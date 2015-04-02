@@ -41,9 +41,7 @@ my $node_types = CoGeX::node_types();
 	get_share_dialog                => \&get_share_dialog,
 	get_roles                       => \&get_roles,
 	search_share                    => \&search_share,
-	delete_genome                   => \&delete_genome,
-	delete_list                     => \&delete_list,
-	delete_experiment               => \&delete_experiment,
+	modify_item                     => \&modify_item,
     cancel_job                      => \&cancel_job,
     restart_job                     => \&restart_job,
     get_jobs                        => \&get_jobs_for_user,
@@ -233,10 +231,11 @@ sub search_stuff {
 		foreach ( sort { $a->id cmp $b->id } @genomes ) {
 			push @results,
 			  {
-				'type'    => "genome",
-				'label'   => $_->info,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
+				'type'          => "genome",
+				'label'         => $_->info,
+				'id'            => $_->id,
+				'deleted'       => $_->deleted,
+				'restricted'    => $_->restricted
 			  };
 		}
 
@@ -252,10 +251,11 @@ sub search_stuff {
 		foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
 			push @results,
 			  {
-				'type'    => "genome",
-				'label'   => $_->info,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
+				'type'          => "genome",
+				'label'         => $_->info,
+				'id'            => $_->id,
+				'deleted'       => $_->deleted,
+				'restricted'    => $_->restricted
 			  };
 		}
 	}
@@ -284,10 +284,11 @@ sub search_stuff {
 		foreach ( sort { $a->name cmp $b->name } @experiments ) {
 			push @results,
 			  {
-				'type'    => "experiment",
-				'label'   => $_->name,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
+				'type'          => "experiment",
+				'label'         => $_->name,
+				'id'            => $_->id,
+				'deleted'       => $_->deleted,
+				'restricted'    => $_->restricted
 			  };
 		}
 	}
@@ -316,10 +317,11 @@ sub search_stuff {
 		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
 			push @results,
 			  {
-				'type'    => "notebook",
-				'label'   => $_->info,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
+				'type'          => "notebook",
+				'label'         => $_->info,
+				'id'            => $_->id,
+				'deleted'       => $_->deleted,
+				'restricted'    => $_->restricted
 			  };
 		}
 	}
@@ -384,8 +386,6 @@ sub user_info {
 		foreach ( $user->child_connectors( { child_type => 6 } ) ) {
 			$child = $_->child;
 			push( @users, $child );
-
-#push @results, { 'type' => "user_group", 'label' => $child->name, 'id' => $child->id, 'deleted' => $child->deleted};
 		}
 	}
 
@@ -395,15 +395,15 @@ sub user_info {
 		# Find notebooks
 		foreach ( $currentUser->child_connectors( { child_type => 1 } ) ) {
 			$child = $_->child;
-
-#push @results, { 'type' => "notebook", 'label' => $child->name, 'id' => $child->id, 'info' => $child->info};
+			
 			push @current,
 			  {
-				'type'    => "notebook",
-				'label'   => $child->info,
-				'id'      => $child->id,
-				'role'    => $_->role_id,
-				'deleted' => $child->deleted
+				'type'          => "notebook",
+				'label'         => $child->info,
+				'id'            => $child->id,
+				'role'          => $_->role_id,
+				'deleted'        => $child->deleted,
+				'restricted'    => $child->restricted
 			  };
 		}
 
@@ -412,11 +412,12 @@ sub user_info {
 			$child = $_->child;
 			push @current,
 			  {
-				'type'    => "genome",
-				'label'   => $child->info,
-				'id'      => $child->id,
-				'role'    => $_->role_id,
-				'deleted' => $child->deleted
+				'type'          => "genome",
+				'label'         => $child->info,
+				'id'            => $child->id,
+				'role'          => $_->role_id,
+				'deleted'       => $child->deleted,
+                'restricted'    => $child->restricted
 			  };
 		}
 
@@ -425,12 +426,13 @@ sub user_info {
 			$child = $_->child;
 			push @current,
 			  {
-				'type'    => "experiment",
-				'label'   => $child->name,
-				'id'      => $child->id,
-				'info'    => $child->info,
-				'role'    => $_->role_id,
-				'deleted' => $child->deleted
+				'type'          => "experiment",
+				'label'         => $child->name,
+				'id'            => $child->id,
+				'info'          => $child->info,
+				'role'          => $_->role_id,
+				'deleted'       => $child->deleted,
+                'restricted'    => $child->restricted
 			  };
 
 #push @current, { 'type' => "experiment", 'label' => $child->info, 'id' => $child->id, 'role' => $_->role_id, 'deleted' => $child->deleted};
@@ -872,116 +874,39 @@ sub usercmp {
 	$a->display_name cmp $b->display_name;
 }
 
-sub delete_genome {
+sub modify_item {
 	
-	unless ( $USER->is_admin ) {
-		return 0;
-	}
-	
-	my %opts = @_;
-	my $gid  = $opts{gid};
-	my $mod  = $opts{modification};
-	print STDERR "$mod genome $gid\n";
-	return 0 unless $gid;
-
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return 0 unless $genome;
-	return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
-	
-	if ($mod eq "delete") {
-        my $delete_or_undelete = ( $genome->deleted ? 'undelete' : 'delete' );
-	   
-        #print STDERR "delete_genome " . $genome->deleted . "\n";
-        $genome->deleted( !$genome->deleted );    # do undelete if already deleted
-        $genome->update;
-
-        # Record in log
-        CoGe::Accessory::Web::log_history(
-            db          => $coge,
-            user_id     => $USER->id,
-            page        => "Admin",
-            description => "$delete_or_undelete genome id $gid"
-        );
-	} elsif ($mod eq "restrict") {
-        my $restrict_or_unrestrict = ( $genome->restrictd ? 'unrestrict' : 'restrict' );
-       
-        #print STDERR "delete_genome " . $genome->deleted . "\n";
-        $genome->restricted( !$genome->restricted );    # do unrestrict if already restricted
-        $genome->update;
-
-        # Record in log
-        CoGe::Accessory::Web::log_history(
-            db          => $coge,
-            user_id     => $USER->id,
-            page        => "Admin",
-            description => "$restrict_or_unrestrict genome id $gid"
-        );
-	}
-
-	return 1;
-}
-
-sub delete_list {
-	unless ( $USER->is_admin ) {
-        return 0;
-    }
-    
-	my %opts = @_;
-	my $lid  = $opts{lid};
-	return 0 unless $lid;    #return "No LID specified" unless $lid;
-
-	my $list = $coge->resultset('List')->find($lid);
-	return 0 unless $list;    #return "Cannot find list $lid\n" unless $list;
-	return 0 unless ( $USER->is_admin or $USER->is_owner( list => $lid ) );
-	my $delete_or_undelete = ( $list->deleted ? 'undelete' : 'delete' );
-
-	if ( $list->locked && !$USER->is_admin ) {
-		return
-		  0;   #"This is a locked list.  Admin permission is needed to modify.";
-	}
-
-	$list->deleted( !$list->deleted );    # do undelete if already deleted
-	$list->update;
-	
-	# Record in log
-    CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        user_id     => $USER->id,
-        page        => "Admin",
-        description => "$delete_or_undelete notebook id $lid"
-    );
-
-	return 1;
-}
-
-sub delete_experiment {
 	unless ( $USER->is_admin ) {
         return 0;
     }
     
     my %opts = @_;
-    my $eid  = $opts{eid};
-    return 0 unless $eid;    #return "No EID specified" unless $eid;
+    my $id  = $opts{id};
+    my $mod  = $opts{modification};
+    my $type = $opts{type};
+    print STDERR "$mod $type $id\n";
+    return 0 unless $id;
 
-    my $experiment = $coge->resultset('Experiment')->find($eid);
-    return 0 unless $experiment;    #return "Cannot find experiment $eid\n" unless $experiment;
-    return 0 unless ( $USER->is_admin or $USER->is_owner( experiment => $eid ) );
-    my $delete_or_undelete = ( $experiment->deleted ? 'undelete' : 'delete' );
-
-    #if ( $experiment->locked && !$USER->is_admin ) {
-    #    return
-    #      0;   #"This is a locked experiment.  Admin permission is needed to modify.";
-    #}
-
-    $experiment->deleted( !$experiment->deleted );    # do undelete if already deleted
-    $experiment->update;
+    my $item = $coge->resultset($type)->find($id);
+    return 0 unless $item;
+    return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $id ) );
+    
+    my $log_message;
+    if ($mod eq "delete") {
+        $log_message = ( $item->deleted ? 'undelete' : 'delete' );
+        $item->deleted( !$item->deleted );    # do undelete if already deleted
+    } elsif ($mod eq "restrict") {
+    	$log_message = ( $item->restricted ? 'unrestrict' : 'restrict' );
+    	$item->restricted( !$item->restricted );    # do undelete if already deleted
+    }
+    $item->update;
 
     # Record in log
     CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $USER->id,
         page        => "Admin",
-        description => "$delete_or_undelete experiment id $eid"
+        description => "$log_message $type id $id"
     );
 
     return 1;
