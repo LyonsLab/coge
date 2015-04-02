@@ -24,7 +24,7 @@
     margin-bottom: 1.5em;
 }
 
-@media(min-width: 920px) {
+@media(min-width: 768px) {
     .row-margin {
         margin-bottom: 1em;
     }
