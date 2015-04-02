@@ -97,6 +97,7 @@ sub gen_html {
     $template->param( BOX_NAME   => 'CoGe: ClustalW 2.0.10' );
     $template->param( BODY       => $body );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     my $prebox =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeAlign.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );

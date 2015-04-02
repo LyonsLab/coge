@@ -90,6 +90,7 @@ sub gen_html {
     $template->param( BODY       => $body );
     $template->param( ADJUST_BOX => 0 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     $html .= $template->output;
 
     return $html;

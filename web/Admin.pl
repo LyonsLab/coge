@@ -52,7 +52,6 @@ my $node_types = CoGeX::node_types();
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-
 	#print STDERR "HTML\n";
 	my $html;
 	my $template =
@@ -70,6 +69,7 @@ sub gen_html {
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( BODY       => gen_body() );
 	$template->param( ADJUST_BOX => 1 );
+	$template->param( CAS_URL    => $P->{CAS_URL} || '' );
 	$html .= $template->output;
 }
 
