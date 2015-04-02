@@ -110,6 +110,7 @@ sub gen_html {
         #$template->param( BOX_NAME	 => $name . " list" );
         #$template->param( TITLE     => 'Managing Data' );
         $template->param( ADMIN_ONLY => $USER->is_admin );
+        $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     }
 
     $template->param( BODY => gen_body() );

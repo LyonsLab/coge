@@ -48,17 +48,17 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 sub generate_html {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param(
-        TITLE => 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
+        TITLE      => 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
         PAGE_TITLE => 'Comparative Genomics',
         PAGE_LINK  => $LINK,
-        #HELP       => '/wiki/index.php',
-	HELP       => $P->{SERVER},
+	    HELP       => $P->{SERVER},
         USER       => $USER->display_name || undef,
         ADJUST_BOX => 1,
         LOGO_PNG   => "CoGe.svg",
-	LOGO_IMAGE => "CoGeCircuitLeaf1.svg",
+	    LOGO_IMAGE => "CoGeCircuitLeaf1.svg",
         BODY       => generate_body(),
-        ADMIN_ONLY => $USER->is_admin
+        ADMIN_ONLY => $USER->is_admin,
+        CAS_URL    => $P->{CAS_URL} || ''
     );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -111,7 +111,7 @@ sub generate_body {
         )
     );
 
-    $tmpl->param(wikifeed => $P->{WIKI_URL});
+    $tmpl->param( wikifeed => $P->{WIKI_URL} || '' );
 
     #      }
     #    my $url = $FORM->param('url') if $FORM->param('url');

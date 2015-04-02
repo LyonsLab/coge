@@ -293,6 +293,7 @@ sub gen_html {
     #$template->param( HELP     => "/wiki/index.php?title=SynMap" );
     $template->param( HELP     => $config->{SERVER} );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $config->{CAS_URL} || '' );
     $html .= $template->output;
     return $html;
 }

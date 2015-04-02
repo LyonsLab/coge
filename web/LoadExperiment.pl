@@ -98,7 +98,8 @@ sub generate_html {
 			  ADJUST_BOX => 1,
                           LOGO_PNG   => "CoGe.svg",
                           ADMIN_ONLY => $USER->is_admin,
-                          USER       => $USER->display_name || ''
+                          USER       => $USER->display_name || '',
+                          CAS_URL    => $P->{CAS_URL} || ''
         );
         $template->param( LOGON      => 1 ) unless $USER->is_public;
     }
@@ -121,7 +122,7 @@ sub generate_body {
     my $gid = $FORM->param('gid');
     if ($gid) {
         my $genome = $coge->resultset('Genome')->find($gid);
-        if ($genome && $USER->has_access_to_genome($genome)) {
+        if ($genome && $USER->has_access_to_genome($genome)) { # check permission
             $template->param(
                 GENOME_NAME => $genome->info,
                 GENOME_ID   => $genome->id
@@ -303,16 +304,12 @@ sub ftp_get_file {
     $request->authorization_basic( $username, $password )
       if ( $username and $password );
 
-    print STDERR Dumper $ua->requests_redirectable, "\n";
-    #print STDERR "request uri: " . $request->uri . "\n";
-    $request->content_type("text/xml; charset=utf-8");
+    #$request->content_type("text/xml; charset=utf-8"); # mdb removed 3/30/15 COGE-599
     my $response = $ua->request($request);
+    #print STDERR "content: <begin>", $response->content , "<end>\n"; # debug
     if ( $response->is_success() ) {
-
         #my $header = $response->header;
         my $result = $response->content;
-
-        #print STDERR "content: <begin>$result<end>\n";
         open( my $fh, ">$fullfilepath/$filename" );
         if ($fh) {
             binmode $fh;    # could be binary data
