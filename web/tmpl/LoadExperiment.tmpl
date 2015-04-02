@@ -220,7 +220,7 @@
             <label class="col-md-2">Options:</label>
             <div class="form-group">
                 <label>-Q:</label>
-                <input id="-Q" type="number" value="20">
+                <input id="-Q" type="number" title="minimum base quality score (mpileup)" value="20">
             </div>
         </div>
     </div>
@@ -288,10 +288,10 @@
 <script id="tophat-template" type="text/template">
     <div id="tophat">
         <div class="form-field">
-            <label class="col-md-2">TopHat:</label>
+            <label class="col-md-2">TopHat: (<a href="http://ccb.jhu.edu/software/tophat/manual.shtml" target="_blank" class="small link">docs</a>)</label>
             <div>
                 <label>-g:</label>
-                <input id="-g" type="number" value="1"/>
+                <input id="-g" type="number" title="Instructs TopHat to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number. The default is 20 for read mapping." value="1"/>
             </div>
         </div>
     </div>
@@ -300,19 +300,19 @@
 <script id="gsnap-template" type="text/template">
     <div id="gsnap">
         <div class="form-field">
-            <label class="col-md-2">CutAdapt:</label>
+            <label class="col-md-2">CutAdapt: <a href="https://cutadapt.readthedocs.org/en/stable/guide.html" target="_blank" class="small link">docs</a>)</label>
             <div class="form-group">
                 <div class="form-entry">
                     <label>-q:</label>
-                    <input id="-q" type="number" value="25"/>
+                    <input id="-q" type="number" title="(--trim-qualities) used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set --quality-base to 64." value="25"/>
                 </div>
                 <div class="form-entry">
                     <label>-m:</label>
-                    <input id="-m" type="number" value="17"/>
+                    <input id="-m" type="number" title="(--minimum-length) Use this to throw away processed reads shorter than N bases" value="17"/>
                 </div>
                 <div class="form-entry">
                     <label>--quality-base:</label>
-                    <input id="--quality-base" type="number" value="32"/>
+                    <input id="--quality-base" type="number" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)" value="32"/>
                 </div>
             </div>
         </div>
@@ -322,16 +322,16 @@
             <div class="form-group">
                 <div class="form-entry">
                     <label>-n:</label>
-                    <input id="-n" type="number" value="5"/>
+                    <input id="-n" type="number" title="(--npaths) Maximum number of paths to print" value="5"/>
                 </div>
 
                 <div class="form-entry">
                     <label>-Q:</label>
-                    <input id="-Q" type="checkbox" checked/>
+                    <input id="-Q" type="checkbox" title="(--quiet-if-excessive) If more than maximum number of paths are found, then nothing is printed." checked/>
                 </div>
                 <div class="form-entry">
                     <label>--gap-mode:</label>
-                    <select id="--gap-mode">
+                    <select id="--gap-mode" title="Cases to use GMAP for complex alignments containing multiple splices or indels">
                         <option>none</option>
                         <option>all</option>
                         <option>pairsearch</option>
@@ -342,7 +342,7 @@
                 </div>
                 <div class="form-entry">
                     <label>--nofails:</label>
-                    <input id="--nofails" type="checkbox" checked/>
+                    <input id="--nofails" type="checkbox" title="Exclude printing of failed alignments" checked/>
                 </div>
             </div>
         </div>
