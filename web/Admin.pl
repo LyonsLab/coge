@@ -65,7 +65,7 @@ sub gen_html {
 	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param( USER       => $name );
 	$template->param( PAGE_TITLE => qq{Admin} );
-	$template->param( TITLE      => "Admin" );
+	$template->param( TITLE      => "GODVIEW" );
 	$template->param( LOGO_PNG   => "CoGe.svg" );
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( BODY       => gen_body() );
@@ -873,31 +873,50 @@ sub usercmp {
 }
 
 sub delete_genome {
+	
 	unless ( $USER->is_admin ) {
 		return 0;
 	}
 	
 	my %opts = @_;
 	my $gid  = $opts{gid};
-	print STDERR "delete_genome $gid\n";
+	my $mod  = $opts{modification};
+	print STDERR "$mod genome $gid\n";
 	return 0 unless $gid;
 
 	my $genome = $coge->resultset('Genome')->find($gid);
 	return 0 unless $genome;
 	return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
-	my $delete_or_undelete = ( $genome->deleted ? 'undelete' : 'delete' );
+	
+	if ($mod eq "delete") {
+        my $delete_or_undelete = ( $genome->deleted ? 'undelete' : 'delete' );
+	   
+        #print STDERR "delete_genome " . $genome->deleted . "\n";
+        $genome->deleted( !$genome->deleted );    # do undelete if already deleted
+        $genome->update;
 
-	#print STDERR "delete_genome " . $genome->deleted . "\n";
-	$genome->deleted( !$genome->deleted );    # do undelete if already deleted
-	$genome->update;
+        # Record in log
+        CoGe::Accessory::Web::log_history(
+            db          => $coge,
+            user_id     => $USER->id,
+            page        => "Admin",
+            description => "$delete_or_undelete genome id $gid"
+        );
+	} elsif ($mod eq "restrict") {
+        my $restrict_or_unrestrict = ( $genome->restrictd ? 'unrestrict' : 'restrict' );
+       
+        #print STDERR "delete_genome " . $genome->deleted . "\n";
+        $genome->restricted( !$genome->restricted );    # do unrestrict if already restricted
+        $genome->update;
 
-	# Record in log
-	CoGe::Accessory::Web::log_history(
-		db          => $coge,
-		user_id     => $USER->id,
-		page        => "Admin",
-		description => "$delete_or_undelete genome id $gid"
-	);
+        # Record in log
+        CoGe::Accessory::Web::log_history(
+            db          => $coge,
+            user_id     => $USER->id,
+            page        => "Admin",
+            description => "$restrict_or_unrestrict genome id $gid"
+        );
+	}
 
 	return 1;
 }
