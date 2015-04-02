@@ -435,7 +435,6 @@ sub user_info {
                 'restricted'    => $child->restricted
 			  };
 
-#push @current, { 'type' => "experiment", 'label' => $child->info, 'id' => $child->id, 'role' => $_->role_id, 'deleted' => $child->deleted};
 		}
 
 		# Find users if searching a user group

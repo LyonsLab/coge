@@ -671,12 +671,9 @@ function modify_item (id, type, modification) {
 			type: type,
 		},
 		success : function(val) {
-			//location.reload();
+			refresh_data();
 		},
 	});
-	
-	//Now refresh the page to reflect changes
-	refresh_data();
 }
 
 function wait_to_search (search_func, search_term) {
