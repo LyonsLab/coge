@@ -145,7 +145,7 @@ function search_stuff (search_term) {
 					}
 	
 					if (obj.items[i].type == "genome") {
-						genList = genList + "<tr><td><span onclick=\"delete_item(" + obj.items[i].id + ", 'genome');\"";
+						genList = genList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'genome', 'delete');\"";
 						genList = genList + " class=\"link ui-icon ui-icon-trash\"></span>";
 						if (obj.items[i].deleted == 1) {
 							genList = genList + "<span style=\"color: red\">";
@@ -154,12 +154,13 @@ function search_stuff (search_term) {
 						}
 						genList = genList + (obj.items[i].label) + " <a href=\"GenomeInfo.pl?gid=" + (obj.items[i].id) + "\">Info </a>";
 						genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ", 2 )'>Edit Access</button>";
+						genList = genList + "<button onclick='modify_item(" + obj.items[i].id + ", 'genome', 'restrict')'>Restrict</button>";
 						genList = genList + "</span></td></tr>";
 						genCounter++;
 					}
 	
 					if (obj.items[i].type == "experiment") {
-						expList = expList + "<tr><td><span onclick=\"delete_item(" + obj.items[i].id + ", 'experiment');\"";
+						expList = expList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'experiment', 'delete');\"";
 						expList = expList + " class=\"link ui-icon ui-icon-trash\"></span>";
 						if (obj.items[i].deleted == 1) {
 							expList = expList + "<span style=\"color: red\">";
@@ -173,7 +174,7 @@ function search_stuff (search_term) {
 					}
 	
 					if (obj.items[i].type == "notebook") {
-						noteList = noteList + "<tr><td><span onclick=\"delete_item(" + obj.items[i].id + ", 'notebook');\"";
+						noteList = noteList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'notebook', 'delete');\"";
 						noteList = noteList + " class=\"link ui-icon ui-icon-trash\"></span>";
 						if (obj.items[i].deleted == 1) {
 							noteList = noteList + "<span style=\"color: red\">";
@@ -418,7 +419,7 @@ function user_info(userID, search_type) {
         				var current = obj.items[i].result[j];
 	
         				if (current.type == "genome") {
-        					genList = genList + "<tr><td><span onclick=\"delete_item(" + current.id + ", 'genome');\"";
+        					genList = genList + "<tr><td><span onclick=\"modify_item(" + current.id + ", 'genome', 'delete');\"";
         					genList = genList + " class=\"link ui-icon ui-icon-trash\"></span>";
 	                                               	
         					if (current.role == 2) {
@@ -441,7 +442,7 @@ function user_info(userID, search_type) {
         				}
 
         				if (current.type == "experiment") {
-        					expList = expList + "<tr><td><span onclick=\"delete_item(" + current.id + ", 'experiment');\"";
+        					expList = expList + "<tr><td><span onclick=\"modify_item(" + current.id + ", 'experiment', 'delete');\"";
         					expList = expList + " class=\"link ui-icon ui-icon-trash\"></span>";
         					
         					if (current.role == 2) {
@@ -464,7 +465,7 @@ function user_info(userID, search_type) {
         				}
 						
         				if (current.type == "notebook") {
-        					noteList = noteList + "<tr><td><span onclick=\"delete_item(" + current.id + ", 'notebook');\"";
+        					noteList = noteList + "<tr><td><span onclick=\"modify_item(" + current.id + ", 'notebook', 'delete');\"";
         					noteList = noteList + " class=\"link ui-icon ui-icon-trash\"></span>";
 
         					if (current.role == 2) {
@@ -626,13 +627,14 @@ function search_share () {
 	});
 }
 
-function delete_item (id, type) {
+function modify_item (id, type, modification) {
 	switch (type) {
 		case "genome":
 			$.ajax({
 				data: {
 					fname: 'delete_genome',
 					gid: id,
+					modification: modification,
 				},
 				success : function(val) {
 					//location.reload();
@@ -645,6 +647,7 @@ function delete_item (id, type) {
 				data: {
 					fname: 'delete_list',
 					lid: id,
+					modification: modification,
 				},
 				success : function(val) {
 					//location.reload();
@@ -657,6 +660,7 @@ function delete_item (id, type) {
 				data: {
 					fname: 'delete_experiment',
 					eid: id,
+					modification: modification,
 				},
 				success : function(val) {
 					//location.reload();
