@@ -497,6 +497,14 @@ $.extend(Wizard.prototype, {
 
         this.tabs.html(titles);
         titles[this.currentIndex].addClass("active");
+//        for (var i=0;i<=this.currentIndex;i++)
+//        	titles[i].addClass("active");
+//        for (var i=0;i<this.currentIndex;i++) {
+//        	var self = this;
+//        	var index = i;
+//        	titles[i].click(function(){self.move(index)});
+//        	titles[i].css('cursor','pointer');
+//        }
 
         var step = this.steps[this.currentIndex];
         if (step.render)
@@ -517,22 +525,22 @@ $.extend(Wizard.prototype, {
         }
     },
 
+    move: function(index) {
+    	this.currentIndex = index;
+    	this.render();
+        this.notifications.stop(true, true).hide();
+    },
+
     movePrevious: function() {
-        if (!this.at_first()) {
-            this.currentIndex--;
-            this.render();
-            this.notifications.stop(true, true).hide();
-        }
+        if (!this.at_first())
+        	this.move(this.currentIndex - 1);
     },
 
     moveNext: function() {
         var step = this.steps[this.currentIndex];
 
-        if (!this.at_last() && step.is_valid()) {
-            this.currentIndex++;
-            this.render();
-            this.notifications.stop(true, true).hide();
-        }
+        if (!this.at_last() && step.is_valid())
+        	this.move(this.currentIndex + 1);
     },
 
     message: function(message) {
