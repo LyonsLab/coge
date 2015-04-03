@@ -150,13 +150,6 @@ sub search_stuff {
 				#Sets the "type" so that only fields relevant to deletion are shown. (i.e. there are no deleted users).
 			}
 		}
-
-        #if ($specialTerms[$i]{tag} eq 'deleted' && $specialTerms[$i]{term} eq '*') {
-        #        @deleted = [-or => [deleted => 0, deleted => 1]];
-        #	if($type eq "none") {
-        #                $type = 'deleted';
-        #        }
-        #}
 	}
 
 	# Perform organism search
@@ -360,9 +353,6 @@ sub search_stuff {
 
 sub user_info {
 
-	#print STDERR "Hello? Is anyone there?";
-	#print STDERR "@_\n";
-
 	my %opts        = @_;
 	my $search_term = $opts{search_term};
 	my $search_type = $opts{search_type};
@@ -435,7 +425,6 @@ sub user_info {
                 'restricted'    => $child->restricted
 			  };
 
-#push @current, { 'type' => "experiment", 'label' => $child->info, 'id' => $child->id, 'role' => $_->role_id, 'deleted' => $child->deleted};
 		}
 
 		# Find users if searching a user group
@@ -454,7 +443,6 @@ sub user_info {
 		  };
 	}
 
-	#print STDERR Dumper(@results);
 	return encode_json( { timestamp => $timestamp, items => \@results } );
 }
 
@@ -467,10 +455,6 @@ sub add_items_to_user_or_group {
 	my $item_list = $opts{item_list};
 	my @items = split( ',', $item_list );
 	return unless @items;
-
-	#print STDERR Dumper(\@items);
-	#print STDERR "\n$target_item\n";
-	#print STDERR "$role_id\n";
 
 	my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
 
@@ -672,10 +656,6 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 	foreach (@items) {
 		( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
 
-		#print STDERR $item_id;
-		#print STDERR "\n!";
-		#print STDERR $item_type;
-		#print STDERR "\n!!";
 		next unless ( $item_id and $item_type );
 
 		# print STDERR "get_share $item_id $item_type\n";
@@ -719,8 +699,6 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 		if ( $conn->is_parent_user ) {
 			my $user = $conn->parent;
 
-			#print STDERR $user;
-			#print STDERR "\nYo\n";
 			$user_rows{ $user->id } = {
 				ITEM_ID        => $item_id,
 				ITEM_TYPE      => $item_type,
