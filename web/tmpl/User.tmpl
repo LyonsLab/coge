@@ -1,9 +1,23 @@
 <TMPL_IF NAME="MAIN">
 
-<link rel="stylesheet" href="js/vendor/slickgrid/slick.grid.css" type="text/css"/>
-<link rel="stylesheet" href="js/vendor/slickgrid/controls/slick.pager.css" type="text/css"/>
-<link rel="stylesheet" href="js/vendor/slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/>
-<link rel="stylesheet" href="js/vendor/slickgrid/controls/slick.columnpicker.css" type="text/css"/>
+<!--<link rel="stylesheet" href="js/vendor/datatables/media/css/jquery.dataTables.min.css" type="text/css"/>-->
+<link rel="stylesheet" href="css/dataTables.css" type="text/css"/>
+
+<style>
+.dt-cell td {
+	font-size: small;
+}
+
+.dt-cell th {
+	text-align: left;
+	font-size: small;
+	color: dimgray !important;
+}
+
+div.dataTables_scrollBody {
+	border-bottom: none !important;
+}
+</style>
 
 <div id="add_to_notebook_dialog" class="dialog_box hidden" title="Add Items to Notebook">
 	<table class="small">
@@ -185,7 +199,7 @@ div.deleted { display: none; }
 	</div>
 
 	<div style="float:left;float:left;margin-right:15px;">
-	    <span id="create_button" class='ui-button ui-button-icon-right ui-corner-all coge-button coge-button-right' style="font-size:1em;padding-top:5px;padding-bottom:5px;" onclick="create_menu();">CREATE<span class="ui-icon ui-icon-triangle-1-s"></span></span>
+	    <span id="create_button" class='ui-button ui-button-icon-right ui-corner-all coge-button coge-button-right' style="font-size:1em;padding-top:5px;padding-bottom:5px;width:70px;" onclick="create_menu();">NEW<span class="ui-icon ui-icon-triangle-1-s"></span></span>
 	    <div id="toc_panel" class="small panel" style="overflow:auto;padding-top:1em;padding-right:1em;">
 			<TMPL_VAR NAME='TOC'>
 		</div>
@@ -226,7 +240,7 @@ div.deleted { display: none; }
 	</div>
 
 	<div id="contents_panel" class="small panel">
-		<div id="contents_table" style="overflow:auto;height:80%;border-top:1px solid lightgray;">
+		<div id="contents_table" style="overflow:auto;border-top:1px solid lightgray;border-bottom:none !important;">
 			<TMPL_VAR NAME='CONTENTS'>
 		</div>
 	</div>
@@ -239,16 +253,8 @@ const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 
 <script type="text/javascript" src="js/pages/user.js"></script>
 
-<script src="js/vendor/slickgrid/lib/jquery-ui-1.8.16.custom.min.js"></script>
-<script src="js/vendor/slickgrid/lib/jquery.event.drag-2.2.js"></script>
-<script src="js/vendor/slickgrid/slick.core.js"></script>
-<script src="js/vendor/slickgrid/slick.formatters.js"></script>
-<script src="js/vendor/slickgrid/slick.editors.js"></script>
-<script src="js/vendor/slickgrid/plugins/slick.rowselectionmodel.js"></script>
-<script src="js/vendor/slickgrid/slick.grid.js"></script>
-<script src="js/vendor/slickgrid/slick.dataview.js"></script>
-<script src="js/vendor/slickgrid/controls/slick.pager.js"></script>
-<script src="js/vendor/slickgrid/controls/slick.columnpicker.js"></script>
+<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
+
 </TMPL_IF> <!-- MAIN -->
 
 <TMPL_IF NAME="DO_TOC">

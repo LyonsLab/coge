@@ -20,6 +20,7 @@
     "bioplot": "https://github.com/erbriones/bioplot.git#v0.1.0",
     "jdot": "https://github.com/LyonsLab/jdot.git",
     "bootstrap": "~3.2.0",
-    "slickgrid": "https://github.com/mleibman/SlickGrid.git"
+    "slickgrid": "https://github.com/mleibman/SlickGrid.git",
+    "datatables": "https://github.com/DataTables/DataTables.git"
   }
 }
