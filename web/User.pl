@@ -98,7 +98,7 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( HELP       => $P->{SERVER} || '',
-                      USER       => $USER->display_name,
+                      USER       => $USER->display_name || '',
                       PAGE_TITLE => 'User Profile',
 				      TITLE      => "My Profile",
     				  PAGE_LINK  => $LINK,
@@ -144,13 +144,10 @@ sub gen_body {
 
 sub get_item_info {
     my %opts      = @_;
-    my $item_spec = $opts{item_spec};
-    my $add_actions = $opts{add_actions}; # boolean flag
-    return unless $item_spec;
-    my ( $item_id, $item_type ) = $item_spec =~ /content_(\d+)_(\d+)/;
-    return unless ( $item_id and defined $item_type );
+    my $item_id = $opts{item_id};
+    my $item_type = $opts{item_type};
+    return unless ($item_id and $item_type);
     my $timestamp = $opts{timestamp};
-
     # print STDERR "get_item_info: $item_id $item_type\n";
 
     my $html;
@@ -1262,7 +1259,7 @@ sub get_contents2 {
 #    }
     
 #    print STDERR Dumper \@items, "\n";
-    return encode_json({ items => \@items });
+    return encode_json(\@items);
 }
 
 sub get_contents {
