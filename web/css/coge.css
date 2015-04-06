@@ -857,6 +857,13 @@ td.link:hover {
  border-collapse: collapse;
 }
 
+.clearfix:before,
+.clearfix:after {
+    content: " ";
+    display: table;
+    clear:both;
+}
+
 /***Portlet css for user profile**/
 .portlet {
   margin: 0 1em 1em 0;
@@ -1492,6 +1499,10 @@ header {
     user-select: none;
 }
 
+/*
+ * YouTube widget
+ *
+ */
 #youtube-hack {
     position: relative;
 }
@@ -1500,13 +1511,6 @@ header {
     position: absolute;
     top: 45%;
     left: 40%;
-}
-
-.clearfix:before,
-.clearfix:after {
-    content: " ";
-    display: table;
-    clear:both;
 }
 
 /*
