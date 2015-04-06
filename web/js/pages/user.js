@@ -62,7 +62,7 @@ $(function() {
 	}
 
 	// Initialize main panels
-	exit_item(); // initialize info panel
+	//exit_item(); // initialize info panel
 	toc_select(toc_id); // initialize toc panel
 
 	// Setup idle timer
@@ -122,120 +122,102 @@ function pad(string, size) {
     return string;
 }
 
-const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+function formatDate(dateStr) {
+	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+	var date = new Date(dateStr);
+	var today = new Date();
+	var diffDays = Math.round(Math.abs((today.getTime() - date.getTime())/(24*60*60*1000)));
+	var dateStr;
+	if (diffDays == 0) // same day as today
+		dateStr = (date.getHours() % 12) + ':' + pad(date.getMinutes(), 2) + ' ' + (date.getHours() < 12 ? 'am' : 'pm');
+	else if (diffDays == 1) // yesterday
+		dateStr = 'Yesterday';
+	else if (diffDays <= 4) // last several days
+		dateStr = diffDays + ' days ago';
+	else if (date.getFullYear() == today.getFullYear()) // same year 
+		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate()
+	else // last year or older
+		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+	return '<span>' + dateStr + '</span>';
+}
+
+function formatGenome(genome) {
+	var descStr = 
+	   	(genome.restricted ? '&reg; '  : '') +
+	   	(genome.organism ? genome.organism : '') + 
+	   	(genome.name ? ' (' + genome.name + ')' : '') +
+	   	(genome.description ? ': ' + genome.description : '') +
+	   	' (v' + genome.version + ', id' + genome.id + ')';
+	return descStr;
+}
 
 function initGrid() {
-	var columns = [
-	   	{ id: "name", name: "Name", field: "name", sortable: true, cssClass: "cell-normal",
-	   		formatter: function( row, cell, value, columnDef, data ) {
-	   		    var desc = 
-	   		    	(data.restricted ? '&reg; ' : '') +
-	   		    	(data.organism ? data.organism : '') +
-	   		    	(data.name ? data.name : '') +
-	   		    	(data.description ? data.description : '') +
-	   		    	' (v' + data.version + ', id' + data.id + ')';
-//	   		    desc += ': ' . $self->genomic_sequence_type->name
-//	   		      if $self->genomic_sequence_type;
-	            return '<span>' + desc + '</span>';
-	   		}
-	    },
-	   	{ id: "date", name: "Date added", field: "date", sortable: true, cssClass: "cell-normal",
-	    	formatter: function( row, cell, value, columnDef, data ) {
-	    		var date = new Date(data.date);
-	    		var today = new Date();
-	    		var diffDays = Math.round(Math.abs((today.getTime() - date.getTime())/(24*60*60*1000)));
-	    		var dateStr;
-	    		if (diffDays == 0) //(date.setHours(0,0,0,0) == today.setHours(0,0,0,0)) // same day as today
-	    			dateStr = (date.getHours() % 12) + ':' + pad(date.getMinutes(), 2) + ' ' + (date.getHours() < 12 ? 'am' : 'pm');
-	    		else if (diffDays == 1)
-	    			dateStr = 'Yesterday';
-	    		else if (diffDays <= 4)
-	    			dateStr = diffDays + ' days ago';
-	    		else if (date.getFullYear() == today.getFullYear()) // same year 
-	    			dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate()
-	    		else // last year or older
-	    			dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
-	    		return '<span>' + dateStr + '</span>';
-	    	}
-	   	},
-	];
+	$('#contents_table').html( '<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border" id="datatable"></table>' );
 	
-	var options = {
-		editable: true,
-		enableCellNavigation: true,
-		asyncEditorLoading: true,
-		forceFitColumns: true,
-	};
-	
-	var dataView = new Slick.Data.DataView({ inlineFilters: true });
-	grid = new Slick.Grid("#contents_table", dataView, columns, options);
-
-	var columnpicker = new Slick.Controls.ColumnPicker(columns, grid, options);
-
-//	grid.onCellChange.subscribe(function (e, args) {
-//		$.ajax({
-//			data: {
-//				jquery_ajax: 1,
-//				fname: 'update_comment',
-//				log_id: args.item.id,
-//				comment: args.item.comment
-//			},
-//			success: function() {
-//				dataView.updateItem(args.item.id, args.item);
-//			}
-//		});
-//	});
-
-//	grid.onSort.subscribe(function (e, args) {
-//		sortcol = args.sortCol.field;
-//		dataView.sort(comparer, args.sortAsc);
-//	});
-
-	// Wire up model events to drive the grid
-	dataView.onRowCountChanged.subscribe(function (e, args) {
-		grid.updateRowCount();
-		grid.render();
-		if ($("#contents_table").is(":not(visible)")) {
-			$("#contents_table").slideDown();
-		}
+	var dataTable = $('#datatable').dataTable({
+		"paging": false,
+		"info" : false,
+		"searching": false,
+		"sScrollY": $(window).height() - 245, // this depends on the height of the header/footer
+		"columns": [
+            { 	title: "Name", 
+            	targets: 0,
+            	type: "string",
+            	data: null, // use full data object
+            	render: function(data, type, row, meta) {
+            		return formatGenome(data);
+            	}
+            },
+            { 	title: "Date added", 
+            	targets: 1, 
+            	type: "date",
+            	data: "date",
+            	width: "100px",
+            	render: function(data, type, row, meta) {
+            		return formatDate(data);
+            	}
+            }
+		]
 	});
-	dataView.onRowsChanged.subscribe(function (e, args) {
-		grid.invalidateRows(args.rows);
-		grid.render();
-	});
-
-	// Wire up the show selector to apply the filter to the model
-//	$("#show_select,#search_type").change(function (e) {
-//		updateFilter();
-//	});
-
-	// Wire up the search textbox to apply the filter to the model
-//	$("#search_input").keyup(function (e) {
-//		Slick.GlobalEditorLock.cancelCurrentEdit();
-//
-//		if (e.which == 27) { // Clear on Esc
-//			this.value = "";
-//		}
-//
-//		updateFilter();
-//	});
 	
+	// Handle row selection event
+	var dataTableBody = dataTable.children('tbody');
+	dataTableBody.on( 'click', 'tr', function () {
+        if ( $(this).hasClass('selected') ) {
+            $(this).removeClass('selected');
+        }
+        else {
+        	dataTable.$('tr.selected').removeClass('selected');
+            $(this).addClass('selected');
+        }
+    });
+	
+	// Handle row hover events
+	dataTableBody.on( 'mouseover', 'tr', function () {
+		var tr = $(this).closest('tr');
+        var row = dataTable.api().row(tr);
+        //enter_item(row.data());
+        row.data().enter();
+    });
+	dataTableBody.on( 'mouseout', 'tr', function () {
+		var tr = $(this).closest('tr');
+        var row = dataTable.api().row(tr);
+		//exit_item(row.data());
+    });	
+
 	$.ajax({
 		dataType: 'json',
 		data: {
 			fname: 'get_contents2',
 		},
 		success : function(data) {
-			dataView.beginUpdate();
-			dataView.setItems(data.items);
-//			dataView.setFilterArgs({
-//				show: 0,
-//				searchType: 1,
-//				searchString: ''
-//			});
-//			dataView.setFilter(myFilter);
-			dataView.endUpdate();
-//			updateFilter();
+			//console.log(data);
+			var rows = data.map(function(obj) {
+				return new DataGridRow(obj);
+			});
+			dataTable.api()
+				.clear()
+				.rows.add(rows).draw();
 		}
 	});
 }
@@ -290,6 +272,40 @@ function toc_toggle_children(toc_id, num_children) {
 		.nextAll().slice(0, num_children)
 		.toggle();
 }
+
+function Cache(params) {
+	this.initialize();
+}
+
+$.extend(Cache.prototype, {
+	initialize: function() {
+		this.items = new Array();
+    },
+    
+    function clear_info_cache(id) {
+    	if (id)
+    		delete item_info_cache[id];
+    	else
+    		item_info_cache = new Array();
+    }
+
+    function refresh_info_cache() {
+    	clear_info_cache();
+    	
+    	var selected = get_selected_items();
+    	selected.each(function(index, obj) {
+    		get_item_info(obj.parentNode);
+    	});
+    }
+
+    function add_to_info_cache(id, value) {
+    	item_info_cache[id] = value;
+    }
+
+    function get_from_info_cache(id) {
+    	return item_info_cache[id];
+    }
+});
 
 function clear_info_cache(id) {
 	if (id)
@@ -358,56 +374,79 @@ function default_info() {
 	$('#info_panel').html(text);
 }
 
-function get_item_info(obj) {
-	var info = get_from_info_cache(obj.id);
-	if ( info ) {
-		$('#info_panel').html(info);
-		return;
-	}
+function DataGrid(params) {
 	
-	$.ajax({
-		data: {
-			fname: 'get_item_info',
-			item_spec: obj.id,
-			timestamp: init_timestamp('get_item_info')
-		},
-		success : function(data) {
-			if (data) {
-				var result = jQuery.parseJSON(data);
-				if (test_timestamp('get_item_info', result.timestamp)) {
-					add_to_info_cache(obj.id, result.html);
-					$('#info_panel').html(result.html);
-				}
-			}
-		}
-	});
 }
 
-function enter_item(obj) {
-	if (selected_item_id)
-		return;
+$.extend(DataGrid.prototype, {
+	initialize: function() {
+    }
+});
 
-	if (timers['item'])
-		window.clearTimeout(timers['item']);
-
-	timers['item'] = window.setTimeout( 
-		function() { 
-			info_busy(); 
-			get_item_info(obj);
-		},
-		500
-	);
+function DataGridRow(data) {
+	$.extend(this, data);
+//    this.initialize();
 }
 
-function exit_item() {
-	if (selected_item_id)
-		return;
-	
-	if (timers['item'])
-		window.clearTimeout(timers['item']);
-	
-	timers['item'] = window.setTimeout( default_info, 500 );
-}
+$.extend(DataGridRow.prototype, {
+//	initialize: function() {
+//    },
+
+    get_info: function() {
+    	//console.log(obj);
+    	var info = get_from_info_cache(obj.type + '-' + obj.id);
+    	if ( info ) {
+    		$('#info_panel').html(info);
+    		return;
+    	}
+    	
+    	$.ajax({
+    		data: {
+    			fname: 'get_item_info',
+    			item_id: obj.id,
+    			item_type: obj.type,
+    			timestamp: init_timestamp('get_item_info')
+    		},
+    		success : function(data) {
+    			if (data) {
+    				var result = jQuery.parseJSON(data);
+    				if (test_timestamp('get_item_info', result.timestamp)) {
+    					add_to_info_cache(obj.id, result.html);
+    					$('#info_panel').html(result.html);
+    				}
+    			}
+    		}
+    	});
+    },
+
+    enter: function() {
+    	var self = this;
+    	
+    	if (selected_item_id)
+    		return;
+
+    	if (timers['item'])
+    		window.clearTimeout(timers['item']);
+
+    	timers['item'] = window.setTimeout( 
+    		function() { 
+    			info_busy(); 
+    			self.get_info();
+    		},
+    		500
+    	);
+    },
+    
+    exit: function() {
+    	if (selected_item_id)
+    		return;
+    	
+    	if (timers['item'])
+    		window.clearTimeout(timers['item']);
+    	
+    	timers['item'] = window.setTimeout( default_info, 500 );
+    }
+});
 
 function info_busy() {
 	$('#info_panel').html('<img src="picts/ajax-loader.gif"/>');
