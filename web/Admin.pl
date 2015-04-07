@@ -92,32 +92,38 @@ sub gen_body {
 }
 
 sub search_stuff {
-	my %opts        = @_;
-	my $search_term = $opts{search_term};
-	my $timestamp   = $opts{timestamp};
+    my %opts        = @_;
+    my $search_term = $opts{search_term};
+    my $timestamp   = $opts{timestamp};
 
-	my @searchArray = split( ' ', $search_term );
-	my @specialTerms;
-	my @idList;
-	my @results;
+    my @searchArray = split( ' ', $search_term );
+    my @specialTerms;
+    my @idList;
+    my @results;
 
-	#return unless $search_term;
+    #return unless $search_term;
 
-	#Set up the necessary arrays of serch terms and special conditions
-	for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-		if ( index( $searchArray[$i], ':' ) == -1 ) {
-			$searchArray[$i] = { 'like', '%' . $searchArray[$i] . '%' };
-		}
-		else {
-			my @splitTerm = split( '::', $searchArray[$i] );
-			splice( @searchArray, $i, 1 );
-			$i--;
-			push @specialTerms,
-			  { 'tag' => $splitTerm[0], 'term' => $splitTerm[1] };
-		}
-	}
+    #Set up the necessary arrays of serch terms and special conditions
+    for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+        if ( index( $searchArray[$i], "::" ) == -1 ) {
+            if ( index( $searchArray[$i], '!' ) == -1 ) {
+                $searchArray[$i] = { 'like', '%' . $searchArray[$i] . '%' };
+            } else {
+            	my $bang_index = index($searchArray[$i], '!');
+            	my $new_term = substr($searchArray[$i], 0, $bang_index) . substr($searchArray[$i], $bang_index + 1);
+            	$searchArray[$i] = { 'not_like', '%' . $new_term . '%' };
+            	#print STDERR Dumper($searchArray[$i]);
+            }
+        }
+        else {
+            my @splitTerm = split( '::', $searchArray[$i] );
+            splice( @searchArray, $i, 1 );
+            $i--;
+            push @specialTerms, { 'tag' => $splitTerm[0], 'term' => $splitTerm[1] };
+        }
+    }
 
-	#say STDERR Dumper(\@searchArray);
+	#print STDERR Dumper(\@searchArray);
 
 	#Set the special conditions
 	my $type = "none";    #Specifies a particular field to show
@@ -152,18 +158,24 @@ sub search_stuff {
 		}
 	}
 
-	# Perform organism search
-	if (   $type eq 'none'
-		|| $type eq 'organism'
-		|| $type eq 'genome'
-		|| $type eq 'restricted'
-		|| $type eq 'deleted' )
-	{
-		my @orgArray;
-		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+    # Perform organism search
+    if (   $type eq 'none'
+        || $type eq 'organism'
+        || $type eq 'genome'
+        || $type eq 'restricted'
+        || $type eq 'deleted' )
+    {
+        my @orgArray;
+        for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+            my $and_or;
+            if ($searchArray[$i]{"not_like"}) {
+                $and_or = "-and";
+			} else {
+				$and_or = "-or";
+			}
 			push @orgArray,
 			  [
-				-or => [
+				$and_or => [
 					name        => $searchArray[$i],
 					description => $searchArray[$i],
 					organism_id => $searchArray[$i]
@@ -181,14 +193,22 @@ sub search_stuff {
 		}
 		@idList = map { $_->id } @organisms;
 	}
+	
+	#print STDERR "organism done\n";
 
 	# Perform user search
 	if ( $type eq 'none' || $type eq 'user' ) {
 		my @usrArray;
 		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+			my $and_or;
+            if ($searchArray[$i]{"not_like"}) {
+                $and_or = "-and";
+            } else {
+                $and_or = "-or";
+            }
 			push @usrArray,
 			  [
-				-or => [
+				$and_or => [
 					user_name  => $searchArray[$i],
 					first_name => $searchArray[$i],
 					user_id    => $searchArray[$i],
@@ -204,6 +224,8 @@ sub search_stuff {
 			  { 'type' => "user", 'label' => $_->user_name, 'id' => $_->id };
 		}
 	}
+	
+	#print STDERR "user done\n";
 
 	# Perform genome search (corresponding to Organism results)
 	if (   $type eq 'none'
@@ -252,6 +274,8 @@ sub search_stuff {
 			  };
 		}
 	}
+	
+	#print STDERR "genome done\n";
 
 	# Perform experiment search
 	if (   $type eq 'none'
@@ -261,9 +285,15 @@ sub search_stuff {
 	{
 		my @expArray;
 		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+			my $and_or;
+            if ($searchArray[$i]{"not_like"}) {
+                $and_or = "-and";
+            } else {
+                $and_or = "-or";
+            }
 			push @expArray,
 			  [
-				-or => [
+				$and_or => [
 					name          => $searchArray[$i],
 					description   => $searchArray[$i],
 					experiment_id => $searchArray[$i]
@@ -286,6 +316,8 @@ sub search_stuff {
 		}
 	}
 
+    #print STDERR "experiment done\n";
+
 	# Perform notebook search
 	if (   $type eq 'none'
 		|| $type eq 'notebook'
@@ -294,9 +326,15 @@ sub search_stuff {
 	{
 		my @noteArray;
 		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+			my $and_or;
+            if ($searchArray[$i]{"not_like"}) {
+                $and_or = "-and";
+            } else {
+                $and_or = "-or";
+            }
 			push @noteArray,
 			  [
-				-or => [
+				$and_or => [
 					name        => $searchArray[$i],
 					description => $searchArray[$i],
 					list_id     => $searchArray[$i]
@@ -318,14 +356,22 @@ sub search_stuff {
 			  };
 		}
 	}
+	
+	#print STDERR "notebook done\n";
 
 	# Perform user group search
 	if ( $type eq 'none' || $type eq 'usergroup' || $type eq 'deleted' ) {
 		my @usrGArray;
 		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+			my $and_or;
+            if ($searchArray[$i]{"not_like"}) {
+                $and_or = "-and";
+            } else {
+                $and_or = "-or";
+            }
 			push @usrGArray,
 			  [
-				-or => [
+				$and_or => [
 					name          => $searchArray[$i],
 					description   => $searchArray[$i],
 					user_group_id => $searchArray[$i]
@@ -347,7 +393,7 @@ sub search_stuff {
 		}
 	}
 
-	#print STDERR "Successful search";
+	#print STDERR "Successful search\n";
 	return encode_json( { timestamp => $timestamp, items => \@results } );
 }
 
