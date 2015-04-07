@@ -140,7 +140,8 @@ function search_stuff (search_term) {
 					}
 
 					if (obj.items[i].type == "organism") {
-						orgList = orgList + "<tr><td><span>" + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")" + "</span></td></tr>";
+						orgList = orgList + "<tr><td><span title='" + obj.items[i].description + "'>";
+						orgList = orgList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")" + "</span></td></tr>";
 						orgCounter++;
 					}
 	
