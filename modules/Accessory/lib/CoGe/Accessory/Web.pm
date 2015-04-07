@@ -110,12 +110,12 @@ sub init {
 		    );
     	}
     	else {
-		    ($user) = login_cas_saml(
-		    	cookie_name => $CONF->{COOKIE_NAME},
-		        ticket   => $ticket,
-		        coge     => $db,
-		        this_url => $url
-		    );
+    	    ($user) = login_cas_saml(
+                cookie_name => $CONF->{COOKIE_NAME},
+                ticket   => $ticket,
+                coge     => $db,
+                this_url => $url
+            );
     	}
     }
     ($user) = CoGe::Accessory::LogUser->get_user(
@@ -530,6 +530,13 @@ sub login_cas_saml {
     my $coge        = $opts{coge};          # db object
 	print STDERR "Web::login_cas_saml ticket=$ticket this_url=$this_url\n";
 
+    my $cas_url = get_defaults()->{CAS_URL};
+    unless ($cas_url) {
+        print STDERR "Web::login_cas_saml: error: CAS_URL not defined in configuration file\n";
+        return;
+    }
+
+    # Build and execute SAML request
     my $ua = new LWP::UserAgent;
     my $request =
         '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">'
@@ -540,18 +547,20 @@ sub login_cas_saml {
     my $request_ua =
       HTTP::Request->new(
         #POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon1
-        POST => get_defaults()->{CAS_URL} . '/samlValidate?TARGET=' . $this_url );
+        POST => $cas_url . '/samlValidate?TARGET=' . $this_url );
     $request_ua->content($request);
     $request_ua->content_type("text/xml; charset=utf-8");
     my $response = $ua->request($request_ua);
+    #print STDERR "SAML response: ", Dumper $response, "\n";
     my $result   = $response->content;
-    print STDERR $result, "\n";
-    my ($uname, $fname, $lname, $email);
-    if ($result) {
-        ( $uname, $fname, $lname, $email ) = parse_saml_response($result);
-    }
+    print STDERR "SAML result: ", Dumper $result, "\n";
+    return unless $result;
+    
+    # Parse user info out of SAML response
+    my ( $uname, $fname, $lname, $email ) = parse_saml_response($result);
     return unless $uname; # Not logged in
 
+    # Find user in database
     my ($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
     unless ($coge_user) {
         # Create new user
@@ -665,6 +674,42 @@ sub parse_saml_response2 {
 		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
         return ( $user_id, $user_fname, $user_lname, $user_email );
     }
+}
+
+# mdb added 3/27/15 for DE cas4 upgrade
+# See http://jasig.github.io/cas/development/protocol/CAS-Protocol-Specification.html
+sub login_cas4 {
+    my ( $self, %opts ) = self_or_default(@_);
+    my $cookie_name = $opts{cookie_name};
+    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $this_url    = $opts{this_url};      # URL that CAS redirected to
+    my $db          = $opts{db};            # db object
+    my $server      = $opts{server};        # server -- this was added to get apache proxying to work with cas
+    print STDERR "Web::login_cas4 ticket=$ticket this_url=$this_url\n";
+    #print STDERR Dumper \%ENV, "\n";
+
+    my $cas_url = get_defaults()->{CAS_URL};
+    unless ($cas_url) {
+        print STDERR "Web::login_cas4: error: CAS_URL not defined in configuration file\n";
+        return;
+    }
+    
+    # mdb: this is a hack to get our Apache proxy user sandboxes to work with CAS validation
+    my $uri = $ENV{SCRIPT_NAME};
+    $uri =~ s/^\///;
+    my $page_url .= $ENV{HTTP_X_FORWARDED_HOST} . $uri;
+    
+    my $agent = new LWP::UserAgent;
+    my $request = HTTP::Request->new( GET => $cas_url . '/serviceValidate?service=' . $page_url . '&ticket=' . $ticket );
+    #$request_ua->content($request);
+    #$request_ua->content_type("text/xml; charset=utf-8");
+    my $response = $agent->request($request);
+    #print STDERR "cas4 response: ", Dumper $response, "\n";
+    my $result   = $response->content;
+    print STDERR "cas result: ", Dumper $result, "\n";
+    return unless $result;
+    
+    return;
 }
 
 sub ajax_func {

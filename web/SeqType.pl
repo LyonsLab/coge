@@ -37,6 +37,7 @@ sub gen_html {
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY => gen_body() );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     return $template->output;
 }
 

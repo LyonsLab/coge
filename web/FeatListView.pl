@@ -133,6 +133,7 @@ sub gen_html {
     $template->param( BODY     => $body );
     $template->param( POSTBOX  => gen_foot() );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     my $html;
     $html .= $template->output;
     return $html;
