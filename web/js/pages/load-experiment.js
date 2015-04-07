@@ -143,7 +143,7 @@ function search_genomes (search_term) {
                 $("#edit_genome").autocomplete({source: obj.items});
                 $("#edit_genome").autocomplete("search");
             }
-        },
+        }
     });
 }
 
@@ -160,7 +160,7 @@ function search_users (search_term) {
                 $("#edit_user").autocomplete({source: obj.items});
                 $("#edit_user").autocomplete("search");
             }
-        },
+        }
     });
 }
 
