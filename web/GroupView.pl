@@ -57,7 +57,8 @@ sub gen_html {
         			 	  PAGE_TITLE => qq{GroupView},
         				  PAGE_LINK  => $LINK,
         				  LOGO_PNG   => "CoGe.svg",
-        				  ADMIN_ONLY => $USER->is_admin );
+        				  ADMIN_ONLY => $USER->is_admin,
+        				  CAS_URL    => $P->{CAS_URL} || '' );
         $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
         $template->param( ADJUST_BOX => 1 );
     }

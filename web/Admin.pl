@@ -3,6 +3,8 @@
 use strict;
 use CGI;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw(format_time_diff);
+use CoGe::Accessory::Jex;
 use HTML::Template;
 use JSON qw(encode_json);
 use Data::Dumper;
@@ -11,13 +13,17 @@ use CoGeX;
 use CoGeX::Result::User;
 use Data::Dumper;
 use URI::Escape::JavaScript qw(escape unescape);
+use Time::Piece;
 no warnings 'redefine';
 
 use vars
-  qw($P $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE);
+  qw($P $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE $JEX);
 
 $FORM = new CGI;
 ( $coge, $USER, $P ) = CoGe::Accessory::Web->init( cgi => $FORM );
+
+$JEX =
+  CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 
 $MAX_SEARCH_RESULTS = 400;
 
@@ -35,15 +41,15 @@ my $node_types = CoGeX::node_types();
 	get_share_dialog                => \&get_share_dialog,
 	get_roles                       => \&get_roles,
 	search_share                    => \&search_share,
-	delete_genome                   => \&delete_genome,
-	delete_list                     => \&delete_list,
-	delete_experiment               => \&delete_experiment,
+	modify_item                     => \&modify_item,
+    cancel_job                      => \&cancel_job,
+    restart_job                     => \&restart_job,
+    get_jobs                        => \&get_jobs_for_user,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-
 	#print STDERR "HTML\n";
 	my $html;
 	my $template =
@@ -56,11 +62,12 @@ sub gen_html {
 	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param( USER       => $name );
 	$template->param( PAGE_TITLE => qq{Admin} );
-	$template->param( TITLE      => "Admin" );
+	$template->param( TITLE      => "GODVIEW" );
 	$template->param( LOGO_PNG   => "CoGe.svg" );
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( BODY       => gen_body() );
 	$template->param( ADJUST_BOX => 1 );
+	$template->param( CAS_URL    => $P->{CAS_URL} || '' );
 	$html .= $template->output;
 }
 
@@ -102,7 +109,7 @@ sub search_stuff {
 			$searchArray[$i] = { 'like', '%' . $searchArray[$i] . '%' };
 		}
 		else {
-			my @splitTerm = split( ':', $searchArray[$i] );
+			my @splitTerm = split( '::', $searchArray[$i] );
 			splice( @searchArray, $i, 1 );
 			$i--;
 			push @specialTerms,
@@ -143,13 +150,6 @@ sub search_stuff {
 				#Sets the "type" so that only fields relevant to deletion are shown. (i.e. there are no deleted users).
 			}
 		}
-
-        #if ($specialTerms[$i]{tag} eq 'deleted' && $specialTerms[$i]{term} eq '*') {
-        #        @deleted = [-or => [deleted => 0, deleted => 1]];
-        #	if($type eq "none") {
-        #                $type = 'deleted';
-        #        }
-        #}
 	}
 
 	# Perform organism search
@@ -224,10 +224,11 @@ sub search_stuff {
 		foreach ( sort { $a->id cmp $b->id } @genomes ) {
 			push @results,
 			  {
-				'type'    => "genome",
-				'label'   => $_->info,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
+				'type'          => "genome",
+				'label'         => $_->info,
+				'id'            => $_->id,
+				'deleted'       => $_->deleted,
+				'restricted'    => $_->restricted
 			  };
 		}
 
@@ -243,10 +244,11 @@ sub search_stuff {
 		foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
 			push @results,
 			  {
-				'type'    => "genome",
-				'label'   => $_->info,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
+				'type'          => "genome",
+				'label'         => $_->info,
+				'id'            => $_->id,
+				'deleted'       => $_->deleted,
+				'restricted'    => $_->restricted
 			  };
 		}
 	}
@@ -275,10 +277,11 @@ sub search_stuff {
 		foreach ( sort { $a->name cmp $b->name } @experiments ) {
 			push @results,
 			  {
-				'type'    => "experiment",
-				'label'   => $_->name,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
+				'type'          => "experiment",
+				'label'         => $_->name,
+				'id'            => $_->id,
+				'deleted'       => $_->deleted,
+				'restricted'    => $_->restricted
 			  };
 		}
 	}
@@ -307,10 +310,11 @@ sub search_stuff {
 		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
 			push @results,
 			  {
-				'type'    => "notebook",
-				'label'   => $_->info,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
+				'type'          => "notebook",
+				'label'         => $_->info,
+				'id'            => $_->id,
+				'deleted'       => $_->deleted,
+				'restricted'    => $_->restricted
 			  };
 		}
 	}
@@ -349,9 +353,6 @@ sub search_stuff {
 
 sub user_info {
 
-	#print STDERR "Hello? Is anyone there?";
-	#print STDERR "@_\n";
-
 	my %opts        = @_;
 	my $search_term = $opts{search_term};
 	my $search_type = $opts{search_type};
@@ -375,8 +376,6 @@ sub user_info {
 		foreach ( $user->child_connectors( { child_type => 6 } ) ) {
 			$child = $_->child;
 			push( @users, $child );
-
-#push @results, { 'type' => "user_group", 'label' => $child->name, 'id' => $child->id, 'deleted' => $child->deleted};
 		}
 	}
 
@@ -386,15 +385,15 @@ sub user_info {
 		# Find notebooks
 		foreach ( $currentUser->child_connectors( { child_type => 1 } ) ) {
 			$child = $_->child;
-
-#push @results, { 'type' => "notebook", 'label' => $child->name, 'id' => $child->id, 'info' => $child->info};
+			
 			push @current,
 			  {
-				'type'    => "notebook",
-				'label'   => $child->info,
-				'id'      => $child->id,
-				'role'    => $_->role_id,
-				'deleted' => $child->deleted
+				'type'          => "notebook",
+				'label'         => $child->info,
+				'id'            => $child->id,
+				'role'          => $_->role_id,
+				'deleted'        => $child->deleted,
+				'restricted'    => $child->restricted
 			  };
 		}
 
@@ -403,11 +402,12 @@ sub user_info {
 			$child = $_->child;
 			push @current,
 			  {
-				'type'    => "genome",
-				'label'   => $child->info,
-				'id'      => $child->id,
-				'role'    => $_->role_id,
-				'deleted' => $child->deleted
+				'type'          => "genome",
+				'label'         => $child->info,
+				'id'            => $child->id,
+				'role'          => $_->role_id,
+				'deleted'       => $child->deleted,
+                'restricted'    => $child->restricted
 			  };
 		}
 
@@ -416,15 +416,15 @@ sub user_info {
 			$child = $_->child;
 			push @current,
 			  {
-				'type'    => "experiment",
-				'label'   => $child->name,
-				'id'      => $child->id,
-				'info'    => $child->info,
-				'role'    => $_->role_id,
-				'deleted' => $child->deleted
+				'type'          => "experiment",
+				'label'         => $child->name,
+				'id'            => $child->id,
+				'info'          => $child->info,
+				'role'          => $_->role_id,
+				'deleted'       => $child->deleted,
+                'restricted'    => $child->restricted
 			  };
 
-#push @current, { 'type' => "experiment", 'label' => $child->info, 'id' => $child->id, 'role' => $_->role_id, 'deleted' => $child->deleted};
 		}
 
 		# Find users if searching a user group
@@ -443,7 +443,6 @@ sub user_info {
 		  };
 	}
 
-	#print STDERR Dumper(@results);
 	return encode_json( { timestamp => $timestamp, items => \@results } );
 }
 
@@ -456,10 +455,6 @@ sub add_items_to_user_or_group {
 	my $item_list = $opts{item_list};
 	my @items = split( ',', $item_list );
 	return unless @items;
-
-	#print STDERR Dumper(\@items);
-	#print STDERR "\n$target_item\n";
-	#print STDERR "$role_id\n";
 
 	my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
 
@@ -661,10 +656,6 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 	foreach (@items) {
 		( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
 
-		#print STDERR $item_id;
-		#print STDERR "\n!";
-		#print STDERR $item_type;
-		#print STDERR "\n!!";
 		next unless ( $item_id and $item_type );
 
 		# print STDERR "get_share $item_id $item_type\n";
@@ -708,8 +699,6 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 		if ( $conn->is_parent_user ) {
 			my $user = $conn->parent;
 
-			#print STDERR $user;
-			#print STDERR "\nYo\n";
 			$user_rows{ $user->id } = {
 				ITEM_ID        => $item_id,
 				ITEM_TYPE      => $item_type,
@@ -863,155 +852,177 @@ sub usercmp {
 	$a->display_name cmp $b->display_name;
 }
 
-sub delete_genome {
-	unless ( $USER->is_admin ) {
-		return 0;
-	}
+sub modify_item {
 	
-	my %opts = @_;
-	my $gid  = $opts{gid};
-	print STDERR "delete_genome $gid\n";
-	return 0 unless $gid;
-
-	my $genome = $coge->resultset('Genome')->find($gid);
-	return 0 unless $genome;
-	return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
-	my $delete_or_undelete = ( $genome->deleted ? 'undelete' : 'delete' );
-
-	#print STDERR "delete_genome " . $genome->deleted . "\n";
-	$genome->deleted( !$genome->deleted );    # do undelete if already deleted
-	$genome->update;
-
-	# Record in log
-	CoGe::Accessory::Web::log_history(
-		db          => $coge,
-		user_id     => $USER->id,
-		page        => "Admin",
-		description => "$delete_or_undelete genome id $gid"
-	);
-
-	return 1;
-}
-
-sub delete_list {
-	unless ( $USER->is_admin ) {
-        return 0;
-    }
-    
-	my %opts = @_;
-	my $lid  = $opts{lid};
-	return 0 unless $lid;    #return "No LID specified" unless $lid;
-
-	my $list = $coge->resultset('List')->find($lid);
-	return 0 unless $list;    #return "Cannot find list $lid\n" unless $list;
-	return 0 unless ( $USER->is_admin or $USER->is_owner( list => $lid ) );
-	my $delete_or_undelete = ( $list->deleted ? 'undelete' : 'delete' );
-
-	if ( $list->locked && !$USER->is_admin ) {
-		return
-		  0;   #"This is a locked list.  Admin permission is needed to modify.";
-	}
-
-	$list->deleted( !$list->deleted );    # do undelete if already deleted
-	$list->update;
-	
-	# Record in log
-    CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        user_id     => $USER->id,
-        page        => "Admin",
-        description => "$delete_or_undelete notebook id $lid"
-    );
-
-	return 1;
-}
-
-sub delete_experiment {
 	unless ( $USER->is_admin ) {
         return 0;
     }
     
     my %opts = @_;
-    my $eid  = $opts{eid};
-    return 0 unless $eid;    #return "No EID specified" unless $eid;
+    my $id  = $opts{id};
+    my $mod  = $opts{modification};
+    my $type = $opts{type};
+    print STDERR "$mod $type $id\n";
+    return 0 unless $id;
 
-    my $experiment = $coge->resultset('Experiment')->find($eid);
-    return 0 unless $experiment;    #return "Cannot find experiment $eid\n" unless $experiment;
-    return 0 unless ( $USER->is_admin or $USER->is_owner( experiment => $eid ) );
-    my $delete_or_undelete = ( $experiment->deleted ? 'undelete' : 'delete' );
-
-    #if ( $experiment->locked && !$USER->is_admin ) {
-    #    return
-    #      0;   #"This is a locked experiment.  Admin permission is needed to modify.";
-    #}
-
-    $experiment->deleted( !$experiment->deleted );    # do undelete if already deleted
-    $experiment->update;
+    my $item = $coge->resultset($type)->find($id);
+    return 0 unless $item;
+    return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $id ) );
+    
+    my $log_message;
+    if ($mod eq "delete") {
+        $log_message = ( $item->deleted ? 'undelete' : 'delete' );
+        $item->deleted( !$item->deleted );    # do undelete if already deleted
+    } elsif ($mod eq "restrict") {
+    	$log_message = ( $item->restricted ? 'unrestrict' : 'restrict' );
+    	$item->restricted( !$item->restricted );    # do undelete if already deleted
+    }
+    $item->update;
 
     # Record in log
     CoGe::Accessory::Web::log_history(
         db          => $coge,
         user_id     => $USER->id,
         page        => "Admin",
-        description => "$delete_or_undelete experiment id $eid"
+        description => "$log_message $type id $id"
     );
 
     return 1;
 }
 
-#Evan's modular stuff
-#sub search_genomem {
-#	# terms is an any array ference tags is a hash references
-#	my ($terms, $tags, $organism_rs) = @_;
-#
-#	my @relevant_fields = qw(name description restricted access_count):
-#
-#	%organisms_tags{@relevant_fields} = $tags->{@relevant_fields};
-#	$organism_tags = # ... filters tags to only organism search
-#
-#	my $search1 = $coge->resultset("Organism")->search({
-#		-or {
-#			-and {
-#				create_like_fields($terms)
-#			},
-#			$organism_tags
-#		}
-#	}) ;
-#
-#	# Query only if organism rs exists
-#	my $search2 = $organism_rs->dosomething if $organism_rs;
-#
-#	return join $search1 $search2;
-#}
+#Jobs tab
+sub get_jobs_for_user {
+	#print STDERR "Get jobs called\n";
+    my @entries;
 
-#sub search_users {
-#    my %opts        = @_;
-#    my $search_term = $opts{search_term};
-#    my $timestamp   = $opts{timestamp};
-#
-#    #print STDERR "$search_term $timestamp\n";
-#    return unless $search_term;
-#
-#    # Perform search
-#    $search_term = '%' . $search_term . '%';
-#    my @users = $coge->resultset("User")->search(
-#        \[
-#            'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
-#            [ 'user_name',  $search_term ],
-#            [ 'first_name', $search_term ],
-#            [ 'last_name',  $search_term ]
-#        ]
-#    );
-#
-#    # Limit number of results displayed
-#    # if (@users > $MAX_SEARCH_RESULTS) {
-#    # 	return encode_json({timestamp => $timestamp, items => undef});
-#    # }
-#
-#    return encode_json(
-#        {
-#            timestamp => $timestamp,
-#            items     => [ sort map { $_->user_name } @users ]
-#        }
-#    );
-#}
+    if ( $USER->is_admin ) {
+        @entries = $coge->resultset('Log')->search(
+            #{ description => { 'not like' => 'page access' } },
+            {
+                type     => { '!='  => 0 },
+                workflow_id  => { "!=" => undef}
+            },
+            { order_by => { -desc => 'time' } },
+        );
+    }
+    else {
+        @entries = $coge->resultset('Log')->search(
+            {
+                user_id => $USER->id,
+                workflow_id  => { "!=" => undef},
+
+                #{ description => { 'not like' => 'page access' } }
+                type => { '!=' => 0 }
+            },
+            { order_by => { -desc => 'time' } },
+        );
+    }
+
+    my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
+    my @workflows = map { $_->workflow_id } @entries;
+    
+    #print STDERR Dumper(\@workflows);
+    
+    my $workflows = $JEX->find_workflows(@workflows);
+
+    my @job_items;
+    my %workflow_results;
+
+    foreach (@{$workflows}) {
+        my($id, $name, $submitted, $completed, $status) = @{$_};
+
+        my $start_time = localtime($submitted)->strftime('%F %I:%M%P');
+        my $end_time = "";
+        my $diff;
+
+        if ($completed) {
+            $end_time = localtime($completed)->strftime('%F %I:%M%P') if $completed;
+            $diff = $completed - $submitted;
+        } else {
+            $diff = time - $submitted;
+        }
+
+        $workflow_results{$id} = {
+            status    => $status,
+            started   => $start_time,
+            completed => $end_time,
+            elapsed   => format_time_diff($diff)
+        };
+    }
+
+    my $index = 1;
+    foreach (@entries) {
+        my $entry = $workflow_results{$_->workflow_id};
+
+        # A log entry must correspond to a workflow
+        next unless $entry;
+
+        push @job_items, {
+            id => int($index++),
+            workflow_id => $_->workflow_id,
+            user  => $users{$_->user_id} || "public",
+            tool  => $_->page,
+            link  => $_->link,
+            %{$entry}
+        };
+    }
+
+    my @filtered;
+
+    # Filter repeated entries
+    foreach (reverse @job_items) {
+        my $wid = $_->{workflow_id};
+        next if (defined $wid and defined $workflow_results{$wid}{seen});
+        $workflow_results{$wid}{seen}++ if (defined $wid);
+
+        unshift @filtered, $_;
+    }
+
+    return encode_json({ jobs => \@filtered });
+}
+
+sub cancel_job {
+    my $job_id = _check_job_args(@_);
+
+    return encode_json( {} ) unless defined($job_id);
+
+    my $status = $JEX->get_status( $job_id );
+
+    if ( $status =~ /scheduled|running|notfound/i ) {
+        return encode_json({ status => $JEX->terminate( $job_id ) });
+    } else {
+        return encode_json( {} );
+    }
+}
+
+sub restart_job {
+    my $job_id = _check_job_args(@_);
+
+    return encode_json( {} ) unless defined($job_id);
+
+    my $status = $JEX->get_status( $job_id );
+
+    if ( $status =~ /running/i ) {
+        return encode_json( {} );
+    } else {
+        return encode_json({ status => $JEX->restart( $job_id ) });
+    }
+}
+
+sub cmp_by_start_time {
+    my $job1 = shift;
+    my $job2 = shift;
+
+    $job1->start_time cmp $job2->start_time;
+}
+
+sub _check_job_args {
+    my %args   = @_;
+    my $job_id = $args{job};
+
+    if ( not defined($job_id) ) {
+        say STDERR "Job.pl: a job id was not given to cancel_job.";
+    }
+
+    return $job_id;
+}

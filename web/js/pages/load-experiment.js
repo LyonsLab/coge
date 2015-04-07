@@ -66,20 +66,14 @@ function file_selected(filename, url) {
 
 function file_finished(size, url) {
     var files = get_selected_files();
-    var paths = files.map(getPath);
+    if (!files || !files.length)
+    	return;
+    
+    var paths = files.map(function (item) { return item.path; });
     var file_type = autodetect_file_type(paths[0])
 
     if (file_type)
         $("#file_type_selector").val(file_type);
-
-    //FIXME: Hack to get around uploader callback not working in DataView
-    if (!current_experiment.options)
-    	current_experiment.options = {};
-    current_experiment.new_data = files;
-}
-
-function getPath(item) {
-    return item.path;
 }
 
 function file_canceled() {
@@ -95,9 +89,6 @@ function file_canceled() {
     	
     	$("#select_file_type option:first").attr("selected", "selected");
     }
-
-    //FIXME: Hack to get around removing the file
-    current_experiment.new_data = undefined;
 }
 
 function create_source() {
@@ -506,6 +497,14 @@ $.extend(Wizard.prototype, {
 
         this.tabs.html(titles);
         titles[this.currentIndex].addClass("active");
+//        for (var i=0;i<=this.currentIndex;i++)
+//        	titles[i].addClass("active");
+//        for (var i=0;i<this.currentIndex;i++) {
+//        	var self = this;
+//        	var index = i;
+//        	titles[i].click(function(){self.move(index)});
+//        	titles[i].css('cursor','pointer');
+//        }
 
         var step = this.steps[this.currentIndex];
         if (step.render)
@@ -526,22 +525,22 @@ $.extend(Wizard.prototype, {
         }
     },
 
+    move: function(index) {
+    	this.currentIndex = index;
+    	this.render();
+        this.notifications.stop(true, true).hide();
+    },
+
     movePrevious: function() {
-        if (!this.at_first()) {
-            this.currentIndex--;
-            this.render();
-            this.notifications.stop(true, true).hide();
-        }
+        if (!this.at_first())
+        	this.move(this.currentIndex - 1);
     },
 
     moveNext: function() {
         var step = this.steps[this.currentIndex];
 
-        if (!this.at_last() && step.is_valid()) {
-            this.currentIndex++;
-            this.render();
-            this.notifications.stop(true, true).hide();
-        }
+        if (!this.at_last() && step.is_valid())
+        	this.move(this.currentIndex + 1);
     },
 
     message: function(message) {
@@ -644,10 +643,9 @@ $.extend(DataView.prototype, {
 
     //FIXME: Add multiple file support
     is_valid: function() {
-        //FIXME: This is a hack to get around the uploader callbacks not working
-        var items = this.experiment.new_data;
+        var items = get_selected_files();
         if (!items || items.length === 0) {
-            error_help('Please select a data file.');
+            error_help('Please select a valid data file.');
             return false;
         }
 
@@ -1187,6 +1185,8 @@ $.extend(OptionsView.prototype, {
             this.layout_view.updateLayout({"#admin-options": this.admin_view});
 
         this.el = this.layout_view.el;
+        
+        this.experiment.options = {};
     },
 
     // Validate and add all options to the experiment
@@ -1343,7 +1343,7 @@ function load(experiment) {
 			email: experiment.options.email,
 			notebook: experiment.options.notebook,
 			source_data: experiment.data
-		},
+		}
 	};
     
     coge.services.submit_job(request, 
