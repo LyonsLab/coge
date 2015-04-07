@@ -925,7 +925,7 @@ $.extend(AlignmentView.prototype, {
                 trimming_params: {
                     '-q': this.el.find("[id='-q']").val(),
                     '-m': this.el.find("[id='-m']").val(),
-                    '--quality-base': this.el.find("[id='--quality-base'").val()
+                    '--quality-base': this.el.find("[id='--quality-base']").val()
                 }
             };
         } else {
