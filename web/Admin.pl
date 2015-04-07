@@ -188,7 +188,7 @@ sub search_stuff {
 		if ( $type eq 'none' || $type eq 'organism' ) {
 			foreach ( sort { $a->name cmp $b->name } @organisms ) {
 				push @results,
-				  { 'type' => "organism", 'label' => $_->name, 'id' => $_->id };
+				  { 'type' => "organism", 'label' => $_->name, 'id' => $_->id, 'description' => $_->description };
 			}
 		}
 		@idList = map { $_->id } @organisms;
