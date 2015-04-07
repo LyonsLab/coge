@@ -49,11 +49,11 @@ sub build {
     my @tasks;
     my $file_type = $data->[0]->{file_type}; # type of first data file
     
+    my @done_files;
     if ( $file_type eq 'fastq' || $file_type eq 'bam' ) {
         my $bam_file;
         my $result_count = 0;
-        my @done_files;
-        
+         
         # Align fastq file or take existing bam
         my ($alignment_tasks, $alignment_results);
         if ( $file_type && $file_type eq 'fastq' ) {
@@ -160,7 +160,7 @@ sub build {
         my $input_file = catfile($upload_dir, $data->[0]->{path});
         
         # Submit workflow to generate experiment
-        push @tasks, create_load_experiment_job(
+        my $job = create_load_experiment_job(
             user => $self->user,
             staging_dir => $staging_dir,
             result_dir => $result_dir,
@@ -169,9 +169,22 @@ sub build {
             input_file => $input_file,
             metadata => $metadata
         );
+         push @tasks, $job;
+         push @done_files, $job->{outputs}->[1];
     }
 
-#    print STDERR Dumper \@tasks, "\n";
+	if ( $self->options->{email} ) {
+		push @tasks, send_email_job(
+			from => 'coge.genome@gmail.com',
+			to => $self->user->email,
+			subject => 'CoGe Load Experiment done',
+			body => 'Experiment ' . $metadata->{name} . ' has finished loading.',
+			staging_dir => $staging_dir,
+			done_files => \@done_files
+		);
+	}
+
+    #print STDERR Dumper \@tasks, "\n";
     $self->workflow->add_jobs(\@tasks);
     
     return 1;

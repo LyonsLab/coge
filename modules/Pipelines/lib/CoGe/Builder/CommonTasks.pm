@@ -24,6 +24,7 @@ our @EXPORT = qw(
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job
+    send_email_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -906,6 +907,44 @@ sub create_notebook_job {
             $log_file
         ],
         description => "Creating notebook of results..."
+    };
+}
+
+
+sub send_email_job {
+    my %opts = @_;
+    my $from = $opts{from};
+    my $to = $opts{to};
+    my $subject = $opts{subject};
+    my $body = $opts{body};
+    my $done_files = $opts{done_files};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "send_email.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    my $staging_dir = $opts{staging_dir};
+    my $done_file = catfile($staging_dir, "send_email.done");
+    
+    my $args = [
+        ['-from', '"'.escape($from).'"', 0],
+        ['-to', '"'.escape($to).'"', 0],
+        ['-subject', '"'.escape($subject).'"', 0],
+        ['-body', '"'.escape($body).'"', 0],
+        ['-done_file', '"'.$done_file.'"', 0]
+    ];
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => [ 
+            $CONF->{_CONFIG_PATH},
+            @$done_files
+        ],
+        outputs => [ 
+            $done_file
+        ],
+        description => "Sending email..."
     };
 }
 
