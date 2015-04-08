@@ -174,11 +174,28 @@ sub build {
     }
 
 	if ( $self->options->{email} ) {
+	    # Get tiny link
+	    my $link;
+	    if ($self->requester && $self->requester->{page}) {
+	        $link = CoGe::Accessory::Web::get_tiny_link( 
+	            url => $self->conf->{SERVER} . $self->requester->{page} . "?wid=" . $self->workflow->id 
+	        );
+	    }
+	    
+	    # Build message body
+	    my $body = 'Experiment "' . $metadata->{name} . '" has finished loading.';
+        $body .= "\nLink: $link" if $link;
+        $body .= "\n\nNote: you received this email because you submitted an experiment on " .
+            "CoGe (http://genomevolution.org) and selected the option to be emailed " .
+            "when finished.";
+
+	    
+	    # Create task
 		push @tasks, send_email_job(
-			from => 'coge.genome@gmail.com',
+			from => 'CoGe Support <coge.genome@gmail.com>',
 			to => $self->user->email,
 			subject => 'CoGe Load Experiment done',
-			body => 'Experiment ' . $metadata->{name} . ' has finished loading.',
+			body => $body,
 			staging_dir => $staging_dir,
 			done_files => \@done_files
 		);
