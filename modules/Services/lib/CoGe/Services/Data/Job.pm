@@ -61,12 +61,14 @@ sub add {
     # Get tiny link #FIXME should this be moved client-side?
     if ($response->{success}) {
         # Get tiny URL
-        my $page = $payload->{requester}->{page};
-        my $link;
-        if ($payload->{requester} && $page) { # request is from web page - external API requests will not have a 'requester' field
+        my ($page, $link);
+        if ($payload->{requester}) { # request is from web page - external API requests will not have a 'requester' field
             my $page = $payload->{requester}->{page};
-            $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
-            $response->{site_url} = $link if ($link);
+            if ($page) { 
+                $page = $payload->{requester}->{page};
+                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
+                $response->{site_url} = $link if $link;
+            }
         }
         
         # Log job submission
