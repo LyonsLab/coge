@@ -1293,6 +1293,7 @@ $.extend(ConfirmationView.prototype, {
             if (options.hasOwnProperty(key)) {
             	var val = String(options[key]);
             	if (typeof options[key] === 'object') val = objToString(options[key]);
+            	else if (typeof options[key] === 'boolean') val = (val ? 'yes' : 'no');
                 newpair = this.pair_template.clone();
                 newpair.find(".name").html(coge.utils.ucfirst(key.replace('_', ' ')));
                 newpair.find(".data").html(val);
