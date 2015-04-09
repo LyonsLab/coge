@@ -61,7 +61,7 @@ exit unless $results;
 my $notebook;
 if (@$results > 1) {
     my @items = map { [ $_->{id}, $_->{type} ] } @$results;
-    print STDOUT Dumper \@items, "\n";
+    #print STDOUT Dumper \@items, "\n";
     $notebook = create_notebook(
         db         => $db,
         user       => $user,
