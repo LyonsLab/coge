@@ -40,6 +40,7 @@ sub search_notebooks {
     my $search_term = $opts{search_term}; # id value, or keyword in name/description
     my $user = $opts{user}; # optional database user object
     return unless $db and $search_term;
+    my $include_deleted = $opts{include_deleted}; # optional boolean flag
 
     # Search genomes
     my $search_term2 = '%' . $search_term . '%';
@@ -54,10 +55,11 @@ sub search_notebooks {
 
     # Filter result by permissions
     my @filtered = grep {
-        !$_->restricted || (defined $user && $user->has_access_to_list($_))
+        (!$_->deleted || $include_deleted) &&
+        (!$_->restricted || (defined $user && $user->has_access_to_list($_)))
     } @notebooks;
 
-    return \@notebooks;
+    return \@filtered;
 }
 
 sub create_notebook {
