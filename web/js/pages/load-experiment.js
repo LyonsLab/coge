@@ -143,7 +143,7 @@ function search_genomes (search_term) {
                 $("#edit_genome").autocomplete({source: obj.items});
                 $("#edit_genome").autocomplete("search");
             }
-        },
+        }
     });
 }
 
@@ -160,7 +160,7 @@ function search_users (search_term) {
                 $("#edit_user").autocomplete({source: obj.items});
                 $("#edit_user").autocomplete("search");
             }
-        },
+        }
     });
 }
 
@@ -1338,6 +1338,7 @@ $.extend(ConfirmationView.prototype, {
             if (options.hasOwnProperty(key)) {
             	var val = String(options[key]);
             	if (typeof options[key] === 'object') val = objToString(options[key]);
+            	else if (typeof options[key] === 'boolean') val = (val ? 'yes' : 'no');
                 newpair = this.pair_template.clone();
                 newpair.find(".name").html(coge.utils.ucfirst(key.replace('_', ' ')));
                 newpair.find(".data").html(val);

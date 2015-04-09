@@ -23,6 +23,10 @@ has 'params' => (
     required => 1
 );
 
+has 'requester' => (
+    is => 'ro'
+);
+
 has 'db' => (
     is => 'ro',
     required => 1
