@@ -1132,12 +1132,14 @@ $.extend(GeneralOptionsView.prototype, {
     },
 
     is_valid: function() {
+        var notebook = this.edit_notebook.val();
+
         this.data.notebook = this.el.find("#notebook").is(":checked");
-        this.data.nid = this.nid;
+        this.data.notebook_name = notebook;
+        this.data.notebook_id = this.notebook_id;
         this.data.email = this.el.find("#email").is(":checked");
 
-        var notebook = this.edit_notebook.val();
-        if (this.data.notebook && (!notebook || notebook === 'Search' || !this.nid)) {
+        if (this.data.notebook && (!notebook || notebook === 'Search' || !this.notebook_id)) {
             error_help('Please specify a notebook.');
             return false;
         }
@@ -1154,8 +1156,8 @@ $.extend(GeneralOptionsView.prototype, {
 
         // jQuery Events
         this.edit_notebook.unbind().change(function() {
-            // Reset nid when item has changed
-            self.nid = undefined;
+            // Reset notebook_id when item has changed
+            self.notebook_id = undefined;
         });
 
         // jQuery UI
@@ -1163,7 +1165,7 @@ $.extend(GeneralOptionsView.prototype, {
             source:[],
             select: function(event, ui) {
                 $(this).val(ui.item.label);
-                self.nid = ui.item.value;
+                self.notebook_id = ui.item.value;
                 return false; // Prevent the widget from inserting the value.
             },
 
@@ -1388,6 +1390,8 @@ function load(experiment) {
 			load_id: load_id,
 			email: experiment.options.email,
 			notebook: experiment.options.notebook,
+			notebook_name: experiment.options.notebook_name,
+			notebook_id: experiment.options.notebook_id,
 			source_data: experiment.data
 		}
 	};
