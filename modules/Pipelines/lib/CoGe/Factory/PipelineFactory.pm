@@ -32,12 +32,13 @@ sub get {
     my ($self, $message) = @_;
 
     my $request = {
-        params   => $message->{parameters},
-        options  => $message->{options},
-        db       => $self->db,
-        jex      => $self->jex,
-        user     => $self->user,
-        conf     => $self->conf
+        params    => $message->{parameters},
+        options   => $message->{options},
+        requester => $message->{requester},
+        db        => $self->db,
+        jex       => $self->jex,
+        user      => $self->user,
+        conf      => $self->conf
     };
 
     # Select pipeline builder
