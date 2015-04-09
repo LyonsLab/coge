@@ -113,7 +113,7 @@ function create_source() {
 
 function wait_to_search (search_func, search_obj) {
     var search_term = search_obj.value;
-    if (!search_term || search_term.length >= 2) {
+    if (search_term && search_term.length >= 3) {
         if (pageObj.time) {
             clearTimeout(pageObj.time);
         }
@@ -162,6 +162,19 @@ function search_users (search_term) {
             }
         },
     });
+}
+
+function search_notebooks (search_term) {
+	coge.services.search_notebooks(search_term,USER_NAME,function(data){
+		if (data.notebooks) {
+			var items = [];
+			data.notebooks.forEach(function(notebook) {
+				items.push({label:notebook.name,value:notebook.id});
+		    });
+		    $("#edit_notebook").autocomplete({source: items});
+		    $("#edit_notebook").autocomplete("search");
+		}
+	},function(){console.log('error');});
 }
 
 //function load_begin() {
@@ -1115,11 +1128,19 @@ function GeneralOptionsView() {
 $.extend(GeneralOptionsView.prototype, {
     initialize: function() {
         this.el = $($("#general-options-template").html());
+        this.edit_notebook = this.el.find("#edit_notebook");
     },
 
     is_valid: function() {
         this.data.notebook = this.el.find("#notebook").is(":checked");
+        this.data.nid = this.nid;
         this.data.email = this.el.find("#email").is(":checked");
+
+        var notebook = this.edit_notebook.val();
+        if (this.data.notebook && (!notebook || notebook === 'Search' || !this.nid)) {
+            error_help('Please specify a notebook.');
+            return false;
+        }
 
         return true;
     },
@@ -1127,6 +1148,30 @@ $.extend(GeneralOptionsView.prototype, {
     get_options: function() {
         return this.data;
     },
+    
+    render: function() {
+        var self = this;
+
+        // jQuery Events
+        this.edit_notebook.unbind().change(function() {
+            // Reset nid when item has changed
+            self.nid = undefined;
+        });
+
+        // jQuery UI
+        this.edit_notebook.autocomplete({
+            source:[],
+            select: function(event, ui) {
+                $(this).val(ui.item.label);
+                self.nid = ui.item.value;
+                return false; // Prevent the widget from inserting the value.
+            },
+
+            focus: function(event, ui) {
+                return false; // Prevent the widget from inserting the value.
+            }
+        });
+    }
 });
 
 function AdminOptionsView() {
