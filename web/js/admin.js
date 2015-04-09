@@ -108,7 +108,7 @@ var previous_search = ""; //indicates the previous search term, used to refresh 
 
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
-
+		$("#loading_gears").show();
 		timestamps['search_stuff'] = new Date().getTime();
 		$.ajax({
 			//type: "POST",
@@ -121,6 +121,7 @@ function search_stuff (search_term) {
 			},
 			success : function(data) {
 				//console.log(data);
+				//$('#loading_gears').hide();
 				var obj = jQuery.parseJSON(data);
 				
 				if (obj && obj.items && obj.timestamp != timestamps['search_stuff']) {
@@ -221,6 +222,7 @@ function search_stuff (search_term) {
 				
 	
 				//Populate the html with the results
+				$("#loading_gears").show();
 				$(".result").fadeIn( 'fast');
 				
 				//user
@@ -294,6 +296,8 @@ function search_stuff (search_term) {
 					$( "#usrgroupList" ).hide();
 					$("#usrGArrow").find('img').attr("src", "picts/arrow-right-icon.png");
 				}
+				
+				$("#loading_gears").hide();
 			},
 		});
 		previous_search = search_term;
@@ -389,7 +393,7 @@ function search_user(userID, search_type) {
 	}
 	if(previous_user != userID) {
 		//$('#userResults').hide();
-		$('#userResults').html("Loading...");
+		//$('#userResults').html("Loading...");
 		user_info(userID, search_type);
 	}
 	previous_user = userID;
@@ -401,7 +405,7 @@ function refresh_data() {
 		//$('#masterTable').html("Loading...");
 		search_stuff(previous_search);
 	} else {
-		$('#userResults').html("Loading...");
+		//$('#userResults').html("Loading...");
 		user_info(previous_user, previous_type);
 	}
 }
@@ -409,6 +413,7 @@ function refresh_data() {
 function user_info(userID, search_type) {
 
 	var search_term = userID;
+	$("#loading_gears2").show();
 	timestamps['user_info'] = new Date().getTime();
 	$.ajax({
 		data: {
@@ -623,6 +628,7 @@ function user_info(userID, search_type) {
         			$("#userArrow0" ).find('img').attr("src", "picts/arrow-right-icon.png");
         		}
         	}
+        	$("#loading_gears2").hide();
         }
 	});
 }
