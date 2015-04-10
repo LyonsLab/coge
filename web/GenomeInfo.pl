@@ -90,6 +90,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_gc_for_noncoding       => \&get_gc_for_noncoding,
     get_gc_for_feature_type    => \&get_gc_for_feature_type,
     get_chr_length_hist        => \&get_chr_length_hist,
+    get_chr_list               => \&get_chr_list,
     get_aa_usage               => \&get_aa_usage,
     get_wobble_gc              => \&get_wobble_gc,
     get_wobble_gc_diff         => \&get_wobble_gc_diff,
@@ -120,8 +121,11 @@ sub get_genome_info_details {
 
     # Histogram
     $html .= qq{ <span class="link" onclick="chr_hist($dsgid);">Histogram</span>};
+  	# chromosome list
+    $html .= qq{, <span class="link" onclick="chr_list($dsgid);">list</span>};
     $html .= qq{</td></tr>};
-
+    
+ 
     my $gstid    = $dsg->genomic_sequence_type->id;
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
@@ -863,6 +867,11 @@ sub get_chr_length_hist {
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
     return $info . "<br>" . $hist_img;
+}
+
+sub get_chr_list {
+	my $html = "<table><thead><tr><th>Chromosome</th></th></thead><tbody></tbody></table>";
+	return $html;
 }
 
 sub get_genome_info {
