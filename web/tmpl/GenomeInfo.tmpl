@@ -1,4 +1,6 @@
 <TMPL_IF NAME='MAIN'>
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.6/css/jquery.dataTables.css">
+<script type="text/javascript" language="javascript" src="//cdn.datatables.net/1.10.6/js/jquery.dataTables.min.js"></script>
 <script src="./js/coge/utils.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></script>
@@ -139,6 +141,27 @@ function chr_hist (dsgid) {
             dsgid: dsgid,
         },
         success: function (data) {$('#chromosome_hist').html(data);}
+    });
+}
+
+function chr_list (dsgid) {
+    $('#chromosome_list').dialog({
+        autoOpen: true,
+        position: {
+           my: "center",
+           at: "top",
+           of: $(".box")
+        }
+    });
+
+    $('#chromosome_list').html('loading. . .');
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: 'get_chr_list',
+            dsgid: dsgid,
+        },
+        success: function (data) {$('#chromosome_list').html(data);}
     });
 }
 
@@ -1188,6 +1211,7 @@ function get_experiments(e) {
 </script>
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
+<div class="dialog_box hidden" id="chromosome_list" title="Chromosome List"></div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
