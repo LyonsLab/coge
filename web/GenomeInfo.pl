@@ -19,6 +19,7 @@ use File::Basename qw(basename);
 use File::Path qw(mkpath);
 use File::Spec::Functions;
 use POSIX qw(floor);
+use Data::Dumper;
 
 no warnings 'redefine';
 
@@ -91,6 +92,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_gc_for_feature_type    => \&get_gc_for_feature_type,
     get_chr_length_hist        => \&get_chr_length_hist,
     get_chr_list               => \&get_chr_list,
+    get_seq_for_chr            => \&get_seq_for_chr,
     get_aa_usage               => \&get_aa_usage,
     get_wobble_gc              => \&get_wobble_gc,
     get_wobble_gc_diff         => \&get_wobble_gc_diff,
@@ -870,7 +872,51 @@ sub get_chr_length_hist {
 }
 
 sub get_chr_list {
-	my $html = "<table><thead><tr><th>Chromosome</th></th></thead><tbody></tbody></table>";
+    my %opts  = @_;
+    my $dsgid = $opts{dsgid};
+    return "error", " " unless $dsgid;
+    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+    unless ($dsg) {
+        my $error = "unable to create genome object using id $dsgid\n";
+        return $error;
+    }
+	my $html = "<table>";
+	#$html .= "<thead><tr><th>Chromosome</th></th></thead>";
+	$html .= "<tbody>";
+	my @chromosomes = $dsg->get_chromosomes();
+	for (@chromosomes) {
+		$html .= "<tr><td>" . $_ . "</td>";
+		$html .= "<td class=\"small link\" onclick=\"export_location_dialog('sequences','" . $dsgid . "','". $_ . "')\">Fasta Sequences</td>";
+		$html .= "<td>|</td>";
+		$html .= "<td class=\"small link\" onclick=\"\">Export GFF</td></tr>";
+	}
+	$html .= "</tbody></table>";
+	return $html;
+}
+
+sub get_seq_for_chr {
+	print STDERR "get_seq_for_chr";
+    my %opts  = @_;
+    my $gid = $opts{dsgid};
+    my $chr = $opts{chr};
+    return "error", " " unless $gid and $chr;
+
+	my $chromosome = $coge->resultset('GenomicSequence')->find({genome_id=>$gid,chromosome=>$chr});
+	print STDERR Dumper $chromosome;
+	
+	# Force browser to download as attachment
+	$FORM->header( -attachment => "chromosome_" . $gid . "_" . $chr . ".faa" );
+#	my $html = "Content-Type: application/force-download\nContent-Disposition: attachment; filename=";
+#	$html .= '"chromosome_' . $gid . "_" . $chr . '.faa"';
+	
+	# Get sequence from file
+	my $html = get_genome_seq(
+		gid   => $gid,
+		chr   => $chr,
+		start => 1,
+		stop  => $chromosome->sequence_length
+	);
+	print STDERR $html;
 	return $html;
 }
 
