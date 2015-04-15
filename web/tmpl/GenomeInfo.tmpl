@@ -165,6 +165,40 @@ function chr_list (dsgid) {
     });
 }
 
+function export_location_dialog (what,dsgid,chr) {
+    $('#export_location').dialog({
+        autoOpen: true,
+        buttons: [
+        	{
+        		text:'Ok',
+        		click: function() {
+        		    $.ajax({
+        		        data: {
+        		            jquery_ajax: 1,
+        		            fname: 'get_seq_for_chr',
+        		            dsgid: dsgid,
+        		            chr: chr
+        		        },
+        		        success: function(data){alert(data);}
+        		    });
+        			$(this).dialog('close');
+				}
+        	},
+        	{
+				text:'Cancel',
+        		click: function() {
+        			$(this).dialog('close');
+				}
+        	}
+        ],
+        position: {
+           my: "center",
+           at: "top",
+           of: $(".box")
+        }
+    });
+}
+
 function toggle_load_log() {
 	var btn = $('#log_button');
 	var log = $('#log_contents');
@@ -1212,6 +1246,10 @@ function get_experiments(e) {
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="chromosome_list" title="Chromosome List"></div>
+<div class="dialog_box hidden" id="export_location" title="Export To">
+	<input type="radio" id="download" name="where" checked /> Download<br />
+	<input type="radio" id="iplant" name="where" /> Send to iPlant<br />
+</div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
