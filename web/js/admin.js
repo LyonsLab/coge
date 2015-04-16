@@ -547,7 +547,13 @@ function user_info(userID, search_type) {
         		} else {
         			nameBlock = nameBlock + "<img src='picts/group-icon.png' width='15' height='15'><span> ";
         		}
-        		nameBlock = nameBlock + obj.items[i].user + " (ID: " + obj.items[i].user_id + "):</span></div>";
+        		nameBlock = nameBlock + obj.items[i].user + " (ID: " + obj.items[i].user_id + "): </span>";
+        		
+        		if (search_type =='group') {
+        			nameBlock = nameBlock + "<button onclick='group_dialog(" + obj.items[i].user_id + ", 6 )'>Edit Group</button></div>";
+        		} else {
+        			nameBlock = nameBlock + "</div>";
+        		}
 				
 
         		if (genCounter > 0) {
@@ -650,7 +656,7 @@ function search_share () {
 	var search_term = $('#share_input').attr('value');
 
 	//$("#wait_notebook").animate({opacity:1});
-	timestamps['search_share'] = new Date().getTime()
+	timestamps['search_share'] = new Date().getTime();
 
 	$.ajax({
 		data: {
@@ -668,6 +674,98 @@ function search_share () {
 		},
 	});
 }
+
+function search_group () { // FIXME dup of above routine but for group dialog
+	var search_term = $('#group_input').attr('value');
+
+	timestamps['search_group'] = new Date().getTime();
+	$.ajax({
+		data: {
+			fname: 'search_share',
+			search_term: search_term,
+			timestamp: timestamps['search_group']
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.timestamp == timestamps['search_group'] && obj.items) {
+				$("#group_input").autocomplete({source: obj.items}).autocomplete("search");
+			}
+		},
+	});
+}
+
+function group_dialog(id, type) {
+	var item_list = "content_" + id + "_" + type;
+	$.ajax({
+		data: {
+			fname: 'get_group_dialog',
+			item_list: item_list,
+		},
+		success : function(data) {
+			$('#group_dialog').html(data).dialog({width:500}).dialog('open');
+		}
+	});
+}
+
+function change_group_role(id, type) {
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	var role_id = $('#group_role_select').val();
+	if (role_id && selected.length) {
+		var target_items = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'change_group_role',
+				target_items: target_items,
+				role_id: role_id,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
+function add_users_to_group(id, type) {
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	var new_item = $('#group_input').data('select_id');
+	if (new_item && selected.length) {
+		var target_items = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'add_users_to_group',
+				target_items: target_items,
+				new_item: new_item,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
+function remove_user_from_group(user_id, id, type) {
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	if (user_id && selected.length) {
+		var target_items = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'remove_user_from_group',
+				target_items: target_items,
+				user_id: user_id,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
 
 function modify_item (id, type, modification) {
 	$.ajax({
