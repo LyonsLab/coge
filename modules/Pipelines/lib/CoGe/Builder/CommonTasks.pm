@@ -179,6 +179,7 @@ sub generate_gff {
         annos   => 0,
         id_type => 0,
         cds     => 0,
+        chr     => 0,
         nu      => 0,
         upa     => 0,
     );
@@ -192,10 +193,13 @@ sub generate_gff {
     $args{basename} = $args{gid} unless $args{basename};
 
     # Generate the output filename
-    my $organism = "gff";
     my @attributes = qw(annos cds id_type nu upa);
     my $param_string = join "-", map { $_ . $args{$_} } @attributes;
-    my $filename = $args{basename} . "_" . $param_string . ".gff";
+    my $filename = $args{basename} . "_" . $param_string;
+    if ($args{chr}) {
+    	$filename .= "_" . $args{chr};
+    }
+    $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
     my $path = get_download_path($CONF->{SECTEMPDIR}, $args{gid});
@@ -209,6 +213,7 @@ sub generate_gff {
             ['-config', $CONF->{_CONFIG_PATH}, 0],
             # Parameters
             ['-cds', $args{cds}, 0],
+            ['-chr', $args{chr}, 0],
             ['-annos', $args{annos}, 0],
             ['-nu', $args{nu}, 0],
             ['-id_type', $args{id_type}, 0],
