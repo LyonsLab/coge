@@ -204,7 +204,11 @@ sub _send_request {
     eval {
         my ($socket, $msg, $json_request, $json_response);
 
-        $json_request = encode_json($request);
+        # mdb added 4/17/15 COGE-609 - sort json consistently
+        my $json_encoder = JSON::XS->new;
+        $json_encoder->canonical(1);
+        
+        $json_request = $json_encoder->encode($request);
         $socket = zmq_socket($self->_context, ZMQ_REQ);
 
         zmq_setsockopt($socket, ZMQ_LINGER, 0);
