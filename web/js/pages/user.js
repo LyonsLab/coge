@@ -1,8 +1,8 @@
 const POLL_TIME = 30*1000, // polling rate when user is not idle
 	  IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 
-var selected_item_id, hover_item_id;
-var item_info_cache; // FIXME: move into own module
+var grid;
+var infoPanel;
 var timestamps = new Array();
 var timers = new Array();
 	
@@ -10,7 +10,6 @@ $(function() {
 	// Initialize globals
 	timers['item'] = null;
 	init_timestamp('idle');
-	clear_info_cache();
 	
 	// Initialize AJAX
 	$.ajaxSetup({
@@ -62,9 +61,18 @@ $(function() {
 	}
 
 	// Initialize main panels
+	grid = new DataGrid({
+		elementId: 'contents_table'
+	});
+	
+	infoPanel = new InfoPanel({
+		elementId: 'info_panel',
+		grid: grid
+	});
+	
 	//exit_item(); // initialize info panel
 	toc_select(toc_id); // initialize toc panel
-
+	
 	// Setup idle timer
 //	$(document).mousemove(function() {
 //		var currentTime = new Date().getTime();
@@ -113,8 +121,6 @@ $(function() {
     		}
     	}
     });
-    
-    initGrid();
 });
 
 function pad(string, size) {
@@ -124,6 +130,9 @@ function pad(string, size) {
 
 function formatDate(dateStr) {
 	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+	if (!dateStr)
+		return '';
+	dateStr = dateStr.replace(/-/g, '/'); // needed for Firefox & Safari
 	var date = new Date(dateStr);
 	var today = new Date();
 	var diffDays = Math.round(Math.abs((today.getTime() - date.getTime())/(24*60*60*1000)));
@@ -138,7 +147,7 @@ function formatDate(dateStr) {
 		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate()
 	else // last year or older
 		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
-	return '<span>' + dateStr + '</span>';
+	return dateStr;
 }
 
 function formatGenome(genome) {
@@ -149,77 +158,6 @@ function formatGenome(genome) {
 	   	(genome.description ? ': ' + genome.description : '') +
 	   	' (v' + genome.version + ', id' + genome.id + ')';
 	return descStr;
-}
-
-function initGrid() {
-	$('#contents_table').html( '<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border" id="datatable"></table>' );
-	
-	var dataTable = $('#datatable').dataTable({
-		"paging": false,
-		"info" : false,
-		"searching": false,
-		"sScrollY": $(window).height() - 245, // this depends on the height of the header/footer
-		"columns": [
-            { 	title: "Name", 
-            	targets: 0,
-            	type: "string",
-            	data: null, // use full data object
-            	render: function(data, type, row, meta) {
-            		return formatGenome(data);
-            	}
-            },
-            { 	title: "Date added", 
-            	targets: 1, 
-            	type: "date",
-            	data: "date",
-            	width: "100px",
-            	render: function(data, type, row, meta) {
-            		return formatDate(data);
-            	}
-            }
-		]
-	});
-	
-	// Handle row selection event
-	var dataTableBody = dataTable.children('tbody');
-	dataTableBody.on( 'click', 'tr', function () {
-        if ( $(this).hasClass('selected') ) {
-            $(this).removeClass('selected');
-        }
-        else {
-        	dataTable.$('tr.selected').removeClass('selected');
-            $(this).addClass('selected');
-        }
-    });
-	
-	// Handle row hover events
-	dataTableBody.on( 'mouseover', 'tr', function () {
-		var tr = $(this).closest('tr');
-        var row = dataTable.api().row(tr);
-        //enter_item(row.data());
-        row.data().enter();
-    });
-	dataTableBody.on( 'mouseout', 'tr', function () {
-		var tr = $(this).closest('tr');
-        var row = dataTable.api().row(tr);
-		//exit_item(row.data());
-    });	
-
-	$.ajax({
-		dataType: 'json',
-		data: {
-			fname: 'get_contents2',
-		},
-		success : function(data) {
-			//console.log(data);
-			var rows = data.map(function(obj) {
-				return new DataGridRow(obj);
-			});
-			dataTable.api()
-				.clear()
-				.rows.add(rows).draw();
-		}
-	});
 }
 
 function getURLParameter(name) {
@@ -233,7 +171,7 @@ function poll(sync) {
 	get_contents(sync, pageObj.content_type);
 	
 	// Refresh item info cache
-	clear_info_cache();
+	grid.reset();
 }
 
 function schedule_poll(when) { 
@@ -271,64 +209,6 @@ function toc_toggle_children(toc_id, num_children) {
 		.parent()
 		.nextAll().slice(0, num_children)
 		.toggle();
-}
-
-function Cache(params) {
-	this.initialize();
-}
-
-$.extend(Cache.prototype, {
-	initialize: function() {
-		this.items = new Array();
-    },
-    
-    function clear_info_cache(id) {
-    	if (id)
-    		delete item_info_cache[id];
-    	else
-    		item_info_cache = new Array();
-    }
-
-    function refresh_info_cache() {
-    	clear_info_cache();
-    	
-    	var selected = get_selected_items();
-    	selected.each(function(index, obj) {
-    		get_item_info(obj.parentNode);
-    	});
-    }
-
-    function add_to_info_cache(id, value) {
-    	item_info_cache[id] = value;
-    }
-
-    function get_from_info_cache(id) {
-    	return item_info_cache[id];
-    }
-});
-
-function clear_info_cache(id) {
-	if (id)
-		delete item_info_cache[id];
-	else
-		item_info_cache = new Array();
-}
-
-function refresh_info_cache() {
-	clear_info_cache();
-	
-	var selected = get_selected_items();
-	selected.each(function(index, obj) {
-		get_item_info(obj.parentNode);
-	});
-}
-
-function add_to_info_cache(id, value) {
-	item_info_cache[id] = value;
-}
-
-function get_from_info_cache(id) {
-	return item_info_cache[id];
 }
 
 function default_info() {
@@ -374,55 +254,197 @@ function default_info() {
 	$('#info_panel').html(text);
 }
 
+/*
+ * Data Grid
+ */
+
 function DataGrid(params) {
-	
+	this.element = $('#'+params.elementId);
+	this.selectedItemId = null;
+	this.initialize();
 }
 
 $.extend(DataGrid.prototype, {
 	initialize: function() {
+		var self = this;
+		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border"></table>');
+		
+		var dataTable = this.dataTable = this.element.children('table').dataTable({
+			"paging": false,
+			"info" : false,
+			"searching": false,
+			"sScrollY": $(window).height() - 245, // this depends on the height of the header/footer
+			"columns": [
+	            { 	title: "Name", 
+	            	targets: 0,
+	            	type: "string",
+	            	data: null, // use full data object
+	            	render: function(data, type, row, meta) {
+	            		return formatGenome(data);
+	            	}
+	            },
+	            { 	title: "Date added", 
+	            	targets: 1, 
+	            	type: "date",
+	            	data: "date",
+	            	width: "100px",
+	            	render: function(data, type, row, meta) {
+	            		return formatDate(data);
+	            	}
+	            }
+			]
+		});
+		
+		// Handle row selection event
+		var dataTableBody = dataTable.children('tbody');
+		dataTableBody.on('click', 'tr', function() {
+			var tr = this;
+			var row = dataTable.api().row(tr);
+			
+	        if ( $(tr).hasClass('selected') ) { // unselect
+	            $(tr).removeClass('selected');
+	        }
+	        else { // select
+	        	self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
+	            $(tr).addClass('selected'); // select item
+	        }
+	        
+	        self.selectItem(row.data());
+		});
+		
+		// Handle row hover events
+		dataTableBody.on('mouseover', 'tr', function () {
+			var tr = $(this).closest('tr');
+	        var row = dataTable.api().row(tr).data();
+	        row.enter.apply(row);
+	    });
+		dataTableBody.on('mouseout', 'tr', function () {
+			var tr = $(this).closest('tr');
+	        var row = dataTable.api().row(tr);
+			//exit_item(row.data());
+	    });	
+
+		$.ajax({
+			dataType: 'json',
+			data: {
+				fname: 'get_contents2',
+			},
+			success : function(data) {
+				//console.log(data);
+				var rows = data.map(function(obj) {
+					return new DataGridRow(obj, self);
+				});
+				dataTable.api()
+					.clear()
+					.rows.add(rows).draw();
+			}
+		});		
+    },
+    
+    reset: function() {
+    	
+    },
+    
+    getSelectedItems: function() {
+    	console.log('getSelectedItems');
+    	//return $('#contents_table input[type=checkbox]').filter(':checked').filter(':not(:hidden)');
+    	return this.dataTable.api().rows('.selected').data();//.filter(':not(:hidden)')
+    },
+
+    clearSelection: function() {
+    	$('.coge-list-item,.coge-selected').removeClass('coge-selected');
+    	$('#contents_table input[type=checkbox]').filter(':checked').prop('checked', false);
+    	update_icons();
+        selection_hint();
+        this.selectedItemId = null;
+    },
+    
+    clickItem: function(item) {
+    	$('#'+item.id).toggleClass('coge-selected')
+    	infoPanel.update();
+    },
+
+    selectItem: function(item) {
+    	console.log('selectItem');
+    	//this.clearSelection();
+    	
+//    	$('#'+item.id)
+//    		.addClass('coge-selected')
+//    		.find('input[type=checkbox]')
+//    		.prop('checked', true);
+    	this.selectedItemId = item.id;
+    	
+    	infoPanel.busy();
+    	infoPanel.update();
+    },
+
+    openItem: function(item_type, title, link) {
+    	if (item_type == ITEM_TYPES.group) // FIXME this is a kludge
+    		group_dialog();
+    	else {
+            if (!link) {
+                return alert("The following link could not be generated");
+            }
+
+    		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
+    		link = link + "&embed=1";
+    		console.log(link);
+    		var height = $(window).height() * 0.8;
+    		var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+    			.dialog({
+    				title: title,
+    				width: '80%',
+    				height: height//'80%'
+    			})
+    			.dialog('open');
+    	}
     }
 });
 
-function DataGridRow(data) {
+/* 
+ * Data Grid Row
+ */
+		
+function DataGridRow(data, grid) {
 	$.extend(this, data);
-//    this.initialize();
+	if (grid)
+		this.grid = grid; // parent DataGrid object
+    this.initialize();
 }
 
 $.extend(DataGridRow.prototype, {
-//	initialize: function() {
-//    },
+	initialize: function() {
+    },
 
-    get_info: function() {
-    	//console.log(obj);
-    	var info = get_from_info_cache(obj.type + '-' + obj.id);
-    	if ( info ) {
-    		$('#info_panel').html(info);
-    		return;
-    	}
+    getInfo: function() {
+    	var self = this;
     	
-    	$.ajax({
+//    	if (self.info)
+//    		return $.Deferred({done: function() { return self.info; }}).promise();
+    	
+    	return $.ajax({
+    		dataType: 'json',
     		data: {
     			fname: 'get_item_info',
-    			item_id: obj.id,
-    			item_type: obj.type,
+    			item_id: self.id,
+    			item_type: self.type,
     			timestamp: init_timestamp('get_item_info')
-    		},
-    		success : function(data) {
-    			if (data) {
-    				var result = jQuery.parseJSON(data);
-    				if (test_timestamp('get_item_info', result.timestamp)) {
-    					add_to_info_cache(obj.id, result.html);
-    					$('#info_panel').html(result.html);
-    				}
-    			}
     		}
+//    		success : function(data) {
+//    			if (data && test_timestamp('get_item_info', data.timestamp))
+//    				self.info = data.html;
+//    		}
+    	}).pipe(function(data) {
+    		if (data && test_timestamp('get_item_info', data.timestamp))
+				return data.html;
+    		return;
     	});
     },
 
     enter: function() {
     	var self = this;
     	
-    	if (selected_item_id)
+    	if (self.grid && self.grid.selectedItemId) // Do nothing if row currently selected
     		return;
 
     	if (timers['item'])
@@ -430,15 +452,14 @@ $.extend(DataGridRow.prototype, {
 
     	timers['item'] = window.setTimeout( 
     		function() { 
-    			info_busy(); 
-    			self.get_info();
+    			infoPanel.busy().update();
     		},
     		500
     	);
     },
     
     exit: function() {
-    	if (selected_item_id)
+    	if (self.grid && self.grid.selectedItemId) // Do nothing if row currently selected
     		return;
     	
     	if (timers['item'])
@@ -448,86 +469,46 @@ $.extend(DataGridRow.prototype, {
     }
 });
 
-function info_busy() {
-	$('#info_panel').html('<img src="picts/ajax-loader.gif"/>');
+function InfoPanel(params) {
+	this.element = $('#'+params.elementId);
+	this.grid = params.grid; // parent DataGrid object
+    this.initialize();
 }
 
-function update_info() {
-	var selected = get_selected_items();
-	var num_items = selected.length;
+$.extend(InfoPanel.prototype, {
+	initialize: function() {
+    },
+    
+    busy: function() {
+    	this.element.html('<img src="picts/ajax-loader.gif"/>');
+    	return this;
+    },
+    
+    update: function() {
+    	var self = this;
+    	var selected = grid.getSelectedItems();
+    	var num_items = selected.length;
 
-	if (num_items > 0) {
-		if (num_items == 1) {
-			var item = selected[0].parentNode;
-			get_item_info(item);
-		}
-		else
-			$('#info_panel').html(num_items + ' item' + (num_items > 1 ? 's' : '') + ' selected.<br><br>Click an action icon at the top to share, organize, delete, or analyze.');
-	}
-	else {
-		default_info();
-		selected_item_id = null;
-	}
-	
-	update_icons();
-    selection_hint();
-}
-
-function click_item(item) {
-	$('#'+item.id).toggleClass('coge-selected')
-	update_info();
-}
-
-function select_item(item) {
-	clear_selected_items();
-	
-	$('#'+item.id)
-		.addClass('coge-selected')
-		.find('input[type=checkbox]')
-		.prop('checked', true);
-	selected_item_id = item.id;
-	
-	info_busy();
-	update_info(item);
-}
-
-function open_item(item_type, title, link) {
-	if (item_type == ITEM_TYPES.group) // FIXME this is a kludge
-		group_dialog();
-	else {
-        if (!link) {
-            return alert("The following link could not be generated");
-        }
-
-		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
-		link = link + "&embed=1";
-		console.log(link);
-		var height = $(window).height() * 0.8;
-		var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
-			.dialog({
-				title: title,
-				width: '80%',
-				height: height//'80%'
-			})
-			.dialog('open');
-	}
-}
-
-function get_selected_items() {
-	return $('#contents_table input[type=checkbox]').filter(':checked').filter(':not(:hidden)');
-}
-
-function clear_selected_items() {
-	$('.coge-list-item,.coge-selected').removeClass('coge-selected');
-	$('#contents_table input[type=checkbox]').filter(':checked').prop('checked', false);
-	update_icons();
-    selection_hint();
-	selected_item_id = null;
-}
-
-function get_item_id(obj) {
-	return obj.id.match(/content_(\w+)_\w+/)[1];
-}
+    	if (num_items > 0) {
+    		if (num_items == 1) {
+    			var item = selected[0];//.parentNode;
+    			item.getInfo().pipe(function(info) {
+    				//console.log(info);
+    				self.element.html(info);
+    			});
+    		}
+    		else
+    			self.element.html(num_items + ' item' + (num_items > 1 ? 's' : '') + ' selected.<br><br>Click an action icon at the top to share, organize, delete, or analyze.');
+    	}
+    	else {
+    		//default_info();
+    		parent.selectedItemId = null;
+    	}
+    	
+    	update_icons();
+        selection_hint();    	
+    }
+});
 
 function get_item_type(obj) {
 	return obj.id.match(/content_\w+_(\w+)/)[1];
@@ -644,7 +625,7 @@ function filter_contents() {
 }
 
 function update_icons(on) {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if ( selected.length > 0) 
 		$('.item-button:not(#add_button)').removeClass('coge-disabled');
 	else
@@ -652,7 +633,7 @@ function update_icons(on) {
 }
 
 function selection_hint() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if ( selected.length == 1)
 		$('#selected-hint').removeClass('hidden');
 	else
@@ -712,7 +693,7 @@ function toc_select(toc_id) {
 	filter_contents();
 	
 	// Clear selected items
-	clear_selected_items();
+	grid.clearSelection();
 	default_info();
 	
 	// Show TOC item as selected
@@ -731,13 +712,13 @@ function toc_select(toc_id) {
 }
 
 function delete_items() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if (selected.length) {
 		selected.parent().fadeOut('fast',
 			function() {
 				selected.parent().addClass('deleted');
 				selected.prop('checked', false);
-				update_info(); // reset button states
+				infoPanel.update(); // reset button states
 			}
 		);
 
@@ -754,13 +735,13 @@ function delete_items() {
 }
 
 function undelete_items() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if (selected.length) {
 		selected.parent().fadeOut('fast',
 			function() {
 				selected.parent().removeClass('deleted');
 				selected.prop('checked', false);
-				update_info(); // reset button states
+				infoPanel.update(); // reset button states
 			}
 		);
 
@@ -866,7 +847,7 @@ function comment_job(id, comment) {
 }
 
 function add_to_notebook_dialog() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if (selected.length) {
 		$('#add_to_notebook_dialog').dialog({width:500}).dialog('open');
 	}
@@ -921,7 +902,7 @@ function search_notebooks () {
 }
 
 function add_items_to_notebook() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	var nid = $('#notebook_select').find('option:selected').val();
 	if (nid && selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
@@ -942,7 +923,7 @@ function add_items_to_notebook() {
 }
 
 function share_dialog() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if (selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
@@ -958,7 +939,7 @@ function share_dialog() {
 }
 
 function remove_items_from_user_or_group(target_item) {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if (target_item && selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
@@ -970,7 +951,7 @@ function remove_items_from_user_or_group(target_item) {
 			success : function(data) {
 				if (data) {
 					$('#share_dialog').html(data);
-					refresh_info_cache();
+//					infoCache.refresh();
 				}
 			}
 		});
@@ -978,7 +959,7 @@ function remove_items_from_user_or_group(target_item) {
 }
 
 function add_items_to_user_or_group() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	var target_item = $('#share_input').data('select_id');
 	var role_id = $('#share_role_select').val();
 	if (target_item && selected.length) {
@@ -993,7 +974,7 @@ function add_items_to_user_or_group() {
 			success : function(data) {
 				if (data) {
 					$('#share_dialog').html(data);
-					refresh_info_cache();
+//					infoCache.refresh();
 				}
 			}
 		});
@@ -1040,7 +1021,7 @@ function search_group () { // FIXME dup of above routine but for group dialog
 }
 
 function group_dialog() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if (selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
@@ -1056,7 +1037,7 @@ function group_dialog() {
 }
 
 function change_group_role() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	var role_id = $('#group_role_select').val();
 	if (role_id && selected.length) {
 		var target_items = selected.map(function(){return this.parentNode.id;}).get().join(',');
@@ -1076,7 +1057,7 @@ function change_group_role() {
 }
 
 function add_users_to_group() {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	var new_item = $('#group_input').data('select_id');
 	if (new_item && selected.length) {
 		var target_items = selected.map(function(){return this.parentNode.id;}).get().join(',');
@@ -1096,7 +1077,7 @@ function add_users_to_group() {
 }
 
 function remove_user_from_group(user_id) {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if (user_id && selected.length) {
 		var target_items = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
@@ -1263,7 +1244,7 @@ function create_new_notebook() {
 	var type_id = $('#edit_notebook_type').val();
 
 	var item_list;
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if (selected.length) {
 		item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 	}
@@ -1312,7 +1293,7 @@ function send_menu() {
 }
 
 function send_items_to(page_name, format) {
-	var selected = get_selected_items();
+	var selected = grid.getSelectedItems();
 	if (selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
