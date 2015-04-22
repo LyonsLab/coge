@@ -9,13 +9,12 @@ use Getopt::Long qw(GetOptions);
 
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw(to_pathname);
-use CoGe::Core::Notebook qw(create_notebook);
 use CoGe::Core::Metadata qw(create_annotations);
+use CoGe::Core::Notebook qw(add_items_to_notebook load_notebook);
 use CoGe::Core::Storage qw(get_workflow_results add_workflow_result);
 use CoGeX;
 
-our ($log_file, $config_file, $name, $description, $type, $userid, 
-    $restricted, $wid, $annotations);
+our ($userid, $wid, $log_file, $config_file, $notebook_id, $annotations);
 
 GetOptions(
     # Required workflow params
@@ -27,11 +26,8 @@ GetOptions(
     "config|cfg=s"      => \$config_file,
 
     # Notebook metadata
-    "name|n=s"          => \$name,
-    "type|t=s"          => \$type,
-    "description|d=s"   => \$description,
-    "restricted|r=s"    => \$restricted,
-    "annotations=s"     => \$annotations, # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
+    "notebook_id=s"     => \$notebook_id,
+    "annotations=s"		=> \$annotations # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
 );
 
 $| = 1;
@@ -39,10 +35,7 @@ print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Check required parameters
 die "ERROR: user id not specified, use userid argument" unless $userid;
-die "ERROR: notebook name not specified" unless $name;
-
-# Set default parameters
-$restricted  = '1' unless (defined $restricted && (lc($restricted) eq 'false' || $restricted eq '0'));
+die "ERROR: notebook id not specified" unless $notebook_id;
 
 # Connect to DB
 my $conf = get_defaults($config_file);
@@ -57,25 +50,21 @@ die "ERROR: user could not be found for id: $userid" unless $user;
 my $results = get_workflow_results($user->name, $wid);
 exit unless $results;
 
-# Create notebook
-my $notebook;
-if (@$results > 1) {
-    my @items = map { [ $_->{id}, $_->{type} ] } @$results;
-    #print STDOUT Dumper \@items, "\n";
-    $notebook = create_notebook(
-        db         => $db,
-        user       => $user,
-        name       => $name,
-        desc       => $description,
-        type_id    => $type,
-        item_list  => \@items,
-        restricted => $restricted
-    );
-    unless ($notebook) {
-        print STDERR "ERROR: couldn't create notebook\n";
-        exit(-1);
-    }
-}
+# load notebook
+my $notebook = load_notebook(
+	db		=> $db,
+	id		=> $notebook_id,
+	user	=> $user
+);
+
+my @items = map { [ $_->{id}, $_->{type} ] } @$results;
+print STDERR Dumper \@items, "\n";
+add_items_to_notebook(
+	db			=> $db,
+	user		=> $user,
+	notebook	=> $notebook,
+	item_list	=> \@items
+);
 
 # Add annotations to notebook and results
 if ($annotations) {
@@ -103,10 +92,10 @@ add_workflow_result($user->name, $wid,
     {
         type => 'notebook',
         id => int($notebook->id),
-        name => $name,
-        description => $description,
-        type_id => $type,
-        restricted => $restricted
+        name => $notebook->name,
+        description => $notebook->description,
+        type_id => $notebook->type->id,
+        restricted => $notebook->restricted
     }
 );
     

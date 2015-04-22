@@ -68,11 +68,10 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'GenomeList',
-		      TITLE      => 'GenomeList',		
-    		      PAGE_LINK  => $LINK,
-    		      #HELP       => '/wiki/index.php?title=GenomeList',
-		      HELP       => $P->{SERVER},
-                      USER       => $USER->display_name,
+		              TITLE      => 'GenomeList',		
+    		          PAGE_LINK  => $LINK || '',
+		              HELP       => $P->{SERVER} || '',
+                      USER       => $USER->display_name || '',
                       LOGO_PNG   => "CoGe.svg" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
