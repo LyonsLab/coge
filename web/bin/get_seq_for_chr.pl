@@ -2,7 +2,6 @@
 
 use strict;
 use CoGe::Accessory::Web;
-use CoGeX::Result::Genome qw( get_genome_seq );
 use Data::Dumper;
 use File::Spec::Functions;
 use CGI;

@@ -173,8 +173,7 @@ sub export_to_irods {
 }
 
 sub generate_gff {
-    my ($inputs, $conf) = @_;
-
+    my %inputs = @_;
     my %args = (
         annos   => 0,
         id_type => 0,
@@ -184,7 +183,7 @@ sub generate_gff {
         upa     => 0,
     );
 
-    @args{(keys $inputs)} = (values $inputs);
+    @args{(keys %inputs)} = (values %inputs);
 
     # Check for a genome or dataset id
     return unless $args{gid};
