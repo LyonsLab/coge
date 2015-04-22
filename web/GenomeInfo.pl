@@ -19,6 +19,7 @@ use File::Basename qw(basename);
 use File::Path qw(mkpath);
 use File::Spec::Functions;
 use POSIX qw(floor);
+use Data::Dumper;
 
 no warnings 'redefine';
 
@@ -90,6 +91,8 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_gc_for_noncoding       => \&get_gc_for_noncoding,
     get_gc_for_feature_type    => \&get_gc_for_feature_type,
     get_chr_length_hist        => \&get_chr_length_hist,
+    get_chr_list               => \&get_chr_list,
+    cache_chr_fasta			   => \&cache_chr_fasta,
     get_aa_usage               => \&get_aa_usage,
     get_wobble_gc              => \&get_wobble_gc,
     get_wobble_gc_diff         => \&get_wobble_gc_diff,
@@ -120,8 +123,11 @@ sub get_genome_info_details {
 
     # Histogram
     $html .= qq{ <span class="link" onclick="chr_hist($dsgid);">Histogram</span>};
+  	# chromosome list
+    $html .= qq{, <span class="link" onclick="chr_list();">list</span>};
     $html .= qq{</td></tr>};
-
+    
+ 
     my $gstid    = $dsg->genomic_sequence_type->id;
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
@@ -864,6 +870,62 @@ sub get_chr_length_hist {
     my $hist_img = "<img src=\"$out\">";
     return $info . "<br>" . $hist_img;
 }
+
+sub get_chr_list {
+    my %opts  = @_;
+    my $gid = $opts{gid};
+    return "error", " " unless $gid;
+    my $genome = $coge->resultset('Genome')->find($gid);
+    unless ($genome) {
+        my $error = "unable to create genome object using id $gid\n";
+        return $error;
+    }
+	my $html = "<table>";
+	#$html .= "<thead><tr><th>Chromosome</th></th></thead>";
+	$html .= "<tbody>";
+	my @chromosomes = $genome->get_chromosomes();
+	for (@chromosomes) {
+		$html .= "<tr><td>" . $_ . "</td>";
+		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){download_chromosome_sequence('". $_ . "')})\">Fasta Sequences</td>";
+		$html .= "<td>|</td>";
+		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){get_gff('". $_ . "')})\">Export GFF</td></tr>";
+	}
+	$html .= "</tbody></table>";
+	return $html;
+}
+
+sub cache_chr_fasta {
+    my %opts  = @_;
+    my $gid = $opts{gid};
+    my $chr = $opts{chr};
+
+    my $path = get_download_path($gid);
+	mkpath( $path, 0, 0777 ) unless -d $path;
+    my $file = catfile($path, $gid . "_" . $chr . ".faa");
+    if (-e $file) {
+    	return;
+    }
+
+    my $genome = $coge->resultset('Genome')->find($gid);
+    return "unable to create genome object using id $gid" unless ($genome);
+	my $chromosome = $coge->resultset('GenomicSequence')->find({genome_id=>$gid,chromosome=>$chr});
+
+	# Get sequence from file
+	my $seq = $genome->get_genomic_sequence(
+		chr   => $chr,
+		start => 1,
+		stop  => $chromosome->sequence_length
+	);
+print STDERR "file $file";
+print STDERR $chromosome->sequence_length;
+	open(my $fh, '>', $file) or return "Could not open file '$file' $!";
+	for (my $i=0; $i<length($seq); $i+=70) {
+		print $fh substr($seq, $i, 70);
+		print $fh "\n";
+	}
+	close $fh;
+}
+
 
 sub get_genome_info {
     my %opts   = @_;

@@ -24,7 +24,7 @@ our @EXPORT = qw(
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job
-    send_email_job
+    send_email_job add_items_to_notebook_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -179,6 +179,7 @@ sub generate_gff {
         annos   => 0,
         id_type => 0,
         cds     => 0,
+        chr     => 0,
         nu      => 0,
         upa     => 0,
     );
@@ -192,10 +193,13 @@ sub generate_gff {
     $args{basename} = $args{gid} unless $args{basename};
 
     # Generate the output filename
-    my $organism = "gff";
     my @attributes = qw(annos cds id_type nu upa);
     my $param_string = join "-", map { $_ . $args{$_} } @attributes;
-    my $filename = $args{basename} . "_" . $param_string . ".gff";
+    my $filename = $args{basename} . "_" . $param_string;
+    if ($args{chr}) {
+    	$filename .= "_" . $args{chr};
+    }
+    $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
     my $path = get_download_path($CONF->{SECTEMPDIR}, $args{gid});
@@ -209,6 +213,7 @@ sub generate_gff {
             ['-config', $CONF->{_CONFIG_PATH}, 0],
             # Parameters
             ['-cds', $args{cds}, 0],
+            ['-chr', $args{chr}, 0],
             ['-annos', $args{annos}, 0],
             ['-nu', $args{nu}, 0],
             ['-id_type', $args{id_type}, 0],
@@ -910,6 +915,50 @@ sub create_notebook_job {
     };
 }
 
+
+sub add_items_to_notebook_job {
+    my %opts = @_;
+    my $user = $opts{user};
+    my $wid = $opts{wid};
+    my $notebook_id = $opts{notebook_id};
+    my $annotations = $opts{annotations}; # array ref
+    my $staging_dir = $opts{staging_dir};
+    my $done_files = $opts{done_files};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "add_items_to_notebook.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    my $result_file = get_workflow_results_file($user->name, $wid);
+    
+    my $log_file = catfile($staging_dir, "add_items_to_notebook", "log.txt");
+    
+    my $annotations_str = '';
+    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+    
+    my $args = [
+        ['-uid', $user->id, 0],
+        ['-wid', $wid, 0],
+        ['-notebook_id', $notebook_id, 0],
+        ['-annotations', qq{"$annotations_str"}, 0],
+        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-log', $log_file, 0]
+    ];
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => [ 
+            $CONF->{_CONFIG_PATH},
+            @$done_files
+        ],
+        outputs => [ 
+            $result_file,
+            $log_file
+        ],
+        description => "Adding experiment to notebook..."
+    };
+}
 
 sub send_email_job {
     my %opts = @_;

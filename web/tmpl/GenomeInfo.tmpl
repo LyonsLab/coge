@@ -1,4 +1,6 @@
 <TMPL_IF NAME='MAIN'>
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.6/css/jquery.dataTables.css">
+<script type="text/javascript" language="javascript" src="//cdn.datatables.net/1.10.6/js/jquery.dataTables.min.js"></script>
 <script src="./js/coge/utils.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></script>
@@ -140,6 +142,56 @@ function chr_hist (dsgid) {
         },
         success: function (data) {$('#chromosome_hist').html(data);}
     });
+}
+
+function chr_list() {
+    $('#chromosome_list').dialog({
+        autoOpen: true,
+        position: {
+           my: "center",
+           at: "top",
+           of: $(".box")
+        }
+    });
+
+    $('#chromosome_list').html('loading. . .');
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: 'get_chr_list',
+            gid: genome_id,
+        },
+        success: function(data){
+        	$('#chromosome_list').html(data);
+        }
+    });
+}
+
+function download_chromosome_sequence(chr) {
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: 'cache_chr_fasta',
+            gid: genome_id,
+            chr: chr
+        },
+        success: function(data) {
+        	document.location='bin/get_seq_for_chr.pl?gid=' + genome_id + '&chr=' + chr;
+        }
+    });
+}
+
+function export_location_dialog (download,irods) {
+    $('#export_location').dialog({
+        autoOpen: true,
+        position: {
+           my: "center",
+           at: "top",
+           of: $(".box")
+        }
+    });
+    $('#export_location_download').unbind().click(function(){download();$('#export_location').dialog('close')});
+    $('#export_location_irods').unbind().click(function(){irods();$('#export_location').dialog('close')});
 }
 
 function toggle_load_log() {
@@ -430,13 +482,14 @@ function show_success() {
     $('#export_ok_button').fadeIn();
 }
 
-function get_gff() {
+function get_gff($chr) {
     var id = genome_id;
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
 
-    $('#gff_export').unbind().on("dialogclose", function(event, ui) {
+    $('#gff_submit').unbind().click(function(event, ui) {
         var id_type = $('#gff_id_type').val(),
             cds = +$('#cds_only')[0].checked,
+            chr = +$chr,
             annos = +$('#annos')[0].checked,
             nu = +$('#name_unique')[0].checked,
             upa = +$('#upa')[0].checked;
@@ -566,7 +619,7 @@ function reset_dialog() {
 
 function export_gff() {
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
-    $('#gff_export').unbind().on("dialogclose", function() {
+    $('#gff_submit').unbind().click(function() {
 
         // ANALYSIS OPTIONS
         var id = genome_id;
@@ -1188,6 +1241,11 @@ function get_experiments(e) {
 </script>
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
+<div class="dialog_box hidden" id="chromosome_list" title="Chromosome List"></div>
+<div class="dialog_box hidden" id="export_location" title="Export">
+	<span id="export_location_download" class="ui-button ui-corner-all coge-button">Download</span>
+	<span id="export_location_irods" class="ui-button ui-corner-all coge-button">Send to iPlant</span>
+</div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
