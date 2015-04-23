@@ -67,7 +67,8 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 #    delete_dataset             => \&delete_dataset,
     check_login                => \&check_login,
     copy_genome                => \&copy_genome,
-    export_fasta_irods         => \&export_fasta_irods,
+    export_fasta		       => \&export_fasta,
+    export_fasta_chr		   => \&export_fasta_chr,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
     update_annotation          => \&update_annotation,
@@ -886,7 +887,7 @@ sub get_chr_list {
 	my @chromosomes = $genome->get_chromosomes();
 	for (@chromosomes) {
 		$html .= "<tr><td>" . $_ . "</td>";
-		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){download_chromosome_sequence('". $_ . "')})\">Fasta Sequences</td>";
+		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){download_chromosome_sequence('". $_ . "')},function(){export_fasta_chr('". $_ . "')})\">Fasta Sequences</td>";
 		$html .= "<td>|</td>";
 		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){get_gff('". $_ . "')})\">Export GFF</td></tr>";
 	}
@@ -902,8 +903,10 @@ sub cache_chr_fasta {
     my $path = get_download_path($gid);
 	mkpath( $path, 0, 0777 ) unless -d $path;
     my $file = catfile($path, $gid . "_" . $chr . ".faa");
+	my %json;
+	$json{file} = $file;
     if (-e $file) {
-    	return;
+    	return encode_json(\%json);
     }
 
     my $genome = $coge->resultset('Genome')->find($gid);
@@ -916,14 +919,13 @@ sub cache_chr_fasta {
 		start => 1,
 		stop  => $chromosome->sequence_length
 	);
-print STDERR "file $file";
-print STDERR $chromosome->sequence_length;
 	open(my $fh, '>', $file) or return "Could not open file '$file' $!";
 	for (my $i=0; $i<length($seq); $i+=70) {
 		print $fh substr($seq, $i, 70);
 		print $fh "\n";
 	}
 	close $fh;
+    return encode_json(\%json);
 }
 
 
@@ -1525,10 +1527,10 @@ sub get_aa_usage {
     return $html2; #return $html1, $html2;
 }
 
-sub export_fasta_irods {
+sub export_fasta {
     my %opts    = @_;
     my $gid = $opts{gid};
-    #print STDERR "export_fasta_irods $gid\n";
+    #print STDERR "export_fasta $gid\n";
 
     my $genome = $coge->resultset('Genome')->find($gid);
     return unless ($USER->has_access_to_genome($genome));
@@ -1538,7 +1540,7 @@ sub export_fasta_irods {
     my $dest = get_irods_path() . '/' . $dest_filename;
 
     unless ($src and $dest) {
-        print STDERR "GenomeInfo:export_fasta_irods: error, undef src or dest\n";
+        print STDERR "GenomeInfo:export_fasta: error, undef src or dest\n";
         return;
     }
 
@@ -1565,7 +1567,28 @@ sub export_fasta_irods {
     $meta{'Genome Description'} = $genome->description if ($genome->description);
     CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
 
-    return $dest_filename;
+	my %json;
+	$json{file} = $dest_filename;
+    return encode_json(\%json);
+}
+
+sub export_fasta_chr {
+    my %args = @_;
+    my $dsg = $coge->resultset('Genome')->find($args{gid});
+    my $file = $args{file};
+#    print STDERR Dumper \%args;
+
+    # ensure user is logged in
+    return $ERROR if $USER->is_public;
+
+    # ensure user has permission
+    return $ERROR unless $USER->has_access_to_genome($dsg);
+
+    my (%json, %meta);
+    %meta = get_metadata($dsg);
+    $json{file} = basename($file);
+    $json{error} = export_to_irods( file => $file, meta => \%meta );
+    return encode_json(\%json);
 }
 
 sub get_irods_path {
@@ -1888,39 +1911,7 @@ sub get_metadata {
 }
 
 sub export_tbl {
-    my %args = @_;
-    my $dsg = $coge->resultset('Genome')->find($args{gid});
-
-    # ensure user is logged in
-    return $ERROR if $USER->is_public;
-
-    # ensure user has permission
-    return $ERROR unless $USER->has_access_to_genome($dsg);
-
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
-
-    my $workflow = $JEX->create_workflow(name => "Export Tbl");
-    my ($output, %task) = generate_tbl(%args);
-    $workflow->add_job(\%task);
-
-    my $response = $JEX->submit_workflow($workflow);
-    say STDERR "RESPONSE ID: " . $response->{id};
-    my $success = $JEX->wait_for_completion($response->{id});
-
-    my (%json, %meta);
-    %meta = get_metadata($dsg);
-    $json{file} = basename($output);
-
-    if($success) {
-        $json{error} = export_to_irods( file => $output, meta => \%meta );
-    } else {
-        $json{error} = 1;
-    }
-
-    return encode_json(\%json);
+    return export_file_to_irods("Tbl", \&generate_tbl, @_);
 }
 
 #
@@ -1955,40 +1946,7 @@ sub get_bed {
 }
 
 sub export_bed {
-    my %args = @_;
-    my $gid = $args{gid};
-    my $dsg = $coge->resultset('Genome')->find($gid);
-
-    # ensure user is logged in
-    return $ERROR if $USER->is_public;
-
-    # ensure user has permission
-    return $ERROR unless $USER->has_access_to_genome($dsg);
-
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
-
-    my $workflow = $JEX->create_workflow(name => "Export bed file");
-    my ($output, %task) = generate_bed(%args);
-    $workflow->add_job(\%task);
-
-    my $response = $JEX->submit_workflow($workflow);
-    say STDERR "RESPONSE ID: " . $response->{id};
-    my $success = $JEX->wait_for_completion($response->{id});
-    my (%json, %meta);
-    %meta = get_metadata($dsg);
-
-    $json{file} = basename($output);
-
-    if($success) {
-        $json{error} = export_to_irods( file => $output, meta => \%meta );
-    } else {
-        $json{error} = 1;
-    }
-
-    return encode_json(\%json);
+    return export_file_to_irods("bed file", \&generate_bed, @_);
 }
 
 #
@@ -2008,7 +1966,7 @@ sub get_gff {
     $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(\%args, $config);
+    my ($output, %task) = generate_gff(%args);
     $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
@@ -2023,6 +1981,17 @@ sub get_gff {
 }
 
 sub export_gff {
+    return export_file_to_irods("gff", \&generate_gff, @_);
+}
+
+# %args:
+# - gid
+# - file_type, used to name workflow
+# - generate_func, function to call to generate file to export
+# %args is also passed to generate_func
+sub export_file_to_irods {
+	my $file_type = shift;
+	my $generate_func = shift;
     my %args = @_;
     my $dsg = $coge->resultset('Genome')->find($args{gid});
 
@@ -2040,8 +2009,8 @@ sub export_gff {
     $args{basename} = sanitize_name($dsg->organism->name);
     $args{conf} = $config->{_CONFIG_PATH};
 
-    my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(\%args, $config);
+    my $workflow = $JEX->create_workflow(name => "Export " . $file_type);
+    my ($output, %task) = $generate_func->(%args);
     $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
