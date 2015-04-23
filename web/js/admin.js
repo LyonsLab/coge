@@ -1,4 +1,8 @@
 var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common location
+var timestamps = new Array();
+var timers = new Array();
+var previous_search = ""; //indicates the previous search term, used to refresh after a delete
+var updating = true;
 
 $(function () {
 	// Configure dialogs
@@ -13,6 +17,9 @@ $(function () {
     });
     $("#show_select,#search_type").change(function(e) {
         update_filter();
+    });
+    $("#update_checkbox").change(function(e) {
+    	toggle_updater();
     });
     
     //Initialize Jobs tab
@@ -87,24 +94,9 @@ $(function () {
 
     window.jobs = new coge.Grid('#jobs', options, columns);
     jobs.grid.registerPlugin(checkbox);
-    $.ajax({
-        dataType: 'json',
-        data: {
-            jquery_ajax: 1,
-            fname: 'get_jobs',
-            time_range: 0,
-        },
-        success: function(data) {
-            jobs.load(data.jobs);
-            entries = data.length;
-            $("#filter_busy").hide();
-        }
-    });
+    get_jobs();
+    document.getElementById("search_bar").value = "running";
 });
-
-var timestamps = new Array();
-
-var previous_search = ""; //indicates the previous search term, used to refresh after a delete
 
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
@@ -800,6 +792,27 @@ function wait_to_search (search_func, search_term) {
 }
 
 //The following javascript deals with Tab2, the Jobs tab
+function get_jobs() {
+	$.ajax({
+		dataType: 'json',
+	    data: {
+	        jquery_ajax: 1,
+	        fname: 'get_jobs',
+	        time_range: 0,
+	    },
+	    success: function(data) {
+	        jobs.load(data.jobs);
+	        entries = data.length;
+	        $("#filter_busy").hide();
+	        update_filter();
+	        
+	        if (updating) {
+	        	schedule_update(5000);
+	        }
+	    }
+	});
+}
+
 function update_filter() {
     jobs.dataView.setFilterArgs({
         show: $('#show_select').val(),
@@ -809,6 +822,30 @@ function update_filter() {
 
     jobs.filter();
     $('#filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
+}
+
+function toggle_updater() {
+	updating = !updating;
+	if (updating) {
+		schedule_update(5000);
+	}
+}
+
+function schedule_update(delay) {
+	console.log("Updating");
+	cancel_update();
+	
+	if (delay !== undefined) {
+		timers['update'] = window.setTimeout(
+			function() { get_jobs(); },
+			delay
+		);
+		return;
+	}	
+}
+
+function cancel_update() {
+	clearTimeout(timers['update']);
 }
 
 function cancel_job() {

@@ -144,12 +144,9 @@
 		
 		<div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
 		<div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
-		
-	
-		<!--<p>Proin elit arcu, rutrum commodo, vehicula tempus, commodo a, risus. Curabitur nec arcu. Donec sollicitudin mi sit amet mauris. Nam elementum quam ullamcorper ante. Etiam aliquet massa et lorem. Mauris dapibus lacus auctor risus. Aenean tempor ullamcorper leo. Vivamus sed magna quis ligula eleifend adipiscing. Duis orci. Aliquam sodales tortor vitae ipsum. Aliquam nulla. Duis aliquam molestie erat. Ut et mauris vel pede varius sollicitudin. Sed ut dolor nec orci tincidunt interdum. Phasellus ipsum. Nunc tristique tempus lectus.</p>-->
 	</div>
 	<div id="tabs-2">
-		<div class="small" style="padding-top:15px;padding-bottom:10px;height:27px;">
+		<div class="small" style="padding-top:15px;height:27px;">
 			Filter:
 			<input type="text" id="search_bar">
 		 	<select id="search_type">
@@ -159,7 +156,11 @@
 		 	<span id='filter_count' style="margin-left:20px;"></span>
 		 	<img id='filter_busy' src="picts/ajax-loader.gif" />
 		</div>
-	
+		<div style="padding-bottom:10px;">
+			<input type="checkbox" id="update_checkbox" checked>
+			<span> Auto-Update</span>
+		</div>
+			
 		<span id="test" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel selected jobs</span>
 		<span class="ui-button ui-button-go ui-corner-all" onclick="restart_job()">Restart selected jobs</span>
 	
