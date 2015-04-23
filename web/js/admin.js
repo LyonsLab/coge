@@ -218,75 +218,105 @@ function search_stuff (search_term) {
 				$(".result").fadeIn( 'fast');
 				
 				//user
-				$('#userCount').html("Users: " + userCounter);
-				$('#userList').html(userList);
-				if(userCounter <= 10) {
-					$( "#userList" ).show();
-					//$( "#userArrow" ).find('img').toggle();
-					$("#userArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+				if(userCounter > 0) {
+					$('#user').show();
+					$('#userCount').html("Users: " + userCounter);
+					$('#userList').html(userList);
+					if(userCounter <= 10) {
+						$( "#userList" ).show();
+						//$( "#userArrow" ).find('img').toggle();
+						$("#userArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#userList" ).hide();
+						$("#userArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#userList" ).hide();
-					$("#userArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#user').hide();
 				}
 				
 				//organism
-				$('#orgCount').html("Organisms: " + orgCounter);
-				$('#orgList').html(orgList);
-				if(orgCounter <= 10) {
-					$( "#orgList" ).show();
-					//$( "#orgArrow" ).find('img').toggle();
-					$( "#orgArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(orgCounter > 0) {
+					$('#organism').show();
+					$('#orgCount').html("Organisms: " + orgCounter);
+					$('#orgList').html(orgList);
+					if(orgCounter <= 10) {
+						$( "#orgList" ).show();
+						//$( "#orgArrow" ).find('img').toggle();
+						$( "#orgArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#orgList" ).hide();
+						$("#orgArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#orgList" ).hide();
-					$("#orgArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#organism').hide();
 				}
 				
 				//genome
-				$('#genCount').html("Genomes: " + genCounter);
-				$('#genList').html(genList);
-				if(genCounter <= 10) {
-					$( "#genList" ).show();
-					//$( "#genArrow" ).find('img').toggle();
-					$( "#genArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(genCounter > 0) {
+					$('#genome').show();
+					$('#genCount').html("Genomes: " + genCounter);
+					$('#genList').html(genList);
+					if(genCounter <= 10) {
+						$( "#genList" ).show();
+						//$( "#genArrow" ).find('img').toggle();
+						$( "#genArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#genList" ).hide();
+						$("#genArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#genList" ).hide();
-					$("#genArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#genome').hide();
 				}
 				
 				//experiment
-				$('#expCount').html("Experiments: " + expCounter);
-				$('#expList').html(expList);
-				if(expCounter <= 10) {
-					$( "#expList" ).show();
-					//$( "#expArrow" ).find('img').toggle();
-					$( "#expArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(expCounter > 0) {
+					$('#experiment').show();
+					$('#expCount').html("Experiments: " + expCounter);
+					$('#expList').html(expList);
+					if(expCounter <= 10) {
+						$( "#expList" ).show();
+						//$( "#expArrow" ).find('img').toggle();
+						$( "#expArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#expList" ).hide();
+						$("#expArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#expList" ).hide();
-					$("#expArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#experiment').hide();
 				}
 				
 				//notebook
-				$('#noteCount').html("Notebooks: " + noteCounter);
-				$('#noteList').html(noteList);
-				if(noteCounter <= 10) {
-					$( "#noteList" ).show();
-					//$( "#noteArrow" ).find('img').toggle();
-					$( "#noteArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(noteCounter > 0) {
+					$('#notebook').show();
+					$('#noteCount').html("Notebooks: " + noteCounter);
+					$('#noteList').html(noteList);
+					if(noteCounter <= 10) {
+						$( "#noteList" ).show();
+						//$( "#noteArrow" ).find('img').toggle();
+						$( "#noteArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#noteList" ).hide();
+						$("#noteArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#noteList" ).hide();
-					$("#noteArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#notebook').hide();
 				}
 				
 				//user group
-				$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
-				$('#usrgroupList').html(usrgroupList);
-				if(usrgroupCounter <= 10) {
-					$( "#usrgroupList" ).show();
-					//$( "#usrGArrow" ).find('img').toggle();
-					$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+				if(usrgroupCounter > 0) {
+					$('#user_group').show();
+					$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
+					$('#usrgroupList').html(usrgroupList);
+					if(usrgroupCounter <= 10) {
+						$( "#usrgroupList" ).show();
+						//$( "#usrGArrow" ).find('img').toggle();
+						$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#usrgroupList" ).hide();
+						$("#usrGArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#usrgroupList" ).hide();
-					$("#usrGArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#user_group').hide();
 				}
 				
 				$("#loading_gears").hide();
