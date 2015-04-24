@@ -680,7 +680,7 @@ function export_gff() {
     });
 }
 
-function export_tbl() {
+function export_to_irods(file_description, fname, data) {
     // Prevent concurrent executions
     if ( $("#export_dialog").dialog( "isOpen" ) )
         return;
@@ -703,15 +703,16 @@ function export_tbl() {
             .html(irods_home_path);
 
     $('#export_log').html(
-        "<br>Copying this genomes's TBL file to <br><br>"
+        "<br>Copying " + file_description + " to <br><br>"
     ).append(link);
 
+    if (!data)
+    	data = {};
+    data.fname = fname;
+    data.gid = genome_id;
     $.ajax({
         dataType: "json",
-        data: {
-            fname: "export_tbl",
-            gid: genome_id
-        },
+        data: data,
         success: function(json) {
             $('#export_log').append('<br><br>File: ' + json.file);
 
@@ -724,88 +725,29 @@ function export_tbl() {
     });
 }
 
-function export_bed() {
-    // Prevent concurrent executions
-    if ( $("#export_dialog").dialog( "isOpen" ) )
-        return;
-
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
-
-    // RESET DIALOG
-    reset_dialog();
-
-    // Open status dialog right away
-    $('#export_dialog')
-        .unbind()
-        .dialog('open');
-
-    var link = $("<a></a>")
-            .addClass("bold")
-            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
-            .html(irods_home_path);
-
-    $('#export_log').html(
-        "<br>Generating/copying this genomes's BED file to <br><br>"
-    ).append(link);
-
-    $.ajax({
-        dataType: "json",
-        data: {
-            fname: "export_bed",
-            gid: genome_id
-        },
-        success: function(json) {
-            if (json.error) {
-                show_error();
-            } else {
-                $('#export_log').append('<br><br>File: ' + json.file);
-                show_success();
-            }
-        }
-    });
+function export_tbl() {
+	export_to_irods("this genomes's TBL file", "export_tbl");
 }
 
-function export_fasta_irods() {
-    // Prevent concurrent executions
-    if ( $("#export_dialog").dialog( "isOpen" ) )
-        return;
+function export_bed() {
+	export_to_irods("this genomes's BED file", "export_bed");
+}
 
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
+function export_fasta() {
+	export_to_irods("this genomes's FASTA file", "export_fasta");
+}
 
-    // RESET DIALOG
-    reset_dialog();
-
-    // Open status dialog right away
-    $('#export_dialog')
-        .unbind()
-        .dialog('open');
-
-    var link = $("<a></a>")
-            .addClass("bold")
-            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
-            .html(irods_home_path);
-
-    $('#export_log').html(
-            "<br>Copying this genomes's FASTA file to <br><br>"
-    ).append(link);
-
+function export_fasta_chr(chr) {
     $.ajax({
         data: {
-            fname: 'export_fasta_irods',
-            gid: genome_id
+            jquery_ajax: 1,
+            fname: 'cache_chr_fasta',
+            gid: genome_id,
+            chr: chr
         },
-        success : function(filename) {
-            if (filename) {  // finished successfully
-                show_success();
-                $('#export_log').append('<br><br>File: ' + filename);
-            }
-            else { // error occurred
-                show_error();
-            }
+        success: function(data) {
+        	var obj = jQuery.parseJSON(data);
+        	export_to_irods("this chromosome's FASTA file", "export_fasta_chr", { chr: chr, file: obj.file });
         }
     });
 }
@@ -1316,7 +1258,7 @@ function get_experiments(e) {
                 <tr>
                     <td class='title5'>iPlant Data Store:</td>
                     <td class='data5'>
-                        <span class='link' ondblclick="export_fasta_irods()" onclick="export_fasta_irods()">Fasta Sequences</span>
+                        <span class='link' ondblclick="export_fasta()" onclick="export_fasta()">Fasta Sequences</span>
                         &nbsp|
                         <span class='link' ondblclick="export_gff()" onclick="export_gff()">Export GFF</span>&nbsp|
                         <span class='link' ondblclick="export_tbl()" onclick="export_tbl()">Export TBL</span>&nbsp|

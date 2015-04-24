@@ -78,12 +78,12 @@ sub gen_body {
 
 	#print STDERR "BODY\n";
 	# Hide this page if the user is not an Admin
-	unless ( $USER->is_admin ) {
-		my $template =
-		  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
-		$template->param( ADMIN_ONLY => 1 );
-		return $template->output;
-	}
+	#unless ( $USER->is_admin ) {
+	#	my $template =
+	#	  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+	#	$template->param( ADMIN_ONLY => 1 );
+	#	return $template->output;
+	#}
 
 	my $template =
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
@@ -846,15 +846,6 @@ sub get_group_dialog {
     my $item_id;
     my $item_type;
 
-    ######
-    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    #my $print_thing = get_roles($lowest_role->name);
-    #print $fh "$print_thing\n";
-    #print $fh Dumper(\@items);
-    #close $fh;
-    #print "done\n";
-
     my ( %users, %roles, %creators, %owners, $lowest_role );
     foreach (@items) {
         ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
@@ -1189,9 +1180,16 @@ sub change_group_role {
 
 #Jobs tab
 sub get_jobs_for_user {
-	#print STDERR "Get jobs called\n";
+	######
+    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    #my $print_thing = get_roles($lowest_role->name);
+    #print $fh "Get Jobs called\n";
+    #print $fh "$size\n";
+    #close $fh;
+    #print $fh Dumper(\@items);
+    
     my @entries;
-
     if ( $USER->is_admin ) {
         @entries = $coge->resultset('Log')->search(
             #{ description => { 'not like' => 'page access' } },
@@ -1217,8 +1215,6 @@ sub get_jobs_for_user {
 
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
     my @workflows = map { $_->workflow_id } @entries;
-    
-    #print STDERR Dumper(\@workflows);
     
     my $workflows = $JEX->find_workflows(@workflows);
 
@@ -1253,7 +1249,7 @@ sub get_jobs_for_user {
 
         # A log entry must correspond to a workflow
         next unless $entry;
-
+        
         push @job_items, {
             id => int($index++),
             workflow_id => $_->workflow_id,
@@ -1263,7 +1259,6 @@ sub get_jobs_for_user {
             %{$entry}
         };
     }
-
     my @filtered;
 
     # Filter repeated entries
