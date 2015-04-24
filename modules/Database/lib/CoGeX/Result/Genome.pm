@@ -897,6 +897,7 @@ sub gff {
     my $print   = $opts{print};
     my $annos   = $opts{annos};
     my $cds     = $opts{cds};       #only print CDS gene features
+    my $chr		= $opts{chr}; #optional, set to only include features on a particular chromosome
     my $unique_parent_annotations =
       $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
     my $id_type =
@@ -933,7 +934,8 @@ sub gff {
             cds                       => $cds,
             name_unique               => $name_unique,
             id_type                   => $id_type,
-            unique_parent_annotations => $unique_parent_annotations
+            unique_parent_annotations => $unique_parent_annotations,
+            chr						  => $chr
         );
         $output .= $tmp;
     }

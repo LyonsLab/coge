@@ -63,7 +63,7 @@
 	
 		    <div id="masterTable" style="position:relative;left:20px;padding-top:10px;padding-bottom:10px;" class="hidden result">
 		
-				<div style="padding-top:10px;">
+				<div id="organism" class= "hidden" style="padding-top:10px;">
 				<span id='orgCount' class='coge-table-header' style='color:119911;'></span>
 					<div id="orgArrow" onclick="toggle_arrow('#orgArrow');show_table('#orgList')" style='display:inline;'>
 						<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -71,7 +71,7 @@
 				<table cellspacing="5" class="hidden" id='orgList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 				</div>
 			
-				<div style="padding-top:10px;">
+				<div id="genome" class= "hidden" style="padding-top:10px;">
 				<span id='genCount' class='coge-table-header' style='color:119911;'></span>
 					<div id="genArrow" onclick="toggle_arrow('#genArrow');show_table('#genList')" style='display:inline;'>
 			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -79,7 +79,7 @@
 				<table cellspacing="5" class="hidden" id='genList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 				</div>
 			
-				<div style="padding-top:10px;">
+				<div id="user" class= "hidden" style="padding-top:10px;">
 				<span id='userCount' class='coge-table-header' style='color:119911;'></span>
 					<div id="userArrow" onclick="toggle_arrow('#userArrow');show_table('#userList')" style='display:inline;'>
 			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -87,7 +87,7 @@
 				<table cellspacing="5" class="hidden" id='userList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 				</div>
 			
-				<div style="padding-top:10px;">
+				<div id="user_group" class= "hidden" style="padding-top:10px;">
 				<span id='usrgroupCount' class='coge-table-header' style='color:119911;'></span>
 					<div id="usrGArrow" onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')" style='display:inline;'>
 			    	                <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -95,7 +95,7 @@
 				<table cellspacing="5" class="hidden" id='usrgroupList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 				</div>
 			
-				<div style="padding-top:10px;">
+				<div id="notebook" class= "hidden" style="padding-top:10px;">
 				<span id='noteCount' class='coge-table-header' style='color:119911;'></span>
 					<div id="noteArrow" onclick="toggle_arrow('#noteArrow');show_table('#noteList')" style='display:inline;'>
 			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -103,7 +103,7 @@
 				<table cellspacing="5" class="hidden" id='noteList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 				</div>
 			
-				<div style="padding-top:10px;">
+				<div id="experiment" class= "hidden" style="padding-top:10px;">
 				<span id='expCount' class='coge-table-header' style='color:119911;'></span>
 					<div id="expArrow" onclick="toggle_arrow('#expArrow');show_table('#expList')" style='display:inline;'>
 			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -143,13 +143,10 @@
 		</div>
 		
 		<div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
-		
-		
-	
-		<!--<p>Proin elit arcu, rutrum commodo, vehicula tempus, commodo a, risus. Curabitur nec arcu. Donec sollicitudin mi sit amet mauris. Nam elementum quam ullamcorper ante. Etiam aliquet massa et lorem. Mauris dapibus lacus auctor risus. Aenean tempor ullamcorper leo. Vivamus sed magna quis ligula eleifend adipiscing. Duis orci. Aliquam sodales tortor vitae ipsum. Aliquam nulla. Duis aliquam molestie erat. Ut et mauris vel pede varius sollicitudin. Sed ut dolor nec orci tincidunt interdum. Phasellus ipsum. Nunc tristique tempus lectus.</p>-->
+		<div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
 	</div>
 	<div id="tabs-2">
-		<div class="small" style="padding-top:15px;padding-bottom:10px;height:27px;">
+		<div class="small" style="padding-top:15px;height:27px;">
 			Filter:
 			<input type="text" id="search_bar">
 		 	<select id="search_type">
@@ -159,7 +156,11 @@
 		 	<span id='filter_count' style="margin-left:20px;"></span>
 		 	<img id='filter_busy' src="picts/ajax-loader.gif" />
 		</div>
-	
+		<div style="padding-bottom:10px;">
+			<input type="checkbox" id="update_checkbox" checked>
+			<span> Auto-Update</span>
+		</div>
+			
 		<span id="test" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel selected jobs</span>
 		<span class="ui-button ui-button-go ui-corner-all" onclick="restart_job()">Restart selected jobs</span>
 	
@@ -294,6 +295,78 @@ $(function(){
 			</span>
 		</TMPL_IF>
 	</div>
+</div>
+</TMPL_IF>
+
+<TMPL_IF NAME='GROUP_DIALOG'>
+<script>
+$(function(){
+	$("#group_input")
+		.autocomplete({
+			source: [],
+			focus: function() { return false; },
+			select:
+		    	function(event, ui) {
+		    		$("#group_input")
+		    			.val( ui.item.label )
+		    			.data('select_id', ui.item.value);
+		    		return false;
+		    	},
+		});
+	$("#group_input").focus(); // why no work!?
+});
+</script>
+<div style="margin:20px;margin-left:5px;">
+	<div style="padding-bottom:10px;">
+		<span class="small" style="font-weight:bold;color:dimgray;">Group Role:</span>
+		<select id="group_role_select" onchange="change_group_role('<TMPL_VAR NAME=ITEM_ID>', '<TMPL_VAR NAME=ITEM_TYPE>');"><TMPL_VAR NAME="ROLES"></select>
+	</div>
+	<br>
+	<span class="small" style="font-weight:bold;color:dimgray;">Group Members</span>
+	<div class="small" style="overflow:auto;max-height:120px;padding-left:30px;padding-bottom:10px;border-top:1px solid lightgray;">
+		<div style="padding-top:10px;">
+			<TMPL_LOOP NAME="USER_LOOP">
+				<div>
+					<img src="picts/user-icon.png" width="11" height="11"/>
+					<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) <TMPL_VAR NAME="USER_ROLE"><span>
+					<TMPL_IF NAME="USER_DELETE">
+						<span onClick="$(this.parentNode).fadeOut('slow'); remove_user_from_group('<TMPL_VAR NAME=USER_ITEM>', '<TMPL_VAR NAME=ITEM_ID>', '<TMPL_VAR NAME=ITEM_TYPE>');" class="link ui-icon ui-icon-close"></span>
+					</TMPL_IF>
+					<br>
+				</div>
+			</TMPL_LOOP>
+			<TMPL_IF NAME="ACCESS_MSG">
+				<div style="color:dimgray;font-style:italic;">
+					<TMPL_VAR NAME="ACCESS_MSG">
+				</div>
+			</TMPL_IF>
+		</div>
+	</div>
+	<br>
+	<span class="small" style="font-weight:bold;color:dimgray;">Add Member</span>
+	<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
+		<TMPL_IF NAME="IS_EDITABLE">
+			<span style="color:dimgray">Enter names or groups:</span><br>
+			<input id="group_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_group, this.value);" />
+			<span href="javascript:void(0)" onClick="add_users_to_group('<TMPL_VAR NAME=ITEM_ID>', '<TMPL_VAR NAME=ITEM_TYPE>');" class='ui-button ui-corner-all coge-button'>Add</span>
+		<TMPL_ELSE>
+			<span style="color:dimgray">
+				You don't have permission to modify this group.
+			</span>
+		</TMPL_IF>
+	</div>
+	<!--<br>
+	<span href="javascript:void(0)" onClick="$('#group_dialog').dialog('close');" class='ui-button ui-corner-all'>Done</span>-->
+</div>
+</TMPL_IF>
+
+<TMPL_IF NAME='ERROR_DIALOG'>
+<div class="small" align='center'>
+	<br>
+	<TMPL_VAR NAME='ERROR_MESSAGE'>
+	<br>
+	<br>
+	<span style="font-size:.75em;" class='ui-button ui-corner-all coge-button' onClick="$(this.parentNode.parentNode).dialog('close');">&nbsp&nbsp;OK&nbsp&nbsp;</span>
 </div>
 </TMPL_IF>
 

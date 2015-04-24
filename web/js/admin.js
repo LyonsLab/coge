@@ -1,4 +1,8 @@
 var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common location
+var timestamps = new Array();
+var timers = new Array();
+var previous_search = ""; //indicates the previous search term, used to refresh after a delete
+var updating = true;
 
 $(function () {
 	// Configure dialogs
@@ -13,6 +17,9 @@ $(function () {
     });
     $("#show_select,#search_type").change(function(e) {
         update_filter();
+    });
+    $("#update_checkbox").change(function(e) {
+    	toggle_updater();
     });
     
     //Initialize Jobs tab
@@ -87,24 +94,9 @@ $(function () {
 
     window.jobs = new coge.Grid('#jobs', options, columns);
     jobs.grid.registerPlugin(checkbox);
-    $.ajax({
-        dataType: 'json',
-        data: {
-            jquery_ajax: 1,
-            fname: 'get_jobs',
-            time_range: 0,
-        },
-        success: function(data) {
-            jobs.load(data.jobs);
-            entries = data.length;
-            $("#filter_busy").hide();
-        }
-    });
+    get_jobs();
+    document.getElementById("search_bar").value = "running";
 });
-
-var timestamps = new Array();
-
-var previous_search = ""; //indicates the previous search term, used to refresh after a delete
 
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
@@ -226,75 +218,105 @@ function search_stuff (search_term) {
 				$(".result").fadeIn( 'fast');
 				
 				//user
-				$('#userCount').html("Users: " + userCounter);
-				$('#userList').html(userList);
-				if(userCounter <= 10) {
-					$( "#userList" ).show();
-					//$( "#userArrow" ).find('img').toggle();
-					$("#userArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+				if(userCounter > 0) {
+					$('#user').show();
+					$('#userCount').html("Users: " + userCounter);
+					$('#userList').html(userList);
+					if(userCounter <= 10) {
+						$( "#userList" ).show();
+						//$( "#userArrow" ).find('img').toggle();
+						$("#userArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#userList" ).hide();
+						$("#userArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#userList" ).hide();
-					$("#userArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#user').hide();
 				}
 				
 				//organism
-				$('#orgCount').html("Organisms: " + orgCounter);
-				$('#orgList').html(orgList);
-				if(orgCounter <= 10) {
-					$( "#orgList" ).show();
-					//$( "#orgArrow" ).find('img').toggle();
-					$( "#orgArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(orgCounter > 0) {
+					$('#organism').show();
+					$('#orgCount').html("Organisms: " + orgCounter);
+					$('#orgList').html(orgList);
+					if(orgCounter <= 10) {
+						$( "#orgList" ).show();
+						//$( "#orgArrow" ).find('img').toggle();
+						$( "#orgArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#orgList" ).hide();
+						$("#orgArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#orgList" ).hide();
-					$("#orgArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#organism').hide();
 				}
 				
 				//genome
-				$('#genCount').html("Genomes: " + genCounter);
-				$('#genList').html(genList);
-				if(genCounter <= 10) {
-					$( "#genList" ).show();
-					//$( "#genArrow" ).find('img').toggle();
-					$( "#genArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(genCounter > 0) {
+					$('#genome').show();
+					$('#genCount').html("Genomes: " + genCounter);
+					$('#genList').html(genList);
+					if(genCounter <= 10) {
+						$( "#genList" ).show();
+						//$( "#genArrow" ).find('img').toggle();
+						$( "#genArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#genList" ).hide();
+						$("#genArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#genList" ).hide();
-					$("#genArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#genome').hide();
 				}
 				
 				//experiment
-				$('#expCount').html("Experiments: " + expCounter);
-				$('#expList').html(expList);
-				if(expCounter <= 10) {
-					$( "#expList" ).show();
-					//$( "#expArrow" ).find('img').toggle();
-					$( "#expArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(expCounter > 0) {
+					$('#experiment').show();
+					$('#expCount').html("Experiments: " + expCounter);
+					$('#expList').html(expList);
+					if(expCounter <= 10) {
+						$( "#expList" ).show();
+						//$( "#expArrow" ).find('img').toggle();
+						$( "#expArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#expList" ).hide();
+						$("#expArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#expList" ).hide();
-					$("#expArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#experiment').hide();
 				}
 				
 				//notebook
-				$('#noteCount').html("Notebooks: " + noteCounter);
-				$('#noteList').html(noteList);
-				if(noteCounter <= 10) {
-					$( "#noteList" ).show();
-					//$( "#noteArrow" ).find('img').toggle();
-					$( "#noteArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(noteCounter > 0) {
+					$('#notebook').show();
+					$('#noteCount').html("Notebooks: " + noteCounter);
+					$('#noteList').html(noteList);
+					if(noteCounter <= 10) {
+						$( "#noteList" ).show();
+						//$( "#noteArrow" ).find('img').toggle();
+						$( "#noteArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#noteList" ).hide();
+						$("#noteArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#noteList" ).hide();
-					$("#noteArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#notebook').hide();
 				}
 				
 				//user group
-				$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
-				$('#usrgroupList').html(usrgroupList);
-				if(usrgroupCounter <= 10) {
-					$( "#usrgroupList" ).show();
-					//$( "#usrGArrow" ).find('img').toggle();
-					$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+				if(usrgroupCounter > 0) {
+					$('#user_group').show();
+					$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
+					$('#usrgroupList').html(usrgroupList);
+					if(usrgroupCounter <= 10) {
+						$( "#usrgroupList" ).show();
+						//$( "#usrGArrow" ).find('img').toggle();
+						$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#usrgroupList" ).hide();
+						$("#usrGArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#usrgroupList" ).hide();
-					$("#usrGArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#user_group').hide();
 				}
 				
 				$("#loading_gears").hide();
@@ -547,7 +569,13 @@ function user_info(userID, search_type) {
         		} else {
         			nameBlock = nameBlock + "<img src='picts/group-icon.png' width='15' height='15'><span> ";
         		}
-        		nameBlock = nameBlock + obj.items[i].user + " (ID: " + obj.items[i].user_id + "):</span></div>";
+        		nameBlock = nameBlock + obj.items[i].user + " (ID: " + obj.items[i].user_id + "): </span>";
+        		
+        		if (search_type =='group') {
+        			nameBlock = nameBlock + "<button onclick='group_dialog(" + obj.items[i].user_id + ", 6 )'>Edit Group</button></div>";
+        		} else {
+        			nameBlock = nameBlock + "</div>";
+        		}
 				
 
         		if (genCounter > 0) {
@@ -650,7 +678,7 @@ function search_share () {
 	var search_term = $('#share_input').attr('value');
 
 	//$("#wait_notebook").animate({opacity:1});
-	timestamps['search_share'] = new Date().getTime()
+	timestamps['search_share'] = new Date().getTime();
 
 	$.ajax({
 		data: {
@@ -668,6 +696,98 @@ function search_share () {
 		},
 	});
 }
+
+function search_group () { // FIXME dup of above routine but for group dialog
+	var search_term = $('#group_input').attr('value');
+
+	timestamps['search_group'] = new Date().getTime();
+	$.ajax({
+		data: {
+			fname: 'search_share',
+			search_term: search_term,
+			timestamp: timestamps['search_group']
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.timestamp == timestamps['search_group'] && obj.items) {
+				$("#group_input").autocomplete({source: obj.items}).autocomplete("search");
+			}
+		},
+	});
+}
+
+function group_dialog(id, type) {
+	var item_list = "content_" + id + "_" + type;
+	$.ajax({
+		data: {
+			fname: 'get_group_dialog',
+			item_list: item_list,
+		},
+		success : function(data) {
+			$('#group_dialog').html(data).dialog({width:500}).dialog('open');
+		}
+	});
+}
+
+function change_group_role(id, type) {
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	var role_id = $('#group_role_select').val();
+	if (role_id && selected.length) {
+		var target_items = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'change_group_role',
+				target_items: target_items,
+				role_id: role_id,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
+function add_users_to_group(id, type) {
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	var new_item = $('#group_input').data('select_id');
+	if (new_item && selected.length) {
+		var target_items = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'add_users_to_group',
+				target_items: target_items,
+				new_item: new_item,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
+function remove_user_from_group(user_id, id, type) {
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	if (user_id && selected.length) {
+		var target_items = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'remove_user_from_group',
+				target_items: target_items,
+				user_id: user_id,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
+
 
 function modify_item (id, type, modification) {
 	$.ajax({
@@ -702,6 +822,27 @@ function wait_to_search (search_func, search_term) {
 }
 
 //The following javascript deals with Tab2, the Jobs tab
+function get_jobs() {
+	$.ajax({
+		dataType: 'json',
+	    data: {
+	        jquery_ajax: 1,
+	        fname: 'get_jobs',
+	        time_range: 0,
+	    },
+	    success: function(data) {
+	        jobs.load(data.jobs);
+	        entries = data.length;
+	        $("#filter_busy").hide();
+	        update_filter();
+	        
+	        if (updating) {
+	        	schedule_update(5000);
+	        }
+	    }
+	});
+}
+
 function update_filter() {
     jobs.dataView.setFilterArgs({
         show: $('#show_select').val(),
@@ -711,6 +852,30 @@ function update_filter() {
 
     jobs.filter();
     $('#filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
+}
+
+function toggle_updater() {
+	updating = !updating;
+	if (updating) {
+		schedule_update(5000);
+	}
+}
+
+function schedule_update(delay) {
+	console.log("Updating");
+	cancel_update();
+	
+	if (delay !== undefined) {
+		timers['update'] = window.setTimeout(
+			function() { get_jobs(); },
+			delay
+		);
+		return;
+	}	
+}
+
+function cancel_update() {
+	clearTimeout(timers['update']);
 }
 
 function cancel_job() {
