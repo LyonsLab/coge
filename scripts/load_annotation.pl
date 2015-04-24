@@ -19,7 +19,7 @@ use Benchmark;
 my $t1 = new Benchmark;
 
 my $GO          = 1;
-my $DEBUG       = 0;
+#my $DEBUG       = 0;
 my $DB_BATCH_SZ = 10 * 1000;
 use vars qw($staging_dir $result_dir $data_file
   $name $description $link $version $restricted
@@ -44,13 +44,14 @@ GetOptions(
     "allow_all_chr=i" => \$allow_all_chr # Allow non-existent chromosomes
 );
 
-# Open log file
+# Open log file for detailed feature info -- everything else goes to STDOUT for JEX
 $| = 1;
 die unless ($staging_dir);
 mkpath($staging_dir); # make sure this exists
-#my $logfile = "$staging_dir/log.txt";
-#open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
-#$log->autoflush(1);
+my $logfile = "$staging_dir/load_annotation.log";
+open( my $log, ">$logfile" ) or die "Error opening log file $logfile";
+$log->autoflush(1);
+
 print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Prevent loading again (issue #417)
@@ -314,7 +315,7 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
           if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
 
         foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$chr_loc}{$name} } ) {
-	        print STDOUT "\n" if $DEBUG;
+	        print $log "\n" if $log;
 
             my ($start, $stop, $strand, $chr);
             my $loc = $data{$chr_loc}{$name}{$feat_type}{loc};
@@ -337,11 +338,11 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
               if $GO && !$feat_types{$feat_type};
             my $feat_type_obj = $feat_types{$feat_type};
 
-            print STDOUT "Creating feature of type $feat_type\n" if $DEBUG;
+            print $log "Creating feature of type $feat_type\n" if $log;
 
             # mdb added check 4/8/14 issue 358
             unless (defined $start and defined $stop and defined $chr) {
-                print STDOUT "warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n" if $DEBUG;
+                print $log "warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n" if $log;
                 #print STDOUT Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
                 next; #exit(-1);
             }
@@ -369,7 +370,7 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
                 next if $feat_type eq "gene" && $loc_count > 1; #only use the first one as this will be the full length of the gene.  Stupid hack
                 next if $seen_locs{$start}{$stop};
                 $seen_locs{$start}{$stop} = 1;
-                print STDOUT "Adding location $chr:(" . $start . "-" . $stop . ", $strand)\n" if $DEBUG;
+                print $log "Adding location $chr:(" . $start . "-" . $stop . ", $strand)\n" if $log;
                 $loaded_annot++;
                 batch_add(
                     \@loc_buffer,
@@ -393,9 +394,9 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
                 }
                 my $master = 0;
                 $master = 1 if $tmp eq $name;
-                print STDOUT "Adding name $tmp to feature ", $featid,
+                print $log "Adding name $tmp to feature ", $featid,
                   ( $master ? " (MASTER)" : '' ), "\n"
-                  if $DEBUG;
+                  if $log;
 
                 batch_add(
                     \@name_buffer,
@@ -423,7 +424,7 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
                         
                         # Add feature annotation to DB
                         my $link = $annos{$tmp}{$anno}{link};
-                        print STDOUT "Adding annotation ($type_name): $anno\n" . ( $link ? "\tlink: $link" : '' ) . "\n" if $DEBUG;
+                        print $log "Adding annotation ($type_name): $anno\n" . ( $link ? "\tlink: $link" : '' ) . "\n" if $log;
                         batch_add(
                             \@anno_buffer,
                             'feature_annotation',

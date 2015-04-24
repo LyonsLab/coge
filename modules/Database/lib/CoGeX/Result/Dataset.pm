@@ -794,6 +794,7 @@ sub gff {
     my $unique_parent_annotations = $opts{unique_parent_annotations}; #flag so that annotations are not propogated to children if they are contained by their parent
     my $id_type  = $opts{id_type};  #type of ID (name, num):  unique number; unique name
     my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
+    my $chromosome = $opts{chr}; #optional, set to only include features on a particular chromosome
     $id_type = "name" unless defined $id_type;
     $count = 0 unless ($count && $count =~ /^\d+$/);
     $ds = $self unless $ds;
@@ -806,11 +807,16 @@ sub gff {
     my $output; # store the goodies
 
     # Generate GFF header
+    my @chrs;
     my %chrs;
     foreach my $chr ( $ds->get_chromosomes ) {
         $chrs{$chr} = $ds->last_chromosome_position($chr);
     }
-    my @chrs = sort { $a cmp $b } keys %chrs;
+    if ($chromosome) {
+    	@chrs = ($chromosome);
+    } else {
+	    @chrs = sort { $a cmp $b } keys %chrs;
+    }
 
     my $tmp;
     $tmp = "##gff-version\t3\n" unless $no_gff_head;
