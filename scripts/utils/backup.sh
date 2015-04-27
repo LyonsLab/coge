@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Weekly cron job to backup to iRODS location
+# Weekly cron job to backup to IRODS location
 # Backed-up:
 #    MySQL databases:
 #       coge
@@ -21,7 +21,7 @@ LOCAL=/storage/coge/backup
 REMOTE=backup
 
 #
-# Dump databases and copy to remote iRODS location
+# Dump databases and copy to remote IRODS location
 #
 LOCAL_MYSQL=$LOCAL/mysql_$VERSION
 mkdir -p $LOCAL_MYSQL
@@ -29,7 +29,7 @@ echo `date` "Dumping MySQL databases"
 mysqldump -u root -p321coge123 wikidb -c | gzip -9 > $LOCAL_MYSQL/wikidb.sql.gz
 mysqlhotcopy -u root -p 321coge123 cogelinks $LOCAL_MYSQL
 mysqlhotcopy --port=3307 -u root -p 321coge123 coge $LOCAL_MYSQL
-echo `date` "Pushing MySQL databases to iRODS"
+echo `date` "Pushing MySQL databases to IRODS"
 $ICMD/iput -bfr $LOCAL_MYSQL $REMOTE
 
 #
@@ -46,18 +46,32 @@ for d in `$ICMD/ils backup | grep 'mysql_' | sed 's/.*\(mysql_.*\)/\1/'`
 do
    if [ ! -d $LOCAL/$d ];
    then
-      echo delete iRODS backup/$d
+      echo delete IRODS backup/$d
       $ICMD/irm -r backup/$d
    fi
 done
 
 #
-# Sync data directories with remote iRODS location
+# Sync data directories with remote IRODS location
 #
-echo `date` "Syncing data directories with iRODS"
+echo `date` "Syncing data directories with IRODS"
 $ICMD/icd
 $ICMD/irsync -rs /opt/apache2/cogepedia i:$REMOTE/cogepedia
 $ICMD/irsync -rs /storage/coge/data/genomic_sequence/ i:$REMOTE/genomic_sequence
 $ICMD/irsync -rs /storage/coge/data/experiments/ i:$REMOTE/experiments
+
+#
+# Sync JEX database with remote IRODS location
+#
+echo `date` "Syncing JEX db with IRODS"
+$ICMD/icd
+$ICMD/irsync -rs /opt/Yerba/workflows.db i:$REMOTE/jex
+
+#
+# Sync /etc with remote IRODS location
+#
+echo `date` "Syncing /etc with IRODS"
+$ICMD/icd
+$ICMD/irsync -rs /etc i:$REMOTE/etc
 
 echo `date` "Backup completed"
