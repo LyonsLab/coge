@@ -967,7 +967,7 @@ sub genomic_sequence {
 				print STDERR "Locations data-structure: ", Dumper \@locs;
 				print STDERR "Retrieved sequence lenght: ",
 				  CORE::length($full_seq), "\n";
-				print STDERR $full_seq, "\n";
+				#print STDERR $full_seq, "\n";
 				print STDERR "Feature object information: ",
 				  Dumper {
 					chromosome        => $chr,
