@@ -57,7 +57,7 @@ done
 echo `date` "Syncing data directories with iRODS"
 $ICMD/icd
 $ICMD/irsync -rs /opt/apache2/cogepedia i:$REMOTE/cogepedia
-$ICMD/irsync -rs /storage/coge/data/genomic_sequence/ i:backup/genomic_sequence
-$ICMD/irsync -rs /storage/coge/data/experiments/ i:backup/experiments
+$ICMD/irsync -rs /storage/coge/data/genomic_sequence/ i:$REMOTE/genomic_sequence
+$ICMD/irsync -rs /storage/coge/data/experiments/ i:$REMOTE/experiments
 
 echo `date` "Backup completed"
