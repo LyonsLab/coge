@@ -385,9 +385,19 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub length {
-	my $self   = shift;
-	my $length = 0;
+	my $self = shift;
+	my $length;
+	
 	map { $length += ( $_->stop - $_->start + 1 ) } $self->locations;
+	
+    unless (defined $length) { # mdb added 4/20/15 COGE-610 for cases where there are no locations
+        $length = $self->stop - $self->start + 1;
+	}
+	
+	if ($length < 0) {
+        print STDERR "Feature::length ERROR, invalid length $length for feature id ", $self->id, "\n";
+    }
+	
 	return $length;
 }
 
