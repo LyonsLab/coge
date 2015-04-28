@@ -887,9 +887,9 @@ sub get_chr_list {
 	my @chromosomes = $genome->get_chromosomes();
 	for (@chromosomes) {
 		$html .= "<tr><td>" . $_ . "</td>";
-		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){download_chromosome_sequence('". $_ . "')},function(){export_fasta_chr('". $_ . "')})\">Fasta Sequences</td>";
+		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){download_chromosome_sequence('". $_ . "')},function(){export_fasta_chr('". $_ . "')})\">FASTA</td>";
 		$html .= "<td>|</td>";
-		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){get_gff('". $_ . "')})\">Export GFF</td></tr>";
+		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){get_gff('". $_ . "')},function(){export_gff('". $_ . "')})\">GFF</td></tr>";
 	}
 	$html .= "</tbody></table>";
 	return $html;

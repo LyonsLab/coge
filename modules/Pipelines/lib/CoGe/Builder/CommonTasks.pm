@@ -178,11 +178,9 @@ sub generate_gff {
         annos   => 0,
         id_type => 0,
         cds     => 0,
-        chr     => 0,
         nu      => 0,
         upa     => 0,
     );
-
     @args{(keys %inputs)} = (values %inputs);
 
     # Check for a genome or dataset id
@@ -203,7 +201,6 @@ sub generate_gff {
     $filename =~ s/\)|\(/_/g;
     my $path = get_download_path($CONF->{SECTEMPDIR}, $args{gid});
     my $output_file = catfile($path, $filename);
-
     return $output_file, (
         cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
         args    => [
