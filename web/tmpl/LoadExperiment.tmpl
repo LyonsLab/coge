@@ -502,9 +502,8 @@ $(document).ready(function() {
     	coge.progress.update(WORKFLOW_ID);
     }
 
-	if (!$.cookie('splash_dont_show_again')) {
-		$('#splash_dialog').dialog({modal:true});
-		$('#splash_dialog').dialog('open');
+	if (!$.cookie('splash_dont_show_again') && !WORKFLOW_ID) {
+		$('#splash_dialog').dialog({modal:true}).dialog('open');
 	}
 	
     wizard = initialize_wizard({ 
