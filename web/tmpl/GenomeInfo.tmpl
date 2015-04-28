@@ -519,7 +519,8 @@ function get_gff($chr) {
                 cds: cds,
                 annos: annos,
                 nu: nu,
-                upa: upa
+                upa: upa,
+                chr: $chr
             },
             success: function(json) {
                 if (json.error) {
@@ -617,7 +618,7 @@ function reset_dialog() {
     $('#export_loading_msg').show();
 }
 
-function export_gff() {
+function export_gff(chr) {
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
     $('#gff_submit').unbind().click(function() {
 
@@ -666,7 +667,8 @@ function export_gff() {
                 cds: cds,
                 annos: annos,
                 nu: nu,
-                upa: upa
+                upa: upa,
+                chr: chr
             },
             success: function(json) {
                 $('#export_log').append('<br><br>File: ' + json.file);
