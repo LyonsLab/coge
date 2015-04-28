@@ -36,6 +36,7 @@ GetOptions(
 );
 
 $| = 1;
+print STDERR "in script \n";
 #open (my $logh, ">", $logfile) or die "Error opening log file";
 $staging_dir //= "."; #/
 $filename = unescape($filename) if $filename;
@@ -82,6 +83,8 @@ $item = $coge->resultset('Genome')->find($id);
 $org = $item->organism->name . "id";
 
 open(my $fh, ">", $file_temp) or die "Error creating gff file";
+
+print STDERR "chr: $chr\n";
 
 print $fh $item->gff(
     print                     => 0,
