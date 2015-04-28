@@ -483,11 +483,12 @@ sub batch_add {
         if ( @$buffer >= $DB_BATCH_SZ or not defined $item ) {
             print STDOUT "Populate $table_name " . @$buffer . "\n";
             my $startTime = time;
-            #$coge->resultset($table_name)->populate($buffer) if (@$buffer); # mdb removed 1/7/14 -- defaulting to single-insert due to missing primary key value, see http://search.cpan.org/~ribasushi/DBIx-Class-0.082810/lib/DBIx/Class/ResultSet.pm#populate
+#            $coge->resultset($table_name)->populate($buffer) if (@$buffer); # mdb removed 1/7/14 -- defaulting to single-insert due to missing primary key value, see http://search.cpan.org/~ribasushi/DBIx-Class-0.082810/lib/DBIx/Class/ResultSet.pm#populate
             my $dbh = $coge->storage->dbh;
             my @columns = keys %{$buffer->[0]};
-            my $stmt = "INSERT $table_name ( " . join(',', @columns) . " ) VALUES " .
-                join(',', map { '(' . join(',', map { $dbh->quote($_) } values %$_) . ')' } @$buffer) . ';';
+            my $stmt = "INSERT $table_name ( " . join(',', @columns) . " ) VALUES " . # TODO use prepared statement
+                join(',', map { '(' . join(',', map { $dbh->quote($_) } @{$_}{@columns}) . ')' } @$buffer) . ';'; # mdb changed 4/28/15 -- fix ordering of values
+#            print $log $stmt, "\n";
             unless ($dbh->do($stmt)) {
                 print STDOUT "log: error: database batch insertion for table '$table_name' failed: $stmt\n";
                 exit(-1);
