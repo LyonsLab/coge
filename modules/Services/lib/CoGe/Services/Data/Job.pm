@@ -63,7 +63,7 @@ sub add {
         # Get tiny URL
         my ($page, $link);
         if ($payload->{requester}) { # request is from web page - external API requests will not have a 'requester' field
-            my $page = $payload->{requester}->{page};
+            $page = $payload->{requester}->{page};
             if ($page) { 
                 $page = $payload->{requester}->{page};
                 $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
