@@ -832,11 +832,12 @@ function get_jobs() {
 	    },
 	    success: function(data) {
 	        jobs.load(data.jobs);
-	        entries = data.length;
+	        entries = data.jobs.length;
 	        $("#filter_busy").hide();
 	        update_filter();
-	        
-	        if (updating) {
+	    },
+	    complete: function(data) {
+	    	if (updating) {
 	        	schedule_update(5000);
 	        }
 	    }
