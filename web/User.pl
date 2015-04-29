@@ -1449,7 +1449,7 @@ sub get_jobs {
     
     # Add status info from job engine for currently active jobs
     my @workflow_ids = map { $_->workflow_id } @entries;
-    my $workflows = $JEX->find_workflows(@workflow_ids);
+    my $workflows = $JEX->find_workflows(\@workflow_ids);
     my %workflowsByID;
     foreach (@{$workflows}) {
         my($id, undef, $submitted, $completed, $status) = @{$_};
