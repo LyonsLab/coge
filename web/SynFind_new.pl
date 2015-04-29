@@ -1,4 +1,5 @@
 #! /usr/bin/perl -w
+
 use v5.10;
 use strict;
 use CoGeX;
@@ -330,12 +331,10 @@ sub get_orgs { #FIXME: dup'ed in CoGeBlast.pl
 }
 
 sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
-    #my $t1    = new Benchmark;
     my %opts  = @_;
     my $oid   = $opts{oid};
     my $dsgid = $opts{dsgid};
 
-   #print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
 
     my @genomes;
     foreach my $dsg (
@@ -352,19 +351,19 @@ sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
         #added by EHL 12/30/2014
         next if $dsg->deleted; #skip deleted genomes
         ######	
-        $dsgid = $dsg->id unless $dsgid;
-        my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
+	my $name;
+        my $has_cds = has_cds( $dsg->id );
+        $name .= " NO CDS ANNOTATIONS.  CAN'T BE USED: " unless $has_cds;
 
- #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
- #$name .= ", ";
- #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+        $dsgid = $dsg->id unless $dsgid;
+
 	$name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
           . $dsg->type->name . " "
           . commify( $dsg->length ) . "nt";
-
+        $name .= " (Source: ".join( ", ", map { $_->name } $dsg->source ).")";
         push @genomes, [ $dsg->id, $name ];
     }
     my $size = scalar @genomes;
@@ -373,19 +372,14 @@ sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
     my $dsg_menu = '';
     if (@genomes) {
 
-#$dsg_menu .= 'Genomes for Organism<br>';
-#$dsg_menu .= qq{<select multiple id='dsgid' size='$size' onclick="show_add();" ondblclick="get_dsg_for_menu(['args__dsgid','dsgid'],[add_to_list]);">};
         foreach (@genomes) {
             my ( $numt, $name ) = @$_;
             my $selected = ( $dsgid && $numt == $dsgid ? 'selected' : '' );
             $dsg_menu .= qq{<option value='$numt' $selected>$name</option>};
         }
 
-        #$dsg_menu .= '</select>';
     }
 
-    #my $t2 = new Benchmark;
-    #my $time = timestr( timediff( $t2, $t1 ) );
     return $dsg_menu;
 }
 
@@ -424,6 +418,7 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
 
     my $html;
     foreach my $dsg ( values %dsgs ) {
+        next unless has_cds( $dsg->id );    #skip if it has no CDS annotations
         my ($ds) = $dsg->datasets;
         $html .= ":::" if $html;
         my $org_name = $dsg->organism->name;
