@@ -4,7 +4,7 @@ use v5.14;
 use strict;
 use warnings;
 
-use Data::Dumper qw(Dumper);
+use File::Basename;
 
 use CoGeX;
 

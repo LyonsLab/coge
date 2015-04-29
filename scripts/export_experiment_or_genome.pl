@@ -11,7 +11,7 @@ use File::Spec;
 use Getopt::Long;
 use Data::Dumper;
 
-our ( $id, $type, $config, $workdir, $output_filename, $resdir);
+our ( $id, $type, $config, $workdir, $output_filename, $resdir, $files);
 
 GetOptions(
     "id=i"             => \$id,       # exeriment/genome id
@@ -83,7 +83,7 @@ my @annotations = $sourceObj->annotations;
 
 unless (-r $archive and -r "$archive.finished") {
     my @file_list = export_annotations( annotations => \@annotations, export_path => $workdir );
-    push @files_list, split(',', $files);
+    push @file_list, split(',', $files);
     copy_readme();
     my $info = export_info( $sourceObj->info_file );
 
