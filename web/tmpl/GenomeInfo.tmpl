@@ -181,17 +181,30 @@ function download_chromosome_sequence(chr) {
     });
 }
 
-function export_location_dialog (download,irods) {
-    $('#export_location').dialog({
-        autoOpen: true,
-        position: {
-           my: "center",
-           at: "top",
-           of: $(".box")
-        }
-    });
-    $('#export_location_download').unbind().click(function(){download();$('#export_location').dialog('close')});
-    $('#export_location_irods').unbind().click(function(){irods();$('#export_location').dialog('close')});
+function download_chr_file() {
+	var i = $('input[name=chr]:checked');
+	if (!i.length) {
+		alert('Please select one of the files to download first.');
+		return;
+	}
+	var id = i.attr('id');
+	if (id.substring(0,1)=='f')
+		download_chromosome_sequence(id.substring(1));
+	else
+		get_gff(id.substring(1));
+}
+
+function export_chr_file() {
+	var i = $('input[name=chr]:checked');
+	if (!i.length) {
+		alert('Please select one of the files to export first.');
+		return;
+	}
+	var id = i.attr('id');
+	if (id.substring(0,1)=='f')
+		export_fasta_chr(id.substring(1));
+	else
+		export_gff(id.substring(1));
 }
 
 function toggle_load_log() {
@@ -1186,10 +1199,6 @@ function get_experiments(e) {
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="chromosome_list" title="Chromosome List"></div>
-<div class="dialog_box hidden" id="export_location" title="Export">
-	<span id="export_location_download" class="ui-button ui-corner-all coge-button">Download</span>
-	<span id="export_location_irods" class="ui-button ui-corner-all coge-button">Send to iPlant</span>
-</div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
