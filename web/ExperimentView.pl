@@ -546,7 +546,6 @@ sub generate_export { #TODO replace with ExperimentBuilder.pm
 sub get_download_path { #TODO move into Storage.pm
     my $eid = shift;
     my $unique_path = get_unique_id();
-    my @paths = ($self->conf->{SECTEMPDIR}, 'downloads', 'experiments', $eid, $unique_path);
     return File::Spec->catdir( $P->{SECTEMPDIR}, 'downloads', 'experiments', $eid, $unique_path );
 }
 
