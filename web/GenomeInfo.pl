@@ -886,12 +886,11 @@ sub get_chr_list {
 	$html .= "<tbody>";
 	my @chromosomes = $genome->get_chromosomes();
 	for (@chromosomes) {
-		$html .= "<tr><td>" . $_ . "</td>";
-		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){download_chromosome_sequence('". $_ . "')},function(){export_fasta_chr('". $_ . "')})\">FASTA</td>";
-		$html .= "<td>|</td>";
-		$html .= "<td class=\"small link\" onclick=\"export_location_dialog(function(){get_gff('". $_ . "')},function(){export_gff('". $_ . "')})\">GFF</td></tr>";
+		$html .= "<tr><td class=\"data5\" style=\"padding-right:20px\">" . $_ . "</td>";
+		$html .= "<td class=\"data5\" style=\"padding-right:20px\"><input type=\"radio\" name=\"chr\" id=\"f" . $_ . "\" /> FASTA</td>";
+		$html .= "<td class=\"data5\"><input type=\"radio\" name=\"chr\" id=\"g" . $_ . "\" /> GFF</td></tr>";
 	}
-	$html .= "</tbody></table>";
+	$html .= "</tbody></table><span onclick=\"download_chr_file()\" class=\"ui-button ui-corner-all coge-button\">Download</span> <span onclick=\"export_chr_file()\" class=\"ui-button ui-corner-all coge-button\">Send to iPlant</span>";
 	return $html;
 }
 
