@@ -1216,7 +1216,7 @@ sub get_jobs_for_user {
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
     my @workflows = map { $_->workflow_id } @entries;
     
-    my $workflows = $JEX->find_workflows(@workflows);
+    my $workflows = $JEX->find_workflows(\@workflows);
 
     my @job_items;
     my %workflow_results;
