@@ -554,10 +554,11 @@ sub get_download_url {
     my $id = $args{id};
     my $dir = $args{dir};
     my $filename = basename($args{file});
+    my $username = $USER->user_name;
 
     return join('/', $P->{SERVER}, 
         'api/v1/legacy/download/ExperimentView', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
-        "?eid=$id&dir=$dir&file=$filename");
+        "?username=$username&eid=$id&dir=$dir&file=$filename");
 }
 
 sub get_file_urls {

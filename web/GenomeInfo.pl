@@ -2051,14 +2051,17 @@ sub get_download_url {
     my %args = @_;
     my $dsgid = $args{dsgid};
     my $filename = basename($args{file});
+    my $username = $USER->user_name;
 
     return join('/', $config->{SERVER}, 
         'api/v1/legacy/download/GenomeInfo', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
-        "?gid=$dsgid&file=$filename");
+        "?username=$username&gid=$dsgid&file=$filename");
 }
 
 sub get_download_path {
-    return catfile($config->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
+    my $gid = shift;
+    my $unique_path = get_unique_id();
+    return catfile($config->{SECTEMPDIR}, "downloads", "genomes", $gid, $unique_path);
 }
 
 sub generate_html {
