@@ -3,11 +3,12 @@ var timestamps = new Array();
 var timers = new Array();
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
 var updating = true;
+var hist_entries = 0;
 
 $(function () {
 	// Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
-    $("#search_bar").keyup(function (e) {
+    $("#job_search_bar").keyup(function (e) {
         Slick.GlobalEditorLock.cancelCurrentEdit();
 
         if (e.which == 27) { // Clear on Esc
@@ -15,7 +16,7 @@ $(function () {
         }
         update_filter();
     });
-    $("#show_select,#search_type").change(function(e) {
+    $("#show_select,#job_search_type").change(function(e) {
         update_filter();
     });
     $("#update_checkbox").change(function(e) {
@@ -57,7 +58,7 @@ $(function () {
         return true;
     };
 
-    var options = {
+    var job_options = {
         editable: true,
         enableCellNavigation: true,
         asyncEditorLoading: true,
@@ -74,7 +75,7 @@ $(function () {
         return '<a href="' + dataContext['link'] + '" target="_blank">'
         + dataContext['link'] + '</a>'
     }
-    var columns = [
+    var job_columns = [
         checkbox.getColumnDefinition(),
         {id: 'id', name: 'Id', field: 'workflow_id', maxWidth: 50, sortable: true},
         {id: 'started', name: 'Started', field: 'started', minWidth: 75,
@@ -92,10 +93,157 @@ $(function () {
             sortable: true}
     ];
 
-    window.jobs = new coge.Grid('#jobs', options, columns);
+    window.jobs = new coge.Grid('#jobs', job_options, job_columns);
     jobs.grid.registerPlugin(checkbox);
     get_jobs();
-    document.getElementById("search_bar").value = "running";
+    document.getElementById("job_search_bar").value = "running";
+    
+    
+    //Initialize History tab
+    
+    
+    var hist_filter = function(item, args) {
+    	var date_time 	= (item['date_time'] ? item['date_time'].toLowerCase() : '');
+    	var user_name 	= (item['user'] ? item['user'].toLowerCase() : '');
+    	var description = (item['description'] ? item['description'].toLowerCase() : '');
+    	var page 		= (item['page'] ? item['page'].toLowerCase() : '');
+    	var link 		= (item['link'] ? item['link'].toLowerCase() : '');
+    	var comment 	= (item['comment'] ? item['comment'].toLowerCase() : '');
+
+    	var show = 1;
+    	if (args.show != 0) {
+    		if (args.show == -1) { // Starred
+    			show = item['starred'];
+    		}
+    		else if (args.show == -2) { // Commented
+    			show = comment;
+    		}
+    		else if (args.show == -3) { // Mine
+    			show = (user_name == '<TMPL_VAR NAME="USER_NAME">');
+    		}
+    		else if (args.show > 0) { // Time Range
+    			var diff = new Date() - new Date(date_time.replace(/-/g, '/'));
+    			show = (diff <= args.show*60*60*1000);
+    		}
+    	}
+    	if (!show) {
+    		return false;
+    	}
+
+    	if (args.searchString != "") {
+    		//FIXME optimize
+    		if (args.searchType == 1) { // Contains
+    			if (date_time.indexOf(args.searchString) == -1 &&
+    				user_name.indexOf(args.searchString) == -1 &&
+    				description.indexOf(args.searchString) == -1 &&
+    				page.indexOf(args.searchString) == -1 &&
+    				link.indexOf(args.searchString) == -1 &&
+    				comment.toLowerCase().indexOf(args.searchString) == -1 )
+    			{
+    				return false;
+    			}
+    		}
+    		else { // Does not contain
+    			if (date_time.indexOf(args.searchString) != -1 ||
+    				user_name.indexOf(args.searchString) != -1 ||
+    				description.indexOf(args.searchString) != -1 ||
+    				page.indexOf(args.searchString) != -1 ||
+    				link.indexOf(args.searchString) != -1 ||
+    				comment.toLowerCase().indexOf(args.searchString) != -1 )
+    			{
+    				return false;
+    			}
+    		}
+    	}
+
+    	return true;
+    };
+    
+    var hist_options = {
+    		editable: true,
+    		enableCellNavigation: true,
+    		asyncEditorLoading: true,
+    		forceFitColumns: true,
+    		filter: hist_filter,
+            comparator: coge.ascending,
+    };
+    
+    var hist_columns = [
+               	{id: "starred", name: "", field: "starred", maxWidth: 25, cssClass: "cell-centered",
+               		formatter: function (row, cell, value, columnDef, dataContext) {
+               			if (value) {
+               				return '<img id="'+dataContext['id']+'" src="picts/star-full.png" onclick="toggle_star(this);">'
+               			}
+               			return '<img id="'+dataContext['id']+'" src="picts/star-hollow.png" onclick="toggle_star(this);">';
+               		}},
+               	{id: "date_time", name: "Date/Time", field: "date_time", minWidth: 160, maxWidth: 160, sortable: true, cssClass: "cell-centered"},
+               	{id: "user", name: "User", field: "user", minWidth: 30, maxWidth: 80, sortable: true, cssClass: "cell-normal"/*,
+               		formatter: function ( row, cell, value, columnDef, dataContext ) {
+                           return '<a target="_blank" href="User.pl?name=' + value + '">' + value + '</a>';
+                       }*/},
+               	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 100, sortable: true, cssClass: "cell-normal"},
+               	{id: "description", name: "Description", field: "description", minWidth: 100, sortable: true, cssClass: "cell-normal",
+               		formatter: function ( row, cell, value, columnDef, dataContext ) {
+                           return '<span>' + value + '</span>';
+                       }},
+               	{id: "link", name: "Link", field: "link", minWidth: 100, maxWidth: 250, cssClass: "cell-normal",
+               		formatter: function ( row, cell, value, columnDef, dataContext ) {
+                           return '<a target="_blank" href="' + value + '">' + value + '</a>';
+                       }},
+               	{id: "comment", name: "Comments (click to edit)", field: "comment", minWidth: 100, sortable: true, cssClass: "cell-normal",
+               		editor: Slick.Editors.Text, validator: requiredFieldValidator}
+               ];
+    
+    window.hist = new coge.Grid('#history', hist_options, hist_columns);
+    get_history();
+    
+    hist.grid.onCellChange.subscribe(function (e, args) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'update_comment',
+				log_id: args.item.id,
+				comment: args.item.comment
+			},
+			success: function() {
+				hist.dataView.updateItem(args.item.id, args.item);
+			}
+		});
+	});
+    
+    hist.grid.onSort.subscribe(function (e, args) {
+		sortcol = args.sortCol.field;
+		hist.dataView.sort(comparer, args.sortAsc);
+	});
+
+	// Wire up model events to drive the grid
+	hist.dataView.onRowCountChanged.subscribe(function (e, args) {
+		hist.grid.updateRowCount();
+		hist.grid.render();
+		if ($("#history").is(":not(visible)")) {
+			$("#history").slideDown();
+		}
+	});
+	hist.dataView.onRowsChanged.subscribe(function (e, args) {
+		hist.grid.invalidateRows(args.rows);
+		hist.grid.render();
+	});
+
+	// Wire up the show selector to apply the filter to the model
+	$("#hist_show_select,#hist_search_type").change(function (e) {
+		updateHistFilter();
+	});
+
+	// Wire up the search textbox to apply the filter to the model
+	$("#hist_search_input").keyup(function (e) {
+		Slick.GlobalEditorLock.cancelCurrentEdit();
+
+		if (e.which == 27) { // Clear on Esc
+			this.value = "";
+		}
+
+		updateHistFilter();
+	});
 });
 
 function search_stuff (search_term) {
@@ -831,6 +979,7 @@ function get_jobs() {
 	        time_range: 0,
 	    },
 	    success: function(data) {
+	    	//console.log(data.jobs);
 	        jobs.load(data.jobs);
 	        entries = data.jobs.length;
 	        $("#filter_busy").hide();
@@ -847,12 +996,12 @@ function get_jobs() {
 function update_filter() {
     jobs.dataView.setFilterArgs({
         show: $('#show_select').val(),
-        searchType: $('#search_type').val(),
-        searchString: $('#search_bar').val().toLowerCase()
+        searchType: $('#job_search_type').val(),
+        searchString: $('#job_search_bar').val().toLowerCase()
     });
 
     jobs.filter();
-    $('#filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
+    $('#job_filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
 }
 
 function toggle_updater() {
@@ -927,3 +1076,58 @@ function submit_task(task, predicate) {
     window.jobs.grid.setSelectedRows([]);
 }
 
+
+//The following Javascript deals with Tab3, the History page
+function get_history() {
+	$.ajax({
+		dataType: 'json',
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_history_for_user',
+			time_range: 0,
+		},
+		success : function(data) {
+			console.log(data);
+			hist.load(data);
+			hist_entries = data.length;
+			//dataView.beginUpdate();
+			//dataView.setItems(data);
+			//dataView.setFilterArgs({
+			//	show: 0,
+			//	searchType: 1,
+			//	searchString: ''
+			//});
+			//dataView.setFilter(myFilter);
+			//dataView.endUpdate();
+			updateHistFilter();
+		}
+	});
+}
+
+function requiredFieldValidator(value) {
+	return {valid: true, msg: null};
+}
+
+function updateHistFilter() {
+	hist.dataView.setFilterArgs({
+		show: $('#hist_show_select').val(),
+		searchType: $('#hist_search_type').val(),
+		searchString: $('#hist_search_input').val().toLowerCase()
+	});
+    hist.filter();
+    $('#hist_filter_count').html('Showing ' + hist.dataView.getLength() + ' of ' + hist_entries + ' results');
+}
+
+function toggle_star(img) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'toggle_star',
+			log_id: img.id,
+		},
+		success :  function(val) {
+			if (val == 0) { $(img).attr({src:"picts/star-hollow.png"}); }
+			else { $(img).attr({src:"picts/star-full.png"}); }
+		}
+	});
+}
