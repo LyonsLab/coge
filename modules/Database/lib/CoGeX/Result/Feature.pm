@@ -920,11 +920,10 @@ sub genomic_sequence {
 	my $dsgid  = $opts{dsgid};
 	my $genome = $opts{genome}; #genome object
 	my $dataset = $opts{dataset}; #dataset object
-	my $server =
-	  $opts{server}; #used for passing in server name from which to retrieve sequence from web-script CoGe/GetSequence.pl
+	my $server = $opts{server}; #used for passing in server name from which to retrieve sequence from web-script CoGe/GetSequence.pl
 	my $rel = $opts{rel};
-#	print STDERR "Feature.pm:  in sub genomic_sequence\n";
-#have a full sequence? -- pass it in and the locations will be parsed out of it!
+    
+    #have a full sequence? -- pass it in and the locations will be parsed out of it!
 	if ( !$up && !$down && $self->_genomic_sequence ) {
 		return $self->_genomic_sequence;
 	}
@@ -953,47 +952,44 @@ sub genomic_sequence {
 	my $start    = $locs[0][0];
 	my $stop     = $locs[-1][1];
 	my $full_seq = $seq ? $seq : $dataset->get_genomic_sequence(
-			chr => $chr,
-			start      => $start,
-			stop       => $stop,
-			debug      => $debug,
-			gstid      => $gstid,
-			gid      => $dsgid,
-                        genome   => $genome,
-			server     => $server,
-		);
-#	print STDERR "Feature.pm:  Have full sequence\n";
+		chr    => $chr,
+		start  => $start,
+		stop   => $stop,
+		debug  => $debug,
+		gstid  => $gstid,
+		gid    => $dsgid,
+        genome => $genome,
+		server => $server,
+	);
+
 	if ($full_seq) {
+	    my $full_seq_length = CORE::length($full_seq);
 		foreach my $loc (@locs) {
-			if ( $loc->[0] - $start + $loc->[1] - $loc->[0] + 1 >
-				CORE::length($full_seq) )
+			if ( $loc->[0] - $start + $loc->[1] - $loc->[0] + 1 > $full_seq_length )
 			{
-				print STDERR "#" x 20, "\n";
-				print STDERR
-"Error in feature->genomic_sequence, Sequence retrieved is smaller than the length of the exon being parsed! \n";
-				print STDERR "Organism: ", $self->organism->name, "\n";
-				print STDERR "Dataset: ",  $self->dataset->name,  "\n";
-				use Data::Dumper;
-				print STDERR "Locations data-structure: ", Dumper \@locs;
-				print STDERR "Retrieved sequence lenght: ",
-				  CORE::length($full_seq), "\n";
-				#print STDERR $full_seq, "\n";
-				print STDERR "Feature object information: ",
-				  Dumper {
-					chromosome        => $chr,
-					skip_length_check => 1,
-					start             => $start,
-					stop              => $stop,
-					dataset           => $dataset->id,
-					feature           => $self->id,
-				  };
-				print STDERR "#" x 20, "\n";
+				print STDERR "#" x 20, "\n",
+    	            "Error in feature->genomic_sequence, Sequence retrieved is smaller than the length of the exon being parsed! \n",
+    	            "Organism: ", $self->organism->name, "\n",
+    	            "Dataset: ",  $self->dataset->name,  "\n",
+    	            "Locations data-structure: ", Dumper \@locs,
+    	            "Retrieved sequence length: ",
+    	            $full_seq_length, "\n",
+    	            #$full_seq, "\n",
+    	            "Feature object information: ",
+    				Dumper {
+        				chromosome        => $chr,
+        				skip_length_check => 1,
+        				start             => $start,
+        				stop              => $stop,
+        				dataset           => $dataset->id,
+        				feature           => $self->id
+    				},
+    	            "#" x 20, "\n";
 			}
 
-			my $sub_seq =
-			  substr( $full_seq, $loc->[0] - $start,
-				$loc->[1] - $loc->[0] + 1 );
+			my $sub_seq = substr( $full_seq, $loc->[0] - $start, $loc->[1] - $loc->[0] + 1 );
 			next unless $sub_seq;
+			
 			if ( $self->strand == -1 ) {
 				unshift @sequences, $self->reverse_complement($sub_seq);
 			}
@@ -1002,34 +998,14 @@ sub genomic_sequence {
 			}
 		}
 	}
+	
 	my $outseq = join( "", @sequences );
 	if ( !$up && !$down ) {
 		$self->_genomic_sequence($outseq);
 	}
+	
 	return $outseq;
 }
-
-################################################ subroutine header begin ##
-
-=head2 genome_sequence
-
- Usage     :
- Purpose   : See genomic_sequence()
- Returns   :
- Argument  :
- Throws    :
- Comments  : Alias for the genomic_sequence() method.
-
-See Also   : genomic_sequence()
-
-=cut
-
-################################################## subroutine header end ##
-
-# mdb removed 8/14/13 - aliases are bad for readability
-#sub genome_sequence {
-#	shift->genomic_sequence(@_);
-#}
 
 ################################################ subroutine header begin ##
 
