@@ -575,6 +575,8 @@ sub annotation_pretty_print_html {
 		  . "</span>" );
 	$anno_type->Type_delimit(": <td>");
 	$anno_type->Val_delimit(" , ");
+	$anno_type->add_Annot(
+            "<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?fid=" . $self->id . "');\">" . "FID:".$self->id. "</span>");
 	my ($primary_name) = $self->primary_name;
 	$primary_name = $primary_name->name if $primary_name;
 
@@ -689,7 +691,7 @@ sub annotation_pretty_print_html {
 		my $location = "Chr " . $chr . " ";
 #       $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
 		$location .= commify( $self->start ) . "-" . commify( $self->stop );
-		$location .= " (" . $strand . ")";
+		$location .= " (" . $strand . ")" ." :: ".$self->genbank_location_string;
 		my $featid = $self->id;
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
