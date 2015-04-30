@@ -832,7 +832,7 @@ sub get_chr_length_hist {
     my $mode = $data[$mid];
     my $file = $TEMPDIR . "/" . join( "_", $dsgid ) . "_chr_length.txt";
     open( OUT, ">" . $file );
-    print OUT "#chromosome/contig lenghts for $dsgid\n";
+    print OUT "#chromosome/contig lengths for $dsgid\n";
     print OUT join( "\n", @data ), "\n";
     close OUT;
     my $cmd = $HISTOGRAM;
@@ -881,16 +881,21 @@ sub get_chr_list {
         my $error = "unable to create genome object using id $gid\n";
         return $error;
     }
-	my $html = "<table>";
-	#$html .= "<thead><tr><th>Chromosome</th></th></thead>";
+	my $html = "<table class=\"display dataTable\">";
+	$html .= "<thead><tr><th>Chromosome</th><th>Length</th><th colspan=\"2\">Files</th></thead>";
 	$html .= "<tbody>";
-	my @chromosomes = $genome->get_chromosomes();
+	my @chromosomes =
+      sort { $b->sequence_length <=> $a->sequence_length }
+      $genome->genomic_sequences();
 	for (@chromosomes) {
-		$html .= "<tr><td class=\"data5\" style=\"padding-right:20px\">" . $_ . "</td>";
-		$html .= "<td class=\"data5\" style=\"padding-right:20px\"><input type=\"radio\" name=\"chr\" id=\"f" . $_ . "\" /> FASTA</td>";
-		$html .= "<td class=\"data5\"><input type=\"radio\" name=\"chr\" id=\"g" . $_ . "\" /> GFF</td></tr>";
+		$html .= "<tr><td class=\"data5\" style=\"padding-right:20px\">" . $_->chromosome . "</td>";
+		$html .= "<td class=\"data5\" style=\"padding-right:20px\">" . $_->sequence_length . "</td>";
+		$html .= "<td class=\"data5\" style=\"padding-right:20px\"><input type=\"radio\" name=\"chr\" id=\"f" . $_->chromosome . "\" /> FASTA</td>";
+		$html .= "<td class=\"data5\"><input type=\"radio\" name=\"chr\" id=\"g" . $_->chromosome . "\" /> GFF</td></tr>";
 	}
-	$html .= "</tbody></table><span onclick=\"download_chr_file()\" class=\"ui-button ui-corner-all coge-button\">Download</span> <span onclick=\"export_chr_file()\" class=\"ui-button ui-corner-all coge-button\">Send to iPlant</span>";
+	$html .= "</tbody></table>";
+	$html .= "<span onclick=\"export_chr_file()\" class=\"r ui-button ui-corner-all coge-button\" style=\"margin-left:10px;margin-top:10px;\">Send to iPlant</span>";
+	$html .= "<span onclick=\"download_chr_file()\" class=\"r ui-button ui-corner-all coge-button\" style=\"margin-top:10px;\">Download</span>";
 	return $html;
 }
 
