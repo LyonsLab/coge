@@ -3,10 +3,8 @@ use base 'CGI::Application';
 
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw( get_genome_seq );
 use File::Spec;
 use File::Slurp;
-use Data::Dumper;
 
 sub setup {
     my $self = shift;
@@ -26,9 +24,9 @@ sub get {
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
 
+    my @path;
     if ($gid) {
         my $genome = $db->resultset('Genome')->find($gid);
-
         if ( $genome->restricted
             and ( not defined $user or not $user->has_access_to_genome($genome) ) )
         {
@@ -36,8 +34,9 @@ sub get {
             return;
         }
 
-        @path = ($conf->{SECTEMPDIR}, $page, "downloads", $gid, $dir, $file);
-    } elsif ($eid) {
+        @path = ($conf->{SECTEMPDIR}, "downloads", "genomes", $gid, $dir, $file);
+    } 
+    elsif ($eid) {
         my $exp = $db->resultset('Experiment')->find($eid);
         if ($exp->restricted and
             (not defined $user or not $user->has_access_to_experiment($exp))) {
@@ -45,15 +44,15 @@ sub get {
             return;
         }
 
-        @path = ($conf->{SECTEMPDIR}, $page, "downloads", $eid, $dir, $file);
+        @path = ($conf->{SECTEMPDIR}, "downloads", "experiments", $eid, $dir, $file);
     }
+    
+    my $file_path = File::Spec->catdir(@path);
+    say STDERR "CoGe::Services::Data::Downloader file: $file_path";
+    return unless (@path);
 
     $self->header_add( -attachment => $file );
-
-    my $file_path = File::Spec->catdir(@path);
     my $content;
-
-    say STDERR "FILE: $file_path";
     eval {
         $content = read_file($file_path) if -r $file_path;
     };

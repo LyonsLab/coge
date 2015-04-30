@@ -554,10 +554,11 @@ sub get_download_url {
     my $id = $args{id};
     my $dir = $args{dir};
     my $filename = basename($args{file});
+    my $username = $USER->user_name;
 
     return join('/', $P->{SERVER}, 
         'api/v1/legacy/download/ExperimentView', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
-        "?eid=$id&dir=$dir&file=$filename");
+        "?username=$username&eid=$id&dir=$dir&file=$filename");
 }
 
 sub get_file_urls {
@@ -612,6 +613,10 @@ sub gen_html {
             ADJUST_BOX => 1,
             CAS_URL    => $P->{CAS_URL} || ''
         );
+    	my $name = $USER->user_name;
+    	$name = $USER->first_name if $USER->first_name;
+    	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
+    	$template->param( USER     => $name );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
         $template->param( ADMIN_ONLY => $USER->is_admin );
     }

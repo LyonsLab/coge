@@ -771,7 +771,7 @@ sub get_tiny_link {
     my $ua = new LWP::UserAgent;
     my $response_url;
 
-	$ua->timeout(5);
+	$ua->timeout(10);
 	my $response = $ua->get($request_url);
 	if ($response->is_success) {
         $response_url = $response->decoded_content;
