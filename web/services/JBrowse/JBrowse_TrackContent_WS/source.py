@@ -216,7 +216,8 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
     cur = con.cursor()
     # mdb 4/24/14 - added fn.primary_name=1 constraint to keep from returning arbitrary name
     query = "SELECT l.start, l.stop, l.strand, ft.name, fn.name, \
-            l.location_id, f.start, f.stop, f.feature_id, fn.primary_name \
+            l.location_id, f.start, f.stop, f.feature_id, fn.primary_name, \
+	    l.chromosome, f.chromosome, f.strand \
             FROM genome g \
             JOIN dataset_connector dc ON dc.genome_id = g.genome_id \
             JOIN dataset d on dc.dataset_id = d.dataset_id \
@@ -270,14 +271,15 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
                     response_body["features"][i]["strand"] = row[2]
                     response_body["features"][i]["type"] = row[3]
 
-                response_body["features"][i]["subfeatures"].append({
-                    "chr" : chr_id, # mdb added 11/18/13 issue 240 - add chr to FeatAnno.pl onclick url
-                    "start" : row[0],
-                    "end" : row[1],
-                    "strand" : row[2],
-                    "type" : row[3],
-                    "name" : row[4],
-                })
+		if row[2] == row[12] and row[10] == row[11] and row[0] >= row[6] and row[0] <= row[7] and row[1] >= row[6] and row[1] <= row[7]:
+                    response_body["features"][i]["subfeatures"].append({
+                        "chr" : chr_id, # mdb added 11/18/13 issue 240 - add chr to FeatAnno.pl onclick url
+                        "start" : row[0],
+                        "end" : row[1],
+                        "strand" : row[2],
+                        "type" : row[3],
+                        "name" : row[4],
+                    })
 
                 lastStrand = row[2]
                 lastType = row[3]
@@ -291,20 +293,21 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
             min_start = None
             max_stop = None
             for row in results:
-                # Find bounds for sequence retrieval later (show_wobble == 1)
-                if min_start is None or min_start > row[0]:
-                    min_start = row[0]
-                if max_stop is None or max_stop < row[1]:
-                    max_stop = row[1]
+		if row[2] == row[12] and row[10] == row[11] and row[0] >= row[6] and row[0] <= row[7] and row[1] >= row[6] and row[1] <= row[7]:
+                    # Find bounds for sequence retrieval later (show_wobble == 1)
+                    if min_start is None or min_start > row[0]:
+                        min_start = row[0]
+                    if max_stop is None or max_stop < row[1]:
+                        max_stop = row[1]
                 
-                # Hash unique features
-                location_id = row[5]
-                try:
-                    feat = feats[location_id]
-                    if row[9] == 1: # is feature name the primary name?
+                    # Hash unique features
+                    location_id = row[5]
+                    try:
+                        feat = feats[location_id]
+                        if row[9] == 1: # is feature name the primary name?
+                            feats[location_id] = row
+                    except KeyError:
                         feats[location_id] = row
-                except KeyError:
-                    feats[location_id] = row
 
             # Calculate wobble GC for CDS features
             wcount = {}
