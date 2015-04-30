@@ -2892,6 +2892,8 @@ sub get_obj_from_genome_db {
         my @names = $f->names;
         next if $f->type->name =~ /misc_feat/;
         next if $f->type->name eq "chromosome";
+	#new changes to deal with GD failures:  EHL 4/30/15
+	next if $f->start == $f->stop;
 
         #	next if $f->type->name eq "contig";
         foreach my $tmp (@names) {
@@ -2907,10 +2909,11 @@ sub get_obj_from_genome_db {
 
         }
         $name = $accn unless $name;
-        print STDERR $name, "\n" if $DEBUG;
+	print STDERR "\n" if $DEBUG;
+        print STDERR $name, " ID: ",$f->id,"\n" if $DEBUG;
         print STDERR "\t", $f->genbank_location_string(), "\n" if $DEBUG;
         print STDERR "\t", $f->genbank_location_string( recalibrate => $start ),
-          "\n\n"
+          "\n"
           if $DEBUG;
         my $anno =
           $P->{SERVER} . "FeatAnno.pl?fid=" . $f->id . ";gstid=" . $gstid;
@@ -4729,7 +4732,7 @@ sub feat_search {
         foreach my $feat (@feats) {
             next unless $feat->dataset->id == $dsid; # mdb added 2/12/15 COGE-588
             my $loc = "(" . $feat->type->name . ") Chr:"
-              . ( $feat->locations > 0 ? $feat->locations->next->chromosome : '' )
+              . $feat->chromosome
               . " " . commify( $feat->start ) . "-" . commify( $feat->stop );
             $loc =~ s/(complement)|(join)//g;
             my $fid = $feat->id;
