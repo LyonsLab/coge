@@ -1022,6 +1022,8 @@ $.extend(QuantativeView.prototype, {
     },
 
     is_valid: function() {
+        this.data.normalize = this.el.find("#normalize").is(":checked");
+        this.data.normalize_method = this.el.find("#percentage").is(":checked") ? 'percentage' : this.el.find("#log10").is(":checked") ? 'log10' : this.el.find("#loge").is(":checked") ? 'loge' : null;
         return true;
     },
 
@@ -1389,6 +1391,8 @@ function load(experiment) {
 		options: {
 			load_id: load_id,
 			email: experiment.options.email,
+			normalize: experiment.options.normalize,
+			normalize_method: experiment.options.normalize_method,
 			notebook: experiment.options.notebook,
 			notebook_name: experiment.options.notebook_name,
 			notebook_id: experiment.options.notebook_id,
