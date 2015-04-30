@@ -2493,6 +2493,7 @@ sub get_unique_genes {
             name         => "Unique genes in " . $qdsg->organism->name,
             description  => "Compared to " . $sdsg->organism->name,
             list_type_id => $list_type->id,
+            creator_id   => $USER->id,
             restricted   => 1
         });
         return unless $list;
