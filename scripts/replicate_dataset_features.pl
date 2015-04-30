@@ -95,7 +95,7 @@ foreach my $feat1 ($ds1->features($search))
 #				     };
 				     });
       }
-    foreach my $loc($feat1->locations)
+    foreach my $loc($feat1->locs)
       {
 	$feat2->add_to_locations(
 #	print Dumper
