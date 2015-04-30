@@ -24,6 +24,8 @@ GetOptions(
 
 $| = 1; # enable autoflushing
 
+print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
+
 # Open log file
 mkpath($workdir, 0, 0755) unless -r $workdir;
 my $logfile = File::Spec->catdir($workdir, "$output_filename.log");
@@ -83,7 +85,7 @@ my @annotations = $sourceObj->annotations;
 
 unless (-r $archive and -r "$archive.finished") {
     my @file_list = export_annotations( annotations => \@annotations, export_path => $workdir );
-    push @file_list, split(',', $files);
+    push @file_list, split(',', $files) if ($files);
     copy_readme();
     my $info = export_info( $sourceObj->info_file );
 
