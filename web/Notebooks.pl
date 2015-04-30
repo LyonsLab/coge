@@ -72,6 +72,7 @@ sub create_list {
             name         => $opts{name},
             description  => $opts{desc},
             list_type_id => $opts{typeid},
+            creator_id   => $USER->id,
             restricted   => 1
         }
     );

@@ -673,7 +673,6 @@ sub _get_experiment_info {
        $tags .= ": " . $tag->description if $tag->description;
 
        if ($allow_edit) {
-           # NOTE: it is undesirable to have a javascript call in a DB object, but it works
            $tags .=
                "<span onClick=\"remove_experiment_tag({eid: '"
              . $exp->id
@@ -684,6 +683,8 @@ sub _get_experiment_info {
     }
 
     my $view_link = "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid";
+
+    my $creation = ($exp->creator_id ? $exp->creator->display_name  . ' ' : '') . ($exp->date ne '0000-00-00 00:00:00' ? $exp->date : '');
 
     my $fields = [
         { title => "ID", value => $exp->id },
@@ -696,6 +697,7 @@ sub _get_experiment_info {
         { title => "Tags", value => $tags || '' },
         { title => "Notebooks", value => $exp->notebooks_desc },
         { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
+        { title => "Creation", value => $creation}
     ];
 
     push @$fields, { title => "Note", value => "This experiment has been deleted" } if $exp->deleted;
