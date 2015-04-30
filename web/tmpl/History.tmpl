@@ -33,7 +33,31 @@
 var data = [];
 var grid;
 var dataView;
-
+var columns = [
+	{id: "starred", name: "", field: "starred", maxWidth: 25, cssClass: "cell-centered",
+		formatter: function (row, cell, value, columnDef, dataContext) {
+			if (value) {
+				return '<img id="'+dataContext['id']+'" src="picts/star-full.png" onclick="toggle_star(this);">'
+			}
+			return '<img id="'+dataContext['id']+'" src="picts/star-hollow.png" onclick="toggle_star(this);">';
+		}},
+	{id: "date_time", name: "Date/Time", field: "date_time", minWidth: 160, maxWidth: 160, sortable: true, cssClass: "cell-centered"},
+	{id: "user", name: "User", field: "user", minWidth: 30, maxWidth: 80, sortable: true, cssClass: "cell-normal"/*,
+		formatter: function ( row, cell, value, columnDef, dataContext ) {
+            return '<a target="_blank" href="User.pl?name=' + value + '">' + value + '</a>';
+        }*/},
+	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 100, sortable: true, cssClass: "cell-normal"},
+	{id: "description", name: "Description", field: "description", minWidth: 100, sortable: true, cssClass: "cell-normal",
+		formatter: function ( row, cell, value, columnDef, dataContext ) {
+            return '<span>' + value + '</span>';
+        }},
+	{id: "link", name: "Link", field: "link", minWidth: 100, maxWidth: 250, cssClass: "cell-normal",
+		formatter: function ( row, cell, value, columnDef, dataContext ) {
+            return '<a target="_blank" href="' + value + '">' + value + '</a>';
+        }},
+	{id: "comment", name: "Comments (click to edit)", field: "comment", minWidth: 100, sortable: true, cssClass: "cell-normal",
+		editor: Slick.Editors.Text, validator: requiredFieldValidator}
+];
 
 var options = {
 	editable: true,
