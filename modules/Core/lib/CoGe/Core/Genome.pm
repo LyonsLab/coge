@@ -377,7 +377,7 @@ sub _generate_noncoding_gc_stats {
 
     foreach my $ds (@datasets) {
         foreach my $feat ($ds->features(@LOCATIONS_PREFETCH)) {
-            foreach my $loc ( $feat->locations ) {
+            foreach my $loc ( $feat->locs ) {
                 if ( $loc->stop > length( $seqs{ $feat->chromosome } ) ) {
                     print STDERR "feature "
                       . $feat->id
