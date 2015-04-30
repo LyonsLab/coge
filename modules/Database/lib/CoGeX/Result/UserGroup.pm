@@ -48,6 +48,8 @@ __PACKAGE__->add_columns(
         is_nullable   => 0,
         size          => 11
     },
+    "date",
+    { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
     "name",
     {
         data_type     => "VARCHAR",
@@ -77,8 +79,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("user_group_id");
 __PACKAGE__->belongs_to( 'role' => "CoGeX::Result::Role", 'role_id' );
 __PACKAGE__->belongs_to(
-    'creator' => "CoGeX::Result::User",
-    'creator_user_id'
+    "creator" => "CoGeX::Result::User", 
+    { 'foreign.user_id' => 'self.creator_user_id' }
 );
 __PACKAGE__->has_many(    # parent users
     'user_connectors' => 'CoGeX::Result::UserConnector',

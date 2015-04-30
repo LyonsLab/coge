@@ -87,8 +87,8 @@ sub search_notebooks {
 
 sub create_notebook {
     my %opts = @_;
-    my $db = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
-    my $user = $opts{user};
+    my $db      = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
+    my $user    = $opts{user};
     my $name    = $opts{name};
     my $desc    = $opts{desc};
     my $type_id = $opts{type_id};
@@ -103,9 +103,8 @@ sub create_notebook {
             name         => $name,
             description  => $desc,
             list_type_id => $type_id,
-
-            # user_group_id => $owner->id,
-            restricted => 1
+            creator_id   => $user->id,
+            restricted   => 1
         }
     );
     return unless $notebook;

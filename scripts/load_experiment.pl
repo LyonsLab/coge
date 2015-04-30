@@ -18,9 +18,9 @@ use CoGe::Core::Storage qw(add_workflow_result);
 use CoGe::Core::Metadata qw(create_annotations);
 
 use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
-  $name $description $version $restricted $ignore_missing_chr
+  $name $description $version $restricted $ignore_missing_chr $creator_id
   $gid $source_name $user_name $config $normalize $allow_negative $disable_range_check
-  $annotations $types $wid $host $port $db $user $pass $P);
+  $user_id $annotations $types $wid $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -47,7 +47,9 @@ GetOptions(
     "source_name=s" => \$source_name,    # experiment source name (JS escaped)
     "gid=s"         => \$gid,            # genome id
     "wid=s"         => \$wid,            # workflow id
-    "user_name=s"   => \$user_name,      # user name
+    "user_id=i"     => \$user_id,        # user ID to assign experiment
+    "user_name=s"   => \$user_name,      # user name to assign experiment (alternative to user_id)
+    "creator_id=i"  => \$creator_id,     # user ID to set as experiment creator
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
     "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
     "config=s"      => \$config,         # configuration file
@@ -99,7 +101,12 @@ unless ($data_file && -r $data_file) {
     exit(-1);
 }
 
-if ($user_name eq 'public') {
+if (not defined $user_id and not defined $user_name) {
+    print STDOUT "log: error: user not specified, use user_id or user_name\n";
+    exit(-1);
+}
+
+if ((defined $user_name and $user_name eq 'public') || (defined $user_id and $user_id eq '0')) {
     print STDOUT "log: error: not logged in\n";
     exit(-1);
 }
@@ -172,6 +179,35 @@ unless ($coge) {
     print STDOUT "log: couldn't connect to database\n";
     exit(-1);
 }
+
+# Retrieve user
+my $user;
+if ($user_id) {
+    $user = $coge->resultset('User')->find($user_id);
+}
+elsif ($user_name) {
+    $user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
+else {
+    print STDOUT "log: error user not specified, see user_id or user_name\n";
+    exit(-1);
+}
+
+unless ($user) {
+    print STDOUT "log: error finding user ", ($user_name ? $user_name : $user_id) , "\n";
+    exit(-1);
+}
+
+# Retrieve creator
+my $creator;
+if ($creator_id) {
+    $creator = $coge->resultset('User')->find($creator_id);
+    unless ($creator) {
+        print STDOUT "log: error finding creator $creator_id\n";
+        exit(-1);
+    }
+}
+$creator = $user unless $creator;
 
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
@@ -310,6 +346,7 @@ my $experiment = $coge->resultset('Experiment')->create(
         data_type      => $data_type,
         row_count      => $count,
         genome_id      => $gid,
+        creator_id     => $creator->id,
         restricted     => $restricted
     }
 );
