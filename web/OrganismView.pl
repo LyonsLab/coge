@@ -1328,7 +1328,7 @@ sub get_gc_for_noncoding {
             )
           )
         {
-            foreach my $loc ( $feat->locations ) {
+            foreach my $loc ( $feat->locs ) {
                 if ( $loc->stop > length( $seqs{ $feat->chromosome } ) ) {
                     print STDERR "feature "
                       . $feat->id
