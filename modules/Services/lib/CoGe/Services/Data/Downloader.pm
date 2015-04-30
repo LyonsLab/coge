@@ -5,7 +5,6 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use File::Spec;
 use File::Slurp;
-use File::Path qw(mkpath);
 
 sub setup {
     my $self = shift;
@@ -23,8 +22,6 @@ sub get {
     $dir = "" unless $dir;
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
-    mkpath ($conf->{SECTEMPDIR}."/downloads/genomes/$gid") if $gid;
-    mkpath ($conf->{SECTEMPDIR}."/downloads/experiments/$eid") if $eid;
 
     my @path;
     if ($gid) {
