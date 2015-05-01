@@ -22,8 +22,8 @@ my $GO          = 1;
 #my $DEBUG       = 0;
 my $DB_BATCH_SZ = 10 * 1000;
 use vars qw($staging_dir $result_dir $data_file
-  $name $description $link $version $restricted
-  $gid $source_name $user_name $config $allow_all_chr
+  $name $description $link $version $restricted $creator_id
+  $gid $source_name $user_name $user_id $config $allow_all_chr
   $host $port $db $user $pass $P $GUNZIP);
 
 GetOptions(
@@ -37,7 +37,9 @@ GetOptions(
     "restricted=i"  => \$restricted,     # experiment restricted flag
     "gid=s"         => \$gid,            # genome id
     "source_name=s" => \$source_name,    # data source name (JS escaped)
-    "user_name=s"   => \$user_name,      # user name
+    "user_id=i"     => \$user_id,        # user ID to assign dataset
+    "user_name=s"   => \$user_name,      # user name to assign dataset (alternative to user_id)
+    "creator_id=i"  => \$creator_id,     # user ID to set as dataset creator
     "config=s"      => \$config,         # configuration file
 
     # Optional Flags
@@ -70,8 +72,13 @@ $version     = unescape($version);
 $source_name = unescape($source_name);
 $restricted  = '0' if ( not defined $restricted );
 
-if ($user_name eq 'public') {
-	print STDOUT "log: error: not logged in\n";
+if (not defined $user_id and not defined $user_name) {
+    print STDOUT "log: error: user not specified, use user_id or user_name\n";
+    exit(-1);
+}
+
+if ((defined $user_name and $user_name eq 'public') || (defined $user_id and $user_id eq '0')) {
+    print STDOUT "log: error: not logged in\n";
     exit(-1);
 }
 
@@ -109,12 +116,34 @@ unless ($coge) {
     exit(-1);
 }
 
-# Retrieve user (for verification now and used at end for logging)
-my $user = $coge->resultset('User')->find( { user_name => $user_name } );
-unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
+# Retrieve user
+my $user;
+if ($user_id) {
+    $user = $coge->resultset('User')->find($user_id);
+}
+elsif ($user_name) {
+    $user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
+else {
+    print STDOUT "log: error user not specified, see user_id or user_name\n";
     exit(-1);
 }
+
+unless ($user) {
+    print STDOUT "log: error finding user ", ($user_name ? $user_name : $user_id) , "\n";
+    exit(-1);
+}
+
+# Retrieve creator
+my $creator;
+if ($creator_id) {
+    $creator = $coge->resultset('User')->find($creator_id);
+    unless ($creator) {
+        print STDOUT "log: error finding creator $creator_id\n";
+        exit(-1);
+    }
+}
+$creator = $user unless $creator;
 
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
@@ -271,6 +300,7 @@ my $dataset = $coge->resultset('Dataset')->create(
         link           => $link,
         version        => $version,
         restricted     => $restricted,
+        creator_id     => $creator->id,
     }
 );
 unless ($dataset) {

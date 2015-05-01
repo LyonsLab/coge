@@ -195,12 +195,15 @@ sub get_item_info {
         my $group = $coge->resultset('UserGroup')->find($item_id);
         return unless $group;
         return unless ( $USER->is_admin or $group->has_member($USER) );
+        
+        my $creation = ($group->creator_user_id ? $group->creator->display_name  . ' ' : '') . ($group->date ne '0000-00-00 00:00:00' ? $group->date : '');
 
         $html .=
             '<b>Group id' . $group->id . '</b><br>'
           . '<b>Name:</b> ' . $group->name . '<br>'
           . '<b>Description:</b> ' . $group->description . '<br>'
           . '<b>Role:</b> ' . $group->role->name . '<br>'
+          . ($creation ? '<b>Creator:</b> ' . $creation . '<br>' : '')
           . '<b>Members:</b><br>';
         foreach ( sort usercmp $group->users ) {
             $html .=
@@ -1776,9 +1779,8 @@ sub create_new_notebook {
             name         => $name,
             description  => $desc,
             list_type_id => $type_id,
-
-            # user_group_id => $owner->id,
-            restricted => 1
+            creator_id   => $USER->id,
+            restricted   => 1
         }
     );
     return unless $list;

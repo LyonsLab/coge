@@ -89,6 +89,8 @@ __PACKAGE__->add_columns(
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
     "deleted",
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+    "creator_id",
+    { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
 );
 
 __PACKAGE__->set_primary_key("dataset_id");
