@@ -11,8 +11,7 @@ use Data::Dumper;
 use CoGe::Accessory::Utils qw(sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iput);
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Core::Genome qw(get_download_path);
-use CoGe::Core::Storage qw(get_workflow_results_file);
+use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -75,9 +74,9 @@ sub copy_and_mask {
     my $cmd = "/copy_genome/copy_load_mask_genome.pl";
 
     return (
-        cmd   => catfile($args{script_dir}, $cmd),
+        cmd   => catfile($CONF->{SCRIPTDIR}, $cmd),
         args  => [
-            ["-conf", $args{conf}, 0],
+            ["-conf", $CONF->{_CONFIG_PATH}, 0],
             ["-gid", $args{gid}, 0],
             ["-uid", $args{uid}, 0],
             ["-mask", $args{mask}, 0],
@@ -98,15 +97,15 @@ sub generate_bed {
     # Generate file name
     my $basename = $args{basename};
     my $filename = "$basename" . "_id" . $args{gid} . ".bed";
-    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
-        cmd  => catfile($args{script_dir}, "coge2bed.pl"),
+        cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.pl"),
         args => [
             ['-gid', $args{gid}, 0],
             ['-f', $filename, 0],
-            ['-config', $args{conf}, 0],
+            ['-config', $CONF->{_CONFIG_PATH}, 0],
         ],
         outputs => [$output_file]
     );
@@ -118,13 +117,13 @@ sub generate_features {
     my $filename = $args{basename} . "-gid-" . $args{gid};
     $filename .= "-prot" if $args{protein};
     $filename .= ".fasta";
-    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
-        cmd    => catfile($args{script_dir}, "export_features_by_type.pl"),
+        cmd    => catfile($CONF->{SCRIPTDIR}, "export_features_by_type.pl"),
         args   => [
-            ["-config", $args{conf}, 0],
+            ["-config", $CONF->{_CONFIG_PATH}, 0],
             ["-f", $filename, 0],
             ["-gid", $args{gid}, 0],
             ["-ftid", $args{fid}, 0],
@@ -140,15 +139,15 @@ sub generate_tbl {
     # Generate filename
     my $organism = $args{basename};
     my $filename = $organism . "id" . $args{gid} . "_tbl.txt";
-    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
-        cmd     => catfile($args{script_dir}, "export_NCBI_TBL.pl"),
+        cmd     => catfile($CONF->{SCRIPTDIR}, "export_NCBI_TBL.pl"),
         args    => [
             ['-gid', $args{gid}, 0],
             ['-f', $filename, 0],
-            ["-config", $args{conf}, 0]
+            ["-config", $CONF->{_CONFIG_PATH}, 0]
         ],
         outputs => [$output_file]
     );
@@ -199,22 +198,27 @@ sub generate_gff {
     $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
-    my $path = get_download_path($CONF->{SECTEMPDIR}, $args{gid});
+    my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
+    
+    # Build argument list
+    my $args = [
+        ['-gid', $args{gid}, 0],
+        ['-f', $filename, 0],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
+        # Parameters
+        ['-cds', $args{cds}, 0],
+        ['-annos', $args{annos}, 0],
+        ['-nu', $args{nu}, 0],
+        ['-id_type', $args{id_type}, 0],
+        ['-upa', $args{upa}, 0]
+    ];
+    push @$args, ['-chr', $args{chr}, 0] if (defined $args{chr});
+    
+    # Return workflow definition
     return $output_file, (
         cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
-        args    => [
-            ['-gid', $args{gid}, 0],
-            ['-f', $filename, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 0],
-            # Parameters
-            ['-cds', $args{cds}, 0],
-            ['-chr', $args{chr}, 0],
-            ['-annos', $args{annos}, 0],
-            ['-nu', $args{nu}, 0],
-            ['-id_type', $args{id_type}, 0],
-            ['-upa', $args{upa}, 0],
-        ],
+        args    => $args,
         outputs => [$output_file],
         description => "Generating gff..."
     );
