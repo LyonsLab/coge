@@ -14,16 +14,15 @@ sub setup {
 
 sub get {
     my $self = shift;
-    my $page = $self->param('page');
-    my $file = $self->query->param('file');
+    my $filename = $self->query->param('filename');
     my $gid = $self->query->param('gid');
     my $eid = $self->query->param('eid');
-    my $dir = $self->query->param('dir');
-    $dir = "" unless $dir;
-
+    my $uuid = $self->query->param('uuid') || ''; # optional
+    
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
 
+    # Determine path to file
     my @path;
     if ($gid) {
         my $genome = $db->resultset('Genome')->find($gid);
@@ -34,7 +33,7 @@ sub get {
             return;
         }
 
-        @path = ($conf->{SECTEMPDIR}, "downloads", "genomes", $gid, $dir, $file);
+        @path = ($conf->{SECTEMPDIR}, "downloads", "genome", $gid, $uuid, $filename);
     } 
     elsif ($eid) {
         my $exp = $db->resultset('Experiment')->find($eid);
@@ -44,14 +43,15 @@ sub get {
             return;
         }
 
-        @path = ($conf->{SECTEMPDIR}, "downloads", "experiments", $eid, $dir, $file);
+        @path = ($conf->{SECTEMPDIR}, "downloads", "experiment", $eid, $uuid, $filename);
     }
     
     my $file_path = File::Spec->catdir(@path);
     say STDERR "CoGe::Services::Data::Downloader file: $file_path";
     return unless (@path);
 
-    $self->header_add( -attachment => $file );
+    # Send file as attachment
+    $self->header_add( -attachment => $filename );
     my $content;
     eval {
         $content = read_file($file_path) if -r $file_path;

@@ -318,7 +318,7 @@ See Also   :
 
 sub locs {
 	my $self = shift;
-	return $self->locations();
+	return $self->clean_locations(@_);
 }
 
 ################################################ subroutine header begin ##
@@ -388,7 +388,7 @@ sub length {
 	my $self = shift;
 	my $length;
 	
-	map { $length += ( $_->stop - $_->start + 1 ) } $self->locations;
+	map { $length += ( $_->stop - $_->start + 1 ) } $self->locs;
 	
     unless (defined $length) { # mdb added 4/20/15 COGE-610 for cases where there are no locations
         $length = $self->stop - $self->start + 1;
@@ -575,6 +575,8 @@ sub annotation_pretty_print_html {
 		  . "</span>" );
 	$anno_type->Type_delimit(": <td>");
 	$anno_type->Val_delimit(" , ");
+	$anno_type->add_Annot(
+            "<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?fid=" . $self->id . "');\">" . "FID:".$self->id. "</span>");
 	my ($primary_name) = $self->primary_name;
 	$primary_name = $primary_name->name if $primary_name;
 
@@ -689,7 +691,7 @@ sub annotation_pretty_print_html {
 		my $location = "Chr " . $chr . " ";
 #       $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
 		$location .= commify( $self->start ) . "-" . commify( $self->stop );
-		$location .= " (" . $strand . ")";
+		$location .= " (" . $strand . ")" ." :: ".$self->genbank_location_string;
 		my $featid = $self->id;
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
@@ -932,7 +934,7 @@ sub genomic_sequence {
 	my @sequences;
 	my %locs =
 	  map { ( $_->start, $_->stop ) }
-	  $self->locations()
+	  $self->locs()
 	  ; #in case a mistake happened when loading locations and there are multiple ones with the same start
 	my @locs = map { [ $_, $locs{$_} ] } sort { $a <=> $b } keys %locs;
 	( $up, $down ) = ( $down, $up )
@@ -1985,6 +1987,37 @@ sub info {
 	         ', v' . $self->dataset->first_genome->version .
 	         ', ' .  $self->dataset->first_genome->genomic_sequence_type->name . ')';
 	return $info;
+}
+
+################################################ subroutine header begin ##
+
+=head2 clean_locations
+
+ Usage     : $self->clean_locations
+ Purpose   : returns wantarray of location objects.  Checks them for consistency due to some bad loads where locations had bad starts, stops, chromosomes and strands
+
+ Returns   : returns wantarray of location ojects
+ Argument  : none
+ Throws    :
+ Comments  : 
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub clean_locations {
+        my $self = shift;
+	my @locs;
+	foreach my $loc ($self->locations(@_)) {
+		next if $loc->strand ne $self->strand;
+		next if $loc->chr ne $self->chr;
+		next if $loc->start < $self->start || $loc->start > $self->stop;
+		next if $loc->stop < $self->start || $loc->stop > $self->stop;
+		push @locs, $loc;
+	} 
+	return wantarray ? @locs : \@locs;
 }
 
 1;

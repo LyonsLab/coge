@@ -939,7 +939,7 @@ sub gff {
             unique_parent_annotations => $unique_parent_annotations,
             chr						  => $chr
         );
-        $output .= $tmp;
+        $output .= $tmp if $tmp;
     }
     return $output;
 }
