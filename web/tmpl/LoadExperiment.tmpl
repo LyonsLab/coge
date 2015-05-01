@@ -261,6 +261,20 @@
 </script>
 
 <script id="quant-template" type="text/template">
+<div class="form-section">
+    <h4>Normalizing Options</h4>
+
+    <div class="form-field">
+        <label class="col-md-2">Normalize data files:</label>
+        <input id="normalize" type="checkbox">
+    </div>
+    <div class="form-field">
+        <label class="col-md-2">Method:</label>
+        <input id="percentage" type="radio" name="normalize_method"> Percentage
+        <input id="log10" type="radio" name="normalize_method" style="margin-left:20px"> Log10
+        <input id="loge" type="radio" name="normalize_method" style="margin-left:20px"> Natural Log
+    </div>
+</div>
 <div>
     <p>
         For details on supported file formats, see 

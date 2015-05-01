@@ -497,7 +497,8 @@ sub create_notebook { #FIXME use routine CoGe::Core::Notebook
         {
             name         => $name,
             description  => $desc,
-            list_type_id => 5, # FIXME hardcoded to 5
+            list_type_id => 5, # FIXME hardcoded to 5,
+            creator_id   => $user->id,
             restricted   => 1
         }
     );
