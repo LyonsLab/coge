@@ -51,14 +51,27 @@ my $dbh = $coge->storage->dbh;
 print STDERR "Verifying datasets ---------------------------------------------\n";
 foreach my $ds (sort {$b->id <=> $a->id} ($coge->resultset('Dataset')->all)) {
 	my $count = 0;
-	print STDERR "Testing dsid ", $ds->id, "\n";
+	print STDERR "Testing dsid ", $ds->id, " ", $ds->date, "\n";
 	foreach my $f ($ds->features) {
-	    if ($f->start =~ /[a-zA-Z]/ || $f->stop =~ /[a-zA-Z]/ || $f->start > $f->stop) {
-	        print STDERR "Bad feature in dsid ", $ds->id, "\n";
-	        last;
+	    if ($f->start =~ /[a-zA-Z]/ || $f->stop =~ /[a-zA-Z]/ || 
+	       ($f->strand < -1 and $f->strand > 1) || $f->start > $f->stop) 
+	    {
+	        print STDERR "   Bad feature ", $f->id, "\n";
+	        goto NEXT;
 	    }
-	    last if ($count++ > 1000);
+	    
+	    foreach my $loc ($f->locations) {
+	        if ($loc->start =~ /[a-zA-Z]/ || $loc->stop =~ /[a-zA-Z]/ || 
+               ($loc->strand < -1 and $loc->strand > 1) || $loc->start > $loc->stop) 
+            {
+                print STDERR "   Bad location ", $loc->id, " in fid ", $f->id, "\n";
+                goto NEXT;
+            }
+	    }
+	    
+	    #last if ($count++ > 1000);
 	}
+	NEXT:
 }
 
 #-------------------------------------------------------------------------------
