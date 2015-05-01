@@ -18,7 +18,7 @@ BEGIN {
     @ISA = qw( Exporter );
     @EXPORT = qw( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-        get_download_path fix_chromosome_id );
+        fix_chromosome_id );
     @EXPORT_OK = qw(genomecmp);
 }
 
@@ -69,10 +69,6 @@ sub get_wobble_histogram {
 
     # Return data
     return $data->{wobble_histogram};
-}
-
-sub get_download_path {
-    return catfile(shift, "GenomeInfo/downloads", shift);
 }
 
 sub get_feature_type_gc_histogram {

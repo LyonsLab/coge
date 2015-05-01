@@ -17,7 +17,7 @@ use Data::Dumper;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_log data_type);
+use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_log data_type get_download_path);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Builder::SNP::CoGeSNPs;
 use CoGe::Builder::SNP::Samtools;
@@ -535,18 +535,12 @@ sub generate_export { #TODO replace with ExperimentBuilder.pm
 
     my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment_or_genome.pl");
-    my $workdir = get_download_path($eid);
+    my $workdir = get_download_path('experiment', $eid);
     my $resdir = $P->{RESOURCEDIR};
 
     my $cmd = "$script -id $eid -type 'experiment' -config $conf -dir $workdir -output $filename";
 
     return (execute($cmd), File::Spec->catdir(($workdir, $filename)));
-}
-
-sub get_download_path { #TODO move into Storage.pm
-    my $eid = shift;
-    my $unique_path = get_unique_id();
-    return File::Spec->catdir( $P->{SECTEMPDIR}, 'downloads', 'experiments', $eid, $unique_path );
 }
 
 sub get_download_url {
@@ -557,8 +551,8 @@ sub get_download_url {
     my $username = $USER->user_name;
 
     return join('/', $P->{SERVER}, 
-        'api/v1/legacy/download/ExperimentView', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
-        "?username=$username&eid=$id&dir=$dir&file=$filename");
+        'api/v1/legacy/download', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
+        "?username=$username&eid=$id&filename=$filename");
 }
 
 sub get_file_urls {
@@ -571,8 +565,8 @@ sub get_file_urls {
     my ($statusCode, $file) = generate_export($experiment);
 
     unless($statusCode) {
-        my $dir = basename(dirname($file));
-        my $url = get_download_url(id => $eid, dir => $dir, file => $file);
+        #my $dir = basename(dirname($file));
+        my $url = get_download_url(id => $eid, file => $file);
         return encode_json({ filename => basename($file), url => $url });
     };
 

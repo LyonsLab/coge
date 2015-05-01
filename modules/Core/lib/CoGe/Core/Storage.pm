@@ -55,7 +55,7 @@ BEGIN {
       get_tiered_path get_workflow_paths get_upload_path get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_genome_cache_path get_workflow_results add_workflow_result
-      get_workflow_results_file
+      get_workflow_results_file get_download_path
       get_experiment_path get_experiment_files get_experiment_data
       create_experiment create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
@@ -827,6 +827,13 @@ sub get_upload_path {
     
     my $conf = CoGe::Accessory::Web::get_defaults();
     return catdir($conf->{SECTEMPDIR}, 'uploads', $user_name, $load_id);
+}
+
+sub get_download_path {
+    my ($type, $id, $uuid) = @_;
+    $uuid = '' unless $uuid; # optional uuid
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    return catfile($conf->{SECTEMPDIR}, 'downloads', $type, $id, $uuid);
 }
 
 sub remove_self { # TODO move to Utils.pm
