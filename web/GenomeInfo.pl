@@ -612,9 +612,6 @@ sub export_features {
 
     my $basename = sanitize_name($genome->organism->name . "-ft-" . $ft->name);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{conf} = $config->{_CONFIG_PATH};
     $args{basename} = $basename;
 
     my ($output, %task) = generate_features(%args);
@@ -899,7 +896,7 @@ sub cache_chr_fasta {
     my $gid = $opts{gid};
     my $chr = $opts{chr};
 
-    my $path = get_download_path($gid);
+    my $path = get_download_path('genome', $gid);
 	mkpath( $path, 0, 0777 ) unless -d $path;
     my $file = catfile($path, $gid . "_" . $chr . ".faa");
 	my %json;
@@ -1363,8 +1360,6 @@ sub copy_genome {
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     $args{uid} = $USER->id;
-    $args{conf} = $config->{_CONFIG_PATH};
-    $args{script_dir} = $config->{SCRIPTDIR};
     $args{staging_dir} = $staging_dir;
     $args{result_dir} = $result_dir;
 
@@ -1874,10 +1869,7 @@ sub get_tbl {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export Tbl");
     my ($output, %task) = generate_tbl(%args);
@@ -1924,10 +1916,7 @@ sub get_bed {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export bed file");
     my ($output, %task) = generate_bed(%args);
@@ -1959,17 +1948,16 @@ sub get_gff {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
     my ($output, %task) = generate_gff(%args);
+#    print STDERR "get_gff: ", $output, "\n",
+#                 "get_gff: ", Dumper \%task, "\n";
     $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
-    say STDERR "RESPONSE ID: " . $response->{id};
+#    say STDERR "get_gff: wid=" . $response->{id};
     $JEX->wait_for_completion($response->{id});
 
     my %json;
@@ -2003,10 +1991,7 @@ sub export_file_to_irods {
     my (%json, %meta);
     %meta = get_metadata($dsg);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export " . $file_type);
     my ($output, %task) = $generate_func->(%args);
@@ -2054,14 +2039,8 @@ sub get_download_url {
     my $username = $USER->user_name;
 
     return join('/', $config->{SERVER}, 
-        'api/v1/legacy/download/GenomeInfo', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
-        "?username=$username&gid=$dsgid&file=$filename");
-}
-
-sub get_download_path {
-    my $gid = shift;
-    my $unique_path = get_unique_id();
-    return catfile($config->{SECTEMPDIR}, "downloads", "genomes", $gid, $unique_path);
+        'api/v1/legacy/download', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
+        "?username=$username&gid=$dsgid&filename=$filename");
 }
 
 sub generate_html {
@@ -2083,10 +2062,9 @@ sub generate_html {
           HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
-	    TITLE      => 'GenomeInfo',
+	        TITLE      => 'GenomeInfo',
             PAGE_LINK  => $LINK,
-            #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
-	    HELP       => $config->{SERVER},
+	        HELP       => $config->{SERVER},
             USER       => $name,
             LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,

@@ -29,7 +29,7 @@ sub build {
        $exp_name = $eid unless $exp_name;
 
     my $filename = "experiment_$exp_name.tar.gz";
-    my $cache_dir = $self->get_download_path($eid);
+    my $cache_dir = get_download_path('experiment', $eid);
     my $cache_file = catfile($cache_dir, $filename);
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
@@ -50,14 +50,6 @@ sub build {
     }
     
     return 1;
-}
-
-sub get_download_path { #TODO move into Storage.pm
-    my $self = shift;
-    my $eid = shift;
-    my $unique_path = get_unique_id();
-    my @paths = ($self->conf->{SECTEMPDIR}, 'downloads', 'experiments', $eid, $unique_path);
-    return File::Spec->catdir(@paths);
 }
 
 sub export_experiment {
