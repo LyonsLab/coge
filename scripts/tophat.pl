@@ -16,8 +16,8 @@ my $cmd_args = shift;   # tophat executable and all command line arguments excep
 my @files = @ARGV;      # fastq files
 
 if ($read_type eq 'paired') {
-    my @m1 = grep { $_ =~ /\S+\_R1\.\S+?/ } @files;
-    my @m2 = grep { $_ =~ /\S+\_R2\.\S+?/ } @files;
+    my @m1 = grep { $_ =~ /\_R1/ } @files;
+    my @m2 = grep { $_ =~ /\_R2/ } @files;
     die "error: invalid paired-end files" unless (@m1 and @m2);
     $cmd_args .= join(',', sort @m1) . ' ' . join(',', sort @m2);
 }
