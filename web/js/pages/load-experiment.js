@@ -1020,15 +1020,31 @@ function QuantativeView(){
 $.extend(QuantativeView.prototype, {
     initialize: function() {
         this.el = $($("#quant-template").html());
+        this.container = this.el.find("#normalize_method");
+    },
+
+    render: function() {
+        this.el.find("#normalize").unbind().change(this.toggleAnalysis.bind(this));
+    },
+
+    toggleAnalysis: function() {
+        this.enabled = this.el.find("#normalize").is(":checked");
+
+        if (this.enabled) {
+            this.container.slideDown();
+        } else {
+            this.container.slideUp();
+        }
     },
 
     is_valid: function() {
         this.data.normalize = this.el.find("#normalize").is(":checked");
-        this.data.normalize_method = this.el.find("#percentage").is(":checked") ? 'percentage' : this.el.find("#log10").is(":checked") ? 'log10' : this.el.find("#loge").is(":checked") ? 'loge' : null;
         return true;
     },
 
     get_options: function() {
+        if (this.enabled)
+            this.data.normalize_method = this.el.find("#percentage").is(":checked") ? 'percentage' : this.el.find("#log10").is(":checked") ? 'log10' : this.el.find("#loge").is(":checked") ? 'loge' : null;
         return this.data;
     },
 });
