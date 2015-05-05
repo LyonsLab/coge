@@ -129,7 +129,6 @@ sub get_genome_path {
     my $path = $seqdir . '/' . get_tiered_path($gid) . '/';
     unless ( -r $path ) {
         print STDERR "Storage::get_genome_path: genome path '$path' doesn't exist!\n";
-        return;
     }
 
     return $path;
