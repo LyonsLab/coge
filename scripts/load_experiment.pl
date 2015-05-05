@@ -19,7 +19,7 @@ use CoGe::Core::Metadata qw(create_annotations);
 
 use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
   $name $description $version $restricted $ignore_missing_chr $creator_id
-  $gid $source_name $user_name $config $normalize $allow_negative $disable_range_check
+  $gid $source_name $user_name $config $allow_negative $disable_range_check
   $user_id $annotations $types $wid $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
@@ -53,7 +53,6 @@ GetOptions(
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
     "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
     "config=s"      => \$config,         # configuration file
-    "normalize=s"   => \$normalize,      # optional normalization method: percentage,log10 or loge    
 
     # Optional flags for debug and bulk loader
     "ignore-missing-chr=i" => \$ignore_missing_chr,
@@ -228,7 +227,7 @@ if (-s $staged_data_file == 0) {
 my ($count, $pChromosomes, $format);
 if ( $data_type == $DATA_TYPE_QUANT ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
-      validate_quant_data_file( file => $staged_data_file, file_type => $file_type, genome_chr => \%genome_chr, normalize => $normalize );
+      validate_quant_data_file( file => $staged_data_file, file_type => $file_type, genome_chr => \%genome_chr );
 }
 elsif ( $data_type == $DATA_TYPE_POLY ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
@@ -507,87 +506,12 @@ sub detect_data_type {
     }
 }
 
-sub sum_values {
-	my $filepath = shift;
-	my $filetype = shift;
-	my $sum = 0;
-    open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
-    while ( my $line = <$in> ) {
-        next if ( $line =~ /^\s*#/ ); # skip comment lines
-        chomp $line;
-        next unless $line; # skip blank lines
-        # Interpret tokens according to file type
-        my @tok;
-        my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
-        if ($filetype eq 'csv') { # CoGe format, comma-separated
-        	@tok = split( /,/, $line );
-        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
-        }
-        elsif ($filetype eq 'tsv') { # CoGe format, tab-separated
-        	@tok = split( /\s+/, $line );
-        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
-        }
-        elsif ($filetype eq 'wig') {
-            next if ( $line =~ /^track/ ); # ignore "track" line
-            if ( $line =~ /^variableStep/i ) { # handle step definition line
-                if ($line =~ /chrom=(\w+)/i) {
-                    $stepChr = $1;
-                }
-                
-                $stepSpan = 1;
-                if ($line =~ /span=(\d+)/i) {
-                    $stepSpan = $1;
-                }
-                next;
-            }
-            elsif ( $line =~ /^fixedStep/i ) {
-                log_line('fixedStep wiggle format is no currently supported', $line_num, $line);
-                return;
-            }
-            
-            if (not defined $stepSpan or not defined $stepChr) {
-                log_line('missing or invalid wiggle step definition line', $line_num, $line);
-                return;
-            }
-            
-            @tok = split( /\s+/, $line );
-            ( $start, $val1 ) = @tok;
-        }
-        elsif ($filetype eq 'bed') {
-            # Check for track type for BED files
-            if ( $line =~ /^track/ ) {
-                undef $bedType;
-                if ($line =~ /type=(\w+)/i) {
-                    $bedType = lc($1);
-                }
-                next;
-            }
-        
-            # Handle different BED formats
-            @tok = split( /\s+/, $line );
-            if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
-                ( $chr, $start, $stop, $val1 ) = @tok;
-            }
-            else { # UCSC standard BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
-                ( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
-            }
-        }
-        else { # unknown file type (should never happen)
-        	die "fatal error: unknown file type!";
-        }
-        $sum += $val1;
-    }
-    close($in);
-    return $sum;
- }
-
 # Parses multiple line-based file formats for quant data
 sub validate_quant_data_file { #TODO this routine is getting long, break into subroutines
     my %opts = @_;
     my $filepath = $opts{file};
     my $filetype = $opts{file_type};
     my $genome_chr = $opts{genome_chr};
-    my $normalize = $opts{normalize};
     my %chromosomes;
     my $line_num = 0;
     my $count;
@@ -597,9 +521,6 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     my ($stepSpan, $stepChr); # only used for WIG format
 
     print STDOUT "validate_quant_data_file: $filepath\n";
-    my $sum;
-    if ($normalize)
-    	$sum = sum_values($filepath, $filetype);
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
@@ -720,13 +641,6 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         $strand = $strand =~ /-/ ? -1 : 1;
 
         # Build output line
-        if ($normalize == "percentage") {
-        	$val1 /= $sum;
-        } else if ($normalize == "log10") {
-        	$val1 = log($val1) / log(10) / $sum;
-        } else {
-        	$val1 = log($val1) / $sum;
-        }
         my @fields  = ( $chr, $start, $stop, $strand, $val1 ); # default fields
         if (defined $val2) {
             $hasVal2 = 1;
