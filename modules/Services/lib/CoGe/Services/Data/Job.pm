@@ -1,7 +1,7 @@
 package CoGe::Services::Data::Job;
 
-use Mojo::Asset::File;
 use Mojo::Base 'Mojolicious::Controller';
+use Mojo::Asset::File;
 #use IO::Compress::Gzip 'gzip';
 use Data::Dumper;
 use File::Basename qw( basename );
