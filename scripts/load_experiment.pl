@@ -506,6 +506,85 @@ sub detect_data_type {
     }
 }
 
+sub max_of_values {
+	my $filepath = shift;
+	my $filetype = shift;
+	my $max = 0;
+    open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
+    while ( my $line = <$in> ) {
+        next if ( $line =~ /^\s*#/ ); # skip comment lines
+        chomp $line;
+        next unless $line; # skip blank lines
+        # Interpret tokens according to file type
+        my @tok;
+        my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
+        if ($filetype eq 'csv') { # CoGe format, comma-separated
+        	@tok = split( /,/, $line );
+        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
+        }
+        elsif ($filetype eq 'tsv') { # CoGe format, tab-separated
+        	@tok = split( /\s+/, $line );
+        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
+        }
+        elsif ($filetype eq 'wig') {
+     		my ($stepSpan, $stepChr, $line_num);
+            next if ( $line =~ /^track/ ); # ignore "track" line
+            if ( $line =~ /^variableStep/i ) { # handle step definition line
+                if ($line =~ /chrom=(\w+)/i) {
+                    $stepChr = $1;
+                }
+                
+                $stepSpan = 1;
+                if ($line =~ /span=(\d+)/i) {
+                    $stepSpan = $1;
+                }
+                next;
+            }
+            elsif ( $line =~ /^fixedStep/i ) {
+                log_line('fixedStep wiggle format is no currently supported', $line_num, $line);
+                return;
+            }
+            
+            if (not defined $stepSpan or not defined $stepChr) {
+                log_line('missing or invalid wiggle step definition line', $line_num, $line);
+                return;
+            }
+            
+            @tok = split( /\s+/, $line );
+            ( $start, $val1 ) = @tok;
+        }
+        elsif ($filetype eq 'bed') {
+        	my $bedType;
+            # Check for track type for BED files
+            if ( $line =~ /^track/ ) {
+                undef $bedType;
+                if ($line =~ /type=(\w+)/i) {
+                    $bedType = lc($1);
+                }
+                next;
+            }
+        
+            # Handle different BED formats
+            @tok = split( /\s+/, $line );
+            if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+                ( $chr, $start, $stop, $val1 ) = @tok;
+            }
+            else { # UCSC standard BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
+                ( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
+            }
+        }
+        else { # unknown file type (should never happen)
+        	die "fatal error: unknown file type!";
+        }
+        if ($val1 > $max) {
+	        $max = $val1;
+        }
+    }
+    close($in);
+    print STDOUT "max=$max\n";
+    return $max;
+ }
+
 # Parses multiple line-based file formats for quant data
 sub validate_quant_data_file { #TODO this routine is getting long, break into subroutines
     my %opts = @_;
@@ -521,6 +600,10 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     my ($stepSpan, $stepChr); # only used for WIG format
 
     print STDOUT "validate_quant_data_file: $filepath\n";
+    my $max;
+    if ($normalize) {
+    	$max = max_of_values($filepath, $filetype);
+    }
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
@@ -625,10 +708,11 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
             $strand = ($val1 >= 0 ? 1 : -1);
             $val1 = abs($val1);
         }
-
-        if ( not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1)) ) {
-            log_line('value 1 not between 0 and 1', $line_num, $line);
-            return;
+        if (!$normalize) {
+        	if (not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1))) {
+	            log_line('value 1 not between 0 and 1', $line_num, $line);
+    	        return;
+        	}
         }
 
         # Munge chr name for CoGe
@@ -641,6 +725,17 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         $strand = $strand =~ /-/ ? -1 : 1;
 
         # Build output line
+        if ($normalize) {
+	        if ($normalize == "percentage") {
+	        	$val1 /= $max;
+	        }
+	        elsif ($normalize == "log10") {
+	        	$val1 = log($val1) / log(10) / $max;
+	        }
+	        else {
+	        	$val1 = log($val1) / $max;
+	        }
+        }
         my @fields  = ( $chr, $start, $stop, $strand, $val1 ); # default fields
         if (defined $val2) {
             $hasVal2 = 1;
