@@ -400,11 +400,6 @@ if ( -e $storage_path ) {
 #TODO create experiment type & connector
 
 # Make user owner of new experiment
-my $user = $coge->resultset('User')->find( { user_name => $user_name } );
-unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
-    exit(-1);
-}
 my $node_types = CoGeX::node_types();
 my $conn       = $coge->resultset('UserConnector')->create(
     {
@@ -598,8 +593,9 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
 
     print STDOUT "validate_quant_data_file: $filepath\n";
     my $sum;
-    if ($normalize)
+    if ($normalize) {
     	$sum = sum_values($filepath, $filetype);
+    }
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
