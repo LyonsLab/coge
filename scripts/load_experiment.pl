@@ -19,7 +19,7 @@ use CoGe::Core::Metadata qw(create_annotations);
 
 use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
   $name $description $version $restricted $ignore_missing_chr $creator_id
-  $gid $source_name $user_name $config $normalize $allow_negative $disable_range_check
+  $gid $source_name $user_name $config $allow_negative $disable_range_check
   $user_id $annotations $types $wid $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
@@ -53,7 +53,6 @@ GetOptions(
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
     "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
     "config=s"      => \$config,         # configuration file
-    "normalize=s"   => \$normalize,      # optional normalization method: percentage,log10 or loge    
 
     # Optional flags for debug and bulk loader
     "ignore-missing-chr=i" => \$ignore_missing_chr,
@@ -228,7 +227,7 @@ if (-s $staged_data_file == 0) {
 my ($count, $pChromosomes, $format);
 if ( $data_type == $DATA_TYPE_QUANT ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
-      validate_quant_data_file( file => $staged_data_file, file_type => $file_type, genome_chr => \%genome_chr, normalize => $normalize );
+      validate_quant_data_file( file => $staged_data_file, file_type => $file_type, genome_chr => \%genome_chr );
 }
 elsif ( $data_type == $DATA_TYPE_POLY ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
@@ -400,6 +399,11 @@ if ( -e $storage_path ) {
 #TODO create experiment type & connector
 
 # Make user owner of new experiment
+my $user = $coge->resultset('User')->find( { user_name => $user_name } );
+unless ($user) {
+    print STDOUT "log: error finding user '$user_name'\n";
+    exit(-1);
+}
 my $node_types = CoGeX::node_types();
 my $conn       = $coge->resultset('UserConnector')->create(
     {
@@ -587,7 +591,6 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     my $filepath = $opts{file};
     my $filetype = $opts{file_type};
     my $genome_chr = $opts{genome_chr};
-    my $normalize = $opts{normalize};
     my %chromosomes;
     my $line_num = 0;
     my $count;
