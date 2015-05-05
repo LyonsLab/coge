@@ -55,7 +55,7 @@ BEGIN {
       get_tiered_path get_workflow_paths get_upload_path get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_genome_cache_path get_workflow_results add_workflow_result
-      get_workflow_results_file get_download_path
+      get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_data
       create_experiment create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
@@ -824,6 +824,18 @@ sub get_workflow_results_file {
     
     my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
     my $results_file = catfile($results_path, '.results');
+    return $results_file;
+}
+
+sub get_workflow_log_file {
+    my ( $user_name, $workflow_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
+    unless ($user_name && $workflow_id) {
+        print STDERR "Storage::get_workflow_log_file ERROR: missing required param\n";
+        return;
+    }
+    
+    my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
+    my $results_file = catfile($results_path, 'debug.log');
     return $results_file;
 }
 
