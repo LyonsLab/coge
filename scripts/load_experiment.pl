@@ -502,10 +502,10 @@ sub detect_data_type {
     }
 }
 
-sub sum_values {
+sub max_of_values {
 	my $filepath = shift;
 	my $filetype = shift;
-	my $sum = 0;
+	my $max = 0;
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     while ( my $line = <$in> ) {
         next if ( $line =~ /^\s*#/ ); # skip comment lines
@@ -523,6 +523,7 @@ sub sum_values {
         	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
         }
         elsif ($filetype eq 'wig') {
+     		my ($stepSpan, $stepChr, $line_num);
             next if ( $line =~ /^track/ ); # ignore "track" line
             if ( $line =~ /^variableStep/i ) { # handle step definition line
                 if ($line =~ /chrom=(\w+)/i) {
@@ -549,6 +550,7 @@ sub sum_values {
             ( $start, $val1 ) = @tok;
         }
         elsif ($filetype eq 'bed') {
+        	my $bedType;
             # Check for track type for BED files
             if ( $line =~ /^track/ ) {
                 undef $bedType;
@@ -570,10 +572,13 @@ sub sum_values {
         else { # unknown file type (should never happen)
         	die "fatal error: unknown file type!";
         }
-        $sum += $val1;
+        if ($val1 > $max) {
+	        $max = $val1;
+        }
     }
     close($in);
-    return $sum;
+    print STDOUT "max=$max\n";
+    return $max;
  }
 
 # Parses multiple line-based file formats for quant data
@@ -592,9 +597,9 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     my ($stepSpan, $stepChr); # only used for WIG format
 
     print STDOUT "validate_quant_data_file: $filepath\n";
-    my $sum;
+    my $max;
     if ($normalize) {
-    	$sum = sum_values($filepath, $filetype);
+    	$max = max_of_values($filepath, $filetype);
     }
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
@@ -700,10 +705,11 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
             $strand = ($val1 >= 0 ? 1 : -1);
             $val1 = abs($val1);
         }
-
-        if ( not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1)) ) {
-            log_line('value 1 not between 0 and 1', $line_num, $line);
-            return;
+        if (!$normalize) {
+        	if (not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1))) {
+	            log_line('value 1 not between 0 and 1', $line_num, $line);
+    	        return;
+        	}
         }
 
         # Munge chr name for CoGe
@@ -716,12 +722,16 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         $strand = $strand =~ /-/ ? -1 : 1;
 
         # Build output line
-        if ($normalize == "percentage") {
-        	$val1 /= $sum;
-        } else if ($normalize == "log10") {
-        	$val1 = log($val1) / log(10) / $sum;
-        } else {
-        	$val1 = log($val1) / $sum;
+        if ($normalize) {
+	        if ($normalize == "percentage") {
+	        	$val1 /= $max;
+	        }
+	        elsif ($normalize == "log10") {
+	        	$val1 = log($val1) / log(10) / $max;
+	        }
+	        else {
+	        	$val1 = log($val1) / $max;
+	        }
         }
         my @fields  = ( $chr, $start, $stop, $strand, $val1 ); # default fields
         if (defined $val2) {
