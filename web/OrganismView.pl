@@ -306,9 +306,9 @@ sub get_orgs {
     
     # Build html options list of organisms
     my @opts;
-    foreach my $_ ( sort { uc( $a->name ) cmp uc( $b->name ) } values %organisms ) {
-        my $this_id = $_->id;
-        my $this_name = $_->name;
+    foreach my $org ( sort { uc( $a->name ) cmp uc( $b->name ) } values %organisms ) {
+        my $this_id = $org->id;
+        my $this_name = $org->name;
 
         # Set selected option if first or specified by user - FIXME there is a bettery way
         my $selected;
