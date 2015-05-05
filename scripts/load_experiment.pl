@@ -52,6 +52,7 @@ GetOptions(
     "creator_id=i"  => \$creator_id,     # user ID to set as experiment creator
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
     "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
+    "normalize=s"   => \$normalize,      # optional: percentage, log10 or loge    
     "config=s"      => \$config,         # configuration file
 
     # Optional flags for debug and bulk loader
