@@ -30,7 +30,7 @@ sub build {
     my $genome = $self->db->resultset("Genome")->find($self->params->{gid});
     $self->params->{basename} = sanitize_name($genome->organism->name);
 
-    my ($output, %job) = generate_gff(%$self->params);
+    my ($output, %job) = generate_gff(%{$self->params});
     $self->workflow->add_job(\%job);
 
     if ($dest_type eq "irods") { # irods export

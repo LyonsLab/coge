@@ -621,7 +621,7 @@ sub create_experiment {
     my $user = $opts{user};
     my $irods = $opts{irods};
     my $files = $opts{files};
-    my $file_type = $opts{file_type};
+    #my $file_type = $opts{file_type};
     my $metadata = $opts{metadata};
     my $options = $opts{options};
 
@@ -647,7 +647,7 @@ sub create_experiment {
 
     # Create list of files to load
     my @staged_files;
-    push @staged_files, @$files;
+    push @staged_files, @$files if ($files);
 
     # Create jobs to retrieve irods files
     my %load_params;
@@ -663,7 +663,17 @@ sub create_experiment {
 
     # Create load job
     my $ignoreMissing = ( $options->{ignoreMissing} ? 1 : 0 );
-    %load_params = _create_load_experiment_job($conf, $metadata, $gid, $workflow->id, $user->name, $staging_dir, \@staged_files, $file_type, $result_dir, $ignoreMissing);
+    %load_params = _create_load_experiment_job(
+        conf => $conf, 
+        metadata => $metadata, 
+        gid => $gid, 
+        wid => $workflow->id, 
+        user_name => $user->name, 
+        staging_dir => $staging_dir, 
+        files => \@staged_files, 
+        #file_type => $file_type, 
+        ignoreMissing => $ignoreMissing
+    );
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
@@ -957,12 +967,22 @@ sub _create_iget_job {
 }
 
 sub _create_load_experiment_job {
-    my ($conf, $metadata, $gid, $wid, $user_name, $staging_dir, $files, $file_type, $result_dir, $ignoreMissing) = @_;
+    my %opts = @_;
+    my $conf = $opts{conf};
+    my $metadata = $opts{metatdata};
+    my $gid = $opts{gid};
+    my $wid = $opts{wid};
+    my $user_name = $opts{user_name};
+    my $staging_dir = $opts{staging_dir};
+    my $files = $opts{files};
+    #my $file_type = $opts{file_type};
+    my $ignoreMissing = $opts{ignoreMissing};
+
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
     my $file_str = join(',', map { basename($_) } @$files);
-    $file_type = 'csv' unless $file_type;
+    #$file_type = 'csv' unless $file_type;
 
     return (
         cmd => $cmd,
@@ -979,10 +999,10 @@ sub _create_load_experiment_job {
             #['-types', qq{"Expression"}, 0], # FIXME
             #['-annotations', $ANNOTATIONS, 0],
             ['-staging_dir', "'".$staging_dir."'", 0],
-            ['-file_type', $file_type, 0], # FIXME
+            #['-file_type', $file_type, 0], # FIXME
             ['-data_file', "'".$file_str."'", 0],
             ['-config', $conf->{_CONFIG_PATH}, 1],
-            ['-result_dir', "'".$result_dir."'", 0],
+            #['-result_dir', "'".$result_dir."'", 0],
             ['-ignore-missing-chr', $ignoreMissing, 0]
         ],
         inputs => [
