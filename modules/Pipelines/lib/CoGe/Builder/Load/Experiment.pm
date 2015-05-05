@@ -163,7 +163,7 @@ sub build {
 	            push @additional_md, @{$snp_results->{metadata}} if ($snp_results->{metadata});
 	            
 	            push @tasks, create_notebook_job(
-	                user => $self->user, 
+	                user => $self->user,
 	                wid => $self->workflow->id,
 	                metadata => $metadata, 
 	                annotations => \@additional_md,
@@ -178,7 +178,6 @@ sub build {
         # Setup full path to input data file
         my $upload_dir = get_upload_path($self->user->name, $self->options->{load_id});
         my $input_file = catfile($upload_dir, $data->[0]->{path});
-        
         # Submit workflow to generate experiment
         my $job = create_load_experiment_job(
             user => $self->user,
@@ -187,6 +186,7 @@ sub build {
             wid => $self->workflow->id,
             gid => $genome->id,
             input_file => $input_file,
+            normalize => $self->options->{normalize} ? $self->options->{normalize_method} : "",
             metadata => $metadata
         );
          push @tasks, $job;
