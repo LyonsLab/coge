@@ -1014,6 +1014,7 @@ $.extend(AlignmentOptionView.prototype, {
 
 function QuantativeView(){
     this.initialize();
+    this.data = {};
 }
 
 $.extend(QuantativeView.prototype, {
@@ -1028,7 +1029,7 @@ $.extend(QuantativeView.prototype, {
     },
 
     get_options: function() {
-        return {};
+        return this.data;
     },
 });
 
@@ -1340,9 +1341,13 @@ $.extend(ConfirmationView.prototype, {
         var key, newpair;
         for(key in options) {
             if (options.hasOwnProperty(key)) {
-            	var val = String(options[key]);
-            	if (typeof options[key] === 'object') val = objToString(options[key]);
-            	else if (typeof options[key] === 'boolean') val = (val ? 'yes' : 'no');
+            	var val;
+            	if (typeof options[key] === 'object')
+            		val = objToString(options[key]);
+            	else if (typeof options[key] === 'boolean')
+            		val = options[key] ? 'yes' : 'no';
+            	else
+                	val = String(options[key]);
                 newpair = this.pair_template.clone();
                 newpair.find(".name").html(coge.utils.ucfirst(key.replace('_', ' ')));
                 newpair.find(".data").html(val);
