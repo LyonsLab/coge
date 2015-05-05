@@ -18,7 +18,7 @@ use CoGe::Core::Storage qw(add_workflow_result);
 use CoGe::Core::Metadata qw(create_annotations);
 
 use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
-  $name $description $version $restricted $ignore_missing_chr $creator_id
+  $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
   $user_id $annotations $types $wid $host $port $db $user $pass $P);
 
@@ -507,6 +507,7 @@ sub detect_data_type {
     }
 }
 
+#TODO rewrite this to load the file once into memory rather than reading it twice
 sub max_of_values {
 	my $filepath = shift;
 	my $filetype = shift;
@@ -727,10 +728,10 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
 
         # Build output line
         if ($normalize) {
-	        if ($normalize == "percentage") {
+	        if ($normalize eq "percentage") {
 	        	$val1 /= $max;
 	        }
-	        elsif ($normalize == "log10") {
+	        elsif ($normalize eq "log10") {
 	        	$val1 = log($val1) / log(10) / $max;
 	        }
 	        else {
