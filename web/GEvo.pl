@@ -324,7 +324,8 @@ sub gen_body {
           if $form->param( "gbstart" . $i );
         $gbstart = 1 unless defined $gbstart;
         my $gblength = $form->param( "gblength" . $i )
-          if $form->param( "gblength" . $i );
+          if defined $form->param( "gblength" . $i );
+	$gblength = 0 unless defined $gblength;
         my $revy = "checked" if $form->param( 'rev' . $i );
         my $revn = "checked" unless $revy;
 
@@ -434,6 +435,8 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $skip_hsp_overlap_adjust = 1 unless defined $skip_hsp_overlap_adjust;
     my $hiqual = get_opt( params => $prefs, form => $form, param => 'hiqual' );
     $hiqual = 0 unless $hiqual;
+    my $color_anchor = get_opt( params => $prefs, form => $form, param => 'ca' );
+    $color_anchor = 1 unless defined $color_anchor;
     my $comp_adj =
       get_opt( params => $prefs, form => $form, param => 'comp_adj' );
     $comp_adj = 0 unless $comp_adj;
@@ -516,6 +519,8 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     else { $template->param( HSP_OVERLAP_YES => "checked" ); }
     if   ($hiqual) { $template->param( HIQUAL_YES => "checked" ); }
     else           { $template->param( HIQUAL_NO  => "checked" ); }
+    if   ($color_anchor) { $template->param( CA_YES => "checked" ); }
+    else           { $template->param( CA_NO  => "checked" ); }
     if   ($comp_adj) { $template->param( COMP_ADJ_YES => "checked" ); }
     else             { $template->param( COMP_ADJ_NO  => "checked" ); }
     if   ($hsp_top) { $template->param( HSP_TOP_YES => "checked" ); }
@@ -731,6 +736,8 @@ sub run {
     my $skip_feat_overlap_search  = $opts{skip_feat_overlap};
     my $skip_hsp_overlap_search   = $opts{skip_hsp_overlap};
     my $font_size                 = $opts{font_size};
+    my $color_anchor              = $opts{ca};
+    $color_anchor = 1 unless defined $color_anchor; #default to 1 which is the original behavior of GEvo, EHL 5/5/15
     my $message;
     my $gen_prot_sequence =
       0;    #flag for generating fasta file of protein_sequence;
@@ -787,6 +794,7 @@ sub run {
     $gevo_link .= ";nt=$show_nt";
     $gevo_link .= ";cbc=$show_cbc";
     $gevo_link .= ";spike_len=$spike_len";
+    $gevo_link .= ";ca=$color_anchor";
     $gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search"
       if defined $skip_feat_overlap_search;
     $gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search"
@@ -885,7 +893,8 @@ sub run {
                 gstid             => $gstid,
                 mask              => $mask,
                 dsgid             => $dsgid,
-                gen_prot_sequence => $gen_prot_sequence
+                gen_prot_sequence => $gen_prot_sequence,
+                color_anchor		  => $color_anchor #color anchor gene yellow flag.  Defaults to 1 in the sub.
             );
             if ($obj)
             { #going to generalize this in parallel after all sequences to be retrieved from coge's db are specified.
@@ -1221,6 +1230,7 @@ sub run {
                 ,    #just use the first hsp_color for all of them
                 show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
                 hiqual                    => $hiqual,
+		color_anchor		  => $color_anchor,
                 padding                   => $padding,
                 reverse_image             => $item->{rev},
                 draw_model                => $draw_model,
@@ -1579,6 +1589,7 @@ sub generate_image {
     my $hsp_colors                = $opts{hsp_colors};
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     my $hiqual                    = $opts{hiqual};
+    my $color_anchor		  = $opts{color_anchor};
     my $padding                   = $opts{padding} || 5;
     my $draw_model                = $opts{draw_model};
     my $hsp_overlap_limit         = $opts{hsp_overlap_limit};
@@ -1667,6 +1678,7 @@ sub generate_image {
         show_contigs              => $show_contigs,
         feat_labels               => $feat_labels,
         font_size                 => $font_size,
+	color_anchor		  => $color_anchor,
     );
 
     return ($gfx);
@@ -1920,6 +1932,7 @@ sub process_features {
     my $show_cns                  = $opts{cns};
     my $show_ofeat                = $opts{ofeat};
     my $show_gene_space           = $opts{gene_space};
+    my $color_anchor              = $opts{color_anchor};
 
     # TODO: remove the 1. here for testing.
     my $show_contigs = $opts{show_contigs};
@@ -2034,7 +2047,7 @@ sub process_features {
                     my $tmp = $accn;
                     $tmp =~ s/\*\*\d+\*\*$//;
                     if ( $tmp =~ /^$cleaned_name\(?\d*\)?$/i ) {
-                        $f->color( [ 255, 255, 0 ] );
+                        $f->color( [ 255, 255, 0 ] ) if $color_anchor;
                         $f->label($name) if $feat_labels;
                     }
                 }
@@ -2744,6 +2757,9 @@ sub get_obj_from_genome_db {
     my $mask   = $opts{mask};        #need this to check for seq file
     my $dsgid  = $opts{dsgid};       #dataset group id
                                      #print STDERR Dumper \%opts;
+    my $color_anchor = $opts{color_anchor}; #option to color anchor gene yellow: EHL 5/5/15
+    $color_anchor = 1 unless defined $color_anchor;
+    
     my $gen_prot_sequence = $opts{gen_prot_sequence}
       || 0;    #are we generating a protein sequence file too?
     my $message;
@@ -2922,7 +2938,7 @@ sub get_obj_from_genome_db {
         print STDERR $name, "\t", $f->type->name, "\t", $location, "\n"
           if $DEBUG;
         my $type = $f->type->name;
-        $type = "anchor" if $f->id && $featid && $f->id == $featid;
+        $type = "anchor" if $f->id && $featid && $f->id == $featid;# WORKING ON THIS FEATURE && $color_anchor;
         $obj->add_feature(
             type       => $f->type->name,
             location   => $location,
@@ -3799,6 +3815,7 @@ qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
         'args__show_ofeat','show_ofeat',
         'args__font_size','font_size',
         'args__show_gene_space','show_gene_space',
+	'args__ca','ca', 
 
 };
 
