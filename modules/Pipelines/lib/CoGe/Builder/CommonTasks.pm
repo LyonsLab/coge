@@ -372,7 +372,6 @@ sub create_load_vcf_job {
 
 sub create_load_experiment_job {
     my %opts = @_;
-    print STDERR "in create_load_experiment_job\n";
 
     # Required arguments
     my $user = $opts{user};
@@ -384,7 +383,6 @@ sub create_load_experiment_job {
     my $gid = $opts{gid};
     my $input_file = $opts{input_file};
     my $normalize = $opts{normalize} || 0;
-    print STDERR "normalize=$normalize\n";
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     my $output_path = catdir($staging_dir, "load_experiment");
