@@ -623,6 +623,7 @@ sub create_experiment {
     #my $file_type = $opts{file_type};
     my $metadata = $opts{metadata};
     my $options = $opts{options};
+    #print STDERR "create_experiment ", Dumper $metadata, "\n";
 
     my $conf = CoGe::Accessory::Web::get_defaults();
 
@@ -980,7 +981,7 @@ sub _create_iget_job {
 sub _create_load_experiment_job {
     my %opts = @_;
     my $conf = $opts{conf};
-    my $metadata = $opts{metatdata};
+    my $metadata = $opts{metadata};
     my $gid = $opts{gid};
     my $wid = $opts{wid};
     my $user_name = $opts{user_name};
@@ -988,6 +989,7 @@ sub _create_load_experiment_job {
     my $files = $opts{files};
     #my $file_type = $opts{file_type};
     my $ignoreMissing = $opts{ignoreMissing};
+    #print STDERR "_create_load_experiment_job ", Dumper $metadata, "\n";
 
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
     return unless $cmd; # SCRIPTDIR undefined
