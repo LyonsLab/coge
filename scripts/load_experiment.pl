@@ -399,12 +399,6 @@ if ( -e $storage_path ) {
 
 #TODO create experiment type & connector
 
-# Make user owner of new experiment
-my $user = $coge->resultset('User')->find( { user_name => $user_name } );
-unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
-    exit(-1);
-}
 my $node_types = CoGeX::node_types();
 my $conn       = $coge->resultset('UserConnector')->create(
     {
