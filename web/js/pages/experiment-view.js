@@ -380,16 +380,9 @@ var snpMenu = {
 		  			return;
 		  		}
 		  		
-			        // Set link in status dialog
-		  		if (response.site_url) {
-			    	var link = $('<a>'+response.site_url+'</a>').attr('href', response.site_url);
-				    $('#load_link').html('Link: ').append(link);
-		  		}
-		
 		        // Start status update
 		  		window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EID + "&wid=" + response.id); // Add workflow id to browser URL
-		  		//update_dialog(response.id, "#progress_dialog", progress_formatter);
-		  		coge.progress.update(response.id);
+		  		coge.progress.update(response.id, response.site_url);
 		    },
 		    function(jqXHR, textStatus, errorThrown) { // error callback
 		    	coge.progress.failed('Error: ' + textStatus);
