@@ -45,40 +45,67 @@ sub build {
     foreach (@files) {
         $numFastq++ if (is_fastq_file($_));
     }
-    return return encode_json({ error => 'Unsupported combination of file types' }) if ($numFastq > 0 and $numFastq != @files);
-    return return encode_json({ error => 'Too many files' }) if ($numFastq == 0 and @files > 1);
+    return encode_json({ error => 'Unsupported combination of file types' }) if ($numFastq > 0 and $numFastq != @files);
+    return encode_json({ error => 'Too many files' }) if ($numFastq == 0 and @files > 1);
     
-    # Process the fastq input files
-    my (@validated, @trimmed);
+    # Decompress the fastq input files (when necessary)
+    my @decompressed;
     foreach my $file (@files) {
-        # Decompress (if necessary)
         my $done_file;
         if ( $file =~ /\.gz$/ ) {
             push @tasks, create_gunzip_job($file);
             $file =~ s/\.gz$//;
-            $done_file = "$file.decompressed";
         }
+        push @decompressed, $file;
+    }
         
-        # Validate
-        my $validate_task = create_validate_fastq_job($file, $done_file);
+    # Validate the fastq input files
+    my @validated;
+    foreach my $file (@decompressed) {
+        my $validate_task = create_validate_fastq_job($file, "$file.decompressed");
         push @validated, @{$validate_task->{outputs}}[0];
         push @tasks, $validate_task;
+    }
     
-        # Trim
-        my $trim_reads = 1; #FIXME hook this as option in LoadExperiment interface
-        if ($trim_reads) {
-            my $trim_task = create_cutadapt_job(
-                fastq => $file, 
-                validated => "$file.validated", 
-                staging_dir => $staging_dir,
-                params => $trimming_params
-            );
-            push @trimmed, $trim_task->{outputs}->[0];
-            push @tasks, $trim_task;
+    # Trim the fastq input files
+    my @trimmed;
+    my $trim_reads = 1; #TODO add this as an option in LoadExperiment interface
+    if ($trim_reads) {
+        if ($alignment_params->{read_type} eq 'paired') { # mdb added 5/8/15 COGE-624 - enable paired-end support in cutadapt
+            my @m1 = sort grep { $_ =~ /\_R1/ } @files;
+            my @m2 = sort grep { $_ =~ /\_R2/ } @files;
+            unless (@m1 and @m2 and @m1 == @m2) {
+                return encode_json({ error => 'Mis-paired FASTQ files' });
+            }
+            
+            for (my $i = 0;  $i < @m1;  $i++) {
+                my $file1 = shift @m1;
+                my $file2 = shift @m2;
+                my $trim_task = create_cutadapt_job(
+                    fastq => [ $file1, $file2 ],
+                    validated => [ "$file1.validated", "$file2.validated" ]
+                    staging_dir => $staging_dir,
+                    params => $trimming_params
+                );
+                push @trimmed, $trim_task->{outputs}->[0];
+                push @tasks, $trim_task;
+            }
         }
-        else {
-            push @trimmed, $file;
+        else { # assume single-ended
+            foreach my $file (@decompressed) {
+                my $trim_task = create_cutadapt_job(
+                    fastq => $file,
+                    validated => "$file.validated",
+                    staging_dir => $staging_dir,
+                    params => $trimming_params
+                );
+                push @trimmed, $trim_task->{outputs}->[0];
+                push @tasks, $trim_task;
+            }
         }
+    }
+    else {
+        push @trimmed, @decompressed;
     }
 
     # Get genome cache path
