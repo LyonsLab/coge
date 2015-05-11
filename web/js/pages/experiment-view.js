@@ -359,6 +359,7 @@ var snpMenu = {
 			type: 'analyze_snps',
 			requester: {
 				page: PAGE_NAME,
+				url: PAGE_NAME + "?eid=" + EID,
 				user_name: USER_NAME
 			},
 			parameters: {
@@ -381,8 +382,8 @@ var snpMenu = {
 		  		
 			        // Set link in status dialog
 		  		if (response.site_url) {
-			    		var link = $('<a>'+response.site_url+'</a>').attr('href', response.site_url);
-				        $('#load_link').html('Link: ').append(link);
+			    	var link = $('<a>'+response.site_url+'</a>').attr('href', response.site_url);
+				    $('#load_link').html('Link: ').append(link);
 		  		}
 		
 		        // Start status update
