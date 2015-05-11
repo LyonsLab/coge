@@ -120,7 +120,8 @@ sub build {
                 input_file => $bam_file,
                 metadata => $metadata,
                 options => $self->options,
-                params => $self->params->{snp_params}
+                params => $self->params->{snp_params},
+                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
             switch ($method) { # TODO move this into subroutine
@@ -151,8 +152,8 @@ sub build {
                 staging_dir => $staging_dir,
                 done_files => \@done_files        		
         	);
-        } else {
-        
+        } 
+        else {
 	        # Create notebook and additional pipeline metadata depending on results
 	        if ( $result_count > 1 ) {
 	            my @additional_md = (
