@@ -178,6 +178,7 @@ sub build {
         # Setup full path to input data file
         my $upload_dir = get_upload_path($self->user->name, $self->options->{load_id});
         my $input_file = catfile($upload_dir, $data->[0]->{path});
+        
         # Submit workflow to generate experiment
         my $job = create_load_experiment_job(
             user => $self->user,
@@ -186,11 +187,11 @@ sub build {
             wid => $self->workflow->id,
             gid => $genome->id,
             input_file => $input_file,
-            normalize => $self->options->{normalize} ? $self->options->{normalize_method} : "",
-            metadata => $metadata
+            metadata => $metadata,
+            normalize => $self->options->{normalize} ? $self->options->{normalize_method} : 0
         );
-         push @tasks, $job;
-         push @done_files, $job->{outputs}->[1];
+        push @tasks, $job;
+        push @done_files, $job->{outputs}->[1];
     }
 
 	if ( $self->options->{email} ) {
@@ -208,7 +209,6 @@ sub build {
         $body .= "\n\nNote: you received this email because you submitted an experiment on " .
             "CoGe (http://genomevolution.org) and selected the option to be emailed " .
             "when finished.";
-
 	    
 	    # Create task
 		push @tasks, send_email_job(
