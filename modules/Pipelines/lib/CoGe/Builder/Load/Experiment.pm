@@ -178,6 +178,7 @@ sub build {
         # Setup full path to input data file
         my $upload_dir = get_upload_path($self->user->name, $self->options->{load_id});
         my $input_file = catfile($upload_dir, $data->[0]->{path});
+        
         # Submit workflow to generate experiment
         my $job = create_load_experiment_job(
             user => $self->user,
@@ -209,7 +210,6 @@ sub build {
             "CoGe (http://genomevolution.org) and selected the option to be emailed " .
             "when finished.";
 
-	    
 	    # Create task
 		push @tasks, send_email_job(
 			from => 'CoGe Support <coge.genome@gmail.com>',
