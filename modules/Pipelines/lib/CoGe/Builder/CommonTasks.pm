@@ -503,8 +503,8 @@ sub create_cutadapt_job {
     my %opts = @_;
 
     # Required params
-    my $fastq = $opts{fastq};
-    my $validated = $opts{validated};
+    my $fastq = $opts{fastq};            # for single fastq file (backwards compatibility) or two paired-end fastq files (new functionality)
+    my $validated = $opts{validated};    # input dependency from previous task, one or two files based on fastq arg
     my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
@@ -513,11 +513,23 @@ sub create_cutadapt_job {
     my $quality = $params->{'--quality-base'} // 32; #/
     my $m = $params->{'-m'} // 17; #/
 
-    my $inputs = [ $fastq ];
-    push @{$inputs}, $validated if $validated;
+    my (@inputs, $fastq_str);
+    if (ref($fastq) eq 'ARRAY') {
+        $fastq_str = join(' ', @$fastq);
+        push @inputs, @$fastq;
+        push @inputs, @$validated;
+    }
+    else {
+        $fastq_str = $fastq;
+        push @inputs, $fastq;
+        push @inputs, $validated;
+    }
 
     my $name = to_filename($fastq);
     my $cmd = $CONF->{CUTADAPT};
+    
+    my $output1 = $name . '.trimmed.1.fastq';
+    my $output2 = $name . '.trimmed.2.fastq';
 
     return {
         cmd => qq[$cmd > /dev/null],
@@ -526,10 +538,10 @@ sub create_cutadapt_job {
             ['-q', $q, 0],
             ["--quality-base=$quality", '', 0],
             ["-m", $m, 0],
-            ['', $fastq, 1],
-            ['-o', $name . '.trimmed.fastq', 1],
+            ['-o', $output1, 1],
+            ['-p', $output2 . ' ' . $fastq_str, 1], #FIXME will JEX allow spaces in arg definition?
         ],
-        inputs => $inputs,
+        inputs => \@inputs,
         outputs => [
             catfile($staging_dir, $name . '.trimmed.fastq')
         ],
