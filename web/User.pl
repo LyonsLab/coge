@@ -1349,6 +1349,7 @@ sub get_contents {
         }
     }
     
+    # Retrieve all job history
     my $jobs = get_jobs($last_update);
 
     #print STDERR "get_contents: time4=" . ((time - $start_time)*1000) . "\n";
@@ -1395,7 +1396,7 @@ sub get_contents {
     
     #print STDERR "get_contents: time6=" . ((time - $start_time)*1000) . "\n";
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_loads} ) {
-        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo']);
+        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo', 'experimentview']);
         foreach (@$loads) {
             $_->{link} = undef unless is_uri($_->{link});
 
@@ -1413,6 +1414,7 @@ sub get_contents {
     }
 
     if ($html_only) { # only do this for initial page load, not polling
+        # Generate activity graph
         my $user_id = $USER->id;
         my $job_list = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
         push @rows,
@@ -1424,6 +1426,7 @@ sub get_contents {
           };
     }
 
+    # Render page template
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( DO_CONTENTS => 1 );
     $template->param( CONTENTS_ITEM_LOOP => \@rows );
