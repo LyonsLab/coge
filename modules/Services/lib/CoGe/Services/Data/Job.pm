@@ -64,11 +64,14 @@ sub add {
         my ($page, $link);
         if ($payload->{requester}) { # request is from web page - external API requests will not have a 'requester' field
             $page = $payload->{requester}->{page};
-            if ($page) { 
-                $page = $payload->{requester}->{page};
-                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
-                $response->{site_url} = $link if $link;
+            my $url = $payload->{requester}->{url};
+            if ($url) {
+                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $url . "&wid=" . $workflow->id );
             }
+            elsif ($page) { 
+                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
+            }
+            $response->{site_url} = $link if $link;
         }
         
         # Log job submission
