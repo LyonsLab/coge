@@ -26,7 +26,7 @@ use CoGe::Builder::SNP::GATK;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
-    $JOB_ID $LOAD_ID $TEMPDIR $CONFIGFILE
+    $WORKFLOW_ID $LOAD_ID $TEMPDIR $CONFIGFILE
 );
 
 $PAGE_TITLE = "ExperimentView";
@@ -39,7 +39,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE,
 );
 
-$JOB_ID  = $FORM->Vars->{'job_id'};
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
@@ -637,7 +637,7 @@ sub gen_body {
         DEFAULT_TYPE    => 'note',
         rows            => commify($exp->row_count),
         IRODS_HOME      => get_irods_path(),
-        JOB_ID          => $JOB_ID,
+        JOB_ID          => $WORKFLOW_ID,
         STATUS_URL      => 'jex/status/',
         ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
         PUBLIC          => $USER->user_name eq "public" ? 1 : 0,

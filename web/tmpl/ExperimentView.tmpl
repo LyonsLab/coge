@@ -16,7 +16,7 @@ const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
 const IRODS_HOME    = '<TMPL_VAR NAME=IRODS_HOME>';
 
 var EID = '<TMPL_VAR NAME="EID">';
-var JOB_ID = '<TMPL_VAR NAME="JOB_ID">';
+var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
 var newLoad = false;
 
 $(document).ready(function() {
@@ -57,9 +57,9 @@ $(document).ready(function() {
     snpMenu.init();
     
     // Open status dialog
-    if (JOB_ID) {
+    if (WORKFLOW_ID) {
     	coge.progress.begin();
-    	coge.progress.update(JOB_ID);
+    	coge.progress.update(WORKFLOW_ID);
     }
 });
 </SCRIPT>

@@ -387,7 +387,7 @@ var snpMenu = {
 		  		}
 		
 		        // Start status update
-		  		window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EID + "&job_id=" + response.id); // Add workflow id to browser URL
+		  		window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EID + "&wid=" + response.id); // Add workflow id to browser URL
 		  		//update_dialog(response.id, "#progress_dialog", progress_formatter);
 		  		coge.progress.update(response.id);
 		    },
