@@ -48,6 +48,7 @@ sub run {
 
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
+    return unless ($workflow && $workflow->id);
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );

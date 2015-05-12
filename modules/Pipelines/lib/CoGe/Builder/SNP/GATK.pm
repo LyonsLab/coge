@@ -31,6 +31,7 @@ sub run {
 
     # Create a workflow
     my $workflow = $JEX->create_workflow( name => 'Running the GATK SNP-finder pipeline', init => 1 );
+    return unless ($workflow && $workflow->id);
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
