@@ -32,7 +32,6 @@ my $node_types = CoGeX::node_types();
 #print STDERR $node_types->{user};
 
 %FUNCTION = (
-	search_organisms                => \&search_organisms,
 	search_users                    => \&search_users,
 	search_stuff                    => \&search_stuff,
 	user_info                       => \&user_info,
@@ -45,6 +44,13 @@ my $node_types = CoGeX::node_types();
     cancel_job                      => \&cancel_job,
     restart_job                     => \&restart_job,
     get_jobs                        => \&get_jobs_for_user,
+    get_group_dialog                => \&get_group_dialog,
+    add_users_to_group              => \&add_users_to_group,
+    remove_user_from_group          => \&remove_user_from_group,
+    change_group_role               => \&change_group_role,
+    get_history_for_user            => \&get_history_for_user,
+    toggle_star                     => \&toggle_star,
+    update_comment                  => \&update_comment,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -75,12 +81,12 @@ sub gen_body {
 
 	#print STDERR "BODY\n";
 	# Hide this page if the user is not an Admin
-	unless ( $USER->is_admin ) {
-		my $template =
-		  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
-		$template->param( ADMIN_ONLY => 1 );
-		return $template->output;
-	}
+	#unless ( $USER->is_admin ) {
+	#	my $template =
+	#	  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+	#	$template->param( ADMIN_ONLY => 1 );
+	#	return $template->output;
+	#}
 
 	my $template =
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
@@ -835,6 +841,90 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 	return $template->output;
 }
 
+sub get_group_dialog {
+    my %opts      = @_;
+    my $item_list = $opts{item_list};
+    my @items     = split( ',', $item_list );
+    return unless @items;
+    my $item_id;
+    my $item_type;
+
+    my ( %users, %roles, %creators, %owners, $lowest_role );
+    foreach (@items) {
+        ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        next unless ( $item_id and $item_type );
+        next unless ( $item_type == $node_types->{group} ); # sanity check
+
+        my $group = $coge->resultset('UserGroup')->find($item_id);
+        next unless ( $group and $group->is_editable($USER) );
+        next if ( $group->locked and !$USER->is_admin );
+
+        my $role = $group->role;
+        $lowest_role = $role if (!$lowest_role or $role->is_lower($lowest_role));
+        my $creator_id = $group->creator_user_id;
+        my $owner_id = $group->owner->id;
+        foreach my $user ($group->users) {
+            my $uid = $user->id;
+            $users{$uid} = $user;
+            if ( not defined $roles{$uid}
+                 or $role->is_lower($roles{$uid}) )
+            {
+                $roles{$uid} = $role;
+            }
+            if ($uid == $creator_id) {
+                $creators{$uid} = 1;
+            }
+            if ($uid == $owner_id) {
+                $owners{$uid} = 1;
+            }
+        }
+    }
+
+    my @rows;
+    foreach my $user ( sort usercmp values %users ) {
+        my $uid = $user->id;
+        my $role_name;
+        if ($creators{$uid}) {
+            $role_name = 'Creator';
+        }
+        if ($owners{$uid}) {
+            $role_name = ($role_name ? $role_name . ', ' : '') . 'Owner';
+        }
+        push @rows, {
+        	ITEM_ID      => $item_id,
+            ITEM_TYPE    => $item_type,
+            USER_ITEM      => $uid,
+            USER_FULL_NAME => $user->display_name,
+            USER_NAME      => $user->name,
+            USER_ROLE      => ($role_name ? ' - ' . $role_name : ''),#$roles{$uid}->name),
+            USER_DELETE    => !$owners{$uid} # owner can't be removed
+        };
+    }
+
+    my $template =
+      HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+
+    # If no editable groups then show error dialog
+    if (!$USER->is_admin) {
+        $template->param(
+            ERROR_DIALOG => 1,
+            ERROR_MESSAGE => "You don't have permission to modify the selected group(s).",
+        );
+    }
+    else {
+        $template->param(
+            GROUP_DIALOG => 1,
+            IS_EDITABLE  => 1,
+            USER_LOOP => \@rows,
+            ROLES => get_roles($lowest_role->name),
+            ITEM_ID   => $item_id,
+            ITEM_TYPE => $item_type,
+        );
+    }
+
+    return $template->output;
+}
+
 sub get_roles {
 	my $selected = shift;
 
@@ -936,11 +1026,173 @@ sub modify_item {
     return 1;
 }
 
+sub add_users_to_group {
+    my %opts = @_;
+    my @target_items = split( ',', $opts{target_items} );
+    return unless @target_items;
+    my $new_item = $opts{new_item};
+    return unless $new_item;
+    #print STDERR "add_users_to_group: $new_item @target_items\n";
+
+    # Build a list of users to add to the target group
+    my %users;
+    my ( $item_id, $item_type ) = $new_item =~ /(\d+)\:(\d+)/;
+    return unless ( $item_id and $item_type );
+
+    if ( $item_type == $node_types->{user} ) {
+        my $user = $coge->resultset('User')->find($item_id);
+        return unless $user;
+        $users{$user->id} = $user;
+    }
+    elsif ( $item_type == $node_types->{group} ) {
+        my $group = $coge->resultset('UserGroup')->find($item_id);
+        return unless $group;
+        # TODO check that user has visibility of this group (one that they own or belong to)
+        map { $users{$_->id} = $_ } $group->users;
+     }
+
+    # Add users to the target groups
+    foreach (@target_items) {
+        # Find target group and check permission to modify
+        my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        #print STDERR "add_users_to_group $target_id\n";
+        next unless ( $target_id and $target_type );
+        next unless ( $target_type == $node_types->{group} ); # sanity check
+        my $target_group = $coge->resultset('UserGroup')->find($target_id);
+        next unless ( $target_group and $target_group->is_editable($USER) );
+        next if ( $target_group->locked && !$USER->is_admin );
+
+        # Add users to this target group
+        foreach my $user (values %users) {
+            # Check for existing user connection to target group
+            my $conn = $coge->resultset('UserConnector')->find(
+                {
+                    parent_id   => $user->id,
+                    parent_type => 5,                #FIXME hardcoded to "user"
+                    child_id    => $target_id,
+                    child_type  => 6                 #FIXME hardcoded to "group"
+                }
+            );
+
+            # Create new user connection if one wasn't found
+            if (!$conn) {
+                $conn = $coge->resultset('UserConnector')->create(
+                    {
+                        parent_id   => $user->id,
+                        parent_type => 5,                #FIXME hardcoded to "user"
+                        child_id    => $target_id,
+                        child_type  => 6,                #FIXME hardcoded to "group"
+                        role_id     => $target_group->role_id
+                    }
+                );
+            }
+            next unless $conn;
+
+            # Record in log
+            CoGe::Accessory::Web::log_history(
+                db          => $coge,
+                user_id     => $USER->id,
+                page        => "Admin",
+                description => 'add user id' . $user->id . ' to group id' . $target_id
+            );
+        }
+    }
+
+    return get_group_dialog( item_list => $opts{target_items} );
+}
+
+sub remove_user_from_group {
+    my %opts = @_;
+    my @target_items = split( ',', $opts{target_items} );
+    return unless @target_items;
+    my $user_id = $opts{user_id};
+    return unless $user_id;
+    #print STDERR "remove_user_from_group: $user_id @target_items\n";
+
+    # Verify user
+    my $user = $coge->resultset('User')->find($user_id);
+    return unless $user;
+
+    # Remove users from the target groups
+    foreach (@target_items) {
+        # Find target group and check permission to modify
+        my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        #print STDERR "remove_user_from_group $target_id\n";
+        next unless ( $target_id and $target_type );
+        next unless ( $target_type == $node_types->{group} ); # sanity check
+        my $target_group = $coge->resultset('UserGroup')->find($target_id);
+        next unless ( $target_group and $target_group->is_editable($USER) );
+        next if ( $target_group->locked && !$USER->is_admin );
+
+        # Get user connection to target group
+        my $conn = $coge->resultset('UserConnector')->find(
+            {
+                parent_id   => $user_id,
+                parent_type => 5,                #FIXME hardcoded to "user"
+                child_id    => $target_id,
+                child_type  => 6                 #FIXME hardcoded to "group"
+            }
+        );
+        next unless $conn;
+
+        # Delete user connection if not owner
+        next if ($conn->role->is_owner);
+        $conn->delete;
+
+        # Record in log
+        CoGe::Accessory::Web::log_history(
+            db          => $coge,
+            user_id     => $USER->id,
+            page        => "Admin",
+            description => 'remove user id' . $user_id . ' from group id' . $target_id
+        );
+    }
+
+    return get_group_dialog( item_list => $opts{target_items} );
+}
+
+sub change_group_role {
+    my %opts = @_;
+    my @target_items = split( ',', $opts{target_items} );
+    return unless @target_items;
+    my $role_id = $opts{role_id};
+    return unless $role_id;
+    #print STDERR "change_group_role: $role_id @target_items\n";
+
+    # Verify role
+    my $role = $coge->resultset('Role')->find($role_id);
+    return unless $role;
+
+    # Change role for the target groups
+    foreach (@target_items) {
+        # Find target group and check permission to modify
+        my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        #print STDERR "change_group_role $target_id\n";
+        next unless ( $target_id and $target_type );
+        next unless ( $target_type == $node_types->{group} ); # sanity check
+        my $target_group = $coge->resultset('UserGroup')->find($target_id);
+        next unless ( $target_group and $target_group->is_editable($USER) );
+        next if ( $target_group->locked && !$USER->is_admin );
+
+        $target_group->role_id($role_id);
+        $target_group->update;
+    }
+
+    return get_group_dialog( item_list => $opts{target_items} );
+}
+
 #Jobs tab
 sub get_jobs_for_user {
-	#print STDERR "Get jobs called\n";
+	######
+    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    #my $print_thing = get_roles($lowest_role->name);
+    #print $fh "Get Jobs called\n";
+    #print $fh "$size\n";
+    #close $fh;
+    #print $fh Dumper(\@items);
+    
     my @entries;
-
     if ( $USER->is_admin ) {
         @entries = $coge->resultset('Log')->search(
             #{ description => { 'not like' => 'page access' } },
@@ -966,8 +1218,6 @@ sub get_jobs_for_user {
 
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
     my @workflows = map { $_->workflow_id } @entries;
-    
-    #print STDERR Dumper(\@workflows);
     
     my $workflows = $JEX->find_workflows(@workflows);
 
@@ -1002,7 +1252,7 @@ sub get_jobs_for_user {
 
         # A log entry must correspond to a workflow
         next unless $entry;
-
+        
         push @job_items, {
             id => int($index++),
             workflow_id => $_->workflow_id,
@@ -1012,7 +1262,6 @@ sub get_jobs_for_user {
             %{$entry}
         };
     }
-
     my @filtered;
 
     # Filter repeated entries
@@ -1071,4 +1320,90 @@ sub _check_job_args {
     }
 
     return $job_id;
+}
+
+
+#History Tab
+sub get_history_for_user {
+    my %opts       = @_;
+    my $time_range = $opts{time_range};    # in hours
+    $time_range = 24 if ( not defined $time_range or $time_range !~ /[-\d]/ );
+    my $include_page_accesses = $opts{include_pages_accesses};
+
+    my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
+    my @entries;
+    if ( $USER->is_admin ) {
+        if ( $time_range == 0 ) {
+            @entries = $coge->resultset('Log')->search(
+
+                #{ description => { 'not like' => 'page access' } },
+                { type     => { '!='  => 0 } },
+                { order_by => { -desc => 'time' } }
+            );
+        }
+    }
+    else {
+        if ( $time_range == 0 or $time_range == -3 ) {
+            @entries = $coge->resultset('Log')->search(
+                {
+                    user_id => $USER->id,
+
+                    #{ description => { 'not like' => 'page access' } }
+                    type => { '!=' => 0 }
+                },
+                { order_by => { -desc => 'time' } }
+            );
+        }
+    }
+
+    my @items;
+    foreach (@entries) {
+        push @items,
+          {
+            id          => $_->id,
+            starred     => ( $_->status != 0 ),
+            date_time   => $_->time,
+            user        => ( $_->user_id ? $users{ $_->user_id } : 'public' ),
+            page        => $_->page,
+            description => $_->description,
+            link        => ( $_->link ? $_->link : '' ),
+            comment     => $_->comment
+          };
+    }
+
+    # print STDERR "items: " . @items . "\n";
+    my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    print $fh Dumper(\@items);
+    close $fh;
+
+    return encode_json(\@items);
+}
+
+sub toggle_star {
+    my %opts   = @_;
+    my $log_id = $opts{log_id};
+
+    my $entry = $coge->resultset('Log')->find($log_id);
+    return '' unless $entry;
+
+    my $status = $entry->status;
+    $entry->status( not $status );
+    $entry->update();
+
+    return not $status;
+}
+
+sub update_comment {
+    my %opts    = @_;
+    my $log_id  = $opts{log_id};
+    my $comment = $opts{comment};
+
+    # print STDERR "udpate_comment: $log_id $comment\n";
+
+    my $entry = $coge->resultset('Log')->find($log_id);
+    return unless $entry;
+
+    $entry->comment($comment);
+    $entry->update();
 }

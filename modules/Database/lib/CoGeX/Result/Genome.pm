@@ -98,6 +98,8 @@ __PACKAGE__->add_columns(
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
     "creator_id",
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+    "date",
+    { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
 );
 
 __PACKAGE__->set_primary_key("genome_id");
@@ -118,8 +120,8 @@ __PACKAGE__->belongs_to(
     'genomic_sequence_type_id'
 );
 __PACKAGE__->belongs_to(
-    "creator" => "CoGeX::Result::User",
-    "creator_id",
+    "creator" => "CoGeX::Result::User", 
+    { 'foreign.user_id' => 'self.creator_id' }
 );
 __PACKAGE__->has_many(
     "genome_annotations" => "CoGeX::Result::GenomeAnnotation",
@@ -897,6 +899,7 @@ sub gff {
     my $print   = $opts{print};
     my $annos   = $opts{annos};
     my $cds     = $opts{cds};       #only print CDS gene features
+    my $chr		= $opts{chr}; #optional, set to only include features on a particular chromosome
     my $unique_parent_annotations =
       $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
     my $id_type =
@@ -933,9 +936,10 @@ sub gff {
             cds                       => $cds,
             name_unique               => $name_unique,
             id_type                   => $id_type,
-            unique_parent_annotations => $unique_parent_annotations
+            unique_parent_annotations => $unique_parent_annotations,
+            chr						  => $chr
         );
-        $output .= $tmp;
+        $output .= $tmp if $tmp;
     }
     return $output;
 }

@@ -48,6 +48,7 @@ sub run {
 
     # Create the workflow
     my $workflow = $jex->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
+    return unless ($workflow && $workflow->id);
 
     # Setup log file, staging, and results paths
     my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
@@ -82,6 +83,7 @@ sub build {
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
     my $params = $opts->{params};
+    my $skipAnnotations = $opts->{skipAnnotations};
 
     # Setup paths
     my $gid = $genome->id;
@@ -113,6 +115,8 @@ sub build {
         staging_dir => $staging_dir
     );
     
+    my $annotations = generate_additional_metadata($params);
+    
     my $load_vcf_task = create_load_vcf_job({
         username => $user->name,
         staging_dir => $staging_dir,
@@ -120,7 +124,8 @@ sub build {
         wid => $wid,
         gid => $gid,
         vcf => catfile($staging_dir, 'snps.vcf'),
-        metadata => $metadata
+        metadata => $metadata,
+        annotations => ($skipAnnotations ? '' : join(';', @$annotations))
     });
     push @tasks, $load_vcf_task;
     
@@ -130,7 +135,7 @@ sub build {
     );
     
     my %results = (
-        metadata => generate_additional_metadata(),
+        metadata => $annotations,
         done_files => \@done_files
     );
 
