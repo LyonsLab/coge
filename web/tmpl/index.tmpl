@@ -34,7 +34,7 @@ $(document).ready(function(){
         ["600px-Phylogeny_fr_PhyML.png","Linking to phylogeny.fr for one-click phylogenetics","Phylogenetics_in_CoGe#Send_sequences_to_phylogeny.fr"]
     );
 
-    var path = "https://gdata.youtube.com/feeds/api/videos?author=CoGeVids&v=2&orderby=updated&alt=jsonc";
+    var path = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=PLX4g0G-7D3_BZrxXnrO_-W7Q12NjrDUBX&key=AIzaSyAH3DLaPmE8bYok1SylK_0Gv2CiRXkrHQs";
 
     images.forEach(function(value, index, list) {
         var im = new Image();
@@ -80,14 +80,13 @@ function show_genomes(e) {
 
 function getYoutubeVideos(path, callback) {
     var parseVideos = function(channel) {
-        var entries = channel.data.items;
+        var entries = channel.items;
         var videos = [];
 
         for (var i=0; i< entries.length; i++) {
-            var id = entries[i].id;
-            var title = entries[i].title;
-            var description = entries[i].description;
-            var thumbnail = entries[i].thumbnail.hqDefault;
+            var id = entries[i].snippet.resourceId.videoId;
+            var title = entries[i].snippet.title;
+            var thumbnail = entries[i].snippet.thumbnails.high.url;
 
             var src = 'https://www.youtube.com/embed/' + id
             + '?wmode=transparent&amp;HD=0&amp;rel=0&amp;showinfo=0&amp;'
@@ -108,7 +107,7 @@ function getYoutubeVideos(path, callback) {
             youtubeHack.append(element);
             youtubeHack.append(overlay);
 
-            videos.push([youtubeHack, title, entries[i].player["default"], vid]);
+            videos.push([youtubeHack, title, null, vid]);
         }
 
         callback(videos);
@@ -163,18 +162,8 @@ function cross_fade(selector, image, delay) {
 
     function animate(duration) {
         var transition = function() {
-            link = "https://genomevolution.org/wiki/index.php/"+image[index][2];
-
             var elem = $(image[index][0])
                     .css("max-width", "100%")
-
-            if(image[index].length === 4) {
-                var vid = $(image[index][3])
-                            .css("width", "95%")
-                            .css("height", "500px");
-
-                link = image[index][2];
-            }
 
             var wrapper = $("<div></div>")
                 .append(elem);
@@ -190,9 +179,9 @@ function cross_fade(selector, image, delay) {
 
             if(image[index].length === 4) {
                 viewer.on("click", $.proxy(pause, run_button))
-                    .on("click", function() { elem.replaceWith(vid); });
+                    .on("click", function() { elem.replaceWith($(image[index][3]).css("width", "95%").css("height", "500px")); });
             } else {
-                viewer.on("click", function() { window.open(link); });
+                viewer.on("click", function() { window.open("https://genomevolution.org/wiki/index.php/"+image[index][2]); });
             }
 
             viewer.html("")

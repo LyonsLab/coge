@@ -68,11 +68,10 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'GenomeList',
-		      TITLE      => 'GenomeList',		
-    		      PAGE_LINK  => $LINK,
-    		      #HELP       => '/wiki/index.php?title=GenomeList',
-		      HELP       => $P->{SERVER},
-                      USER       => $USER->display_name,
+		              TITLE      => 'GenomeList',		
+    		          PAGE_LINK  => $LINK || '',
+		              HELP       => $P->{SERVER} || '',
+                      USER       => $USER->display_name || '',
                       LOGO_PNG   => "CoGe.svg" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
@@ -805,7 +804,8 @@ sub send_to_list          #send to list
         {
             name         => 'genomelist',
             description  => 'Created by GenomeList',
-            list_type_id => 1,                         # FIXME hardcoded type!
+            list_type_id => 1, # FIXME hardcoded type!
+            creator_id   => $USER->id,
             restricted   => 1
         }
     );
@@ -817,7 +817,7 @@ sub send_to_list          #send to list
             parent_id   => $USER->id,
             parent_type => 5,           # FIXME hardcoded to "user"
             child_id    => $list->id,
-	 child_type  => 1,           # FIXME hardcoded to "list"
+	        child_type  => 1,           # FIXME hardcoded to "list"
             role_id     => 2,           # FIXME hardcoded to "owner"
         }
     );

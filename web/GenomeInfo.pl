@@ -19,6 +19,7 @@ use File::Basename qw(basename);
 use File::Path qw(mkpath);
 use File::Spec::Functions;
 use POSIX qw(floor);
+use Data::Dumper;
 
 no warnings 'redefine';
 
@@ -66,7 +67,8 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 #    delete_dataset             => \&delete_dataset,
     check_login                => \&check_login,
     copy_genome                => \&copy_genome,
-    export_fasta_irods         => \&export_fasta_irods,
+    export_fasta		       => \&export_fasta,
+    export_fasta_chr		   => \&export_fasta_chr,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
     update_annotation          => \&update_annotation,
@@ -91,6 +93,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_gc_for_feature_type    => \&get_gc_for_feature_type,
     get_chr_length_hist        => \&get_chr_length_hist,
     get_chr_list               => \&get_chr_list,
+    cache_chr_fasta			   => \&cache_chr_fasta,
     get_aa_usage               => \&get_aa_usage,
     get_wobble_gc              => \&get_wobble_gc,
     get_wobble_gc_diff         => \&get_wobble_gc_diff,
@@ -122,7 +125,7 @@ sub get_genome_info_details {
     # Histogram
     $html .= qq{ <span class="link" onclick="chr_hist($dsgid);">Histogram</span>};
   	# chromosome list
-    $html .= qq{, <span class="link" onclick="chr_list($dsgid);">list</span>};
+    $html .= qq{, <span class="link" onclick="chr_list();">list</span>};
     $html .= qq{</td></tr>};
     
  
@@ -609,9 +612,6 @@ sub export_features {
 
     my $basename = sanitize_name($genome->organism->name . "-ft-" . $ft->name);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{conf} = $config->{_CONFIG_PATH};
     $args{basename} = $basename;
 
     my ($output, %task) = generate_features(%args);
@@ -829,7 +829,7 @@ sub get_chr_length_hist {
     my $mode = $data[$mid];
     my $file = $TEMPDIR . "/" . join( "_", $dsgid ) . "_chr_length.txt";
     open( OUT, ">" . $file );
-    print OUT "#chromosome/contig lenghts for $dsgid\n";
+    print OUT "#chromosome/contig lengths for $dsgid\n";
     print OUT join( "\n", @data ), "\n";
     close OUT;
     my $cmd = $HISTOGRAM;
@@ -870,9 +870,65 @@ sub get_chr_length_hist {
 }
 
 sub get_chr_list {
-	my $html = "<table><thead><tr><th>Chromosome</th></th></thead><tbody></tbody></table>";
+    my %opts  = @_;
+    my $gid = $opts{gid};
+    return "error", " " unless $gid;
+    my $genome = $coge->resultset('Genome')->find($gid);
+    unless ($genome) {
+        my $error = "unable to create genome object using id $gid\n";
+        return $error;
+    }
+	my $html = "<table class=\"display dataTable\">";
+	$html .= "<thead><tr><th>Chromosome</th><th>Length</th><th colspan=\"2\">Files</th></thead>";
+	$html .= "<tbody>";
+	my @chromosomes =
+      sort { $b->sequence_length <=> $a->sequence_length }
+      $genome->genomic_sequences();
+	for (@chromosomes) {
+		$html .= "<tr><td class=\"data5\" style=\"padding-right:20px\">" . $_->chromosome . "</td>";
+		$html .= "<td class=\"data5\" style=\"padding-right:20px\">" . $_->sequence_length . "</td>";
+		$html .= "<td class=\"data5\" style=\"padding-right:20px\"><input type=\"radio\" name=\"chr\" id=\"f" . $_->chromosome . "\" /> FASTA</td>";
+		$html .= "<td class=\"data5\"><input type=\"radio\" name=\"chr\" id=\"g" . $_->chromosome . "\" /> GFF</td></tr>";
+	}
+	$html .= "</tbody></table>";
+	$html .= "<span onclick=\"export_chr_file()\" class=\"r ui-button ui-corner-all coge-button\" style=\"margin-left:10px;margin-top:10px;\">Send to iPlant</span>";
+	$html .= "<span onclick=\"download_chr_file()\" class=\"r ui-button ui-corner-all coge-button\" style=\"margin-top:10px;\">Download</span>";
 	return $html;
 }
+
+sub cache_chr_fasta {
+    my %opts  = @_;
+    my $gid = $opts{gid};
+    my $chr = $opts{chr};
+
+    my $path = get_download_path('genome', $gid);
+	mkpath( $path, 0, 0777 ) unless -d $path;
+    my $file = catfile($path, $gid . "_" . $chr . ".faa");
+	my %json;
+	$json{file} = $file;
+    if (-e $file) {
+    	return encode_json(\%json);
+    }
+
+    my $genome = $coge->resultset('Genome')->find($gid);
+    return "unable to create genome object using id $gid" unless ($genome);
+	my $chromosome = $coge->resultset('GenomicSequence')->find({genome_id=>$gid,chromosome=>$chr});
+
+	# Get sequence from file
+	my $seq = $genome->get_genomic_sequence(
+		chr   => $chr,
+		start => 1,
+		stop  => $chromosome->sequence_length
+	);
+	open(my $fh, '>', $file) or return "Could not open file '$file' $!";
+	for (my $i=0; $i<length($seq); $i+=70) {
+		print $fh substr($seq, $i, 70);
+		print $fh "\n";
+	}
+	close $fh;
+    return encode_json(\%json);
+}
+
 
 sub get_genome_info {
     my %opts   = @_;
@@ -885,8 +941,7 @@ sub get_genome_info {
         return unless ($genome);
     }
 
-    my $template =
-      HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    my $template = HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 
     $template->param(
         DO_GENOME_INFO => 1,
@@ -896,8 +951,7 @@ sub get_genome_info {
         SOURCE         => get_genome_sources($genome),
         LINK           => $genome->link,
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
-        USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', map { $_->display_name } $USER->users_with_access($genome))
-                                                   : 'Everyone' ),
+        USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', map { $_->display_name } $USER->users_with_access($genome)) : 'Everyone' ),
         NAME           => $genome->name,
         DESCRIPTION    => $genome->description,
         DELETED        => $genome->deleted
@@ -905,11 +959,11 @@ sub get_genome_info {
 
     my $owner = $genome->owner;
     my $creator = $genome->creator;
-    my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome))
-                                                   : undef);
+    my $creation = ($genome->creator_id ? $genome->creator->display_name  . ' ' : '') . ($genome->date ne '0000-00-00 00:00:00' ? $genome->date : '');
+    my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome)) : undef);
     $template->param( groups_with_access => $groups) if $groups;
     $template->param( OWNER => $owner->display_name ) if $owner;
-    $template->param( CREATOR => $creator->display_name ) if $creator;
+    $template->param( CREATOR => $creation ) if $creation;
     $template->param( GID => $genome->id );
 
     return $template->output;
@@ -1309,8 +1363,6 @@ sub copy_genome {
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     $args{uid} = $USER->id;
-    $args{conf} = $config->{_CONFIG_PATH};
-    $args{script_dir} = $config->{SCRIPTDIR};
     $args{staging_dir} = $staging_dir;
     $args{result_dir} = $result_dir;
 
@@ -1472,10 +1524,10 @@ sub get_aa_usage {
     return $html2; #return $html1, $html2;
 }
 
-sub export_fasta_irods {
+sub export_fasta {
     my %opts    = @_;
     my $gid = $opts{gid};
-    #print STDERR "export_fasta_irods $gid\n";
+    #print STDERR "export_fasta $gid\n";
 
     my $genome = $coge->resultset('Genome')->find($gid);
     return unless ($USER->has_access_to_genome($genome));
@@ -1485,7 +1537,7 @@ sub export_fasta_irods {
     my $dest = get_irods_path() . '/' . $dest_filename;
 
     unless ($src and $dest) {
-        print STDERR "GenomeInfo:export_fasta_irods: error, undef src or dest\n";
+        print STDERR "GenomeInfo:export_fasta: error, undef src or dest\n";
         return;
     }
 
@@ -1512,7 +1564,28 @@ sub export_fasta_irods {
     $meta{'Genome Description'} = $genome->description if ($genome->description);
     CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
 
-    return $dest_filename;
+	my %json;
+	$json{file} = $dest_filename;
+    return encode_json(\%json);
+}
+
+sub export_fasta_chr {
+    my %args = @_;
+    my $dsg = $coge->resultset('Genome')->find($args{gid});
+    my $file = $args{file};
+#    print STDERR Dumper \%args;
+
+    # ensure user is logged in
+    return $ERROR if $USER->is_public;
+
+    # ensure user has permission
+    return $ERROR unless $USER->has_access_to_genome($dsg);
+
+    my (%json, %meta);
+    %meta = get_metadata($dsg);
+    $json{file} = basename($file);
+    $json{error} = export_to_irods( file => $file, meta => \%meta );
+    return encode_json(\%json);
 }
 
 sub get_irods_path {
@@ -1799,10 +1872,7 @@ sub get_tbl {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export Tbl");
     my ($output, %task) = generate_tbl(%args);
@@ -1835,39 +1905,7 @@ sub get_metadata {
 }
 
 sub export_tbl {
-    my %args = @_;
-    my $dsg = $coge->resultset('Genome')->find($args{gid});
-
-    # ensure user is logged in
-    return $ERROR if $USER->is_public;
-
-    # ensure user has permission
-    return $ERROR unless $USER->has_access_to_genome($dsg);
-
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
-
-    my $workflow = $JEX->create_workflow(name => "Export Tbl");
-    my ($output, %task) = generate_tbl(%args);
-    $workflow->add_job(\%task);
-
-    my $response = $JEX->submit_workflow($workflow);
-    say STDERR "RESPONSE ID: " . $response->{id};
-    my $success = $JEX->wait_for_completion($response->{id});
-
-    my (%json, %meta);
-    %meta = get_metadata($dsg);
-    $json{file} = basename($output);
-
-    if($success) {
-        $json{error} = export_to_irods( file => $output, meta => \%meta );
-    } else {
-        $json{error} = 1;
-    }
-
-    return encode_json(\%json);
+    return export_file_to_irods("Tbl", \&generate_tbl, @_);
 }
 
 #
@@ -1881,10 +1919,7 @@ sub get_bed {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export bed file");
     my ($output, %task) = generate_bed(%args);
@@ -1902,40 +1937,7 @@ sub get_bed {
 }
 
 sub export_bed {
-    my %args = @_;
-    my $gid = $args{gid};
-    my $dsg = $coge->resultset('Genome')->find($gid);
-
-    # ensure user is logged in
-    return $ERROR if $USER->is_public;
-
-    # ensure user has permission
-    return $ERROR unless $USER->has_access_to_genome($dsg);
-
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
-    $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
-
-    my $workflow = $JEX->create_workflow(name => "Export bed file");
-    my ($output, %task) = generate_bed(%args);
-    $workflow->add_job(\%task);
-
-    my $response = $JEX->submit_workflow($workflow);
-    say STDERR "RESPONSE ID: " . $response->{id};
-    my $success = $JEX->wait_for_completion($response->{id});
-    my (%json, %meta);
-    %meta = get_metadata($dsg);
-
-    $json{file} = basename($output);
-
-    if($success) {
-        $json{error} = export_to_irods( file => $output, meta => \%meta );
-    } else {
-        $json{error} = 1;
-    }
-
-    return encode_json(\%json);
+    return export_file_to_irods("bed file", \&generate_bed, @_);
 }
 
 #
@@ -1949,17 +1951,16 @@ sub get_gff {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
 
     my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(\%args, $config);
+    my ($output, %task) = generate_gff(%args);
+#    print STDERR "get_gff: ", $output, "\n",
+#                 "get_gff: ", Dumper \%task, "\n";
     $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
-    say STDERR "RESPONSE ID: " . $response->{id};
+#    say STDERR "get_gff: wid=" . $response->{id};
     $JEX->wait_for_completion($response->{id});
 
     my %json;
@@ -1970,6 +1971,17 @@ sub get_gff {
 }
 
 sub export_gff {
+    return export_file_to_irods("gff", \&generate_gff, @_);
+}
+
+# %args:
+# - gid
+# - file_type, used to name workflow
+# - generate_func, function to call to generate file to export
+# %args is also passed to generate_func
+sub export_file_to_irods {
+	my $file_type = shift;
+	my $generate_func = shift;
     my %args = @_;
     my $dsg = $coge->resultset('Genome')->find($args{gid});
 
@@ -1982,13 +1994,10 @@ sub export_gff {
     my (%json, %meta);
     %meta = get_metadata($dsg);
 
-    $args{script_dir} = $config->{SCRIPTDIR};
-    $args{secure_tmp} = $config->{SECTEMPDIR};
     $args{basename} = sanitize_name($dsg->organism->name);
-    $args{conf} = $config->{_CONFIG_PATH};
 
-    my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(\%args, $config);
+    my $workflow = $JEX->create_workflow(name => "Export " . $file_type);
+    my ($output, %task) = $generate_func->(%args);
     $workflow->add_job(\%task);
 
     my $response = $JEX->submit_workflow($workflow);
@@ -2030,14 +2039,11 @@ sub get_download_url {
     my %args = @_;
     my $dsgid = $args{dsgid};
     my $filename = basename($args{file});
+    my $username = $USER->user_name;
 
     return join('/', $config->{SERVER}, 
-        'api/v1/legacy/download/GenomeInfo', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
-        "?gid=$dsgid&file=$filename");
-}
-
-sub get_download_path {
-    return catfile($config->{SECTEMPDIR}, "GenomeInfo/downloads", shift);
+        'api/v1/legacy/download', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
+        "?username=$username&gid=$dsgid&filename=$filename");
 }
 
 sub generate_html {
@@ -2059,10 +2065,9 @@ sub generate_html {
           HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
-	    TITLE      => 'GenomeInfo',
+	        TITLE      => 'GenomeInfo',
             PAGE_LINK  => $LINK,
-            #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE . '.pl',
-	    HELP       => $config->{SERVER},
+	        HELP       => $config->{SERVER},
             USER       => $name,
             LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,

@@ -9,7 +9,7 @@ use File::Spec::Functions;
 use URI::Escape::JavaScript qw(unescape);
 
 our ($DEBUG, $db, $user, $pass, $id, $config, $host, $port, $P,
-     $filename, $annos, $cds, $name_unique, $staging_dir,
+     $filename, $annos, $cds, $chr, $name_unique, $staging_dir,
      $id_type, $upa, $coge);
 
 GetOptions(
@@ -19,6 +19,7 @@ GetOptions(
     "filename|f=s"                    => \$filename,
     "annos=i"                         => \$annos,
     "cds=i"                           => \$cds,
+    "chr=s"							  => \$chr,
     "name_unique|nu=i"                => \$name_unique,
     "id_type|type=s"                  => \$id_type,
     "unique_parent_annotations|upa=i" => \$upa,
@@ -35,6 +36,7 @@ GetOptions(
 );
 
 $| = 1;
+print STDERR "in script \n";
 #open (my $logh, ">", $logfile) or die "Error opening log file";
 $staging_dir //= "."; #/
 $filename = unescape($filename) if $filename;
@@ -82,10 +84,13 @@ $org = $item->organism->name . "id";
 
 open(my $fh, ">", $file_temp) or die "Error creating gff file";
 
+print STDERR "chr: $chr\n";
+
 print $fh $item->gff(
     print                     => 0,
     annos                     => $annos,
     cds                       => $cds,
+    chr						  => $chr,
     name_unique               => $name_unique,
     id_type                   => $id_type,
     unique_parent_annotations => $upa,

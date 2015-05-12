@@ -7,6 +7,8 @@ var coge = window.coge = (function(namespace) {
 	namespace.progress = {
 		init: function(opts) {
 			var self = this;
+			this.baseUrl = opts.baseUrl;
+			this.userName = opts.userName;
 			this.supportEmail = opts.supportEmail;
 			this.success = opts.success;
 			this.onError = opts.onError;
@@ -96,6 +98,8 @@ var coge = window.coge = (function(namespace) {
 
 		failed: function(string) {
 			var c = this.container;
+			
+			// Show error message
 		    c.find('.log')
 		    	.append('<div class="alert">' + string + '</div><br>')
 		    	.append(
@@ -107,15 +111,16 @@ var coge = window.coge = (function(namespace) {
 			        '</div>'
 		    	);
 
-//		    if (logfile) {
-//		        $("#logfile a").attr("href", logfile);
-//		        $('#logfile').fadeIn();
-//		    }
+		    // Show link to log file
+		    var logfile = this.baseUrl + 'legacy/download?username=' + this.userName + '&' + 'wid=' + this.job_id;
+		    $(".logfile a").attr("href", logfile);
+		    $('.logfile').fadeIn();
 
 		    // Update dialog
 		    c.find('.msg,.progress-link').hide();
 		    c.find('.error,.cancel').fadeIn();
 
+// FIXME restore this email reporting
 //		    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
 //		        $.ajax({
 //		            data: {

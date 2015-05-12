@@ -273,11 +273,23 @@
 </script>
 
 <script id="quant-template" type="text/template">
-<div>
-    <p>
-        For details on supported file formats, see 
-        <a href="https://genomevolution.org/wiki/index.php/LoadExperiment#CSV_File_Format">this article</a>.
-    </p>
+<div class="form-section">
+    Please verify that your data file is formatted according to the requirements documented here:
+    <a href="https://genomevolution.org/wiki/index.php/LoadExperiment#CSV_File_Format">Quantitative File Formats</a>.
+</div>
+<div class="form-section">
+    <h4>Normalizing Data Options</h4>
+
+    <div class="form-field">
+        <label class="col-md-2">Enable:</label>
+        <input id="normalize" type="checkbox">
+    </div>
+    <div id="normalize_method" class="form-field hidden">
+        <label class="col-md-2">Method:</label>
+        <input id="percentage" type="radio" name="normalize_method" checked> Percentage
+        <input id="log10" type="radio" name="normalize_method" style="margin-left:20px"> Log10
+        <input id="loge" type="radio" name="normalize_method" style="margin-left:20px"> Natural Log
+    </div>
 </div>
 </script>
 
@@ -504,6 +516,8 @@ $(document).ready(function() {
     
     coge.progress.init({
     	title: "Loading Experiment",
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME,
     	supportEmail: SUPPORT_EMAIL,
     	onReset: reset_load
     });
@@ -514,9 +528,8 @@ $(document).ready(function() {
     	coge.progress.update(WORKFLOW_ID);
     }
 
-	if (!$.cookie('splash_dont_show_again')) {
-		$('#splash_dialog').dialog({modal:true});
-		$('#splash_dialog').dialog('open');
+	if (!$.cookie('splash_dont_show_again') && !WORKFLOW_ID) {
+		$('#splash_dialog').dialog({modal:true}).dialog('open');
 	}
 	
     wizard = initialize_wizard({ 
