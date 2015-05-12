@@ -51,6 +51,7 @@ my $node_types = CoGeX::node_types();
     get_history_for_user            => \&get_history_for_user,
     toggle_star                     => \&toggle_star,
     update_comment                  => \&update_comment,
+    update_history                  => \&update_history,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -81,12 +82,12 @@ sub gen_body {
 
 	#print STDERR "BODY\n";
 	# Hide this page if the user is not an Admin
-	#unless ( $USER->is_admin ) {
-	#	my $template =
-	#	  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
-	#	$template->param( ADMIN_ONLY => 1 );
-	#	return $template->output;
-	#}
+	unless ( $USER->is_admin ) {
+		my $template =
+		  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+		$template->param( ADMIN_ONLY => 1 );
+		return $template->output;
+	}
 
 	my $template =
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
@@ -218,7 +219,7 @@ sub search_stuff {
 					user_name  => $searchArray[$i],
 					first_name => $searchArray[$i],
 					user_id    => $searchArray[$i],
-					first_name => $searchArray[$i]
+					last_name => $searchArray[$i]
 				]
 			  ];
 		}
@@ -1219,7 +1220,8 @@ sub get_jobs_for_user {
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
     my @workflows = map { $_->workflow_id } @entries;
     
-    my $workflows = $JEX->find_workflows(\@workflows);
+    #my $workflows = $JEX->find_workflows(\@workflows, 'running');
+    my $workflows = $JEX->find_workflows(undef, 'running');
 
     my @job_items;
     my %workflow_results;
@@ -1372,10 +1374,10 @@ sub get_history_for_user {
     }
 
     # print STDERR "items: " . @items . "\n";
-    my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    print $fh Dumper(\@items);
-    close $fh;
+    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    #print $fh Dumper(\@items);
+    #close $fh;
 
     return encode_json(\@items);
 }
@@ -1407,3 +1409,55 @@ sub update_comment {
     $entry->comment($comment);
     $entry->update();
 }
+
+sub update_history {
+	my %opts       = @_;
+    my $time_range = $opts{time_range};    # in hours
+    my $timestamp = $opts{timestamp};
+    $timestamp = "'" . $timestamp . "'";
+    
+    # print STDERR "items: " . @items . "\n";
+    my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    print $fh $timestamp;
+    print $fh "\n";
+    print $fh "Huzzah\n";
+    close $fh;
+    
+    $time_range = 24 if ( not defined $time_range or $time_range !~ /[-\d]/ );
+    my $include_page_accesses = $opts{include_pages_accesses};
+
+    my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
+    my @entries;
+    if ( $USER->is_admin ) {
+        if ( $time_range == 0 ) {
+            @entries = $coge->resultset('Log')->search(
+#
+#                #{ description => { 'not like' => 'page access' } },
+#                #{ 'time' => { '>', $timestamp } },
+#                #{ type     => { '!='  => 0 } },
+                {
+#                	order_by => { -desc => 'time' },
+                	'time' => { '>' => \$timestamp }
+                }
+            );
+        }
+    }
+    
+    my @items;
+    foreach (@entries) {
+        push @items,
+          {
+            id          => $_->id,
+            starred     => ( $_->status != 0 ),
+            date_time   => $_->time,
+            user        => ( $_->user_id ? $users{ $_->user_id } : 'public' ),
+            page        => $_->page,
+            description => $_->description,
+            link        => ( $_->link ? $_->link : '' ),
+            comment     => $_->comment
+          };
+    }
+
+    return encode_json(\@items);
+}	

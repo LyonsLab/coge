@@ -1,9 +1,12 @@
 var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common location
 var timestamps = new Array();
-var timers = new Array();
+var jobs_timers = new Array();
+var hist_timers = new Array();
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
-var updating = true;
+var jobs_updating = true;
+var hist_updating = true;
 var hist_entries = 0;
+var last_hist_update;
 
 $(function () {
 	// Configure dialogs
@@ -20,7 +23,7 @@ $(function () {
         update_filter();
     });
     $("#update_checkbox").change(function(e) {
-    	toggle_updater();
+    	toggle_job_updater();
     });
     
     //Initialize Jobs tab
@@ -96,7 +99,7 @@ $(function () {
     window.jobs = new coge.Grid('#jobs', job_options, job_columns);
     jobs.grid.registerPlugin(checkbox);
     get_jobs();
-    document.getElementById("job_search_bar").value = "running";
+    //document.getElementById("job_search_bar").value = "running";
     
     
     //Initialize History tab
@@ -986,8 +989,8 @@ function get_jobs() {
 	        update_filter();
 	    },
 	    complete: function(data) {
-	    	if (updating) {
-	        	schedule_update(5000);
+	    	if (jobs_updating) {
+	        	schedule_update("jobs", 1000);
 	        }
 	    }
 	});
@@ -1004,28 +1007,41 @@ function update_filter() {
     $('#job_filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
 }
 
-function toggle_updater() {
-	updating = !updating;
-	if (updating) {
-		schedule_update(5000);
+function toggle_job_updater() {
+	jobs_updating = !jobs_updating;
+	if (jobs_updating) {
+		schedule_update("jobs", 1000);
 	}
 }
 
-function schedule_update(delay) {
-	console.log("Updating");
-	cancel_update();
+function schedule_update(page, delay) {
+	console.log("Updating " + page);
+	cancel_update(page);
 	
 	if (delay !== undefined) {
-		timers['update'] = window.setTimeout(
-			function() { get_jobs(); },
-			delay
-		);
+		if(page == "jobs") {
+			jobs_timers['update'] = window.setTimeout(
+					function() { get_jobs(); },
+					delay
+			);
+		}
+		if(page == "hist") {
+			hist_timers['update'] = window.setTimeout(
+					function() { update_history(); },
+					delay
+			);
+		}
 		return;
 	}	
 }
 
-function cancel_update() {
-	clearTimeout(timers['update']);
+function cancel_update(page) {
+	if(page == "job") {
+		clearTimeout(job_timers['update']);
+	}
+	if(page == "hist") {
+		clearTimeout(hist_timers['update']);
+	}
 }
 
 function cancel_job() {
@@ -1077,7 +1093,7 @@ function submit_task(task, predicate) {
 }
 
 
-//The following Javascript deals with Tab3, the History page
+//The following Javascript deals with Tab3, the History page 
 function get_history() {
 	$.ajax({
 		dataType: 'json',
@@ -1087,9 +1103,15 @@ function get_history() {
 			time_range: 0,
 		},
 		success : function(data) {
-			console.log(data);
+			//console.log(data[0]);
 			hist.load(data);
 			hist_entries = data.length;
+			last_hist_update = data[0].date_time;
+			//console.log(last_hist_update);
+			//console.log(data[1].date_time);
+			//console.log(last_hist_update > data[1].date_time);
+			//console.log(last_hist_update < data[1].date_time);
+			
 			//dataView.beginUpdate();
 			//dataView.setItems(data);
 			//dataView.setFilterArgs({
@@ -1100,8 +1122,46 @@ function get_history() {
 			//dataView.setFilter(myFilter);
 			//dataView.endUpdate();
 			updateHistFilter();
-		}
+		},
+	    complete: function(data) {
+	    	if (hist_updating && last_hist_update) {
+	        	schedule_update("hist", 1000);
+	        }
+	    }
 	});
+}
+
+function update_history() {
+	//console.log(last_hist_update);
+	$.ajax({
+		dataType: 'json',
+		data: {
+			jquery_ajax: 1,
+			fname: 'update_history',
+			timestamp: last_hist_update,
+			time_range: 0,
+		},
+		success: function(data) {
+			console.log(data);
+			if(data[0]) {
+				hist.insert(data);
+				last_hist_update = data[0].date_time;
+			}
+		},
+		complete: function(data) {
+			//console.log(data);
+	    	if (hist_updating) {
+	        	schedule_update("hist", 1000);
+	        }
+	    }
+	})
+}
+
+function toggle_hist_updater() {
+	hist_updating = !hist_updating;
+	if (hist_updating) {
+		schedule_update("hist", 1000);
+	}
 }
 
 function requiredFieldValidator(value) {

@@ -89,6 +89,16 @@ var coge = (function (namespace) {
 
         this.dataView.refresh();
     }
+    
+    namespace.Grid.prototype.insert = function(data) {
+    	this.dataView.beginUpdate();
+    	for(var i = 0; i < data.length; i++) {
+    		this.dataView.insertItem(0, data[i]);
+    	}
+    	this.dataView.endUpdate();
+    	this.dataView.refresh();
+    	this.filter();
+    }
 
     return namespace;
 
