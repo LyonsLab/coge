@@ -113,7 +113,6 @@ var coge = window.coge = (function(namespace) {
 
 		    // Show link to log file
 		    var logfile = this.baseUrl + 'legacy/download?username=' + this.userName + '&' + 'wid=' + this.job_id;
-		    console.log(this.baseUrl);
 		    $(".logfile a").attr("href", logfile);
 		    $('.logfile').fadeIn();
 
@@ -121,6 +120,7 @@ var coge = window.coge = (function(namespace) {
 		    c.find('.msg,.progress-link').hide();
 		    c.find('.error,.cancel').fadeIn();
 
+// FIXME restore this email reporting
 //		    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
 //		        $.ajax({
 //		            data: {

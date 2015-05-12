@@ -61,6 +61,7 @@ sub build {
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
+    my $skipAnnotations = $opts->{skipAnnotations};
 
     # Setup paths
     my $gid = $genome->id;
@@ -70,6 +71,8 @@ sub build {
     my $fasta_file = get_genome_file($gid);
     my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
 
+    my $annotations = generate_additional_metadata();
+
     my $conf = {
         staging_dir => $staging_dir,
         result_dir  => $result_dir,
@@ -78,7 +81,7 @@ sub build {
         fasta       => catfile($FASTA_CACHE_DIR, $reheader_fasta),
         vcf         => catfile($staging_dir, qq[snps.vcf]),
 
-        #annotations => generate_additional_metadata(),
+        annotations => ($skipAnnotations ? '' : join(';', @$annotations)),
         username    => $user->name,
         metadata    => $metadata,
         wid         => $wid,
@@ -109,7 +112,7 @@ sub build {
     );
     
     my %results = (
-        metadata => generate_additional_metadata(),
+        metadata => $annotations,
         done_files => \@done_files
     );
 

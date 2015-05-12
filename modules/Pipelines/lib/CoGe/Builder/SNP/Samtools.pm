@@ -70,6 +70,7 @@ sub build {
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
     my $params = $opts->{params};
+    my $skipAnnotations = $opts->{skipAnnotations};
 
     # Setup paths
     my $gid = $genome->id;
@@ -78,6 +79,8 @@ sub build {
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
     my $fasta_file = get_genome_file($gid);
     my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
+    
+    my $annotations = generate_additional_metadata($params);
 
     my $conf = {
         staging_dir => $staging_dir,
@@ -93,7 +96,9 @@ sub build {
         wid         => $wid,
         gid         => $gid,
         
-        params      => $params
+        params      => $params,
+        
+        annotations => ($skipAnnotations ? '' : join(';', @$annotations)),
     };
 
     # Build the workflow's tasks
@@ -117,7 +122,7 @@ sub build {
     );
     
     my %results = (
-        metadata => generate_additional_metadata($params),
+        metadata => $annotations,
         done_files => \@done_files
     );
 

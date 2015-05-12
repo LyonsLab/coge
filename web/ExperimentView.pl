@@ -637,7 +637,7 @@ sub gen_body {
         DEFAULT_TYPE    => 'note',
         rows            => commify($exp->row_count),
         IRODS_HOME      => get_irods_path(),
-        WORKFLOW_ID          => $WORKFLOW_ID,
+        WORKFLOW_ID     => $WORKFLOW_ID,
         STATUS_URL      => 'jex/status/',
         ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
         PUBLIC          => $USER->user_name eq "public" ? 1 : 0,

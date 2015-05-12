@@ -135,7 +135,7 @@ sub generate_body {
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
-        MAX_FTP_FILES            => 30,
+        MAX_FTP_FILES            => 50,
         USER                     => $user->user_name
     );
 
