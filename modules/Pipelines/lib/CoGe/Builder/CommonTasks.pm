@@ -512,39 +512,36 @@ sub create_cutadapt_job {
     my $q = $params->{'-q'} // 25; #/
     my $quality = $params->{'--quality-base'} // 32; #/
     my $m = $params->{'-m'} // 17; #/
+    my $read_type = $params->{read_type} // 'single'; #/
 
-    my (@inputs, $fastq_str);
-    if (ref($fastq) eq 'ARRAY') {
-        $fastq_str = join(' ', @$fastq);
-        push @inputs, @$fastq;
-        push @inputs, @$validated;
-    }
-    else {
-        $fastq_str = $fastq;
-        push @inputs, $fastq;
-        push @inputs, $validated;
-    }
-
-    my $name = to_filename($fastq);
-    my $cmd = $CONF->{CUTADAPT};
+    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
+    $validated = [ $validated ] unless (ref($validated) eq 'ARRAY');
     
-    my $output1 = $name . '.trimmed.1.fastq';
-    my $output2 = $name . '.trimmed.2.fastq';
+    my $name = join(', ', map { to_filename($_) } @$fastq);
+    my @inputs = ( @$fastq, @$validated);
+    my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
 
+    # Build up command/arguments string
+    my $cmd = $CONF->{CUTADAPT};
+    die "ERROR: CUTADAPT is not in the config." unless $cmd;
+    $cmd = 'nice ' . $cmd; # run at lower priority
+
+    my $arg_str;
+    $arg_str .= $cmd . ' ';
+    $arg_str .= "-q $q --quality-base=$quality -m $m -o $outputs[0] ";
+    $arg_str .= "-p $outputs[1] " if (@$fastq > 1); # paired-end
+    
     return {
-        cmd => qq[$cmd > /dev/null],
+        cmd => catfile($CONF->{SCRIPTDIR}, 'cutadapt.pl'), # this script was created because JEX can't handle Cutadapt's paired-end argument syntax
         script => undef,
         args => [
-            ['-q', $q, 0],
-            ["--quality-base=$quality", '', 0],
-            ["-m", $m, 0],
-            ['-o', $output1, 1],
-            ['-p', $output2 . ' ' . $fastq_str, 1], #FIXME will JEX allow spaces in arg definition?
+            [$read_type, '', 0],
+            [$staging_dir, '', 0],
+            ['"'.$arg_str.'"', '', 0],
+            ['', join(' ', @$fastq), 0]
         ],
         inputs => \@inputs,
-        outputs => [
-            catfile($staging_dir, $name . '.trimmed.fastq')
-        ],
+        outputs => \@outputs,
         description => "Trimming (cutadapt) $name..."
     };
 }
