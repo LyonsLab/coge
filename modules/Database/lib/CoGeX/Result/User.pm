@@ -940,11 +940,8 @@ sub children_by_type_and_id {
 sub children_by_type_role_id {
 	my $self = shift;
 	return unless $self->id; # ignore public user
-	#my %opts = @_;
 
-	#use Time::HiRes qw ( time );
-	#my $start_time = time;
-
+	#use Time::HiRes qw ( time ); my $start_time = time;
 	my (%children, %roles);
 
 	foreach my $c ($self->child_connectors) {
@@ -975,7 +972,6 @@ sub children_by_type_role_id {
 			}
 		}
 	}
-
 	#print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
 
 	return (\%children, \%roles);
