@@ -804,7 +804,8 @@ sub send_to_list          #send to list
         {
             name         => 'genomelist',
             description  => 'Created by GenomeList',
-            list_type_id => 1,                         # FIXME hardcoded type!
+            list_type_id => 1, # FIXME hardcoded type!
+            creator_id   => $USER->id,
             restricted   => 1
         }
     );
@@ -816,7 +817,7 @@ sub send_to_list          #send to list
             parent_id   => $USER->id,
             parent_type => 5,           # FIXME hardcoded to "user"
             child_id    => $list->id,
-	 child_type  => 1,           # FIXME hardcoded to "list"
+	        child_type  => 1,           # FIXME hardcoded to "list"
             role_id     => 2,           # FIXME hardcoded to "owner"
         }
     );

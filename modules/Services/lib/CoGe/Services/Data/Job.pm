@@ -1,7 +1,7 @@
 package CoGe::Services::Data::Job;
 
-use Mojo::Asset::File;
 use Mojo::Base 'Mojolicious::Controller';
+use Mojo::Asset::File;
 #use IO::Compress::Gzip 'gzip';
 use Data::Dumper;
 use File::Basename qw( basename );
@@ -64,11 +64,14 @@ sub add {
         my ($page, $link);
         if ($payload->{requester}) { # request is from web page - external API requests will not have a 'requester' field
             $page = $payload->{requester}->{page};
-            if ($page) { 
-                $page = $payload->{requester}->{page};
-                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
-                $response->{site_url} = $link if $link;
+            my $url = $payload->{requester}->{url};
+            if ($url) {
+                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $url . "&wid=" . $workflow->id );
             }
+            elsif ($page) { 
+                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
+            }
+            $response->{site_url} = $link if $link;
         }
         
         # Log job submission
@@ -177,44 +180,44 @@ sub fetch {
     });
 }
 
-sub results { #TODO remove this, no longer necessary in load_experiment2
-    my $self = shift;
-    my $id = $self->stash('id');
-    my $name = $self->stash('name');
-    my $format = $self->stash('format');
-
-    # Authenticate user and connect to the database
-    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-
-    # User authentication is required
-    unless (defined $user) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        });
-        return;
-    }
-
-    $name = "$name.$format" if $format;
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $id);
-    my $result_file = catfile($result_dir, $name);
-
-    unless (-r $result_file) {
-        $self->render(json => {
-            error => { Error => "Item not found" }
-        });
-        return;
-    }
-
-    # Either download the file or display the results
-    if ($name eq "1") {
-        my $pResult = CoGe::Accessory::TDS::read($result_file);
-        $self->render(json => $pResult);
-    } 
-    else {
-        $self->res->headers->content_disposition("attachment; filename=$name;");
-        $self->res->content->asset(Mojo::Asset::File->new(path => $result_file));
-        $self->rendered(200);
-    }
-}
+#sub results { #TODO remove this, no longer necessary in load_experiment2
+#    my $self = shift;
+#    my $id = $self->stash('id');
+#    my $name = $self->stash('name');
+#    my $format = $self->stash('format');
+#
+#    # Authenticate user and connect to the database
+#    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+#
+#    # User authentication is required
+#    unless (defined $user) {
+#        $self->render(json => {
+#            error => { Auth => "Access denied" }
+#        });
+#        return;
+#    }
+#
+#    $name = "$name.$format" if $format;
+#    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $id);
+#    my $result_file = catfile($result_dir, $name);
+#
+#    unless (-r $result_file) {
+#        $self->render(json => {
+#            error => { Error => "Item not found" }
+#        });
+#        return;
+#    }
+#
+#    # Either download the file or display the results
+#    if ($name eq "1") {
+#        my $pResult = CoGe::Accessory::TDS::read($result_file);
+#        $self->render(json => $pResult);
+#    } 
+#    else {
+#        $self->res->headers->content_disposition("attachment; filename=$name;");
+#        $self->res->content->asset(Mojo::Asset::File->new(path => $result_file));
+#        $self->rendered(200);
+#    }
+#}
 
 1;

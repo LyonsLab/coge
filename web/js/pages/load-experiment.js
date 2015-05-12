@@ -1014,19 +1014,38 @@ $.extend(AlignmentOptionView.prototype, {
 
 function QuantativeView(){
     this.initialize();
+    this.data = {};
 }
 
 $.extend(QuantativeView.prototype, {
     initialize: function() {
         this.el = $($("#quant-template").html());
+        this.container = this.el.find("#normalize_method");
+    },
+
+    render: function() {
+        this.el.find("#normalize").unbind().change(this.toggleAnalysis.bind(this));
+    },
+
+    toggleAnalysis: function() {
+        this.enabled = this.el.find("#normalize").is(":checked");
+
+        if (this.enabled) {
+            this.container.slideDown();
+        } else {
+            this.container.slideUp();
+        }
     },
 
     is_valid: function() {
+        this.data.normalize = this.el.find("#normalize").is(":checked");
         return true;
     },
 
     get_options: function() {
-        return {};
+        if (this.enabled)
+            this.data.normalize_method = this.el.find("#percentage").is(":checked") ? 'percentage' : this.el.find("#log10").is(":checked") ? 'log10' : this.el.find("#loge").is(":checked") ? 'loge' : null;
+        return this.data;
     },
 });
 
@@ -1338,9 +1357,13 @@ $.extend(ConfirmationView.prototype, {
         var key, newpair;
         for(key in options) {
             if (options.hasOwnProperty(key)) {
-            	var val = String(options[key]);
-            	if (typeof options[key] === 'object') val = objToString(options[key]);
-            	else if (typeof options[key] === 'boolean') val = (val ? 'yes' : 'no');
+            	var val;
+            	if (typeof options[key] === 'object')
+            		val = objToString(options[key]);
+            	else if (typeof options[key] === 'boolean')
+            		val = options[key] ? 'yes' : 'no';
+            	else
+                	val = String(options[key]);
                 newpair = this.pair_template.clone();
                 newpair.find(".name").html(coge.utils.ucfirst(key.replace('_', ' ')));
                 newpair.find(".data").html(val);
@@ -1389,6 +1412,8 @@ function load(experiment) {
 		options: {
 			load_id: load_id,
 			email: experiment.options.email,
+			normalize: experiment.options.normalize,
+			normalize_method: experiment.options.normalize_method,
 			notebook: experiment.options.notebook,
 			notebook_name: experiment.options.notebook_name,
 			notebook_id: experiment.options.notebook_id,
@@ -1412,7 +1437,7 @@ function load(experiment) {
             coge.progress.update(response.id, response.site_url);
 	    },
 	    function(jqXHR, textStatus, errorThrown) { // error callback
-	    	coge.progress.failed('Error: ' + textStatus);
+	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
 	    }
 	);
 }

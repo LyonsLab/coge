@@ -17,7 +17,7 @@ use Data::Dumper;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_log data_type);
+use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_log data_type get_download_path);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Builder::SNP::CoGeSNPs;
 use CoGe::Builder::SNP::Samtools;
@@ -26,7 +26,7 @@ use CoGe::Builder::SNP::GATK;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
-    $JOB_ID $LOAD_ID $TEMPDIR $CONFIGFILE
+    $WORKFLOW_ID $LOAD_ID $TEMPDIR $CONFIGFILE
 );
 
 $PAGE_TITLE = "ExperimentView";
@@ -39,7 +39,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE,
 );
 
-$JOB_ID  = $FORM->Vars->{'job_id'};
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
@@ -535,18 +535,12 @@ sub generate_export { #TODO replace with ExperimentBuilder.pm
 
     my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment_or_genome.pl");
-    my $workdir = get_download_path($eid);
+    my $workdir = get_download_path('experiment', $eid);
     my $resdir = $P->{RESOURCEDIR};
 
     my $cmd = "$script -id $eid -type 'experiment' -config $conf -dir $workdir -output $filename";
 
     return (execute($cmd), File::Spec->catdir(($workdir, $filename)));
-}
-
-sub get_download_path { #TODO move into Storage.pm
-    my $eid = shift;
-    my $unique_path = get_unique_id();
-    return File::Spec->catdir( $P->{SECTEMPDIR}, 'downloads', 'experiments', $eid, $unique_path );
 }
 
 sub get_download_url {
@@ -557,8 +551,8 @@ sub get_download_url {
     my $username = $USER->user_name;
 
     return join('/', $P->{SERVER}, 
-        'api/v1/legacy/download/ExperimentView', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
-        "?username=$username&eid=$id&dir=$dir&file=$filename");
+        'api/v1/legacy/download', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
+        "?username=$username&eid=$id&filename=$filename");
 }
 
 sub get_file_urls {
@@ -571,8 +565,8 @@ sub get_file_urls {
     my ($statusCode, $file) = generate_export($experiment);
 
     unless($statusCode) {
-        my $dir = basename(dirname($file));
-        my $url = get_download_url(id => $eid, dir => $dir, file => $file);
+        #my $dir = basename(dirname($file));
+        my $url = get_download_url(id => $eid, file => $file);
         return encode_json({ filename => basename($file), url => $url });
     };
 
@@ -643,7 +637,7 @@ sub gen_body {
         DEFAULT_TYPE    => 'note',
         rows            => commify($exp->row_count),
         IRODS_HOME      => get_irods_path(),
-        JOB_ID          => $JOB_ID,
+        WORKFLOW_ID     => $WORKFLOW_ID,
         STATUS_URL      => 'jex/status/',
         ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
         PUBLIC          => $USER->user_name eq "public" ? 1 : 0,
@@ -673,7 +667,6 @@ sub _get_experiment_info {
        $tags .= ": " . $tag->description if $tag->description;
 
        if ($allow_edit) {
-           # NOTE: it is undesirable to have a javascript call in a DB object, but it works
            $tags .=
                "<span onClick=\"remove_experiment_tag({eid: '"
              . $exp->id
@@ -684,6 +677,8 @@ sub _get_experiment_info {
     }
 
     my $view_link = "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid";
+
+    my $creation = ($exp->creator_id ? $exp->creator->display_name  . ' ' : '') . ($exp->date ne '0000-00-00 00:00:00' ? $exp->date : '');
 
     my $fields = [
         { title => "ID", value => $exp->id },
@@ -696,6 +691,7 @@ sub _get_experiment_info {
         { title => "Tags", value => $tags || '' },
         { title => "Notebooks", value => $exp->notebooks_desc },
         { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
+        { title => "Creation", value => $creation}
     ];
 
     push @$fields, { title => "Note", value => "This experiment has been deleted" } if $exp->deleted;
