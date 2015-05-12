@@ -343,7 +343,7 @@ sub feat_search_for_feat_name {
             my $loc = "("
               . $feat->type->name
               . ") Chr:"
-              . $feat->locations->next->chromosome . " "
+              . $feat->chromosome . " "
               . $feat->start . "-"
               . $feat->stop;
 

@@ -89,6 +89,8 @@ __PACKAGE__->add_columns(
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
     "deleted",
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+    "creator_id",
+    { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
 );
 
 __PACKAGE__->set_primary_key("dataset_id");
@@ -932,7 +934,7 @@ sub gff {
                 }
             }
 
-            foreach my $loc ( $feat->locations( {}, { 'order_by' => 'start' } ) ) {
+            foreach my $loc ( sort { $a->start <=> $b->start } $feat->locs() ) {
                 push @out,
                   {
                     f         => $feat,
@@ -1017,7 +1019,7 @@ sub gff {
                 if ( $fids{ $f->feature_id } ) { next; }
                 my $ftn = $self->process_feature_type_name( $f->feature_type->name );
                 push @{ $notes{gene}{"Encoded_feature"} }, $self->escape_gff($ftn);
-                foreach my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) ) {
+                foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
                     next if ($loc->start > $feat->stop || $loc->stop < $feat->start);
                     #outside of genes boundaries;  Have to count it as something else
                     #sometimes mRNA features are missing.  This is due to the original dataset not having them enumerated.
@@ -1175,7 +1177,7 @@ sub _search_rna {
               $self->process_feature_type_name( $f->feature_type->name );
             $fids->{ $f->feature_id } = 1;    #feat_id has been used;
             $types->{ $f->feature_type->name }++;
-            foreach my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) ) {
+	    foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
                 next
                   if $loc->start > $parent_feat->stop
                       || $loc->stop < $parent_feat->start
@@ -1249,7 +1251,7 @@ sub _process_rna {
             #begin dumping exons for mRNA
     $parent_id = $$count;
     $$count++;
-    foreach my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) ) {
+    foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
         next
           if $loc->start > $parent_feat->stop
               || $loc->stop < $parent_feat

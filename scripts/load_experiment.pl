@@ -18,9 +18,9 @@ use CoGe::Core::Storage qw(add_workflow_result);
 use CoGe::Core::Metadata qw(create_annotations);
 
 use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
-  $name $description $version $restricted $ignore_missing_chr
+  $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
-  $annotations $types $wid $host $port $db $user $pass $P);
+  $user_id $annotations $types $wid $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -47,9 +47,12 @@ GetOptions(
     "source_name=s" => \$source_name,    # experiment source name (JS escaped)
     "gid=s"         => \$gid,            # genome id
     "wid=s"         => \$wid,            # workflow id
-    "user_name=s"   => \$user_name,      # user name
+    "user_id=i"     => \$user_id,        # user ID to assign experiment
+    "user_name=s"   => \$user_name,      # user name to assign experiment (alternative to user_id)
+    "creator_id=i"  => \$creator_id,     # user ID to set as experiment creator
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
     "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
+    "normalize=s"   => \$normalize,      # optional: percentage, log10 or loge    
     "config=s"      => \$config,         # configuration file
 
     # Optional flags for debug and bulk loader
@@ -98,7 +101,12 @@ unless ($data_file && -r $data_file) {
     exit(-1);
 }
 
-if ($user_name eq 'public') {
+if (not defined $user_id and not defined $user_name) {
+    print STDOUT "log: error: user not specified, use user_id or user_name\n";
+    exit(-1);
+}
+
+if ((defined $user_name and $user_name eq 'public') || (defined $user_id and $user_id eq '0')) {
     print STDOUT "log: error: not logged in\n";
     exit(-1);
 }
@@ -171,6 +179,35 @@ unless ($coge) {
     print STDOUT "log: couldn't connect to database\n";
     exit(-1);
 }
+
+# Retrieve user
+my $user;
+if ($user_id) {
+    $user = $coge->resultset('User')->find($user_id);
+}
+elsif ($user_name) {
+    $user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
+else {
+    print STDOUT "log: error user not specified, see user_id or user_name\n";
+    exit(-1);
+}
+
+unless ($user) {
+    print STDOUT "log: error finding user ", ($user_name ? $user_name : $user_id) , "\n";
+    exit(-1);
+}
+
+# Retrieve creator
+my $creator;
+if ($creator_id) {
+    $creator = $coge->resultset('User')->find($creator_id);
+    unless ($creator) {
+        print STDOUT "log: error finding creator $creator_id\n";
+        exit(-1);
+    }
+}
+$creator = $user unless $creator;
 
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
@@ -309,6 +346,7 @@ my $experiment = $coge->resultset('Experiment')->create(
         data_type      => $data_type,
         row_count      => $count,
         genome_id      => $gid,
+        creator_id     => $creator->id,
         restricted     => $restricted
     }
 );
@@ -361,12 +399,6 @@ if ( -e $storage_path ) {
 
 #TODO create experiment type & connector
 
-# Make user owner of new experiment
-my $user = $coge->resultset('User')->find( { user_name => $user_name } );
-unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
-    exit(-1);
-}
 my $node_types = CoGeX::node_types();
 my $conn       = $coge->resultset('UserConnector')->create(
     {
@@ -469,6 +501,86 @@ sub detect_data_type {
     }
 }
 
+#TODO rewrite this to load the file once into memory rather than reading it twice
+sub max_of_values {
+	my $filepath = shift;
+	my $filetype = shift;
+	my $max = 0;
+    open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
+    while ( my $line = <$in> ) {
+        next if ( $line =~ /^\s*#/ ); # skip comment lines
+        chomp $line;
+        next unless $line; # skip blank lines
+        # Interpret tokens according to file type
+        my @tok;
+        my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
+        if ($filetype eq 'csv') { # CoGe format, comma-separated
+        	@tok = split( /,/, $line );
+        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
+        }
+        elsif ($filetype eq 'tsv') { # CoGe format, tab-separated
+        	@tok = split( /\s+/, $line );
+        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
+        }
+        elsif ($filetype eq 'wig') {
+     		my ($stepSpan, $stepChr, $line_num);
+            next if ( $line =~ /^track/ ); # ignore "track" line
+            if ( $line =~ /^variableStep/i ) { # handle step definition line
+                if ($line =~ /chrom=(\w+)/i) {
+                    $stepChr = $1;
+                }
+                
+                $stepSpan = 1;
+                if ($line =~ /span=(\d+)/i) {
+                    $stepSpan = $1;
+                }
+                next;
+            }
+            elsif ( $line =~ /^fixedStep/i ) {
+                log_line('fixedStep wiggle format is no currently supported', $line_num, $line);
+                return;
+            }
+            
+            if (not defined $stepSpan or not defined $stepChr) {
+                log_line('missing or invalid wiggle step definition line', $line_num, $line);
+                return;
+            }
+            
+            @tok = split( /\s+/, $line );
+            ( $start, $val1 ) = @tok;
+        }
+        elsif ($filetype eq 'bed') {
+        	my $bedType;
+            # Check for track type for BED files
+            if ( $line =~ /^track/ ) {
+                undef $bedType;
+                if ($line =~ /type=(\w+)/i) {
+                    $bedType = lc($1);
+                }
+                next;
+            }
+        
+            # Handle different BED formats
+            @tok = split( /\s+/, $line );
+            if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+                ( $chr, $start, $stop, $val1 ) = @tok;
+            }
+            else { # UCSC standard BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
+                ( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
+            }
+        }
+        else { # unknown file type (should never happen)
+        	die "fatal error: unknown file type!";
+        }
+        if ($val1 > $max) {
+	        $max = $val1;
+        }
+    }
+    close($in);
+    print STDOUT "max=$max\n";
+    return $max;
+ }
+
 # Parses multiple line-based file formats for quant data
 sub validate_quant_data_file { #TODO this routine is getting long, break into subroutines
     my %opts = @_;
@@ -484,6 +596,10 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     my ($stepSpan, $stepChr); # only used for WIG format
 
     print STDOUT "validate_quant_data_file: $filepath\n";
+    my $max;
+    if ($normalize) {
+    	$max = max_of_values($filepath, $filetype);
+    }
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
@@ -588,10 +704,11 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
             $strand = ($val1 >= 0 ? 1 : -1);
             $val1 = abs($val1);
         }
-
-        if ( not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1)) ) {
-            log_line('value 1 not between 0 and 1', $line_num, $line);
-            return;
+        if (!$normalize) {
+        	if (not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1))) {
+	            log_line('value 1 not between 0 and 1', $line_num, $line);
+    	        return;
+        	}
         }
 
         # Munge chr name for CoGe
@@ -604,6 +721,17 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         $strand = $strand =~ /-/ ? -1 : 1;
 
         # Build output line
+        if ($normalize) {
+	        if ($normalize eq "percentage") {
+	        	$val1 /= $max;
+	        }
+	        elsif ($normalize eq "log10") {
+	        	$val1 = log($val1) / log(10) / $max;
+	        }
+	        else {
+	        	$val1 = log($val1) / $max;
+	        }
+        }
         my @fields  = ( $chr, $start, $stop, $strand, $val1 ); # default fields
         if (defined $val2) {
             $hasVal2 = 1;

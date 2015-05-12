@@ -55,7 +55,7 @@ BEGIN {
       get_tiered_path get_workflow_paths get_upload_path get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_genome_cache_path get_workflow_results add_workflow_result
-      get_workflow_results_file
+      get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_data
       create_experiment create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
@@ -129,7 +129,6 @@ sub get_genome_path {
     my $path = $seqdir . '/' . get_tiered_path($gid) . '/';
     unless ( -r $path ) {
         print STDERR "Storage::get_genome_path: genome path '$path' doesn't exist!\n";
-        return;
     }
 
     return $path;
@@ -621,9 +620,10 @@ sub create_experiment {
     my $user = $opts{user};
     my $irods = $opts{irods};
     my $files = $opts{files};
-    my $file_type = $opts{file_type};
+    #my $file_type = $opts{file_type};
     my $metadata = $opts{metadata};
     my $options = $opts{options};
+    #print STDERR "create_experiment ", Dumper $metadata, "\n";
 
     my $conf = CoGe::Accessory::Web::get_defaults();
 
@@ -647,7 +647,7 @@ sub create_experiment {
 
     # Create list of files to load
     my @staged_files;
-    push @staged_files, @$files;
+    push @staged_files, @$files if ($files);
 
     # Create jobs to retrieve irods files
     my %load_params;
@@ -663,7 +663,17 @@ sub create_experiment {
 
     # Create load job
     my $ignoreMissing = ( $options->{ignoreMissing} ? 1 : 0 );
-    %load_params = _create_load_experiment_job($conf, $metadata, $gid, $workflow->id, $user->name, $staging_dir, \@staged_files, $file_type, $result_dir, $ignoreMissing);
+    %load_params = _create_load_experiment_job(
+        conf => $conf, 
+        metadata => $metadata, 
+        gid => $gid, 
+        wid => $workflow->id, 
+        user_name => $user->name, 
+        staging_dir => $staging_dir, 
+        files => \@staged_files, 
+        #file_type => $file_type, 
+        ignoreMissing => $ignoreMissing
+    );
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
@@ -818,6 +828,18 @@ sub get_workflow_results_file {
     return $results_file;
 }
 
+sub get_workflow_log_file {
+    my ( $user_name, $workflow_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
+    unless ($user_name && $workflow_id) {
+        print STDERR "Storage::get_workflow_log_file ERROR: missing required param\n";
+        return;
+    }
+    
+    my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
+    my $results_file = catfile($results_path, 'debug.log');
+    return $results_file;
+}
+
 sub get_upload_path {
     my ( $user_name, $load_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
     unless ($user_name && $load_id) {
@@ -827,6 +849,13 @@ sub get_upload_path {
     
     my $conf = CoGe::Accessory::Web::get_defaults();
     return catdir($conf->{SECTEMPDIR}, 'uploads', $user_name, $load_id);
+}
+
+sub get_download_path {
+    my ($type, $id, $uuid) = @_;
+    $uuid = '' unless $uuid; # optional uuid
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    return catfile($conf->{SECTEMPDIR}, 'downloads', $type, $id, $uuid);
 }
 
 sub remove_self { # TODO move to Utils.pm
@@ -950,12 +979,23 @@ sub _create_iget_job {
 }
 
 sub _create_load_experiment_job {
-    my ($conf, $metadata, $gid, $wid, $user_name, $staging_dir, $files, $file_type, $result_dir, $ignoreMissing) = @_;
+    my %opts = @_;
+    my $conf = $opts{conf};
+    my $metadata = $opts{metadata};
+    my $gid = $opts{gid};
+    my $wid = $opts{wid};
+    my $user_name = $opts{user_name};
+    my $staging_dir = $opts{staging_dir};
+    my $files = $opts{files};
+    #my $file_type = $opts{file_type};
+    my $ignoreMissing = $opts{ignoreMissing};
+    #print STDERR "_create_load_experiment_job ", Dumper $metadata, "\n";
+
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
     my $file_str = join(',', map { basename($_) } @$files);
-    $file_type = 'csv' unless $file_type;
+    #$file_type = 'csv' unless $file_type;
 
     return (
         cmd => $cmd,
@@ -972,10 +1012,10 @@ sub _create_load_experiment_job {
             #['-types', qq{"Expression"}, 0], # FIXME
             #['-annotations', $ANNOTATIONS, 0],
             ['-staging_dir', "'".$staging_dir."'", 0],
-            ['-file_type', $file_type, 0], # FIXME
+            #['-file_type', $file_type, 0], # FIXME
             ['-data_file', "'".$file_str."'", 0],
             ['-config', $conf->{_CONFIG_PATH}, 1],
-            ['-result_dir', "'".$result_dir."'", 0],
+            #['-result_dir', "'".$result_dir."'", 0],
             ['-ignore-missing-chr', $ignoreMissing, 0]
         ],
         inputs => [
