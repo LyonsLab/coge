@@ -16,7 +16,7 @@ sub build {
 
     # Initialize workflow
     $self->workflow($self->jex->create_workflow(name => "Generate/export gff", init => 1));
-    return unless $self->workflow->id;
+    return unless ($self->workflow && $self->workflow->id);
 
     # Verify required parameters and set defaults
     my $dest_type = $self->options->{dest_type};

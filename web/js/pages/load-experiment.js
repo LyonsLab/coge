@@ -1437,7 +1437,7 @@ function load(experiment) {
             coge.progress.update(response.id, response.site_url);
 	    },
 	    function(jqXHR, textStatus, errorThrown) { // error callback
-	    	coge.progress.failed('Error: ' + textStatus);
+	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
 	    }
 	);
 }

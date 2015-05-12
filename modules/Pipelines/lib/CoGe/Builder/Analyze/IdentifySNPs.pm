@@ -40,7 +40,7 @@ sub build {
     
     # Initialize workflow
     $self->workflow($self->jex->create_workflow(name => "Load Experiment", init => 1));
-    return unless $self->workflow->id;
+    return unless ($self->workflow && $self->workflow->id);
     
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
     $self->workflow->logfile(catfile($result_dir, "debug.log"));

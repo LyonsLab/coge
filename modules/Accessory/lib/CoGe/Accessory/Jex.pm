@@ -52,7 +52,10 @@ sub create_workflow {
         my $response = _send_request($self, $request);
         $id = $response->{id};
 
-        die "The workflow could not be initialized" unless $id;
+        unless ($id) {
+            print STDERR "CoGe::Accessory::Jex ERROR: Failed to initialize workflow\n";
+            return;
+        }
     }
 
     my $workflow = CoGe::Accessory::Workflow->new(
