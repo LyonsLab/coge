@@ -1417,12 +1417,12 @@ sub update_history {
     $timestamp = "'" . $timestamp . "'";
     
     # print STDERR "items: " . @items . "\n";
-    my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    print $fh $timestamp;
-    print $fh "\n";
-    print $fh "Huzzah\n";
-    close $fh;
+    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    #print $fh $timestamp;
+    #print $fh "\n";
+    #print $fh "Huzzah\n";
+    #close $fh;
     
     $time_range = 24 if ( not defined $time_range or $time_range !~ /[-\d]/ );
     my $include_page_accesses = $opts{include_pages_accesses};
@@ -1432,14 +1432,8 @@ sub update_history {
     if ( $USER->is_admin ) {
         if ( $time_range == 0 ) {
             @entries = $coge->resultset('Log')->search(
-#
-#                #{ description => { 'not like' => 'page access' } },
-#                #{ 'time' => { '>', $timestamp } },
-#                #{ type     => { '!='  => 0 } },
-                {
-#                	order_by => { -desc => 'time' },
-                	'time' => { '>' => \$timestamp }
-                }
+                { 'time' => { '>' => \$timestamp } },
+                { order_by => { -desc => 'time' } }
             );
         }
     }
