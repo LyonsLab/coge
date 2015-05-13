@@ -130,12 +130,11 @@ sub build {
     );
     push @done_files, $load_csv_task->{outputs}->[0] if ($include_csv);
     
-    my %results = (
+    return {
+        tasks => \@tasks,
         metadata => generate_additional_metadata($params, $isAnnotated),
         done_files => \@done_files
-    );
-
-    return (\@tasks, \%results);
+    };
 }
 
 sub generate_additional_metadata {
