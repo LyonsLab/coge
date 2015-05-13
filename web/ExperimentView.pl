@@ -19,10 +19,6 @@ use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_log data_type get_download_path);
 use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Builder::SNP::CoGeSNPs;
-use CoGe::Builder::SNP::Samtools;
-use CoGe::Builder::SNP::Platypus;
-use CoGe::Builder::SNP::GATK;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
@@ -64,7 +60,6 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     check_login                => \&check_login,
     export_experiment_irods    => \&export_experiment_irods,
     get_file_urls              => \&get_file_urls,
-    find_snps                  => \&find_snps,
     get_progress_log           => \&get_progress_log,
     get_load_log               => \&get_load_log,
     send_error_report          => \&send_error_report
