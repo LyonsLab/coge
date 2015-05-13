@@ -1,4 +1,4 @@
-package CoGe::Builder::Analyze::IdentifySNPs;
+package CoGe::Builder::SNP::IdentifySNPs;
 
 use Moose;
 
