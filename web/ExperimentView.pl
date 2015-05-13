@@ -18,7 +18,6 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_log data_type get_download_path);
-use CoGe::Core::Genome qw(genomecmp);
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
