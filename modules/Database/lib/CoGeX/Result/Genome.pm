@@ -96,6 +96,10 @@ __PACKAGE__->add_columns(
     },
     "deleted",
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+    "creator_id",
+    { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+    "date",
+    { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
 );
 
 __PACKAGE__->set_primary_key("genome_id");
@@ -114,6 +118,10 @@ __PACKAGE__->belongs_to(
 __PACKAGE__->belongs_to(
     "genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType",
     'genomic_sequence_type_id'
+);
+__PACKAGE__->belongs_to(
+    "creator" => "CoGeX::Result::User", 
+    { 'foreign.user_id' => 'self.creator_id' }
 );
 __PACKAGE__->has_many(
     "genome_annotations" => "CoGeX::Result::GenomeAnnotation",
@@ -233,6 +241,11 @@ sub notebooks {
     shift->lists(@_);
 }
 
+sub notebooks_desc {
+    my $self = shift;
+    return join(',', map {local $_ = $_->name; s/&reg;\s*//; $_ } $self->notebooks) || '';
+}
+
 # mdb: These functions were consolidated for all item types (genome, experiment,
 # notebook, etc) into User.pm functions users_with_access() and groups_with_access().
 #sub groups {
@@ -326,14 +339,6 @@ sub owner {
     my $self = shift;
 
     foreach ( $self->user_connectors( { role_id => 2 } ) ) {    #FIXME hardcoded
-        return $_->parent;
-    }
-}
-
-sub creator {
-    my $self = shift;
-
-    foreach ( $self->user_connectors( { role_id => 5 } ) ) {    #FIXME hardcoded
         return $_->parent;
     }
 }
@@ -556,6 +561,10 @@ sub get_genomic_sequence {
 sub file_path {
     my $self = shift;
     return CoGe::Core::Storage::get_genome_file( $self->id );
+}
+
+sub storage_path {
+    return shift->file_path;
 }
 
 # mdb added 8/6/13, issue #157
@@ -890,6 +899,7 @@ sub gff {
     my $print   = $opts{print};
     my $annos   = $opts{annos};
     my $cds     = $opts{cds};       #only print CDS gene features
+    my $chr		= $opts{chr}; #optional, set to only include features on a particular chromosome
     my $unique_parent_annotations =
       $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
     my $id_type =
@@ -926,9 +936,10 @@ sub gff {
             cds                       => $cds,
             name_unique               => $name_unique,
             id_type                   => $id_type,
-            unique_parent_annotations => $unique_parent_annotations
+            unique_parent_annotations => $unique_parent_annotations,
+            chr						  => $chr
         );
-        $output .= $tmp;
+        $output .= $tmp if $tmp;
     }
     return $output;
 }
@@ -1121,6 +1132,16 @@ sub distinct_feature_type_names {
     return wantarray ? keys %names : [ keys %names ];
 }
 
+sub has_gene_features {
+    my $self = shift;
+    
+    foreach ($self->distinct_feature_type_ids) { # FIXME use grep instead
+        return 1 if ($_ == 1 || $_ == 2 || $_ == 3); # FIXME hardcoded feature types
+    }
+    
+    return 0;
+}
+
 sub source {
     my $self = shift;
     my %sources;
@@ -1188,6 +1209,28 @@ sub info_html {
       . qq{")'>}
       . $info
       . "</span>";
+}
+
+sub info_file {
+    my $self = shift;
+    
+    my $restricted = ($self->restricted) ? "yes" : "no";
+    my $genome_name = $self->genome->info;
+    $genome_name =~ s/&reg;\s*//;
+
+    my @lines = (
+        qq{"Name","} . $self->name . '"',
+        qq{"Description","} . $self->description . '"',
+        qq{"Source","} . $self->source->info . '"',
+        qq{"Version","} . $self->version . '"',
+        qq{"Organism","} . $self->organism->name . '"',
+        qq{"Sequence Type", "} . $self->genomic_sequence_type->name . '"',
+        qq{"Notebooks","} . $self->notebooks_desc . '"',
+        qq{"Restricted","$restricted"},
+    );
+    push @lines, qq{"Link","} . $self->link . '"' if ($self->link);
+
+    return join("\n", @lines);
 }
 
 ############################################### subroutine header begin ##

@@ -1,6 +1,8 @@
 package CoGe::Services::Routes;
 use Mojo::Base "Mojolicious";
 
+use Data::Dumper;
+
 sub startup {
     my $self = shift;
 
@@ -104,6 +106,11 @@ sub startup {
     $r->get("/jobs/:id/results/:name" => { id => qr/\d+/, name => qr/\w+/ })
         ->name("jobs-results")
         ->to("job#results", id => undef, name => undef);
+
+    $r->any("*" => sub {
+        my $c = shift;
+        $c->render(status => 404, json => { error => {Error => "Resource not found" }});
+    });
 }
 
 1;

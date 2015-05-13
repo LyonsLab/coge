@@ -6,9 +6,8 @@ use warnings;
 use File::Spec::Functions;
 use Sort::Versions;
 
-use CoGeX;
 use CoGe::Accessory::TDS qw(write read);
-use CoGe::Accessory::Utils qw(split_string);
+use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_genome_path);
 
 BEGIN {
@@ -16,12 +15,11 @@ BEGIN {
     require Exporter;
 
     $VERSION = 0.1;
-    @ISA = qw ( Exporter );
-    @EXPORT = qw ( has_statistic get_gc_stats get_noncoding_gc_stats
+    @ISA = qw( Exporter );
+    @EXPORT = qw( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-        get_download_path);
-
-    @EXPORT_OK = qw(genomecmp search_genomes);
+        fix_chromosome_id );
+    @EXPORT_OK = qw(genomecmp);
 }
 
 my @LOCATIONS_PREFETCH = (
@@ -51,35 +49,6 @@ sub genomecmp($$) {
       || $b->id cmp $a->id;
 }
 
-sub search_genomes {
-    my %opts = @_;
-    my $db = $opts{db};
-    my $user = $opts{user};
-    my $search = $opts{search};
-    my $gid = $opts{gid};
-
-    # Search for a single genome if given the gid
-    return $db->resultset("Genome")->find($gid) if $gid;
-
-    my @terms = split_string($search);
-    return unless @terms;
-
-    my @constraints = map {
-        -or => [{ name => {like => qq{%$_%}}},
-                { description => {like => qq{%$_%}}},
-                { genome_id =>   {like  => qq{%$_%}}}]
-    } @terms;
-
-    my @genomes = $db->resultset("Genome")->search({
-        -or => [
-            -and => \@constraints,
-            { genome_id => $gid },
-        ]
-    });
-
-    return wantarray ? @genomes : \@genomes;
-}
-
 sub get_wobble_histogram {
     my $genome = _get_genome_or_exit(@_);
     my $storage_path = _get_histogram_file($genome->id);
@@ -100,10 +69,6 @@ sub get_wobble_histogram {
 
     # Return data
     return $data->{wobble_histogram};
-}
-
-sub get_download_path {
-    return catfile(shift, "GenomeInfo/downloads", shift);
 }
 
 sub get_feature_type_gc_histogram {
@@ -408,7 +373,7 @@ sub _generate_noncoding_gc_stats {
 
     foreach my $ds (@datasets) {
         foreach my $feat ($ds->features(@LOCATIONS_PREFETCH)) {
-            foreach my $loc ( $feat->locations ) {
+            foreach my $loc ( $feat->locs ) {
                 if ( $loc->stop > length( $seqs{ $feat->chromosome } ) ) {
                     print STDERR "feature "
                       . $feat->id
@@ -447,4 +412,48 @@ sub _generate_noncoding_gc_stats {
         x     => $x  / $total,
     };
 }
+
+# Used by the load scripts:  load_genome.pl, load_experiment.pl, and load_annotation.pl
+# mdb consolidated from load scripts into this module, 2/11/15 COGE-587
+sub fix_chromosome_id { 
+    my $chr = shift;        # chr id to fix
+    my $genome_chr = shift; # optional hash ref of existing chromosome ids for genome
+    return unless defined $chr;
+
+    # Fix chromosome identifier
+    $chr =~ s/^lcl\|//;
+    $chr =~ s/^gi\|//;
+    $chr =~ s/chromosome//i;
+    $chr =~ s/^chr//i;
+    $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 chromosome name is 00 (or something like that)
+    $chr =~ s/^0+// unless $chr eq '0';
+    $chr =~ s/^_+//;
+    $chr =~ s/\s+/ /;
+    $chr =~ s/^\s//;
+    $chr =~ s/\s$//;
+    $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
+    $chr =~ s/\|$//; # mdb added 3/14/14 issue 332 - remove trailing pipes
+    $chr =~ s/\(/_/; # mdb added 2/11/15 COGE-587 - replace '(' with '_'
+    $chr =~ s/\)/_/; # mdb added 2/11/15 COGE-587 - replace ')' with '_'
+    return if ($chr eq '');
+
+    # Convert 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed
+    if (defined $genome_chr) {
+        if (   $chr =~ /^chloroplast$/i
+            && !$genome_chr->{$chr}
+            && $genome_chr->{"C"} )
+        {
+            $chr = "C";
+        }
+        if (   $chr =~ /^mitochondria$/i
+            && !$genome_chr->{$chr}
+            && $genome_chr->{"M"} )
+        {
+            $chr = "M";
+        }
+    }
+
+    return $chr;
+}
+
 1;

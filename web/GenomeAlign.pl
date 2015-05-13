@@ -118,6 +118,7 @@ sub gen_html {
     $template->param( BODY       => $body );
     $template->param( ADJUST_BOX => 1 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     $html .= $template->output;
 }
 
@@ -150,7 +151,7 @@ sub gen_body {
         return $template->output;
     }
     else {
-        return "No dataset_group (genome) ids were specified.";
+        return "No genomes were specified.";
     }
 }
 
@@ -166,7 +167,7 @@ sub generate_table {
         my $desc = $dsg->description ? $dsg->description : join(
             "; ",
             map {
-qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>}
+                qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>}
               } split /;\s*/,
             $dsg->organism->description
         );

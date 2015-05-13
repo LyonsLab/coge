@@ -25,7 +25,7 @@ no warnings 'redefine';
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
   $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
   $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL %ITEM_TYPE
-  $MAX_SEARCH_RESULTS);
+  $MAX_SEARCH_RESULTS $node_types);
 $P = CoGe::Accessory::Web::get_defaults();
 
 $DATE = sprintf(
@@ -83,7 +83,7 @@ $link = CoGe::Accessory::Web::get_tiny_link(
     get_node => \&get_node,
 );
 
-my $node_types = CoGeX::node_types();
+$node_types = CoGeX::node_types();
 
 dispatch();
 
@@ -124,6 +124,7 @@ sub gen_html {
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
 
     return $template->output;
 }

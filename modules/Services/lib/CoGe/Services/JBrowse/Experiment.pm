@@ -58,7 +58,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 #      . ") bpPerBin=$bpPerBin\n";
 
     # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+    my ( $db, $user ) = CoGe::Accessory::Web->init;
 
     # Retrieve experiments
     my @all_experiments;
@@ -186,7 +186,7 @@ sub features {
     }
 
     # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+    my ( $db, $user ) = CoGe::Accessory::Web->init;
 
     # Retrieve experiments
     my @all_experiments;
@@ -238,7 +238,7 @@ sub features {
 
             # Convert to JSON
             foreach my $d (@$pData) {
-                next if ($d->{value1} == 0 and $d->{value2} == 0);
+                #next if ($d->{value1} == 0 and $d->{value2} == 0); # mdb removed 1/15/15 for user Un-Sa - send zero values (for when "Show background" is enabled in JBrowse)
                 my %result = (
                     id     => int($eid),
                     start  => $d->{start},

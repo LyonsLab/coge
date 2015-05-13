@@ -1,4 +1,5 @@
 #! /usr/bin/perl -w
+
 use v5.10;
 use strict;
 use CoGeX;
@@ -7,7 +8,7 @@ use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 use CGI;
 use JSON::XS;
 use HTML::Template;
@@ -119,9 +120,10 @@ sub gen_html {
     my ($body) = gen_body();
 
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( TITLE      => 'Syntenic Compiler',
+    $template->param( TITLE      => 'SynFind: Syntenic Compiler',
                       PAGE_TITLE => 'SynFind',
-                      HELP       => '/wiki/index.php?title=SynFind' );
+                      #HELP       => '/wiki/index.php?title=SynFind' );
+		      HELP	 => $config->{SERVER} );
 
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -129,11 +131,12 @@ sub gen_html {
     $template->param( USER     => $name );
 
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "SynFind-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
     #$template->param(BOX_NAME=>'SynFind Settings');
     $template->param( ADJUST_BOX => 1 );
     $template->param( BODY       => $body );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $config->{CAS_URL} || '' );
 
     my $prebox = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynFind.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
@@ -328,12 +331,10 @@ sub get_orgs { #FIXME: dup'ed in CoGeBlast.pl
 }
 
 sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
-    #my $t1    = new Benchmark;
     my %opts  = @_;
     my $oid   = $opts{oid};
     my $dsgid = $opts{dsgid};
 
-   #print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
 
     my @genomes;
     foreach my $dsg (
@@ -347,18 +348,22 @@ sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
       )
     {
         next unless $USER->has_access_to_genome($dsg);
-        $dsgid = $dsg->id unless $dsgid;
-        my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
+        #added by EHL 12/30/2014
+        next if $dsg->deleted; #skip deleted genomes
+        ######	
+	my $name;
+        my $has_cds = has_cds( $dsg->id );
+        $name .= " NO CDS ANNOTATIONS.  CAN'T BE USED: " unless $has_cds;
 
- #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
- #$name .= ", ";
- #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+        $dsgid = $dsg->id unless $dsgid;
+
+	$name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
           . $dsg->type->name . " "
           . commify( $dsg->length ) . "nt";
-
+        $name .= " (Source: ".join( ", ", map { $_->name } $dsg->source ).")";
         push @genomes, [ $dsg->id, $name ];
     }
     my $size = scalar @genomes;
@@ -367,19 +372,14 @@ sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
     my $dsg_menu = '';
     if (@genomes) {
 
-#$dsg_menu .= 'Genomes for Organism<br>';
-#$dsg_menu .= qq{<select multiple id='dsgid' size='$size' onclick="show_add();" ondblclick="get_dsg_for_menu(['args__dsgid','dsgid'],[add_to_list]);">};
         foreach (@genomes) {
             my ( $numt, $name ) = @$_;
             my $selected = ( $dsgid && $numt == $dsgid ? 'selected' : '' );
             $dsg_menu .= qq{<option value='$numt' $selected>$name</option>};
         }
 
-        #$dsg_menu .= '</select>';
     }
 
-    #my $t2 = new Benchmark;
-    #my $time = timestr( timediff( $t2, $t1 ) );
     return $dsg_menu;
 }
 
@@ -397,6 +397,9 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
             $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
             next unless $USER->has_access_to_genome($dsg);
+	    #added by EHL 12/30/2014
+	    next if $dsg->deleted;
+            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -406,12 +409,16 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
 
     my $html;
     foreach my $dsg ( values %dsgs ) {
+        next unless has_cds( $dsg->id );    #skip if it has no CDS annotations
         my ($ds) = $dsg->datasets;
         $html .= ":::" if $html;
         my $org_name = $dsg->organism->name;
@@ -419,6 +426,7 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
         $html .=
             $dsg->id . "::"
           . $org_name . " ("
+          . "id " . $dsg->id . " "
           . $ds->data_source->name . " "
           . $dsg->type->name . " v"
           . $dsg->version . ")";
@@ -705,7 +713,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
 
     # Build select items out of results
     my $html;
-    foreach my $n ( sort listcmp @notebooks ) {
+    foreach my $n ( sort notebookcmp @notebooks ) {
         my $item_spec = 1 . ':' . $n->id; #FIXME magic number for item_type
         $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
     }
@@ -1192,14 +1200,14 @@ sub go_synfind {
             [ "--fasta",        $fasta,     1 ]
         ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $GEN_FASTA,
             description => "Generating fasta file...",
             script      => undef,
             args        => $fasta_args,
             inputs      => undef,
             outputs     => [$fasta]
-        );
+        });
 
         my $bed_args = [
             [ " -cf ",  $config->{_CONFIG_PATH}, 0 ],
@@ -1207,14 +1215,14 @@ sub go_synfind {
             [ '>',      $BEDDIR . $dsgid . ".bed", 1 ]
         ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $DATASETGROUP2BED,
             description => "Creating bed files...",
             script      => undef,
             args        => $bed_args,
             inputs      => undef,
             outputs     => [ $BEDDIR . $dsgid . ".bed" ]
-        );
+        });
     }
 
     #query is the first item on this list.
@@ -1237,7 +1245,7 @@ sub go_synfind {
         my $blastfile = $basedir . "/" . $basename . ".$algo";
         my $bedfile1  = $BEDDIR . $dsgid1 . ".bed";
         my $bedfile2  = $BEDDIR . $dsgid2 . ".bed";
-        $target->{synteny_score_db}    = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".db";
+        $target->{synteny_score_db}    = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".v053" . ".db"; #v053 is the version of synteny_score
         $target->{basedir}             = $basedir;
         $target->{basename}            = $basename;
         $target->{blastfile}           = $blastfile;
@@ -1282,14 +1290,14 @@ sub go_synfind {
             $blast_cmd = $LAST;
         }
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $blast_cmd,
             description => "Running blast ($algo) algorithm...",
             script      => undef,
             args        => $blast_args,
             inputs      => [ $target->{query_fasta}, $target->{target_fasta} ],
             outputs     => [ $target->{blastfile} ]
-        );
+        });
 
         #######################################################################
         # Convert Blast
@@ -1301,14 +1309,14 @@ sub go_synfind {
         my $convert_inputs = [ $target->{blastfile} ];
         my $convert_outputs = [ $target->{converted_blastfile}, ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $CONVERT_BLAST,
             description => "Converting blast file to short names...",
             script      => undef,
             args        => $convert_args,
             inputs      => $convert_inputs,
             outputs     => $convert_outputs
-        );
+        });
 
         #######################################################################
         # Blast 2 Raw
@@ -1332,20 +1340,19 @@ sub go_synfind {
             #$target->{filtered_blastfile} . ".s.localdups",
         ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $BLAST2RAW,
             description => "Finding and removing local duplications...",
             script      => undef,
             args        => $raw_args,
             inputs      => $raw_inputs,
             outputs     => $raw_outputs
-        );
+        });
 
         #######################################################################
         # Synteny Score
         #######################################################################
         $cutoff = sprintf( "%.2f", $cutoff / $window_size ) if ( $cutoff >= 1 );
-
         my $synteny_score_args = [
             [ '',          $target->{filtered_blastfile}, 1 ],
             [ '--qbed',    $target->{bedfile1},           1 ],
@@ -1355,24 +1362,30 @@ sub go_synfind {
             [ '--scoring', $scoring_function,             1 ],
             [ '--qnote',   $target->{dsgid1},             1 ],
             [ '--snote',   $target->{dsgid2},             1 ],
-            [ '--sqlite',  $target->{synteny_score_db},   1 ]
+	#added new commands for synteny_score v0.5.3 Eric Lyons 4/29/2015
+            [ '--qbedlift',$target->{bedfile1},           1 ],
+            [ '--sbedlift',$target->{bedfile2},           1 ],
+            [ '--lift',    $target->{converted_blastfile},1 ],
+	####
+            [ '--sqlite',  $target->{synteny_score_db},   1 ],
         ];
 
         my $synteny_score_inputs = [
+            $target->{filtered_blastfile},
             $target->{bedfile1}, $target->{bedfile2},
-            $target->{filtered_blastfile}
+	    $target->{converted_blastfile}
         ];
 
         my $synteny_score_outputs = [ $target->{synteny_score_db}, ];
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd         => $SYNTENY_SCORE,
             description => "Running Synteny Score...",
             script      => undef,
             args        => $synteny_score_args,
             inputs      => $synteny_score_inputs,
             outputs     => $synteny_score_outputs,
-        );
+        });
     }
 
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
@@ -1529,7 +1542,8 @@ sub get_results {
         my $blastfile = $basedir . "/" . $basename . ".$algo";
         my $bedfile1  = $BEDDIR . $dsgid1 . ".bed";
         my $bedfile2  = $BEDDIR . $dsgid2 . ".bed";
-        $target->{synteny_score_db}    = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".db";
+        $target->{synteny_score_db}    = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".v053" . ".db"; #v053 is the version of synteny_score
+        #$target->{synteny_score_db}    = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".db";
 
         return encode_json({
             success => JSON::false,
@@ -2227,7 +2241,8 @@ sub get_master_syn_sets {
           . $window_size . "_"
           . $cutoff . "_"
           . $scoring_function
-          . ".$algo" . ".db";
+          . ".$algo"
+	  . ".v053"  . ".db";
 
         unless (-r $db) { # mdb added 3/4/14, issue 324
             print STDERR qq{SQLite database not found: $db\n};
@@ -2428,7 +2443,7 @@ sub get_unique_genes {
         if ( $dsgid2 lt $dsgid1 );
     my $basedir  = $DIAGSDIR . "/" . $dsgid1 . "/" . $dsgid2;
     my $basename = $dsgid1 . "_" . $dsgid2 . "." . "CDS-CDS";
-    my $db = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".db";
+    my $db = $basedir . "/" . $basename . "_" . $window_size . "_" . $cutoff . "_" . $scoring_function . ".$algo" . ".v053" . ".db";
     my $dbh   = DBI->connect( "dbi:SQLite:dbname=$db", "", "" );
     my $query = "SELECT * FROM synteny";
     my $sth   = $dbh->prepare($query);
@@ -2485,6 +2500,7 @@ sub get_unique_genes {
             name         => "Unique genes in " . $qdsg->organism->name,
             description  => "Compared to " . $sdsg->organism->name,
             list_type_id => $list_type->id,
+            creator_id   => $USER->id,
             restricted   => 1
         });
         return unless $list;

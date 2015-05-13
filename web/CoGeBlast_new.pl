@@ -9,7 +9,7 @@ use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -117,19 +117,21 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 
-    #$template->param(TITLE=>'CoGe BLAST Analysis');
+    $template->param(TITLE=>'CoGeBLAST: Perform BLAST Analysis');
     $template->param( PAGE_TITLE => 'BLAST',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=CoGeBlast' );
+    				  #HELP       => '/wiki/index.php?title=CoGeBlast' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= ' ' . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "CoGeBlast-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
 
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     #	$template->param( BOX_NAME   => 'CoGeBlast Settings' );
     #	$template->param( ADJUST_BOX => 1 );
     $template->param( BODY => $body );
@@ -160,29 +162,6 @@ sub gen_body {
         coge => $coge
     );
     $prefs = {} unless $prefs;
-
-    my $color_hsps = $form->param( "color_hsps" );
-    my $program    = $form->param( "program" );
-    my $expect     = $form->param( "expect" );
-    my $job_title  = $form->param( "job_title" );
-    my $wordsize   = $form->param( "wordsize" );
-
-    #$wordsize=11 if $program eq "blastn";
-    my $comp         = $form->param( "comp" );
-    my $matrix       = $form->param( "matrix" );
-    my $gapcost      = $form->param( "gapcost" );
-    my $match_score  = $form->param( "matchscore" );
-    my $filter_query = $form->param( "filter_query" );
-    my $resultslimit = $form->param( "resultslimit" );
-    my $basename     = $form->param( "basename" );
-
-    #blastz params
-    my $zwordsize      = $form->param( "zwordsize" );
-    my $zgap_start     = $form->param( "zgap_start" );
-    my $zgap_extension = $form->param( "zgap_extension" );
-    my $zchaining      = $form->param( "zchaining" );
-    my $zthreshold     = $form->param( "zthreshold" );
-    my $zmask          = $form->param( "zmask" );
 
     $template->param(
         MAIN       => 1,
@@ -419,6 +398,39 @@ sub get_url {
     }
 }
 
+sub generate_blastdb_job {
+    my %opts = @_;
+
+    # required arguments
+    my $title = $opts{title};
+    my $fasta = $opts{fasta};
+    my $type = $opts{type};
+    my $out  = $opts{out};
+    my $outdir = $opts{outdir};
+
+    my $logfile = $opts{logfile} || "db.log";
+    my $BLASTDB = $P->{MAKEBLASTDB} || "makeblastdb";
+
+    my $args = [
+        ["-in", $fasta, 0],
+        ["-out", $out, 0],
+        ["-dbtype", $type, 0],
+        ["-title", qq{"$title"}, 0],
+        ["-logfile", $logfile, 0],
+    ];
+
+    my $base = basename($outdir);
+
+    return {
+        cmd => "mkdir $base && cd $base && $BLASTDB",
+        script  => undef,
+        args    => $args,
+        inputs  => undef,
+        outputs => [[$outdir, 1]],
+        description => "Generating blastable database..."
+    };
+}
+
 sub blast_param {
     my %opts      = @_;
     my $seq_type  = $opts{blast_type} || "blast_type_n";
@@ -560,12 +572,17 @@ sub gen_dsg_menu {
       )
     {
         next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
+
         $dsgid = $dsg->id unless $dsgid;
         my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
 
  #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
  #$name .= ", ";
  #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+	$name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
@@ -610,6 +627,10 @@ sub get_dsg_for_menu {
             $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
+
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -619,6 +640,9 @@ sub get_dsg_for_menu {
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
             next unless $USER->has_access_to_genome($dsg);
+            #added by EHL 12/30/2014
+            next if $dsg->deleted;
+            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -632,6 +656,7 @@ sub get_dsg_for_menu {
         $html .=
             $dsg->id . "::"
           . $org_name . " ("
+          . "id " . $dsg->id . " "
           . $ds->data_source->name . " "
           . $dsg->type->name . " v"
           . $dsg->version . ")";
@@ -660,6 +685,7 @@ sub blast_search {
     my $expect     = $opts{expect};
     my $job_title  = $opts{job_title};
     my $wordsize   = $opts{wordsize};
+    my $type       = $opts{type};
 
     #$wordsize=11 if $program eq "blastn";
     my $comp         = $opts{comp};
@@ -715,6 +741,12 @@ sub blast_search {
 
     my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
 
+    my $gap;
+
+    if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
+        $gap = qq[$1,$2];
+    }
+
     my %params = (
         color_hsps   => $color_hsps,
         program      => $program,
@@ -723,7 +755,7 @@ sub blast_search {
         wordsize     => $wordsize,
         comp         => $comp,
         matrix       => $matrix,
-        gapcost      => $gapcost,
+        gapcost      => $gap,
         match_score  => $match_score,
         filter_query => $filter_query,
         resultslimit => $resultslimit,
@@ -734,9 +766,10 @@ sub blast_search {
         zchaining    => $zchaining,
         zthreshold   => $zthreshold,
         zmask        => $zmask,
+        type         => $type,
 
         #Genomes
-        dsgid      => $blastable
+        dsgid        => $blastable,
     );
 
     # Optional parameters
@@ -773,32 +806,39 @@ sub blast_search {
         next unless -s $fasta_file;
 
         my $name = $dsg->organism->name;
-        my $args = [
-            ['-i', $dbfasta, 0],
-            ['-t', qq{"$name"}, 0],
-            ['-n', $dsgid, 1],
-        ];
+        #my $args = [
+        #    ['-i', $dbfasta, 0],
+        #    ['-t', qq{"$name"}, 0],
+        #    ['-n', $dsgid, 1],
+        #];
 
-        push @$args, ['-p', 'F', 1];
+        #push @$args, ['-p', 'F', 1];
 
         my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
-        mkpath($dbpath, 0, 0775);
         my $db = File::Spec->catdir(($dbpath, $dsgid));
-        my $outputs = ["$db.nhr", "$db.nin", "$db.nsq"];
+        #my $outputs = [[$dbpath, 1]]; #["$db.nhr", "$db.nin", "$db.nsq"];
 
-        $workflow->add_job(
-            cmd     => $FORMATDB,
-            script  => undef,
-            args    => $args,
-            inputs  => undef,
-            outputs => $outputs,
-            description => "Generating blastable database..."
-        );
+        $workflow->add_job(generate_blastdb_job(
+            title   => $name,
+            out     => $dsgid,
+            fasta   => $dbfasta,
+            type    => "nucl",
+            outdir  => $dbpath,
+        ));
+
+        #$workflow->add_job(
+        #    cmd     => "mkdir $dsgid && cd $dsgid && $FORMATDB",
+        #    script  => undef,
+        #    args    => $args,
+        #    inputs  => undef,
+        #    outputs => $outputs,
+        #    description => "Generating blastable database..."
+        #);
 
         my $outfile = $cogeweb->basefile . "-$count.$program";
 
         my $cmd = $BLAST_PROGS->{$program};
-        $args = [
+        my $args = [
             [ '', '--adjustment=10', 1 ],
             [ '', $BLAST_PROGS->{$program}, 0 ],
         ];
@@ -850,14 +890,14 @@ sub blast_search {
             dsg      => $dsg
           };
 
-        $workflow->add_job(
+        $workflow->add_job({
             cmd     => "/usr/bin/nice",
             script  => undef,
             args    => $args,
-            inputs  => [$fasta_file, "$db.nhr", "$db.nin", "$db.nsq"],
+            inputs  => [$fasta_file, [$dbpath, 1]],
             outputs => [$outfile],
             description => "Blasting sequence against $name"
-        );
+        });
 
         $count++;
     }
@@ -876,6 +916,7 @@ sub blast_search {
     return encode_json({
         id => $response->{id},
         link => $link,
+        logfile => $TEMPURL . "/" . $cogeweb->basefilename . ".log",
         success => $JEX->is_successful($response) ? JSON::true : JSON::false
     })
 }
@@ -899,6 +940,8 @@ sub get_results {
     my $filter_query = $opts{filter_query};
     my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
     my $basename     = $opts{basename};
+    my $type = $opts{type};
+
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
         basename => $basename,
         tempdir  => $TEMPDIR
@@ -954,6 +997,7 @@ sub get_results {
         zchaining    => $zchaining,
         zthreshold   => $zthreshold,
         zmask        => $zmask,
+        type         => $type,
 
         #Genomes
         dsgid      => $blastable
@@ -2116,6 +2160,13 @@ sub overlap_feats_parse    #Send to GEvo
             my ( $hspnum, $dsgid );
             ( $featid, $hspnum, $dsgid ) = $featid =~ m/^(\d+)_(\d+)_(\d+)$/;
             my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+
+            if ($dsg->deleted) {
+                my $name = $dsg->organism->name;
+                my $error_message = "The genome $name was marked as deleted";
+                return encode_json({error => $error_message });
+            }
+
             $featid .= "_" . $dsg->type->id if $dsg;
             push @list, $featid;
         }
@@ -2512,10 +2563,9 @@ sub export_to_excel {
     $worksheet->write( 0, 6, "E-value" );
     $worksheet->write( 0, 7, "Percent ID" );
     $worksheet->write( 0, 8, "Score" );
-    unless ( $accn_list =~ /no/ ) {
-        $worksheet->write( 0, 9,  "Closest Feature" );
-        $worksheet->write( 0, 10, "Distance" );
-    }
+    $worksheet->write( 0, 9, "CoGe Feature ID" );
+    $worksheet->write( 0, 10,  "Closest Feature" );
+    $worksheet->write( 0, 11, "Distance" );
 
     my (
         $org,   $chr,      $pos,    $hsp_no, $eval,   $pid,
@@ -2582,9 +2632,10 @@ sub export_to_excel {
             $worksheet->write( $i, 6, $eval );
             $worksheet->write( $i, 7, $pid );
             $worksheet->write( $i, 8, $score );
-            $worksheet->write( $i, 9, $P->{SERVER} . "FeatView.pl?accn=$name",
+            $worksheet->write( $i, 9, $feat->id );
+            $worksheet->write( $i, 10, $P->{SERVER} . "FeatView.pl?accn=$name",
                 $name );
-            $worksheet->write( $i, 10, $distance );
+            $worksheet->write( $i, 11, $distance );
         }
 
         $i++;
@@ -2612,7 +2663,7 @@ sub generate_tab_deliminated {
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
 
-    my $str = "Name\tHSP No.\tE-value\tPerc ID\tScore\tOrganism\n";
+    my $str = "Name\tHSP No.\tE-value\tPerc ID\tScore\tOrganism\tCoge Feature ID\n";
 
     foreach my $accn ( split( /,/, $accn_list ) ) {
         next if $accn =~ /no$/;
@@ -2629,7 +2680,7 @@ sub generate_tab_deliminated {
             $pid   = $info->{pid};
             $score = $info->{score};
         }
-        $str .= "$name\t$hsp_num\t$pval\t$pid\t$score\t$org\n";
+        $str .= "$name\t$hsp_num\t$pval\t$pid\t$score\t$org\t$featid\n";
     }
     $str =~ s/\n$//;
 
@@ -3087,7 +3138,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
 
     # Build select items out of results
     my $html;
-    foreach my $n ( sort listcmp @notebooks ) {
+    foreach my $n ( sort notebookcmp @notebooks ) {
         my $item_spec = 1 . ':' . $n->id; #FIXME magic number for item_type
         $html .= "<option value='$item_spec'>" . $n->info . "</option><br>\n";
     }

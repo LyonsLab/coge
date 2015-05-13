@@ -5,7 +5,7 @@ use CGI;
 use HTML::Template;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Core::List qw(listcmp);
+use CoGe::Core::Notebook qw(notebookcmp);
 
 use vars qw( $P $PAGE_TITLE $USER $coge %FUNCTION $FORM $LINK );
 
@@ -28,15 +28,16 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    #$template->param( HELP => "/wiki/index.php?title=$PAGE_TITLE" );
+    $template->param( HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER       => $name );
-    $template->param( TITLE      => qq{},
+    $template->param( TITLE      => qq{Notebooks},
     				  PAGE_TITLE => $PAGE_TITLE,
     				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "$PAGE_TITLE-logo.png" );
+    				  LOGO_PNG   => "CoGe.svg" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
 
@@ -44,6 +45,7 @@ sub gen_html {
     #	$template->param( BOX_NAME   => $name . " Data Lists:" );
     $template->param( ADJUST_BOX => 1 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     return $template->output;
 }
 
@@ -70,6 +72,7 @@ sub create_list {
             name         => $opts{name},
             description  => $opts{desc},
             list_type_id => $opts{typeid},
+            creator_id   => $USER->id,
             restricted   => 1
         }
     );
@@ -132,8 +135,8 @@ sub get_lists_for_user {
     my %seen_list_ids
       ;    #for admins -- their lists are listed first, then all lists
     my @list_info;
-    @lists = sort listcmp @lists;
-    push @lists, sort listcmp @admin_lists;
+    @lists = sort notebookcmp @lists;
+    push @lists, sort notebookcmp @admin_lists;
     foreach my $list (@lists) {
 
         #next if ($list->is_owner && !$USER->is_admin); # skip owner lists

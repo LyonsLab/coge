@@ -29,19 +29,21 @@ use warnings;
 use POSIX qw( ceil );
 use Data::GUID;
 use Data::Dumper;
+use File::Basename qw(fileparse);
 
 BEGIN {
-    use vars qw ($VERSION $FASTA_LINE_LEN @ISA @EXPORT @EXPORT_OK);
+    use vars qw ($VERSION $FASTA_LINE_LEN @ISA @EXPORT);
     require Exporter;
 
     $VERSION = 0.1;
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
-    @EXPORT =
-      qw( units commify print_fasta get_unique_id get_link_coords format_time_diff sanitize_string
-        execute );
-
-    @EXPORT_OK = qw (split_string);
+    @EXPORT = qw( 
+        units commify print_fasta get_unique_id get_link_coords 
+        format_time_diff sanitize_name execute 
+        trim js_escape html_escape to_filename to_pathname
+        is_fastq_file
+    );
 }
 
 sub units {
@@ -65,6 +67,30 @@ sub commify {
     my $text = reverse $_[0];
     $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
     return scalar reverse $text;
+}
+
+sub trim {
+    my $s = shift;
+    $s =~ s/^\s+//;
+    $s =~ s/\s+$//;
+    $s =~ s/^\"//;
+    $s =~ s/\"$//;
+    return $s;
+}
+
+sub js_escape {
+    my $s = shift;
+    $s =~ s/[\x00-\x1f]/ /g; # remove non-printable ascii chars
+    $s =~ s/\'/\\'/g;
+    $s =~ s/\"/\\"/g;
+    return $s;
+}
+
+sub html_escape {
+    my $s = shift;
+    $s =~ s/[\x00-\x1f]/ /g; # remove non-printable ascii chars
+    $s =~ s/\'/\&\#8216\;/g; # convert apostrophe char
+    return $s;
 }
 
 sub print_fasta {
@@ -99,20 +125,23 @@ sub get_link_coords { # mdb added 11/20/13 issue 254
 	return ($start, $stop);
 }
 
-sub sanitize_string {
-    my $string = shift;
+# Convert a string to filename-friendly version
+sub sanitize_name { 
+    my $name = shift;
+    
+    return unless (defined $name);
 
-    $string =~ s/\///g;
-    $string =~ s/\s+/_/g;
-    $string =~ s/\(//g;
-    $string =~ s/\)//g;
-    $string =~ s/://g;
-    $string =~ s/;//g;
-    $string =~ s/#/_/g;
-    $string =~ s/'//g;
-    $string =~ s/"//g;
+    $name =~ s/\///g;   # remove /
+    $name =~ s/\s+/_/g; # replace whitespace with _
+    $name =~ s/\(//g;   # remove (
+    $name =~ s/\)//g;   # remove )
+    $name =~ s/://g;    # remove :
+    $name =~ s/;//g;    # remove ;
+    $name =~ s/#/_/g;   # replace # with _
+    $name =~ s/'//g;    # remove '
+    $name =~ s/"//g;    # remove "
 
-    return $string;
+    return $name;
 }
 
 sub format_time_diff {
@@ -135,32 +164,38 @@ sub format_time_diff {
     return $elapsed;
 }
 
-sub split_string {
-    my $string = shift;
+sub to_filename {
+    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $name;
+}
 
-    return unless defined $string;
-
-    #remove trailing and leading white-space
-    $string =~ s/^\s+//g;
-    $string =~ s/\s+$//g;
-
-    # Create terms for search
-    my @terms = split /\s+/, $string;
-
-    return wantarray ? @terms : \@terms;
+sub to_pathname {
+    my (undef, $path, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $path;
 }
 
 sub execute {
     my $cmd = shift;
+    my $error_msg = shift; # optional
 
     my @cmdOut = qx{$cmd};
     my $cmdStatus = $?;
 
     if ($cmdStatus != 0) {
-        say STDERR "error: command failed with rc=$cmdStatus: $cmd";
+        if ($error_msg) {
+            print STDERR $error_msg;
+        }
+        else {
+            say STDERR "error: command failed with rc=$cmdStatus: $cmd";
+        }
     }
 
     return $cmdStatus;
+}
+
+sub is_fastq_file {
+    my $filename = shift;
+    return ($filename =~ /fastq$/ || $filename =~ /fastq\.gz$/ || $filename =~ /fq$/ || $filename =~ /fq\.gz$/);
 }
 
 1;

@@ -6,20 +6,21 @@ use CoGeX;
 use Getopt::Long;
 use File::Path;
 use File::Touch;
-use File::Basename qw( basename );
-use File::Spec::Functions qw( catdir catfile );
+use File::Basename qw(basename);
+use File::Spec::Functions qw(catdir catfile);
 use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Accessory::Utils qw( commify );
-use CoGe::Core::Metadata qw( create_annotations );
+use CoGe::Accessory::Utils qw( commify to_pathname );
+use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Accessory::TDS;
+use CoGe::Core::Storage qw(add_workflow_result);
+use CoGe::Core::Metadata qw(create_annotations);
 
-use vars qw($staging_dir $result_dir $install_dir $data_file $file_type $log_file
-  $name $description $version $restricted $ignore_missing_chr
+use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
+  $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
-  $annotations $types $wid
-  $host $port $db $user $pass $P);
+  $user_id $annotations $types $wid $host $port $db $user $pass $P);
 
 #FIXME: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -36,43 +37,45 @@ my $MIN_GFF_COLUMNS = 9;
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "install_dir=s" => \$install_dir,    # final installation path
-    "result_dir=s"  => \$result_dir,     # results path
+#    "result_file=s" => \$result_file,    # results file
     "data_file=s"   => \$data_file,      # input data file (JS escape)
     "file_type=s"   => \$file_type,		 # input file type
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
     "version=s"     => \$version,        # experiment version (JS escaped)
-    "restricted=i"  => \$restricted,     # experiment restricted flag
+    "restricted=s"  => \$restricted,     # experiment restricted flag (0|1 or false|true)
     "source_name=s" => \$source_name,    # experiment source name (JS escaped)
     "gid=s"         => \$gid,            # genome id
     "wid=s"         => \$wid,            # workflow id
-    "user_name=s"   => \$user_name,      # user name
+    "user_id=i"     => \$user_id,        # user ID to assign experiment
+    "user_name=s"   => \$user_name,      # user name to assign experiment (alternative to user_id)
+    "creator_id=i"  => \$creator_id,     # user ID to set as experiment creator
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
     "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
+    "normalize=s"   => \$normalize,      # optional: percentage, log10 or loge    
     "config=s"      => \$config,         # configuration file
 
     # Optional flags for debug and bulk loader
     "ignore-missing-chr=i" => \$ignore_missing_chr,
     "allow_negative=i"     => \$allow_negative,
     "disable_range_check"  => \$disable_range_check, # allow any value in val1 column
-    #"log_file=s"           => \$log_file # mdb removed 8/1/14 - logging sent to STDOUT as part of jex changes
 );
 
+$| = 1;
+print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
-my @QUANT_TYPES = qw(csv tsv bed);
+# Setup supported file types
+my @QUANT_TYPES = qw(csv tsv bed wig);
 my @MARKER_TYPES = qw(gff gtf gff3);
 my @OTHER_TYPES = qw(bam vcf);
-
 my @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES);
 
-# Open log file
-$| = 1;
-die unless ($staging_dir);
-#$log_file = catfile($staging_dir, 'log.txt') unless $log_file;
+# Setup staging path
+unless ($staging_dir) {
+    print STDOUT "log: error: staging_dir argument is missing\n";
+    exit(-1);
+}
 mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
-#open( my $log, ">>$log_file" ) or die "Error opening log file $log_file";
-#$log->autoflush(1);
-print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
@@ -82,21 +85,35 @@ if (-e $logdonefile) {
 }
 
 # Process and verify parameters
-if (!$wid) {
-    print STDOUT "log: error: required workflow ID not specified\n";
-    exit(-1);
-}
 $data_file   = unescape($data_file);
 $name        = unescape($name);
 $description = unescape($description);
 $version     = unescape($version);
 $source_name = unescape($source_name);
-$restricted  = '0' if ( not defined $restricted );
 
-if ($user_name eq 'public') {
-	print STDOUT "log: error: not logged in\n";
+unless ($wid) {
+    print STDOUT "log: error: required workflow ID not specified\n";
     exit(-1);
 }
+
+unless ($data_file && -r $data_file) {
+    print STDOUT "log: error: cannot access input data file\n";
+    exit(-1);
+}
+
+if (not defined $user_id and not defined $user_name) {
+    print STDOUT "log: error: user not specified, use user_id or user_name\n";
+    exit(-1);
+}
+
+if ((defined $user_name and $user_name eq 'public') || (defined $user_id and $user_id eq '0')) {
+    print STDOUT "log: error: not logged in\n";
+    exit(-1);
+}
+
+# Set default parameters
+$restricted  = '1' unless (defined $restricted && (lc($restricted) eq 'false' || $restricted eq '0'));
+$ignore_missing_chr = '1' unless (defined $ignore_missing_chr); # mdb added 10/6/14 easier just to make this the default
 
 # Load config file
 unless ($config) {
@@ -128,13 +145,12 @@ if (   not $FASTBIT_LOAD
     exit(-1);
 }
 
-my $cmd;
-
 # Copy input data file to staging area
 # If running via JEX the file will already be there
-my ($filename) = basename($data_file);#$data_file =~ /^.+\/([^\/]+)$/;
+my ($filename) = basename($data_file);
 my $staged_data_file = $staging_dir . '/' . $filename;
 unless (-r $staged_data_file) {
+    my $cmd;
     $cmd = "cp -f '$data_file' $staging_dir";
     `$cmd`;
 }
@@ -142,7 +158,6 @@ unless (-r $staged_data_file) {
 # Decompress file if necessary
 if ( $staged_data_file =~ /\.gz$/ ) {
     my $cmd = $GUNZIP . ' ' . $staged_data_file;
-    #print STDERR "$cmd\n";
     print STDOUT "log: Decompressing '$filename'\n";
     `$cmd`;
     $staged_data_file =~ s/\.gz$//;
@@ -165,6 +180,35 @@ unless ($coge) {
     exit(-1);
 }
 
+# Retrieve user
+my $user;
+if ($user_id) {
+    $user = $coge->resultset('User')->find($user_id);
+}
+elsif ($user_name) {
+    $user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
+else {
+    print STDOUT "log: error user not specified, see user_id or user_name\n";
+    exit(-1);
+}
+
+unless ($user) {
+    print STDOUT "log: error finding user ", ($user_name ? $user_name : $user_id) , "\n";
+    exit(-1);
+}
+
+# Retrieve creator
+my $creator;
+if ($creator_id) {
+    $creator = $coge->resultset('User')->find($creator_id);
+    unless ($creator) {
+        print STDOUT "log: error finding creator $creator_id\n";
+        exit(-1);
+    }
+}
+$creator = $user unless $creator;
+
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
 unless ($genome) {
@@ -178,7 +222,7 @@ my %genome_chr = map { $_ => 1 } $genome->chromosomes;
 # Validate the data file
 print STDOUT "log: Validating data file\n";
 if (-s $staged_data_file == 0) {
-    print STDOUT "log: error: input file '$staged_data_file' is empty\n";
+    print STDOUT "log: error: input file '", basename($staged_data_file), "' is empty\n";
     exit(-1);
 }
 my ($count, $pChromosomes, $format);
@@ -198,31 +242,42 @@ elsif ( $data_type == $DATA_TYPE_MARKER ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
       validate_gff_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
-if ( not defined $count ) { # parse error in validate
-    exit(-1);
-}
-if ( $count == 0 ) {
+if ( !$count ) {
     print STDOUT "log: error: file contains no data\n";
     exit(-1);
 }
 print STDOUT "log: Successfully read " . commify($count) . " lines\n";
 
 # Verify that chromosome names in input file match those for genome
+my $print_limit = 50;
 foreach ( sort keys %genome_chr ) {
     print STDOUT "genome chromosome $_\n";
+    if ($print_limit-- == 0) {
+        print STDOUT "... (stopping here, too many genome chromosomes to show)\n";
+        last;
+    }
 }
+$print_limit = 50;
 foreach ( sort keys %$pChromosomes ) {
     print STDOUT "input chromosome $_\n";
+    if ($print_limit-- == 0) {
+        print STDOUT "... stopping here, too many input chromosomes to show\n";
+        last;
+    }
 }
-if (not $ignore_missing_chr) {
-	my $error = 0;
-	foreach ( sort keys %$pChromosomes ) {
-	    if ( not defined $genome_chr{$_} ) {
-	        print STDOUT "log: chromosome '$_' not found in genome\n";
-	        $error++;
-	    }
+	
+my $missing_chr_error = 0;
+foreach ( sort keys %$pChromosomes ) {
+	if ( not defined $genome_chr{$_} ) { # don't repeat same error message
+		if ($missing_chr_error < 5) {
+			print STDOUT "log: chromosome '$_' not found in genome, skipping (only showing first 5) ...\n";
+		}
+	        $missing_chr_error++;
 	}
-	if ($error) {
+}
+
+if (not $ignore_missing_chr) {
+	if ($missing_chr_error) {
 	    print STDOUT "log: error: input chromosome names don't match genome\n";
 	    exit(-1);
 	}
@@ -246,7 +301,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 
 	#TODO redirect fastbit output to log file instead of stderr
 	print STDOUT "log: Generating database\n";
-	$cmd = "$FASTBIT_LOAD -d $staging_dir -m \"$data_spec\" -t $staged_data_file";
+	my $cmd = "$FASTBIT_LOAD -d $staging_dir -m \"$data_spec\" -t $staged_data_file";
 	print STDOUT $cmd, "\n";
 	my $rc = system($cmd);
 	if ( $rc != 0 ) {
@@ -255,8 +310,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 	}
 
 	print STDOUT "log: Indexing database (may take a few minutes)\n";
-	$cmd =
-	"$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
+	$cmd = "$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
 	print STDOUT $cmd, "\n";
 	$rc = system($cmd);
 	if ( $rc != 0 ) {
@@ -292,6 +346,7 @@ my $experiment = $coge->resultset('Experiment')->create(
         data_type      => $data_type,
         row_count      => $count,
         genome_id      => $gid,
+        creator_id     => $creator->id,
         restricted     => $restricted
     }
 );
@@ -344,12 +399,6 @@ if ( -e $storage_path ) {
 
 #TODO create experiment type & connector
 
-# Make user owner of new experiment
-my $user = $coge->resultset('User')->find( { user_name => $user_name } );
-unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
-    exit(-1);
-}
 my $node_types = CoGeX::node_types();
 my $conn       = $coge->resultset('UserConnector')->create(
     {
@@ -371,7 +420,7 @@ unless (-r $storage_path) {
 	print STDOUT "log: error: could not create installation path\n";
 	exit(-1);
 }
-$cmd = "cp -r $staging_dir/* $storage_path"; #FIXME use perl copy and detect failure
+my $cmd = "cp -r $staging_dir/* $storage_path"; #FIXME use perl copy and detect failure
 print STDOUT "$cmd\n";
 `$cmd`;
 
@@ -380,16 +429,22 @@ $cmd = "chmod -R a+r $storage_path";
 print STDOUT "$cmd\n";
 `$cmd`;
 
-# Save result document
-if ($result_dir) {
-    mkpath($result_dir);
-    CoGe::Accessory::TDS::write(
-        catfile($result_dir, '1'),
-        {
-            experiment_id => int($experiment->id)
-        }
-    );
-}
+# Save result
+add_workflow_result($user_name, $wid, 
+    {
+        type => 'experiment',
+        id => int($experiment->id),
+        name        => $name,
+        description => $description,
+        version     => $version,
+        #link       => $link, #FIXME
+        data_source_id => $data_source->id,
+        data_type   => $data_type, #FIXME convert from number to string identifier
+        row_count   => $count,
+        genome_id   => $gid,
+        restricted  => $restricted
+    }
+);
 
 # Add experiment ID to log - mdb added 8/19/14, needed after log output was moved to STDOUT for jex
 my $logtxtfile = "$staging_dir/log.txt";
@@ -397,7 +452,7 @@ open(my $logh, '>', $logtxtfile);
 print $logh "experiment id: " . $experiment->id . "\n";
 close($logh);
 
-# Save job_id in experiment data path
+# Save job_id in experiment data path -- #TODO move into own routine in Storage.pm
 CoGe::Accessory::TDS::write(
     catfile($storage_path, 'metadata.json'),
     {
@@ -407,9 +462,6 @@ CoGe::Accessory::TDS::write(
 
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
-
-#print STDOUT "log: All done!\n";
-#close($log);
 
 exit;
 
@@ -424,8 +476,10 @@ sub detect_data_type {
         #print STDOUT "log: Detecting file type\n";
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
+    
+    $filetype = lc($filetype);
 
-    if ( grep { $_ eq $filetype } @QUANT_TYPES ) { #TODO add 'bigbed', 'wig', 'bigwig'
+    if ( grep { $_ eq $filetype } @QUANT_TYPES ) {
         print STDOUT "log: Detected a quantitative file ($filetype)\n";
         return ($filetype, $DATA_TYPE_QUANT);
     }
@@ -447,47 +501,183 @@ sub detect_data_type {
     }
 }
 
-# Quant file can be .csv or .bed formats
-sub validate_quant_data_file {
+#TODO rewrite this to load the file once into memory rather than reading it twice
+sub max_of_values {
+	my $filepath = shift;
+	my $filetype = shift;
+	my $max = 0;
+    open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
+    while ( my $line = <$in> ) {
+        next if ( $line =~ /^\s*#/ ); # skip comment lines
+        chomp $line;
+        next unless $line; # skip blank lines
+        # Interpret tokens according to file type
+        my @tok;
+        my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
+        if ($filetype eq 'csv') { # CoGe format, comma-separated
+        	@tok = split( /,/, $line );
+        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
+        }
+        elsif ($filetype eq 'tsv') { # CoGe format, tab-separated
+        	@tok = split( /\s+/, $line );
+        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
+        }
+        elsif ($filetype eq 'wig') {
+     		my ($stepSpan, $stepChr, $line_num);
+            next if ( $line =~ /^track/ ); # ignore "track" line
+            if ( $line =~ /^variableStep/i ) { # handle step definition line
+                if ($line =~ /chrom=(\w+)/i) {
+                    $stepChr = $1;
+                }
+                
+                $stepSpan = 1;
+                if ($line =~ /span=(\d+)/i) {
+                    $stepSpan = $1;
+                }
+                next;
+            }
+            elsif ( $line =~ /^fixedStep/i ) {
+                log_line('fixedStep wiggle format is no currently supported', $line_num, $line);
+                return;
+            }
+            
+            if (not defined $stepSpan or not defined $stepChr) {
+                log_line('missing or invalid wiggle step definition line', $line_num, $line);
+                return;
+            }
+            
+            @tok = split( /\s+/, $line );
+            ( $start, $val1 ) = @tok;
+        }
+        elsif ($filetype eq 'bed') {
+        	my $bedType;
+            # Check for track type for BED files
+            if ( $line =~ /^track/ ) {
+                undef $bedType;
+                if ($line =~ /type=(\w+)/i) {
+                    $bedType = lc($1);
+                }
+                next;
+            }
+        
+            # Handle different BED formats
+            @tok = split( /\s+/, $line );
+            if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+                ( $chr, $start, $stop, $val1 ) = @tok;
+            }
+            else { # UCSC standard BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
+                ( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
+            }
+        }
+        else { # unknown file type (should never happen)
+        	die "fatal error: unknown file type!";
+        }
+        if ($val1 > $max) {
+	        $max = $val1;
+        }
+    }
+    close($in);
+    print STDOUT "max=$max\n";
+    return $max;
+ }
+
+# Parses multiple line-based file formats for quant data
+sub validate_quant_data_file { #TODO this routine is getting long, break into subroutines
     my %opts = @_;
     my $filepath = $opts{file};
     my $filetype = $opts{file_type};
     my $genome_chr = $opts{genome_chr};
     my %chromosomes;
-    my $line_num = 1;
+    my $line_num = 0;
     my $count;
     my $hasLabels = 0;
     my $hasVal2   = 0;
+    my $bedType; # only used for BED formats
+    my ($stepSpan, $stepChr); # only used for WIG format
 
     print STDOUT "validate_quant_data_file: $filepath\n";
+    my $max;
+    if ($normalize) {
+    	$max = max_of_values($filepath, $filetype);
+    }
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
     while ( my $line = <$in> ) {
         $line_num++;
-        next if ( $line =~ /^\s*#/ ); # skip comments
+        next if ( $line =~ /^\s*#/ ); # skip comment lines
         chomp $line;
-        next unless $line; # skip blanks
-
+        next unless $line; # skip blank lines
+        
         # Interpret tokens according to file type
         my @tok;
         my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
-        if ($filetype eq 'csv') {
+        if ($filetype eq 'csv') { # CoGe format, comma-separated
         	@tok = split( /,/, $line );
         	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
         }
-        elsif ($filetype eq 'tsv') {
+        elsif ($filetype eq 'tsv') { # CoGe format, tab-separated
         	@tok = split( /\s+/, $line );
         	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
         }
-        elsif ($filetype eq 'bed') {
-        	next if ( $line =~ /^track/ );
-        	@tok = split( /\s+/, $line );
-        	( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
-        	$val2 = $tok[6] if (@tok >= 7);
+        elsif ($filetype eq 'wig') {
+            next if ( $line =~ /^track/ ); # ignore "track" line
+            if ( $line =~ /^variableStep/i ) { # handle step definition line
+                if ($line =~ /chrom=(\w+)/i) {
+                    $stepChr = $1;
+                }
+                
+                $stepSpan = 1;
+                if ($line =~ /span=(\d+)/i) {
+                    $stepSpan = $1;
+                }
+                next;
+            }
+            elsif ( $line =~ /^fixedStep/i ) {
+                log_line('fixedStep wiggle format is no currently supported', $line_num, $line);
+                return;
+            }
+            
+            if (not defined $stepSpan or not defined $stepChr) {
+                log_line('missing or invalid wiggle step definition line', $line_num, $line);
+                return;
+            }
+            
+            @tok = split( /\s+/, $line );
+            ( $start, $val1 ) = @tok;
+            $stop = $start + $stepSpan - 1;
+            $chr = $stepChr;
+            $strand = '.'; # determine strand by val1 polarity   
         }
-        else {
-        	die; # sanity check
+        elsif ($filetype eq 'bed') {
+            # Check for track type for BED files
+            if ( $line =~ /^track/ ) {
+                undef $bedType;
+                if ($line =~ /type=(\w+)/i) {
+                    $bedType = lc($1);
+                }
+                next;
+            }
+        
+            # Handle different BED formats
+            @tok = split( /\s+/, $line );
+            if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+                ( $chr, $start, $stop, $val1 ) = @tok;
+                $strand = '.'; # determine strand by val1 polarity
+            }
+            else { # UCSC standard BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
+                ( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
+                $val2 = $tok[6] if (@tok >= 7); # non-standard CoGe usage
+            }
+            
+            # Adjust coordinates from base-0 to base-1
+            if (defined $start and defined $stop) {
+                $start += 1;
+                $stop += 1;
+            }
+        }
+        else { # unknown file type (should never happen)
+        	die "fatal error: unknown file type!";
         }
 
         # Validate mandatory fields
@@ -496,7 +686,12 @@ sub validate_quant_data_file {
             or not defined $stop
             or not defined $strand )
         {
-            log_line('missing value in a column', $line_num, $line);
+            my $missing;
+            $missing = 'chr'    unless $chr;
+            $missing = 'start'  unless $start;
+            $missing = 'stop'   unless $stop;
+            $missing = 'strand' unless $strand;
+            log_line("missing value in a column: $missing", $line_num, $line);
             return;
         }
 
@@ -504,25 +699,39 @@ sub validate_quant_data_file {
         if ($allow_negative and $val1 < 0) {
 	       $val1 = abs($val1);
         }
-        # mdb added 3/13/14 issue 331
+        # mdb added 3/13/14 issue 331 - set strand based on polarity of value
         elsif ($strand eq '.') {
             $strand = ($val1 >= 0 ? 1 : -1);
             $val1 = abs($val1);
         }
-
-        if ( not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1)) ) {
-            log_line('value 1 not between 0 and 1', $line_num, $line);
-            return;
+        if (!$normalize) {
+        	if (not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1))) {
+	            log_line('value 1 not between 0 and 1', $line_num, $line);
+    	        return;
+        	}
         }
 
+        # Munge chr name for CoGe
+        ($chr) = split(/\s+/, $chr);
 		$chr = fix_chromosome_id($chr, $genome_chr);
-        if (!$chr) {
-            log_line('trouble parsing chromosome', $line_num, $line);
+        unless (defined $chr) {
+            log_line("trouble parsing sequence ID", $line_num, $line);
             return;
         }
         $strand = $strand =~ /-/ ? -1 : 1;
 
         # Build output line
+        if ($normalize) {
+	        if ($normalize eq "percentage") {
+	        	$val1 /= $max;
+	        }
+	        elsif ($normalize eq "log10") {
+	        	$val1 = log($val1) / log(10) / $max;
+	        }
+	        else {
+	        	$val1 = log($val1) / $max;
+	        }
+        }
         my @fields  = ( $chr, $start, $stop, $strand, $val1 ); # default fields
         if (defined $val2) {
             $hasVal2 = 1;
@@ -534,6 +743,7 @@ sub validate_quant_data_file {
         }
         print $out join( ",", @fields ), "\n";
 
+        # Keep track of seen chromosome names for later use
         $chromosomes{$chr}++;
         $count++;
     }
@@ -582,7 +792,7 @@ sub validate_vcf_data_file {
 
         # Validate format
         if ( @tok < $MIN_VCF_COLUMNS ) {
-              log_line('more columns expected ('.@tok.' < '.$MIN_VCF_COLUMNS.')', $line_num, $line);
+            log_line('more columns expected ('.@tok.' < '.$MIN_VCF_COLUMNS.')', $line_num, $line);
             return;
         }
 
@@ -636,8 +846,8 @@ sub validate_vcf_data_file {
             { name => 'id',    type => 'text' },
             { name => 'ref',   type => 'key' },
             { name => 'alt',   type => 'key' },
-            { name => 'qual',  type => 'double' },
-            { name => 'info',  type => 'text' }
+            { name => 'qual',  type => 'double' }
+            #{ name => 'info',  type => 'text' }
         ]
     };
 
@@ -680,7 +890,7 @@ sub validate_bam_data_file {
 	$cmd = "$SAMTOOLS view -H $filepath";
 	print STDOUT $cmd, "\n";
     my @header = qx{$cmd};
-    print STDOUT "Old header:\n", @header;
+    #print STDOUT "Old header:\n", @header;
     execute($cmd);
 
 	# Parse the chromosome names out of the header
@@ -724,7 +934,7 @@ sub validate_bam_data_file {
 		$cmd = "rm -f $filepath";
 		execute($cmd);
 	}
-	else {
+	elsif ($filepath ne $newfilepath) { # mdb added condition 3/12/15 -- possible that original file is named "alignment.bam"
 		# Rename original bam file
 		$cmd = "mv $filepath $newfilepath";
 		execute($cmd);
@@ -837,35 +1047,4 @@ sub execute { # FIXME move into Util.pm
 sub log_line {
     my ( $msg, $line_num, $line ) = @_;
     print STDOUT "log: error at line $line_num: $msg\n", "log: ", substr($line, 0, 100), "\n";    
-}
-
-sub fix_chromosome_id {
-	my $chr = shift;
-	my $genome_chr = shift;
-
-    # Fix chromosome identifier
-    $chr =~ s/^lcl\|//;
-    $chr =~ s/chromosome//i;
-    $chr =~ s/^chr//i;
-    $chr =~ s/^0+//;
-    $chr =~ s/^_+//;
-    $chr =~ s/\s+/ /;
-    $chr =~ s/^\s//;
-    $chr =~ s/\s$//;
-
-	# Hack to deal with converting 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed
-    if (   $chr =~ /^chloroplast$/i
-        && !$genome_chr->{$chr}
-        && $genome_chr->{"C"} )
-    {
-        $chr = "C";
-    }
-    if (   $chr =~ /^mitochondria$/i
-        && !$genome_chr->{$chr}
-        && $genome_chr->{"M"} )
-    {
-        $chr = "M";
-    }
-
-	return $chr;
 }

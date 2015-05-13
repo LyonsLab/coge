@@ -70,7 +70,8 @@ def fetch_sequence(genome_id, chr_id, start, stop, cookie_string):
         return
 
     url = service.format(base=config['SERVER'],
-        service='services/JBrowse/service.pl',
+        #service='services/JBrowse/service.pl',
+        service='api/v1/legacy/', # mdb added 2/5/15, COGE-289
         id=genome_id, chr=chr_id, start=start, stop=stop)
 
 
@@ -139,8 +140,8 @@ def gc_features(environ, start_response):
         
     try:
         # Get chromosome subsequence using interbase coordinates
-        string = fetch_sequence(genome_id, chr_id, start+1, end+1,
-                environ['HTTP_COOKIE'])
+        cookie = get_cookie(environ)
+        string = fetch_sequence(genome_id, chr_id, start+1, end+1, cookie)
 
         # Set bucketSize
         sizes = {'20': 1, '10': 1, '5': 2, '2': 5, '1': 25, '0.5': 75}
@@ -215,7 +216,8 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
     cur = con.cursor()
     # mdb 4/24/14 - added fn.primary_name=1 constraint to keep from returning arbitrary name
     query = "SELECT l.start, l.stop, l.strand, ft.name, fn.name, \
-            l.location_id, f.start, f.stop, f.feature_id, fn.primary_name \
+            l.location_id, f.start, f.stop, f.feature_id, fn.primary_name, \
+	    l.chromosome, f.chromosome, f.strand \
             FROM genome g \
             JOIN dataset_connector dc ON dc.genome_id = g.genome_id \
             JOIN dataset d on dc.dataset_id = d.dataset_id \
@@ -269,14 +271,15 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
                     response_body["features"][i]["strand"] = row[2]
                     response_body["features"][i]["type"] = row[3]
 
-                response_body["features"][i]["subfeatures"].append({
-                    "chr" : chr_id, # mdb added 11/18/13 issue 240 - add chr to FeatAnno.pl onclick url
-                    "start" : row[0],
-                    "end" : row[1],
-                    "strand" : row[2],
-                    "type" : row[3],
-                    "name" : row[4],
-                })
+		if row[2] == row[12] and row[10] == row[11] and row[0] >= row[6] and row[0] <= row[7] and row[1] >= row[6] and row[1] <= row[7]:
+                    response_body["features"][i]["subfeatures"].append({
+                        "chr" : chr_id, # mdb added 11/18/13 issue 240 - add chr to FeatAnno.pl onclick url
+                        "start" : row[0],
+                        "end" : row[1],
+                        "strand" : row[2],
+                        "type" : row[3],
+                        "name" : row[4],
+                    })
 
                 lastStrand = row[2]
                 lastType = row[3]
@@ -290,20 +293,21 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
             min_start = None
             max_stop = None
             for row in results:
-                # Find bounds for sequence retrieval later (show_wobble == 1)
-                if min_start is None or min_start > row[0]:
-                    min_start = row[0]
-                if max_stop is None or max_stop < row[1]:
-                    max_stop = row[1]
+		if row[2] == row[12] and row[10] == row[11] and row[0] >= row[6] and row[0] <= row[7] and row[1] >= row[6] and row[1] <= row[7]:
+                    # Find bounds for sequence retrieval later (show_wobble == 1)
+                    if min_start is None or min_start > row[0]:
+                        min_start = row[0]
+                    if max_stop is None or max_stop < row[1]:
+                        max_stop = row[1]
                 
-                # Hash unique features
-                location_id = row[5]
-                try:
-                    feat = feats[location_id]
-                    if row[9] == 1: # is feature name the primary name?
+                    # Hash unique features
+                    location_id = row[5]
+                    try:
+                        feat = feats[location_id]
+                        if row[9] == 1: # is feature name the primary name?
+                            feats[location_id] = row
+                    except KeyError:
                         feats[location_id] = row
-                except KeyError:
-                    feats[location_id] = row
 
             # Calculate wobble GC for CDS features
             wcount = {}
@@ -315,7 +319,8 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
                     if row[3] == 'CDS' and is_overlapping(int(row[0]), int(row[1]), int(start), int(end)):
                         if not seq:
                             # Get chromosome subsequence using interbase coordinates
-                            seq = fetch_sequence(genome_id, chr_id, int(min_start), int(max_stop), environ['HTTP_COOKIE'])
+                            cookie = get_cookie(environ)
+                            seq = fetch_sequence(genome_id, chr_id, int(min_start), int(max_stop), cookie)
                             
                         if (int(row[2]) == 1): # plus strand
                             count, total = calc_wobble(seq, int(row[0])-int(min_start), int(row[1])-int(min_start))
@@ -449,6 +454,12 @@ def reverse_complement(dna):
 
 def bin(start, end, bpPerBin):
     return max(0, int((start + end) / 2 / bpPerBin))
+
+def get_cookie(environ): # mdb added 2/5/15 for GEISHA-JBrowse, COGE-585
+    try:
+        return environ['HTTP_COOKIE']
+    except KeyError:
+        return None
 
 urls = [
     (r'stats/global$',

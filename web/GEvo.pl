@@ -175,11 +175,12 @@ sub gen_html {
     my $html;    # =  "Content-Type: text/html\n\n";
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( LOGO_PNG   => "GEvo-logo.png" );
-    $template->param( TITLE      => 'Genome Evolution Analysis',
+    $template->param( LOGO_PNG   => "CoGe.svg" );
+    $template->param( TITLE      => 'GEvo: Genome Evolution Analysis',
     				  PAGE_TITLE => 'GEvo',
     				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=GEvo' );
+    				  #HELP       => '/wiki/index.php?title=GEvo' );
+				  HELP       => $P->{SERVER} );
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
@@ -188,6 +189,7 @@ sub gen_html {
     $template->param( NO_BOX => 1 );
     $template->param( BODY   => gen_body() );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX     => $prebox->output );
@@ -224,6 +226,8 @@ sub gen_body {
     }
     my @seq_nums;
     my @seq_sub;
+
+    my $index = 1;
     for ( my $i = 1 ; $i <= $num_seqs ; $i++ ) {
         my (
             $draccn, $pos,   $chr,  $fid, $dsid,
@@ -231,7 +235,7 @@ sub gen_body {
         );
 
         #order by which genomi regions are displayed, top to bottom
-        $display_order = $i unless $display_order;
+        $display_order = $index unless $display_order;
         $draccn = $form->param( "accn" . $i ) if $form->param( "accn" . $i );
         $pos    = $form->param( "x" . $i )    if $form->param( "x" . $i );
         $chr = $form->param( "chr" . $i ) if defined $form->param( "chr" . $i );
@@ -252,6 +256,11 @@ sub gen_body {
             my ($feat) = $coge->resultset('Feature')->find($fid);
             ($draccn) = $feat->names if $feat;
 
+            # Check for available genomes
+            next unless grep {
+                $_ && !$_->deleted && $USER->has_access_to_genome($_)
+            } $feat->dataset->genomes;
+
             unless ($draccn)                    #no name!  This is a problem
             {
                 $pos  = $feat->start;
@@ -259,6 +268,43 @@ sub gen_body {
                 $dsid = $feat->dataset_id;
             }
         }
+
+        # Check if all genomes have been deleted
+        if ($dsid) {
+            my $dataset = $coge->resultset("Dataset")->find($dsid);
+
+            if ($dataset) {
+                next unless grep {
+                    $_ && !$_->deleted && $USER->has_access_to_genome($_)
+                } $dataset->genomes;
+            }
+        }
+
+        ## Check if the genome was deleted
+        if ($dsgid) {
+            my $genome = $coge->resultset('Genome')->find($dsgid);
+            next unless $genome && !$genome->deleted && $USER->has_access_to_genome($genome);
+        }
+
+        if ($draccn) {
+            my $rs = $coge->resultset('Dataset')->search(
+                { 'feature_names.name' => uri_unescape($draccn), },
+                {
+                    'join' => { 'features' => 'feature_names', },
+                }
+            );
+
+            if ($rs) {
+                while (my $ds = $rs->next()) {
+                    if ($ds) {
+                        next unless grep {
+                            $_ && !$_->deleted && $USER->has_access_to_genome($_)
+                        } $ds->genomes;
+                    }
+                }
+            }
+        }
+
         my $drup = $form->param( 'dr' . $i . 'up' )
           if defined $form->param( 'dr' . $i . 'up' );
         my $drdown = $form->param( 'dr' . $i . 'down' )
@@ -278,7 +324,8 @@ sub gen_body {
           if $form->param( "gbstart" . $i );
         $gbstart = 1 unless defined $gbstart;
         my $gblength = $form->param( "gblength" . $i )
-          if $form->param( "gblength" . $i );
+          if defined $form->param( "gblength" . $i );
+	$gblength = 0 unless defined $gblength;
         my $revy = "checked" if $form->param( 'rev' . $i );
         my $revn = "checked" unless $revy;
 
@@ -291,15 +338,16 @@ sub gen_body {
         my $refy = "checked" if $form->param( 'ref' . $i );
         my $refn = "checked" unless $refy;
         my $org_title;
-        my $dsg_menu = qq{<input type="hidden" id="dsgid$i"};
+        my $dsg_menu = qq{<input type="hidden" id="dsgid$index"};
         $dsg_menu .= qq{value ="$dsgid"} if $dsgid;
         $dsg_menu .= qq{>};
+
         ( $org_title, $dsid, $gstid, $dsgid, $dsg_menu ) = get_org_info(
             dsid    => $dsid,
             chr     => $chr,
             gstid   => $gstid,
             dsgid   => $dsgid,
-            seq_num => $i
+            seq_num => $index,
         ) if $pos;
 
         # mdb added 11/20/13 issue 254
@@ -316,7 +364,7 @@ sub gen_body {
         	$stop = $gbstart + $gblength-1 + $drdown;
         }
 
-        push @seq_nums, { SEQ_NUM => $i, };
+        push @seq_nums, { SEQ_NUM => $index, };
         my %opts = (
             SEQ_NUM   => $display_order,
             REV_YES   => $revy,
@@ -352,6 +400,7 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
           if $pos;
         push @seq_sub, {%opts};
 
+        $index++;
     }
     @seq_sub =
       sort { $a->{SEQ_NUM} <=> $b->{SEQ_NUM} } @seq_sub;  #sort based on seq_num
@@ -386,6 +435,8 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $skip_hsp_overlap_adjust = 1 unless defined $skip_hsp_overlap_adjust;
     my $hiqual = get_opt( params => $prefs, form => $form, param => 'hiqual' );
     $hiqual = 0 unless $hiqual;
+    my $color_anchor = get_opt( params => $prefs, form => $form, param => 'ca' );
+    $color_anchor = 1 unless defined $color_anchor;
     my $comp_adj =
       get_opt( params => $prefs, form => $form, param => 'comp_adj' );
     $comp_adj = 0 unless $comp_adj;
@@ -437,6 +488,11 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $show_gene_space = 0 unless $show_gene_space;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
+
+    # Check if a genome was specified
+    my $error = (scalar @seq_sub < $num_seqs) ? 1 : 0;
+
+    $template->param( ERROR             => $error );
     $template->param( PAD_GS            => $pad_gs );
     $template->param( APPLY_ALL         => $apply_all );
     $template->param( IMAGE_WIDTH       => $image_width );
@@ -463,6 +519,8 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     else { $template->param( HSP_OVERLAP_YES => "checked" ); }
     if   ($hiqual) { $template->param( HIQUAL_YES => "checked" ); }
     else           { $template->param( HIQUAL_NO  => "checked" ); }
+    if   ($color_anchor) { $template->param( CA_YES => "checked" ); }
+    else           { $template->param( CA_NO  => "checked" ); }
     if   ($comp_adj) { $template->param( COMP_ADJ_YES => "checked" ); }
     else             { $template->param( COMP_ADJ_NO  => "checked" ); }
     if   ($hsp_top) { $template->param( HSP_TOP_YES => "checked" ); }
@@ -614,7 +672,7 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $spike_len = $form->param('spike_len') if defined $form->param('spike_len');
     $template->param( SPIKE_LEN     => $spike_len );
     $template->param( SEQ_RETRIEVAL => 1 );
-    $template->param( NUM_SEQS      => $num_seqs );
+    $template->param( NUM_SEQS      => scalar @seq_sub);
 
     # $template->param(COLOR_NUM=>$num_colors);
     $message .= "<BR/>" if $message;
@@ -678,6 +736,8 @@ sub run {
     my $skip_feat_overlap_search  = $opts{skip_feat_overlap};
     my $skip_hsp_overlap_search   = $opts{skip_hsp_overlap};
     my $font_size                 = $opts{font_size};
+    my $color_anchor              = $opts{ca};
+    $color_anchor = 1 unless defined $color_anchor; #default to 1 which is the original behavior of GEvo, EHL 5/5/15
     my $message;
     my $gen_prot_sequence =
       0;    #flag for generating fasta file of protein_sequence;
@@ -734,6 +794,7 @@ sub run {
     $gevo_link .= ";nt=$show_nt";
     $gevo_link .= ";cbc=$show_cbc";
     $gevo_link .= ";spike_len=$spike_len";
+    $gevo_link .= ";ca=$color_anchor";
     $gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search"
       if defined $skip_feat_overlap_search;
     $gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search"
@@ -832,7 +893,8 @@ sub run {
                 gstid             => $gstid,
                 mask              => $mask,
                 dsgid             => $dsgid,
-                gen_prot_sequence => $gen_prot_sequence
+                gen_prot_sequence => $gen_prot_sequence,
+                color_anchor		  => $color_anchor #color anchor gene yellow flag.  Defaults to 1 in the sub.
             );
             if ($obj)
             { #going to generalize this in parallel after all sequences to be retrieved from coge's db are specified.
@@ -1168,6 +1230,7 @@ sub run {
                 ,    #just use the first hsp_color for all of them
                 show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
                 hiqual                    => $hiqual,
+		color_anchor		  => $color_anchor,
                 padding                   => $padding,
                 reverse_image             => $item->{rev},
                 draw_model                => $draw_model,
@@ -1279,7 +1342,7 @@ qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" sty
       . basename($all_file)
       . "\" target=_new>all sequences</A></font></DIV>\n";
     $html .=
-qq{<td class=dropmenu><td><span class=bold>Third part systemannotation files</span>};
+qq{<td class="dropmenu"><td><span class="bold">Third party system annotation files</span>};
     foreach my $item (@sets) {
         my $anno_file = generate_annotation(%$item);
         next unless $anno_file;
@@ -1526,6 +1589,7 @@ sub generate_image {
     my $hsp_colors                = $opts{hsp_colors};
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     my $hiqual                    = $opts{hiqual};
+    my $color_anchor		  = $opts{color_anchor};
     my $padding                   = $opts{padding} || 5;
     my $draw_model                = $opts{draw_model};
     my $hsp_overlap_limit         = $opts{hsp_overlap_limit};
@@ -1614,6 +1678,7 @@ sub generate_image {
         show_contigs              => $show_contigs,
         feat_labels               => $feat_labels,
         font_size                 => $font_size,
+	color_anchor		  => $color_anchor,
     );
 
     return ($gfx);
@@ -1867,6 +1932,7 @@ sub process_features {
     my $show_cns                  = $opts{cns};
     my $show_ofeat                = $opts{ofeat};
     my $show_gene_space           = $opts{gene_space};
+    my $color_anchor              = $opts{color_anchor};
 
     # TODO: remove the 1. here for testing.
     my $show_contigs = $opts{show_contigs};
@@ -1981,7 +2047,7 @@ sub process_features {
                     my $tmp = $accn;
                     $tmp =~ s/\*\*\d+\*\*$//;
                     if ( $tmp =~ /^$cleaned_name\(?\d*\)?$/i ) {
-                        $f->color( [ 255, 255, 0 ] );
+                        $f->color( [ 255, 255, 0 ] ) if $color_anchor;
                         $f->label($name) if $feat_labels;
                     }
                 }
@@ -2691,6 +2757,9 @@ sub get_obj_from_genome_db {
     my $mask   = $opts{mask};        #need this to check for seq file
     my $dsgid  = $opts{dsgid};       #dataset group id
                                      #print STDERR Dumper \%opts;
+    my $color_anchor = $opts{color_anchor}; #option to color anchor gene yellow: EHL 5/5/15
+    $color_anchor = 1 unless defined $color_anchor;
+    
     my $gen_prot_sequence = $opts{gen_prot_sequence}
       || 0;    #are we generating a protein sequence file too?
     my $message;
@@ -2839,6 +2908,8 @@ sub get_obj_from_genome_db {
         my @names = $f->names;
         next if $f->type->name =~ /misc_feat/;
         next if $f->type->name eq "chromosome";
+	#new changes to deal with GD failures:  EHL 4/30/15
+	next if $f->start == $f->stop;
 
         #	next if $f->type->name eq "contig";
         foreach my $tmp (@names) {
@@ -2854,10 +2925,11 @@ sub get_obj_from_genome_db {
 
         }
         $name = $accn unless $name;
-        print STDERR $name, "\n" if $DEBUG;
+	print STDERR "\n" if $DEBUG;
+        print STDERR $name, " ID: ",$f->id,"\n" if $DEBUG;
         print STDERR "\t", $f->genbank_location_string(), "\n" if $DEBUG;
         print STDERR "\t", $f->genbank_location_string( recalibrate => $start ),
-          "\n\n"
+          "\n"
           if $DEBUG;
         my $anno =
           $P->{SERVER} . "FeatAnno.pl?fid=" . $f->id . ";gstid=" . $gstid;
@@ -2866,7 +2938,7 @@ sub get_obj_from_genome_db {
         print STDERR $name, "\t", $f->type->name, "\t", $location, "\n"
           if $DEBUG;
         my $type = $f->type->name;
-        $type = "anchor" if $f->id && $featid && $f->id == $featid;
+        $type = "anchor" if $f->id && $featid && $f->id == $featid;# WORKING ON THIS FEATURE && $color_anchor;
         $obj->add_feature(
             type       => $f->type->name,
             location   => $location,
@@ -3743,6 +3815,7 @@ qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
         'args__show_ofeat','show_ofeat',
         'args__font_size','font_size',
         'args__show_gene_space','show_gene_space',
+	'args__ca','ca', 
 
 };
 
@@ -4434,7 +4507,7 @@ sub dataset_search {
  };
         foreach my $id (
             sort {
-                     $sources{$b}{version} <=> $sources{$a}{version}
+                     $sources{$b}{version} cmp $sources{$a}{version}
                   || $sources{$a}{typeid} <=> $sources{$b}{typeid}
             } keys %sources
           )
@@ -4493,7 +4566,15 @@ qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','
     }
     $html .= "</select>";
     $html .= "<span class=small>($count)</span>" if $count > 1;
-    return ( $html, $num, $featid );
+
+    return ( $html, $num, $featid ) if $count > 0;
+
+
+    $html = qq{<select name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num','args__dsgid', 'dsgid$num', 'args__num','args__$num', 'args__featid', 'args__$featid'],['feat$num']);">};
+
+    $html .= "<option>The genome has been deleted</option></select>";
+
+    return ( $html, $num, $featid);
 }
 
 sub save_settings_gevo {
@@ -4570,6 +4651,12 @@ qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
             $dsg_menu .= "<option>Restricted</option>";
             next;
         }
+
+        if ($dsg->deleted) {
+            $dsg_menu .= "<option>The genome has been been deleted</option>";
+            next;
+        }
+
         my $dsgid_tmp = $item->id;
         my $title;
         $title = $item->name . " " if $item->name;
@@ -4654,31 +4741,26 @@ sub feat_search {
     }
     @feats = sort { $a->type->name cmp $b->type->name } @feats;
     unshift @feats, @genes if @genes;
+
+    my $feat_count;
     my $html;
     if (@feats) {
-
-        $html .= qq{
-<SELECT name = "featid$num" id = "featid$num" >
-  };
+        $html .= qq{<SELECT name="featid$num" id="featid$num">};
         foreach my $feat (@feats) {
-            my $loc = "("
-              . $feat->type->name
-              . ") Chr:"
-              . (
-                $feat->locations > 0 ? $feat->locations->next->chromosome : '' )
-              . " "
-              . commify( $feat->start ) . "-"
-              . commify( $feat->stop );
+            next unless $feat->dataset->id == $dsid; # mdb added 2/12/15 COGE-588
+            my $loc = "(" . $feat->type->name . ") Chr:"
+              . $feat->chromosome
+              . " " . commify( $feat->start ) . "-" . commify( $feat->stop );
             $loc =~ s/(complement)|(join)//g;
             my $fid = $feat->id;
             $fid .= "_" . $gstid if $gstid;
-            $html .= qq {  <option value="$fid"};
-            $html .= qq { selected } if $featid && $featid == $feat->id;
+            $html .= qq{  <option value="$fid"};
+            $html .= qq{ selected } if $featid && $featid == $feat->id;
             $html .= qq{>$loc \n};
+            $feat_count++;
         }
         $html .= qq{</SELECT>\n};
-        my $count = scalar @feats;
-        $html .= qq{<font class=small>($count)</font>} if $count > 1;
+        $html .= qq{<font class="small">($feat_count)</font>} if $feat_count > 1;
     }
     else {
         $html .= qq{<input type="hidden" id="featid$num">\n};

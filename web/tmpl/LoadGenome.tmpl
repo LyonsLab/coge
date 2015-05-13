@@ -30,7 +30,7 @@
 .jstree.jstree-focused { background:white; }
 </style>
 
-<SCRIPT type="text/javascript">
+<script type="text/javascript">
 const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
 const PAGE_NAME  = '<TMPL_VAR NAME="PAGE_NAME">';
 const ENTREZ_URL = '//eutils.ncbi.nlm.nih.gov/entrez/eutils/';
@@ -179,8 +179,8 @@ function create_organism() {
 function reset_log() {
 	$('#load_log').html('');
 	$('#loading_msg').show();
-	$('#finished_msg,#error_msg,#ok_button').hide();
-	$('#finish_button,#cancel_button').hide();
+	$('#finished_msg,#error_msg,#ok_button,#logfile').hide();
+	$('#finish_actions,#cancel_button').hide();
 }
 
 function check_login() {
@@ -293,8 +293,12 @@ function load_genome() {
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			if (obj && obj.error) {
-				alert(obj.error);
+			if (!obj || obj.error) {
+				if (!obj)
+					alert("Error: load_genome: invalid response from server");
+				else
+					alert(obj.error);
+				reset_load();
 				return;
 			}
 
@@ -329,47 +333,6 @@ function get_load_log(callback) {
         }
     });
 }
-//function get_load_log() {
-//	$.ajax({
-//		data: {
-//			dataType: 'text',
-//			fname: 'get_load_log',
-//			load_id: load_id
-//		},
-//		success : function(data) {
-//			if (!data) { // workaround for issue #45, jquery intermittently dropping payload
-//				setTimeout(function() { get_load_log(); }, 1000);
-//				return;
-//			}
-//
-//			var obj = jQuery.parseJSON(data);
-//			if (obj.log) {
-//				$('#load_genome_log').html(obj.log.join('<BR>'));
-//				var height = $('#load_genome_log')[0].scrollHeight;
-//	    		$("#load_genome_log").animate({ scrollTop: height}, 500);
-//    		}
-//
-//			if (obj.status == 1) {  // finished successfully
-//				// Update load_id in case user reuses page to load again
-//				load_id = obj.new_load_id;
-//
-//				$('#genome_id').val( obj.genome_id );
-//				$('#loading_msg').hide();
-//				$('#finished_msg').fadeIn();
-//				$('#ok_button').fadeIn();
-//				$('#finish_load_genome_button').fadeIn();
-//			}
-//			else if (obj.status == -1) { // error occurred
-//				$('#loading_msg').hide();
-//				$('#error_msg').fadeIn();
-//				$('#cancel_load_genome_button').fadeIn();
-//			}
-//			else { // not done yet, continue polling
-//				setTimeout(function() { get_load_log(); }, 1000);
-//			}
-//		}
-//	});
-//}
 
 function load_failed(obj) {
 	// Handle special case of genbank load of existing genome
@@ -389,6 +352,12 @@ function load_failed(obj) {
 			'and we can help to determine the cause.' +
 			'</div>';
 		var log = $('#load_log');
+
+        if (obj) {
+            $("#logfile a").attr("href", obj);
+            $('#logfile').fadeIn();
+        }
+
 		log.html( log.html() + msg );
 	}
 
@@ -414,7 +383,7 @@ function load_succeeded(obj) {
 
     // Update dialog
     $('#loading_msg').hide();
-    $('#finished_msg,#finish_button,#ok_button').fadeIn();
+    $('#finished_msg,#finish_actions,#ok_button').fadeIn();
 }
 
 function reset_load() {
@@ -423,8 +392,16 @@ function reset_load() {
     $('#load_dialog').dialog('close');
 }
 
-function continue_to_view() {
-	window.location.href = "GenomeInfo.pl?embed=" + embed + "&gid=" + genome_id;
+function handle_action() {
+    var action = $("#finish_actions select").val() || "genome";
+
+    if (action === "genome") {
+	    window.location.href = "GenomeInfo.pl?embed=" + embed + "&gid=" + genome_id;
+    } else if (action === "annotation") {
+	    window.location.href = "LoadAnnotation.pl?embed=" + embed + "&gid=" + genome_id;
+    } else if (action === "new") {
+        reset_load();
+    }
 }
 
 function wait_to_search (search_func, search_term) {
@@ -718,7 +695,8 @@ function progress_formatter(item) {
         var p = item.log.split("\n");
 
         var pElements = p.map(function(item) {
-            return $("<div></div>").html(item);
+            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
+            return $("<div></div>").append(norm);
         });
 
         var log = $("<div></div>").html(pElements).addClass("padded");
@@ -761,7 +739,12 @@ function update_dialog(request, user, identifier, formatter) {
             pageObj.error++;
             if (pageObj.error > 3) {
                 workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                load_failed();
+                var logfile;
+
+                if (json.results.length) {
+                    logfile = json.results[0].path;
+                }
+                load_failed(logfile);
                 return;
             }
         } else {
@@ -815,9 +798,12 @@ function update_dialog(request, user, identifier, formatter) {
                 || current_status == "cancelled")
         {
             workflow_status.find('span').addClass('alert');
-            get_load_log(function(result) {
-                load_failed(result);
-            });
+            var logfile;
+
+            if (json.results.length) {
+                logfile = json.results[0].path;
+            }
+            load_failed(logfile);
         }
         else if (current_status == "notfound") {
             setTimeout(callback, timeout);
@@ -836,7 +822,7 @@ function update_dialog(request, user, identifier, formatter) {
     get_status();
 }
 
-</SCRIPT>
+</script>
 
 <div class="bold text" style="padding-top:1em;">1 - Describe the Genome</div>
 <div class="coge-bg inline padded ui-widget-content ui-corner-all">
@@ -912,9 +898,9 @@ function update_dialog(request, user, identifier, formatter) {
 			<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all coge-button' style="margin-top:0.5em;">Clear List</span>
 		</div>
 		<div class="padded" style="background-color: white; overflow:hidden; width:auto; min-height:8em; border:1px solid lightgray; margin-right:5px; margin-bottom:5px;">
-			<div class="small bold text">Selected files:</div>
+			<div class="small bold text">Files:</div>
 			<div>
-				<div id="no_files" class="indent small padded note">You haven't selected any files yet, click "Add Data"</div>
+				<div id="no_files" class="indent small padded note">You haven't added any files yet, click "Add Data"</div>
 				<table id='file_table' class="small padded"></table>
 			</div>
 		</div>
@@ -1004,9 +990,19 @@ function update_dialog(request, user, identifier, formatter) {
   <div class="coge-buttonset">
 	  <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
 	  <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-	  <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Load Another</span>
-	  <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to GenomeInfo</span>
+      <span id="finish_actions" class="hidden">
+	    <span onClick="handle_action();" class="ui-button ui-corner-all coge-button r">GO</span>
+	    <span class="r" style="padding-top:5px;">
+	        <select>
+	            <option value="genome">View Genome Info</option>
+	            <option value="annotation">Load Annotations</option>
+	            <option value="new">Load Another Genome</option>
+	        </select>
+        </span>
+        <span class="r" style="padding-right:0.5em; padding-top:6px;">Next Step:</span>
+      </span>
 	  <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+      <span id="logfile" class="hidden"><a href="">Logfile</a></span>
   </div>
 </div>
 

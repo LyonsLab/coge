@@ -1,256 +1,250 @@
-<div id="validator" class="alert padded hidden"></div>
+<div id="validator" class="alert-box alert-box-warn hidden"></div>
 
 <TMPL_INCLUDE NAME='widgets/GenomeSelect.tmpl'><!--<TMPL_VAR NAME=GENOME_SEARCH_STUFF>-->
 <br>
 
 <div class="bold text">BLAST Parameters</div>
-<table class="ui-widget-content ui-corner-all coge-section" style="width: 100%;">
-  <tr valign="top">
-    <td align="left">
-      <!--
-      <div class='small' style='color:gray;padding:5px;'>
-        <span id='blast_summary'><b>Type:</b> Nucleotide Sequence (blastn) ...</span>
-        <span onclick='$(this).parent().hide(); $("#blast_params").slideDown();' class='link small'>more</span>
-      </div>
-      -->
-      <div id='blast_params'>
-        <table>
-          <tr>
-            <td align="left" valign="top">
-              <div class="bold text">Type</div>
-              <div id="coge_blast_type">
-                <table class="ui-widget-content ui-corner-all small">
-                  <tr>
-                    <td valign="top">
-                      <label><input id="coge_radio" type="radio" name="cogeblast" value="coge_blast_type_n" checked onClick="get_seq('coge_radio');blast_param_on_select('coge_radio','coge');">Nucleotide Sequence</label>
-                      <select name="coge_blasttype" id="coge_blast_type_n" onChange="blast_param_on_select('coge_radio','coge')">
-                        <option value="blastn">blastn</option>
-                        <option value="tblastx">tblastx</option>
-                        <option value="lastz">(b)lastz</option>
-                        <option value="mega">megablast</option>
-                        <option value="dcmega">discontinuous megablast</option>
-                      </select>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label><input id="coge_radio" type="radio" name="cogeblast" value="coge_blast_type_p" onClick="get_seq('coge_radio');blast_param_on_select('coge_radio','coge')">Protein Sequence</label>
-                      <select name="coge_blasttype" id="coge_blast_type_p" onChange="blast_param_on_select('coge_radio','coge')">
-                       <option value="tblastn">tblastn</option>
-                      </select>
-                    </td>
-                  </tr>
-                </table>
-                <br>
-                <div class="bold text">Color Blast Hits According to:</div>
-                <div class="ui-widget-content ui-corner-all small">&nbsp&nbsp
-                  <input type="radio" name="color_by" id="color_by" value="0" checked>None<br>&nbsp&nbsp
-                  <input type="radio" name="color_by" id="color_by" value="query">Query Sequence<br>&nbsp&nbsp
-                  <input type="radio" name="color_by" id="color_by" value="quality">Log Quality<br>&nbsp&nbsp
-                  <input type="radio" name="color_by" id="color_by" value="identity">Percent Identity<br>
-                </div>
-              </div> <!-- coge_blast_type -->
-            </td>
-            <td align="left" valign="top">
-              <div class="bold text">Parameters</div>
-              <div id="blast_parameters">
-                <table class="ui-corner-all ui-widget-content small">
-                  <tr>
-                    <td>E-Value:</td>
-                    <td>
-                      <select name="e_value" id="e_value">
-                        <option value="1e-30">1e-30</option>
-                        <option value="1e-20">1e-20</option>
-                        <option value="1e-10">1e-10</option>
-                        <option value=".000001">1e-6</option>
-                        <option value=".00001">1e-5</option>
-                        <option value=".0001">0.0001</option>
-                        <option value=".001" selected>0.001</option>
-                        <option value=".01">0.01</option>
-                        <option value=".1">0.1</option>
-                        <option value="1">1</option>
-                        <option value="10">10</option>
-                        <option value="100">100</option>
-                     </select>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Word size:</td>
-                    <td>
-                      <input type='text' id='word_size' value="7" size="7" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Gap Costs:</td>
-                    <td>
-                      <select id="gapcosts_1-2" class="gapcosts" style="display: block">
-                        <!-- <option value=" 0 0">Linear</option> -->
-                        <option value="5 2" selected>Existence: 5 Extension: 2</option>
-                        <option value="2 2">Existence: 2 Extension: 2</option>
-                        <option value="1 2">Existence: 1 Extension: 2</option>
-                        <option value="0 2">Existence: 0 Extension: 2</option>
-                        <option value="3 1">Existence: 3 Extension: 1</option>
-                        <option value="2 1">Existence: 2 Extension: 1</option>
-                        <option value="1 1">Existence: 1 Extension: 1</option>
-                      </select>
-                      <select id="gapcosts_1-3" class="gapcosts" style="display: none">
-                        <!-- <option value=" 0 0">Linear</option> -->
-                        <option value="5 2">Existence: 5 Extension: 2</option>
-                        <option value="2 2">Existence: 2 Extension: 2</option>
-                        <option value="1 2">Existence: 1 Extension: 2</option>
-                        <option value="0 2">Existence: 0 Extension: 2</option>
-                        <option value="2 1">Existence: 2 Extension: 1</option>
-                        <option value="1 1">Existence: 1 Extension: 1</option>
-                      </select>
-                      <select id="gapcosts_1-4" class="gapcosts" style="display: none">
-                        <!-- <option value=" 0 0">Linear</option>    -->
-                        <option value="5 2">Existence: 5 Extension: 2</option>
-                        <option value="1 2">Existence: 1 Extension: 2</option>
-                        <option value="0 2">Existence: 0 Extension: 2</option>
-                        <option value="2 1">Existence: 2 Extension: 1</option>
-                        <option value="1 1">Existence: 1 Extension: 1</option>
-                      </select>
-                      <select id="gapcosts_2-3" class="gapcosts" style="display: none">
-                        <!-- <option value=" 0 0">Linear</option>    -->
-                        <option value="4 4">Existence: 4 Extension: 4</option>
-                        <option value="2 4">Existence: 2 Extension: 4</option>
-                        <option value="0 4">Existence: 0 Extension: 4</option>
-                        <option value="3 3">Existence: 3 Extension: 3</option>
-                        <option value="6 2">Existence: 6 Extension: 2</option>
-                        <option value="5 2">Existence: 5 Extension: 2</option>
-                        <option value="4 2">Existence: 4 Extension: 2</option>
-                        <option value="2 2">Existence: 2 Extension: 2</option>
-                      </select>
-                      <select id="gapcosts_4-5" class="gapcosts" style="display: none">
-                        <!-- <option value=" 0 0">Linear</option>   -->
-                        <option value="12 8">Existence: 12 Extension: 8</option>
-                        <option value="6 5">Existence: 6 Extension: 5</option>
-                        <option value="5 5">Existence: 5 Extension: 5</option>
-                        <option value="4 5">Existence: 4 Extension: 5</option>
-                        <option value="3 5">Existence: 3 Extension: 5</option>
-                      </select>
-                      <select id="gapcosts_1-1" class="gapcosts" style="display: none">
-                        <option value="5 2">Existence: 5 Extension: 2</option>
-                        <option value="3 2">Existence: 3 Extension: 2</option>
-                        <option value="2 2">Existence: 2 Extension: 2</option>
-                        <option value="1 2">Existence: 1 Extension: 2</option>
-                        <option value="0 2">Existence: 0 Extension: 2</option>
-                        <option value="4 1">Existence: 4 Extension: 1</option>
-                        <option value="3 1">Existence: 3 Extension: 1</option>
-                        <option value="2 1">Existence: 2 Extension: 1</option>
-                      </select>
-                      <select id="gapcosts_BLOSUM62" class="gapcosts" style="display: none">
-                        <option value="9 2">Existence: 9 Extension: 2</option>
-                        <option value="8 2">Existence: 8 Extension: 2</option>
-                        <option value="7 2">Existence: 7 Extension: 2</option>
-                        <option value="12 1">Existence: 12 Extension: 1</option>
-                        <option value="11 1" selected>Existence: 11 Extension: 1</option>
-                        <option value="10 1">Existence: 10 Extension: 1</option>
-                      </select>
-                      <select id="gapcosts_PAM30" class="gapcosts" style="display: none">
-                        <option value="7 2">Existence: 7 Extension: 2</option>
-                        <option value="6 2">Existence: 6 Extension: 2</option>
-                        <option value="5 2">Existence: 5 Extension: 2</option>
-                        <option value="10 1">Existence: 10 Extension: 1</option>
-                        <option value="9 1" selected>Existence: 9 Extension: 1</option>
-                        <option value="8 1">Existence: 8 Extension: 1</option>
-                      </select>
-                      <select id="gapcosts_PAM70" class="gapcosts" style="display: none">
-                        <option value="8 2">Existence: 8 Extension: 2</option>
-                        <option value="7 2">Existence: 7 Extension: 2</option>
-                        <option value="6 2">Existence: 6 Extension: 2</option>
-                        <option value="11 1">Existence: 11 Extension: 1</option>
-                        <option value="10 1" selected>Existence: 10 Extension: 1</option>
-                        <option value="9 1">Existence: 9 Extension: 1</option>
-                      </select>
-                      <select id="gapcosts_BLOSUM80" class="gapcosts" style="display: none">
-                        <option value="8 2">Existence: 8 Extension: 2</option>
-                        <option value="7 2">Existence: 7 Extension: 2</option>
-                        <option value="6 2">Existence: 6 Extension: 2</option>
-                        <option value="11 1">Existence: 11 Extension: 1</option>
-                        <option value="10 1" selected>Existence: 10 Extension: 1</option>
-                        <option value="9 1">Existence: 9 Extension: 1</option>
-                      </select>
-                      <select id="gapcosts_BLOSUM45" class="gapcosts" style="display: none">
-                        <option value="13 3">Existence: 13 Extension: 3</option>
-                        <option value="12 3">Existence: 12 Extension: 3</option>
-                        <option value="11 3">Existence: 11 Extension: 3</option>
-                        <option value="10 3">Existence: 10 Extension: 3</option>
-                        <option value="15 2" selected>Existence: 15 Extension: 2</option>
-                        <option value="14 2">Existence: 14 Extension: 2</option>
-                        <option value="13 2">Existence: 13 Extension: 2</option>
-                        <option value="12 2">Existence: 12 Extension: 2</option>
-                        <option value="19 1">Existence: 19 Extension: 1</option>
-                        <option value="18 1">Existence: 18 Extension: 1</option>
-                        <option value="17 1">Existence: 17 Extension: 1</option>
-                        <option value="16 1">Existence: 16 Extension: 1</option>
-                      </select>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Filter query sequence:</td>
-                    <td>
-                      <label><input type="radio" name="filter_query" id="filter_query" value="T" checked />Yes</label>
-                      <label><input type="radio" name="filter_query" id="filter_query" value="F" />No</label>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Limit results to:</td>
-                    <td>
-                      <input type="text" id="resultslimit" value="<TMPL_VAR NAME=RESULTSLIMIT>" size="5" /> per organism</td>
-                  </tr>
-                </table>
-              <div id='pro_or_nu_param'></div>
-            </div> <!-- blast_parameters -->
-            <div id='blastz_parameters'>
-              <table class="ui-corner-all ui-widget-content small">
+    <!--
+    <div class='small' style='color:gray;padding:5px;'>
+    <span id='blast_summary'><b>Type:</b> Nucleotide Sequence (blastn) ...</span>
+    <span onclick='$(this).parent().hide(); $("#blast_params").slideDown();' class='link small'>more</span>
+    </div>
+    -->
+<div id='coge-params' class="ui-widget-content ui-corner-all coge-section" style="box-sizing: border-box; width: 100%;">
+    <table>
+        <tr>
+        <td align="left" valign="top">
+            <div class="bold text">Type</div>
+            <div id="coge_blast_type">
+            <table class="ui-widget-content ui-corner-all small">
                 <tr>
-                  <td>Word size:</td>
-                  <td>
-                    <input type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="8" />
-                  </td>
-                </tr>
-                <tr>
-                  <td>Gap start penality:</td>
-                  <td>
-                    <input type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="400" />
-                  </td>
-                </tr>
-                <tr>
-                  <td>Gap extend penality:</td>
-                  <td>
-                    <input type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="30" />
-                  </td>
-                </tr>
-                <tr>
-                  <td>Chaining:</td>
-                  <td>
-                    <select id="blastz_chaining" tabindex="1" />
-                    <option value='0'>no chaining</option>
-                    <option value='1'>just output chain</option>
-                    <option value='2'>chain and extend</option>
-                    <option value='3'>just output HSPs</option>
+                <td valign="top">
+                    <label><input id="coge_radio" type="radio" name="cogeblast" value="coge_blast_type_n" checked onClick="get_seq('coge_radio');blast_param_on_select('coge_radio','coge');">Nucleotide Sequence</label>
+                    <select name="coge_blasttype" id="coge_blast_type_n" onChange="blast_param_on_select('coge_radio','coge')">
+                    <option value="blastn">blastn</option>
+                    <option value="tblastx">tblastx</option>
+                    <option value="lastz">(b)lastz</option>
+                    <option value="mega">megablast</option>
+                    <option value="dcmega">discontinuous megablast</option>
                     </select>
-                  </td>
+                </td>
                 </tr>
                 <tr>
-                  <td>Score threshold:</td>
-                  <td>
-                    <input type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="3000" />
-                  </td>
+                <td>
+                    <label><input id="coge_radio" type="radio" name="cogeblast" value="coge_blast_type_p" onClick="get_seq('coge_radio');blast_param_on_select('coge_radio','coge')">Protein Sequence</label>
+                    <select name="coge_blasttype" id="coge_blast_type_p" onChange="blast_param_on_select('coge_radio','coge')">
+                    <option value="tblastn">tblastn</option>
+                    </select>
+                </td>
+                </tr>
+            </table>
+            <br>
+            <div class="bold text">Color Blast Hits According to:</div>
+            <div class="ui-widget-content ui-corner-all small">&nbsp&nbsp
+                <input type="radio" name="color_by" id="color_by" value="0" checked>None<br>&nbsp&nbsp
+                <input type="radio" name="color_by" id="color_by" value="query">Query Sequence<br>&nbsp&nbsp
+                <input type="radio" name="color_by" id="color_by" value="quality">Log Quality<br>&nbsp&nbsp
+                <input type="radio" name="color_by" id="color_by" value="identity">Percent Identity<br>
+            </div>
+            </div> <!-- coge_blast_type -->
+        </td>
+        <td align="left" valign="top">
+            <div class="bold text">Parameters</div>
+            <div id="blast_parameters">
+            <table class="ui-corner-all ui-widget-content small">
+                <tr>
+                <td>E-Value:</td>
+                <td>
+                    <select name="e_value" id="e_value">
+                    <option value="1e-30">1e-30</option>
+                    <option value="1e-20">1e-20</option>
+                    <option value="1e-10">1e-10</option>
+                    <option value="0.000001">1e-6</option>
+                    <option value="0.00001">1e-5</option>
+                    <option value="0.0001">0.0001</option>
+                    <option value="0.001" selected>0.001</option>
+                    <option value="0.01">0.01</option>
+                    <option value="0.1">0.1</option>
+                    <option value="1">1</option>
+                    <option value="10">10</option>
+                    <option value="100">100</option>
+                    </select>
+                </td>
                 </tr>
                 <tr>
-                  <td>Mask threshold:</td>
-                  <td>
-                    <input type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="0" />
-                  </td>
+                <td>Word size:</td>
+                <td>
+                    <input type='text' id='word_size' value="7" size="7" />
+                </td>
                 </tr>
-              </table>
-            </div> <!-- blastz_parameters -->
-          </td>
-        </tr>
-      </table>
-      </div> <!-- blast_params -->
-    </td>
-  </tr>
-</table>
+                <tr>
+                <td>Gap Costs:</td>
+                <td>
+                    <select id="gapcosts_1-2" class="gapcosts" style="display: block">
+                    <!-- <option value=" 0 0">Linear</option> -->
+                    <option value="5 2" selected>Existence: 5 Extension: 2</option>
+                    <option value="2 2">Existence: 2 Extension: 2</option>
+                    <option value="1 2">Existence: 1 Extension: 2</option>
+                    <option value="0 2">Existence: 0 Extension: 2</option>
+                    <option value="3 1">Existence: 3 Extension: 1</option>
+                    <option value="2 1">Existence: 2 Extension: 1</option>
+                    <option value="1 1">Existence: 1 Extension: 1</option>
+                    </select>
+                    <select id="gapcosts_1-3" class="gapcosts" style="display: none">
+                    <!-- <option value=" 0 0">Linear</option> -->
+                    <option value="5 2">Existence: 5 Extension: 2</option>
+                    <option value="2 2">Existence: 2 Extension: 2</option>
+                    <option value="1 2">Existence: 1 Extension: 2</option>
+                    <option value="0 2">Existence: 0 Extension: 2</option>
+                    <option value="2 1">Existence: 2 Extension: 1</option>
+                    <option value="1 1">Existence: 1 Extension: 1</option>
+                    </select>
+                    <select id="gapcosts_1-4" class="gapcosts" style="display: none">
+                    <!-- <option value=" 0 0">Linear</option>    -->
+                    <option value="5 2">Existence: 5 Extension: 2</option>
+                    <option value="1 2">Existence: 1 Extension: 2</option>
+                    <option value="0 2">Existence: 0 Extension: 2</option>
+                    <option value="2 1">Existence: 2 Extension: 1</option>
+                    <option value="1 1">Existence: 1 Extension: 1</option>
+                    </select>
+                    <select id="gapcosts_2-3" class="gapcosts" style="display: none">
+                    <!-- <option value=" 0 0">Linear</option>    -->
+                    <option value="4 4">Existence: 4 Extension: 4</option>
+                    <option value="2 4">Existence: 2 Extension: 4</option>
+                    <option value="0 4">Existence: 0 Extension: 4</option>
+                    <option value="3 3">Existence: 3 Extension: 3</option>
+                    <option value="6 2">Existence: 6 Extension: 2</option>
+                    <option value="5 2">Existence: 5 Extension: 2</option>
+                    <option value="4 2">Existence: 4 Extension: 2</option>
+                    <option value="2 2">Existence: 2 Extension: 2</option>
+                    </select>
+                    <select id="gapcosts_4-5" class="gapcosts" style="display: none">
+                    <!-- <option value=" 0 0">Linear</option>   -->
+                    <option value="12 8">Existence: 12 Extension: 8</option>
+                    <option value="6 5">Existence: 6 Extension: 5</option>
+                    <option value="5 5">Existence: 5 Extension: 5</option>
+                    <option value="4 5">Existence: 4 Extension: 5</option>
+                    <option value="3 5">Existence: 3 Extension: 5</option>
+                    </select>
+                    <select id="gapcosts_1-1" class="gapcosts" style="display: none">
+                    <option value="5 2">Existence: 5 Extension: 2</option>
+                    <option value="3 2">Existence: 3 Extension: 2</option>
+                    <option value="2 2">Existence: 2 Extension: 2</option>
+                    <option value="1 2">Existence: 1 Extension: 2</option>
+                    <option value="0 2">Existence: 0 Extension: 2</option>
+                    <option value="4 1">Existence: 4 Extension: 1</option>
+                    <option value="3 1">Existence: 3 Extension: 1</option>
+                    <option value="2 1">Existence: 2 Extension: 1</option>
+                    </select>
+                    <select id="gapcosts_BLOSUM62" class="gapcosts" style="display: none">
+                    <option value="9 2">Existence: 9 Extension: 2</option>
+                    <option value="8 2">Existence: 8 Extension: 2</option>
+                    <option value="7 2">Existence: 7 Extension: 2</option>
+                    <option value="12 1">Existence: 12 Extension: 1</option>
+                    <option value="11 1" selected>Existence: 11 Extension: 1</option>
+                    <option value="10 1">Existence: 10 Extension: 1</option>
+                    </select>
+                    <select id="gapcosts_PAM30" class="gapcosts" style="display: none">
+                    <option value="7 2">Existence: 7 Extension: 2</option>
+                    <option value="6 2">Existence: 6 Extension: 2</option>
+                    <option value="5 2">Existence: 5 Extension: 2</option>
+                    <option value="10 1">Existence: 10 Extension: 1</option>
+                    <option value="9 1" selected>Existence: 9 Extension: 1</option>
+                    <option value="8 1">Existence: 8 Extension: 1</option>
+                    </select>
+                    <select id="gapcosts_PAM70" class="gapcosts" style="display: none">
+                    <option value="8 2">Existence: 8 Extension: 2</option>
+                    <option value="7 2">Existence: 7 Extension: 2</option>
+                    <option value="6 2">Existence: 6 Extension: 2</option>
+                    <option value="11 1">Existence: 11 Extension: 1</option>
+                    <option value="10 1" selected>Existence: 10 Extension: 1</option>
+                    <option value="9 1">Existence: 9 Extension: 1</option>
+                    </select>
+                    <select id="gapcosts_BLOSUM80" class="gapcosts" style="display: none">
+                    <option value="8 2">Existence: 8 Extension: 2</option>
+                    <option value="7 2">Existence: 7 Extension: 2</option>
+                    <option value="6 2">Existence: 6 Extension: 2</option>
+                    <option value="11 1">Existence: 11 Extension: 1</option>
+                    <option value="10 1" selected>Existence: 10 Extension: 1</option>
+                    <option value="9 1">Existence: 9 Extension: 1</option>
+                    </select>
+                    <select id="gapcosts_BLOSUM45" class="gapcosts" style="display: none">
+                    <option value="13 3">Existence: 13 Extension: 3</option>
+                    <option value="12 3">Existence: 12 Extension: 3</option>
+                    <option value="11 3">Existence: 11 Extension: 3</option>
+                    <option value="10 3">Existence: 10 Extension: 3</option>
+                    <option value="15 2" selected>Existence: 15 Extension: 2</option>
+                    <option value="14 2">Existence: 14 Extension: 2</option>
+                    <option value="13 2">Existence: 13 Extension: 2</option>
+                    <option value="12 2">Existence: 12 Extension: 2</option>
+                    <option value="19 1">Existence: 19 Extension: 1</option>
+                    <option value="18 1">Existence: 18 Extension: 1</option>
+                    <option value="17 1">Existence: 17 Extension: 1</option>
+                    <option value="16 1">Existence: 16 Extension: 1</option>
+                    </select>
+                </td>
+                </tr>
+                <tr>
+                <td>Filter query sequence:</td>
+                <td>
+                    <label><input type="radio" name="filter_query" id="filter_query" value="1" checked />Yes</label>
+                    <label><input type="radio" name="filter_query" id="filter_query" value="0" />No</label>
+                </td>
+                </tr>
+                <tr>
+                <td>Limit results to:</td>
+                <td>
+                    <input type="text" id="resultslimit" value="<TMPL_VAR NAME=RESULTSLIMIT>" size="5" /> per organism</td>
+                </tr>
+            </table>
+            <div id='pro_or_nu_param'></div>
+        </div> <!-- blast_parameters -->
+        <div id='blastz_parameters'>
+            <table class="ui-corner-all ui-widget-content small">
+            <tr>
+                <td>Word size:</td>
+                <td>
+                <input type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="8" />
+                </td>
+            </tr>
+            <tr>
+                <td>Gap start penality:</td>
+                <td>
+                <input type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="400" />
+                </td>
+            </tr>
+            <tr>
+                <td>Gap extend penality:</td>
+                <td>
+                <input type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="30" />
+                </td>
+            </tr>
+            <tr>
+                <td>Chaining:</td>
+                <td>
+                <select id="blastz_chaining" tabindex="1" />
+                <option value='0'>no chaining</option>
+                <option value='1'>just output chain</option>
+                <option value='2'>chain and extend</option>
+                <option value='3'>just output HSPs</option>
+                </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Score threshold:</td>
+                <td>
+                <input type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="3000" />
+                </td>
+            </tr>
+            <tr>
+                <td>Mask threshold:</td>
+                <td>
+                <input type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="0" />
+                </td>
+            </tr>
+            </table>
+        </div> <!-- blastz_parameters -->
+        </td>
+    </tr>
+    </table>
+</div> <!-- blast_params -->

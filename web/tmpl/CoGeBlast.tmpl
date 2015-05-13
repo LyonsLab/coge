@@ -19,7 +19,7 @@
          <li>Paste-in query sequences
          <li>Find and select any number of organisms and genomes to search against
          <li>Configure the analysis parameters
-         <li>Click the <strong>Run CoGe Blast</strong> button to start the analysis
+         <li>Click the <strong>Run CoGe BLAST</strong> button to start the analysis
        </ol>
 
        Results:
@@ -57,26 +57,39 @@
   <div id="table_opts_dialog" class="dialog_box hidden" title="Table Information Options">
     <table id="show_columns" class="small ui-widget-content ui-corner-all" style="padding:5px;">
       <tr>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(1);" <TMPL_VAR NAME="QND">>Query Sequence Name</td>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(2);" <TMPL_VAR NAME="OrgD">>Organism Name</td>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(3);" <TMPL_VAR NAME="ChrD">>Chromosome</td>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(4);" <TMPL_VAR NAME="PosD">>Position</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(1);" <TMPL_VAR NAME="QND">>Query Sequence Name</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(2);" <TMPL_VAR NAME="OrgD">>Organism Name</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(3);" <TMPL_VAR NAME="ChrD">>Chromosome</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(4);" <TMPL_VAR NAME="PosD">>Position</td>
       </tr>
       <tr>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(5);" <TMPL_VAR NAME="NumD">>HSP Number</td>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(6);" <TMPL_VAR NAME="LengthD">>HSP Length</td>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(7);" <TMPL_VAR NAME="QSCD">>Query Sequence Coverage</td>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(8);" <TMPL_VAR NAME="EvalD">>HSP E-value</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(5);" <TMPL_VAR NAME="NumD">>HSP Number</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(6);" <TMPL_VAR NAME="LengthD">>HSP Length</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(7);" <TMPL_VAR NAME="QSCD">>Query Sequence Coverage</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(8);" <TMPL_VAR NAME="EvalD">>HSP E-value</td>
       </tr>
       <tr>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(9);" <TMPL_VAR NAME="PIDD">>HSP Percent Identity</td>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(10);" <TMPL_VAR NAME="ScoreD">>HSP Score</td>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(11);" <TMPL_VAR NAME="QualD">>HSP Quality (query coverage * percent ID)</td>
-        <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(12);" <TMPL_VAR NAME="FeatD">>Closest Genomic Feature</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(9);" <TMPL_VAR NAME="PIDD">>HSP Percent Identity</td>
+          <td><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(10);" <TMPL_VAR NAME="ScoreD">>HSP Score</td>
+          <td>
+              <input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(11);" <TMPL_VAR NAME="QualD">>HSP Quality (query coverage * percent ID)</td>
+          <td
+              ><input class="hsp_display" type='checkbox' onclick="toggle_hsp_column(12);" <TMPL_VAR NAME="FeatD">>Closest Genomic Feature</td>
       </tr>
       <tr>
-        <td><input class="hsp_display" type=checkbox onclick="toggle_hsp_column(13);"<TMPL_VAR NAME="DistD">>Distance to Closest Feature</td>
-        <td><input class="hsp_display" type=checkbox onclick="toggle_hsp_column(14);"<TMPL_VAR NAME="SeqViewD">>Link to SeqView for HSP Sequence</td>
+          <td
+              ><input class="hsp_display" type=checkbox onclick="toggle_hsp_column(13);"<TMPL_VAR NAME="DistD">>Distance to Closest Feature</td>
+          <td
+              ><input class="hsp_display" type=checkbox onclick="toggle_hsp_column(14);"<TMPL_VAR NAME="SeqViewD">>Link to SeqView for HSP Sequence</td>
       </tr>
       <TMPL_IF NAME="SAVE_DISPLAY">
       </TMPL_IF> <!-- SAVE_DISPLAY -->
@@ -104,8 +117,8 @@
 
   <div id='tabs' class="hidden" style='margin-top: 0.5em; display: inline-block;'>
     <ul>
-      <li class='small'><a href="#tab-1" onclick="adjust_blast_types()">CoGe Blast</a></li>
-      <li class='small'><a href="#tab-2" onclick="adjust_blast_types(1)">NCBI Blast</a></li>
+      <li class='small'><a href="#tab-1">CoGe Blast</a></li>
+      <li class='small'><a href="#tab-2">NCBI Blast</a></li>
     </ul>
     <div id="tab-1">
       <TMPL_INCLUDE NAME='CoGeBlast_coge.tmpl'>
@@ -115,13 +128,13 @@
     </div>
 
     <div style="padding: 0 1.4em 1em; box-sizing: border-box;">
-        <div class="bold text">Query Sequences(s)</div>
+        <div class="bold text">Query Sequence(s)</div>
         <textarea id="seq_box" name="seq_box" style='width: 100%; color:gray;' class="ui-corner-all ui-widget-content coge-section" spellcheck='false' wrap="off" cols="80"
         placeholder="<TMPL_VAR NAME="SEQUENCE">" rows="15"></textarea>
     </div>
   </div> <!-- tabs -->
     <div class="padded" style='margin-top:0.75em;'>
-        <span id="run_blast" class='ui-button ui-button-go ui-corner-all coge-button-lg'>Run CoGe Blast</span>
+        <span id="run_blast" class='ui-button ui-button-go ui-corner-all coge-button-lg'>Run CoGe BLAST</span>
     </div>
 
     <tmpl_include name="/widgets/Overlay.tmpl">
@@ -186,30 +199,8 @@
 
         <TMPL_VAR NAME="document_ready">
 
-        $("#tabs").tabs({
-            select: function(event, ui) {
-                var button = $("#run_blast");
-                switch(ui.index) {
-                    case 0:
-                        button.unbind().click(run_coge_blast).html("Run CoGe Blast");
-                        break;
-                    case 1:
-                        button.unbind().click(function() {
-                            select_blast();
-                            ga('send', 'event', 'cogeblast', 'run', 'ncbi');
-                        }).html("Run NCBI Blast");
-                        break;
-                }
-            }
-        }).show();
-
         // Initialize CoGe Blast
         $("#run_blast").click(run_coge_blast);
-
-        blast_param_on_select('coge_radio','coge');
-        blast_param(); //blast_param([],[animate_params]);
-        database_param(); //database_param([],['database']);
-
         if (+"<tmpl_var name=RUN>") {
             run_coge_blast();
         }
@@ -218,17 +209,91 @@
         if(+pageObj.seqview){
             var featid = "<TMPL_VAR NAME=FEATID>";
             if ((featid) && (featid!=0)){
-                seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>,featid);
+                seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,0, <TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>,featid);
             }
             else{
                 seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>);
             }
         }
+
         //TODO - handle js object error when checking for value when it hasn't been instantiated
         else{
             seqObj = new Object();
         }
 
+        var initialized = false;
+
+        $("#tabs").tabs({
+            show: function(event, ui) {
+                var button = $("#run_blast");
+                switch(ui.index) {
+                    case 0:
+                        adjust_blast_types();
+                        button.unbind().click(run_coge_blast).html("Run CoGe BLAST");
+
+                        if (!initialized) {
+                            var queryParams = getParamsFromUrl();
+
+                            var analysis = new Blast("#coge-params", {
+                                type: queryParams['type'],
+                                color: queryParams['color_hsps'],
+                                match_score: queryParams['match_score'],
+                                matrix_score: queryParams['matrix'],
+                                evalue: queryParams['expect'],
+                                wordsize: queryParams['wordsize'],
+                                limit: queryParams['resultslimit'],
+                                gapcost: queryParams['gapcost'],
+                                filtered: queryParams['filter_query'],
+                                composition: queryParams['comp'],
+                                blastz_wordsize: queryParams['zwordsize'],
+                                blastz_gap_start: queryParams['zgap_start'],
+                                blastz_gap_extension: queryParams['zgap_exten'],
+                                blastz_chaining: queryParams['zchaining'],
+                                blastz_threshold: queryParams['zthreshold'],
+                                blastz_mask: queryParams['zmask'],
+                                program: queryParams['program']
+                            });
+
+                            analysis.update_display();
+                            initialized = true;
+                        }
+                        break;
+                    case 1:
+                        adjust_blast_types(1);
+                        blast_param_on_select('ncbi_radio','ncbi');
+                        button.unbind().click(function() {
+                            select_blast();
+                            ga('send', 'event', 'cogeblast', 'run', 'ncbi');
+                        }).html("Run NCBI Blast");
+
+                        if (!initialized) {
+                            var queryParams = getParamsFromUrl();
+
+                            var analysis = new Ncbi("#ncbi-params", {
+                                type: queryParams['type'],
+                                match_score: queryParams['match_score'],
+                                matrix_score: queryParams['matrix'],
+                                evalue: queryParams['expect'],
+                                wordsize: queryParams['word_size'],
+                                limit: queryParams['resultslimit'],
+                                gapcost: queryParams['gapcost'],
+                                filter: queryParams['filter'],
+                                composition: queryParams['comp'],
+                                database: queryParams['database'],
+                                job: queryParams['job'],
+                                program: queryParams['program']
+                            });
+
+                            analysis.update_display();
+                            initialized = true;
+                        }
+                        break;
+                }
+            }
+        }).show();
+
+
+        // sequence fetching
         get_seq('coge_radio');
     });
     </script>
@@ -296,7 +361,7 @@
       <TR>
         <TD valign="top">Match/Mismatch Scores:</TD>
         <TD>
-          <select id="ncbi_match_score" name="ncbi_match_score" onchange="update_gapcost_ncbi()">
+          <select id="match_score" name="match_score" onchange="update_gapcost_ncbi()">
             <option selected="selected" value="1,-2">1,-2</option>
             <option value="1,-3">1,-3</option>
             <option value="1,-4">1,-4</option>
@@ -317,7 +382,7 @@
       <TR>
         <TD valign="top">Matrix</TD>
         <TD>
-          <select name="ncbi_matrix" id="ncbi_matrix" onChange="update_gapcost_ncbi(1)">
+          <select name="matrix" id="matrix" onChange="update_gapcost_ncbi(1)">
             <option value="PAM30">PAM30</option>
             <option value="PAM70">PAM70</option>
             <option value="BLOSUM80">BLOSUM80</option>
@@ -330,7 +395,7 @@
       <TR>
         <TD>Compositional adjustments</TD>
         <TD>
-          <select name=ncbi_comp_adj id=ncbi_comp_adj>
+          <select name=comp_adj id=comp_adj>
             <option value="0">No adjustment</option>
             <option value="1" selected>Composition-based statistics</option>
             <option value="2">Conditional compositional score matrix adjustment</option>
@@ -344,7 +409,7 @@
 </TMPL_IF> <!-- NCBI_BLAST_PRO -->
 
 <TMPL_IF NAME="NU_DB">
-  <select name="ncbi_db" id="ncbi_db">
+  <select name="db" id="db">
     <optgroup label="Genomic plus Transcript">
       <option value="Test/gpipe/9606/allcontig_and_rna">Human genomic plus transcript</option>
       <option value="Test/gpipe/10090/allcontig_and_rna">Mouse genomic plus transcript</option>
@@ -368,7 +433,7 @@
 </TMPL_IF> <!-- NU_DB -->
 
 <TMPL_IF NAME="PRO_DB">
-  <select name="blast_db" id="blast_db">
+  <select name="blast_db" id="db">
     <option value="nr" selected>Non-redundant protein sequences (nr)</option>
     <option value="refseq_protein">Reference proteins (refseq_protein)</option>
     <option value="swissprot">Swissprot protein sequences(swissprot)</option>
@@ -379,7 +444,7 @@
 </TMPL_IF> <!-- PRO_DB -->
 
 <TMPL_IF NAME="T_DB">
-  <select name="blast_db" id="blast_db">
+  <select name="blast_db" id="db">
     <option value="nr" selected>Nucleotide collection (nr/nt)</option>
     <option value="refseq_rna">Reference mRNA sequences (refseq_rna)</option>
     <option value="refseq_genomic">Reference genomic sequences (refseq_genomic)</option>

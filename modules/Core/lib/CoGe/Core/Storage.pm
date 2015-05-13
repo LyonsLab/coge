@@ -6,9 +6,9 @@ CoGe::Core::Storage
 
 =head1 SYNOPSIS
 
-Abstraction layer on top of genome storage sub-system created for issues
-77 and 157.  All accesses to genome FASTA sequences should go through this
-module.
+Abstraction layer on top of storage sub-system created for issues
+77 and 157.  All accesses to genome FASTA sequences, experiment data files, etc. 
+should go through this module.
 
 =head1 DESCRIPTION
 
@@ -25,7 +25,6 @@ LICENSE file included with this module.
 
 =cut
 
-#use v5.14;
 use strict;
 use warnings;
 
@@ -53,8 +52,10 @@ BEGIN {
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw(
-      get_tiered_path get_workflow_paths get_log
+      get_tiered_path get_workflow_paths get_upload_path get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
+      get_genome_cache_path get_workflow_results add_workflow_result
+      get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_data
       create_experiment create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
@@ -70,9 +71,7 @@ BEGIN {
 }
 
 ################################################ subroutine header begin ##
-
 =head2 get_tiered_path
-
  Usage     :
  Purpose   : This method determines the correct directory structure for storing
              the files for a genome/experiment.
@@ -89,11 +88,8 @@ BEGIN {
              ./0/0/2/ will hold files 2000-2999
              ./0/1/0 will hold files 1000000-1000999
              ./level0/level1/level2/
-
 See Also   :
-
 =cut
-
 ################################################## subroutine header end ##
 
 sub get_tiered_path {
@@ -108,6 +104,19 @@ sub get_tiered_path {
     return $path;
 }
 
+sub get_genome_cache_path {
+    my $gid = shift;
+    return unless $gid;
+    
+    my $cache_dir = CoGe::Accessory::Web::get_defaults()->{'CACHEDIR'};
+    unless ($cache_dir) {
+        print STDERR "Storage::get_genome_cache_path missing CACHEDIR\n";
+        return;
+    }
+    
+    return catdir($cache_dir, $gid, "fasta");
+}
+
 sub get_genome_path {
     my $gid = shift;
     return unless $gid;
@@ -120,7 +129,6 @@ sub get_genome_path {
     my $path = $seqdir . '/' . get_tiered_path($gid) . '/';
     unless ( -r $path ) {
         print STDERR "Storage::get_genome_path: genome path '$path' doesn't exist!\n";
-        return;
     }
 
     return $path;
@@ -508,6 +516,10 @@ sub get_experiment_data {
             print STDERR "Storage::get_experiment_data: error $? executing command: $cmd\n";
             return;
         }
+        
+        # Return if error message detected (starts with '[')
+        map { return if (/^\[/) } @cmdOut; # mdb added 5/6/15 COGE-594
+        
         return \@cmdOut;
     }
     else {
@@ -608,11 +620,10 @@ sub create_experiment {
     my $user = $opts{user};
     my $irods = $opts{irods};
     my $files = $opts{files};
-    my $file_type = $opts{file_type};
+    #my $file_type = $opts{file_type};
     my $metadata = $opts{metadata};
     my $options = $opts{options};
-
-    #print STDERR (caller(0))[3], "\n";
+    #print STDERR "create_experiment ", Dumper $metadata, "\n";
 
     my $conf = CoGe::Accessory::Web::get_defaults();
 
@@ -636,7 +647,7 @@ sub create_experiment {
 
     # Create list of files to load
     my @staged_files;
-    push @staged_files, @$files;
+    push @staged_files, @$files if ($files);
 
     # Create jobs to retrieve irods files
     my %load_params;
@@ -646,17 +657,27 @@ sub create_experiment {
         unless ( %load_params ) {
             return (undef, "Could not create iget task");
         }
-        $workflow->add_job(%load_params);
+        $workflow->add_job(\%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
 
     # Create load job
     my $ignoreMissing = ( $options->{ignoreMissing} ? 1 : 0 );
-    %load_params = _create_load_experiment_job($conf, $metadata, $gid, $workflow->id, $user->name, $staging_dir, \@staged_files, $file_type, $result_dir, $ignoreMissing);
+    %load_params = _create_load_experiment_job(
+        conf => $conf, 
+        metadata => $metadata, 
+        gid => $gid, 
+        wid => $workflow->id, 
+        user_name => $user->name, 
+        staging_dir => $staging_dir, 
+        files => \@staged_files, 
+        #file_type => $file_type, 
+        ignoreMissing => $ignoreMissing
+    );
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -669,17 +690,21 @@ sub create_experiment {
 
 sub create_experiments_from_batch {
     my %opts = @_;
-    my $genome = $opts{genome}; # genome object or id
-    my $user = $opts{user};
+    my $genome = $opts{genome};     # genome object or id
+    my $notebook = $opts{notebook}; # optional notebook object or id
+    my $user = $opts{user};         # user running the job
+    my $assignee = $opts{assignee}; # user object or id to assign to
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
 
-    #print STDERR (caller(0))[3], "\n", Dumper $files, "\n";
-
     my $conf = CoGe::Accessory::Web::get_defaults();
 
     my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
+    my $nid;
+    if ($notebook) {
+        $nid = $notebook =~ /^\d+$/ ? $notebook : $notebook->id;
+    }
 
     # Connect to workflow engine and get an id
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
@@ -709,16 +734,20 @@ sub create_experiments_from_batch {
         unless ( %load_params ) {
             return (undef, "Could not create iget task");
         }
-        $workflow->add_job(%load_params);
+        $workflow->add_job(\%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
+    
+    # Change user if "assign to user" specified
+    my $user_name = $user->name;
+    $user_name = $assignee->name if ($assignee);
 
     # Create load job
-    %load_params = _create_load_batch_job($conf, $metadata, $gid, $workflow->id, $user->name, \@staged_files, $staging_dir, $result_dir);
+    %load_params = _create_load_batch_job($conf, $metadata, $gid, $workflow->id, $user->name, \@staged_files, $staging_dir, $result_dir, $nid);
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -742,7 +771,6 @@ sub get_workflow_paths {
     my $tmp_path = CoGe::Accessory::Web::get_defaults()->{SECTEMPDIR};
     my ($staging_path, $results_path);
     if (!$user_name) {
-        # TODO maybe putting username in filepath isn't worth debug convenience
         my $staging_dir = catdir($tmp_path, 'staging');
         my @tmp = read_dir($staging_dir);
         my @wdir = grep { -d "$staging_dir/$_/$workflow_id" } read_dir($staging_dir);
@@ -760,6 +788,76 @@ sub get_workflow_paths {
     return ($staging_path, $results_path);
 }
 
+sub add_workflow_result {
+    my ( $user_name, $workflow_id, $result ) = @_;
+    unless ($user_name && $workflow_id && $result) {
+        print STDERR "Storage::add_result ERROR: missing required param\n";
+        return;
+    }
+    
+    my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
+    my $results_file = catfile($results_path, '.results');
+    
+    return CoGe::Accessory::TDS::append($results_file, { results => [ $result ] });
+}
+
+sub get_workflow_results {
+    my ( $user_name, $workflow_id ) = @_;
+    unless ($user_name && $workflow_id) {
+        print STDERR "Storage::get_workflow_results ERROR: missing required param\n";
+        return;
+    }
+    
+    my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
+    my $results_file = catfile($results_path, '.results');
+    
+    my $results = CoGe::Accessory::TDS::read($results_file);
+    return unless ($results && $results->{results} && @{$results->{results}});
+    return $results->{results};
+}
+
+sub get_workflow_results_file {
+    my ( $user_name, $workflow_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
+    unless ($user_name && $workflow_id) {
+        print STDERR "Storage::get_workflow_results_file ERROR: missing required param\n";
+        return;
+    }
+    
+    my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
+    my $results_file = catfile($results_path, '.results');
+    return $results_file;
+}
+
+sub get_workflow_log_file {
+    my ( $user_name, $workflow_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
+    unless ($user_name && $workflow_id) {
+        print STDERR "Storage::get_workflow_log_file ERROR: missing required param\n";
+        return;
+    }
+    
+    my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
+    my $results_file = catfile($results_path, 'debug.log');
+    return $results_file;
+}
+
+sub get_upload_path {
+    my ( $user_name, $load_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
+    unless ($user_name && $load_id) {
+         print STDERR "Storage::get_upload_path ERROR: missing required param\n";
+        return;
+    }
+    
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    return catdir($conf->{SECTEMPDIR}, 'uploads', $user_name, $load_id);
+}
+
+sub get_download_path {
+    my ($type, $id, $uuid) = @_;
+    $uuid = '' unless $uuid; # optional uuid
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    return catfile($conf->{SECTEMPDIR}, 'downloads', $type, $id, $uuid);
+}
+
 sub remove_self { # TODO move to Utils.pm
     return @_ unless ( ref($_[0]) );
     my @a = @_[1..$#_];
@@ -772,8 +870,6 @@ sub create_genome_from_file {
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
-
-    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -804,7 +900,7 @@ sub create_genome_from_file {
         unless ( %load_params ) {
             return (undef, "Could not create iget task");
         }
-        $workflow->add_job(%load_params);
+        $workflow->add_job(\%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
 
@@ -813,7 +909,7 @@ sub create_genome_from_file {
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -828,8 +924,6 @@ sub create_genome_from_NCBI {
     my %opts = @_;
     my $user = $opts{user};
     my $accns = $opts{accns};
-
-    #print STDERR (caller(0))[3], "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -853,7 +947,7 @@ sub create_genome_from_NCBI {
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);
@@ -885,12 +979,23 @@ sub _create_iget_job {
 }
 
 sub _create_load_experiment_job {
-    my ($conf, $metadata, $gid, $wid, $user_name, $staging_dir, $files, $file_type, $result_dir, $ignoreMissing) = @_;
+    my %opts = @_;
+    my $conf = $opts{conf};
+    my $metadata = $opts{metadata};
+    my $gid = $opts{gid};
+    my $wid = $opts{wid};
+    my $user_name = $opts{user_name};
+    my $staging_dir = $opts{staging_dir};
+    my $files = $opts{files};
+    #my $file_type = $opts{file_type};
+    my $ignoreMissing = $opts{ignoreMissing};
+    #print STDERR "_create_load_experiment_job ", Dumper $metadata, "\n";
+
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
     my $file_str = join(',', map { basename($_) } @$files);
-    $file_type = 'csv' unless $file_type;
+    #$file_type = 'csv' unless $file_type;
 
     return (
         cmd => $cmd,
@@ -907,10 +1012,10 @@ sub _create_load_experiment_job {
             #['-types', qq{"Expression"}, 0], # FIXME
             #['-annotations', $ANNOTATIONS, 0],
             ['-staging_dir', "'".$staging_dir."'", 0],
-            ['-file_type', $file_type, 0], # FIXME
+            #['-file_type', $file_type, 0], # FIXME
             ['-data_file', "'".$file_str."'", 0],
             ['-config', $conf->{_CONFIG_PATH}, 1],
-            ['-result_dir', "'".$result_dir."'", 0],
+            #['-result_dir', "'".$result_dir."'", 0],
             ['-ignore-missing-chr', $ignoreMissing, 0]
         ],
         inputs => [
@@ -925,14 +1030,14 @@ sub _create_load_experiment_job {
 }
 
 sub _create_load_batch_job {
-    my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir) = @_;
+    my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir, $nid) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
     #my $file_str = join(',', map { basename($_) } @$files);
     my $file_str = join(',', @$files);
 
-    return (
+    my %params = (
         cmd => $cmd,
         script => undef,
         args => [
@@ -955,6 +1060,10 @@ sub _create_load_batch_job {
         ],
         description => "Loading batch experiments..."
     );
+    
+    push $params{args}, ['-nid', $nid, 0] if ($nid);
+    
+    return %params;
 }
 
 sub _create_load_genome_job {
@@ -1033,8 +1142,6 @@ sub create_annotation_dataset {
     my $files = $opts{files};
     my $metadata = $opts{metadata};
 
-    #print STDERR (caller(0))[3], "\n";
-
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
@@ -1064,7 +1171,7 @@ sub create_annotation_dataset {
         unless ( %load_params ) {
             return (undef, "Could not create iget task");
         }
-        $workflow->add_job(%load_params);
+        $workflow->add_job(\%load_params);
         push @staged_files, $load_params{outputs}[0];
     }
 
@@ -1073,7 +1180,7 @@ sub create_annotation_dataset {
     unless ( %load_params ) {
         return (undef, "Could not create load task");
     }
-    $workflow->add_job(%load_params);
+    $workflow->add_job(\%load_params);
 
     # Submit the workflow
     my $result = $jex->submit_workflow($workflow);

@@ -19,7 +19,6 @@
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
 
-
 <div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
     <div style="text-align:center;padding:30px;">
         <div class="info">Would you like to log out of all iPlant applications?</div>
@@ -108,38 +107,48 @@ $(document).ready( function() {
 </script>
 
 <div style="min-height:100%">
-    <!--
+
+<!--
     <div class="error-box">
-    Please note:  the iPlant Data Store will be unavailable Tuesday, April 15th for scheduled maintenance, preventing data import into CoGe.
+    Please note:  the iPlant Data Store will be unavailable Tuesday, December 16th for scheduled maintenance, preventing data import into CoGe.
     </div>
-    -->
+-->
 
 <header class="clearfix">
     <div id="brand">
         <TMPL_IF NAME="LOGO_PNG">
-            <a href="http://www.genomevolution.org/<TMPL_VAR NAME=HELP>">
-                <img style="vertical-align:bottom;" class="l" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
+            <a href="<TMPL_VAR NAME=HELP>">
+                <img style="vertical-align:bottom;height:3.4em" class="l" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
             </a>
         </TMPL_IF>
-        <span class="tagline"><TMPL_VAR NAME="TITLE"></span>
     </div>
+    
+    <!--CoGe icon on main page only-->
+    <!--<div id="logo">
+        <TMPL_IF NAME="LOGO_IMAGE">
+            <a href="<TMPL_VAR NAME=HELP>">
+                <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/<TMPL_VAR NAME="LOGO_IMAGE">'>
+            </a>
+        </TMPL_IF>
+    </div>-->
+
+    <!--CoGe icon on all pages-->
+<!--
+    <div id="logo">
+        <a href="<TMPL_VAR NAME=HELP>">
+            <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>
+        </a>
+    </div>
+-->
 
     <TMPL_UNLESS NAME="MENU">
-        <div id="menubar" class="menubar r" style="visibility:hidden;">
+        <div id="menubar" class="coge-menubar r" style="visibility:hidden;">
             <span style="float:right; margin-right: 20px;">
                 <ul class="sf-menu">
                     <li><a href="User.pl" target="_self">My Profile</a></li>
                     <li><a href='User.pl?p=106' target="_self">My History</a></li>
                     <tmpl_if name="ADMIN_ONLY">
-                        <li><a href='javascript:void(0)'>Admin</a>
-                            <ul>
-                                <li><a href="Jobs.pl">Jobs</a></li>
-                                <li><a href="History.pl">History</a></li>
-                                <li><a href="Groups.pl">Groups</a></li>
-                                <li><a href="Genomes.pl">Genomes</a></li>
-                                <li><a href="Experiments.pl">Experiments</a></li>
-                            </ul>
-                        </li>
+                        <li><a href='Admin.pl'>Admin</a></li>
                     </tmpl_if>
                     <li><a href='javascript:void(0)'>Tools</a>
                         <ul>
@@ -176,11 +185,10 @@ $(document).ready( function() {
 
         </div>
     </TMPL_UNLESS>
-
-
     <noscript>
     Welcome to CoGe -- a new system for a new kind of comparative genomics.  CoGe is designed for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes.
 
     Unfortunately, we have detected that your browser currently has JavaScript disabled. In order for CoGe to function properly, JavaScript must be enabled in your browser. For instruction on how to do so in Mozilla Firefox, please click <a href="http://www.mozilla.org/support/firefox/options#content" target="_blank">here</a>. After enabling JavaScript, simply refresh the page, or click <a href="javascript:location.reload(true);" target="_self">here</a>.
     </noscript>
 </header>
+<div class="tagline"><TMPL_VAR NAME="TITLE"></div>
