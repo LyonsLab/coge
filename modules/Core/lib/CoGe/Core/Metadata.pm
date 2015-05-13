@@ -23,7 +23,7 @@ sub create_annotations {
     my $target = $opts{target};           # experiment, genome, or list object
     my ($target_id, $target_type) = ($opts{target_id}, $opts{target_type}); # or an experiment/genome/list id and type
     my $annotations = $opts{annotations}; # semicolon-separated list of annotations (link:group:type:text;...)
-    my $locked = $opts{locked};           # boolean
+    my $locked = $opts{locked};           # boolean flag to indicate locked (not editable) annotations
 
     my @result = ();
     foreach ( split(/\s*;\s*/, $annotations) ) {
@@ -83,7 +83,7 @@ sub create_annotations {
         # Create annotation
         if ($target) {
             if (ref($target) =~ /Experiment/) {
-                $anno = $db->resultset('ExperimentAnnotation')->create({
+                $anno = $db->resultset('ExperimentAnnotation')->find_or_create({
                     experiment_id => $target->id,
                     annotation_type_id => ($type ? $type->id : undef),
                     annotation => $anno_text,
@@ -92,7 +92,7 @@ sub create_annotations {
                 }); # null description
             }
             elsif (ref($target) =~ /Genome/) {
-                $anno = $db->resultset('GenomeAnnotation')->create({
+                $anno = $db->resultset('GenomeAnnotation')->find_or_create({
                     genome_id => $target->id,
                     annotation_type_id => ($type ? $type->id : undef),
                     annotation => $anno_text,
@@ -101,7 +101,7 @@ sub create_annotations {
                 }); # null description
             }
             elsif (ref($target) =~ /List/) {
-                $anno = $db->resultset('ListAnnotation')->create({
+                $anno = $db->resultset('ListAnnotation')->find_or_create({
                     list_id => $target->id,
                     annotation_type_id => ($type ? $type->id : undef),
                     annotation => $anno_text,

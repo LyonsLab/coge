@@ -58,23 +58,20 @@ my $results = get_workflow_results($user->name, $wid);
 exit unless $results;
 
 # Create notebook
-my $notebook;
-if (@$results > 1) {
-    my @items = map { [ $_->{id}, $_->{type} ] } @$results;
-    #print STDOUT Dumper \@items, "\n";
-    $notebook = create_notebook(
-        db         => $db,
-        user       => $user,
-        name       => $name,
-        desc       => $description,
-        type_id    => $type,
-        item_list  => \@items,
-        restricted => $restricted
-    );
-    unless ($notebook) {
-        print STDERR "ERROR: couldn't create notebook\n";
-        exit(-1);
-    }
+my @items = map { [ $_->{id}, $_->{type} ] } @$results;
+#print STDOUT Dumper \@items, "\n";
+my $notebook = create_notebook(
+    db         => $db,
+    user       => $user,
+    name       => $name,
+    desc       => $description,
+    type_id    => $type,
+    item_list  => \@items,
+    restricted => $restricted
+);
+unless ($notebook) {
+    print STDERR "ERROR: couldn't create notebook\n";
+    exit(-1);
 }
 
 # Add annotations to notebook and results
