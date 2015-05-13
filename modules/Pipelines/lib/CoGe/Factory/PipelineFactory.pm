@@ -6,7 +6,7 @@ use CoGe::Builder::Export::Fasta;
 use CoGe::Builder::Export::Gff;
 use CoGe::Builder::Export::Experiment;
 use CoGe::Builder::Load::Experiment;
-use CoGe::Builder::Analyze::IdentifySNPs;
+use CoGe::Builder::SNP::IdentifySNPs;
 
 has 'db' => (
     is => 'ro',
@@ -56,7 +56,7 @@ sub get {
         $builder = CoGe::Builder::Load::Experiment->new($request);
     }
     elsif ($message->{type} eq "analyze_snps") {
-        $builder = CoGe::Builder::Analyze::IdentifySNPs->new($request);
+        $builder = CoGe::Builder::SNP::IdentifySNPs->new($request);
     }
     else {
         print STDERR "PipelineFactory::get unknown type\n";
