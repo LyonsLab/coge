@@ -1148,17 +1148,21 @@ $.extend(GeneralOptionsView.prototype, {
     initialize: function() {
         this.el = $($("#general-options-template").html());
         this.edit_notebook = this.el.find("#edit_notebook");
+        this.notebook_container = this.el.find("#notebook-container");
     },
 
     is_valid: function() {
         var notebook = this.edit_notebook.val();
 
         this.data.notebook = this.el.find("#notebook").is(":checked");
+        this.data.notebook_type = this.el.find("[name=notebook] :checked").val();
         this.data.notebook_name = notebook;
         this.data.notebook_id = this.notebook_id;
         this.data.email = this.el.find("#email").is(":checked");
 
-        if (this.data.notebook && (!notebook || notebook === 'Search' || !this.notebook_id)) {
+        if (this.data.notebook && this.data.notebook_type === "existing" && 
+        		(!notebook || notebook === 'Search' || !this.notebook_id)) 
+        {
             error_help('Please specify a notebook.');
             return false;
         }
@@ -1174,6 +1178,11 @@ $.extend(GeneralOptionsView.prototype, {
         var self = this;
 
         // jQuery Events
+        this.el.find("#notebook").unbind().change(this.toggleNotebook.bind(this));
+        this.el.find("[name=notebook]").unbind().click(function() {
+        	var option = $(this).val();
+        	self.edit_notebook.prop("disabled", (option === 'new' ? true : false));
+        });
         this.edit_notebook.unbind().change(function() {
             // Reset notebook_id when item has changed
             self.notebook_id = undefined;
@@ -1192,6 +1201,15 @@ $.extend(GeneralOptionsView.prototype, {
                 return false; // Prevent the widget from inserting the value.
             }
         });
+    },
+    
+    toggleNotebook: function() {
+        this.notebook_enabled = this.el.find("#notebook").is(":checked");
+
+        if (this.notebook_enabled) 
+            this.notebook_container.slideDown();
+        else 
+            this.notebook_container.slideUp();
     }
 });
 
@@ -1357,13 +1375,15 @@ $.extend(ConfirmationView.prototype, {
         var key, newpair;
         for(key in options) {
             if (options.hasOwnProperty(key)) {
-            	var val;
-            	if (typeof options[key] === 'object')
-            		val = objToString(options[key]);
-            	else if (typeof options[key] === 'boolean')
-            		val = options[key] ? 'yes' : 'no';
+            	var val = options[key];
+            	if (typeof val === 'undefined' || val === '')
+            		continue;
+            	else if (typeof val === 'object')
+            		val = objToString(val);
+            	else if (typeof val === 'boolean')
+            		val = val ? 'yes' : 'no';
             	else
-                	val = String(options[key]);
+                	val = String(val);
                 newpair = this.pair_template.clone();
                 newpair.find(".name").html(coge.utils.ucfirst(key.replace('_', ' ')));
                 newpair.find(".data").html(val);
