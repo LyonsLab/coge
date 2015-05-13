@@ -30,7 +30,7 @@
 	.ui-sortable-placeholder { placeholder: ".portlet"; border: 1px dotted black; visibility: visible !important; width: 200px !important; }
 </style>
 
-<SCRIPT language="JavaScript">
+<script language="JavaScript">
 function animate_section(name, style, speedy, show) {
   if (show) {alert (name+"::"+style)}
   if (speedy == undefined) speedy = pageObj.speed;
@@ -234,35 +234,43 @@ function open_all_sequence_option_menus(open) {
 }
 
 $(document).ready(function(){
+    check_seq_submit();
+    autodistance_setup();
+    autosearch_coge_names();
+    check_alignment_program();
+    check_dialign_anchor_program();
 
-     // close the dialog box when the run a new analysis.
-     jQuery('.go_run').click(function(){
-         $('#results_info').dialog('close');
-         jQuery('html, body').animate({scrollTop: 0}, 2000);
-     });
- 	 check_seq_submit();
- 	 autodistance_setup();
-	 autosearch_coge_names();
- 	 check_alignment_program();
- 	 check_dialign_anchor_program();
- 	 if(window.location.toString().indexOf('autogo') != -1){
-     	  jQuery('#go').trigger('click');
- 	 }
-   $.ajaxSetup({
-     type: "GET",
-     url: "GEvo.pl",
-     cache: false,
-   });
-set_up_tabs();
-set_up_sort();
-  pageObj.nolog = 0;
-  pageObj.waittime = 1000;
-  pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
+    $.ajaxSetup({
+        type: "GET",
+        url: "GEvo.pl",
+        cache: false,
+    });
+
+    set_up_tabs();
+    set_up_sort();
+    pageObj.nolog = 0;
+    pageObj.waittime = 1000;
+    pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
+    pageObj.error = Boolean(parseInt("<TMPL_VAR NAME=ERROR>", 10));
+
+    if (pageObj.error) {
+        $("#error-box").removeClass("hidden");
+    }
 
     // track analysis
     $("#go").on("click", function() {
         ga('send', 'event', 'gevo', 'run');
     });
+
+    // close the dialog box when the run a new analysis.
+    jQuery('.go_run').click(function(){
+        $('#results_info').dialog('close');
+        jQuery('html, body').animate({scrollTop: 0}, 2000);
+    });
+
+    if(window.location.toString().indexOf('autogo') != -1){
+        jQuery('#go').trigger('click');
+    }
  });
 
 function populate_page_obj(basefile)
@@ -814,6 +822,8 @@ function rand ()
 	</ul>
 	
 	<div id="tabs-1">
+    <div id="error-box" class="alert-box alert-box-warn hidden">A genome was omitted because it has been marked deleted.</div>
+
 	<input name="num_seqs" id="num_seqs" type="hidden" readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
 	<span class='ui-button ui-corner-all ui-button-icon-left coge-button-sm coge-button-left' onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
 
@@ -1213,6 +1223,13 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
   <td>
   <label><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" <TMPL_VAR NAME="HIQUAL_YES">/>Yes</label>
   <label><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" <TMPL_VAR NAME="HIQUAL_NO"> />No</label>
+ </TR>
+ <TR>
+  <TD>
+  <font>Color anchor gene yellow?</font>
+  <td>
+  <label><input  type="radio" name="ca" id="ca" tabindex="1" value="1" <TMPL_VAR NAME="CA_YES">/>Yes</label>
+  <label><input  type="radio" name="ca" id="ca" tabindex="1" value="0" <TMPL_VAR NAME="CA_NO"> />No</label>
  </TR>
 </TABLE>
 </div>

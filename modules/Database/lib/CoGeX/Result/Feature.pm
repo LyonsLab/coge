@@ -318,7 +318,7 @@ See Also   :
 
 sub locs {
 	my $self = shift;
-	return $self->locations();
+	return $self->clean_locations(@_);
 }
 
 ################################################ subroutine header begin ##
@@ -385,9 +385,19 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub length {
-	my $self   = shift;
-	my $length = 0;
-	map { $length += ( $_->stop - $_->start + 1 ) } $self->locations;
+	my $self = shift;
+	my $length;
+	
+	map { $length += ( $_->stop - $_->start + 1 ) } $self->locs;
+	
+    unless (defined $length) { # mdb added 4/20/15 COGE-610 for cases where there are no locations
+        $length = $self->stop - $self->start + 1;
+	}
+	
+	if ($length < 0) {
+        print STDERR "Feature::length ERROR, invalid length $length for feature id ", $self->id, "\n";
+    }
+	
 	return $length;
 }
 
@@ -565,6 +575,8 @@ sub annotation_pretty_print_html {
 		  . "</span>" );
 	$anno_type->Type_delimit(": <td>");
 	$anno_type->Val_delimit(" , ");
+	$anno_type->add_Annot(
+            "<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?fid=" . $self->id . "');\">" . "FID:".$self->id. "</span>");
 	my ($primary_name) = $self->primary_name;
 	$primary_name = $primary_name->name if $primary_name;
 
@@ -573,11 +585,8 @@ sub annotation_pretty_print_html {
 		$name = "<b>" . $name . "</b>"
 		  if $primary_name && $primary_name eq $name;
 		$anno_type->add_Annot(
-"<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?accn="
-			  . $accn
-			  . "');\">"
-			  . $name
-			  . "</span>" );
+            "<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?accn=" . $accn . "');\">" . $name . "</span>" 
+		);
 	}
 	$anno_obj->add_Annot($anno_type);
 	unless ($minimal) {
@@ -593,11 +602,12 @@ sub annotation_pretty_print_html {
 
 		my ($temp_start, $temp_stop) = get_link_coords($start, $stop);
 		my @links = (
-			"<span class='data5 link' onclick =\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
-			"<span class='data5 link' onclick =\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
-			#"<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\">GenomeView</span>", # mdb removed 11/18/13 issue 220, 254
-			"<span class='data5 link' onclick =\"window.open('GenomeView.pl?gid=$gid&loc=$chr:$temp_start..$temp_stop')\">GenomeView</span>", # mdb added 11/18/13 issue 220, 254 - fix for jbrowse
-			"<span class='data5 link' onclick =\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
+			"<span class='data5 link' onclick=\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
+			"<span class='data5 link' onclick=\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
+			#"<span class='data5 link' onclick=\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\">GenomeView</span>", # mdb removed 11/18/13 issue 220, 254
+			"<span class='data5 link' onclick=\"window.open('GenomeView.pl?gid=$gid&loc=$chr:$temp_start..$temp_stop')\">GenomeView</span>", # mdb added 11/18/13 issue 220, 254 - fix for jbrowse
+			"<span class='data5 link' onclick=\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
+			"<span class='data5 link' onclick=\"window.open('FeatView.pl?fid=$fid&gstid=$gstid')\">FeatView</span>"
 		);
 
         my $P = $opts{P};
@@ -679,52 +689,43 @@ sub annotation_pretty_print_html {
 		}
 
 		my $location = "Chr " . $chr . " ";
-
-#    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
-		$location .=
-		  commify( $self->start ) . "-" . commify( $self->stop );
-		$location .= " (" . $strand . ")";
+#       $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
+		$location .= commify( $self->start ) . "-" . commify( $self->stop );
+		$location .= " (" . $strand . ")" ." :: ".$self->genbank_location_string;
 		my $featid = $self->id;
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
-				Type =>
-				  "<tr><td nowrap='true'><span class=\"title5\">Length</span>",
-				Values =>
-				  [ "<span class='data5'>" . $self->length . " nt</span>" ],
+				Type => "<tr><td nowrap='true'><span class=\"title5\">Length</span>",
+				Values => [ "<span class='data5'>" . $self->length . " nt</span>" ],
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
 			)
 		  )
 		  unless $minimal;
 
-#	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&gstid=$gstid')" >}.$location."</span>" if $loc_link;
-		$location =
-qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid=$gstid')" >}
-		  . $location
-		  . "</span>"
-		  if $loc_link;
-		$location = qq{<span class="data">$location</span>};
+#		$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid=$gstid')" >}
+#		  . $location
+#		  . "</span>"
+#		  if $loc_link;
+		$location = qq{<span class="data link" onclick="window.open('GenomeView.pl?gid=$gid&loc=$chr:$temp_start..$temp_stop')">$location</span>};
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
-				Type =>
-"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&gid=$gid&start=$start&z=6')\" >Location</span></span>",
-				Values       => [$location],
+				Type         => "<tr><td nowrap='true'><span class=\"title5\">Location</span>",
+				Values       => ["<span class='data5'>".$location."</span>"],
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
 			)
 		);
 
 		my $ds      = $self->dataset();
-		my $dataset =
-qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}
+		my $dataset = qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}
 		  . $ds->id . "')\">"
 		  . $ds->name . " (v"
 		  . $ds->version . ")";
 		$dataset .= "</span>";
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
-				Type =>
-				  "<tr><td nowrap='true'><span class=\"title5\">Dataset</span>",
+				Type         => "<tr><td nowrap='true'><span class=\"title5\">Dataset</span>",
 				Values       => [$dataset],
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
@@ -734,8 +735,7 @@ qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}
 		my @genomes;
 		foreach my $dsg ( $ds->genomes ) {
 			my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
-			my $genome =
-qq{<span class="data5 link" onclick="window.open('GenomeInfo.pl?gid=}
+			my $genome = qq{<span class="data5 link" onclick="window.open('GenomeInfo.pl?gid=}
 			  . $dsg->id . "')\">"
 			  . $name . " (v"
 			  . $dsg->version . ")";
@@ -743,8 +743,7 @@ qq{<span class="data5 link" onclick="window.open('GenomeInfo.pl?gid=}
 		}
 		$anno_obj->add_Annot(
 			new CoGe::Accessory::Annotation(
-				Type =>
-				  "<tr><td nowrap='true'><span class=\"title5\">Genome</span>",
+				Type         => "<tr><td nowrap='true'><span class=\"title5\">Genome</span>",
 				Values       => \@genomes,
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
@@ -923,11 +922,10 @@ sub genomic_sequence {
 	my $dsgid  = $opts{dsgid};
 	my $genome = $opts{genome}; #genome object
 	my $dataset = $opts{dataset}; #dataset object
-	my $server =
-	  $opts{server}; #used for passing in server name from which to retrieve sequence from web-script CoGe/GetSequence.pl
+	my $server = $opts{server}; #used for passing in server name from which to retrieve sequence from web-script CoGe/GetSequence.pl
 	my $rel = $opts{rel};
-#	print STDERR "Feature.pm:  in sub genomic_sequence\n";
-#have a full sequence? -- pass it in and the locations will be parsed out of it!
+    
+    #have a full sequence? -- pass it in and the locations will be parsed out of it!
 	if ( !$up && !$down && $self->_genomic_sequence ) {
 		return $self->_genomic_sequence;
 	}
@@ -936,7 +934,7 @@ sub genomic_sequence {
 	my @sequences;
 	my %locs =
 	  map { ( $_->start, $_->stop ) }
-	  $self->locations()
+	  $self->locs()
 	  ; #in case a mistake happened when loading locations and there are multiple ones with the same start
 	my @locs = map { [ $_, $locs{$_} ] } sort { $a <=> $b } keys %locs;
 	( $up, $down ) = ( $down, $up )
@@ -956,47 +954,44 @@ sub genomic_sequence {
 	my $start    = $locs[0][0];
 	my $stop     = $locs[-1][1];
 	my $full_seq = $seq ? $seq : $dataset->get_genomic_sequence(
-			chr => $chr,
-			start      => $start,
-			stop       => $stop,
-			debug      => $debug,
-			gstid      => $gstid,
-			gid      => $dsgid,
-                        genome   => $genome,
-			server     => $server,
-		);
-#	print STDERR "Feature.pm:  Have full sequence\n";
+		chr    => $chr,
+		start  => $start,
+		stop   => $stop,
+		debug  => $debug,
+		gstid  => $gstid,
+		gid    => $dsgid,
+        genome => $genome,
+		server => $server,
+	);
+
 	if ($full_seq) {
+	    my $full_seq_length = CORE::length($full_seq);
 		foreach my $loc (@locs) {
-			if ( $loc->[0] - $start + $loc->[1] - $loc->[0] + 1 >
-				CORE::length($full_seq) )
+			if ( $loc->[0] - $start + $loc->[1] - $loc->[0] + 1 > $full_seq_length )
 			{
-				print STDERR "#" x 20, "\n";
-				print STDERR
-"Error in feature->genomic_sequence, Sequence retrieved is smaller than the length of the exon being parsed! \n";
-				print STDERR "Organism: ", $self->organism->name, "\n";
-				print STDERR "Dataset: ",  $self->dataset->name,  "\n";
-				use Data::Dumper;
-				print STDERR "Locations data-structure: ", Dumper \@locs;
-				print STDERR "Retrieved sequence lenght: ",
-				  CORE::length($full_seq), "\n";
-				print STDERR $full_seq, "\n";
-				print STDERR "Feature object information: ",
-				  Dumper {
-					chromosome        => $chr,
-					skip_length_check => 1,
-					start             => $start,
-					stop              => $stop,
-					dataset           => $dataset->id,
-					feature           => $self->id,
-				  };
-				print STDERR "#" x 20, "\n";
+				print STDERR "#" x 20, "\n",
+    	            "Error in feature->genomic_sequence, Sequence retrieved is smaller than the length of the exon being parsed! \n",
+    	            "Organism: ", $self->organism->name, "\n",
+    	            "Dataset: ",  $self->dataset->name,  "\n",
+    	            "Locations data-structure: ", Dumper \@locs,
+    	            "Retrieved sequence length: ",
+    	            $full_seq_length, "\n",
+    	            #$full_seq, "\n",
+    	            "Feature object information: ",
+    				Dumper {
+        				chromosome        => $chr,
+        				skip_length_check => 1,
+        				start             => $start,
+        				stop              => $stop,
+        				dataset           => $dataset->id,
+        				feature           => $self->id
+    				},
+    	            "#" x 20, "\n";
 			}
 
-			my $sub_seq =
-			  substr( $full_seq, $loc->[0] - $start,
-				$loc->[1] - $loc->[0] + 1 );
+			my $sub_seq = substr( $full_seq, $loc->[0] - $start, $loc->[1] - $loc->[0] + 1 );
 			next unless $sub_seq;
+			
 			if ( $self->strand == -1 ) {
 				unshift @sequences, $self->reverse_complement($sub_seq);
 			}
@@ -1005,34 +1000,14 @@ sub genomic_sequence {
 			}
 		}
 	}
+	
 	my $outseq = join( "", @sequences );
 	if ( !$up && !$down ) {
 		$self->_genomic_sequence($outseq);
 	}
+	
 	return $outseq;
 }
-
-################################################ subroutine header begin ##
-
-=head2 genome_sequence
-
- Usage     :
- Purpose   : See genomic_sequence()
- Returns   :
- Argument  :
- Throws    :
- Comments  : Alias for the genomic_sequence() method.
-
-See Also   : genomic_sequence()
-
-=cut
-
-################################################## subroutine header end ##
-
-# mdb removed 8/14/13 - aliases are bad for readability
-#sub genome_sequence {
-#	shift->genomic_sequence(@_);
-#}
 
 ################################################ subroutine header begin ##
 
@@ -2012,6 +1987,37 @@ sub info {
 	         ', v' . $self->dataset->first_genome->version .
 	         ', ' .  $self->dataset->first_genome->genomic_sequence_type->name . ')';
 	return $info;
+}
+
+################################################ subroutine header begin ##
+
+=head2 clean_locations
+
+ Usage     : $self->clean_locations
+ Purpose   : returns wantarray of location objects.  Checks them for consistency due to some bad loads where locations had bad starts, stops, chromosomes and strands
+
+ Returns   : returns wantarray of location ojects
+ Argument  : none
+ Throws    :
+ Comments  : 
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub clean_locations {
+        my $self = shift;
+	my @locs;
+	foreach my $loc ($self->locations(@_)) {
+		next if $loc->strand ne $self->strand;
+		next if $loc->chr ne $self->chr;
+		next if $loc->start < $self->start || $loc->start > $self->stop;
+		next if $loc->stop < $self->start || $loc->stop > $self->stop;
+		push @locs, $loc;
+	} 
+	return wantarray ? @locs : \@locs;
 }
 
 1;

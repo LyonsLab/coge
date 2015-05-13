@@ -4,6 +4,7 @@ use v5.10;
 use strict;
 use base 'Class::Accessor';
 use Data::Dumper;
+use Data::Validate::URI qw(is_uri);
 use Carp qw(cluck);
 use CoGeX;
 use DBIxProfiler;
@@ -13,12 +14,14 @@ use CGI::Cookie;
 use File::Path;
 use File::Basename;
 use File::Temp;
+use File::Spec::Functions;
+use HTML::Template;
 use LWP::Simple qw(!get !head !getprint !getstore !mirror);
 use LWP::UserAgent;
 use JSON;
 use HTTP::Request;
 use XML::Simple;
-use CoGe::Accessory::LogUser;
+use CoGe::Accessory::LogUser qw(get_cookie_session);
 use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
@@ -57,9 +60,9 @@ BEGIN {
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( qw (Exporter Class::Accessor) );
-    @EXPORT  = qw( get_session_id );
-    @EXPORT_OK = qw( check_filename_taint check_taint gunzip gzip send_email
-                     get_defaults set_defaults url_for get_job schedule_job );
+    @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
+                   send_email get_defaults set_defaults url_for get_job 
+                   schedule_job render_template );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
     $NOT_FOUND = "The action could not be found";
@@ -107,12 +110,12 @@ sub init {
 		    );
     	}
     	else {
-		    ($user) = login_cas_saml(
-		    	cookie_name => $CONF->{COOKIE_NAME},
-		        ticket   => $ticket,
-		        coge     => $db,
-		        this_url => $url
-		    );
+    	    ($user) = login_cas_saml(
+                cookie_name => $CONF->{COOKIE_NAME},
+                ticket   => $ticket,
+                coge     => $db,
+                this_url => $url
+            );
     	}
     }
     ($user) = CoGe::Accessory::LogUser->get_user(
@@ -133,14 +136,15 @@ sub init {
 	            url => 'http://' . $ENV{SERVER_NAME} . $ENV{REQUEST_URI},
 	        );
 
+            # erb 10/07/2014 - remove unused generic logging issue 516
 	        # Log this page access
-	        CoGe::Accessory::Web::log_history(
-		        db          => $db,
-		        user_id     => $user->id,
-		       	page        => $page_title,
-		      	description => 'page access',
-		        link        => $link
-		    );
+            #CoGe::Accessory::Web::log_history(
+		    #    db          => $db,
+		    #    user_id     => $user->id,
+		    #   	page        => $page_title,
+		    #  	description => 'page access',
+		    #    link        => $link
+		    #);
 		}
     }
 
@@ -149,19 +153,36 @@ sub init {
     return ( $db, $user, $CONF, $link );
 }
 
+sub render_template {
+    my ($template_name, $opts) = @_;
+
+    my $template_file = catfile(get_defaults()->{TMPLDIR}, $template_name);
+
+    unless(-r $template_file) {
+        cluck "error: template=$template_file could not be found";
+        return;
+    }
+
+    my $template = HTML::Template->new( filename => $template_file );
+
+    $template->param($opts);
+    return $template->output;
+}
+
 sub get_defaults {
     return $CONF if ($CONF);
 
-    my ( $self, $param_file ) = self_or_default(@_);
-    $param_file = $BASEDIR . "/coge.conf" unless defined $param_file;
-#    print STDERR "Web::get_defaults $param_file\n";
-    unless ( -r $param_file ) {
+    my ( $self, $conf_file ) = self_or_default(@_);
+    $conf_file = $BASEDIR . "/coge.conf" unless defined $conf_file;
+    #print STDERR "Web::get_defaults $conf_file\n";
+    unless ( -r $conf_file ) {
         print STDERR
-qq{Either no parameter file specified or unable to read paramer file ($param_file).
-A valid parameter file must be specified or very little will work!};
+qq{Either no configuration file was specified or unable to read file ($conf_file).
+A valid configuration file must be specified or very little will work!};
         return 0;
     }
-    open( IN, $param_file );
+    
+    open( IN, $conf_file );
     my %items;
     while (<IN>) {
         chomp;
@@ -173,7 +194,7 @@ A valid parameter file must be specified or very little will work!};
     close IN;
 
     # mdb added 4/10/14 - add path to the file that was loaded
-    $items{_CONFIG_PATH} = $param_file;
+    $items{_CONFIG_PATH} = $conf_file;
 
     $CONF = \%items;
     return $CONF;
@@ -322,7 +343,7 @@ sub feat_search_for_feat_name {
             my $loc = "("
               . $feat->type->name
               . ") Chr:"
-              . $feat->locations->next->chromosome . " "
+              . $feat->chromosome . " "
               . $feat->start . "-"
               . $feat->stop;
 
@@ -372,12 +393,14 @@ sub logout_coge { # mdb added 3/24/14, issue 329
     my $coge        = $opts{coge};
     my $user        = $opts{user};
     my $form        = $opts{form}; # CGI form for calling page
-    my $url         = $opts{this_url};
+    my $url         = $opts{url};
     $url = $form->url() unless $url;
     print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n";
 
     # Delete user session from db
-    my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+    my $session_id = get_cookie_session(cookie_name => $CONF->{COOKIE_NAME})
+        || get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
 
@@ -390,12 +413,14 @@ sub logout_cas {
     my $coge        = $opts{coge};
     my $user        = $opts{user};
     my $form        = $opts{form}; # CGI form for calling page
-    my $url         = $opts{this_url};
+    my $url         = $opts{url};
     $url = $form->url() unless $url;
     print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n";
 
     # Delete user session from db
-    my $session_id = get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+    my $session_id = get_cookie_session(cookie_name => $CONF->{COOKIE_NAME})
+        || get_session_id($user->user_name, $ENV{REMOTE_ADDR});
+
     my ($session) = $coge->resultset('UserSession')->find( { session => $session_id } );
     $session->delete if $session;
 
@@ -505,6 +530,13 @@ sub login_cas_saml {
     my $coge        = $opts{coge};          # db object
 	print STDERR "Web::login_cas_saml ticket=$ticket this_url=$this_url\n";
 
+    my $cas_url = get_defaults()->{CAS_URL};
+    unless ($cas_url) {
+        print STDERR "Web::login_cas_saml: error: CAS_URL not defined in configuration file\n";
+        return;
+    }
+
+    # Build and execute SAML request
     my $ua = new LWP::UserAgent;
     my $request =
         '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">'
@@ -515,18 +547,20 @@ sub login_cas_saml {
     my $request_ua =
       HTTP::Request->new(
         #POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon1
-        POST => get_defaults()->{CAS_URL} . '/samlValidate?TARGET=' . $this_url );
+        POST => $cas_url . '/samlValidate?TARGET=' . $this_url );
     $request_ua->content($request);
     $request_ua->content_type("text/xml; charset=utf-8");
     my $response = $ua->request($request_ua);
+    #print STDERR "SAML response: ", Dumper $response, "\n";
     my $result   = $response->content;
-    print STDERR $result, "\n";
-    my ($uname, $fname, $lname, $email);
-    if ($result) {
-        ( $uname, $fname, $lname, $email ) = parse_saml_response($result);
-    }
+    print STDERR "SAML result: ", Dumper $result, "\n";
+    return unless $result;
+    
+    # Parse user info out of SAML response
+    my ( $uname, $fname, $lname, $email ) = parse_saml_response($result);
     return unless $uname; # Not logged in
 
+    # Find user in database
     my ($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
     unless ($coge_user) {
         # Create new user
@@ -642,6 +676,42 @@ sub parse_saml_response2 {
     }
 }
 
+# mdb added 3/27/15 for DE cas4 upgrade
+# See http://jasig.github.io/cas/development/protocol/CAS-Protocol-Specification.html
+sub login_cas4 {
+    my ( $self, %opts ) = self_or_default(@_);
+    my $cookie_name = $opts{cookie_name};
+    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $this_url    = $opts{this_url};      # URL that CAS redirected to
+    my $db          = $opts{db};            # db object
+    my $server      = $opts{server};        # server -- this was added to get apache proxying to work with cas
+    print STDERR "Web::login_cas4 ticket=$ticket this_url=$this_url\n";
+    #print STDERR Dumper \%ENV, "\n";
+
+    my $cas_url = get_defaults()->{CAS_URL};
+    unless ($cas_url) {
+        print STDERR "Web::login_cas4: error: CAS_URL not defined in configuration file\n";
+        return;
+    }
+    
+    # mdb: this is a hack to get our Apache proxy user sandboxes to work with CAS validation
+    my $uri = $ENV{SCRIPT_NAME};
+    $uri =~ s/^\///;
+    my $page_url .= $ENV{HTTP_X_FORWARDED_HOST} . $uri;
+    
+    my $agent = new LWP::UserAgent;
+    my $request = HTTP::Request->new( GET => $cas_url . '/serviceValidate?service=' . $page_url . '&ticket=' . $ticket );
+    #$request_ua->content($request);
+    #$request_ua->content_type("text/xml; charset=utf-8");
+    my $response = $agent->request($request);
+    #print STDERR "cas4 response: ", Dumper $response, "\n";
+    my $result   = $response->content;
+    print STDERR "cas result: ", Dumper $result, "\n";
+    return unless $result;
+    
+    return;
+}
+
 sub ajax_func {
     return (
         read_log            => \&read_log,
@@ -699,15 +769,22 @@ sub get_tiny_link {
 
     # mdb added 1/8/14, issue 272
     my $ua = new LWP::UserAgent;
-	$ua->timeout(5);
+    my $response_url;
+
+	$ua->timeout(10);
 	my $response = $ua->get($request_url);
 	if ($response->is_success) {
-        return $response->decoded_content;
+        $response_url = $response->decoded_content;
 	}
 	else {
         cluck "Unable to produce tiny url from server falling back to url";
         return $url;
 	}
+
+    # check if the tiny link is a validate url
+    return $url unless is_uri($response_url);
+
+    return $response_url;
 
     # Log the page
 # mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167

@@ -1,5 +1,5 @@
 <div class="bold text">BLAST Parameters</div>
-<div class="ui-widget-content ui-corner-all coge-section" style="box-sizing: border-box; width: 100%;">
+<div id="ncbi-params" class="ui-widget-content ui-corner-all coge-section" style="box-sizing: border-box; width: 100%;">
 <!--
   <tr valign="top">
     <td align="left">
@@ -27,22 +27,22 @@
                 </td>
             </tr>
             </table>
-        </div> <!-- ncbi_blast_type -->
+        </div> <!-- blast_type -->
         <br><div class="bold text">Scoring</div>
         <table class="ui-corner-all ui-widget-content small">
             <TR>
             <TD>E-Value</TD>
             <TD>
-                <select name="ncbi_e_value" id="ncbi_e_value">
+                <select name="e_value" id="e_value">
                 <option value="1e-30">1e-30</option>
                 <option value="1e-20">1e-20</option>
                 <option value="1e-10">1e-10</option>
-                <option value=".000001">1e-6</option>
-                <option value=".00001">1e-5</option>
-                <option value=".0001" selected>0.0001</option>
-                <option value=".001">0.001</option>
-                <option value=".01">0.01</option>
-                <option value=".1">0.1</option>
+                <option value="0.000001">1e-6</option>
+                <option value="0.00001">1e-5</option>
+                <option value="0.0001" selected>0.0001</option>
+                <option value="0.001">0.001</option>
+                <option value="0.01">0.01</option>
+                <option value="0.1">0.1</option>
                 <option value="1">1</option>
                 <option value="10">10</option>
                 <option value="100">100</option>
@@ -52,21 +52,21 @@
             <TR>
             <TD>Word size</TD>
             <TD>
-                <select name="ncbi_word_size" id="ncbi_word_size">
-                <option value="16">16</option>
-                <option value="20">20</option>
-                <option value="24">24</option>
-                <option value="28" selected>28</option>
-                <option value="32">32</option>
-                <option value="48">48</option>
-                <option value="64">64</option>
+                <select name="word_size" id="word_size">
+                    <option value="16">16</option>
+                    <option value="20">20</option>
+                    <option value="24">24</option>
+                    <option value="28" selected>28</option>
+                    <option value="32">32</option>
+                    <option value="48">48</option>
+                    <option value="64">64</option>
                 </select>
             </td>
             </TR>
             <TR>
             <TD>Gap Costs:</TD>
             <TD>
-                <select id="ncbi_gapcosts_1-2" class="ncbi_gapcosts" style="display: block">
+                <select id="gapcosts_1-2" class="gapcosts" style="display: block">
                 <option value="0 0">Linear</option>
                 <option value="5 2">Existence: 5 Extension: 2</option>
                 <option value="2 2">Existence: 2 Extension: 2</option>
@@ -76,7 +76,7 @@
                 <option value="2 1">Existence: 2 Extension: 1</option>
                 <option value="1 1">Existence: 1 Extension: 1</option>
                 </select>
-                <select id="ncbi_gapcosts_1-3" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_1-3" class="gapcosts" style="display: none">
                 <option value="0 0">Linear</option>
                 <option value="5 2">Existence: 5 Extension: 2</option>
                 <option value="2 2">Existence: 2 Extension: 2</option>
@@ -85,7 +85,7 @@
                 <option value="2 1">Existence: 2 Extension: 1</option>
                 <option value="1 1">Existence: 1 Extension: 1</option>
                 </select>
-                <select id="ncbi_gapcosts_1-4" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_1-4" class="gapcosts" style="display: none">
                 <option value="0 0">Linear</option>
                 <option value="5 2">Existence: 5 Extension: 2</option>
                 <option value="1 2">Existence: 1 Extension: 2</option>
@@ -93,7 +93,7 @@
                 <option value="2 1">Existence: 2 Extension: 1</option>
                 <option value="1 1">Existence: 1 Extension: 1</option>
                 </select>
-                <select id="ncbi_gapcosts_2-3" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_2-3" class="gapcosts" style="display: none">
                 <option value="0 0">Linear</option>
                 <option value="4 4">Existence: 4 Extension: 4</option>
                 <option value="2 4">Existence: 2 Extension: 4</option>
@@ -104,7 +104,7 @@
                 <option value="4 2">Existence: 4 Extension: 2</option>
                 <option value="2 2">Existence: 2 Extension: 2</option>
                 </select>
-                <select id="ncbi_gapcosts_4-5" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_4-5" class="gapcosts" style="display: none">
                 <option value="0 0">Linear</option>
                 <option value="12 8">Existence: 12 Extension: 8</option>
                 <option value="6 5">Existence: 6 Extension: 5</option>
@@ -112,7 +112,7 @@
                 <option value="4 5">Existence: 4 Extension: 5</option>
                 <option value="3 5">Existence: 3 Extension: 5</option>
                 </select>
-                <select id="ncbi_gapcosts_1-1" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_1-1" class="gapcosts" style="display: none">
                 <option value="5 2">Existence: 5 Extension: 2</option>
                 <option value="3 2">Existence: 3 Extension: 2</option>
                 <option value="2 2">Existence: 2 Extension: 2</option>
@@ -122,7 +122,7 @@
                 <option value="3 1">Existence: 3 Extension: 1</option>
                 <option value="2 1">Existence: 2 Extension: 1</option>
                 </select>
-                <select id="ncbi_gapcosts_BLOSUM62" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_BLOSUM62" class="gapcosts" style="display: none">
                 <option value="9 2">Existence: 9 Extension: 2</option>
                 <option value="8 2">Existence: 8 Extension: 2</option>
                 <option value="7 2">Existence: 7 Extension: 2</option>
@@ -130,7 +130,7 @@
                 <option value="11 1" selected>Existence: 11 Extension: 1</option>
                 <option value="10 1">Existence: 10 Extension: 1</option>
                 </select>
-                <select id="ncbi_gapcosts_PAM30" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_PAM30" class="gapcosts" style="display: none">
                 <option value="7 2">Existence: 7 Extension: 2</option>
                 <option value="6 2">Existence: 6 Extension: 2</option>
                 <option value="5 2">Existence: 5 Extension: 2</option>
@@ -138,7 +138,7 @@
                 <option value="9 1" selected>Existence: 9 Extension: 1</option>
                 <option value="8 1">Existence: 8 Extension: 1</option>
                 </select>
-                <select id="ncbi_gapcosts_PAM70" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_PAM70" class="gapcosts" style="display: none">
                 <option value="8 2">Existence: 8 Extension: 2</option>
                 <option value="7 2">Existence: 7 Extension: 2</option>
                 <option value="6 2">Existence: 6 Extension: 2</option>
@@ -146,7 +146,7 @@
                 <option value="10 1" selected>Existence: 10 Extension: 1</option>
                 <option value="9 1">Existence: 9 Extension: 1</option>
                 </select>
-                <select id="ncbi_gapcosts_BLOSUM80" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_BLOSUM80" class="gapcosts" style="display: none">
                 <option value="8 2">Existence: 8 Extension: 2</option>
                 <option value="7 2">Existence: 7 Extension: 2</option>
                 <option value="6 2">Existence: 6 Extension: 2</option>
@@ -154,7 +154,7 @@
                 <option value="10 1" selected>Existence: 10 Extension: 1</option>
                 <option value="9 1">Existence: 9 Extension: 1</option>
                 </select>
-                <select id="ncbi_gapcosts_BLOSUM45" class="ncbi_gapcosts" style="display: none">
+                <select id="gapcosts_BLOSUM45" class="gapcosts" style="display: none">
                 <option value="13 3">Existence: 13 Extension: 3</option>
                 <option value="12 3">Existence: 12 Extension: 3</option>
                 <option value="11 3">Existence: 11 Extension: 3</option>
@@ -201,7 +201,7 @@
             </TR>
         </table>
         <br>
-        <div id='ncbi_pro_or_nu_param'></div>
+        <div id='pro_or_nu_param'></div>
         </TD>
     </tr>
     </table>

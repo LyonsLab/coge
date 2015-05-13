@@ -1,12 +1,8 @@
 #! /usr/bin/perl -w
 
 use strict;
+
 use CGI;
-use CoGe::Accessory::Web;
-use CoGe::Accessory::IRODS;
-use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_log data_type);
-use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
 use Spreadsheet::WriteExcel;
@@ -15,12 +11,18 @@ use File::Path;
 use File::Slurp;
 use File::Spec::Functions qw(catdir catfile);
 use Sort::Versions;
-use CoGe::Pipelines::FindSNPs qw( run );
+use Switch;
 use Data::Dumper;
+
+use CoGe::Accessory::Web;
+use CoGe::Accessory::IRODS;
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_log data_type get_download_path);
+use CoGe::Core::Genome qw(genomecmp);
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
-    $JOB_ID $LOAD_ID $TEMPDIR $CONFIGFILE
+    $WORKFLOW_ID $LOAD_ID $TEMPDIR $CONFIGFILE
 );
 
 $PAGE_TITLE = "ExperimentView";
@@ -33,7 +35,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE,
 );
 
-$JOB_ID  = $FORM->Vars->{'job_id'};
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 
@@ -58,7 +60,6 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     check_login                => \&check_login,
     export_experiment_irods    => \&export_experiment_irods,
     get_file_urls              => \&get_file_urls,
-    find_snps                  => \&find_snps,
     get_progress_log           => \&get_progress_log,
     get_load_log               => \&get_load_log,
     send_error_report          => \&send_error_report
@@ -245,7 +246,7 @@ sub get_annotations {
     my %groups;
     my $num_annot = 0;
     foreach my $a ( $exp->annotations ) {
-        my $group = ( $a->type->group ? $a->type->group->name : undef);
+        my $group = ( $a->type->group ? $a->type->group->name : '');
         my $type = $a->type->name;
         push @{ $groups{$group}{$type} }, $a if (defined $group and defined $type);
         $num_annot++;
@@ -291,7 +292,7 @@ sub get_annotations {
         $html .= '</tbody></table>';
     }
     elsif ($user_can_edit) {
-        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There a no additional metadata items for this experiment.</tr></td></table>';
+        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There are no additional metadata items for this experiment.</tr></td></table>';
     }
 
     if ($user_can_edit) {
@@ -518,29 +519,23 @@ sub export_experiment_irods {
     return basename($file);
 }
 
-sub generate_export {
+sub generate_export { #TODO replace with ExperimentBuilder.pm
     my $experiment = shift;
     my $eid = $experiment->id;
 
-    my $exp_name = $experiment->name;
+    my $exp_name = sanitize_name($experiment->name);
        $exp_name = $eid unless $exp_name;
 
     my $filename = "experiment_$exp_name.tar.gz";
 
     my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
-    my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment.pl");
-    my $workdir = get_download_path($eid);
-    my $resdir = $P->{RESOURCESDIR};
+    my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment_or_genome.pl");
+    my $workdir = get_download_path('experiment', $eid);
+    my $resdir = $P->{RESOURCEDIR};
 
-    my $cmd = "$script -eid $eid -config $conf -dir $workdir -output $filename -a 1";
+    my $cmd = "$script -id $eid -type 'experiment' -config $conf -dir $workdir -output $filename";
 
-    return (execute($cmd),  File::Spec->catdir(($workdir, $filename)));
-}
-
-sub get_download_path {
-    my $unique_path = get_unique_id();
-    my @paths = ($P->{SECTEMPDIR}, "ExperimentView/downloads", shift, $unique_path);
-    return File::Spec->catdir(@paths);
+    return (execute($cmd), File::Spec->catdir(($workdir, $filename)));
 }
 
 sub get_download_url {
@@ -548,12 +543,11 @@ sub get_download_url {
     my $id = $args{id};
     my $dir = $args{dir};
     my $filename = basename($args{file});
+    my $username = $USER->user_name;
 
-    my @url = ($P->{SERVER}, "services/JBrowse",
-        "service.pl/download/ExperimentView",
-        "?eid=$id&dir=$dir&file=$filename");
-
-    return join "/", @url;
+    return join('/', $P->{SERVER}, 
+        'api/v1/legacy/download', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
+        "?username=$username&eid=$id&filename=$filename");
 }
 
 sub get_file_urls {
@@ -566,9 +560,9 @@ sub get_file_urls {
     my ($statusCode, $file) = generate_export($experiment);
 
     unless($statusCode) {
-        my $dir = basename(dirname($file));
-        my $url = get_download_url(id => $eid, dir => $dir, file => $file);
-        return encode_json({ files => [$url] });
+        #my $dir = basename(dirname($file));
+        my $url = get_download_url(id => $eid, file => $file);
+        return encode_json({ filename => basename($file), url => $url });
     };
 
     return encode_json({ error => 1 });
@@ -591,28 +585,27 @@ sub remove_annotation {
 sub gen_html {
     my $template;
 
-    $EMBED = $FORM->param('embed');
+    $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
         $template =
           HTML::Template->new(
             filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
     }
     else {
-        $template =
-          HTML::Template->new(
-            filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-        my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= ' ' . $USER->last_name
-          if ( $USER->first_name && $USER->last_name );
+        $template = HTML::Template->new(filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
+            TITLE      => 'ExperimentView',
             PAGE_LINK  => $LINK,
-            HELP       => '/wiki/index.php?title=' . $PAGE_TITLE,
-            USER       => $name,
-            LOGO_PNG   => "$PAGE_TITLE-logo.png",
+            HELP       => $P->{SERVER},
+            LOGO_PNG   => "CoGe.svg",
             ADJUST_BOX => 1,
+            CAS_URL    => $P->{CAS_URL} || ''
         );
+    	my $name = $USER->user_name;
+    	$name = $USER->first_name if $USER->first_name;
+    	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
+    	$template->param( USER     => $name );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
         $template->param( ADMIN_ONLY => $USER->is_admin );
     }
@@ -630,20 +623,21 @@ sub gen_body {
 
     my $gid = $exp->genome_id;
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         MAIN            => 1,
         PAGE_NAME       => $PAGE_TITLE . '.pl',
+        USER_NAME       => $USER->name,
         EID             => $eid,
         DEFAULT_TYPE    => 'note',
         rows            => commify($exp->row_count),
         IRODS_HOME      => get_irods_path(),
-        JOB_ID          => $JOB_ID,
+        WORKFLOW_ID     => $WORKFLOW_ID,
         STATUS_URL      => 'jex/status/',
         ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
         PUBLIC          => $USER->user_name eq "public" ? 1 : 0,
-        ADMIN_AREA      => $USER->is_admin
+        ADMIN_AREA      => $USER->is_admin,
+        API_BASE_URL    => 'api/v1/', #TODO move into config file or module
     );
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
@@ -668,7 +662,6 @@ sub _get_experiment_info {
        $tags .= ": " . $tag->description if $tag->description;
 
        if ($allow_edit) {
-           # NOTE: it is undesirable to have a javascript call in a DB object, but it works
            $tags .=
                "<span onClick=\"remove_experiment_tag({eid: '"
              . $exp->id
@@ -680,6 +673,8 @@ sub _get_experiment_info {
 
     my $view_link = "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid";
 
+    my $creation = ($exp->creator_id ? $exp->creator->display_name  . ' ' : '') . ($exp->date ne '0000-00-00 00:00:00' ? $exp->date : '');
+
     my $fields = [
         { title => "ID", value => $exp->id },
         { title => "Name", value => $exp->name},
@@ -688,9 +683,10 @@ sub _get_experiment_info {
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
         { title => "Version", value => $exp->version },
-        { title => "Tags", value => $tags },
-        { title => "Notebooks", value => },
+        { title => "Tags", value => $tags || '' },
+        { title => "Notebooks", value => $exp->notebooks_desc },
         { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
+        { title => "Creation", value => $creation}
     ];
 
     push @$fields, { title => "Note", value => "This experiment has been deleted" } if $exp->deleted;
@@ -771,42 +767,6 @@ sub get_annotation_type_groups {
     return encode_json( [ sort keys %unique ] );
 }
 
-sub find_snps {
-    my %opts        = @_;
-    my $user_name   = $opts{user_name};
-    my $eid         = $opts{eid};
-
-    # Check login
-    if ( !$user_name || !$USER->is_admin ) {
-        $user_name = $USER->user_name;
-    }
-    if ($user_name eq 'public') {
-        return encode_json({ error => 'Not logged in' });
-    }
-
-    # Get experiment
-    my $experiment = $coge->resultset('Experiment')->find($eid);
-    return encode_json({ error => 'Experiment not found' }) unless $experiment;
-
-    # Submit workflow to generate experiment
-    my ($workflow_id, $error_msg) = CoGe::Pipelines::FindSNPs::run(
-        db => $coge,
-        experiment => $experiment,
-        user => $USER
-    );
-    unless ($workflow_id) {
-        print STDERR $error_msg, "\n";
-        return encode_json({ error => "Workflow submission failed: " . $error_msg });
-    }
-
-    # Get tiny link
-    my $link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
-    );
-
-    return encode_json({ job_id => $workflow_id, link => $link });
-}
-
 sub get_progress_log {
     my %opts = @_;
     my $workflow_id = $opts{workflow_id};
@@ -844,7 +804,8 @@ sub send_error_report {
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
 
-    my $staging_dir = catdir($TEMPDIR, 'staging');
+    # Get the staging directory
+    my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
     my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;

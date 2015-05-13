@@ -4,6 +4,7 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Core::Storage qw( index_genome_file get_tiered_path );
+use CoGe::Core::Genome qw( fix_chromosome_id );
 use CoGe::Accessory::Utils qw( commify units print_fasta );
 use CoGe::Accessory::IRODS qw( irods_imeta $IRODS_METADATA_PREFIX );
 use Data::Dumper;
@@ -19,11 +20,11 @@ use Benchmark;
 use vars qw($staging_dir $install_dir $fasta_files $irods_files
   $name $description $link $version $type_id $restricted $message
   $organism_id $source_id $source_name $source_desc $user_id $user_name
-  $keep_headers $split $compress $result_dir
+  $keep_headers $split $compress $result_dir $creator_id $ignore_chr_limit
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
-$MAX_CHROMOSOMES     = 200000;    # max number of chromosomes or contigs
+$MAX_CHROMOSOMES     = 200*1000;    # max number of chromosomes or contigs
 $MAX_PRINT           = 50;
 $MAX_SEQUENCE_SIZE   = 5 * 1024 * 1024 * 1024;    # 5 gig
 $MAX_CHR_NAME_LENGTH = 255;
@@ -45,9 +46,11 @@ GetOptions(
     "source_id=i"	=> \$source_id,		 # data source id
     "source_name=s" => \$source_name,    # data source name (JS escaped)
     "source_desc=s" => \$source_desc,    # data source description (JS escaped)
-    "user_id=i"		=> \$user_id,		 # user ID
-    "user_name=s"   => \$user_name,      # user name
+    "user_id=i"		=> \$user_id,		 # user ID to assign genome
+    "user_name=s"   => \$user_name,      # user name to assign genome (alternative to user_id)
+    "creator_id=i"	=> \$creator_id,     # user ID to set as genome creator
     "keep_headers=i" => \$keep_headers,  # flag to keep original headers (no parsing)
+    "ignore_chr_limit=i" => \$ignore_chr_limit, # flag to ignore chromosome/contig limit # mdb added 3/9/15 COGE-595
     "split=i"    => \$split,       # split fasta into chr directory
     "compress=i" => \$compress,    # compress fasta into RAZF before indexing
     "config=s"   => \$config       # configuration file
@@ -82,19 +85,23 @@ $source_desc = unescape($source_desc) if ($source_desc);
 $restricted  = '0' if ( not defined $restricted );
 $split       = 0 if ( not defined $split ); 	# split fasta into chr/ files (legacy method)
 $compress    = 0 if ( not defined $compress ); 	# RAZF compress the fasta file
+$type_id     = 1 if ( not defined $type_id );   # default genomic seq type to "unmasked"
 
 if (not $source_id and not $source_name) {
 	print STDOUT "log: error: source not specified, use source_id or source_name\n";
 	exit(-1);
 }
-if (not $user_id and not $user_name) {
-	print STDOUT "log: error: user not specified, use user_id or user_name\n";
-	exit(-1);
-}
-if ($user_name and $user_name eq 'public') {
-	print STDOUT "log: error: not logged in\n";
+
+if (not defined $user_id and not defined $user_name) {
+    print STDOUT "log: error: user not specified, use user_id or user_name\n";
     exit(-1);
 }
+
+if ((defined $user_name and $user_name eq 'public') || (defined $user_id and $user_id eq '0')) {
+    print STDOUT "log: error: not logged in\n";
+    exit(-1);
+}
+
 unless ($organism_id) {
     print STDOUT "log: error: organism_id not specified\n";
     exit(-1);
@@ -155,7 +162,7 @@ foreach my $file (@files) {
           . units($MAX_SEQUENCE_SIZE) . "\n";
         exit(-1);
     }
-    if ( $numSequences > $MAX_CHROMOSOMES ) {
+    if ( !$ignore_chr_limit && $numSequences > $MAX_CHROMOSOMES ) {
         print STDOUT
           "log: error: too many sequences, limit is $MAX_CHROMOSOMES\n";
         exit(-1);
@@ -194,6 +201,35 @@ unless ($coge) {
     exit(-1);
 }
 
+# Retrieve user
+my $user;
+if ($user_id) {
+    $user = $coge->resultset('User')->find($user_id);
+}
+elsif ($user_name) {
+    $user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
+else {
+    print STDOUT "log: error user not specified, see user_id or user_name\n";
+    exit(-1);
+}
+
+unless ($user) {
+    print STDOUT "log: error finding user ", ($user_name ? $user_name : $user_id) , "\n";
+    exit(-1);
+}
+
+# Retrieve creator
+my $creator;
+if ($creator_id) {
+    $creator = $coge->resultset('User')->find($creator_id);
+    unless ($creator) {
+        print STDOUT "log: error finding creator $creator_id\n";
+        exit(-1);
+    }
+}
+$creator = $user unless $creator;
+
 # Retrieve organism
 my $organism = $coge->resultset('Organism')->find($organism_id);
 unless ($organism) {
@@ -223,14 +259,15 @@ my $genome = $coge->resultset('Genome')->create(
         version                  => $version,
         organism_id              => $organism->id,
         genomic_sequence_type_id => $type_id,
-        restricted               => $restricted
+        creator_id               => $creator->id,
+        restricted               => $restricted,
     }
 );
 unless ($genome) {
     print STDOUT "log: error creating genome\n";
     exit(-1);
 }
-print STDOUT "genome id: " . $genome->id . "\n";
+print STDOUT "log: Created genome id" . $genome->id . "\n";
 
 # Determine installation path
 unless ($install_dir) {
@@ -255,17 +292,6 @@ if ( -e $install_dir ) {
 }
 
 # Make user owner of new genome
-my $user;
-if ($user_id) {
-	$user = $coge->resultset('User')->find($user_id);
-}
-else {
-	$user = $coge->resultset('User')->find( { user_name => $user_name } );
-}
-unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
-    exit(-1);
-}
 my $node_types = CoGeX::node_types();
 
 # Add owner connector
@@ -283,24 +309,6 @@ unless ($conn) {
     exit(-1);
 }
 
-
-# Add creator connector
-my $creator_conn       = $coge->resultset('UserConnector')->create(
-    {
-        parent_id   => $user->id,
-        parent_type => $node_types->{user},
-        child_id    => $genome->id,
-        child_type  => $node_types->{genome},
-        role_id     => 5                        # FIXME hardcoded
-    }
-);
-
-unless ($conn) {
-    print STDOUT "log: error creating user connector\n";
-    exit(-1);
-}
-
-
 # Create datasets
 my %datasets;
 foreach my $file (@files) {
@@ -312,6 +320,7 @@ foreach my $file (@files) {
             description    => $description,
             version        => $version,
             restricted     => $restricted,
+            creator_id     => $creator->id,
         }
     );
     unless ($dataset) {
@@ -443,61 +452,60 @@ sub process_fasta_file {
     my $pSeq       = shift;
     my $filepath   = shift;
     my $target_dir = shift;
-
     print STDOUT "process_fasta_file: $filepath\n";
-    $/ = "\n>";
-    open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
-
+    
     my $fileSize    = -s $filepath;
     my $lineNum     = 0;
     my $totalLength = 0;
-    while (<$in>) {
-        s/\n*\>//g;
-        next unless $_;
-        my ( $name, $seq ) = split /\n/, $_, 2;
-	#print STDERR $name,"\tlength: ",length($seq),"\n";
-	#2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing
-
-	my @groups;
-	my $seq_length = length($seq);
-	if ($seq_length > 1000000) {
-		my $n = ceil($seq_length/1000000);
-		@groups = unpack "a$n" x (($seq_length/$n)-1) . "a*", $seq;
-	}
-	else {
-		push @groups, $seq;
-	}
-        my $new_seq;
-	foreach my $item (@groups) {
-		$item =~ s/\n//g;
-        	$item =~ s/\r//g; # mdb added 11/22/13 issue 255 - remove Windows-style CRLF
-		$new_seq .= $item;
-	}
- 	$seq = $new_seq;
-        $seq =~ s/\s+$//; # mdb added 12/17/13 issue 267 - trim trailing whitespace
-        # Note: not removing spaces from within sequence because sometimes spaces are
-        # used ambiguously to indicate gaps.  We will be strict and force error
-        # if spaces are present.
+    
+    # Open fasta file
+    my $in; # file handle
+    unless (open( $in, $filepath )) {
+        print STDOUT "log: error: Error opening file for reading: $!\n";
+        exit(-1);
+    }
+    
+    # Process fasta file by sections
+    $/ = '>'; # set file parsing delimiter
+    while (my $section = <$in>) {
         $lineNum++;
-
+        
+        # Process the section in chunks.  There is a known problem where
+        # Perl substitions fail on strings larger than 1GB.
+        my $sectionName;
+        my $sectionLen = length($section);
+        my $filteredSeq;
+        my $CHUNK_LEN = 1*1000;
+        my $ofs = 0;
+        while ($ofs < $sectionLen) {
+            my $chunk = substr($section, $ofs, $CHUNK_LEN);
+            $ofs += $CHUNK_LEN;
+            
+            $chunk =~ s/>//g;
+            $chunk =~ s/^\n+//m;
+            $chunk =~ s/\n+$//m;
+            next unless $chunk;
+            
+            if ($ofs == $CHUNK_LEN) { # first chunk
+                ( $sectionName, $chunk ) = split(/\n/, $chunk, 2);
+            }
+            elsif ($sectionLen < $ofs) { # last chunk
+                $chunk =~ s/\s+$//; # trim trailing whitespace
+            }
+            $chunk =~ s/\n//g;
+            $chunk =~ s/\r//g;
+            $filteredSeq .= $chunk;
+        }
+        next unless $filteredSeq;
+    
+        # Convert refseq (chromosome) name
         my $chr;
-        if ($keep_headers) {
-            $chr = $name;
+        if ($keep_headers) { # Don't modify refseq name
+            $chr = $sectionName;
         }
         else {
-            ($chr) = split( /\s+/, $name );
-            $chr =~ s/^lcl\|//;
-            $chr =~ s/^gi\|//;
-            $chr =~ s/chromosome//i;
-            $chr =~ s/^chr//i;
-	        $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 to catch cases where chromosome name is 00 (or something like that)
-            $chr =~ s/^0+// unless $chr eq '0';
-            $chr =~ s/^_+//;
-            $chr =~ s/\s+/ /;
-            $chr =~ s/^\s//;
-            $chr =~ s/\s$//;
-            $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
-            $chr =~ s/\|$//; # mdb added 3/14/14 issue 332 - remove trailing pipes
+            ($chr) = split(/\s+/, $sectionName);
+            $chr = fix_chromosome_id($chr);
         }
 
         # Check validity of chr name and sequence
@@ -505,7 +513,7 @@ sub process_fasta_file {
             print STDOUT "log: error parsing section header, line $lineNum, name='$name'\n";
             exit(-1);
         }
-        if ( length $seq == 0 ) {
+        if ( length $filteredSeq == 0 ) {
             print STDOUT "log: warning: skipping zero-length section '$chr'\n";
             next;
         }
@@ -517,38 +525,41 @@ sub process_fasta_file {
             print STDOUT "log: error: Duplicate section name '$chr'\n";
             exit(-1);
         }
-        if ( $seq =~ /\W/ ) {
+        if ( $filteredSeq =~ /\W/ ) {
             print STDOUT "log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
             exit(-1);
         }
 
-        my $filename = basename($filepath);#$filepath =~ /^.+\/([^\/]+)$/;
-
         # Append sequence to master file
-        open( my $out, ">>$target_dir/genome.faa" );
+	my $out;
+        unless (open( $out, ">>$target_dir/genome.faa" )) {
+            print STDOUT "log: error: Couldn't open genome.faa\n";
+            exit(-1);
+        }
         my $head = $chr =~ /^\d+$/ ? "gi" : "lcl";
         $head .= "|" . $chr;
-        print_fasta($out, $head, \$seq); #print $out "$head\n$seq\n";
+        print_fasta($out, $head, \$filteredSeq);
         close($out);
 
         # Create individual file for chromosome
         if ($split) {
             mkpath("$target_dir/chr");
             open( $out, ">$target_dir/chr/$chr" );
-            print $out $seq;
+            print $out $filteredSeq;
             close($out);
         }
 
-        $pSeq->{$chr} = { size => length $seq, file => $filepath };
+        $pSeq->{$chr} = { size => length $filteredSeq, file => $filepath };
 
         # Print log message
         my $count = keys %$pSeq;
-        $totalLength += length $seq;
-        if ( $count > $MAX_CHROMOSOMES or $totalLength > $MAX_SEQUENCE_SIZE ) {
+        $totalLength += length $filteredSeq;
+        if ( !$ignore_chr_limit && ($count > $MAX_CHROMOSOMES or $totalLength > $MAX_SEQUENCE_SIZE) ) {
             return $totalLength;
         }
         if ( $count <= $MAX_PRINT ) {
-            print STDOUT "log: Processed chr '$chr' in $filename (".commify(length($seq))." bp)\n";
+            my $filename = basename($filepath);
+            print STDOUT "log: Processed chr '$chr' in $filename (".commify(length($filteredSeq))." bp)\n";
         }
         elsif ( $count == $MAX_PRINT + 1 ) {
             print STDOUT "log: (only showing first $MAX_PRINT chromosomes)\n";

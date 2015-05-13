@@ -16,8 +16,7 @@ use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
 
 $PAGE_TITLE = 'GenomeList';
@@ -36,8 +35,7 @@ $COGEDIR   = $P->{COGEDIR};
 $URL       = $P->{URL};
 $HISTOGRAM = $P->{HISTOGRAM};
 
-$LIST_TYPE =
-  $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
+$LIST_TYPE = $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
 
 %FUNCTION = (
     gen_html                 => \&gen_html,
@@ -70,18 +68,17 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'GenomeList',
-    				  PAGE_LINK  => $LINK,
-    				  HELP       => '/wiki/index.php?title=GenomeList' );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
-    $template->param( LOGO_PNG   => "GenomeList-logo.png" );
+		              TITLE      => 'GenomeList',		
+    		          PAGE_LINK  => $LINK || '',
+		              HELP       => $P->{SERVER} || '',
+                      USER       => $USER->display_name || '',
+                      LOGO_PNG   => "CoGe.svg" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
     $template->param( BODY       => $body );
     $template->param( ADJUST_BOX => 1 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     $html .= $template->output;
 }
 
@@ -616,10 +613,8 @@ qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>
         # mdb removed 7/31/13 issue 77
         #        my $file      = $dsg->file_path;
         #        $file =~ s/$COGEDIR/$URL/;
-        my $seq_url = "services/JBrowse/service.pl/sequence/$dsgid"
-          ;    # mdb added 7/31/13 issue 77
-        $type = $type
-          . "<br><a href='$seq_url'>Fasta</a><br><a href='bin/export/coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
+        my $seq_url = "api/v1/legacy/sequence/$dsgid"; #"services/JBrowse/service.pl/sequence/$dsgid"; # mdb changed 2/5/15, COGE-289
+        $type = $type . "<br><a href='$seq_url'>Fasta</a><br><a href='bin/export/coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
         my ($ds_source) = $dsg->source;
         my $source      = $ds_source->name;
         my $source_link = $ds_source->link;
@@ -809,7 +804,8 @@ sub send_to_list          #send to list
         {
             name         => 'genomelist',
             description  => 'Created by GenomeList',
-            list_type_id => 1,                         # FIXME hardcoded type!
+            list_type_id => 1, # FIXME hardcoded type!
+            creator_id   => $USER->id,
             restricted   => 1
         }
     );
@@ -821,7 +817,7 @@ sub send_to_list          #send to list
             parent_id   => $USER->id,
             parent_type => 5,           # FIXME hardcoded to "user"
             child_id    => $list->id,
-	 child_type  => 1,           # FIXME hardcoded to "list"
+	        child_type  => 1,           # FIXME hardcoded to "list"
             role_id     => 2,           # FIXME hardcoded to "owner"
         }
     );
@@ -919,8 +915,8 @@ sub send_to_xls {
         #my ($wgc, $wat) = $dsg->wobble_content;
         #$wat*=100;
         #$wgc*=100;
-        my $seq_url = $P->{SERVER}."services/JBrowse/service.pl/sequence/$dsgid";    # EHL Added 8/29/14
-        my $GFF_url = $P->{SERVER}."bin/export/coge_gff.pl?dsgid=$dsgid;annos=1";    # EHL Added 8/29/14
+        my $seq_url = $P->{SERVER}."api/v1/legacy/sequence/$dsgid"; #"services/JBrowse/service.pl/sequence/$dsgid"; # mdb changed 2/5/15, COGE-289
+        my $GFF_url = $P->{SERVER}."bin/export/coge_gff.pl?dsgid=$dsgid;annos=1";
         $worksheet->write( $i, 0, $name );
         $worksheet->write( $i, 1, $desc );
         $worksheet->write( $i, 2, $source );

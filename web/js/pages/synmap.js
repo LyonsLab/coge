@@ -1209,7 +1209,7 @@ function checkRequestSize(url) {
         var seq_type1 = pageObj.seq_type1;
         var seq_type2 = pageObj.seq_type2;
         //check to see if we will allow this run
-        var max_size = 100000000;
+        var max_size = 50 * 1000 * 1000;
         // console.log (org_name1, org_length1, seq_type1);
         // console.log (org_name2, org_length2, seq_type2);
         if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&

@@ -89,6 +89,8 @@ __PACKAGE__->add_columns(
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
     "deleted",
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+    "creator_id",
+    { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
 );
 
 __PACKAGE__->set_primary_key("dataset_id");
@@ -538,8 +540,9 @@ sub get_chromosomes {
     my $self   = shift;
     my %opts   = @_;
     my $ftid   = $opts{ftid};   #feature_type_id for feature_type of name "chromosome";
-    my $length = $opts{length}; #opts to return length of chromosomes as well
-    my $limit  = $opts{limit};  #opt to set the number of chromosomes to return, sorted by size
+    my $length = $opts{length}; #option to return length of chromosomes as well
+    my $limit  = $opts{limit};  #optional number of chromosomes to return, sorted by size
+    my $max    = $opts{max};    #optional number of chromosomes to avoid slow query, sorted by size
     my @data;
 
     #this query is faster if the feature_type_id of feature_type "chromosome" is known.
@@ -554,8 +557,15 @@ sub get_chromosomes {
         $search->{name}      = "chromosome";
         $search_type->{join} = "feature_type";
     }
+    
+    if ($max && $self->features( $search, $search_type )->count() > $max ) {
+        return;
+    }
 
-    $search_type->{rows} = $limit if $limit;
+    if ($limit) {
+        $search_type->{rows} = $limit;
+    }
+    
     if ($length) {
         @data = $self->features( $search, $search_type );
     }
@@ -786,6 +796,7 @@ sub gff {
     my $unique_parent_annotations = $opts{unique_parent_annotations}; #flag so that annotations are not propogated to children if they are contained by their parent
     my $id_type  = $opts{id_type};  #type of ID (name, num):  unique number; unique name
     my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
+    my $chromosome = $opts{chr}; #optional, set to only include features on a particular chromosome
     $id_type = "name" unless defined $id_type;
     $count = 0 unless ($count && $count =~ /^\d+$/);
     $ds = $self unless $ds;
@@ -798,11 +809,16 @@ sub gff {
     my $output; # store the goodies
 
     # Generate GFF header
+    my @chrs;
     my %chrs;
     foreach my $chr ( $ds->get_chromosomes ) {
         $chrs{$chr} = $ds->last_chromosome_position($chr);
     }
-    my @chrs = sort { $a cmp $b } keys %chrs;
+    if ($chromosome) {
+    	@chrs = ($chromosome);
+    } else {
+	    @chrs = sort { $a cmp $b } keys %chrs;
+    }
 
     my $tmp;
     $tmp = "##gff-version\t3\n" unless $no_gff_head;
@@ -918,7 +934,7 @@ sub gff {
                 }
             }
 
-            foreach my $loc ( $feat->locations( {}, { 'order_by' => 'start' } ) ) {
+            foreach my $loc ( sort { $a->start <=> $b->start } $feat->locs() ) {
                 push @out,
                   {
                     f         => $feat,
@@ -1003,7 +1019,7 @@ sub gff {
                 if ( $fids{ $f->feature_id } ) { next; }
                 my $ftn = $self->process_feature_type_name( $f->feature_type->name );
                 push @{ $notes{gene}{"Encoded_feature"} }, $self->escape_gff($ftn);
-                foreach my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) ) {
+                foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
                     next if ($loc->start > $feat->stop || $loc->stop < $feat->start);
                     #outside of genes boundaries;  Have to count it as something else
                     #sometimes mRNA features are missing.  This is due to the original dataset not having them enumerated.
@@ -1161,7 +1177,7 @@ sub _search_rna {
               $self->process_feature_type_name( $f->feature_type->name );
             $fids->{ $f->feature_id } = 1;    #feat_id has been used;
             $types->{ $f->feature_type->name }++;
-            foreach my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) ) {
+	    foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
                 next
                   if $loc->start > $parent_feat->stop
                       || $loc->stop < $parent_feat->start
@@ -1235,7 +1251,7 @@ sub _process_rna {
             #begin dumping exons for mRNA
     $parent_id = $$count;
     $$count++;
-    foreach my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) ) {
+    foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
         next
           if $loc->start > $parent_feat->stop
               || $loc->stop < $parent_feat

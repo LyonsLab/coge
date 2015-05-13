@@ -1,38 +1,41 @@
 package CoGe::Accessory::Jex;
+
+use v5.10;
 use strict;
 use warnings;
-use v5.10;
 
 use Moose;
 use JSON::XS;
 use ZMQ::LibZMQ3;
 use ZMQ::Constants qw/:all/;
+use Switch;
+
 use CoGe::Accessory::Workflow;
 
 # Attributes
 has 'host' => (
     is       => 'ro',
     isa      => 'Str',
-    required => 1,
+    required => 1
 );
 
 has 'port' => (
     is       => 'ro',
     isa      => 'Int',
     default  => 5151,
-    required => 0,
+    required => 0
 );
 
 has 'local' => (
     is  => 'ro',
-    isa => 'Bool',
+    isa => 'Bool'
 );
 
 has '_context' => (
     is       => 'ro',
     lazy     => 1,
     init_arg => undef,
-    default  => sub { zmq_init(); },
+    default  => sub { zmq_init(); }
 );
 
 # Public functions
@@ -49,13 +52,16 @@ sub create_workflow {
         my $response = _send_request($self, $request);
         $id = $response->{id};
 
-        die "The workflow could not be initialized" unless $id;
+        unless ($id) {
+            print STDERR "CoGe::Accessory::Jex ERROR: Failed to initialize workflow\n";
+            return;
+        }
     }
 
     my $workflow = CoGe::Accessory::Workflow->new(
         id      => $id,
         name    => $opts{name},
-        logfile => $opts{logfile},
+        logfile => $opts{logfile}
     );
 
     return $workflow;
@@ -73,9 +79,9 @@ sub submit_workflow {
             logfile  => $workflow->logfile,
             priority => $workflow->priority,
             jobs     => $workflow->jobs(),
-        },
+        }
     };
-
+    
     return _send_request($self, $request);
 }
 
@@ -86,13 +92,13 @@ sub wait_for_completion {
     while (1) {
         $status = get_status($self, $id);
 
-        given ($status) {
-            when (/completed/i)  { return 1; }
-            when (/notfound/i)   { return 0; }
-            when (/failed/i)     { return 0; }
-            when (/terminated/i) { return 0; }
-            when (/error/i)      { return 0; }
-            default {
+        switch ($status) {
+            case /completed/i  { return 1; }
+            case /notfound/i   { return 0; }
+            case /failed/i     { return 0; }
+            case /terminated/i { return 0; }
+            case /error/i      { return 0; }
+            else {
                 sleep $wait;
                 $wait = $wait + 0.25;
             }
@@ -108,7 +114,7 @@ sub terminate {
         request => 'cancel',
         data => {
             id => $id
-        },
+        }
     };
 
     $response = _send_request($self, $request);
@@ -123,7 +129,7 @@ sub restart {
         request => 'restart',
         data => {
             id => $id
-        },
+        }
     };
 
     $response = _send_request($self, $request);
@@ -144,7 +150,7 @@ sub get_job {
         request => 'get_status',
         data    => {
             id => $id
-        },
+        }
     };
 
     return _send_request($self, $request);
@@ -153,39 +159,41 @@ sub get_job {
 sub is_successful {
     my ($self, $response) = @_;
 
-    return $response and not $response->{status} =~ /error/i;
+    return $response && lc($response->{status}) ne 'error';
 }
 
 sub get_all_workflows {
-    my $self = $_;
+    my ($self) = @_;
     my ($request, $response, $workflows);
 
     $request = {
         request => 'workflows',
-        data    => {},
+        data    => { }
     };
 
     $response = _send_request($self, $request);
     $workflows = $response->{workflows} if $response and $response->{workflows};
-    $workflows //= [];
+    $workflows //= []; #/
 
     return $workflows;
 }
 
 sub find_workflows {
-    my ($self, @workflows) = @_;
+    my ($self, $ids, $status) = @_;
     my ($request, $response, $workflows);
+
+    my %data;
+    $data{ids} = $ids if ($ids); # mdb changed 4/29/15 - rename key from "workflows" to "ids"
+    $data{status} = $status if ($status);
 
     $request = {
         request => 'workflows',
-        data    => {
-            workflows => \@workflows
-        },
+        data    => \%data
     };
 
     $response = _send_request($self, $request);
     $workflows = $response->{workflows} if $response and $response->{workflows};
-    $workflows //= [];
+    $workflows //= []; #/
 
     return $workflows;
 }
@@ -201,7 +209,11 @@ sub _send_request {
     eval {
         my ($socket, $msg, $json_request, $json_response);
 
-        $json_request = encode_json($request);
+        # mdb added 4/17/15 COGE-609 - sort json consistently
+        my $json_encoder = JSON::XS->new;
+        $json_encoder->canonical(1);
+        
+        $json_request = $json_encoder->encode($request);
         $socket = zmq_socket($self->_context, ZMQ_REQ);
 
         zmq_setsockopt($socket, ZMQ_LINGER, 0);

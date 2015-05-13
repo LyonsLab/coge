@@ -62,14 +62,16 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 
+    $template->param( TITLE => 'FeatList' );
     $template->param( PAGE_TITLE => 'FeatList' );
-    $template->param( HELP       => '/wiki/index.php?title=FeatList' );
+    #$template->param( HELP       => '/wiki/index.php?title=FeatList' );
+    $template->param( HELP => $P->{SERVER} );
 
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
     $template->param( USER     => $name );
-    $template->param( LOGO_PNG => "$PAGE_TITLE-logo.png" );
+    $template->param( LOGO_PNG => "CoGe.svg" );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
 
 #	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
@@ -82,6 +84,7 @@ sub gen_html {
     $template->param( BODY       => $body );
     $template->param( ADJUST_BOX => 1 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
+    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     return $template->output;
 }
 
@@ -544,7 +547,8 @@ sub send_to_list    #send to list
         {
             name         => 'featlist',
             description  => 'Created by FeatList',
-            list_type_id => 4,                       # FIXME hardcoded type!
+            list_type_id => 4, # FIXME hardcoded type!
+            creator_id   => $USER->id,
             restricted   => 1
         }
     );

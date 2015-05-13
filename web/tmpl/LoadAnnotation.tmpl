@@ -24,7 +24,7 @@
 }
 </style>
 
-<SCRIPT language="JavaScript">
+<script type="text/javascript">
 var LOG_POLL_TIME = 2000;
 var timestamps = new Array();
 var load_id    = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
@@ -109,7 +109,7 @@ function create_source() {
 function reset_log() {
 	$('#load_log').html('');
 	$('#loading_msg').show();
-	$('#finished_msg,#error_msg,#ok_button,#finish_button,#cancel_button').hide();
+	$('#finished_msg,#error_msg,#ok_button,#finish_button,#cancel_button,#logfile').hide();
 }
 
 function check_login() {
@@ -133,7 +133,6 @@ function load_annotation() {
 	var description = $('#edit_description').val();
 	var link = $('#edit_link').val();
 	var version = $('#edit_version').val();
-	var restricted = $('#restricted').is(':checked');
 	var genome = $('#edit_genome').val();
 	var gid = $('#gid').val();
 
@@ -191,7 +190,6 @@ function load_annotation() {
 			description: description,
 			link: link,
 			version: version,
-			restricted: restricted,
 			gid: gid,
 			source_name: source,
 			user_name: user_name,
@@ -312,7 +310,8 @@ function progress_formatter(item) {
         var p = item.log.split("\n");
 
         var pElements = p.map(function(item) {
-            return $("<div></div>").html(item);
+            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
+            return $("<div></div>").append(norm);
         });
 
         var log = $("<div></div>").html(pElements).addClass("padded");
@@ -355,7 +354,12 @@ function update_dialog(request, user, identifier, formatter) {
             pageObj.error++;
             if (pageObj.error > 3) {
                 workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                load_failed();
+                var logfile;
+
+                if (json.results.length) {
+                    logfile = json.results[0].path;
+                }
+                load_failed(logfile);
                 return;
             }
         } else {
@@ -409,9 +413,13 @@ function update_dialog(request, user, identifier, formatter) {
                 || current_status == "cancelled")
         {
             workflow_status.find('span').addClass('alert');
-            get_load_log(function(result) {
-                load_failed(result);
-            });
+
+            var logfile;
+
+            if (json.results.length) {
+                logfile = json.results[0].path;
+            }
+            load_failed(logfile);
         }
         else if (current_status == "notfound") {
             setTimeout(callback, timeout);
@@ -430,7 +438,7 @@ function update_dialog(request, user, identifier, formatter) {
     get_status();
 }
 
-function load_failed() {
+function load_failed(logfile) {
 	// mdb added 6/24/14 - temporary message until JEX logging is improved
 	var msg =
 		'<div class="alert">' +
@@ -440,6 +448,11 @@ function load_failed() {
 		'</div>';
 	var log = $('#load_log');
 	log.html( log.html() + msg );
+
+    if (logfile) {
+        $("#logfile a").attr("href", logfile);
+        $("#logfile").fadeIn();
+    }
 
     // Update dialog
     $('#loading_msg').hide();
@@ -550,7 +563,7 @@ function more() {
 	$('#more').hide();
 	$('#edit_name,#edit_description,#edit_link').closest('tr').fadeIn();
 }
-</SCRIPT>
+</script>
 
 <div class="bold text" style="padding-top:1em;">Describe the Annotation</div>
 <div class="coge-bg inline padded ui-widget-content ui-corner-all">
@@ -574,10 +587,6 @@ function more() {
 	      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span>
 	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
 	    </td>
-	  </tr>
-	  <tr>
-	    <td>Restricted?</td>
-	    <td><input id="restricted" type="checkbox" checked></td>
 	  </tr>
 	  <tr>
 	    <td>Genome:</td>
@@ -636,6 +645,7 @@ function more() {
 	  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">Load Another</span>
 	  <span id="finish_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all coge-button">GenomeView</span>
 	  <span id="cancel_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+      <span id="logfile" class="hidden"><a href="">Logfile</a></span>
   </div>
 </div>
 

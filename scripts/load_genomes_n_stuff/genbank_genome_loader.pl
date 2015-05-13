@@ -19,7 +19,7 @@ my (
     $ds_link,       $delete_src_file, $test,        $auto_increment_chr,
     $base_chr_name, $accn_file,       $max_entries, $user_id,
     $user_name,     $config,          $host,        $port,
-    $db,            $user,            $pass,        $install_dir,
+    $db,            $dbuser,          $pass,        $install_dir,
     $server,        $force,           $result_dir
 );
 
@@ -49,7 +49,7 @@ GetOptions(
     "host=s"        => \$host,
     "port|p=s"      => \$port,
     "database|db=s" => \$db,
-    "user|u=s"      => \$user,
+    "user|u=s"      => \$dbuser,
     "password|pw=s" => \$pass,
 
     # Or use config file
@@ -72,7 +72,7 @@ if ($config) {
     $db   = $P->{DBNAME};
     $host = $P->{DBHOST};
     $port = $P->{DBPORT};
-    $user = $P->{DBUSER};
+    $dbuser = $P->{DBUSER};
     $pass = $P->{DBPASS};
 
     #other stuff
@@ -99,11 +99,24 @@ print STDOUT "Starting $0 (pid $$)\n";
 
 # Connect to database
 my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port";
-my $coge    = CoGeX->connect( $connstr, $user, $pass );
+my $coge    = CoGeX->connect( $connstr, $dbuser, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 unless ($coge) {
     print STDOUT "log: error: couldn't connect to database\n";
+    exit(-1);
+}
+
+# Retreive User
+my $user;
+if ($user_id) {
+    $user = $coge->resultset('User')->find($user_id);
+}
+else {
+    $user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
+unless ($user) {
+    print STDOUT "log: error finding user '$user_name'\n";
     exit(-1);
 }
 
@@ -610,7 +623,8 @@ accn: foreach my $accn (@accns) {
             $genome = generate_genome(
                 version => $version,
                 org_id  => $organism->id,
-                gst_id  => 1
+                user_id => $user->id,
+                gst_id  => 1,
             );
             unless ($genome) {
                 print STDOUT "Error adding genome to database\n";
@@ -721,44 +735,32 @@ print STDOUT "log: Creating output sequence file and indexing\n";
 add_and_index_sequence( fasta => $fasta_output, file => $output_file ) if $GO;
 
 # Make user owner of new genome
-if ( $GO and ( $user_id or $user_name ) ) {
-    my $user;
-    if ($user_id) {
-        $user = $coge->resultset('User')->find($user_id);
-    }
-    else {
-        $user = $coge->resultset('User')->find( { user_name => $user_name } );
-    }
-    unless ($user) {
-        print STDOUT "log: error finding user '$user_name'\n";
-        exit(-1);
-    }
+if ( $GO && $user ) {
 
     # mdb removed 6/17/14 issue 394 - don't create a user connector for NCBI loaded genomes
-    # erb added 9/09/2014 issue 409 - add user connector for the creator of the genome
-    my $node_types = CoGeX::node_types();
-    my $conn       = $coge->resultset('UserConnector')->create(
-       {
-           parent_id   => $user->id,
-           parent_type => $node_types->{user},
-           child_id    => $genome->id,
-           child_type  => $node_types->{genome},
-           role_id     => 5                       # FIXME hardcoded creator role
-       }
-    );
-    unless ($conn) {
-       print STDOUT "log: error creating user connector\n";
-       exit(-1);
-    }
+    #my $node_types = CoGeX::node_types();
+    #my $conn       = $coge->resultset('UserConnector')->create(
+    #   {
+    #       parent_id   => $user->id,
+    #       parent_type => $node_types->{user},
+    #       child_id    => $genome->id,
+    #       child_type  => $node_types->{genome},
+    #       role_id     => 2                       # FIXME hardcoded creator role
+    #   }
+    #);
+    #unless ($conn) {
+    #   print STDOUT "log: error creating user connector\n";
+    #   exit(-1);
+    #}
 
-    # Log in history
-    CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        user_id     => $user->id,
-        page        => "LoadGenome",
-        description => 'load genome id' . $genome->id,
-        link        => 'GenomeInfo.pl?gid=' . $genome->id
-    );
+    # Log in history - mdb removed 11/14/14, this logging is redundant to LoadGenome.pl
+#    CoGe::Accessory::Web::log_history(
+#        db          => $coge,
+#        user_id     => $user->id,
+#        page        => "LoadGenome",
+#        description => 'load genome id' . $genome->id,
+#        link        => 'GenomeInfo.pl?gid=' . $genome->id
+#    );
 }
 
 # Save result document
@@ -826,7 +828,7 @@ sub fasta_genomic_sequence {
     $seq =~ s/\n//g;
 
     my $seqlen = length $seq;
-    if ( my ($item) = $genome->get_genomic_sequence( { chromosome => $chr } ) ) {
+    if ( my ($item) = $genome->get_genomic_sequence( chromosome => $chr ) ) {
         my $prev_length = $item->sequence_length;
         print STDOUT "$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
         return;
@@ -985,6 +987,7 @@ sub generate_genome {
     my $org_id    = $opts{org_id};
     my $gst_id    = $opts{gst_id};
     my $genome_id = $opts{genome_id};
+    my $user_id   = $opts{user_id};
     my $genome    = $genome_id
       ? $coge->resultset('Genome')->find($genome_id)
       : $coge->resultset('Genome')->create(
@@ -993,6 +996,7 @@ sub generate_genome {
             description              => $desc,
             version                  => $version,
             organism_id              => $org_id,
+            creator_id               => $user_id,
             genomic_sequence_type_id => $gst_id,
         }
       )

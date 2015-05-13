@@ -10,6 +10,7 @@ use File::Spec::Functions qw( catdir catfile );
 use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Accessory::Utils;
+use CoGe::Core::Storage;
 
 sub search {
     my $self = shift;
@@ -114,7 +115,7 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    print STDERR (caller(0))[3], "\n", Dumper $data, "\n";
+    #print STDERR (caller(0))[3], "\n", Dumper $data, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -140,7 +141,6 @@ sub add {
     # TODO validate metadata parameters
 
     # Valid data items
-    my @items;
     if (!@{ $data->{items} }) {
         $self->render(json => {
             error => { Error => "No data items specified" }
@@ -153,7 +153,7 @@ sub add {
         genome => $genome,
         user => $user,
         metadata => $data,
-        irods => \@items
+        irods => $data->{items} 
     );
     unless ($job_id) {
         $self->render(json => {

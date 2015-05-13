@@ -1,4 +1,102 @@
 <TMPL_IF NAME="MAIN">
+<!--
+   DIALOGS
+-->
+<div id="add_to_notebook_dialog" class="dialog_box hidden" title="Add Items to Notebook">
+	<table class="small">
+		<tr align='left'>
+			<td>
+				<span style="float:right;">
+					<input type="textbox" size="53" id="notebook_search_input" onkeyup="wait_to_search(search_notebooks, this.value);" />
+					<span class='ui-button ui-corner-all coge-button' onclick="search_notebooks();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+					<img id="wait_notebook" src="picts/ajax-loader.gif" style="opacity: 0;" />
+				</span>
+				<span style="float:left;font-weight:bold;">Notebooks</span>
+			</td>
+		</tr>
+		<tr>
+			<td colspan='2'>
+				<select id="notebook_select" size="10" style="width:450px;">
+				</select>
+			</td>
+		</tr>
+	</table>
+	<br>
+	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='ui-button ui-corner-all coge-button'>Add Items</span>
+</div>
+
+<div id="create_group_dialog" class="dialog_box hidden" title="Create New Group">
+	<table class="small">
+		<tr>
+			<td colspan="2" style="padding-bottom: 10px;">
+				<span style="color: red;">
+				<span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
+			</td>
+		</tr>
+		<tr>
+			<td>Name:</td>
+			<td><input id="edit_group_name" type="textbox" size="53" value="" /></td>
+			<td><span class="glyphicon glyphicon-asterisk" style="color: red; font-size: 0.75em;"></span></td>
+		</tr>
+		<tr>
+			<td>Description:</td>
+			<td><textarea id="edit_group_desc" rows="5" cols="50"></textarea></td>
+		</tr>
+		<tr>
+			<td>Role:</td>
+			<td>
+				<select id="edit_group_role" style="max-width:265px;">
+					<TMPL_VAR NAME="ROLES">
+				</select>
+			</td>
+		</tr>
+	</table><br>
+	<div onClick="create_new_group();" class="r ui-button ui-corner-all coge-button">Create Group</div>
+</div>
+
+<div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
+	<table class="small">
+		<tr>
+                        <td colspan="2" style="padding-bottom: 10px;">
+                                <span style="color: red;">
+				<span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
+                        </td>
+                </tr>
+		<tr>
+			<td>Name:</td>
+			<td><input id="edit_notebook_name" type="textbox" size="53" value="" /></td>
+			<td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
+		</tr>
+		<tr>
+			<td>Description:</td>
+			<td><textarea id="edit_notebook_desc" rows="5" cols="50"></textarea></td>
+		</tr>
+		<tr>
+			<td>Type:</td>
+			<td>
+				<select id="edit_notebook_type" style="max-width:265px;">
+					<TMPL_VAR NAME="NOTEBOOK_TYPES">
+				</select>
+			</td>
+		</tr>
+	</table>
+	<br>
+	<div onClick="create_new_notebook();" class="r ui-button ui-corner-all coge-button">Create Notebook</div>
+</div>
+
+<div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
+
+<div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
+
+<div id="cancel_dialog" class="dialog_box hidden" title="Cancel analysis">
+	<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>Are you sure you want to cancel this analysis?</p>
+</div>
+
+<div id="comment_dialog" class="dialog_box hidden" title="Add comment to analysis">
+	<p>Comment:<br><input type='text' size="54" maxlength="255" spellcheck="false"/></p>
+</div>
+
+
 <script type="text/javascript" src="./js/jquery.fileupload.js"></script>
 
 <style>
@@ -189,20 +287,20 @@ function getURLParameter(name) {
     );
 }
 
-function poll() {
+function poll(sync) {
 	// Refresh contents
-	get_contents(1, pageObj.content_type);
+	get_contents(sync, pageObj.content_type);
 	
 	// Refresh item info cache
 	clear_info_cache();
 }
 
-function schedule_poll(when) {
+function schedule_poll(when) { 
 	cancel_poll();
 
 	if (when !== undefined) {
 		timers['poll'] = window.setTimeout(
-			function() { poll(); },
+			function() { poll(1); },
 			when
 		);
 		return;
@@ -212,7 +310,7 @@ function schedule_poll(when) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME) {
 		timers['poll'] = window.setTimeout(
-			function() { poll(); },
+			function() { poll(1); },
 			POLL_TIME
 		);
 	}
@@ -288,8 +386,10 @@ function default_info() {
 		case ITEM_TYPE_NOTEBOOK:
 		case ITEM_TYPE_GENOME:
 		case ITEM_TYPE_EXPERIMENT:
-			text = "These are data items that you added to the system.<br><br>" +
-				"Hover over an item to view additional info. Select one or more items to share, organize, delete, or send them to one of CoGe's tools.";
+			text = "<p>These are data items that you added to the system.</p>"
+				+ "<p><b>Hover over</b> an item to view additional info.</p>"
+                + "<p><b>Single-click</b> to select one or more items to share, organize, delete, or send them to one of CoGe's tools.</p>"
+                + "<p><b>Double-click</b> an item for a detailed view of the item.</p>";
 			break;
 		case ITEM_TYPE_GROUP:
 			text = "You are a member of these user groups.<br><br>" +
@@ -372,6 +472,7 @@ function update_info() {
 	}
 	
 	update_icons();
+    selection_hint();
 }
 
 function click_item(item) {
@@ -396,12 +497,17 @@ function open_item(item_type, title, link) {
 	if (item_type == ITEM_TYPE_GROUP) // FIXME this is a kludge
 		group_dialog();
 	else {
+        if (!link) {
+            return alert("The following link could not be generated");
+        }
+
 		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
 		link = link + "&embed=1";
 		console.log(link);
 		var height = $(window).height() * 0.8;
-		var d = $('<div class="dialog_box" title="'+title+'"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+		var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
 			.dialog({
+				title: title,
 				width: '80%',
 				height: height//'80%'
 			})
@@ -417,6 +523,7 @@ function clear_selected_items() {
 	$('.coge-list-item,.coge-selected').removeClass('coge-selected');
 	$('#contents_table input[type=checkbox]').filter(':checked').prop('checked', false);
 	update_icons();
+    selection_hint();
 	selected_item_id = null;
 }
 
@@ -544,6 +651,14 @@ function update_icons(on) {
 		$('.item-button:not(#add_button)').removeClass('coge-disabled');
 	else
 		$('.item-button:not(#add_button)').addClass('coge-disabled');
+}
+
+function selection_hint() {
+	var selected = get_selected_items();
+	if ( selected.length == 1)
+		$('#selected-hint').removeClass('hidden');
+	else
+		$('#selected-hint').addClass('hidden');
 }
 
 function toc_select(toc_id) {
@@ -700,7 +815,7 @@ function cancel_job(id) {
 			},
 			success : function(rc) {
 				if (rc) {
-					schedule_poll(0);
+					poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
 	            }
 			}
 		});
@@ -720,10 +835,10 @@ function restart_job(link) {
 		// restart command.
 		var w = window.open(link,'_blank', 'toolbar=no,status=no,menubar=no,scrollbars=no,resizable=no,left=10000,top=10000,width=1,height=1,visible=none', ''); 
 		setTimeout(function() {
-				schedule_poll(0);
+				poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
 				w.close();
 			},
-			5000
+			5*1000
 		);
 	}
 }
@@ -1105,10 +1220,11 @@ function create_notebook_dialog() {
 }
 
 function add_dialog() {
-	if (pageObj.content_type == ITEM_TYPE_GROUP)
+	if (pageObj.content_type == ITEM_TYPE_GROUP) {
 		create_group_dialog();
-	else if (pageObj.content_type == ITEM_TYPE_NOTEBOOK)
+	} else if (pageObj.content_type == ITEM_TYPE_NOTEBOOK) {
 		create_notebook_dialog();
+    }
 }
 
 function create_new_group() {
@@ -1231,6 +1347,7 @@ function toggle_star(img) {
 
 </script>
 
+<!--
 <div id="top_panel">
 	<div style="width:100%;float:left;border-bottom:1px solid lightgray;">
 		<span id="hide_panel_button" onClick="hide_top_panel();" class="link ui-icon ui-icon-minus" style="float:right;margin-left:20px;margin-right:5px;border:1px solid lightgray;"></span>
@@ -1252,6 +1369,7 @@ function toggle_star(img) {
 	</div>
 	<div style="clear:both;height:13px;"></div>
 </div>
+-->
 
 <div id="bottom-panel" style="width:100%;">
 	<div style="float:right;width:200px;">
@@ -1280,7 +1398,7 @@ function toggle_star(img) {
 		<span id="share_button" onClick="share_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
 		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-folder-open item-button invisible" style="margin-right:5px;" title="Add Selected Items to Notebook"></span>
 		<span id="edit_button" onClick="edit_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-cog item-button invisible" style="margin-right:5px;" title="Edit Selected Items"></span>
-		<span id="delete_button" onClick="delete_items();" class="coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
+		<span id="delete_button" onClick="delete_items();" class="coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
 		<span id="send_button" onClick="send_menu();" class="coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
 		<span id="undelete_button" onClick="undelete_items();" class="coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
 		<ul id="send_menu" class="small hidden">
@@ -1298,110 +1416,16 @@ function toggle_star(img) {
 		<span id="undelete_button" onClick="undelete_items();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		-->
 		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" onsearch="filter_contents();" />
+        <div id="selected-hint" class="hidden small info" style="float:right; margin-right: 15px;"><b>Double-click</b> for detailed view</div>
 		<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
 	</div>
 
 	<div id="contents_panel" class="small panel">
-		<div id="contents_table" style="overflow:auto;height:70%;border-top:1px solid lightgray;">
+		<div id="contents_table" style="overflow:auto;height:80%;border-top:1px solid lightgray;">
 			<TMPL_VAR NAME='CONTENTS'>
 		</div>
 	</div>
 </div>
-
-<div id="add_to_notebook_dialog" class="dialog_box hidden" title="Add Items to Notebook">
-	<table class="small">
-		<tr align='left'>
-			<td>
-				<span style="float:right;">
-					<input type="textbox" size="53" id="notebook_search_input" onkeyup="wait_to_search(search_notebooks, this.value);" />
-					<span class='ui-button ui-corner-all coge-button' onclick="search_notebooks();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-					<img id="wait_notebook" src="picts/ajax-loader.gif" style="opacity: 0;" />
-				</span>
-				<span style="float:left;font-weight:bold;">Notebooks</span>
-			</td>
-		</tr>
-		<tr>
-			<td colspan='2'>
-				<select id="notebook_select" size="10" style="width:450px;">
-				</select>
-			</td>
-		</tr>
-	</table>
-	<br>
-	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='ui-button ui-corner-all coge-button'>Add Items</span>
-</div>
-
-<div id="create_group_dialog" class="dialog_box hidden" title="Create New Group">
-	<table class="small">
-		<tr>
-			<td colspan="2" style="padding-bottom: 10px;">
-				<span style="color: red;">
-				<span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
-			</td>
-		</tr>
-		<tr>
-			<td>Name:</td>
-			<td><input id="edit_group_name" type="textbox" size="53" value="" /></td>
-			<td><span class="glyphicon glyphicon-asterisk" style="color: red; font-size: 0.75em;"></span></td>
-		</tr>
-		<tr>
-			<td>Description:</td>
-			<td><textarea id="edit_group_desc" rows="5" cols="50"></textarea></td>
-		</tr>
-		<tr>
-			<td>Role:</td>
-			<td>
-				<select id="edit_group_role" style="max-width:265px;">
-					<TMPL_VAR NAME="ROLES">
-				</select>
-			</td>
-		</tr>
-	</table><br>
-	<div onClick="create_new_group();" class="r ui-button ui-corner-all coge-button">Create Group</div>
-</div>
-
-<div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
-	<table class="small">
-		<tr>
-                        <td colspan="2" style="padding-bottom: 10px;">
-                                <span style="color: red;">
-				<span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
-                        </td>
-                </tr>
-		<tr>
-			<td>Name:</td>
-			<td><input id="edit_notebook_name" type="textbox" size="53" value="" /></td>
-			<td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
-		</tr>
-		<tr>
-			<td>Description:</td>
-			<td><textarea id="edit_notebook_desc" rows="5" cols="50"></textarea></td>
-		</tr>
-		<tr>
-			<td>Type:</td>
-			<td>
-				<select id="edit_notebook_type" style="max-width:265px;">
-					<TMPL_VAR NAME="NOTEBOOK_TYPES">
-				</select>
-			</td>
-		</tr>
-	</table>
-	<br>
-	<div onClick="create_new_notebook();" class="r ui-button ui-corner-all coge-button">Create Notebook</div>
-</div>
-
-<div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
-
-<div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
-
-<div id="cancel_dialog" class="dialog_box hidden" title="Cancel analysis">
-	<p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>Are you sure you want to cancel this analysis?</p>
-</div>
-
-<div id="comment_dialog" class="dialog_box hidden" title="Add comment to analysis">
-	<p>Comment:<br><input type='text' size="54" maxlength="255" spellcheck="false"/></p>
-</div>
-
 </TMPL_IF> <!-- MAIN -->
 
 <TMPL_IF NAME="DO_TOC">

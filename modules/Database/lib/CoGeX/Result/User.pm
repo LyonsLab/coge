@@ -338,7 +338,7 @@ sub has_access_to_experiment {
 sub has_access_to_dataset {
 	my ($self, $ds) = @_;
 	return 0 unless $ds;
-	return 1 if (not $ds->restricted or $self->is_admin); # public dataset or superuser
+	return 1 if ($self->is_admin);#if (not $ds->restricted or $self->is_admin); # public dataset or superuser
 	return 0 if ($self->is_public); # deny public user for restricted dataset
 
 	my $dsid = $ds->id;
@@ -450,31 +450,6 @@ sub is_reader {
 	return unless $self->id; # ignore public user
 	my %opts = @_;
 	$opts{role_id} = 4;#'reader';
-	return is_role($self, %opts);
-}
-
-################################################ subroutine header begin ##
-
-=head2 is_creator
-
- Usage     : $self->(dsg=>$dsg)
- Purpose   : checks to see if a user is the reader of a genome or dataset or list
- Returns   : 1/0
- Argument  : dsg=>genome object
-             ds=>dataset object
-             list=>list object
- Throws    : None
- Comments  :
-
-=cut
-
-################################################## subroutine header end ##
-
-sub is_creator {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my %opts = @_;
-	$opts{role_id} = 5;#'creator';
 	return is_role($self, %opts);
 }
 
@@ -772,6 +747,8 @@ sub users_with_access {
 		my $list = $conn->parent_list;
 		foreach ($list->user_connectors) {
 			my $user = $_->parent;
+            next unless defined $user;
+
 			$users{$user->id} = $user;
 		}
 		foreach ($list->group_connectors) {
@@ -874,6 +851,7 @@ sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, co
 }
 
 sub children { #FIXME have this use child_by_type_and_id
+
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
@@ -962,11 +940,8 @@ sub children_by_type_and_id {
 sub children_by_type_role_id {
 	my $self = shift;
 	return unless $self->id; # ignore public user
-	#my %opts = @_;
 
-	#use Time::HiRes qw ( time );
-	#my $start_time = time;
-
+	#use Time::HiRes qw ( time ); my $start_time = time;
 	my (%children, %roles);
 
 	foreach my $c ($self->child_connectors) {
@@ -997,7 +972,6 @@ sub children_by_type_role_id {
 			}
 		}
 	}
-
 	#print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
 
 	return (\%children, \%roles);

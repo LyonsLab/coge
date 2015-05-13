@@ -51,7 +51,7 @@ div.deleted { display: none; }
 	    	If you choose, synonymous and non-synonymous site mutation data can be calculated for protein coding genes that are identified as syntenic. These genes will then be colored based on those values in the dotplot for rapid identification of different age-classes of syntenic regions.
 
         <p>
-            <a href="http://www.genomevolution.org/r/btab" target="_blank">
+            <a href="http://genomevolution.org/r/btab" target="_blank">
                 Click here for an example analysis between
                 <em>Arabidopsis thaliana</em> and <em>Arabidopsis lyrata</em>.
             </a>
@@ -329,6 +329,8 @@ div.deleted { display: none; }
                         <option value="-1" <tmpl_var name="spa_more_select"> > more
                     </select>
                           pieces (contigs, scaffolds, etc)
+		    </span><br>
+		    <span class ="small">(Note: SPA is not compatible with syntenic depth or merging syntenic blocks.  If SPA is selected with those options, your dotplot image will fail to be drawn.)</span>
                 <li>
                     <label>Hide contigs without synteny?</label>
                     <input type="checkbox" name="show_non_syn" id="show_non_syn" value="true" <tmpl_var name="show_non_syn">><span><br>

@@ -8,42 +8,43 @@ use CGI::Application::Dispatch;
 CGI::Application::Dispatch->dispatch(
     table => [
 
-        # Data Services
-        'sequence/:gid/:chr?' => {
-            prefix => 'CoGe::Services::Data',
-            app    => 'Sequence',
-            rm     => 'get'
-        },
-        'organism/search' => {
-            prefix => 'CoGe::Services::Data',
-            app    => 'Organism',
-            rm     => 'search'
-        },
-        'genome/search' => {
-            prefix => 'CoGe::Services::Data',
-            app    => 'Genome',
-            rm     => 'search'
-        },
-        'genome/load' => {
-            prefix => 'CoGe::Services::Data',
-            app    => 'Genome',
-            rm     => 'load'
-        },
-        'notebook/create' => {
-            prefix => 'CoGe::Services::Data',
-            app    => 'Notebook',
-            rm     => 'create'
-        },
-        'notebook/delete/:nid' => {
-            prefix => 'CoGe::Services::Data',
-            app    => 'Notebook',
-            rm     => 'delete'
-        },
-        'download/:page' => {
-            prefix => 'CoGe::Services::Data',
-            app    => 'Downloader',
-            rm     => 'get'
-        },
+# mdb removed 2/4/15 - moved to JBrowse/service.pl, COGE-289
+#        # Data Services
+#        'sequence/:gid/:chr?' => {
+#            prefix => 'CoGe::Services::Data',
+#            app    => 'Sequence',
+#            rm     => 'get'
+#        },
+#        'organism/search' => {
+#            prefix => 'CoGe::Services::Data',
+#            app    => 'Organism',
+#            rm     => 'search'
+#        },
+#        'genome/search' => {
+#            prefix => 'CoGe::Services::Data',
+#            app    => 'Genome',
+#            rm     => 'search'
+#        },
+#        'genome/load' => {
+#            prefix => 'CoGe::Services::Data',
+#            app    => 'Genome',
+#            rm     => 'load'
+#        },
+#        'notebook/create' => {
+#            prefix => 'CoGe::Services::Data',
+#            app    => 'Notebook',
+#            rm     => 'create'
+#        },
+#        'notebook/delete/:nid' => {
+#            prefix => 'CoGe::Services::Data',
+#            app    => 'Notebook',
+#            rm     => 'delete'
+#        },
+#        'download/:page' => {
+#            prefix => 'CoGe::Services::Data',
+#            app    => 'Downloader',
+#            rm     => 'get'
+#        },
 
         # JBrowse Services
         'config/refseq' => {
@@ -66,16 +67,17 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Sequence',
             rm     => 'features'
         },
-        'annotation/:dsid/stats/global' => {
-            prefix => 'CoGe::Services::JBrowse',
-            app    => 'Annotation',
-            rm     => 'stats_global'
-        },
-        'annotation/:dsid/features/:chr' => {
-            prefix => 'CoGe::Services::JBrowse',
-            app    => 'Annotation',
-            rm     => 'features'
-        },
+# mdb removed 2/4/15 - replaced by JBrowse_TrackContent_WS/source.py
+#        'annotation/:dsid/stats/global' => {
+#            prefix => 'CoGe::Services::JBrowse',
+#            app    => 'Annotation',
+#            rm     => 'stats_global'
+#        },
+#        'annotation/:dsid/features/:chr' => {
+#            prefix => 'CoGe::Services::JBrowse',
+#            app    => 'Annotation',
+#            rm     => 'features'
+#        },
         'experiment/:eid/stats/global' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',
