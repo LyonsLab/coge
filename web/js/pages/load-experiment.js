@@ -1160,7 +1160,6 @@ $.extend(GeneralOptionsView.prototype, {
         this.data.notebook_id = this.notebook_id;
         this.data.email = this.el.find("#email").is(":checked");
 
-        console.log(this.data.notebook_type);
         if (this.data.notebook && this.data.notebook_type === "existing" && 
         		(!notebook || notebook === 'Search' || !this.notebook_id)) 
         {
@@ -1376,13 +1375,15 @@ $.extend(ConfirmationView.prototype, {
         var key, newpair;
         for(key in options) {
             if (options.hasOwnProperty(key)) {
-            	var val;
-            	if (typeof options[key] === 'object')
-            		val = objToString(options[key]);
-            	else if (typeof options[key] === 'boolean')
-            		val = options[key] ? 'yes' : 'no';
+            	var val = options[key];
+            	if (typeof val === 'undefined' || val === '')
+            		continue;
+            	else if (typeof val === 'object')
+            		val = objToString(val);
+            	else if (typeof val === 'boolean')
+            		val = val ? 'yes' : 'no';
             	else
-                	val = String(options[key]);
+                	val = String(val);
                 newpair = this.pair_template.clone();
                 newpair.find(".name").html(coge.utils.ucfirst(key.replace('_', ' ')));
                 newpair.find(".data").html(val);
