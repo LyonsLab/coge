@@ -41,26 +41,8 @@
 		$( "#tabs" ).tabs({
 	        select: function(event, ui) {
 	            var theSelectedTab = ui.index;
-	            if (theSelectedTab == 0) {
-	            	if(jobs_updating == true) {
-	            		$("#job_update_checkbox").trigger("click");
-	            	}
-	            	if(hist_updating == true) {
-	            		$("#hist_update_checkbox").trigger("click");
-	            	}
-	            }
-	            else if (theSelectedTab == 1 && jobs_updating == false) {
-	            	$("#job_update_checkbox").trigger("click");
-	            	if(hist_updating == true) {
-	            		$("#hist_update_checkbox").trigger("click");
-	            	}
-	            }
-	            else if (theSelectedTab == 2 && hist_updating == false) {
-	                $("#hist_update_checkbox").trigger("click");
-	                if(jobs_updating == true) {
-	            		$("#job_update_checkbox").trigger("click");
-	            	}
-	            }
+	            change_tab(theSelectedTab);
+	            schedule_update(5000);
 	        }
 	    });
 	});
@@ -181,7 +163,7 @@
 		 	<img id='filter_busy' src="picts/ajax-loader.gif" />
 		</div>
 		<div style="padding-bottom:10px;">
-			<input type="checkbox" id="job_update_checkbox" unchecked>
+			<input type="checkbox" id="job_update_checkbox" checked>
 			<span> Auto-Update</span>
 		</div>
 			
@@ -255,7 +237,7 @@
 		</div>
 	
 		<div style="padding-bottom:10px;">
-			<input type="checkbox" id="hist_update_checkbox" unchecked>
+			<input type="checkbox" id="hist_update_checkbox" checked>
 			<span> Auto-Update</span>
 		</div>
 		<img id="loading_gears3" src="picts/large_gears.gif" width='30' height='30' class="link" style="padding:1px;display:none;" />

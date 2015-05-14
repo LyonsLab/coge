@@ -2,10 +2,11 @@ var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common l
 var timestamps = new Array();
 var jobs_timers = new Array();
 var hist_timers = new Array();
+var current_tab = 0;
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
-var jobs_updating = false;
+var jobs_updating = true;
 var hist_init = false;
-var hist_updating = false;
+var hist_updating = true;
 var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
@@ -41,11 +42,7 @@ $(function () {
 
 		if (idleTime > IDLE_TIME) {
 			// User was idle for a while, refresh page
-			if (jobs_updating) {
-				schedule_update("jobs", 5000);
-			} else if (hist_updating) {
-				schedule_update("hist", 5000);
-			}
+			schedule_update(5000);
 		}
 	});
     
@@ -271,6 +268,11 @@ $(function () {
 		updateHistFilter();
 	});
 });
+
+function change_tab(tab) {
+	current_tab = tab;
+	console.log(tab);
+}
 
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
@@ -1012,9 +1014,7 @@ function get_jobs() {
 	        update_filter();
 	    },
 	    complete: function(data) {
-	    	if(jobs_updating) {
-	    		schedule_update("jobs", 5000);
-	    	}
+	    	schedule_update(5000);
 	    }
 	});
 }
@@ -1033,23 +1033,24 @@ function update_filter() {
 function toggle_job_updater() {
 	jobs_updating = !jobs_updating;
 	if (jobs_updating) {
-		schedule_update("jobs", 5000);
+		schedule_update(5000);
 	}
 }
 
-function schedule_update(page, delay) {
-	console.log("Updating " + page);
-	cancel_update(page);
-	
+function schedule_update(delay) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME && delay !== undefined) {
-		if(page == "jobs") {
+		if(current_tab == 1 && jobs_updating) {
+			console.log("Updating jobs");
+			cancel_update("jobs");
 			jobs_timers['update'] = window.setTimeout(
 					function() { get_jobs(); },
 					delay
 			);
 		}
-		if(page == "hist") {
+		if(current_tab == 2 && hist_updating && hist_init) {
+			console.log("Updating hist");
+			cancel_update("hist");
 			hist_timers['update'] = window.setTimeout(
 					function() { update_history(); },
 					delay
@@ -1128,7 +1129,7 @@ function get_history() {
 			time_range: 0,
 		},
 		success : function(data) {
-			console.log(data[0]);
+			//console.log(data[0]);
 			hist.load(data);
 			hist_entries = data.length;
 			last_hist_update = data[0].date_time;
@@ -1138,9 +1139,7 @@ function get_history() {
 			$("#loading_gears3").hide();
 		},
 	    complete: function(data) {
-	    	if(hist_updating && hist_init) {
-	    		schedule_update("hist", 5000);
-	    	}
+	    	schedule_update(5000);
 	    }
 	});
 }
@@ -1163,10 +1162,7 @@ function update_history() {
 			}
 		},
 		complete: function(data) {
-			//console.log(data);
-			if(hist_updating && hist_init) {
-				schedule_update("hist", 5000);
-			}
+			schedule_update(5000);
 	    }
 	})
 }
@@ -1174,7 +1170,7 @@ function update_history() {
 function toggle_hist_updater() {
 	hist_updating = !hist_updating;
 	if (hist_updating && hist_init) {
-		schedule_update("hist", 5000);
+		schedule_update(5000);
 	}
 }
 
