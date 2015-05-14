@@ -57,7 +57,7 @@ BEGIN {
       get_genome_cache_path get_workflow_results add_workflow_result
       get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_data
-      create_experiment create_experiments_from_batch
+      create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
       create_annotation_dataset reverse_complement
     );
@@ -614,79 +614,80 @@ sub get_log {
     return $log;
 }
 
-sub create_experiment {
-    my %opts = @_;
-    my $genome = $opts{genome}; # genome object or id
-    my $user = $opts{user};
-    my $irods = $opts{irods};
-    my $files = $opts{files};
-    #my $file_type = $opts{file_type};
-    my $metadata = $opts{metadata};
-    my $options = $opts{options};
-    #print STDERR "create_experiment ", Dumper $metadata, "\n";
-
-    my $conf = CoGe::Accessory::Web::get_defaults();
-
-    my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
-
-    # Connect to workflow engine and get an id
-    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    unless (defined $jex) {
-        return (undef, "Could not connect to JEX");
-    }
-
-    # Create the workflow
-    my $workflow = $jex->create_workflow( name => 'Create Experiment', init => 1 );
-    unless ($workflow and $workflow->id) {
-        return (undef, 'Could not create workflow');
-    }
-
-    # Setup log file, staging, and results paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($result_dir, 'debug.log') );
-
-    # Create list of files to load
-    my @staged_files;
-    push @staged_files, @$files if ($files);
-
-    # Create jobs to retrieve irods files
-    my %load_params;
-    foreach my $item (@$irods) {
-        next unless ($item->{type} eq 'irods');
-        %load_params = _create_iget_job($conf, $item->{path}, $staging_dir);
-        unless ( %load_params ) {
-            return (undef, "Could not create iget task");
-        }
-        $workflow->add_job(\%load_params);
-        push @staged_files, $load_params{outputs}[0];
-    }
-
-    # Create load job
-    my $ignoreMissing = ( $options->{ignoreMissing} ? 1 : 0 );
-    %load_params = _create_load_experiment_job(
-        conf => $conf, 
-        metadata => $metadata, 
-        gid => $gid, 
-        wid => $workflow->id, 
-        user_name => $user->name, 
-        staging_dir => $staging_dir, 
-        files => \@staged_files, 
-        #file_type => $file_type, 
-        ignoreMissing => $ignoreMissing
-    );
-    unless ( %load_params ) {
-        return (undef, "Could not create load task");
-    }
-    $workflow->add_job(\%load_params);
-
-    # Submit the workflow
-    my $result = $jex->submit_workflow($workflow);
-    if ($result->{status} =~ /error/i) {
-        return (undef, "Could not submit workflow");
-    }
-
-    return ($result->{id}, undef);
-}
+# mdb removed 5/13/15 - deprecated, instead use CoGe::Builder::Load::Experiment
+#sub create_experiment {
+#    my %opts = @_;
+#    my $genome = $opts{genome}; # genome object or id
+#    my $user = $opts{user};
+#    my $irods = $opts{irods};
+#    my $files = $opts{files};
+#    #my $file_type = $opts{file_type};
+#    my $metadata = $opts{metadata};
+#    my $options = $opts{options};
+#    #print STDERR "create_experiment ", Dumper $metadata, "\n";
+#
+#    my $conf = CoGe::Accessory::Web::get_defaults();
+#
+#    my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
+#
+#    # Connect to workflow engine and get an id
+#    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+#    unless (defined $jex) {
+#        return (undef, "Could not connect to JEX");
+#    }
+#
+#    # Create the workflow
+#    my $workflow = $jex->create_workflow( name => 'Create Experiment', init => 1 );
+#    unless ($workflow and $workflow->id) {
+#        return (undef, 'Could not create workflow');
+#    }
+#
+#    # Setup log file, staging, and results paths
+#    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
+#    $workflow->logfile( catfile($result_dir, 'debug.log') );
+#
+#    # Create list of files to load
+#    my @staged_files;
+#    push @staged_files, @$files if ($files);
+#
+#    # Create jobs to retrieve irods files
+#    my %load_params;
+#    foreach my $item (@$irods) {
+#        next unless ($item->{type} eq 'irods');
+#        %load_params = _create_iget_job($conf, $item->{path}, $staging_dir);
+#        unless ( %load_params ) {
+#            return (undef, "Could not create iget task");
+#        }
+#        $workflow->add_job(\%load_params);
+#        push @staged_files, $load_params{outputs}[0];
+#    }
+#
+#    # Create load job
+#    my $ignoreMissing = ( $options->{ignoreMissing} ? 1 : 0 );
+#    %load_params = _create_load_experiment_job(
+#        conf => $conf, 
+#        metadata => $metadata, 
+#        gid => $gid, 
+#        wid => $workflow->id, 
+#        user_name => $user->name, 
+#        staging_dir => $staging_dir, 
+#        files => \@staged_files, 
+#        #file_type => $file_type, 
+#        ignoreMissing => $ignoreMissing
+#    );
+#    unless ( %load_params ) {
+#        return (undef, "Could not create load task");
+#    }
+#    $workflow->add_job(\%load_params);
+#
+#    # Submit the workflow
+#    my $result = $jex->submit_workflow($workflow);
+#    if ($result->{status} =~ /error/i) {
+#        return (undef, "Could not submit workflow");
+#    }
+#
+#    return ($result->{id}, undef);
+#}
 
 sub create_experiments_from_batch {
     my %opts = @_;
