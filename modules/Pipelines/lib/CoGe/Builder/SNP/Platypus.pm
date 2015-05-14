@@ -123,6 +123,7 @@ sub create_platypus_job {
     my $fasta = $opts->{fasta};
     my $bam = $opts->{bam};
     my $vcf = $opts->{vcf};
+    my $nCPU = 8; # number of processors to use
 
     my $fasta_index = qq[$fasta.fai];
     my $PLATYPUS = $CONF->{PLATYPUS} || "Platypus.py";
@@ -134,6 +135,7 @@ sub create_platypus_job {
             ["--refFile", $fasta, 0],
             ["--output", $vcf, 1],
             ["--verbosity", 0, 0],
+            ["--nCPU", $nCPU, 0]
         ],
         inputs => [
             $bam,
