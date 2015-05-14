@@ -8,8 +8,11 @@ var hist_init = false;
 var hist_updating = false;
 var hist_entries = 0;
 var last_hist_update;
+var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 
 $(function () {
+	timestamps['idle'] = new Date().getTime();
+	
 	// Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
     $("#job_search_bar").keyup(function (e) {
@@ -29,6 +32,22 @@ $(function () {
     $("#hist_update_checkbox").change(function(e) {
     	toggle_hist_updater();
     });
+    
+    //Setup idle timer
+    $(document).mousemove(function() {
+		var currentTime = new Date().getTime();
+		var idleTime = currentTime - timestamps['idle'];
+		timestamps['idle'] = currentTime;
+
+		if (idleTime > IDLE_TIME) {
+			// User was idle for a while, refresh page
+			if (jobs_updating) {
+				schedule_update("jobs", 5000);
+			} else if (hist_updating) {
+				schedule_update("hist", 5000);
+			}
+		}
+	});
     
     //Initialize Jobs tab
     var searchFilter = function(item, args) {
@@ -1022,7 +1041,8 @@ function schedule_update(page, delay) {
 	console.log("Updating " + page);
 	cancel_update(page);
 	
-	if (delay !== undefined) {
+	var idleTime = new Date().getTime() - timestamps['idle'];
+	if (idleTime < IDLE_TIME && delay !== undefined) {
 		if(page == "jobs") {
 			jobs_timers['update'] = window.setTimeout(
 					function() { get_jobs(); },
