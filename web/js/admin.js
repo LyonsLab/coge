@@ -3,8 +3,9 @@ var timestamps = new Array();
 var jobs_timers = new Array();
 var hist_timers = new Array();
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
-var jobs_updating = true;
-var hist_updating = true;
+var jobs_updating = false;
+var hist_init = false;
+var hist_updating = false;
 var hist_entries = 0;
 var last_hist_update;
 
@@ -992,9 +993,9 @@ function get_jobs() {
 	        update_filter();
 	    },
 	    complete: function(data) {
-	    	if (jobs_updating) {
-	        	schedule_update("jobs", 5000);
-	        }
+	    	if(jobs_updating) {
+	    		schedule_update("jobs", 1000);
+	    	}
 	    }
 	});
 }
@@ -1013,7 +1014,7 @@ function update_filter() {
 function toggle_job_updater() {
 	jobs_updating = !jobs_updating;
 	if (jobs_updating) {
-		schedule_update("jobs", 5000);
+		schedule_update("jobs", 1000);
 	}
 }
 
@@ -1098,6 +1099,7 @@ function submit_task(task, predicate) {
 
 //The following Javascript deals with Tab3, the History page 
 function get_history() {
+	$("#loading_gears3").show();
 	$.ajax({
 		dataType: 'json',
 		data: {
@@ -1106,30 +1108,19 @@ function get_history() {
 			time_range: 0,
 		},
 		success : function(data) {
-			//console.log(data[0]);
+			console.log(data[0]);
 			hist.load(data);
 			hist_entries = data.length;
 			last_hist_update = data[0].date_time;
-			//console.log(last_hist_update);
-			//console.log(data[1].date_time);
-			//console.log(last_hist_update > data[1].date_time);
-			//console.log(last_hist_update < data[1].date_time);
-			
-			//dataView.beginUpdate();
-			//dataView.setItems(data);
-			//dataView.setFilterArgs({
-			//	show: 0,
-			//	searchType: 1,
-			//	searchString: ''
-			//});
-			//dataView.setFilter(myFilter);
-			//dataView.endUpdate();
 			updateHistFilter();
+			
+			hist_init = true;
+			$("#loading_gears3").hide();
 		},
 	    complete: function(data) {
-	    	if (hist_updating && last_hist_update) {
-	        	schedule_update("hist", 5000);
-	        }
+	    	if(hist_updating && hist_init) {
+	    		schedule_update("hist", 1000);
+	    	}
 	    }
 	});
 }
@@ -1153,17 +1144,17 @@ function update_history() {
 		},
 		complete: function(data) {
 			//console.log(data);
-	    	if (hist_updating) {
-	        	schedule_update("hist", 5000);
-	        }
+			if(hist_updating && hist_init) {
+				schedule_update("hist", 1000);
+			}
 	    }
 	})
 }
 
 function toggle_hist_updater() {
 	hist_updating = !hist_updating;
-	if (hist_updating) {
-		schedule_update("hist", 5000);
+	if (hist_updating && hist_init) {
+		schedule_update("hist", 1000);
 	}
 }
 
