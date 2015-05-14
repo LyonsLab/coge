@@ -1,16 +1,11 @@
 package CoGe::Services::Data::Experiment;
 
 use Mojo::Base 'Mojolicious::Controller';
-use Mojo::JSON qw( decode_json );
 use Data::Dumper;
-use File::Path qw( mkpath );
-use File::Basename qw( basename dirname );
-use File::Spec::Functions qw( catdir catfile );
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage;
 
 sub search {
     my $self = shift;
