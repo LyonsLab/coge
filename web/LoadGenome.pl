@@ -96,7 +96,7 @@ sub generate_html {
 					      TITLE      => "Load Genome",
         				  PAGE_LINK  => $LINK,
 					      HELP       => $P->{SERVER}, #TODO rename to HOME
-                          USER       => $user->display_name,
+                          USER       => $user->display_name || '',
                           LOGO_PNG   => "CoGe.svg",
         );
         $template->param( LOGON => 1 ) unless $user->user_name eq "public";

@@ -1,4 +1,4 @@
-package CoGe::Builder::Analyze::IdentifySNPs;
+package CoGe::Builder::SNP::IdentifySNPs;
 
 use Moose;
 
@@ -60,17 +60,16 @@ sub build {
         params => $self->params->{snp_params}
     };
     
-    my ($snp_tasks, $snp_results);
+    my $snp_workflow;
     switch ($method) { # TODO move this into subroutine
-        case 'coge'     { ($snp_tasks, $snp_results) = CoGe::Builder::SNP::CoGeSNPs::build($snp_params); }
-        case 'samtools' { ($snp_tasks, $snp_results) = CoGe::Builder::SNP::Samtools::build($snp_params); }
-        case 'platypus' { ($snp_tasks, $snp_results) = CoGe::Builder::SNP::Platypus::build($snp_params); }
-        case 'gatk'     { ($snp_tasks, $snp_results) = CoGe::Builder::SNP::GATK::build($snp_params); }
+        case 'coge'     { $snp_workflow = CoGe::Builder::SNP::CoGeSNPs::build($snp_params); }
+        case 'samtools' { $snp_workflow = CoGe::Builder::SNP::Samtools::build($snp_params); }
+        case 'platypus' { $snp_workflow = CoGe::Builder::SNP::Platypus::build($snp_params); }
+        case 'gatk'     { $snp_workflow = CoGe::Builder::SNP::GATK::build($snp_params); }
         else            { die "unknown SNP method"; }
     }
-    push @tasks, @$snp_tasks;
+    push @tasks, @{$snp_workflow->{tasks}};
         
-#    print STDERR Dumper \@tasks, "\n";
     $self->workflow->add_jobs(\@tasks);
     
     return 1;
