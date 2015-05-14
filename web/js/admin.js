@@ -1013,7 +1013,7 @@ function get_jobs() {
 	    },
 	    complete: function(data) {
 	    	if(jobs_updating) {
-	    		schedule_update("jobs", 1000);
+	    		schedule_update("jobs", 5000);
 	    	}
 	    }
 	});
@@ -1033,7 +1033,7 @@ function update_filter() {
 function toggle_job_updater() {
 	jobs_updating = !jobs_updating;
 	if (jobs_updating) {
-		schedule_update("jobs", 1000);
+		schedule_update("jobs", 5000);
 	}
 }
 
@@ -1139,7 +1139,7 @@ function get_history() {
 		},
 	    complete: function(data) {
 	    	if(hist_updating && hist_init) {
-	    		schedule_update("hist", 1000);
+	    		schedule_update("hist", 5000);
 	    	}
 	    }
 	});
@@ -1165,7 +1165,7 @@ function update_history() {
 		complete: function(data) {
 			//console.log(data);
 			if(hist_updating && hist_init) {
-				schedule_update("hist", 1000);
+				schedule_update("hist", 5000);
 			}
 	    }
 	})
@@ -1174,7 +1174,7 @@ function update_history() {
 function toggle_hist_updater() {
 	hist_updating = !hist_updating;
 	if (hist_updating && hist_init) {
-		schedule_update("hist", 1000);
+		schedule_update("hist", 5000);
 	}
 }
 
