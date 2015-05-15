@@ -58,7 +58,9 @@ sub read {
 
 sub write {
     my ($filepath, $pData) = @_;
+    
     mkpath(dirname($filepath), 0, 0777);
+    return 0 unless (-r dirname($filepath));
 
     my $json = encode_json($pData);
     return if (length($json) > $MAX_DOCUMENT_SZ);
