@@ -12,9 +12,10 @@ use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify to_pathname );
-use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Accessory::TDS;
+use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Core::Storage qw(add_workflow_result $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER);
+use CoGe::Core::Experiment qw(@SUPPORTED_TYPES detect_data_type);
 use CoGe::Core::Metadata qw(create_annotations);
 
 use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
@@ -418,21 +419,25 @@ print STDOUT "$cmd\n";
 `$cmd`;
 
 # Save result
-add_workflow_result($user_name, $wid, 
-    {
-        type => 'experiment',
-        id => int($experiment->id),
-        name        => $name,
-        description => $description,
-        version     => $version,
-        #link       => $link, #FIXME
-        data_source_id => $data_source->id,
-        data_type   => $data_type, #FIXME convert from number to string identifier
-        row_count   => $count,
-        genome_id   => $gid,
-        restricted  => $restricted
-    }
-);
+unless (add_workflow_result($user_name, $wid, 
+        {
+            type => 'experiment',
+            id => int($experiment->id),
+            name        => $name,
+            description => $description,
+            version     => $version,
+            #link       => $link, #FIXME
+            data_source_id => $data_source->id,
+            data_type   => $data_type, #FIXME convert from number to string identifier
+            row_count   => $count,
+            genome_id   => $gid,
+            restricted  => $restricted
+        })
+    )
+{
+    print STDOUT "log: error: could not add workflow result\n";
+    exit(-1);
+}
 
 # Add experiment ID to log - mdb added 8/19/14, needed after log output was moved to STDOUT for jex
 my $logtxtfile = "$staging_dir/log.txt";
@@ -450,6 +455,7 @@ CoGe::Accessory::TDS::write(
 
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
+print STDOUT "All done!\n";
 
 exit;
 
