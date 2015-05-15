@@ -37,7 +37,6 @@ sub build {
     my $input_file = $opts{input_file}; # path to bam file
     my $metadata = $opts{metadata};
     my $wid = $opts{wid};
-    my $options = $opts{options};
     my $params = $opts{params};
 
     # Setup paths

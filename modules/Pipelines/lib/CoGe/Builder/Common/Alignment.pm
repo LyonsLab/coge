@@ -29,7 +29,7 @@ sub build {
     my $genome      = $opts{genome};
     my $metadata    = $opts{metadata};
     my $additional_metadata = $opts{additional_metadata};
-    my $options     = $opts{options};
+    my $load_id     = $opts{load_id};
     my $alignment_params = $opts{alignment_params};
     my $trimming_params  = $opts{trimming_params};
     
@@ -38,7 +38,7 @@ sub build {
     # Setup paths to data files
     #FIXME this is for LoadExperiment, also need to handle IRODS/FTP/HTTP data from API
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
-    my $upload_dir = get_upload_path($user->name, $options->{load_id});
+    my $upload_dir = get_upload_path($user->name, $load_id);
     my @files = map { catfile($upload_dir, $_->{path}) } @$input_files;
 
     # Check multiple files (if more than one file then all should be FASTQ)
