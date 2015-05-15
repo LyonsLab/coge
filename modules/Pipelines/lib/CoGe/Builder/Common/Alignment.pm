@@ -25,7 +25,7 @@ sub build {
     my %opts = @_;
     my $user        = $opts{user};
     my $wid         = $opts{wid};
-    my $input_files = $opts{input_files};
+    my $input_files = $opts{input_files}; # array of file paths
     my $genome      = $opts{genome};
     my $metadata    = $opts{metadata};
     my $additional_metadata = $opts{additional_metadata};
@@ -38,20 +38,18 @@ sub build {
     # Setup paths to data files
     #FIXME this is for LoadExperiment, also need to handle IRODS/FTP/HTTP data from API
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
-    my $upload_dir = get_upload_path($user->name, $load_id);
-    my @files = map { catfile($upload_dir, $_->{path}) } @$input_files;
 
     # Check multiple files (if more than one file then all should be FASTQ)
     my $numFastq = 0;
-    foreach (@files) {
+    foreach (@$input_files) {
         $numFastq++ if (is_fastq_file($_));
     }
-    if ($numFastq > 0 and $numFastq != @files) {
+    if ($numFastq > 0 and $numFastq != @$input_files) {
         my $error = 'Unsupported combination of file types';
         print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
         return { error => $error };
     }
-    if ($numFastq == 0 and @files > 1) {
+    if ($numFastq == 0 and @$input_files > 1) {
         my $error = 'Too many files';
         print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
         return { error => $error };
@@ -59,7 +57,7 @@ sub build {
     
     # Decompress the fastq input files (when necessary)
     my @decompressed;
-    foreach my $file (@files) {
+    foreach my $file (@$input_files) {
         my $done_file;
         if ( $file =~ /\.gz$/ ) {
             push @tasks, create_gunzip_job($file);
@@ -82,8 +80,8 @@ sub build {
     if ($trim_reads) {
         if ($alignment_params->{read_type} eq 'paired') { # mdb added 5/8/15 COGE-624 - enable paired-end support in cutadapt
             # Note: paired-end filenames must end in _R1 and _R2 respectively, e.g. test_R1.fastq.gz and test_R2.fastq.gz
-            my @m1 = sort grep { $_ =~ /\_R1\./ } @files; 
-            my @m2 = sort grep { $_ =~ /\_R2\./ } @files;
+            my @m1 = sort grep { $_ =~ /\_R1\./ } @$input_files; 
+            my @m2 = sort grep { $_ =~ /\_R2\./ } @$input_files;
             unless (@m1 and @m2 and @m1 == @m2) {
                 my $error = 'Mispaired FASTQ files, m1=' . @m1 . ' m2=' . @m2;
                 print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
