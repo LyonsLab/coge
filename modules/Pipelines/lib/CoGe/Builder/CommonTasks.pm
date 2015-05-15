@@ -4,12 +4,13 @@ use strict;
 use warnings;
 
 use File::Spec::Functions qw(catdir catfile);
-use File::Basename qw(basename);
+use File::Basename qw(basename dirname);
+use File::Path qw(make_path);
 use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
 use CoGe::Accessory::Utils qw(sanitize_name to_filename);
-use CoGe::Accessory::IRODS qw(irods_iput);
+use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
 
@@ -22,7 +23,7 @@ our @EXPORT = qw(
     create_bam_index_job create_gff_generation_job create_load_experiment_job
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
-    create_notebook_job create_bam_sort_job
+    create_notebook_job create_bam_sort_job create_iget_job
     send_email_job add_items_to_notebook_job
 );
 
@@ -169,6 +170,26 @@ sub export_to_irods {
         inputs => [$src],
         outputs => [$done_file]
    };
+}
+
+sub create_iget_job {
+    my %args = @_;
+    my $irods_path = $args{irods_path}; # source path
+    my $local_path = $args{local_path}; # destination path
+
+    my $dest_file = catdir($local_path, 'irods', $irods_path);
+    my $dest_path = dirname($dest_file);
+    make_path($dest_path) unless (-r $dest_path);
+    my $cmd = irods_iget( $irods_path, $dest_path, { no_execute => 1 } );
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [],
+        inputs => [],
+        outputs => [ $dest_file ],
+        description => "Fetching $irods_path..."
+    };
 }
 
 sub generate_gff {
@@ -326,7 +347,6 @@ sub create_load_vcf_job {
     my $metadata = $opts->{metadata};
     my $username = $opts->{username};
     my $staging_dir = $opts->{staging_dir};
-    my $result_dir = $opts->{result_dir};
     my $annotations = $opts->{annotations};
        $annotations = '' unless $annotations;
     my $wid = $opts->{wid};
@@ -377,7 +397,6 @@ sub create_load_experiment_job {
     my $user = $opts{user};
     my $metadata = $opts{metadata};
     my $staging_dir = $opts{staging_dir};
-    my $result_dir = $opts{result_dir};
     my $annotations = $opts{annotations} || '';
     my $wid = $opts{wid};
     my $gid = $opts{gid};
@@ -430,7 +449,6 @@ sub create_load_bam_job {
     my $user = $opts{user};
     my $metadata = $opts{metadata};
     my $staging_dir = $opts{staging_dir};
-    my $result_dir = $opts{result_dir};
     my $annotations = $opts{annotations} || '';
     my $wid = $opts{wid};
     my $gid = $opts{gid};
