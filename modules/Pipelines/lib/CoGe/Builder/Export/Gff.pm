@@ -19,7 +19,7 @@ sub build {
     return unless ($self->workflow && $self->workflow->id);
 
     # Verify required parameters and set defaults
-    my $dest_type = $self->options->{dest_type};
+    my $dest_type = $self->params->{dest_type};
     $dest_type = "http" unless $dest_type;
 
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
@@ -34,12 +34,12 @@ sub build {
     $self->workflow->add_job(\%job);
 
     if ($dest_type eq "irods") { # irods export
-        my $irods_base = $self->options->{dest_path};
+        my $irods_base = $self->params->{dest_path};
         $irods_base = irods_get_base_path($self->user->name) unless $irods_base;
         my $irods_dest = catfile($irods_base, basename($output));
         my $irods_done = catfile($staging_dir, "irods.done");
 
-        $self->workflow->add_job( export_to_irods($output, $irods_dest, $self->options->{overwrite}, $irods_done) );
+        $self->workflow->add_job( export_to_irods($output, $irods_dest, $self->params->{overwrite}, $irods_done) );
         $self->workflow->add_job( generate_results($irods_dest, $dest_type, $result_dir, $self->conf, $irods_done) );
     } 
     else { # http download
