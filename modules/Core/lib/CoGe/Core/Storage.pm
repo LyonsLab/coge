@@ -46,11 +46,12 @@ use Data::Dumper;
 use POSIX qw(ceil);
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $DATA_TYPE_QUANT 
+                 $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
     require Exporter;
 
     $VERSION = 0.1;
-    @ISA     = qw (Exporter);
+    @ISA     = qw(Exporter);
     @EXPORT = qw(
       get_tiered_path get_workflow_paths get_upload_path get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
@@ -60,10 +61,11 @@ BEGIN {
       create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
       create_annotation_dataset reverse_complement
+      $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
     @EXPORT_OK = qw(data_type);
 
-    # Experiment Data Types
+    # Experiment Data Types -- move to CoGe::Core::Experiment?
     $DATA_TYPE_QUANT  = 1; # Quantitative data
     $DATA_TYPE_POLY   = 2; # Polymorphism data
     $DATA_TYPE_ALIGN  = 3; # Alignments
