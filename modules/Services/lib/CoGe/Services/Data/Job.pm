@@ -17,9 +17,8 @@ use CoGe::Factory::PipelineFactory;
 
 sub add {
     my $self = shift;
-    my $payload = $self->req->json;
-    #print STDERR 'payload: ', Dumper $payload, "\n";
-    #print STDERR 'req: ', Dumper $self->req, "\n";
+    my $payload = shift || $self->req->json; # allow special payload to be passed in from other controllers
+    print STDERR "CoGe::Services::Data::Job::add\n", Dumper $payload, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -84,6 +83,9 @@ sub add {
             link        => ($link ? $link : '')
         );
     }
+    
+    # Convert success to boolean
+    $response->{success} = ($response->{success} ? Mojo::JSON->true : Mojo::JSON->false);
 
     return $self->render(json => $response);
 }
