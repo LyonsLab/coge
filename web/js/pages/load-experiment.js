@@ -1427,7 +1427,7 @@ function load(experiment) {
 			alignment_params:  experiment.options.alignment_params,
 			trimming_params:   experiment.options.trimming_params,
 			expression_params: experiment.options.expression_params,
-			snp_params:        experiment.options.snp_params
+			snp_params:        experiment.options.snp_params,
 			normalize:         experiment.options.normalize,
 			normalize_method:  experiment.options.normalize_method,
 			email:             experiment.options.email,
@@ -1441,7 +1441,6 @@ function load(experiment) {
     
     coge.services.submit_job(request, 
     	function(response) { // success callback
-    		console.log(response);
     		if (!response) {
     			coge.progress.failed("Error: empty response from server");
     			return;
