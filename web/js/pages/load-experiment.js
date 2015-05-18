@@ -113,7 +113,7 @@ function create_source() {
 
 function wait_to_search (search_func, search_obj) {
     var search_term = search_obj.value;
-    if (!search_term || search_term.length >= 2) {
+    if (search_term && search_term.length >= 3) {
         if (pageObj.time) {
             clearTimeout(pageObj.time);
         }
@@ -143,7 +143,7 @@ function search_genomes (search_term) {
                 $("#edit_genome").autocomplete({source: obj.items});
                 $("#edit_genome").autocomplete("search");
             }
-        },
+        }
     });
 }
 
@@ -160,8 +160,21 @@ function search_users (search_term) {
                 $("#edit_user").autocomplete({source: obj.items});
                 $("#edit_user").autocomplete("search");
             }
-        },
+        }
     });
+}
+
+function search_notebooks (search_term) {
+	coge.services.search_notebooks(search_term,USER_NAME,function(data){
+		if (data.notebooks) {
+			var items = [];
+			data.notebooks.forEach(function(notebook) {
+				items.push({label:notebook.name,value:notebook.id});
+		    });
+		    $("#edit_notebook").autocomplete({source: items});
+		    $("#edit_notebook").autocomplete("search");
+		}
+	},function(){console.log('error');});
 }
 
 //function load_begin() {
@@ -497,6 +510,14 @@ $.extend(Wizard.prototype, {
 
         this.tabs.html(titles);
         titles[this.currentIndex].addClass("active");
+//        for (var i=0;i<=this.currentIndex;i++)
+//        	titles[i].addClass("active");
+//        for (var i=0;i<this.currentIndex;i++) {
+//        	var self = this;
+//        	var index = i;
+//        	titles[i].click(function(){self.move(index)});
+//        	titles[i].css('cursor','pointer');
+//        }
 
         var step = this.steps[this.currentIndex];
         if (step.render)
@@ -517,22 +538,22 @@ $.extend(Wizard.prototype, {
         }
     },
 
+    move: function(index) {
+    	this.currentIndex = index;
+    	this.render();
+        this.notifications.stop(true, true).hide();
+    },
+
     movePrevious: function() {
-        if (!this.at_first()) {
-            this.currentIndex--;
-            this.render();
-            this.notifications.stop(true, true).hide();
-        }
+        if (!this.at_first())
+        	this.move(this.currentIndex - 1);
     },
 
     moveNext: function() {
         var step = this.steps[this.currentIndex];
 
-        if (!this.at_last() && step.is_valid()) {
-            this.currentIndex++;
-            this.render();
-            this.notifications.stop(true, true).hide();
-        }
+        if (!this.at_last() && step.is_valid())
+        	this.move(this.currentIndex + 1);
     },
 
     message: function(message) {
@@ -917,7 +938,7 @@ $.extend(AlignmentView.prototype, {
                 trimming_params: {
                     '-q': this.el.find("[id='-q']").val(),
                     '-m': this.el.find("[id='-m']").val(),
-                    '--quality-base': this.el.find("[id='--quality-base'").val()
+                    '--quality-base': this.el.find("[id='--quality-base']").val()
                 }
             };
         } else {
@@ -993,19 +1014,38 @@ $.extend(AlignmentOptionView.prototype, {
 
 function QuantativeView(){
     this.initialize();
+    this.data = {};
 }
 
 $.extend(QuantativeView.prototype, {
     initialize: function() {
         this.el = $($("#quant-template").html());
+        this.container = this.el.find("#normalize_method");
+    },
+
+    render: function() {
+        this.el.find("#normalize").unbind().change(this.toggleAnalysis.bind(this));
+    },
+
+    toggleAnalysis: function() {
+        this.enabled = this.el.find("#normalize").is(":checked");
+
+        if (this.enabled) {
+            this.container.slideDown();
+        } else {
+            this.container.slideUp();
+        }
     },
 
     is_valid: function() {
+        this.data.normalize = this.el.find("#normalize").is(":checked");
         return true;
     },
 
     get_options: function() {
-        return {};
+        if (this.enabled)
+            this.data.normalize_method = this.el.find("#percentage").is(":checked") ? 'percentage' : this.el.find("#log10").is(":checked") ? 'log10' : this.el.find("#loge").is(":checked") ? 'loge' : null;
+        return this.data;
     },
 });
 
@@ -1107,11 +1147,25 @@ function GeneralOptionsView() {
 $.extend(GeneralOptionsView.prototype, {
     initialize: function() {
         this.el = $($("#general-options-template").html());
+        this.edit_notebook = this.el.find("#edit_notebook");
+        this.notebook_container = this.el.find("#notebook-container");
     },
 
     is_valid: function() {
+        var notebook = this.edit_notebook.val();
+
         this.data.notebook = this.el.find("#notebook").is(":checked");
+        this.data.notebook_type = this.el.find("[name=notebook] :checked").val();
+        this.data.notebook_name = notebook;
+        this.data.notebook_id = this.notebook_id;
         this.data.email = this.el.find("#email").is(":checked");
+
+        if (this.data.notebook && this.data.notebook_type === "existing" && 
+        		(!notebook || notebook === 'Search' || !this.notebook_id)) 
+        {
+            error_help('Please specify a notebook.');
+            return false;
+        }
 
         return true;
     },
@@ -1119,6 +1173,44 @@ $.extend(GeneralOptionsView.prototype, {
     get_options: function() {
         return this.data;
     },
+    
+    render: function() {
+        var self = this;
+
+        // jQuery Events
+        this.el.find("#notebook").unbind().change(this.toggleNotebook.bind(this));
+        this.el.find("[name=notebook]").unbind().click(function() {
+        	var option = $(this).val();
+        	self.edit_notebook.prop("disabled", (option === 'new' ? true : false));
+        });
+        this.edit_notebook.unbind().change(function() {
+            // Reset notebook_id when item has changed
+            self.notebook_id = undefined;
+        });
+
+        // jQuery UI
+        this.edit_notebook.autocomplete({
+            source:[],
+            select: function(event, ui) {
+                $(this).val(ui.item.label);
+                self.notebook_id = ui.item.value;
+                return false; // Prevent the widget from inserting the value.
+            },
+
+            focus: function(event, ui) {
+                return false; // Prevent the widget from inserting the value.
+            }
+        });
+    },
+    
+    toggleNotebook: function() {
+        this.notebook_enabled = this.el.find("#notebook").is(":checked");
+
+        if (this.notebook_enabled) 
+            this.notebook_container.slideDown();
+        else 
+            this.notebook_container.slideUp();
+    }
 });
 
 function AdminOptionsView() {
@@ -1177,6 +1269,8 @@ $.extend(OptionsView.prototype, {
             this.layout_view.updateLayout({"#admin-options": this.admin_view});
 
         this.el = this.layout_view.el;
+        
+        this.experiment.options = {};
     },
 
     // Validate and add all options to the experiment
@@ -1281,8 +1375,15 @@ $.extend(ConfirmationView.prototype, {
         var key, newpair;
         for(key in options) {
             if (options.hasOwnProperty(key)) {
-            	var val = String(options[key]);
-            	if (typeof options[key] === 'object') val = objToString(options[key]);
+            	var val = options[key];
+            	if (typeof val === 'undefined' || val === '')
+            		continue;
+            	else if (typeof val === 'object')
+            		val = objToString(val);
+            	else if (typeof val === 'boolean')
+            		val = val ? 'yes' : 'no';
+            	else
+                	val = String(val);
                 newpair = this.pair_template.clone();
                 newpair.find(".name").html(coge.utils.ucfirst(key.replace('_', ' ')));
                 newpair.find(".data").html(val);
@@ -1331,7 +1432,11 @@ function load(experiment) {
 		options: {
 			load_id: load_id,
 			email: experiment.options.email,
+			normalize: experiment.options.normalize,
+			normalize_method: experiment.options.normalize_method,
 			notebook: experiment.options.notebook,
+			notebook_name: experiment.options.notebook_name,
+			notebook_id: experiment.options.notebook_id,
 			source_data: experiment.data
 		}
 	};
@@ -1352,7 +1457,7 @@ function load(experiment) {
             coge.progress.update(response.id, response.site_url);
 	    },
 	    function(jqXHR, textStatus, errorThrown) { // error callback
-	    	coge.progress.failed('Error: ' + textStatus);
+	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
 	    }
 	);
 }

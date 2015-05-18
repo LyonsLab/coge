@@ -20,37 +20,39 @@ our @EXPORT = qw(build run);
 our $CONF = CoGe::Accessory::Web::get_defaults();
 our $JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
 
-sub run {
-    my %opts = @_;
-    my $user = $opts{user};
-    my $genome = $opts{genome};
-    my $input_file = $opts{input_file};
-    my $metadata = $opts{metadata};
-    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
-
-    # Create the workflow
-    my $workflow = $JEX->create_workflow( name => 'Running the Playtpus SNP-finder pipeline', init => 1 );
-    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-    $workflow->logfile( catfile($result_dir, 'debug.log') );
-
-    # Build the workflow
-    my @tasks = build({
-        user => $user,
-        wid  => $workflow->id,
-        genome => $genome,
-        input_file => $input_file,
-        metadata => $metadata,
-    });
-    $workflow->add_jobs(\@tasks);
-
-    # Submit the workflow
-    my $result = $JEX->submit_workflow($workflow);
-    if ($result->{status} =~ /error/i) {
-        return (undef, "Could not submit workflow");
-    }
-
-    return ($result->{id}, undef);
-}
+# mdb deprecated 5/13/15
+#sub run {
+#    my %opts = @_;
+#    my $user = $opts{user};
+#    my $genome = $opts{genome};
+#    my $input_file = $opts{input_file};
+#    my $metadata = $opts{metadata};
+#    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
+#
+#    # Create the workflow
+#    my $workflow = $JEX->create_workflow( name => 'Running the Playtpus SNP-finder pipeline', init => 1 );
+#    return unless ($workflow && $workflow->id);
+#    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
+#    $workflow->logfile( catfile($result_dir, 'debug.log') );
+#
+#    # Build the workflow
+#    my @tasks = build({
+#        user => $user,
+#        wid  => $workflow->id,
+#        genome => $genome,
+#        input_file => $input_file,
+#        metadata => $metadata,
+#    });
+#    $workflow->add_jobs(\@tasks);
+#
+#    # Submit the workflow
+#    my $result = $JEX->submit_workflow($workflow);
+#    if ($result->{status} =~ /error/i) {
+#        return (undef, "Could not submit workflow");
+#    }
+#
+#    return ($result->{id}, undef);
+#}
 
 sub build {
     my $opts = shift;
@@ -61,6 +63,7 @@ sub build {
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
+    my $skipAnnotations = $opts->{skipAnnotations};
 
     # Setup paths
     my $gid = $genome->id;
@@ -70,6 +73,8 @@ sub build {
     my $fasta_file = get_genome_file($gid);
     my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
 
+    my $annotations = generate_additional_metadata();
+
     my $conf = {
         staging_dir => $staging_dir,
         result_dir  => $result_dir,
@@ -78,7 +83,7 @@ sub build {
         fasta       => catfile($FASTA_CACHE_DIR, $reheader_fasta),
         vcf         => catfile($staging_dir, qq[snps.vcf]),
 
-        #annotations => generate_additional_metadata(),
+        annotations => ($skipAnnotations ? '' : join(';', @$annotations)),
         username    => $user->name,
         metadata    => $metadata,
         wid         => $wid,
@@ -103,17 +108,11 @@ sub build {
     my $load_vcf_task = create_load_vcf_job($conf);
     push @tasks, $load_vcf_task;
 
-    # Save outputs for retrieval by downstream tasks
-    my @done_files = (
-        $load_vcf_task->{outputs}->[1]
-    );
-    
-    my %results = (
-        metadata => generate_additional_metadata(),
-        done_files => \@done_files
-    );
-
-    return (\@tasks, \%results);
+    return {
+        tasks => \@tasks,
+        metadata => $annotations,
+        done_files => [ $load_vcf_task->{outputs}->[1] ]
+    };
 }
 
 sub create_platypus_job {
@@ -124,6 +123,7 @@ sub create_platypus_job {
     my $fasta = $opts->{fasta};
     my $bam = $opts->{bam};
     my $vcf = $opts->{vcf};
+    my $nCPU = 8; # number of processors to use
 
     my $fasta_index = qq[$fasta.fai];
     my $PLATYPUS = $CONF->{PLATYPUS} || "Platypus.py";
@@ -135,6 +135,7 @@ sub create_platypus_job {
             ["--refFile", $fasta, 0],
             ["--output", $vcf, 1],
             ["--verbosity", 0, 0],
+            ["--nCPU", $nCPU, 0]
         ],
         inputs => [
             $bam,

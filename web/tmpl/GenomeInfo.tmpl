@@ -1,4 +1,6 @@
 <TMPL_IF NAME='MAIN'>
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.6/css/jquery.dataTables.css">
+<script type="text/javascript" language="javascript" src="//cdn.datatables.net/1.10.6/js/jquery.dataTables.min.js"></script>
 <script src="./js/coge/utils.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></script>
@@ -140,6 +142,69 @@ function chr_hist (dsgid) {
         },
         success: function (data) {$('#chromosome_hist').html(data);}
     });
+}
+
+function chr_list() {
+    $('#chromosome_list').dialog({
+        autoOpen: true,
+        position: {
+           my: "center",
+           at: "top",
+           of: $(".box")
+        }
+    });
+
+    $('#chromosome_list').html('loading. . .');
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: 'get_chr_list',
+            gid: genome_id,
+        },
+        success: function(data){
+        	$('#chromosome_list').html(data);
+        }
+    });
+}
+
+function download_chromosome_sequence(chr) {
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: 'cache_chr_fasta',
+            gid: genome_id,
+            chr: chr
+        },
+        success: function(data) {
+        	document.location='bin/get_seq_for_chr.pl?gid=' + genome_id + '&chr=' + chr;
+        }
+    });
+}
+
+function download_chr_file() {
+	var i = $('input[name=chr]:checked');
+	if (!i.length) {
+		alert('Please select one of the files to download first.');
+		return;
+	}
+	var id = i.attr('id');
+	if (id.substring(0,1)=='f')
+		download_chromosome_sequence(id.substring(1));
+	else
+		get_gff(id.substring(1));
+}
+
+function export_chr_file() {
+	var i = $('input[name=chr]:checked');
+	if (!i.length) {
+		alert('Please select one of the files to export first.');
+		return;
+	}
+	var id = i.attr('id');
+	if (id.substring(0,1)=='f')
+		export_fasta_chr(id.substring(1));
+	else
+		export_gff(id.substring(1));
 }
 
 function toggle_load_log() {
@@ -430,13 +495,14 @@ function show_success() {
     $('#export_ok_button').fadeIn();
 }
 
-function get_gff() {
+function get_gff($chr) {
     var id = genome_id;
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
 
-    $('#gff_export').unbind().on("dialogclose", function(event, ui) {
+    $('#gff_submit').unbind().click(function(event, ui) {
         var id_type = $('#gff_id_type').val(),
             cds = +$('#cds_only')[0].checked,
+            chr = +$chr,
             annos = +$('#annos')[0].checked,
             nu = +$('#name_unique')[0].checked,
             upa = +$('#upa')[0].checked;
@@ -466,7 +532,8 @@ function get_gff() {
                 cds: cds,
                 annos: annos,
                 nu: nu,
-                upa: upa
+                upa: upa,
+                chr: $chr
             },
             success: function(json) {
                 if (json.error) {
@@ -564,9 +631,9 @@ function reset_dialog() {
     $('#export_loading_msg').show();
 }
 
-function export_gff() {
+function export_gff(chr) {
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
-    $('#gff_export').unbind().on("dialogclose", function() {
+    $('#gff_submit').unbind().click(function() {
 
         // ANALYSIS OPTIONS
         var id = genome_id;
@@ -613,7 +680,8 @@ function export_gff() {
                 cds: cds,
                 annos: annos,
                 nu: nu,
-                upa: upa
+                upa: upa,
+                chr: chr
             },
             success: function(json) {
                 $('#export_log').append('<br><br>File: ' + json.file);
@@ -627,7 +695,7 @@ function export_gff() {
     });
 }
 
-function export_tbl() {
+function export_to_irods(file_description, fname, data) {
     // Prevent concurrent executions
     if ( $("#export_dialog").dialog( "isOpen" ) )
         return;
@@ -650,15 +718,16 @@ function export_tbl() {
             .html(irods_home_path);
 
     $('#export_log').html(
-        "<br>Copying this genomes's TBL file to <br><br>"
+        "<br>Copying " + file_description + " to <br><br>"
     ).append(link);
 
+    if (!data)
+    	data = {};
+    data.fname = fname;
+    data.gid = genome_id;
     $.ajax({
         dataType: "json",
-        data: {
-            fname: "export_tbl",
-            gid: genome_id
-        },
+        data: data,
         success: function(json) {
             $('#export_log').append('<br><br>File: ' + json.file);
 
@@ -671,88 +740,29 @@ function export_tbl() {
     });
 }
 
-function export_bed() {
-    // Prevent concurrent executions
-    if ( $("#export_dialog").dialog( "isOpen" ) )
-        return;
-
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
-
-    // RESET DIALOG
-    reset_dialog();
-
-    // Open status dialog right away
-    $('#export_dialog')
-        .unbind()
-        .dialog('open');
-
-    var link = $("<a></a>")
-            .addClass("bold")
-            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
-            .html(irods_home_path);
-
-    $('#export_log').html(
-        "<br>Generating/copying this genomes's BED file to <br><br>"
-    ).append(link);
-
-    $.ajax({
-        dataType: "json",
-        data: {
-            fname: "export_bed",
-            gid: genome_id
-        },
-        success: function(json) {
-            if (json.error) {
-                show_error();
-            } else {
-                $('#export_log').append('<br><br>File: ' + json.file);
-                show_success();
-            }
-        }
-    });
+function export_tbl() {
+	export_to_irods("this genomes's TBL file", "export_tbl");
 }
 
-function export_fasta_irods() {
-    // Prevent concurrent executions
-    if ( $("#export_dialog").dialog( "isOpen" ) )
-        return;
+function export_bed() {
+	export_to_irods("this genomes's BED file", "export_bed");
+}
 
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
+function export_fasta() {
+	export_to_irods("this genomes's FASTA file", "export_fasta");
+}
 
-    // RESET DIALOG
-    reset_dialog();
-
-    // Open status dialog right away
-    $('#export_dialog')
-        .unbind()
-        .dialog('open');
-
-    var link = $("<a></a>")
-            .addClass("bold")
-            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
-            .html(irods_home_path);
-
-    $('#export_log').html(
-            "<br>Copying this genomes's FASTA file to <br><br>"
-    ).append(link);
-
+function export_fasta_chr(chr) {
     $.ajax({
         data: {
-            fname: 'export_fasta_irods',
-            gid: genome_id
+            jquery_ajax: 1,
+            fname: 'cache_chr_fasta',
+            gid: genome_id,
+            chr: chr
         },
-        success : function(filename) {
-            if (filename) {  // finished successfully
-                show_success();
-                $('#export_log').append('<br><br>File: ' + filename);
-            }
-            else { // error occurred
-                show_error();
-            }
+        success: function(data) {
+        	var obj = jQuery.parseJSON(data);
+        	export_to_irods("this chromosome's FASTA file", "export_fasta_chr", { chr: chr, file: obj.file });
         }
     });
 }
@@ -1188,6 +1198,7 @@ function get_experiments(e) {
 </script>
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
+<div class="dialog_box hidden" id="chromosome_list" title="Chromosome List"></div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
@@ -1258,7 +1269,7 @@ function get_experiments(e) {
                 <tr>
                     <td class='title5'>iPlant Data Store:</td>
                     <td class='data5'>
-                        <span class='link' ondblclick="export_fasta_irods()" onclick="export_fasta_irods()">Fasta Sequences</span>
+                        <span class='link' ondblclick="export_fasta()" onclick="export_fasta()">Fasta Sequences</span>
                         &nbsp|
                         <span class='link' ondblclick="export_gff()" onclick="export_gff()">Export GFF</span>&nbsp|
                         <span class='link' ondblclick="export_tbl()" onclick="export_tbl()">Export TBL</span>&nbsp|
@@ -1436,7 +1447,7 @@ Are you sure you want to move this genome into your trash?<p>
         </tr>
         <tmpl_if name="creator">
         <tr>
-            <td class='title5' style='white-space:nowrap;'>Added By:</td>
+            <td class='title5' style='white-space:nowrap;'>Creation:</td>
             <td class='data5'><TMPL_VAR NAME="creator"></td>
         </tr>
         </tmpl_if>

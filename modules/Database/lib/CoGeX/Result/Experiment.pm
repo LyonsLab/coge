@@ -88,6 +88,8 @@ __PACKAGE__->add_columns(
     { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
     "deleted",
     { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
+    "creator_id",
+    { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
 );
 
 __PACKAGE__->set_primary_key("experiment_id");
@@ -96,6 +98,10 @@ __PACKAGE__->belongs_to(
     'data_source_id'
 );
 __PACKAGE__->belongs_to( "genome" => "CoGeX::Result::Genome", 'genome_id' );
+__PACKAGE__->belongs_to(
+    "creator" => "CoGeX::Result::User", 
+    { 'foreign.user_id' => 'self.creator_id' }
+);
 __PACKAGE__->has_many(
     "experiment_type_connectors" => "CoGeX::Result::ExperimentTypeConnector",
     'experiment_id'
@@ -239,6 +245,11 @@ sub notebooks {
     shift->lists(@_);
 }
 
+sub notebooks_desc {
+    my $self = shift;
+    return join(',', map {local $_ = $_->name; s/&reg;\s*//; $_ } $self->notebooks) || '';
+}
+
 #sub groups {
 #	my $self = shift;
 #	my %opts = @_;
@@ -271,133 +282,134 @@ sub notebooks {
 #	return wantarray ? values %users : [ values %users ];
 #}
 
-sub annotation_pretty_print_html {
-    my $self         = shift;
-    my %opts         = @_;
-    my $minimal      = $opts{minimal};
-    my $allow_delete = $opts{allow_delete};
-
-    my $anno_obj = new CoGe::Accessory::Annotation( Type => "anno" );
-    $anno_obj->Val_delimit("\n");
-    $anno_obj->Add_type(0);
-    $anno_obj->String_end("\n");
-
-    my $anno_type =
-      new CoGe::Accessory::Annotation(
-        Type => "<tr><td nowrap='true'><span class=\"title5\">" . "ID"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    $anno_type->add_Annot( $self->id . "</td>" );
-    $anno_obj->add_Annot($anno_type);
-
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-        Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Name"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    $anno_type->add_Annot( $self->name . "</td>" );
-    $anno_obj->add_Annot($anno_type);
-
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-            Type => "<tr><td nowrap='true'><span class=\"title5\">"
-          . "Description"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    $anno_type->add_Annot( $self->description . "</td>" );
-    $anno_obj->add_Annot($anno_type);
-
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-            Type => "<tr><td nowrap='true'><span class=\"title5\">"
-          . "Genome"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    $anno_type->add_Annot( $self->genome->info_html . "</td>" );
-    $anno_obj->add_Annot($anno_type);
-
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-            Type => "<tr><td nowrap='true'><span class=\"title5\">"
-          . "Source"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    $anno_type->add_Annot(
-        ( $self->source ? $self->source->info_html : '<no source>' )
-        . "</td>" );
-    $anno_obj->add_Annot($anno_type);
-
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-            Type => "<tr><td nowrap='true'><span class=\"title5\">"
-          . "Version"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    $anno_type->add_Annot( $self->version . "</td>" );
-    $anno_obj->add_Annot($anno_type);
-
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-            Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">"
-          . "Types"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    $anno_type->Val_delimit("<br>");
-    foreach my $type ( $self->types ) {
-        my $info = $type->name;
-        $info .= ": " . $type->description if $type->description;
-        if ($allow_delete) {
-            # NOTE: it is undesirable to have a javascript call in a DB object, but it works
-            $info .=
-                "<span onClick=\"remove_experiment_type({eid: '"
-              . $self->id
-              . "', etid: '"
-              . $type->id
-              . "'});\" class=\"link ui-icon ui-icon-trash\"></span>";
-        }
-        $anno_type->add_Annot($info);
-    }
-    $anno_obj->add_Annot($anno_type);
-
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-            Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">"
-          . "Notebooks"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    $anno_type->Val_delimit("<br>");
-    foreach my $list ( $self->lists ) {
-        next if ( not $list );    #FIXME mdb 8/21/12 - why necessary?
-        my $info = $list->info_html;
-        $anno_type->add_Annot($info);
-    }
-    $anno_obj->add_Annot($anno_type);
-
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-            Type => "<tr><td nowrap='true'><span class=\"title5\">"
-          . "Restricted"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class=\"data5\">");
-    my $restricted = $self->restricted ? "Yes" : "No";
-    $anno_type->add_Annot( $restricted . "</td>" );
-    $anno_obj->add_Annot($anno_type);
-
-    if ( $self->deleted ) {
-        $anno_type =
-          new CoGe::Accessory::Annotation(
-            Type => "<tr><td nowrap='true'><span class=\"alert\">" . "Note"
-              . "</span>" );
-        $anno_type->Type_delimit(": <td class=\"alert\">");
-        $anno_type->add_Annot( "This experiment is deleted" . "</td>" );
-        $anno_obj->add_Annot($anno_type);
-    }
-
-    return
-        "<table cellpadding=0 class='ui-widget-content ui-corner-all'>"
-      . $anno_obj->to_String
-      . "</table>";
-}
+# mdb removed 4/30/15 - deprecated, don't want view code in the model
+#sub annotation_pretty_print_html {
+#    my $self         = shift;
+#    my %opts         = @_;
+#    my $minimal      = $opts{minimal};
+#    my $allow_delete = $opts{allow_delete};
+#
+#    my $anno_obj = new CoGe::Accessory::Annotation( Type => "anno" );
+#    $anno_obj->Val_delimit("\n");
+#    $anno_obj->Add_type(0);
+#    $anno_obj->String_end("\n");
+#
+#    my $anno_type =
+#      new CoGe::Accessory::Annotation(
+#        Type => "<tr><td nowrap='true'><span class=\"title5\">" . "ID"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class=\"data5\">");
+#    $anno_type->add_Annot( $self->id . "</td>" );
+#    $anno_obj->add_Annot($anno_type);
+#
+#    $anno_type =
+#      new CoGe::Accessory::Annotation(
+#        Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Name"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class=\"data5\">");
+#    $anno_type->add_Annot( $self->name . "</td>" );
+#    $anno_obj->add_Annot($anno_type);
+#
+#    $anno_type =
+#      new CoGe::Accessory::Annotation(
+#            Type => "<tr><td nowrap='true'><span class=\"title5\">"
+#          . "Description"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class=\"data5\">");
+#    $anno_type->add_Annot( $self->description . "</td>" );
+#    $anno_obj->add_Annot($anno_type);
+#
+#    $anno_type =
+#      new CoGe::Accessory::Annotation(
+#            Type => "<tr><td nowrap='true'><span class=\"title5\">"
+#          . "Genome"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class=\"data5\">");
+#    $anno_type->add_Annot( $self->genome->info_html . "</td>" );
+#    $anno_obj->add_Annot($anno_type);
+#
+#    $anno_type =
+#      new CoGe::Accessory::Annotation(
+#            Type => "<tr><td nowrap='true'><span class=\"title5\">"
+#          . "Source"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class=\"data5\">");
+#    $anno_type->add_Annot(
+#        ( $self->source ? $self->source->info_html : '<no source>' )
+#        . "</td>" );
+#    $anno_obj->add_Annot($anno_type);
+#
+#    $anno_type =
+#      new CoGe::Accessory::Annotation(
+#            Type => "<tr><td nowrap='true'><span class=\"title5\">"
+#          . "Version"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class=\"data5\">");
+#    $anno_type->add_Annot( $self->version . "</td>" );
+#    $anno_obj->add_Annot($anno_type);
+#
+#    $anno_type =
+#      new CoGe::Accessory::Annotation(
+#            Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">"
+#          . "Types"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class=\"data5\">");
+#    $anno_type->Val_delimit("<br>");
+#    foreach my $type ( $self->types ) {
+#        my $info = $type->name;
+#        $info .= ": " . $type->description if $type->description;
+#        if ($allow_delete) {
+#            # NOTE: it is undesirable to have a javascript call in a DB object, but it works
+#            $info .=
+#                "<span onClick=\"remove_experiment_type({eid: '"
+#              . $self->id
+#              . "', etid: '"
+#              . $type->id
+#              . "'});\" class=\"link ui-icon ui-icon-trash\"></span>";
+#        }
+#        $anno_type->add_Annot($info);
+#    }
+#    $anno_obj->add_Annot($anno_type);
+#
+#    $anno_type =
+#      new CoGe::Accessory::Annotation(
+#            Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">"
+#          . "Notebooks"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class=\"data5\">");
+#    $anno_type->Val_delimit("<br>");
+#    foreach my $list ( $self->lists ) {
+#        next if ( not $list );    #FIXME mdb 8/21/12 - why necessary?
+#        my $info = $list->info_html;
+#        $anno_type->add_Annot($info);
+#    }
+#    $anno_obj->add_Annot($anno_type);
+#
+#    $anno_type =
+#      new CoGe::Accessory::Annotation(
+#            Type => "<tr><td nowrap='true'><span class=\"title5\">"
+#          . "Restricted"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class=\"data5\">");
+#    my $restricted = $self->restricted ? "Yes" : "No";
+#    $anno_type->add_Annot( $restricted . "</td>" );
+#    $anno_obj->add_Annot($anno_type);
+#
+#    if ( $self->deleted ) {
+#        $anno_type =
+#          new CoGe::Accessory::Annotation(
+#            Type => "<tr><td nowrap='true'><span class=\"alert\">" . "Note"
+#              . "</span>" );
+#        $anno_type->Type_delimit(": <td class=\"alert\">");
+#        $anno_type->add_Annot( "This experiment is deleted" . "</td>" );
+#        $anno_obj->add_Annot($anno_type);
+#    }
+#
+#    return
+#        "<table cellpadding=0 class='ui-widget-content ui-corner-all'>"
+#      . $anno_obj->to_String
+#      . "</table>";
+#}
 
 ################################################ subroutine header begin ##
 
@@ -467,6 +479,28 @@ sub info_html {
       . qq{")'>}
       . $info
       . "</span>";
+}
+
+sub info_file {
+    my $self = shift;
+    
+    my $restricted = ($self->restricted) ? "yes" : "no";
+    my $types = join ",", map($_->name, $self->types);
+    my $genome_name = $self->genome->info;
+    $genome_name =~ s/&reg;\s*//;
+
+    my @lines = (
+        qq{"Name","} . $self->name . '"',
+        qq{"Description","} . $self->description . '"',
+        qq{"Genome","$genome_name"},
+        qq{"Source","} . $self->source->info . '"',
+        qq{"Version","} . $self->version . '"',
+        qq{"Types","$types"},
+        qq{"Notebooks","} . $self->notebooks_desc . '"',
+        qq{"Restricted","$restricted"}
+    );
+
+    return join("\n", @lines);
 }
 
 sub to_hash {

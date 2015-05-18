@@ -16,7 +16,7 @@ const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
 const IRODS_HOME    = '<TMPL_VAR NAME=IRODS_HOME>';
 
 var EID = '<TMPL_VAR NAME="EID">';
-var JOB_ID = '<TMPL_VAR NAME="JOB_ID">';
+var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
 var newLoad = false;
 
 $(document).ready(function() {
@@ -50,6 +50,8 @@ $(document).ready(function() {
     });
     
     coge.progress.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME,
     	supportEmail: SUPPORT_EMAIL,
     	onReset: reset_location
     });
@@ -57,9 +59,9 @@ $(document).ready(function() {
     snpMenu.init();
     
     // Open status dialog
-    if (JOB_ID) {
+    if (WORKFLOW_ID) {
     	coge.progress.begin();
-    	coge.progress.update(JOB_ID);
+    	coge.progress.update(WORKFLOW_ID);
     }
 });
 </SCRIPT>
@@ -88,38 +90,23 @@ $(document).ready(function() {
 			</div>
 			<div style="padding-left: 10px;">
 			    <div style="color:dimgray;font-weight:bold;">Tools</div>
-			    <table class="inline top ui-widget-content ui-corner-all">
-			        <tr>
-			            <td>
-			                <span class="title5">Download:</span>
-			            </td>
-			            <td>
-			                <span class="data5 link" onclick="download_files();">All Experiment Data
-			            </td>
-			        </tr>
-                    <TMPL_UNLESS NAME="PUBLIC">
-			        <tr>
-			            <td>
-			                <span class="title5">iPlant Data Store:</span>
-			            </td>
-			            <td>
-			            	<span class="data5 link" ondblclick="export_data()" onclick="export_data()">Export Data</span>
-		                </td>
-		            </tr>
-                    </TMPL_UNLESS>
-		            <TMPL_IF NAME="ALIGNMENT_TYPE">
-                    <tr>
-                    	<td>
+			    <div class="inline top">
+			    	<ul class="ui-widget-content ui-corner-all" style="padding: 2px;">
+			    		<li>
+			    			<span class="title5">Export data:</span>
+		            		<span class="data5 link" ondblclick="download_files();" onclick="download_files();">Download</span>
+		            		<TMPL_UNLESS NAME="PUBLIC">
+		            		|&nbsp;<span class="data5 link" ondblclick="export_data();" onclick="export_data();">iPlant Data Store</span>
+		            		</TMPL_UNLESS>
+		            	</li>
+		            	<TMPL_IF NAME="ALIGNMENT_TYPE">
+                    	<li>
                     		<span class="title5">Analyze:</span>
-                    	</td>
-                    	<td>
                     		<span class="data5 link" ondblclick="snpMenu.open();" onclick="snpMenu.open();">Identify SNPs</span>
-                    	</td>
-                    </tr>
-			        </TMPL_IF>
-			    </table>
-                <div>
-                </div>
+                    	</li>
+                    	</TMPL_IF>
+			        </ul>
+			    </div>
 		    </div>
 		</td>
 	</tr>

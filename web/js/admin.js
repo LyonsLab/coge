@@ -1,17 +1,260 @@
 var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common location
+var timestamps = new Array();
+var jobs_timers = new Array();
+var hist_timers = new Array();
+var previous_search = ""; //indicates the previous search term, used to refresh after a delete
+var jobs_updating = true;
+var hist_updating = true;
+var hist_entries = 0;
+var last_hist_update;
 
 $(function () {
 	// Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
+    $("#job_search_bar").keyup(function (e) {
+        Slick.GlobalEditorLock.cancelCurrentEdit();
+
+        if (e.which == 27) { // Clear on Esc
+            this.value = "";
+        }
+        update_filter();
+    });
+    $("#show_select,#job_search_type").change(function(e) {
+        update_filter();
+    });
+    $("#job_update_checkbox").change(function(e) {
+    	toggle_job_updater();
+    });
+    $("#hist_update_checkbox").change(function(e) {
+    	toggle_hist_updater();
+    });
+    
+    //Initialize Jobs tab
+    var searchFilter = function(item, args) {
+        var link = item['link'] ? item['link'].toLowerCase() : '',
+            tool = item['tool'] ? item['tool'].toLowerCase() : '',
+            status = item['status'] ? item['status'].toLowerCase() : '',
+            started = item['started'] ? item['started'].toLowerCase() : '',
+            completed = item['completed'] ? item['completed'].toLowerCase() : '',
+            user = item['user'] ? item['user'].toLowerCase() : '';
+
+        if (args.searchType == 1) {
+            if (args.searchString != "" &&
+                link.indexOf(args.searchString) == -1 &&
+                tool.indexOf(args.searchString) == -1 &&
+                status.indexOf(args.searchString) == -1 &&
+                started.indexOf(args.searchString) == -1 &&
+                completed.indexOf(args.searchString) == -1
+                && user.indexOf(args.searchString) == -1) {
+                return false;
+            }
+        } else {
+            if (args.searchString != "" &&
+                link.indexOf(args.searchString) != -1 ||
+                tool.indexOf(args.searchString) != -1 ||
+                status.indexOf(args.searchString) != -1 ||
+                started.indexOf(args.searchString) != -1 ||
+                completed.indexOf(args.searchString) != -1
+
+                || user.indexOf(args.searchString) != -1 ) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    var job_options = {
+        editable: true,
+        enableCellNavigation: true,
+        asyncEditorLoading: true,
+        forceFitColumns: true,
+        filter: searchFilter,
+        comparator: coge.ascending,
+    };
+
+    var checkbox = new Slick.CheckboxSelectColumn({
+            cssClass: 'slick-cell-checkboxsel'
+    });
+
+    var linkformatter = function(row, cell, value, columnDef, dataContext) {
+        return '<a href="' + dataContext['link'] + '" target="_blank">'
+        + dataContext['link'] + '</a>'
+    }
+    var job_columns = [
+        checkbox.getColumnDefinition(),
+        {id: 'id', name: 'Id', field: 'workflow_id', maxWidth: 50, sortable: true},
+        {id: 'started', name: 'Started', field: 'started', minWidth: 75,
+            sortable: true},
+        {id: 'completed', name: 'Completed', field: 'completed', minWidth: 75,
+            sortable: true},
+        {id: 'elapsed', name: 'Elapsed', field: 'elapsed', minWidth: 55,
+            sortable: true},
+        {id: 'user', name: 'User', field: 'user', sortable: true, minWidth: 75},
+        {id: 'tool', name: 'Tool', field: 'tool', minWidth: 75,
+            sortable: true},
+        {id: 'link', name: 'Link to Analysis', field: 'link', minWidth: 250,
+            sortable: false, formatter: linkformatter },
+        {id: 'status', name: 'Status', field: 'status', minWidth: 75,
+            sortable: true}
+    ];
+
+    window.jobs = new coge.Grid('#jobs', job_options, job_columns);
+    jobs.grid.registerPlugin(checkbox);
+    get_jobs();
+    //document.getElementById("job_search_bar").value = "running";
+    
+    
+    //Initialize History tab
+    
+    
+    var hist_filter = function(item, args) {
+    	var date_time 	= (item['date_time'] ? item['date_time'].toLowerCase() : '');
+    	var user_name 	= (item['user'] ? item['user'].toLowerCase() : '');
+    	var description = (item['description'] ? item['description'].toLowerCase() : '');
+    	var page 		= (item['page'] ? item['page'].toLowerCase() : '');
+    	var link 		= (item['link'] ? item['link'].toLowerCase() : '');
+    	var comment 	= (item['comment'] ? item['comment'].toLowerCase() : '');
+
+    	var show = 1;
+    	if (args.show != 0) {
+    		if (args.show == -1) { // Starred
+    			show = item['starred'];
+    		}
+    		else if (args.show == -2) { // Commented
+    			show = comment;
+    		}
+    		else if (args.show == -3) { // Mine
+    			show = (user_name == '<TMPL_VAR NAME="USER_NAME">');
+    		}
+    		else if (args.show > 0) { // Time Range
+    			var diff = new Date() - new Date(date_time.replace(/-/g, '/'));
+    			show = (diff <= args.show*60*60*1000);
+    		}
+    	}
+    	if (!show) {
+    		return false;
+    	}
+
+    	if (args.searchString != "") {
+    		//FIXME optimize
+    		if (args.searchType == 1) { // Contains
+    			if (date_time.indexOf(args.searchString) == -1 &&
+    				user_name.indexOf(args.searchString) == -1 &&
+    				description.indexOf(args.searchString) == -1 &&
+    				page.indexOf(args.searchString) == -1 &&
+    				link.indexOf(args.searchString) == -1 &&
+    				comment.toLowerCase().indexOf(args.searchString) == -1 )
+    			{
+    				return false;
+    			}
+    		}
+    		else { // Does not contain
+    			if (date_time.indexOf(args.searchString) != -1 ||
+    				user_name.indexOf(args.searchString) != -1 ||
+    				description.indexOf(args.searchString) != -1 ||
+    				page.indexOf(args.searchString) != -1 ||
+    				link.indexOf(args.searchString) != -1 ||
+    				comment.toLowerCase().indexOf(args.searchString) != -1 )
+    			{
+    				return false;
+    			}
+    		}
+    	}
+
+    	return true;
+    };
+    
+    var hist_options = {
+    		editable: true,
+    		enableCellNavigation: true,
+    		asyncEditorLoading: true,
+    		forceFitColumns: true,
+    		filter: hist_filter,
+            comparator: coge.ascending,
+    };
+    
+    var hist_columns = [
+               	{id: "starred", name: "", field: "starred", maxWidth: 25, cssClass: "cell-centered",
+               		formatter: function (row, cell, value, columnDef, dataContext) {
+               			if (value) {
+               				return '<img id="'+dataContext['id']+'" src="picts/star-full.png" onclick="toggle_star(this);">'
+               			}
+               			return '<img id="'+dataContext['id']+'" src="picts/star-hollow.png" onclick="toggle_star(this);">';
+               		}},
+               	{id: "date_time", name: "Date/Time", field: "date_time", minWidth: 160, maxWidth: 160, sortable: true, cssClass: "cell-centered"},
+               	{id: "user", name: "User", field: "user", minWidth: 30, maxWidth: 80, sortable: true, cssClass: "cell-normal"/*,
+               		formatter: function ( row, cell, value, columnDef, dataContext ) {
+                           return '<a target="_blank" href="User.pl?name=' + value + '">' + value + '</a>';
+                       }*/},
+               	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 100, sortable: true, cssClass: "cell-normal"},
+               	{id: "description", name: "Description", field: "description", minWidth: 100, sortable: true, cssClass: "cell-normal",
+               		formatter: function ( row, cell, value, columnDef, dataContext ) {
+                           return '<span>' + value + '</span>';
+                       }},
+               	{id: "link", name: "Link", field: "link", minWidth: 100, maxWidth: 250, cssClass: "cell-normal",
+               		formatter: function ( row, cell, value, columnDef, dataContext ) {
+                           return '<a target="_blank" href="' + value + '">' + value + '</a>';
+                       }},
+               	{id: "comment", name: "Comments (click to edit)", field: "comment", minWidth: 100, sortable: true, cssClass: "cell-normal",
+               		editor: Slick.Editors.Text, validator: requiredFieldValidator}
+               ];
+    
+    window.hist = new coge.Grid('#history', hist_options, hist_columns);
+    get_history();
+    
+    hist.grid.onCellChange.subscribe(function (e, args) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'update_comment',
+				log_id: args.item.id,
+				comment: args.item.comment
+			},
+			success: function() {
+				hist.dataView.updateItem(args.item.id, args.item);
+			}
+		});
+	});
+    
+    hist.grid.onSort.subscribe(function (e, args) {
+		sortcol = args.sortCol.field;
+		hist.dataView.sort(comparer, args.sortAsc);
+	});
+
+	// Wire up model events to drive the grid
+	hist.dataView.onRowCountChanged.subscribe(function (e, args) {
+		hist.grid.updateRowCount();
+		hist.grid.render();
+		if ($("#history").is(":not(visible)")) {
+			$("#history").slideDown();
+		}
+	});
+	hist.dataView.onRowsChanged.subscribe(function (e, args) {
+		hist.grid.invalidateRows(args.rows);
+		hist.grid.render();
+	});
+
+	// Wire up the show selector to apply the filter to the model
+	$("#hist_show_select,#hist_search_type").change(function (e) {
+		updateHistFilter();
+	});
+
+	// Wire up the search textbox to apply the filter to the model
+	$("#hist_search_input").keyup(function (e) {
+		Slick.GlobalEditorLock.cancelCurrentEdit();
+
+		if (e.which == 27) { // Clear on Esc
+			this.value = "";
+		}
+
+		updateHistFilter();
+	});
 });
-
-var timestamps = new Array();
-
-var previous_search = ""; //indicates the previous search term, used to refresh after a delete
 
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
-
+		$("#loading_gears").show();
 		timestamps['search_stuff'] = new Date().getTime();
 		$.ajax({
 			//type: "POST",
@@ -24,6 +267,7 @@ function search_stuff (search_term) {
 			},
 			success : function(data) {
 				//console.log(data);
+				//$('#loading_gears').hide();
 				var obj = jQuery.parseJSON(data);
 				
 				if (obj && obj.items && obj.timestamp != timestamps['search_stuff']) {
@@ -43,12 +287,19 @@ function search_stuff (search_term) {
 					}
 
 					if (obj.items[i].type == "organism") {
-						orgList = orgList + "<tr><td><span>" + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")" + "</span></td></tr>";
+						orgList = orgList + "<tr><td><span title='" + obj.items[i].description + "'>";
+						orgList = orgList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")" + "</span></td></tr>";
 						orgCounter++;
 					}
 	
 					if (obj.items[i].type == "genome") {
-						genList = genList + "<tr><td><span onclick=\"delete_item(" + obj.items[i].id + ", 'genome');\"";
+						genList = genList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'Genome', 'restrict');\"";
+						if (obj.items[i].restricted == 1) {
+							genList = genList + " class=\"link ui-icon ui-icon-locked\"></span>";
+						} else {
+							genList = genList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
+						}
+						genList = genList + "<span onclick=\"modify_item(" + obj.items[i].id + ", 'Genome', 'delete');\"";
 						genList = genList + " class=\"link ui-icon ui-icon-trash\"></span>";
 						if (obj.items[i].deleted == 1) {
 							genList = genList + "<span style=\"color: red\">";
@@ -62,7 +313,13 @@ function search_stuff (search_term) {
 					}
 	
 					if (obj.items[i].type == "experiment") {
-						expList = expList + "<tr><td><span onclick=\"delete_item(" + obj.items[i].id + ", 'experiment');\"";
+						expList = expList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'Experiment', 'restrict');\"";
+						if (obj.items[i].restricted == 1) {
+							expList = expList + " class=\"link ui-icon ui-icon-locked\"></span>";
+						} else {
+							expList = expList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
+						}
+						expList = expList + "<span onclick=\"modify_item(" + obj.items[i].id + ", 'Experiment', 'delete');\"";
 						expList = expList + " class=\"link ui-icon ui-icon-trash\"></span>";
 						if (obj.items[i].deleted == 1) {
 							expList = expList + "<span style=\"color: red\">";
@@ -76,7 +333,13 @@ function search_stuff (search_term) {
 					}
 	
 					if (obj.items[i].type == "notebook") {
-						noteList = noteList + "<tr><td><span onclick=\"delete_item(" + obj.items[i].id + ", 'notebook');\"";
+						noteList = noteList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'List', 'restrict');\"";
+						if (obj.items[i].restricted == 1) {
+							noteList = noteList + " class=\"link ui-icon ui-icon-locked\"></span>";
+						} else {
+							noteList = noteList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
+						}
+						noteList = noteList + "<span onclick=\"modify_item(" + obj.items[i].id + ", 'List', 'delete');\"";
 						noteList = noteList + " class=\"link ui-icon ui-icon-trash\"></span>";
 						if (obj.items[i].deleted == 1) {
 							noteList = noteList + "<span style=\"color: red\">";
@@ -105,79 +368,112 @@ function search_stuff (search_term) {
 				
 	
 				//Populate the html with the results
+				$("#loading_gears").show();
 				$(".result").fadeIn( 'fast');
 				
 				//user
-				$('#userCount').html("Users: " + userCounter);
-				$('#userList').html(userList);
-				if(userCounter <= 10) {
-					$( "#userList" ).show();
-					//$( "#userArrow" ).find('img').toggle();
-					$("#userArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+				if(userCounter > 0) {
+					$('#user').show();
+					$('#userCount').html("Users: " + userCounter);
+					$('#userList').html(userList);
+					if(userCounter <= 10) {
+						$( "#userList" ).show();
+						//$( "#userArrow" ).find('img').toggle();
+						$("#userArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#userList" ).hide();
+						$("#userArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#userList" ).hide();
-					$("#userArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#user').hide();
 				}
 				
 				//organism
-				$('#orgCount').html("Organisms: " + orgCounter);
-				$('#orgList').html(orgList);
-				if(orgCounter <= 10) {
-					$( "#orgList" ).show();
-					//$( "#orgArrow" ).find('img').toggle();
-					$( "#orgArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(orgCounter > 0) {
+					$('#organism').show();
+					$('#orgCount').html("Organisms: " + orgCounter);
+					$('#orgList').html(orgList);
+					if(orgCounter <= 10) {
+						$( "#orgList" ).show();
+						//$( "#orgArrow" ).find('img').toggle();
+						$( "#orgArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#orgList" ).hide();
+						$("#orgArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#orgList" ).hide();
-					$("#orgArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#organism').hide();
 				}
 				
 				//genome
-				$('#genCount').html("Genomes: " + genCounter);
-				$('#genList').html(genList);
-				if(genCounter <= 10) {
-					$( "#genList" ).show();
-					//$( "#genArrow" ).find('img').toggle();
-					$( "#genArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(genCounter > 0) {
+					$('#genome').show();
+					$('#genCount').html("Genomes: " + genCounter);
+					$('#genList').html(genList);
+					if(genCounter <= 10) {
+						$( "#genList" ).show();
+						//$( "#genArrow" ).find('img').toggle();
+						$( "#genArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#genList" ).hide();
+						$("#genArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#genList" ).hide();
-					$("#genArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#genome').hide();
 				}
 				
 				//experiment
-				$('#expCount').html("Experiments: " + expCounter);
-				$('#expList').html(expList);
-				if(expCounter <= 10) {
-					$( "#expList" ).show();
-					//$( "#expArrow" ).find('img').toggle();
-					$( "#expArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(expCounter > 0) {
+					$('#experiment').show();
+					$('#expCount').html("Experiments: " + expCounter);
+					$('#expList').html(expList);
+					if(expCounter <= 10) {
+						$( "#expList" ).show();
+						//$( "#expArrow" ).find('img').toggle();
+						$( "#expArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#expList" ).hide();
+						$("#expArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#expList" ).hide();
-					$("#expArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#experiment').hide();
 				}
 				
 				//notebook
-				$('#noteCount').html("Notebooks: " + noteCounter);
-				$('#noteList').html(noteList);
-				if(noteCounter <= 10) {
-					$( "#noteList" ).show();
-					//$( "#noteArrow" ).find('img').toggle();
-					$( "#noteArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+				if(noteCounter > 0) {
+					$('#notebook').show();
+					$('#noteCount').html("Notebooks: " + noteCounter);
+					$('#noteList').html(noteList);
+					if(noteCounter <= 10) {
+						$( "#noteList" ).show();
+						//$( "#noteArrow" ).find('img').toggle();
+						$( "#noteArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#noteList" ).hide();
+						$("#noteArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#noteList" ).hide();
-					$("#noteArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#notebook').hide();
 				}
 				
 				//user group
-				$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
-				$('#usrgroupList').html(usrgroupList);
-				if(usrgroupCounter <= 10) {
-					$( "#usrgroupList" ).show();
-					//$( "#usrGArrow" ).find('img').toggle();
-					$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+				if(usrgroupCounter > 0) {
+					$('#user_group').show();
+					$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
+					$('#usrgroupList').html(usrgroupList);
+					if(usrgroupCounter <= 10) {
+						$( "#usrgroupList" ).show();
+						//$( "#usrGArrow" ).find('img').toggle();
+						$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+					} else {
+						$( "#usrgroupList" ).hide();
+						$("#usrGArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					}
 				} else {
-					$( "#usrgroupList" ).hide();
-					$("#usrGArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+					$('#user_group').hide();
 				}
+				
+				$("#loading_gears").hide();
 			},
 		});
 		previous_search = search_term;
@@ -209,7 +505,6 @@ function toggle_master() {
 }
 
 function open_dialog() {
-	console.log("Open_dialog called");
 	$("#user_dialog").dialog("open");
 }
 
@@ -241,7 +536,6 @@ function edit_access(id, type) {
 }
 
 function remove_items_from_user_or_group(target_item, id, type) {
-	console.log("" + target_item + " " + id + " " + type);
 	var selected = "content_" + id + "_" + type; //get_selected_items();
 	if (target_item && selected.length) {
 		var item_list = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
@@ -275,8 +569,7 @@ function search_user(userID, search_type) {
 	}
 	if(previous_user != userID) {
 		//$('#userResults').hide();
-		$('#userResults').html("Loading...");
-		console.log("Before search.");
+		//$('#userResults').html("Loading...");
 		user_info(userID, search_type);
 	}
 	previous_user = userID;
@@ -288,7 +581,7 @@ function refresh_data() {
 		//$('#masterTable').html("Loading...");
 		search_stuff(previous_search);
 	} else {
-		$('#userResults').html("Loading...");
+		//$('#userResults').html("Loading...");
 		user_info(previous_user, previous_type);
 	}
 }
@@ -296,7 +589,7 @@ function refresh_data() {
 function user_info(userID, search_type) {
 
 	var search_term = userID;
-	//console.log(search_term);
+	$("#loading_gears2").show();
 	timestamps['user_info'] = new Date().getTime();
 	$.ajax({
 		data: {
@@ -317,11 +610,6 @@ function user_info(userID, search_type) {
 
         		var genList = "", expList = "", noteList = "", userList = "";
         		var genCounter = 0, expCounter = 0, noteCounter = 0, userCounter = 0;
-
-        		//for (var j = 0; j < obj.items[i].result.length; j++) {
-        		//	console.log(current);
-        		//}				
-
 				
         		//for each object belonging to that user, populate tables
         		for (var j = 0; j < obj.items[i].result.length; j++) {
@@ -330,7 +618,13 @@ function user_info(userID, search_type) {
         				var current = obj.items[i].result[j];
 	
         				if (current.type == "genome") {
-        					genList = genList + "<tr><td><span onclick=\"delete_item(" + current.id + ", 'genome');\"";
+        					genList = genList + "<tr><td><span onclick=\"modify_item(" + current.id + ", 'Genome', 'restrict');\"";
+    						if (current.restricted == 1) {
+    							genList = genList + " class=\"link ui-icon ui-icon-locked\"></span>";
+    						} else {
+    							genList = genList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
+    						}
+        					genList = genList + "<span onclick=\"modify_item(" + current.id + ", 'Genome', 'delete');\"";
         					genList = genList + " class=\"link ui-icon ui-icon-trash\"></span>";
 	                                               	
         					if (current.role == 2) {
@@ -353,7 +647,13 @@ function user_info(userID, search_type) {
         				}
 
         				if (current.type == "experiment") {
-        					expList = expList + "<tr><td><span onclick=\"delete_item(" + current.id + ", 'experiment');\"";
+        					expList = expList + "<tr><td><span onclick=\"modify_item(" + current.id + ", 'Experiment', 'restrict');\"";
+    						if (current.restricted == 1) {
+    							expList = expList + " class=\"link ui-icon ui-icon-locked\"></span>";
+    						} else {
+    							expList = expList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
+    						}
+        					expList = expList + "<span onclick=\"modify_item(" + current.id + ", 'Experiment', 'delete');\"";
         					expList = expList + " class=\"link ui-icon ui-icon-trash\"></span>";
         					
         					if (current.role == 2) {
@@ -376,7 +676,13 @@ function user_info(userID, search_type) {
         				}
 						
         				if (current.type == "notebook") {
-        					noteList = noteList + "<tr><td><span onclick=\"delete_item(" + current.id + ", 'notebook');\"";
+        					noteList = noteList + "<tr><td><span onclick=\"modify_item(" + current.id + ", 'List', 'restrict');\"";
+    						if (current.restricted == 1) {
+    							noteList = noteList + " class=\"link ui-icon ui-icon-locked\"></span>";
+    						} else {
+    							noteList = noteList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
+    						}
+        					noteList = noteList + "<span onclick=\"modify_item(" + current.id + ", 'List', 'delete');\"";
         					noteList = noteList + " class=\"link ui-icon ui-icon-trash\"></span>";
 
         					if (current.role == 2) {
@@ -417,7 +723,13 @@ function user_info(userID, search_type) {
         		} else {
         			nameBlock = nameBlock + "<img src='picts/group-icon.png' width='15' height='15'><span> ";
         		}
-        		nameBlock = nameBlock + obj.items[i].user + " (ID: " + obj.items[i].user_id + "):</span></div>";
+        		nameBlock = nameBlock + obj.items[i].user + " (ID: " + obj.items[i].user_id + "): </span>";
+        		
+        		if (search_type =='group') {
+        			nameBlock = nameBlock + "<button onclick='group_dialog(" + obj.items[i].user_id + ", 6 )'>Edit Group</button></div>";
+        		} else {
+        			nameBlock = nameBlock + "</div>";
+        		}
 				
 
         		if (genCounter > 0) {
@@ -463,8 +775,6 @@ function user_info(userID, search_type) {
         	} //end of all users loop
 
         	$('#userResults').html(htmlBlock);
-			
-        	console.log("After search.");
         	//$('#userResults').show();
 
         	if(search_type == 'group') {
@@ -500,13 +810,13 @@ function user_info(userID, search_type) {
         			$("#userArrow0" ).find('img').attr("src", "picts/arrow-right-icon.png");
         		}
         	}
+        	$("#loading_gears2").hide();
         }
 	});
 }
 
 function share_dialog(id, type) {
 	var item_list = "content_" + id + "_" + type;  //selected.map(function(){return this.parentNode.id;}).get().join(',');
-	console.log(item_list);
 	$.ajax({
 		data: {
 			fname: 'get_share_dialog',
@@ -522,7 +832,7 @@ function search_share () {
 	var search_term = $('#share_input').attr('value');
 
 	//$("#wait_notebook").animate({opacity:1});
-	timestamps['search_share'] = new Date().getTime()
+	timestamps['search_share'] = new Date().getTime();
 
 	$.ajax({
 		data: {
@@ -541,156 +851,111 @@ function search_share () {
 	});
 }
 
-function delete_item (id, type) {
-	switch (type) {
-		case "genome":
-			$.ajax({
-				data: {
-					fname: 'delete_genome',
-					gid: id,
-				},
-				success : function(val) {
-					//location.reload();
-				},
-			});
-			break;
-			
-		case "notebook":
-			$.ajax({
-				data: {
-					fname: 'delete_list',
-					lid: id,
-				},
-				success : function(val) {
-					//location.reload();
-				},
-			});
-			break;
-			
-		case "experiment":
-			$.ajax({
-				data: {
-					fname: 'delete_experiment',
-					eid: id,
-				},
-				success : function(val) {
-					//location.reload();
-				},
-			});
-			break;
-	}
-	
-	//Now refresh the page to reflect changes
-	refresh_data();
+function search_group () { // FIXME dup of above routine but for group dialog
+	var search_term = $('#group_input').attr('value');
+
+	timestamps['search_group'] = new Date().getTime();
+	$.ajax({
+		data: {
+			fname: 'search_share',
+			search_term: search_term,
+			timestamp: timestamps['search_group']
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			if (obj && obj.timestamp == timestamps['search_group'] && obj.items) {
+				$("#group_input").autocomplete({source: obj.items}).autocomplete("search");
+			}
+		},
+	});
 }
 
-/*function update_dialog(request, user, identifier, formatter) {
-    var get_status = function () {
-        $.ajax({
-            type: 'GET',
-            url: request,
-            dataType: 'json',
-            data: {
-                username: user
-            },
-            success: update_callback,
-            error: update_callback,
-            xhrFields: {
-                withCredentials: true
-            }
-        });
-    };
+function group_dialog(id, type) {
+	var item_list = "content_" + id + "_" + type;
+	$.ajax({
+		data: {
+			fname: 'get_group_dialog',
+			item_list: item_list,
+		},
+		success : function(data) {
+			$('#group_dialog').html(data).dialog({width:500}).dialog('open');
+		}
+	});
+}
 
-    var update_callback = function(json) {
-        var dialog = $(identifier);
-        var workflow_status = $("<p></p>");
-        var data = $("<ul></ul>");
-        var results = [];
-        var current_status;
-        var timeout = 2000;
+function change_group_role(id, type) {
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	var role_id = $('#group_role_select').val();
+	if (role_id && selected.length) {
+		var target_items = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'change_group_role',
+				target_items: target_items,
+				role_id: role_id,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
 
-        var callback = function() {
-            update_dialog(request, user, identifier, formatter);
-        }
+function add_users_to_group(id, type) {
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	var new_item = $('#group_input').data('select_id');
+	if (new_item && selected.length) {
+		var target_items = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'add_users_to_group',
+				target_items: target_items,
+				new_item: new_item,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
 
-        if (json.error) {
-            pageObj.error++;
-            if (pageObj.error > 3) {
-                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                load_failed();
-                return;
-            }
-        } else {
-            pageObj.error = 0;
-        }
+function remove_user_from_group(user_id, id, type) {
+	var selected = "content_" + id + "_" + type; //get_selected_items();
+	if (user_id && selected.length) {
+		var target_items = selected; //.map(function(){return this.parentNode.id;}).get().join(',');
+		$.ajax({
+			data: {
+				fname: 'remove_user_from_group',
+				target_items: target_items,
+				user_id: user_id,
+			},
+			success : function(data) {
+				if (data) {
+					$('#group_dialog').html(data);
+				}
+			}
+		});
+	}
+}
 
-        if (json.status) {
-            current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: ");
-            workflow_status.append($('<span></span>').html(json.status));
-            workflow_status.addClass('bold');
-        } else {
-            setTimeout(callback, timeout);
-            return;
-        }
 
-        if (json.tasks) {
-            var jobs = json.tasks;
-            for (var index = 0; index < jobs.length; index++) {
-                var item = formatter(jobs[index]);
-                if (item) {
-                    results.push(item);
-                }
-            }
-        }
-
-        if (!dialog.dialog('isOpen')) {
-            return;
-        }
-
-        //FIXME Update when a workflow supports elapsed time
-        if (current_status == "completed") {
-            var total = json.tasks.reduce(function(a, b) {
-                if (!b.elapsed) return a;
-
-                return a + b.elapsed;
-            }, 0);
-
-            var duration = coge.utils.toPrettyDuration(total);
-
-            workflow_status.append("<br>Finished in " + duration);
-            workflow_status.find('span').addClass('completed');
-            get_load_log(function(result) {
-                load_succeeded(result);
-            });
-
-        }
-        else if (current_status == "failed"
-                || current_status == "error"
-                || current_status == "terminated"
-                || current_status == "cancelled")
-        {
-            workflow_status.find('span').addClass('alert');
-            get_load_log(function(result) {
-                load_failed(result);
-            });
-        }
-        else if (current_status == "notfound") {
-            setTimeout(callback, timeout);
-            return;
-        }
-        else {
-            workflow_status.find('span').addClass('running');
-            setTimeout(callback, timeout);
-        }
-
-        results.push(workflow_status);
-        data.append(results);
-        dialog.find('#load_log').html(data);
-    };
-
-    get_status();
-}*/
+function modify_item (id, type, modification) {
+	$.ajax({
+		data: {
+			fname: 'modify_item',
+			id: id,
+			modification: modification,
+			type: type,
+		},
+		success : function(val) {
+			refresh_data();
+		},
+	});
+}
 
 function wait_to_search (search_func, search_term) {
 	//console.log(search_term);
@@ -710,3 +975,222 @@ function wait_to_search (search_func, search_term) {
 	);
 }
 
+//The following javascript deals with Tab2, the Jobs tab
+function get_jobs() {
+	$.ajax({
+		dataType: 'json',
+	    data: {
+	        jquery_ajax: 1,
+	        fname: 'get_jobs',
+	        time_range: 0,
+	    },
+	    success: function(data) {
+	    	//console.log(data.jobs);
+	        jobs.load(data.jobs);
+	        entries = data.jobs.length;
+	        $("#filter_busy").hide();
+	        update_filter();
+	    },
+	    complete: function(data) {
+	    	if (jobs_updating) {
+	        	schedule_update("jobs", 5000);
+	        }
+	    }
+	});
+}
+
+function update_filter() {
+    jobs.dataView.setFilterArgs({
+        show: $('#show_select').val(),
+        searchType: $('#job_search_type').val(),
+        searchString: $('#job_search_bar').val().toLowerCase()
+    });
+
+    jobs.filter();
+    $('#job_filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
+}
+
+function toggle_job_updater() {
+	jobs_updating = !jobs_updating;
+	if (jobs_updating) {
+		schedule_update("jobs", 5000);
+	}
+}
+
+function schedule_update(page, delay) {
+	console.log("Updating " + page);
+	cancel_update(page);
+	
+	if (delay !== undefined) {
+		if(page == "jobs") {
+			jobs_timers['update'] = window.setTimeout(
+					function() { get_jobs(); },
+					delay
+			);
+		}
+		if(page == "hist") {
+			hist_timers['update'] = window.setTimeout(
+					function() { update_history(); },
+					delay
+			);
+		}
+		return;
+	}	
+}
+
+function cancel_update(page) {
+	if(page == "job") {
+		clearTimeout(job_timers['update']);
+	}
+	if(page == "hist") {
+		clearTimeout(hist_timers['update']);
+	}
+}
+
+function cancel_job() {
+    submit_task("cancel_job", function(row) {
+        return row.status.toLowerCase() === 'running'
+    });
+}
+
+function restart_job() {
+    submit_task("restart_job", function(row) {
+        return row.status.toLowerCase() === 'cancelled' ||
+               row.status.toLowerCase() === 'stopped';
+    });
+}
+
+function submit_task(task, predicate) {
+    var selectedIndexes = window.jobs.grid.getSelectedRows();
+
+    var selectedRows = selectedIndexes.map(function(item) {
+        return window.jobs.dataView.getItem(item);
+    });
+
+    var validRows = selectedRows.filter(predicate);
+
+    // No rows were valid
+    if (!validRows.length) return;
+
+    jQuery.each(validRows, function(index,row) {
+        var argument_list =  {
+            fname: task,
+            job: row.workflow_id,
+        };
+
+        $.ajax({
+            type: "GET",
+            dataType: "json",
+            data: argument_list,
+            success: function(data) {
+                if (data.status) {
+                    row.status = data.status;
+                    window.jobs.dataView.updateItem(row.id, row);
+                }
+            }
+        });
+    });
+
+    // Deselect all rows
+    window.jobs.grid.setSelectedRows([]);
+}
+
+
+//The following Javascript deals with Tab3, the History page 
+function get_history() {
+	$.ajax({
+		dataType: 'json',
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_history_for_user',
+			time_range: 0,
+		},
+		success : function(data) {
+			//console.log(data[0]);
+			hist.load(data);
+			hist_entries = data.length;
+			last_hist_update = data[0].date_time;
+			//console.log(last_hist_update);
+			//console.log(data[1].date_time);
+			//console.log(last_hist_update > data[1].date_time);
+			//console.log(last_hist_update < data[1].date_time);
+			
+			//dataView.beginUpdate();
+			//dataView.setItems(data);
+			//dataView.setFilterArgs({
+			//	show: 0,
+			//	searchType: 1,
+			//	searchString: ''
+			//});
+			//dataView.setFilter(myFilter);
+			//dataView.endUpdate();
+			updateHistFilter();
+		},
+	    complete: function(data) {
+	    	if (hist_updating && last_hist_update) {
+	        	schedule_update("hist", 5000);
+	        }
+	    }
+	});
+}
+
+function update_history() {
+	//console.log(last_hist_update);
+	$.ajax({
+		dataType: 'json',
+		data: {
+			jquery_ajax: 1,
+			fname: 'update_history',
+			timestamp: last_hist_update,
+			time_range: 0,
+		},
+		success: function(data) {
+			console.log(data);
+			if(data[0]) {
+				hist.insert(data);
+				last_hist_update = data[0].date_time;
+			}
+		},
+		complete: function(data) {
+			//console.log(data);
+	    	if (hist_updating) {
+	        	schedule_update("hist", 5000);
+	        }
+	    }
+	})
+}
+
+function toggle_hist_updater() {
+	hist_updating = !hist_updating;
+	if (hist_updating) {
+		schedule_update("hist", 5000);
+	}
+}
+
+function requiredFieldValidator(value) {
+	return {valid: true, msg: null};
+}
+
+function updateHistFilter() {
+	hist.dataView.setFilterArgs({
+		show: $('#hist_show_select').val(),
+		searchType: $('#hist_search_type').val(),
+		searchString: $('#hist_search_input').val().toLowerCase()
+	});
+    hist.filter();
+    $('#hist_filter_count').html('Showing ' + hist.dataView.getLength() + ' of ' + hist_entries + ' results');
+}
+
+function toggle_star(img) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'toggle_star',
+			log_id: img.id,
+		},
+		success :  function(val) {
+			if (val == 0) { $(img).attr({src:"picts/star-hollow.png"}); }
+			else { $(img).attr({src:"picts/star-full.png"}); }
+		}
+	});
+}

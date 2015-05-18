@@ -14,20 +14,23 @@ use Data::Dumper;
 sub build {
     my $self = shift;
 
-    $self->init_workflow($self->jex);
-    return unless $self->workflow->id;
+    # Initialize workflow
+    $self->workflow($self->jex->create_workflow(name => "Generate/export gff", init => 1));
+    return unless ($self->workflow && $self->workflow->id);
 
-    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
-
+    # Verify required parameters and set defaults
     my $dest_type = $self->options->{dest_type};
     $dest_type = "http" unless $dest_type;
 
+    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
+    # Get genome
+    return unless (defined $self->params && $self->params->{gid});
     my $genome = $self->db->resultset("Genome")->find($self->params->{gid});
     $self->params->{basename} = sanitize_name($genome->organism->name);
 
-    my ($output, %job) = generate_gff($self->params, $self->conf);
+    my ($output, %job) = generate_gff(%{$self->params});
     $self->workflow->add_job(\%job);
 
     if ($dest_type eq "irods") { # irods export
@@ -44,12 +47,6 @@ sub build {
     }
     
     return 1;
-}
-
-sub init_workflow {
-    my ($self, $jex) = @_;
-
-    $self->workflow($jex->create_workflow(name => "Generate gff", init => 1));
 }
 
 with qw(CoGe::Builder::Buildable);

@@ -11,19 +11,19 @@ use Data::Dumper;
 use CoGe::Accessory::Utils qw(sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iput);
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Core::Genome qw(get_download_path);
-use CoGe::Core::Storage qw(get_workflow_results_file);
+use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
-    generate_results link_results generate_bed export_experiment
+    generate_results link_results generate_bed 
     generate_tbl export_to_irods generate_gff generate_features copy_and_mask
     create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
     create_bam_index_job create_gff_generation_job create_load_experiment_job
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job
+    send_email_job add_items_to_notebook_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -74,9 +74,9 @@ sub copy_and_mask {
     my $cmd = "/copy_genome/copy_load_mask_genome.pl";
 
     return (
-        cmd   => catfile($args{script_dir}, $cmd),
+        cmd   => catfile($CONF->{SCRIPTDIR}, $cmd),
         args  => [
-            ["-conf", $args{conf}, 0],
+            ["-conf", $CONF->{_CONFIG_PATH}, 0],
             ["-gid", $args{gid}, 0],
             ["-uid", $args{uid}, 0],
             ["-mask", $args{mask}, 0],
@@ -97,15 +97,15 @@ sub generate_bed {
     # Generate file name
     my $basename = $args{basename};
     my $filename = "$basename" . "_id" . $args{gid} . ".bed";
-    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
-        cmd  => catfile($args{script_dir}, "coge2bed.pl"),
+        cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.pl"),
         args => [
             ['-gid', $args{gid}, 0],
             ['-f', $filename, 0],
-            ['-config', $args{conf}, 0],
+            ['-config', $CONF->{_CONFIG_PATH}, 0],
         ],
         outputs => [$output_file]
     );
@@ -117,13 +117,13 @@ sub generate_features {
     my $filename = $args{basename} . "-gid-" . $args{gid};
     $filename .= "-prot" if $args{protein};
     $filename .= ".fasta";
-    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
-        cmd    => catfile($args{script_dir}, "export_features_by_type.pl"),
+        cmd    => catfile($CONF->{SCRIPTDIR}, "export_features_by_type.pl"),
         args   => [
-            ["-config", $args{conf}, 0],
+            ["-config", $CONF->{_CONFIG_PATH}, 0],
             ["-f", $filename, 0],
             ["-gid", $args{gid}, 0],
             ["-ftid", $args{fid}, 0],
@@ -139,34 +139,17 @@ sub generate_tbl {
     # Generate filename
     my $organism = $args{basename};
     my $filename = $organism . "id" . $args{gid} . "_tbl.txt";
-    my $path = get_download_path($args{secure_tmp}, $args{gid});
+    my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
-        cmd     => catfile($args{script_dir}, "export_NCBI_TBL.pl"),
+        cmd     => catfile($CONF->{SCRIPTDIR}, "export_NCBI_TBL.pl"),
         args    => [
             ['-gid', $args{gid}, 0],
             ['-f', $filename, 0],
-            ["-config", $args{conf}, 0]
+            ["-config", $CONF->{_CONFIG_PATH}, 0]
         ],
         outputs => [$output_file]
-    );
-}
-
-sub export_experiment {
-    my ($params, $output, $conf) = @_;
-
-    return (
-        cmd => catdir($CONF->{SCRIPTDIR}, "export_experiment.pl"),
-        description => "Generating experiment files",
-        args => [
-            ["-eid", $params->{eid}, 0],
-            ["-output", $output, 1],
-            ["-conf", $CONF->{_CONFIG_PATH}, 0],
-            ["-dir", ".", ""]
-        ],
-        inputs => [],
-        outputs => [$output]
     );
 }
 
@@ -189,8 +172,7 @@ sub export_to_irods {
 }
 
 sub generate_gff {
-    my ($inputs, $conf) = @_;
-
+    my %inputs = @_;
     my %args = (
         annos   => 0,
         id_type => 0,
@@ -198,8 +180,7 @@ sub generate_gff {
         nu      => 0,
         upa     => 0,
     );
-
-    @args{(keys $inputs)} = (values $inputs);
+    @args{(keys %inputs)} = (values %inputs);
 
     # Check for a genome or dataset id
     return unless $args{gid};
@@ -208,28 +189,36 @@ sub generate_gff {
     $args{basename} = $args{gid} unless $args{basename};
 
     # Generate the output filename
-    my $organism = "gff";
     my @attributes = qw(annos cds id_type nu upa);
     my $param_string = join "-", map { $_ . $args{$_} } @attributes;
-    my $filename = $args{basename} . "_" . $param_string . ".gff";
+    my $filename = $args{basename} . "_" . $param_string;
+    if ($args{chr}) {
+    	$filename .= "_" . $args{chr};
+    }
+    $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
-    my $path = get_download_path($CONF->{SECTEMPDIR}, $args{gid});
+    my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
-
+    
+    # Build argument list
+    my $args = [
+        ['-gid', $args{gid}, 0],
+        ['-f', $filename, 0],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
+        # Parameters
+        ['-cds', $args{cds}, 0],
+        ['-annos', $args{annos}, 0],
+        ['-nu', $args{nu}, 0],
+        ['-id_type', $args{id_type}, 0],
+        ['-upa', $args{upa}, 0]
+    ];
+    push @$args, ['-chr', $args{chr}, 0] if (defined $args{chr});
+    
+    # Return workflow definition
     return $output_file, (
         cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
-        args    => [
-            ['-gid', $args{gid}, 0],
-            ['-f', $filename, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 0],
-            # Parameters
-            ['-cds', $args{cds}, 0],
-            ['-annos', $args{annos}, 0],
-            ['-nu', $args{nu}, 0],
-            ['-id_type', $args{id_type}, 0],
-            ['-upa', $args{upa}, 0],
-        ],
+        args    => $args,
         outputs => [$output_file],
         description => "Generating gff..."
     );
@@ -393,6 +382,7 @@ sub create_load_experiment_job {
     my $wid = $opts{wid};
     my $gid = $opts{gid};
     my $input_file = $opts{input_file};
+    my $normalize = $opts{normalize} || 0;
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     my $output_path = catdir($staging_dir, "load_experiment");
@@ -416,6 +406,7 @@ sub create_load_experiment_job {
             ['-staging_dir', "./load_experiment", 0],
             #['-file_type', qq["bam"], 0],
             ['-data_file', $input_file, 0],
+            ['-normalize', $normalize, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
         inputs => [
@@ -512,8 +503,8 @@ sub create_cutadapt_job {
     my %opts = @_;
 
     # Required params
-    my $fastq = $opts{fastq};
-    my $validated = $opts{validated};
+    my $fastq = $opts{fastq};            # for single fastq file (backwards compatibility) or two paired-end fastq files (new functionality)
+    my $validated = $opts{validated};    # input dependency from previous task, one or two files based on fastq arg
     my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
@@ -521,27 +512,36 @@ sub create_cutadapt_job {
     my $q = $params->{'-q'} // 25; #/
     my $quality = $params->{'--quality-base'} // 32; #/
     my $m = $params->{'-m'} // 17; #/
+    my $read_type = $params->{read_type} // 'single'; #/
 
-    my $inputs = [ $fastq ];
-    push @{$inputs}, $validated if $validated;
+    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
+    $validated = [ $validated ] unless (ref($validated) eq 'ARRAY');
+    
+    my $name = join(', ', map { to_filename($_) } @$fastq);
+    my @inputs = ( @$fastq, @$validated);
+    my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
 
-    my $name = to_filename($fastq);
+    # Build up command/arguments string
     my $cmd = $CONF->{CUTADAPT};
+    die "ERROR: CUTADAPT is not in the config." unless $cmd;
+    $cmd = 'nice ' . $cmd; # run at lower priority
 
+    my $arg_str;
+    $arg_str .= $cmd . ' ';
+    $arg_str .= "-q $q --quality-base=$quality -m $m -o $outputs[0] ";
+    $arg_str .= "-p $outputs[1] " if (@$fastq > 1); # paired-end
+    
     return {
-        cmd => qq[$cmd > /dev/null],
+        cmd => catfile($CONF->{SCRIPTDIR}, 'cutadapt.pl'), # this script was created because JEX can't handle Cutadapt's paired-end argument syntax
         script => undef,
         args => [
-            ['-q', $q, 0],
-            ["--quality-base=$quality", '', 0],
-            ["-m", $m, 0],
-            ['', $fastq, 1],
-            ['-o', $name . '.trimmed.fastq', 1],
+            [$read_type, '', 0],
+            [$staging_dir, '', 0],
+            ['"'.$arg_str.'"', '', 0],
+            ['', join(' ', @$fastq), 0]
         ],
-        inputs => $inputs,
-        outputs => [
-            catfile($staging_dir, $name . '.trimmed.fastq')
-        ],
+        inputs => \@inputs,
+        outputs => \@outputs,
         description => "Trimming (cutadapt) $name..."
     };
 }
@@ -923,6 +923,88 @@ sub create_notebook_job {
             $log_file
         ],
         description => "Creating notebook of results..."
+    };
+}
+
+
+sub add_items_to_notebook_job {
+    my %opts = @_;
+    my $user = $opts{user};
+    my $wid = $opts{wid};
+    my $notebook_id = $opts{notebook_id};
+    my $annotations = $opts{annotations}; # array ref
+    my $staging_dir = $opts{staging_dir};
+    my $done_files = $opts{done_files};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "add_items_to_notebook.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    my $result_file = get_workflow_results_file($user->name, $wid);
+    
+    my $log_file = catfile($staging_dir, "add_items_to_notebook", "log.txt");
+    
+    my $annotations_str = '';
+    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+    
+    my $args = [
+        ['-uid', $user->id, 0],
+        ['-wid', $wid, 0],
+        ['-notebook_id', $notebook_id, 0],
+        ['-annotations', qq{"$annotations_str"}, 0],
+        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-log', $log_file, 0]
+    ];
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => [ 
+            $CONF->{_CONFIG_PATH},
+            @$done_files
+        ],
+        outputs => [ 
+            $result_file,
+            $log_file
+        ],
+        description => "Adding experiment to notebook..."
+    };
+}
+
+sub send_email_job {
+    my %opts = @_;
+    my $from = $opts{from};
+    my $to = $opts{to};
+    my $subject = $opts{subject};
+    my $body = $opts{body};
+    my $done_files = $opts{done_files};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "send_email.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    my $staging_dir = $opts{staging_dir};
+    my $done_file = catfile($staging_dir, "send_email.done");
+    
+    my $args = [
+        ['-from', '"'.escape($from).'"', 0],
+        ['-to', '"'.escape($to).'"', 0],
+        ['-subject', '"'.escape($subject).'"', 0],
+        ['-body', '"'.escape($body).'"', 0],
+        ['-done_file', '"'.$done_file.'"', 0]
+    ];
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => [ 
+            $CONF->{_CONFIG_PATH},
+            @$done_files
+        ],
+        outputs => [ 
+            $done_file
+        ],
+        description => "Sending email..."
     };
 }
 

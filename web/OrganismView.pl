@@ -306,9 +306,9 @@ sub get_orgs {
     
     # Build html options list of organisms
     my @opts;
-    foreach my $_ ( sort { uc( $a->name ) cmp uc( $b->name ) } values %organisms ) {
-        my $this_id = $_->id;
-        my $this_name = $_->name;
+    foreach my $org ( sort { uc( $a->name ) cmp uc( $b->name ) } values %organisms ) {
+        my $this_id = $org->id;
+        my $this_name = $org->name;
 
         # Set selected option if first or specified by user - FIXME there is a bettery way
         my $selected;
@@ -1328,7 +1328,7 @@ sub get_gc_for_noncoding {
             )
           )
         {
-            foreach my $loc ( $feat->locations ) {
+            foreach my $loc ( $feat->locs ) {
                 if ( $loc->stop > length( $seqs{ $feat->chromosome } ) ) {
                     print STDERR "feature "
                       . $feat->id

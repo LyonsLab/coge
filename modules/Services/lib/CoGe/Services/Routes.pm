@@ -30,6 +30,20 @@ sub startup {
         ->name("genomes-fetch")
         ->to("genome2#fetch", id => undef);
 
+    # Dataset routes
+    #$r->get("/genomes/search/#term")
+    #    ->name("genomes-search")
+    #    ->to("genome2#search", term => undef);
+
+    $r->get("/datasets/:id" => [id => qr/\d+/])
+        ->name("datasets-fetch")
+        ->to("dataset#fetch", id => undef);
+
+    $r->get("/datasets/:id/genomes" => [id => qr/\d+/])
+        ->name("datasets-genomes")
+        ->to("dataset#genomes", id => undef);
+
+
     # Experiment routes
     $r->get("/experiments/search/#term")
         ->name("experiments-search")

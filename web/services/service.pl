@@ -14,7 +14,7 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Sequence',
             rm     => 'get'
         },
-        'download/:page' => {
+        'download' => {
             prefix => 'CoGe::Services::Data',
             app    => 'Downloader',
             rm     => 'get'

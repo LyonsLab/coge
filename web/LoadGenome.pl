@@ -96,7 +96,7 @@ sub generate_html {
 					      TITLE      => "Load Genome",
         				  PAGE_LINK  => $LINK,
 					      HELP       => $P->{SERVER}, #TODO rename to HOME
-                          USER       => $user->display_name,
+                          USER       => $user->display_name || '',
                           LOGO_PNG   => "CoGe.svg",
         );
         $template->param( LOGON => 1 ) unless $user->user_name eq "public";
@@ -135,7 +135,7 @@ sub generate_body {
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
-        MAX_FTP_FILES            => 30,
+        MAX_FTP_FILES            => 50,
         USER                     => $user->user_name
     );
 

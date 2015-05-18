@@ -22,7 +22,10 @@ has 'jex'     => (
 
 sub get {
     my ($self, $message) = @_;
-    return unless (defined $message->{type});
+    unless (defined $message && defined $message->{type}) {
+        print STDERR "RequestFactory: error: invalid message\n";
+        return;
+    }
 
     my $options = {
         db         => $self->db,
@@ -32,19 +35,23 @@ sub get {
         parameters => $message->{parameters}
     };
 
-    if ($message->{type} eq "export_gff" ||
-        $message->{type} eq "export_fasta" ||
-        $message->{type} eq "load_experiment")
+    my $type = $message->{type};
+    if ($type eq "export_gff" ||
+        $type eq "export_fasta" ||
+        $type eq "export_genome" ||
+        $type eq "load_experiment")
     {
         return CoGe::Request::Genome->new($options);
     }
-    elsif ($message->{type} eq "export_experiment") 
-    {
+    elsif ($type eq "export_experiment") {
         return CoGe::Request::Experiment->new($options);
     }
-    elsif ($message->{type} eq "analyze_snps") 
-    {
+    elsif ($type eq "analyze_snps") {
         return CoGe::Request::ExperimentAnalysis->new($options);
+    }
+    else {
+        print STDERR "RequestFactory: error: unrecognized job type '", $type, "'\n";
+        return;
     }
 }
 

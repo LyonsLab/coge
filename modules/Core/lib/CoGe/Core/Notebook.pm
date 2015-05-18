@@ -14,7 +14,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook notebookcmp %ITEM_TYPE );
+    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook load_notebook notebookcmp %ITEM_TYPE );
 
     my $node_types = CoGeX::node_types();
 
@@ -34,12 +34,36 @@ BEGIN {
     );
 }
 
+sub load_notebook {
+    my %opts = @_;
+    my $db = $opts{db};
+    my $id = $opts{id};
+    my $user = $opts{user}; # optional database user object
+    return unless $db and $id;
+
+	my $notebook = $db->resultset('List')->find($id);
+	unless ($notebook) {
+    	print STDERR "error reading notebook from db in CoGe::Core::Notebook::load_notebook\n";
+		return undef;
+	}
+
+	if ($user) { # check permissions if user specified
+		if ($notebook->restricted && !$user->has_access_to_list($notebook)) {
+	    	print STDERR "attempt to load notebook without user permissions in CoGe::Core::Notebook::load_notebook\n";
+			return undef;
+		}
+	}
+
+	return $notebook;	
+}
+
 sub search_notebooks {
     my %opts = @_;
     my $db = $opts{db};
     my $search_term = $opts{search_term}; # id value, or keyword in name/description
     my $user = $opts{user}; # optional database user object
     return unless $db and $search_term;
+    my $include_deleted = $opts{include_deleted}; # optional boolean flag
 
     # Search genomes
     my $search_term2 = '%' . $search_term . '%';
@@ -54,16 +78,17 @@ sub search_notebooks {
 
     # Filter result by permissions
     my @filtered = grep {
-        !$_->restricted || (defined $user && $user->has_access_to_list($_))
+        (!$_->deleted || $include_deleted) &&
+        (!$_->restricted || (defined $user && $user->has_access_to_list($_)))
     } @notebooks;
 
-    return \@notebooks;
+    return \@filtered;
 }
 
 sub create_notebook {
     my %opts = @_;
-    my $db = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
-    my $user = $opts{user};
+    my $db      = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
+    my $user    = $opts{user};
     my $name    = $opts{name};
     my $desc    = $opts{desc};
     my $type_id = $opts{type_id};
@@ -78,9 +103,8 @@ sub create_notebook {
             name         => $name,
             description  => $desc,
             list_type_id => $type_id,
-
-            # user_group_id => $owner->id,
-            restricted => 1
+            creator_id   => $user->id,
+            restricted   => 1
         }
     );
     return unless $notebook;

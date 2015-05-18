@@ -16,26 +16,26 @@ use CoGe::Accessory::Workflow;
 has 'host' => (
     is       => 'ro',
     isa      => 'Str',
-    required => 1,
+    required => 1
 );
 
 has 'port' => (
     is       => 'ro',
     isa      => 'Int',
     default  => 5151,
-    required => 0,
+    required => 0
 );
 
 has 'local' => (
     is  => 'ro',
-    isa => 'Bool',
+    isa => 'Bool'
 );
 
 has '_context' => (
     is       => 'ro',
     lazy     => 1,
     init_arg => undef,
-    default  => sub { zmq_init(); },
+    default  => sub { zmq_init(); }
 );
 
 # Public functions
@@ -52,13 +52,16 @@ sub create_workflow {
         my $response = _send_request($self, $request);
         $id = $response->{id};
 
-        die "The workflow could not be initialized" unless $id;
+        unless ($id) {
+            print STDERR "CoGe::Accessory::Jex ERROR: Failed to initialize workflow\n";
+            return;
+        }
     }
 
     my $workflow = CoGe::Accessory::Workflow->new(
         id      => $id,
         name    => $opts{name},
-        logfile => $opts{logfile},
+        logfile => $opts{logfile}
     );
 
     return $workflow;
@@ -76,7 +79,7 @@ sub submit_workflow {
             logfile  => $workflow->logfile,
             priority => $workflow->priority,
             jobs     => $workflow->jobs(),
-        },
+        }
     };
     
     return _send_request($self, $request);
@@ -111,7 +114,7 @@ sub terminate {
         request => 'cancel',
         data => {
             id => $id
-        },
+        }
     };
 
     $response = _send_request($self, $request);
@@ -126,7 +129,7 @@ sub restart {
         request => 'restart',
         data => {
             id => $id
-        },
+        }
     };
 
     $response = _send_request($self, $request);
@@ -147,7 +150,7 @@ sub get_job {
         request => 'get_status',
         data    => {
             id => $id
-        },
+        }
     };
 
     return _send_request($self, $request);
@@ -160,12 +163,12 @@ sub is_successful {
 }
 
 sub get_all_workflows {
-    my $self = $_;
+    my ($self) = @_;
     my ($request, $response, $workflows);
 
     $request = {
         request => 'workflows',
-        data    => {},
+        data    => { }
     };
 
     $response = _send_request($self, $request);
@@ -176,14 +179,16 @@ sub get_all_workflows {
 }
 
 sub find_workflows {
-    my ($self, @workflows) = @_;
+    my ($self, $ids, $status) = @_;
     my ($request, $response, $workflows);
+
+    my %data;
+    $data{ids} = $ids if ($ids); # mdb changed 4/29/15 - rename key from "workflows" to "ids"
+    $data{status} = $status if ($status);
 
     $request = {
         request => 'workflows',
-        data    => {
-            workflows => \@workflows
-        },
+        data    => \%data
     };
 
     $response = _send_request($self, $request);
@@ -204,7 +209,11 @@ sub _send_request {
     eval {
         my ($socket, $msg, $json_request, $json_response);
 
-        $json_request = encode_json($request);
+        # mdb added 4/17/15 COGE-609 - sort json consistently
+        my $json_encoder = JSON::XS->new;
+        $json_encoder->canonical(1);
+        
+        $json_request = $json_encoder->encode($request);
         $socket = zmq_socket($self->_context, ZMQ_REQ);
 
         zmq_setsockopt($socket, ZMQ_LINGER, 0);

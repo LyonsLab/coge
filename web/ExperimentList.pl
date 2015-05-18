@@ -347,7 +347,8 @@ sub send_to_list              #send to list
         {
             name         => 'experimentlist',
             description  => 'Created by ExperimentList',
-            list_type_id => 2,                           # FIXME hardcoded type!
+            list_type_id => 2, # FIXME hardcoded type!
+            creator_id => $USER->id,
             restricted   => 1
         }
     );

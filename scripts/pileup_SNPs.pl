@@ -52,7 +52,7 @@ while ($line = <STDIN>) {
         }
     }
 
-    if (keys %filtered > 1) {
+    if (keys %filtered > 0) {
         foreach my $b (keys %filtered) {
             my $info = 'DP='.$filtered{$b}{depth}.';AF='.$filtered{$b}{freq};
             print join("\t", $ref, $pos, '.', $refAllele, $b, '.', '.', $info), "\n";
