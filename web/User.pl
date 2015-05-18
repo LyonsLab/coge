@@ -155,12 +155,15 @@ sub get_item_info {
         my $group = $coge->resultset('UserGroup')->find($item_id);
         return unless $group;
         return unless ( $USER->is_admin or $group->has_member($USER) );
+        
+        my $creation = ($group->creator_user_id ? $group->creator->display_name  . ' ' : '') . ($group->date ne '0000-00-00 00:00:00' ? $group->date : '');
 
         $html .=
             '<b>Group id' . $group->id . '</b><br>'
           . '<b>Name:</b> ' . $group->name . '<br>'
           . '<b>Description:</b> ' . $group->description . '<br>'
           . '<b>Role:</b> ' . $group->role->name . '<br>'
+          . ($creation ? '<b>Creator:</b> ' . $creation . '<br>' : '')
           . '<b>Members:</b><br>';
         foreach ( sort usercmp $group->users ) {
             $html .=
@@ -1367,6 +1370,7 @@ sub get_contents {
         }
     }
     
+    # Retrieve all job history
     my $jobs = get_jobs($last_update);
 
     #print STDERR "get_contents: time4=" . ((time - $start_time)*1000) . "\n";
@@ -1413,7 +1417,7 @@ sub get_contents {
     
     #print STDERR "get_contents: time6=" . ((time - $start_time)*1000) . "\n";
     if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_loads} ) {
-        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo']);
+        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo', 'experimentview']);
         foreach (@$loads) {
             $_->{link} = undef unless is_uri($_->{link});
 
@@ -1431,6 +1435,7 @@ sub get_contents {
     }
 
     if ($html_only) { # only do this for initial page load, not polling
+        # Generate activity graph
         my $user_id = $USER->id;
         my $job_list = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
         push @rows,
@@ -1442,6 +1447,7 @@ sub get_contents {
           };
     }
 
+    # Render page template
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( DO_CONTENTS => 1 );
     $template->param( CONTENTS_ITEM_LOOP => \@rows );
@@ -1470,7 +1476,7 @@ sub get_jobs {
     
     # Add status info from job engine for currently active jobs
     my @workflow_ids = map { $_->workflow_id } @entries;
-    my $workflows = $JEX->find_workflows(@workflow_ids);
+    my $workflows = $JEX->find_workflows(\@workflow_ids);
     my %workflowsByID;
     foreach (@{$workflows}) {
         my($id, undef, $submitted, $completed, $status) = @{$_};
@@ -1797,9 +1803,8 @@ sub create_new_notebook {
             name         => $name,
             description  => $desc,
             list_type_id => $type_id,
-
-            # user_group_id => $owner->id,
-            restricted => 1
+            creator_id   => $USER->id,
+            restricted   => 1
         }
     );
     return unless $list;

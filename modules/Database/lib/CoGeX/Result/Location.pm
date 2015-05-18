@@ -88,3 +88,20 @@ LICENSE file included with this module.
 =head1 SEE ALSO
 
 =cut
+
+################################################ subroutine header begin ##
+
+=head2 chr
+
+ Usage     : my $chr = $feat->chr
+ Purpose   : alias for $feat->chromosome
+
+=cut
+
+################################################## subroutine header end ##
+
+sub chr {
+        my $self = shift;
+        return $self->chromosome;
+}
+

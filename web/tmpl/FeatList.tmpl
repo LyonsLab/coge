@@ -392,6 +392,7 @@ Filter:
  <input type=button value="Uncheck All" onclick="$('#feat_table :checkbox').attr('checked', false);">-->
 
  <!-- TODO - consider putting onClick declarations in javascript for simplicity -->
+ <div class='small coge-padded'>
  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
@@ -402,8 +403,9 @@ Filter:
  <span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
  </TMPL_IF>
 -->
+ </div>
 
-<div class='small'>
+<div class='small coge-padded-left'>
  Send selected features to:
  <select name='checked_action' id='checked_action'>
   <option value="send_to_blast">CoGeBlast</option>

@@ -28,37 +28,39 @@ BEGIN {
     #@EXPORT_OK = qw(build);
 }
 
-sub run {
-    my %opts = @_;
-    my $user = $opts{user};
-    my $genome = $opts{genome};
-    my $input_file = $opts{input_file};
-    my $metadata = $opts{metadata};
-    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
-
-    # Create the workflow
-    my $workflow = $JEX->create_workflow( name => 'Running the SAMtools SNP-finder pipeline', init => 1 );
-    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-    $workflow->logfile( catfile($result_dir, 'debug.log') );
-
-    # Build the workflow
-    my @tasks = build({
-        user => $user,
-        wid  => $workflow->id,
-        genome => $genome,
-        input_file => $input_file,
-        metadata => $metadata,
-    });
-    $workflow->add_jobs(\@tasks);
-
-    # Submit the workflow
-    my $result = $JEX->submit_workflow($workflow);
-    if ($result->{status} =~ /error/i) {
-        return (undef, "Could not submit workflow");
-    }
-
-    return ($result->{id}, undef);
-}
+# mdb deprecated 5/13/15
+#sub run {
+#    my %opts = @_;
+#    my $user = $opts{user};
+#    my $genome = $opts{genome};
+#    my $input_file = $opts{input_file};
+#    my $metadata = $opts{metadata};
+#    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
+#
+#    # Create the workflow
+#    my $workflow = $JEX->create_workflow( name => 'Running the SAMtools SNP-finder pipeline', init => 1 );
+#    return unless ($workflow && $workflow->id);
+#    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
+#    $workflow->logfile( catfile($result_dir, 'debug.log') );
+#
+#    # Build the workflow
+#    my @tasks = build({
+#        user => $user,
+#        wid  => $workflow->id,
+#        genome => $genome,
+#        input_file => $input_file,
+#        metadata => $metadata,
+#    });
+#    $workflow->add_jobs(\@tasks);
+#
+#    # Submit the workflow
+#    my $result = $JEX->submit_workflow($workflow);
+#    if ($result->{status} =~ /error/i) {
+#        return (undef, "Could not submit workflow");
+#    }
+#
+#    return ($result->{id}, undef);
+#}
 
 sub build {
     my $opts = shift;
@@ -70,6 +72,7 @@ sub build {
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
     my $params = $opts->{params};
+    my $skipAnnotations = $opts->{skipAnnotations};
 
     # Setup paths
     my $gid = $genome->id;
@@ -78,6 +81,8 @@ sub build {
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
     my $fasta_file = get_genome_file($gid);
     my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
+    
+    my $annotations = generate_additional_metadata($params);
 
     my $conf = {
         staging_dir => $staging_dir,
@@ -93,7 +98,9 @@ sub build {
         wid         => $wid,
         gid         => $gid,
         
-        params      => $params
+        params      => $params,
+        
+        annotations => ($skipAnnotations ? '' : join(';', @$annotations)),
     };
 
     # Build the workflow's tasks
@@ -111,17 +118,11 @@ sub build {
     my $load_vcf_task = create_load_vcf_job($conf);
     push @tasks, $load_vcf_task;
 
-    # Save outputs for retrieval by downstream tasks
-    my @done_files = (
-        $load_vcf_task->{outputs}->[1]
-    );
-    
-    my %results = (
-        metadata => generate_additional_metadata($params),
-        done_files => \@done_files
-    );
-
-    return (\@tasks, \%results);
+    return {
+        tasks => \@tasks,
+        metadata => $annotations,
+        done_files => [ $load_vcf_task->{outputs}->[1] ]
+    };
 }
 
 sub create_find_snps_job {

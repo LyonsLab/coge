@@ -19,11 +19,11 @@ use Benchmark;
 my $t1 = new Benchmark;
 
 my $GO          = 1;
-my $DEBUG       = 0;
+#my $DEBUG       = 0;
 my $DB_BATCH_SZ = 10 * 1000;
 use vars qw($staging_dir $result_dir $data_file
-  $name $description $link $version $restricted
-  $gid $source_name $user_name $config $allow_all_chr
+  $name $description $link $version $restricted $creator_id
+  $gid $source_name $user_name $user_id $config $allow_all_chr
   $host $port $db $user $pass $P $GUNZIP);
 
 GetOptions(
@@ -37,20 +37,23 @@ GetOptions(
     "restricted=i"  => \$restricted,     # experiment restricted flag
     "gid=s"         => \$gid,            # genome id
     "source_name=s" => \$source_name,    # data source name (JS escaped)
-    "user_name=s"   => \$user_name,      # user name
+    "user_id=i"     => \$user_id,        # user ID to assign dataset
+    "user_name=s"   => \$user_name,      # user name to assign dataset (alternative to user_id)
+    "creator_id=i"  => \$creator_id,     # user ID to set as dataset creator
     "config=s"      => \$config,         # configuration file
 
     # Optional Flags
     "allow_all_chr=i" => \$allow_all_chr # Allow non-existent chromosomes
 );
 
-# Open log file
+# Open log file for detailed feature info -- everything else goes to STDOUT for JEX
 $| = 1;
 die unless ($staging_dir);
 mkpath($staging_dir); # make sure this exists
-#my $logfile = "$staging_dir/log.txt";
-#open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
-#$log->autoflush(1);
+my $logfile = "$staging_dir/load_annotation.log";
+open( my $log, ">$logfile" ) or die "Error opening log file $logfile";
+$log->autoflush(1);
+
 print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 
 # Prevent loading again (issue #417)
@@ -69,8 +72,13 @@ $version     = unescape($version);
 $source_name = unescape($source_name);
 $restricted  = '0' if ( not defined $restricted );
 
-if ($user_name eq 'public') {
-	print STDOUT "log: error: not logged in\n";
+if (not defined $user_id and not defined $user_name) {
+    print STDOUT "log: error: user not specified, use user_id or user_name\n";
+    exit(-1);
+}
+
+if ((defined $user_name and $user_name eq 'public') || (defined $user_id and $user_id eq '0')) {
+    print STDOUT "log: error: not logged in\n";
     exit(-1);
 }
 
@@ -108,12 +116,34 @@ unless ($coge) {
     exit(-1);
 }
 
-# Retrieve user (for verification now and used at end for logging)
-my $user = $coge->resultset('User')->find( { user_name => $user_name } );
-unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
+# Retrieve user
+my $user;
+if ($user_id) {
+    $user = $coge->resultset('User')->find($user_id);
+}
+elsif ($user_name) {
+    $user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
+else {
+    print STDOUT "log: error user not specified, see user_id or user_name\n";
     exit(-1);
 }
+
+unless ($user) {
+    print STDOUT "log: error finding user ", ($user_name ? $user_name : $user_id) , "\n";
+    exit(-1);
+}
+
+# Retrieve creator
+my $creator;
+if ($creator_id) {
+    $creator = $coge->resultset('User')->find($creator_id);
+    unless ($creator) {
+        print STDOUT "log: error finding creator $creator_id\n";
+        exit(-1);
+    }
+}
+$creator = $user unless $creator;
 
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
@@ -270,6 +300,7 @@ my $dataset = $coge->resultset('Dataset')->create(
         link           => $link,
         version        => $version,
         restricted     => $restricted,
+        creator_id     => $creator->id,
     }
 );
 unless ($dataset) {
@@ -314,7 +345,7 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
           if ( $loaded_annot and ( $loaded_annot % 1000 ) == 0 );
 
         foreach my $feat_type ( sort { $a cmp $b } keys %{ $data{$chr_loc}{$name} } ) {
-	        print STDOUT "\n" if $DEBUG;
+	        print $log "\n" if $log;
 
             my ($start, $stop, $strand, $chr);
             my $loc = $data{$chr_loc}{$name}{$feat_type}{loc};
@@ -337,11 +368,11 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
               if $GO && !$feat_types{$feat_type};
             my $feat_type_obj = $feat_types{$feat_type};
 
-            print STDOUT "Creating feature of type $feat_type\n" if $DEBUG;
+            print $log "Creating feature of type $feat_type\n" if $log;
 
             # mdb added check 4/8/14 issue 358
             unless (defined $start and defined $stop and defined $chr) {
-                print STDOUT "warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n" if $DEBUG;
+                print $log "warning: feature '", (defined $name ? $name : ''), "' (type '$feat_type') missing coordinates", "\n" if $log;
                 #print STDOUT Dumper $data{$chr_loc}{$name}{$feat_type}, "\n";
                 next; #exit(-1);
             }
@@ -369,7 +400,7 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
                 next if $feat_type eq "gene" && $loc_count > 1; #only use the first one as this will be the full length of the gene.  Stupid hack
                 next if $seen_locs{$start}{$stop};
                 $seen_locs{$start}{$stop} = 1;
-                print STDOUT "Adding location $chr:(" . $start . "-" . $stop . ", $strand)\n" if $DEBUG;
+                print $log "Adding location $chr:(" . $start . "-" . $stop . ", $strand)\n" if $log;
                 $loaded_annot++;
                 batch_add(
                     \@loc_buffer,
@@ -393,9 +424,9 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
                 }
                 my $master = 0;
                 $master = 1 if $tmp eq $name;
-                print STDOUT "Adding name $tmp to feature ", $featid,
+                print $log "Adding name $tmp to feature ", $featid,
                   ( $master ? " (MASTER)" : '' ), "\n"
-                  if $DEBUG;
+                  if $log;
 
                 batch_add(
                     \@name_buffer,
@@ -423,7 +454,7 @@ foreach my $chr_loc ( sort { $a cmp $b } keys %data ) {
                         
                         # Add feature annotation to DB
                         my $link = $annos{$tmp}{$anno}{link};
-                        print STDOUT "Adding annotation ($type_name): $anno\n" . ( $link ? "\tlink: $link" : '' ) . "\n" if $DEBUG;
+                        print $log "Adding annotation ($type_name): $anno\n" . ( $link ? "\tlink: $link" : '' ) . "\n" if $log;
                         batch_add(
                             \@anno_buffer,
                             'feature_annotation',
@@ -482,11 +513,12 @@ sub batch_add {
         if ( @$buffer >= $DB_BATCH_SZ or not defined $item ) {
             print STDOUT "Populate $table_name " . @$buffer . "\n";
             my $startTime = time;
-            #$coge->resultset($table_name)->populate($buffer) if (@$buffer); # mdb removed 1/7/14 -- defaulting to single-insert due to missing primary key value, see http://search.cpan.org/~ribasushi/DBIx-Class-0.082810/lib/DBIx/Class/ResultSet.pm#populate
+#            $coge->resultset($table_name)->populate($buffer) if (@$buffer); # mdb removed 1/7/14 -- defaulting to single-insert due to missing primary key value, see http://search.cpan.org/~ribasushi/DBIx-Class-0.082810/lib/DBIx/Class/ResultSet.pm#populate
             my $dbh = $coge->storage->dbh;
             my @columns = keys %{$buffer->[0]};
-            my $stmt = "INSERT $table_name ( " . join(',', @columns) . " ) VALUES " .
-                join(',', map { '(' . join(',', map { $dbh->quote($_) } values %$_) . ')' } @$buffer) . ';';
+            my $stmt = "INSERT $table_name ( " . join(',', @columns) . " ) VALUES " . # TODO use prepared statement
+                join(',', map { '(' . join(',', map { $dbh->quote($_) } @{$_}{@columns}) . ')' } @$buffer) . ';'; # mdb changed 4/28/15 -- fix ordering of values
+#            print $log $stmt, "\n";
             unless ($dbh->do($stmt)) {
                 print STDOUT "log: error: database batch insertion for table '$table_name' failed: $stmt\n";
                 exit(-1);

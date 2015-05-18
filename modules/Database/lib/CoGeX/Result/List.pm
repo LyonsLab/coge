@@ -65,12 +65,20 @@ __PACKAGE__->add_columns(
     "locked",
     { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
     "deleted",
-    { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 }
+    { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
+    "creator_id",
+    { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+    "date",
+    { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
 );
 __PACKAGE__->set_primary_key("list_id");
 __PACKAGE__->belongs_to(
     "list_type" => "CoGeX::Result::ListType",
     'list_type_id'
+);
+__PACKAGE__->belongs_to(
+    "creator" => "CoGeX::Result::User", 
+    { 'foreign.user_id' => 'self.creator_id' }
 );
 __PACKAGE__->has_many(
     "list_annotations" => "CoGeX::Result::ListAnnotation",
@@ -473,7 +481,7 @@ See Also   : CoGe::Accessory::Annotation
 
 ################################################## subroutine header end ##
 
-sub annotation_pretty_print_html {
+sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view code in the model
     my $self    = shift;
     my %opts    = @_;
     my $minimal = $opts{minimal};
@@ -533,6 +541,19 @@ sub annotation_pretty_print_html {
     my $restricted = $self->restricted ? "Yes" : "No";
     $anno_type->add_Annot( $restricted . "</td>" );
     $anno_obj->add_Annot($anno_type);
+    
+    my $creation = ($self->creator_id ? $self->creator->display_name  . ' ' : '') . ($self->date ne '0000-00-00 00:00:00' ? $self->date : '');
+    if ($creation) {
+        $anno_type =
+          new CoGe::Accessory::Annotation(
+                Type => "<tr><td nowrap='true'><span class='title5'>"
+              . "Creation"
+              . "</span>" );
+        $anno_type->Type_delimit(": <td class='data5'>");
+        my $restricted = $self->restricted ? "Yes" : "No";
+        $anno_type->add_Annot( $creation . "</td>" );
+        $anno_obj->add_Annot($anno_type);
+    }
 
     $anno_type =
       new CoGe::Accessory::Annotation(

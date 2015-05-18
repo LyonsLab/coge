@@ -98,6 +98,8 @@ __PACKAGE__->add_columns(
     { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
     "creator_id",
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+    "date",
+    { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
 );
 
 __PACKAGE__->set_primary_key("genome_id");
@@ -118,8 +120,8 @@ __PACKAGE__->belongs_to(
     'genomic_sequence_type_id'
 );
 __PACKAGE__->belongs_to(
-    "creator" => "CoGeX::Result::User",
-    "creator_id",
+    "creator" => "CoGeX::Result::User", 
+    { 'foreign.user_id' => 'self.creator_id' }
 );
 __PACKAGE__->has_many(
     "genome_annotations" => "CoGeX::Result::GenomeAnnotation",
@@ -237,6 +239,11 @@ sub lists {
 
 sub notebooks {
     shift->lists(@_);
+}
+
+sub notebooks_desc {
+    my $self = shift;
+    return join(',', map {local $_ = $_->name; s/&reg;\s*//; $_ } $self->notebooks) || '';
 }
 
 # mdb: These functions were consolidated for all item types (genome, experiment,
@@ -554,6 +561,10 @@ sub get_genomic_sequence {
 sub file_path {
     my $self = shift;
     return CoGe::Core::Storage::get_genome_file( $self->id );
+}
+
+sub storage_path {
+    return shift->file_path;
 }
 
 # mdb added 8/6/13, issue #157
@@ -888,6 +899,7 @@ sub gff {
     my $print   = $opts{print};
     my $annos   = $opts{annos};
     my $cds     = $opts{cds};       #only print CDS gene features
+    my $chr		= $opts{chr}; #optional, set to only include features on a particular chromosome
     my $unique_parent_annotations =
       $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
     my $id_type =
@@ -924,9 +936,10 @@ sub gff {
             cds                       => $cds,
             name_unique               => $name_unique,
             id_type                   => $id_type,
-            unique_parent_annotations => $unique_parent_annotations
+            unique_parent_annotations => $unique_parent_annotations,
+            chr						  => $chr
         );
-        $output .= $tmp;
+        $output .= $tmp if $tmp;
     }
     return $output;
 }
@@ -1196,6 +1209,28 @@ sub info_html {
       . qq{")'>}
       . $info
       . "</span>";
+}
+
+sub info_file {
+    my $self = shift;
+    
+    my $restricted = ($self->restricted) ? "yes" : "no";
+    my $genome_name = $self->genome->info;
+    $genome_name =~ s/&reg;\s*//;
+
+    my @lines = (
+        qq{"Name","} . $self->name . '"',
+        qq{"Description","} . $self->description . '"',
+        qq{"Source","} . $self->source->info . '"',
+        qq{"Version","} . $self->version . '"',
+        qq{"Organism","} . $self->organism->name . '"',
+        qq{"Sequence Type", "} . $self->genomic_sequence_type->name . '"',
+        qq{"Notebooks","} . $self->notebooks_desc . '"',
+        qq{"Restricted","$restricted"},
+    );
+    push @lines, qq{"Link","} . $self->link . '"' if ($self->link);
+
+    return join("\n", @lines);
 }
 
 ############################################### subroutine header begin ##

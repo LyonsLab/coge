@@ -32,45 +32,47 @@ BEGIN {
 our $CONF = CoGe::Accessory::Web::get_defaults();
 our $FASTA_CACHE_DIR;
 
-sub run {
-    my %opts = @_;
-    my $user = $opts{user};
-    my $genome = $opts{genome};
-    my $input_file = $opts{input_file};
-    my $metadata = $opts{metadata};
-    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
-
-    # Connect to workflow engine and get an id
-    my $jex = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
-    unless (defined $jex) {
-        return (undef, "Could not connect to JEX");
-    }
-
-    # Create the workflow
-    my $workflow = $jex->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
-
-    # Setup log file, staging, and results paths
-    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-    $workflow->logfile( catfile($result_dir, 'debug.log') );
-
-    # Build the workflow
-    my @tasks = build({
-        user => $user,
-        wid  => $workflow->id,
-        genome => $genome,
-        input_file => $input_file,
-        metadata => $metadata,
-    });
-    $workflow->add_jobs(\@tasks);
-
-    # Submit the workflow
-    my $result = $jex->submit_workflow($workflow);
-    if ($result->{status} =~ /error/i) {
-        return (undef, "Could not submit workflow");
-    }
-
-    return ($result->{id}, undef);
-}
+# mdb deprecated 5/13/15
+#sub run {
+#    my %opts = @_;
+#    my $user = $opts{user};
+#    my $genome = $opts{genome};
+#    my $input_file = $opts{input_file};
+#    my $metadata = $opts{metadata};
+#    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
+#
+#    # Connect to workflow engine and get an id
+#    my $jex = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
+#    unless (defined $jex) {
+#        return (undef, "Could not connect to JEX");
+#    }
+#
+#    # Create the workflow
+#    my $workflow = $jex->create_workflow( name => 'Running the SNP-finder pipeline', init => 1 );
+#    return unless ($workflow && $workflow->id);
+#
+#    # Setup log file, staging, and results paths
+#    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
+#    $workflow->logfile( catfile($result_dir, 'debug.log') );
+#
+#    # Build the workflow
+#    my @tasks = build({
+#        user => $user,
+#        wid  => $workflow->id,
+#        genome => $genome,
+#        input_file => $input_file,
+#        metadata => $metadata,
+#    });
+#    $workflow->add_jobs(\@tasks);
+#
+#    # Submit the workflow
+#    my $result = $jex->submit_workflow($workflow);
+#    if ($result->{status} =~ /error/i) {
+#        return (undef, "Could not submit workflow");
+#    }
+#
+#    return ($result->{id}, undef);
+#}
 
 sub build {
     my $opts = shift;
@@ -82,6 +84,7 @@ sub build {
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
     my $params = $opts->{params};
+    my $skipAnnotations = $opts->{skipAnnotations};
 
     # Setup paths
     my $gid = $genome->id;
@@ -113,6 +116,8 @@ sub build {
         staging_dir => $staging_dir
     );
     
+    my $annotations = generate_additional_metadata($params);
+    
     my $load_vcf_task = create_load_vcf_job({
         username => $user->name,
         staging_dir => $staging_dir,
@@ -120,21 +125,16 @@ sub build {
         wid => $wid,
         gid => $gid,
         vcf => catfile($staging_dir, 'snps.vcf'),
-        metadata => $metadata
+        metadata => $metadata,
+        annotations => ($skipAnnotations ? '' : join(';', @$annotations))
     });
     push @tasks, $load_vcf_task;
     
-    # Save outputs for retrieval by downstream tasks
-    my @done_files = (
-        $load_vcf_task->{outputs}->[1]
-    );
-    
-    my %results = (
-        metadata => generate_additional_metadata(),
-        done_files => \@done_files
-    );
-
-    return (\@tasks, \%results);
+    return {
+        tasks => \@tasks,
+        metadata => $annotations,
+        done_files => [ $load_vcf_task->{outputs}->[1] ]
+    };
 }
 
 sub create_samtools_job {

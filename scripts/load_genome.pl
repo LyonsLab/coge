@@ -46,9 +46,9 @@ GetOptions(
     "source_id=i"	=> \$source_id,		 # data source id
     "source_name=s" => \$source_name,    # data source name (JS escaped)
     "source_desc=s" => \$source_desc,    # data source description (JS escaped)
-    "user_id=i"		=> \$user_id,		 # user ID
-    "creator_id=i"	=> \$creator_id,     # user ID to set genome creator
-    "user_name=s"   => \$user_name,      # user name
+    "user_id=i"		=> \$user_id,		 # user ID to assign genome
+    "user_name=s"   => \$user_name,      # user name to assign genome (alternative to user_id)
+    "creator_id=i"	=> \$creator_id,     # user ID to set as genome creator
     "keep_headers=i" => \$keep_headers,  # flag to keep original headers (no parsing)
     "ignore_chr_limit=i" => \$ignore_chr_limit, # flag to ignore chromosome/contig limit # mdb added 3/9/15 COGE-595
     "split=i"    => \$split,       # split fasta into chr directory
@@ -91,14 +91,17 @@ if (not $source_id and not $source_name) {
 	print STDOUT "log: error: source not specified, use source_id or source_name\n";
 	exit(-1);
 }
-if (not $user_id and not $user_name) {
-	print STDOUT "log: error: user not specified, use user_id or user_name\n";
-	exit(-1);
-}
-if ($user_name and $user_name eq 'public') {
-	print STDOUT "log: error: not logged in\n";
+
+if (not defined $user_id and not defined $user_name) {
+    print STDOUT "log: error: user not specified, use user_id or user_name\n";
     exit(-1);
 }
+
+if ((defined $user_name and $user_name eq 'public') || (defined $user_id and $user_id eq '0')) {
+    print STDOUT "log: error: not logged in\n";
+    exit(-1);
+}
+
 unless ($organism_id) {
     print STDOUT "log: error: organism_id not specified\n";
     exit(-1);
@@ -198,6 +201,35 @@ unless ($coge) {
     exit(-1);
 }
 
+# Retrieve user
+my $user;
+if ($user_id) {
+    $user = $coge->resultset('User')->find($user_id);
+}
+elsif ($user_name) {
+    $user = $coge->resultset('User')->find( { user_name => $user_name } );
+}
+else {
+    print STDOUT "log: error user not specified, see user_id or user_name\n";
+    exit(-1);
+}
+
+unless ($user) {
+    print STDOUT "log: error finding user ", ($user_name ? $user_name : $user_id) , "\n";
+    exit(-1);
+}
+
+# Retrieve creator
+my $creator;
+if ($creator_id) {
+    $creator = $coge->resultset('User')->find($creator_id);
+    unless ($creator) {
+        print STDOUT "log: error finding creator $creator_id\n";
+        exit(-1);
+    }
+}
+$creator = $user unless $creator;
+
 # Retrieve organism
 my $organism = $coge->resultset('Organism')->find($organism_id);
 unless ($organism) {
@@ -216,28 +248,6 @@ else {
 }
 die "Error creating/finding data source" unless $datasource;
 print STDOUT "datasource id: " . $datasource->id . "\n";
-
-# Retrieve user
-my ($user, $creator);
-if ($user_id) {
-	$user = $coge->resultset('User')->find($user_id);
-}
-else {
-	$user = $coge->resultset('User')->find( { user_name => $user_name } );
-}
-
-unless ($user) {
-    print STDOUT "log: error finding user '$user_name'\n";
-    exit(-1);
-}
-
-# Retreive creator
-if ($creator_id) {
-    $creator = $coge->resultset('User')->find($creator_id);
-}
-
-$creator = $user unless $creator;
-
 
 # Create genome
 my $genome = $coge->resultset('Genome')->create(
@@ -310,6 +320,7 @@ foreach my $file (@files) {
             description    => $description,
             version        => $version,
             restricted     => $restricted,
+            creator_id     => $creator->id,
         }
     );
     unless ($dataset) {

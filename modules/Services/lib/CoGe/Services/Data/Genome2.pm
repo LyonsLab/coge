@@ -28,11 +28,27 @@ sub search {
             [ 'description', $search_term2 ]
         ]
     );
+    
+    # Search organisms
+    my @organisms = $db->resultset("Organism")->search(
+        \[
+            'name LIKE ? OR description LIKE ?',
+            [ 'name',        $search_term2 ],
+            [ 'description', $search_term2 ]
+        ]
+    );
+    
+    # Combine matching genomes and organisms, preventing duplicates
+    my %unique;
+    map { $unique{ $_->id } = $_ } @genomes;
+    foreach my $organism (@organisms) {
+        map { $unique{ $_->id } = $_ } $organism->genomes;
+    }
 
     # Filter response
     my @filtered = grep {
         !$_->restricted || (defined $user && $user->has_access_to_genome($_))
-    } @genomes;
+    } values %unique;
 
     # Format response
     my @result = map {
@@ -40,6 +56,20 @@ sub search {
         id => int($_->id),
         name => $_->name,
         description => $_->description,
+        link => $_->link,
+        version => $_->version,
+        organism_id  => int($_->organism->id),
+        sequence_type => {
+            name => $_->type->name,
+            description => $_->type->description,
+        },
+        restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        chromosome_count => int($_->chromosome_count),
+        organism => {
+            id => int($_->organism->id),
+            name => $_->organism->name,
+            description => $_->organism->description
+        }
       }
     } @filtered;
 
@@ -85,14 +115,19 @@ sub fetch {
         description => $genome->description,
         link => $genome->link,
         version => $genome->version,
-        organism_id  => int($genome->organism->id),
+        restricted => $genome->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        organism => {
+            id => int($genome->organism->id),
+            name => $genome->organism->name,
+            description => $genome->organism->description
+        },
         sequence_type => {
             name => $genome->type->name,
             description => $genome->type->description,
         },
+        chromosome_count => int($genome->chromosome_count),
         experiments => [ map { int($_->id) } $genome->experiments ],
-        metadata => \@metadata,
-        restricted => $genome->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        metadata => \@metadata
     });
 }
 

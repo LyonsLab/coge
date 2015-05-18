@@ -5,18 +5,18 @@ use Data::Dumper;
 use CoGe::Accessory::Web;
 use URI::Escape::JavaScript qw(unescape);
 
-# FIXME move these into coge.conf someday
-our $AUTH_API_URL = 'foundation.iplantc.org/auth-v1';
-our $USER_API_URL = 'user.iplantcollaborative.org/api/v1';
+#our $AUTH_API_URL = 'foundation.iplantc.org/auth-v1'; # mdb removed COGE-581
+#our $USER_API_URL = 'user.iplantcollaborative.org/api/v1'; # mdb removed COGE-581 -- moved into coge.conf
 
 sub init {
     my $mojo = shift;
     return unless $mojo;
-    my $opts = shift;
     my $username = $mojo->param('username');
     my $token    = $mojo->param('token');
     my $remote_ip = $ENV{REMOTE_ADDR}; #$mojo->req->env->{HTTP_X_FORWARDED_FOR};
-    print STDERR "CoGe::Services::Auth::init: username=", ($username ? $username : ''), " token=", ($token ? $token : ''), " remote_ip=", ($remote_ip ? $remote_ip : ''), "\n";
+    print STDERR "CoGe::Services::Auth::init: username=", ($username ? $username : ''), 
+                 " token=", ($token ? $token : ''), 
+                 " remote_ip=", ($remote_ip ? $remote_ip : ''), "\n";
 
     # Get config
     my $conf = get_defaults();
@@ -55,7 +55,8 @@ sub init {
 
     # Otherwise, get user info and add to DB
     if (!$user) {
-        # TODO get user info from iPlant user API and add user to database
+        # TODO add user to database
+        print STDERR "CoGe::Services::Auth::init: failed to find user '", $username, "'\n";
         return ( $db, undef, $conf ); # tempfix
     }
 
@@ -70,11 +71,18 @@ sub validate {
     return unless ($username and $token);
     print STDERR "CoGe::Services::Auth::validate: username=$username token=$token\n";
 
-    # Validate ticket
     # Note: Mojolicious requires IO::Socket::SSL 1.75, do "cpan upgrade IO::Socket::SSL"
     my $ua = Mojo::UserAgent->new;
-    my $url = 'https://'.$username.':'.$token.'@'.$AUTH_API_URL.'/list';
-    my $res = $ua->get($url)->res;
+    
+    # Agave API ---------------------------------------------------------------
+    my $USER_API_URL = get_defaults()->{USER_API_URL}; # test token against API
+    unless ($USER_API_URL) {
+        print STDERR "CoGe::Services::Auth::validate: missing USER_API_URL\n";
+        return;
+    }
+    
+    my $url = $USER_API_URL . '/' . $username;
+    my $res = $ua->get($url, { Authorization => "Bearer $token" })->res;
     #print STDERR Dumper $res, "\n";
     unless ($res and $res->{message} eq 'OK') {
         print STDERR 'CoGe::Services::Auth::validate: user agent error, message=',
@@ -82,37 +90,34 @@ sub validate {
             ' url=', $url, "\n";
         return;
     }
-    my $authResponse = $res->json;
-    unless ($authResponse and $authResponse->{status} eq 'success') {
+    my $authResponse = $res->{content}->{post_buffer};
+    unless ($authResponse and $authResponse =~ /success/) { #FIXME this is a hack because the response is weird
         print STDERR 'CoGe::Services::Auth::validate: failed to authenticate, message=',
             ($authResponse ? $authResponse->{message} : 'undef'),
             ' url=', $url, "\n";
         return;
     }
+    
+    # Foundation API # mdb removed COGE-581 -----------------------------------
+#    my $url = 'https://'.$username.':'.$token.'@'.$AUTH_API_URL.'/list';
+#    my $res = $ua->get($url)->res;
+#    #print STDERR Dumper $res, "\n";
+#    unless ($res and $res->{message} eq 'OK') {
+#        print STDERR 'CoGe::Services::Auth::validate: user agent error, message=',
+#            ($res ? $res->{message} : 'undef'),
+#            ' url=', $url, "\n";
+#        return;
+#    }
+#    my $authResponse = $res->json;
+#    unless ($authResponse and $authResponse->{status} eq 'success') {
+#        print STDERR 'CoGe::Services::Auth::validate: failed to authenticate, message=',
+#            ($authResponse ? $authResponse->{message} : 'undef'),
+#            ' url=', $url, "\n";
+#        return;
+#    }
 
+    print STDERR "CoGe::Services::Auth::validate: success!\n";
     return 1;
-}
-
-sub get_user {
-    my ($username) = @_;
-
-    # Get user information if not already in our database
-    $url = 'https://coge:150b316673023dff56f7ba125df21c4f@'.$USER_API_URL.'/users/username/'.$username;
-    $res = $ua->get($url)->res;
-    print STDERR Dumper $res, "\n";
-    unless ($res and $res->{message} eq 'OK') {
-        print STDERR 'CoGe::Services::Auth::validate: user agent error, message=',
-            ($res ? $res->{message} : 'undef'),
-            ' url=', $url, "\n";
-        return;
-    }
-    my $userResponse = $res->json;
-    unless ($userResponse) {
-        print STDERR 'CoGe::Services::Auth::validate: failed to authenticate, message=',
-            ($userResponse ? $userResponse->{message} : 'undef'),
-            ' url=', $url, "\n";
-        return;
-    }
 }
 
 1;
