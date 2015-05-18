@@ -31,7 +31,6 @@ sub get {
         db         => $self->db,
         jex        => $self->jex,
         user       => $self->user,
-        options    => $message->{options},
         parameters => $message->{parameters}
     };
 

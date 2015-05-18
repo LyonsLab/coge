@@ -33,7 +33,6 @@ sub get {
 
     my $request = {
         params    => $message->{parameters},
-        options   => $message->{options},
         requester => $message->{requester},
         db        => $self->db,
         jex       => $self->jex,

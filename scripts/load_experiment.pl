@@ -12,21 +12,16 @@ use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify to_pathname );
-use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Accessory::TDS;
-use CoGe::Core::Storage qw(add_workflow_result);
+use CoGe::Core::Genome qw(fix_chromosome_id);
+use CoGe::Core::Storage qw(add_workflow_result $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER);
+use CoGe::Core::Experiment qw(@SUPPORTED_TYPES detect_data_type);
 use CoGe::Core::Metadata qw(create_annotations);
 
 use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
   $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
   $user_id $annotations $types $wid $host $port $db $user $pass $P);
-
-#FIXME: use these from Storage.pm instead of redeclaring them
-my $DATA_TYPE_QUANT  = 1; # Quantitative data
-my $DATA_TYPE_POLY	 = 2; # Polymorphism data
-my $DATA_TYPE_ALIGN  = 3; # Alignments
-my $DATA_TYPE_MARKER = 4; # Markers
 
 #my $MIN_QUANT_COLUMNS = 5;
 #my $MAX_QUANT_COLUMNS = 6;
@@ -63,12 +58,6 @@ GetOptions(
 
 $| = 1;
 print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
-
-# Setup supported file types
-my @QUANT_TYPES = qw(csv tsv bed wig);
-my @MARKER_TYPES = qw(gff gtf gff3);
-my @OTHER_TYPES = qw(bam vcf);
-my @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES);
 
 # Setup staging path
 unless ($staging_dir) {
@@ -430,21 +419,25 @@ print STDOUT "$cmd\n";
 `$cmd`;
 
 # Save result
-add_workflow_result($user_name, $wid, 
-    {
-        type => 'experiment',
-        id => int($experiment->id),
-        name        => $name,
-        description => $description,
-        version     => $version,
-        #link       => $link, #FIXME
-        data_source_id => $data_source->id,
-        data_type   => $data_type, #FIXME convert from number to string identifier
-        row_count   => $count,
-        genome_id   => $gid,
-        restricted  => $restricted
-    }
-);
+unless (add_workflow_result($user_name, $wid, 
+        {
+            type => 'experiment',
+            id => int($experiment->id),
+            name        => $name,
+            description => $description,
+            version     => $version,
+            #link       => $link, #FIXME
+            data_source_id => $data_source->id,
+            data_type   => $data_type, #FIXME convert from number to string identifier
+            row_count   => $count,
+            genome_id   => $gid,
+            restricted  => $restricted
+        })
+    )
+{
+    print STDOUT "log: error: could not add workflow result\n";
+    exit(-1);
+}
 
 # Add experiment ID to log - mdb added 8/19/14, needed after log output was moved to STDOUT for jex
 my $logtxtfile = "$staging_dir/log.txt";
@@ -462,44 +455,11 @@ CoGe::Accessory::TDS::write(
 
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
+print STDOUT "All done!\n";
 
 exit;
 
 #-------------------------------------------------------------------------------
-sub detect_data_type {
-    my $filetype = shift;
-    my $filepath = shift;
-    print STDOUT "detect_data_type: $filepath\n";
-
-    if (!$filetype or $filetype eq 'autodetect') {
-        # Try to determine type based on file extension
-        #print STDOUT "log: Detecting file type\n";
-        ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
-    }
-    
-    $filetype = lc($filetype);
-
-    if ( grep { $_ eq $filetype } @QUANT_TYPES ) {
-        print STDOUT "log: Detected a quantitative file ($filetype)\n";
-        return ($filetype, $DATA_TYPE_QUANT);
-    }
-    elsif ( $filetype eq 'bam' ) {
-        print STDOUT "log: Detected an alignment file ($filetype)\n";
-        return ($filetype, $DATA_TYPE_ALIGN);
-    }
-    elsif ( $filetype eq 'vcf' ) {
-        print STDOUT "log: Detected a polymorphism file ($filetype)\n";
-        return ($filetype, $DATA_TYPE_POLY);
-    }
-    elsif ( grep { $_ eq $filetype } @MARKER_TYPES ) {
-        print STDOUT "log: Detected a marker file ($filetype)\n";
-        return ($filetype, $DATA_TYPE_MARKER);
-    }
-    else {
-        print STDOUT "detect_data_type: unknown file ext '$filetype'\n";
-        return ($filetype);
-    }
-}
 
 #TODO rewrite this to load the file once into memory rather than reading it twice
 sub max_of_values {

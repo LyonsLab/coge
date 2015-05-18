@@ -6,8 +6,10 @@ use Data::Dumper qw(Dumper);
 use Switch;
 use File::Spec::Functions qw(catfile);
 
-use CoGe::Core::Notebook qw(load_notebook);
+use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
+use CoGe::Core::Experiment qw(detect_data_type);
+use CoGe::Core::Notebook qw(load_notebook);
 use CoGe::Builder::CommonTasks;
 use CoGe::Builder::Common::Alignment qw(build);
 use CoGe::Builder::Expression::qTeller qw(build);
@@ -20,12 +22,13 @@ sub build {
     my $self = shift;
     
     # Validate inputs
-    my $gid = $self->params->{gid};
+    my $gid = $self->params->{genome_id};
     return unless $gid;
-    my $data = $self->options->{source_data};
+    my $data = $self->params->{source_data};
     return unless (defined $data && @$data);
     my $metadata = $self->params->{metadata};
     return unless $metadata;
+    my $load_id = $self->params->{load_id} || get_unique_id();
     
     # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
     $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
@@ -33,7 +36,6 @@ sub build {
     # Get genome
     my $genome = $self->db->resultset('Genome')->find($gid);
     return unless $genome;
-    # TODO add permissions check here -- or will it happen in Request::Genome?
     
     # Initialize workflow
     my $info = '"' . $metadata->{name};
@@ -45,13 +47,49 @@ sub build {
     
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
-    
-    # Build workflow steps
-    my @tasks;
+
+    # Determine file type if not set
     my $file_type = $data->[0]->{file_type}; # type of first data file
+    ($file_type) = detect_data_type($file_type, $data->[0]->{path}) unless $file_type;
     
-    my @done_files;
-    my @additional_metadata;
+    #
+    # Build workflow
+    #
+    my (@tasks, @input_files, @done_files, @additional_metadata);
+    
+    # Create tasks to retrieve files
+    my $upload_dir = get_upload_path($self->user->name, $load_id);
+    foreach my $item (@$data) {
+        my $type = lc($item->{type});
+        my $task;
+        
+        # Check if the file already exists which will be the case if called
+        # via the LoadExperiment page.  
+        #TODO Change the LoadExperiment page to not actually transfer files in
+        # an apache process -- instead let it be done here in the workflow.
+        my $filepath = catfile($upload_dir, $item->{path});
+        if (-r $filepath) {
+            push @input_files, $filepath;
+            next;
+        }
+        
+        # Create task based on source type (IRODS, HTTP, FTP)
+        if ($type eq 'irods') {
+            my $irods_path = $item->{path};
+            $irods_path =~ s/^irods//; # strip of leading "irods" from LoadExperiment page # FIXME remove this in FileSelect
+            $task = create_iget_job(irods_path => $irods_path, local_path => $upload_dir);
+            return unless $task;
+        }
+        elsif ($type eq 'http' or $type eq 'ftp') {
+            #TODO
+        }
+        
+        # Add task to workflow
+        $self->workflow->add_job($task);
+        push @input_files, $task->{outputs}[0];
+    }
+    
+    # Build analytical tasks based on file type
     if ( $file_type eq 'fastq' || $file_type eq 'bam' ) {
         my $bam_file;
         my $result_count = 0;
@@ -62,10 +100,10 @@ sub build {
             my $alignment_workflow = CoGe::Builder::Common::Alignment::build(
                 user => $self->user,
                 wid => $self->workflow->id,
-                input_files => $data,
+                input_files => \@input_files,
                 genome => $genome,
                 metadata => $metadata,
-                options => $self->options,
+                load_id => $load_id,
                 trimming_params => $self->params->{trimming_params},
                 alignment_params => $self->params->{alignment_params}
             );
@@ -78,8 +116,7 @@ sub build {
             $result_count++;
         }
         elsif ( $file_type && $file_type eq 'bam' ) {
-            my $upload_dir = get_upload_path($self->user->name, $self->options->{load_id});
-            $bam_file = catfile($upload_dir, $data->[0]->{path});
+            $bam_file = $input_files[0];
         
             push @tasks, create_load_bam_job(
                 user => $self->user,
@@ -104,7 +141,6 @@ sub build {
                 genome => $genome,
                 input_file => $bam_file,
                 metadata => $metadata,
-                options => $self->options,
                 params => $self->params->{expression_params}
             );
             push @tasks, @{$expression_workflow->{tasks}};
@@ -123,7 +159,6 @@ sub build {
                 genome => $genome,
                 input_file => $bam_file,
                 metadata => $metadata,
-                options => $self->options,
                 params => $self->params->{snp_params},
                 skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
@@ -143,10 +178,6 @@ sub build {
     }
     # Else, all other file types
     else {
-        # Setup full path to input data file
-        my $upload_dir = get_upload_path($self->user->name, $self->options->{load_id});
-        my $input_file = catfile($upload_dir, $data->[0]->{path});
-        
         # Submit workflow to generate experiment
         my $job = create_load_experiment_job(
             user => $self->user,
@@ -154,35 +185,35 @@ sub build {
             result_dir => $result_dir,
             wid => $self->workflow->id,
             gid => $genome->id,
-            input_file => $input_file,
+            input_file => $input_files[0],
             metadata => $metadata,
-            normalize => $self->options->{normalize} ? $self->options->{normalize_method} : 0
+            normalize => $self->params->{normalize} ? $self->params->{normalize_method} : 0
         );
         push @tasks, $job;
         push @done_files, $job->{outputs}->[1];
     }
     
     # Create notebook
-    if ($self->options->{notebook}) {
+    if ($self->params->{notebook}) {
         unshift @additional_metadata,
             qq{https://genomevolution.org/wiki/index.php/Expression_Analysis_Pipeline||note|Generated by CoGe's RNAseq Analysis Pipeline};
 
         #TODO add_items_to_notebook_job and create_notebook_job and their respective scripts can be consolidated
-        if ($self->options->{notebook_id}) { # use existing notebook
+        if ($self->params->{notebook_id}) { # use existing notebook
             push @tasks, add_items_to_notebook_job(
-                notebook_id => $self->options->{notebook_id},
+                notebook_id => $self->params->{notebook_id},
                 user => $self->user, 
                 wid => $self->workflow->id,
                 annotations => \@additional_metadata,
                 staging_dir => $staging_dir,
-                done_files => \@done_files              
+                done_files => \@done_files
             );
         }
         else { # create new notebook
             push @tasks, create_notebook_job(
-                user => $self->user, 
+                user => $self->user,
                 wid => $self->workflow->id,
-                metadata => $metadata, 
+                metadata => $metadata,
                 annotations => \@additional_metadata,
                 staging_dir => $staging_dir,
                 done_files => \@done_files
@@ -191,7 +222,7 @@ sub build {
     } 
 
     # Send notification email
-	if ( $self->options->{email} ) {
+	if ( $self->params->{email} ) {
 	    # Get tiny link
 	    my $link;
 	    if ($self->requester && $self->requester->{page}) {

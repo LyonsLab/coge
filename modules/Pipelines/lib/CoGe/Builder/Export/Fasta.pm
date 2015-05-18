@@ -21,7 +21,7 @@ sub build {
 
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
 
-    my $dest_type = $self->options->{dest_type};
+    my $dest_type = $self->params->{dest_type};
        $dest_type = "http" unless $dest_type;
 
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
@@ -39,13 +39,13 @@ sub build {
 
     # Setup tasks to export/download the file
     if ($dest_type eq "irods") { # irods export
-        my $irods_base = $self->options->{dest_path};
+        my $irods_base = $self->params->{dest_path};
         $irods_base = irods_get_base_path($self->user->name) unless $irods_base;
 
         my $irods_dest = catfile($irods_base, $output_file);
         my $irods_done = catfile($staging_dir, "irods.done");
 
-        $self->workflow->add_job( export_to_irods($genome_file, $irods_dest, $self->options->{overwrite}, $irods_done) );
+        $self->workflow->add_job( export_to_irods($genome_file, $irods_dest, $self->params->{overwrite}, $irods_done) );
         $self->workflow->add_job( generate_results($irods_dest, $dest_type, $result_dir, $self->conf, $irods_done) );
     }
     else { # http download
