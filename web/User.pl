@@ -125,13 +125,13 @@ sub gen_body {
         MAIN        => 1,
         USER_NAME   => $USER->user_name,
         USER_ID     => $USER->id,
-        FULL_NAME   => $USER->display_name,
+        FULL_NAME   => $USER->display_name || '',
         EMAIL       => $USER->email,
-        USER_IMAGE  => (
-            $USER->image_id
-            ? 'image.pl?id=' . $USER->image_id
-            : 'picts/smiley_default.png'
-        ),
+#        USER_IMAGE  => (
+#            $USER->image_id
+#            ? 'image.pl?id=' . $USER->image_id
+#            : 'picts/smiley_default.png'
+#        ),
         ITEM_TYPES     => encode_json(\%ITEM_TYPE),
         TOC            => get_toc(),
         #CONTENTS       => get_contents( html_only => 1 ),
