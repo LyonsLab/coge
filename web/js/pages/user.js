@@ -130,8 +130,9 @@ function pad(string, size) {
 
 function formatDate(dateStr) {
 	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
-	if (!dateStr)
+	if (!dateStr || dateStr === '0000-00-00 00:00:00')
 		return '';
+	
 	dateStr = dateStr.replace(/-/g, '/'); // needed for Firefox & Safari
 	var date = new Date(dateStr);
 	var today = new Date();
@@ -147,6 +148,7 @@ function formatDate(dateStr) {
 		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate()
 	else // last year or older
 		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+
 	return dateStr;
 }
 
@@ -212,6 +214,7 @@ function toc_toggle_children(toc_id, num_children) {
 }
 
 function default_info() {
+	console.log('default_info');
 	var text = "";
 	switch(pageObj.content_type) {
 		case ITEM_TYPES.activity_summary:
@@ -320,8 +323,8 @@ $.extend(DataGrid.prototype, {
 	    });
 		dataTableBody.on('mouseout', 'tr', function () {
 			var tr = $(this).closest('tr');
-	        var row = dataTable.api().row(tr);
-			//exit_item(row.data());
+	        var row = dataTable.api().row(tr).data();
+			row.exit.apply(row);
 	    });	
 
 		$.ajax({
@@ -442,6 +445,7 @@ $.extend(DataGridRow.prototype, {
     },
 
     enter: function() {
+    	console.log('DataGridRow.enter');
     	var self = this;
     	
     	if (self.grid && self.grid.selectedItemId) // Do nothing if row currently selected
@@ -459,6 +463,7 @@ $.extend(DataGridRow.prototype, {
     },
     
     exit: function() {
+    	console.log('DataGridRow.exit');
     	if (self.grid && self.grid.selectedItemId) // Do nothing if row currently selected
     		return;
     	
@@ -468,6 +473,10 @@ $.extend(DataGridRow.prototype, {
     	timers['item'] = window.setTimeout( default_info, 500 );
     }
 });
+
+/* 
+ * Info Panel
+ */
 
 function InfoPanel(params) {
 	this.element = $('#'+params.elementId);
@@ -485,9 +494,12 @@ $.extend(InfoPanel.prototype, {
     },
     
     update: function() {
+    	console.log('InfoPanel.update');
     	var self = this;
     	var selected = grid.getSelectedItems();
     	var num_items = selected.length;
+    	console.log(num_items);
+    	console.log(selected);
 
     	if (num_items > 0) {
     		if (num_items == 1) {
