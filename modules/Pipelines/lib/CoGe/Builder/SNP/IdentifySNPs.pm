@@ -56,7 +56,6 @@ sub build {
         genome => $genome,
         input_file => $bam_file,
         metadata => $metadata,
-        options => $self->options,
         params => $self->params->{snp_params}
     };
     
