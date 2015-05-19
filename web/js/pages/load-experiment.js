@@ -1418,26 +1418,24 @@ function load(experiment) {
 	var request = {
 		type: 'load_experiment',
 		requester: {
-			page: PAGE_NAME,
+			page:      PAGE_NAME,
 			user_name: USER_NAME
 		},
 		parameters: {
-			gid: experiment.gid,
-			metadata: experiment.metadata,
-			alignment_params: experiment.options.alignment_params,
-			trimming_params: experiment.options.trimming_params,
+			genome_id:         experiment.gid,
+			metadata:          experiment.metadata,
+			alignment_params:  experiment.options.alignment_params,
+			trimming_params:   experiment.options.trimming_params,
 			expression_params: experiment.options.expression_params,
-			snp_params: experiment.options.snp_params
-		},
-		options: {
-			load_id: load_id,
-			email: experiment.options.email,
-			normalize: experiment.options.normalize,
-			normalize_method: experiment.options.normalize_method,
-			notebook: experiment.options.notebook,
-			notebook_name: experiment.options.notebook_name,
-			notebook_id: experiment.options.notebook_id,
-			source_data: experiment.data
+			snp_params:        experiment.options.snp_params,
+			normalize:         experiment.options.normalize,
+			normalize_method:  experiment.options.normalize_method,
+			email:             experiment.options.email,
+			notebook:          experiment.options.notebook,
+			notebook_name:     experiment.options.notebook_name,
+			notebook_id:       experiment.options.notebook_id,
+			source_data:       experiment.data,
+			load_id:           load_id
 		}
 	};
     

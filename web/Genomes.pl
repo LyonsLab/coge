@@ -78,7 +78,7 @@ sub get_genomes_for_user {
               . $g->info
               . "</span>",
             VERSION => $g->version,
-            DATE    => $g->date,
+            DATE    => $g->get_date,
             EDIT_BUTTON =>
 "<span class='link ui-icon ui-icon-gear' onclick=\"window.open('GenomeInfo.pl?gid="
               . $g->id

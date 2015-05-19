@@ -38,7 +38,13 @@
 
 <script>
 	$(function() {
-		$( "#tabs" ).tabs();
+		$( "#tabs" ).tabs({
+	        select: function(event, ui) {
+	            var theSelectedTab = ui.index;
+	            change_tab(theSelectedTab);
+	            schedule_update(5000);
+	        }
+	    });
 	});
 </script>
 
@@ -234,6 +240,7 @@
 			<input type="checkbox" id="hist_update_checkbox" checked>
 			<span> Auto-Update</span>
 		</div>
+		<img id="loading_gears3" src="picts/large_gears.gif" width='30' height='30' class="link" style="padding:1px;display:none;" />
 		
 		<div id="history" style="max-width:95%;height:80%;display:none;"></div>
 	</div>

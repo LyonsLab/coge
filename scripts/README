@@ -1,0 +1,31 @@
+This scripts/ directory contains a combination of scripts used in production
+code (called via Apache or JEX processes), debug scripts, cron scripts, and
+current/obsolete utility scripts.
+
+AGRP/
+    The Java AGRP package -- FIXME move this somewhere else
+
+backup/
+    audit_backup.pl - verify that the IRODS backup is correct.
+    backup.sh - called as cron job to backup database and files.
+    fetch.sh - manually called to pull IRODS backup to dev box.
+    sync_jex_db.pl
+
+copy_genome/
+    Scripts used by production code to copy and mask genomes in the 
+    GenomeInfo page.
+
+diags/
+    Utility scripts to manually clean up the file system.
+
+migration/
+    Scripts used to manually migrate the database for new features.
+
+old/
+    Old utility scripts that are unlikely to work with the current database.
+
+synmap/
+    Scripts used by production code in the SynMap page.
+    
+All scripts at the top level are up-to-date and are either called via cron
+or production code.
