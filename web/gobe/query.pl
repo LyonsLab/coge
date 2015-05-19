@@ -28,7 +28,7 @@ our $dbh = DBI->connect("dbi:SQLite:dbname=$db") || die "cant connect to db";
 my $sth;
 
 sub get_cns {
-    # get all the stuff that had been saved in the mysql db as CNS
+    # get all the stuff that had been saved in the db as CNS
     # (and here as well). use those with image_id == 1 to find pair in
     # image_id == 2, if we cant find the pair, then it must be
     # off-screen.

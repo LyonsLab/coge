@@ -30,7 +30,7 @@ unless ( -r $mauve_bin ) {
 
 help() unless ($dsgids);
 
-my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=PORT';
+my $connstr = 'dbi:Pg:dbname=coge;host=localhost;port=PORT';
 $coge = CoGeX->connect( $connstr, 'USER', 'PASSWORD' );
 $out_file = "alignment.aln" unless $out_file;
 

@@ -38,7 +38,7 @@ print STDERR "PERL5LIB=" . $ENV{PERL5LIB} . "\n";
 # Connect to database
 #-------------------------------------------------------------------------------
 
-my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307";
+my $connstr = "dbi:Pg:dbname=$db;host=localhost;port=3307";
 $coge = CoGeX->connect($connstr, $user, $pass);
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);

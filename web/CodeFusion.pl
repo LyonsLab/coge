@@ -39,7 +39,7 @@ $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 
 $connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+  "dbi:$P->{DB}:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 $FORM = new CGI;

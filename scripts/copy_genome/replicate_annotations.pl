@@ -17,7 +17,7 @@ GetOptions(
 	"dsgid2=i"        => \$dsgid2,
 );
 
-my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307";
+my $connstr = "dbi:Pg:dbname=$db;host=localhost;port=3307";
 $coge = CoGeX->connect( $connstr, $user, $pass );
 
 unless ( $coge && $dsgid1 && $dsgid2 )

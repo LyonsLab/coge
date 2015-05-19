@@ -48,7 +48,7 @@ if ($config) {
     $pass = $P->{DBPASS};
 }
 
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $connstr = "dbi:Pg:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 
 unless ($coge) {

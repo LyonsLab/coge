@@ -28,6 +28,7 @@ unless ( $P && $P->{DBNAME} ) { usage(); }
 my $TEMPDIR = $P->{TEMPDIR} . "copy_genome";
 mkpath( $TEMPDIR, 1, 0777 );
 
+my $DB = $P->{DB};
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
@@ -35,7 +36,7 @@ my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 
 my $connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+  "dbi:$DB:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->dbconnect(
     db_connection_string => $connstr,
     db_name              => $DBUSER,

@@ -51,6 +51,7 @@ if (not $uid) {
 # Load config file
 die "No config file specified\n" unless ($conf_file);
 $P = CoGe::Accessory::Web::get_defaults($conf_file);
+my $DB = $P->{DB};
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
@@ -59,7 +60,7 @@ my $DBPASS = $P->{DBPASS};
 
 # Connect to the database
 my $connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+  "dbi:$DB:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 # Get paths to external scripts

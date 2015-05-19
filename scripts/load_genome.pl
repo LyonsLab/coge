@@ -194,7 +194,7 @@ if ( $rc != 0 ) {
 ################################################################################
 
 # Connect to database
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $connstr = "dbi:$P->{DB}:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
     print STDOUT "log: error: couldn't connect to database\n";

@@ -67,7 +67,7 @@ if ($config) {
     $user = $P->{DBUSER};
     $pass = $P->{DBPASS};
 
-    my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+    my $connstr = "dbi:Pg:dbname=$db;host=$host;port=$port;";
     $coge = CoGeX->connect( $connstr, $user, $pass );
     #$coge->storage->debugobj(new DBIxProfiler());
     #$coge->storage->debug(1);

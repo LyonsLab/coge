@@ -57,7 +57,7 @@ $stop   = $FORM->param('end')    unless defined $stop;
 #TODO need some param checking here
 
 # Connect to the database
-my $connstr = "dbi:mysql:dbname=$DBNAME;host=$DBHOST;port=$DBPORT";
+my $connstr = "dbi:$P->{DB}:dbname=$DBNAME;host=$DBHOST;port=$DBPORT";
 my $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);

@@ -60,7 +60,7 @@ unless ($resdir) {
 }
 
 # Connect to DB
-my $connstr = "dbi:mysql:dbname=".$P->{DBNAME}.";host=".$P->{DBHOST}.";port=".$P->{DBPORT}.";";
+my $connstr = "dbi:".$P->{DB}.":dbname=".$P->{DBNAME}.";host=".$P->{DBHOST}.";port=".$P->{DBPORT}.";";
 my $coge = CoGeX->connect( $connstr, $P->{DBUSER}, $P->{DBPASS} );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);

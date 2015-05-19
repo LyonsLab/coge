@@ -60,7 +60,7 @@ if (not $filename) {
     exit(-1);
 }
 
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $connstr = "dbi:Pg:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);

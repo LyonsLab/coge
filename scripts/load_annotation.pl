@@ -88,7 +88,8 @@ unless ($config) {
     exit(-1);
 }
 $P    = CoGe::Accessory::Web::get_defaults($config);
-$db   = $P->{DBNAME};
+$db = $P->{DB};
+$dbname   = $P->{DBNAME};
 $host = $P->{DBHOST};
 $port = $P->{DBPORT};
 $user = $P->{DBUSER};
@@ -109,7 +110,7 @@ unless ( -e $data_file ) {
 }
 
 # Connect to database
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $connstr = "dbi:$db:dbname=$dbname;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
   print STDOUT "log: couldn't connect to database\n";

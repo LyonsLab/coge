@@ -42,7 +42,7 @@ if($config) {
     my $port    = $P->{DBPORT};
     my $user    = $P->{DBUSER};
     my $pass    = $P->{DBPASS};
-    my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+    my $connstr = "dbi:$P->{DB}:dbname=$db;host=$host;port=$port;";
 
     $coge = CoGeX->connect( $connstr, $user, $pass );
 }

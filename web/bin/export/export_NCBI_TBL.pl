@@ -18,7 +18,7 @@ my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 
 my $connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+  "dbi:$P->{DB}:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 my $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 my $COOKIE_NAME  = $P->{COOKIE_NAME};

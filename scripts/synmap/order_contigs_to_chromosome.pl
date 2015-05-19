@@ -42,13 +42,14 @@ $GUNZIP  = $CONFIG->{GUNZIP};
 $TAR     = $CONFIG->{TAR};
 
 if($CONFIG) {
+	my $DB = $P->{DB};
     my $DBNAME = $CONFIG->{DBNAME};
     my $DBHOST = $CONFIG->{DBHOST};
     my $DBPORT = $CONFIG->{DBPORT};
     my $DBUSER = $CONFIG->{DBUSER};
     my $DBPASS = $CONFIG->{DBPASS};
     my $connstr =
-    "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+    "dbi:$DB:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 
     $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 }

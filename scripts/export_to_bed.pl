@@ -28,7 +28,7 @@ Options:
     exit;
 }
 
-my $connstr = 'dbi:mysql:dbname=DB;host=HOST;port=PORT';
+my $connstr = 'dbi:Pg:dbname=DB;host=HOST;port=PORT';
 my $coge = CoGeX->connect($connstr, 'USER', 'PASSWORD' );
 my $DSG = $coge->resultset('DatasetGroup')->resolve($dataset_group);
 print STDERR $DSG . "\n";

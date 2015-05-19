@@ -162,7 +162,7 @@ if ( !$file_type or !$data_type ) {
 }
 
 # Connect to database
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $connstr = "dbi:$P->{DB}:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
     print STDOUT "log: couldn't connect to database\n";

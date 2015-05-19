@@ -51,7 +51,7 @@ $DBPORT = 3307 unless (defined $DBPORT);
 $CMDPATH = '/usr/local/bin/ibis' unless ($CMDPATH);
 
 # Connect to the database
-my $connstr = "dbi:mysql:dbname=$DBNAME;host=$DBHOST;port=$DBPORT";
+my $connstr = "dbi:Pg:dbname=$DBNAME;host=$DBHOST;port=$DBPORT";
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS);
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);

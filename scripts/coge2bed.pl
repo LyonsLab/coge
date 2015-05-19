@@ -59,7 +59,7 @@ sub main {
         exit(-1);
     }
 
-    my $connstr = "dbi:mysql:db=$dbname;host=$host;port=$port;";
+    my $connstr = "dbi:Pg:db=$dbname;host=$host;port=$port;";
     $db = CoGeX->connect( $connstr, $user, $pass );
     #$db->storage->debugobj(new DBIxProfiler());
     #$db->storage->debug(1);

@@ -86,7 +86,7 @@ unless ( -e $data_file ) {
 }
 
 # Connect to database
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $connstr = "dbi:Pg:dbname=$db;host=$host;port=$port;";
 my $coge = CoGeX->connect( $connstr, $user, $pass );
 unless ($coge) {
     print $log "log: couldn't connect to database\n";
