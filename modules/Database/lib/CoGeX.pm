@@ -75,12 +75,13 @@ sub dbconnect {
     unless ( defined $pool{$conn_name} )
         #and $pool{$conn_name}->storage->dbh->ping() )
     {
+        my $db      = $conf->{DB};
         my $dbname  = $conf->{DBNAME};
         my $dbhost  = $conf->{DBHOST};
         my $dbport  = $conf->{DBPORT};
         my $dbuser  = $conf->{DBUSER};
         my $dbpass  = $conf->{DBPASS};
-        my $connstr = "dbi:mysql:dbname=$dbname;host=$dbhost;port=$dbport";
+        my $connstr = "dbi:$db:dbname=$dbname;host=$dbhost;port=$dbport";
         $pool{$conn_name} = $self->connect( $connstr, $dbuser, $dbpass );
 
         #print STDERR "CoGeX: new connection '$conn_name'\n";
