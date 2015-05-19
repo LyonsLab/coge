@@ -1235,7 +1235,7 @@ sub get_contents2 {
                 #icon    => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
                 #link    => 'GenomeInfo.pl?gid=' . $genome->id,
                 selectable => 1,
-                date     => $genome->date
+                date     => $genome->get_date
             };
         }
     }
