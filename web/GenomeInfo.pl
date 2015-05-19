@@ -959,7 +959,7 @@ sub get_genome_info {
 
     my $owner = $genome->owner;
     my $creator = $genome->creator;
-    my $creation = ($genome->creator_id ? $genome->creator->display_name  . ' ' : '') . ($genome->date ne '0000-00-00 00:00:00' ? $genome->date : '');
+    my $creation = ($genome->creator_id ? $genome->creator->display_name  . ' ' : '') . $genome->get_date();
     my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome)) : undef);
     $template->param( groups_with_access => $groups) if $groups;
     $template->param( OWNER => $owner->display_name ) if $owner;
