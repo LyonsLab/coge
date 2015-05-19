@@ -1109,7 +1109,7 @@ sub _create_load_genome_job {
 
 sub _create_load_genome_from_NCBI_job {
     my ($conf, $user_name, $accns, $staging_dir, $result_dir, $files) = @_;
-    my $cmd = catfile($conf->{SCRIPTDIR}, "load_genomes_n_stuff", "genbank_genome_loader.pl");
+    my $cmd = catfile($conf->{SCRIPTDIR}, "genbank_genome_loader.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
     my %p = (
