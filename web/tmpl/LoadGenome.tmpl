@@ -741,7 +741,7 @@ function update_dialog(request, user, identifier, formatter) {
                 workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
                 var logfile;
 
-                if (json.results.length) {
+                if (json.results && json.results.length) {
                     logfile = json.results[0].path;
                 }
                 load_failed(logfile);
@@ -800,7 +800,7 @@ function update_dialog(request, user, identifier, formatter) {
             workflow_status.find('span').addClass('alert');
             var logfile;
 
-            if (json.results.length) {
+            if (json.results && json.results.length) {
                 logfile = json.results[0].path;
             }
             load_failed(logfile);
