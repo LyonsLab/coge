@@ -8,7 +8,6 @@ var timers = new Array();
 	
 $(function() {
 	// Initialize globals
-	timers['item'] = null;
 	init_timestamp('idle');
 	
 	// Initialize AJAX
@@ -23,25 +22,23 @@ $(function() {
 	$(".dialog_box").dialog({autoOpen: false, resizable: false});
 
 	// Initialize fileupload plugin
-	$('#input_upload_file').fileupload({
-    	dataType: 'json',
-    	formData: {
-    		fname: 'upload_image_file',
-    	},
-       	add:
-    		function(e, data) {
-				if ( verify_image_file(data.files[0]) ) {
-					$('#user_image').attr('src', 'picts/ajax-loader-large.gif');
-					data.submit();
-				}
-    		},
-		done:
-			function(e, data) {
-				if (data.result && data.result.link) {
-					$('#user_image').attr('src', data.result.link);
-				}
-			},
-	});
+//	$('#input_upload_file').fileupload({
+//    	dataType: 'json',
+//    	formData: {
+//    		fname: 'upload_image_file',
+//    	},
+//       	add: function(e, data) {
+//			if ( verify_image_file(data.files[0]) ) {
+//				$('#user_image').attr('src', 'picts/ajax-loader-large.gif');
+//				data.submit();
+//			}
+//		},
+//		done: function(e, data) {
+//			if (data.result && data.result.link) {
+//				$('#user_image').attr('src', data.result.link);
+//			}
+//		}
+//	});
 
 	// Initialize dropdown menus
 	$("#create_menu").menu()
@@ -126,40 +123,6 @@ $(function() {
 function pad(string, size) {
     while (string.length < size) string = "0" + string;
     return string;
-}
-
-function formatDate(dateStr) {
-	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
-	if (!dateStr || dateStr === '0000-00-00 00:00:00')
-		return '';
-	
-	dateStr = dateStr.replace(/-/g, '/'); // needed for Firefox & Safari
-	var date = new Date(dateStr);
-	var today = new Date();
-	var diffDays = Math.round(Math.abs((today.getTime() - date.getTime())/(24*60*60*1000)));
-	var dateStr;
-	if (diffDays == 0) // same day as today
-		dateStr = (date.getHours() % 12) + ':' + pad(date.getMinutes(), 2) + ' ' + (date.getHours() < 12 ? 'am' : 'pm');
-	else if (diffDays == 1) // yesterday
-		dateStr = 'Yesterday';
-	else if (diffDays <= 4) // last several days
-		dateStr = diffDays + ' days ago';
-	else if (date.getFullYear() == today.getFullYear()) // same year 
-		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate()
-	else // last year or older
-		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
-
-	return dateStr;
-}
-
-function formatGenome(genome) {
-	var descStr = 
-	   	(genome.restricted ? '&reg; '  : '') +
-	   	(genome.organism ? genome.organism : '') + 
-	   	(genome.name ? ' (' + genome.name + ')' : '') +
-	   	(genome.description ? ': ' + genome.description : '') +
-	   	' (v' + genome.version + ', id' + genome.id + ')';
-	return descStr;
 }
 
 function getURLParameter(name) {
@@ -283,50 +246,85 @@ $.extend(DataGrid.prototype, {
 	            	type: "string",
 	            	data: null, // use full data object
 	            	render: function(data, type, row, meta) {
-	            		return formatGenome(data);
+	            		return data.getDescription();
 	            	}
 	            },
 	            { 	title: "Date added", 
 	            	targets: 1, 
 	            	type: "date",
-	            	data: "date",
+	            	data: null,//"date",
 	            	width: "100px",
 	            	render: function(data, type, row, meta) {
-	            		return formatDate(data);
+	            		return data.getDate();
 	            	}
 	            }
 			]
 		});
 		
-		// Handle row selection event
 		var dataTableBody = dataTable.children('tbody');
+		
+		// Handle row selection event
 		dataTableBody.on('click', 'tr', function() {
 			var tr = this;
-			var row = dataTable.api().row(tr);
+			var row = dataTable.api().row(tr).data();
+			
+			var isShift = false, isCtrl = false, isMeta = false;
+			if (window.event) {
+			    key = window.event.keyCode;
+			    isShift = !!window.event.shiftKey; // typecast to boolean
+			    isCtrl  = !!window.event.ctrlKey;  // typecast to boolean
+			    isMeta  = !!window.event.metaKey;  // typecast to boolean
+			}
 			
 	        if ( $(tr).hasClass('selected') ) { // unselect
 	            $(tr).removeClass('selected');
 	        }
 	        else { // select
-	        	self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
+	        	if (isCtrl || isMeta)
+	        		;
+	        	else if (isShift)
+	        		; //TODO handle block selection
+	        	else
+	        		self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
+	        	
 	            $(tr).addClass('selected'); // select item
 	        }
 	        
-	        self.selectItem(row.data());
+	        self.selectItem(row);
+		});
+		
+		// Handle row double-click event
+		dataTableBody.on('dblclick', 'tr', function() {
+			var tr = this;
+			var row = dataTable.api().row(tr).data();
+			
+			self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
+	        $(tr).addClass('selected'); // select item
+	        
+	        self.openItem(row);
 		});
 		
 		// Handle row hover events
 		dataTableBody.on('mouseover', 'tr', function () {
+			//console.log('enter');
 			var tr = $(this).closest('tr');
 	        var row = dataTable.api().row(tr).data();
-	        row.enter.apply(row);
+	        
+	    	if (self.selectedItemId) // Do nothing if row currently selected
+	    		return;
+	    	
+	    	infoPanel.busy().scheduleUpdate(row);
 	    });
+		
 		dataTableBody.on('mouseout', 'tr', function () {
-			var tr = $(this).closest('tr');
-	        var row = dataTable.api().row(tr).data();
-			row.exit.apply(row);
+			//console.log('exit');
+	    	if (self.selectedItemId) // Do nothing if row currently selected
+	    		return;
+	    	
+	    	infoPanel.scheduleUpdate();
 	    });	
 
+		// Get table contents
 		$.ajax({
 			dataType: 'json',
 			data: {
@@ -349,46 +347,45 @@ $.extend(DataGrid.prototype, {
     },
     
     getSelectedItems: function() {
-    	console.log('getSelectedItems');
-    	//return $('#contents_table input[type=checkbox]').filter(':checked').filter(':not(:hidden)');
+    	//console.log('getSelectedItems');
     	return this.dataTable.api().rows('.selected').data();//.filter(':not(:hidden)')
     },
-
+    
     clearSelection: function() {
-    	$('.coge-list-item,.coge-selected').removeClass('coge-selected');
-    	$('#contents_table input[type=checkbox]').filter(':checked').prop('checked', false);
+//    	$('.coge-list-item,.coge-selected').removeClass('coge-selected');
+//    	$('#contents_table input[type=checkbox]').filter(':checked').prop('checked', false);
     	update_icons();
         selection_hint();
         this.selectedItemId = null;
     },
     
-    clickItem: function(item) {
-    	$('#'+item.id).toggleClass('coge-selected')
-    	infoPanel.update();
-    },
+//    clickItem: function(item) {
+//    	$('#'+item.id).toggleClass('coge-selected')
+//    	infoPanel.update();
+//    },
 
     selectItem: function(item) {
     	console.log('selectItem');
-    	//this.clearSelection();
+    	if (item.id == this.selectedItemId) {
+    		this.selectedItemId = null;
+    		return;
+    	}
     	
-//    	$('#'+item.id)
-//    		.addClass('coge-selected')
-//    		.find('input[type=checkbox]')
-//    		.prop('checked', true);
     	this.selectedItemId = item.id;
     	
-    	infoPanel.busy();
-    	infoPanel.update();
+    	infoPanel.busy().update();
     },
 
-    openItem: function(item_type, title, link) {
-    	if (item_type == ITEM_TYPES.group) // FIXME this is a kludge
-    		group_dialog();
-    	else {
-            if (!link) {
-                return alert("The following link could not be generated");
-            }
+    openItem: function(row) {
+    	console.log('openItem');
+//    	if (item_type == ITEM_TYPES.group) // FIXME this is a kludge
+//    		group_dialog();
+//    	else {
+//            if (!link)
+//                return alert("The following link could not be generated");
 
+    		title = row.getDescription(); //TODO move formatGenome into row class
+    		link = row.getLink();
     		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
     		link = link + "&embed=1";
     		console.log(link);
@@ -400,7 +397,7 @@ $.extend(DataGrid.prototype, {
     				height: height//'80%'
     			})
     			.dialog('open');
-    	}
+//    	}
     }
 });
 
@@ -417,6 +414,33 @@ function DataGridRow(data, grid) {
 
 $.extend(DataGridRow.prototype, {
 	initialize: function() {
+    },
+    
+    getDescription: function() {
+    	if (this.type == ITEM_TYPES.genome)
+    		return this._formatGenome();
+    	if (this.type == ITEM_TYPES.experiment)
+    		return this._formatExperiment();
+    	if (this.type == ITEM_TYPES.notebook)
+    		return this._formatNotebook();    	
+    },
+    
+    _formatGenome: function() {
+    	var descStr = 
+    	   	(this.restricted ? '&reg; '  : '') +
+    	   	(this.organism ? this.organism : '') + 
+    	   	(this.name ? ' (' + this.name + ')' : '') +
+    	   	(this.description ? ': ' + this.description : '') +
+    	   	' (v' + this.version + ', id' + this.id + ')';
+    	return descStr;
+    },
+    
+    _formatExperiment: function() {
+    	
+    },
+    
+    _formatNotebook: function() {
+    	
     },
 
     getInfo: function() {
@@ -443,34 +467,39 @@ $.extend(DataGridRow.prototype, {
     		return;
     	});
     },
-
-    enter: function() {
-    	console.log('DataGridRow.enter');
-    	var self = this;
-    	
-    	if (self.grid && self.grid.selectedItemId) // Do nothing if row currently selected
-    		return;
-
-    	if (timers['item'])
-    		window.clearTimeout(timers['item']);
-
-    	timers['item'] = window.setTimeout( 
-    		function() { 
-    			infoPanel.busy().update();
-    		},
-    		500
-    	);
+    
+    getLink: function() {
+    	if (this.type == ITEM_TYPES.genome)
+    		return 'GenomeInfo.pl?gid=' + this.id;
+    	if (this.type == ITEM_TYPES.experiment)
+    		return 'ExperimentView.pl?eid=' + this.id;
+    	if (this.type == ITEM_TYPES.notebook)
+    		return 'NotebookView.pl?nid=' + this.id;
     },
     
-    exit: function() {
-    	console.log('DataGridRow.exit');
-    	if (self.grid && self.grid.selectedItemId) // Do nothing if row currently selected
-    		return;
+    getDate: function() {
+    	var dateStr = this.date;
+    	if (!dateStr || dateStr === '0000-00-00 00:00:00')
+    		return '';
     	
-    	if (timers['item'])
-    		window.clearTimeout(timers['item']);
-    	
-    	timers['item'] = window.setTimeout( default_info, 500 );
+    	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+    	dateStr = dateStr.replace(/-/g, '/'); // needed for Firefox & Safari
+    	var date = new Date(dateStr);
+    	var today = new Date();
+    	var diffDays = Math.round(Math.abs((today.getTime() - date.getTime())/(24*60*60*1000)));
+    	var dateStr;
+    	if (diffDays == 0) // same day as today
+    		dateStr = (date.getHours() % 12) + ':' + pad(date.getMinutes(), 2) + ' ' + (date.getHours() < 12 ? 'am' : 'pm');
+    	else if (diffDays == 1) // yesterday
+    		dateStr = 'Yesterday';
+    	else if (diffDays <= 4) // last several days
+    		dateStr = diffDays + ' days ago';
+    	else if (date.getFullYear() == today.getFullYear()) // same year 
+    		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate()
+    	else // last year or older
+    		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+
+    	return dateStr;
     }
 });
 
@@ -493,32 +522,42 @@ $.extend(InfoPanel.prototype, {
     	return this;
     },
     
-    update: function() {
+    update: function(row) {
     	console.log('InfoPanel.update');
     	var self = this;
     	var selected = grid.getSelectedItems();
     	var num_items = selected.length;
-    	console.log(num_items);
-    	console.log(selected);
 
-    	if (num_items > 0) {
-    		if (num_items == 1) {
-    			var item = selected[0];//.parentNode;
+    	if (num_items > 0 || row) {
+    		if (num_items == 1 || row) {
+    			var item = selected[0] || row;
     			item.getInfo().pipe(function(info) {
-    				//console.log(info);
     				self.element.html(info);
     			});
     		}
     		else
-    			self.element.html(num_items + ' item' + (num_items > 1 ? 's' : '') + ' selected.<br><br>Click an action icon at the top to share, organize, delete, or analyze.');
+    			self.element.html(num_items + ' item' + (num_items > 1 ? 's' : '') + 
+    				' selected.<br><br>Click an action icon at the top to share, organize, delete, or analyze.');
+    				//TODO add action links for sharing, adding to notebook, deleting, etc...
     	}
-    	else {
-    		//default_info();
-    		parent.selectedItemId = null;
-    	}
+    	else
+    		default_info();
     	
     	update_icons();
         selection_hint();    	
+    },
+    
+    scheduleUpdate: function(row) {
+    	console.log('InfoPanel.scheduleUpdate');
+    	if (this.timer)
+    		window.clearTimeout(this.timer);
+
+    	this.timer = window.setTimeout( 
+    		function() { 
+    			infoPanel.busy().update(row);
+    		},
+    		500
+    	);
     }
 });
 
