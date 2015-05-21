@@ -47,7 +47,7 @@ if ($coge_conf) {
 	$CMDPATH = $P->{FASTBIT_QUERY};
 }
 $DBHOST = 'localhost' unless ($DBHOST);
-$DBPORT = 3307 unless (defined $DBPORT);
+$DBPORT = 5432 unless (defined $DBPORT);
 $CMDPATH = '/usr/local/bin/ibis' unless ($CMDPATH);
 
 # Connect to the database

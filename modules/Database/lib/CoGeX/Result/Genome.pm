@@ -1238,7 +1238,7 @@ sub info_file {
 =head2 date
 
  Usage     :
- Purpose   : returns load data from first dataset entry
+ Purpose   : returns load date from first dataset entry
  Returns   : a string
  Argument  :
  Throws    :
@@ -1250,8 +1250,9 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub date {
+sub get_date {
     my $self = shift;
+    return $self->date if ($self->date && $self->date ne '0000-00-00 00:00:00');
     my ($ds) = $self->datasets;
     return $ds ? $ds->date : '';
 }
