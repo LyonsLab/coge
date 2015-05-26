@@ -103,7 +103,7 @@ sub fetch {
             link => $experiment->source->link
         },
         types => \@types,
-        metadata => \@metadata,
+        additional_metadata => \@metadata,
         restricted => $experiment->restricted ? Mojo::JSON->true : Mojo::JSON->false,
     });
 }

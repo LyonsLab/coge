@@ -81,7 +81,7 @@ sub fetch {
         description => $notebook->description,
         type => $notebook->type->name,
         restricted => $notebook->restricted ? Mojo::JSON->true : Mojo::JSON->false,
-        metadata => \@metadata,
+        additional_metadata => \@metadata,
         items => \@items
     });
 }
