@@ -1,6 +1,28 @@
 <TMPL_IF NAME='MAIN'>
-<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.6/css/jquery.dataTables.css">
-<script type="text/javascript" language="javascript" src="//cdn.datatables.net/1.10.6/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" type="text/css" href="js/vendor/datatables/media/css/jquery.dataTables.min.css">
+<script type="text/javascript" language="javascript" src="js/vendor/datatables/media/js/jquery.dataTables.js"></script>
+<style>
+#chr_list_table {
+  white-space: nowrap;
+}
+#chr_list_table td {
+  font-size: small;
+}
+#chr_list_table th {
+  color: dimgray !important;
+  font-size: small;
+  text-align: left;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+	color:#0000EE !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color:#009900!important;
+    border:1px solid transparent !important;
+    background:none !important;
+}
+.dataTables_info{ font-size: small; }
+</style>
 <script src="./js/coge/utils.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
 <script language="javascript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></script>
@@ -108,14 +130,13 @@ function get_feat_gc(opts){
     $.ajax({
         data: {
                 dsgid: genome_id,
-                jquery_ajax: 1,
-                    fname: 'get_gc_for_feature_type',
+                fname: 'get_gc_for_feature_type',
                 dsid: dsid,
                 typeid: typeid,
                 chr: chr,
                 min: min,
                 max: max,
-                hist_type: hist_type,
+                hist_type: hist_type
             },
             success: function(data) {
                 elem.html(data);
@@ -136,41 +157,51 @@ function chr_hist (dsgid) {
     $('#chromosome_hist').html('loading. . .');
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'get_chr_length_hist',
-            dsgid: dsgid,
+            dsgid: dsgid
         },
         success: function (data) {$('#chromosome_hist').html(data);}
     });
 }
 
+var chr_list_table = null;
 function chr_list() {
-    $('#chromosome_list').dialog({
-        autoOpen: true,
-        position: {
-           my: "center",
-           at: "top",
-           of: $(".box")
-        }
-    });
+	$('#chromosome_list').dialog({
+		autoOpen: true,
+		position: {
+			my: "center",
+			at: "top",
+			of: $(".box")
+		}
+	});
 
-    $('#chromosome_list').html('loading. . .');
-    $.ajax({
-        data: {
-            jquery_ajax: 1,
-            fname: 'get_chr_list',
-            gid: genome_id,
-        },
-        success: function(data){
-        	$('#chromosome_list').html(data);
-        }
-    });
-}
+	if (!chr_list_table)
+	    $.ajax({
+	        data: {
+	            fname: 'get_chromosomes',
+	            gid: genome_id
+	        },
+	        dataType: "json",
+	        success: function (data) {
+				chr_list_table = $('#chr_list_table').DataTable({
+			   		columnDefs:[{targets:1,type:'num'},{orderable:false,targets:[2,3]}],
+			   		data:data,
+					deferRender:true,
+					language:{info:'Showing _START_ to _END_ of _TOTAL_ chromosomes'},
+					lengthChange:false,
+					paging:data.length>10,
+					pagingType:'simple',
+					searching:data.length>10
+				});
+				$('#chr_list_loading').hide();
+				$('#chr_list').show();
+	        }
+		});
+ }
 
 function download_chromosome_sequence(chr) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'cache_chr_fasta',
             gid: genome_id,
             chr: chr
@@ -328,7 +359,6 @@ function search_organisms (search_term) {
     if (search_term.length > 2) {
         $.ajax({
             data: {
-                jquery_ajax: 1,
                 fname: 'search_organisms',
                 search_term: search_term,
                 timestamp: new Date().getTime()
@@ -368,7 +398,6 @@ function get_features(selector) {
 function search_users (search_term) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'search_users',
             search_term: search_term,
             timestamp: new Date().getTime()
@@ -386,7 +415,6 @@ function search_users (search_term) {
 function get_genome_info () {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'get_genome_info',
             gid: genome_id
         },
@@ -401,7 +429,6 @@ function get_genome_info () {
 function edit_genome_info () {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'edit_genome_info',
             gid: genome_id
         },
@@ -440,7 +467,6 @@ function update_genome_info (){
 
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'update_genome_info',
             gid: genome_id,
             name: name,
@@ -755,7 +781,6 @@ function export_fasta() {
 function export_fasta_chr(chr) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'cache_chr_fasta',
             gid: genome_id,
             chr: chr
@@ -1198,7 +1223,17 @@ function get_experiments(e) {
 </script>
 
 <div class="dialog_box hidden" id="chromosome_hist" title="Chromosome Size"></div>
-<div class="dialog_box hidden" id="chromosome_list" title="Chromosome List"></div>
+<div class="dialog_box hidden" id="chromosome_list" title="Chromosome List">
+	<div id="chr_list_loading">Loading...</div>
+	<div id="chr_list" style="display:none;">
+		<table id="chr_list_table" class="display">
+			<thead><tr><th>Chromosome</th><th>Length</th><th style="text-align:right;">Files</th><th></th></thead>
+			<tbody></tbody>
+		</table>
+		<span onclick="export_chr_file()" class="r ui-button ui-corner-all coge-button" style="margin-left:10px;margin-top:10px;">Send to iPlant</span>
+		<span onclick="download_chr_file()" class="r ui-button ui-corner-all coge-button" style="margin-top:10px;">Download</span>
+	</div>
+</div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
 <div class="dialog_box hidden" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box hidden" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
@@ -1575,7 +1610,6 @@ Are you sure you want to move this genome into your trash?<p>
 
         $.ajax({
             data: {
-                jquery_ajax: 1,
                 fname: 'update_owner',
                 gid: "<TMPL_VAR NAME='GID'>",
                 user_name: user_name,
