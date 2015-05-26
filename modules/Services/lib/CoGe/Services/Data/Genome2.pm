@@ -15,7 +15,6 @@ sub search {
     }
 
     # Authenticate user and connect to the database
-    #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Search genomes
@@ -81,7 +80,6 @@ sub fetch {
     my $id = int($self->stash('id'));
 
     # Authenticate user and connect to the database
-    #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
     my $genome = $db->resultset("Genome")->find($id);
@@ -127,7 +125,7 @@ sub fetch {
         },
         chromosome_count => int($genome->chromosome_count),
         experiments => [ map { int($_->id) } $genome->experiments ],
-        metadata => \@metadata
+        additional_metadata => \@metadata
     });
 }
 
