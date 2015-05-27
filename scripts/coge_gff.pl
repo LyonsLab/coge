@@ -84,7 +84,7 @@ $org = $item->organism->name . "id";
 
 open(my $fh, ">", $file_temp) or die "Error creating gff file";
 
-print STDERR "chr: $chr\n";
+#print STDERR "chr: $chr\n";
 
 print $fh $item->gff(
     print                     => 0,
