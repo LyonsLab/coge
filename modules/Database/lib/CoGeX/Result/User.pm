@@ -27,7 +27,7 @@ This object uses the DBIx::Class to define an interface to the C<user> table in 
 
 my $node_types = CoGeX::node_types();
 
-__PACKAGE__->table("user");
+__PACKAGE__->table("coge.user");
 __PACKAGE__->add_columns(
 	"user_id",
 	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },

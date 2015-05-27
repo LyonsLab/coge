@@ -92,7 +92,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_gc_for_noncoding       => \&get_gc_for_noncoding,
     get_gc_for_feature_type    => \&get_gc_for_feature_type,
     get_chr_length_hist        => \&get_chr_length_hist,
-    get_chr_list               => \&get_chr_list,
+    get_chromosomes            => \&get_chromosomes,
     cache_chr_fasta			   => \&cache_chr_fasta,
     get_aa_usage               => \&get_aa_usage,
     get_wobble_gc              => \&get_wobble_gc,
@@ -869,31 +869,24 @@ sub get_chr_length_hist {
     return $info . "<br>" . $hist_img;
 }
 
-sub get_chr_list {
+sub get_chromosomes {
     my %opts  = @_;
     my $gid = $opts{gid};
-    return "error", " " unless $gid;
-    my $genome = $coge->resultset('Genome')->find($gid);
-    unless ($genome) {
-        my $error = "unable to create genome object using id $gid\n";
-        return $error;
-    }
-	my $html = "<table class=\"display dataTable\">";
-	$html .= "<thead><tr><th>Chromosome</th><th>Length</th><th colspan=\"2\">Files</th></thead>";
-	$html .= "<tbody>";
-	my @chromosomes =
-      sort { $b->sequence_length <=> $a->sequence_length }
-      $genome->genomic_sequences();
-	for (@chromosomes) {
-		$html .= "<tr><td class=\"data5\" style=\"padding-right:20px\">" . $_->chromosome . "</td>";
-		$html .= "<td class=\"data5\" style=\"padding-right:20px\">" . $_->sequence_length . "</td>";
-		$html .= "<td class=\"data5\" style=\"padding-right:20px\"><input type=\"radio\" name=\"chr\" id=\"f" . $_->chromosome . "\" /> FASTA</td>";
-		$html .= "<td class=\"data5\"><input type=\"radio\" name=\"chr\" id=\"g" . $_->chromosome . "\" /> GFF</td></tr>";
-	}
-	$html .= "</tbody></table>";
-	$html .= "<span onclick=\"export_chr_file()\" class=\"r ui-button ui-corner-all coge-button\" style=\"margin-left:10px;margin-top:10px;\">Send to iPlant</span>";
-	$html .= "<span onclick=\"download_chr_file()\" class=\"r ui-button ui-corner-all coge-button\" style=\"margin-top:10px;\">Download</span>";
-	return $html;
+    my $rs = $coge->resultset('GenomicSequence')->search({genome_id=>$gid},{
+    	columns=>['chromosome','sequence_length']
+    });
+    my $html = '[';
+    my $first = 1;
+	while (my $c = $rs->next) {
+		if ($first) {
+			$first = 0;
+		} else {
+			$html .= ",";
+		}
+		$html .= '["' . $c->chromosome . '","' . $c->sequence_length . "\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"f" . $c->chromosome . "\\\" /> FASTA\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"g" . $c->chromosome . "\\\" /> GFF\"]";
+  	}
+	$html .= ']';
+	return $html;	
 }
 
 sub cache_chr_fasta {

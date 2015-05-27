@@ -1262,7 +1262,8 @@ sub get_contents {
     my $update_time = $coge->storage->dbh_do(
         sub {
             my ( $storage, $dbh, @args ) = @_;
-            $dbh->selectrow_array('SELECT NOW()+0');
+#mysql            $dbh->selectrow_array('SELECT NOW()+0');
+            $dbh->selectrow_array('SELECT NOW()'); #postgresql
         }
     );
 
