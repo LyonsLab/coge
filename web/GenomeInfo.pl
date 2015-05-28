@@ -123,9 +123,9 @@ sub get_genome_info_details {
         . qq{<td class="data5">} . commify($chr_num);
 
     # Histogram
-    $html .= qq{ <span class="link" onclick="chr_hist($dsgid);">Histogram</span>};
+    $html .= qq{&nbsp;&nbsp;&nbsp;<span class="link" onclick="chr_hist($dsgid);">Histogram</span>};
   	# chromosome list
-    $html .= qq{, <span class="link" onclick="chr_list();">list</span>};
+    $html .= qq{ | <span class="link" onclick="chr_list();">List</span>};
     $html .= qq{</td></tr>};
     
  
