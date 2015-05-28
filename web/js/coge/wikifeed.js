@@ -1,5 +1,4 @@
 window.wikifeed = function(url, element, size) {
-	url = 'https://genomevolution.org/wiki/index.php/CoGepedia:Current_events';
     var num_posts = size || 5;
     var div = $("<div></div>");
 
