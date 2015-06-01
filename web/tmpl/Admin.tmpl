@@ -159,12 +159,10 @@
 		 	<option value="1">Contains</option>
 		 	<option value="0">Does NOT contain</option>
 		 	</select>
-		 	<span id='job_filter_count' style="margin-left:20px;"></span>
-		 	<img id='filter_busy' src="picts/ajax-loader.gif" />
-		</div>
-		<div style="padding-bottom:10px;">
-			<input type="checkbox" id="job_update_checkbox" checked>
+		 	<span id='job_filter_count' style="margin-left:20px;margin-right:20px;"></span>
+		 	<input type="checkbox" id="job_update_checkbox" checked>
 			<span> Auto-Update</span>
+		 	<img id='filter_busy' src="picts/ajax-loader.gif" />
 		</div>
 			
 		<span id="test" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel selected jobs</span>
@@ -225,7 +223,7 @@
 					<option value="720">Last month</option>
 				</select>
 			</span>
-			<span>
+			<span style="margin-right:20px;">
 				Filter:
 				<input id="hist_search_input" type="text">
 				<select id="hist_search_type">
@@ -234,12 +232,10 @@
 				</select>
 				<span id='hist_filter_count' style="margin-left:20px;color:darkgray;font-style:italic;"></span>
 			</span>
-		</div>
-	
-		<div style="padding-bottom:10px;">
 			<input type="checkbox" id="hist_update_checkbox" checked>
 			<span> Auto-Update</span>
 		</div>
+		
 		<img id="loading_gears3" src="picts/large_gears.gif" width='30' height='30' class="link" style="padding:1px;display:none;" />
 		
 		<div id="history" style="max-width:95%;height:80%;display:none;"></div>
