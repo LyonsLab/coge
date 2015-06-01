@@ -46,24 +46,26 @@ use Data::Dumper;
 use POSIX qw(ceil);
 
 BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $DATA_TYPE_QUANT 
+                 $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
     require Exporter;
 
     $VERSION = 0.1;
-    @ISA     = qw (Exporter);
+    @ISA     = qw(Exporter);
     @EXPORT = qw(
       get_tiered_path get_workflow_paths get_upload_path get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_genome_cache_path get_workflow_results add_workflow_result
       get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_data
-      create_experiment create_experiments_from_batch
+      create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
       create_annotation_dataset reverse_complement
+      $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
     @EXPORT_OK = qw(data_type);
 
-    # Experiment Data Types
+    # Experiment Data Types -- move to CoGe::Core::Experiment?
     $DATA_TYPE_QUANT  = 1; # Quantitative data
     $DATA_TYPE_POLY   = 2; # Polymorphism data
     $DATA_TYPE_ALIGN  = 3; # Alignments
@@ -614,79 +616,80 @@ sub get_log {
     return $log;
 }
 
-sub create_experiment {
-    my %opts = @_;
-    my $genome = $opts{genome}; # genome object or id
-    my $user = $opts{user};
-    my $irods = $opts{irods};
-    my $files = $opts{files};
-    #my $file_type = $opts{file_type};
-    my $metadata = $opts{metadata};
-    my $options = $opts{options};
-    #print STDERR "create_experiment ", Dumper $metadata, "\n";
-
-    my $conf = CoGe::Accessory::Web::get_defaults();
-
-    my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
-
-    # Connect to workflow engine and get an id
-    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    unless (defined $jex) {
-        return (undef, "Could not connect to JEX");
-    }
-
-    # Create the workflow
-    my $workflow = $jex->create_workflow( name => 'Create Experiment', init => 1 );
-    unless ($workflow and $workflow->id) {
-        return (undef, 'Could not create workflow');
-    }
-
-    # Setup log file, staging, and results paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($result_dir, 'debug.log') );
-
-    # Create list of files to load
-    my @staged_files;
-    push @staged_files, @$files if ($files);
-
-    # Create jobs to retrieve irods files
-    my %load_params;
-    foreach my $item (@$irods) {
-        next unless ($item->{type} eq 'irods');
-        %load_params = _create_iget_job($conf, $item->{path}, $staging_dir);
-        unless ( %load_params ) {
-            return (undef, "Could not create iget task");
-        }
-        $workflow->add_job(\%load_params);
-        push @staged_files, $load_params{outputs}[0];
-    }
-
-    # Create load job
-    my $ignoreMissing = ( $options->{ignoreMissing} ? 1 : 0 );
-    %load_params = _create_load_experiment_job(
-        conf => $conf, 
-        metadata => $metadata, 
-        gid => $gid, 
-        wid => $workflow->id, 
-        user_name => $user->name, 
-        staging_dir => $staging_dir, 
-        files => \@staged_files, 
-        #file_type => $file_type, 
-        ignoreMissing => $ignoreMissing
-    );
-    unless ( %load_params ) {
-        return (undef, "Could not create load task");
-    }
-    $workflow->add_job(\%load_params);
-
-    # Submit the workflow
-    my $result = $jex->submit_workflow($workflow);
-    if ($result->{status} =~ /error/i) {
-        return (undef, "Could not submit workflow");
-    }
-
-    return ($result->{id}, undef);
-}
+# mdb removed 5/13/15 - deprecated, instead use CoGe::Builder::Load::Experiment
+#sub create_experiment {
+#    my %opts = @_;
+#    my $genome = $opts{genome}; # genome object or id
+#    my $user = $opts{user};
+#    my $irods = $opts{irods};
+#    my $files = $opts{files};
+#    #my $file_type = $opts{file_type};
+#    my $metadata = $opts{metadata};
+#    my $options = $opts{options};
+#    #print STDERR "create_experiment ", Dumper $metadata, "\n";
+#
+#    my $conf = CoGe::Accessory::Web::get_defaults();
+#
+#    my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
+#
+#    # Connect to workflow engine and get an id
+#    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+#    unless (defined $jex) {
+#        return (undef, "Could not connect to JEX");
+#    }
+#
+#    # Create the workflow
+#    my $workflow = $jex->create_workflow( name => 'Create Experiment', init => 1 );
+#    unless ($workflow and $workflow->id) {
+#        return (undef, 'Could not create workflow');
+#    }
+#
+#    # Setup log file, staging, and results paths
+#    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
+#    $workflow->logfile( catfile($result_dir, 'debug.log') );
+#
+#    # Create list of files to load
+#    my @staged_files;
+#    push @staged_files, @$files if ($files);
+#
+#    # Create jobs to retrieve irods files
+#    my %load_params;
+#    foreach my $item (@$irods) {
+#        next unless ($item->{type} eq 'irods');
+#        %load_params = _create_iget_job($conf, $item->{path}, $staging_dir);
+#        unless ( %load_params ) {
+#            return (undef, "Could not create iget task");
+#        }
+#        $workflow->add_job(\%load_params);
+#        push @staged_files, $load_params{outputs}[0];
+#    }
+#
+#    # Create load job
+#    my $ignoreMissing = ( $options->{ignoreMissing} ? 1 : 0 );
+#    %load_params = _create_load_experiment_job(
+#        conf => $conf, 
+#        metadata => $metadata, 
+#        gid => $gid, 
+#        wid => $workflow->id, 
+#        user_name => $user->name, 
+#        staging_dir => $staging_dir, 
+#        files => \@staged_files, 
+#        #file_type => $file_type, 
+#        ignoreMissing => $ignoreMissing
+#    );
+#    unless ( %load_params ) {
+#        return (undef, "Could not create load task");
+#    }
+#    $workflow->add_job(\%load_params);
+#
+#    # Submit the workflow
+#    my $result = $jex->submit_workflow($workflow);
+#    if ($result->{status} =~ /error/i) {
+#        return (undef, "Could not submit workflow");
+#    }
+#
+#    return ($result->{id}, undef);
+#}
 
 sub create_experiments_from_batch {
     my %opts = @_;
@@ -978,56 +981,57 @@ sub _create_iget_job {
     );
 }
 
-sub _create_load_experiment_job {
-    my %opts = @_;
-    my $conf = $opts{conf};
-    my $metadata = $opts{metadata};
-    my $gid = $opts{gid};
-    my $wid = $opts{wid};
-    my $user_name = $opts{user_name};
-    my $staging_dir = $opts{staging_dir};
-    my $files = $opts{files};
-    #my $file_type = $opts{file_type};
-    my $ignoreMissing = $opts{ignoreMissing};
-    #print STDERR "_create_load_experiment_job ", Dumper $metadata, "\n";
-
-    my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
-    return unless $cmd; # SCRIPTDIR undefined
-
-    my $file_str = join(',', map { basename($_) } @$files);
-    #$file_type = 'csv' unless $file_type;
-
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-user_name', $user_name, 0],
-            ['-name', '"' . $metadata->{name} . '"', 0],
-            ['-desc', '"' . $metadata->{description} . '"', 0],
-            ['-version', '"' . $metadata->{version} . '"', 0],
-            ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
-            ['-gid', $gid, 0],
-            ['-wid', $wid, 0],
-            ['-source_name', '"' . $metadata->{source_name} . '"', 0],
-            #['-types', qq{"Expression"}, 0], # FIXME
-            #['-annotations', $ANNOTATIONS, 0],
-            ['-staging_dir', "'".$staging_dir."'", 0],
-            #['-file_type', $file_type, 0], # FIXME
-            ['-data_file', "'".$file_str."'", 0],
-            ['-config', $conf->{_CONFIG_PATH}, 1],
-            #['-result_dir', "'".$result_dir."'", 0],
-            ['-ignore-missing-chr', $ignoreMissing, 0]
-        ],
-        inputs => [
-            ($conf->{_CONFIG_PATH}, @$files)
-        ],
-        outputs => [
-            [$staging_dir, 1],
-            catdir($staging_dir, 'log.done')
-        ],
-        description => "Loading experiment data..."
-    );
-}
+# mdb removed 5/13/15 - deprecated
+#sub _create_load_experiment_job {
+#    my %opts = @_;
+#    my $conf = $opts{conf};
+#    my $metadata = $opts{metadata};
+#    my $gid = $opts{gid};
+#    my $wid = $opts{wid};
+#    my $user_name = $opts{user_name};
+#    my $staging_dir = $opts{staging_dir};
+#    my $files = $opts{files};
+#    #my $file_type = $opts{file_type};
+#    my $ignoreMissing = $opts{ignoreMissing};
+#    #print STDERR "_create_load_experiment_job ", Dumper $metadata, "\n";
+#
+#    my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
+#    return unless $cmd; # SCRIPTDIR undefined
+#
+#    my $file_str = join(',', map { basename($_) } @$files);
+#    #$file_type = 'csv' unless $file_type;
+#
+#    return (
+#        cmd => $cmd,
+#        script => undef,
+#        args => [
+#            ['-user_name', $user_name, 0],
+#            ['-name', '"' . $metadata->{name} . '"', 0],
+#            ['-desc', '"' . $metadata->{description} . '"', 0],
+#            ['-version', '"' . $metadata->{version} . '"', 0],
+#            ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
+#            ['-gid', $gid, 0],
+#            ['-wid', $wid, 0],
+#            ['-source_name', '"' . $metadata->{source_name} . '"', 0],
+#            #['-types', qq{"Expression"}, 0], # FIXME
+#            #['-annotations', $ANNOTATIONS, 0],
+#            ['-staging_dir', "'".$staging_dir."'", 0],
+#            #['-file_type', $file_type, 0], # FIXME
+#            ['-data_file', "'".$file_str."'", 0],
+#            ['-config', $conf->{_CONFIG_PATH}, 1],
+#            #['-result_dir', "'".$result_dir."'", 0],
+#            ['-ignore-missing-chr', $ignoreMissing, 0]
+#        ],
+#        inputs => [
+#            ($conf->{_CONFIG_PATH}, @$files)
+#        ],
+#        outputs => [
+#            [$staging_dir, 1],
+#            catdir($staging_dir, 'log.done')
+#        ],
+#        description => "Loading experiment data..."
+#    );
+#}
 
 sub _create_load_batch_job {
     my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir, $nid) = @_;
@@ -1105,7 +1109,7 @@ sub _create_load_genome_job {
 
 sub _create_load_genome_from_NCBI_job {
     my ($conf, $user_name, $accns, $staging_dir, $result_dir, $files) = @_;
-    my $cmd = catfile($conf->{SCRIPTDIR}, "load_genomes_n_stuff", "genbank_genome_loader.pl");
+    my $cmd = catfile($conf->{SCRIPTDIR}, "genbank_genome_loader.pl");
     return unless $cmd; # SCRIPTDIR undefined
 
     my %p = (

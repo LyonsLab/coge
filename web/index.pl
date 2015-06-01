@@ -227,7 +227,7 @@ sub get_latest_genomes {
         my $name = $dsg->organism->name;
         my $orgview_link = "GenomeInfo.pl?gid=" . $dsg->id;
 
-        my @datetime = split " ", $dsg->date;
+        my @datetime = split " ", $dsg->get_date;
 
         push @genomes, { organism => $name, added => $datetime[0], url => $orgview_link };
     }

@@ -1,16 +1,12 @@
 package CoGe::Services::Data::Experiment;
 
 use Mojo::Base 'Mojolicious::Controller';
-use Mojo::JSON qw( decode_json );
 use Data::Dumper;
-use File::Path qw( mkpath );
-use File::Basename qw( basename dirname );
-use File::Spec::Functions qw( catdir catfile );
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
-use CoGe::Services::Auth;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage;
+use CoGe::Services::Auth;
+use CoGe::Services::Data::Job;
 
 sub search {
     my $self = shift;
@@ -107,7 +103,7 @@ sub fetch {
             link => $experiment->source->link
         },
         types => \@types,
-        metadata => \@metadata,
+        additional_metadata => \@metadata,
         restricted => $experiment->restricted ? Mojo::JSON->true : Mojo::JSON->false,
     });
 }
@@ -115,20 +111,10 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    #print STDERR (caller(0))[3], "\n", Dumper $data, "\n";
+    #print STDERR "CoGe::Services::Data::Experiment::add\n", Dumper $data, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-
-    # Get genome
-    my $gid = $data->{genome_id};
-    my $genome = $db->resultset("Genome")->find($gid);
-    unless ($genome) {
-        $self->render(json => {
-            error => { Error => "Item not found" }
-        });
-        return;
-    }
 
     # User authentication is required to add experiment
     unless (defined $user) {
@@ -138,37 +124,23 @@ sub add {
         return;
     }
 
-    # TODO validate metadata parameters
-
     # Valid data items
-    if (!@{ $data->{items} }) {
+    unless ($data->{source_data} && @{$data->{source_data}}) {
         $self->render(json => {
             error => { Error => "No data items specified" }
         });
         return;
     }
-
-    # Submit workflow to generate experiment
-    my ($job_id, $error_msg) = create_experiment(
-        genome => $genome,
-        user => $user,
-        metadata => $data,
-        irods => $data->{items} 
-    );
-    unless ($job_id) {
-        $self->render(json => {
-            error => { Error => "Workflow submission failed: " . $error_msg }
-        });
-        return;
-    }
-
-    $self->render(json =>
-        {
-            success => Mojo::JSON->true,
-            job_id => int($job_id),
-            link => undef
-        }
-    );
+    
+    # Marshall incoming payload into format expected by Job Submit.
+    # Note: This is kind of a kludge -- is there a better way to do this using
+    # Mojolicious routing?
+    my $request = {
+        type => 'load_experiment',
+        parameters => $data
+    };
+    
+    return CoGe::Services::Data::Job::add($self, $request);
 }
 
 1;

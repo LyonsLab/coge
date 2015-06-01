@@ -20,7 +20,7 @@ sub build {
 
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
 
-    my $dest_type = $self->options->{dest_type};
+    my $dest_type = $self->params->{dest_type};
     $dest_type = "http" unless $dest_type;
 
     my $eid = $self->params->{eid};
@@ -37,12 +37,12 @@ sub build {
     $self->workflow->add_job(\%job);
 
     if ($dest_type eq "irods") {
-        my $base = $self->options->{dest_path};
+        my $base = $self->params->{dest_path};
         $base = irods_get_base_path($self->user->name) unless $base;
         my $dest = catfile($base, $filename);
         my $irods_done = catfile($staging_dir, "irods.done");
 
-        $self->workflow->add_job( export_to_irods($cache_file, $dest, $self->options->{overwrite}, $irods_done) );
+        $self->workflow->add_job( export_to_irods($cache_file, $dest, $self->params->{overwrite}, $irods_done) );
         $self->workflow->add_job( generate_results($dest, $dest_type, $result_dir, $self->conf, $irods_done)) ;
     } 
     else {

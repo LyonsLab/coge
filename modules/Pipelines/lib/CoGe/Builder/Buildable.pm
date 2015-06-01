@@ -13,11 +13,6 @@ has 'jex' => (
     is => 'ro',
 );
 
-has 'options' => (
-    is => 'ro',
-    required => 1
-);
-
 has 'params' => (
     is => 'ro',
     required => 1
