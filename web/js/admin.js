@@ -12,6 +12,15 @@ var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 
 $(function () {
+	//$( "#tabs" ).show();
+	/*$( "#tabs" ).tabs({
+		select: function(event, ui) {
+            var theSelectedTab = ui.index;
+            change_tab(theSelectedTab);
+            schedule_update(5000);
+        }
+    });*/
+	
 	timestamps['idle'] = new Date().getTime();
 	
 	// Configure dialogs
@@ -528,7 +537,6 @@ function toggle_master() {
 		});
 	}
 
-	
 }
 
 function open_dialog() {
