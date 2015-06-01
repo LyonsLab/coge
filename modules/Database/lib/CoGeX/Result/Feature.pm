@@ -738,7 +738,8 @@ sub annotation_pretty_print_html {
 			my $genome = qq{<span class="data5 link" onclick="window.open('GenomeInfo.pl?gid=}
 			  . $dsg->id . "')\">"
 			  . $name . " (v"
-			  . $dsg->version . ")";
+			  . $dsg->version . ")"
+			  . " gid: ". $dsg->id;
 			push @genomes, $genome;
 		}
 		$anno_obj->add_Annot(
