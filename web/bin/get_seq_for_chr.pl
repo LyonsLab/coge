@@ -22,7 +22,7 @@ print "\n\n";
 
 print ">chromosome " . $chr . "\n";
 
-my $path = catfile($conf->{SECTEMPDIR}, "GenomeInfo/downloads", $gid);
+my $path = catfile($conf->{SECTEMPDIR}, "downloads/genome", $gid);
 my $file = catfile($path, $filename);
 open(my $fh, $file);
 while (my $l = <$fh>) {
