@@ -518,12 +518,17 @@ function toggle_arrow(id) {
 function toggle_master() {
 	if (current_page == 0) {
 		current_page = 1;
+		$('#master').fadeToggle('slow', function() {
+			$('#userInfo').fadeToggle('slow');
+		});
 	} else {
 		current_page = 0;
+		$('#userInfo').fadeToggle('slow', function() {
+			$('#master').fadeToggle('slow');
+		});
 	}
 
-	$('#master').fadeToggle('slow');
-	$('#userInfo').fadeToggle('slow');
+	
 }
 
 function open_dialog() {
