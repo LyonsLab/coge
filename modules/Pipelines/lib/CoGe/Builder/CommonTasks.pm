@@ -216,6 +216,7 @@ sub generate_gff {
     if ($args{chr}) {
     	$filename .= "_" . $args{chr};
     }
+    $filename .= ".gid".$args{gid};
     $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
