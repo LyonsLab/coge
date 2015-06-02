@@ -7,6 +7,7 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
+use CoGe::Core::Chromosomes;
 use CoGe::Core::Genome;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Storage;
@@ -872,18 +873,21 @@ sub get_chr_length_hist {
 sub get_chromosomes {
     my %opts  = @_;
     my $gid = $opts{gid};
-    my $rs = $coge->resultset('GenomicSequence')->search({genome_id=>$gid},{
-    	columns=>['chromosome','sequence_length']
-    });
+#    my $rs = $coge->resultset('GenomicSequence')->search({genome_id=>$gid},{
+#    	columns=>['chromosome','sequence_length']
+#    });
+	my $c = CoGe::Core::Chromosomes->new($gid);
     my $html = '[';
     my $first = 1;
-	while (my $c = $rs->next) {
+#	while (my $c = $rs->next) {
+	while ($c->next) {
 		if ($first) {
 			$first = 0;
 		} else {
 			$html .= ",";
 		}
-		$html .= '["' . $c->chromosome . '","' . $c->sequence_length . "\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"f" . $c->chromosome . "\\\" /> FASTA\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"g" . $c->chromosome . "\\\" /> GFF\"]";
+#		$html .= '["' . $c->chromosome . '","' . $c->sequence_length . "\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"f" . $c->chromosome . "\\\" /> FASTA\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"g" . $c->chromosome . "\\\" /> GFF\"]";
+		$html .= '["' . $c->name . '","' . $c->length . "\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"f" . $c->name . "\\\" /> FASTA\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"g" . $c->name . "\\\" /> GFF\"]";
   	}
 	$html .= ']';
 	return $html;	
