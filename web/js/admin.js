@@ -255,7 +255,7 @@ function init_hist_grid() {
     
     hist.grid.onSort.subscribe(function (e, args) {
 		sortcol = args.sortCol.field;
-		hist.dataView.sort(comparer, args.sortAsc);
+		hist.dataView.sort(args.sortAsc);
 	});
 
 	// Wire up model events to drive the grid
