@@ -35,6 +35,7 @@ sub new {
 	my $genome_file = get_genome_file($gid);
 	open(my $fh, $genome_file . '.fai');
 	$self->{fh} = $fh;
+	$self->{lines} = 0;
 	return bless $self, $class;
 }
 
@@ -45,17 +46,16 @@ sub DESTROY {
 	}	
 }
 
-sub next {
+sub count {
 	my $self = shift;
-	my $line = readline($self->{fh});
-	if ($line) {
-		my @tokens = split('\t', $line);
-		@{$self->{tokens}} = @tokens;
-		return 1;
+	while ($self->next) {
 	}
-	close($self->{fh});
-	$self->{fh} = 0;
-	return 0;
+	return $self->{lines};
+}
+
+sub length {
+	my $self = shift;
+	return $self->{tokens}[1];
 }
 
 sub name {
@@ -68,9 +68,18 @@ sub name {
 	return $name;
 }
 
-sub length {
+sub next {
 	my $self = shift;
-	return $self->{tokens}[1];
+	my $line = readline($self->{fh});
+	if ($line) {
+		my @tokens = split('\t', $line);
+		@{$self->{tokens}} = @tokens;
+		$self->{lines}++;
+		return 1;
+	}
+	close($self->{fh});
+	$self->{fh} = 0;
+	return 0;
 }
 
 sub offset {

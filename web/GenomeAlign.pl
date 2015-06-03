@@ -5,6 +5,7 @@ use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
+use CoGe::Core::Chromosomes;
 use CGI;
 use DBI;
 use Data::Dumper;
@@ -172,7 +173,7 @@ sub generate_table {
             $dsg->organism->description
         );
 
-        my $chr_count = $dsg->chromosome_count;
+    	my $chr_count = new CoGe::Core::Chromosomes($dsgid)->count;
         my $length    = $dsg->length;
         my $type      = $dsg->type->name;
         push @table, {
