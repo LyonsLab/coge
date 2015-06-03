@@ -401,16 +401,16 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub last_chromosome_position_old {
-    my $self = shift;
-    my $chr  = shift;
-    my $stop = $self->genomic_sequences( { chromosome => "$chr", }, )->get_column('stop')->max;
-    unless ($stop) {
-        warn "No genomic sequence for ", $self->name, " for chr $chr\n";
-        return;
-    }
-    return $stop;
-}
+#sub last_chromosome_position_old {
+#    my $self = shift;
+#    my $chr  = shift;
+#    my $stop = $self->genomic_sequences( { chromosome => "$chr", }, )->get_column('stop')->max;
+#    unless ($stop) {
+#        warn "No genomic sequence for ", $self->name, " for chr $chr\n";
+#        return;
+#    }
+#    return $stop;
+#}
 
 ################################################ subroutine header begin ##
 
