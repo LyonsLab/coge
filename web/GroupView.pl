@@ -127,9 +127,7 @@ sub get_group_info {
     return "Must have valid user group id.\n" unless ($ugid);
 
     my ($group) = $coge->resultset('UserGroup')->find($ugid);
-    return "User group id$ugid does not exist.<br>"
-      . "Click <a href='Groups.pl'>here</a> to view all groups."
-      unless ($group);
+    return "User group id$ugid does not exist.<br>" unless ($group);
 
     my $user_can_edit =
       ( $group->is_editable($USER)
