@@ -119,7 +119,7 @@ sub get_genome_info_details {
     my $total_length = $dsg->length;
 
     # Count
-    my $chr_num = $dsg->chromosome_count();
+    my $chr_num = new CoGe::Core::Chromosomes($dsgid)->count;
     $html .= qq{<tr><td class="title5">Chromosome count:</td</td>}
         . qq{<td class="data5">} . commify($chr_num);
 
