@@ -122,9 +122,7 @@ sub gen_body {
     $lid = $FORM->param('nid') unless $lid;                 # alias
     return "Must have valid notebook id\n" unless ($lid);
     my ($list) = $coge->resultset('List')->find($lid);
-    return "<br>Notebook id$lid does not exist.<br>"
-      . "Click <a href='Notebooks.pl'>here</a> to view a table of all notebooks.<br><br>"
-      unless ($list);
+    return "<br>Notebook id$lid does not exist.<br>" unless ($list);
     return "Access denied\n" unless $USER->has_access_to_list($list);
 
     my $template =
@@ -566,9 +564,7 @@ sub get_list_contents {
     return "Must have valid notebook id\n" unless ($lid);
 
     my $list = $coge->resultset('List')->find($lid);
-    return "Notebook id$lid does not exist.<br>"
-      . "Click <a href='Notebooks.pl'>here</a> to view all notebooks."
-      unless $list;
+    return "Notebook id$lid does not exist.<br>" unless $list;
 
     return "Access denied\n" unless $USER->has_access_to_list($list);
 
