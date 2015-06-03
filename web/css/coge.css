@@ -1508,6 +1508,23 @@ header {
     user-select: none;
 }
 
+.coge-side-menu ul, li { margin: 0; padding: 0; }
+.coge-side-menu ul li span { 
+    display: block;
+    font-size: 1.05em;
+    color: dimgray;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+.coge-side-menu ul li span:hover { background: greenyellow }
+.coge-side-menu li span       { padding-left: 0 }
+.coge-side-menu li li span    { padding-left: 1.5em }
+.coge-side-menu li li li span { padding-left: 3em }
+.coge-side-menu .selected { 
+    font-weight: bold; 
+    color: green;
+}
+
 /*
  * YouTube widget
  *
