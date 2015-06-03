@@ -562,7 +562,7 @@ sub get_genome_info {
 
     $html .=
         qq{<tr><td>Genome ID: </td><td>$gid</td>}
-      . qq{<tr><td>Sequence type <a href="SeqType.pl">?</a>: </td>}
+      . qq{<tr><td>Sequence type: </td>}
       . qq{<td>$gst_name (gstid$gstid) </td>}
       . qq{</tr>}
       . $owner_field
