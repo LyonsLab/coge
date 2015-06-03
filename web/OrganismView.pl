@@ -716,7 +716,7 @@ sub get_dataset_info {
           qq{<table><tr valign='top'><td><table class="small annotation_table">}
         . qq{<tr>}
         . qq{<td>Name: <td>$ds_name (id} . $ds->id . qq{)</td>}
-        . qq{<tr><td><span class="link" onclick="window.open('Sources.pl')">Source:</span> <td>$source_name (id} . $ds->data_source->id . qq{)}
+        . qq{<tr><td>Source: <td>$source_name (id} . $ds->data_source->id . qq{)}
         . qq{<tr><td>Version: <td>} . $ds->version
         . qq{<tr><td>Organism:<td class="link"><a href="OrganismView.pl?oid=}
         . $ds->organism->id
