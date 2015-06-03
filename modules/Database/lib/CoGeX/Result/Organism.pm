@@ -214,41 +214,41 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-sub current_datasets_old
-  {
-    my $self = shift;
-    my %opts = @_;
-    my $type = $opts{type} || $opts{genomic_sequence_type} || $opts{sequence_type} || $opts{gstid};
-    $type =1 unless $type;
-    my %data;
-    my $typeid;
-    $typeid = ref($type) =~/Type/ ? $type->id : $type;
-    my $version;
-    my $contig_set =0;
-    ds_loop: foreach my $ds ($self->datasets({},{distict=>'version',order_by=>'version desc'}))
-      {
-	next unless $ds->sequence_type && $ds->sequence_type->id eq $typeid;
-	$version = $ds->version unless $version;
-	$version = $ds->version if $ds->version > $version;
-#	next unless $version == $ds->version;
-	my @chrs = $ds->get_chromosomes;
-	$contig_set = 1 if scalar @chrs > 50; #more than 50 chromosome?  probably a contig dataset
-	foreach my $chr (@chrs)
-	  {
-	    #this is a hack but the general problem is that some organisms have different chromosomes at different versions, however, partially complete genomes will have many contigs and different versions will have different contigs.  So, to get around this, there is a check to see if the chromosome name has contig in it, if so, then only the most current version is used.  Otherwise, all versions are game.
-	    next unless $chr;
-	    if ($chr =~ /contig/i || $chr=~/scaffold/i || $contig_set)
-	      {
-		$contig_set = 1;
-		next ds_loop if $ds->version ne $version;
-	      }
-	    $data{$chr} = $ds unless $data{$chr};# || $contig_set;
-	    $data{$chr} = $ds if $ds->version > $data{$chr}->version;
-	  }
-      }
-    %data = map {$_->id,$_} values %data;
-    return wantarray ? values %data : [values %data];
-  }
+#sub current_datasets_old
+#  {
+#    my $self = shift;
+#    my %opts = @_;
+#    my $type = $opts{type} || $opts{genomic_sequence_type} || $opts{sequence_type} || $opts{gstid};
+#    $type =1 unless $type;
+#    my %data;
+#    my $typeid;
+#    $typeid = ref($type) =~/Type/ ? $type->id : $type;
+#    my $version;
+#    my $contig_set =0;
+#    ds_loop: foreach my $ds ($self->datasets({},{distict=>'version',order_by=>'version desc'}))
+#      {
+#	next unless $ds->sequence_type && $ds->sequence_type->id eq $typeid;
+#	$version = $ds->version unless $version;
+#	$version = $ds->version if $ds->version > $version;
+##	next unless $version == $ds->version;
+#	my @chrs = $ds->get_chromosomes;
+#	$contig_set = 1 if scalar @chrs > 50; #more than 50 chromosome?  probably a contig dataset
+#	foreach my $chr (@chrs)
+#	  {
+#	    #this is a hack but the general problem is that some organisms have different chromosomes at different versions, however, partially complete genomes will have many contigs and different versions will have different contigs.  So, to get around this, there is a check to see if the chromosome name has contig in it, if so, then only the most current version is used.  Otherwise, all versions are game.
+#	    next unless $chr;
+#	    if ($chr =~ /contig/i || $chr=~/scaffold/i || $contig_set)
+#	      {
+#		$contig_set = 1;
+#		next ds_loop if $ds->version ne $version;
+#	      }
+#	    $data{$chr} = $ds unless $data{$chr};# || $contig_set;
+#	    $data{$chr} = $ds if $ds->version > $data{$chr}->version;
+#	  }
+#      }
+#    %data = map {$_->id,$_} values %data;
+#    return wantarray ? values %data : [values %data];
+#  }
 
 ################################################ subroutine header begin ##
 
