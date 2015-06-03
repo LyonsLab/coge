@@ -5,6 +5,7 @@ use warnings;
 use base 'DBIx::Class::Core';
 
 #use CoGeX::ResultSet::Genome;
+use CoGe::Core::Chromosomes;
 use CoGe::Core::Storage qw( get_genome_seq get_genome_file );
 use CoGe::Accessory::Utils qw( commify );
 use JSON qw(encode_json);
@@ -688,11 +689,12 @@ See Also   :
 
 sub get_chromosomes {
     my $self = shift;
-    my @data =
-      map  { $_->chromosome }
-      sort { $b->sequence_length <=> $a->sequence_length }
-      $self->genomic_sequences();
-    return wantarray ? @data : \@data;
+	return CoGe::Core::Chromosomes->new($self->id)->names;
+#    my @data =
+#      map  { $_->chromosome }
+#      sort { $b->sequence_length <=> $a->sequence_length }
+#      $self->genomic_sequences();
+#    return wantarray ? @data : \@data;
 }
 
 ################################################ subroutine header begin ##
@@ -1034,16 +1036,17 @@ See Also   :
 
 sub length {
     my $self = shift;
-    my $rs   = $self->genomic_sequences(
-        {},
-        {
-            select => [ { sum => 'sequence_length' } ],
-            as     => ['total_length']
-            ,    # remember this 'as' is for DBIx::Class::ResultSet not SQL
-        }
-    );
-    my $total_length = $rs->first->get_column('total_length');
-    return $total_length;
+    return CoGe::Core::Chromosomes->new($self->id)->total_length;
+#    my $rs   = $self->genomic_sequences(
+#        {},
+#        {
+#            select => [ { sum => 'sequence_length' } ],
+#            as     => ['total_length']
+#            ,    # remember this 'as' is for DBIx::Class::ResultSet not SQL
+#        }
+#    );
+#    my $total_length = $rs->first->get_column('total_length');
+#    return $total_length;
 }
 
 ############################################### subroutine header begin ##
@@ -1064,7 +1067,9 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub chromosome_count {
-    return shift->genomic_sequences->count();
+	my $self = shift;
+    return CoGe::Core::Chromosomes->new($self->id)->count;
+#    return shift->genomic_sequences->count();
 }
 
 ################################################ subroutine header begin ##

@@ -68,6 +68,15 @@ sub name {
 	return $name;
 }
 
+sub names {
+	my $self = shift;
+	my @a;
+	while ($self->next) {
+		push @a, $self->name;
+	}
+    return wantarray ? @a : \@a;
+}
+
 sub next {
 	my $self = shift;
 	my $line = readline($self->{fh});
@@ -85,6 +94,15 @@ sub next {
 sub offset {
 	my $self = shift;
 	return $self->{tokens}[2];
+}
+
+sub total_length {
+	my $self = shift;
+	my $length = 0;
+	while ($self->next) {
+		$length += $self->length;
+	}
+    return $length;
 }
 
 1;
