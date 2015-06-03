@@ -36,20 +36,7 @@
 .jstree.jstree-focused { background:white; }
 </style>
 
-<script>
-	$(function() {
-		$( "#tabs" ).tabs({
-	        select: function(event, ui) {
-	            var theSelectedTab = ui.index;
-	            change_tab(theSelectedTab);
-	            schedule_update(5000);
-	        }
-	    });
-		$( "#tabs" ).show();
-	});
-</script>
-
-<div id="tabs" style="display:none;">
+<div id="tabs" class="hidden">
 	<ul>
 		<li><a href="#tabs-1">Search</a></li>
 		<li><a href="#tabs-2">Jobs</a></li>
