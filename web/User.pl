@@ -12,19 +12,20 @@ use Time::Piece;
 use List::Util qw(first);
 use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
+use Benchmark;
 use File::Path;
 use File::stat;
+use CoGeDBI;
 use CoGeX;
+use CoGeX::ResultSet::Experiment;
+use CoGeX::ResultSet::Genome;
+use CoGeX::ResultSet::Feature;
+use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape);
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
-use CoGeX::ResultSet::Experiment;
-use CoGeX::ResultSet::Genome;
-use CoGeX::ResultSet::Feature;
-use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape);
-use Benchmark;
 no warnings 'redefine';
 
 use vars qw(
@@ -74,7 +75,7 @@ $node_types = CoGeX::node_types();
     get_item_info                   => \&get_item_info,
     delete_items                    => \&delete_items,
     undelete_items                  => \&undelete_items,
-    get_contents2                    => \&get_contents2,
+    get_contents                    => \&get_contents,
     search_notebooks                => \&search_notebooks,
     add_items_to_notebook           => \&add_items_to_notebook,
     get_share_dialog                => \&get_share_dialog,
@@ -119,6 +120,10 @@ sub gen_body {
                           LOGIN     => 1 );
         return $template->output;
     }
+    
+    foreach ( keys %ITEM_TYPE ) {
+        $template->param( 'ITEM_TYPE.' . uc($_) => $ITEM_TYPE{$_} );
+    }
 
     $template->param(
         PAGE_NAME   => "$PAGE_TITLE.pl",
@@ -132,8 +137,8 @@ sub gen_body {
 #            ? 'image.pl?id=' . $USER->image_id
 #            : 'picts/smiley_default.png'
 #        ),
-        ITEM_TYPES     => encode_json(\%ITEM_TYPE),
-        TOC            => get_toc(),
+        ITEM_TYPE     => encode_json(\%ITEM_TYPE),
+        #TOC            => get_toc(),
         #CONTENTS       => get_contents( html_only => 1 ),
         ROLES          => get_roles('reader'),
         NOTEBOOK_TYPES => get_notebook_types('mixed')
@@ -148,10 +153,10 @@ sub get_item_info {
     my $item_type = $opts{item_type};
     return unless ($item_id and $item_type);
     my $timestamp = $opts{timestamp};
-    # print STDERR "get_item_info: $item_id $item_type\n";
+    #print STDERR "get_item_info: ", Dumper \%opts, "\n";
 
     my $html;
-    if ( $item_type == $ITEM_TYPE{group} ) {
+    if ( $item_type eq 'group' ) {
         my $group = $coge->resultset('UserGroup')->find($item_id);
         return unless $group;
         return unless ( $USER->is_admin or $group->has_member($USER) );
@@ -176,7 +181,7 @@ sub get_item_info {
             . qq{<span class="link" onclick="group_dialog();" title="Edit metadata and membership">Edit group</span><br>}
             . qq{</div></div>};        
     }
-    elsif ( $item_type == $ITEM_TYPE{notebook} ) {
+    elsif ( $item_type eq 'notebook' ) {
         my $notebook = $coge->resultset('List')->find($item_id);
         return unless $USER->has_access_to_list($notebook);
 
@@ -215,7 +220,7 @@ sub get_item_info {
             . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
             . qq{</div></div>};
     }
-    elsif ( $item_type == $ITEM_TYPE{genome} ) {
+    elsif ( $item_type eq 'genome' ) {
         my $genome = $coge->resultset('Genome')->find($item_id);
         return unless ( $USER->has_access_to_genome($genome) );
 
@@ -261,7 +266,7 @@ sub get_item_info {
             . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add to a notebook">Add to notebook</span><br>}
             . qq{</div></div>};
     }
-    elsif ( $item_type == $ITEM_TYPE{experiment} ) {
+    elsif ( $item_type eq 'experiment' ) {
         my $experiment = $coge->resultset('Experiment')->find($item_id);
         return unless $USER->has_access_to_experiment($experiment);
 
@@ -1201,68 +1206,82 @@ sub get_toc {    # table of contents
     return $template->output;
 }
 
-sub get_contents2 {
+sub get_contents {
     my %opts = @_;
     my $type = $opts{item_type};
-    $type = $ITEM_TYPE{all} unless $type;
+    return unless $type;
     my $timestamp = $opts{timestamp};
+    my $last_update = 0;
+    print STDERR "get_contents $type\n";
     
-    # Preload stuff for speed (needed for genome/experiment sorting and info routines)
-    #FIXME which would be faster, children_by_type_role_id or joins?
-    my %sourceIdToName =
-      map { $_->id => $_->name } $coge->resultset('DataSource')->all();
-
-    # Get all items for this user (genomes, experiments, notebooks)
     #my $t1    = new Benchmark;
-    my ( $children, $roles ) = $USER->children_by_type_role_id;
+    my $items = [];
 
-    my @items;
-
-    #print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
-    if ( $type == $ITEM_TYPE{genome} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
-    {
-        foreach my $genome ( sort genomecmp values %{ $children->{2} } ) { #FIXME hardcoded type
-            push @items, {
-                type    => $ITEM_TYPE{genome},
-                id      => $genome->id,
-                name    => $genome->name,
-                description => $genome->description,
-                organism => $genome->organism->name,
-                version => $genome->version,
-                deleted => $genome->deleted,
-                shared  => !$roles->{2}{ $genome->id }, #FIXME hardcoded role id
-                #info    => html_escape($genome->info),
-                #icon    => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-                #link    => 'GenomeInfo.pl?gid=' . $genome->id,
-                selectable => 1,
-                date     => $genome->get_date
+    if ( $type eq 'mine' ) {
+        return 'test';
+    }    
+    elsif ( $type eq 'genome' ) {
+        $items = get_genomes_for_user($coge->storage->dbh, $USER->id);
+    }
+    elsif ( $type eq 'experiment' ) {
+        $items = get_experiments_for_user($coge->storage->dbh, $USER->id);
+    }
+    elsif ( $type eq 'notebook' ) {
+        $items = get_lists_for_user($coge->storage->dbh, $USER->id);
+    }
+    elsif ( $type eq 'group' ) {
+        $items = get_groups_for_user($coge->storage->dbh, $USER->id);
+    }
+    elsif ( $type eq 'activity' ) {
+#        my $summary_html = summarize_jobs($jobs);
+#        $items = [ $summary_html ];
+    }
+    elsif ( $type eq 'analyses' ) {
+        my $jobs = get_jobs($last_update);
+        my $analyses = filter_jobs($jobs, ['synmap', 'cogeblast', 'gevo', 'synfind']);
+        foreach (@$analyses) {
+            push @$items, {
+                id   => $_->{id},
+                date => $_->{start_time},
+                description => $_->{description},
+                comment => $_->{comment},
+                status => $_->{status},
+                elapsed => $_->{elapsed},
+                page => $_->{page},
+                workflow_id => $_->{workflow_id},
+                link => (is_uri($_->{link}) ? $_->{link} : undef),
+                is_important => $_->{is_important}
             };
         }
     }
-    
-    #print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
-#    if ( $type == $ITEM_TYPE{experiment} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
-#    {
-#        foreach my $experiment ( sort experimentcmp values %{ $children->{3} } ) { #FIXME hardcoded type
-#            push @items, {
-#                id      => $experiment->id,
-#                type    => $ITEM_TYPE{experiment},
-#                deleted => $experiment->deleted,
-#                shared  => !$roles->{2}{ $experiment->id },    #FIXME hardcoded role id
-#                name    => html_escape( $experiment->info( source => $sourceIdToName{ $experiment->data_source_id } ) ),
-#                icon    => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-#                link    => 'ExperimentView.pl?eid=' . $experiment->id,
-#                selectable => 1,
-#                date    => $experiment->date
-#            };
-#        }
-#    }
-    
+    elsif ( $type eq 'loads' ) {
+        my $jobs = get_jobs($last_update);
+        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo', 'experimentview']);
+        foreach (@$loads) {
+            push @$items, {
+                id   => $_->{id},
+                date => $_->{start_time},
+                description => $_->{description},
+                status => $_->{status},
+                elapsed => $_->{elapsed},
+                page => $_->{page},
+                workflow_id => $_->{workflow_id},
+                link => (is_uri($_->{link}) ? $_->{link} : undef)
+            };
+        }
+    }
+    elsif ( $type eq 'graph' ) {
+        # Generate activity graph
+        my $user_id = $USER->id;
+        my $job_list = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
+        return qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="//genomevolution.org/blacktea/standalone/$user_id/$job_list"></iframe>} #FIXME: hardcoded server name
+    }
+
 #    print STDERR Dumper \@items, "\n";
-    return encode_json(\@items);
+    return encode_json($items);
 }
 
-sub get_contents {
+sub get_contents_old {
     my %opts = @_;
     my $type = $opts{item_type};
     $type = $ITEM_TYPE{all} unless $type;
