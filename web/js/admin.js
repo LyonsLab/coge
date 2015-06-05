@@ -1423,40 +1423,64 @@ function flatten(root) {
 	return nodes;* /
 }*/
 function init_graph() {
-	root;
+	if(!graph_init) {
+		root;
 
-	force = d3.layout.force()
-		.size([w, h])
-		.on("tick", tick);
+		force = d3.layout.force()
+			.size([w, h])
+			.on("tick", tick);
+			//.gravity(1);
+			//.charge(function(d) { 
+			//	if(d.type) {
+			//		return (d.size/50)*(-1);
+			//	} else {
+			//		return -30;
+			//	}
+			//});
 
-	svg = d3.select("#chart").append("svg")
-		.attr("width", w)
-		.attr("height", h);
+		svg = d3.select("#chart").append("svg")
+			.attr("width", w)
+			.attr("height", h);
 
-	link = svg.selectAll(".link"),
-	node = svg.selectAll(".node");
+		link = svg.selectAll(".link"),
+		node = svg.selectAll(".node");
 
 
-	d3.json("?fname=get_all_nodes", function(json) {
-		console.log(json);
-		root = json;
-		//root.children[0].children.forEach(click);
-		click(root.children[0]);
-		root.children[1].children.forEach(click);
-		//click(root.children[1]);
-		update();
-	});
+		d3.json("?fname=get_all_nodes", function(json) {
+			console.log(json);
+			root = json;
+			var nodes = flatten(root);
+			nodes.forEach(function(d) {
+				d._children = d.children;
+				d.children = null;
+			})
+			//root.children[0].children.forEach(click);
+			//click(root.children[0]);
+			//root.children[1].children.forEach(click);
+			//click(root.children[1]);
+			update();
+			//console.log(links);
+			//console.log(nodes);
+		});
+	}
 }
 
 function update() {
       
 	var nodes = flatten(root),
 		links = d3.layout.tree().links(nodes);
-
+	
 	// Restart the force layout.
 	force
  		.nodes(nodes)
  		.links(links)
+		//.charge(function(d) { 
+		//	if(d.type) {
+		//		return (d.size/50)*(-1);
+		//	} else {
+		//		return -30;
+		//	}
+		//})
  		.start();
 
 	// Update the links…
@@ -1475,7 +1499,8 @@ function update() {
 
 	// Update the nodes…
 	node = node.data(nodes, function(d) { return d.id; }).style("fill", color)
-		.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; });
+		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; });
+		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5});
 
 	// Exit any old nodes.
 	node.exit().remove();
@@ -1485,11 +1510,18 @@ function update() {
 		.attr("class", "node")
 		.attr("cx", function(d) { return d.x; })
 		.attr("cy", function(d) { return d.y; })
-		.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
+		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
+		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5})
 		.style("fill", color)
 		.on("dblclick", click)
 		.call(force.drag)
 		.append("svg:title").text(function(d) { return d.info; });
+	
+	//root.x = w/2;
+	//root.y = h/2;
+	
+	console.log(nodes);
+	//console.log(links);
 }
 
 function tick() {
@@ -1505,10 +1537,14 @@ function tick() {
 //Color leaf nodes orange, and packages white or blue.
 function color(d) {
 	//return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
-	if (d.type) {
-		return colors[d.type-1].color;
-    }
-	return 'white';
+	if((d.children || d._children) || (d.type == 2 || d.type == 3)) {
+		if (d.type) {
+			return colors[d.type-1].color;
+		}
+		return 'white';
+	} else {
+		return 'black';
+	}
 }
 
 //Toggle children on click.
@@ -1520,23 +1556,35 @@ function toggle_children(d) {
 		d.children = d._children;
 		d._children = null;
 	}
-	
-	if (d._size) {
-		var temp = d._size;
-		d._size = d.size;
-		d.size = temp;
-	} else {
-		d._size = d.size;
-		d.size = 2025;
-	}
-	console.log(d.size);
+	//console.log(d.size);
 }
 
 function click(d) {
 	//if (!d3.event.defaultPrevented) {
+		if (d._size) {
+			var temp = d._size;
+			d._size = d.size;
+			d.size = temp;
+		} else {
+			d._size = d.size;
+			d.size = 2025;
+		}
+		
+		force.charge(
+			function(d, i) {
+				//if(d.type) {
+					//return Math.pow(d.size, 1.0/3.0)*(-12);
+					return Math.sqrt(d.size)*(-1.5);
+				//} else {
+				//	return -30;
+				//}
+			}
+		);
+		force.start();
+		
 		toggle_children(d);
 		update();
-		//console.log(root);
+		//console.log(d.charge);
 	//}
 }
 
