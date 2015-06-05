@@ -35,8 +35,7 @@ GetOptions(
     "config=s"          => \$config,
 );
 
-$| = 1;
-print STDERR "in script \n";
+#$| = 1;
 #open (my $logh, ">", $logfile) or die "Error opening log file";
 $staging_dir //= "."; #/
 $filename = unescape($filename) if $filename;
@@ -51,7 +50,7 @@ my $file = catfile($staging_dir, $filename);
 my $file_temp = $file . ".tmp";
 
 # Check if file already exists
-return if -r $file;
+exit if -r $file;
 
 # Verify parameters
 if (not $id) {
