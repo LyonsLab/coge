@@ -3,6 +3,7 @@ const POLL_TIME = 30*1000, // polling rate when user is not idle
 
 var grid;
 var infoPanel;
+var tocPanel;
 var timestamps = new Array();
 var timers = new Array();
 	
@@ -54,21 +55,163 @@ $(function() {
 	// Get starting page from URL if set
 	var toc_id = parseInt( getURLParameter('p') );
 	if (!toc_id || toc_id == 'null') {
-		toc_id = ITEM_TYPES.mine;
+		toc_id = 'mine';
 	}
 
+	//
+	var typeModel = {
+		mine: {
+			title: 'My Data',
+			displayType: 'html',
+			search: false,
+		},
+		genome: {
+			title: 'Genomes',
+			displayType: 'grid',
+			operations: ['share', 'organize', 'delete', 'sendto']
+		},
+		experiment: {
+			title: 'Experiments',
+			displayType: 'grid',
+			operations: ['share', 'organize', 'delete', 'sendto']	
+		},
+		notebook: {
+			title: 'Notebooks',
+			displayType: 'grid',
+			operations: ['share', 'delete', 'sendto', 'add']
+		},
+		group: {
+			title: 'User Groups',
+			displayType: 'grid',
+			operations: ['edit', 'delete', 'add']
+		},
+		shared: {
+			title: 'Shared with me',
+			displayType: 'grid',
+			operations: ['share', 'organize'],
+			shared: true
+		},
+		activity: {
+			title: 'Activity',
+			displayType: 'html',
+			search: false
+		},
+		analyses: {
+			title: 'Analyses',
+			displayType: 'grid'
+		},
+		loads: {
+			title: 'Data loading',
+			displayType: 'grid'
+		},
+		graph: {
+			title: 'Graph',
+			displayType: 'html',
+			search: false
+		},
+		trash: {
+			title: 'Trash',
+			displayType: 'grid',
+			operations: ['undelete'],
+			deleted: true
+		}
+	};
+	
+	var views = {
+		mine: {
+			title: 'My Data',
+			displayType: 'html',
+			dataTypes: ['genome', 'experiment'],
+			search: false
+		},
+		genome: {
+			title: 'Genomes',
+			displayType: 'grid',
+			dataTypes: ['genome'],
+			operations: ['share', 'organize', 'delete', 'sendto']
+		},
+		experiment: {
+			title: 'Experiments',
+			displayType: 'grid',
+			dataTypes: ['experiment'],
+			operations: ['share', 'organize', 'delete', 'sendto']
+		},
+		notebook: {
+			title: 'Notebooks',
+			displayType: 'grid',
+			dataTypes: ['notebook'],
+			operations: ['share', 'delete', 'sendto', 'add']
+		},
+		group: {
+			title: 'User Groups',
+			displayType: 'grid',
+			dataTypes: ['group'],
+			operations: ['edit', 'delete', 'add']
+		},
+		shared: {
+			title: 'Shared with me',
+			displayType: 'grid',
+			dataTypes: ['genome', 'experiment'],
+			operations: ['share', 'organize'],
+			shared: true
+		},
+		activity: {
+			title: 'Activity',
+			displayType: 'html',
+			dataTypes: ['activity'],
+			search: false
+		},
+		analyses: {
+			title: 'Analyses',
+			displayType: 'grid',
+			dataTypes: ['analyses'],
+		},
+		loads: {
+			title: 'Data loading',
+			displayType: 'grid',
+			dataTypes: ['loads'],
+		},
+		graph: {
+			title: 'Graph',
+			displayType: 'html',
+			dataTypes: ['graph'],
+			search: false
+		},
+		trash: {
+			title: 'Trash',
+			displayType: 'grid',
+			dataTypes: ['genome', 'experiment', 'notebook', 'group'],
+			operations: ['undelete'],
+			deleted: true
+		}
+	};
+	
 	// Initialize main panels
-	grid = new DataGrid({
-		elementId: 'contents_table'
-	});
-	
 	infoPanel = new InfoPanel({
-		elementId: 'info_panel',
-		grid: grid
+		elementId: 'info_panel'
 	});
 	
-	//exit_item(); // initialize info panel
-	toc_select(toc_id); // initialize toc panel
+	contentPanel = new ContentPanel({
+		elementId: 'contents_panel',
+		types: typeModel,
+		views: views
+	});
+	
+	tocPanel = new TocPanel({
+		elementId: 'toc_panel',
+		types: typeModel,
+		selection: function(typeId) {
+			contentPanel
+				.update(typeId)
+				.done(function() { contentPanel.render(); }); //TODO move render inside update
+		}
+	});
+	
+	$('#search_input').on('keyup search', function() {
+		contentPanel.grid.search( $(this).val() );
+	});
+	
+	tocPanel.selectItemType(toc_id); // initialize toc panel
 	
 	// Setup idle timer
 //	$(document).mousemove(function() {
@@ -164,69 +307,239 @@ function cancel_poll() {
 	clearTimeout(timers['poll']);
 }
 
-function toc_toggle_children(toc_id, num_children) {
-	$('#toc_'+toc_id)
-	.next()
-	.attr('src', function(idx, oldSrc) {
-        return (oldSrc == 'picts/arrow-down-icon.png' ? 'picts/arrow-right-icon.png' : 'picts/arrow-down-icon.png');
-    });
-	$('#toc_'+toc_id)
-		.parent()
-		.nextAll().slice(0, num_children)
-		.toggle();
-}
-
 function default_info() {
-	console.log('default_info');
-	var text = "";
-	switch(pageObj.content_type) {
-		case ITEM_TYPES.activity_summary:
-			text = "Here is a summary of all analyses you have performed.";
-			break;
-		case ITEM_TYPES.activity_analyses:
-			text = "These are the analyses you have performed or started.<br><br>" + 
+	switch(contentPanel.selectedTypeId) {
+		case 'activity':
+			return "Here is a summary of all analyses you have performed.";
+		case 'analyses':
+			return "These are the analyses you have performed or started.<br><br>" + 
 				"Select an analysis to open the current progress or finished result in a new tab.<br><br>" +
 				"Use the icons to the left of each analysis to 'Favorite' it, add comments, or cancel (if running).";
-			break;
-		case ITEM_TYPES.activity_loads:
-			text = "These are the data loading workflows you have performed or started.<br><br>" +
+		case 'loads':
+			return "These are the data loading workflows you have performed or started.<br><br>" +
 				"Select an item to open the current progress or finished result in a new tab.";
-			break;
-		case ITEM_TYPES.activity_viz:
-			text = "Woah, cool!";
-			break;
-		case ITEM_TYPES.trash:
-			text = "These are items you deleted.<br><br>" +
+		case 'graph':
+			return "Woah, cool!";
+		case 'trash':
+			return "These are items you deleted.<br><br>" +
 				"Hover over an item to view additional info. Select one or more items to undelete.";
-			break;
-		case ITEM_TYPES.shared:
-			text = "These are data items that your collaborators shared with you.<br><br>" +
+		case 'shared':
+			return "These are data items that your collaborators shared with you.<br><br>" +
 				"Hover over an item to view additional info. Select one or more items to share with others or add to a notebook.";
-			break;
-		case ITEM_TYPES.mine:
-		case ITEM_TYPES.notebook:
-		case ITEM_TYPES.genome:
-		case ITEM_TYPES.experiment:
-			text = "<p>These are data items that you added to the system.</p>"
+		case 'mine':
+		case 'notebook':
+		case 'genome':
+		case 'experiment':
+			return "<p>These are data items that you added to the system.</p>"
 				+ "<p><b>Hover over</b> an item to view additional info.</p>"
                 + "<p><b>Single-click</b> to select one or more items to share, organize, delete, or send them to one of CoGe's tools.</p>"
                 + "<p><b>Double-click</b> an item for a detailed view of the item.</p>";
-			break;
-		case ITEM_TYPES.group:
-			text = "You are a member of these user groups.<br><br>" +
+		case 'group':
+			return "You are a member of these user groups.<br><br>" +
 				"Hover over a group to view additional info. Select one or more groups to edit or delete."; 
-			break;
 	}
-	$('#info_panel').html(text);
 }
+
+/*
+ * Content Panel
+ */
+function ContentPanel(params) {
+	this.element = $('#'+params.elementId);
+	this.types = params.types;
+	this.views = params.views;
+	this.cache = new Array();
+	this.selectedTypeId = null;
+	this.initialize();
+}
+
+$.extend(ContentPanel.prototype, {
+	initialize: function() {
+		var self = this;
+		
+		self.grid = new DataGrid({
+			element: self.element.children('.grid'),
+			filter: function(data) {
+				var view = self.views[self.selectedTypeId];
+				if (data.deleted == '1' && !view.deleted)
+					return false;
+				return true;
+			}
+		});
+	},
+	
+    update: function(typeId) {
+    	console.log('ContentPanel.update: ' + typeId + ' ');
+    	var self = this;
+    	this.selectedTypeId = typeId;
+    	var view = this.views[typeId];
+    	
+    	// Render data
+    	var promises = new Array();
+    	view.dataTypes.forEach(function (type) {
+    		var deferred = $.Deferred();
+    		var cachedData = self.cache[typeId];
+    	
+	        if (0) { //(cachedData) {
+//	        	if (view.displayType == 'grid') {
+//	        		self.grid.update(cachedData);
+//	        	}
+//	        	else {
+//	        		self.render();
+//	        	}
+		    	deferred.resolve();
+	    	}
+	    	else {
+	    		//this.busy();
+	    		deferred = self.fetch(false, type);
+		    	setTimeout(deferred.resolve, 10);
+	    	}
+	        promises.push(deferred);
+    	});
+        
+        return $.when.apply($, promises).then(function(schemas) {
+	            console.log("ContentPanel.update: DONE");
+	        }, function(e) {
+	            console.log("My ajax failed");
+	        });
+    },
+    
+    setData: function(typeId, data) {
+    	var typeDef = this.types[typeId];
+    	
+    	if (typeDef.displayType == 'grid') {
+			this.cache[typeId] = data.map(function(obj) {
+				return new DataGridRow(obj, typeId);
+			});
+		}
+		else {
+			this.cache[typeId] = data;
+		}
+    	
+    	return this;
+    },
+    
+    getData: function(typeId) {
+    	var cachedData = this.cache[typeId];
+    	return cachedData;
+    },
+    
+    render: function() {
+    	console.log('ContentPanel.render ' + this.selectedTypeId);
+    	if (!this.selectedTypeId)
+    		return;
+    	
+        var typeDef = this.types[this.selectedTypeId];
+        var isGrid = (typeDef.displayType == 'grid');
+        
+        // Clear search bar
+        $('#search_input').show().val('');
+        
+        // Update title
+        var title = typeDef.title;
+        if (isGrid)
+        	title += '&nbsp;&nbsp;<span class="small info">' + this.grid.getNumRowsDisplayed() + '</span>';
+        $('#contents_title').html(title);
+        
+    	// Show/hide action icons based on type of data
+    	$('.item-button').hide(); // hide all icons
+    	if (typeDef.operations) {
+    		typeDef.operations.forEach(function(op) {
+    			$('.'+op).show();
+    		});
+    	}
+    	
+    	// Icons are set to invisible on load to prevent flickering
+    	$('.item-button').removeClass('invisible');
+    	
+    	// Render contents
+    	var cachedData = this.getData(this.selectedTypeId);
+    	if (isGrid) {
+    		this.element.children('.html').hide();
+    		this.element.children('.grid').show();
+    		this.grid.update(cachedData);
+    		this.grid.dataTable.api().draw(); // needed to display column widths properly
+    	}
+    	else {
+    		var cachedData = this.cache[this.selectedTypeId];
+    		this.element.children('.grid').hide();
+    		this.element.children('.html').html(cachedData).show();
+    	}
+
+    	// Update browser url
+    	window.history.pushState({}, "", PAGE_NAME + "?p="+this.selectedTypeId);
+    },
+    
+    fetch: function(sync, typeId) {
+    	var self = this;
+    	console.log('ContentPanel.fetch type=' + typeId);
+    	
+    	$('#refresh_label').show();
+    	
+    	var lastUpdate = (sync ? timestamps['lastUpdate'] : 0);
+
+    	// Clear pending refresh
+    	cancel_poll();
+
+    	return $.ajax({
+    		dataType: 'text',
+    		data: {
+    			fname: 'get_contents',
+    			item_type: typeId,
+    			last_update: lastUpdate,
+    			timestamp: init_timestamp('get_contents')
+    		},
+    		success : function(data) {
+    			if (!data) {
+    				console.warn('get_contents: null data');
+    				return;
+    			}
+//    			if (obj) {
+//    				if (test_timestamp('get_contents', obj.timestamp)) {
+//    					if (sync) { // merge with existing contents
+//    						sync_items(obj.html);
+//    					}
+//    					else { // replace existing contents
+//    						$('#contents_table').html(obj.html);
+//    					}
+//    					timestamps['lastUpdate'] = obj.lastUpdate;
+//    					filter_contents();
+//    				}
+//    			}
+    			
+    			if (self.types[typeId].displayType == 'grid') {
+    				data = JSON.parse(data);
+    			}
+//    			var rows = data.map(function(obj) {
+//    				return new DataGridRow(obj, typeId);
+//    			});
+//    			self.cache[typeId] = rows;
+//    			grid.update(rows);
+    			self.setData(typeId, data);//.update(typeId);
+
+    			// Setup next refresh
+//    			schedule_poll();
+    		},
+    		complete : function() {
+    			$('#refresh_label').hide();
+    		}
+    	});
+    }
+});
 
 /*
  * Data Grid
  */
 
 function DataGrid(params) {
-	this.element = $('#'+params.elementId);
-	this.selectedItemId = null;
+	if (params.element)
+		this.element = params.element;
+	else if (params.elementId)
+		this.element = $('#'+params.elementId);
+	else 
+		console.warn('DataGrid: please specify target element');
+	
+	this.filter = params.filter;
+	
 	this.initialize();
 }
 
@@ -235,12 +548,14 @@ $.extend(DataGrid.prototype, {
 		var self = this;
 		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border"></table>');
 		
+		// Instantiate grid
 		var dataTable = this.dataTable = this.element.children('table').dataTable({
-			"paging": false,
-			"info" : false,
-			"searching": false,
-			"sScrollY": $(window).height() - 245, // this depends on the height of the header/footer
-			"columns": [
+			paging:    false,
+			info:      false,
+			searching: true,
+			dom:       'lrt', // remove unused elements (like search box)
+			sScrollY:  $(window).height() - 245, // this depends on the height of the header/footer
+			columns: [
 	            { 	title: "Name", 
 	            	targets: 0,
 	            	type: "string",
@@ -307,56 +622,90 @@ $.extend(DataGrid.prototype, {
 		// Handle row hover events
 		dataTableBody.on('mouseover', 'tr', function () {
 			//console.log('enter');
-			var tr = $(this).closest('tr');
-	        var row = dataTable.api().row(tr).data();
-	        
-	    	if (self.selectedItemId) // Do nothing if row currently selected
+	        if (self.getSelectedItems()) // Do nothing if row(s) currently selected
 	    		return;
 	    	
-	    	infoPanel.busy().scheduleUpdate(row);
+	        var tr = $(this).closest('tr');
+	        var row = dataTable.api().row(tr).data();
+	    	infoPanel.busy().scheduleUpdate([row]);
 	    });
 		
 		dataTableBody.on('mouseout', 'tr', function () {
 			//console.log('exit');
-	    	if (self.selectedItemId) // Do nothing if row currently selected
+	    	if (self.getSelectedItems()) // Do nothing if row(s) currently selected
 	    		return;
 	    	
 	    	infoPanel.scheduleUpdate();
-	    });	
-
-		// Get table contents
-		$.ajax({
-			dataType: 'json',
-			data: {
-				fname: 'get_contents2',
-			},
-			success : function(data) {
-				//console.log(data);
-				var rows = data.map(function(obj) {
-					return new DataGridRow(obj, self);
-				});
-				dataTable.api()
-					.clear()
-					.rows.add(rows).draw();
+	    });
+		
+		// Add custom filter
+		$.fn.dataTable.ext.search.push(
+			function(settings, data, dataIndex) { 
+				var data = self.dataTable.api().row(dataIndex).data();
+				return self.filter(data); 
 			}
-		});		
+		);
     },
     
     reset: function() {
     	
+    	return this;
+    },
+    
+    busy: function(disable) {
+//    	if (!disable)
+//    		this.element.append('<div id="spinner"><div class="f_circleG" id="frotateG_01"></div><div class="f_circleG" id="frotateG_02"></div><div class="f_circleG" id="frotateG_03"></div><div class="f_circleG" id="frotateG_04"></div><div class="f_circleG" id="frotateG_05"></div><div class="f_circleG" id="frotateG_06"></div><div class="f_circleG" id="frotateG_07"></div><div class="f_circleG" id="frotateG_08"></div></div>');
+//    	else
+//    		this.element.remove('#spinner');
+    	return this;
+    },
+    
+    update: function(data) {
+    	console.log('DataGrid.update');
+    	
+    	if (data) {
+	    	this.dataTable.api()
+				.clear()
+				.rows.add(data)
+				.draw();
+    	}
+		
+        return this;
+    },
+    
+    search: function(search_term) {
+		this.dataTable.api()
+			.search(search_term)
+			.draw();
+    },
+    
+//    filter: function(data) {
+//    	if (data.deleted == "1")
+//    		return false;
+//        return true;
+//    },
+    
+    getNumRows: function() {
+    	return this.dataTable.api().page.info().recordsTotal;
+    },    
+    
+    getNumRowsDisplayed: function() {
+    	return this.dataTable.api().page.info().recordsDisplay;
     },
     
     getSelectedItems: function() {
     	//console.log('getSelectedItems');
-    	return this.dataTable.api().rows('.selected').data();//.filter(':not(:hidden)')
+    	var items = this.dataTable.api().rows('.selected').data();
+    	if (!items || !items.length)
+    		return;
+    	return items;
     },
     
     clearSelection: function() {
 //    	$('.coge-list-item,.coge-selected').removeClass('coge-selected');
 //    	$('#contents_table input[type=checkbox]').filter(':checked').prop('checked', false);
     	update_icons();
-        selection_hint();
-        this.selectedItemId = null;
+    	this.dataTable.api().rows('.selected').removeClass('selected');
     },
     
 //    clickItem: function(item) {
@@ -365,20 +714,20 @@ $.extend(DataGrid.prototype, {
 //    },
 
     selectItem: function(item) {
-    	console.log('selectItem');
-    	if (item.id == this.selectedItemId) {
-    		this.selectedItemId = null;
-    		return;
-    	}
+    	console.log('DataGrid.selectItem');
     	
-    	this.selectedItemId = item.id;
+//    	if (item.id == this.selectedItemId) { // Un-select item
+//    		this.selectedItemId = null;
+//    		return;
+//    	}
     	
-    	infoPanel.busy().update();
+    	var selectedItems = this.getSelectedItems();
+    	infoPanel.busy().update(selectedItems);
     },
 
     openItem: function(row) {
-    	console.log('openItem');
-//    	if (item_type == ITEM_TYPES.group) // FIXME this is a kludge
+    	console.log('DataGrid.openItem');
+//    	if (item_type == ITEM_TYPE.group) // FIXME this is a kludge
 //    		group_dialog();
 //    	else {
 //            if (!link)
@@ -405,24 +754,29 @@ $.extend(DataGrid.prototype, {
  * Data Grid Row
  */
 		
-function DataGridRow(data, grid) {
+function DataGridRow(data, type) {
 	$.extend(this, data);
-	if (grid)
-		this.grid = grid; // parent DataGrid object
+	this.type = type;
     this.initialize();
 }
 
-$.extend(DataGridRow.prototype, {
+$.extend(DataGridRow.prototype, { // TODO extend this into separate classes for each type (genome, experiment, etc...)
 	initialize: function() {
     },
     
     getDescription: function() {
-    	if (this.type == ITEM_TYPES.genome)
+    	if (this.type == 'genome')
     		return this._formatGenome();
-    	if (this.type == ITEM_TYPES.experiment)
+    	if (this.type == 'experiment')
     		return this._formatExperiment();
-    	if (this.type == ITEM_TYPES.notebook)
-    		return this._formatNotebook();    	
+    	if (this.type == 'notebook')
+    		return this._formatNotebook();
+    	if (this.type == 'group')
+    		return this._formatGroup();
+    	if (this.type == 'analyses')
+    		return this._formatAnalysis();
+    	if (this.type == 'loads')
+    		return this._formatLoad();
     },
     
     _formatGenome: function() {
@@ -436,14 +790,67 @@ $.extend(DataGridRow.prototype, {
     },
     
     _formatExperiment: function() {
-    	
+    	var descStr = 
+    	   	(this.restricted ? '&reg; '  : '') +
+    	   	this.name +
+    	   	(this.description ? ': ' + this.description : '') +
+    	   	' (v' + this.version + ', id' + this.id + ')';
+    	return descStr;
     },
     
     _formatNotebook: function() {
-    	
+    	var descStr =
+    		(this.restricted ? '&reg; '  : '') +
+    		this.name +
+    		(this.description ? ': ' + this.description : '') +
+    		(this.type_name ? ' (' + this.type_name + ')' : '');
+    	return descStr;
+    },
+    
+    _formatGroup: function() {
+    	var descStr =
+    		this.name +
+    		(this.description ? ': ' + this.description : '');;
+    	return descStr;
+    },
+    
+    _formatWorkflowStatus: function(status) {
+    	status = status.toLowerCase();
+        var color;
+        
+        if (status == 'terminated') status = 'cancelled';
+        
+        switch (status) {
+        	case 'running':   color = 'yellowgreen'; 	break;
+        	case 'completed': color = 'cornflowerblue'; break;
+        	case 'scheduled': color = 'goldenrod'; 		break;
+            default:          color = 'salmon';
+        }
+        
+        return '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:' + color + ';">' + coge.utils.ucfirst(status) + '</span>';
+    },
+    
+    _formatAnalysis: function() {
+        var isRunning   = (this.status.toLowerCase() == 'running');
+        var isCancelled = (this.status.toLowerCase() == 'cancelled');
+        var star_icon    = '<img title="Favorite this analysis"' + ( this.is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) + 'width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this);" />';
+        var cancel_icon  = '<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('+(this.workflow_id ? this.workflow_id : '')+');"/>';
+        var restart_icon = '<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('+(this.link ? this.link : '')+');"/>';
+        var comment_icon = '<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '+this.comment+');" />';
+        var icons = star_icon + ' ' + comment_icon + ' ' + (isCancelled ? restart_icon : '') + ' ' + (isRunning ? cancel_icon : '');
+    	var descStr =
+    		icons + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + this.comment : '') + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
+    	return descStr;
+    },
+    
+    _formatLoad: function() {
+    	var descStr =
+    		this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
+    	return descStr;
     },
 
     getInfo: function() {
+    	console.log('DataGridRow.getInfo');
     	var self = this;
     	
 //    	if (self.info)
@@ -457,10 +864,6 @@ $.extend(DataGridRow.prototype, {
     			item_type: self.type,
     			timestamp: init_timestamp('get_item_info')
     		}
-//    		success : function(data) {
-//    			if (data && test_timestamp('get_item_info', data.timestamp))
-//    				self.info = data.html;
-//    		}
     	}).pipe(function(data) {
     		if (data && test_timestamp('get_item_info', data.timestamp))
 				return data.html;
@@ -469,16 +872,18 @@ $.extend(DataGridRow.prototype, {
     },
     
     getLink: function() {
-    	if (this.type == ITEM_TYPES.genome)
+    	if (this.type == 'genome')
     		return 'GenomeInfo.pl?gid=' + this.id;
-    	if (this.type == ITEM_TYPES.experiment)
+    	if (this.type == 'experiment')
     		return 'ExperimentView.pl?eid=' + this.id;
-    	if (this.type == ITEM_TYPES.notebook)
+    	if (this.type == 'notebook')
     		return 'NotebookView.pl?nid=' + this.id;
     },
     
     getDate: function() {
     	var dateStr = this.date;
+    	if (!dateStr || dateStr === '0000-00-00 00:00:00')
+    		dateStr = this.dataset_date;
     	if (!dateStr || dateStr === '0000-00-00 00:00:00')
     		return '';
     	
@@ -509,7 +914,6 @@ $.extend(DataGridRow.prototype, {
 
 function InfoPanel(params) {
 	this.element = $('#'+params.elementId);
-	this.grid = params.grid; // parent DataGrid object
     this.initialize();
 }
 
@@ -522,42 +926,99 @@ $.extend(InfoPanel.prototype, {
     	return this;
     },
     
-    update: function(row) {
+    update: function(items) {
     	console.log('InfoPanel.update');
     	var self = this;
-    	var selected = grid.getSelectedItems();
-    	var num_items = selected.length;
-
-    	if (num_items > 0 || row) {
-    		if (num_items == 1 || row) {
-    			var item = selected[0] || row;
+    	
+    	if (!items || !items.length) {
+    		self.element.html( default_info() );
+    		return;
+    	}
+    	
+    	var numItems = items.length;
+    	if (numItems > 0) {
+    		if (numItems == 1) {
+    			var item = items[0];
     			item.getInfo().pipe(function(info) {
     				self.element.html(info);
     			});
     		}
-    		else
-    			self.element.html(num_items + ' item' + (num_items > 1 ? 's' : '') + 
+    		else {
+    			self.element.html(numItems + ' item' + (numItems > 1 ? 's' : '') + 
     				' selected.<br><br>Click an action icon at the top to share, organize, delete, or analyze.');
     				//TODO add action links for sharing, adding to notebook, deleting, etc...
+    		}
     	}
-    	else
-    		default_info();
-    	
-    	update_icons();
-        selection_hint();    	
     },
     
-    scheduleUpdate: function(row) {
-    	console.log('InfoPanel.scheduleUpdate');
+    scheduleUpdate: function(items) {
+    	//console.log('InfoPanel.scheduleUpdate');
     	if (this.timer)
     		window.clearTimeout(this.timer);
 
     	this.timer = window.setTimeout( 
     		function() { 
-    			infoPanel.busy().update(row);
+    			infoPanel.busy().update(items);
     		},
     		500
     	);
+    }
+});
+
+/* 
+ * Table of Contents Panel
+ */
+
+function TocPanel(params) {
+	this.types = params.types;
+	this.element = $('#'+params.elementId);
+	this.selection = params.selection;
+    this.initialize();
+}
+
+$.extend(TocPanel.prototype, {
+	initialize: function() {
+		var self = this;
+		
+		// Style TOC
+		this.element.addClass('coge-side-menu');
+		
+		// Add click handler
+		this.element.find('span').each(function(index, value) {
+			$(value).on('click', function () {
+				self.clearSelection().selectItem(this);
+				if (self.selection) { // call user handler
+					var itemType = $(this).data('type');
+					self.selection(itemType);
+				}
+		    });
+		});
+		
+		//TODO dynamically generate html from types here instead of statically in User.tmpl
+    },
+    
+    clearSelection: function() {
+    	this.element.find('span').removeClass('selected');
+    	return this;
+    },
+    
+    selectItemType: function(itemType) {
+    	var item = $('span[data-type="'+itemType+'"]');
+    	this.selectItem(item);
+    },
+    
+    selectItem: function(item) {
+    	var self = this;
+    	
+    	$(item).addClass('selected');
+    	var itemType = $(item).data('type');
+    	console.log('TocPanel.selectItem ' + itemType);
+    	
+    	if (this.selectedTypeId && itemType == this.selectedTypeId) 
+    		return;
+    	this.selectedTypeId = itemType;
+    	
+    	return this;
     }
 });
 
@@ -586,184 +1047,66 @@ function sync_items(html) {
 	);
 }
 
-function get_contents(sync, item_type) {
-	$('#refresh_label').show();
-	
-	var lastUpdate = (sync ? timestamps['lastUpdate'] : 0);
-
-	// Clear pending refresh
-	cancel_poll();
-
-	$.ajax({
-		data: {
-			fname: 'get_contents',
-			item_type: item_type,
-			last_update: lastUpdate,
-			timestamp: init_timestamp('get_contents')
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {
-				if (test_timestamp('get_contents', obj.timestamp)) {
-					if (sync) { // merge with existing contents
-						sync_items(obj.html);
-					}
-					else { // replace existing contents
-						$('#contents_table').html(obj.html);
-					}
-					timestamps['lastUpdate'] = obj.lastUpdate;
-					filter_contents();
-				}
-			}
-
-			// Setup next refresh
-			schedule_poll();
-		},
-		complete : function() {
-			$('#refresh_label').hide();
-		}
-	});
-}
-
-function filter_contents() {
-	var search_term = $('#search_input').val();
-	search_term = search_term.toLowerCase();
-
-	$('#contents_table div.coge-list-item').each(
-		function() {
-			var item_type = get_item_type(this);
-			var show;
-
-			if (pageObj.content_type == ITEM_TYPES.group) {
-				show = item_type == ITEM_TYPES.group
-						&& !$(this).hasClass('deleted');
-			}
-			else if (pageObj.content_type == ITEM_TYPES.mine) {
-				show = !$(this).hasClass('deleted')
-						&& !$(this).hasClass('shared')
-						&& item_type != ITEM_TYPES.activity_summary 
-						&& item_type != ITEM_TYPES.activity_analyses
-						&& item_type != ITEM_TYPES.activity_loads
-						&& item_type != ITEM_TYPES.activity_viz
-						&& item_type != ITEM_TYPES.group
-						&& item_type != ITEM_TYPES.notebook;
-			}
-			else if (pageObj.content_type == ITEM_TYPES.shared) {
-				show = $(this).hasClass('shared')
-						&& !$(this).hasClass('deleted')
-						&& item_type != ITEM_TYPES.activity_summary 
-						&& item_type != ITEM_TYPES.activity_analyses
-						&& item_type != ITEM_TYPES.activity_loads
-						&& item_type != ITEM_TYPES.activity_viz;
-			}
-			else if (pageObj.content_type == ITEM_TYPES.trash) {
-				show = $(this).hasClass('deleted');
-			}
-			else {
-				show = (item_type == pageObj.content_type
-						&& !$(this).hasClass('deleted')
-						&& !$(this).hasClass('shared'));
-			}
-
-			if (show && search_term) {
-				show = (this.innerHTML.toLowerCase().indexOf(search_term) >= 0);
-			}
-
-			if (show) { $(this).show(); }
-			else { $(this).hide(); }
-		}
-	);
-}
+//function filter_contents() {
+//	var search_term = $('#search_input').val();
+//	search_term = search_term.toLowerCase();
+//
+//	$('#contents_table div.coge-list-item').each(
+//		function() {
+//			var item_type = get_item_type(this);
+//			var show;
+//
+//			if (pageObj.content_type == ITEM_TYPE.group) {
+//				show = item_type == ITEM_TYPE.group
+//						&& !$(this).hasClass('deleted');
+//			}
+//			else if (pageObj.content_type == ITEM_TYPE.mine) {
+//				show = !$(this).hasClass('deleted')
+//						&& !$(this).hasClass('shared')
+//						&& item_type != ITEM_TYPE.activity_summary 
+//						&& item_type != ITEM_TYPE.activity_analyses
+//						&& item_type != ITEM_TYPE.activity_loads
+//						&& item_type != ITEM_TYPE.activity_viz
+//						&& item_type != ITEM_TYPE.group
+//						&& item_type != ITEM_TYPE.notebook;
+//			}
+//			else if (pageObj.content_type == ITEM_TYPE.shared) {
+//				show = $(this).hasClass('shared')
+//						&& !$(this).hasClass('deleted')
+//						&& item_type != ITEM_TYPE.activity_summary 
+//						&& item_type != ITEM_TYPE.activity_analyses
+//						&& item_type != ITEM_TYPE.activity_loads
+//						&& item_type != ITEM_TYPE.activity_viz;
+//			}
+//			else if (pageObj.content_type == ITEM_TYPE.trash) {
+//				show = $(this).hasClass('deleted');
+//			}
+//			else {
+//				show = (item_type == pageObj.content_type
+//						&& !$(this).hasClass('deleted')
+//						&& !$(this).hasClass('shared'));
+//			}
+//
+//			if (show && search_term) {
+//				show = (this.innerHTML.toLowerCase().indexOf(search_term) >= 0);
+//			}
+//
+//			if (show) { $(this).show(); }
+//			else { $(this).hide(); }
+//		}
+//	);
+//}
 
 function update_icons(on) {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if ( selected.length > 0) 
 		$('.item-button:not(#add_button)').removeClass('coge-disabled');
 	else
 		$('.item-button:not(#add_button)').addClass('coge-disabled');
 }
 
-function selection_hint() {
-	var selected = grid.getSelectedItems();
-	if ( selected.length == 1)
-		$('#selected-hint').removeClass('hidden');
-	else
-		$('#selected-hint').addClass('hidden');
-}
-
-function toc_select(toc_id) {
-	if (toc_id == pageObj.content_type) 
-		return;
-	
-	pageObj.content_type = toc_id;
-
-	// Clear search bar
-	$('#search_input').show().val('');
-	
-	// Show/hide action icons based on type of data
-	switch(toc_id) {
-		case ITEM_TYPES.mine:
-		case ITEM_TYPES.genome:
-		case ITEM_TYPES.experiment:
-			$('#undelete_button,#edit_button,#add_button').hide();
-			$('#share_button,#notebook_button,#delete_button,#send_button').show();
-			break;
-		case ITEM_TYPES.notebook:
-			$('#undelete_button,#edit_button,#notebook_button').hide();
-			$('#share_button,#delete_button,#send_button,#add_button').show();
-			break;
-		case ITEM_TYPES.trash:
-			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#add_button').hide();
-			$('#undelete_button').show();
-			break;
-		case ITEM_TYPES.group:
-			$('#notebook_button,#send_button,#share_button,#undelete_button').hide();
-			$('#edit_button,#delete_button,#add_button').show();
-			break;
-		case ITEM_TYPES.shared:
-			$('#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide();
-			$('#share_button,#notebook_button').show();
-			break;
-		case ITEM_TYPES.activity_analyses:
-		case ITEM_TYPES.activity_loads:
-			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide(); // hide all
-			break;
-		case ITEM_TYPES.activity_summary:
-		case ITEM_TYPES.activity_viz:
-			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide(); // hide all
-			$('#search_input').hide();
-			break;
-		default:
-			$('#share_button,#notebook_button,#edit_button,#delete_button,#send_button,#undelete_button,#add_button').hide(); // hide all
-	}
-	
-	// Icons are set to invisible on load to prevent flickering
-	$('.item-button').removeClass('invisible');
-
-	// Refilter based on content selection
-	filter_contents();
-	
-	// Clear selected items
-	grid.clearSelection();
-	default_info();
-	
-	// Show TOC item as selected
-	$('#toc_'+toc_id)
-		.parent()
-		.css({'font-weight':'bold'})
-		.siblings()
-		.css({'font-weight':'normal'});
-
-	// Update title
-	var title = $('#toc_label_'+toc_id).html();
-	$('#contents_title').html(title);
-
-	// Update browser url
-	window.history.pushState({}, "", PAGE_NAME + "?p="+toc_id);
-}
-
 function delete_items() {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if (selected.length) {
 		selected.parent().fadeOut('fast',
 			function() {
@@ -786,7 +1129,7 @@ function delete_items() {
 }
 
 function undelete_items() {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if (selected.length) {
 		selected.parent().fadeOut('fast',
 			function() {
@@ -898,7 +1241,7 @@ function comment_job(id, comment) {
 }
 
 function add_to_notebook_dialog() {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if (selected.length) {
 		$('#add_to_notebook_dialog').dialog({width:500}).dialog('open');
 	}
@@ -953,7 +1296,7 @@ function search_notebooks () {
 }
 
 function add_items_to_notebook() {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	var nid = $('#notebook_select').find('option:selected').val();
 	if (nid && selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
@@ -974,7 +1317,7 @@ function add_items_to_notebook() {
 }
 
 function share_dialog() {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if (selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
@@ -990,7 +1333,7 @@ function share_dialog() {
 }
 
 function remove_items_from_user_or_group(target_item) {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if (target_item && selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
@@ -1010,7 +1353,7 @@ function remove_items_from_user_or_group(target_item) {
 }
 
 function add_items_to_user_or_group() {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	var target_item = $('#share_input').data('select_id');
 	var role_id = $('#share_role_select').val();
 	if (target_item && selected.length) {
@@ -1072,7 +1415,7 @@ function search_group () { // FIXME dup of above routine but for group dialog
 }
 
 function group_dialog() {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if (selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
@@ -1088,7 +1431,7 @@ function group_dialog() {
 }
 
 function change_group_role() {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	var role_id = $('#group_role_select').val();
 	if (role_id && selected.length) {
 		var target_items = selected.map(function(){return this.parentNode.id;}).get().join(',');
@@ -1108,7 +1451,7 @@ function change_group_role() {
 }
 
 function add_users_to_group() {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	var new_item = $('#group_input').data('select_id');
 	if (new_item && selected.length) {
 		var target_items = selected.map(function(){return this.parentNode.id;}).get().join(',');
@@ -1128,7 +1471,7 @@ function add_users_to_group() {
 }
 
 function remove_user_from_group(user_id) {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if (user_id && selected.length) {
 		var target_items = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
@@ -1147,10 +1490,10 @@ function remove_user_from_group(user_id) {
 }
 
 function edit_dialog() {
-	if (pageObj.content_type == ITEM_TYPES.group) {
+	if (pageObj.content_type == ITEM_TYPE.group) {
 		group_dialog();
 	}
-//	else if (pageObj.content_type == ITEM_TYPES.notebook) {
+//	else if (pageObj.content_type == ITEM_TYPE.notebook) {
 //		add_to_notebook_dialog();
 //	}
 }
@@ -1250,9 +1593,9 @@ function create_notebook_dialog() {
 }
 
 function add_dialog() {
-	if (pageObj.content_type == ITEM_TYPES.group) {
+	if (pageObj.content_type == ITEM_TYPE.group) {
 		create_group_dialog();
-	} else if (pageObj.content_type == ITEM_TYPES.notebook) {
+	} else if (pageObj.content_type == ITEM_TYPE.notebook) {
 		create_notebook_dialog();
     }
 }
@@ -1276,7 +1619,7 @@ function create_new_group() {
         success: function(rc) {
             if (rc) {
             	schedule_poll(0);
-            	toc_select(ITEM_TYPES.group);
+            	toc_select(ITEM_TYPE.group);
             }
         },
         complete: function() {
@@ -1295,7 +1638,7 @@ function create_new_notebook() {
 	var type_id = $('#edit_notebook_type').val();
 
 	var item_list;
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if (selected.length) {
 		item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 	}
@@ -1311,7 +1654,7 @@ function create_new_notebook() {
         success: function(rc) {
             if (rc) {
             	schedule_poll(0);
-            	toc_select(ITEM_TYPES.notebook);
+            	toc_select(ITEM_TYPE.notebook);
             }
         },
         complete: function() {
@@ -1344,7 +1687,7 @@ function send_menu() {
 }
 
 function send_items_to(page_name, format) {
-	var selected = grid.getSelectedItems();
+	var selected = contentPanel.grid.getSelectedItems();
 	if (selected.length) {
 		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
