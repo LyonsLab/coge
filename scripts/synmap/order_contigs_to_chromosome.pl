@@ -62,11 +62,13 @@ my ( $chr1, $chr2, $dsgid1, $dsgid2 ) =
 ( $chr1, $chr2, $dsgid1, $dsgid2 ) = ( $chr2, $chr1, $dsgid2, $dsgid1 )
   if scalar @$chr1 < scalar @$chr2;
 
-my ($dsg1) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid1 },
-    { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
+my ($dsg1) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid1 } );
+#my ($dsg1) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid1 },
+#    { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
 
-my ($dsg2) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid2 },
-    { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
+my ($dsg2) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid2 } );
+#my ($dsg2) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid2 },
+#    { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
 
 unless ($dsg1) {
     print STDERR "Unable to get genome object for genome_id=$dsgid1.\n";

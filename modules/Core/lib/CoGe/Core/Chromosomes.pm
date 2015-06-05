@@ -29,6 +29,23 @@ use warnings;
 use CoGe::Core::Storage qw(get_genome_file);
 use Data::Dumper;
 
+################################################ subroutine header begin ##
+
+=head2 new
+
+ Usage     :
+ Purpose   :
+ Returns   : newly instantiated object for this class
+ Argument  : genome id (required)
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
 sub new {
 	my ($class, $gid) = @_;
 	my $self = {};
@@ -39,12 +56,46 @@ sub new {
 	return bless $self, $class;
 }
 
+################################################ subroutine header begin ##
+
+=head2 DESTROY
+
+ Usage     :
+ Purpose   : closes file if still open when object goes out of scope
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
 sub DESTROY {
 	my $self = shift;
 	if ($self->{fh}) {
 		close($self->{fh});
 	}	
 }
+
+################################################ subroutine header begin ##
+
+=head2 count
+
+ Usage     :
+ Purpose   :
+ Returns   : number of chromosomes for the genome
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
 
 sub count {
 	my $self = shift;
@@ -53,10 +104,98 @@ sub count {
 	return $self->{lines};
 }
 
+################################################ subroutine header begin ##
+
+=head2 find
+
+ Usage     : 
+ Purpose   : iterates through list and stops when matching chromosome is found
+ Returns   : 1 if found, 0 otherwise
+ Argument  : name of chromosome to find (required)
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub find {
+	my $self = shift;
+	my $name = shift;
+	while ($self->next) {
+		if ($name == $self->name) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+################################################ subroutine header begin ##
+
+=head2 length
+
+ Usage     :
+ Purpose   : 
+ Returns   : length of current chromosome
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
 sub length {
 	my $self = shift;
 	return $self->{tokens}[1];
 }
+
+################################################ subroutine header begin ##
+
+=head2 lengths
+
+ Usage     :
+ Purpose   : 
+ Returns   : array of lengths of all chromosomes for the genome
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub lengths {
+	my $self = shift;
+	my @a;
+	while ($self->next) {
+		push @a, $self->length;
+	}
+    return wantarray ? @a : \@a;
+}
+
+################################################ subroutine header begin ##
+
+=head2 name
+
+ Usage     :
+ Purpose   : 
+ Returns   : name of current chromosome
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
 
 sub name {
 	my $self = shift;
@@ -68,6 +207,23 @@ sub name {
 	return $name;
 }
 
+################################################ subroutine header begin ##
+
+=head2 names
+
+ Usage     :
+ Purpose   : 
+ Returns   : array of names of all chromosomes for the genome
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
 sub names {
 	my $self = shift;
 	my @a;
@@ -76,6 +232,23 @@ sub names {
 	}
     return wantarray ? @a : \@a;
 }
+
+################################################ subroutine header begin ##
+
+=head2 next
+
+ Usage     :
+ Purpose   : set the current chromosome to be the next one in the list
+ Returns   : 1 if new chromosome is current, 0 if no more chromosomes available
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
 
 sub next {
 	my $self = shift;
@@ -91,10 +264,44 @@ sub next {
 	return 0;
 }
 
+################################################ subroutine header begin ##
+
+=head2 offset
+
+ Usage     :
+ Purpose   : 
+ Returns   : offset of current chromosome
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
 sub offset {
 	my $self = shift;
 	return $self->{tokens}[2];
 }
+
+################################################ subroutine header begin ##
+
+=head2 total_length
+
+ Usage     :
+ Purpose   : 
+ Returns   : length of all chromosomes for the genome
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
 
 sub total_length {
 	my $self = shift;

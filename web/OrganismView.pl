@@ -539,7 +539,7 @@ sub get_genome_info {
     }    
 
     my $total_length = $dsg->length;
-    my $chr_num = $dsg->chromosome_count();#$dsg->genomic_sequences->count();
+    my $chr_num = $dsg->chromosome_count();
     
     my $html;
     $html .= qq{<table>};
@@ -1794,15 +1794,12 @@ sub get_chr_length_hist {
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
     return "error", " " unless $dsgid;
-    my @data;
     my ($dsg) = $coge->resultset('Genome')->find($dsgid);
     unless ($dsg) {
         my $error = "unable to create genome object using id $dsgid\n";
         return $error;
     }
-    foreach my $gs ( $dsg->genomic_sequences ) {
-        push @data, $gs->sequence_length;
-    }
+    my @data = $dsg->chromosome_lengths;
     return "error", " " unless @data;
     @data = sort { $a <=> $b } @data;
     my $mid  = floor( scalar(@data) / 2 );
@@ -1836,7 +1833,7 @@ sub get_chr_length_hist {
     my $mean = sprintf( "%.0f", $sum / scalar @data );
     my $info =
         "<table class=small><TR><td>Count:<TD>"
-      . commify( $dsg->genomic_sequences->count )
+      . commify( $dsg->chromosome_count )
       . " chromosomes (contigs, scaffolds, etc.)<tr><Td>Mean:<td>"
       . commify($mean)
       . " nt<tr><Td>Mode:<td>"

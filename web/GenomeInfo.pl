@@ -815,15 +815,12 @@ sub get_chr_length_hist {
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
     return "error", " " unless $dsgid;
-    my @data;
     my ($dsg) = $coge->resultset('Genome')->find($dsgid);
     unless ($dsg) {
         my $error = "unable to create genome object using id $dsgid\n";
         return $error;
     }
-    foreach my $gs ( $dsg->genomic_sequences ) {
-        push @data, $gs->sequence_length;
-    }
+    my @data = $dsg->chromosome_lengths;
     return "error", " " unless @data;
     @data = sort { $a <=> $b } @data;
     my $mid  = floor( scalar(@data) / 2 );
@@ -857,7 +854,7 @@ sub get_chr_length_hist {
     my $mean = sprintf( "%.0f", $sum / scalar @data );
     my $info =
         "<table><TR><td>Count:<TD>"
-      . commify( $dsg->genomic_sequences->count )
+      . commify( $dsg->chromosome_count )
       . " chromosomes (contigs, scaffolds, etc.)<tr><Td>Mean:<td>"
       . commify($mean)
       . " nt<tr><Td>Mode:<td>"
@@ -909,13 +906,12 @@ sub cache_chr_fasta {
 
     my $genome = $coge->resultset('Genome')->find($gid);
     return "unable to create genome object using id $gid" unless ($genome);
-	my $chromosome = $coge->resultset('GenomicSequence')->find({genome_id=>$gid,chromosome=>$chr});
 
 	# Get sequence from file
 	my $seq = $genome->get_genomic_sequence(
 		chr   => $chr,
 		start => 1,
-		stop  => $chromosome->sequence_length
+		stop  => $genome->get_chromosome_length($chr)
 	);
 	open(my $fh, '>', $file) or return "Could not open file '$file' $!";
 	for (my $i=0; $i<length($seq); $i+=70) {

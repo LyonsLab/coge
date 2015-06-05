@@ -4,6 +4,7 @@ use strict;
 
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Core::Chromosomes;
 
 use DBI;
 use Data::Dumper;
@@ -436,14 +437,24 @@ sub get_genome_info {
     my $genome = $opts{genome};
     my $chr    = $opts{chr};
     my %data;
-    foreach my $gs ( $genome->genomic_sequences ) {
-        next if defined $chr && $chr ne $gs->chromosome;
-        my $len = $gs->sequence_length;
-        if ( $data{ $gs->chromosome } ) {
-            warn "Duplicate chromosome:" . $gs->chromosome . "\n";
+#    foreach my $gs ( $genome->genomic_sequences ) {
+#        next if defined $chr && $chr ne $gs->chromosome;
+#        my $len = $gs->sequence_length;
+#        if ( $data{ $gs->chromosome } ) {
+#            warn "Duplicate chromosome:" . $gs->chromosome . "\n";
+#        }
+#        $data{ $gs->chromosome }{chr_length} = $len;
+#        $data{ $gs->chromosome }{length}     = $len;
+#    }
+	my $c = CoGe::Core::Chromosomes->new($genome->id);
+	while ($c->next) {
+        next if defined $chr && $chr ne $c->name;
+        my $len = $c->length;
+        if ( $data{ $c->name } ) {
+            warn "Duplicate chromosome:" . $c->name . "\n";
         }
-        $data{ $gs->chromosome }{chr_length} = $len;
-        $data{ $gs->chromosome }{length}     = $len;
+        $data{ $c->name }{chr_length} = $len;
+        $data{ $c->name }{length}     = $len;
     }
     return \%data;
 }
