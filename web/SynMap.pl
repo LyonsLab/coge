@@ -1036,7 +1036,7 @@ sub get_dsg_info {
     my $chr_count = 0;
 
     $length = $dsg->length;    #$rs->first->get_column('total_length');
-    $chr_count = $dsg->genomic_sequences->count();
+    $chr_count = $dsg->chromosome_count;
     my ( $gc, $at, $n, $x ) = ( 0, 0, 0, 0 );
     if ( $chr_count < 100 && $length < 50000000 ) {
         ( $gc, $at, $n, $x ) = get_dsg_gc( dsg => $dsg );
@@ -1073,11 +1073,11 @@ sub get_chr_types {
     my $plasmid  = 0;
     my $contig   = 0;
     my $scaffold = 0;
-    my @gs       = $dsg->genomic_sequences;
-    if ( @gs > 100 ) {
+    my @chromosomes = $dsg->chromosomes;
+    if ( @chromosomes > 100 ) {
         return ( 0, 1, 0 );
     }
-    foreach my $chr ( map { $_->chromosome } @gs ) {
+    foreach my $chr ( @chromosomes ) {
         $plasmid  = 1 if !$plasmid  && $chr =~ /plasmid/i;
         $contig   = 1 if !$contig   && $chr =~ /contig/i;
         $scaffold = 1 if !$scaffold && $chr =~ /scaffold/i;
@@ -2102,19 +2102,9 @@ sub go {
     }
 
     #generate dotplot images
-    my ( $org1_length, $org2_length, $chr1_count, $chr2_count ) = (0) x 4;
-
-    foreach my $gs ( $genome1->genomic_sequences ) {
-        $chr1_count++;
-        $org1_length += $gs->sequence_length;
-    }
-
-    foreach my $gs ( $genome2->genomic_sequences ) {
-        $chr2_count++;
-        $org2_length += $gs->sequence_length;
-    }
-
     unless ($width) {
+    	my $chr1_count = $genome1->chromosome_count;
+    	my $chr2_count = $genome2->chromosome_count;
         my $max_chr = $chr1_count;
         $max_chr = $chr2_count if $chr2_count > $chr1_count;
         $width   = int( $max_chr * 100 );
@@ -2815,19 +2805,9 @@ sub get_results {
     }
 
     #generate dotplot images
-    my ( $org1_length, $org2_length, $chr1_count, $chr2_count ) = (0) x 4;
-
-    foreach my $gs ( $genome1->genomic_sequences ) {
-        $chr1_count++;
-        $org1_length += $gs->sequence_length;
-    }
-
-    foreach my $gs ( $genome2->genomic_sequences ) {
-        $chr2_count++;
-        $org2_length += $gs->sequence_length;
-    }
-
     unless ($width) {
+    	my $chr1_count = $genome1->chromosome_count;
+    	my $chr2_count = $genome2->chromosome_count;
         my $max_chr = $chr1_count;
         $max_chr = $chr2_count if $chr2_count > $chr1_count;
         $width   = int( $max_chr * 100 );

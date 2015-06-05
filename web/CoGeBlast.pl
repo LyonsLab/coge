@@ -2764,10 +2764,8 @@ qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}
           } split( /;\s+/, $dsg->organism->description )
       ) if $dsg->organism->description;
 
-    my @gs = $dsg->genomic_sequences;
-    my $chr_num = scalar @gs;
-    my $total_length;
-    map { $total_length += $_->sequence_length } @gs;
+    my $chr_num = $dsg->chromosome_count;
+    my $total_length = $dsg->length;
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
     $link = "http://" . $link unless $link =~ /^http/;
