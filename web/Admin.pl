@@ -1499,8 +1499,8 @@ sub get_all_nodes {
               {
                 name     => $conn->child_id,
                 type     => $conn->child_type,
-                _size	 => $size * 1000,
-                size	 => 2025,
+                size	 => $size * 1000,
+                _size	 => 2025,
                 children => $childrenByList{ $conn->child_id }
               };
         }
@@ -1524,8 +1524,8 @@ sub get_all_nodes {
             name     => $user->id,
             type     => 5,
             info     => $user->info,
-            _size	 => $size * 1000,
-            size	 => 2025,
+            size	 => $size * 1000,
+            _size	 => 2025,
             children => $childrenByUser{ $user->id }
           };
     }
@@ -1556,8 +1556,8 @@ sub get_all_nodes {
               {
                 name     => $conn->child_id,
                 type     => $conn->child_type,
-                _size	 => $size * 1000,
-                size	 => 2025,
+                size	 => $size * 1000,
+                _size	 => 2025,
                 children => $childrenByList{ $conn->child_id }
               };
         }
@@ -1581,8 +1581,8 @@ sub get_all_nodes {
             name     => $group->id,
             type     => 6,
             info     => $group->info,
-            _size    => $size * 1000,
-            size	 => 2025,
+            size    => $size * 1000,
+            _size	 => 2025,
             children => $childrenByGroup{ $group->id }
           };
     }
@@ -1590,9 +1590,24 @@ sub get_all_nodes {
     return encode_json(
         {
             name     => 'root',
+            info	 => 'root',
+            size	 => 10000000,
+            _size	 => 2025,
             children => [
-                { name => 'users',  children => \@users },
-                { name => 'groups', children => \@groups }
+                { 
+                	name 	 => 'users',  
+                	info	 => 'users', 
+                	children => \@users, 
+                	size	 => (scalar @users) * 1000, 
+                	_size	 => 2025,
+                },
+                { 
+                	name	 => 'groups', 
+                	info	 => 'groups', 
+                	children => \@groups, 
+                	size	 => (scalar @groups) * 1000,
+                	_size	 => 2025,
+                }
             ]
         }
     );
