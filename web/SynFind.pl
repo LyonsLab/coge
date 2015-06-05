@@ -555,10 +555,8 @@ sub get_genome_info { #FIXME: dup'ed in CoGeBlast.pl
         } split( /;\s+/, $dsg->organism->description )
       ) if $dsg->organism->description;
 
-    my @gs = $dsg->genomic_sequences;
-    my $chr_num = scalar @gs;
-    my $total_length;
-    map { $total_length += $_->sequence_length } @gs;
+    my $chr_num = $dsg->chromosome_count;
+    my $total_length = $dsg->length;
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
     $link = "http://" . $link unless ($link && $link =~ /^http/);
@@ -1811,8 +1809,9 @@ sub generate_fasta {
     my $type  = $opts{type};
 
     my ($dsg) =
-      $coge->resultset('Genome')->search( { "me.genome_id" => $dsgid },
-        { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
+      $coge->resultset('Genome')->search( { "me.genome_id" => $dsgid } );
+#      $coge->resultset('Genome')->search( { "me.genome_id" => $dsgid },
+#        { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
     $file = $FASTADIR . "/$file" unless $file =~ /$FASTADIR/;
     CoGe::Accessory::Web::write_log( "creating fasta file", $cogeweb->logfile );
     open( OUT, ">$file" ) || die "Can't open $file for writing: $!";

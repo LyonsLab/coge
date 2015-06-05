@@ -108,10 +108,10 @@ __PACKAGE__->has_many(
     "dataset_connectors" => "CoGeX::Result::DatasetConnector",
     'genome_id'
 );
-__PACKAGE__->has_many(
-    "genomic_sequences" => "CoGeX::Result::GenomicSequence",
-    'genome_id'
-);
+#__PACKAGE__->has_many(
+#    "genomic_sequences" => "CoGeX::Result::GenomicSequence",
+#    'genome_id'
+#);
 __PACKAGE__->belongs_to(
     "organism" => "CoGeX::Result::Organism",
     'organism_id'
@@ -162,7 +162,7 @@ __PACKAGE__->has_many(
     "genome_id"
 );
 
-__PACKAGE__->mk_accessors('_genomic_sequences');
+__PACKAGE__->mk_accessors('_chromosomes');
 
 sub desc {
     return shift->description(@_);
@@ -342,6 +342,60 @@ sub owner {
     foreach ( $self->user_connectors( { role_id => 2 } ) ) {    #FIXME hardcoded
         return $_->parent;
     }
+}
+
+################################################ subroutine header begin ##
+
+=head2 get_chromosome
+
+ Usage     :
+ Purpose   : replace DBIX one-to-many relation with Chromosomes class
+ Returns   :
+ Argument  : name
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_chromosome {
+    my $self = shift;
+    my $name = shift;
+	my $c = CoGe::Core::Chromosomes->new($self->id);
+	if ($c->find($name)) {
+		return (chromosome=>$c->name, sequence_length=>$c->length);
+	}
+	return 0;
+}
+
+################################################ subroutine header begin ##
+
+=head2 get_chromosome_length
+
+ Usage     :
+ Purpose   : replace DBIX one-to-many relation with Chromosomes class
+ Returns   :
+ Argument  : name
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_chromosome_length {
+    my $self = shift;
+    my $name = shift;
+	my $c = CoGe::Core::Chromosomes->new($self->id);
+	if ($c->find($name)) {
+		return $->length;
+	}
+	return 0;
 }
 
 ################################################ subroutine header begin ##
@@ -602,11 +656,11 @@ sub sequence_length {
     my $chr  = shift;
     return 0 unless defined $chr;
     my $gs;
-    $self->_genomic_sequences({}) unless $self->_genomic_sequences;
-    return $self->_genomic_sequences->{$chr} if ($self->_genomic_sequences->{$chr});
+    $self->_chromosomes({}) unless $self->_chromosomes;
+    return $self->_chromosomes->{$chr} if ($self->_chromosomes->{$chr});
     foreach my $item ($self->genomic_sequences ({chromosome=>"$chr"}))
      {
-       $self->_genomic_sequences->{$item->chromosome}=$item->sequence_length;
+       $self->_chromosomes->{$item->chromosome}=$item->sequence_length;
        $gs = $item if $item->chromosome =~ /^$chr$/i;  #if this object has multiple chromosomes pre-cached, all will be returned, even with a query.
      }
     #print STDERR "Genome->sequence_length CHR: $chr; genomic_sequence->chromosome: ", $gs->chromosome,"\n";
@@ -672,33 +726,6 @@ sub type {
 
 ################################################ subroutine header begin ##
 
-=head2 get_chromosomes
-
- Usage     :
- Purpose   :
- Returns   :
- Argument  :
- Throws    :
- Comments  :
-
-See Also   :
-
-=cut
-
-################################################## subroutine header end ##
-
-sub get_chromosomes {
-    my $self = shift;
-	return CoGe::Core::Chromosomes->new($self->id)->names;
-#    my @data =
-#      map  { $_->chromosome }
-#      sort { $b->sequence_length <=> $a->sequence_length }
-#      $self->genomic_sequences();
-#    return wantarray ? @data : \@data;
-}
-
-################################################ subroutine header begin ##
-
 =head2 chromosomes
 
  Usage     :
@@ -716,7 +743,29 @@ See Also   :
 
 sub chromosomes {
     my $self = shift;
-    $self->get_chromosomes(@_);
+	return CoGe::Core::Chromosomes->new($self->id)->names;
+}
+
+################################################ subroutine header begin ##
+
+=head2 chromosome_lengths
+
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub chromosome_lengths {
+    my $self = shift;
+	return CoGe::Core::Chromosomes->new($self->id)->lengths;
 }
 
 ################################################ subroutine header begin ##
@@ -752,7 +801,7 @@ sub percent_gc {
     my $length = 0;
 
     unless ($sent_chr) {
-        foreach my $chr ( $self->get_chromosomes ) {
+        foreach my $chr ( $self->chromosomes ) {
             push @chr, $chr;
         }
     }
@@ -782,7 +831,7 @@ sub percent_gc {
             chr_name =>   fasta header contains only the chromosome name (default 0)
             start    =>  start position (default 1)
             stop     =>  stop position  (default $self->sequence_legnth($chr)
-            chr      =>  chromosome for which to get sequence (default:  whatever $self->get_chromosomes gets first)
+            chr      =>  chromosome for which to get sequence (default:  whatever $self->chromosomes gets first)
             rc       =>  generate the reverse complement (default: 0)
             prot     =>  translate to protein, will do 6 frame automatically if it is not in a proper reading frame (default: 0)
 
@@ -806,7 +855,7 @@ sub fasta {
     $col = 100           unless defined $col;
     my $chr_name = $opts{chr_name};   #makes header contain only chromosome name
     my $chr      = $opts{chr};
-    ($chr) = $self->get_chromosomes unless defined $chr;
+    ($chr) = $self->chromosomes unless defined $chr;
     my $strand = $opts{strand} || 1;
     my $start  = $opts{start}  || 1;
     $start = 1 if $start < 1;
@@ -990,33 +1039,40 @@ sub chr_info {
     my %opts    = @_;
     my $summary = $opts{summary};
 
-    #    print STDERR Dumper \%opts;
     my $html;
     my $total_length;
-    my @gs = sort {
-             $a->chromosome =~ /(\d+)/ <=> $b->chromosome =~ /(\d+)/
-          || $a->chromosome cmp $b->chromosome
-    } $self->genomic_sequences;
-    my $chr_num = scalar @gs;
-    my $count   = 0;
+    my $count = 0;
     my $chr_list;
-
-    foreach my $gs (@gs) {
-        my $chr    = $gs->chromosome;
-        my $length = $gs->sequence_length;
-        $total_length += $length;
-        $length = commify($length);
+#    my @gs = sort {
+#             $a->chromosome =~ /(\d+)/ <=> $b->chromosome =~ /(\d+)/
+#          || $a->chromosome cmp $b->chromosome
+#    } $self->genomic_sequences;
+#
+#    foreach my $gs (@gs) {
+#        my $chr    = $gs->chromosome;
+#        my $length = $gs->sequence_length;
+#        $total_length += $length;
+#        $length = commify($length);
+#        $chr_list .= qq{$chr:  $length bp<br>};
+#        $count++;
+#    }
+    my $c = CoGe::Core::Chromosomes->new($self->id);
+    while ($c->next) {
+        $total_length += $c->length;
+        my $chr    = $c->name;
+        my $length = commify($c->length);
         $chr_list .= qq{$chr:  $length bp<br>};
         $count++;
     }
     $html .=
-        qq{Chromosome count: $chr_num<br>}
+        qq{Chromosome count: $count<br>}
       . qq{Total length: }
       . commify($total_length) . " bp";
     $html .= "<br>" . qq{-----------<br>Chr:   (length)<br>} . $chr_list
       unless $summary;
     return $html;
 }
+
 ############################################### subroutine header begin ##
 
 =head2 length
@@ -1037,25 +1093,15 @@ See Also   :
 sub length {
     my $self = shift;
     return CoGe::Core::Chromosomes->new($self->id)->total_length;
-#    my $rs   = $self->genomic_sequences(
-#        {},
-#        {
-#            select => [ { sum => 'sequence_length' } ],
-#            as     => ['total_length']
-#            ,    # remember this 'as' is for DBIx::Class::ResultSet not SQL
-#        }
-#    );
-#    my $total_length = $rs->first->get_column('total_length');
-#    return $total_length;
 }
 
 ############################################### subroutine header begin ##
 
 =head2 chromosome_count
 
- Usage     : $self->chromosome_count
- Purpose   : get count of chromosomes in the dataset group
- Returns   : number
+ Usage     :
+ Purpose   :
+ Returns   : number of chromosomes in the genome
  Argument  :
  Throws    :
  Comments  :
@@ -1069,7 +1115,6 @@ See Also   :
 sub chromosome_count {
 	my $self = shift;
     return CoGe::Core::Chromosomes->new($self->id)->count;
-#    return shift->genomic_sequences->count();
 }
 
 ################################################ subroutine header begin ##

@@ -1329,16 +1329,28 @@ sub get_dsg_order {
       $opts{skip_random}; #skip "random" chromosome where sequences are added ad hoc
 
     my %data;
-    foreach my $gs ( $dsg->genomic_sequences ) {
-        next if check_random( $gs->chromosome ) && $skip_random;
-        next if defined $chr && $chr ne $gs->chromosome;
-        my $len = $gs->sequence_length;
+#    foreach my $gs ( $dsg->genomic_sequences ) {
+#        next if check_random( $gs->chromosome ) && $skip_random;
+#        next if defined $chr && $chr ne $gs->chromosome;
+#        my $len = $gs->sequence_length;
+#        next if $minsize && $minsize > $len;
+#        if ( $data{ $gs->chromosome } ) {
+#            warn "Duplicate chromosome:" . $gs->chromosome . "\n";
+#        }
+#        $data{ $gs->chromosome }{chr_length} = $len;
+#        $data{ $gs->chromosome }{length}     = $len;
+#    }
+	my $c = CoGe::Core::Chromosomes->new($genome->id);
+	while ($c->next) {
+        next if check_random( $c->name ) && $skip_random;
+        next if defined $chr && $chr ne $c->name;
+        my $len = $c->length;
         next if $minsize && $minsize > $len;
-        if ( $data{ $gs->chromosome } ) {
-            warn "Duplicate chromosome:" . $gs->chromosome . "\n";
+        if ( $data{ $c->name } ) {
+            warn "Duplicate chromosome:" . $c->name . "\n";
         }
-        $data{ $gs->chromosome }{chr_length} = $len;
-        $data{ $gs->chromosome }{length}     = $len;
+        $data{ $c->name }{chr_length} = $len;
+        $data{ $c->name }{length}     = $len;
     }
     #how to sort chromosomes for diplay?
     my @ordered;
