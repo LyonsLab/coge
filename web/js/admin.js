@@ -5,6 +5,7 @@ var hist_timers = new Array();
 var current_tab = 0;
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
 var jobs_updating = true;
+var jobs_init = false;
 var hist_init = false;
 var hist_updating = true;
 var hist_entries = 0;
@@ -12,14 +13,23 @@ var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 
 $(function () {
-	//$( "#tabs" ).show();
-	/*$( "#tabs" ).tabs({
+	$( "#tabs" ).tabs({
 		select: function(event, ui) {
             var theSelectedTab = ui.index;
             change_tab(theSelectedTab);
             schedule_update(5000);
-        }
-    });*/
+        },
+		show: function(event, ui) {
+			if(current_tab == 1 && !jobs_init) {
+				init_jobs_grid();
+			}
+			if(current_tab == 2 && !hist_init) {
+				init_hist_grid();
+			}
+		}
+    });
+	
+	$( "#tabs" ).show();
 	
 	timestamps['idle'] = new Date().getTime();
 	
@@ -54,9 +64,11 @@ $(function () {
 			schedule_update(5000);
 		}
 	});
-    
-    //Initialize Jobs tab
-    var searchFilter = function(item, args) {
+});
+
+//Initialize the Jobs tab
+function init_jobs_grid() {
+	var searchFilter = function(item, args) {
         var link = item['link'] ? item['link'].toLowerCase() : '',
             tool = item['tool'] ? item['tool'].toLowerCase() : '',
             status = item['status'] ? item['status'].toLowerCase() : '',
@@ -128,13 +140,11 @@ $(function () {
     window.jobs = new coge.Grid('#jobs', job_options, job_columns);
     jobs.grid.registerPlugin(checkbox);
     get_jobs();
-    //document.getElementById("job_search_bar").value = "running";
-    
-    
-    //Initialize History tab
-    
-    
-    var hist_filter = function(item, args) {
+}
+
+//Initialize the History tab
+function init_hist_grid() {
+	var hist_filter = function(item, args) {
     	var date_time 	= (item['date_time'] ? item['date_time'].toLowerCase() : '');
     	var user_name 	= (item['user'] ? item['user'].toLowerCase() : '');
     	var description = (item['description'] ? item['description'].toLowerCase() : '');
@@ -245,7 +255,7 @@ $(function () {
     
     hist.grid.onSort.subscribe(function (e, args) {
 		sortcol = args.sortCol.field;
-		hist.dataView.sort(comparer, args.sortAsc);
+		hist.dataView.sort(args.sortAsc);
 	});
 
 	// Wire up model events to drive the grid
@@ -276,11 +286,11 @@ $(function () {
 
 		updateHistFilter();
 	});
-});
+}
 
 function change_tab(tab) {
 	current_tab = tab;
-	console.log(tab);
+	//console.log(tab);
 }
 
 function search_stuff (search_term) {
@@ -1025,6 +1035,7 @@ function get_jobs() {
 	        entries = data.jobs.length;
 	        $("#filter_busy").hide();
 	        update_filter();
+	        jobs_init = true;
 	    },
 	    complete: function(data) {
 	    	schedule_update(5000);
@@ -1057,16 +1068,16 @@ function schedule_update(delay) {
 			console.log("Updating jobs");
 			cancel_update("jobs");
 			jobs_timers['update'] = window.setTimeout(
-					function() { get_jobs(); },
-					delay
+				function() { get_jobs(); },
+				delay
 			);
 		}
 		if(current_tab == 2 && hist_updating && hist_init) {
 			console.log("Updating hist");
 			cancel_update("hist");
 			hist_timers['update'] = window.setTimeout(
-					function() { update_history(); },
-					delay
+				function() { update_history(); },
+				delay
 			);
 		}
 		return;

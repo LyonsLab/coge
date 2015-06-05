@@ -780,7 +780,7 @@ See Also   : genome->gff
 =cut
 
 ################################################## subroutine header end ##
-
+#This is stupid complicated — can’t begin to document what the hell this thing does.  Good luck hacking this piece of shit in the future.
 sub gff {
     my $self = shift;
     my %opts = @_;
@@ -857,6 +857,7 @@ sub gff {
         #gff columns: chr organization feature_type start stop strand . name
         print STDERR "dataset_id: " . $ds->id."\n" if $debug;# . ";  chr: $chr\n" if $debug;
         main: while ( my $feat = $rs_feat->next ) {
+	    print STDERR "Processing feature: ".$feat->id,"\n" if $debug;
             next if ( $fids{ $feat->feature_id } );
             my $ft = $feat->feature_type;
 #	        my $chr = $feat->chromosome;
@@ -875,8 +876,11 @@ sub gff {
             else {
                 @feat_names = $feat->names();
             }
-            $prior_genes{ $feat_names[0] } = $feat
-              if $ft->name eq "gene" && !$prior_genes{ $feat_names[0] };
+             if ($ft->name =~ /gene/i && !$prior_genes{ $feat_names[0] })
+		{
+            	  $prior_genes{ $feat_names[0] } = $feat;
+		  $prior_genes{ $count} = $feat;
+		}
             if ( $ft->name =~ /RNA/ ) { #perhaps an alternatively spliced transcript
                 #check for name congruence
                 my $match = 0;
@@ -905,6 +909,7 @@ sub gff {
                             chr         => $chr,
                             ds          => $ds,
                             cds_exon    => $cds_exon,
+			    prior_genes => \%prior_genes
                         )
                       )
                     {
@@ -943,7 +948,8 @@ sub gff {
                     name_re   => $name_re,
                     id        => $count,
                     parent_id => 0,
-                    type      => $ft->name
+                    type      => $ft->name,
+		    prior_genes=> \%prior_genes
                   };
                 $count++;
             }
@@ -984,6 +990,7 @@ sub gff {
                     chr         => $chr,
                     ds          => $ds,
                     cds_exon    => $cds_exon,
+		    prior_genes => \%prior_genes
                 )
               )
             {
@@ -1009,7 +1016,7 @@ sub gff {
             #dump other stuff for gene that does not have mRNAs.
             my $sub_rs = $self->_feat_search(
                 name_search => \@feat_names,
-                skip_ftids  => [ 1, 2 ],
+                skip_ftids  => [ 1, 2], #1 == gene; 2 == mRNA
                 ds          => $ds,
                 chr         => $chr,
             );
@@ -1017,6 +1024,7 @@ sub gff {
             $parent_id--;
             while ( my $f = $sub_rs->next() ) {
                 if ( $fids{ $f->feature_id } ) { next; }
+		#next if $f->type->name =~ /pseudogene/i; #skip pseudogene stuff:  EHL 6/1/15
                 my $ftn = $self->process_feature_type_name( $f->feature_type->name );
                 push @{ $notes{gene}{"Encoded_feature"} }, $self->escape_gff($ftn);
                 foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
@@ -1034,7 +1042,8 @@ sub gff {
                             name_re   => $name_re,
                             id        => $count,
                             parent_id => $parent_id,
-                            type      => "mRNA"
+                            type      => "mRNA",
+		    	    prior_genes=> \%prior_genes
                           };
                         $parent_id = $count;
                         $count++;
@@ -1047,8 +1056,9 @@ sub gff {
                         name_re   => $name_re,
                         id        => $count,
                         parent_id => $parent_id,
-                        type      => "exon"
-                      };
+                        type      => "exon",
+		        prior_genes=> \%prior_genes
+                      } unless $f->type->name =~ /pseudogene/;
                     $count++;
                     push @out,
                       {
@@ -1058,7 +1068,8 @@ sub gff {
                         name_re   => $name_re,
                         id        => $count,
                         parent_id => $parent_id,
-                        type      => $f->feature_type->name
+                        type      => $f->feature_type->name,
+		        prior_genes=> \%prior_genes
                       };
                     $fids{ $f->feature_id } = 1;    #feat_id has been used;
                     $types{ $f->feature_type->name }++;
@@ -1131,6 +1142,7 @@ sub _search_rna {
     my $chr         = $opts{chr};
     my $ds          = $opts{ds};
     my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
+    my $prior_genes = $opts{prior_genes};
     #print STDERR "_search_rna\n";
 
     my $rna_rs = $self->_feat_search(
@@ -1155,7 +1167,8 @@ sub _search_rna {
             name_re     => $name_re,
             parent_feat => $parent_feat,
             parent_id   => $parent_id,
-            cds_exon    => $cds_exon
+            cds_exon    => $cds_exon,
+	    prior_genes => $prior_genes
         );
 
         #get CDSs (mostly)
@@ -1190,7 +1203,8 @@ sub _search_rna {
                     name_re   => $name_re,
                     id        => $$count,
                     parent_id => $parent_id,
-                    type      => $f->feature_type->name
+                    type      => $f->feature_type->name,
+		    prior_genes=> $prior_genes
                   };
                 $$count++ if $cds_exon;
                 push @$out,
@@ -1201,7 +1215,8 @@ sub _search_rna {
                     name_re   => $name_re,
                     id        => $$count,
                     parent_id => $parent_id,
-                    type      => "exon"
+                    type      => "exon",
+		    prior_genes=> $prior_genes,
                   }
                   if $cds_exon;
 
@@ -1225,6 +1240,7 @@ sub _process_rna {
     my $parent_feat = $opts{parent_feat};
     my $parent_id   = $opts{parent_id};
     my $name_re     = $opts{name_re};
+    my $prior_genes = $opts{prior_genes};
     my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
     my $ftn = $self->process_feature_type_name( $f->feature_type->name );
     push @{ $notes->{gene}{"encoded_feature"} }, $self->escape_gff($ftn);
@@ -1245,7 +1261,8 @@ sub _process_rna {
         name_re   => $name_re,
         id        => $$count,
         parent_id => $parent_id,
-        type      => $f->feature_type->name()
+        type      => $f->feature_type->name(),
+	prior_genes=>$prior_genes
       };    #need to add a mRNA from its start to stop, no exons/introns
             #end creating entry to mRNA
             #begin dumping exons for mRNA
@@ -1320,7 +1337,6 @@ sub _format_gff_line {
     my $unique_ids  = $opts{unique_ids};  #hash for making sure that each used ID happens once for each ID
     my $cache = $opts{cache};
     #print STDERR "_format_gff_line\n";
-
     my $output;
     foreach my $item (@$out) {
         my $f         = $item->{f};         #feature object
@@ -1330,8 +1346,8 @@ sub _format_gff_line {
         my $parent_id = $item->{parent_id}; #unique id for the parent of the gff feature
         my $start     = $item->{start};     #start of entry.  May be the feat start, may be a loc start.  Need to declare in logic outside of this routine
         my $stop      = $item->{stop};      #stop of entry.  May be the feat stop, may be a loc stop.  Need to declare in logic outside of this routine
+	my $prior_genes = $item->{prior_genes}; #ref to genes list.  Used to look up a previous gene if needed.
         my $parsed_type = $self->process_feature_type_name($type);
-
         #check to see if we are only printing CDS genes
         return
           if $cds
@@ -1361,7 +1377,7 @@ sub _format_gff_line {
 
         #store the unqiue name and associate it with the unique ID number
         if ( $ids2names->{$id} ) {
-            warn "ERROR!  $id is already in use in \$ids2names lookup table: " . $ids2names->{$id} . "\n";
+            warn "ERROR!  $id is already in use in \$ids2names lookup table: " . $ids2names->{$id} . " fid: ". $f->id."\n";
         }
         $ids2names->{$id} = $unique_name;
 
@@ -1376,8 +1392,24 @@ sub _format_gff_line {
         warn "ERROR:  ID $id has been previously used!" if ( $unique_ids->{$id} );
         $unique_ids->{$id}++;
 
+	#need to check and correct for an edge case when item is something like a miRNA, and parent is defined, and parent is not a gene.  EHL: 6/2/15
+	my $is_RNA = $parsed_type =~ /RNA/i?1:0;
+	my $is_mRNA = $parsed_type =~ /mRNA/i?1:0;
+	my $parent_is_gene = $prior_genes->{$parent_id}->type->name=~/gene/?1:0 if $prior_genes->{$parent_id};
+	$parent_is_gene = 0 unless defined $parent_is_gene;
+	if ($parent_id && $is_RNA && !$is_mRNA &&! $prior_genes->{$parent_id}  && !$parent_is_gene)
+	  {
+	    my $temp_id = $parent_id;
+	    while (!$parent_is_gene) 
+	      {
+		$temp_id--;
+		$parent_is_gene = $prior_genes->{$temp_id}->type->name=~/gene/?1:0 if $prior_genes->{$temp_id};
+	      }
+	    $parent_id = $temp_id;
+	  }
         my $attrs;
-        $attrs .= "Parent=$parent_id;" if $parent_id;
+	my $test_var = $type=~/gene/?1:0;
+        $attrs .= "Parent=$parent_id;" if $parent_id && $test_var == 0;#!$type=~/gene/i;
         $attrs .= "ID=$id";
         $attrs .= ";Name=$name"        if $name;
         $attrs .= ";Alias=$alias"      if $alias;
