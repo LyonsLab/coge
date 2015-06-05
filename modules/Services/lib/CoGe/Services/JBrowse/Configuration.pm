@@ -13,6 +13,7 @@ use File::Spec::Functions qw(catdir);
 use CoGeX;
 use CoGeDBI qw(get_table get_user_access_table get_experiments get_distinct_feat_types);
 use CoGe::Accessory::Web;
+use CoGe::Core::Chromosomes;
 use CoGe::Core::Experiment qw(experimentcmp);
 
 my %expTypeToName = (
@@ -53,18 +54,28 @@ sub refseq_config {
     }
 
     my @chromosomes;
-    foreach my $chr ( sort { $b->sequence_length <=> $a->sequence_length }
-        $genome->genomic_sequences )
-    {
-        push @chromosomes,
-          {
-            name         => uri_escape($chr->chromosome), # mdb changed 12/17/13 issue 266
-            length       => $chr->sequence_length,
+#    foreach my $chr ( sort { $b->sequence_length <=> $a->sequence_length }
+#        $genome->genomic_sequences )
+#    {
+#        push @chromosomes,
+#          {
+#            name         => uri_escape($chr->chromosome), # mdb changed 12/17/13 issue 266
+#            length       => $chr->sequence_length,
+#            seqChunkSize => $SEQ_CHUNK_SIZE,
+#            start        => 0,
+#            end          => $chr->sequence_length - 1
+#          };
+#    }
+	my $c = CoGe::Core::Chromosomes->new($genome->id);
+	while ($c->next) {
+		push @chromosomes, {
+            name         => uri_escape($c->name),
+            length       => $c->length,
             seqChunkSize => $SEQ_CHUNK_SIZE,
             start        => 0,
-            end          => $chr->sequence_length - 1
-          };
-    }
+            end          => $c->length - 1
+		};
+	}
 
     return encode_json( \@chromosomes );
 }

@@ -371,17 +371,18 @@ sub last_chromosome_position {
     return 0 unless defined $chr;
 
     my $dsg = $self->first_genome; #my ($dsg) = $self->genomes; # mdb changed 4/23/14 issue 364
-    my ($item) = $dsg->genomic_sequences( { chromosome => "$chr" } );
-    unless ($item) {
-        warn "Dataset::last_chromosome_position: unable to find genomic_sequence object for '$chr'";
-        return 0;
-    }
-    my $stop = $item->sequence_length();
-    unless ($stop) {
-        warn "No genomic sequence for ", $self->name, " for chr $chr\n";
-        return 0;
-    }
-    return $stop;
+#    my ($item) = $dsg->get_chromosome($chr);
+#    unless ($item) {
+#        warn "Dataset::last_chromosome_position: unable to find genomic_sequence object for '$chr'";
+#        return 0;
+#    }
+#    my $stop = $item->sequence_length();
+#    unless ($stop) {
+#        warn "No genomic sequence for ", $self->name, " for chr $chr\n";
+#        return 0;
+#    }
+#    return $stop;
+	return $dsg->get_chromosome_length($chr);
 }
 
 ################################################ subroutine header begin ##
