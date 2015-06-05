@@ -74,11 +74,10 @@ div.dataTables_scrollBody {
 <div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
 	<table class="small">
 		<tr>
-                        <td colspan="2" style="padding-bottom: 10px;">
-                                <span style="color: red;">
-				<span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
-                        </td>
-                </tr>
+            <td colspan="2" style="padding-bottom: 10px;">
+                <span style="color: red;"><span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
+            </td>
+        </tr>
 		<tr>
 			<td>Name:</td>
 			<td><input id="edit_notebook_name" type="textbox" size="53" value="" /></td>
@@ -200,8 +199,26 @@ div.deleted { display: none; }
 
 	<div style="float:left;float:left;margin-right:15px;">
 	    <span id="create_button" class='ui-button ui-button-icon-right ui-corner-all coge-button coge-button-right' style="font-size:1em;padding-top:5px;padding-bottom:5px;width:70px;" onclick="create_menu();">NEW<span class="ui-icon ui-icon-triangle-1-s"></span></span>
-	    <div id="toc_panel" class="small panel" style="overflow:auto;padding-top:1em;padding-right:1em;">
-			<TMPL_VAR NAME='TOC'>
+	    <div id="toc_panel" class="small panel noselect" style="overflow:auto;padding-top:1em;width:10em;">
+			<ul>
+				<li><span data-type="mine">My Data</span>
+					<ul>
+						<li><span data-type="genome"><img src="picts/dna-icon.png" width="15" height="15"/> Genomes</span></li>
+						<li><span data-type="experiment"><img src="picts/testtube-icon.png" width="15" height="15"/> Experiments</span></li>
+					</ul>
+				</li>
+				<li><span data-type="notebook">Notebooks</span></li>
+				<li><span data-type="group">User Groups</span></li>
+				<li><span data-type="shared">Shared with me</span></li>
+				<li><span data-type="activity">Activity</span>
+					<ul>
+						<li><span data-type="analyses">Analyses</span></li>
+						<li><span data-type="loads">Data loading</span></li>
+						<li><span data-type="graph">Graph</span></li>
+					</ul>
+				</li>
+				<li><span data-type="trash">Trash</span></li>
+			</ul>
 		</div>
 		<ul id="create_menu" class="coge-menu hidden" style="white-space:nowrap;">
 			<li><a onclick="create_group_dialog();"><img src="picts/group-icon.png" width="15" height="15"/> New User Group</a></li>
@@ -213,13 +230,13 @@ div.deleted { display: none; }
 
 	<div style="height:24px;">
 		<span id="contents_title" style="float:left;min-width:130px;font-weight:bold;margin-right:20px;"></span>
-		<span id="add_button" onClick="add_dialog();" class="coge-icon glyphicon glyphicon-plus item-button invisible" style="margin-right:5px;" title="Create New Item"></span>
-		<span id="share_button" onClick="share_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
-		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-folder-open item-button invisible" style="margin-right:5px;" title="Add Selected Items to Notebook"></span>
-		<span id="edit_button" onClick="edit_dialog();" class="coge-icon coge-disabled glyphicon glyphicon-cog item-button invisible" style="margin-right:5px;" title="Edit Selected Items"></span>
-		<span id="delete_button" onClick="delete_items();" class="coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
-		<span id="send_button" onClick="send_menu();" class="coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
-		<span id="undelete_button" onClick="undelete_items();" class="coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
+		<span id="add_button" onClick="add_dialog();" class="add coge-icon glyphicon glyphicon-plus item-button invisible" style="margin-right:5px;" title="Create New Item"></span>
+		<span id="share_button" onClick="share_dialog();" class="share coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
+		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="organize coge-icon coge-disabled glyphicon glyphicon-folder-open item-button invisible" style="margin-right:5px;" title="Add Selected Items to Notebook"></span>
+		<span id="edit_button" onClick="edit_dialog();" class="edit coge-icon coge-disabled glyphicon glyphicon-cog item-button invisible" style="margin-right:5px;" title="Edit Selected Items"></span>
+		<span id="delete_button" onClick="delete_items();" class="delete coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
+		<span id="send_button" onClick="send_menu();" class="sendto coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
+		<span id="undelete_button" onClick="undelete_items();" class="undelete coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
 		<ul id="send_menu" class="small hidden">
 			<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
 			<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
@@ -234,25 +251,38 @@ div.deleted { display: none; }
 		<span id="send_button" onClick="send_menu();" class="invisible item-button link ui-icon ui-icon-arrowthick-1-e ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		<span id="undelete_button" onClick="undelete_items();" class="invisible item-button link ui-icon ui-icon-cancel ui-state-disabled" style="margin-right:5px;border:1px solid lightgray;"></span>
 		-->
-		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" onkeyup="filter_contents();" onsearch="filter_contents();" />
-        <div id="selected-hint" class="hidden small info" style="float:right; margin-right: 15px;"><b>Double-click</b> for detailed view</div>
+		<input id="search_input" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" />
 		<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
 	</div>
 
 	<div id="contents_panel" class="small panel">
-		<div id="contents_table" class="noselect" style="overflow:auto;border-top:1px solid lightgray;border-bottom:none !important;">
-			<TMPL_VAR NAME='CONTENTS'>
-		</div>
+		<div class="grid hidden noselect" style="overflow:auto;border-top:1px solid lightgray;border-bottom:none !important;"></div>
+		<div class="html hidden" style="overflow:auto;border-top:1px solid lightgray;border-bottom:none !important;"></div>
 	</div>
 </div>
 
 <script type="text/javascript">
-const ITEM_TYPES = <TMPL_VAR NAME="ITEM_TYPES">;
+//const ITEM_TYPE = <TMPL_VAR NAME="ITEM_TYPE">;
+//const ITEM_TYPE = {
+//	all: 				'<TMPL_VAR NAME="ITEM_TYPE.ALL">',
+//	mine: 				'<TMPL_VAR NAME="ITEM_TYPE.MINE">',
+//	shared: 			'<TMPL_VAR NAME="ITEM_TYPE.SHARED">',
+//	activity_summary:	'<TMPL_VAR NAME="ITEM_TYPE.ACTIVITY_SUMMARY">',
+//	trash: 				'<TMPL_VAR NAME="ITEM_TYPE.TRASH">',
+//	activity_viz: 		'<TMPL_VAR NAME="ITEM_TYPE.ACTIVITY_VIZ">',
+//	activity_analyses: 	'<TMPL_VAR NAME="ITEM_TYPE.ACTIVITY_ANALYSES">',
+//	activity_loads: 	'<TMPL_VAR NAME="ITEM_TYPE.ACTIVITY_LOADS">',
+//	user: 				'<TMPL_VAR NAME="ITEM_TYPE.USER">',
+//	group: 				'<TMPL_VAR NAME="ITEM_TYPE.GROUP">',
+//	notebook: 			'<TMPL_VAR NAME="ITEM_TYPE.NOTEBOOK">',
+//	genome: 			'<TMPL_VAR NAME="ITEM_TYPE.GENOME">',
+//	experiment: 		'<TMPL_VAR NAME="ITEM_TYPE.EXPERIMENT">'
+//};
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 </script>
 
 <script type="text/javascript" src="js/pages/user.js"></script>
-
+<script type="text/javascript" src="js/coge/utils.js"></script>
 <script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
 
 </TMPL_IF> <!-- MAIN -->
@@ -308,7 +338,7 @@ const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 		    		$("#share_input")
 		    			.val( ui.item.label )
 		    			.data('select_id', ui.item.value);
-		    		if (ui.item.value.split(':')[1] == ITEM_TYPES.user) {
+		    		if (ui.item.value.split(':')[1] == ITEM_TYPE.user) {
 		    			$('#share_role_select').show();
 		    		}
 		    		else {
