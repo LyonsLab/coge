@@ -1241,7 +1241,12 @@ var colors = [
 	{ name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
 ];
 
-var w = Math.max(800, $(window).width()),
+var filters = [
+    { name: 'deleted', 		color: 'Red', 		show: 0 },
+    { name: 'restricted', 	color: 'Grey',	 	show: 0 },
+]
+
+var w = Math.max(800, $(window).width()-200),
 	h = Math.max(800, $(window).height()-300),
 	node,
 	link,
@@ -1249,8 +1254,33 @@ var w = Math.max(800, $(window).width()),
 
 function init_graph() {
 	if(!graph_init) {
-		root;
+		graph_init = true;
+		filters.forEach(function(element, index) {
+			var item =
+				$('<div class="link legend selected">'+filters[index].name+'</div>')
+					.css('color', filters[index].color)
+					.css('background-color', '')
+					.click(function() {
+						$(this).toggleClass('selected');
+						if ($(this).hasClass('selected')) {
+							$(this).css('color', filters[index].color);
+							$(this).css('background-color', '');
+						}
+						else {
+							$(this).css('color', 'white');
+							$(this).css('background-color', filters[index].color);
+						}
+						filters[index].show = !filters[index].show;
+						
+						var nodes = flatten(root);
+						nodes.forEach(color);
+						update();
+					});
 
+			$('#legend')
+				.append(item);
+		});
+		
 		force = d3.layout.force()
 			.size([w, h])
 			.on("tick", tick)
@@ -1265,7 +1295,7 @@ function init_graph() {
 
 
 		d3.json("?fname=get_all_nodes", function(json) {
-			//console.log(json);
+			console.log(json);
 			root = json;
 			var nodes = flatten(root);
 			nodes.forEach(function(d) {
@@ -1349,14 +1379,26 @@ function tick() {
 }
 
 function color(d) {
-	//return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
-	if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
-		if (d.type) {
-			return colors[d.type-1].color;
+	if(!filters[0].show && !filters[1].show) {
+		//normal filter
+		if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
+			if (d.type) {
+				return colors[d.type-1].color;
+			}
+			return 'white';
+		} else {
+			return 'black';
 		}
-		return 'white';
 	} else {
-		return 'black';
+		if(d.deleted == 1 && d.restricted == 1 && filters[0].show && filters[1].show) {
+			return 'yellow';
+		} else if (d.deleted == 1 && filters[0].show) {
+			return filters[0].color;
+		} else if (d.restricted == 1 && filters[1].show) {
+			return filters[1].color;
+		} else {
+			return 'yellowGreen';
+		}
 	}
 }
 
@@ -1402,7 +1444,7 @@ function click(d) {
 		
 		toggle_children(d);
 		update();
-		//console.log(d.charge);
+		console.log(d.deleted);
 	}
 }
 
