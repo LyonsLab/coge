@@ -1460,9 +1460,18 @@ sub get_all_nodes {
 
     my %childrenByList;
     foreach my $conn ( $coge->resultset('ListConnector')->all ) {
-        push @{ $childrenByList{ $conn->parent_id } },
-          { name => $conn->child_id, size => 2025, type => $conn->child_type };
-          #TODO: Remove features
+    	if($conn->child_type != 4) {
+    		my $child = $conn->child;
+	        push @{ $childrenByList{ $conn->parent_id } },
+          	{ 
+          		name 		=> $conn->child_id, 
+          		size 		=> 2025, 
+          		type 		=> $conn->child_type,
+          		deleted		=> $child->deleted,
+          		restricted 	=> $child->restricted,
+          	};
+          	#TODO: Remove features
+    	}
     }
 
     my %childrenByUser;
@@ -1494,19 +1503,29 @@ sub get_all_nodes {
     		#print $fh $size;
     		#print $fh "\n";
     		#close $fh;
+    		my $child = $conn->child;
     		
             push @{ $childrenByUser{ $conn->parent_id } },
-              {
-                name     => $conn->child_id,
-                type     => $conn->child_type,
-                size	 => $size * 1000,
-                _size	 => 2025,
-                children => $childrenByList{ $conn->child_id }
+            {
+           		name     	=> $conn->child_id,
+                type     	=> $conn->child_type,
+                size	 	=> $size * 1000,
+                _size	 	=> 2025,
+                children 	=> $childrenByList{ $conn->child_id },
+                deleted	 	=> $child->deleted,
+                restricted 	=> $child->restricted,
               };
         }
         else {
+        	my $child = $conn->child;
             push @{ $childrenByUser{ $conn->parent_id } },
-              { name => $conn->child_id, size => 2025, type => $conn->child_type };
+              { 
+              	name 		=> $conn->child_id, 
+              	size 		=> 2025, 
+              	type 		=> $conn->child_type,
+              	deleted 	=> $child->deleted,
+              	restricted 	=> $child->restricted,
+              };
         }
     }
 
@@ -1521,12 +1540,14 @@ sub get_all_nodes {
     	
         push @users,
           {
-            name     => $user->id,
-            type     => 5,
-            info     => $user->info,
-            size	 => $size * 1000,
-            _size	 => 2025,
-            children => $childrenByUser{ $user->id }
+            name     	=> $user->id,
+            type     	=> 5,
+            info     	=> $user->info,
+            size	 	=> $size * 1000,
+            _size	 	=> 2025,
+            children 	=> $childrenByUser{ $user->id },
+            deleted	 	=> 0,
+            restricted 	=> 0,
           };
     }
 
@@ -1552,18 +1573,28 @@ sub get_all_nodes {
     			$size = scalar @{$sub};
     		}
     		
+    		my $child = $conn->child;
+    		
             push @{ $childrenByGroup{ $conn->parent_id } },
               {
-                name     => $conn->child_id,
-                type     => $conn->child_type,
-                size	 => $size * 1000,
-                _size	 => 2025,
-                children => $childrenByList{ $conn->child_id }
+                name     	=> $conn->child_id,
+                type     	=> $conn->child_type,
+                size	 	=> $size * 1000,
+                _size	 	=> 2025,
+                children 	=> $childrenByList{ $conn->child_id },
+                deleted	 	=> $child->deleted,
+                restricted 	=> $child->restricted,
               };
         }
         else {
+        	my $child = $conn->child;
             push @{ $childrenByGroup{ $conn->parent_id } },
-              { name => $conn->child_id, size => 2025, type => $conn->child_type };
+              { name 		=> $conn->child_id, 
+              	size 		=> 2025, 
+              	type 		=> $conn->child_type,
+              	deleted 	=> $child->deleted,
+              	restricted 	=> $child->restricted,
+              };
         }
     }
 
@@ -1578,12 +1609,14 @@ sub get_all_nodes {
         #my $num_users = @{ $group->users };
         push @groups,
           {
-            name     => $group->id,
-            type     => 6,
-            info     => $group->info,
-            size    => $size * 1000,
-            _size	 => 2025,
-            children => $childrenByGroup{ $group->id }
+            name     	=> $group->id,
+            type     	=> 6,
+            info     	=> $group->info,
+            size   	 	=> $size * 3000,
+            _size	 	=> 2025,
+            children 	=> $childrenByGroup{ $group->id },
+            deleted	 	=> 0,
+            restricted 	=> 0,
           };
     }
 
