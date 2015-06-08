@@ -1241,203 +1241,21 @@ var colors = [
 	{ name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
 ];
 
-var w = Math.max(800, $(window).width()-200),
-	h = Math.max(800, $(window).height()),
+var w = Math.max(800, $(window).width()),
+	h = Math.max(800, $(window).height()-300),
 	node,
 	link,
 	root;
 
-/*function init_graph() {
-	
-	/* //Create legend
-	colors.forEach(function(element, index) {
-		var item =
-			$('<div class="link legend selected">'+colors[index].name+'</div>')
-			.css('color', 'white')
-			.css('background-color', colors[index].color)
-			.click(function() {
-				$(this).toggleClass('selected');
-				if ($(this).hasClass('selected')) {
-					$(this).css('color', 'white');
-					$(this).css('background-color', colors[index].color);
-				} else {
-					$(this).css('color', colors[index].color);
-					$(this).css('background-color', '');
-				}
-				colors[index].show = !colors[index].show;
-				update();
-			});
-
-     	$('#legend')
-     		.append(item);
-   	});* /
-
-	// Setup D3
-	force = d3.layout.force()
-		.on("tick", tick)
-		.size([w, h]);
-
-	vis = d3.select("#chart").append("svg:svg")
-		.attr("width", w)
-		.attr("height", h);
-
-	d3.json("?fname=get_all_nodes", function(json) {
-		root = json;
-		console.log(json);
-		/*for(var i = 0; i < root.children.length; i++) {
-			//console.log(root.children[i].children.length);
-			for(var j = 0; j < root.children[i].children.length; j++) {
-				//console.log(j);
-				toggle_children(root.children[i].children[j]);
-			}
-		}* /
-		root.children[0].children.forEach(toggle_children);
-		root.children[1].children.forEach(toggle_children);
-		update();
-	});
-	graph_init = true;
-}
-
-function update() {
-	var nodes = flatten(root),
-	links = d3.layout.tree().links(nodes);
-
-	// Restart the force layout.
-	force
-		.nodes(nodes)
-		.links(links)
-		.start();
-
-	// Update the links…
-	link = vis.selectAll("line.link")
-		.data(links, function(d) { return d.target.id; });
-	
-	// Exit any old links.
-	link.exit().remove();
-	
-	// Enter any new links.
-	link.enter().insert("svg:line", ".node")
-		.attr("class", "link")
-		.attr("x1", function(d) { return d.source.x; })
-		.attr("y1", function(d) { return d.source.y; })
-		.attr("x2", function(d) { return d.target.x; })
-		.attr("y2", function(d) { return d.target.y; });
-
-	// Update the nodes…
-	node = vis.selectAll("circle.node")
-		.data(nodes, function(d) { return d.id; })
-		.style("fill", color);
-	
-	//New bit
-	//node.transition()
-	//	.attr("r", function(d) { return d.children ? 4.5 : Math.sqrt(d.size) / 10; })
-
-	// Enter any new nodes.
-	node.enter()
-       	.append("svg:circle")
-       	.attr("class", "node")
-       	.attr("cx", function(d) { return d.x; })
-       	.attr("cy", function(d) { return d.y; })
-       	.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
-       	.style("fill", color)
-       	.on("dblclick", click)
-       	.call(force.drag)
-       	.append("svg:title").text(function(d) { return d.info; });
-
-	// Exit any old nodes.
-	node.exit().remove();
-}
-
-function tick() {
-	link.attr("x1", function(d) { return d.source.x; })
-		.attr("y1", function(d) { return d.source.y; })
-		.attr("x2", function(d) { return d.target.x; })
-		.attr("y2", function(d) { return d.target.y; });
-
- 	node.attr("cx", function(d) { return d.x; })
-   		.attr("cy", function(d) { return d.y; });
-}
-
-// Color nodes
-function color(d) {
-	if (d.type) {
-		return colors[d.type-1].color;
-    }
-	return 'white';
-}
-
-// Toggle children on click.
-function toggle_children(d) {
-	if (d.children) {
-		d._children = d.children;
-		d.children = null;
-	} else {
-      	d.children = d._children;
-      	d._children = null;
-	}
-	//update();
-
-	//var link = colors[d.type-1].link;
-	//if (link) {
-	//	window.open(link + d.name);
-	//}
-}
-
-function click(d) {
-	toggle_children(d);
-	update();
-	console.log(d.type);
-	console.log(d.info);
-}
-
-// Returns a list of all nodes under the root.
-function flatten(root) {
-	var nodes = [], i = 0;
-
-	function recurse(node) {
-		if (node.children) node.children.forEach(recurse);
-		if (!node.id) node.id = ++i;
-
-		var show = 1;
-		if (node.type) {
-			show = colors[node.type-1].show;
-		}
-		if (show) {
-			nodes.push(node);
-		}
-	}
-
-	recurse(root);
-	return nodes;
-	
-	/*var nodes = [], i = 0;
-
-	function recurse(node) {
-		if (node.children) node.size = node.children.reduce(function(p, v) { return p + recurse(v); }, 0);
-		if (!node.id) node.id = ++i;
-		nodes.push(node);
-		return node.size;
-	}
-
-	root.size = recurse(root);
-	return nodes;* /
-}*/
 function init_graph() {
 	if(!graph_init) {
 		root;
 
 		force = d3.layout.force()
 			.size([w, h])
-			.on("tick", tick);
-			//.gravity(1);
-			//.charge(function(d) { 
-			//	if(d.type) {
-			//		return (d.size/50)*(-1);
-			//	} else {
-			//		return -30;
-			//	}
-			//});
-
+			.on("tick", tick)
+			.gravity(1);
+			
 		svg = d3.select("#chart").append("svg")
 			.attr("width", w)
 			.attr("height", h);
@@ -1447,17 +1265,13 @@ function init_graph() {
 
 
 		d3.json("?fname=get_all_nodes", function(json) {
-			console.log(json);
+			//console.log(json);
 			root = json;
 			var nodes = flatten(root);
 			nodes.forEach(function(d) {
 				d._children = d.children;
 				d.children = null;
 			})
-			//root.children[0].children.forEach(click);
-			//click(root.children[0]);
-			//root.children[1].children.forEach(click);
-			//click(root.children[1]);
 			update();
 			//console.log(links);
 			//console.log(nodes);
@@ -1474,13 +1288,6 @@ function update() {
 	force
  		.nodes(nodes)
  		.links(links)
-		//.charge(function(d) { 
-		//	if(d.type) {
-		//		return (d.size/50)*(-1);
-		//	} else {
-		//		return -30;
-		//	}
-		//})
  		.start();
 
 	// Update the links�
@@ -1513,31 +1320,37 @@ function update() {
 		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
 		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5})
 		.style("fill", color)
-		.on("dblclick", click)
+		.on("click", click)
 		.call(force.drag)
-		.append("svg:title").text(function(d) { return d.info; });
+		.append("svg:title").text(function(d) { 
+			if(d.info) {
+				return d.info; 
+			} else {
+				return d.name;
+			}
+		});
 	
 	//root.x = w/2;
 	//root.y = h/2;
 	
-	console.log(nodes);
+	//console.log(nodes);
 	//console.log(links);
 }
 
 function tick() {
-	link.attr("x1", function(d) { return d.source.x; })
+	/*link.attr("x1", function(d) { return d.source.x; })
 		.attr("y1", function(d) { return d.source.y; })
 		.attr("x2", function(d) { return d.target.x; })
 		.attr("y2", function(d) { return d.target.y; });
 
 	node.attr("cx", function(d) { return d.x; })
-		.attr("cy", function(d) { return d.y; });
+		.attr("cy", function(d) { return d.y; });*/
+	moveItems();
 }
 
-//Color leaf nodes orange, and packages white or blue.
 function color(d) {
 	//return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
-	if((d.children || d._children) || (d.type == 2 || d.type == 3)) {
+	if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
 		if (d.type) {
 			return colors[d.type-1].color;
 		}
@@ -1560,7 +1373,7 @@ function toggle_children(d) {
 }
 
 function click(d) {
-	//if (!d3.event.defaultPrevented) {
+	if (!d3.event.defaultPrevented) {
 		if (d._size) {
 			var temp = d._size;
 			d._size = d.size;
@@ -1572,20 +1385,25 @@ function click(d) {
 		
 		force.charge(
 			function(d, i) {
-				//if(d.type) {
+				if(d.size) {
 					//return Math.pow(d.size, 1.0/3.0)*(-12);
-					return Math.sqrt(d.size)*(-1.5);
-				//} else {
-				//	return -30;
-				//}
+					//console.log(d.size + '!');
+					return Math.sqrt(d.size)*(-2.25);
+				} else {
+					console.log(d.name);
+					console.log(d.id);
+					console.log(d.size + '?');
+					return -30;
+				}
 			}
 		);
+		//force.getAttribute("charge");
 		force.start();
 		
 		toggle_children(d);
 		update();
 		//console.log(d.charge);
-	//}
+	}
 }
 
 //Returns a list of all nodes under the root.
@@ -1601,3 +1419,72 @@ function flatten(root) {
 	recurse(root);
 	return nodes;
 }
+
+//Optimization of the Tick function.
+var moveItems = (function(){
+    var todoNode = 0;
+    var todoLink = 0;
+    var MAX_NODES = 240;
+    var MAX_LINKS = MAX_NODES/2;
+      
+    var restart = false;
+       
+    function moveSomeNodes(){
+        var n;
+        var goal = Math.min(todoNode+MAX_NODES, node[0].length);
+          
+        for(var i=todoNode ; i < goal ; i++){
+            n = node[0][i];
+            n.setAttribute('cx', n.__data__.x);
+            n.setAttribute('cy', n.__data__.y);
+        }
+            
+        todoNode = goal;
+        requestAnimationFrame(moveSome)
+    }
+      
+    function moveSomeLinks(){
+        var l;
+        var goal = Math.min(todoLink+MAX_LINKS, link[0].length);
+           
+        for(var i=todoLink ; i < goal ; i++){
+            l = link[0][i];
+            //console.log(l);
+            l.setAttribute('x1', l.__data__.source.x);
+            l.setAttribute('y1', l.__data__.source.y);
+            l.setAttribute('x2', l.__data__.target.x);
+            l.setAttribute('y2', l.__data__.target.y);
+        }
+          
+        todoLink = goal;
+        requestAnimationFrame(moveSome)
+    }
+        
+    function moveSome(){
+        //console.time('moveSome')
+        if(todoNode < node[0].length) // some more nodes to do
+            moveSomeNodes()
+        else{ // nodes are done
+            if(todoLink < link[0].length) // some more links to do
+                moveSomeLinks()
+            else{ // both nodes and links are done
+                if(restart){
+                    restart = false;
+                    todoNode = 0;
+                    todoLink = 0;
+                    requestAnimationFrame(moveSome);
+                }
+            }
+        }
+        //console.timeEnd('moveSome')
+    }
+        
+        
+    return function moveItems(){
+        if(!restart){
+            restart = true;
+            requestAnimationFrame(moveSome);
+        }
+    };
+ 
+})();

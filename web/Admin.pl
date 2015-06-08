@@ -1461,7 +1461,7 @@ sub get_all_nodes {
     my %childrenByList;
     foreach my $conn ( $coge->resultset('ListConnector')->all ) {
         push @{ $childrenByList{ $conn->parent_id } },
-          { name => $conn->child_id, type => $conn->child_type };
+          { name => $conn->child_id, size => 2025, type => $conn->child_type };
           #TODO: Remove features
     }
 
@@ -1506,7 +1506,7 @@ sub get_all_nodes {
         }
         else {
             push @{ $childrenByUser{ $conn->parent_id } },
-              { name => $conn->child_id, type => $conn->child_type };
+              { name => $conn->child_id, size => 2025, type => $conn->child_type };
         }
     }
 
@@ -1563,7 +1563,7 @@ sub get_all_nodes {
         }
         else {
             push @{ $childrenByGroup{ $conn->parent_id } },
-              { name => $conn->child_id, type => $conn->child_type };
+              { name => $conn->child_id, size => 2025, type => $conn->child_type };
         }
     }
 
