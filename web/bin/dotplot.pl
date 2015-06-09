@@ -8,6 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::SynMap_report;
 use CoGe::Accessory::Utils qw( commify );
+use CoGe::Core::Chromosomes;
 use DBI;
 use Data::Dumper;
 use DBI;
@@ -1340,7 +1341,7 @@ sub get_dsg_order {
 #        $data{ $gs->chromosome }{chr_length} = $len;
 #        $data{ $gs->chromosome }{length}     = $len;
 #    }
-	my $c = CoGe::Core::Chromosomes->new($genome->id);
+	my $c = CoGe::Core::Chromosomes->new($dsg->id);
 	while ($c->next) {
         next if check_random( $c->name ) && $skip_random;
         next if defined $chr && $chr ne $c->name;

@@ -232,7 +232,8 @@ sub genomic_view
 	my $finddid_time = timestr( timediff( $tb, $ta ) ) if $BENCHMARK;
 	my $last_position;
 	if ($ds) {$last_position  = $ds->last_chromosome_position($chr);}
-	if ($dsg) {$last_position = $dsg->last_chromosome_position($chr);}
+#	if ($dsg) {$last_position = $dsg->last_chromosome_position($chr);}
+	if ($dsg) {$last_position = $dsg->get_chromosome_length($chr);}
 	$self->initialize_c(
 		 chr                => $chr,
 		 iw                 => $iw,

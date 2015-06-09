@@ -66,8 +66,9 @@ unless ($ftid) {
 }
 
 my ( $dsg, $ds );
-($dsg) = $coge->resultset('Genome')->search( { "me.genome_id" => $gid },
-    { join => 'genomic_sequences', prefetch => 'genomic_sequences' } )
+#($dsg) = $coge->resultset('Genome')->search( { "me.genome_id" => $gid },
+#    { join => 'genomic_sequences', prefetch => 'genomic_sequences' } )
+($dsg) = $coge->resultset('Genome')->search( { "me.genome_id" => $gid }
   if $gid;
 
 $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
