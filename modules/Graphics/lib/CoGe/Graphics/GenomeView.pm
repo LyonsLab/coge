@@ -476,48 +476,50 @@ sub default_feature_color
     return $self->_default_feature_color;
   }
 
-sub add_feature
-  {
-    my ($self) = shift;
-    my (%opts) = @_;
-    my $name = $opts{'name'};
-    my $start = $opts{'start'};
-    $start = $opts{'begin'} unless $start;
-    $start = 1 unless $start;
-    my $end = $opts{'end'};
-    $end = $opts{'stop'} unless $end;
-    my $chr = $opts{'chr'};
-    $chr = $opts{'chrom'} unless $chr;
-    $chr = $opts{'chromosome'} unless $chr;
-    $chr = $self->get_chromosome($chr);
-    my $link = $opts{'link'};
-    my $color = $opts{'color'};
-    my $desc = $opts{'desc'};
-    my $up = $opts{'up'} || 0;
-    my $imagemap = $opts{imagemap};
-    my $heatmap = $opts{heatmap};
-    $self->features({}) unless $self->features;
-
-    unless ($start && $end && $chr)
-      {
-	warn "add_feature call failed -- must have valid start, end, and chromosome";
-	return 0;
-      }
-    my $feats = $self->features();
-    push @{$feats->{$chr->{name}}}, {
-				     name=>$name,
-				     start=>$start,
-				     end=>$end,
-				     chr=>$chr,
-				     color=>$color,
-				     link=>$link,
-				     desc=>$desc,
-				     up=>$up,
-				     imagemap=>$imagemap,
-				     heatmap=>$heatmap,
-				 };
-    return 1;
-  }
+# is this called?
+#
+#sub add_feature
+#  {
+#    my ($self) = shift;
+#    my (%opts) = @_;
+#    my $name = $opts{'name'};
+#    my $start = $opts{'start'};
+#    $start = $opts{'begin'} unless $start;
+#    $start = 1 unless $start;
+#    my $end = $opts{'end'};
+#    $end = $opts{'stop'} unless $end;
+#    my $chr = $opts{'chr'};
+#    $chr = $opts{'chrom'} unless $chr;
+#    $chr = $opts{'chromosome'} unless $chr;
+#    $chr = $self->get_chromosome($chr);
+#    my $link = $opts{'link'};
+#    my $color = $opts{'color'};
+#    my $desc = $opts{'desc'};
+#    my $up = $opts{'up'} || 0;
+#    my $imagemap = $opts{imagemap};
+#    my $heatmap = $opts{heatmap};
+#    $self->features({}) unless $self->features;
+#
+#    unless ($start && $end && $chr)
+#      {
+#	warn "add_feature call failed -- must have valid start, end, and chromosome";
+#	return 0;
+#      }
+#    my $feats = $self->features();
+#    push @{$feats->{$chr->{name}}}, {
+#				     name=>$name,
+#				     start=>$start,
+#				     end=>$end,
+#				     chr=>$chr,
+#				     color=>$color,
+#				     link=>$link,
+#				     desc=>$desc,
+#				     up=>$up,
+#				     imagemap=>$imagemap,
+#				     heatmap=>$heatmap,
+#				 };
+#    return 1;
+#  }
 
 sub add_chromosome
   {
