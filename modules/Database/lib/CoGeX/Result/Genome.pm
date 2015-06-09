@@ -428,7 +428,8 @@ sub get_genomic_sequence {
       if ( defined $start && defined $stop && $start < 1 && $stop < 1 )
       ;    #asking for sequence beyond the start
     $start = 1 unless $start;
-    my $last = $self->sequence_length($chr);
+#    my $last = $self->sequence_length($chr);
+    my $last = $self->get_chromosome_length($chr);
     $stop = $last unless $stop;
     $stop  = $last if $stop > $last;
     $start = $last if $start > $last;
@@ -651,36 +652,36 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub sequence_length {
-    my $self = shift;
-    my $chr  = shift;
-    return 0 unless defined $chr;
-    my $gs;
-    $self->_chromosomes({}) unless $self->_chromosomes;
-    return $self->_chromosomes->{$chr} if ($self->_chromosomes->{$chr});
-    foreach my $item ($self->genomic_sequences ({chromosome=>"$chr"}))
-     {
-       $self->_chromosomes->{$item->chromosome}=$item->sequence_length;
-       $gs = $item if $item->chromosome =~ /^$chr$/i;  #if this object has multiple chromosomes pre-cached, all will be returned, even with a query.
-     }
-    #print STDERR "Genome->sequence_length CHR: $chr; genomic_sequence->chromosome: ", $gs->chromosome,"\n";
-    unless ($gs) {
-        warn
-"Genome::sequence_length: unable to get genomic_sequence object for chr '$chr' genome id"
-          . $self->id . "\n";
-        return 0;
-    }
-    my $stop = $gs->sequence_length;
-    unless ($stop) {
-        warn "No genomic sequence for ", $self->name, " for chr $chr\n";
-        return 0;
-    }
-    return $stop;
-}
+#sub sequence_length {
+#    my $self = shift;
+#    my $chr  = shift;
+#    return 0 unless defined $chr;
+#    my $gs;
+#    $self->_chromosomes({}) unless $self->_chromosomes;
+#    return $self->_chromosomes->{$chr} if ($self->_chromosomes->{$chr});
+#    foreach my $item ($self->genomic_sequences ({chromosome=>"$chr"}))
+#     {
+#       $self->_chromosomes->{$item->chromosome}=$item->sequence_length;
+#       $gs = $item if $item->chromosome =~ /^$chr$/i;  #if this object has multiple chromosomes pre-cached, all will be returned, even with a query.
+#     }
+#    #print STDERR "Genome->sequence_length CHR: $chr; genomic_sequence->chromosome: ", $gs->chromosome,"\n";
+#    unless ($gs) {
+#        warn
+#"Genome::sequence_length: unable to get genomic_sequence object for chr '$chr' genome id"
+#          . $self->id . "\n";
+#        return 0;
+#    }
+#    my $stop = $gs->sequence_length;
+#    unless ($stop) {
+#        warn "No genomic sequence for ", $self->name, " for chr $chr\n";
+#        return 0;
+#    }
+#    return $stop;
+#}
 
-sub last_chromosome_position {
-    shift->sequence_length(@_);
-}
+#sub last_chromosome_position {
+#    shift->sequence_length(@_);
+#}
 
 ################################################ subroutine header begin ##
 
@@ -859,7 +860,8 @@ sub fasta {
     my $strand = $opts{strand} || 1;
     my $start  = $opts{start}  || 1;
     $start = 1 if $start < 1;
-    my $stop = $opts{stop} || $self->sequence_length($chr);
+#    my $stop = $opts{stop} || $self->sequence_length($chr);
+    my $stop = $opts{stop} || $self->get_chromosome_length($chr);
     my $prot = $opts{prot};
     my $rc   = $opts{rc};
     $strand = -1 if $rc;

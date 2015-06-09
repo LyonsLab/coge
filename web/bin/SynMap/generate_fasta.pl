@@ -64,8 +64,9 @@ sub gen_fasta {
     my $feature_type = $opts{feature_type};
     my $file         = $opts{fasta};
     my ($genome)     =
-      $coge->resultset('Genome')->search( { "me.genome_id" => $gid },
-        { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
+#      $coge->resultset('Genome')->search( { "me.genome_id" => $gid },
+#        { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
+      $coge->resultset('Genome')->search( { "me.genome_id" => $gid }
 
     my $output;
 
