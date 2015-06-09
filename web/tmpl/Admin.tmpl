@@ -251,8 +251,19 @@ div.legend {
 		<div id="history" style="max-width:95%;height:80%;display:none;"></div>
 	</div>
 	<div id="tabs-4">
-		<span id="legend" style="float:left;"></span>
-		<span id="chart"></span>
+		<div>
+			<select onchange="init_graph(this.selectedIndex)">
+			  <option value="Default">------</option>
+			  <option value="Users">Users</option>
+			  <option value="Groups">Groups</option>
+			</select>
+		</div>
+		<div>
+			<span id="user_legend" style="float:left;"></span>
+			<span id="group_legend" style="float:left;"></span>
+			<span id="user_chart"></span>
+			<span id="group_chart"></span>
+		</div>
 	</div>
 </div>
 
