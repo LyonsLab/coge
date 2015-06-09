@@ -1460,7 +1460,8 @@ qq{<span class=small>Hits colored by Identity.  <span style="color:#AA0000">Min:
 
                 #add chromosome to graphic
                 unless ( $data{$org}{chr}{$chr} ) {
-                    my $last_pos = $dsg->sequence_length($chr);
+#                    my $last_pos = $dsg->sequence_length($chr);
+                    my $last_pos = $dsg->get_chromosome_length($chr);
                     $data{$org}{image}
                       ->add_chromosome( name => "Chr: $chr", end => $last_pos );
                     $data{$org}{chr}{$chr} = 1;

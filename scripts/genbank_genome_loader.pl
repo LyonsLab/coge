@@ -828,20 +828,23 @@ sub fasta_genomic_sequence {
     $seq =~ s/\n//g;
 
     my $seqlen = length $seq;
-    if ( my ($item) = $genome->get_genomic_sequence( chromosome => $chr ) ) {
-        my $prev_length = $item->sequence_length;
+#    if ( my ($item) = $genome->get_genomic_sequence( chromosome => $chr ) ) {
+#        my $prev_length = $item->sequence_length;
+    my $prev_length = $item->get_chromosome_length($chr);
+    if ( $prev_length ) {
         print STDOUT "$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
         return;
     }
     print STDOUT "Loading genomic sequence ($seqlen nt)\n";    # if $DEBUG;
 
-    $genome->add_to_genomic_sequences(
-        {
-            sequence_length => $seqlen,
-            chromosome      => $chr,
-        }
-      )
-      if $GO;
+# no longer add to db, we use the index file instead. not sure if the rest of fasta_genomic_sequence is necessary
+#    $genome->add_to_genomic_sequences(
+#        {
+#            sequence_length => $seqlen,
+#            chromosome      => $chr,
+#        }
+#      )
+#      if $GO;
 
     my $head = $chr =~ /^\d+$/ ? ">gi" : ">lcl";
     $head .= "|" . $chr;

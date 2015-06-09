@@ -348,8 +348,9 @@ foreach my $chr ( sort keys %sequences ) {
     my $seqlen = $sequences{$chr}{size};
     my $dsid   = $datasets{ $sequences{$chr}{file} };
 
-    $genome->add_to_genomic_sequences(
-        { sequence_length => $seqlen, chromosome => $chr } );
+# using index file instead of db
+#    $genome->add_to_genomic_sequences(
+#        { sequence_length => $seqlen, chromosome => $chr } );
 
 	# Must add a feature of type chromosome to the dataset so the dataset
 	# "knows" its chromosomes

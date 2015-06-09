@@ -47,7 +47,8 @@ sub features {
 
     # Adjust location - note: incoming coordinates are interbase!
     $start = 0 if ( $start < 0 );
-    my $chrLen = $genome->sequence_length($chr);
+#    my $chrLen = $genome->sequence_length($chr);
+    my $chrLen = $genome->get_chromosome_length($chr);
     $start = min( $start, $chrLen );
     $end   = min( $end,   $chrLen );
     return $empty if ( $start == $end );
