@@ -66,7 +66,7 @@ sub gen_fasta {
     my ($genome)     =
 #      $coge->resultset('Genome')->search( { "me.genome_id" => $gid },
 #        { join => 'genomic_sequences', prefetch => 'genomic_sequences' } );
-      $coge->resultset('Genome')->search( { "me.genome_id" => $gid }
+      $coge->resultset('Genome')->search( { "me.genome_id" => $gid } );
 
     my $output;
 
