@@ -52,12 +52,6 @@ $(function() {
 	
 	$("#send_menu").menu().css({ position: 'absolute', width: '90px' });
 
-	// Get starting page from URL if set
-	var toc_id = parseInt( getURLParameter('p') );
-	if (!toc_id || toc_id == 'null') {
-		toc_id = 'mine';
-	}
-
 	//
 	var views = {
 		mine: {
@@ -156,7 +150,11 @@ $(function() {
 		contentPanel.grid.search( $(this).val() );
 	});
 	
-	tocPanel.selectItemType(toc_id); // initialize toc panel
+	// Get starting page from URL and initialize TOC panel
+	var toc_id = getURLParameter('p');
+	if (!toc_id || toc_id == 'null')
+		toc_id = 'mine';
+	tocPanel.selectItemType(toc_id);
 	
 	// Setup idle timer
 //	$(document).mousemove(function() {
@@ -228,6 +226,8 @@ function poll(sync) {
 }
 
 function schedule_poll(when) { 
+	return; // mdb 6/10/15
+	
 	cancel_poll();
 
 	if (when !== undefined) {
@@ -307,6 +307,8 @@ $.extend(ContentPanel.prototype, {
 				// Filter rows based on view
 				var view = self.views[self.selectedView];
 				if (!view.noFilter) {
+					if (view.deleted && data.deleted == '0')
+						return false;
 					if (!view.deleted && data.deleted == '1')
 						return false;
 					if (view.shared && data.role_id == '2')
@@ -405,12 +407,6 @@ $.extend(ContentPanel.prototype, {
         // Clear search bar
         $('#search_input').show().val('');
         
-        // Update title
-        var title = view.title;
-        if (isGrid)
-        	title += '&nbsp;&nbsp;<span class="small info">' + this.grid.getNumRowsDisplayed() + '</span>';
-        $('#contents_title').html(title);
-        
     	// Show/hide action icons based on type of data
     	$('.item-button').hide(); // hide all icons
     	if (view.operations) {
@@ -435,14 +431,20 @@ $.extend(ContentPanel.prototype, {
     		this.element.children('.grid').hide();
     		this.element.children('.html').html(cachedData).show();
     	}
+    	
+        // Update title with row number
+        var title = view.title;
+        if (isGrid)
+        	title += '&nbsp;&nbsp;<span class="small info">' + this.grid.getNumRowsDisplayed() + '</span>';
+        $('#contents_title').html(title);
 
     	// Update browser url
     	window.history.pushState({}, "", PAGE_NAME + "?p="+this.selectedView);
     },
     
     busy: function() {
-    	this.element.children('.grid').hide();
     	var spinner = '<div class="spinner" style="display:flex;justify-content:center;align-items:center;margin-top:40%;"></div>';
+    	this.element.children('.grid').hide();
     	this.element.children('.html').html(spinner).show();
     },
     
@@ -652,6 +654,11 @@ $.extend(DataGrid.prototype, {
     
     getNumRowsDisplayed: function() {
     	return this.dataTable.api().page.info().recordsDisplay;
+    },
+    
+    getSelectedRows: function() {
+    	var rows = this.dataTable.api().rows('.selected');
+    	return rows;
     },
     
     getSelectedItems: function() {
@@ -956,10 +963,6 @@ $.extend(TocPanel.prototype, {
 		this.element.find('span').each(function(index, value) {
 			$(value).on('click', function () {
 				self.clearSelection().selectItem(this);
-				if (self.selection) { // call user handler
-					var itemType = $(this).data('type');
-					self.selection(itemType);
-				}
 		    });
 		});
 		
@@ -977,15 +980,18 @@ $.extend(TocPanel.prototype, {
     },
     
     selectItem: function(item) {
-    	var self = this;
-    	
-    	$(item).addClass('selected');
+    	this.element.find('span').removeClass('selected'); // disable all
+    	$(item).addClass('selected'); // enable this one
     	var itemType = $(item).data('type');
     	console.log('TocPanel.selectItem ' + itemType);
     	
     	if (this.selectedTypeId && itemType == this.selectedTypeId) // already selected
     		return;
     	this.selectedTypeId = itemType;
+    	
+    	// Call user handler
+    	if (this.selection)
+			this.selection(itemType);
     	
     	return this;
     }
@@ -1067,46 +1073,58 @@ function sync_items(html) {
 //}
 
 function delete_items() {
-	var selected = contentPanel.grid.getSelectedItems();
-	if (selected.length) {
-		selected.parent().fadeOut('fast',
-			function() {
-				selected.parent().addClass('deleted');
-				selected.prop('checked', false);
-				infoPanel.update(); // reset button states
-			}
-		);
+	var selected_rows = contentPanel.grid.getSelectedRows();
+	var item_list = contentPanel.grid.getSelectedItemList();
+	if (item_list) {
+//		selected.parent().fadeOut('fast',
+//			function() {
+//				selected.parent().addClass('deleted');
+//				selected.prop('checked', false);
+//				infoPanel.update(); // reset button states
+//			}
+//		);
 
-		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
 		$.ajax({
 			data: {
 				fname: 'delete_items',
 				item_list: item_list
 			},
 			success : function(data) {
+				selected_rows.every(function() {
+					var d = this.data();
+					d.deleted = '1';
+					this.data(d);
+				});
+				contentPanel.grid.dataTable.api().draw(); //FIXME move into ContentPanel method
 			}
 		});
 	}
 }
 
 function undelete_items() {
-	var selected = contentPanel.grid.getSelectedItems();
-	if (selected.length) {
-		selected.parent().fadeOut('fast',
-			function() {
-				selected.parent().removeClass('deleted');
-				selected.prop('checked', false);
-				infoPanel.update(); // reset button states
-			}
-		);
-
-		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+	var selected_rows = contentPanel.grid.getSelectedRows();
+	var item_list = contentPanel.grid.getSelectedItemList();
+	if (item_list) {
+//		selected.parent().fadeOut('fast',
+//			function() {
+//				selected.parent().removeClass('deleted');
+//				selected.prop('checked', false);
+//				infoPanel.update(); // reset button states
+//			}
+//		);
+		
 		$.ajax({
 			data: {
 				fname: 'undelete_items',
 				item_list: item_list
 			},
 			success : function(data) {
+				selected_rows.every(function() {
+					var d = this.data();
+					d.deleted = '0';
+					this.data(d);
+				});
+				contentPanel.grid.dataTable.api().draw(); //FIXME move into ContentPanel method
 			}
 		});
 	}
@@ -1257,10 +1275,9 @@ function search_notebooks () {
 }
 
 function add_items_to_notebook() {
-	var selected = contentPanel.grid.getSelectedItems();
+	var item_list = contentPanel.grid.getSelectedItemList();
 	var nid = $('#notebook_select').find('option:selected').val();
-	if (nid && selected.length) {
-		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
+	if (nid && item_list) {
 		$.ajax({
 			data: {
 				fname: 'add_items_to_notebook',
@@ -1440,10 +1457,10 @@ function remove_user_from_group(user_id) {
 }
 
 function edit_dialog() {
-	if (pageObj.content_type == ITEM_TYPE.group) {
+	if (contentPanel.selectedView == 'group') {
 		group_dialog();
 	}
-//	else if (pageObj.content_type == ITEM_TYPE.notebook) {
+//	else if (contentPanel.selectedView == 'notebook') {
 //		add_to_notebook_dialog();
 //	}
 }
@@ -1532,20 +1549,21 @@ function create_menu() {
 
 function create_group_dialog() {
 	$('#edit_group_name,#edit_group_desc').val('');
-	$('#create_group_dialog').dialog({width:'27em'}).dialog('open');
+	$('#create_group_dialog').dialog({width:'28em'}).dialog('open');
 	$('#create_menu').hide();
 }
 
 function create_notebook_dialog() {
 	$('#edit_notebook_name,#edit_notebook_desc').val('');
-	$('#create_notebook_dialog').dialog({width:'27em'}).dialog('open');
+	$('#create_notebook_dialog').dialog({width:'28em'}).dialog('open');
 	$('#create_menu').hide();
 }
 
 function add_dialog() {
-	if (pageObj.content_type == ITEM_TYPE.group) {
+	if (contentPanel.selectedView == 'group') {
 		create_group_dialog();
-	} else if (pageObj.content_type == ITEM_TYPE.notebook) {
+	}
+	else if (contentPanel.selectedView == 'notebook') {
 		create_notebook_dialog();
     }
 }
@@ -1569,7 +1587,7 @@ function create_new_group() {
         success: function(rc) {
             if (rc) {
             	schedule_poll(0);
-            	toc_select(ITEM_TYPE.group);
+            	tocPanel.selectItemType('group');
             }
         },
         complete: function() {
@@ -1587,27 +1605,26 @@ function create_new_notebook() {
 	var desc = $('#edit_notebook_desc').val();
 	var type_id = $('#edit_notebook_type').val();
 
-	var item_list = contentPanel.grid.getSelectedItemList();
-	if (item_list) {
-	    $.ajax({
-	        data: {
-	            fname: 'create_new_notebook',
-	            name: name,
-	            desc: desc,
-	            type_id: type_id,
-	            item_list: item_list,
-	        },
-	        success: function(rc) {
-	            if (rc) {
-	            	schedule_poll(0);
-	            	toc_select(ITEM_TYPE.notebook);
-	            }
-	        },
-	        complete: function() {
-	        	$('#create_notebook_dialog').dialog('close');
-	        }
-	    });
-	}
+	var item_list = contentPanel.grid.getSelectedItemList(); // optional
+	
+    $.ajax({
+        data: {
+            fname: 'create_new_notebook',
+            name: name,
+            desc: desc,
+            type_id: type_id,
+            item_list: item_list,
+        },
+        success: function(rc) {
+            if (rc) {
+            	schedule_poll(0);
+            	tocPanel.selectItemType('notebook');
+            }
+        },
+        complete: function() {
+        	$('#create_notebook_dialog').dialog('close');
+        }
+    });
 }
 
 function send_menu() {
@@ -1661,4 +1678,18 @@ function toggle_star(img) {
 			$(img).attr({ src: (val == 0 ? "picts/star-hollow.png" : "picts/star-full.png") });
 		}
 	});
+}
+
+function open_item(item_type, title, link) {
+	title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
+	link = link + "&embed=1";
+	console.log(link);
+	var height = $(window).height() * 0.8;
+	var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+		.dialog({
+			title: title,
+			width: '80%',
+			height: height//'80%'
+		})
+		.dialog('open');
 }
