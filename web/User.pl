@@ -319,12 +319,12 @@ sub delete_items {
     return unless @items;
 
     foreach (@items) {
-        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
 		my $type_name;
 
         #print STDERR "delete $item_id $item_type\n";
-        if ( $item_type == $ITEM_TYPE{group} ) {
+        if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
             my $group = $coge->resultset('UserGroup')->find($item_id);
 		    return unless ( $group and $group->is_editable($USER) );
 		    return if ( $group->locked and !$USER->is_admin );
@@ -333,7 +333,7 @@ sub delete_items {
             $group->update;
 			$type_name = 'user group';
         }
-        elsif ( $item_type == $ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
             return unless $notebook;
 
@@ -346,7 +346,7 @@ sub delete_items {
                 $type_name = 'notebook';
             }
         }
-        elsif ( $item_type == $ITEM_TYPE{genome} ) {
+        elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
             return unless $genome;
 
@@ -356,7 +356,7 @@ sub delete_items {
                 $type_name = 'genome';
             }
         }
-        elsif ( $item_type == $ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
             return unless $experiment;
 
@@ -387,12 +387,12 @@ sub undelete_items {
     return unless @items;
 
     foreach (@items) {
-        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
         my $type_name;
 
         # print STDERR "undelete $item_id $item_type\n";
-        if ( $item_type == $ITEM_TYPE{group} ) {
+        if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
             my $group = $coge->resultset('UserGroup')->find($item_id);
             return unless $group;
 
@@ -402,7 +402,7 @@ sub undelete_items {
                 $type_name = 'user group';
             }
         }
-        elsif ( $item_type == $ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
             return unless $notebook;
 
@@ -412,7 +412,7 @@ sub undelete_items {
                 $type_name = 'notebook';
             }
         }
-        elsif ( $item_type == $ITEM_TYPE{genome} ) {
+        elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
             return unless $genome;
 
@@ -422,7 +422,7 @@ sub undelete_items {
                 $type_name = 'genome';
             }
         }
-        elsif ( $item_type == $ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
             return unless $experiment;
 
@@ -453,7 +453,7 @@ sub undelete_items {
 #    return unless @items;
 #
 #    foreach (@items) {
-#        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+#        my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
 #        next unless ( $item_id and $item_type );
 #        print STDERR "cancel $item_id $item_type\n";
 #
@@ -538,6 +538,7 @@ sub get_roles {
 sub get_share_dialog {    #FIXME this routine needs to be optimized
     my %opts      = @_;
     my $item_list = $opts{item_list};
+    print STDERR 'get_share_dialog: ', $item_list, "\n";
     my @items     = split( ',', $item_list );
     return unless @items;
 
@@ -545,11 +546,11 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
     my $isPublic   = 0;
     my $isEditable = 1;
     foreach (@items) {
-        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
 
         # print STDERR "get_share $item_id $item_type\n";
-        if ( $item_type == $ITEM_TYPE{genome} ) {
+        if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
             map { $userconn{ $_->parent_id } = $_ }
@@ -558,7 +559,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
             $isPublic = 1 if ( not $genome->restricted );
             $isEditable = 0 if ( not $USER->is_owner_editor( dsg => $genome ) );
         }
-        elsif ( $item_type == $ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
             map { $userconn{ $_->id } = $_ }
@@ -568,7 +569,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
             $isEditable = 0
               if ( not $USER->is_owner_editor( experiment => $experiment ) );
         }
-        elsif ( $item_type == $ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
             map { $userconn{ $_->id } = $_ }
@@ -581,7 +582,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 
     my ( %user_rows, %group_rows, %notebook_rows );
     foreach my $conn ( values %userconn ) {
-	next unless $conn->role; #EL added 10/21/14 so solve a problem for a user where the share dialog wouldn't appear for his genomes, and an fatal error was being thrown due to role->name with role being undefined.  Genomes with problems were IDs: 24576, 24721, 24518, 24515, 24564, 24566, 24568, 24562, 24571 
+	   next unless $conn->role; #EL added 10/21/14 so solve a problem for a user where the share dialog wouldn't appear for his genomes, and an fatal error was being thrown due to role->name with role being undefined.  Genomes with problems were IDs: 24576, 24721, 24518, 24515, 24564, 24566, 24568, 24562, 24571 
         if ( $conn->is_parent_user ) {
             my $user = $conn->parent;
             $user_rows{ $user->id } = {
@@ -674,9 +675,9 @@ sub get_group_dialog {
 
     my ( %users, %roles, %creators, %owners, $lowest_role );
     foreach (@items) {
-        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
-        next unless ( $item_type == $ITEM_TYPE{group} ); # sanity check
+        next unless ( $item_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
 
         #print STDERR "get_group_dialog $item_id $item_type\n";
         my $group = $coge->resultset('UserGroup')->find($item_id);
@@ -764,7 +765,7 @@ sub search_share {
           unless ( escape($_->user_name) =~ /$search_term/i
             || escape($_->display_name) =~ /$search_term/i );
         my $label = $_->display_name . ' (' . $_->user_name . ')';
-        my $value = $_->id . ':' . $ITEM_TYPE{user};
+        my $value = $_->id . ':' . 'user'; #$ITEM_TYPE{user};
         push @results, { 'label' => $label, 'value' => $value };
     }
 
@@ -772,7 +773,7 @@ sub search_share {
     foreach ( $coge->resultset('UserGroup')->all ) {
         next unless ( escape($_->name) =~ /$search_term/i );
         my $label = $_->name . ' (' . $_->role->name . ' group)';
-        my $value = $_->id . ':' . $ITEM_TYPE{group};
+        my $value = $_->id . ':' . 'group'; #$ITEM_TYPE{group};
         push @results, { 'label' => $label, 'value' => $value };
     }
 
@@ -788,43 +789,44 @@ sub add_items_to_user_or_group {
     my $item_list = $opts{item_list};
     my @items = split( ',', $item_list );
     return unless @items;
+    print STDERR "add_items_to_user_or_group ", $target_item, " ", $item_list, "\n";
 
-    my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
+    my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\w+)/;
     return unless ( $target_id and $target_type );
 
     # Verify that user has access to each item
     my @verified;
     foreach my $item (@items) {
-        my ( $item_id, $item_type ) = $item =~ /content_(\d+)_(\d+)/;
+        my ( $item_id, $item_type ) = $item =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
 
         # print STDERR "add_items_to_user_or_group $item_id $item_type\n";
-        if ( $item_type == $ITEM_TYPE{genome} ) {
+        if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
-            push @verified, $item;
+            push @verified, { id => $item_id, type => $ITEM_TYPE{genome} };
         }
-        elsif ( $item_type == $ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
-            push @verified, $item;
+            push @verified, { id => $item_id, type => $ITEM_TYPE{experiment} };
         }
-        elsif ( $item_type == $ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
-            push @verified, $item;
+            push @verified, { id => $item_id, type => $ITEM_TYPE{notebook} };
         }
     }
 
     # Assign each item to user/group
     # print STDERR "add_items_to_user_or_group $target_id $target_type\n";
     #TODO verify that user can use specified role (for admin/owner roles)
-    if ( $target_type == $ITEM_TYPE{user} ) {
+    if ( $target_type eq 'user' ) { #$ITEM_TYPE{user} ) {
         my $user = $coge->resultset('User')->find($target_id);
         return unless $user;
 
         foreach (@verified) {
-            my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+            my ( $item_id, $item_type ) = ( $_->{id}, $_->{type} );
 
             # print STDERR "   user: $item_id $item_type\n";
 
@@ -856,12 +858,12 @@ sub add_items_to_user_or_group {
             return unless $conn;
         }
     }
-    elsif ( $target_type == $ITEM_TYPE{group} ) {
+    elsif ( $target_type eq 'group' ) { #$ITEM_TYPE{group} ) {
         my $group = $coge->resultset('UserGroup')->find($target_id);
         return unless $group;
 
         foreach (@verified) {
-            my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+            my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
 
             # print STDERR "   group: $item_id $item_type\n";
             my $conn = $coge->resultset('UserConnector')->find_or_create(
@@ -892,11 +894,11 @@ sub remove_items_from_user_or_group {
     next unless ( $target_id and $target_type );
 
     foreach (@items) {
-        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
 
         # print STDERR "remove_item_from_user $item_id $item_type\n";
-        if ( $item_type == $ITEM_TYPE{genome} ) {
+        if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
             my $genome = $coge->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
 
@@ -912,7 +914,7 @@ sub remove_items_from_user_or_group {
 
             $conn->delete;
         }
-        elsif ( $item_type == $ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
             my $experiment = $coge->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
 
@@ -928,7 +930,7 @@ sub remove_items_from_user_or_group {
 
             $conn->delete;
         }
-        elsif ( $item_type == $ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
             my $notebook = $coge->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
 
@@ -962,12 +964,12 @@ sub add_users_to_group {
     my ( $item_id, $item_type ) = $new_item =~ /(\d+)\:(\d+)/;
     return unless ( $item_id and $item_type );
 
-    if ( $item_type == $ITEM_TYPE{user} ) {
+    if ( $item_type eq 'user' ) { #$ITEM_TYPE{user} ) {
      	my $user = $coge->resultset('User')->find($item_id);
       	return unless $user;
        	$users{$user->id} = $user;
     }
-    elsif ( $item_type == $ITEM_TYPE{group} ) {
+    elsif ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
       	my $group = $coge->resultset('UserGroup')->find($item_id);
         return unless $group;
         # TODO check that user has visibility of this group (one that they own or belong to)
@@ -977,10 +979,10 @@ sub add_users_to_group {
     # Add users to the target groups
     foreach (@target_items) {
         # Find target group and check permission to modify
-		my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
+		my ( $target_id, $target_type ) = $_ =~ /(\d+)_(\w+)/;
 		#print STDERR "add_users_to_group $target_id\n";
 	    next unless ( $target_id and $target_type );
-	    next unless ( $target_type == $ITEM_TYPE{group} ); # sanity check
+	    next unless ( $target_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
 	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
@@ -1039,10 +1041,10 @@ sub remove_user_from_group {
     # Remove users from the target groups
     foreach (@target_items) {
         # Find target group and check permission to modify
-		my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
+		my ( $target_id, $target_type ) = $_ =~ /(\d+)_(\w+)/;
 		#print STDERR "remove_user_from_group $target_id\n";
 	    next unless ( $target_id and $target_type );
-	    next unless ( $target_type == $ITEM_TYPE{group} ); # sanity check
+	    next unless ( $target_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
 	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
@@ -1089,10 +1091,10 @@ sub change_group_role {
     # Change role for the target groups
     foreach (@target_items) {
         # Find target group and check permission to modify
-		my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
+		my ( $target_id, $target_type ) = $_ =~ /(\d+)_(\w+)/;
 		#print STDERR "change_group_role $target_id\n";
 	    next unless ( $target_id and $target_type );
-	    next unless ( $target_type == $ITEM_TYPE{group} ); # sanity check
+	    next unless ( $target_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
 	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
@@ -1115,7 +1117,7 @@ sub send_items_to {
 
     my %fields;
     foreach (@items) {
-        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
         push @{ $fields{$item_type} }, $item_id;
     }
@@ -1124,13 +1126,13 @@ sub send_items_to {
     my $num = 1;
     foreach my $type ( keys %fields ) {
         my $name;
-        if ( $type == $ITEM_TYPE{genome} ) {
+        if ( $type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
             $name = 'dsgid';
         }
-        elsif ( $type == $ITEM_TYPE{experiment} ) {
+        elsif ( $type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
             $name = 'eid';
         }
-        elsif ( $type == $ITEM_TYPE{notebook} ) {
+        elsif ( $type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
             $name = 'nid';
         }
 
@@ -1151,60 +1153,60 @@ sub send_items_to {
     return $url;
 }
 
-sub get_toc {    # table of contents
-    my @rows = (
-    	{  	TOC_ITEM_ID       => $ITEM_TYPE{mine},
-        	TOC_ITEM_INFO     => 'My Data',
-        	TOC_ITEM_CHILDREN => 2 # enable dropdown button
-      	},
-      	{   TOC_ITEM_ID   => $ITEM_TYPE{genome},
-	        TOC_ITEM_INFO => 'Genomes',
-	        TOC_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15"/>',
-	        TOC_ITEM_INDENT => 20
-	    },
-	    {   TOC_ITEM_ID   => $ITEM_TYPE{experiment},
-	        TOC_ITEM_INFO => 'Experiments',
-	        TOC_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15"/>',
-	        TOC_ITEM_INDENT => 20
-	    },
-	    {   TOC_ITEM_ID   => $ITEM_TYPE{notebook},
-            TOC_ITEM_INFO => 'Notebooks',
-            #TOC_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15"/>',
-            #TOC_ITEM_INDENT => 20
-        },
-        {   TOC_ITEM_ID => $ITEM_TYPE{group},
-            TOC_ITEM_INFO => 'User Groups',
-            #TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>'
-        },
-    	{   TOC_ITEM_ID   => $ITEM_TYPE{shared},
-	        TOC_ITEM_INFO => 'Shared with me'
-	    },
-    	{   TOC_ITEM_ID       => $ITEM_TYPE{activity_summary},
-	        TOC_ITEM_INFO     => 'Activity',
-	        TOC_ITEM_CHILDREN => 3 # enable dropdown button
-	    },
-	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_analyses},
-	        TOC_ITEM_INFO   => 'Analyses',
-	        TOC_ITEM_INDENT => 20
-	    },
-	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_loads},
-            TOC_ITEM_INFO   => 'Data loading',
-            TOC_ITEM_INDENT => 20
-        },
-    	{   TOC_ITEM_ID     => $ITEM_TYPE{activity_viz},
-	        TOC_ITEM_INFO   => 'Graph',
-	        TOC_ITEM_INDENT => 20
-	    },
-    	{	TOC_ITEM_ID   => $ITEM_TYPE{trash},
-        	TOC_ITEM_INFO => 'Trash'
-      	}
-    );
-
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param( DO_TOC        => 1,
-                      TOC_ITEM_LOOP => \@rows );
-    return $template->output;
-}
+#sub get_toc {    # table of contents
+#    my @rows = (
+#    	{  	TOC_ITEM_ID       => $ITEM_TYPE{mine},
+#        	TOC_ITEM_INFO     => 'My Data',
+#        	TOC_ITEM_CHILDREN => 2 # enable dropdown button
+#      	},
+#      	{   TOC_ITEM_ID   => $ITEM_TYPE{genome},
+#	        TOC_ITEM_INFO => 'Genomes',
+#	        TOC_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15"/>',
+#	        TOC_ITEM_INDENT => 20
+#	    },
+#	    {   TOC_ITEM_ID   => $ITEM_TYPE{experiment},
+#	        TOC_ITEM_INFO => 'Experiments',
+#	        TOC_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15"/>',
+#	        TOC_ITEM_INDENT => 20
+#	    },
+#	    {   TOC_ITEM_ID   => $ITEM_TYPE{notebook},
+#            TOC_ITEM_INFO => 'Notebooks',
+#            #TOC_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15"/>',
+#            #TOC_ITEM_INDENT => 20
+#        },
+#        {   TOC_ITEM_ID => $ITEM_TYPE{group},
+#            TOC_ITEM_INFO => 'User Groups',
+#            #TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>'
+#        },
+#    	{   TOC_ITEM_ID   => $ITEM_TYPE{shared},
+#	        TOC_ITEM_INFO => 'Shared with me'
+#	    },
+#    	{   TOC_ITEM_ID       => $ITEM_TYPE{activity_summary},
+#	        TOC_ITEM_INFO     => 'Activity',
+#	        TOC_ITEM_CHILDREN => 3 # enable dropdown button
+#	    },
+#	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_analyses},
+#	        TOC_ITEM_INFO   => 'Analyses',
+#	        TOC_ITEM_INDENT => 20
+#	    },
+#	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_loads},
+#            TOC_ITEM_INFO   => 'Data loading',
+#            TOC_ITEM_INDENT => 20
+#        },
+#    	{   TOC_ITEM_ID     => $ITEM_TYPE{activity_viz},
+#	        TOC_ITEM_INFO   => 'Graph',
+#	        TOC_ITEM_INDENT => 20
+#	    },
+#    	{	TOC_ITEM_ID   => $ITEM_TYPE{trash},
+#        	TOC_ITEM_INFO => 'Trash'
+#      	}
+#    );
+#
+#    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+#    $template->param( DO_TOC        => 1,
+#                      TOC_ITEM_LOOP => \@rows );
+#    return $template->output;
+#}
 
 sub get_contents {
     my %opts = @_;
@@ -1217,10 +1219,7 @@ sub get_contents {
     #my $t1    = new Benchmark;
     my $items = [];
 
-    if ( $type eq 'mine' ) {
-        return 'test';
-    }    
-    elsif ( $type eq 'genome' ) {
+    if ( $type eq 'genome' ) {
         $items = get_genomes_for_user($coge->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'experiment' ) {
@@ -1233,8 +1232,9 @@ sub get_contents {
         $items = get_groups_for_user($coge->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'activity' ) {
-#        my $summary_html = summarize_jobs($jobs);
-#        $items = [ $summary_html ];
+        my $jobs = get_jobs($last_update);
+        my $summary_html = summarize_jobs($jobs);
+        return $summary_html;
     }
     elsif ( $type eq 'analyses' ) {
         my $jobs = get_jobs($last_update);
@@ -1281,205 +1281,204 @@ sub get_contents {
     return encode_json($items);
 }
 
-sub get_contents_old {
-    my %opts = @_;
-    my $type = $opts{item_type};
-    $type = $ITEM_TYPE{all} unless $type;
-    my $last_update = $opts{last_update};
-    $last_update = 0 if ( not defined $last_update );
-    my $timestamp = $opts{timestamp};
-    my $html_only = $opts{html_only};
-    #print STDERR "get_contents $type $html_only $last_update\n";
-
-    #use Time::HiRes qw ( time );
-    #my $start_time = time;
-    my @rows;
-
-    # Check login
-    return if ($USER->is_public);
-
-    # Get current time (according to database)
-    my $update_time = $coge->storage->dbh_do(
-        sub {
-            my ( $storage, $dbh, @args ) = @_;
-#mysql            $dbh->selectrow_array('SELECT NOW()+0');
-            $dbh->selectrow_array('SELECT NOW()'); #postgresql
-        }
-    );
-
-    # Preload stuff speed (needed for genome/experiment sorting and info routines)
-    #FIXME which would be faster, children_by_type_role_id or joins?
-    my %sourceIdToName =
-      map { $_->id => $_->name } $coge->resultset('DataSource')->all();
-
-    # Get all items for this user (genomes, experiments, notebooks)
-    #my $t1    = new Benchmark;
-    my ( $children, $roles ) = $USER->children_by_type_role_id;
-    #my $t2    = new Benchmark;
-    #my $time = timestr( timediff( $t2, $t1 ) );
-    #print STDERR "User.pl: Number of children\n";
-    #foreach my $k (sort keys %$children) {
-	#	print STDERR $k,"\t", scalar values $children->{$k},"\n";
-    #}
-    #$children={};
-    #print STDERR "Time to run user->children_by_type_role_id: $time\n";
-    #print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
-
-	if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{group} )
-	{
-	 	foreach my $group ( sort {$a->name cmp $b->name} values %{ $children->{6} } ) { #FIXME hardcoded type
-	 		push @rows, { 
-	 		    CONTENTS_ITEM_ID => $group->id,
-	 			CONTENTS_ITEM_TYPE => $ITEM_TYPE{group},
-	 			CONTENTS_ITEM_DELETED => $group->deleted,
-	 			CONTENTS_ITEM_INFO => html_escape( $group->info ),
-	 			CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-	 			CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id,
-	 			CONTENTS_ITEM_SELECTABLE => 1
-	 		};
-	 	}
-	}
-
-    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{notebook} )
-    {
-        foreach my $list ( sort notebookcmp values %{ $children->{1} } ) { #FIXME hardcoded type
-            push @rows, {
-                CONTENTS_ITEM_ID => $list->id,
-                CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook},
-                CONTENTS_ITEM_DELETED => $list->deleted,
-                CONTENTS_ITEM_SHARED => !$roles->{2}{ $list->id }, #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => html_escape( $list->info ),
-                CONTENTS_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-                CONTENTS_ITEM_LINK => 'NotebookView.pl?nid=' . $list->id,
-                CONTENTS_ITEM_SELECTABLE => 1
-            };
-        }
-    }
-
-    #print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
-    if ( $type == $ITEM_TYPE{genome} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
-    {
-        foreach my $genome ( sort genomecmp values %{ $children->{2} } ) { #FIXME hardcoded type
-            push @rows, {
-                CONTENTS_ITEM_ID      => $genome->id,
-                CONTENTS_ITEM_TYPE    => $ITEM_TYPE{genome},
-                CONTENTS_ITEM_DELETED => $genome->deleted,
-                CONTENTS_ITEM_SHARED  => !$roles->{2}{ $genome->id }, #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => html_escape($genome->info),
-                CONTENTS_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-                CONTENTS_ITEM_LINK => 'GenomeInfo.pl?gid=' . $genome->id,
-                CONTENTS_ITEM_SELECTABLE => 1
-            };
-        }
-    }
-
-    #print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
-    if ( $type == $ITEM_TYPE{experiment} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
-    {
-        foreach my $experiment ( sort experimentcmp values %{ $children->{3} } ) { #FIXME hardcoded type
-            push @rows, {
-                CONTENTS_ITEM_ID      => $experiment->id,
-                CONTENTS_ITEM_TYPE    => $ITEM_TYPE{experiment},
-                CONTENTS_ITEM_DELETED => $experiment->deleted,
-                CONTENTS_ITEM_SHARED => !$roles->{2}{ $experiment->id },    #FIXME hardcoded role id
-                CONTENTS_ITEM_INFO => html_escape( $experiment->info( source => $sourceIdToName{ $experiment->data_source_id } ) ),
-                CONTENTS_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
-                CONTENTS_ITEM_LINK => 'ExperimentView.pl?eid=' . $experiment->id,
-                CONTENTS_ITEM_SELECTABLE => 1
-            };
-        }
-    }
-    
-    # Retrieve all job history
-    my $jobs = get_jobs($last_update);
-
-    #print STDERR "get_contents: time4=" . ((time - $start_time)*1000) . "\n";
-    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_summary} ) {
-        my $summary_html = summarize_jobs($jobs);
-        
-        push @rows,
-          {
-            CONTENTS_FORMAT_1  => 1,
-            CONTENTS_ITEM_ID   => 0,
-            CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_summary},
-            CONTENTS_ITEM_INFO => $summary_html,
-          };
-    }
-    
-    #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
-    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_analyses} ) {
-        my $analyses = filter_jobs($jobs, ['synmap', 'cogeblast', 'gevo', 'synfind']);
-        foreach (@$analyses) {
-            my $id = $_->{id};
-            my $isRunning = $_->{status} =~ /running/i;
-            my $isCancelled = $_->{status} =~ /cancelled/i;
-            my $star_icon    = qq{<img title="Favorite this analysis" }.( $_->{is_important} ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ).qq{ width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this);" />};
-            my $cancel_icon  = qq{<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('}.($_->{workflow_id} ? $_->{workflow_id} : '').qq{');"/>};
-
-            $_->{link} = undef unless is_uri($_->{link});
-
-            my $restart_icon = qq{<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('}.($_->{link} ? $_->{link} : '').qq{');"/>};
-
-
-            my $comment_icon = qq{<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '$_->{comment}');" />};
-            my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{comment} ? ' | ' . $_->{comment} : '') . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
-            push @rows,
-              {
-                CONTENTS_FORMAT_1  => 1,
-                CONTENTS_ITEM_ID   => $id,
-                CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
-                CONTENTS_ITEM_INFO => $info_html,
-                CONTENTS_ITEM_LINK => $_->{link},
-                CONTENTS_ITEM_ICON => $star_icon . ' ' . $comment_icon . ' ' . ($isCancelled ? $restart_icon : '') . ' ' . ($isRunning ? $cancel_icon : ''),
-              };
-        }
-    }
-    
-    #print STDERR "get_contents: time6=" . ((time - $start_time)*1000) . "\n";
-    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_loads} ) {
-        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo', 'experimentview']);
-        foreach (@$loads) {
-            $_->{link} = undef unless is_uri($_->{link});
-
-            my $isRunning = $_->{status} =~ /running/i;
-            my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
-            push @rows,
-              {
-                CONTENTS_FORMAT_1  => 1,
-                CONTENTS_ITEM_ID   => $_->{id},
-                CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_loads},
-                CONTENTS_ITEM_INFO => $info_html,
-                CONTENTS_ITEM_LINK => $_->{link},
-              };
-        }
-    }
-
-    if ($html_only) { # only do this for initial page load, not polling
-        # Generate activity graph
-        my $user_id = $USER->id;
-        my $job_list = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
-        push @rows,
-          {
-            CONTENTS_FORMAT_1  => 1,
-            CONTENTS_ITEM_ID   => 0,
-            CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_viz},
-            CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="//genomevolution.org/blacktea/standalone/$user_id/$job_list"></iframe>} # FIXME: hardcoded server name
-          };
-    }
-
-    # Render page template
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param( DO_CONTENTS => 1 );
-    $template->param( CONTENTS_ITEM_LOOP => \@rows );
-    my $html = $template->output;
-
-    #print STDERR "get_contents: time=" . ((time - $start_time)*1000) . "\n";
-
-    return $html if ($html_only);
-    return encode_json(
-        { timestamp => $timestamp, lastUpdate => $update_time, html => $html }
-    );
-}
+#sub get_contents_old {
+#    my %opts = @_;
+#    my $type = $opts{item_type};
+#    $type = $ITEM_TYPE{all} unless $type;
+#    my $last_update = $opts{last_update};
+#    $last_update = 0 if ( not defined $last_update );
+#    my $timestamp = $opts{timestamp};
+#    my $html_only = $opts{html_only};
+#    #print STDERR "get_contents $type $html_only $last_update\n";
+#
+#    #use Time::HiRes qw ( time );
+#    #my $start_time = time;
+#    my @rows;
+#
+#    # Check login
+#    return if ($USER->is_public);
+#
+#    # Get current time (according to database)
+#    my $update_time = $coge->storage->dbh_do(
+#        sub {
+#            my ( $storage, $dbh, @args ) = @_;
+#            $dbh->selectrow_array('SELECT NOW()+0');
+#        }
+#    );
+#
+#    # Preload stuff speed (needed for genome/experiment sorting and info routines)
+#    #FIXME which would be faster, children_by_type_role_id or joins?
+#    my %sourceIdToName =
+#      map { $_->id => $_->name } $coge->resultset('DataSource')->all();
+#
+#    # Get all items for this user (genomes, experiments, notebooks)
+#    #my $t1    = new Benchmark;
+#    my ( $children, $roles ) = $USER->children_by_type_role_id;
+#    #my $t2    = new Benchmark;
+#    #my $time = timestr( timediff( $t2, $t1 ) );
+#    #print STDERR "User.pl: Number of children\n";
+#    #foreach my $k (sort keys %$children) {
+#	#	print STDERR $k,"\t", scalar values $children->{$k},"\n";
+#    #}
+#    #$children={};
+#    #print STDERR "Time to run user->children_by_type_role_id: $time\n";
+#    #print STDERR "get_contents: time1=" . ((time - $start_time)*1000) . "\n";
+#
+#	if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{group} )
+#	{
+#	 	foreach my $group ( sort {$a->name cmp $b->name} values %{ $children->{6} } ) { #FIXME hardcoded type
+#	 		push @rows, { 
+#	 		    CONTENTS_ITEM_ID => $group->id,
+#	 			CONTENTS_ITEM_TYPE => $ITEM_TYPE{group},
+#	 			CONTENTS_ITEM_DELETED => $group->deleted,
+#	 			CONTENTS_ITEM_INFO => html_escape( $group->info ),
+#	 			CONTENTS_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+#	 			CONTENTS_ITEM_LINK =>  'GroupView.pl?ugid=' . $group->id,
+#	 			CONTENTS_ITEM_SELECTABLE => 1
+#	 		};
+#	 	}
+#	}
+#
+#    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{notebook} )
+#    {
+#        foreach my $list ( sort notebookcmp values %{ $children->{1} } ) { #FIXME hardcoded type
+#            push @rows, {
+#                CONTENTS_ITEM_ID => $list->id,
+#                CONTENTS_ITEM_TYPE => $ITEM_TYPE{notebook},
+#                CONTENTS_ITEM_DELETED => $list->deleted,
+#                CONTENTS_ITEM_SHARED => !$roles->{2}{ $list->id }, #FIXME hardcoded role id
+#                CONTENTS_ITEM_INFO => html_escape( $list->info ),
+#                CONTENTS_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+#                CONTENTS_ITEM_LINK => 'NotebookView.pl?nid=' . $list->id,
+#                CONTENTS_ITEM_SELECTABLE => 1
+#            };
+#        }
+#    }
+#
+#    #print STDERR "get_contents: time2=" . ((time - $start_time)*1000) . "\n";
+#    if ( $type == $ITEM_TYPE{genome} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
+#    {
+#        foreach my $genome ( sort genomecmp values %{ $children->{2} } ) { #FIXME hardcoded type
+#            push @rows, {
+#                CONTENTS_ITEM_ID      => $genome->id,
+#                CONTENTS_ITEM_TYPE    => $ITEM_TYPE{genome},
+#                CONTENTS_ITEM_DELETED => $genome->deleted,
+#                CONTENTS_ITEM_SHARED  => !$roles->{2}{ $genome->id }, #FIXME hardcoded role id
+#                CONTENTS_ITEM_INFO => html_escape($genome->info),
+#                CONTENTS_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+#                CONTENTS_ITEM_LINK => 'GenomeInfo.pl?gid=' . $genome->id,
+#                CONTENTS_ITEM_SELECTABLE => 1
+#            };
+#        }
+#    }
+#
+#    #print STDERR "get_contents: time3=" . ((time - $start_time)*1000) . "\n";
+#    if ( $type == $ITEM_TYPE{experiment} or $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{mine} )
+#    {
+#        foreach my $experiment ( sort experimentcmp values %{ $children->{3} } ) { #FIXME hardcoded type
+#            push @rows, {
+#                CONTENTS_ITEM_ID      => $experiment->id,
+#                CONTENTS_ITEM_TYPE    => $ITEM_TYPE{experiment},
+#                CONTENTS_ITEM_DELETED => $experiment->deleted,
+#                CONTENTS_ITEM_SHARED => !$roles->{2}{ $experiment->id },    #FIXME hardcoded role id
+#                CONTENTS_ITEM_INFO => html_escape( $experiment->info( source => $sourceIdToName{ $experiment->data_source_id } ) ),
+#                CONTENTS_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/>',
+#                CONTENTS_ITEM_LINK => 'ExperimentView.pl?eid=' . $experiment->id,
+#                CONTENTS_ITEM_SELECTABLE => 1
+#            };
+#        }
+#    }
+#    
+#    # Retrieve all job history
+#    my $jobs = get_jobs($last_update);
+#
+#    #print STDERR "get_contents: time4=" . ((time - $start_time)*1000) . "\n";
+#    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_summary} ) {
+#        my $summary_html = summarize_jobs($jobs);
+#        
+#        push @rows,
+#          {
+#            CONTENTS_FORMAT_1  => 1,
+#            CONTENTS_ITEM_ID   => 0,
+#            CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_summary},
+#            CONTENTS_ITEM_INFO => $summary_html,
+#          };
+#    }
+#    
+#    #print STDERR "get_contents: time5=" . ((time - $start_time)*1000) . "\n";
+#    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_analyses} ) {
+#        my $analyses = filter_jobs($jobs, ['synmap', 'cogeblast', 'gevo', 'synfind']);
+#        foreach (@$analyses) {
+#            my $id = $_->{id};
+#            my $isRunning = $_->{status} =~ /running/i;
+#            my $isCancelled = $_->{status} =~ /cancelled/i;
+#            my $star_icon    = qq{<img title="Favorite this analysis" }.( $_->{is_important} ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ).qq{ width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this);" />};
+#            my $cancel_icon  = qq{<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('}.($_->{workflow_id} ? $_->{workflow_id} : '').qq{');"/>};
+#
+#            $_->{link} = undef unless is_uri($_->{link});
+#
+#            my $restart_icon = qq{<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('}.($_->{link} ? $_->{link} : '').qq{');"/>};
+#
+#
+#            my $comment_icon = qq{<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '$_->{comment}');" />};
+#            my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{comment} ? ' | ' . $_->{comment} : '') . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
+#            push @rows,
+#              {
+#                CONTENTS_FORMAT_1  => 1,
+#                CONTENTS_ITEM_ID   => $id,
+#                CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_analyses},
+#                CONTENTS_ITEM_INFO => $info_html,
+#                CONTENTS_ITEM_LINK => $_->{link},
+#                CONTENTS_ITEM_ICON => $star_icon . ' ' . $comment_icon . ' ' . ($isCancelled ? $restart_icon : '') . ' ' . ($isRunning ? $cancel_icon : ''),
+#              };
+#        }
+#    }
+#    
+#    #print STDERR "get_contents: time6=" . ((time - $start_time)*1000) . "\n";
+#    if ( $type == $ITEM_TYPE{all} or $type == $ITEM_TYPE{activity_loads} ) {
+#        my $loads = filter_jobs($jobs, ['loadgenome', 'loadexperiment', 'loadannotation', 'loadbatch', 'genomeinfo', 'experimentview']);
+#        foreach (@$loads) {
+#            $_->{link} = undef unless is_uri($_->{link});
+#
+#            my $isRunning = $_->{status} =~ /running/i;
+#            my $info_html = format_job_status($_->{status}).' '.$_->{start_time}.' | '. $_->{elapsed}.' | '.$_->{page}.' | '.$_->{description} . ($_->{workflow_id} ? ' | id' . $_->{workflow_id} : '');
+#            push @rows,
+#              {
+#                CONTENTS_FORMAT_1  => 1,
+#                CONTENTS_ITEM_ID   => $_->{id},
+#                CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_loads},
+#                CONTENTS_ITEM_INFO => $info_html,
+#                CONTENTS_ITEM_LINK => $_->{link},
+#              };
+#        }
+#    }
+#
+#    if ($html_only) { # only do this for initial page load, not polling
+#        # Generate activity graph
+#        my $user_id = $USER->id;
+#        my $job_list = 'cogeblast/synmap/gevo/synfind/loadgenome/loadexperiment/organismview/user';
+#        push @rows,
+#          {
+#            CONTENTS_FORMAT_1  => 1,
+#            CONTENTS_ITEM_ID   => 0,
+#            CONTENTS_ITEM_TYPE => $ITEM_TYPE{activity_viz},
+#            CONTENTS_ITEM_INFO => qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="//genomevolution.org/blacktea/standalone/$user_id/$job_list"></iframe>} # FIXME: hardcoded server name
+#          };
+#    }
+#
+#    # Render page template
+#    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+#    $template->param( DO_CONTENTS => 1 );
+#    $template->param( CONTENTS_ITEM_LOOP => \@rows );
+#    my $html = $template->output;
+#
+#    #print STDERR "get_contents: time=" . ((time - $start_time)*1000) . "\n";
+#
+#    return $html if ($html_only);
+#    return encode_json(
+#        { timestamp => $timestamp, lastUpdate => $update_time, html => $html }
+#    );
+#}
 
 sub get_jobs {
     my ($last_update) = @_;
@@ -1735,24 +1734,22 @@ sub add_items_to_notebook {
     return unless $USER->has_access_to_list($notebook);
 
     foreach (@items) {
-        my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
+        my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
         next
-          unless ( $item_type eq $ITEM_TYPE{notebook}
-            or $item_type eq $ITEM_TYPE{genome}
-            or $item_type eq $ITEM_TYPE{experiment} );
+          unless ( $item_type eq 'notebook' #$ITEM_TYPE{notebook}
+            or $item_type eq 'genome' #$ITEM_TYPE{genome}
+            or $item_type eq 'experiment' ); #$ITEM_TYPE{experiment} );
 
         #TODO check access permission on each item
 
         # print STDERR "add_item_to_notebook $item_id $item_type\n";
 
-        my $conn = $coge->resultset('ListConnector')->find_or_create(
-            {
-                parent_id  => $nid,
-                child_id   => $item_id,
-                child_type => $item_type
-            }
-        );
+        my $conn = $coge->resultset('ListConnector')->find_or_create({
+            parent_id  => $nid,
+            child_id   => $item_id,
+            child_type => $item_type
+        });
         return unless $conn;
     }
 

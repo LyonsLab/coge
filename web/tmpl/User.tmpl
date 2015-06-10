@@ -237,7 +237,7 @@ div.deleted { display: none; }
 		<span id="delete_button" onClick="delete_items();" class="delete coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
 		<span id="send_button" onClick="send_menu();" class="sendto coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
 		<span id="undelete_button" onClick="undelete_items();" class="undelete coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
-		<ul id="send_menu" class="small hidden">
+		<ul id="send_menu" style="z-index:100;" class="small hidden">
 			<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
 			<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
 			<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
@@ -338,7 +338,7 @@ const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 		    		$("#share_input")
 		    			.val( ui.item.label )
 		    			.data('select_id', ui.item.value);
-		    		if (ui.item.value.split(':')[1] == ITEM_TYPE.user) {
+		    		if (ui.item.value.split(':')[1] == 'user') { //ITEM_TYPE.user) {
 		    			$('#share_role_select').show();
 		    		}
 		    		else {
