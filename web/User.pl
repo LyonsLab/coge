@@ -391,7 +391,7 @@ sub undelete_items {
         next unless ( $item_id and $item_type );
         my $type_name;
 
-        # print STDERR "undelete $item_id $item_type\n";
+        print STDERR "undelete $item_id $item_type\n";
         if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
             my $group = $coge->resultset('UserGroup')->find($item_id);
             return unless $group;
@@ -432,6 +432,9 @@ sub undelete_items {
                 $experiment->update;
                 $type_name = 'experiment';
             }
+        }
+        else {
+            print STDERR "User::undelete_items error: unknown type\n";
         }
 
         # Record in log
@@ -1741,6 +1744,7 @@ sub add_items_to_notebook {
             or $item_type eq 'genome' #$ITEM_TYPE{genome}
             or $item_type eq 'experiment' ); #$ITEM_TYPE{experiment} );
 
+        $item_type = $ITEM_TYPE{$item_type};
         #TODO check access permission on each item
 
         # print STDERR "add_item_to_notebook $item_id $item_type\n";
