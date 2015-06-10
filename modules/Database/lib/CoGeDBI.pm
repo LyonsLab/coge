@@ -161,9 +161,9 @@ sub get_genomes_for_user {
     my $dbh = shift;         # database connection handle
     my $user_id = shift;     # user id
     return unless $user_id;
-    my $role_ids = shift;
-    $role_ids = [2] unless $role_ids;
-    my $role_id_str = join(', ', @$role_ids);
+    my $role_ids = shift;    # optional ref to role IDs array
+    my $role_id_str;
+    $role_id_str = join(', ', @$role_ids) if $role_ids;
     print STDERR "CoGeDBI::get_genomes_for_user $user_id\n";
     
     # Get groups for user
@@ -173,15 +173,16 @@ sub get_genomes_for_user {
     my $query = qq{
         SELECT g.genome_id AS id, g.name AS name, g.description AS description, 
             g.version AS version, g.restricted AS restricted, g.deleted AS deleted, 
-            g.date AS date, o.name AS organism, ds.date AS dataset_date
+            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id as role_id
         FROM user_connector AS uc 
         JOIN genome AS g ON (uc.child_id=g.genome_id) 
         JOIN dataset_connector AS dsc ON (dsc.genome_id=g.genome_id) 
         JOIN dataset AS ds ON (ds.dataset_id=dsc.dataset_id) 
         JOIN organism AS o ON (o.organism_id=g.organism_id) 
         WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
-            AND uc.child_type=2 AND uc.role_id in ($role_id_str)
+            AND uc.child_type=2 
     };
+    $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     #my $t1    = new Benchmark;
     my $sth = $dbh->prepare($query);
     $sth->execute();
@@ -194,7 +195,7 @@ sub get_genomes_for_user {
     $query = qq{
         SELECT g.genome_id AS id, g.name AS name, g.description AS description, 
             g.version AS version, g.restricted AS restricted, g.deleted AS deleted, 
-            g.date AS date, o.name AS organism, ds.date AS dataset_date 
+            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id as role_id
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_connector AS lc ON (lc.parent_id=l.list_id)
@@ -203,8 +204,9 @@ sub get_genomes_for_user {
         JOIN dataset AS ds ON (ds.dataset_id=dsc.dataset_id) 
         JOIN organism AS o ON (o.organism_id=g.organism_id) 
         WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
-            AND uc.child_type=1 AND lc.child_type=2 AND uc.role_id in ($role_id_str); 
+            AND uc.child_type=1 AND lc.child_type=2
     };
+    $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $sth = $dbh->prepare($query);
     $sth->execute();
     my $results2 = $sth->fetchall_arrayref({});
@@ -218,8 +220,9 @@ sub get_experiments_for_user {
     my $dbh = shift;         # database connection handle
     my $user_id = shift;     # user id
     return unless $user_id;
-    my $role_id = shift;
-    $role_id = 2 unless $role_id;
+    my $role_ids = shift;    # optional ref to role IDs array
+    my $role_id_str;
+    $role_id_str = join(', ', @$role_ids) if $role_ids;
     print STDERR "CoGeDBI::get_experiments_for_user $user_id\n";
     
     # Get groups for user
@@ -229,12 +232,13 @@ sub get_experiments_for_user {
     my $query = qq{
         SELECT e.experiment_id AS id, e.name AS name, e.description AS description, 
             e.version AS version, e.restricted AS restricted, e.deleted AS deleted, 
-            e.date AS date
+            e.date AS date, uc.role_id as role_id
         FROM user_connector AS uc 
         JOIN experiment AS e ON (uc.child_id=e.experiment_id) 
         WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
-            AND uc.child_type=3 AND uc.role_id=$role_id
+            AND uc.child_type=3
     };
+    $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     my $sth = $dbh->prepare($query);
     $sth->execute();
     my $results1 = $sth->fetchall_arrayref({});
@@ -244,14 +248,15 @@ sub get_experiments_for_user {
     $query = qq{
         SELECT e.experiment_id AS id, e.name AS name, e.description AS description, 
             e.version AS version, e.restricted AS restricted, e.deleted AS deleted, 
-            e.date AS date
+            e.date AS date, uc.role_id as role_id
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_connector AS lc ON (lc.parent_id=l.list_id)
         JOIN experiment AS e ON (lc.child_id=e.experiment_id)
         WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
-            AND uc.child_type=1 AND lc.child_type=3 AND uc.role_id=$role_id; 
+            AND uc.child_type=1 AND lc.child_type=3 
     };
+    $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $sth = $dbh->prepare($query);
     $sth->execute();
     my $results2 = $sth->fetchall_arrayref({});
@@ -265,8 +270,9 @@ sub get_lists_for_user {
     my $dbh = shift;         # database connection handle
     my $user_id = shift;     # user id
     return unless $user_id;
-    my $role_id = shift;
-    $role_id = 2 unless $role_id;
+    my $role_ids = shift;    # optional ref to role IDs array
+    my $role_id_str;
+    $role_id_str = join(', ', @$role_ids) if $role_ids;
     print STDERR "CoGeDBI::get_lists_for_user $user_id\n";
     
     # Get groups for user
@@ -276,13 +282,14 @@ sub get_lists_for_user {
     my $query = qq{
         SELECT l.list_id AS id, l.name AS name, l.description AS description, 
             l.restricted AS restricted, l.deleted AS deleted, lt.name AS type_name,
-            l.date AS date
+            l.date AS date, uc.role_id as role_id
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_type AS lt ON (lt.list_type_id=l.list_type_id)
         WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
-            AND uc.child_type=1 AND uc.role_id=$role_id
+            AND uc.child_type=1 
     };
+    $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     my $sth = $dbh->prepare($query);
     $sth->execute();
     my $results = $sth->fetchall_arrayref({});
