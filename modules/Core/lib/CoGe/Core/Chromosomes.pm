@@ -125,7 +125,7 @@ sub find {
 	my $self = shift;
 	my $name = shift;
 	while ($self->next) {
-		if ($name == $self->name) {
+		if ($name eq $self->name) {
 			return 1;
 		}
 	}
@@ -252,6 +252,9 @@ See Also   :
 
 sub next {
 	my $self = shift;
+	if (!$self->{fh}) {
+		print STDERR caller . "\n";
+	}
 	my $line = readline($self->{fh});
 	if ($line) {
 		my @tokens = split('\t', $line);
