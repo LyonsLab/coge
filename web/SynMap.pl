@@ -3236,8 +3236,8 @@ sub get_results {
         ########################################################################
 
         $results->param( link => $tiny_link );
-        my ($ks_file) = $ks_db =~ /([^\/]*)$/;
         if ($ks_type) {
+	        my ($ks_file) = $ks_db =~ /([^\/]*)$/;
             my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;file=$ks_file";
             $results->param( synsub => $link );
         }

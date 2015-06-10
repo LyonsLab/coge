@@ -779,10 +779,9 @@ function blastOff(dialog, results, basename) {
 
                 status_dialog.find(".dialog-link").html(link_message);
                 status_dialog.find(".dialog-log").html(logfile);
-
+ 
                 options.fname = "get_results";
                 options.logfile = response.logfile;
-                delete options.seq;
 
                 update_dialog("jex/status/" + response.id, status_dialog, results, formatter, options);
             } else {

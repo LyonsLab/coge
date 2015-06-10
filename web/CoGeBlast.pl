@@ -956,6 +956,7 @@ sub get_results {
     my $zmask          = $opts{zmask};
 
     my $seq = $opts{seq};
+
     #this is where the dsgids are stored -- stupid name
     my $blastable = $opts{blastable};
 

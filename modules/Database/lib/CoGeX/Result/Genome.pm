@@ -393,7 +393,7 @@ sub get_chromosome_length {
     my $name = shift;
 	my $c = CoGe::Core::Chromosomes->new($self->id);
 	if ($c->find($name)) {
-		return $->length;
+		return $c->length;
 	}
 	return 0;
 }
