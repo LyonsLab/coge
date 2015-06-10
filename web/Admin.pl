@@ -1463,14 +1463,17 @@ sub get_user_nodes {
     foreach my $conn ( $coge->resultset('ListConnector')->all ) {
     	if($conn->child_type != 4) {
     		my $child = $conn->child;
-	        push @{ $childrenByList{ $conn->parent_id } },
-          	{ 
-          		name 		=> $conn->child_id, 
-          		size 		=> 2025, 
-          		type 		=> $conn->child_type,
-          		deleted		=> $child->deleted,
-          		restricted 	=> $child->restricted,
-          	};
+    		
+    		if($child) {
+	        	push @{ $childrenByList{ $conn->parent_id } },
+          		{ 
+          			name 		=> $conn->child_id, 
+          			size 		=> 2025, 
+          			type 		=> $conn->child_type,
+          			deleted		=> $child->deleted,
+          			restricted 	=> $child->restricted,
+          		};
+    		}
     	}
     }
 
@@ -1496,13 +1499,6 @@ sub get_user_nodes {
     			$size = scalar @{$sub};
     		}
     		
-    		#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    		#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    		#print $fh "Genomes: ";
-    		#print $fh Dumper(\@children);
-    		#print $fh $size;
-    		#print $fh "\n";
-    		#close $fh;
     		my $child = $conn->child;
     		
             push @{ $childrenByUser{ $conn->parent_id } },
@@ -1564,17 +1560,30 @@ sub get_user_nodes {
 
 sub get_group_nodes {
 	my %childrenByList;
+	# TODO: Only pull from relevant lists
     foreach my $conn ( $coge->resultset('ListConnector')->all ) {
     	if($conn->child_type != 4) {
     		my $child = $conn->child;
-	        push @{ $childrenByList{ $conn->parent_id } },
-          	{ 
-          		name 		=> $conn->child_id, 
-          		size 		=> 2025, 
-          		type 		=> $conn->child_type,
-          		deleted		=> $child->deleted,
-          		restricted 	=> $child->restricted,
-          	};
+    		
+    		#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    		#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    		#if(!$child) {
+    		#	print $fh "Problem found: ";
+    		#	print $fh $conn->child_id;
+    		#	print $fh "\n";
+    		#}
+    		#close $fh;
+    		
+    		if($child) {
+	        	push @{ $childrenByList{ $conn->parent_id } },
+          		{ 
+          			name 		=> $conn->child_id, 
+          			size 		=> 2025, 
+          			type 		=> $conn->child_type,
+          			deleted		=> $child->deleted,
+          			restricted 	=> $child->restricted,
+          		};
+    		}
     	}
     }
 	

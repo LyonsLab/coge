@@ -252,11 +252,12 @@ div.legend {
 	</div>
 	<div id="tabs-4">
 		<div>
-			<select onchange="init_graph(this.selectedIndex)">
-			  <option value="Default">------</option>
+			<select style="margin-left:100px;margin-right:20px;" onchange="init_graph(this.selectedIndex)">
+			  <option value="Default">Select View</option>
 			  <option value="Users">Users</option>
 			  <option value="Groups">Groups</option>
 			</select>
+			<img id="loading_gears4" src="picts/large_gears.gif" width='30' height='30' class="link" style="padding:1px;display:none;" />
 		</div>
 		<div>
 			<span id="user_legend" style="float:left;"></span>
