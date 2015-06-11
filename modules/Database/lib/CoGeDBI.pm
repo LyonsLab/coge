@@ -186,7 +186,7 @@ sub get_genomes_for_user {
     #my $t1    = new Benchmark;
     my $sth = $dbh->prepare($query);
     $sth->execute();
-    my $results1 = $sth->fetchall_arrayref({});
+    my $results1 = $sth->fetchall_hashref(['id']);
     #my $t2    = new Benchmark;
     #print STDERR 'query1: ', timestr( timediff( $t2, $t1 ) ), "\n";
     #print STDERR Dumper $results1, "\n";
@@ -209,11 +209,11 @@ sub get_genomes_for_user {
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $sth = $dbh->prepare($query);
     $sth->execute();
-    my $results2 = $sth->fetchall_arrayref({});
+    my $results2 = $sth->fetchall_hashref(['id']);
     #print STDERR Dumper $results2, "\n";
-    push @$results1, @$results2;
-        
-    return $results1;
+    
+    my $combined = merge($results1, $results2);
+    return [ values $combined ];
 }
 
 sub get_experiments_for_user {
@@ -241,7 +241,7 @@ sub get_experiments_for_user {
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     my $sth = $dbh->prepare($query);
     $sth->execute();
-    my $results1 = $sth->fetchall_arrayref({});
+    my $results1 = $sth->fetchall_hashref(['id']);
     #print STDERR Dumper $results1, "\n";
 
     # Get list experiment connections
@@ -259,11 +259,11 @@ sub get_experiments_for_user {
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $sth = $dbh->prepare($query);
     $sth->execute();
-    my $results2 = $sth->fetchall_arrayref({});
+    my $results2 = $sth->fetchall_hashref(['id']);
     #print STDERR Dumper $results2, "\n";
-    push @$results1, @$results2;
         
-    return $results1;
+    my $combined = merge($results1, $results2);
+    return [ values $combined ];
 }
 
 sub get_lists_for_user {
