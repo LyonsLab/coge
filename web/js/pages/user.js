@@ -8,9 +8,6 @@ var timestamps = new Array();
 var timers = new Array();
 	
 $(function() {
-	// Initialize globals
-	init_timestamp('idle');
-	
 	// Initialize AJAX
 	$.ajaxSetup({
 		type: "GET",
@@ -114,7 +111,8 @@ $(function() {
 			title: 'Graph',
 			displayType: 'html',
 			dataTypes: ['graph'],
-			search: false
+			search: false,
+			refresh: false
 		},
 		trash: {
 			title: 'Trash',
@@ -138,17 +136,22 @@ $(function() {
 	tocPanel = new TocPanel({
 		elementId: 'toc_panel',
 		selection: function(typeId) {
+			cancel_poll();
 			contentPanel
 				.update(typeId)
 				.done(function() { 
 					contentPanel.render();
+					schedule_poll();
 				});
 			infoPanel.update(null);
+			update_icons(null);
+			$('#search_input').val(''); //FIXME move into ContentPanel
 		}
 	});
 	
-	$('#search_input').on('keyup search', function() {
+	$('#search_input').on('keyup search', function() { //FIXME move into ContentPanel
 		contentPanel.grid.search( $(this).val() );
+		contentPanel.renderTitle();
 	});
 	
 	// Get starting page from URL and initialize TOC panel
@@ -158,19 +161,20 @@ $(function() {
 	tocPanel.selectItemType(toc_id);
 	
 	// Setup idle timer
-//	$(document).mousemove(function() {
-//		var currentTime = new Date().getTime();
-//		var idleTime = currentTime - timestamps['idle'];
-//		timestamps['idle'] = currentTime;
-//
-//		if (idleTime > IDLE_TIME) {
-//			// User was idle for a while, refresh page
-//			schedule_poll(0);
-//		}
-//	});
+	init_timestamp('idle');
+	$(document).mousemove(function() {
+		var currentTime = new Date().getTime();
+		var idleTime = currentTime - timestamps['idle'];
+		timestamps['idle'] = currentTime;
+
+		if (idleTime > IDLE_TIME) {
+			// User was idle for a while, refresh page immediately
+			schedule_poll(0);
+		}
+	});
 
 	// Initiate refresh loop
-	//schedule_poll();
+	schedule_poll();
 
 	// Initialize add-to-notebook dialog
 	window.setTimeout(search_notebooks, 1000);
@@ -221,11 +225,19 @@ function getURLParameter(name) {
 }
 
 function poll(sync) {
+	console.log('poll');
+	
 	// Refresh contents
-	get_contents(sync, pageObj.content_type);
+	//get_contents(sync, pageObj.content_type);
+	contentPanel
+		.refresh()
+		.done(function() { 
+			contentPanel.render();
+			schedule_poll(); // schedule next poll
+		});
 	
 	// Refresh item info cache
-	grid.reset();
+	//grid.reset();
 }
 
 function schedule_poll(when) { 
@@ -321,45 +333,10 @@ $.extend(ContentPanel.prototype, {
 			},
 			selection: function(items) {
 				// Update icons
-				console.log('update_icons:');
-				console.log(items);
-				if ( items && items.length > 0) 
-					$('.item-button:not(#add_button)').removeClass('coge-disabled');
-				else
-					$('.item-button:not(#add_button)').addClass('coge-disabled');
+				update_icons(items);
 			}
 		});
 	},
-	
-    update: function(viewId) {
-    	console.log('ContentPanel.update: ' + viewId + ' ');
-    	var self = this;
-    	this.selectedView = viewId;
-    	var view = this.views[viewId];
-    	
-    	// 
-    	var promises = new Array();
-    	view.dataTypes.forEach(function (dataType) {
-    		var deferred = $.Deferred();
-    		var cachedData = self.getData(dataType);
-    	
-	        if (cachedData) {
-		    	deferred.resolve();
-	    	}
-	    	else {
-	    		self.busy();
-	    		deferred = self.fetch(false, dataType);
-		    	setTimeout(deferred.resolve, 10);
-	    	}
-	        promises.push(deferred);
-    	});
-        
-        return $.when.apply($, promises).then(function(schemas) {
-	            console.log("ContentPanel.update: DONE");
-	        }, function(e) {
-	            console.log("My ajax failed");
-	        });
-    },
     
     getRow: function(dataTypeId, id) {
     	var row = null;
@@ -429,12 +406,6 @@ $.extend(ContentPanel.prototype, {
     	return this;
     },
     
-    syncData: function(typeId, data) {
-    	console.log("ContentPanel.syncData " + typeId);
-    	
-    	
-    },
-    
     render: function() {
     	console.log('ContentPanel.render ' + this.selectedView);
     	if (!this.selectedView)
@@ -442,11 +413,41 @@ $.extend(ContentPanel.prototype, {
     	
         var view = this.views[this.selectedView];
         var isGrid = (view.displayType == 'grid');
+
+        // Disable search bar if specified
+        if (view.hasOwnProperty('search') && !view.search)
+        	$('#search_input').hide();
+        else
+        	$('#search_input').show();
         
-        // Clear search bar
-        $('#search_input').show().val('');
+    	// Render contents
+    	var cachedData = this.getData(view.dataTypes);
+    	if (isGrid) {
+    		// Save selection and scroll position
+    		var items = this.grid.getSelectedItems();
+    		var scrollPos = this.element.find(".dataTables_scrollBody").scrollTop();
+    		
+    		// Swap in grid and update contents
+    		this.element.children('.html').hide();
+    		this.element.children('.grid').show();
+    		this.grid.update(cachedData);
+    		this.grid.redraw(); // needed to display column widths properly
+    		
+    		// Restore selection and scroll position
+    		if (items)
+    			this.grid.setSelectedItems(items);
+    		this.element.find(".dataTables_scrollBody").scrollTop(scrollPos);
+    	}
+    	else {
+    		var cachedData = this.getData(this.selectedView);
+    		this.element.children('.grid').hide();
+    		this.element.children('.html').html(cachedData).show();
+    	}
+    	
+        // Update title with row number
+        this.renderTitle();
         
-    	// Show/hide action icons based on type of data
+        // Show/hide action icons based on type of data
     	$('.item-button').hide(); // hide all icons
     	if (view.operations) {
     		view.operations.forEach(function(op) {
@@ -456,29 +457,18 @@ $.extend(ContentPanel.prototype, {
     	
     	// Icons are initially set to invisible on load to prevent flickering
     	$('.item-button').removeClass('invisible');
-    	
-    	// Render contents
-    	var cachedData = this.getData(view.dataTypes);
-    	if (isGrid) {
-    		this.element.children('.html').hide();
-    		this.element.children('.grid').show();
-    		this.grid.update(cachedData);
-    		this.grid.redraw(); // needed to display column widths properly
-    	}
-    	else {
-    		var cachedData = this.getData(this.selectedView);
-    		this.element.children('.grid').hide();
-    		this.element.children('.html').html(cachedData).show();
-    	}
-    	
-        // Update title with row number
-        var title = view.title;
-        if (isGrid)
-        	title += '&nbsp;&nbsp;<span class="small info">' + this.grid.getNumRowsDisplayed() + '</span>';
-        $('#contents_title').html(title);
 
     	// Update browser url
     	window.history.pushState({}, "", PAGE_NAME + "?p="+this.selectedView);
+    },
+    
+    renderTitle: function() {
+    	var view = this.views[this.selectedView];
+    	var title = view.title;
+    	var isGrid = (view.displayType == 'grid');
+        if (isGrid)
+        	title += '&nbsp;&nbsp;<span class="small info">' + this.grid.getNumRowsDisplayed() + '</span>';
+        $('#contents_title').html(title);
     },
     
     busy: function() {
@@ -487,16 +477,73 @@ $.extend(ContentPanel.prototype, {
     	this.element.children('.html').html(spinner).show();
     },
     
+    update: function(viewId) {
+    	console.log('ContentPanel.update: ' + viewId + ' ');
+    	var self = this;
+    	this.selectedView = viewId;
+    	var view = this.views[viewId];
+    	
+    	// 
+    	var promises = new Array();
+    	view.dataTypes.forEach(function (dataType) {
+    		var deferred = $.Deferred();
+    		var cachedData = self.getData(dataType);
+    	
+	        if (cachedData) {
+		    	deferred.resolve();
+	    	}
+	    	else {
+	    		self.busy();
+	    		deferred = self.fetch(false, dataType);
+		    	setTimeout(deferred.resolve, 10);
+	    	}
+	        promises.push(deferred);
+    	});
+        
+        return $.when.apply($, promises).then(function(schemas) {
+	            console.log("ContentPanel.update: DONE");
+	        }, function(e) {
+	            console.log("My ajax failed");
+	        });
+    },
+    
+    refresh: function() {
+    	console.log('ContentPanel.refresh');
+    	var self = this;
+    	if (!this.selectedView)
+    		return;
+    	
+    	var view = this.views[this.selectedView];
+    	
+    	// Skip refresh if specified
+    	if (view.hasOwnProperty('refresh') && !view.refresh)
+    		return;
+    	
+    	$('#refresh_label').fadeIn(); //FIXME move into ContentPanel
+    	
+       	var promises = new Array();
+    	view.dataTypes.forEach(function (dataType) {
+    		console.log('refresh ' + dataType);
+    		var deferred = self.fetch(false, dataType);
+	    	setTimeout(deferred.resolve, 10);
+	        promises.push(deferred);
+    	});
+        
+        return $.when.apply($, promises).then(function(schemas) {
+	            console.log("ContentPanel.refresh: DONE");
+	            $('#refresh_label').fadeOut(); //FIXME move into ContentPanel
+	        }, function(e) {
+	            console.log("ContentPanel.refresh: ajax failed");
+	        });
+    },    
+    
     fetch: function(sync, typeId) {
     	var self = this;
+    	if (!typeId)
+    		typeId = this.selectedType;
     	console.log('ContentPanel.fetch ' + typeId);
     	
-    	$('#refresh_label').show();
-    	
     	var lastUpdate = (sync ? timestamps['lastUpdate'] : 0);
-
-    	// Clear pending refresh
-    	cancel_poll();
 
     	return $.ajax({
     		dataType: 'text',
@@ -529,12 +576,9 @@ $.extend(ContentPanel.prototype, {
     				data = JSON.parse(data);
     			}
     			self.setData(typeId, data);
-
-    			// Setup next refresh
-//    			schedule_poll();
     		},
     		complete : function() {
-    			$('#refresh_label').hide();
+    			
     		}
     	});
     }
@@ -637,7 +681,6 @@ $.extend(DataGrid.prototype, {
 		
 		// Handle row hover events
 		dataTableBody.on('mouseover', 'tr', function () {
-			//console.log('enter');
 	        if (self.getSelectedItems()) // Do nothing if row(s) currently selected
 	    		return;
 	    	
@@ -647,7 +690,6 @@ $.extend(DataGrid.prototype, {
 	    });
 		
 		dataTableBody.on('mouseout', 'tr', function () {
-			//console.log('exit');
 	    	if (self.getSelectedItems()) // Do nothing if row(s) currently selected
 	    		return;
 	    	
@@ -722,6 +764,19 @@ $.extend(DataGrid.prototype, {
     	return item_list;
     },
     
+    setSelectedItems: function(items) {
+    	this.dataTable.api().rows().every( function () {
+    		var row = this;
+    	    var d = row.data();
+    	    items.each(function(item) {
+	    	    if (d.id == item.id) {
+	    	    	var tr = row.node();
+	    	    	$(tr).addClass('selected'); // select item
+	    	    }
+    	    });
+    	});
+    },
+    
     clearSelection: function() {
     	this.dataTable.api().rows('.selected').removeClass('selected');
     },
@@ -729,13 +784,8 @@ $.extend(DataGrid.prototype, {
     selectItem: function(item) {
     	console.log('DataGrid.selectItem');
     	
-//    	if (item.id == this.selectedItemId) { // Un-select item
-//    		this.selectedItemId = null;
-//    		return;
-//    	}
-    	
     	var selectedItems = this.getSelectedItems();
-    	infoPanel.busy().update(selectedItems);
+    	infoPanel.busy().update(selectedItems); //FIXME move into selection handler
     	
     	if (this.selection)
     		this.selection(selectedItems);
@@ -746,10 +796,7 @@ $.extend(DataGrid.prototype, {
     	if (row.type == 'group') // kludge
     		group_dialog();
     	else {
-            if (!link)
-                return alert("The following link could not be generated");
-
-    		title = row.getDescription(); //TODO move formatGenome into row class
+    		title = row.getDescription();
     		link = row.getLink();
     		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
     		link = link + "&embed=1";
@@ -1040,6 +1087,13 @@ $.extend(TocPanel.prototype, {
     }
 });
 
+function update_icons(items) { //TODO move into ContentPanel
+	if ( items && items.length > 0) 
+		$('.item-button:not(#add_button)').removeClass('coge-disabled');
+	else
+		$('.item-button:not(#add_button)').addClass('coge-disabled');
+}
+
 function get_item_type(obj) {
 	return obj.id.match(/content_\w+_(\w+)/)[1];
 }
@@ -1179,7 +1233,7 @@ function cancel_job(id) {
 				},
 				success : function(rc) {
 					if (rc) {
-						//poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
+						//poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14
 						
 						// Update status to cancelled in displayed row
 						var data = row.data();
@@ -1206,7 +1260,7 @@ function restart_job(id) {
 			// restart command.
 			var w = window.open(data.link,'_blank', 'toolbar=no,status=no,menubar=no,scrollbars=no,resizable=no,left=10000,top=10000,width=1,height=1,visible=none', ''); 
 			setTimeout(function() {
-					//poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
+					//poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14
 					w.close();
 				},
 				5*1000
