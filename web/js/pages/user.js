@@ -52,7 +52,7 @@ $(function() {
 	
 	$("#send_menu").menu().css({ position: 'absolute', width: '90px' });
 
-	//
+	// Define views in the Content Panel
 	var views = {
 		mine: {
 			title: 'My Data',
@@ -125,7 +125,7 @@ $(function() {
 		}
 	};
 	
-	// Initialize main panels
+	// Initialize the main panels
 	infoPanel = new InfoPanel({
 		elementId: 'info_panel'
 	});
@@ -221,8 +221,6 @@ function getURLParameter(name) {
 }
 
 function poll(sync) {
-	return; // mdb 6/10/15
-	
 	// Refresh contents
 	get_contents(sync, pageObj.content_type);
 	
@@ -231,8 +229,6 @@ function poll(sync) {
 }
 
 function schedule_poll(when) { 
-	return; // mdb 6/10/15
-	
 	cancel_poll();
 
 	if (when !== undefined) {
@@ -747,11 +743,11 @@ $.extend(DataGrid.prototype, {
 
     openItem: function(row) {
     	console.log('DataGrid.openItem');
-//    	if (item_type == ITEM_TYPE.group) // FIXME this is a kludge
-//    		group_dialog();
-//    	else {
-//            if (!link)
-//                return alert("The following link could not be generated");
+    	if (row.type == 'group') // kludge
+    		group_dialog();
+    	else {
+            if (!link)
+                return alert("The following link could not be generated");
 
     		title = row.getDescription(); //TODO move formatGenome into row class
     		link = row.getLink();
@@ -766,7 +762,7 @@ $.extend(DataGrid.prototype, {
     				height: height//'80%'
     			})
     			.dialog('open');
-//    	}
+    	}
     }
 });
 
