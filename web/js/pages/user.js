@@ -143,6 +143,7 @@ $(function() {
 				.done(function() { 
 					contentPanel.render();
 				});
+			infoPanel.update(null);
 		}
 	});
 	
@@ -182,7 +183,7 @@ $(function() {
     			$(this).dialog("close");
     		},
     		Yes: function() {
-    			cancel_job( $(this).data("job_id") );
+    			cancel_job( $(this).data("log_id") );
     			$(this).dialog("close");
     		}
     	}
@@ -196,6 +197,8 @@ $(function() {
     		OK: function() {
     			var log_id = $(this).data("log_id");
     			var comment = $(this).find("input").first().val();
+    			contentPanel.setRowData('analyses', log_id, {comment: comment});
+    			contentPanel.grid.redraw();
     			comment_job( log_id, comment );
     			$(this).dialog("close");
     		},
@@ -218,6 +221,8 @@ function getURLParameter(name) {
 }
 
 function poll(sync) {
+	return; // mdb 6/10/15
+	
 	// Refresh contents
 	get_contents(sync, pageObj.content_type);
 	
@@ -360,6 +365,44 @@ $.extend(ContentPanel.prototype, {
 	        });
     },
     
+    getRow: function(dataTypeId, id) {
+    	var row = null;
+    	this.grid.dataTable.api().rows().every( function () {
+    	    var d = this.data();
+    	    if (d.id == id) {
+    	    	row = this;
+    	    }
+    	});
+    	return row;
+    },
+    
+    getRowData: function(dataTypeId, id) {
+    	var data = this.getData(dataTypeId);
+    	var rowData = null;
+    	if (data) {
+    		data.some(function(d) {
+    			if (d.id == id) {
+    				rowData = d;
+    				return true;
+    			}
+    			return false;
+    		});
+    	}
+    	return rowData;
+    },
+    
+    setRowData: function(dataTypeId, id, newData) {
+    	this.grid.dataTable.api().rows().every( function () {
+    	    var d = this.data();
+    	    if (d.id == id) {
+	    	    for (key in newData) {
+	    	    	d[key] = newData[key];
+	    	    }
+	    	    this.data(d);
+    	    }
+    	});
+    },    
+    
     getData: function(dataTypeId) {
     	var self = this;
     	var cachedData = new Array();
@@ -424,7 +467,7 @@ $.extend(ContentPanel.prototype, {
     		this.element.children('.html').hide();
     		this.element.children('.grid').show();
     		this.grid.update(cachedData);
-    		this.grid.dataTable.api().draw(); // needed to display column widths properly
+    		this.grid.redraw(); // needed to display column widths properly
     	}
     	else {
     		var cachedData = this.getData(this.selectedView);
@@ -648,6 +691,10 @@ $.extend(DataGrid.prototype, {
 			.draw();
     },
     
+    redraw: function() {
+    	this.dataTable.api().draw();
+    },
+    
     getNumRows: function() {
     	return this.dataTable.api().page.info().recordsTotal;
     },    
@@ -810,13 +857,13 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatAnalysis: function() {
         var isRunning   = (this.status.toLowerCase() == 'running');
         var isCancelled = (this.status.toLowerCase() == 'cancelled');
-        var star_icon    = '<img title="Favorite this analysis"' + ( this.is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) + 'width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this);" />';
-        var cancel_icon  = '<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('+(this.workflow_id ? this.workflow_id : '')+');"/>';
-        var restart_icon = '<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('+(this.link ? this.link : '')+');"/>';
-        var comment_icon = '<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog($id, '+this.comment+');" />';
+        var star_icon    = '<img title="Favorite this analysis"' + ( this.is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) + 'width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this, '+this.id+');" />';
+        var cancel_icon  = '<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('+this.id+');"/>';
+        var restart_icon = '<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('+this.id+');"/>';
+        var comment_icon = '<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog('+this.id+');" />';
         var icons = star_icon + ' ' + comment_icon + ' ' + (isCancelled ? restart_icon : '') + ' ' + (isRunning ? cancel_icon : '');
     	var descStr =
-    		icons + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + this.comment : '') + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
+    		icons + ' ' + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + this.comment : '') + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
     	return descStr;
     },
     
@@ -1076,14 +1123,6 @@ function delete_items() {
 	var selected_rows = contentPanel.grid.getSelectedRows();
 	var item_list = contentPanel.grid.getSelectedItemList();
 	if (item_list) {
-//		selected.parent().fadeOut('fast',
-//			function() {
-//				selected.parent().addClass('deleted');
-//				selected.prop('checked', false);
-//				infoPanel.update(); // reset button states
-//			}
-//		);
-
 		$.ajax({
 			data: {
 				fname: 'delete_items',
@@ -1095,7 +1134,8 @@ function delete_items() {
 					d.deleted = '1';
 					this.data(d);
 				});
-				contentPanel.grid.dataTable.api().draw(); //FIXME move into ContentPanel method
+				contentPanel.grid.redraw();
+				infoPanel.update(null);
 			}
 		});
 	}
@@ -1105,14 +1145,6 @@ function undelete_items() {
 	var selected_rows = contentPanel.grid.getSelectedRows();
 	var item_list = contentPanel.grid.getSelectedItemList();
 	if (item_list) {
-//		selected.parent().fadeOut('fast',
-//			function() {
-//				selected.parent().removeClass('deleted');
-//				selected.prop('checked', false);
-//				infoPanel.update(); // reset button states
-//			}
-//		);
-		
 		$.ajax({
 			data: {
 				fname: 'undelete_items',
@@ -1124,80 +1156,73 @@ function undelete_items() {
 					d.deleted = '0';
 					this.data(d);
 				});
-				contentPanel.grid.dataTable.api().draw(); //FIXME move into ContentPanel method
+				contentPanel.grid.redraw();
+				infoPanel.update(null);
 			}
 		});
 	}
 }
-
-/*
-function cancel_jobs() {
-	var selected = get_selected_items();
-	if (selected.length) {
-		var item_list = selected.map(function(){return this.parentNode.id;}).get().join(',');
-		$.ajax({
-			data: {
-				fname: 'cancel_jobs',
-				item_list: item_list
-			},
-			success : function(rc) {
-				if (rc) {
-	            	poll();
-	            }
-			}
-		});
-	}
-}
-*/
 
 function cancel_job_dialog(id) {
 	if (id) {
 		$('#cancel_dialog')
-			.data("job_id", id)
+			.data("log_id", id)
 			.dialog('open');
 	}
 }
 
 function cancel_job(id) {
 	if (id) {
-		$.ajax({
-			data: {
-				fname: 'cancel_job',
-				workflow_id: id
-			},
-			success : function(rc) {
-				if (rc) {
-					poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
-	            }
-			}
-		});
+		var row = contentPanel.getRow('analyses', id);
+		if (row) {
+			var data = row.data();
+			$.ajax({
+				data: {
+					fname: 'cancel_job',
+					workflow_id: data.workflow_id
+				},
+				success : function(rc) {
+					if (rc) {
+						//poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
+						
+						// Update status to cancelled in displayed row
+						var data = row.data();
+						data.status = 'Cancelled';
+						row.data(data);
+		            }
+				}
+			});
+		}
 	}
 }
 
-function restart_job(link) {
-	if (link) {
-		// Doesn't work for http vs. https:
-//		var element = document.createElement("iframe"); 
-//		element.setAttribute('id', 'myframe');
-//		element.setAttribute('src', link);
-//		document.body.appendChild(element);
-
-		// Open the link in a "hidden" window.
-		// Workaround for restarting a workflow until JEX implements a 
-		// restart command.
-		var w = window.open(link,'_blank', 'toolbar=no,status=no,menubar=no,scrollbars=no,resizable=no,left=10000,top=10000,width=1,height=1,visible=none', ''); 
-		setTimeout(function() {
-				poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
-				w.close();
-			},
-			5*1000
-		);
-	}
-}
-
-function comment_dialog(id, val) {
+function restart_job(id) {
 	if (id) {
-		$('#comment_dialog').find("input").first().val(val);
+		var row = contentPanel.getRow('analyses', id);
+		var data = row.data();
+		if (data.link) {
+			// Change status to running in displayed row
+			data.status = 'Running';
+			row.data(data);
+			
+			// Open the link in a "hidden" window.
+			// Workaround for restarting a workflow until JEX implements a 
+			// restart command.
+			var w = window.open(data.link,'_blank', 'toolbar=no,status=no,menubar=no,scrollbars=no,resizable=no,left=10000,top=10000,width=1,height=1,visible=none', ''); 
+			setTimeout(function() {
+					//poll(0);//schedule_poll(0); // FIXME mdb changed 10/7/14, reevaluate someday
+					w.close();
+				},
+				5*1000
+			);
+		}
+	}
+}
+
+function comment_dialog(id) {
+	if (id) {
+		var data = contentPanel.getRowData('analyses', id);
+		$('#comment_dialog').find("input").first().val(data.comment);
 		$('#comment_dialog')
 			.data("log_id", id)
 			.dialog('open');
@@ -1213,7 +1238,8 @@ function comment_job(id, comment) {
 		},
 		success : function(rc) {
 			if (rc) {
-				schedule_poll(0);
+				//schedule_poll(0);
+				contentPanel.grid.redraw();
             }
 		}
 	});
@@ -1668,11 +1694,11 @@ function send_items_to(page_name, format) {
 	}
 }
 
-function toggle_star(img) {
+function toggle_star(img, id) {
 	$.ajax({
 		data: {
 			fname: 'toggle_star',
-			log_id: img.name,
+			log_id: id,
 		},
 		success :  function(val) {
 			$(img).attr({ src: (val == 0 ? "picts/star-hollow.png" : "picts/star-full.png") });
