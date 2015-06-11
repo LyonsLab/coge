@@ -6,6 +6,7 @@ var current_tab = 0;
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
 var jobs_updating = true;
 var jobs_init = false;
+var running_only = 1;
 var hist_init = false;
 var user_graph_init = false;
 var group_graph_init = false;
@@ -53,6 +54,9 @@ $(function () {
     });
     $("#job_update_checkbox").change(function(e) {
     	toggle_job_updater();
+    });
+    $("#running_checkbox").change(function(e) {
+    	toggle_running();
     });
     $("#hist_update_checkbox").change(function(e) {
     	toggle_hist_updater();
@@ -300,7 +304,7 @@ function change_tab(tab) {
 
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
-		$("#loading_gears").show();
+		$("#loading").show();
 		timestamps['search_stuff'] = new Date().getTime();
 		$.ajax({
 			//type: "POST",
@@ -313,7 +317,7 @@ function search_stuff (search_term) {
 			},
 			success : function(data) {
 				//console.log(data);
-				//$('#loading_gears').hide();
+				//$('#loading').hide();
 				var obj = jQuery.parseJSON(data);
 				
 				if (obj && obj.items && obj.timestamp != timestamps['search_stuff']) {
@@ -334,7 +338,9 @@ function search_stuff (search_term) {
 
 					if (obj.items[i].type == "organism") {
 						orgList = orgList + "<tr><td><span title='" + obj.items[i].description + "'>";
-						orgList = orgList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")" + "</span></td></tr>";
+						orgList = orgList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")";
+						orgList = orgList + " <a href=\"OrganismView.pl?oid=" + (obj.items[i].id) + "\">Info </a>";
+						orgList = orgList + "</span></td></tr>";
 						orgCounter++;
 					}
 	
@@ -353,7 +359,7 @@ function search_stuff (search_term) {
 							genList = genList + "<span>";
 						}
 						genList = genList + (obj.items[i].label) + " <a href=\"GenomeInfo.pl?gid=" + (obj.items[i].id) + "\">Info </a>";
-						genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ", 2 )'>Edit Access</button>";
+						genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ", 2, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						genList = genList + "</span></td></tr>";
 						genCounter++;
 					}
@@ -373,7 +379,7 @@ function search_stuff (search_term) {
 							expList = expList + "<span>";
 						}
 						expList = expList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"ExperimentView.pl?eid=" + (obj.items[i].id) + "\">Info </a>";
-						expList = expList + "<button onclick='share_dialog(" + obj.items[i].id + ", 3 )'>Edit Access</button>";
+						expList = expList + "<button onclick='share_dialog(" + obj.items[i].id + ", 3, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						expList = expList + "</span></td></tr>";
 						expCounter++;
 					}
@@ -393,7 +399,7 @@ function search_stuff (search_term) {
 							noteList = noteList + "<span>";
 						}
 						noteList = noteList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"NotebookView.pl?lid=" + (obj.items[i].id) + "\">Info </a>";
-						noteList = noteList + "<button onclick='share_dialog(" + obj.items[i].id + ", 1 )'>Edit Access</button>";
+						noteList = noteList + "<button onclick='share_dialog(" + obj.items[i].id + ", 1 , " + obj.items[i].restricted + ")'>Edit Access</button>";
 						noteList = noteList + "</span></td></tr>";
 						noteCounter++;
 					}
@@ -414,7 +420,7 @@ function search_stuff (search_term) {
 				
 	
 				//Populate the html with the results
-				$("#loading_gears").show();
+				$("#loading").show();
 				$(".result").fadeIn( 'fast');
 				
 				//user
@@ -519,7 +525,7 @@ function search_stuff (search_term) {
 					$('#user_group').hide();
 				}
 				
-				$("#loading_gears").hide();
+				$("#loading").hide();
 			},
 		});
 		previous_search = search_term;
@@ -639,7 +645,7 @@ function refresh_data() {
 function user_info(userID, search_type) {
 
 	var search_term = userID;
-	$("#loading_gears2").show();
+	$("#loading2").show();
 	timestamps['user_info'] = new Date().getTime();
 	$.ajax({
 		data: {
@@ -691,7 +697,7 @@ function user_info(userID, search_type) {
                             	genList = genList + "<span>";
                             }
         					genList = genList + (current.label) + " <a href=\"GenomeInfo.pl?gid=" + (current.id) + "\">Info </a>";
-        					genList = genList + "<button onclick='share_dialog(" + current.id + ", 2 )'>Edit Access</button>";
+        					genList = genList + "<button onclick='share_dialog(" + current.id + ", 2, " + current.restricted + ")'>Edit Access</button>";
         					genList = genList + "</span></td></tr>";
         					genCounter++;
         				}
@@ -720,7 +726,7 @@ function user_info(userID, search_type) {
         						expList = expList + "<span>";
         					}
         					expList = expList + (current.label) + " (ID: " + (current.id) + ") <a href=\"ExperimentView.pl?eid=" + (current.id) + "\">Info </a>";
-        					expList = expList + "<button onclick='share_dialog(" + current.id + ", 3 )'>Edit Access</button>";
+        					expList = expList + "<button onclick='share_dialog(" + current.id + ", 3, " + current.restricted + ")'>Edit Access</button>";
         					expList = expList + "</span></td></tr>";
         					expCounter++;
         				}
@@ -749,7 +755,7 @@ function user_info(userID, search_type) {
         						noteList = noteList + "<span>";
         					}
         					noteList = noteList + (current.label) + " (ID: " + (current.id) + ") <a href=\"NotebookView.pl?lid=" + (current.id) + "\">Info </a>";
-        					noteList = noteList + "<button onclick='share_dialog(" + current.id + ", 1 )'>Edit Access</button>";
+        					noteList = noteList + "<button onclick='share_dialog(" + current.id + ", , " + current.restricted + ")'>Edit Access</button>";
         					noteList = noteList + "</span></td></tr>";
         					noteCounter++;
         				}
@@ -784,7 +790,8 @@ function user_info(userID, search_type) {
 
         		if (genCounter > 0) {
         			genBlock = genBlock + "<div style=\"padding-top:10px;padding-left:30px;\">";
-        			genBlock = genBlock + "<span id='genCount" + i + "' class='coge-table-header' style='color:119911;'>Genomes: " + genCounter + " </span>";
+        			genBlock = genBlock + "<span id='genCount" + i + "' class='coge-table-header' style='color:119911;' onclick=\"toggle_arrow('#genArrow" + i + "');show_table('#genList" + i + "')\">";	
+        			genBlock = genBlock + "Genomes: " + genCounter + " </span>";
         			genBlock = genBlock + "<div id=\"genArrow" + i + "\" onclick=\"toggle_arrow('#genArrow" + i + "');show_table('#genList" + i + "')\" style='display:inline;'>";
         			genBlock = genBlock + "<img src=\"picts/arrow-right-icon.png\" class=\"link\" style=\"width:10px;height:10px;\"/></div>";
         			genBlock = genBlock + "<table cellspacing=\"5\" class=\"hidden\" id='genList" + i + "' style=\"border-top:0px solid green; padding-left:20px; padding-bottom:10px;\">";
@@ -793,7 +800,8 @@ function user_info(userID, search_type) {
 
         		if (noteCounter > 0) {
         			noteBlock = noteBlock + "<div style=\"padding-top:10px;padding-left:30px;\">";
-        			noteBlock = noteBlock + "<span id='noteCount" + i + "' class='coge-table-header' style='color:119911;'>Notebooks: " + noteCounter + " </span>";
+        			noteBlock = noteBlock + "<span id='noteCount" + i + "' class='coge-table-header' style='color:119911;' onclick=\"toggle_arrow('#noteArrow" + i + "');show_table('#noteList" + i + "')\">";
+        			noteBlock = noteBlock +	"Notebooks: " + noteCounter + " </span>";
         			noteBlock = noteBlock + "<div id=\"noteArrow" + i + "\" onclick=\"toggle_arrow('#noteArrow" + i + "');show_table('#noteList" + i + "')\" style='display:inline;'>";
         			noteBlock = noteBlock + "<img src=\"picts/arrow-right-icon.png\" class=\"link\" style=\"width:10px;height:10px;\"/></div>";
         			noteBlock = noteBlock + "<table cellspacing=\"5\" class=\"hidden\" id='noteList" + i + "' style=\"border-top:0px solid green; padding-left:20px; padding-bottom:10px;\">"; 
@@ -802,7 +810,8 @@ function user_info(userID, search_type) {
 
         		if (expCounter > 0) {
         			expBlock = expBlock + "<div style=\"padding-top:10px;padding-left:30px;\">";
-        			expBlock = expBlock + "<span id='expCount" + i + "' class='coge-table-header' style='color:119911;'>Experiments: " + expCounter + " </span>";
+        			expBlock = expBlock + "<span id='expCount" + i + "' class='coge-table-header' style='color:119911;' onclick=\"toggle_arrow('#expArrow" + i + "');show_table('#expList" + i + "')\">";
+        			expBlock = expBlock + "Experiments: " + expCounter + " </span>";
         			expBlock = expBlock + "<div id=\"expArrow" + i + "\" onclick=\"toggle_arrow('#expArrow" + i + "');show_table('#expList" + i + "')\" style='display:inline;'>";
         			expBlock = expBlock + "<img src=\"picts/arrow-right-icon.png\" class=\"link\" style=\"width:10px;height:10px;\"/></div>";
         			expBlock = expBlock + "<table cellspacing=\"5\" class=\"hidden\" id='expList" + i + "' style=\"border-top:0px solid green; padding-left:20px; padding-bottom:10px;\">";
@@ -811,7 +820,8 @@ function user_info(userID, search_type) {
 
         		if (userCounter > 0) {
         			userBlock = userBlock + "<div style=\"padding-top:10px;padding-left:30px;\">";
-        			userBlock = userBlock + "<span id='userCount" + i + "' class='coge-table-header' style='color:119911;'>Users: " + userCounter + " </span>";
+        			userBlock = userBlock + "<span id='userCount" + i + "' class='coge-table-header' style='color:119911;' onclick=\"toggle_arrow('#userArrow" + i + "');show_table('#userList" + i + "')\">";
+        			userBlock = userBlock + "Users: " + userCounter + " </span>";
         			userBlock = userBlock + "<div id=\"userArrow" + i + "\" onclick=\"toggle_arrow('#userArrow" + i + "');show_table('#userList" + i + "')\" style='display:inline;'>";
         			userBlock = userBlock + "<img src=\"picts/arrow-right-icon.png\" class=\"link\" style=\"width:10px;height:10px;\"/></div>";
         			userBlock = userBlock + "<table cellspacing=\"5\" class=\"hidden\" id='userList" + i + "' style=\"border-top:0px solid green; padding-left:20px; padding-bottom:10px;\">"; 
@@ -860,20 +870,38 @@ function user_info(userID, search_type) {
         			$("#userArrow0" ).find('img').attr("src", "picts/arrow-right-icon.png");
         		}
         	}
-        	$("#loading_gears2").hide();
+        	$("#loading2").hide();
         }
 	});
 }
 
-function share_dialog(id, type) {
+function share_dialog(id, type, restricted) {
+	console.log(type);
 	var item_list = "content_" + id + "_" + type;  //selected.map(function(){return this.parentNode.id;}).get().join(',');
+	var type_string;
+	switch(type) {
+		case 1: type_string = 'List';
+			break;
+		case 2: type_string = 'Genome';
+			break;
+		case 3: type_string = 'Experiment';
+			break;
+	}
 	$.ajax({
 		data: {
 			fname: 'get_share_dialog',
 			item_list: item_list,
 		},
-		success : function(data) {
+		success : function(data) {			
 			$('#share_dialog').html(data).dialog({width:500}).dialog('open');
+			if(restricted == 0) {
+				$('#restrict_checkbox').prop('checked', true);
+			} else if(restricted == 1) {
+				$('#restrict_checkbox').prop('checked', false);
+			}
+			$('#restrict_checkbox').change(function(e) {
+				modify_item(id, type_string, 'restrict');
+			});
 		}
 	});
 }
@@ -993,7 +1021,8 @@ function remove_user_from_group(user_id, id, type) {
 }
 
 
-function modify_item (id, type, modification) {
+function modify_item(id, type, modification) {
+	console.log(type);
 	$.ajax({
 		data: {
 			fname: 'modify_item',
@@ -1007,7 +1036,7 @@ function modify_item (id, type, modification) {
 	});
 }
 
-function wait_to_search (search_func, search_term) {
+function wait_to_search(search_func, search_term) {
 	//console.log(search_term);
 	pageObj.search_term = search_term;
 
@@ -1027,12 +1056,14 @@ function wait_to_search (search_func, search_term) {
 
 //The following javascript deals with Tab2, the Jobs tab
 function get_jobs() {
+	cancel_update("jobs");
 	$.ajax({
 		dataType: 'json',
 	    data: {
 	        jquery_ajax: 1,
 	        fname: 'get_jobs',
 	        time_range: 0,
+	        running_only: running_only,
 	    },
 	    success: function(data) {
 	    	//console.log(data.jobs);
@@ -1066,6 +1097,15 @@ function toggle_job_updater() {
 	}
 }
 
+function toggle_running() {
+	if(running_only == 0) {
+		running_only = 1;
+	} else {
+		running_only = 0;
+	}
+	get_jobs();
+}
+
 function schedule_update(delay) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME && delay !== undefined) {
@@ -1090,8 +1130,8 @@ function schedule_update(delay) {
 }
 
 function cancel_update(page) {
-	if(page == "job") {
-		clearTimeout(job_timers['update']);
+	if(page == "jobs") {
+		clearTimeout(jobs_timers['update']);
 	}
 	if(page == "hist") {
 		clearTimeout(hist_timers['update']);
@@ -1149,7 +1189,7 @@ function submit_task(task, predicate) {
 
 //The following Javascript deals with Tab3, the History page 
 function get_history() {
-	$("#loading_gears3").show();
+	$("#loading3").show();
 	$.ajax({
 		dataType: 'json',
 		data: {
@@ -1165,7 +1205,7 @@ function get_history() {
 			updateHistFilter();
 			
 			hist_init = true;
-			$("#loading_gears3").hide();
+			$("#loading3").hide();
 		},
 	    complete: function(data) {
 	    	schedule_update(5000);
@@ -1263,7 +1303,7 @@ function init_graph(selectId) {
 		
 		if(!user_graph_init) {	
 			user_graph_init = true;
-			$("#loading_gears4").show();
+			$("#loading4").show();
 			d3.json("?fname=get_user_nodes", function(json) {
 				console.log(json);
 				var root = json;
@@ -1324,7 +1364,7 @@ function init_graph(selectId) {
 				});
 				
 				var user_force = new Force(root, link, node, user_filters);
-				$("#loading_gears4").hide();
+				$("#loading4").hide();
 				user_force.update();
 			});
 		} 
@@ -1336,7 +1376,7 @@ function init_graph(selectId) {
 		
 		if(!group_graph_init) {
 			group_graph_init = true;
-			$("#loading_gears4").show();
+			$("#loading4").show();
 			d3.json("?fname=get_group_nodes", function(json) {
 				console.log(json);
 				var root = json;
@@ -1397,7 +1437,7 @@ function init_graph(selectId) {
 				});
 				
 				var group_force = new Force(root, link, node, group_filters);
-				$("#loading_gears4").hide();
+				$("#loading4").hide();
 				group_force.update();
 			});
 		}
