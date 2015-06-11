@@ -55,7 +55,8 @@ my $node_types = CoGeX::node_types();
     toggle_star                     => \&toggle_star,
     update_comment                  => \&update_comment,
     update_history                  => \&update_history,
-    get_all_nodes  					=> \&get_all_nodes,
+    get_user_nodes  				=> \&get_user_nodes,
+    get_group_nodes  				=> \&get_group_nodes,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1189,14 +1190,8 @@ sub change_group_role {
 
 #Jobs tab
 sub get_jobs_for_user {
-	######
-    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    #my $print_thing = get_roles($lowest_role->name);
-    #print $fh "Get Jobs called\n";
-    #print $fh "$size\n";
-    #close $fh;
-    #print $fh Dumper(\@items);
+    my %opts = @_;
+    my $running_only = $opts{running_only};
     
     my @entries;
     if ( $USER->is_admin ) {
@@ -1225,8 +1220,22 @@ sub get_jobs_for_user {
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
     my @workflows = map { $_->workflow_id } @entries;
     
+    ######
+    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    #my $print_thing = get_roles($lowest_role->name);
+    #print $fh Dumper(\@workflows);
+    #print $fh "\n";
+    #close $fh;
+    #print $fh Dumper(\@items);
+    
     #my $workflows = $JEX->find_workflows(\@workflows, 'running');
-    my $workflows = $JEX->find_workflows(undef, 'running');
+    my $workflows;
+    if($running_only == 1) {
+    	$workflows = $JEX->find_workflows(undef, 'running');
+    } else {
+    	$workflows = $JEX->find_workflows(\@workflows);
+    }
 
     my @job_items;
     my %workflow_results;
@@ -1455,22 +1464,24 @@ sub update_history {
 
 
 #Graph tab
-sub get_all_nodes {
+sub get_user_nodes {
     #print STDERR "get_all_nodes\n";
 
     my %childrenByList;
     foreach my $conn ( $coge->resultset('ListConnector')->all ) {
     	if($conn->child_type != 4) {
     		my $child = $conn->child;
-	        push @{ $childrenByList{ $conn->parent_id } },
-          	{ 
-          		name 		=> $conn->child_id, 
-          		size 		=> 2025, 
-          		type 		=> $conn->child_type,
-          		deleted		=> $child->deleted,
-          		restricted 	=> $child->restricted,
-          	};
-          	#TODO: Remove features
+    		
+    		if($child) {
+	        	push @{ $childrenByList{ $conn->parent_id } },
+          		{ 
+          			name 		=> $conn->child_id, 
+          			size 		=> 2025, 
+          			type 		=> $conn->child_type,
+          			deleted		=> $child->deleted,
+          			restricted 	=> $child->restricted,
+          		};
+    		}
     	}
     }
 
@@ -1496,13 +1507,6 @@ sub get_all_nodes {
     			$size = scalar @{$sub};
     		}
     		
-    		#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    		#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    		#print $fh "Genomes: ";
-    		#print $fh Dumper(\@children);
-    		#print $fh $size;
-    		#print $fh "\n";
-    		#close $fh;
     		my $child = $conn->child;
     		
             push @{ $childrenByUser{ $conn->parent_id } },
@@ -1549,9 +1553,49 @@ sub get_all_nodes {
             deleted	 	=> 0,
             restricted 	=> 0,
           };
-    }
+    }    
 
-    my %childrenByGroup;
+    return encode_json(
+		{ 
+			name 	 => 'users',  
+			info	 => 'users', 
+			children => \@users, 
+			size	 => (scalar @users) * 1000, 
+			_size	 => 2025,
+		}
+    );
+}
+
+sub get_group_nodes {
+	my %childrenByList;
+	# TODO: Only pull from relevant lists
+    foreach my $conn ( $coge->resultset('ListConnector')->all ) {
+    	if($conn->child_type != 4) {
+    		my $child = $conn->child;
+    		
+    		#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    		#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    		#if(!$child) {
+    		#	print $fh "Problem found: ";
+    		#	print $fh $conn->child_id;
+    		#	print $fh "\n";
+    		#}
+    		#close $fh;
+    		
+    		if($child) {
+	        	push @{ $childrenByList{ $conn->parent_id } },
+          		{ 
+          			name 		=> $conn->child_id, 
+          			size 		=> 2025, 
+          			type 		=> $conn->child_type,
+          			deleted		=> $child->deleted,
+          			restricted 	=> $child->restricted,
+          		};
+    		}
+    	}
+    }
+	
+	my %childrenByGroup;
     foreach my $conn (
         $coge->resultset('UserConnector')->search(
             {
@@ -1619,91 +1663,14 @@ sub get_all_nodes {
             restricted 	=> 0,
           };
     }
-
+    
     return encode_json(
-        {
-            name     => 'root',
-            info	 => 'root',
-            size	 => 10000000,
-            _size	 => 2025,
-            children => [
-                { 
-                	name 	 => 'users',  
-                	info	 => 'users', 
-                	children => \@users, 
-                	size	 => (scalar @users) * 1000, 
-                	_size	 => 2025,
-                },
-                { 
-                	name	 => 'groups', 
-                	info	 => 'groups', 
-                	children => \@groups, 
-                	size	 => (scalar @groups) * 1000,
-                	_size	 => 2025,
-                }
-            ]
-        }
+		{ 
+			name	 => 'groups', 
+			info	 => 'groups', 
+			children => \@groups, 
+			size	 => (scalar @groups) * 3000,
+			_size	 => 2025,
+		}
     );
 }
-
-#sub get_type_name {
-#    my $type_id = shift;
-#    foreach my $type_name ( keys %{$node_types} ) {
-#        return $type_name if ( $type_id == $node_types->{$type_name} );
-#    }
-#}
-#
-#sub get_node {
-#    my %opts    = @_;
-#    my $node_id = $opts{id};
-#    return unless $node_id;
-#
-#    my ( $type, $id ) = split( '_', $node_id );
-#
-#    my ( $url, @children );
-#
-#    if ( $type eq 'user' ) {
-#        foreach my $conn (
-#            $coge->resultset('UserConnector')->search(
-#                { parent_id => $id, parent_type => $node_types->{user} }
-#            )
-#          )
-#        {
-#            my $child = $conn->child;
-#            my $type  = get_type_name( $conn->child_type );
-#            my $name  = ( $child->name ? $child->name : '<unnamed>' );
-#            my $info  = ( $child->info ? $child->info : '<no info>' );
-#            my $id    = $type . '_' . $conn->child_id;
-#            push @children,
-#              { id => $id, name => $name, info => $info, type => $type };
-#        }
-#    }
-#    elsif ( $type eq 'group' ) {
-#        $url = 'GroupView.pl?ugid=' . $id;
-#    }
-#    elsif ( $type eq 'list' ) {
-#
-#        #$url = 'NotebookView.pl?nid='.$id;
-#        foreach my $conn (
-#            $coge->resultset('ListConnector')->search( { parent_id => $id } ) )
-#        {
-#            my $child = $conn->child;
-#            my $type  = get_type_name( $conn->child_type );
-#            my $name  = ( $child->name ? $child->name : '<unnamed>' );
-#            my $info  = ( $child->info ? $child->info : '<no info>' );
-#            my $id    = $type . '_' . $conn->child_id;
-#            push @children,
-#              { id => $id, name => $name, info => $info, type => $type };
-#        }
-#    }
-#    elsif ( $type eq 'genome' ) {
-#        $url = 'GenomeInfo.pl?gid=' . $id;
-#    }
-#    elsif ( $type eq 'experiment' ) {
-#        $url = 'ExperimentView.pl?eid=' . $id;
-#    }
-#
-#    push @children, { info => '<empty>' } if ( not @children );
-#
-#    return encode_json( { url => $url, children => \@children } );
-#}

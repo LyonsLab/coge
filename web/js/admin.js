@@ -6,8 +6,10 @@ var current_tab = 0;
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
 var jobs_updating = true;
 var jobs_init = false;
+var running_only = 1;
 var hist_init = false;
-var graph_init = false;
+var user_graph_init = false;
+var group_graph_init = false;
 var hist_updating = true;
 var hist_entries = 0;
 var last_hist_update;
@@ -27,9 +29,9 @@ $(function () {
 			if(current_tab == 2 && !hist_init) {
 				init_hist_grid();
 			}
-			if(current_tab == 3 && !graph_init) {
-				init_graph();
-			}
+			//if(current_tab == 3 && !graph_init) {
+			//	init_graph();
+			//}
 		}
     });
 	
@@ -52,6 +54,9 @@ $(function () {
     });
     $("#job_update_checkbox").change(function(e) {
     	toggle_job_updater();
+    });
+    $("#running_checkbox").change(function(e) {
+    	toggle_running();
     });
     $("#hist_update_checkbox").change(function(e) {
     	toggle_hist_updater();
@@ -299,7 +304,7 @@ function change_tab(tab) {
 
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
-		$("#loading_gears").show();
+		$("#loading").show();
 		timestamps['search_stuff'] = new Date().getTime();
 		$.ajax({
 			//type: "POST",
@@ -312,7 +317,7 @@ function search_stuff (search_term) {
 			},
 			success : function(data) {
 				//console.log(data);
-				//$('#loading_gears').hide();
+				//$('#loading').hide();
 				var obj = jQuery.parseJSON(data);
 				
 				if (obj && obj.items && obj.timestamp != timestamps['search_stuff']) {
@@ -333,7 +338,9 @@ function search_stuff (search_term) {
 
 					if (obj.items[i].type == "organism") {
 						orgList = orgList + "<tr><td><span title='" + obj.items[i].description + "'>";
-						orgList = orgList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")" + "</span></td></tr>";
+						orgList = orgList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")";
+						orgList = orgList + " <a href=\"OrganismView.pl?oid=" + (obj.items[i].id) + "\">Info </a>";
+						orgList = orgList + "</span></td></tr>";
 						orgCounter++;
 					}
 	
@@ -352,7 +359,7 @@ function search_stuff (search_term) {
 							genList = genList + "<span>";
 						}
 						genList = genList + (obj.items[i].label) + " <a href=\"GenomeInfo.pl?gid=" + (obj.items[i].id) + "\">Info </a>";
-						genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ", 2 )'>Edit Access</button>";
+						genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ", 2, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						genList = genList + "</span></td></tr>";
 						genCounter++;
 					}
@@ -372,7 +379,7 @@ function search_stuff (search_term) {
 							expList = expList + "<span>";
 						}
 						expList = expList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"ExperimentView.pl?eid=" + (obj.items[i].id) + "\">Info </a>";
-						expList = expList + "<button onclick='share_dialog(" + obj.items[i].id + ", 3 )'>Edit Access</button>";
+						expList = expList + "<button onclick='share_dialog(" + obj.items[i].id + ", 3, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						expList = expList + "</span></td></tr>";
 						expCounter++;
 					}
@@ -392,7 +399,7 @@ function search_stuff (search_term) {
 							noteList = noteList + "<span>";
 						}
 						noteList = noteList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"NotebookView.pl?lid=" + (obj.items[i].id) + "\">Info </a>";
-						noteList = noteList + "<button onclick='share_dialog(" + obj.items[i].id + ", 1 )'>Edit Access</button>";
+						noteList = noteList + "<button onclick='share_dialog(" + obj.items[i].id + ", 1 , " + obj.items[i].restricted + ")'>Edit Access</button>";
 						noteList = noteList + "</span></td></tr>";
 						noteCounter++;
 					}
@@ -413,7 +420,7 @@ function search_stuff (search_term) {
 				
 	
 				//Populate the html with the results
-				$("#loading_gears").show();
+				$("#loading").show();
 				$(".result").fadeIn( 'fast');
 				
 				//user
@@ -518,7 +525,7 @@ function search_stuff (search_term) {
 					$('#user_group').hide();
 				}
 				
-				$("#loading_gears").hide();
+				$("#loading").hide();
 			},
 		});
 		previous_search = search_term;
@@ -638,7 +645,7 @@ function refresh_data() {
 function user_info(userID, search_type) {
 
 	var search_term = userID;
-	$("#loading_gears2").show();
+	$("#loading2").show();
 	timestamps['user_info'] = new Date().getTime();
 	$.ajax({
 		data: {
@@ -690,7 +697,7 @@ function user_info(userID, search_type) {
                             	genList = genList + "<span>";
                             }
         					genList = genList + (current.label) + " <a href=\"GenomeInfo.pl?gid=" + (current.id) + "\">Info </a>";
-        					genList = genList + "<button onclick='share_dialog(" + current.id + ", 2 )'>Edit Access</button>";
+        					genList = genList + "<button onclick='share_dialog(" + current.id + ", 2, " + current.restricted + ")'>Edit Access</button>";
         					genList = genList + "</span></td></tr>";
         					genCounter++;
         				}
@@ -719,7 +726,7 @@ function user_info(userID, search_type) {
         						expList = expList + "<span>";
         					}
         					expList = expList + (current.label) + " (ID: " + (current.id) + ") <a href=\"ExperimentView.pl?eid=" + (current.id) + "\">Info </a>";
-        					expList = expList + "<button onclick='share_dialog(" + current.id + ", 3 )'>Edit Access</button>";
+        					expList = expList + "<button onclick='share_dialog(" + current.id + ", 3, " + current.restricted + ")'>Edit Access</button>";
         					expList = expList + "</span></td></tr>";
         					expCounter++;
         				}
@@ -748,7 +755,7 @@ function user_info(userID, search_type) {
         						noteList = noteList + "<span>";
         					}
         					noteList = noteList + (current.label) + " (ID: " + (current.id) + ") <a href=\"NotebookView.pl?lid=" + (current.id) + "\">Info </a>";
-        					noteList = noteList + "<button onclick='share_dialog(" + current.id + ", 1 )'>Edit Access</button>";
+        					noteList = noteList + "<button onclick='share_dialog(" + current.id + ", , " + current.restricted + ")'>Edit Access</button>";
         					noteList = noteList + "</span></td></tr>";
         					noteCounter++;
         				}
@@ -783,7 +790,8 @@ function user_info(userID, search_type) {
 
         		if (genCounter > 0) {
         			genBlock = genBlock + "<div style=\"padding-top:10px;padding-left:30px;\">";
-        			genBlock = genBlock + "<span id='genCount" + i + "' class='coge-table-header' style='color:119911;'>Genomes: " + genCounter + " </span>";
+        			genBlock = genBlock + "<span id='genCount" + i + "' class='coge-table-header' style='color:119911;' onclick=\"toggle_arrow('#genArrow" + i + "');show_table('#genList" + i + "')\">";	
+        			genBlock = genBlock + "Genomes: " + genCounter + " </span>";
         			genBlock = genBlock + "<div id=\"genArrow" + i + "\" onclick=\"toggle_arrow('#genArrow" + i + "');show_table('#genList" + i + "')\" style='display:inline;'>";
         			genBlock = genBlock + "<img src=\"picts/arrow-right-icon.png\" class=\"link\" style=\"width:10px;height:10px;\"/></div>";
         			genBlock = genBlock + "<table cellspacing=\"5\" class=\"hidden\" id='genList" + i + "' style=\"border-top:0px solid green; padding-left:20px; padding-bottom:10px;\">";
@@ -792,7 +800,8 @@ function user_info(userID, search_type) {
 
         		if (noteCounter > 0) {
         			noteBlock = noteBlock + "<div style=\"padding-top:10px;padding-left:30px;\">";
-        			noteBlock = noteBlock + "<span id='noteCount" + i + "' class='coge-table-header' style='color:119911;'>Notebooks: " + noteCounter + " </span>";
+        			noteBlock = noteBlock + "<span id='noteCount" + i + "' class='coge-table-header' style='color:119911;' onclick=\"toggle_arrow('#noteArrow" + i + "');show_table('#noteList" + i + "')\">";
+        			noteBlock = noteBlock +	"Notebooks: " + noteCounter + " </span>";
         			noteBlock = noteBlock + "<div id=\"noteArrow" + i + "\" onclick=\"toggle_arrow('#noteArrow" + i + "');show_table('#noteList" + i + "')\" style='display:inline;'>";
         			noteBlock = noteBlock + "<img src=\"picts/arrow-right-icon.png\" class=\"link\" style=\"width:10px;height:10px;\"/></div>";
         			noteBlock = noteBlock + "<table cellspacing=\"5\" class=\"hidden\" id='noteList" + i + "' style=\"border-top:0px solid green; padding-left:20px; padding-bottom:10px;\">"; 
@@ -801,7 +810,8 @@ function user_info(userID, search_type) {
 
         		if (expCounter > 0) {
         			expBlock = expBlock + "<div style=\"padding-top:10px;padding-left:30px;\">";
-        			expBlock = expBlock + "<span id='expCount" + i + "' class='coge-table-header' style='color:119911;'>Experiments: " + expCounter + " </span>";
+        			expBlock = expBlock + "<span id='expCount" + i + "' class='coge-table-header' style='color:119911;' onclick=\"toggle_arrow('#expArrow" + i + "');show_table('#expList" + i + "')\">";
+        			expBlock = expBlock + "Experiments: " + expCounter + " </span>";
         			expBlock = expBlock + "<div id=\"expArrow" + i + "\" onclick=\"toggle_arrow('#expArrow" + i + "');show_table('#expList" + i + "')\" style='display:inline;'>";
         			expBlock = expBlock + "<img src=\"picts/arrow-right-icon.png\" class=\"link\" style=\"width:10px;height:10px;\"/></div>";
         			expBlock = expBlock + "<table cellspacing=\"5\" class=\"hidden\" id='expList" + i + "' style=\"border-top:0px solid green; padding-left:20px; padding-bottom:10px;\">";
@@ -810,7 +820,8 @@ function user_info(userID, search_type) {
 
         		if (userCounter > 0) {
         			userBlock = userBlock + "<div style=\"padding-top:10px;padding-left:30px;\">";
-        			userBlock = userBlock + "<span id='userCount" + i + "' class='coge-table-header' style='color:119911;'>Users: " + userCounter + " </span>";
+        			userBlock = userBlock + "<span id='userCount" + i + "' class='coge-table-header' style='color:119911;' onclick=\"toggle_arrow('#userArrow" + i + "');show_table('#userList" + i + "')\">";
+        			userBlock = userBlock + "Users: " + userCounter + " </span>";
         			userBlock = userBlock + "<div id=\"userArrow" + i + "\" onclick=\"toggle_arrow('#userArrow" + i + "');show_table('#userList" + i + "')\" style='display:inline;'>";
         			userBlock = userBlock + "<img src=\"picts/arrow-right-icon.png\" class=\"link\" style=\"width:10px;height:10px;\"/></div>";
         			userBlock = userBlock + "<table cellspacing=\"5\" class=\"hidden\" id='userList" + i + "' style=\"border-top:0px solid green; padding-left:20px; padding-bottom:10px;\">"; 
@@ -859,20 +870,38 @@ function user_info(userID, search_type) {
         			$("#userArrow0" ).find('img').attr("src", "picts/arrow-right-icon.png");
         		}
         	}
-        	$("#loading_gears2").hide();
+        	$("#loading2").hide();
         }
 	});
 }
 
-function share_dialog(id, type) {
+function share_dialog(id, type, restricted) {
+	console.log(type);
 	var item_list = "content_" + id + "_" + type;  //selected.map(function(){return this.parentNode.id;}).get().join(',');
+	var type_string;
+	switch(type) {
+		case 1: type_string = 'List';
+			break;
+		case 2: type_string = 'Genome';
+			break;
+		case 3: type_string = 'Experiment';
+			break;
+	}
 	$.ajax({
 		data: {
 			fname: 'get_share_dialog',
 			item_list: item_list,
 		},
-		success : function(data) {
+		success : function(data) {			
 			$('#share_dialog').html(data).dialog({width:500}).dialog('open');
+			if(restricted == 0) {
+				$('#restrict_checkbox').prop('checked', true);
+			} else if(restricted == 1) {
+				$('#restrict_checkbox').prop('checked', false);
+			}
+			$('#restrict_checkbox').change(function(e) {
+				modify_item(id, type_string, 'restrict');
+			});
 		}
 	});
 }
@@ -992,7 +1021,8 @@ function remove_user_from_group(user_id, id, type) {
 }
 
 
-function modify_item (id, type, modification) {
+function modify_item(id, type, modification) {
+	console.log(type);
 	$.ajax({
 		data: {
 			fname: 'modify_item',
@@ -1006,7 +1036,7 @@ function modify_item (id, type, modification) {
 	});
 }
 
-function wait_to_search (search_func, search_term) {
+function wait_to_search(search_func, search_term) {
 	//console.log(search_term);
 	pageObj.search_term = search_term;
 
@@ -1026,12 +1056,14 @@ function wait_to_search (search_func, search_term) {
 
 //The following javascript deals with Tab2, the Jobs tab
 function get_jobs() {
+	cancel_update("jobs");
 	$.ajax({
 		dataType: 'json',
 	    data: {
 	        jquery_ajax: 1,
 	        fname: 'get_jobs',
 	        time_range: 0,
+	        running_only: running_only,
 	    },
 	    success: function(data) {
 	    	//console.log(data.jobs);
@@ -1065,6 +1097,15 @@ function toggle_job_updater() {
 	}
 }
 
+function toggle_running() {
+	if(running_only == 0) {
+		running_only = 1;
+	} else {
+		running_only = 0;
+	}
+	get_jobs();
+}
+
 function schedule_update(delay) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME && delay !== undefined) {
@@ -1089,8 +1130,8 @@ function schedule_update(delay) {
 }
 
 function cancel_update(page) {
-	if(page == "job") {
-		clearTimeout(job_timers['update']);
+	if(page == "jobs") {
+		clearTimeout(jobs_timers['update']);
 	}
 	if(page == "hist") {
 		clearTimeout(hist_timers['update']);
@@ -1148,7 +1189,7 @@ function submit_task(task, predicate) {
 
 //The following Javascript deals with Tab3, the History page 
 function get_history() {
-	$("#loading_gears3").show();
+	$("#loading3").show();
 	$.ajax({
 		dataType: 'json',
 		data: {
@@ -1164,7 +1205,7 @@ function get_history() {
 			updateHistFilter();
 			
 			hist_init = true;
-			$("#loading_gears3").hide();
+			$("#loading3").hide();
 		},
 	    complete: function(data) {
 	    	schedule_update(5000);
@@ -1233,101 +1274,209 @@ function toggle_star(img) {
 
 //Tab 4, the User Graph
 var colors = [
-	{ name: 'list',       link: 'NotebookView.pl?nid=',   color: 'Tomato',      show: 1 },
-	{ name: 'genome',     link: 'GenomeInfo.pl?gid=',     color: 'YellowGreen', show: 1 },
-	{ name: 'experiment', link: 'ExperimentView.pl?eid=', color: 'Orchid',      show: 1 },
-	{ name: 'feature',    link: '',                       color: 'orange',      show: 1 },
-	{ name: 'user',       link: '',                       color: 'DeepSkyBlue', show: 1 },
-	{ name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
+        	{ name: 'list',       link: 'NotebookView.pl?nid=',   color: 'Tomato',      show: 1 },
+        	{ name: 'genome',     link: 'GenomeInfo.pl?gid=',     color: 'YellowGreen', show: 1 },
+        	{ name: 'experiment', link: 'ExperimentView.pl?eid=', color: 'Orchid',      show: 1 },
+        	{ name: 'feature',    link: '',                       color: 'orange',      show: 1 },
+        	{ name: 'user',       link: '',                       color: 'DeepSkyBlue', show: 1 },
+        	{ name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
 ];
-
-var filters = [
-    { name: 'deleted', 		color: 'Red', 		show: 0 },
-    { name: 'restricted', 	color: 'Grey',	 	show: 0 },
-]
 
 var w = Math.max(800, $(window).width()-200),
 	h = Math.max(800, $(window).height()-300),
-	node,
-	link,
-	root;
+	user_node,
+	user_link,
+	user_root,
+	user_force,
+	group_node,
+	group_link,
+	group_root,
+	group_force;
 
-function init_graph() {
-	if(!graph_init) {
-		graph_init = true;
-		filters.forEach(function(element, index) {
-			var item =
-				$('<div class="link legend selected">'+filters[index].name+'</div>')
-					.css('color', filters[index].color)
-					.css('background-color', '')
-					.click(function() {
-						$(this).toggleClass('selected');
-						if ($(this).hasClass('selected')) {
-							$(this).css('color', filters[index].color);
-							$(this).css('background-color', '');
-						}
-						else {
-							$(this).css('color', 'white');
-							$(this).css('background-color', filters[index].color);
-						}
-						filters[index].show = !filters[index].show;
-						
-						var nodes = flatten(root);
-						nodes.forEach(color);
-						update();
-					});
-
-			$('#legend')
-				.append(item);
-		});
+function init_graph(selectId) {
+	//console.log(selectId);
+	if(selectId == 1) {
+		$('#group_chart').hide();
+		$('#group_legend').hide();
+		$('#user_chart').show();
+		$('#user_legend').show();
 		
-		force = d3.layout.force()
-			.size([w, h])
-			.on("tick", tick)
-			.gravity(1);
+		if(!user_graph_init) {	
+			user_graph_init = true;
+			$("#loading4").show();
+			d3.json("?fname=get_user_nodes", function(json) {
+				console.log(json);
+				var root = json;
+				var nodes = flatten(root);
+				nodes.forEach(function(d) {
+					d._children = d.children;
+					d.children = null;
+				});
+				
+				svg = d3.select("#user_chart").append("svg")
+					.attr("width", w)
+					.attr("height", h);
+				
+				var link = svg.selectAll(".link");
+				var node = svg.selectAll(".node");
+				
+				var user_filters = [
+				                    { name: 'deleted', 		color: 'Red', 		show: 0 },
+				                    { name: 'restricted', 	color: 'Grey',	 	show: 0 },
+				                    { name: '||||||||',		color: 'White',		show: 1 },
+				];
+				user_filters.forEach(function(element, index) {
+					var item =
+						$('<div class="link legend selected">'+user_filters[index].name+'</div>')
+							.css('color', user_filters[index].color)
+							.css('background-color', '')
+							.click(function() {
+								$(this).toggleClass('selected');
+								if ($(this).hasClass('selected')) {
+									$(this).css('color', user_filters[index].color);
+									$(this).css('background-color', '');
+								}
+								else {
+									$(this).css('color', 'white');
+									$(this).css('background-color', user_filters[index].color);
+								}
+								user_filters[index].show = !user_filters[index].show;
+								
+								var nodes = flatten(root);
+								nodes.forEach(function(d) {
+									return color(d, user_filters);
+								});
+								user_force.update();
+							});
+
+					$('#user_legend')
+						.append(item);
+				});
+				
+				colors.forEach(function(element, index) {
+					var item =
+						$('<div class="link legend selected">'+colors[index].name+'</div>')
+							.css('color', 'white')
+							.css('background-color', colors[index].color);
+	
+					$('#user_legend')
+						.append(item);
+				});
+				
+				var user_force = new Force(root, link, node, user_filters);
+				$("#loading4").hide();
+				user_force.update();
+			});
+		} 
+	} else if (selectId == 2) {
+		$('#user_chart').hide();
+		$('#user_legend').hide();
+		$('#group_chart').show();
+		$('#group_legend').show();
+		
+		if(!group_graph_init) {
+			group_graph_init = true;
+			$("#loading4").show();
+			d3.json("?fname=get_group_nodes", function(json) {
+				console.log(json);
+				var root = json;
+				var nodes = flatten(root);
+				nodes.forEach(function(d) {
+					d._children = d.children;
+					d.children = null;
+				});
+				
+				svg = d3.select("#group_chart").append("svg")
+					.attr("width", w)
+					.attr("height", h);
 			
-		svg = d3.select("#chart").append("svg")
-			.attr("width", w)
-			.attr("height", h);
+				var link = svg.selectAll(".link");
+				var node = svg.selectAll(".node");
+				
+				var group_filters = [
+				                     { name: 'deleted', 		color: 'Red', 		show: 0 },
+				                     { name: 'restricted', 	color: 'Grey',	 	show: 0 },
+				                     { name: '||||||||',		color: 'White',		show: 1 },
+				];
+				group_filters.forEach(function(element, index) {
+					var item =
+						$('<div class="link legend selected">'+group_filters[index].name+'</div>')
+							.css('color', group_filters[index].color)
+							.css('background-color', 'white')
+							.click(function() {
+								$(this).toggleClass('selected');
+								if ($(this).hasClass('selected')) {
+									$(this).css('color', group_filters[index].color);
+									$(this).css('background-color', '');
+								}
+								else {
+									$(this).css('color', 'white');
+									$(this).css('background-color', group_filters[index].color);
+								}
+								group_filters[index].show = !group_filters[index].show;
+								
+								var nodes = flatten(root);
+								nodes.forEach(function(d) {
+									return color(d, group_filters);
+								});
+								group_force.update();
+							});
 
-		link = svg.selectAll(".link"),
-		node = svg.selectAll(".node");
-
-
-		d3.json("?fname=get_all_nodes", function(json) {
-			console.log(json);
-			root = json;
-			var nodes = flatten(root);
-			nodes.forEach(function(d) {
-				d._children = d.children;
-				d.children = null;
-			})
-			update();
-			//console.log(links);
-			//console.log(nodes);
-		});
+					$('#group_legend')
+						.append(item);
+				});
+				
+				colors.forEach(function(element, index) {
+					var item =
+						$('<div class="link legend selected">'+colors[index].name+'</div>')
+							.css('color', 'white')
+							.css('background-color', colors[index].color);
+	
+					$('#group_legend')
+						.append(item);
+				});
+				
+				var group_force = new Force(root, link, node, group_filters);
+				$("#loading4").hide();
+				group_force.update();
+			});
+		}
 	}
 }
 
-function update() {
-      
-	var nodes = flatten(root),
+var Force = function(root, link, node, filters) {
+	var self = this;
+	this.link = link;
+	this.node = node;
+	this.root = root;
+	this.filters = filters;
+	this.force = d3.layout.force()
+		.size([w, h])
+		.on("tick", function() {
+			self.tick.call(self);
+		})
+		.gravity(1);
+}
+
+Force.prototype.update = function() {
+	var self = this;
+	var nodes = flatten(this.root),
 		links = d3.layout.tree().links(nodes);
 	
 	// Restart the force layout.
-	force
+	this.force
  		.nodes(nodes)
  		.links(links)
  		.start();
 
 	// Update the links…
-	link = link.data(links, function(d) { return d.target.id; });
+	this.link = this.link.data(links, function(d) { return d.target.id; });
 
 	// Exit any old links.
-	link.exit().remove();
+	this.link.exit().remove();
 
 	// Enter any new links.
-	link.enter().insert("line", ".node")
+	this.link.enter().insert("line", ".node")
 		.attr("class", "link")
 		.attr("x1", function(d) { return d.source.x; })
 		.attr("y1", function(d) { return d.source.y; })
@@ -1335,23 +1484,30 @@ function update() {
 		.attr("y2", function(d) { return d.target.y; });
 
 	// Update the nodes…
-	node = node.data(nodes, function(d) { return d.id; }).style("fill", color)
+	this.node = this.node.data(nodes, function(d) { return d.id; })
+		.style("fill", function(d) {
+			return color(d, self.filters);
+		})
 		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; });
 		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5});
 
 	// Exit any old nodes.
-	node.exit().remove();
+	this.node.exit().remove();
 
 	// Enter any new nodes.
-	node.enter().append("circle")
+	this.node.enter().append("circle")
 		.attr("class", "node")
 		.attr("cx", function(d) { return d.x; })
 		.attr("cy", function(d) { return d.y; })
 		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
 		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5})
-		.style("fill", color)
-		.on("click", click)
-		.call(force.drag)
+		.style("fill", function(d) {
+			return color(d, self.filters);
+		})
+		.on("click", function(d) {
+			self.click.call(self, d);
+		})
+		.call(this.force.drag)
 		.append("svg:title").text(function(d) { 
 			if(d.info) {
 				return d.info; 
@@ -1359,51 +1515,23 @@ function update() {
 				return d.name;
 			}
 		});
-	
-	//root.x = w/2;
-	//root.y = h/2;
-	
-	//console.log(nodes);
-	//console.log(links);
 }
 
-function tick() {
-	/*link.attr("x1", function(d) { return d.source.x; })
+Force.prototype.tick = function() {
+	/*this.link.attr("x1", function(d) { return d.source.x; })
 		.attr("y1", function(d) { return d.source.y; })
 		.attr("x2", function(d) { return d.target.x; })
 		.attr("y2", function(d) { return d.target.y; });
-
-	node.attr("cx", function(d) { return d.x; })
+	
+	this.node.attr("cx", function(d) { return d.x; })
 		.attr("cy", function(d) { return d.y; });*/
-	moveItems();
-}
-
-function color(d) {
-	if(!filters[0].show && !filters[1].show) {
-		//normal filter
-		if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
-			if (d.type) {
-				return colors[d.type-1].color;
-			}
-			return 'white';
-		} else {
-			return 'black';
-		}
-	} else {
-		if(d.deleted == 1 && d.restricted == 1 && filters[0].show && filters[1].show) {
-			return 'yellow';
-		} else if (d.deleted == 1 && filters[0].show) {
-			return filters[0].color;
-		} else if (d.restricted == 1 && filters[1].show) {
-			return filters[1].color;
-		} else {
-			return 'yellowGreen';
-		}
-	}
+	
+	var self = this;
+	self.moveItems.call(self);
 }
 
 //Toggle children on click.
-function toggle_children(d) {
+Force.prototype.toggle_children = function(d) {
 	if (d.children) {
 		d._children = d.children;
 		d.children = null;
@@ -1414,37 +1542,31 @@ function toggle_children(d) {
 	//console.log(d.size);
 }
 
-function click(d) {
+Force.prototype.click = function(d) {
 	if (!d3.event.defaultPrevented) {
-		if (d._size) {
-			var temp = d._size;
-			d._size = d.size;
-			d.size = temp;
-		} else {
-			d._size = d.size;
-			d.size = 2025;
-		}
+		//if (d._size) {
+		//	var temp = d._size;
+		//	d._size = d.size;
+		//	d.size = temp;
+		//} else {
+		//	d._size = d.size;
+		//	d.size = 2025;
+		//}
 		
-		force.charge(
+		this.force.charge(
 			function(d, i) {
 				if(d.size) {
 					//return Math.pow(d.size, 1.0/3.0)*(-12);
 					//console.log(d.size + '!');
 					return Math.sqrt(d.size)*(-2.25);
-				} else {
-					console.log(d.name);
-					console.log(d.id);
-					console.log(d.size + '?');
-					return -30;
 				}
 			}
 		);
 		//force.getAttribute("charge");
-		force.start();
+		this.force.start();
 		
-		toggle_children(d);
-		update();
-		console.log(d.deleted);
+		this.toggle_children(d);
+		this.update();
 	}
 }
 
@@ -1462,8 +1584,36 @@ function flatten(root) {
 	return nodes;
 }
 
+function color(d, new_filters) {
+	//console.log(new_filters);
+	if(!new_filters[0].show && !new_filters[1].show) {
+		//normal filter
+		if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
+			if (d.type) {
+				return colors[d.type-1].color;
+			}
+			return 'white';
+		} else {
+			return 'black';
+		}
+	} else {
+		if(d.deleted == 1 && d.restricted == 1 && new_filters[0].show && new_filters[1].show) {
+			return 'yellow';
+		} else if (d.deleted == 1 && new_filters[0].show) {
+			return new_filters[0].color;
+		} else if (d.restricted == 1 && new_filters[1].show) {
+			return new_filters[1].color;
+		} else {
+			return 'yellowGreen';
+		}
+	}
+}
+
 //Optimization of the Tick function.
-var moveItems = (function(){
+Force.prototype.moveItems = (function(){
+	var self = this;
+	var node = self.node;
+	var link = self.link;
     var todoNode = 0;
     var todoLink = 0;
     var MAX_NODES = 240;
@@ -1472,25 +1622,29 @@ var moveItems = (function(){
     var restart = false;
        
     function moveSomeNodes(){
+    	var self = this;
         var n;
-        var goal = Math.min(todoNode+MAX_NODES, node[0].length);
+        var goal = Math.min(todoNode+MAX_NODES, self.node[0].length);
           
         for(var i=todoNode ; i < goal ; i++){
-            n = node[0][i];
+            n = self.node[0][i];
             n.setAttribute('cx', n.__data__.x);
             n.setAttribute('cy', n.__data__.y);
         }
             
         todoNode = goal;
-        requestAnimationFrame(moveSome)
+        requestAnimationFrame(function() {
+        	moveSome.call(self);
+        });
     }
       
     function moveSomeLinks(){
+    	var self = this;
         var l;
-        var goal = Math.min(todoLink+MAX_LINKS, link[0].length);
+        var goal = Math.min(todoLink+MAX_LINKS, self.link[0].length);
            
         for(var i=todoLink ; i < goal ; i++){
-            l = link[0][i];
+            l = self.link[0][i];
             //console.log(l);
             l.setAttribute('x1', l.__data__.source.x);
             l.setAttribute('y1', l.__data__.source.y);
@@ -1499,22 +1653,27 @@ var moveItems = (function(){
         }
           
         todoLink = goal;
-        requestAnimationFrame(moveSome)
+        requestAnimationFrame(function() {
+        	moveSome.call(self);
+        });
     }
         
     function moveSome(){
+    	var self = this;
         //console.time('moveSome')
-        if(todoNode < node[0].length) // some more nodes to do
-            moveSomeNodes()
+        if(todoNode < self.node[0].length) // some more nodes to do
+            moveSomeNodes.call(self)
         else{ // nodes are done
-            if(todoLink < link[0].length) // some more links to do
-                moveSomeLinks()
+            if(todoLink < self.link[0].length) // some more links to do
+                moveSomeLinks.call(self)
             else{ // both nodes and links are done
                 if(restart){
                     restart = false;
                     todoNode = 0;
                     todoLink = 0;
-                    requestAnimationFrame(moveSome);
+                    requestAnimationFrame(function() {
+                    	moveSome.call(self);
+                    });
                 }
             }
         }
@@ -1523,9 +1682,12 @@ var moveItems = (function(){
         
         
     return function moveItems(){
+    	var self = this;
         if(!restart){
             restart = true;
-            requestAnimationFrame(moveSome);
+            requestAnimationFrame(function() {
+            	moveSome.call(self);
+            });
         }
     };
  

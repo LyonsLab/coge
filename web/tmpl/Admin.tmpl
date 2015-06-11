@@ -75,12 +75,13 @@ div.legend {
 			<!--<input id="search_token" type="search" placeholder="Search" onkeyup="search_stuff(this.value);" size="50" spellcheck="false" />-->
 	    	</td>
 	    	</div>
-	    	<img id="loading_gears" src="picts/large_gears.gif" width='30' height='30' class="link" style="padding:1px;display:none;" />
+	    	<input type=button onClick="location.href='https://genomevolution.org/wiki/index.php/Admin#Search'" value='?'>
+	    	<img id="loading" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;display:none;" />
 	
 		    <div id="masterTable" style="position:relative;left:20px;padding-top:10px;padding-bottom:10px;" class="hidden result">
 		
 				<div id="organism" class= "hidden" style="padding-top:10px;">
-				<span id='orgCount' class='coge-table-header' style='color:119911;'></span>
+				<span id='orgCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#orgArrow');show_table('#orgList')"></span>
 					<div id="orgArrow" onclick="toggle_arrow('#orgArrow');show_table('#orgList')" style='display:inline;'>
 						<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
 					</div>
@@ -88,7 +89,7 @@ div.legend {
 				</div>
 			
 				<div id="genome" class= "hidden" style="padding-top:10px;">
-				<span id='genCount' class='coge-table-header' style='color:119911;'></span>
+				<span id='genCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#genArrow');show_table('#genList')"></span>
 					<div id="genArrow" onclick="toggle_arrow('#genArrow');show_table('#genList')" style='display:inline;'>
 			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
 			            	</div>
@@ -96,7 +97,7 @@ div.legend {
 				</div>
 			
 				<div id="user" class= "hidden" style="padding-top:10px;">
-				<span id='userCount' class='coge-table-header' style='color:119911;'></span>
+				<span id='userCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#userArrow');show_table('#userList')"></span>
 					<div id="userArrow" onclick="toggle_arrow('#userArrow');show_table('#userList')" style='display:inline;'>
 			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
 			            	</div>
@@ -104,7 +105,7 @@ div.legend {
 				</div>
 			
 				<div id="user_group" class= "hidden" style="padding-top:10px;">
-				<span id='usrgroupCount' class='coge-table-header' style='color:119911;'></span>
+				<span id='usrgroupCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')"></span>
 					<div id="usrGArrow" onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')" style='display:inline;'>
 			    	                <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
 			   		        </div>
@@ -112,7 +113,7 @@ div.legend {
 				</div>
 			
 				<div id="notebook" class= "hidden" style="padding-top:10px;">
-				<span id='noteCount' class='coge-table-header' style='color:119911;'></span>
+				<span id='noteCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#noteArrow');show_table('#noteList')"></span>
 					<div id="noteArrow" onclick="toggle_arrow('#noteArrow');show_table('#noteList')" style='display:inline;'>
 			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
 			            	</div>
@@ -120,7 +121,7 @@ div.legend {
 				</div>
 			
 				<div id="experiment" class= "hidden" style="padding-top:10px;">
-				<span id='expCount' class='coge-table-header' style='color:119911;'></span>
+				<span id='expCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#expArrow');show_table('#expList')"></span>
 					<div id="expArrow" onclick="toggle_arrow('#expArrow');show_table('#expList')" style='display:inline;'>
 			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
 			            	</div>
@@ -135,7 +136,7 @@ div.legend {
 				<button onclick="refresh_data()">Refresh Data</button>
 			</div>
 
-			<div><img id="loading_gears2" src="picts/large_gears.gif" width='30' height='30' class="link" style="padding-top:10px;padding-left:25px;display:none;" /></div>
+			<div><img id="loading2" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding-top:10px;padding-left:25px;display:none;" /></div>
 			
 			<div id="userResults" style="position:relative;left:20px;padding-top:10px;padding-bottom:10px;" class="hidden result">
 			
@@ -170,9 +171,13 @@ div.legend {
 		 	<option value="0">Does NOT contain</option>
 		 	</select>
 		 	<span id='job_filter_count' style="margin-left:20px;margin-right:20px;"></span>
+		 	<img id='filter_busy' src="picts/ajax-loader.gif" />
+		 	
 		 	<input type="checkbox" id="job_update_checkbox" checked>
 			<span> Auto-Update</span>
-		 	<img id='filter_busy' src="picts/ajax-loader.gif" />
+			
+			<input type="checkbox" id="running_checkbox" style="margin-left:20px;" checked>
+			<span> Running</span>
 		</div>
 			
 		<span id="test" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel selected jobs</span>
@@ -215,7 +220,6 @@ div.legend {
 	
 		<script src="js/coge/utils.js"></script>
 		<script src="js/coge/grid.js"></script>
-		<!--<p>Morbi tincidunt, dui sit amet facilisis feugiat, odio metus gravida ante, ut pharetra massa metus id nunc. Duis scelerisque molestie turpis. Sed fringilla, massa eget luctus malesuada, metus eros molestie lectus, ut tempus eros massa ut dolor. Aenean aliquet fringilla sem. Suspendisse sed ligula in ligula suscipit aliquam. Praesent in eros vestibulum mi adipiscing adipiscing. Morbi facilisis. Curabitur ornare consequat nunc. Aenean vel metus. Ut posuere viverra nulla. Aliquam erat volutpat. Pellentesque convallis. Maecenas feugiat, tellus pellentesque pretium posuere, felis lorem euismod felis, eu ornare leo nisi vel felis. Mauris consectetur tortor et purus.</p>-->
 	</div>
 	<div id="tabs-3">
 		<div class="small" style="padding-top:15px;padding-bottom:5px;height:27px;">
@@ -246,13 +250,25 @@ div.legend {
 			<span> Auto-Update</span>
 		</div>
 		
-		<img id="loading_gears3" src="picts/large_gears.gif" width='30' height='30' class="link" style="padding:1px;display:none;" />
+		<img id="loading3" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;display:none;" />
 		
 		<div id="history" style="max-width:95%;height:80%;display:none;"></div>
 	</div>
 	<div id="tabs-4">
-		<span id="legend" style="float:left;"></span>
-		<span id="chart"></span>
+		<div>
+			<select style="margin-left:100px;margin-right:20px;" onchange="init_graph(this.selectedIndex)">
+			  <option value="Default">Select View</option>
+			  <option value="Users">Users</option>
+			  <option value="Groups">Groups</option>
+			</select>
+			<img id="loading4" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;display:none;" />
+		</div>
+		<div>
+			<span id="user_legend" style="float:left;"></span>
+			<span id="group_legend" style="float:left;"></span>
+			<span id="user_chart"></span>
+			<span id="group_chart"></span>
+		</div>
 	</div>
 </div>
 
@@ -336,6 +352,10 @@ $(function(){
 			<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:20em;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_share, this.value);" />
 			<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>
 			<span href="javascript:void(0)" onClick="edit_access(<TMPL_VAR NAME=ITEM_ID>, <TMPL_VAR NAME=ITEM_TYPE>);" class='ui-button ui-corner-all coge-button'>Add</span>
+			<div style="padding-top:20px;">
+				<input type="checkbox" id="restrict_checkbox">
+				<span> Make Public</span>
+			</div>
 		<TMPL_ELSE>
 			<span style="color:dimgray">
 				You don't have permission to modify the selected item(s).
