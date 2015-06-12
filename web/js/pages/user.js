@@ -290,7 +290,7 @@ function default_info() {
 		case 'experiment':
 			return "<p>These are data items that you added to the system.</p>"
 				+ "<p><b>Hover over</b> an item to view additional info.</p>"
-                + "<p><b>Single-click</b> to select one or more items to share, organize, delete, or send them to one of CoGe's tools.</p>"
+                + "<p><b>Single-click</b> to select one or more items to share, organize, delete, or send them to one of CoGe's tools. Use <b>Ctrl-click</b> to select multiple items.</p>"
                 + "<p><b>Double-click</b> an item for a detailed view of the item.</p>";
 		case 'group':
 			return "You are a member of these user groups.<br><br>" +
