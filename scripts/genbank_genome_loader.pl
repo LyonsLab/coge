@@ -830,7 +830,7 @@ sub fasta_genomic_sequence {
     my $seqlen = length $seq;
 #    if ( my ($item) = $genome->get_genomic_sequence( chromosome => $chr ) ) {
 #        my $prev_length = $item->sequence_length;
-    my $prev_length = $item->get_chromosome_length($chr);
+    my $prev_length = $genome->get_chromosome_length($chr);
     if ( $prev_length ) {
         print STDOUT "$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
         return;
