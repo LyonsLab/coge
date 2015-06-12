@@ -277,7 +277,7 @@ function default_info() {
 			return "These are the data loading workflows you have performed or started.<br><br>" +
 				"Select an item to open the current progress or finished result in a new tab.";
 		case 'graph':
-			return "Woah, cool!";
+			return "This is a graphical representation of the analyses you've run.<br><br>Click a node to see the individual analyses of that type.";
 		case 'trash':
 			return "These are items you deleted.<br><br>" +
 				"Hover over an item to view additional info. Select one or more items to undelete.";
