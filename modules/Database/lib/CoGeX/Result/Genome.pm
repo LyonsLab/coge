@@ -953,6 +953,7 @@ sub gff {
     my $annos   = $opts{annos};
     my $cds     = $opts{cds};       #only print CDS gene features
     my $chr		= $opts{chr}; #optional, set to only include features on a particular chromosome
+    my $add_chr = $opts{add_chr};
     my $unique_parent_annotations =
       $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
     my $id_type =
@@ -976,7 +977,6 @@ sub gff {
     $output .= "##\n";
     print $output if $print;
     my $id = 0;
-
     foreach my $ds ( $self->datasets ) {
         my $tmp;
         ( $tmp, $id ) = $ds->gff(
@@ -990,7 +990,8 @@ sub gff {
             name_unique               => $name_unique,
             id_type                   => $id_type,
             unique_parent_annotations => $unique_parent_annotations,
-            chr						  => $chr
+            chr						  => $chr,
+	    add_chr => $add_chr
         );
         $output .= $tmp if $tmp;
     }

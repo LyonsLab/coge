@@ -1190,14 +1190,8 @@ sub change_group_role {
 
 #Jobs tab
 sub get_jobs_for_user {
-	######
-    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    #my $print_thing = get_roles($lowest_role->name);
-    #print $fh "Get Jobs called\n";
-    #print $fh "$size\n";
-    #close $fh;
-    #print $fh Dumper(\@items);
+    my %opts = @_;
+    my $running_only = $opts{running_only};
     
     my @entries;
     if ( $USER->is_admin ) {
@@ -1226,8 +1220,22 @@ sub get_jobs_for_user {
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
     my @workflows = map { $_->workflow_id } @entries;
     
+    ######
+    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    #my $print_thing = get_roles($lowest_role->name);
+    #print $fh Dumper(\@workflows);
+    #print $fh "\n";
+    #close $fh;
+    #print $fh Dumper(\@items);
+    
     #my $workflows = $JEX->find_workflows(\@workflows, 'running');
-    my $workflows = $JEX->find_workflows(undef, 'running');
+    my $workflows;
+    if($running_only == 1) {
+    	$workflows = $JEX->find_workflows(undef, 'running');
+    } else {
+    	$workflows = $JEX->find_workflows(\@workflows);
+    }
 
     my @job_items;
     my %workflow_results;
@@ -1463,14 +1471,17 @@ sub get_user_nodes {
     foreach my $conn ( $coge->resultset('ListConnector')->all ) {
     	if($conn->child_type != 4) {
     		my $child = $conn->child;
-	        push @{ $childrenByList{ $conn->parent_id } },
-          	{ 
-          		name 		=> $conn->child_id, 
-          		size 		=> 2025, 
-          		type 		=> $conn->child_type,
-          		deleted		=> $child->deleted,
-          		restricted 	=> $child->restricted,
-          	};
+    		
+    		if($child) {
+	        	push @{ $childrenByList{ $conn->parent_id } },
+          		{ 
+          			name 		=> $conn->child_id, 
+          			size 		=> 2025, 
+          			type 		=> $conn->child_type,
+          			deleted		=> $child->deleted,
+          			restricted 	=> $child->restricted,
+          		};
+    		}
     	}
     }
 
@@ -1496,13 +1507,6 @@ sub get_user_nodes {
     			$size = scalar @{$sub};
     		}
     		
-    		#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    		#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    		#print $fh "Genomes: ";
-    		#print $fh Dumper(\@children);
-    		#print $fh $size;
-    		#print $fh "\n";
-    		#close $fh;
     		my $child = $conn->child;
     		
             push @{ $childrenByUser{ $conn->parent_id } },
@@ -1564,17 +1568,30 @@ sub get_user_nodes {
 
 sub get_group_nodes {
 	my %childrenByList;
+	# TODO: Only pull from relevant lists
     foreach my $conn ( $coge->resultset('ListConnector')->all ) {
     	if($conn->child_type != 4) {
     		my $child = $conn->child;
-	        push @{ $childrenByList{ $conn->parent_id } },
-          	{ 
-          		name 		=> $conn->child_id, 
-          		size 		=> 2025, 
-          		type 		=> $conn->child_type,
-          		deleted		=> $child->deleted,
-          		restricted 	=> $child->restricted,
-          	};
+    		
+    		#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    		#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    		#if(!$child) {
+    		#	print $fh "Problem found: ";
+    		#	print $fh $conn->child_id;
+    		#	print $fh "\n";
+    		#}
+    		#close $fh;
+    		
+    		if($child) {
+	        	push @{ $childrenByList{ $conn->parent_id } },
+          		{ 
+          			name 		=> $conn->child_id, 
+          			size 		=> 2025, 
+          			type 		=> $conn->child_type,
+          			deleted		=> $child->deleted,
+          			restricted 	=> $child->restricted,
+          		};
+    		}
     	}
     }
 	
