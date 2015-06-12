@@ -798,6 +798,7 @@ sub gff {
     my $id_type  = $opts{id_type};  #type of ID (name, num):  unique number; unique name
     my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
     my $chromosome = $opts{chr}; #optional, set to only include features on a particular chromosome
+    my $add_chr = $opts{add_chr}; #option to add "chr" before chromosome name
     $id_type = "name" unless defined $id_type;
     $count = 0 unless ($count && $count =~ /^\d+$/);
     $ds = $self unless $ds;
@@ -823,6 +824,9 @@ sub gff {
 
     my $tmp;
     $tmp = "##gff-version\t3\n" unless $no_gff_head;
+    $tmp .= "##CoGe Dataset ID: ".$ds->id."\n";
+    $tmp .= "##CoGe Dataset Name: ". $ds->name."\n" if $ds->name;
+    $tmp .= "##CoGe Dataset Desc: ". $ds->desc."\n" if $ds->desc;
     $output .= $tmp if $tmp;
     print $tmp if $print && !$no_gff_head;
     foreach my $chr (@chrs) {
@@ -928,7 +932,8 @@ sub gff {
                             unique_ids  => \%unique_ids,
                             unique_parent_annotations =>
                               $unique_parent_annotations,
-                            prev_annos => \%prev_annos
+                            prev_annos => \%prev_annos,
+			    add_chr => $add_chr
                         );
                         $output .= $tmp if $tmp;
                         next main;
@@ -971,7 +976,8 @@ sub gff {
                     id_type                   => $id_type,
                     unique_ids                => \%unique_ids,
                     unique_parent_annotations => $unique_parent_annotations,
-                    prev_annos                => \%prev_annos
+                    prev_annos                => \%prev_annos,
+		    add_chr                   => $add_chr
                 );
                 $output .= $tmp if $tmp;
                 next;
@@ -1008,7 +1014,8 @@ sub gff {
                     id_type                   => $id_type,
                     unique_ids                => \%unique_ids,
                     unique_parent_annotations => $unique_parent_annotations,
-                    prev_annos                => \%prev_annos
+                    prev_annos                => \%prev_annos,
+		    add_chr 		      => $add_chr
                 );
                 $output .= $tmp if $tmp;
                 next main;
@@ -1088,7 +1095,8 @@ sub gff {
                     id_type                   => $id_type,
                     unique_ids                => \%unique_ids,
                     unique_parent_annotations => $unique_parent_annotations,
-                    prev_annos                => \%prev_annos
+                    prev_annos                => \%prev_annos,
+		    add_chr                   => $add_chr
                 );
                 $output .= $tmp if $tmp;
                 last;
@@ -1336,6 +1344,7 @@ sub _format_gff_line {
     my $id_type     = $opts{id_type};     #type of ID (name, num):  unique number; unique name
     my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
     my $unique_ids  = $opts{unique_ids};  #hash for making sure that each used ID happens once for each ID
+    my $add_chr     = $opts{add_chr}; #flag to add "chr" before the chromosome
     my $cache = $opts{cache};
     #print STDERR "_format_gff_line\n";
     my $output;
@@ -1414,6 +1423,7 @@ sub _format_gff_line {
         $attrs .= "ID=$id";
         $attrs .= ";Name=$name"        if $name;
         $attrs .= ";Alias=$alias"      if $alias;
+	$attrs .= ";$parsed_type=$name" if $name;
         $attrs .= ";coge_fid=" . $f->id . "";
         foreach my $key ( keys %{ $notes->{$type} } ) {
             $attrs .= ";$key=" . join( ",", @{ $notes->{$type}{$key} } );
@@ -1465,10 +1475,12 @@ sub _format_gff_line {
 
         #escape stuff
         #assemble gene info for printing
+	my $chr = $f->chromosome;
+	$chr = "chr".$chr if $add_chr;
         my $str = join(
             "\t",
             (
-                $f->chromosome, 'CoGe', $parsed_type, $start,
+                $chr, 'CoGe', $parsed_type, $start,
                 $stop,          ".",    $strand,      ".",
                 $attrs
             )

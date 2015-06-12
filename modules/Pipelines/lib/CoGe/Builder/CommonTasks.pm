@@ -210,7 +210,7 @@ sub generate_gff {
     $args{basename} = $args{gid} unless $args{basename};
 
     # Generate the output filename
-    my @attributes = qw(annos cds id_type nu upa);
+    my @attributes = qw(annos cds id_type nu upa add_chr);
     my $param_string = join "-", map { $_ . $args{$_} } @attributes;
     my $filename = $args{basename} . "_" . $param_string;
     if ($args{chr}) {
@@ -236,6 +236,7 @@ sub generate_gff {
         ['-upa', $args{upa}, 0]
     ];
     push @$args, ['-chr', $args{chr}, 0] if (defined $args{chr});
+    push @$args, ['-add_chr', $args{add_chr}, 0] if (defined $args{add_chr});
     
     # Return workflow definition
     return $output_file, (

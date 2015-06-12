@@ -10,7 +10,7 @@ use URI::Escape::JavaScript qw(unescape);
 
 our ($DEBUG, $db, $user, $pass, $id, $config, $host, $port, $P,
      $filename, $annos, $cds, $chr, $name_unique, $staging_dir,
-     $id_type, $upa, $coge);
+     $id_type, $upa, $coge, $add_chr);
 
 GetOptions(
     "debug=s"                         => \$DEBUG,
@@ -23,6 +23,7 @@ GetOptions(
     "name_unique|nu=i"                => \$name_unique,
     "id_type|type=s"                  => \$id_type,
     "unique_parent_annotations|upa=i" => \$upa,
+    "add_chr=i"                       => \$add_chr, #flag to add "chr" before chromosome
 
     # Database params
     "host|h=s"          => \$host,
@@ -40,6 +41,7 @@ GetOptions(
 $staging_dir //= "."; #/
 $filename = unescape($filename) if $filename;
 $id = unescape($id) if $id;
+$add_chr = 0 unless $add_chr;
 
 if (not $filename) {
     say STDERR "log: error: output file not specified use output";
@@ -84,7 +86,6 @@ $org = $item->organism->name . "id";
 open(my $fh, ">", $file_temp) or die "Error creating gff file";
 
 #print STDERR "chr: $chr\n";
-
 print $fh $item->gff(
     print                     => 0,
     annos                     => $annos,
@@ -93,6 +94,7 @@ print $fh $item->gff(
     name_unique               => $name_unique,
     id_type                   => $id_type,
     unique_parent_annotations => $upa,
+    add_chr                   => $add_chr,
     base_url => $P->{SERVER},
     debug => $DEBUG,
 );
