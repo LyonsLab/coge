@@ -638,26 +638,17 @@ $.extend(DataGrid.prototype, {
 		var dataTableBody = dataTable.children('tbody');
 		
 		// Handle row selection event
-		dataTableBody.on('click', 'tr', function() {
+		dataTableBody.on('click', 'tr', function(event) {
 			var tr = this;
 			var row = dataTable.api().row(tr).data();
-			//console.log(row);
-			
-			var isShift = false, isCtrl = false, isMeta = false;
-			if (window.event) {
-			    key = window.event.keyCode;
-			    isShift = !!window.event.shiftKey; // typecast to boolean
-			    isCtrl  = !!window.event.ctrlKey;  // typecast to boolean
-			    isMeta  = !!window.event.metaKey;  // typecast to boolean
-			}
 			
 	        if ( $(tr).hasClass('selected') ) { // unselect
 	            $(tr).removeClass('selected');
 	        }
 	        else { // select
-	        	if (isCtrl || isMeta)
-	        		;
-	        	else if (isShift)
+	        	if (event.ctrlKey || event.metaKey)
+	        		; // do-nothing for multi-select
+	        	else if (event.shiftKey)
 	        		; //TODO handle block selection
 	        	else
 	        		self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
