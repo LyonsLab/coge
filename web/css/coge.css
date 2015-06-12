@@ -105,6 +105,15 @@ div.panel {
   padding: 5px;
 }
 
+.noselect {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 .prep {
   white-space: pre;
 }
@@ -857,6 +866,13 @@ td.link:hover {
  border-collapse: collapse;
 }
 
+.clearfix:before,
+.clearfix:after {
+    content: " ";
+    display: table;
+    clear:both;
+}
+
 /***Portlet css for user profile**/
 .portlet {
   margin: 0 1em 1em 0;
@@ -1492,6 +1508,27 @@ header {
     user-select: none;
 }
 
+.coge-side-menu ul, li { margin: 0; padding: 0; }
+.coge-side-menu ul li span { 
+    display: block;
+    font-size: 1.05em;
+    color: dimgray;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+.coge-side-menu ul li span:hover { background: greenyellow }
+.coge-side-menu li span       { padding-left: 0 }
+.coge-side-menu li li span    { padding-left: 1.5em }
+.coge-side-menu li li li span { padding-left: 3em }
+.coge-side-menu .selected { 
+    font-weight: bold; 
+    color: green;
+}
+
+/*
+ * YouTube widget
+ *
+ */
 #youtube-hack {
     position: relative;
 }
@@ -1500,13 +1537,6 @@ header {
     position: absolute;
     top: 45%;
     left: 40%;
-}
-
-.clearfix:before,
-.clearfix:after {
-    content: " ";
-    display: table;
-    clear:both;
 }
 
 /*
