@@ -797,7 +797,7 @@ $.extend(DataGrid.prototype, {
     			.dialog({
     				title: title,
     				width: '80%',
-    				height: height//'80%'
+    				height: height
     			})
     			.dialog('open');
     	}
@@ -911,9 +911,6 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     	console.log('DataGridRow.getInfo');
     	var self = this;
     	
-//    	if (self.info)
-//    		return $.Deferred({done: function() { return self.info; }}).promise();
-    	
     	return $.ajax({
     		dataType: 'json',
     		data: {
@@ -1010,7 +1007,6 @@ $.extend(InfoPanel.prototype, {
     },
     
     scheduleUpdate: function(items) {
-    	//console.log('InfoPanel.scheduleUpdate');
     	if (this.timer)
     		window.clearTimeout(this.timer);
 
@@ -1109,56 +1105,6 @@ function sync_items(html) {
 		}
 	);
 }
-
-//function filter_contents() {
-//	var search_term = $('#search_input').val();
-//	search_term = search_term.toLowerCase();
-//
-//	$('#contents_table div.coge-list-item').each(
-//		function() {
-//			var item_type = get_item_type(this);
-//			var show;
-//
-//			if (pageObj.content_type == ITEM_TYPE.group) {
-//				show = item_type == ITEM_TYPE.group
-//						&& !$(this).hasClass('deleted');
-//			}
-//			else if (pageObj.content_type == ITEM_TYPE.mine) {
-//				show = !$(this).hasClass('deleted')
-//						&& !$(this).hasClass('shared')
-//						&& item_type != ITEM_TYPE.activity_summary 
-//						&& item_type != ITEM_TYPE.activity_analyses
-//						&& item_type != ITEM_TYPE.activity_loads
-//						&& item_type != ITEM_TYPE.activity_viz
-//						&& item_type != ITEM_TYPE.group
-//						&& item_type != ITEM_TYPE.notebook;
-//			}
-//			else if (pageObj.content_type == ITEM_TYPE.shared) {
-//				show = $(this).hasClass('shared')
-//						&& !$(this).hasClass('deleted')
-//						&& item_type != ITEM_TYPE.activity_summary 
-//						&& item_type != ITEM_TYPE.activity_analyses
-//						&& item_type != ITEM_TYPE.activity_loads
-//						&& item_type != ITEM_TYPE.activity_viz;
-//			}
-//			else if (pageObj.content_type == ITEM_TYPE.trash) {
-//				show = $(this).hasClass('deleted');
-//			}
-//			else {
-//				show = (item_type == pageObj.content_type
-//						&& !$(this).hasClass('deleted')
-//						&& !$(this).hasClass('shared'));
-//			}
-//
-//			if (show && search_term) {
-//				show = (this.innerHTML.toLowerCase().indexOf(search_term) >= 0);
-//			}
-//
-//			if (show) { $(this).show(); }
-//			else { $(this).hide(); }
-//		}
-//	);
-//}
 
 function delete_items() {
 	var selected_rows = contentPanel.grid.getSelectedRows();
