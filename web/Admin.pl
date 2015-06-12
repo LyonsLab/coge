@@ -14,6 +14,9 @@ use CoGeX::Result::User;
 use Data::Dumper;
 use URI::Escape::JavaScript qw(escape unescape);
 use Time::Piece;
+use JSON::XS;
+use CoGe::Accessory::Web;
+use Benchmark;
 no warnings 'redefine';
 
 use vars
@@ -52,6 +55,8 @@ my $node_types = CoGeX::node_types();
     toggle_star                     => \&toggle_star,
     update_comment                  => \&update_comment,
     update_history                  => \&update_history,
+    get_user_nodes  				=> \&get_user_nodes,
+    get_group_nodes  				=> \&get_group_nodes,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1417,14 +1422,6 @@ sub update_history {
     my $timestamp = $opts{timestamp};
     $timestamp = "'" . $timestamp . "'";
     
-    # print STDERR "items: " . @items . "\n";
-    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    #print $fh $timestamp;
-    #print $fh "\n";
-    #print $fh "Huzzah\n";
-    #close $fh;
-    
     $time_range = 24 if ( not defined $time_range or $time_range !~ /[-\d]/ );
     my $include_page_accesses = $opts{include_pages_accesses};
 
@@ -1456,3 +1453,207 @@ sub update_history {
 
     return encode_json(\@items);
 }	
+
+
+#Graph tab
+sub get_user_nodes {
+    #print STDERR "get_all_nodes\n";
+
+    my %childrenByList;
+    foreach my $conn ( $coge->resultset('ListConnector')->all ) {
+    	if($conn->child_type != 4) {
+    		my $child = $conn->child;
+	        push @{ $childrenByList{ $conn->parent_id } },
+          	{ 
+          		name 		=> $conn->child_id, 
+          		size 		=> 2025, 
+          		type 		=> $conn->child_type,
+          		deleted		=> $child->deleted,
+          		restricted 	=> $child->restricted,
+          	};
+    	}
+    }
+
+    my %childrenByUser;
+    foreach my $conn (
+        $coge->resultset('UserConnector')->search(
+            {
+                parent_type => $node_types->{user},
+                -or         => [
+                    child_type => $node_types->{genome},
+                    child_type => $node_types->{experiment},
+                    child_type => $node_types->{list}
+                ]
+            }
+        )
+      )
+    {
+        if ( $conn->child_type == $node_types->{list} ) {
+        	my @children = $childrenByList{ $conn->child_id};
+    		my $sub = @children[0];
+    		my $size = 1;
+    		if($sub) {
+    			$size = scalar @{$sub};
+    		}
+    		
+    		#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+    		#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+    		#print $fh "Genomes: ";
+    		#print $fh Dumper(\@children);
+    		#print $fh $size;
+    		#print $fh "\n";
+    		#close $fh;
+    		my $child = $conn->child;
+    		
+            push @{ $childrenByUser{ $conn->parent_id } },
+            {
+           		name     	=> $conn->child_id,
+                type     	=> $conn->child_type,
+                size	 	=> $size * 1000,
+                _size	 	=> 2025,
+                children 	=> $childrenByList{ $conn->child_id },
+                deleted	 	=> $child->deleted,
+                restricted 	=> $child->restricted,
+              };
+        }
+        else {
+        	my $child = $conn->child;
+            push @{ $childrenByUser{ $conn->parent_id } },
+              { 
+              	name 		=> $conn->child_id, 
+              	size 		=> 2025, 
+              	type 		=> $conn->child_type,
+              	deleted 	=> $child->deleted,
+              	restricted 	=> $child->restricted,
+              };
+        }
+    }
+
+    my @users;
+    foreach my $user ( $coge->resultset('User')->all ) {
+    	my @children = $childrenByUser{ $user->id};
+    	my $sub = @children[0];
+    	my $size = 1;
+    	if($sub) {
+    		$size = scalar @{$sub};
+    	}
+    	
+        push @users,
+          {
+            name     	=> $user->id,
+            type     	=> 5,
+            info     	=> $user->info,
+            size	 	=> $size * 1000,
+            _size	 	=> 2025,
+            children 	=> $childrenByUser{ $user->id },
+            deleted	 	=> 0,
+            restricted 	=> 0,
+          };
+    }    
+
+    return encode_json(
+		{ 
+			name 	 => 'users',  
+			info	 => 'users', 
+			children => \@users, 
+			size	 => (scalar @users) * 1000, 
+			_size	 => 2025,
+		}
+    );
+}
+
+sub get_group_nodes {
+	my %childrenByList;
+    foreach my $conn ( $coge->resultset('ListConnector')->all ) {
+    	if($conn->child_type != 4) {
+    		my $child = $conn->child;
+	        push @{ $childrenByList{ $conn->parent_id } },
+          	{ 
+          		name 		=> $conn->child_id, 
+          		size 		=> 2025, 
+          		type 		=> $conn->child_type,
+          		deleted		=> $child->deleted,
+          		restricted 	=> $child->restricted,
+          	};
+    	}
+    }
+	
+	my %childrenByGroup;
+    foreach my $conn (
+        $coge->resultset('UserConnector')->search(
+            {
+                parent_type => $node_types->{group},
+                -or         => [
+                    child_type => $node_types->{genome},
+                    child_type => $node_types->{experiment},
+                    child_type => $node_types->{list}
+                ]
+            }
+        )
+      )
+    {
+        if ( $conn->child_type == $node_types->{list} ) {
+        	my @children = $childrenByList{ $conn->child_id};
+    		my $sub = @children[0];
+    		my $size = 1;
+    		if($sub) {
+    			$size = scalar @{$sub};
+    		}
+    		
+    		my $child = $conn->child;
+    		
+            push @{ $childrenByGroup{ $conn->parent_id } },
+              {
+                name     	=> $conn->child_id,
+                type     	=> $conn->child_type,
+                size	 	=> $size * 1000,
+                _size	 	=> 2025,
+                children 	=> $childrenByList{ $conn->child_id },
+                deleted	 	=> $child->deleted,
+                restricted 	=> $child->restricted,
+              };
+        }
+        else {
+        	my $child = $conn->child;
+            push @{ $childrenByGroup{ $conn->parent_id } },
+              { name 		=> $conn->child_id, 
+              	size 		=> 2025, 
+              	type 		=> $conn->child_type,
+              	deleted 	=> $child->deleted,
+              	restricted 	=> $child->restricted,
+              };
+        }
+    }
+
+    my @groups;
+    foreach my $group ( $coge->resultset('UserGroup')->all ) {
+    	my @children = $childrenByGroup{ $group->id};
+    	my $sub = @children[0];
+    	my $size = 1;
+    	if($sub) {
+    		$size = scalar @{$sub};
+    	}
+        #my $num_users = @{ $group->users };
+        push @groups,
+          {
+            name     	=> $group->id,
+            type     	=> 6,
+            info     	=> $group->info,
+            size   	 	=> $size * 3000,
+            _size	 	=> 2025,
+            children 	=> $childrenByGroup{ $group->id },
+            deleted	 	=> 0,
+            restricted 	=> 0,
+          };
+    }
+    
+    return encode_json(
+		{ 
+			name	 => 'groups', 
+			info	 => 'groups', 
+			children => \@groups, 
+			size	 => (scalar @groups) * 3000,
+			_size	 => 2025,
+		}
+    );
+}

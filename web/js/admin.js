@@ -7,6 +7,8 @@ var previous_search = ""; //indicates the previous search term, used to refresh 
 var jobs_updating = true;
 var jobs_init = false;
 var hist_init = false;
+var user_graph_init = false;
+var group_graph_init = false;
 var hist_updating = true;
 var hist_entries = 0;
 var last_hist_update;
@@ -26,6 +28,9 @@ $(function () {
 			if(current_tab == 2 && !hist_init) {
 				init_hist_grid();
 			}
+			//if(current_tab == 3 && !graph_init) {
+			//	init_graph();
+			//}
 		}
     });
 	
@@ -1225,3 +1230,436 @@ function toggle_star(img) {
 		}
 	});
 }
+
+
+//Tab 4, the User Graph
+var colors = [
+        	{ name: 'list',       link: 'NotebookView.pl?nid=',   color: 'Tomato',      show: 1 },
+        	{ name: 'genome',     link: 'GenomeInfo.pl?gid=',     color: 'YellowGreen', show: 1 },
+        	{ name: 'experiment', link: 'ExperimentView.pl?eid=', color: 'Orchid',      show: 1 },
+        	{ name: 'feature',    link: '',                       color: 'orange',      show: 1 },
+        	{ name: 'user',       link: '',                       color: 'DeepSkyBlue', show: 1 },
+        	{ name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
+];
+
+var w = Math.max(800, $(window).width()-200),
+	h = Math.max(800, $(window).height()-300),
+	user_node,
+	user_link,
+	user_root,
+	user_force,
+	group_node,
+	group_link,
+	group_root,
+	group_force;
+
+function init_graph(selectId) {
+	//console.log(selectId);
+	if(selectId == 1) {
+		$('#group_chart').hide();
+		$('#group_legend').hide();
+		$('#user_chart').show();
+		$('#user_legend').show();
+		
+		if(!user_graph_init) {	
+			user_graph_init = true;
+			d3.json("?fname=get_user_nodes", function(json) {
+				console.log(json);
+				var root = json;
+				var nodes = flatten(root);
+				nodes.forEach(function(d) {
+					d._children = d.children;
+					d.children = null;
+				});
+				
+				svg = d3.select("#user_chart").append("svg")
+					.attr("width", w)
+					.attr("height", h);
+				
+				var link = svg.selectAll(".link");
+				var node = svg.selectAll(".node");
+				
+				var user_filters = [
+				                    { name: 'deleted', 		color: 'Red', 		show: 0 },
+				                    { name: 'restricted', 	color: 'Grey',	 	show: 0 },
+				                    { name: '||||||||',		color: 'White',		show: 1 },
+				];
+				user_filters.forEach(function(element, index) {
+					var item =
+						$('<div class="link legend selected">'+user_filters[index].name+'</div>')
+							.css('color', user_filters[index].color)
+							.css('background-color', '')
+							.click(function() {
+								$(this).toggleClass('selected');
+								if ($(this).hasClass('selected')) {
+									$(this).css('color', user_filters[index].color);
+									$(this).css('background-color', '');
+								}
+								else {
+									$(this).css('color', 'white');
+									$(this).css('background-color', user_filters[index].color);
+								}
+								user_filters[index].show = !user_filters[index].show;
+								
+								var nodes = flatten(root);
+								nodes.forEach(function(d) {
+									return color(d, user_filters);
+								});
+								user_force.update();
+							});
+
+					$('#user_legend')
+						.append(item);
+				});
+				
+				colors.forEach(function(element, index) {
+					var item =
+						$('<div class="link legend selected">'+colors[index].name+'</div>')
+							.css('color', 'white')
+							.css('background-color', colors[index].color);
+							/*.click(function() {
+								$(this).toggleClass('selected');
+								if ($(this).hasClass('selected')) {
+									$(this).css('color', filters[index].color);
+									$(this).css('background-color', '');
+								}
+								else {
+									$(this).css('color', 'white');
+									$(this).css('background-color', filters[index].color);
+								}
+								filters[index].show = !filters[index].show;
+								
+								var nodes = flatten(root);
+								nodes.forEach(color);
+								group_force.update();
+							});*/
+	
+					$('#user_legend')
+						.append(item);
+				});
+				
+				var user_force = new Force(root, link, node, user_filters);
+				user_force.update();
+			});
+		} 
+	} else if (selectId == 2) {
+		$('#user_chart').hide();
+		$('#user_legend').hide();
+		$('#group_chart').show();
+		$('#group_legend').show();
+		
+		if(!group_graph_init) {
+			group_graph_init = true;
+			d3.json("?fname=get_group_nodes", function(json) {
+				console.log(json);
+				var root = json;
+				var nodes = flatten(root);
+				nodes.forEach(function(d) {
+					d._children = d.children;
+					d.children = null;
+				});
+				
+				svg = d3.select("#group_chart").append("svg")
+					.attr("width", w)
+					.attr("height", h);
+			
+				var link = svg.selectAll(".link");
+				var node = svg.selectAll(".node");
+				
+				var group_filters = [
+				                     { name: 'deleted', 		color: 'Red', 		show: 0 },
+				                     { name: 'restricted', 	color: 'Grey',	 	show: 0 },
+				                     { name: '||||||||',		color: 'White',		show: 1 },
+				];
+				group_filters.forEach(function(element, index) {
+					var item =
+						$('<div class="link legend selected">'+group_filters[index].name+'</div>')
+							.css('color', group_filters[index].color)
+							.css('background-color', 'white')
+							.click(function() {
+								$(this).toggleClass('selected');
+								if ($(this).hasClass('selected')) {
+									$(this).css('color', group_filters[index].color);
+									$(this).css('background-color', '');
+								}
+								else {
+									$(this).css('color', 'white');
+									$(this).css('background-color', group_filters[index].color);
+								}
+								group_filters[index].show = !group_filters[index].show;
+								
+								var nodes = flatten(root);
+								nodes.forEach(function(d) {
+									return color(d, group_filters);
+								});
+								group_force.update();
+							});
+
+					$('#group_legend')
+						.append(item);
+				});
+				
+				colors.forEach(function(element, index) {
+					var item =
+						$('<div class="link legend selected">'+colors[index].name+'</div>')
+							.css('color', 'white')
+							.css('background-color', colors[index].color);
+							/*.click(function() {
+								$(this).toggleClass('selected');
+								if ($(this).hasClass('selected')) {
+									$(this).css('color', filters[index].color);
+									$(this).css('background-color', '');
+								}
+								else {
+									$(this).css('color', 'white');
+									$(this).css('background-color', filters[index].color);
+								}
+								filters[index].show = !filters[index].show;
+								
+								var nodes = flatten(root);
+								nodes.forEach(color);
+								group_force.update();
+							});*/
+	
+					$('#group_legend')
+						.append(item);
+				});
+				
+				var group_force = new Force(root, link, node, group_filters);
+				group_force.update();
+			});
+		}
+	}
+}
+
+var Force = function(root, link, node, filters) {
+	var self = this;
+	this.link = link;
+	this.node = node;
+	this.root = root;
+	this.filters = filters;
+	this.force = d3.layout.force()
+		.size([w, h])
+		.on("tick", function() {
+			self.tick.call(self);
+		})
+		.gravity(1);
+}
+
+Force.prototype.update = function() {
+	var self = this;
+	var nodes = flatten(this.root),
+		links = d3.layout.tree().links(nodes);
+	
+	// Restart the force layout.
+	this.force
+ 		.nodes(nodes)
+ 		.links(links)
+ 		.start();
+
+	// Update the links…
+	this.link = this.link.data(links, function(d) { return d.target.id; });
+
+	// Exit any old links.
+	this.link.exit().remove();
+
+	// Enter any new links.
+	this.link.enter().insert("line", ".node")
+		.attr("class", "link")
+		.attr("x1", function(d) { return d.source.x; })
+		.attr("y1", function(d) { return d.source.y; })
+		.attr("x2", function(d) { return d.target.x; })
+		.attr("y2", function(d) { return d.target.y; });
+
+	// Update the nodes…
+	this.node = this.node.data(nodes, function(d) { return d.id; })
+		.style("fill", function(d) {
+			return color(d, self.filters);
+		})
+		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; });
+		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5});
+
+	// Exit any old nodes.
+	this.node.exit().remove();
+
+	// Enter any new nodes.
+	this.node.enter().append("circle")
+		.attr("class", "node")
+		.attr("cx", function(d) { return d.x; })
+		.attr("cy", function(d) { return d.y; })
+		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
+		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5})
+		.style("fill", function(d) {
+			return color(d, self.filters);
+		})
+		.on("click", function(d) {
+			self.click.call(self, d);
+		})
+		.call(this.force.drag)
+		.append("svg:title").text(function(d) { 
+			if(d.info) {
+				return d.info; 
+			} else {
+				return d.name;
+			}
+		});
+}
+
+Force.prototype.tick = function() {
+	this.link.attr("x1", function(d) { return d.source.x; })
+		.attr("y1", function(d) { return d.source.y; })
+		.attr("x2", function(d) { return d.target.x; })
+		.attr("y2", function(d) { return d.target.y; });
+	
+	this.node.attr("cx", function(d) { return d.x; })
+		.attr("cy", function(d) { return d.y; });
+	//moveItems();
+}
+
+//Toggle children on click.
+Force.prototype.toggle_children = function(d) {
+	if (d.children) {
+		d._children = d.children;
+		d.children = null;
+	} else {
+		d.children = d._children;
+		d._children = null;
+	}
+	//console.log(d.size);
+}
+
+Force.prototype.click = function(d) {
+	if (!d3.event.defaultPrevented) {
+		if (d._size) {
+			var temp = d._size;
+			d._size = d.size;
+			d.size = temp;
+		} else {
+			d._size = d.size;
+			d.size = 2025;
+		}
+		
+		this.force.charge(
+			function(d, i) {
+				if(d.size) {
+					//return Math.pow(d.size, 1.0/3.0)*(-12);
+					//console.log(d.size + '!');
+					return Math.sqrt(d.size)*(-2.25);
+				}
+			}
+		);
+		//force.getAttribute("charge");
+		this.force.start();
+		
+		this.toggle_children(d);
+		this.update();
+	}
+}
+
+//Returns a list of all nodes under the root.
+function flatten(root) {
+	var nodes = [], i = 0;
+
+	function recurse(node) {
+		if (node.children) node.children.forEach(recurse);
+		if (!node.id) node.id = ++i;
+		nodes.push(node);
+	}
+
+	recurse(root);
+	return nodes;
+}
+
+function color(d, new_filters) {
+	//console.log(new_filters);
+	if(!new_filters[0].show && !new_filters[1].show) {
+		//normal filter
+		if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
+			if (d.type) {
+				return colors[d.type-1].color;
+			}
+			return 'white';
+		} else {
+			return 'black';
+		}
+	} else {
+		if(d.deleted == 1 && d.restricted == 1 && new_filters[0].show && new_filters[1].show) {
+			return 'yellow';
+		} else if (d.deleted == 1 && new_filters[0].show) {
+			return new_filters[0].color;
+		} else if (d.restricted == 1 && new_filters[1].show) {
+			return new_filters[1].color;
+		} else {
+			return 'yellowGreen';
+		}
+	}
+}
+
+//Optimization of the Tick function.
+/*var moveItems = (function(){
+    var todoNode = 0;
+    var todoLink = 0;
+    var MAX_NODES = 240;
+    var MAX_LINKS = MAX_NODES/2;
+      
+    var restart = false;
+       
+    function moveSomeNodes(){
+        var n;
+        var goal = Math.min(todoNode+MAX_NODES, node[0].length);
+          
+        for(var i=todoNode ; i < goal ; i++){
+            n = node[0][i];
+            n.setAttribute('cx', n.__data__.x);
+            n.setAttribute('cy', n.__data__.y);
+        }
+            
+        todoNode = goal;
+        requestAnimationFrame(moveSome)
+    }
+      
+    function moveSomeLinks(){
+        var l;
+        var goal = Math.min(todoLink+MAX_LINKS, link[0].length);
+           
+        for(var i=todoLink ; i < goal ; i++){
+            l = link[0][i];
+            //console.log(l);
+            l.setAttribute('x1', l.__data__.source.x);
+            l.setAttribute('y1', l.__data__.source.y);
+            l.setAttribute('x2', l.__data__.target.x);
+            l.setAttribute('y2', l.__data__.target.y);
+        }
+          
+        todoLink = goal;
+        requestAnimationFrame(moveSome)
+    }
+        
+    function moveSome(){
+        //console.time('moveSome')
+        if(todoNode < node[0].length) // some more nodes to do
+            moveSomeNodes()
+        else{ // nodes are done
+            if(todoLink < link[0].length) // some more links to do
+                moveSomeLinks()
+            else{ // both nodes and links are done
+                if(restart){
+                    restart = false;
+                    todoNode = 0;
+                    todoLink = 0;
+                    requestAnimationFrame(moveSome);
+                }
+            }
+        }
+        //console.timeEnd('moveSome')
+    }
+        
+        
+    return function moveItems(){
+        if(!restart){
+            restart = true;
+            requestAnimationFrame(moveSome);
+        }
+    };
+ 
+})();*/

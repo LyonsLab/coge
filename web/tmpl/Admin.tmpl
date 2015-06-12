@@ -8,6 +8,7 @@
 <script lanaguage="javascript" type="text/javascript" src="js/admin.js"></script>
 <SCRIPT type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 <SCRIPT type="text/javascript" src="./js/jstree/jquery.jstree.js"></SCRIPT>
+<script src="js/vendor/d3/d3.min.js"></script>
 
 <style type="text/css">
 
@@ -34,6 +35,26 @@
 
 .jstree li a ins { display:none !important; }
 .jstree.jstree-focused { background:white; }
+
+
+circle.node {
+  cursor: pointer;
+  stroke: #3182bd;
+  stroke-width: 1.5px;
+}
+
+line.link {
+  fill: none;
+  stroke: #9ecae1;
+  stroke-width: 1.5px;
+}
+
+div.legend {
+  border: 'solid 1px lightgray';
+  margin: 1px;
+  padding: 2px;
+  text-align: center;
+}
 </style>
 
 <div id="tabs" class="hidden">
@@ -41,6 +62,7 @@
 		<li><a href="#tabs-1">Search</a></li>
 		<li><a href="#tabs-2">Jobs</a></li>
 		<li><a href="#tabs-3">History</a></li>
+		<li><a href="#tabs-4">Graph</a></li>
 	</ul>
 	<div id="tabs-1">
 		<div id="master" style="position:relative;">
@@ -227,6 +249,21 @@
 		<img id="loading_gears3" src="picts/large_gears.gif" width='30' height='30' class="link" style="padding:1px;display:none;" />
 		
 		<div id="history" style="max-width:95%;height:80%;display:none;"></div>
+	</div>
+	<div id="tabs-4">
+		<div>
+			<select onchange="init_graph(this.selectedIndex)">
+			  <option value="Default">------</option>
+			  <option value="Users">Users</option>
+			  <option value="Groups">Groups</option>
+			</select>
+		</div>
+		<div>
+			<span id="user_legend" style="float:left;"></span>
+			<span id="group_legend" style="float:left;"></span>
+			<span id="user_chart"></span>
+			<span id="group_chart"></span>
+		</div>
 	</div>
 </div>
 
