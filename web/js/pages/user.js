@@ -784,8 +784,11 @@ $.extend(DataGrid.prototype, {
 
     openItem: function(row) {
     	console.log('DataGrid.openItem');
+    	console.log(row);
     	if (row.type == 'group') // kludge
     		group_dialog();
+    	else if (row.type == 'analyses' || row.type == 'loads')
+    		window.open(row.link, '_blank');
     	else {
     		title = row.getDescription();
     		link = row.getLink();
@@ -929,10 +932,12 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     getLink: function() {
     	if (this.type == 'genome')
     		return 'GenomeInfo.pl?gid=' + this.id;
-    	if (this.type == 'experiment')
+    	else if (this.type == 'experiment')
     		return 'ExperimentView.pl?eid=' + this.id;
-    	if (this.type == 'notebook')
+    	else if (this.type == 'notebook')
     		return 'NotebookView.pl?nid=' + this.id;
+    	else
+    		return this.link;
     },
     
     getDate: function() {
@@ -1693,6 +1698,7 @@ function toggle_star(img, id) {
 	});
 }
 
+// For "Create New Genome" and "Create New Experiment" //FIXME merge with ContentPanel.openItem ...?
 function open_item(item_type, title, link) {
 	title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
 	link = link + "&embed=1";
