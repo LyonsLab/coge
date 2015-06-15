@@ -962,7 +962,7 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     	if (!dateStr || dateStr.indexOf('0000') == 0)
     		dateStr = this.dataset_date;
     	if (!dateStr || dateStr.indexOf('0000') == 0)
-    		return '';
+    		return '&nbsp;'; // return blank (needed for cell to render properly in Safari)
     	
     	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
     	dateStr = dateStr.replace(/-/g, '/'); // needed for Firefox & Safari
