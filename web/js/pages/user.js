@@ -959,9 +959,9 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     
     getDate: function() {
     	var dateStr = this.date;
-    	if (!dateStr || dateStr.startsWith('0000'))
+    	if (!dateStr || dateStr.indexOf('0000') == 0)
     		dateStr = this.dataset_date;
-    	if (!dateStr || dateStr.startsWith('0000'))
+    	if (!dateStr || dateStr.indexOf('0000') == 0)
     		return '';
     	
     	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
