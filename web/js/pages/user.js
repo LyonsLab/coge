@@ -839,7 +839,7 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatGenome: function() {
     	var descStr = 
     		'<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-    	   	(this.restricted ? '&reg; '  : '') +
+    	   	(this.restricted == '1' ? '&reg; '  : '') +
     	   	(this.organism ? this.organism : '') + 
     	   	(this.name ? ' (' + this.name + ')' : '') +
     	   	(this.description ? ': ' + this.description : '') +
@@ -850,7 +850,7 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatExperiment: function() {
     	var descStr = 
     		'<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-    	   	(this.restricted ? '&reg; '  : '') +
+    	   	(this.restricted == '1' ? '&reg; '  : '') +
     	   	this.name +
     	   	(this.description ? ': ' + this.description : '') +
     	   	' (v' + this.version + ', id' + this.id + ')';
@@ -860,7 +860,7 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatNotebook: function() {
     	var descStr =
     		'<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-    		(this.restricted ? '&reg; '  : '') +
+    		(this.restricted == '1' ? '&reg; '  : '') +
     		this.name +
     		(this.description ? ': ' + this.description : '') +
     		(this.type_name ? ' (' + this.type_name + ')' : '');
