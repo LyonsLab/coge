@@ -1284,13 +1284,7 @@ var colors = [
 
 var w = Math.max(800, $(window).width()-200),
 	h = Math.max(800, $(window).height()-300),
-	user_node,
-	user_link,
-	user_root,
 	user_force,
-	group_node,
-	group_link,
-	group_root,
 	group_force;
 
 function init_graph(selectId) {
