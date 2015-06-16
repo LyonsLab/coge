@@ -263,6 +263,7 @@ const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 
 </TMPL_IF> <!-- MAIN -->
 
+<!--
 <TMPL_IF NAME="DO_TOC">
 	<TMPL_LOOP NAME="TOC_ITEM_LOOP">
 		<div style="padding-bottom:3px;padding-left:<TMPL_VAR NAME='TOC_ITEM_INDENT'>px;">
@@ -273,12 +274,12 @@ const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 				</span>
 			</span>
 			<TMPL_IF NAME="TOC_ITEM_CHILDREN">
-				<!--<span onClick="toc_toggle_children(<TMPL_VAR NAME='TOC_ITEM_ID'>, <TMPL_VAR NAME='TOC_ITEM_CHILDREN'>);" class="link ui-icon ui-icon-triangle-1-s"></span>-->
 				<img src="picts/arrow-down-icon.png" class="link" style="width:10px;height:10px;" onClick="toc_toggle_children(<TMPL_VAR NAME='TOC_ITEM_ID'>, <TMPL_VAR NAME='TOC_ITEM_CHILDREN'>);"/>
 			</TMPL_IF>
 		</div>
 	</TMPL_LOOP>
 </TMPL_IF>
+-->
 
 <!--
 <TMPL_IF NAME="DO_CONTENTS">
