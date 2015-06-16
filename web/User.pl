@@ -391,7 +391,7 @@ sub undelete_items {
         next unless ( $item_id and $item_type );
         my $type_name;
 
-        print STDERR "undelete $item_id $item_type\n";
+        #print STDERR "undelete $item_id $item_type\n";
         if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
             my $group = $coge->resultset('UserGroup')->find($item_id);
             return unless $group;
@@ -541,7 +541,7 @@ sub get_roles {
 sub get_share_dialog {    #FIXME this routine needs to be optimized
     my %opts      = @_;
     my $item_list = $opts{item_list};
-    print STDERR 'get_share_dialog: ', $item_list, "\n";
+    #print STDERR 'get_share_dialog: ', $item_list, "\n";
     my @items     = split( ',', $item_list );
     return unless @items;
 
@@ -792,7 +792,7 @@ sub add_items_to_user_or_group {
     my $item_list = $opts{item_list};
     my @items = split( ',', $item_list );
     return unless @items;
-    print STDERR "add_items_to_user_or_group ", $target_item, " ", $item_list, "\n";
+    #print STDERR "add_items_to_user_or_group ", $target_item, " ", $item_list, "\n";
 
     my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\w+)/;
     return unless ( $target_id and $target_type );
@@ -1217,7 +1217,7 @@ sub get_contents {
     return unless $type;
     my $timestamp = $opts{timestamp};
     my $last_update = 0;
-    print STDERR "get_contents $type\n";
+    #print STDERR "get_contents $type\n";
     
     #my $t1    = new Benchmark;
     my $items = [];
@@ -1663,7 +1663,7 @@ sub search_notebooks
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
 
-    #	print STDERR "$search_term $timestamp\n";
+    #print STDERR "$search_term $timestamp\n";
 
     my @notebooks;
     my $num_results;
@@ -1731,7 +1731,7 @@ sub add_items_to_notebook {
     my @items = split( ',', $item_list );
     return unless @items;
 
-    # print STDERR "add_items_to_notebook $nid $item_list\n";
+    #print STDERR "add_items_to_notebook $nid $item_list\n";
 
     my $notebook = $coge->resultset('List')->find($nid);
     return unless $USER->has_access_to_list($notebook);
