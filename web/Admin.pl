@@ -1679,11 +1679,14 @@ sub get_user_tables {
 	push @data, []; 	#needed to format for dataTables
 	
 	my @users = CoGeDBI::get_table($db->storage->dbh, 'user');
-	foreach my $user (keys @users[0]) {
-		#print $fh $user;
-		#print $fh "\n";
+	
+	keys @users[0]; # reset the internal iterator so a prior each() doesn't affect the loop
+	while(my($id, $user) = each @users[0]) {
+	#foreach my $user (keys @users[0]) {
+		print $fh Dumper($user);
+		print $fh "\n";
 		
-		my $table = CoGeDBI::get_user_access_table($db->storage->dbh, $user);
+		my $table = CoGeDBI::get_user_access_table($db->storage->dbh, $id);
 		
 		my $notebooks;
 		my $genomes;
@@ -1703,10 +1706,10 @@ sub get_user_tables {
 			$groups = ${$table}{6};
 		#}
 		
-		print $fh Dumper(${$table}{1});
-		print $fh "\n";
-		print $fh Dumper($notebooks);
-		print $fh "\n";
+		#print $fh Dumper(${$table}{1});
+		#print $fh "\n";
+		#print $fh Dumper($notebooks);
+		#print $fh "\n";
 		
 		my $note_size = keys %$notebooks;
 		my $gen_size = keys %$genomes;
@@ -1714,7 +1717,7 @@ sub get_user_tables {
 		my $group_size = keys %$groups;
 		
 		my @user_data;
-		push @user_data, "$user";
+		push @user_data, "${$user}{first_name} ${$user}{last_name} (${$user}{user_name}: $id)";
 		push @user_data, "$note_size";
 		push @user_data, "$gen_size";
 		push @user_data, "$exp_size";
@@ -1730,6 +1733,7 @@ sub get_user_tables {
 	return encode_json(
 		{
 			data => @data,
+			bPaginate => 0,
 		}
 	);
 }
