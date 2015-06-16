@@ -1339,7 +1339,24 @@ function share_dialog() {
 			},
 			success : function(data) {
 				if (data)
-					$('#share_dialog').html(data).dialog({width:500}).dialog('open');
+					$('#share_dialog').html(data).dialog({width:'31em'}).dialog('open');
+			}
+		});
+	}
+}
+
+function make_items_public(make_public) {
+	var item_list = contentPanel.grid.getSelectedItemList();
+	if (item_list) {
+		$.ajax({
+			data: {
+				fname: 'make_items_public',
+				item_list: item_list,
+				make_public: make_public
+			},
+			success : function(data) {
+				if (data)
+					$('#share_dialog').html(data);
 			}
 		});
 	}
