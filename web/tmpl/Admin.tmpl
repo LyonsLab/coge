@@ -5,11 +5,13 @@
 <TMPL_IF NAME='MAIN'>
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <!--<script src="js/coge/colors.js"</script>-->
-<script lanaguage="javascript" type="text/javascript" src="js/admin.js"></script>
+<script lanaguage="javascript" type="text/javascript" src="js/pages/admin.js"></script>
 <SCRIPT type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 <SCRIPT type="text/javascript" src="./js/jstree/jquery.jstree.js"></SCRIPT>
 <script src="js/vendor/d3/d3.min.js"></script>
+<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
 
+<link rel="stylesheet" href="css/dataTables.css" type="text/css"/>
 <style type="text/css">
 
 @font-face {
@@ -63,6 +65,7 @@ div.legend {
 		<li><a href="#tabs-2">Jobs</a></li>
 		<li><a href="#tabs-3">History</a></li>
 		<li><a href="#tabs-4">Graph</a></li>
+		<li><a href="#tabs-5">Summary</a></li>
 	</ul>
 	<div id="tabs-1">
 		<div id="master" style="position:relative;">
@@ -268,6 +271,10 @@ div.legend {
 			<span id="group_legend" style="float:left;"></span>
 			<span id="user_chart"></span>
 			<span id="group_chart"></span>
+		</div>
+	</div>
+	<div id="tabs-5">
+		<div id="summary_table">
 		</div>
 	</div>
 </div>

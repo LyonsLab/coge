@@ -11,6 +11,7 @@ use Data::Dumper;
 use List::Compare;
 use CoGeX;
 use CoGeX::Result::User;
+use CoGeDBI;
 use Data::Dumper;
 use URI::Escape::JavaScript qw(escape unescape);
 use Time::Piece;
