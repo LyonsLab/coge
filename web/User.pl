@@ -80,6 +80,7 @@ $node_types = CoGeX::node_types();
     add_items_to_notebook           => \&add_items_to_notebook,
     get_share_dialog                => \&get_share_dialog,
     search_share                    => \&search_share,
+    make_items_public               => \&make_items_public,
     add_items_to_user_or_group      => \&add_items_to_user_or_group,
     remove_items_from_user_or_group => \&remove_items_from_user_or_group,
     add_users_to_group			    => \&add_users_to_group,
@@ -650,6 +651,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
     $template->param(
         SHARE_DIALOG => 1,
         IS_EDITABLE  => $USER->is_admin || $isEditable,
+        IS_RESTRICTED => !$isPublic,
         GROUP_LOOP =>
           [ sort { $a->{GROUP_NAME} cmp $b->{GROUP_NAME} } values %group_rows ],
         USER_LOOP => [
@@ -664,7 +666,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
     );
 
     if ($isPublic) {
-        $template->param( ACCESS_MSG => 'Everyone' );
+        $template->param( ACCESS_MSG => 'Everyone (publicly available)' );
     }
 
     return $template->output;
@@ -781,6 +783,44 @@ sub search_share {
     }
 
     return encode_json( { timestamp => $timestamp, items => \@results } );
+}
+
+sub make_items_public {
+    my %opts        = @_;
+    my $make_public = $opts{make_public};
+    $make_public = 1 unless defined $make_public;
+    my $item_list = $opts{item_list};
+    my @items = split( ',', $item_list );
+    return unless @items;
+    #print STDERR "make_items_public ", $item_list, " ", $make_public, "\n";
+    
+    # Verify that user has access to each item then make public
+    foreach my $item (@items) {
+        my ( $item_id, $item_type ) = $item =~ /(\d+)_(\w+)/;
+        next unless ( $item_id and $item_type );
+
+        #print STDERR "make_items_public $item_id $item_type\n";
+        if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
+            my $genome = $coge->resultset('Genome')->find($item_id);
+            next unless ( $USER->has_access_to_genome($genome) );
+            $genome->restricted(!$make_public);
+            $genome->update();
+        }
+        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
+            my $experiment = $coge->resultset('Experiment')->find($item_id);
+            next unless $USER->has_access_to_experiment($experiment);
+            $experiment->restricted(!$make_public);
+            $experiment->update();
+        }
+        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
+            my $notebook = $coge->resultset('List')->find($item_id);
+            next unless $USER->has_access_to_list($notebook);
+            $notebook->restricted(!$make_public);
+            $notebook->update();
+        }
+    }
+    
+    return get_share_dialog( item_list => $item_list );
 }
 
 sub add_items_to_user_or_group {
