@@ -1525,6 +1525,25 @@ header {
     color: green;
 }
 
+/* 
+ * DataTables customizations 
+ *
+ */
+ 
+.dt-cell td {
+    font-size: small;
+}
+
+.dt-cell th {
+    text-align: left;
+    font-size: small;
+    color: dimgray !important;
+}
+
+div.dataTables_scrollBody {
+    border-bottom: none !important;
+}
+
 /*
  * YouTube widget
  *

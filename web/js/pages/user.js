@@ -625,7 +625,7 @@ $.extend(DataGrid.prototype, {
 	            },
 	            { 	title: "Date added", 
 	            	targets: 1, 
-	            	type: "date",
+	            	type: "relative-date", // this is our own custom type
 	            	data: null, // use full data object
 	            	width: "100px",
 	            	render: function(data, type, row, meta) {
@@ -694,6 +694,23 @@ $.extend(DataGrid.prototype, {
 				return self.filter(data); 
 			}
 		);
+		
+		// Add custom date sort functions
+		$.fn.dataTable.ext.oSort['relative-date-pre'] = function(s) {
+			var matches = s.match(/^\<\!\-\-(\d+)\-\-\>/); // the number of days is hidden in an html comment
+			if (!matches)
+				return 999999; // sort last
+			var daysDiff = matches[1];
+			if (!daysDiff)
+				return 999999; // sort last
+		    return parseInt(daysDiff);
+		};		
+		$.fn.dataTable.ext.oSort['relative-date-asc'] = function(x,y) {
+		    return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+		};
+		$.fn.dataTable.ext.oSort['relative-date-desc'] = function(x,y) {
+		    return ((x < y) ? 1 : ((x > y) ? -1 : 0));
+		};
     },
     
     reset: function() {
@@ -942,19 +959,19 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     
     getDate: function() {
     	var dateStr = this.date;
-    	if (!dateStr || dateStr === '0000-00-00 00:00:00')
+    	if (!dateStr || dateStr.indexOf('0000') == 0)
     		dateStr = this.dataset_date;
-    	if (!dateStr || dateStr === '0000-00-00 00:00:00')
-    		return '';
+    	if (!dateStr || dateStr.indexOf('0000') == 0)
+    		return '&nbsp;'; // return blank (needed for cell to render properly in Safari)
     	
     	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
     	dateStr = dateStr.replace(/-/g, '/'); // needed for Firefox & Safari
     	var date = new Date(dateStr);
     	var today = new Date();
-    	var diffDays = Math.round(Math.abs((today.getTime() - date.getTime())/(24*60*60*1000)));
+    	var diffDays = Math.floor(Math.abs((today.getTime() - date.getTime())/(24*60*60*1000)));
     	var dateStr;
     	if (diffDays == 0) // same day as today
-    		dateStr = (date.getHours() % 12) + ':' + pad(date.getMinutes(), 2) + ' ' + (date.getHours() < 12 ? 'am' : 'pm');
+    		dateStr = (date.getHours() % 12) + ':' + pad(''+date.getMinutes(), 2) + ' ' + (date.getHours() < 12 ? 'am' : 'pm');
     	else if (diffDays == 1) // yesterday
     		dateStr = 'Yesterday';
     	else if (diffDays <= 4) // last several days
@@ -964,7 +981,7 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     	else // last year or older
     		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
 
-    	return dateStr;
+    	return '<!--' + diffDays + '-->' + dateStr; // embed the number of days in an html comment for sorting
     }
 });
 
