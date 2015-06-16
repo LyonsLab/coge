@@ -399,7 +399,7 @@ function init_summary() {
 		}
 	});*/
 	
-	var json = {
+	var test_json = {
 		"data": [
 			[
 		    	"0",
@@ -413,9 +413,19 @@ function init_summary() {
 	};
 	
 	$('#summary_table').html('<table id="example" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-        + '<thead><tr><th>Name</th><th>Position</th><th>Office</th><th>Extn.</th><th>Start date</th><th>Salary</th></tr></thead></table>');
+        + '<thead><tr><th>Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
 	
-	$('#example').dataTable(json);
+	
+	
+	$.ajax({
+		data: {
+			fname: 'get_user_tables',
+		},
+		success: function(data) {
+			console.log(JSON.parse(data));
+			$('#example').dataTable(JSON.parse(data));
+		}
+	});
 }
 
 function change_tab(tab) {
