@@ -58,6 +58,7 @@ my $node_types = CoGeX::node_types();
     update_history                  => \&update_history,
     get_user_nodes  				=> \&get_user_nodes,
     get_group_nodes  				=> \&get_group_nodes,
+    get_user_tables					=> \&get_user_tables,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1574,15 +1575,6 @@ sub get_group_nodes {
     	if($conn->child_type != 4) {
     		my $child = $conn->child;
     		
-    		#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    		#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    		#if(!$child) {
-    		#	print $fh "Problem found: ";
-    		#	print $fh $conn->child_id;
-    		#	print $fh "\n";
-    		#}
-    		#close $fh;
-    		
     		if($child) {
 	        	push @{ $childrenByList{ $conn->parent_id } },
           		{ 
@@ -1674,4 +1666,70 @@ sub get_group_nodes {
 			_size	 => 2025,
 		}
     );
+}
+
+
+sub get_user_tables {
+	
+	my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+	open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+	
+	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+	my @data;
+	push @data, []; 	#needed to format for dataTables
+	
+	my @users = CoGeDBI::get_table($db->storage->dbh, 'user');
+	foreach my $user (keys @users[0]) {
+		#print $fh $user;
+		#print $fh "\n";
+		
+		my $table = CoGeDBI::get_user_access_table($db->storage->dbh, $user);
+		
+		my $notebooks;
+		my $genomes;
+		my $experiments;
+		my $groups;
+		
+		#if(${$table}{1}) {
+			$notebooks = ${$table}{1};
+		#}
+		#if(${$table}{2}) {
+			$genomes = ${$table}{2};
+		#}
+		#if(${$table}{3}) {
+			$experiments = ${$table}{3};
+		#}
+		#if(${$table}{6}) {
+			$groups = ${$table}{6};
+		#}
+		
+		print $fh Dumper(${$table}{1});
+		print $fh "\n";
+		print $fh Dumper($notebooks);
+		print $fh "\n";
+		
+		my $note_size = keys %$notebooks;
+		my $gen_size = keys %$genomes;
+		my $exp_size = keys %$experiments;
+		my $group_size = keys %$groups;
+		
+		my @user_data;
+		push @user_data, "$user";
+		push @user_data, "$note_size";
+		push @user_data, "$gen_size";
+		push @user_data, "$exp_size";
+		push @user_data, "$group_size";
+		
+		push @data[0], \@user_data;
+	}
+	
+	#print $fh Dumper(\@data);
+	print $fh "\n";
+	close $fh;
+	
+	return encode_json(
+		{
+			data => @data,
+		}
+	);
 }
