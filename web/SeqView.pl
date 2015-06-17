@@ -52,14 +52,11 @@ sub gen_html {
 
         $template->param( PAGE_TITLE => 'SeqView',
         				  PAGE_LINK  => $LINK,
-        				  HELP       => '/wiki/index.php?title=SeqView' );
-        my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " " . $USER->last_name
-          if $USER->first_name && $USER->last_name;
-        $template->param( USER => $name );
+        				  HOME       => $P->{SERVER},
+                          HELP       => 'SeqView',
+                          WIKI_URL   => $P->{WIKI_URL} || '',
+                          USER => $USER->display_name || '' );
 
-        $template->param( LOGO_PNG   => "SeqView-logo.png" );
         $template->param( BOX_NAME   => qq{<DIV id="box_name">$title</DIV>} );
         $template->param( BODY       => gen_body() );
         $template->param( ADJUST_BOX => 1 );

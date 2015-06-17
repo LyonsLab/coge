@@ -92,23 +92,17 @@ sub gen_html {
         $template =
           HTML::Template->new(
             filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-        my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " " . $USER->last_name
-          if $USER->first_name && $USER->last_name;
         $template->param(
-            USER       => $name,
-	        HELP       => $P->{SERVER},
+            USER       => $USER->display_name || '',
             PAGE_TITLE => $PAGE_TITLE,
             TITLE      => "NotebookView",
             PAGE_LINK  => $LINK,
-            LOGO_PNG   => "CoGe.svg",
-            ADJUST_BOX => 1
+            ADJUST_BOX => 1,
+            HOME       => $P->{SERVER},
+            HELP       => 'NotebookView',
+            WIKI_URL   => $P->{WIKI_URL} || ''
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-
-        #$template->param( BOX_NAME	 => $name . " list" );
-        #$template->param( TITLE     => 'Managing Data' );
         $template->param( ADMIN_ONLY => $USER->is_admin );
         $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     }

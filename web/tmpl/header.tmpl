@@ -116,26 +116,13 @@ $(document).ready( function() {
 
 <header class="clearfix">
     <div id="brand">
-        <TMPL_IF NAME="LOGO_PNG">
-            <a href="<TMPL_VAR NAME=HELP>">
-                <img style="vertical-align:bottom;height:3.4em" class="l" src='picts/<TMPL_VAR NAME="LOGO_PNG">'>
-            </a>
-        </TMPL_IF>
+        <a href="<TMPL_VAR NAME=HOME>">
+            <img style="vertical-align:bottom;height:3.4em" class="l" src='picts/CoGe.svg'>
+        </a>
     </div>
-    
-    <!--CoGe icon on main page only-->
-    <!--<div id="logo">
-        <TMPL_IF NAME="LOGO_IMAGE">
-            <a href="<TMPL_VAR NAME=HELP>">
-                <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/<TMPL_VAR NAME="LOGO_IMAGE">'>
-            </a>
-        </TMPL_IF>
-    </div>-->
-
-    <!--CoGe icon on all pages-->
 <!--
     <div id="logo">
-        <a href="<TMPL_VAR NAME=HELP>">
+        <a href="<TMPL_VAR NAME=HOME>">
             <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>
         </a>
     </div>
@@ -162,14 +149,14 @@ $(document).ready( function() {
                     </li>
                     <li><a href='javascript:void(0)'>Help</a>
                         <ul>
-                            <li><a href="https://genomevolution.org/wiki" target="_blank">CoGePedia</a></li>
-                            <li><a href="https://genomevolution.org/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+                            <li><a href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
+                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
                             <li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
-                            <li><a href="https://genomevolution.org/wiki/index.php/FAQs" target="_blank">About CoGe</a></li>
-                            <li><a href="https://genomevolution.org/wiki/index.php/Tutorials" target="_blank">Tutorials</a></li>
-                            <li><a href="https://genomevolution.org/wiki/index.php/Contact_Page" target="_blank">Contact or Cite Us</a></li>
-                            <li><a href="https://genomevolution.org/wiki/index.php/System_Support" target="_blank">System Support</a></li>
-                            <li><a href="https://genomevolution.org/wiki/index.php/CoGepedia:Current_events" target="_blank">Latest News</a><li>
+                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
+                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
+                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
+                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
+                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
                         </ul>
                     </li>
                     <li><a href="./" target="_self">Home</a></li>
@@ -179,10 +166,9 @@ $(document).ready( function() {
                 <TMPL_IF NAME="LOGON">
                     <span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <span onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');" class="small bold link">Sign-out</span></span>
                 <TMPL_ELSE>
-                    <span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a> <a href="http://genomevolution.org/wiki/index.php/How_to_get_a_CoGe_account" target=_login_info><br>New here? Get a CoGe account.</a></span>
+                    <span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a> <a href="<TMPL_VAR NAME=WIKI_URL>/How_to_get_a_CoGe_account" target=_login_info><br>New here? Get a CoGe account.</a></span>
             </TMPL_IF>
             </span>
-
         </div>
     </TMPL_UNLESS>
     <noscript>

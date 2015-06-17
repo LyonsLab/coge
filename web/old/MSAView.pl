@@ -74,7 +74,6 @@ sub gen_html {
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE => $DATE );
-    $template->param( LOGO_PNG  => "MSAView-logo.png" );
     $template->param( BODY      => $body );
     $template->param( SEQ_NAMES => $seq_names ) if $seq_names;
     $template->param( SEQS      => $seqs ) if $seqs;

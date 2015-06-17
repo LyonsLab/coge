@@ -29,7 +29,6 @@ sub gen_html {
     $template->param( USER       => $name );
     $template->param( TITLE      => qq{Blank Page} );
     $template->param( PAGE_TITLE => qq{Blank Page} );
-    $template->param( LOGO_PNG   => "Blank-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADJUST_BOX => 1 );

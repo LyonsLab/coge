@@ -91,7 +91,6 @@ sub gen_html {
     $template->param( USER       => $name );
     $template->param( TITLE      => qq{Motif Find} );
     $template->param( PAGE_TITLE => qq{Motif Find} );
-    $template->param( LOGO_PNG   => "Blank-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
     $template->param( BODY       => gen_body() );

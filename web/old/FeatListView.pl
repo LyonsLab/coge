@@ -129,7 +129,6 @@ sub gen_html {
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE => $DATE );
-    $template->param( LOGO_PNG => "FeatListView-logo.png" );
     $template->param( BODY     => $body );
     $template->param( POSTBOX  => gen_foot() );
     $template->param( ADMIN_ONLY => $USER->is_admin );

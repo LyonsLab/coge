@@ -71,20 +71,16 @@ sub gen_html {
     my ($body) = gen_body();
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( TITLE      => 'Feature Map' );
-    $template->param( PAGE_TITLE => 'FeatMap' );
-    $template->param( HELP       => '/wiki/index.php?title=FeatMap' );
-    # print STDERR "user is: ",$USER,"\n";
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER     => $name );
-    $template->param( LOGO_PNG => "FeatMap-logo.png" );
-    $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
-    #$template->param(LOGO_PNG=>"CoGeBlast-logo.png");
-    $template->param( BOX_NAME => 'CoGe: Feature Map' );
-    $template->param( BODY     => $body );
+    $template->param( TITLE      => 'Feature Map',
+                      PAGE_TITLE => 'FeatMap',
+                      HOME       => $P->{SERVER},
+                      HELP       => 'FeatMap',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      USER       => $USER->display_name || '' );
+    $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
+    $template->param( DATE       => $DATE );
+    $template->param( BOX_NAME   => 'CoGe: Feature Map' );
+    $template->param( BODY       => $body );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     $html .= $template->output;
