@@ -14,6 +14,7 @@ var hist_updating = true;
 var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
+var reports_grid;
 
 $(function () {
 	$( "#tabs" ).tabs({
@@ -29,8 +30,8 @@ $(function () {
 			if(current_tab == 2 && !hist_init) {
 				init_hist_grid();
 			}
-			if(current_tab == 4) {
-				init_summary();
+			if(current_tab == 4 && !reports_grid) {
+				init_reports();
 			}
 		}
     });
@@ -297,135 +298,16 @@ function init_hist_grid() {
 	});
 }
 
-//initialize Summary tab
-function init_summary() {
-	console.log("Huzzah");
-	/*var selectedView = null;
-	
-	var views = {
-		mine: {
-			title: 'My Data',
-			displayType: 'grid',
-			dataTypes: ['genome', 'experiment'],
-			operations: ['share', 'organize', 'delete', 'sendto']
-		},
-		genome: {
-			title: 'Genomes',
-			displayType: 'grid',
-			dataTypes: ['genome'],
-			operations: ['share', 'organize', 'delete', 'sendto']
-		},
-		experiment: {
-			title: 'Experiments',
-			displayType: 'grid',
-			dataTypes: ['experiment'],
-			operations: ['share', 'organize', 'delete', 'sendto']
-		},
-		notebook: {
-			title: 'Notebooks',
-			displayType: 'grid',
-			dataTypes: ['notebook'],
-			operations: ['share', 'delete', 'sendto', 'add']
-		},
-		group: {
-			title: 'User Groups',
-			displayType: 'grid',
-			dataTypes: ['group'],
-			operations: ['edit', 'delete', 'add'],
-			shared: true
-		},
-		shared: {
-			title: 'Shared with me',
-			displayType: 'grid',
-			dataTypes: ['genome', 'experiment', 'notebook'],
-			operations: ['share', 'organize'],
-			shared: true
-		},
-		activity: {
-			title: 'Activity',
-			displayType: 'html',
-			dataTypes: ['activity'],
-			search: false
-		},
-		analyses: {
-			title: 'Analyses',
-			displayType: 'grid',
-			dataTypes: ['analyses'],
-			noFilter: true
-		},
-		loads: {
-			title: 'Data loading',
-			displayType: 'grid',
-			dataTypes: ['loads'],
-			noFilter: true
-		},
-		graph: {
-			title: 'Graph',
-			displayType: 'html',
-			dataTypes: ['graph'],
-			search: false,
-			refresh: false
-		},
-		trash: {
-			title: 'Trash',
-			displayType: 'grid',
-			dataTypes: ['genome', 'experiment', 'notebook', 'group'],
-			operations: ['undelete'],
-			deleted: true
-		}
-	};
-
-	// Create grid
-	var grid = new DataGrid({
-		elementId: 'summary_table',
-		filter: function(data) { 
-			// Filter rows based on view
-			var view = views[selectedView];
-			if (!view.noFilter) {
-				if (view.deleted && data.deleted == '0')
-					return false;
-				if (!view.deleted && data.deleted == '1')
-					return false;
-				if (view.shared && data.role_id == '2')
-					return false;
-				if (!view.shared && data.role_id != '2')
-					return false;
-			}
-			return true;
-		},
-		selection: function(items) {
-			// Update icons
-			update_icons(items);
-		}
-	});*/
-	
-	var test_json = {
-		"data": [
-			[
-		    	"0",
-		    	"1",
-		    	"2",
-		    	"3",
-		    	"4",
-		    	"5"
-			],
-		]
-	};
-	
-	$('#summary_table').html('<table id="example" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-        + '<thead><tr><th>Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
-	
-	
-	
-	$.ajax({
-		data: {
-			fname: 'get_user_tables',
-		},
-		success: function(data) {
-			console.log(JSON.parse(data));
-			$('#example').dataTable(JSON.parse(data));
-		}
+//initialize Reports tab
+function init_reports() {
+	reports_grid = new DataGrid({
+		elementId: "reports_table",
+		restricted: false,
+		deleted: false,
+		selection: "total",
 	});
+	
+	console.log(reports_grid.restricted);
 }
 
 function change_tab(tab) {
@@ -433,6 +315,7 @@ function change_tab(tab) {
 	//console.log(tab);
 }
 
+//Tab 1 Search
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
 		$("#loading").show();
@@ -1824,13 +1707,77 @@ function DataGrid(params) {
 	this.element = $('#'+params.elementId);
 	console.log(this.element);
 	
-	this.filter = params.filter;
+	this.restricted = params.restricted;
+	this.deleted = params.deleted;
 	this.selection = params.selection;
 	
 	this.initialize();
 }
 
 $.extend(DataGrid.prototype, {
+	initialize: function() {
+		if(this.selection == "user") {
+			$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+		    	+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
+			
+			
+			
+			$.ajax({
+				data: {
+					fname: 'get_user_table',
+				},
+				success: function(data) {
+					console.log(JSON.parse(data));
+					$('#report').dataTable(JSON.parse(data));
+				}
+			});
+		} else if (this.selection == "group") {
+			$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+				+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
+				
+				
+				
+			$.ajax({
+				data: {
+					fname: 'get_group_table',
+				},
+				success: function(data) {
+					console.log(JSON.parse(data));
+					$('#report').dataTable(JSON.parse(data));
+				}
+			});
+		} else if (this.selection == "total") {
+			$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+				+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th></tr></thead></table>');
+				
+				
+				
+			$.ajax({
+				data: {
+					fname: 'get_total_table',
+				},
+				success: function(data) {
+					console.log(JSON.parse(data));
+					$('#report').dataTable(JSON.parse(data));
+				}
+			});
+		}
+	}
+});
+
+function change_report(index) {
+	switch (index) {
+		case 0: reports_grid.selection = "total";
+			break;
+		case 1: reports_grid.selection = "user";
+			break;
+		case 2: reports_grid.selection = "group";
+			break;
+	}
+	reports_grid.initialize();
+}
+
+/*$.extend(DataGrid.prototype, {
 	initialize: function() {
 		var self = this;
 		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border"></table>');
@@ -2190,4 +2137,4 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
 
     	return dateStr;
     }
-});
+});*/

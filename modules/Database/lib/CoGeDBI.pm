@@ -43,7 +43,7 @@ BEGIN {
     @EXPORT = qw( 
         get_table get_user_access_table get_experiments get_distinct_feat_types
         get_genomes_for_user get_experiments_for_user get_lists_for_user
-        get_groups_for_user
+        get_groups_for_user get_group_access_table
     );
 }
 
@@ -114,6 +114,40 @@ sub get_user_access_table {
     }
     
     my $combined = merge($results1, $results2, $results3);
+    #print STDERR Dumper \%combined, "\n";
+    
+    return $combined;
+}
+
+sub get_group_access_table {
+    my $dbh = shift;         # database connection handle
+    my $user_id = shift;     # user id
+    #my $child_type = shift;  # optional child_type
+    return unless $user_id;
+    
+    # Get user connections
+    my $query = "SELECT * FROM user_connector WHERE parent_type=6 AND parent_id=$user_id";
+    #$query .= " AND child_type=$child_type" if ($child_type);
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results1 = $sth->fetchall_hashref(['child_type', 'child_id']);
+    #print STDERR Dumper $results1, "\n";
+    
+    # Get list connections for user and user's groups
+    my $lists_str = join(',', map { $_->{child_id} } 
+        (defined $results1 && defined $results1->{1} ? values %{$results1->{1}} : ())
+    );
+    my $results2 = {};
+    if ($lists_str) {
+        my $query = "SELECT * FROM list_connector WHERE parent_id IN ($lists_str)";
+        #$query .= " AND child_type=$child_type" if ($child_type);
+        my $sth = $dbh->prepare($query);
+        $sth->execute();
+        $results2 = $sth->fetchall_hashref(['child_type', 'child_id']);
+        #print STDERR Dumper $results3, "\n"; 
+    }
+    
+    my $combined = merge($results1, $results2);
     #print STDERR Dumper \%combined, "\n";
     
     return $combined;
