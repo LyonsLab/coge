@@ -302,8 +302,7 @@ function init_hist_grid() {
 function init_reports() {
 	reports_grid = new DataGrid({
 		elementId: "reports_table",
-		restricted: false,
-		deleted: false,
+		filters: "none",
 		selection: "total",
 	});
 	
@@ -1705,10 +1704,7 @@ Force.prototype.moveItems = (function(){
 //Tab 5, Summary
 function DataGrid(params) {
 	this.element = $('#'+params.elementId);
-	console.log(this.element);
-	
-	this.restricted = params.restricted;
-	this.deleted = params.deleted;
+	this.filter = params.filter;
 	this.selection = params.selection;
 	
 	this.initialize();
@@ -1716,52 +1712,33 @@ function DataGrid(params) {
 
 $.extend(DataGrid.prototype, {
 	initialize: function() {
-		if(this.selection == "user") {
-			$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-		    	+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
-			
-			
-			
-			$.ajax({
-				data: {
-					fname: 'get_user_table',
-				},
-				success: function(data) {
-					console.log(JSON.parse(data));
-					$('#report').dataTable(JSON.parse(data));
-				}
-			});
-		} else if (this.selection == "group") {
-			$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-				+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
-				
-				
-				
-			$.ajax({
-				data: {
-					fname: 'get_group_table',
-				},
-				success: function(data) {
-					console.log(JSON.parse(data));
-					$('#report').dataTable(JSON.parse(data));
-				}
-			});
-		} else if (this.selection == "total") {
-			$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-				+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th></tr></thead></table>');
-				
-				
-				
-			$.ajax({
-				data: {
-					fname: 'get_total_table',
-				},
-				success: function(data) {
-					console.log(JSON.parse(data));
-					$('#report').dataTable(JSON.parse(data));
-				}
-			});
+		var fname;
+		switch (this.selection) {
+			case "user":
+				fname = 'get_user_table';
+				$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+						+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
+				break;
+			case "group":
+				fname = 'get_group_table';
+				$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+						+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
+				break;
+			case "total":
+				fname = 'get_total_table';
+				$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th></tr></thead></table>');
+				break;
 		}
+		$.ajax({
+			data: {
+				fname: fname,
+			},
+			success: function(data) {
+				console.log(JSON.parse(data));
+				$('#report').dataTable(JSON.parse(data));
+			}
+		});
 	}
 });
 
@@ -1772,6 +1749,20 @@ function change_report(index) {
 		case 1: reports_grid.selection = "user";
 			break;
 		case 2: reports_grid.selection = "group";
+			break;
+	}
+	reports_grid.initialize();
+}
+
+function filter_report(index) {
+	switch (index) {
+		case 0: reports_grid.filters = "none";
+			break;
+		case 1: reports_grid.filters = "restricted";
+			break;
+		case 2: reports_grid.filters = "deleted";
+			break;
+		case 3: reports_grid.filters = "public";
 			break;
 	}
 	reports_grid.initialize();
