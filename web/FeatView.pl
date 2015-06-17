@@ -457,18 +457,15 @@ sub gen_html {
     my $html;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( LOGO_PNG => "CoGe.svg" );
 
     #$template->param(TITLE=>'Feature Viewer');
     $template->param( PAGE_TITLE => 'FeatView',
-		      TITLE      => 'FeatView: Search Features Across Organisms',
+		              TITLE      => 'FeatView: Search Features Across Organisms',
                       PAGE_LINK  => $LINK,
-                      #HELP       => "/wiki/index.php?title=FeatView" );
-		      HELP       => $P->{SERVER} );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER => $name );
+                      HOME       => $P->{SERVER},
+                      HELP       => 'FeatView',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      USER       => $USER->display_name || '' );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( BOX_NAME => "Feature Selection" );

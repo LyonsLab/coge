@@ -99,12 +99,13 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP       => $P->{SERVER} || '',
-                      USER       => $USER->display_name || '',
+    $template->param( USER       => $USER->display_name || '',
                       PAGE_TITLE => 'User Profile',
 				      TITLE      => "My Profile",
     				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "CoGe.svg",
+    				  HOME       => $P->{SERVER},
+                      HELP       => 'User',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
     				  ADJUST_BOX => 1,
                       ADMIN_ONLY => $USER->is_admin,
                       CAS_URL    => $P->{CAS_URL} || '' );

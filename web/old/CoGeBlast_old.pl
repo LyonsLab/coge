@@ -123,7 +123,6 @@ sub gen_html {
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "CoGeBlast-logo.png" );
 
     #	$template->param( BOX_NAME   => 'CoGeBlast Settings' );
     #	$template->param( ADJUST_BOX => 1 );

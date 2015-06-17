@@ -89,17 +89,13 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
-					  TITLE      => "LoadAnnotation",
+					      TITLE      => "LoadAnnotation",
         				  PAGE_LINK  => $LINK,
-        				  #HELP       => '/wiki/index.php?title=' . $PAGE_TITLE );
-					  HELP       => $P->{SERVER} );
-        my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= ' ' . $USER->last_name
-          if ( $USER->first_name && $USER->last_name );
-        $template->param( USER     => $name );
-        $template->param( LOGO_PNG => "CoGe.svg" );
-        $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+        				  HOME       => $P->{SERVER},
+                          HELP       => 'LoadAnnotation',
+                          WIKI_URL   => $P->{WIKI_URL} || '' );
+        $template->param( USER       => $USER->display_name || '' );
+        $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
         $link = CoGe::Accessory::Web::get_tiny_link( url => $link );

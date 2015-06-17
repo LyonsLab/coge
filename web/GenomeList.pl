@@ -70,9 +70,10 @@ sub gen_html {
     $template->param( PAGE_TITLE => 'GenomeList',
 		              TITLE      => 'GenomeList',		
     		          PAGE_LINK  => $LINK || '',
-		              HELP       => $P->{SERVER} || '',
-                      USER       => $USER->display_name || '',
-                      LOGO_PNG   => "CoGe.svg" );
+		              HOME       => $P->{SERVER},
+                      HELP       => 'GenomeList',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      USER       => $USER->display_name || '' );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
     $template->param( BODY       => $body );

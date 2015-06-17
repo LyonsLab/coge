@@ -2,6 +2,7 @@
 use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
+use CoGeX;
 use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
@@ -71,18 +72,16 @@ sub gen_html {
     my ($body) = gen_body();
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( TITLE      => 'Sequence Alignment Matrix View' );
-    $template->param( PAGE_TITLE => 'MatrixView' );
-    $template->param( HELP       => "/wiki/index.php?title=MatrixView" );
-    $template->param( HEAD       => qq{} );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER     => $name );
-    $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-    $template->param( DATE     => $DATE );
-    $template->param( LOGO_PNG => "MatrixView-logo.png" );
-    $template->param( BODY     => $body );
+    $template->param( TITLE      => 'Sequence Alignment Matrix View',
+                      PAGE_TITLE => 'MatrixView',
+                      HOME       => $P->{SERVER},
+                      HELP       => 'MatrixView',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      HEAD       => qq{},
+                      USER       => $USER->display_name || '' );
+    $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
+    $template->param( DATE       => $DATE );
+    $template->param( BODY       => $body );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     $html .= $template->output;

@@ -83,15 +83,13 @@ sub gen_html {
     my ($body) = gen_body();
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( TITLE      => 'ClustalW2 Alignments' );
-    $template->param( PAGE_TITLE => 'Align' );
-    $template->param( HELP       => '/wiki/index.php?title=CoGeAlign' );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
+    $template->param( TITLE      => 'ClustalW2 Alignments',
+                      PAGE_TITLE => 'Align',
+                      HOME       => $P->{SERVER},
+                      HELP       => 'CoGeAlign',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      USER       => $USER->display_name || '' );
     $template->param( ADJUST_BOX => 0 );
-    $template->param( LOGO_PNG   => "CoGeAlign-logo.png" );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
     $template->param( BOX_NAME   => 'CoGe: ClustalW 2.0.10' );

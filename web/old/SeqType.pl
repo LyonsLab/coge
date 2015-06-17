@@ -31,7 +31,6 @@ sub gen_html {
     $template->param(
         USER       => $name,
         PAGE_TITLE => $PAGE_TITLE,
-        LOGO_PNG   => "$PAGE_TITLE-logo.png",
         ADJUST_BOX => 1
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
