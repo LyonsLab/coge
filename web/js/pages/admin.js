@@ -301,12 +301,10 @@ function init_hist_grid() {
 //initialize Reports tab
 function init_reports() {
 	reports_grid = new DataGrid({
-		elementId: "reports_table",
-		filters: "none",
+		elementId: "reports",
+		filter: "none",
 		selection: "total",
 	});
-	
-	console.log(reports_grid.restricted);
 }
 
 function change_tab(tab) {
@@ -1703,7 +1701,7 @@ Force.prototype.moveItems = (function(){
 
 //Tab 5, Summary
 function DataGrid(params) {
-	this.element = $('#'+params.elementId);
+	this.elementId = params.elementId;
 	this.filter = params.filter;
 	this.selection = params.selection;
 	
@@ -1712,33 +1710,43 @@ function DataGrid(params) {
 
 $.extend(DataGrid.prototype, {
 	initialize: function() {
+		var element = this.elementId;
 		var fname;
+		$('#' + element + '_loading').show();
 		switch (this.selection) {
 			case "user":
 				fname = 'get_user_table';
-				$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
+				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
 				break;
 			case "group":
 				fname = 'get_group_table';
-				$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
+				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
 				break;
 			case "total":
 				fname = 'get_total_table';
-				$(this.element).html('<table id="report" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+				if (this.filter == "none") {
+					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
 						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th></tr></thead></table>');
+				} else {
+					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th></tr></thead></table>');
+				}
 				break;
 		}
 		$.ajax({
 			data: {
 				fname: fname,
+				filter: this.filter,
 			},
 			success: function(data) {
+				$('#' + element + '_loading').hide();
 				console.log(JSON.parse(data));
-				$('#report').dataTable(JSON.parse(data));
+				$('#' + element + '_table').dataTable(JSON.parse(data));
 			}
 		});
+		
 	}
 });
 
@@ -1756,376 +1764,14 @@ function change_report(index) {
 
 function filter_report(index) {
 	switch (index) {
-		case 0: reports_grid.filters = "none";
+		case 0: reports_grid.filter = "none";
 			break;
-		case 1: reports_grid.filters = "restricted";
+		case 1: reports_grid.filter = "restricted";
 			break;
-		case 2: reports_grid.filters = "deleted";
+		case 2: reports_grid.filter = "deleted";
 			break;
-		case 3: reports_grid.filters = "public";
+		case 3: reports_grid.filter = "public";
 			break;
 	}
 	reports_grid.initialize();
 }
-
-/*$.extend(DataGrid.prototype, {
-	initialize: function() {
-		var self = this;
-		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border"></table>');
-		
-		// Instantiate grid
-		var dataTable = this.dataTable = this.element.children('table').dataTable({
-			paging:    false,
-			info:      false,
-			searching: true,
-			dom:       'lrt', // remove unused elements (like search box)
-			sScrollY:  $(window).height() - 245, // this depends on the height of the header/footer
-			columns: [
-	            { 	title: "Name", 
-	            	targets: 0,
-	            	type: "string",
-	            	data: null, // use full data object
-	            	render: function(data, type, row, meta) {
-	            		return data.getDescription();
-	            	}
-	            },
-	            { 	title: "Date added", 
-	            	targets: 1, 
-	            	type: "date",
-	            	data: null, // use full data object
-	            	width: "100px",
-	            	render: function(data, type, row, meta) {
-	            		return data.getDate();
-	            	}
-	            }
-			]
-		});
-		
-		var dataTableBody = dataTable.children('tbody');
-		
-		// Handle row selection event
-		dataTableBody.on('click', 'tr', function(event) {
-			var tr = this;
-			var row = dataTable.api().row(tr).data();
-			
-	        if ( $(tr).hasClass('selected') ) { // unselect
-	            $(tr).removeClass('selected');
-	        }
-	        else { // select
-	        	if (event.ctrlKey || event.metaKey)
-	        		; // do-nothing for multi-select
-	        	else if (event.shiftKey)
-	        		; //TODO handle block selection
-	        	else
-	        		self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
-	        	
-	            $(tr).addClass('selected'); // select item
-	        }
-	        
-	        self.selectItem(row);
-		});
-		
-		// Handle row double-click event
-		dataTableBody.on('dblclick', 'tr', function() {
-			var tr = this;
-			var row = dataTable.api().row(tr).data();
-			
-			self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
-	        $(tr).addClass('selected'); // select item
-	        
-	        self.openItem(row);
-		});
-		
-		// Handle row hover events
-		dataTableBody.on('mouseover', 'tr', function () {
-	        if (self.getSelectedItems()) // Do nothing if row(s) currently selected
-	    		return;
-	    	
-	        var tr = $(this).closest('tr');
-	        var row = dataTable.api().row(tr).data();
-	    	infoPanel.busy().scheduleUpdate([row]);
-	    });
-		
-		dataTableBody.on('mouseout', 'tr', function () {
-	    	if (self.getSelectedItems()) // Do nothing if row(s) currently selected
-	    		return;
-	    	
-	    	infoPanel.scheduleUpdate();
-	    });
-		
-		// Add custom filter
-		$.fn.dataTable.ext.search.push(
-			function(settings, data, dataIndex) { 
-				var data = self.dataTable.api().row(dataIndex).data();
-				return self.filter(data); 
-			}
-		);
-    },
-    
-    reset: function() {
-    	
-    	return this;
-    },
-    
-    update: function(data) {
-    	console.log('DataGrid.update');
-    	
-    	if (data) {
-	    	this.dataTable.api()
-				.clear()
-				.rows.add(data)
-				.draw();
-    	}
-		
-        return this;
-    },
-    
-    search: function(search_term) {
-		this.dataTable.api()
-			.search(search_term)
-			.draw();
-    },
-    
-    redraw: function() {
-    	this.dataTable.api().draw();
-    },
-    
-    getNumRows: function() {
-    	return this.dataTable.api().page.info().recordsTotal;
-    },    
-    
-    getNumRowsDisplayed: function() {
-    	return this.dataTable.api().page.info().recordsDisplay;
-    },
-    
-    getSelectedRows: function() {
-    	var rows = this.dataTable.api().rows('.selected');
-    	return rows;
-    },
-    
-    getSelectedItems: function() {
-    	//console.log('getSelectedItems');
-    	var items = this.dataTable.api().rows('.selected').data();
-    	if (!items || !items.length)
-    		return;
-    	return items;
-    },
-    
-    getSelectedItemList: function() {
-    	var items = this.getSelectedItems();
-    	var item_list;
-    	if (items && items.length)
-    		item_list = $.map(items, function(item) {
-					return item.id + '_' + item.type;
-				}).join(',');
-    	return item_list;
-    },
-    
-    setSelectedItems: function(items) {
-    	this.dataTable.api().rows().every( function () {
-    		var row = this;
-    	    var d = row.data();
-    	    items.each(function(item) {
-	    	    if (d.id == item.id) {
-	    	    	var tr = row.node();
-	    	    	$(tr).addClass('selected'); // select item
-	    	    }
-    	    });
-    	});
-    },
-    
-    clearSelection: function() {
-    	this.dataTable.api().rows('.selected').removeClass('selected');
-    },
-    
-    selectItem: function(item) {
-    	console.log('DataGrid.selectItem');
-    	
-    	var selectedItems = this.getSelectedItems();
-    	infoPanel.busy().update(selectedItems); //FIXME move into selection handler
-    	
-    	if (this.selection)
-    		this.selection(selectedItems);
-    },
-
-    openItem: function(row) {
-    	console.log('DataGrid.openItem');
-    	console.log(row);
-    	if (row.type == 'group') // kludge
-    		group_dialog();
-    	else if (row.type == 'analyses' || row.type == 'loads')
-    		window.open(row.link, '_blank');
-    	else {
-    		title = row.getDescription();
-    		link = row.getLink();
-    		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
-    		link = link + "&embed=1";
-    		console.log(link);
-    		var height = $(window).height() * 0.8;
-    		var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
-    			.dialog({
-    				title: title,
-    				width: '80%',
-    				height: height
-    			})
-    			.dialog('open');
-    	}
-    }
-});
-
-function DataGridRow(data, type) {
-	$.extend(this, data);
-	this.type = type;
-    this.initialize();
-}
-
-$.extend(DataGridRow.prototype, { // TODO extend this into separate classes for each type (genome, experiment, etc...)
-	initialize: function() {
-    },
-    
-    getDescription: function() {
-    	if (this.type == 'genome')
-    		return this._formatGenome();
-    	if (this.type == 'experiment')
-    		return this._formatExperiment();
-    	if (this.type == 'notebook')
-    		return this._formatNotebook();
-    	if (this.type == 'group')
-    		return this._formatGroup();
-    	if (this.type == 'analyses')
-    		return this._formatAnalysis();
-    	if (this.type == 'loads')
-    		return this._formatLoad();
-    },
-    
-    _formatGenome: function() {
-    	var descStr = 
-    		'<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-    	   	(this.restricted == '1' ? '&reg; '  : '') +
-    	   	(this.organism ? this.organism : '') + 
-    	   	(this.name ? ' (' + this.name + ')' : '') +
-    	   	(this.description ? ': ' + this.description : '') +
-    	   	' (v' + this.version + ', id' + this.id + ')';
-    	return descStr;
-    },
-    
-    _formatExperiment: function() {
-    	var descStr = 
-    		'<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-    	   	(this.restricted == '1' ? '&reg; '  : '') +
-    	   	this.name +
-    	   	(this.description ? ': ' + this.description : '') +
-    	   	' (v' + this.version + ', id' + this.id + ')';
-    	return descStr;
-    },
-    
-    _formatNotebook: function() {
-    	var descStr =
-    		'<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-    		(this.restricted == '1' ? '&reg; '  : '') +
-    		this.name +
-    		(this.description ? ': ' + this.description : '') +
-    		(this.type_name ? ' (' + this.type_name + ')' : '');
-    	return descStr;
-    },
-    
-    _formatGroup: function() {
-    	var descStr =
-    		'<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-    		this.name +
-    		(this.description ? ': ' + this.description : '');;
-    	return descStr;
-    },
-    
-    _formatWorkflowStatus: function(status) {
-    	status = status.toLowerCase();
-        var color;
-        
-        if (status == 'terminated') status = 'cancelled';
-        
-        switch (status) {
-        	case 'running':   color = 'yellowgreen'; 	break;
-        	case 'completed': color = 'cornflowerblue'; break;
-        	case 'scheduled': color = 'goldenrod'; 		break;
-            default:          color = 'salmon';
-        }
-        
-        return '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:' + color + ';">' + coge.utils.ucfirst(status) + '</span>';
-    },
-    
-    _formatAnalysis: function() {
-        var isRunning   = (this.status.toLowerCase() == 'running');
-        var isCancelled = (this.status.toLowerCase() == 'cancelled');
-        var star_icon    = '<img title="Favorite this analysis"' + ( this.is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) + 'width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this, '+this.id+');" />';
-        var cancel_icon  = '<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('+this.id+');"/>';
-        var restart_icon = '<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('+this.id+');"/>';
-        var comment_icon = '<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog('+this.id+');" />';
-        var icons = star_icon + ' ' + comment_icon + ' ' + (isCancelled ? restart_icon : '') + ' ' + (isRunning ? cancel_icon : '');
-    	var descStr =
-    		icons + ' ' + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + this.comment : '') + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
-    	return descStr;
-    },
-    
-    _formatLoad: function() {
-    	var descStr =
-    		this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
-    	return descStr;
-    },
-
-    getInfo: function() {
-    	console.log('DataGridRow.getInfo');
-    	var self = this;
-    	
-    	return $.ajax({
-    		dataType: 'json',
-    		data: {
-    			fname: 'get_item_info',
-    			item_id: self.id,
-    			item_type: self.type,
-    			timestamp: init_timestamp('get_item_info')
-    		}
-    	}).pipe(function(data) {
-    		if (data && test_timestamp('get_item_info', data.timestamp))
-				return data.html;
-    		return;
-    	});
-    },
-    
-    getLink: function() {
-    	if (this.type == 'genome')
-    		return 'GenomeInfo.pl?gid=' + this.id;
-    	else if (this.type == 'experiment')
-    		return 'ExperimentView.pl?eid=' + this.id;
-    	else if (this.type == 'notebook')
-    		return 'NotebookView.pl?nid=' + this.id;
-    	else
-    		return this.link;
-    },
-    
-    getDate: function() {
-    	var dateStr = this.date;
-    	if (!dateStr || dateStr === '0000-00-00 00:00:00')
-    		dateStr = this.dataset_date;
-    	if (!dateStr || dateStr === '0000-00-00 00:00:00')
-    		return '';
-    	
-    	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
-    	dateStr = dateStr.replace(/-/g, '/'); // needed for Firefox & Safari
-    	var date = new Date(dateStr);
-    	var today = new Date();
-    	var diffDays = Math.round(Math.abs((today.getTime() - date.getTime())/(24*60*60*1000)));
-    	var dateStr;
-    	if (diffDays == 0) // same day as today
-    		dateStr = (date.getHours() % 12) + ':' + pad(date.getMinutes(), 2) + ' ' + (date.getHours() < 12 ? 'am' : 'pm');
-    	else if (diffDays == 1) // yesterday
-    		dateStr = 'Yesterday';
-    	else if (diffDays <= 4) // last several days
-    		dateStr = diffDays + ' days ago';
-    	else if (date.getFullYear() == today.getFullYear()) // same year 
-    		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate()
-    	else // last year or older
-    		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
-
-    	return dateStr;
-    }
-});*/
