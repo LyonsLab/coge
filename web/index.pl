@@ -51,11 +51,11 @@ sub generate_html {
         TITLE      => 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
         PAGE_TITLE => 'Comparative Genomics',
         PAGE_LINK  => $LINK,
-	    HELP       => $P->{SERVER},
+        HOME       => $P->{SERVER},
+        HELP       => '',
+        WIKI_URL   => $P->{WIKI_URL} || '',
         USER       => $USER->display_name || undef,
         ADJUST_BOX => 1,
-        LOGO_PNG   => "CoGe.svg",
-	    LOGO_IMAGE => "CoGeCircuitLeaf1.svg",
         BODY       => generate_body(),
         ADMIN_ONLY => $USER->is_admin,
         CAS_URL    => $P->{CAS_URL} || ''
@@ -111,7 +111,7 @@ sub generate_body {
         )
     );
 
-    $tmpl->param( wikifeed => $P->{WIKI_URL} || '' );
+    $tmpl->param( wikifeed => $P->{WIKI_URL}."/CoGepedia:Current_events" ) if $P->{WIKI_URL};
 
     #      }
     #    my $url = $FORM->param('url') if $FORM->param('url');

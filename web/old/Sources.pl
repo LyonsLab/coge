@@ -162,16 +162,13 @@ sub gen_html {
     my $html;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    #$template->param( HELP => '/wiki/index.php?title=Lists' );
-    $template->param( HELP       => $P->{SERVER} );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
+    $template->param( USER       => $USER->display_name || '' );
     $template->param( TITLE      => qq{Sources},
     				  PAGE_TITLE => qq{Sources},
     				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "CoGe.svg" );
+    				  HOME       => $P->{SERVER},
+                      HELP       => 'Sources',
+                      WIKI_URL   => $P->{WIKI_URL} || '' );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     $template->param( ADMIN_ONLY => $USER->is_admin );

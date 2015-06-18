@@ -95,9 +95,10 @@ sub generate_html {
         $template->param( PAGE_TITLE => $PAGE_TITLE,
 					      TITLE      => "Load Genome",
         				  PAGE_LINK  => $LINK,
-					      HELP       => $P->{SERVER}, #TODO rename to HOME
-                          USER       => $user->display_name || '',
-                          LOGO_PNG   => "CoGe.svg",
+					      HOME       => $P->{SERVER},
+                          HELP       => 'LoadGenome',
+                          WIKI_URL   => $P->{WIKI_URL} || '',
+                          USER       => $user->display_name || ''
         );
         $template->param( LOGON => 1 ) unless $user->user_name eq "public";
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
@@ -154,7 +155,7 @@ sub generate_body {
 sub irods_get_path {
     my %opts      = @_;
     my $path      = $opts{path};
-    #print STDERR $path, "\n";
+    print STDERR "irods_get_path: ", $path, "\n";
     
     $path = unescape($path);
 
@@ -163,8 +164,15 @@ sub irods_get_path {
     $basepath =~ s/\<USER\>/$username/;
     $path = $basepath unless $path;
 
-    if ( $path !~ /^$basepath/ ) {
-        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
+# mdb removed 6/17/15 COGE-313
+#    if ( $path !~ /^$basepath/ ) {
+#        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
+#        return;
+#    }
+
+    # mdb added 6/17/15 COGE-313
+    if ( $path eq '/iplant/home/' ) {
+        print STDERR "Attempt to access '$path' denied\n";
         return;
     }
 

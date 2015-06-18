@@ -73,7 +73,6 @@ sub gen_html {
     my $form = shift || $FORM;
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( LOGO_PNG   => "CoGe.svg" );
     $template->param( TITLE      => 'HSP Viewer' );
     $template->param( PAGE_TITLE => 'HSPView' );
     #$template->param( HELP       => "/wiki/index.php?title=HSPView" );

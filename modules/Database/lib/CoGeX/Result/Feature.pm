@@ -92,9 +92,7 @@ __PACKAGE__->add_columns(
 		default_value => 0,
 		is_nullable   => 1,
 		size          => 255
-	},
-	"access_count",
-	{ data_type => "INT", default_value => 0, is_nullable => 1, size => 10 },
+	}
 );
 
 __PACKAGE__->set_primary_key("feature_id");

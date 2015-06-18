@@ -107,6 +107,12 @@ sub startup {
         ->name("jobs-results")
         ->to("job#results", id => undef, name => undef);
 
+    # IRODS routes
+    $r->get("/irods/list/(*path)")
+        ->name("irods-list")
+        ->to("IRODS#list");
+        
+    # Not found
     $r->any("*" => sub {
         my $c = shift;
         $c->render(status => 404, json => { error => {Error => "Resource not found" }});

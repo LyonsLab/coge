@@ -191,7 +191,6 @@ sub gen_html {
     else {
         my $template =
           HTML::Template->new( filename => $TMPLDIR . 'generic_page.tmpl' );
-        $template->param( LOGO_PNG   => "MotifView-logo.png" );
         $template->param( TITLE      => 'TFBS Motif Finder' );
         $template->param( PAGE_TITLE => 'MotifView' );
         $template->param( HELP       => '/wiki/index.php?title=MotifView' );

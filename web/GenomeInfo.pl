@@ -2049,20 +2049,16 @@ sub generate_html {
             filename => $config->{TMPLDIR} . 'embedded_page.tmpl' );
     }
     else {
-        my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= ' ' . $USER->last_name
-          if ( $USER->first_name && $USER->last_name );
-    
         $template =
           HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
             PAGE_TITLE => $PAGE_TITLE,
 	        TITLE      => 'GenomeInfo',
             PAGE_LINK  => $LINK,
-	        HELP       => $config->{SERVER},
-            USER       => $name,
-            LOGO_PNG   => "CoGe.svg",
+	        HOME       => $config->{SERVER},
+	        HELP       => 'GenomeInfo',
+	        WIKI_URL   => $config->{WIKI_URL} || '',
+            USER       => $USER->display_name || '',
             ADJUST_BOX => 1,
             LOGON      => ( $USER->user_name ne "public" ),
             ADMIN_ONLY => $USER->is_admin,

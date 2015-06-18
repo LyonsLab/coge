@@ -85,17 +85,14 @@ sub gen_html {
 
     #       $template->param(TITLE=>'Fasta Viewer');
     $template->param( PAGE_TITLE => 'FastaView',
-				  TITLE      => 'FastaView',
+				      TITLE      => 'FastaView',
     				  PAGE_LINK  => $LINK,
-    				  #HELP       => '/wiki/index.php?title=FastaView' );
-				  HELP       => $P->{SERVER} );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER => $name );
+    				  HOME       => $P->{SERVER},
+                      HELP       => 'FastaView',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      USER => $USER->display_name || '' );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( LOGO_PNG => "CoGe.svg" );
     $template->param( BOX_NAME => qq{<DIV id="box_name">Sequences:</DIV>} );
     my @fids;
     push @fids, $form->param('featid') if $form->param('featid');

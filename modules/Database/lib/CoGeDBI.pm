@@ -164,10 +164,10 @@ sub get_genomes_for_user {
     my $role_ids = shift;    # optional ref to role IDs array
     my $role_id_str;
     $role_id_str = join(', ', @$role_ids) if $role_ids;
-    print STDERR "CoGeDBI::get_genomes_for_user $user_id\n";
+    #print STDERR "CoGeDBI::get_genomes_for_user $user_id\n";
     
     # Get groups for user
-    my $group_str = get_group_str_for_user($dbh, $user_id);
+    my $group_str = get_group_str_for_user($dbh, $user_id) || -1; # default to -1 to prevent empty IN clause in query
         
     # Get user/group genome connections
     my $query = qq{
@@ -223,10 +223,10 @@ sub get_experiments_for_user {
     my $role_ids = shift;    # optional ref to role IDs array
     my $role_id_str;
     $role_id_str = join(', ', @$role_ids) if $role_ids;
-    print STDERR "CoGeDBI::get_experiments_for_user $user_id\n";
+    #print STDERR "CoGeDBI::get_experiments_for_user $user_id\n";
     
     # Get groups for user
-    my $group_str = get_group_str_for_user($dbh, $user_id);
+    my $group_str = get_group_str_for_user($dbh, $user_id) || -1; # default to -1 to prevent empty IN clause in query
         
     # Get user/group experiment connections
     my $query = qq{
@@ -273,7 +273,7 @@ sub get_lists_for_user {
     my $role_ids = shift;    # optional ref to role IDs array
     my $role_id_str;
     $role_id_str = join(', ', @$role_ids) if $role_ids;
-    print STDERR "CoGeDBI::get_lists_for_user $user_id\n";
+    #print STDERR "CoGeDBI::get_lists_for_user $user_id\n";
     
     # Get groups for user
     my $group_str = get_group_str_for_user($dbh, $user_id);

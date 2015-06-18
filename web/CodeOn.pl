@@ -76,14 +76,12 @@ sub gen_html {
     my ($body) = gen_body();
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( TITLE      => 'Coding Sequence Evolution' );
-    $template->param( PAGE_TITLE => 'CodeOn' );
-    $template->param( HELP       => '/wiki/index.php?title=CodeOn' );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER       => $name );
-    $template->param( LOGO_PNG   => "CodeOn-logo.png" );
+    $template->param( TITLE      => 'Coding Sequence Evolution',
+                      PAGE_TITLE => 'CodeOn',
+                      HOME       => $P->{SERVER},
+                      HELP       => 'CodeOn',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      USER       => $USER->display_name || '' );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
     $template->param( BOX_NAME   => '' );
