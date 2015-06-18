@@ -11,6 +11,7 @@ use Data::Dumper;
 use List::Compare;
 use CoGeX;
 use CoGeX::Result::User;
+use CoGeDBI;
 use Data::Dumper;
 use URI::Escape::JavaScript qw(escape unescape);
 use Time::Piece;
@@ -57,6 +58,9 @@ my $node_types = CoGeX::node_types();
     update_history                  => \&update_history,
     get_user_nodes  				=> \&get_user_nodes,
     get_group_nodes  				=> \&get_group_nodes,
+    get_user_table					=> \&get_user_table,
+    get_group_table					=> \&get_group_table,
+    get_total_table					=> \&get_total_table,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1569,15 +1573,6 @@ sub get_group_nodes {
     	if($conn->child_type != 4) {
     		my $child = $conn->child;
     		
-    		#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    		#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    		#if(!$child) {
-    		#	print $fh "Problem found: ";
-    		#	print $fh $conn->child_id;
-    		#	print $fh "\n";
-    		#}
-    		#close $fh;
-    		
     		if($child) {
 	        	push @{ $childrenByList{ $conn->parent_id } },
           		{ 
@@ -1669,4 +1664,260 @@ sub get_group_nodes {
 			_size	 => 2025,
 		}
     );
+}
+	
+sub get_user_table {
+	my %opts       = @_;
+    my $filter = $opts{filter};
+    my %query;
+    if ($filter eq "restricted") {
+    	%query = ('restricted', '1');
+    } elsif ($filter eq "deleted") {
+    	%query = ('deleted', '1');
+    } elsif ($filter eq "public") {
+    	%query = ('restricted', '0', 'deleted', '0');
+    }
+	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+	my @data;
+	push @data, []; 	#needed to format for dataTables
+	
+	my @users = CoGeDBI::get_table($db->storage->dbh, 'user');
+	
+	keys @users[0]; # reset the internal iterator so a prior each() doesn't affect the loop
+	while(my($id, $user) = each @users[0]) {
+		my $table = CoGeDBI::get_user_access_table($db->storage->dbh, $id);
+		
+		my $notebooks = ${$table}{1};
+		my $note_size = 0;
+		foreach my $note_id (keys %$notebooks) {
+			my @filtered_notebooks;
+			if (keys %query) {
+				my %note_query = %query;
+				$note_query{list_id} = $note_id;
+				@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query);
+			} else {
+				$note_size++;
+			}
+			if (scalar(@filtered_notebooks) != 0 && keys @filtered_notebooks[0]) {
+				$note_size++;
+			}
+		}
+		
+		my $genomes = ${$table}{2};
+		my $gen_size = 0;
+		foreach my $gen_id (keys %$genomes) {
+			my @filtered_genomes;
+			if (keys %query) {
+				my %gen_query = %query;
+				$gen_query{genome_id} = $gen_id;
+				@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+			} else {
+				$gen_size++;
+			}
+			if (scalar(@filtered_genomes) != 0 && keys @filtered_genomes[0]) {
+				$gen_size++;
+			}
+		}
+		
+		my $experiments = ${$table}{3};
+		my $exp_size = 0;
+		foreach my $exp_id (keys %$experiments) {
+			my @filtered_experiments;
+			if (keys %query) {
+				my %exp_query = %query;
+				$exp_query{experiment_id} = $exp_id;
+				@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+			} else {
+				$exp_size++;
+			}
+			if (scalar(@filtered_experiments) != 0 && keys @filtered_experiments[0]) {
+				$exp_size++;
+			}
+		}
+		
+		my $groups = ${$table}{6};
+		my $group_size = keys %$groups;
+		
+		my @user_data;
+		push @user_data, "${$user}{first_name} ${$user}{last_name} (${$user}{user_name}: $id)";
+		push @user_data, "$note_size";
+		push @user_data, "$gen_size";
+		push @user_data, "$exp_size";
+		push @user_data, "$group_size";
+		
+		push @data[0], \@user_data;
+	}
+	
+	return encode_json(
+		{
+			data => @data,
+			bPaginate => 0,
+		}
+	);
+}
+
+sub get_group_table {
+	my %opts       = @_;
+    my $filter = $opts{filter};
+    my %query;
+    if ($filter eq "restricted") {
+    	%query = ('restricted', '1');
+    } elsif ($filter eq "deleted") {
+    	%query = ('deleted', '1');
+    } elsif ($filter eq "public") {
+    	%query = ('restricted', '0', 'deleted', '0');
+    }
+	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+	my @data;
+	push @data, []; 	#needed to format for dataTables
+	
+	my @groups = CoGeDBI::get_table($db->storage->dbh, 'user_group');
+	
+	keys @groups[0]; # reset the internal iterator so a prior each() doesn't affect the loop
+	while(my($id, $group) = each @groups[0]) {
+		my $table = CoGeDBI::get_group_access_table($db->storage->dbh, $id);
+		
+		my $notebooks = ${$table}{1};
+		my $note_size = 0;
+		foreach my $note_id (keys %$notebooks) {
+
+			#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+			#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+			#	print $fh scalar(keys @filtered_notebooks[0]);
+			#	print $fh "\n";
+			#print $fh Dumper(\%query);
+			#print $fh "\n";
+			#close $fh;	
+			my @filtered_notebooks;
+			if (keys %query) {
+				my %list_query = %query;
+				$list_query{list_id} = $note_id;
+				@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%list_query);
+			} else {
+				$note_size++;
+			}
+			if (scalar(@filtered_notebooks) != 0 && keys @filtered_notebooks[0]) {
+				$note_size++;
+			}	
+		}
+			
+		my $genomes = ${$table}{2};
+		my $gen_size = 0;
+		foreach my $gen_id (keys %$genomes) {
+			my @filtered_genomes;
+			if (keys %query) {
+				my %gen_query = %query;
+				$gen_query{genome_id} = $gen_id;
+				@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+			} else {
+				$gen_size++;
+			}
+			if (scalar(@filtered_genomes) != 0 && keys @filtered_genomes[0]) {
+				$gen_size++;
+			}
+		}
+		
+		my $experiments = ${$table}{3};
+		my $exp_size = 0;
+		foreach my $exp_id (keys %$experiments) {
+			my @filtered_experiments;
+			if (keys %query) {
+				my %exp_query = %query;
+				$exp_query{experiment_id} = $exp_id;
+				@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+			} else {
+				$exp_size++;
+			}
+			if (scalar(@filtered_experiments) != 0 && keys @filtered_experiments[0]) {
+				$exp_size++;
+			}
+		}
+		
+		my $group_obj = $coge->resultset("UserGroup")->find($id);
+		my @users = $group_obj->users;
+		my $group_size = @users;
+		
+		my @group_data;
+		push @group_data, "${$group}{name} (id: $id)";
+		push @group_data, "$note_size";
+		push @group_data, "$gen_size";
+		push @group_data, "$exp_size";
+		push @group_data, "$group_size";
+		
+		push @data[0], \@group_data;
+	}
+	
+	return encode_json(
+		{
+			data => @data,
+			bPaginate => 0,
+		}
+	);
+}
+
+sub get_total_table {
+	my %opts       = @_;
+    my $filter = $opts{filter};
+
+	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+	my @data;
+	#push @data, []; 	#needed to format for dataTables
+	
+	my @notebooks;
+	my @genomes;
+	my @experiments;
+	my @users;
+	my @groups;
+	my @inner;
+	
+	if ($filter eq "restricted") {
+		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 1});
+		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 1});
+		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 1});
+		
+		my $note_size = keys @notebooks[0];
+		my $gen_size = keys@genomes[0];
+		my $exp_size = keys @experiments[0];
+		@inner = ["$note_size", "$gen_size", "$exp_size"];
+	} elsif ($filter eq "deleted") {
+		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {deleted => 1});
+		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {deleted => 1});
+		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {deleted => 1});
+		
+		my $note_size = keys @notebooks[0];
+		my $gen_size = keys@genomes[0];
+		my $exp_size = keys @experiments[0];
+		@inner = ["$note_size", "$gen_size", "$exp_size"];
+	} elsif ($filter eq "public") {
+		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 0, deleted => 0});
+		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 0, deleted => 0});
+		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 0, deleted => 0});
+		
+		my $note_size = keys @notebooks[0];
+		my $gen_size = keys@genomes[0];
+		my $exp_size = keys @experiments[0];
+		@inner = ["$note_size", "$gen_size", "$exp_size"];
+	} else {
+		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list');
+		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome');
+		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment');
+		@users = CoGeDBI::get_table($db->storage->dbh, 'user');
+		@groups = CoGeDBI::get_table($db->storage->dbh, 'user_group');
+		
+		my $note_size = keys @notebooks[0];
+		my $gen_size = keys@genomes[0];
+		my $exp_size = keys @experiments[0];
+		my $user_size = keys @users[0];
+		my $group_size = keys @groups[0];
+		@inner = ["$note_size", "$gen_size", "$exp_size", "$user_size", "$group_size"]; #because formatting
+	}
+	
+	push @data, \@inner;
+	
+	return encode_json(
+		{
+			data => @data,
+			bPaginate => 0,
+		}
+	);
 }
