@@ -112,6 +112,10 @@ sub startup {
         ->name("irods-list")
         ->to("IRODS#list");
         
+    $r->get("/irods/fetch/(*path)")
+        ->name("irods-fetch")
+        ->to("IRODS#fetch");
+        
     # Not found
     $r->any("*" => sub {
         my $c = shift;
