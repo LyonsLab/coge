@@ -8,7 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(create_genome_from_file create_genome_from_NCBI get_workflow_paths);
+use CoGe::Core::Storage qw(create_genome_from_file create_genome_from_NCBI get_workflow_paths get_irods_path get_irods_file);
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
@@ -153,35 +153,21 @@ sub generate_body {
 }
 
 sub irods_get_path {
-    my %opts      = @_;
-    my $path      = $opts{path};
-    print STDERR "irods_get_path: ", $path, "\n";
-    
+    my %opts = @_;
+    my $path = $opts{path};
     $path = unescape($path);
-
-    my $username = $user->name;
-    my $basepath = $P->{IRODSDIR};
-    $basepath =~ s/\<USER\>/$username/;
-    $path = $basepath unless $path;
-
-# mdb removed 6/17/15 COGE-313
-#    if ( $path !~ /^$basepath/ ) {
-#        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
-#        return;
-#    }
-
-    # mdb added 6/17/15 COGE-313
-    if ( $path eq '/iplant/home/' ) {
-        print STDERR "Attempt to access '$path' denied\n";
-        return;
+    print STDERR "irods_get_path ", $path, "\n";
+    
+    unless ($path) {
+        my $username = $user->name;
+        my $basepath = CoGe::Accessory::Web::get_defaults()->{IRODSDIR};
+        $basepath =~ s/\<USER\>/$username/;
+        $path = $basepath;
     }
-
-    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
-    my $error  = $result->{error};
-
-    #print STDERR Dumper $result, "\n";
-
-    if ($error) {
+    
+    my $result = get_irods_path($path);
+    
+    if ($result->{error}) {
         # Test for recent new account.  The iPlant IRODS isn't ready for a few
         # minues the first time a user logs into CoGe.
         # mdb added 3/31/14
@@ -194,6 +180,7 @@ sub irods_get_path {
             $isNewAccount = (!$years && !$months && !$days && !$hours && $minutes < 5) ? 1 : 0;
         }
 
+        # Send support email
         if (!$isNewAccount) {
             my $email = $P->{SUPPORT_EMAIL};
             my $body =
@@ -202,49 +189,30 @@ sub irods_get_path {
               . $user->name . ' id='
               . $user->id . ' '
               . $user->date . "\n\n"
-              . $error . "\n\n"
+              . $result->{error} . "\n\n"
               . $P->{SERVER};
             CoGe::Accessory::Web::send_email(
                 from    => $email,
                 to      => $email,
-                subject => "System error notification from $PAGE_TITLE",
+                subject => "System error notification",
                 body    => $body
             );
-            return encode_json( { error => $error } );
         }
+        return encode_json($result);
     }
-    return encode_json(
-        { path => $path, items => $result->{items} } );
+
+    return encode_json({ path => $path, items => $result->{items} });
 }
 
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
+    
     $path = unescape($path);
-    my ($filename)   = $path =~ /([^\/]+)\s*$/;
-    my ($remotepath) = $path =~ /(.*)$filename$/;
+    
+    my $result = get_irods_file($path, $TEMPDIR);
 
-    my $localpath     = 'irods/' . $remotepath;
-    my $localfullpath = catdir($TEMPDIR . $localpath);
-    $localpath = catfile($localpath, $filename);
-    my $localfilepath = catfile($localfullpath, $filename);
-    #print STDERR "get_file $path $filename $localfilepath\n";
-
-    my $do_get = 1;
-
-    #	if (-e $localfilepath) {
-    #		my $remote_chksum = irods_chksum($path);
-    #		my $local_chksum = md5sum($localfilepath);
-    #		$do_get = 0 if ($remote_chksum eq $local_chksum);
-    #		print STDERR "$remote_chksum $local_chksum\n";
-    #	}
-
-    if ($do_get) {
-        mkpath($localfullpath);
-        CoGe::Accessory::IRODS::irods_iget( $path, $localfullpath );
-    }
-
-    return encode_json( { path => $localpath, size => -s $localfilepath } );
+    return encode_json( { path => $result->{localpath}, size => $result->{size} } );
 }
 
 sub load_from_ftp {
