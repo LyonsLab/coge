@@ -596,15 +596,13 @@ sub gen_html {
             PAGE_TITLE => $PAGE_TITLE,
             TITLE      => 'ExperimentView',
             PAGE_LINK  => $LINK,
-            HELP       => $P->{SERVER},
-            LOGO_PNG   => "CoGe.svg",
+            HOME       => $P->{SERVER},
+            HELP       => 'ExperimentView',
+            WIKI_URL   => $P->{WIKI_URL} || '',
             ADJUST_BOX => 1,
             CAS_URL    => $P->{CAS_URL} || ''
         );
-    	my $name = $USER->user_name;
-    	$name = $USER->first_name if $USER->first_name;
-    	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    	$template->param( USER     => $name );
+    	$template->param( USER     => $USER->display_name || '' );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
         $template->param( ADMIN_ONLY => $USER->is_admin );
     }

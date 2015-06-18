@@ -34,6 +34,10 @@ var coge = window.coge = (function(namespace) {
 			this._ajax("GET", BASE_URL + "jobs/" + id, null, success_callback, error_callback);
 		},
 		
+		irods_list: function(path, success_callback, error_callback) {
+			this._ajax("GET", BASE_URL + "irods/list/" + path, null, success_callback, error_callback);
+		},
+		
 		_ajax: function(type, url, data, success, error) {
 			var self = this;
 		    $.ajax({

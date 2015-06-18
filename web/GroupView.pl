@@ -47,18 +47,15 @@ sub gen_html {
     }
     else {  
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-        #$template->param( HELP => '/wiki/index.php?title=GroupView' );
-	$template->param( HELP       => $P->{SERVER} );
-        my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-        $template->param( USER       => $name );
-        $template->param( TITLE      => qq{GroupView},
+        $template->param( USER       => $USER->display_name || '',
+                          TITLE      => qq{GroupView},
         			 	  PAGE_TITLE => qq{GroupView},
         				  PAGE_LINK  => $LINK,
-        				  LOGO_PNG   => "CoGe.svg",
         				  ADMIN_ONLY => $USER->is_admin,
-        				  CAS_URL    => $P->{CAS_URL} || '' );
+        				  CAS_URL    => $P->{CAS_URL} || '',
+        				  HOME       => $P->{SERVER},
+                          HELP       => 'GroupView',
+                          WIKI_URL   => $P->{WIKI_URL} || '' );
         $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
         $template->param( ADJUST_BOX => 1 );
     }

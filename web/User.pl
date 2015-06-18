@@ -80,6 +80,7 @@ $node_types = CoGeX::node_types();
     add_items_to_notebook           => \&add_items_to_notebook,
     get_share_dialog                => \&get_share_dialog,
     search_share                    => \&search_share,
+    make_items_public               => \&make_items_public,
     add_items_to_user_or_group      => \&add_items_to_user_or_group,
     remove_items_from_user_or_group => \&remove_items_from_user_or_group,
     add_users_to_group			    => \&add_users_to_group,
@@ -98,12 +99,13 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( HELP       => $P->{SERVER} || '',
-                      USER       => $USER->display_name || '',
+    $template->param( USER       => $USER->display_name || '',
                       PAGE_TITLE => 'User Profile',
 				      TITLE      => "My Profile",
     				  PAGE_LINK  => $LINK,
-    				  LOGO_PNG   => "CoGe.svg",
+    				  HOME       => $P->{SERVER},
+                      HELP       => 'User',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
     				  ADJUST_BOX => 1,
                       ADMIN_ONLY => $USER->is_admin,
                       CAS_URL    => $P->{CAS_URL} || '' );
@@ -391,7 +393,7 @@ sub undelete_items {
         next unless ( $item_id and $item_type );
         my $type_name;
 
-        print STDERR "undelete $item_id $item_type\n";
+        #print STDERR "undelete $item_id $item_type\n";
         if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
             my $group = $coge->resultset('UserGroup')->find($item_id);
             return unless $group;
@@ -541,7 +543,7 @@ sub get_roles {
 sub get_share_dialog {    #FIXME this routine needs to be optimized
     my %opts      = @_;
     my $item_list = $opts{item_list};
-    print STDERR 'get_share_dialog: ', $item_list, "\n";
+    #print STDERR 'get_share_dialog: ', $item_list, "\n";
     my @items     = split( ',', $item_list );
     return unless @items;
 
@@ -650,6 +652,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
     $template->param(
         SHARE_DIALOG => 1,
         IS_EDITABLE  => $USER->is_admin || $isEditable,
+        IS_RESTRICTED => !$isPublic,
         GROUP_LOOP =>
           [ sort { $a->{GROUP_NAME} cmp $b->{GROUP_NAME} } values %group_rows ],
         USER_LOOP => [
@@ -664,7 +667,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
     );
 
     if ($isPublic) {
-        $template->param( ACCESS_MSG => 'Everyone' );
+        $template->param( ACCESS_MSG => 'Everyone (publicly available)' );
     }
 
     return $template->output;
@@ -783,6 +786,44 @@ sub search_share {
     return encode_json( { timestamp => $timestamp, items => \@results } );
 }
 
+sub make_items_public {
+    my %opts        = @_;
+    my $make_public = $opts{make_public};
+    $make_public = 1 unless defined $make_public;
+    my $item_list = $opts{item_list};
+    my @items = split( ',', $item_list );
+    return unless @items;
+    #print STDERR "make_items_public ", $item_list, " ", $make_public, "\n";
+    
+    # Verify that user has access to each item then make public
+    foreach my $item (@items) {
+        my ( $item_id, $item_type ) = $item =~ /(\d+)_(\w+)/;
+        next unless ( $item_id and $item_type );
+
+        #print STDERR "make_items_public $item_id $item_type\n";
+        if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
+            my $genome = $coge->resultset('Genome')->find($item_id);
+            next unless ( $USER->has_access_to_genome($genome) );
+            $genome->restricted(!$make_public);
+            $genome->update();
+        }
+        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
+            my $experiment = $coge->resultset('Experiment')->find($item_id);
+            next unless $USER->has_access_to_experiment($experiment);
+            $experiment->restricted(!$make_public);
+            $experiment->update();
+        }
+        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
+            my $notebook = $coge->resultset('List')->find($item_id);
+            next unless $USER->has_access_to_list($notebook);
+            $notebook->restricted(!$make_public);
+            $notebook->update();
+        }
+    }
+    
+    return get_share_dialog( item_list => $item_list );
+}
+
 sub add_items_to_user_or_group {
     my %opts        = @_;
     my $target_item = $opts{target_item};
@@ -792,7 +833,7 @@ sub add_items_to_user_or_group {
     my $item_list = $opts{item_list};
     my @items = split( ',', $item_list );
     return unless @items;
-    print STDERR "add_items_to_user_or_group ", $target_item, " ", $item_list, "\n";
+    #print STDERR "add_items_to_user_or_group ", $target_item, " ", $item_list, "\n";
 
     my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\w+)/;
     return unless ( $target_id and $target_type );
@@ -1217,7 +1258,7 @@ sub get_contents {
     return unless $type;
     my $timestamp = $opts{timestamp};
     my $last_update = 0;
-    print STDERR "get_contents $type\n";
+    #print STDERR "get_contents $type\n";
     
     #my $t1    = new Benchmark;
     my $items = [];
@@ -1663,7 +1704,7 @@ sub search_notebooks
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
 
-    #	print STDERR "$search_term $timestamp\n";
+    #print STDERR "$search_term $timestamp\n";
 
     my @notebooks;
     my $num_results;
@@ -1731,7 +1772,7 @@ sub add_items_to_notebook {
     my @items = split( ',', $item_list );
     return unless @items;
 
-    # print STDERR "add_items_to_notebook $nid $item_list\n";
+    #print STDERR "add_items_to_notebook $nid $item_list\n";
 
     my $notebook = $coge->resultset('List')->find($nid);
     return unless $USER->has_access_to_list($notebook);

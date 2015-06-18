@@ -66,21 +66,17 @@ sub gen_html {
 	my $html;
 	my $template =
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-
-	#$template->param( HELP => '/wiki/index.php?title=ADMIN' );
-	$template->param( HELP => $P->{SERVER} );
-	my $name = $USER->user_name;
-	$name = $USER->first_name if $USER->first_name;
-	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-	$template->param( USER       => $name );
-	$template->param( PAGE_TITLE => qq{Admin} );
-	$template->param( TITLE      => "GODVIEW" );
-	$template->param( LOGO_PNG   => "CoGe.svg" );
+	$template->param( USER       => $USER->display_name || '',
+	                  PAGE_TITLE => qq{Admin},
+	                  TITLE      => "GODVIEW",
+	                  HOME       => $P->{SERVER},
+                      HELP       => '',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      CAS_URL    => $P->{CAS_URL} || '',
+                      ADJUST_BOX => 1,
+                      ADMIN_ONLY => $USER->is_admin );
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( BODY       => gen_body() );
-	$template->param( ADJUST_BOX => 1 );
-	$template->param( CAS_URL    => $P->{CAS_URL} || '' );
-	$template->param( ADMIN_ONLY => $USER->is_admin );
 	$html .= $template->output;
 }
 

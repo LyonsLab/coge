@@ -76,18 +76,15 @@ sub gen_html {
 
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => 'SynSub' );
-    $template->param( TITLE      => 'Synteny Substitution Matrix' );
-    $template->param( HEAD       => qq{} );
-    $template->param( HELP       => "/wiki/index.php?title=SynSub" );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER => $name );
-
+    $template->param( PAGE_TITLE => 'SynSub',
+                      TITLE      => 'Synteny Substitution Matrix',
+                      HEAD       => qq{},
+                      HOME       => $P->{SERVER},
+                      HELP       => 'SynSub',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      USER       => $USER->display_name || '' );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE => $DATE );
-    $template->param( LOGO_PNG => "SynSub-logo.png" );
     $template->param( BODY     => $body );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $P->{CAS_URL} || '' );

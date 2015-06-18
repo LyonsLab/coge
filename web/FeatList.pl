@@ -62,29 +62,17 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 
-    $template->param( TITLE => 'FeatList' );
-    $template->param( PAGE_TITLE => 'FeatList' );
-    #$template->param( HELP       => '/wiki/index.php?title=FeatList' );
-    $template->param( HELP => $P->{SERVER} );
-
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER     => $name );
-    $template->param( LOGO_PNG => "CoGe.svg" );
+    $template->param( TITLE => 'FeatList',
+                      PAGE_TITLE => 'FeatList',
+                      HOME       => $P->{SERVER},
+                      HELP       => 'FeatList',
+                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      USER     => $USER->display_name || '' );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
-
-#	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-#	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-#	my $box_name = "Feature List: ";
-#	my $list_name = $FORM->param('list_name') || $FORM->param('ln');
-#	$box_name .= " $list_name" if $list_name;
-#	$box_name .= "<a class='link' onclick=window.open('$link'); href='$link'>$link</a>";
-#	$template->param( BOX_NAME   => $box_name );
     $template->param( BODY       => $body );
-    $template->param( ADJUST_BOX => 1 );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
-    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+    $template->param( ADJUST_BOX => 1,
+                      ADMIN_ONLY => $USER->is_admin,
+                      CAS_URL    => $P->{CAS_URL} || '' );
     return $template->output;
 }
 

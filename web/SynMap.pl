@@ -277,23 +277,20 @@ sub gen_html {
     my ($body) = gen_body();
     my $template =
       HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => 'SynMap' );
-    $template->param( TITLE      => 'SynMap: Whole Genome Synteny Analysis' );
-    $template->param( HEAD       => qq{} );
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param( USER => $name );
+    $template->param( PAGE_TITLE => 'SynMap',
+                      TITLE      => 'SynMap: Whole Genome Synteny Analysis',
+                      HEAD       => qq{},
+                      USER       => $USER->display_name || '' );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
 
     #$template->param(ADJUST_BOX=>1);
-    $template->param( LOGO_PNG => "CoGe.svg" );
-    $template->param( BODY     => $body );
-    #$template->param( HELP     => "/wiki/index.php?title=SynMap" );
-    $template->param( HELP     => $config->{SERVER} );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
-    $template->param( CAS_URL    => $config->{CAS_URL} || '' );
+    $template->param( BODY       => $body );
+    $template->param( HOME       => $config->{SERVER},
+                      HELP       => 'SynMap',
+                      WIKI_URL   => $config->{WIKI_URL} || '',
+                      ADMIN_ONLY => $USER->is_admin,
+                      CAS_URL    => $config->{CAS_URL} || '' );
     $html .= $template->output;
     return $html;
 }

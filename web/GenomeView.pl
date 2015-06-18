@@ -35,11 +35,12 @@ sub gen_html {
     else {    
         $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
-	        HELP => $CONF->{SERVER},
-            USER => ( $USER->user_name eq 'public' ? '' : $USER->display_name ),
+            USER       => $USER->display_name || '',
             PAGE_TITLE => 'Genome Viewer',
 	        TITLE      => 'Genome Viewer',
-            LOGO_PNG   => 'CoGe.svg',
+	        HOME       => $CONF->{SERVER},
+            HELP       => 'GenomeView',
+            WIKI_URL   => $CONF->{WIKI_URL} || '',
             ADJUST_BOX => 1,
             ADMIN_ONLY => $USER->is_admin,
             CAS_URL    => $CONF->{CAS_URL} || ''

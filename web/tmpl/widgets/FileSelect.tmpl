@@ -251,8 +251,6 @@ function irods_get_path (path) {
 
 	path = resolve_path(path);
 
-    $('#ids_loading');
-
 	$.ajax({
 		data: {
 			fname: 'irods_get_path',
@@ -337,7 +335,7 @@ function irods_get_path (path) {
 					$('#ids_table').append(tr);
 				}
 			);
-		},
+		}
 	});
 }
 
@@ -528,11 +526,12 @@ function load_from_ncbi() {
   <div id="tab-1" class="small">
 	<div style="white-space:nowrap;border-bottom:1px solid gray;">
 		<img id="ids_loading" src="picts/ajax-loader.gif" style="float:right;"/>
-		<span class='link' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'></span>Home</span>
-		<span class='link' style='padding-left:15px;' onclick='irods_get_path("..")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>
-		<span class='link' style='padding-left:15px;' onclick='irods_get_path(".")'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>
+		<span class='link' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'></span>Home</span>&nbsp;&nbsp;
+		<span class='link' onclick='irods_get_path("/iplant/home/shared")'><span class='ui-icon ui-icon-folder-collapsed'></span>Community Data</span>&nbsp;&nbsp;
+		<span class='link' onclick='irods_get_path("..")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>&nbsp;&nbsp;
+		<span class='link' onclick='irods_get_path(".")'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>&nbsp;&nbsp;
 		<TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
-		<span class='link' style='padding-left:15px;' onclick='irods_get_all_files(".")'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>
+		<span class='link' onclick='irods_get_all_files(".")'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>
 		</TMPL_UNLESS>
 	</div>
 	<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
