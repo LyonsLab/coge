@@ -8,7 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
-use CoGe::Core::Storage qw( create_annotation_dataset get_workflow_paths );
+use CoGe::Core::Storage qw( create_annotation_dataset get_workflow_paths get_irods_path get_irods_file );
 use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
@@ -161,66 +161,66 @@ sub generate_body {
 }
 
 sub irods_get_path {
-    my %opts      = @_;
-    my $path      = $opts{path};
+    my %opts = @_;
+    my $path = $opts{path};
+    $path = unescape($path);
+    print STDERR "irods_get_path ", $path, "\n";
+    
+    unless ($path) {
+        my $username = $USER->name;
+        my $basepath = CoGe::Accessory::Web::get_defaults()->{IRODSDIR};
+        $basepath =~ s/\<USER\>/$username/;
+        $path = $basepath;
+    }
+    
+    my $result = get_irods_path($path);
+    
+    if ($result->{error}) {
+        # Test for recent new account.  The iPlant IRODS isn't ready for a few
+        # minues the first time a user logs into CoGe.
+        # mdb added 3/31/14
+        my $isNewAccount = 0;
+        if ($USER->date ne '0000-00-00 00:00:00') {
+            my $dt_user = DateTime::Format::MySQL->parse_datetime( $USER->date );
+            my $dt_now = DateTime->now( time_zone => 'America/Phoenix' );
+            my $diff = $dt_now->subtract_datetime($dt_user);
+            my ( $years, $months, $days, $hours, $minutes ) = $diff->in_units('years', 'months', 'days', 'hours', 'minutes');
+            $isNewAccount = (!$years && !$months && !$days && !$hours && $minutes < 5) ? 1 : 0;
+        }
 
-    my $username = $USER->name;
-    my $basepath = $P->{IRODSDIR};
-    $basepath =~ s/\<USER\>/$username/;
-    $path = $basepath unless $path;
-
-    if ( $path !~ /^$basepath/ ) {
-        print STDERR
-          "Attempt to access '$path' denied (basepath='$basepath')\n";
-        return;
+        # Send support email
+        if (!$isNewAccount) {
+            my $email = $P->{SUPPORT_EMAIL};
+            my $body =
+                "irods ils command failed\n\n"
+              . 'User: '
+              . $USER->name . ' id='
+              . $USER->id . ' '
+              . $USER->date . "\n\n"
+              . $result->{error} . "\n\n"
+              . $P->{SERVER};
+            CoGe::Accessory::Web::send_email(
+                from    => $email,
+                to      => $email,
+                subject => "System error notification",
+                body    => $body
+            );
+        }
+        return encode_json($result);
     }
 
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
-    my $error  = $result->{error};
-    if ($error) {
-        my $body  = 'User: ' . $USER->name . ' ' . $USER->id . "\n\n" . $error;
-        my $email = $P->{SUPPORT_EMAIL};
-        CoGe::Accessory::Web::send_email(
-            from    => $email,
-            to      => $email,
-            subject => "System error notification from $PAGE_TITLE",
-            body    => $body
-        );
-        return encode_json( { error => $error } );
-    }
-    return encode_json(
-        { path => $path, items => $result->{items} } );
+    return encode_json({ path => $path, items => $result->{items} });
 }
 
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
+    
+    $path = unescape($path);
+    
+    my $result = get_irods_file($path, $TEMPDIR);
 
-    my ($filename)   = $path =~ /([^\/]+)\s*$/;
-    my ($remotepath) = $path =~ /(.*)$filename$/;
-
-    #	print STDERR "irods_get_file $path $filename\n";
-
-    my $localpath     = 'irods/' . $remotepath;
-    my $localfullpath = $TEMPDIR . $localpath;
-    $localpath .= '/' . $filename;
-    my $localfilepath = $localfullpath . '/' . $filename;
-
-    my $do_get = 1;
-
-    #	if (-e $localfilepath) {
-    #		my $remote_chksum = irods_chksum($path);
-    #		my $local_chksum = md5sum($localfilepath);
-    #		$do_get = 0 if ($remote_chksum eq $local_chksum);
-    #		print STDERR "$remote_chksum $local_chksum\n";
-    #	}
-
-    if ($do_get) {
-        mkpath($localfullpath);
-        CoGe::Accessory::IRODS::irods_iget( $path, $localfullpath );
-    }
-
-    return encode_json( { path => $localpath, size => -s $localfilepath } );
+    return encode_json( { path => $result->{localpath}, size => $result->{size} } );
 }
 
 sub load_from_ftp {
