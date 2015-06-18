@@ -5,11 +5,13 @@
 <TMPL_IF NAME='MAIN'>
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <!--<script src="js/coge/colors.js"</script>-->
-<script lanaguage="javascript" type="text/javascript" src="js/admin.js"></script>
+<script lanaguage="javascript" type="text/javascript" src="js/pages/admin.js"></script>
 <SCRIPT type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 <SCRIPT type="text/javascript" src="./js/jstree/jquery.jstree.js"></SCRIPT>
 <script src="js/vendor/d3/d3.min.js"></script>
+<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
 
+<link rel="stylesheet" href="css/dataTables.css" type="text/css"/>
 <style type="text/css">
 
 @font-face {
@@ -63,6 +65,7 @@ div.legend {
 		<li><a href="#tabs-2">Jobs</a></li>
 		<li><a href="#tabs-3">History</a></li>
 		<li><a href="#tabs-4">Graph</a></li>
+		<li><a href="#tabs-5">Reports</a></li>
 	</ul>
 	<div id="tabs-1">
 		<div id="master" style="position:relative;">
@@ -186,10 +189,10 @@ div.legend {
 		<div id="jobs" style="max-width:95%; height: 900px; display:true; font-size: 0.8em; margin-top: 5px;">
 		</div>
 	
-		<link rel="stylesheet" href="js/slickgrid/slick.grid.css" type="text/css"/>
-		<link rel="stylesheet" href="js/slickgrid/controls/slick.pager.css" type="text/css"/>
-		<!--<link rel="stylesheet" href="js/slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/> -->
-		<link rel="stylesheet" href="js/slickgrid/controls/slick.columnpicker.css" type="text/css"/>
+		<link rel="stylesheet" href="js/vendor/slickgrid/slick.grid.css" type="text/css"/>
+		<link rel="stylesheet" href="js/vendor/slickgrid/controls/slick.pager.css" type="text/css"/>
+		<!--<link rel="stylesheet" href="js/vendor/slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/> -->
+		<link rel="stylesheet" href="js/vendor/slickgrid/controls/slick.columnpicker.css" type="text/css"/>
 		  <style>
 		    .cell-centered {
 				text-align: center;
@@ -206,17 +209,17 @@ div.legend {
 		        border-right-style: solid;
 		    }
 		  </style>
-		<script src="js/slickgrid/lib/jquery-ui-1.8.16.custom.min.js"></script>
-		<script src="js/slickgrid/lib/jquery.event.drag-2.0.min.js"></script>
-		<script src="js/slickgrid/slick.core.js"></script>
-		<script src="js/slickgrid/slick.formatters.js"></script>
-		<script src="js/slickgrid/slick.editors.js"></script>
-		<script src="js/slickgrid/plugins/slick.rowselectionmodel.js"></script>
-		<script src="js/slickgrid/plugins/slick.checkboxselectcolumn.js"></script>
-		<script src="js/slickgrid/slick.grid.js"></script>
-		<script src="js/slickgrid/slick.dataview.js"></script>
-		<script src="js/slickgrid/controls/slick.pager.js"></script>
-		<script src="js/slickgrid/controls/slick.columnpicker.js"></script>
+		<script src="js/vendor/slickgrid/lib/jquery-ui-1.8.16.custom.min.js"></script>
+		<script src="js/vendor/slickgrid/lib/jquery.event.drag-2.2.js"></script>
+		<script src="js/vendor/slickgrid/slick.core.js"></script>
+		<script src="js/vendor/slickgrid/slick.formatters.js"></script>
+		<script src="js/vendor/slickgrid/slick.editors.js"></script>
+		<script src="js/vendor/slickgrid/plugins/slick.rowselectionmodel.js"></script>
+		<script src="js/vendor/slickgrid/plugins/slick.checkboxselectcolumn.js"></script>
+		<script src="js/vendor/slickgrid/slick.grid.js"></script>
+		<script src="js/vendor/slickgrid/slick.dataview.js"></script>
+		<script src="js/vendor/slickgrid/controls/slick.pager.js"></script>
+		<script src="js/vendor/slickgrid/controls/slick.columnpicker.js"></script>
 	
 		<script src="js/coge/utils.js"></script>
 		<script src="js/coge/grid.js"></script>
@@ -269,6 +272,23 @@ div.legend {
 			<span id="user_chart"></span>
 			<span id="group_chart"></span>
 		</div>
+	</div>
+	<div class="small" id="tabs-5">
+		<span>Select Report: </span>
+		<select style="margin-right:20px;" onchange="change_report(this.selectedIndex)">
+		  <option value="Total">Total</option>
+		  <option value="By User">By User</option>
+		  <option value="By Group">By Group</option>
+		</select>
+		<span>Filter: </span>
+		<select style="margin-right:20px;" onchange="filter_report(this.selectedIndex)">
+		  <option value="Default">None</option>
+		  <option value="Restricted">Restricted Only</option>
+		  <option value="Deleted">Deleted Only</option>
+		  <option value="Public">Public</options>
+		</select>
+		<img id="reports_loading" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;display:none;" />
+		<div id="reports"></div>
 	</div>
 </div>
 

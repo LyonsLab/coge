@@ -14,6 +14,7 @@ var hist_updating = true;
 var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
+var reports_grid;
 
 $(function () {
 	$( "#tabs" ).tabs({
@@ -29,9 +30,9 @@ $(function () {
 			if(current_tab == 2 && !hist_init) {
 				init_hist_grid();
 			}
-			//if(current_tab == 3 && !graph_init) {
-			//	init_graph();
-			//}
+			if(current_tab == 4 && !reports_grid) {
+				init_reports();
+			}
 		}
     });
 	
@@ -297,11 +298,21 @@ function init_hist_grid() {
 	});
 }
 
+//initialize Reports tab
+function init_reports() {
+	reports_grid = new DataGrid({
+		elementId: "reports",
+		filter: "none",
+		selection: "total",
+	});
+}
+
 function change_tab(tab) {
 	current_tab = tab;
 	//console.log(tab);
 }
 
+//Tab 1 Search
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
 		$("#loading").show();
@@ -1284,13 +1295,7 @@ var colors = [
 
 var w = Math.max(800, $(window).width()-200),
 	h = Math.max(800, $(window).height()-300),
-	user_node,
-	user_link,
-	user_root,
 	user_force,
-	group_node,
-	group_link,
-	group_root,
 	group_force;
 
 function init_graph(selectId) {
@@ -1692,3 +1697,81 @@ Force.prototype.moveItems = (function(){
     };
  
 })();
+
+
+//Tab 5, Summary
+function DataGrid(params) {
+	this.elementId = params.elementId;
+	this.filter = params.filter;
+	this.selection = params.selection;
+	
+	this.initialize();
+}
+
+$.extend(DataGrid.prototype, {
+	initialize: function() {
+		var element = this.elementId;
+		var fname;
+		$('#' + element + '_loading').show();
+		switch (this.selection) {
+			case "user":
+				fname = 'get_user_table';
+				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
+				break;
+			case "group":
+				fname = 'get_group_table';
+				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
+				break;
+			case "total":
+				fname = 'get_total_table';
+				if (this.filter == "none") {
+					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th></tr></thead></table>');
+				} else {
+					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th></tr></thead></table>');
+				}
+				break;
+		}
+		$.ajax({
+			data: {
+				fname: fname,
+				filter: this.filter,
+			},
+			success: function(data) {
+				$('#' + element + '_loading').hide();
+				console.log(JSON.parse(data));
+				$('#' + element + '_table').dataTable(JSON.parse(data));
+			}
+		});
+		
+	}
+});
+
+function change_report(index) {
+	switch (index) {
+		case 0: reports_grid.selection = "total";
+			break;
+		case 1: reports_grid.selection = "user";
+			break;
+		case 2: reports_grid.selection = "group";
+			break;
+	}
+	reports_grid.initialize();
+}
+
+function filter_report(index) {
+	switch (index) {
+		case 0: reports_grid.filter = "none";
+			break;
+		case 1: reports_grid.filter = "restricted";
+			break;
+		case 2: reports_grid.filter = "deleted";
+			break;
+		case 3: reports_grid.filter = "public";
+			break;
+	}
+	reports_grid.initialize();
+}
