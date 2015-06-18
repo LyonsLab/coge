@@ -28,6 +28,16 @@ sub list {
         return;
     }
     
+    # Setup path
+    #TODO set path to home if not specified
+    #my $username = $user->name;
+    #my $basepath = $conf->{IRODSDIR};
+    #$basepath =~ s/\<USER\>/$username/;
+    #$path = $basepath unless $path;
+    $path = '/' . $path;
+
+    # Fetch directory listing
+    my $result = CoGe::Accessory::IRODS::irods_ils($path);
     my $error  = $result->{error};
     if ($error) {
         $self->render(json => { error => { IRODS => $error } });
