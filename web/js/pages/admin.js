@@ -1712,6 +1712,7 @@ $.extend(DataGrid.prototype, {
 	initialize: function() {
 		var element = this.elementId;
 		var fname;
+		$('#' + element).hide();
 		$('#' + element + '_loading').show();
 		switch (this.selection) {
 			case "user":
@@ -1744,6 +1745,7 @@ $.extend(DataGrid.prototype, {
 				$('#' + element + '_loading').hide();
 				console.log(JSON.parse(data));
 				$('#' + element + '_table').dataTable(JSON.parse(data));
+				$('#' + element).show();
 			}
 		});
 		
