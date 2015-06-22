@@ -74,6 +74,8 @@ $(function () {
 			schedule_update(5000);
 		}
 	});
+    
+    //var histo_test = new Histogram("histo_dialog");
 });
 
 //Initialize the Jobs tab
@@ -1704,12 +1706,14 @@ function DataGrid(params) {
 	this.elementId = params.elementId;
 	this.filter = params.filter;
 	this.selection = params.selection;
+	this.data;
 	
 	this.initialize();
 }
 
 $.extend(DataGrid.prototype, {
 	initialize: function() {
+		var self = this;
 		var element = this.elementId;
 		var fname;
 		$('#' + element).hide();
@@ -1743,7 +1747,8 @@ $.extend(DataGrid.prototype, {
 			},
 			success: function(data) {
 				$('#' + element + '_loading').hide();
-				console.log(JSON.parse(data));
+				self.data = JSON.parse(data);
+				console.log(self.data);
 				$('#' + element + '_table').dataTable(JSON.parse(data));
 				$('#' + element).show();
 			}
@@ -1776,4 +1781,96 @@ function filter_report(index) {
 			break;
 	}
 	reports_grid.initialize();
+}
+
+var Histogram = function(element, json) {
+	this.values = json.data[0];
+	this.formatCount;
+	this.margin;
+	this.width;
+	this.height;
+	this.x;
+	this.data;
+	this.y;
+	this.xAxis;
+	this.svg;
+	this.bar;
+	this.element = element;
+	
+	this.initialize();
+}
+
+$.extend(Histogram.prototype, {
+	initialize: function() {
+		var self = this;
+		$("#" + this.element).html('');
+		//Generate a Bates distribution of 10 random variables.
+		//this.values = d3.range(1000).map(d3.random.bates(10));
+		console.log(this.values);
+	
+		// A formatter for counts.
+		this.formatCount = d3.format(",.0f");
+	
+		this.margin = {top: 10, right: 30, bottom: 30, left: 30},
+		this.width = 960 - this.margin.left - this.margin.right,
+		this.height = 500 - this.margin.top - this.margin.bottom;
+	
+		this.x = d3.scale.linear()
+		    .domain([
+		             Math.floor((Math.min.apply(Math, self.values)/100)*100), 
+		             Math.ceil((Math.max.apply(Math, self.values)/100)*100)
+		             ])
+		    .range([0, this.width]);
+	
+		// Generate a histogram using twenty uniformly-spaced bins.
+		this.data = d3.layout.histogram()
+		    .bins(this.x.ticks(10))
+		    (this.values);
+	
+		this.y = d3.scale.linear()
+		    .domain([0, d3.max(this.data, function(d) { return d.y; })])
+		    .range([this.height, 0]);
+	
+		this.xAxis = d3.svg.axis()
+		    .scale(this.x)
+		    .orient("bottom");
+	
+		this.svg = d3.select("#" + this.element).append("svg")
+		    .attr("width", this.width + this.margin.left + this.margin.right)
+		    .attr("height", this.height + this.margin.top + this.margin.bottom)
+		  .append("g")
+		    .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+	
+		this.bar = this.svg.selectAll(".bar")
+		    .data(this.data)
+		  .enter().append("g")
+		    .attr("class", "bar")
+		    .attr("transform", function(d) { return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; });
+	
+		this.bar.append("rect")
+		    .attr("x", 1)
+		    .attr("width", this.x(this.data[0].dx) - 1)
+		    .attr("height", function(d) { return self.height - self.y(d.y); });
+	
+		this.bar.append("text")
+		    .attr("dy", ".75em")
+		    .attr("y", 6)
+		    .attr("x", this.x(this.data[0].dx) / 2)
+		    .attr("text-anchor", "middle")
+		    .text(function(d) { return self.formatCount(d.y); });
+	
+		this.svg.append("g")
+		    .attr("class", "x axis")
+		    .attr("transform", "translate(0," + this.height + ")")
+		    .call(this.xAxis);
+		
+		//console.log(this.element);
+		$('#histo_dialog').dialog({width:500}).dialog('open');
+	}
+});
+
+function init_histogram(element) {
+	data = reports_grid.data;
+	var histogram = new Histogram(element, data);
+	return histogram;
 }
