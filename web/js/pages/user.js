@@ -605,7 +605,7 @@ function DataGrid(params) {
 $.extend(DataGrid.prototype, {
 	initialize: function() {
 		var self = this;
-		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border"></table>');
+		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border" style="cursor:pointer;"></table>');
 		
 		// Instantiate grid
 		var dataTable = this.dataTable = this.element.children('table').dataTable({
