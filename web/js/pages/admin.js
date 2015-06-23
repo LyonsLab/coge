@@ -1723,11 +1723,13 @@ $.extend(DataGrid.prototype, {
 				fname = 'get_user_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
 					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
+				$('#histogram_button').prop('disabled', false);
 				break;
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
 					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
+				$('#histogram_button').prop('disabled', false);
 				break;
 			case "total":
 				fname = 'get_total_table';
@@ -1738,6 +1740,7 @@ $.extend(DataGrid.prototype, {
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
 						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th></tr></thead></table>');
 				}
+				$('#histogram_button').prop('disabled', true);
 				break;
 		}
 		$.ajax({
@@ -1783,8 +1786,28 @@ function filter_report(index) {
 	reports_grid.initialize();
 }
 
-var Histogram = function(element, json) {
-	this.values = json.data[0];
+var Histogram = function(element, json, selection) {
+	this.values = [];
+	this.max_value = 0;
+	for(var i = 0; i < json.data.length; i++) {
+		var total_items = 0;
+		for(var j = 0; j < json.data[i].length; j++) {
+			if(selection == "total" || j != 0) {
+				var num = parseInt(json.data[i][j]);
+				total_items += num;
+				//console.log(json.data[i][j]);
+			}
+		}
+		//if(total_items != 0) {
+			this.values.push(total_items);
+		//}
+		if(total_items > this.max_value) {
+			this.max_value = total_items;
+		}
+	}
+	
+	//console.log(this.values);
+	
 	this.formatCount;
 	this.margin;
 	this.width;
@@ -1793,6 +1816,7 @@ var Histogram = function(element, json) {
 	this.data;
 	this.y;
 	this.xAxis;
+	this.yAxis;
 	this.svg;
 	this.bar;
 	this.element = element;
@@ -1806,71 +1830,146 @@ $.extend(Histogram.prototype, {
 		$("#" + this.element).html('');
 		//Generate a Bates distribution of 10 random variables.
 		//this.values = d3.range(1000).map(d3.random.bates(10));
-		console.log(this.values);
+		//console.log(this.values);
 	
 		// A formatter for counts.
 		this.formatCount = d3.format(",.0f");
 	
-		this.margin = {top: 10, right: 30, bottom: 30, left: 30},
-		this.width = 960 - this.margin.left - this.margin.right,
+		this.margin = {top: 10, right: 30, bottom: 30, left: 50},
+		this.width = 500 - this.margin.left - this.margin.right,
 		this.height = 500 - this.margin.top - this.margin.bottom;
 	
 		this.x = d3.scale.linear()
-		    .domain([
-		             Math.floor((Math.min.apply(Math, self.values)/100)*100), 
-		             Math.ceil((Math.max.apply(Math, self.values)/100)*100)
-		             ])
+		    .domain([0, this.max_value])
 		    .range([0, this.width]);
 	
 		// Generate a histogram using twenty uniformly-spaced bins.
 		this.data = d3.layout.histogram()
-		    .bins(this.x.ticks(10))
+		    .bins(this.x.ticks(this.max_value))
 		    (this.values);
 	
-		this.y = d3.scale.linear()
-		    .domain([0, d3.max(this.data, function(d) { return d.y; })])
+		this.y = d3.scale.log()
+		    .domain([1, d3.max(this.data, function(d) { return d.y; })])
 		    .range([this.height, 0]);
 	
 		this.xAxis = d3.svg.axis()
 		    .scale(this.x)
 		    .orient("bottom");
+		
+		this.yAxis = d3.svg.axis()
+	    	.scale(this.y)
+	    	.orient("left");
 	
 		this.svg = d3.select("#" + this.element).append("svg")
 		    .attr("width", this.width + this.margin.left + this.margin.right)
 		    .attr("height", this.height + this.margin.top + this.margin.bottom)
-		  .append("g")
+		    //.attr("viewBox", "0 0 500 500")
+		    //.attr("preserveAspectRatio", "xMidYMid")
+			.append("g")
 		    .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
 	
 		this.bar = this.svg.selectAll(".bar")
 		    .data(this.data)
-		  .enter().append("g")
+			.enter().append("g")
 		    .attr("class", "bar")
-		    .attr("transform", function(d) { return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; });
+		    .attr("transform", function(d) { 
+		    	if(d.y == 0) {
+		    		return "translate(" + self.x(d.x) + ", 0)";
+		    	}
+		    	return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
+		    });
 	
+		//console.log(this.x(1));
+		
 		this.bar.append("rect")
 		    .attr("x", 1)
-		    .attr("width", this.x(this.data[0].dx) - 1)
-		    .attr("height", function(d) { return self.height - self.y(d.y); });
+		    .attr("width", this.x((this.data[0].dx * 2) - 1))
+		    .attr("height", function(d) { 
+		    	if(d.y == 0) {
+		    		return 0;
+		    	}
+		    	return self.height - self.y(d.y); 
+		    });
 	
-		this.bar.append("text")
+		/*this.bar.append("text")
 		    .attr("dy", ".75em")
 		    .attr("y", 6)
 		    .attr("x", this.x(this.data[0].dx) / 2)
-		    .attr("text-anchor", "middle")
-		    .text(function(d) { return self.formatCount(d.y); });
+		    .attr("text-anchor", "top")
+		    .text(function(d) { return self.formatCount(d.y); });*/
 	
 		this.svg.append("g")
 		    .attr("class", "x axis")
 		    .attr("transform", "translate(0," + this.height + ")")
 		    .call(this.xAxis);
 		
-		//console.log(this.element);
-		$('#histo_dialog').dialog({width:500}).dialog('open');
+		this.svg.append("g")
+	    	.attr("class", "y axis")
+	    	//.attr("transform", "translate(0," + this.width + ")")
+	    	.call(this.yAxis);
+		
+		console.log(this.element);
+		$('#' + this.element)
+			.dialog({
+				width:580,
+				resize: function( event, ui ) { 
+					//console.log(ui.originalSize.width);
+					//self.svg.attr("transform", "scale(" + ui.size.width/ui.originalSize.width + " " + ui.size.height/ui.originalSize.height + ") translate(" + self.margin.left + "," + self.margin.top + ")");
+					d3.select("#" + self.element).remove();
+					var widthScale = ui.size.width/ui.originalSize.width;
+					var heightScale = ui.size.height/ui.originalSize.height;
+					self.svg = d3.select("#" + self.element).append("svg")
+					    .attr("width", self.width*widthScale + self.margin.left + self.margin.right)
+					    .attr("height", self.height*heightScale + self.margin.top + self.margin.bottom)
+						.append("g")
+					    .attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
+					
+					this.bar = this.svg.selectAll(".bar")
+				    	.data(this.data)
+						.enter().append("g")
+				    	.attr("class", "bar")
+				    	.attr("transform", function(d) { 
+				    		if(d.y == 0) {
+				    			return "translate(" + self.x(d.x) + ", 0)";
+				    		}
+				    		return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
+				    	});
+			
+					//console.log(this.x(1));
+					
+					this.bar.append("rect")
+					    .attr("x", 1)
+					    .attr("width", this.x((this.data[0].dx * 2) - 1))
+					    .attr("height", function(d) { 
+					    	if(d.y == 0) {
+					    		return 0;
+					    	}
+					    	return self.height - self.y(d.y); 
+					    });
+				
+					/*this.bar.append("text")
+					    .attr("dy", ".75em")
+					    .attr("y", 6)
+					    .attr("x", this.x(this.data[0].dx) / 2)
+					    .attr("text-anchor", "top")
+					    .text(function(d) { return self.formatCount(d.y); });*/
+				
+					this.svg.append("g")
+					    .attr("class", "x axis")
+					    .attr("transform", "translate(0," + this.height + ")")
+					    .call(this.xAxis);
+					
+					this.svg.append("g")
+				    	.attr("class", "y axis")
+				    	//.attr("transform", "translate(0," + this.width + ")")
+				    	.call(this.yAxis);
+				},
+			})
+			.dialog('open');
 	}
 });
 
 function init_histogram(element) {
-	data = reports_grid.data;
-	var histogram = new Histogram(element, data);
+	var histogram = new Histogram(element, reports_grid.data, reports_grid.selection);
 	return histogram;
 }
