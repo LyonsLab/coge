@@ -110,6 +110,18 @@ $(document).ready(function() {
 				finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
 			}
 	});
+	
+	// Setup resize handler - mdb added 6/23/15
+	var dialog = $("#file_select_dialog");
+	dialog.dialog({
+    	width: '50%',
+    	resizeStop: function(event, ui) {
+    		//console.log('resizeStop ' + ui.size.width + ' ' + ui.size.height + ' ' + ui.originalSize.width + ' ' + ui.originalSize.height);
+    		var heightChange = ui.size.height - ui.originalSize.height;
+    		var panel = $("#ids_panel");
+    		panel.height(panel.height() + heightChange);
+    	}
+    });
 });
 
 function add_file_to_list(filename, url) {
@@ -535,7 +547,7 @@ function load_from_ncbi() {
 		</TMPL_UNLESS>
 	</div>
 	<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
-    <div style="overflow-y:auto;height:154px;">
+    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
     	<table id="ids_table" class="small" style="width:100%;"></table>
     </div>
   </div>
