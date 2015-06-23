@@ -1752,6 +1752,10 @@ sub get_user_table {
 		{
 			data => @data,
 			bPaginate => 0,
+			columnDefs => [{ 
+				orderSequence => [ "desc", "asc" ], 
+				targets => [1, 2, 3, 4],
+			}],
 		}
 	);
 }
@@ -1851,6 +1855,10 @@ sub get_group_table {
 		{
 			data => @data,
 			bPaginate => 0,
+			columnDefs => [{ 
+				orderSequence => [ "desc", "asc" ], 
+				targets => [1, 2, 3, 4],
+			}],
 		}
 	);
 }
