@@ -89,7 +89,6 @@ sub irods_ils {
             ($name) = basename($line);# $line =~ /([^\/]+)\s*$/; # mdb modified 8/14/14 issue 441
             if ($name) { $name =~ s/\s*$//; $name .= '/'; }
             else       { $name = 'error' }
-            ( $size, $timestamp ) = ( '', '' );
         }
         else {                         # file
             $type = 'file';
@@ -107,14 +106,14 @@ sub irods_ils {
             $name      = escape($name);
 		}
 		
-        push @result,
-          {
+		my %item = (
             type      => $type,
-            size      => $size,
-            timestamp => $timestamp,
             name      => $name,
             path      => $path2
-          };
+		);
+		$item{size} = $size if $size;
+		$item{timestamp} = $timestamp if $timestamp;
+        push @result, \%item;
     }
     @result = sort { $a->{type} cmp $b->{type} } @result;    # directories before files
 
