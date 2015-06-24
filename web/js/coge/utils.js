@@ -70,7 +70,33 @@ var coge = window.coge = (function(ns) {
         
         ucfirst: function(string) {
             return string.charAt(0).toUpperCase() + string.slice(1);
-        }
+        },
+        
+        getURLParameters: function () { // returns object of query params
+            var match,
+                pl     = /\+/g,  // Regex for replacing addition symbol with a space
+                search = /([^&=]+)=?([^&]*)/g,
+                decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+                query  = window.location.search.substring(1);
+
+            var urlParams = {};
+            while (match = search.exec(query))
+               urlParams[decode(match[1])] = decode(match[2]);
+            return urlParams;
+        },
+        
+        toQueryString: function(obj, prefix) { // accepts an object of query params
+		    var str = [];
+		    for (var p in obj) {
+		        if (obj.hasOwnProperty(p)) {
+		        	var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p];
+		        	str.push(typeof v == "object" ?
+		        			serialize(v, k) :
+		        			encodeURIComponent(k) + "=" + encodeURIComponent(v));
+		        }
+		    }
+		    return str.join("&");
+    	}
     };
 
     return ns;

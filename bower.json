@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "homepage": "https://github.com/LyonsLab/coge",
   "authors": [
-    "Evan Briones <erbriones@gmail.com>"
+    "Evan Briones <erbriones@gmail.com>",
+    "Matt Bomhoff <mbomhoff@email.arizona.edu>"
   ],
   "license": "MIT",
   "ignore": [
@@ -17,7 +18,7 @@
   "dependencies": {
     "d3": "~3.4.8",
     "underscore": "~1.6.0",
-    "bioplot": "https://github.com/erbriones/bioplot.git#v0.1.0",
+    "bioplot": "https://github.com/LyonsLab/bioplot.git",
     "jdot": "https://github.com/LyonsLab/jdot.git",
     "bootstrap": "~3.2.0",
     "slickgrid": "https://github.com/mleibman/SlickGrid.git",

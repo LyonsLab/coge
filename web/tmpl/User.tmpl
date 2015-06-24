@@ -183,7 +183,7 @@ div.deleted { display: none; }
 
 	<div style="float:left;float:left;margin-right:5px;">
 	    <span id="create_button" class='ui-button ui-button-icon-right ui-corner-all coge-button coge-button-right' style="font-size:1em;padding-top:5px;padding-bottom:5px;width:70px;" onclick="create_menu();">NEW<span class="ui-icon ui-icon-triangle-1-s"></span></span>
-	    <div id="toc_panel" class="small panel noselect" style="overflow:auto;padding-top:1em;width:10em;">
+	    <div id="toc_panel" class="small panel noselect" style="overflow:auto;padding-top:1em;width:10em;cursor:pointer;">
 			<ul>
 				<li><span data-type="mine">My Data</span>
 					<ul>
@@ -212,7 +212,7 @@ div.deleted { display: none; }
 		</ul>
 	</div>
 
-	<div style="height:24px;">
+	<div class="noselect" style="height:24px">
 		<span id="contents_title" style="float:left;min-width:130px;font-weight:bold;margin-right:20px;"></span>
 		<span id="add_button" onClick="add_dialog();" class="add coge-icon glyphicon glyphicon-plus item-button invisible" style="margin-right:5px;" title="Create New Item"></span>
 		<span id="share_button" onClick="share_dialog();" class="share coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
@@ -255,6 +255,7 @@ div.deleted { display: none; }
 //	experiment: 		'<TMPL_VAR NAME="ITEM_TYPE.EXPERIMENT">'
 //};
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
+const USER_ID = '<TMPL_VAR NAME="USER_ID">';
 </script>
 
 <script type="text/javascript" src="js/pages/user.js"></script>
