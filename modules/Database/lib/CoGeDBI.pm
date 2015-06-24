@@ -310,7 +310,7 @@ sub get_lists_for_user {
     #print STDERR "CoGeDBI::get_lists_for_user $user_id\n";
     
     # Get groups for user
-    my $group_str = get_group_str_for_user($dbh, $user_id);
+    my $group_str = get_group_str_for_user($dbh, $user_id) || -1; # default to -1 to prevent empty IN clause in query
         
     # Get user/group list connections
     my $query = qq{

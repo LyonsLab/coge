@@ -41,6 +41,16 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
+# Admins have ability to simulate other users using the "user_id" query parameter
+my $user_id = $FORM->Vars->{'user_id'};
+if ($user_id && $USER->is_admin) {
+    my $user = $coge->resultset('User')->find($user_id);
+    if (defined $user) {
+        print STDERR "Switching to user '", $user->name, "'\n";
+        $USER = $user;
+    }
+}
+
 $JEX = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 
 # debug for fileupload:
