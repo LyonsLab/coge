@@ -1232,18 +1232,22 @@ sub _create_load_annotation_job {
 }
 
 sub get_irods_path {
-    my ($path) = @_;
+    my ($path, $username) = @_;
     #print STDERR "irods_get_path: ", $path, "\n";
     
-# mdb removed 6/17/15 COGE-313
-#    if ( $path !~ /^$basepath/ ) {
-#        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
-#        return;
-#    }
+    my $homepath = CoGe::Accessory::Web::get_defaults()->{IRODSDIR};
+    return unless $homepath;
+    $homepath =~ s/\<USER\>/$username/;
+    my $sharedpath = CoGe::Accessory::Web::get_defaults()->{IRODSSHARED};
+    return unless $sharedpath;
 
-    # mdb added 6/17/15 COGE-313
-    if ( $path eq '/iplant/home/' ) {
-        #print STDERR "Attempt to access '$path' denied\n";
+    # Set default path
+    $path = $homepath unless $path;
+    $path = '/' . $path if ($path !~ /^\//);
+
+    # Restrict access
+    unless ( $path =~ /^\/iplant\/home\/$username/ || $path =~ /^$sharedpath/) {
+        print STDERR "CoGe::Core::Storage::get_irods_path: Attempt to access '$path' denied\n";
         return;
     }
 
@@ -1258,7 +1262,7 @@ sub get_irods_file {
     my ($filename)   = $src_path =~ /([^\/]+)\s*$/;
     my ($remotepath) = $src_path =~ /(.*)$filename$/;
 
-    my $localpath     = 'irods/' . $remotepath;
+    my $localpath     = catdir('irods', $remotepath);
     my $localfullpath = catdir($dest_path . $localpath);
     $localpath = catfile($localpath, $filename);
     my $localfilepath = catfile($localfullpath, $filename);
