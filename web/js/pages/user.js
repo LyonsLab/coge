@@ -459,7 +459,10 @@ $.extend(ContentPanel.prototype, {
     	$('.item-button').removeClass('invisible');
 
     	// Update browser url
-    	window.history.pushState({}, "", PAGE_NAME + "?p="+this.selectedView);
+    	var params = coge.utils.getURLParameters();
+    	params['p'] = this.selectedView;
+    	var queryString = coge.utils.toQueryString(params);
+    	window.history.pushState({}, "", PAGE_NAME + "?" + queryString);
     },
     
     renderTitle: function() {
@@ -549,6 +552,7 @@ $.extend(ContentPanel.prototype, {
     		dataType: 'text',
     		data: {
     			fname: 'get_contents',
+    			user_id: USER_ID,
     			item_type: typeId,
     			last_update: lastUpdate,
     			timestamp: init_timestamp('get_contents')
