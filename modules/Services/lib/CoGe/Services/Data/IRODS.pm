@@ -20,14 +20,6 @@ sub list {
         return;
     }
 
-    # Fetch directory listing
-    #my $result = CoGe::Accessory::IRODS::irods_ils($path);
-    my $result = get_irods_path($path, $user->name);
-    unless ($result) {
-        $self->render(json => { error => { IRODS => 'Access denied' } });
-        return;
-    }
-    
     # Setup path
     #TODO set path to home if not specified
     #my $username = $user->name;
@@ -37,7 +29,13 @@ sub list {
     $path = '/' . $path;
 
     # Fetch directory listing
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    #my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    my $result = get_irods_path($path, $user->name);
+    unless ($result) {
+        $self->render(json => { error => { IRODS => 'Access denied' } });
+        return;
+    }
+    
     my $error  = $result->{error};
     if ($error) {
         $self->render(json => { error => { IRODS => $error } });
