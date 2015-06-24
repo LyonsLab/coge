@@ -36,6 +36,9 @@ sub init {
         return;
     }
 
+    # Get user from DB
+    my $user = $db->resultset('User')->find( { user_name => $username } );
+
     # Check for existing user session
     my $session_id = unescape($mojo->cookie($conf->{COOKIE_NAME}));
     $session_id =~ s/session&//;
@@ -44,18 +47,21 @@ sub init {
 
     # TODO add expiration to session table and check it here
 
-    # Otherwise, validate user
-    unless ($session or validate($username, $token)) {
+    # Use existing session if possible
+    if ($session && $user && $session->user_id == $user->id) {
+        print STDERR "CoGe::Services::Auth::init using existing session\n";
+        return ( $db, $user, $conf );
+    }
+
+    # Otherwise, try to validate user token
+    unless (validate($username, $token)) {
         print STDERR "CoGe::Services::Auth::init: validation failed\n";
         return ( $db, undef, $conf );
     }
 
-    # Get user from DB
-    my $user = $db->resultset('User')->find( { user_name => $username } );
-
-    # Otherwise, get user info and add to DB
+    # Add user to DB
     if (!$user) {
-        # TODO add user to database
+        # TODO add user to database -- right now the user must login via web site before they can use the API
         print STDERR "CoGe::Services::Auth::init: failed to find user '", $username, "'\n";
         return ( $db, undef, $conf ); # tempfix
     }
