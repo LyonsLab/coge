@@ -1809,9 +1809,9 @@ var Histogram = function(element, json, selection) {
 	//console.log(this.values);
 	
 	this.formatCount;
-	this.margin;
-	this.width;
-	this.height;
+	this.margin = {top: 10, right: 30, bottom: 30, left: 50};
+	this.width = 500 - this.margin.left - this.margin.right;
+	this.height = 500 - this.margin.top - this.margin.bottom;
 	this.x;
 	this.data;
 	this.y;
@@ -1835,9 +1835,9 @@ $.extend(Histogram.prototype, {
 		// A formatter for counts.
 		this.formatCount = d3.format(",.0f");
 	
-		this.margin = {top: 10, right: 30, bottom: 30, left: 50},
+		/*this.margin = {top: 10, right: 30, bottom: 30, left: 50},
 		this.width = 500 - this.margin.left - this.margin.right,
-		this.height = 500 - this.margin.top - this.margin.bottom;
+		this.height = 500 - this.margin.top - this.margin.bottom;*/
 	
 		this.x = d3.scale.linear()
 		    .domain([0, this.max_value])
@@ -1867,6 +1867,10 @@ $.extend(Histogram.prototype, {
 		    //.attr("preserveAspectRatio", "xMidYMid")
 			.append("g")
 		    .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+		
+		this.svg.onclick = function(event, ui) {
+			console.log("huzzah");
+		}
 	
 		this.bar = this.svg.selectAll(".bar")
 		    .data(this.data)
@@ -1878,8 +1882,6 @@ $.extend(Histogram.prototype, {
 		    	}
 		    	return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
 		    });
-	
-		//console.log(this.x(1));
 		
 		this.bar.append("rect")
 		    .attr("x", 1)
@@ -1908,62 +1910,31 @@ $.extend(Histogram.prototype, {
 	    	//.attr("transform", "translate(0," + this.width + ")")
 	    	.call(this.yAxis);
 		
-		console.log(this.element);
 		$('#' + this.element)
 			.dialog({
-				width:580,
-				resize: function( event, ui ) { 
-					//console.log(ui.originalSize.width);
+				//width:580,
+				//resize: function( event, ui ) {
+				//	var widthScale = ui.size.width/ui.originalSize.width;
+				//	var heightScale = ui.size.height/ui.originalSize.height;
+				//	self.svg.attr("transform", "scale(" + ui.size.width/ui.originalSize.width + " " + ui.size.height/ui.originalSize.height + ") translate(" + self.margin.left + "," + self.margin.top + ")");
+				//},
+				resizeStop: function( event, ui ) { 
+					console.log(ui.size.height/ui.originalSize.height);
 					//self.svg.attr("transform", "scale(" + ui.size.width/ui.originalSize.width + " " + ui.size.height/ui.originalSize.height + ") translate(" + self.margin.left + "," + self.margin.top + ")");
-					d3.select("#" + self.element).remove();
+
 					var widthScale = ui.size.width/ui.originalSize.width;
 					var heightScale = ui.size.height/ui.originalSize.height;
-					self.svg = d3.select("#" + self.element).append("svg")
-					    .attr("width", self.width*widthScale + self.margin.left + self.margin.right)
-					    .attr("height", self.height*heightScale + self.margin.top + self.margin.bottom)
-						.append("g")
-					    .attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
+					self.width = (self.width + self.margin.left + self.margin.right)*widthScale - self.margin.left - self.margin.right;
+					self.height = (self.height + self.margin.top + self.margin.bottom + 30)*heightScale - self.margin.top - self.margin.bottom - 30;
+					//self.margin.left = self.margin.left*widthScale;
+					//self.margin.right = self.margin.right*widthScale;
+					//self.margin.top = self.margin.top*heightScale;
+					//self.margin.bottom = self.margin.bottom*heightScale;
 					
-					this.bar = this.svg.selectAll(".bar")
-				    	.data(this.data)
-						.enter().append("g")
-				    	.attr("class", "bar")
-				    	.attr("transform", function(d) { 
-				    		if(d.y == 0) {
-				    			return "translate(" + self.x(d.x) + ", 0)";
-				    		}
-				    		return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
-				    	});
-			
-					//console.log(this.x(1));
+					self.initialize();
 					
-					this.bar.append("rect")
-					    .attr("x", 1)
-					    .attr("width", this.x((this.data[0].dx * 2) - 1))
-					    .attr("height", function(d) { 
-					    	if(d.y == 0) {
-					    		return 0;
-					    	}
-					    	return self.height - self.y(d.y); 
-					    });
-				
-					/*this.bar.append("text")
-					    .attr("dy", ".75em")
-					    .attr("y", 6)
-					    .attr("x", this.x(this.data[0].dx) / 2)
-					    .attr("text-anchor", "top")
-					    .text(function(d) { return self.formatCount(d.y); });*/
-				
-					this.svg.append("g")
-					    .attr("class", "x axis")
-					    .attr("transform", "translate(0," + this.height + ")")
-					    .call(this.xAxis);
-					
-					this.svg.append("g")
-				    	.attr("class", "y axis")
-				    	//.attr("transform", "translate(0," + this.width + ")")
-				    	.call(this.yAxis);
 				},
+				
 			})
 			.dialog('open');
 	}
