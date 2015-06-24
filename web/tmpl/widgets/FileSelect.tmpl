@@ -317,8 +317,8 @@ function irods_get_path (path) {
 					tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;">' 
 							+ icon
 							+ decodeURIComponent(obj.name) + '</td><td>'
-							+ decodeURIComponent(obj.size) + '</td><td>' 
-							+ decodeURIComponent(obj.timestamp) + '</td></tr>'); // mdb added decodeURI 8/14/14 issue 441
+							+ (obj.size ? decodeURIComponent(obj.size) : '') + '</td><td>' 
+							+ (obj.timestamp ? decodeURIComponent(obj.timestamp) : '') + '</td></tr>'); // mdb added decodeURI 8/14/14 issue 441
 					if (obj.type == 'directory') {
 						$(tr).click(
 							function() {
