@@ -79,9 +79,13 @@ sub build {
     my $trim_reads = 1; #TODO add this as an option in LoadExperiment interface
     if ($trim_reads) {
         if ($alignment_params->{read_type} eq 'paired') { # mdb added 5/8/15 COGE-624 - enable paired-end support in cutadapt
-            # Note: paired-end filenames must end in _R1 and _R2 respectively, e.g. test_R1.fastq.gz and test_R2.fastq.gz
-            my @m1 = sort grep { $_ =~ /\_R1\./ } @$input_files; 
-            my @m2 = sort grep { $_ =~ /\_R2\./ } @$input_files;
+            # Separate files based on last occurrence of _R1 or _R2 in filename
+            my (@m1, @m2);
+            foreach my $file (@$input_files) {
+                my ($pair_id) = $file =~ /.+\_R([12])/;
+                if ($pair_id eq '1') { push @m1, $file; }
+                else { push @m2, $file; }
+            }
             unless (@m1 and @m2 and @m1 == @m2) {
                 my $error = 'Mispaired FASTQ files, m1=' . @m1 . ' m2=' . @m2;
                 print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
