@@ -338,7 +338,7 @@ sub create_bam_index_job {
         outputs => [
             $input_file . '.bai'
         ],
-        description => "Indexing bam file...",
+        description => "Indexing BAM file...",
     };
 }
 
@@ -740,14 +740,18 @@ sub create_gsnap_workflow {
         staging_dir => $staging_dir,
         params => $params,
     });
+    
+    # Filter sam file
+    my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
 
     # Convert sam file to bam
-    my %bam = create_samtools_bam_job($gsnap{outputs}->[0], $staging_dir);
+    my %bam = create_samtools_bam_job($filter{outputs}->[0], $staging_dir);
 
     # Return the bam output name and jobs required
     my @tasks = (
         \%gmap,
         \%gsnap,
+        \%filter,
         \%bam
     );
     my %results = (
@@ -802,7 +806,27 @@ sub create_samtools_bam_job {
         outputs => [
             catfile($staging_dir, $filename . ".bam")
         ],
-        description => "Generating bam file..."
+        description => "Generating BAM file..."
+    );
+}
+
+sub create_sam_filter_job {
+    my ($samfile, $staging_dir) = @_;
+    
+    my $filename = to_filename($samfile);
+    my $cmd = qq{awk 'BEGIN {OFS="\t"} {split($6,C,/[0-9]*/); split($6,L,/[SMDIN]/); if (C[2]=="S") {$10=substr($10,L[1]+1); $11=substr($11,L[1]+1)}; if (C[length(C)]=="S") {L1=length($10)-L[length(L)-1]; $10=substr($10,1,L1); $11=substr($11,1,L1); }; gsub(/[0-9]*S/,"",$6); print}' $filename > $filename.processed};
+
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [],
+        inputs => [
+            $samfile
+        ],
+        outputs => [
+            catfile($staging_dir, $filename . ".processed")
+        ],
+        description => "Filtering SAM file..."
     );
 }
 
@@ -830,7 +854,7 @@ sub create_bam_sort_job {
         outputs => [
             catfile($staging_dir, $filename . "-sorted.bam")
         ],
-        description => "Sorting bam file..."
+        description => "Sorting BAM file..."
     };
 }
 
