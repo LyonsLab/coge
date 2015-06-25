@@ -42,7 +42,7 @@ BEGIN {
         units commify print_fasta get_unique_id get_link_coords 
         format_time_diff sanitize_name execute 
         trim js_escape html_escape to_filename to_pathname
-        is_fastq_file
+        is_fastq_file detect_paired_end
     );
 }
 
@@ -196,6 +196,18 @@ sub execute {
 sub is_fastq_file {
     my $filename = shift;
     return ($filename =~ /fastq$/ || $filename =~ /fastq\.gz$/ || $filename =~ /fq$/ || $filename =~ /fq\.gz$/);
+}
+
+# Separate files based on last occurrence of _R1 or _R2 in filename
+sub detect_paired_end {
+    my $files = shift;
+    my (@p1, @p2);
+    foreach my $file (@$files) {
+        my ($pair_id) = $file =~ /.+\_R([12])/;
+        if ($pair_id eq '1') { push @p1, $file; }
+        else { push @p2, $file; }
+    }
+    return (\@p1, \@p2);
 }
 
 1;
