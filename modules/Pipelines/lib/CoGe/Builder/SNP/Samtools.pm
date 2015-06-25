@@ -25,42 +25,7 @@ BEGIN {
     $VERSION   = 0.1;
     @ISA       = qw(Exporter);
     @EXPORT    = qw(run build);
-    #@EXPORT_OK = qw(build);
 }
-
-# mdb deprecated 5/13/15
-#sub run {
-#    my %opts = @_;
-#    my $user = $opts{user};
-#    my $genome = $opts{genome};
-#    my $input_file = $opts{input_file};
-#    my $metadata = $opts{metadata};
-#    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
-#
-#    # Create the workflow
-#    my $workflow = $JEX->create_workflow( name => 'Running the SAMtools SNP-finder pipeline', init => 1 );
-#    return unless ($workflow && $workflow->id);
-#    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-#    $workflow->logfile( catfile($result_dir, 'debug.log') );
-#
-#    # Build the workflow
-#    my @tasks = build({
-#        user => $user,
-#        wid  => $workflow->id,
-#        genome => $genome,
-#        input_file => $input_file,
-#        metadata => $metadata,
-#    });
-#    $workflow->add_jobs(\@tasks);
-#
-#    # Submit the workflow
-#    my $result = $JEX->submit_workflow($workflow);
-#    if ($result->{status} =~ /error/i) {
-#        return (undef, "Could not submit workflow");
-#    }
-#
-#    return ($result->{id}, undef);
-#}
 
 sub build {
     my $opts = shift;
@@ -100,7 +65,7 @@ sub build {
         
         params      => $params,
         
-        annotations => ($skipAnnotations ? '' : join(';', @$annotations)),
+        annotations => ($skipAnnotations ? '' : join(';', @$annotations))
     };
 
     # Build the workflow's tasks
@@ -133,54 +98,24 @@ sub create_find_snps_job {
     my $alignment = $opts->{bam};
     my $snps = $opts->{bcf};
 
-    my $subopts = {
-        samtools => {
-            command => $CONF->{SAMTOOLS} || "samtools",
-            subtask => "mpileup",
-            args    => {
-                u => [],
-                f => [],
-            },
-            inputs => [
-                basename($reference),
-                basename($alignment),
-            ],
-        },
-        bcf => {
-            command => $CONF->{BCFTOOLS} || "bcftools",
-            subtask => "view",
-            args    => {
-                b => [],
-                v => [],
-                c => [],
-                g => [],
-            },
-            inputs => [
-            ],
-        },
-    };
-
-    my @subcommands =  (
-        _subcommand($subopts->{samtools}),
-        _subcommand($subopts->{bcf}),
-    );
-
     # Pipe commands together
-    my $command = join " | ", @subcommands;
+    my $sam_command = $CONF->{SAMTOOLS} || "samtools";
+    $sam_command .= " mpileup -u -f " . basename($reference) . ' ' . basename($alignment);
+    my $bcf_command = $CONF->{BCFTOOLS} || "bcftools";
+    $bcf_command .= " view -b -v -c -g";
 
     # Get the output filename
     my $output = basename($snps);
 
     return {
-        cmd => qq[$command - > $output],
+        cmd => qq[$sam_command | $bcf_command - > $output],
         inputs => [
             $reference,
-            $alignment,
+            $reference . '.fai',
+            $alignment
         ],
-        outputs => [
-            $snps,
-        ],
-        description => "Identifying SNPs using SAMtools method ...",
+        outputs => [ $snps ],
+        description => "Identifying SNPs using SAMtools method ..."
     };
 }
 
@@ -196,60 +131,21 @@ sub create_filter_snps_job {
     my $min_read_depth = $params->{'min-read-depth'} || 6;
     my $max_read_depth = $params->{'max-read-depth'} || 10;
 
-    my $subopts = {
-        bcf => {
-            command => $CONF->{BCFTOOLS} || "bcftools",
-            subtask => "view",
-            args    => {},
-            inputs => [ basename($snps) ]
-        },
-
-        vcf => {
-            command => $CONF->{VCFTOOLS} || "vcfutils.pl",
-            subtask => "varFilter",
-            args    => {
-                d => [$min_read_depth],
-                D => [$max_read_depth]
-            },
-            inputs => []
-        },
-    };
-
-    my @subcommands =  (
-        _subcommand($subopts->{bcf}),
-        _subcommand($subopts->{vcf}),
-    );
-
     # Pipe commands together
-    my $command = join " | ", @subcommands;
+    my $bcf_command = $CONF->{BCFTOOLS} || "bcftools";
+    $bcf_command .= " view " . basename($snps);
+    my $vcf_command = $CONF->{VCFTOOLS} || "vcfutils.pl";
+    $vcf_command .= " varFilter -d $min_read_depth -D $max_read_depth";
 
     # Get the output filename
     my $output = basename($filtered_snps);
 
     return {
-        cmd => qq[$command > $output],
-        inputs  => [
-            $snps,
-        ],
-        outputs => [
-            $filtered_snps,
-        ],
-        description => "Filtering SNPs ...",
+        cmd => qq[$bcf_command | $vcf_command > $output],
+        inputs  => [ $snps ],
+        outputs => [ $filtered_snps ],
+        description => "Filtering SNPs ..."
     };
-}
-
-sub _subcommand {
-    my $opts = shift;
-    my $cmd = $opts->{command};
-    my $subtask = $opts->{subtask};
-    my $args = $opts->{args};
-
-    # create parameter string
-    my @params = map { @{$args->{$_}} ? qq[-$_ @{$args->{$_}}] : qq[-$_] } keys %{$args};
-
-    my @inputs = @{$opts->{inputs}} if $opts->{inputs};
-
-    return qq[$cmd $subtask @params @inputs];
 }
 
 sub generate_additional_metadata {
