@@ -220,7 +220,7 @@ sub get_dots {
     my $json_data = $opts{json_data};
 
     #flag for whether these are syntenic gene pairs or general matches
-    my $syntenic_pairs = $opts{syntenic_pairs} // 0;
+    my $syntenic_pairs = $opts{syntenic_pairs} // 0; #/
 
     my $data_label = $syntenic_pairs ? "syntenic_pairs" : "pairs";
     my $has_ksdata = keys %$ksdata ? 1 : 0;
