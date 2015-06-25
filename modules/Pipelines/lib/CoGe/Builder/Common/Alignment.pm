@@ -89,7 +89,7 @@ sub build {
             unless (@m1 and @m2 and @m1 == @m2) {
                 my $error = 'Mispaired FASTQ files, m1=' . @m1 . ' m2=' . @m2;
                 print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-                print STDERR join(' ', @m1), "\n", join(' ', @m2), "\n";
+                print STDERR 'm1: ', join(' ', @m1), "\n", 'm2: ', join(' ', @m2), "\n";
                 return { error => $error };
             }
             
