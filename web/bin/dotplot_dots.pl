@@ -253,7 +253,7 @@ sub get_dots {
         }
 
         my $chr1 = $fields->{chr1};
-        my $chr2 = $fields->{chr1};
+        my $chr2 = $fields->{chr2};
 
         # sometimes there will be data that is skipped, e.g. where
         # chromosome="random";
