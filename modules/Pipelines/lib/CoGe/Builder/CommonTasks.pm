@@ -742,10 +742,10 @@ sub create_gsnap_workflow {
     });
     
     # Filter sam file
-    my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
+    #my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
 
     # Convert sam file to bam
-    my %bam = create_samtools_bam_job($filter{outputs}->[0], $staging_dir);
+    my %bam = create_samtools_bam_job($gsnap{outputs}->[0], $staging_dir);#$filter{outputs}->[0], $staging_dir);
 
     # Return the bam output name and jobs required
     my @tasks = (
