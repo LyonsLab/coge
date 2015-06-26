@@ -23,12 +23,13 @@ REMOTE=backup
 #
 # Dump databases and copy to remote IRODS location
 #
+DBPASS=$(grep -P "DBPASS" /opt/apache2/coge/web/coge.conf | cut -d ' ' -f3)
 LOCAL_MYSQL=$LOCAL/mysql_$VERSION
 mkdir -p $LOCAL_MYSQL
 echo `date` "Dumping MySQL databases"
-mysqldump -u root -p321coge123 wikidb -c | gzip -9 > $LOCAL_MYSQL/wikidb.sql.gz
-mysqlhotcopy -u root -p 321coge123 cogelinks $LOCAL_MYSQL
-mysqlhotcopy --port=3307 -u root -p 321coge123 coge $LOCAL_MYSQL
+mysqldump -u root -p$DBPASS wikidb -c | gzip -9 > $LOCAL_MYSQL/wikidb.sql.gz
+mysqlhotcopy -u root -p $DBPASS cogelinks $LOCAL_MYSQL
+mysqlhotcopy --port=3307 -u root -p $DBPASS coge $LOCAL_MYSQL
 echo `date` "Pushing MySQL databases to IRODS"
 $ICMD/iput -bfr $LOCAL_MYSQL $REMOTE
 
