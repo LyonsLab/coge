@@ -338,7 +338,7 @@ sub create_bam_index_job {
         outputs => [
             $input_file . '.bai'
         ],
-        description => "Indexing bam file...",
+        description => "Indexing BAM file...",
     };
 }
 
@@ -740,14 +740,18 @@ sub create_gsnap_workflow {
         staging_dir => $staging_dir,
         params => $params,
     });
+    
+    # Filter sam file
+    my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
 
     # Convert sam file to bam
-    my %bam = create_samtools_bam_job($gsnap{outputs}->[0], $staging_dir);
+    my %bam = create_samtools_bam_job($filter{outputs}->[0], $staging_dir);
 
     # Return the bam output name and jobs required
     my @tasks = (
         \%gmap,
         \%gsnap,
+        \%filter,
         \%bam
     );
     my %results = (
@@ -802,7 +806,29 @@ sub create_samtools_bam_job {
         outputs => [
             catfile($staging_dir, $filename . ".bam")
         ],
-        description => "Generating bam file..."
+        description => "Generating BAM file..."
+    );
+}
+
+sub create_sam_filter_job {
+    my ($samfile, $staging_dir) = @_;
+    
+    my $filename = basename($samfile);
+
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "filter_sam.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    return (
+        cmd => "$cmd $filename $filename.processed",
+        script => undef,
+        args => [],
+        inputs => [
+            $samfile
+        ],
+        outputs => [
+            catfile($staging_dir, $filename . ".processed")
+        ],
+        description => "Filtering SAM file..."
     );
 }
 
@@ -830,7 +856,7 @@ sub create_bam_sort_job {
         outputs => [
             catfile($staging_dir, $filename . "-sorted.bam")
         ],
-        description => "Sorting bam file..."
+        description => "Sorting BAM file..."
     };
 }
 

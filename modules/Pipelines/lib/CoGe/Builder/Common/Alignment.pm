@@ -7,7 +7,7 @@ use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
 
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_upload_path get_genome_cache_path);
-use CoGe::Accessory::Utils qw(is_fastq_file to_filename);
+use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end);
 use CoGe::Builder::CommonTasks;
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -77,33 +77,28 @@ sub build {
     # Trim the fastq input files
     my @trimmed;
     my $trim_reads = 1; #TODO add this as an option in LoadExperiment interface
-    if ($trim_reads) {
+    if ($trim_reads && $trimming_params) {
         if ($alignment_params->{read_type} eq 'paired') { # mdb added 5/8/15 COGE-624 - enable paired-end support in cutadapt
             # Separate files based on last occurrence of _R1 or _R2 in filename
-            my (@m1, @m2);
-            foreach my $file (@$input_files) {
-                my ($pair_id) = $file =~ /.+\_R([12])/;
-                if ($pair_id eq '1') { push @m1, $file; }
-                else { push @m2, $file; }
-            }
-            unless (@m1 and @m2 and @m1 == @m2) {
-                my $error = 'Mispaired FASTQ files, m1=' . @m1 . ' m2=' . @m2;
+            my ($m1, $m2) = detect_paired_end($input_files);
+            unless (@$m1 and @$m2 and @$m1 == @$m2) {
+                my $error = 'Mispaired FASTQ files, m1=' . @$m1 . ' m2=' . @$m2;
                 print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-                print STDERR join(' ', @m1), "\n", join(' ', @m2), "\n";
+                print STDERR 'm1: ', join(' ', @$m1), "\n", 'm2: ', join(' ', @$m2), "\n";
                 return { error => $error };
             }
             
             # Create cutadapt task for each file pair
-            for (my $i = 0;  $i < @m1;  $i++) { 
-                my $file1 = shift @m1;
-                my $file2 = shift @m2;
+            for (my $i = 0;  $i < @$m1;  $i++) { 
+                my $file1 = shift @$m1;
+                my $file2 = shift @$m2;
                 my $trim_task = create_cutadapt_job(
                     fastq => [ $file1, $file2 ],
                     validated => [ "$file1.validated", "$file2.validated" ],
                     staging_dir => $staging_dir,
                     params => $trimming_params
                 );
-                push @trimmed, $trim_task->{outputs}->[0];
+                push @trimmed, @{$trim_task->{outputs}};
                 push @tasks, $trim_task;
             }
         }
