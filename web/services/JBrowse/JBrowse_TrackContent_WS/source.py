@@ -63,7 +63,7 @@ def get_config():
     return config
 
 def fetch_sequence(genome_id, chr_id, start, stop, cookie_string):
-    service = '{base}/{service}/sequence/{id}/{chr}?start={start};stop={stop};'
+    service = '{base}{service}/sequence/{id}/{chr}?start={start};stop={stop};'
 
     config = get_config()
     if not config:
@@ -71,10 +71,10 @@ def fetch_sequence(genome_id, chr_id, start, stop, cookie_string):
 
     url = service.format(base=config['SERVER'],
         #service='services/JBrowse/service.pl',
-        service='api/v1/legacy/', # mdb added 2/5/15, COGE-289
+        service='api/v1/legacy', # mdb added 2/5/15, COGE-289
         id=genome_id, chr=chr_id, start=start, stop=stop)
 
-
+    sys.stderr.write(url)
     try:
         name = config['COOKIE_NAME']
 
