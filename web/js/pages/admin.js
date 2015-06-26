@@ -1751,7 +1751,7 @@ $.extend(DataGrid.prototype, {
 			success: function(data) {
 				$('#' + element + '_loading').hide();
 				self.data = JSON.parse(data);
-				console.log(self.data);
+				//console.log(self.data);
 				$('#' + element + '_table').dataTable(JSON.parse(data));
 				$('#' + element).show();
 			}
@@ -1786,9 +1786,15 @@ function filter_report(index) {
 	reports_grid.initialize();
 }
 
-var Histogram = function(element, json, selection) {
-	this.values = [];
+var Histogram = function(element, json, parent) {
+	this.element = element;
+	this.json = json;
+	this.parent = parent;
+	//this.selection = selection;
+	
+	/*this.values = [];
 	this.max_value = 0;
+	this.min_value = Number.MAX_SAFE_INTEGER;
 	for(var i = 0; i < json.data.length; i++) {
 		var total_items = 0;
 		for(var j = 0; j < json.data[i].length; j++) {
@@ -1798,15 +1804,19 @@ var Histogram = function(element, json, selection) {
 				//console.log(json.data[i][j]);
 			}
 		}
-		//if(total_items != 0) {
-			this.values.push(total_items);
-		//}
+		this.values.push(total_items);
 		if(total_items > this.max_value) {
 			this.max_value = total_items;
 		}
-	}
+		if(total_items < this.min_value) {
+			this.min_value = total_items;
+		}
+	}*/
+	this.values = this.json.values;
+	this.min_value = this.json.min;
+	this.max_value = this.json.max;
 	
-	//console.log(this.values);
+	console.log(this.json);
 	
 	this.formatCount;
 	this.margin = {top: 10, right: 30, bottom: 30, left: 50};
@@ -1819,7 +1829,7 @@ var Histogram = function(element, json, selection) {
 	this.yAxis;
 	this.svg;
 	this.bar;
-	this.element = element;
+	this.brush;
 	
 	this.initialize();
 }
@@ -1840,7 +1850,7 @@ $.extend(Histogram.prototype, {
 		this.height = 500 - this.margin.top - this.margin.bottom;*/
 	
 		this.x = d3.scale.linear()
-		    .domain([0, this.max_value])
+		    .domain([this.min_value, this.max_value])
 		    .range([0, this.width]);
 	
 		// Generate a histogram using twenty uniformly-spaced bins.
@@ -1859,21 +1869,21 @@ $.extend(Histogram.prototype, {
 		this.yAxis = d3.svg.axis()
 	    	.scale(this.y)
 	    	.orient("left");
+		
+		this.brush = d3.svg.brush()
+	    	.x(this.x)
+	    	.on("brushend", function() {
+	    		self.brushed.call(self);
+	    	});
 	
 		this.svg = d3.select("#" + this.element).append("svg")
-		    .attr("width", this.width + this.margin.left + this.margin.right)
-		    .attr("height", this.height + this.margin.top + this.margin.bottom)
-		    //.attr("viewBox", "0 0 500 500")
-		    //.attr("preserveAspectRatio", "xMidYMid")
-			.append("g")
-		    .attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
-		
-		this.svg.onclick = function(event, ui) {
-			console.log("huzzah");
-		}
+	    	.attr("width", this.width + this.margin.left + this.margin.right)
+	    	.attr("height", this.height + this.margin.top + this.margin.bottom)
+	    	.append("g")
+	    	.attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
 	
 		this.bar = this.svg.selectAll(".bar")
-		    .data(this.data)
+		    .data(self.data)
 			.enter().append("g")
 		    .attr("class", "bar")
 		    .attr("transform", function(d) { 
@@ -1885,7 +1895,7 @@ $.extend(Histogram.prototype, {
 		
 		this.bar.append("rect")
 		    .attr("x", 1)
-		    .attr("width", this.x((this.data[0].dx * 2) - 1))
+		    .attr("width", self.x((self.data[0].dx * 2) - 1))
 		    .attr("height", function(d) { 
 		    	if(d.y == 0) {
 		    		return 0;
@@ -1907,40 +1917,75 @@ $.extend(Histogram.prototype, {
 		
 		this.svg.append("g")
 	    	.attr("class", "y axis")
-	    	//.attr("transform", "translate(0," + this.width + ")")
 	    	.call(this.yAxis);
+		
+		this.svg.append("g")
+	    	.attr("class", "x brush")
+	    	.call(self.brush)
+	    	.selectAll("rect")
+	    	.attr("y", -6)
+	    	.attr("height", this.height + 7);
 		
 		$('#' + this.element)
 			.dialog({
-				//width:580,
-				//resize: function( event, ui ) {
-				//	var widthScale = ui.size.width/ui.originalSize.width;
-				//	var heightScale = ui.size.height/ui.originalSize.height;
-				//	self.svg.attr("transform", "scale(" + ui.size.width/ui.originalSize.width + " " + ui.size.height/ui.originalSize.height + ") translate(" + self.margin.left + "," + self.margin.top + ")");
-				//},
 				resizeStop: function( event, ui ) { 
-					console.log(ui.size.height/ui.originalSize.height);
 					//self.svg.attr("transform", "scale(" + ui.size.width/ui.originalSize.width + " " + ui.size.height/ui.originalSize.height + ") translate(" + self.margin.left + "," + self.margin.top + ")");
 
 					var widthScale = ui.size.width/ui.originalSize.width;
 					var heightScale = ui.size.height/ui.originalSize.height;
 					self.width = (self.width + self.margin.left + self.margin.right)*widthScale - self.margin.left - self.margin.right;
 					self.height = (self.height + self.margin.top + self.margin.bottom + 30)*heightScale - self.margin.top - self.margin.bottom - 30;
-					//self.margin.left = self.margin.left*widthScale;
-					//self.margin.right = self.margin.right*widthScale;
-					//self.margin.top = self.margin.top*heightScale;
-					//self.margin.bottom = self.margin.bottom*heightScale;
-					
 					self.initialize();
-					
 				},
-				
 			})
 			.dialog('open');
+	},
+	brushed: function() {
+		var self = this;
+		var extent = this.brush.extent();
+		var rangeExtent = [this.x( extent[0] ), this.x( extent[1] ) ];
+		var rangeWidth  = rangeExtent[1] - rangeExtent[0];
+		console.log(extent[0]);
+		console.log(rangeExtent[0]);
+		
+		var newValues = [];
+		for (var i = 0; i < this.values.length; i++) {
+			if (this.values[i] >= extent[0] && this.values[i] <= extent[1]) {
+				newValues.push(this.values[i]);
+			}
+		}
+		var newJson = {
+				min: Math.floor(extent[0]),
+				max: Math.ceil(extent[1]),
+				values: newValues,
+		};
+		//console.log(newJson);
+		var childHistogram = new Histogram(this.element, newJson, this);
 	}
 });
 
 function init_histogram(element) {
-	var histogram = new Histogram(element, reports_grid.data, reports_grid.selection);
+	var json = reports_grid.data;
+	var values = [];
+	var max_value = 0;
+	var min_value = Number.MAX_SAFE_INTEGER;
+	for(var i = 0; i < json.data.length; i++) {
+		var total_items = 0;
+		for(var j = 0; j < json.data[i].length; j++) {
+			if(reports_grid.selection == "total" || j != 0) {
+				var num = parseInt(json.data[i][j]);
+				total_items += num;
+				//console.log(json.data[i][j]);
+			}
+		}
+		values.push(total_items);
+		if(total_items > max_value) {
+			max_value = total_items;
+		}
+		if(total_items < min_value) {
+			min_value = total_items;
+		}
+	}
+	var histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
 	return histogram;
 }
