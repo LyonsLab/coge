@@ -751,7 +751,7 @@ sub create_gsnap_workflow {
     my @tasks = (
         \%gmap,
         \%gsnap,
-        \%filter,
+        #\%filter,
         \%bam
     );
     my %results = (
