@@ -77,7 +77,7 @@ sub build {
     # Trim the fastq input files
     my @trimmed;
     my $trim_reads = 1; #TODO add this as an option in LoadExperiment interface
-    if ($trim_reads) {
+    if ($trim_reads && $trimming_params) {
         if ($alignment_params->{read_type} eq 'paired') { # mdb added 5/8/15 COGE-624 - enable paired-end support in cutadapt
             # Separate files based on last occurrence of _R1 or _R2 in filename
             my ($m1, $m2) = detect_paired_end($input_files);

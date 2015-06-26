@@ -742,16 +742,16 @@ sub create_gsnap_workflow {
     });
     
     # Filter sam file
-    #my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
+    my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
 
     # Convert sam file to bam
-    my %bam = create_samtools_bam_job($gsnap{outputs}->[0], $staging_dir);#$filter{outputs}->[0], $staging_dir);
+    my %bam = create_samtools_bam_job($filter{outputs}->[0], $staging_dir);
 
     # Return the bam output name and jobs required
     my @tasks = (
         \%gmap,
         \%gsnap,
-        #\%filter,
+        \%filter,
         \%bam
     );
     my %results = (
@@ -814,10 +814,12 @@ sub create_sam_filter_job {
     my ($samfile, $staging_dir) = @_;
     
     my $filename = basename($samfile);
-    my $cmd = qq{awk 'BEGIN {OFS="\t"} {split($6,C,/[0-9]*/); split($6,L,/[SMDIN]/); if (C[2]=="S") {$10=substr($10,L[1]+1); $11=substr($11,L[1]+1)}; if (C[length(C)]=="S") {L1=length($10)-L[length(L)-1]; $10=substr($10,1,L1); $11=substr($11,1,L1); }; gsub(/[0-9]*S/,"",$6); print}' $filename > $filename.processed};
+
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "filter_sam.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     return (
-        cmd => $cmd,
+        cmd => "$cmd $filename $filename.processed",
         script => undef,
         args => [],
         inputs => [
