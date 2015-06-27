@@ -320,8 +320,19 @@ sub get_item_info {
             . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add a notebook">Add to notebook</span><br>}
             . qq{</div></div>};
     }
-    elsif ( $item_type eq 'analyses' ) {
-        print STDERR 'mattt !!!!!!!', "\n";
+    elsif ( $item_type eq 'analyses' or $item_type eq 'loads' ) {
+        my $log = $coge->resultset('Log')->find($item_id);
+        return unless $log;
+        
+        $html .=
+            '<b>Workflow id' . $log->workflow_id . '</b><br>'
+          . '<b>Type:</b> ' . $log->page . '<br>'
+          . '<b>Description:</b> ' . $log->description . '<br>'
+          . '<b>Date:</b> ' . $log->time . '<br>'
+          . qq{<div><b>Tools:</b><br>}
+          . qq{<div style="padding-left:20px;">}
+          . qq{<a href="} . $log->link . qq{" target=_blank>Open result</a>}
+          . qq{</div>}
     }
 
     return encode_json( { timestamp => $timestamp, html => $html } );
