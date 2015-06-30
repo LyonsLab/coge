@@ -923,7 +923,7 @@ sub genomic_sequence {
 	my $dataset = $opts{dataset}; #dataset object
 	my $server = $opts{server}; #used for passing in server name from which to retrieve sequence from web-script CoGe/GetSequence.pl
 	my $rel = $opts{rel};
-    print STDERR "up: $up, down: $down\n";
+    #print STDERR "up: $up, down: $down\n";
     #have a full sequence? -- pass it in and the locations will be parsed out of it!
 	if ( !$up && !$down && $self->_genomic_sequence ) {
 		return $self->_genomic_sequence;
@@ -935,7 +935,7 @@ sub genomic_sequence {
 	  map { ( $_->start, $_->stop ) }
 	  $self->locs()
 	  ; #in case a mistake happened when loading locations and there are multiple ones with the same start
-	 print STDERR Dumper \%locs, "\n";
+	 #print STDERR Dumper \%locs, "\n";
 	my @locs = map { [ $_, $locs{$_} ] } sort { $a <=> $b } keys %locs;
 	( $up, $down ) = ( $down, $up )
 	  if ( $self->strand =~ /-/ )
