@@ -53,7 +53,9 @@ sub build {
         username    => $user->name,
         metadata    => $metadata,
         wid         => $wid,
-        gid         => $gid
+        gid         => $gid,
+        
+        method      => 'Platypus'
     };
 
     # Build the workflow's tasks

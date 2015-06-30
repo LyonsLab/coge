@@ -77,6 +77,7 @@ sub build {
     my $annotations = generate_additional_metadata($params);
     
     my $load_vcf_task = create_load_vcf_job({
+        method => 'CoGe',
         username => $user->name,
         staging_dir => $staging_dir,
         result_dir => $result_dir,
