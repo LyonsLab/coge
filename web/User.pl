@@ -1029,7 +1029,7 @@ sub add_users_to_group {
 
 	# Build a list of users to add to the target group
 	my %users;
-    my ( $item_id, $item_type ) = $new_item =~ /(\d+)\:(\d+)/;
+    my ( $item_id, $item_type ) = $new_item =~ /(\d+)\:(\w+)/;
     return unless ( $item_id and $item_type );
 
     if ( $item_type eq 'user' ) { #$ITEM_TYPE{user} ) {
