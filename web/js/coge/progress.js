@@ -156,16 +156,16 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		update: function(job_id, url) {
-			this._debug("update");
+			var self = this;
+			
+			self._debug("update");
 			
 			if (job_id)
-				this.job_id = job_id;
+				self.job_id = job_id;
 			if (url) {
-				this.url = url;
-				this.container.find('.progress-link').html('Link: <a href="'+url+'">'+url+'</a>').show();
+				self.url = url;
+				self.container.find('.progress-link').html('Link: <a href="'+url+'">'+url+'</a>').show();
 			}
-			
-			var self = this;
 			
 			var update_handler = function(json) {
 				self._debug('update_handler');
@@ -176,8 +176,8 @@ var coge = window.coge = (function(namespace) {
 		        var results = [];
 
 		        var refresh_interval = self._refresh_interval();
-		        self._debug('refresh: ' + refresh_interval);
 		        var retry_interval = 5*1000;
+		        self._debug('refresh=' + refresh_interval + ', retry=' + retry_interval);
 		        
 		        // Sanity check -- progress dialog should be open
 		        if (!c.dialog('isOpen')) {
@@ -198,28 +198,37 @@ var coge = window.coge = (function(namespace) {
 		            	return;
 		            }
 		            else {
-			            c.find(".alert").html('Server not responding ('+self.ajaxError+')').show();
+			            self.alert('Server not responding ('+self.ajaxError+')');
 			            setTimeout($.proxy(self.update, self), retry_interval);
 			            return;
 		            }
 		        }
 		        
 		        self.ajaxError = 0;
-		        c.find(".alert").hide();
+		        self.alert();
 
-		        // Render status
+		        // Retry on missing status (probably won't ever happen)
 		        if (!json.status) {
-		        	self._error('Error: missing status');
-		        	setTimeout($.proxy(self.update, self), refresh_interval);
+		        	self._error('Error: missing status, retrying ...');
+		        	setTimeout($.proxy(self.update, self), retry_interval);
 		            return;
 		        }
 		        
+		        // Render status
 	            var current_status = json.status.toLowerCase();
+	            self._debug('status=' + current_status);
 	            workflow_status
 	                .html("Workflow status: ")
 	                .append( $('<span></span>').html(json.status) )
 	                .addClass('bold');
 
+	            // Retry on JEX error status -- mdb added 6/30/15
+	            if (current_status == "error") {
+	            	self.alert('JEX error status');
+	            	setTimeout($.proxy(self.update, self), retry_interval);
+	            	return;
+	            }
+	            
 	            // Render tasks
 		        if (json.tasks) {
 		            var jobs = json.tasks;
@@ -231,7 +240,6 @@ var coge = window.coge = (function(namespace) {
 		        }
 
 		        //FIXME Update when a workflow supports elapsed time
-		        console.log('status: ' + current_status);
 		        if (current_status == "completed") {
 		            var total = json.tasks.reduce(function(a, b) {
 		                if (!b.elapsed) return a;
@@ -246,7 +254,7 @@ var coge = window.coge = (function(namespace) {
 		            	self.succeeded(json.results);
 		        }
 		        else if (current_status == "failed"
-		                //|| current_status == "error" // mdb removed 6/30/15 -- fall through to retry
+		                //|| current_status == "error" // mdb removed 6/30/15 -- now handled first (see above code)
 		                || current_status == "terminated"
 		                || current_status == "cancelled")
 		        {
@@ -336,6 +344,14 @@ var coge = window.coge = (function(namespace) {
 		    }
 
 		    return row;
+		},
+		
+		alert: function(string) {
+			var el = this.container.find(".alert");
+			if (!string)
+				el.html('').hide();
+			else
+				el.html(string).show();
 		},
 		
 		_error: function(string) {
