@@ -231,7 +231,7 @@ var coge = window.coge = (function(namespace) {
 		        }
 
 		        //FIXME Update when a workflow supports elapsed time
-		        console.log(current_status);
+		        console.log('status: ' + current_status);
 		        if (current_status == "completed") {
 		            var total = json.tasks.reduce(function(a, b) {
 		                if (!b.elapsed) return a;
@@ -246,7 +246,7 @@ var coge = window.coge = (function(namespace) {
 		            	self.succeeded(json.results);
 		        }
 		        else if (current_status == "failed"
-		                || current_status == "error"
+		                //|| current_status == "error" // mdb removed 6/30/15 -- fall through to retry
 		                || current_status == "terminated"
 		                || current_status == "cancelled")
 		        {
