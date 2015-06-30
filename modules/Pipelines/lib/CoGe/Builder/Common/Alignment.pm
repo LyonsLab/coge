@@ -55,25 +55,24 @@ sub build {
         return { error => $error };
     }
     
-    # Decompress the fastq input files (when necessary)
-    my @decompressed;
-    foreach my $file (@$input_files) {
+    # Decompress and validate the fastq input files
+    my (@decompressed, @validated);
+    foreach my $input_file (@$input_files) {
+        # Decompress
         my $done_file;
-        if ( $file =~ /\.gz$/ ) {
-            push @tasks, create_gunzip_job($file);
-            $file =~ s/\.gz$//;
+        if ( $input_file =~ /\.gz$/ ) {
+            push @tasks, create_gunzip_job($input_file);
+            $input_file =~ s/\.gz$//;
+            $done_file = "$input_file.decompressed";
         }
-        push @decompressed, $file;
-    }
+        push @decompressed, $input_file;
         
-    # Validate the fastq input files
-    my @validated;
-    foreach my $file (@decompressed) {
-        my $validate_task = create_validate_fastq_job($file, "$file.decompressed");
+        # Validate
+        my $validate_task = create_validate_fastq_job($input_file, $done_file);
         push @validated, @{$validate_task->{outputs}}[0];
         push @tasks, $validate_task;
     }
-    
+        
     # Trim the fastq input files
     my @trimmed;
     my $trim_reads = 1; #TODO add this as an option in LoadExperiment interface
