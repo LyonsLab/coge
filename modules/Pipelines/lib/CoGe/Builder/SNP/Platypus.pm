@@ -20,40 +20,6 @@ our @EXPORT = qw(build run);
 our $CONF = CoGe::Accessory::Web::get_defaults();
 our $JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
 
-# mdb deprecated 5/13/15
-#sub run {
-#    my %opts = @_;
-#    my $user = $opts{user};
-#    my $genome = $opts{genome};
-#    my $input_file = $opts{input_file};
-#    my $metadata = $opts{metadata};
-#    croak "Missing parameters" unless ($user and $genome and $input_file and $metadata);
-#
-#    # Create the workflow
-#    my $workflow = $JEX->create_workflow( name => 'Running the Playtpus SNP-finder pipeline', init => 1 );
-#    return unless ($workflow && $workflow->id);
-#    my ($staging_dir, $result_dir) = get_workflow_paths( $user->name, $workflow->id );
-#    $workflow->logfile( catfile($result_dir, 'debug.log') );
-#
-#    # Build the workflow
-#    my @tasks = build({
-#        user => $user,
-#        wid  => $workflow->id,
-#        genome => $genome,
-#        input_file => $input_file,
-#        metadata => $metadata,
-#    });
-#    $workflow->add_jobs(\@tasks);
-#
-#    # Submit the workflow
-#    my $result = $JEX->submit_workflow($workflow);
-#    if ($result->{status} =~ /error/i) {
-#        return (undef, "Could not submit workflow");
-#    }
-#
-#    return ($result->{id}, undef);
-#}
-
 sub build {
     my $opts = shift;
 
