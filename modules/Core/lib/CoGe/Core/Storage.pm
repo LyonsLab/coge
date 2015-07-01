@@ -1251,7 +1251,7 @@ sub get_irods_path {
         return;
     }
 
-    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
+    my $result = CoGe::Accessory::IRODS::irods_ils($path);
     #print STDERR Dumper $result, "\n";
 
     return $result;
