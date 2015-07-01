@@ -204,7 +204,7 @@ sub detect_paired_end {
     my (@p1, @p2);
     foreach my $file (@$files) {
         my ($pair_id) = $file =~ /.+\_R([12])/;
-        if ($pair_id eq '1') { push @p1, $file; }
+        if (defined $pair_id && $pair_id eq '1') { push @p1, $file; }
         else { push @p2, $file; }
     }
     return (\@p1, \@p2);
