@@ -58,39 +58,6 @@ function check_login() { //TODO move to services.js
     return logged_in;
 }
 
-function file_selected(filename, url) {
-    $('#select_file_button').hide();
-    $('#select_file_type').show();
-    $('#files').show();
-}
-
-function file_finished(size, url) {
-    var files = get_selected_files();
-    if (!files || !files.length)
-    	return;
-    
-    var paths = files.map(function (item) { return item.path; });
-    var file_type = autodetect_file_type(paths[0])
-
-    if (file_type)
-        $("#file_type_selector").val(file_type);
-}
-
-function file_canceled() {
-    if (!get_selected_files()) {
-// mdb removed 2/20/15 -- causes js error in Firefox
-//    	$('#select_file_type')
-//    		.hide()
-//	        .find("option[value=autodetect")
-//	        .prop("selected", true)
-//	        .change();
-    	
-    	$('#files').hide();
-    	
-    	$("#select_file_type option:first").attr("selected", "selected");
-    }
-}
-
 function create_source() {
     var name = $('#edit_source_name').val();
     var desc = $('#edit_source_desc').val();
@@ -592,9 +559,43 @@ function DataView(experiment) {
 
 $.extend(DataView.prototype, {
     initialize: function() {
+    	var self = this;
+    	
         this.el = $($("#data-template").html());
-        this.file_selector = $($("#selector-template").html());
+        this.file_selector = $($("#fileselect-template").html());
         this.selector_container = this.el.find("#selector_container");
+        this.file_table = this.el.find('#file_table');
+        
+        coge.fileSelect.init({
+        	container: this.selector_container,
+        	fileTable: this.file_table,
+        	defaultTab: DEFAULT_TAB,
+        	maxIrodsListFiles: MAX_IRODS_LIST_FILES,
+        	maxIrodsTransferFiles: MAX_IRODS_TRANSFER_FILES,
+        	maxFtpFiles: MAX_FTP_FILES,
+        	fileSelectSingle: FILE_SELECT_SINGLE,
+        	loadId: LOAD_ID,
+        	fileSelectedCallback: function(filename, url) {
+        		self.el.find('#files').show();
+        	},
+        	fileFinishedCallback: function(size, url) {
+        	    var files = coge.fileSelect.get_selected_files();
+        	    if (!files || !files.length)
+        	    	return;
+        	    
+        	    var paths = files.map(function (item) { return item.path; });
+        	    var file_type = autodetect_file_type(paths[0])
+        	    if (file_type)
+        	    	self.el.find("#file_type_selector").val(file_type);
+        	    self.el.find("#select_file_type").show();
+        	},
+        	fileCancelledCallback: function() {
+        	    if (!coge.fileSelect.get_selected_files()) {
+        	    	self.el.find('#files').hide();
+        	    	self.el.find("#select_file_type option:first").attr("selected", "selected");
+        	    }
+        	}
+        });
     },
 
     render: function() {
@@ -602,61 +603,12 @@ $.extend(DataView.prototype, {
         var selector = this.file_selector.clone();
         this.selector_container.empty();
         selector.appendTo(this.selector_container);
-        selector.tabs();
-
-        //FIXME: selector view should track the current path
-        if (pageObj.current_path)
-            irods_get_path(pageObj.current_path);
-        else
-            irods_get_path();
-
-        selector.find('#input_url').bind('keyup focus click', function() {
-            var button = selector.find("#ftp_get_button"),
-                disabled = !selector.find("#input_url").val();
-
-            button.toggleClass("ui-state-disabled", disabled);
-        });
-
-        selector.find('#input_accn').bind('keyup focus click', function() {
-            var button = selector.find("#ncbi_get_button"),
-                disabled = !selector.find("#input_accn").val();
-
-            button.toggleClass("ui-state-disabled", disabled);
-        });
-
-        selector.find('#input_upload_file').fileupload({
-            dataType: 'json',
-            add: this.add.bind(this),
-            done: this.uploaded.bind(this)
-        });
+        
+        coge.fileSelect.render();
     },
 
-    //FIXME: Add files to file list view and mark them as being transferred
-    add: function(e, data) {
-        var filename = data.files[0].name;
-
-        if ( !add_file_to_list(filename, 'file://'+filename) ) {
-            error_help('File already exists.');
-        } 
-        else {
-            // mdb added 10/29/13 - prevent stale load_id value, COGE-236
-            $('#input_upload_file').fileupload('option', { formData: {
-                fname: 'upload_file',
-                load_id: load_id
-            }});
-
-            data.submit();
-        }
-    },
-
-    //FIXME: Update files to a completed state after transfer
-    uploaded: function(e, data) {
-        finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
-    },
-
-    //FIXME: Add multiple file support
     is_valid: function() {
-        var items = get_selected_files();
+        var items = coge.fileSelect.get_selected_files();
         if (!items || items.length === 0) {
             error_help('Please select a valid data file.');
             return false;
