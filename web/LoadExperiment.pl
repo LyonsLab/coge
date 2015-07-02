@@ -137,7 +137,7 @@ sub generate_body {
     	LOAD_ID      => $LOAD_ID,
     	WORKFLOW_ID  => $WORKFLOW_ID,
         API_BASE_URL => 'api/v1/', #TODO move into config file or module
-        HELP_URL     => 'https://genomevolution.org/wiki/index.php/LoadExperiment', #TODO move into config file somehow, $P->{SERVER} won't work
+        HELP_URL     => 'https://genomevolution.org/wiki/index.php/LoadExperiment',
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
