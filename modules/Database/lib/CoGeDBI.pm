@@ -51,13 +51,15 @@ sub get_table {
     my $dbh = shift;         # database connection handle
     my $table = shift;       # table name
     my $hash_fields = shift; # array ref of field names to use as hash keys
-    my $conditions = shift;  
+    my $conditions = shift;
+    my $search_string = shift;
     $hash_fields = [$table.'_id'] unless $hash_fields;
+    $search_string = "=" unless $search_string;
     
     # Build query string
     my $query = "SELECT * FROM $table";
     if ($conditions) {
-        $query .= ' WHERE ' . join(' AND ', map { $_.'='.$conditions->{$_} } keys %$conditions);
+        $query .= ' WHERE ' . join(' AND ', map { $_.$search_string.$conditions->{$_} } keys %$conditions);
     }
     #print STDERR $query, "\n";
     

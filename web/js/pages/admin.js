@@ -76,6 +76,14 @@ $(function () {
 	});
     
     //var histo_test = new Histogram("histo_dialog");
+    /*$.ajax({
+		data: {
+			fname: "gen_tree_json",
+		},
+		success: function(data) {
+			console.log("Success");
+		}
+	});*/
 });
 
 //Initialize the Jobs tab
