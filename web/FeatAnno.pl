@@ -108,7 +108,7 @@ sub gen_html {
     }
     if ($dsg) {
         $version = $dsg->version unless $version;
-        ($chr) = $dsg->get_chromosomes() unless ($chr);
+        ($chr) = $dsg->chromosomes() unless ($chr);
     }
     my @all_feats;
     foreach my $item (@ds) {

@@ -63,6 +63,8 @@ sub build {
         wid         => $wid,
         gid         => $gid,
         
+        method      => 'SAMtools',
+        
         params      => $params,
         
         annotations => ($skipAnnotations ? '' : join(';', @$annotations))

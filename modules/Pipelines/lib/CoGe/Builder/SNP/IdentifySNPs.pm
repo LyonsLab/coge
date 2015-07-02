@@ -20,6 +20,7 @@ sub build {
     my $eid = $self->params->{eid};
     return unless $eid;
     return unless $self->params->{snp_params};
+    my $method = $self->params->{snp_params}->{method};
     
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
@@ -39,7 +40,8 @@ sub build {
     my $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     
     # Initialize workflow
-    $self->workflow($self->jex->create_workflow(name => "Load Experiment", init => 1));
+    my $workflow_name = 'Identify SNPs' . ( $method ? ' using '.$method.' method' : '' );
+    $self->workflow($self->jex->create_workflow(name => $workflow_name, init => 1));
     return unless ($self->workflow && $self->workflow->id);
     
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
@@ -49,7 +51,6 @@ sub build {
     my @tasks;
     
     # Add SNP workflow
-    my $method = $self->params->{snp_params}->{method};
     my $snp_params = {
         user => $self->user,
         wid => $self->workflow->id,

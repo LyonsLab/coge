@@ -106,6 +106,7 @@ sub build {
             output_vcf => catfile($staging_dir, $output_vcf_file)
         }),
         create_load_vcf_job({
+            method      => 'GATK',
             username    => $user->name,
             metadata    => $metadata,
             staging_dir => $staging_dir,

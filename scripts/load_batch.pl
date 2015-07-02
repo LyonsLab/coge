@@ -113,7 +113,7 @@ foreach my $file (@files) {
 #    }
 
     # Untar file (if necessary) - TODO: do this before gunzip if tar.gz file
-    if ( $file =~ /\.tar$/ || $file =~ /\.tar\.gz$/) {
+    if ( $file =~ /\.tar$/ || $file =~ /\.tar\.gz$/ || $file =~ /\.tgz$/ ) {
         print "log: Extracting files\n";
         run( $P->{TAR}.' -xf '.$file.' --directory '.$data_dir );
         next;
