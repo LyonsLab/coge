@@ -285,21 +285,21 @@ function get_latest_genomes(limit) {
 </SCRIPT>
 
 <TMPL_IF NAME="INTRO">
-    <div id="stats" class="coge-shaded coge-shadow">
-        <ul class="horizontal small bold">
-                <li>Organisms: <span style="color:darkgreen"><TMPL_VAR NAME="ORG_COUNT"></span></li>
-                <li>Genomes: <span style="color:darkgreen"><TMPL_VAR NAME="GEN_COUNT"></span></li>
-                <li>Features: <span style="color:darkgreen"><TMPL_VAR NAME="FEAT_COUNT"></span></li>
-                <li>Annotations: <span style="color:darkgreen"><TMPL_VAR NAME="ANNOT_COUNT"></span></li>
-                <li>Experiments: <span style="color:darkgreen"><TMPL_VAR NAME="EXP_COUNT"> (<TMPL_VAR NAME="QUANT_COUNT"> values)</span></li>
-        </ul>
-    </div>
+<div id="stats" class="coge-shaded" style="border-bottom:1px solid lightgray">
+    <ul class="horizontal small bold">
+            <li>Organisms: <span style="color:darkgreen"><TMPL_VAR NAME="ORG_COUNT"></span></li>
+            <li>Genomes: <span style="color:darkgreen"><TMPL_VAR NAME="GEN_COUNT"></span></li>
+            <li>Features: <span style="color:darkgreen"><TMPL_VAR NAME="FEAT_COUNT"></span></li>
+            <li>Annotations: <span style="color:darkgreen"><TMPL_VAR NAME="ANNOT_COUNT"></span></li>
+            <li>Experiments: <span style="color:darkgreen"><TMPL_VAR NAME="EXP_COUNT"> (<TMPL_VAR NAME="QUANT_COUNT"> values)</span></li>
+    </ul>
+</div>
 
 <div class="wrapper">
     <div id="intro">
         <div class="coge-section coge-shadow">
             <h3>New to CoGe?</h3>
-            <div class="padded" style="color:dimgray;">
+            <div class="padded text">
             CoGe is a platform for performing Comparative Genomics research.  It provides an open-ended network of interconnected tools to manage, analyze, and visualize next-gen data.
             </div>
             <br>

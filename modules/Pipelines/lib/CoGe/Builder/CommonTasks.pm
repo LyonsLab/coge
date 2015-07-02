@@ -348,12 +348,15 @@ sub create_load_vcf_job {
     # Required arguments
     my $metadata = $opts->{metadata};
     my $username = $opts->{username};
+    my $method   = $opts->{method};
     my $staging_dir = $opts->{staging_dir};
     my $annotations = $opts->{annotations};
        $annotations = '' unless $annotations;
     my $wid = $opts->{wid};
     my $gid = $opts->{gid};
     my $vcf = $opts->{vcf};
+    
+    my $desc = 'Single nucleotide polymorphisms' . ($method ? " (determined by $method method)" : '');
 
     my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
     my $output_path = catdir($staging_dir, "load_vcf");
@@ -366,7 +369,7 @@ sub create_load_vcf_job {
         args => [
             ['-user_name', qq["$username"], 0],
             ['-name', "'".$metadata->{name}." (SNPs)". "'", 0],
-            ['-desc', qq{"Single nucleotide polymorphisms"}, 0],
+            ['-desc', qq{"$desc"}, 0],
             ['-version', "'".$metadata->{version}."'", 0],
             ['-restricted', "'".$metadata->{restricted}."'", 0],
             ['-gid', $gid, 0],
