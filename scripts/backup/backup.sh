@@ -19,11 +19,12 @@ DAYS_UNTIL_DELETE=21
 VERSION=$(date '+%Y%m%d')
 LOCAL=/storage/coge/backup
 REMOTE=backup
+CONFIG=/opt/apache2/coge/web/coge.conf
 
 #
 # Dump databases and copy to remote IRODS location
 #
-DBPASS=$(grep -P "DBPASS" /opt/apache2/coge/web/coge.conf | cut -d ' ' -f3)
+DBPASS=$(grep -P "DBPASS" $CONFIG | cut -d ' ' -f3)
 LOCAL_MYSQL=$LOCAL/mysql_$VERSION
 mkdir -p $LOCAL_MYSQL
 echo `date` "Dumping MySQL databases"
