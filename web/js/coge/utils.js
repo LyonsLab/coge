@@ -96,6 +96,16 @@ var coge = window.coge = (function(ns) {
 		        }
 		    }
 		    return str.join("&");
+    	},
+    	
+    	objToString: function(obj) {
+    	    var str = '<br>';
+    	    for (var p in obj) {
+    	        if (obj.hasOwnProperty(p)) {
+    	            str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + p + ': ' + obj[p] + '<br>';
+    	        }
+    	    }
+    	    return str;
     	}
     };
 
