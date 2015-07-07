@@ -962,7 +962,7 @@ sub create_genome_from_NCBI {
     return ($result->{id}, undef);
 }
 
-sub _create_iget_job {
+sub _create_iget_job { #FIXME move into CommonTasks.pm
     my ($conf, $irods_path, $staging_dir) = @_;
 
     my $dest_file = catdir($staging_dir, 'irods', $irods_path);
@@ -982,59 +982,7 @@ sub _create_iget_job {
     );
 }
 
-# mdb removed 5/13/15 - deprecated
-#sub _create_load_experiment_job {
-#    my %opts = @_;
-#    my $conf = $opts{conf};
-#    my $metadata = $opts{metadata};
-#    my $gid = $opts{gid};
-#    my $wid = $opts{wid};
-#    my $user_name = $opts{user_name};
-#    my $staging_dir = $opts{staging_dir};
-#    my $files = $opts{files};
-#    #my $file_type = $opts{file_type};
-#    my $ignoreMissing = $opts{ignoreMissing};
-#    #print STDERR "_create_load_experiment_job ", Dumper $metadata, "\n";
-#
-#    my $cmd = catfile($conf->{SCRIPTDIR}, "load_experiment.pl");
-#    return unless $cmd; # SCRIPTDIR undefined
-#
-#    my $file_str = join(',', map { basename($_) } @$files);
-#    #$file_type = 'csv' unless $file_type;
-#
-#    return (
-#        cmd => $cmd,
-#        script => undef,
-#        args => [
-#            ['-user_name', $user_name, 0],
-#            ['-name', '"' . $metadata->{name} . '"', 0],
-#            ['-desc', '"' . $metadata->{description} . '"', 0],
-#            ['-version', '"' . $metadata->{version} . '"', 0],
-#            ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
-#            ['-gid', $gid, 0],
-#            ['-wid', $wid, 0],
-#            ['-source_name', '"' . $metadata->{source_name} . '"', 0],
-#            #['-types', qq{"Expression"}, 0], # FIXME
-#            #['-annotations', $ANNOTATIONS, 0],
-#            ['-staging_dir', "'".$staging_dir."'", 0],
-#            #['-file_type', $file_type, 0], # FIXME
-#            ['-data_file', "'".$file_str."'", 0],
-#            ['-config', $conf->{_CONFIG_PATH}, 1],
-#            #['-result_dir', "'".$result_dir."'", 0],
-#            ['-ignore-missing-chr', $ignoreMissing, 0]
-#        ],
-#        inputs => [
-#            ($conf->{_CONFIG_PATH}, @$files)
-#        ],
-#        outputs => [
-#            [$staging_dir, 1],
-#            catdir($staging_dir, 'log.done')
-#        ],
-#        description => "Loading experiment data..."
-#    );
-#}
-
-sub _create_load_batch_job {
+sub _create_load_batch_job { #FIXME move into CommonTasks.pm
     my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir, $nid) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
     return unless $cmd; # SCRIPTDIR undefined
@@ -1071,7 +1019,7 @@ sub _create_load_batch_job {
     return %params;
 }
 
-sub _create_load_genome_job {
+sub _create_load_genome_job { #FIXME move into CommonTasks.pm
     my ($conf, $metadata, $user_name, $staging_dir, $files, $result_dir, $irods) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "load_genome.pl");
     return unless $cmd; # SCRIPTDIR undefined
@@ -1108,7 +1056,7 @@ sub _create_load_genome_job {
     );
 }
 
-sub _create_load_genome_from_NCBI_job {
+sub _create_load_genome_from_NCBI_job { #FIXME move into CommonTasks.pm
     my ($conf, $user_name, $accns, $staging_dir, $result_dir, $files) = @_;
     my $cmd = catfile($conf->{SCRIPTDIR}, "genbank_genome_loader.pl");
     return unless $cmd; # SCRIPTDIR undefined
