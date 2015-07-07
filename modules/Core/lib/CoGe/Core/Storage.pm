@@ -1032,112 +1032,112 @@ sub remove_self { # TODO move to Utils.pm
 #        description => "Loading experiment data..."
 #    );
 #}
-
-sub _create_load_batch_job {
-    my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir, $nid) = @_;
-    my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
-    return unless $cmd; # SCRIPTDIR undefined
-
-    #my $file_str = join(',', map { basename($_) } @$files);
-    my $file_str = join(',', @$files);
-
-    my %params = (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-user_name', $user_name, 0],
-            ['-name', '"' . $metadata->{name} . '"', 0],
-            ['-desc', '"' . $metadata->{description} . '"', 0],
-            ['-gid', $gid, 0],
-            ['-wid', $wid, 0],
-            ['-staging_dir', "'".$staging_dir."'", 0],
-            ['-result_dir', "'".$result_dir."'", 0],
-            ['-files', "'".$file_str."'", 0],
-            ['-config', $conf->{_CONFIG_PATH}, 1]
-        ],
-        inputs => [
-            ($conf->{_CONFIG_PATH}, @$files)
-        ],
-        outputs => [
-            [$staging_dir, 1],
-            catdir($staging_dir, 'log.done')
-        ],
-        description => "Loading batch experiments..."
-    );
-    
-    push $params{args}, ['-nid', $nid, 0] if ($nid);
-    
-    return %params;
-}
-
-sub _create_load_genome_job {
-    my ($conf, $metadata, $user_name, $staging_dir, $files, $result_dir, $irods) = @_;
-    my $cmd = catfile($conf->{SCRIPTDIR}, "load_genome.pl");
-    return unless $cmd; # SCRIPTDIR undefined
-
-    my $file_str = join(',', map { basename($_) } @$files);
-    my $irods_str = join(',', map { basename($_) } @$irods);
-
-    return (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-user_name', $user_name, 0],
-            ['-name', '"' . $metadata->{name} . '"', 0],
-            ['-desc', '"' . $metadata->{description} . '"', 0],
-            ['-version', '"' . $metadata->{version} . '"', 0],
-            ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
-            ['-source_name', '"' . $metadata->{source_name} . '"', 0],
-            ['-organism_id', '"' . $metadata->{organism_id} . '"', 0],
-            ['-type_id', '"' . $metadata->{type_id} . '"', 0],
-            ['-staging_dir', "'".$staging_dir."'", 0],
-            ['-fasta_files', "'".$file_str."'", 0],
-            ['-irods_files', "'".$irods_str."'", 0],
-            ['-config', $conf->{_CONFIG_PATH}, 1],
-            ['-result_dir', "'".$result_dir."'", 0]
-        ],
-        inputs => [
-            ($conf->{_CONFIG_PATH}, @$files)
-        ],
-        outputs => [
-            [$staging_dir, 1],
-            catdir($staging_dir, 'log.done')
-        ],
-        description => "Loading genome data ..."
-    );
-}
-
-sub _create_load_genome_from_NCBI_job {
-    my ($conf, $user_name, $accns, $staging_dir, $result_dir, $files) = @_;
-    my $cmd = catfile($conf->{SCRIPTDIR}, "genbank_genome_loader.pl");
-    return unless $cmd; # SCRIPTDIR undefined
-
-    my %p = (
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-user_name', $user_name, 0],
-            ['-staging_dir', "'".$staging_dir."'", 0],
-            ['-result_dir', "'".$result_dir."'", 0],
-            ['-config', $conf->{_CONFIG_PATH}, 1],
-            ['-GO', 1, 0]
-        ],
-        inputs => [
-            $conf->{_CONFIG_PATH}
-        ],
-        outputs => [
-            [$staging_dir, 1],
-            catdir($staging_dir, 'log.done')
-        ],
-        description => "Loading genome data ..."
-    );
-
-    foreach (@$accns) {
-        push @{ $p{args} }, ['-accn', "'".$_."'", 0];
-    }
-
-    return %p;
-}
+#
+#sub _create_load_batch_job {
+#    my ($conf, $metadata, $gid, $wid, $user_name, $files, $staging_dir, $result_dir, $nid) = @_;
+#    my $cmd = catfile($conf->{SCRIPTDIR}, "load_batch.pl");
+#    return unless $cmd; # SCRIPTDIR undefined
+#
+#    #my $file_str = join(',', map { basename($_) } @$files);
+#    my $file_str = join(',', @$files);
+#
+#    my %params = (
+#        cmd => $cmd,
+#        script => undef,
+#        args => [
+#            ['-user_name', $user_name, 0],
+#            ['-name', '"' . $metadata->{name} . '"', 0],
+#            ['-desc', '"' . $metadata->{description} . '"', 0],
+#            ['-gid', $gid, 0],
+#            ['-wid', $wid, 0],
+#            ['-staging_dir', "'".$staging_dir."'", 0],
+#            ['-result_dir', "'".$result_dir."'", 0],
+#            ['-files', "'".$file_str."'", 0],
+#            ['-config', $conf->{_CONFIG_PATH}, 1]
+#        ],
+#        inputs => [
+#            ($conf->{_CONFIG_PATH}, @$files)
+#        ],
+#        outputs => [
+#            [$staging_dir, 1],
+#            catdir($staging_dir, 'log.done')
+#        ],
+#        description => "Loading batch experiments..."
+#    );
+#    
+#    push $params{args}, ['-nid', $nid, 0] if ($nid);
+#    
+#    return %params;
+#}
+#
+#sub _create_load_genome_job { #FIXME move into CommonTasks.pm
+#    my ($conf, $metadata, $user_name, $staging_dir, $files, $result_dir, $irods) = @_;
+#    my $cmd = catfile($conf->{SCRIPTDIR}, "load_genome.pl");
+#    return unless $cmd; # SCRIPTDIR undefined
+#
+#    my $file_str = join(',', map { basename($_) } @$files);
+#    my $irods_str = join(',', map { basename($_) } @$irods);
+#
+#    return (
+#        cmd => $cmd,
+#        script => undef,
+#        args => [
+#            ['-user_name', $user_name, 0],
+#            ['-name', '"' . $metadata->{name} . '"', 0],
+#            ['-desc', '"' . $metadata->{description} . '"', 0],
+#            ['-version', '"' . $metadata->{version} . '"', 0],
+#            ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
+#            ['-source_name', '"' . $metadata->{source_name} . '"', 0],
+#            ['-organism_id', '"' . $metadata->{organism_id} . '"', 0],
+#            ['-type_id', '"' . $metadata->{type_id} . '"', 0],
+#            ['-staging_dir', "'".$staging_dir."'", 0],
+#            ['-fasta_files', "'".$file_str."'", 0],
+#            ['-irods_files', "'".$irods_str."'", 0],
+#            ['-config', $conf->{_CONFIG_PATH}, 1],
+#            ['-result_dir', "'".$result_dir."'", 0]
+#        ],
+#        inputs => [
+#            ($conf->{_CONFIG_PATH}, @$files)
+#        ],
+#        outputs => [
+#            [$staging_dir, 1],
+#            catdir($staging_dir, 'log.done')
+#        ],
+#        description => "Loading genome data ..."
+#    );
+#}
+#
+#sub _create_load_genome_from_NCBI_job { #FIXME move into CommonTasks.pm
+#    my ($conf, $user_name, $accns, $staging_dir, $result_dir, $files) = @_;
+#    my $cmd = catfile($conf->{SCRIPTDIR}, "genbank_genome_loader.pl");
+#    return unless $cmd; # SCRIPTDIR undefined
+#
+#    my %p = (
+#        cmd => $cmd,
+#        script => undef,
+#        args => [
+#            ['-user_name', $user_name, 0],
+#            ['-staging_dir', "'".$staging_dir."'", 0],
+#            ['-result_dir', "'".$result_dir."'", 0],
+#            ['-config', $conf->{_CONFIG_PATH}, 1],
+#            ['-GO', 1, 0]
+#        ],
+#        inputs => [
+#            $conf->{_CONFIG_PATH}
+#        ],
+#        outputs => [
+#            [$staging_dir, 1],
+#            catdir($staging_dir, 'log.done')
+#        ],
+#        description => "Loading genome data ..."
+#    );
+#
+#    foreach (@$accns) {
+#        push @{ $p{args} }, ['-accn', "'".$_."'", 0];
+#    }
+#
+#    return %p;
+#}
 
 # mdb removed 7/13/15 -- migrated to web services
 #sub create_annotation_dataset {
