@@ -1,22 +1,5 @@
-function file_selected(filename, url) {
-	$('#no_files').hide();
-	$('#file_select_dialog').dialog('close');
-	$('#files_clear').removeClass('ui-state-disabled');
-}
-
-function get_sequence_types(id) {
-	$.ajax({
-		data: {
-			fname: 'get_sequence_types'
-		},
-		success : function(html) {
-			$('#select_type').html(html);
-			if (id) {
-				$('#select_type').val(id);
-			}
-		}
-	});
-}
+// Global genome data
+var current_genome = {};
 
 function create_sequence_type() {
 	var name = $('#edit_type_name').val();
@@ -86,258 +69,182 @@ function create_organism() {
 		success : function(organism_id) {
 			if (organism_id) {
 				$('#create_new_organism_dialog').dialog('close');
-				$('#edit_organism').val(name).data("organism_id", organism_id);
+				$('#edit_organism')
+					.val(name)
+					.data("organism_id", organism_id);
 			}
 		}
 	});
 }
 
-function reset_log() {
-	$('#load_log').html('');
-	$('#loading_msg').show();
-	$('#finished_msg,#error_msg,#ok_button,#logfile').hide();
-	$('#finish_actions,#cancel_button').hide();
-}
-
-function check_login() {
-	var logged_in = false;
-
-	$.ajax({
-		async: false,
-		data: {
-			fname: 'check_login',
-		},
-		success : function(rc) {
-			logged_in = rc;
-		}
+function load_genome(genome) {
+	var keep_headers = $('#keep_headers').val();
+	
+	// Prevent mix of NCBI and file data types
+//	var types = {};
+//	items.forEach(function(item) { types[item.type] = 1; });
+//	var isNCBI = 'ncbi' in types;
+//	if (Object.keys(types).length > 1 && isNCBI) {
+//		error_help('Cannot mix NCBI data with other types.');
+//		return;
+//	}
+	
+	// Build file list
+	var items = genome.data.map(function(item) {
+		return { path: item.path, type: item.type };
 	});
 
-	return logged_in;
-}
-
-function error_help(s) {
-	$('#error_help_text')
-		.html(s)
-		.show()
-		.delay(10*1000)
-		.fadeOut(1500);
-}
-
-function load_genome() {
-	// Validate data items
-	var items = get_selected_files();
-	if (items == null) {
-		error_help('Files are still being transferred, please wait.');
-		return;
-	}
-	else if (items.length == 0) {
-		error_help('Please select some sequence files by clicking <b>Add Data</b>.');
-		return;
-	}
-
-	// Prevent mix of NCBI and file data types
-	var types = {};
-	items.forEach(function(item) { types[item.type] = 1; });
-	var isNCBI = 'ncbi' in types;
-	if (Object.keys(types).length > 1 && isNCBI) {
-		error_help('Cannot mix NCBI data with other types.');
-		return;
-	}
-
-	// Validate other input fields
-	var organism_name = $('#edit_organism').val();
-	var organism_id = $('#edit_organism').data("organism_id");
-	if (!isNCBI && (!organism_id || !organism_name)) {
-		error_help('Organism not found.');
-		return;
-	}
-
-	var version = $('#edit_version').val();
-	if (!isNCBI && !version) {
-		error_help('Please specify a genome version.');
-		return;
-	}
-
-	var source = $('#edit_source').val();
-	if (!isNCBI && !source) {
-		error_help('Please specify a data source.');
-		return;
-	}
-
-	var user_name = $('#edit_user').val(); // only exists if admin
-	var keep_headers = $('#keep_headers').is(':checked'); // only exists if admin
-	var name = $('#edit_name').val();
-	var description = $('#edit_description').val();
-	var link = $('#edit_link').val();
-	var type_id = $('#select_type').val();
-	var restricted = $('#restricted').is(':checked');
-	var json = JSON.stringify(items);
-
-	// Prevent concurrent executions - issue 101
-	if ( $("#load_dialog").dialog( "isOpen" ) )
-		return;
-
-	// Make sure user is still logged-in - issue 206
-	if (!check_login()) {
-		alert('Your session has expired, please log in again.');
-		location.reload(true)
-		return;
-	}
-
-	// Open status dialog right away - issue 101
-	reset_log();
-	$('#load_dialog').dialog('open');
-	$('#load_log').html('Initializing ...');
+	// Open progress window
+	coge.progress.begin();
 	newLoad = true;
+	
+	console.log(genome);
 
-	$.ajax({
+	$.ajax({ // TODO migrate to web services like load-experiment.js
+		dataType: 'json',
 		data: {
 			fname: 'load_genome',
 			load_id: load_id,
-			name: name,
-			description: description,
-			link: link,
-			version: version,
-			type_id: type_id,
-			restricted: restricted,
-			organism_id: organism_id,
-			source_name: source,
-			user_name: user_name,
+			name: genome.metadata.name,
+			description: genome.metadata.description,
+			link: genome.metadata.link,
+			version: genome.metadata.version,
+			type_id: genome.metadata.type,
+			restricted: genome.metadata.restricted,
+			organism_id: genome.organism_id,
+			source_name: genome.metadata.source,
+			user_name: USER_NAME,
 			keep_headers: keep_headers,
-			items: json,
+			items: JSON.stringify(items),
 			timestamp: new Date().getTime()
 		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (!obj || obj.error) {
-				if (!obj)
-					alert("Error: load_genome: invalid response from server");
+		success : function(response) {
+			// Handle reponse error
+			if (!response || response.error) {
+				if (!response)
+					coge.progress.failed("Error: load_genome: invalid response from server");
 				else
-					alert(obj.error);
-				reset_load();
+					coge.progress.failed(response.error);
 				return;
 			}
 
-			// Set link in status dialog
-			$('#loading_msg span a').attr('href', obj.link).html(obj.link);
-
 			// Start status update
-            if (obj.job_id) { // JEX status for load FASTQ
-                job_id = obj.job_id;
-                window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(STATUS_URL + obj.job_id, pageObj.user, "#load_dialog", progress_formatter);
+            if (response.job_id) { // JEX status for load FASTQ
+                window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + response.job_id); // Add job_id to browser URL
+                coge.progress.update(response.job_id, response.link);
             }
-		}
-		// TODO: handle error, show in status dialog
+		},
+		error: function(jqXHR, textStatus, errorThrown) { // transaction error callback
+	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+	    }
 	});
 }
 
-function get_load_log(callback) {
-    $.ajax({
-        data: {
-            dataType:    'text',
-            fname:       'get_load_log',
-            workflow_id: job_id,
-            timestamp:   new Date().getTime()
-        },
-        success : function(data) {
-            if (callback) {
-            	var obj = jQuery.parseJSON(data);
-                callback(obj);
-                return;
-            }
-        }
-    });
-}
-
-function load_failed(obj) {
-	// Handle special case of genbank load of existing genome
-	if ( obj && obj.links && obj.links.length ) {
-		var link_text = obj.links.reduce(function(prev, cur) {
-				return prev + '<a href="' + cur + '" target=_new>' + cur + '</a>' + '<br>';
-			},
-			'<b>Cannot load because the data already exist in the system:</b><br>');
-		var log = $('#load_log');
-		log.html( log.html() + link_text );
-	}
-	else { // mdb added 6/24/14 - temporary message until JEX logging is improved
-		var msg =
-			'<div class="alert">' +
-			'The CoGe Support Team has been notified of this error but please ' + 
-			'feel free to contact us at <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> ' +
-			'and we can help to determine the cause.' +
-			'</div>';
-		var log = $('#load_log');
-
-        if (obj) {
-            $("#logfile a").attr("href", obj);
-            $('#logfile').fadeIn();
-        }
-
-		log.html( log.html() + msg );
-	}
-
-    // Update dialog
-    $('#loading_msg').hide();
-    $('#error_msg').fadeIn();
-    $('#cancel_button').fadeIn();
-
-    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
-	    $.ajax({
-	        data: {
-	            fname: "send_error_report",
-	            load_id: load_id,
-	            job_id: job_id
-	        }
-	    });
-    }
-}
-
-function load_succeeded(obj) {
-    // Update globals
-    genome_id = obj.genome_id; // for continuing to GenomeInfo
-
-    // Update dialog
-    $('#loading_msg').hide();
-    $('#finished_msg,#finish_actions,#ok_button').fadeIn();
-}
-
-function reset_load() {
-	clear_list();
-    window.history.pushState({}, "Title", PAGE_NAME);
-    $('#load_dialog').dialog('close');
-}
+//function get_load_log(callback) {
+//    $.ajax({
+//        data: {
+//            dataType:    'text',
+//            fname:       'get_load_log',
+//            workflow_id: job_id,
+//            timestamp:   new Date().getTime()
+//        },
+//        success : function(data) {
+//            if (callback) {
+//            	var obj = jQuery.parseJSON(data);
+//                callback(obj);
+//                return;
+//            }
+//        }
+//    });
+//}
+//
+//function load_failed(obj) {
+//	// Handle special case of genbank load of existing genome
+//	if ( obj && obj.links && obj.links.length ) {
+//		var link_text = obj.links.reduce(function(prev, cur) {
+//				return prev + '<a href="' + cur + '" target=_new>' + cur + '</a>' + '<br>';
+//			},
+//			'<b>Cannot load because the data already exist in the system:</b><br>');
+//		var log = $('#load_log');
+//		log.html( log.html() + link_text );
+//	}
+//	else { // mdb added 6/24/14 - temporary message until JEX logging is improved
+//		var msg =
+//			'<div class="alert">' +
+//			'The CoGe Support Team has been notified of this error but please ' + 
+//			'feel free to contact us at <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> ' +
+//			'and we can help to determine the cause.' +
+//			'</div>';
+//		var log = $('#load_log');
+//
+//        if (obj) {
+//            $("#logfile a").attr("href", obj);
+//            $('#logfile').fadeIn();
+//        }
+//
+//		log.html( log.html() + msg );
+//	}
+//
+//    // Update dialog
+//    $('#loading_msg').hide();
+//    $('#error_msg').fadeIn();
+//    $('#cancel_button').fadeIn();
+//
+//    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+//	    $.ajax({
+//	        data: {
+//	            fname: "send_error_report",
+//	            load_id: load_id,
+//	            job_id: job_id
+//	        }
+//	    });
+//    }
+//}
+//
+//function load_succeeded(obj) {
+//    // Update globals
+//    genome_id = obj.genome_id; // for continuing to GenomeInfo
+//
+//    // Update dialog
+//    $('#loading_msg').hide();
+//    $('#finished_msg,#finish_actions,#ok_button').fadeIn();
+//}
+//
+//function reset_load() {
+//	clear_list();
+//    window.history.pushState({}, "Title", PAGE_NAME);
+//    $('#load_dialog').dialog('close');
+//}
 
 function handle_action() {
     var action = $("#finish_actions select").val() || "genome";
 
     if (action === "genome") {
-	    window.location.href = "GenomeInfo.pl?embed=" + embed + "&gid=" + genome_id;
-    } else if (action === "annotation") {
-	    window.location.href = "LoadAnnotation.pl?embed=" + embed + "&gid=" + genome_id;
-    } else if (action === "new") {
+	    window.location.href = "GenomeInfo.pl?embed=" + EMBED + "&gid=" + genome_id;
+    } 
+    else if (action === "annotation") {
+	    window.location.href = "LoadAnnotation.pl?embed=" + EMBED + "&gid=" + genome_id;
+    } 
+    else if (action === "new") {
         reset_load();
     }
 }
 
-function wait_to_search (search_func, search_term) {
-	pageObj.search_term = search_term;
-
-	if (pageObj.time) {
+function wait_to_search (search_func, search_obj) {
+	if (pageObj.time)
 		clearTimeout(pageObj.time);
-	}
 
 	// FIXME: could generalize by passing select id instead of separate search_* functions
 	pageObj.time = setTimeout(
 		function() {
-			search_func(pageObj.search_term);
+			search_func(search_obj.value);
 		},
 		500
 	);
 }
 
 function search_organisms (search_term) {
-	if (search_term.length > 2) {
+	if (search_term && search_term.length > 2) {
 		timestamps['search_organisms'] = new Date().getTime();
 		$.ajax({
 			data: {
@@ -348,7 +255,9 @@ function search_organisms (search_term) {
 			success : function(data) {
 				var obj = jQuery.parseJSON(data);
 				if (obj && obj.items && obj.timestamp == timestamps['search_organisms']) {
-					$("#edit_organism").autocomplete({source: obj.items}).autocomplete("search");
+					$("#edit_organism")
+						.autocomplete({source: obj.items})
+						.autocomplete("search");
 				}
 			},
 		});
@@ -366,30 +275,12 @@ function search_users (search_term) {
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
 			if (obj && obj.items && obj.timestamp == timestamps['search_users']) {
-				$("#edit_user").autocomplete({source: obj.items});
-				$("#edit_user").autocomplete("search");
+				$("#edit_user")
+					.autocomplete({source: obj.items})
+					.autocomplete("search");
 			}
 		},
 	});
-}
-
-function get_sources () {
-	$.ajax({
-		data: {
-			fname: 'get_sources',
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {
-				$("#edit_source").autocomplete({source: obj});
-			}
-		},
-	});
-}
-
-function more() {
-	$('#more').hide();
-	$('#edit_name,#edit_description,#edit_link').closest('tr').fadeIn();
 }
 
 function build_taxonomy_tree(items) {
@@ -580,160 +471,179 @@ function sort_name (a,b) {
 	return 0 //default return value (no sorting)
 }
 
-function progress_formatter(item) {
-    var msg;
-    var row = $('<li>'+ item.description + ' </li>');
-
-    var job_status = $('<span></span>');
-
-    if (item.status == 'scheduled')
-        job_status.append(item.status).addClass('down bold');
-    else if (item.status == 'completed')
-        job_status.append(item.status).addClass('completed bold');
-    else if (item.status == 'running')
-        job_status.append(item.status).addClass('running bold');
-    else if (item.status == 'skipped')
-        job_status.append("already generated").addClass('skipped bold');
-    else if (item.status == 'cancelled')
-        job_status.append(item.status).addClass('alert bold');
-    else if (item.status == 'failed')
-        job_status.append(item.status).addClass('alert bold');
-    else
-        return;
-
-    row.append(job_status);
-
-    if (item.elapsed)  {
-        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
-    }
-
-    if (item.log) {
-        var p = item.log.split("\n");
-
-        var pElements = p.map(function(item) {
-            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
-            return $("<div></div>").append(norm);
-        });
-
-        var log = $("<div></div>").html(pElements).addClass("padded");
-        row.append(log);
-    }
-
-    return row;
+function GenomeDescriptionView(opts) {
+    this.genome = opts.genome;
+    this.metadata = opts.metadata;
+    this.organism_id = opts.organism_id;
+    this.onError = opts.onError;
+    this.sources = undefined;
+    this.title = "Describe your genome";
+    this.initialize();
 }
 
-function update_dialog(request, user, identifier, formatter) {
-    var get_status = function () {
-        $.ajax({
-            type: 'GET',
-            url: request,
-            dataType: 'json',
+$.extend(GenomeDescriptionView.prototype, {
+    initialize: function() {
+        this.el = $($("#description-template").html());
+        this.edit_source = this.el.find("#edit_source");
+        this.edit_organism = this.el.find("#edit_organism");
+        this.select_type = this.el.find('#select_type');
+        this.get_sources();
+        this.get_sequence_types();
+
+        if (this.metadata) {
+            this.el.find('#edit_name').val(this.metadata.name);
+            this.el.find('#edit_description').val(this.metadata.description);
+            this.el.find('#edit_version').val(this.metadata.version);
+            this.select_type.val(this.metadata.type);
+            this.edit_source.val(this.metadata.source);
+
+            if (!this.metadata.restricted)
+                this.el.find('#restricted').removeAttr('checked');
+
+            this.edit_organism.val(this.metadata.organism);
+        }
+    },
+
+    get_sources: function() { // TODO move into web services
+        var self = this;
+
+        return $.ajax({
+            dataType: "json",
             data: {
-                username: user
+                fname: 'get_sources',
             },
-            success: update_callback,
-            error: update_callback,
-            xhrFields: {
-                withCredentials: true
+            success : function(sources) {
+                self.sources = sources;
+                if (sources)
+                    self.edit_source.autocomplete({source: sources});
+            },
+        });
+    },
+    
+    get_sequence_types: function(id) { // TODO move into web services
+    	var self = this;
+    	
+    	$.ajax({
+    		dataType: "html",
+    		data: {
+    			fname: 'get_sequence_types'
+    		},
+    		success : function(html) {
+    			self.select_type.html(html);
+    			if (id)
+    				self.select_type.val(id);
+    		}
+    	});
+    },
+
+    render: function() {
+        var self = this;
+
+        // jQuery Events
+        this.edit_organism.unbind().change(function() {
+            // Reset organism_id when item has changed
+            self.organism_id = undefined;
+        });
+
+        // jQuery UI
+        this.edit_organism.autocomplete({
+            source:[],
+            select: function(event, ui) {
+                $(this).val(ui.item.label);
+                self.organism_id = ui.item.value;
+                return false; // Prevent the widget from inserting the value.
+            },
+
+            focus: function(event, ui) {
+                return false; // Prevent the widget from inserting the value.
             }
         });
-    };
 
-    var update_callback = function(json) {
-        var dialog = $(identifier);
-        var workflow_status = $("<p></p>");
-        var data = $("<ul></ul>");
-        var results = [];
-        var current_status;
-        var timeout = 2000;
+        this.edit_source.autocomplete({source: this.sources});
+    },
 
-        var callback = function() {
-            update_dialog(request, user, identifier, formatter);
+    is_valid: function() {
+        var name = this.el.find('#edit_name').val();
+        var description = this.el.find('#edit_description').val();
+        var link = this.el.find('#edit_link').val();
+        var version = this.el.find('#edit_version').val();
+        var type = this.el.find('#select_type').val();
+        var restricted = this.el.find('#restricted').is(':checked');
+        var organism = this.el.find('#edit_organism').val();
+
+        if (!organism || organism === 'Search' || !this.organism_id) {
+        	if (this.onError)
+            	this.onError('Please specify an organism.');
+            return false;
+        }        
+        
+        if (!version) {
+        	if (this.onError)
+            	this.onError('Please specify a genome version.');
+            return false;
         }
 
-        if (json.error) {
-            pageObj.error++;
-            if (pageObj.error > 3) {
-                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                var logfile;
-
-                if (json.results && json.results.length) {
-                    logfile = json.results[0].path;
-                }
-                load_failed(logfile);
-                return;
-            }
-        } else {
-            pageObj.error = 0;
+        var source = $('#edit_source').val();
+        if (!source || source === 'Search') {
+        	if (this.onError)
+            	this.onError('Please specify a data source.');
+            return false;
         }
 
-        if (json.status) {
-            current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: ");
-            workflow_status.append($('<span></span>').html(json.status));
-            workflow_status.addClass('bold');
-        } else {
-            setTimeout(callback, timeout);
-            return;
-        }
+       $.extend(this.genome, {
+            metadata: {
+                name: name,
+                description: description,
+                link: link,
+                version: version,
+                type: type,
+                restricted: restricted,
+                source: source,
+                organism: organism
+            },
 
-        if (json.tasks) {
-            var jobs = json.tasks;
-            for (var index = 0; index < jobs.length; index++) {
-                var item = formatter(jobs[index]);
-                if (item) {
-                    results.push(item);
-                }
-            }
-        }
+            organism_id: this.organism_id
+        });
 
-        if (!dialog.dialog('isOpen')) {
-            return;
-        }
+        return true;
+    },
+});
 
-        //FIXME Update when a workflow supports elapsed time
-        if (current_status == "completed") {
-            var total = json.tasks.reduce(function(a, b) {
-                if (!b.elapsed) return a;
+function reset_load() {
+    window.history.pushState({}, "Title", PAGE_NAME);
 
-                return a + b.elapsed;
-            }, 0);
+    // Reset the wizard and set description step
+    initialize_wizard({
+        admin: IS_ADMIN,
+        metadata: current_genome.metadata,
+        organism_id: current_genome.organism_id
+    });
 
-            var duration = coge.utils.toPrettyDuration(total);
+    $('#wizard-container').hide().fadeIn();
+}
 
-            workflow_status.append("<br>Finished in " + duration);
-            workflow_status.find('span').addClass('completed');
-            get_load_log(function(result) {
-                load_succeeded(result);
-            });
+function initialize_wizard(opts) {
+    current_genome = {};
+    var root = $("#wizard-container");
+    var wizard = new Wizard({ 
+    	onCompleted: load_genome.bind(current_genome), 
+    	data: current_genome, 
+    	helpUrl: opts.helpUrl 
+    });
+    wizard.addStep(new GenomeDescriptionView({
+        genome: current_genome,
+        metadata: opts.metadata,
+        organism_id: opts.organism_id,
+        onError: wizard.error_help.bind(wizard)
+    }));
+    wizard.addStep(new DataView(current_genome, { supportedFileTypes: ['fasta', 'faa', 'fa'], onError: wizard.error_help.bind(wizard) }));
+    //wizard.addStep(new OptionsView({genome: current_genome, admin: opts.admin}));
+    wizard.addStep(new ConfirmationView(current_genome));
 
-        }
-        else if (current_status == "failed"
-                || current_status == "error"
-                || current_status == "terminated"
-                || current_status == "cancelled")
-        {
-            workflow_status.find('span').addClass('alert');
-            var logfile;
+    // Render all the wizard sub views
+    wizard.render();
 
-            if (json.results && json.results.length) {
-                logfile = json.results[0].path;
-            }
-            load_failed(logfile);
-        }
-        else if (current_status == "notfound") {
-            setTimeout(callback, timeout);
-            return;
-        }
-        else {
-            workflow_status.find('span').addClass('running');
-            setTimeout(callback, timeout);
-        }
-
-        results.push(workflow_status);
-        data.append(results);
-        dialog.find('#load_log').html(data);
-    };
-
-    get_status();
+    // Add the wizard to the document
+    root.html(wizard.el);
+    return wizard;
 }

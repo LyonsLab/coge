@@ -8,7 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(create_genome_from_file create_genome_from_NCBI get_workflow_paths get_irods_path get_irods_file);
+use CoGe::Core::Storage qw(create_genome_from_file create_genome_from_NCBI get_workflow_paths get_upload_path get_irods_path get_irods_file);
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
@@ -28,34 +28,36 @@ use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $user $coge $FORM $LINK $JOB_ID $EMBED
+  $P $PAGE_TITLE $TEMPDIR $USER $coge $FORM $LINK $WORKFLOW_ID $EMBED
   %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID
 );
 
 $PAGE_TITLE = 'LoadGenome';
 
 $FORM = new CGI;
-( $coge, $user, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
-$JOB_ID  = $FORM->Vars->{'job_id'};
+# Get workflow_id and load_id for previous load if specified.  Otherwise
+# generate a new load_id for data upload.
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $user->name . '/' . $LOAD_ID . '/';
+$TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 
 $EMBED = $FORM->param('embed');
 
 $MAX_SEARCH_RESULTS = 400;
 
 %FUNCTION = (
-    irods_get_path => \&irods_get_path,
-    irods_get_file => \&irods_get_file,
-    load_from_ftp  => \&load_from_ftp,
-    ftp_get_file   => \&ftp_get_file,
-    upload_file    => \&upload_file,
+    irods_get_path       => \&irods_get_path,
+    irods_get_file       => \&irods_get_file,
+    load_from_ftp        => \&load_from_ftp,
+    ftp_get_file         => \&ftp_get_file,
+    upload_file          => \&upload_file,
     search_ncbi_nucleotide => \&search_ncbi_nucleotide,
     load_genome          => \&load_genome,
     get_sequence_types   => \&get_sequence_types,
@@ -74,8 +76,8 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
     # Check for finished result
-    if ($JOB_ID) {
-    	my $log = get_load_log(workflow_id => $JOB_ID);
+    if ($WORKFLOW_ID) {
+    	my $log = get_load_log(workflow_id => $WORKFLOW_ID);
     	if ($log) {
             my $res = decode_json($log);
             if ($res->{genome_id}) {
@@ -98,14 +100,14 @@ sub generate_html {
 					      HOME       => $P->{SERVER},
                           HELP       => 'LoadGenome',
                           WIKI_URL   => $P->{WIKI_URL} || '',
-                          USER       => $user->display_name || ''
+                          USER       => $USER->display_name || ''
         );
-        $template->param( LOGON => 1 ) unless $user->user_name eq "public";
+        $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
         $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
     
         $template->param( ADJUST_BOX => 1 );
-        $template->param( ADMIN_ONLY => $user->is_admin );
+        $template->param( ADMIN_ONLY => $USER->is_admin );
         $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     }
     
@@ -114,7 +116,7 @@ sub generate_html {
 }
 
 sub generate_body {
-    if ( $user->user_name eq 'public' ) {
+    if ( $USER->user_name eq 'public' ) {
         my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
         $template->param(
             PAGE_NAME => "$PAGE_TITLE.pl",
@@ -129,25 +131,25 @@ sub generate_body {
         EMBED         => $EMBED,
         PAGE_NAME     => $PAGE_TITLE . '.pl',
         LOAD_ID       => $LOAD_ID,
-        JOB_ID        => $JOB_ID,
-        STATUS_URL    => 'api/v1/jobs/',
+        WORKFLOW_ID   => $WORKFLOW_ID,
+        API_BASE_URL  => 'api/v1/', #TODO move into config file or module
+        HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadGenome',
         SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         ENABLE_NCBI              => 1,
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 50,
-        USER                     => $user->user_name
+        USER                     => $USER->user_name
     );
 
     my $oid = $FORM->param("oid");
     my $organism = $coge->resultset('Organism')->find($oid) if $oid;
-
     if ($organism) {
         $template->param(ORGANISM_NAME => $organism->name);
     }
 
-    $template->param( ADMIN_AREA => 1 ) if $user->is_admin;
+    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
 }
@@ -159,7 +161,7 @@ sub irods_get_path {
     print STDERR "irods_get_path ", $path, "\n";
     
     unless ($path) {
-        my $username = $user->name;
+        my $username = $USER->name;
         my $basepath = CoGe::Accessory::Web::get_defaults()->{IRODSDIR};
         $basepath =~ s/\<USER\>/$username/;
         $path = $basepath;
@@ -172,8 +174,8 @@ sub irods_get_path {
         # minues the first time a user logs into CoGe.
         # mdb added 3/31/14
         my $isNewAccount = 0;
-        if ($user->date ne '0000-00-00 00:00:00') {
-            my $dt_user = DateTime::Format::MySQL->parse_datetime( $user->date );
+        if ($USER->date ne '0000-00-00 00:00:00') {
+            my $dt_user = DateTime::Format::MySQL->parse_datetime( $USER->date );
             my $dt_now = DateTime->now( time_zone => 'America/Phoenix' );
             my $diff = $dt_now->subtract_datetime($dt_user);
             my ( $years, $months, $days, $hours, $minutes ) = $diff->in_units('years', 'months', 'days', 'hours', 'minutes');
@@ -186,9 +188,9 @@ sub irods_get_path {
             my $body =
                 "irods ils command failed\n\n"
               . 'User: '
-              . $user->name . ' id='
-              . $user->id . ' '
-              . $user->date . "\n\n"
+              . $USER->name . ' id='
+              . $USER->id . ' '
+              . $USER->date . "\n\n"
               . $result->{error} . "\n\n"
               . $P->{SERVER};
             CoGe::Accessory::Web::send_email(
@@ -212,7 +214,7 @@ sub irods_get_file {
     
     my $result = get_irods_file($path, $TEMPDIR);
 
-    return encode_json( { path => $result->{localpath}, size => $result->{size} } );
+    return encode_json( { path => $result->{path}, size => $result->{size} } );
 }
 
 sub load_from_ftp {
@@ -405,7 +407,7 @@ sub upload_file {
 
 sub check_login {
 	#print STDERR $user->user_name . ' ' . int($user->is_public) . "\n";
-	return ($user && !$user->is_public);
+	return ($USER && !$USER->is_public);
 }
 
 sub load_genome {
@@ -421,7 +423,7 @@ sub load_genome {
     my $user_name    = $opts{user_name};
     my $keep_headers = $opts{keep_headers};
     my $items        = $opts{items};
-	#print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
+	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
 
 	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.
 	# Otherwise, command-line call fails with '-organism_id' being passed to
@@ -429,15 +431,18 @@ sub load_genome {
     $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
 
 	# Check login
-    if ( !$user_name || !$user->is_admin ) {
-        $user_name = $user->user_name;
+    if ( !$user_name || !$USER->is_admin ) {
+        $user_name = $USER->user_name;
     }
     if ($user_name eq 'public') {
     	return encode_json({ error => 'Not logged in' });
     }
 
     # Check data items
-    return encode_json({ error => 'No files specified' }) unless $items;
+    unless ($items) {
+        print STDERR "load_genome: no files specified\n";
+        return encode_json({ error => 'No files specified' });
+    }
     $items = decode_json($items);
     my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
 
@@ -459,7 +464,7 @@ sub load_genome {
     my ($workflow_id, $error_msg, $info);
     if (@accns) { # NCBI accession numbers specified
         ($workflow_id, $error_msg) = create_genome_from_NCBI(
-            user => $user,
+            user => $USER,
             accns => \@accns
         );
         
@@ -467,7 +472,7 @@ sub load_genome {
     }
     else { # File-based load
         ($workflow_id, $error_msg) = create_genome_from_file(
-            user => $user,
+            user => $USER,
             metadata => {
                 name => $name,
                 description => $description,
@@ -504,7 +509,7 @@ sub load_genome {
     CoGe::Accessory::Web::log_history(
         db          => $coge,
         workflow_id => $workflow_id,
-        user_id     => $user->id,
+        user_id     => $USER->id,
         page        => "LoadGenome",
         description => 'Load genome ' . $info,
         link        => $tiny_link
@@ -519,7 +524,7 @@ sub get_load_log {
     return unless $workflow_id;
     #TODO authenticate user access to workflow
 
-    my (undef, $results_path) = get_workflow_paths($user->name, $workflow_id);
+    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
     return unless (-r $results_path);
 
     my $result_file = catfile($results_path, '1');
@@ -593,7 +598,7 @@ sub get_debug_log {
     return unless $workflow_id;
     #TODO authenticate user access to workflow
 
-    my (undef, $results_path) = get_workflow_paths($user->name, $workflow_id);
+    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
     return unless (-r $results_path);
 
     my $result_file = catfile($results_path, 'debug.log');
@@ -703,7 +708,7 @@ sub send_error_report {
     my $job_id = $opts{job_id};
 
     # Get the staging directory
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $job_id);
+    my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
     my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
@@ -714,9 +719,9 @@ sub send_error_report {
     my $body =
         "Load failed\n\n"
         . 'For user: '
-        . $user->name . ' id='
-        . $user->id . ' '
-        . $user->date . "\n\n"
+        . $USER->name . ' id='
+        . $USER->id . ' '
+        . $USER->date . "\n\n"
         . "staging_directory: $staging_dir\n\n"
         . "result_directory: $result_dir\n\n"
         . "tiny link: $url\n\n";
