@@ -18,7 +18,7 @@ use CoGe::Core::Storage qw(add_workflow_result $DATA_TYPE_QUANT $DATA_TYPE_ALIGN
 use CoGe::Core::Experiment qw(@SUPPORTED_TYPES detect_data_type);
 use CoGe::Core::Metadata qw(create_annotations);
 
-use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
+use vars qw($staging_dir $install_dir $data_file $file_type 
   $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
   $user_id $annotations $types $wid $host $port $db $user $pass $P);
