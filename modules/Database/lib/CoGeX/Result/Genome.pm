@@ -319,6 +319,14 @@ sub datasets {
     return wantarray ? values %datasets : [ values %datasets ];
 }
 
+sub first_dataset {
+    my $self = shift;
+
+    foreach my $dsc ( $self->dataset_connectors() ) {
+        return $dsc->dataset;
+    }
+}
+
 ################################################ subroutine header begin ##
 #
 #=head2 owner
