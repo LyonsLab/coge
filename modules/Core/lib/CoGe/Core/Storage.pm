@@ -874,6 +874,7 @@ sub create_genome_from_file {
     my $irods = $opts{irods};
     my $files = $opts{files};
     my $metadata = $opts{metadata};
+    #print STDERR "Storage::create_genome_from_file ", Dumper $metadata, " ", Dumper $files, "\n";
 
     # Connect to workflow engine and get an id
     my $conf = CoGe::Accessory::Web::get_defaults();
@@ -1211,7 +1212,7 @@ sub get_irods_file {
     my ($remotepath) = $src_path =~ /(.*)$filename$/;
 
     my $localpath     = catdir('irods', $remotepath);
-    my $localfullpath = catdir($dest_path . $localpath);
+    my $localfullpath = catdir($dest_path, $localpath);
     $localpath = catfile($localpath, $filename);
     my $localfilepath = catfile($localfullpath, $filename);
     #print STDERR "get_file $path $filename $localfilepath\n";
