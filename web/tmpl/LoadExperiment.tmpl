@@ -41,8 +41,8 @@
 		This page allows you to load quantitative, polymorphism, or alignment data onto a genome from a
 		variety of file formats.
 		<br><br>
-		See <a href="https://genomevolution.org/wiki/index.php/LoadExperiment">this article</a> for detailed instructions.
-		Or at any time you can click the <a href="https://genomevolution.org/wiki/index.php/LoadExperiment">"Need help?"</a> link in the upper right of this page.
+		See <a href="<TMPL_VAR NAME=HELP_URL>">this article</a> for detailed instructions.
+		Or at any time you can click the <a href="<TMPL_VAR NAME=HELP_URL>">"Need help?"</a> link in the upper right of this page.
 	</div>
     <br><br>
     <span id="splash_ok_button" onClick="if($('#splash_dont_show_again').prop('checked'))$.cookie('splash_dont_show_again','true',{expires:10000});$('#splash_dialog').dialog('close');" class="r ui-button ui-corner-all">OK</span>
@@ -65,25 +65,6 @@
     <br>
     <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
 </div>
-
-<!-- Wizard Templates -->
-<script id="wizard-template" type="text/template">
-	<div id="wizard" class="wizard wizard-coge">
-	    <div class="header">
-	        <div class="sections">
-	        </div>
-	        <div class="r small link">Need help?</div>
-	    </div>
-	    <div id='error_help_text' class='alert-box alert-box-warn hidden'></div>
-	    <div id="step-container"></div>
-	
-	    <div class="nav-control coge-buttonset">
-	        <button class="done ui-button ui-corner-all r">Start Loading</button>
-	        <button class="next ui-button ui-corner-all r">Next</button>
-	        <button class="prev ui-button ui-corner-all" disabled>Previous</button>
-	    </div>
-	</div
-</script>
 
 <!-- Step Templates-->
 <script id="description-template" type="text/template">
@@ -274,7 +255,7 @@
 <script id="quant-template" type="text/template">
 	<div class="form-section">
 	    Please verify that your data file is formatted according to the requirements documented here:
-	    <a href="https://genomevolution.org/wiki/index.php/LoadExperiment#CSV_File_Format">Quantitative File Formats</a>.
+	    <a href="<TMPL_VAR NAME=HELP_URL>#CSV_File_Format">Quantitative File Formats</a>.
 	</div>
 	<div class="form-section">
 	    <h4>Normalizing Data Options</h4>
@@ -293,7 +274,7 @@
 </script>
 
 <script id="confirm-template" type="text/template">
-    <div class="step info" data-title="Review and Load" data-step="3" data-validate="options">
+    <div class="step info">
         <h3>Description</h3>
         <div class="confirm-description padded"></div>
         <h3>Data</h3>
@@ -395,18 +376,13 @@
     </div>
 </script>
 
-<script id="summary-pair-template" type="text/template">
-    <div>
-        <span class="name"></span>:
-        <span class="data"></span>
-    </div>
-</script>
-
 <TMPL_INCLUDE NAME='widgets/pipeline-options.tmpl'> 
 
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
 
 <TMPL_INCLUDE NAME="widgets/FileSelect.tmpl">
+
+<TMPL_INCLUDE NAME="widgets/Wizard.tmpl">
 
 <script type="text/javascript">
 // Page constants
@@ -451,12 +427,13 @@ $(function() {
     	gid: GENOME_ID
     });
     
-    // Initialize CoGe packages
+    // Initialize CoGe web services
     coge.services.init({
     	baseUrl: API_BASE_URL,
     	userName: USER_NAME
     });
     
+    // Intialize progress window
     coge.progress.init({
     	title: "Loading Experiment",
     	baseUrl: API_BASE_URL,
@@ -482,6 +459,7 @@ $(function() {
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <script type="text/javascript" src="js/coge/services.js"></script>
 <script type="text/javascript" src="js/coge/progress.js"></script>
+<script type="text/javascript" src="js/coge/wizard.js"></script>
 <script type="text/javascript" src="js/coge/file-select.js"></script>
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
 </TMPL_IF> <!-- MAIN -->
