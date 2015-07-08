@@ -445,7 +445,7 @@ open(my $logh, '>', $logtxtfile);
 print $logh "experiment id: " . $experiment->id . "\n";
 close($logh);
 
-# Save job_id in experiment data path -- #TODO move into own routine in Storage.pm
+# Save workflow_id in experiment data path -- #TODO move into own routine in Storage.pm
 CoGe::Accessory::TDS::write(
     catfile($storage_path, 'metadata.json'),
     {
