@@ -22,41 +22,7 @@ var QUANT_FILES = [
     "csv", "tsv", "bed", "gff", "gtf"
 ];
 
-var SUPPORTED_FILES = concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
-var FILE_TYPE_PATTERNS = new RegExp("(:?" + SUPPORTED_FILES.join("|") + ")$");
-
-// Returns the file extension detected or undefined
-function autodetect_file_type(file) {
-    var stripped_file = file.replace(/.gz$/, '');
-
-    if (FILE_TYPE_PATTERNS.test(stripped_file)) {
-        return stripped_file.match(FILE_TYPE_PATTERNS)[0];
-    }
-}
-
-function error_help(s) {
-    $('#error_help_text')
-        .html(s)
-        .show()
-        .delay(10*1000)
-        .fadeOut(1500);
-}
-
-function check_login() { //TODO move to services.js
-    var logged_in = false;
-
-    $.ajax({
-        async: false,
-        data: {
-            fname: 'check_login',
-        },
-        success : function(rc) {
-            logged_in = rc;
-        }
-    });
-
-    return logged_in;
-}
+var SUPPORTED_FILE_TYPES = concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
 
 function create_source() {
     var name = $('#edit_source_name').val();
@@ -107,8 +73,9 @@ function search_genomes (search_term) {
                 obj.items.forEach(function(element) {
                     element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
                 });
-                $("#edit_genome").autocomplete({source: obj.items});
-                $("#edit_genome").autocomplete("search");
+                $("#edit_genome")
+                	.autocomplete({source: obj.items})
+                	.autocomplete("search");
             }
         }
     });
@@ -124,8 +91,9 @@ function search_users (search_term) {
         success : function(data) {
             var obj = jQuery.parseJSON(data);
             if (obj && obj.items) {
-                $("#edit_user").autocomplete({source: obj.items});
-                $("#edit_user").autocomplete("search");
+                $("#edit_user")
+                	.autocomplete({source: obj.items})
+                	.autocomplete("search");
             }
         }
     });
@@ -138,8 +106,9 @@ function search_notebooks (search_term) {
 			data.notebooks.forEach(function(notebook) {
 				items.push({label:notebook.name,value:notebook.id});
 		    });
-		    $("#edit_notebook").autocomplete({source: items});
-		    $("#edit_notebook").autocomplete("search");
+		    $("#edit_notebook")
+		    	.autocomplete({source: items})
+		    	.autocomplete("search");
 		}
 	},function(){console.log('error');});
 }
@@ -178,210 +147,17 @@ $.extend(LayoutView.prototype, {
     }
 });
 
-//
-// Requires a done callback and a data object to pass to the callback
-//
-function Wizard(options) {
-    this.onCompleted = options.onCompleted;
-    this.data = options.data;
-    this.steps = [];
-    this.currentIndex = 0;
-    this.initialize(options);
-}
-
-$.extend(Wizard.prototype, {
-    initialize: function(options) {
-        this.el = $($("#wizard-template").html());
-        this.tabs = this.el.find(".sections");
-        this.next = this.el.find(".next");
-        this.prev = this.el.find(".prev");
-        this.done = this.el.find(".done");
-        this.viewer = this.el.find("#step-container");
-        this.notifications = this.el.find("#error_help_text");
-        this.help = this.el.find(".link");
-
-        // jQuery events
-        this.prev.unbind().click(this.movePrevious.bind(this));
-        this.next.unbind().click(this.moveNext.bind(this));
-        this.done.unbind().click(this.submit.bind(this));
-        this.help.unbind().click(function() {
-        	window.open(options.helpUrl);
-        });
-    },
-
-    at_first: function() {
-        return this.currentIndex === 0;
-    },
-
-    at_last: function() {
-        return this.currentIndex >= (this.steps.length - 1);
-    },
-
-    render: function() {
-        var titles = this.steps.map(function(step) {
-            return $("<div></div>", { text:  step.title });
-        });
-
-        this.tabs.html(titles);
-        titles[this.currentIndex].addClass("active");
-//        for (var i=0;i<=this.currentIndex;i++)
-//        	titles[i].addClass("active");
-//        for (var i=0;i<this.currentIndex;i++) {
-//        	var self = this;
-//        	var index = i;
-//        	titles[i].click(function(){self.move(index)});
-//        	titles[i].css('cursor','pointer');
-//        }
-
-        var step = this.steps[this.currentIndex];
-        if (step.render)
-            step.render();
-        this.viewer.html(step.el);
-
-        if (this.at_first())
-            this.prev.hide();//this.prev.attr("disabled", 1);
-        else
-            this.prev.removeAttr("disabled").show();
-
-        if (this.at_last()) {
-            this.next.hide();
-            this.done.show();
-        } else {
-            this.next.show();
-            this.done.hide();
-        }
-    },
-
-    move: function(index) {
-    	this.currentIndex = index;
-    	this.render();
-        this.notifications.stop(true, true).hide();
-    },
-
-    movePrevious: function() {
-        if (!this.at_first())
-        	this.move(this.currentIndex - 1);
-    },
-
-    moveNext: function() {
-        var step = this.steps[this.currentIndex];
-
-        if (!this.at_last() && step.is_valid())
-        	this.move(this.currentIndex + 1);
-    },
-
-    message: function(message) {
-        this.notifications.html(message)
-            .show()
-            .stop(true, true)
-            .delay(10*1000)
-            .fadeOut(1500);
-    },
-
-    submit: function() {
-        if (!check_login()) {
-            this.message('Your session has expired, please log in again.');
-            return;
-        }
-
-        if (this.at_last())
-            this.onCompleted(this.data);
-    },
-
-    // Expects a view with render, is_valid methods and a element property el
-    addStep: function(step, index) {
-        if (index !== undefined && index < this.steps.length)
-            this.steps.slice(index, 0, step);
-        else
-            this.steps.push(step);
-    }
-});
-
-function DataView(experiment) {
-    this.experiment = experiment || {};
-    this.title = "Data";
-    this.files = [];
-    this.initialize();
-}
-
-$.extend(DataView.prototype, {
-    initialize: function() {
-    	var self = this;
-    	
-        this.el = $($("#data-template").html());
-        this.file_selector = $($("#fileselect-template").html());
-        this.selector_container = this.el.find("#selector_container");
-        this.file_table = this.el.find('#file_table');
-        
-        coge.fileSelect.init({
-        	container: this.selector_container,
-        	fileTable: this.file_table,
-        	defaultTab: DEFAULT_TAB,
-        	maxIrodsListFiles: MAX_IRODS_LIST_FILES,
-        	maxIrodsTransferFiles: MAX_IRODS_TRANSFER_FILES,
-        	maxFtpFiles: MAX_FTP_FILES,
-        	fileSelectSingle: FILE_SELECT_SINGLE,
-        	loadId: LOAD_ID,
-        	fileSelectedCallback: function(filename, url) {
-        		self.el.find('#files').show();
-        	},
-        	fileFinishedCallback: function(size, url) {
-        	    var files = coge.fileSelect.get_selected_files();
-        	    if (!files || !files.length)
-        	    	return;
-        	    
-        	    var paths = files.map(function (item) { return item.path; });
-        	    var file_type = autodetect_file_type(paths[0])
-        	    if (file_type)
-        	    	self.el.find("#file_type_selector").val(file_type);
-        	    self.el.find("#select_file_type").show();
-        	},
-        	fileCancelledCallback: function() {
-        	    if (!coge.fileSelect.get_selected_files()) {
-        	    	self.el.find('#files').hide();
-        	    	self.el.find("#select_file_type option:first").attr("selected", "selected");
-        	    }
-        	}
-        });
-    },
-
-    render: function() {
-        //FIXME: This selector should be in another view
-        var selector = this.file_selector.clone();
-        this.selector_container.empty();
-        selector.appendTo(this.selector_container);
-        
-        coge.fileSelect.render();
-    },
-
-    is_valid: function() {
-        var items = coge.fileSelect.get_selected_files();
-        if (!items || items.length === 0) {
-            error_help('Please select a valid data file.');
-            return false;
-        }
-
-        items[0].file_type = this.el.find("#select_file_type option:selected").val();
-        if (!items[0].file_type) {
-            error_help("Please select the file type to continue");
-            return false;
-        }
-
-        this.experiment.data = items;
-        return true;
-    }
-});
-
-function DescriptionView(opts) {
+function ExperimentDescriptionView(opts) {
     this.experiment = opts.experiment;
     this.metadata = opts.metadata;
     this.gid = opts.gid;
+    this.onError = opts.onError;
     this.sources = undefined;
     this.title = "Describe your experiment";
     this.initialize();
 }
 
-$.extend(DescriptionView.prototype, {
+$.extend(ExperimentDescriptionView.prototype, {
     initialize: function() {
         this.el = $($("#description-template").html());
         this.edit_source = this.el.find("#edit_source");
@@ -453,23 +229,27 @@ $.extend(DescriptionView.prototype, {
         var genome = this.el.find('#edit_genome').val();
 
         if (!name) {
-            error_help('Please specify an experiment name.');
+            if (this.onError)
+            	this.onError('Please specify an experiment name.');
             return false;
         }
         
         if (!version) {
-            error_help('Please specify an experiment version.');
+        	if (this.onError)
+            	this.onError('Please specify an experiment version.');
             return false;
         }
 
         var source = $('#edit_source').val();
         if (!source || source === 'Search') {
-            error_help('Please specify a data source.');
+        	if (this.onError)
+            	this.onError('Please specify a data source.');
             return false;
         }
 
         if (!genome || genome === 'Search' || !this.gid) {
-            error_help('Please specify a genome.');
+        	if (this.onError)
+            	this.onError('Please specify a genome.');
             return false;
         }
 
@@ -838,9 +618,10 @@ $.extend(FastqView.prototype, {
     },
 });
 
-function GeneralOptionsView() {
+function GeneralOptionsView(opts) {
     this.data = {};
     this.initialize();
+    this.onError = opts.onError;
 }
 
 $.extend(GeneralOptionsView.prototype, {
@@ -862,7 +643,8 @@ $.extend(GeneralOptionsView.prototype, {
         if (this.data.notebook && this.data.notebook_type === "existing" && 
         		(!notebook || notebook === 'Search' || !this.notebook_id)) 
         {
-            error_help('Please specify a notebook.');
+        	if (this.onError)
+            	this.onError('Please specify a notebook.');
             return false;
         }
 
@@ -949,6 +731,7 @@ $.extend(AdminOptionsView.prototype, {
 function OptionsView(opts) {
     this.experiment = opts.experiment;
     this.admin = opts.admin;
+    this.onError = opts.onError;
     this.title = "Options";
     this.initialize();
 }
@@ -956,7 +739,7 @@ function OptionsView(opts) {
 $.extend(OptionsView.prototype, {
     initialize: function() {
         this.admin_view = new AdminOptionsView();
-        this.general_view = new GeneralOptionsView();
+        this.general_view = new GeneralOptionsView(onError: this.onError);
         this.layout_view = new LayoutView({
             template: "#options-layout-template",
             layout: {
@@ -991,7 +774,8 @@ $.extend(OptionsView.prototype, {
     render: function() {
         var file_type = this.experiment.data[0].file_type;
         if (!file_type) {
-            error_help("Please set the file type.");
+            if (this.onError)
+            	this.onError("Please set the file type.");
             return;
         }
 
@@ -1014,102 +798,7 @@ $.extend(OptionsView.prototype, {
     },
 });
 
-function ConfirmationView(experiment) {
-    this.experiment = experiment;
-    this.initialize();
-    this.title = "Review and Submit";
-}
-
-$.extend(ConfirmationView.prototype, {
-    initialize: function() {
-        this.el = $($("#confirm-template").html());
-        this.description = this.el.find(".confirm-description");
-        this.options = this.el.find(".confirm-options");
-        this.data = this.el.find(".confirm-data");
-        this.pair_template = $($("#summary-pair-template").html());
-    },
-
-    render: function() {
-        this.renderDescription(this.experiment.metadata);
-        this.renderData(this.experiment.data);
-        this.renderOptions(this.experiment.options);
-    },
-
-    // Render description summary
-    renderDescription: function(description) {
-        this.description.empty();
-
-        var key, newpair;
-        for(key in description) {
-            if (description.hasOwnProperty(key)) {
-            	var value = description[key];
-            	if (typeof value === "boolean")
-            		value = (value ? "yes" : "no");
-                newpair = this.pair_template.clone();
-                newpair.find(".name").html(coge.utils.ucfirst(key));
-                newpair.find(".data").html(value);
-                this.description.append(newpair);
-            }
-        }
-    },
-
-    // Render data files summary
-    renderData: function(data) {
-        this.data.empty();
-
-        var index, newpair;
-        for(index = 0; index < data.length; index++) {
-            newpair = this.pair_template.clone();
-            newpair.find(".name").html("File");
-            var filename = data[index].path.replace(/^.*[\\\/]/, '')
-            newpair.find(".data").html(filename);
-            this.data.append(newpair);
-        }
-    },
-
-    // Render options summary
-    renderOptions: function(options) {
-        this.options.empty();
-
-        var key, newpair;
-        for(key in options) {
-            if (options.hasOwnProperty(key)) {
-            	var val = options[key];
-            	if (typeof val === 'undefined' || val === '')
-            		continue;
-            	else if (typeof val === 'object')
-            		val = objToString(val);
-            	else if (typeof val === 'boolean')
-            		val = val ? 'yes' : 'no';
-            	else
-                	val = String(val);
-                newpair = this.pair_template.clone();
-                newpair.find(".name").html(coge.utils.ucfirst(key.replace('_', ' ')));
-                newpair.find(".data").html(val);
-                this.options.append(newpair);
-            }
-        }
-    },
-
-    // Validates the confirmation view (nothing to do here)
-    is_valid: function() {
-        return true;
-    }
-});
-
-function objToString(obj) {
-    var str = '<br>';
-    for (var p in obj) {
-        if (obj.hasOwnProperty(p)) {
-            str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + p + ': ' + obj[p] + '<br>';
-        }
-    }
-    return str;
-}
-
 function load(experiment) {
-	// TODO make sure still logged in
-	
 	coge.progress.begin();
     newLoad = true;
 
@@ -1180,13 +869,14 @@ function initialize_wizard(opts) {
     	data: current_experiment, 
     	helpUrl: opts.helpUrl 
     });
-    wizard.addStep(new DescriptionView({
+    wizard.addStep(new ExperimentDescriptionView({
         experiment: current_experiment,
         metadata: opts.metadata,
-        gid: opts.gid
+        gid: opts.gid,
+        onError: wizard.error_help.bind(wizard)
     }));
-    wizard.addStep(new DataView(current_experiment));
-    wizard.addStep(new OptionsView({experiment: current_experiment, admin: opts.admin}));
+    wizard.addStep(new DataView(current_experiment, { supportedFileTypes: SUPPORTED_FILE_TYPES, onError: wizard.error_help.bind(wizard) }));
+    wizard.addStep(new OptionsView({experiment: current_experiment, admin: opts.admin, onError: wizard.error_help }));
     wizard.addStep(new ConfirmationView(current_experiment));
 
     // Render all the wizard sub views
