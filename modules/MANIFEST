@@ -152,6 +152,7 @@ Pipelines/lib/CoGe/Builder/Tools/SynMap.pm
 Pipelines/lib/CoGe/Request/Request.pm
 Pipelines/lib/CoGe/Request/Genome.pm
 Pipelines/lib/CoGe/Request/Experiment.pm
+Pipelines/lib/CoGe/Request/Empty.pm
 Pipelines/lib/CoGe/Request/ExperimentAnalysis.pm
 Pipelines/lib/CoGe/Factory/PipelineFactory.pm
 Pipelines/lib/CoGe/Factory/RequestFactory.pm
