@@ -10,10 +10,11 @@ var coge = window.coge = (function(namespace) {
 			this.baseUrl = opts.baseUrl;
 			this.userName = opts.userName;
 			this.supportEmail = opts.supportEmail;
-			this.success = opts.success;
+			this.onSuccess = opts.onSuccess;
 			this.onError = opts.onError;
 			this.onReset = opts.onReset;
 			this.formatter = opts.formatter || this.default_formatter;
+			this.buttonTemplate = opts.buttonTemplate;
 			
 			var c = this.container = $('<div class="dialog_box progress"></div>');
 			c.dialog({ 
@@ -88,12 +89,22 @@ var coge = window.coge = (function(namespace) {
 			
 		    // Update dialog
 		    c.find('.msg,.progress-link').hide();
-		    c.find('.finished,.ok').fadeIn();
-		    c.find('.log').append(string)
+		    c.find('.finished').fadeIn();
+		    if (string)
+		    	c.find('.log').append(string)
+		    	
+		    // Show user-specified button template
+		    if (this.buttonTemplate) {
+		    	var template = $($("#"+this.buttonTemplate).html());
+		    	c.find('.buttons').append(template);
+		    }
+		    else { // default buttons
+		    	c.find('.ok').fadeIn();
+		    }
 		    
 		    // User callback
-		    if (this.success)
-		    	this.success();
+		    if (this.onSuccess)
+		    	this.onSuccess();
 		},
 
 		failed: function(string) {
@@ -250,8 +261,7 @@ var coge = window.coge = (function(namespace) {
 
 		            workflow_status.append("<br>Finished in " + duration);
 		            workflow_status.find('span').addClass('completed');
-		            if (json.results && json.results.length) 
-		            	self.succeeded(json.results);
+		            self.succeeded(json.results);
 		        }
 		        else if (current_status == "failed"
 		                //|| current_status == "error" // mdb removed 6/30/15 -- now handled first (see above code)
