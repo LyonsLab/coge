@@ -1,0 +1,23 @@
+<div class="dialog_box splash_dialog hidden" title="<TMPL_VAR NAME=PAGE_TITLE>">
+	<div>
+		<br>
+		Welcome to <TMPL_VAR NAME=PAGE_TITLE>!
+		<br><br>
+		<TMPL_VAR NAME=SPLASH_CONTENTS>
+		<br><br>
+		See <a href="<TMPL_VAR NAME=HELP_URL>">this article</a> for detailed instructions.
+		Or at any time you can click the <a href="<TMPL_VAR NAME=HELP_URL>">"Need help?"</a> link in the upper right of this page.
+	</div>
+    <br><br>
+    <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) $.cookie('<TMPL_VAR NAME=SPLASH_COOKIE_NAME>','true',{expires:10000});$(this).parent('div').dialog('close');" class="r ui-button ui-corner-all">OK</span>
+    <input type="checkbox" /> <span class="small">Don't show this message again</span>
+</div>
+    
+<script>
+$(function(){
+	//Show splash popup
+	if (!$.cookie('<TMPL_VAR NAME=SPLASH_COOKIE_NAME>') && !'<TMPL_VAR NAME=WORKFLOW_ID>') {
+		$('.splash_dialog').dialog({modal:true}).dialog('open');
+	}
+});
+</script>
