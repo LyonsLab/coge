@@ -1005,7 +1005,7 @@ sub update_genome_info {
     my $link        = $opts{link};
     my $timestamp   = $opts{timestamp};
 
-# print STDERR "gid=$gid organism=$org_name version=$version source=$source_name\n";
+    #print STDERR "gid=$gid organism=$org_name version=$version source=$source_name\n";
     return "Error: missing params."
       unless ( $gid and $org_name and $version and $source_name );
 
@@ -1015,8 +1015,7 @@ sub update_genome_info {
     my $organism = $coge->resultset('Organism')->find( { name => $org_name } );
     return "Error: can't find organism." unless ($organism);
 
-    my $source =
-      $coge->resultset('DataSource')->find( { name => $source_name } );
+    my $source = $coge->resultset('DataSource')->find( { name => $source_name } );
     return "Error: can't find source." unless ($source);
 
     $genome->organism_id( $organism->id );
@@ -1042,7 +1041,7 @@ sub search_organisms {
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
 
-    #   print STDERR "$search_term $timestamp\n";
+    #print STDERR "$search_term $timestamp\n";
     return unless $search_term;
 
     # Perform search
@@ -1144,8 +1143,13 @@ sub update_owner {
 
 sub get_genome_sources {
     my $genome = shift;
-    my %sources = map { $_->name => 1 } $genome->source;
-    return join( ',', sort keys %sources);
+    
+    # mdb removed 7/8/15
+    #my %sources = map { $_->name => 1 } $genome->source;
+    #return join( ',', sort keys %sources);
+    
+    # mdb added 7/8/15 - limit to one source
+    return $genome->first_dataset->source->name;
 }
 
 sub get_genome_data {
@@ -2034,7 +2038,9 @@ sub get_download_url {
     my $filename = basename($args{file});
     my $username = $USER->user_name;
 
-    return join('/', $config->{SERVER}, 
+    my $server = $config->{SERVER};
+    $server =~ s/\/$//;
+    return join('/', $server, 
         'api/v1/legacy/download', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
         "?username=$username&gid=$dsgid&filename=$filename");
 }
