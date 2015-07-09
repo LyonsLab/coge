@@ -79,80 +79,6 @@ sub load {
 	my $source_name = $user->name; #FIXME change to user's display_name
 	my $organism_id = 38378; # FIXME hardcoded to "test" organism, need to change to "unknown" or something
 
-    # Setup staging area
-#    my $LOAD_ID = get_unique_id();
-#	my $TEMPDIR = $conf->{SECTEMPDIR} . '/LoadGenome/' . $user->name . '/' . $LOAD_ID . '/';
-#    my $stagepath = $TEMPDIR . '/staging/';
-#    mkpath $stagepath;
-#	if (not -r $stagepath) {
-#		#$self->header_props( -status => 500 );
-#		return encode_json({
-#			success => JSON::false,
-#			error => 'Cannot create staging path'
-#		});
-#	}
-
-	# Open log file
-#    my $logfile = $stagepath . '/log.txt';
-#    open( my $log, ">$logfile" ) or die "Error creating log file";
-#    print $log "Starting load genome $stagepath\n"; #. "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$organism_id\n";
-
-	# Copy files from iPlant Data Store to staging path
-#	foreach my $item (@{$data->{items}}) {
-#		print STDERR 'item: ', $item->{type}, ' ', $item->{path}, "\n";
-#		next unless ($item->{type} and $item->{type} eq 'irods');
-#		my $local_path = irods_get_file($item->{path}, $TEMPDIR);
-#		print STDERR 'local_path=', $local_path, "\n";
-#		unless (-r $local_path) {
-#			#$self->header_props( -status => 500 );
-#			return encode_json({
-#				success => JSON::false,
-#				error => 'Failed to retrieve file: ' . $item->{path}
-#			});
-#		}
-#		push @files, $local_path;
-#	}
-#	print STDERR Dumper \@files, "\n";
-
-	#FIXME: what happens when files take a long time to transfer? !!!!!!!!!!!!!!
-
-    # Verify and decompress files #TODO move this into scripts/load_genome.pl
-#    my @files;
-#    foreach my $item (@$items) {
-#        my $fullpath = $TEMPDIR . $item->{path};
-#		 $self->header_props( -status => 500 );
-#        return encode_json({ error => "File doesn't exist: $fullpath" }) if ( not -e $fullpath );
-#        my ( $path, $filename ) = $item->{path} =~ /^(.+)\/([^\/]+)$/;
-#        my ($fileext) = $filename =~ /\.([^\.]+)$/;
-#
-#        #print STDERR "$path $filename $fileext\n";
-#        if ( $fileext eq 'gz' ) {
-#            my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
-#            #print STDERR "$cmd\n";
-#            `$cmd`;
-#            $fullpath =~ s/\.$fileext$//;
-#        }
-#
-#        #TODO support detecting/untarring tar files also
-#        push @files, $fullpath;
-#    }
-
-#    my $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
-#    my $cmd = $conf->{SCRIPTDIR} . "/load_genome.pl ";
-#    $cmd .= '-user_name "' . $user->name . '" ';
-#    $cmd .= '-name "' . escape($data->{name}) . '" '        if $data->{name};
-#    $cmd .= '-desc "' . escape($data->{description}) . '" ' if $data->{description};
-#    $cmd .= '-link "' . escape($data->{link}) . '" '        if $data->{link};
-#    $cmd .= '-version "' . escape($data->{version}) . '" '  if $data->{version};
-#    $cmd .= '-type_id ' . $type_id . ' ';
-#    $cmd .= "-restricted " . $data->{restricted} . ' '      if $data->{restricted};
-#    $cmd .= '-organism_id ' . $organism_id . ' ';
-#    $cmd .= '-source_name "' . escape($source_name) . '" ';
-#    $cmd .= "-staging_dir $stagepath ";
-#    $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
-#    $cmd .= '-irods_files "' . escape( join( ',', map { $_->{path} } @{$data->{items}} ) ) . '" ';
-#    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
-
     my ($workflow_id, $error_msg) = create_genome_from_file(
         user => $user,
         metadata => {
@@ -173,23 +99,6 @@ sub load {
             error => "Workflow submission failed: " . $error_msg
         });
     }
-
-    # Call load script
-#    print STDERR "$cmd\n";
-#    print $log "$cmd\n";
-#    close($log);
-#    if ( !defined( my $child_pid = fork() ) ) {
-#    	#$self->header_props( -status => 500 );
-#        return encode_json({
-#			success => JSON::false,
-#			error => "Cannot fork process: $!"
-#		});
-#    }
-#    elsif ( $child_pid == 0 ) {
-#        print STDERR "child running: $cmd\n";
-#        `$cmd`;
-#        return;
-#    }
 
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
