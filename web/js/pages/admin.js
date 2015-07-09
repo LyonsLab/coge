@@ -15,6 +15,7 @@ var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 var reports_grid;
+var tree;
 
 $(function () {
 	$( "#tabs" ).tabs({
@@ -32,6 +33,9 @@ $(function () {
 			}
 			if(current_tab == 4 && !reports_grid) {
 				init_reports();
+			}
+			if(current_tab == 5) {
+				init_taxon_tree("");
 			}
 		}
     });
@@ -76,14 +80,6 @@ $(function () {
 	});
     
     //var histo_test = new Histogram("histo_dialog");
-    /*$.ajax({
-		data: {
-			fname: "gen_tree_json",
-		},
-		success: function(data) {
-			console.log("Success");
-		}
-	});*/
 });
 
 //Initialize the Jobs tab
@@ -1996,4 +1992,218 @@ function init_histogram(element) {
 	}
 	var histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
 	return histogram;
+}
+
+function init_taxon_tree(element) {
+	if (!tree) {
+		$.ajax({
+			data: {
+				fname: "gen_tree_json",
+			},
+			success: function(data) {
+				console.log(JSON.parse(data));
+				tree = new Taxon_tree(JSON.parse(data), "taxonomic_tree");
+			}
+		});
+	}
+}
+
+var Taxon_tree = function(json, element) {
+	this.margin = {top: 20, right: 120, bottom: 20, left: 120};
+	this.width = 1960 - this.margin.right - this.margin.left;
+	this.height = 8000 - this.margin.top - this.margin.bottom;
+	this.duration = 750;
+	this.root = json;
+	this.node;
+	this.link;
+	this.svg;
+	this.i = 0;
+	
+	this.tree = d3.layout.tree()
+		.size([this.height, this.width]);
+	
+	this.diagonal = d3.svg.diagonal()
+		.projection(function(d) { return [d.y, d.x]; });
+	
+
+	d3.select(self.frameElement).style("height", "800px");
+	
+	this.initialize(element);
+	for (var i = 0; i < this.root.children.length; i++) {
+		if (this.root.children[i].name == "Bacteria") {
+			console.log(this.root.children[i]);
+		}
+	}
+}
+
+$.extend(Taxon_tree.prototype, {
+	initialize: function(element) {
+		var self = this;
+		self.svg = d3.select("#" + element).append("svg")
+			.attr("width", self.width + self.margin.right + self.margin.left)
+			.attr("height", self.height + self.margin.top + self.margin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
+		
+		self.fix.call(self);
+	},
+	fix: function() {
+		var self = this;
+		self.root.x0 = self.height / 2;
+		self.root.y0 = 0;
+
+		self.root.children.forEach(collapse);
+		self.update.call(self, self.root);
+	},
+	update: function(source) {
+		var self = this;
+		
+		// Compute the new tree layout.
+		var nodes = self.tree.nodes(self.root).reverse(),
+		 	links = self.tree.links(nodes);
+
+		console.log(nodes);
+		
+		// Normalize for fixed-depth.
+		nodes.forEach(function(d) { d.y = d.depth * 180; });
+
+		// Update the nodesÉ
+		self.node = self.svg.selectAll("g.node")
+			.data(nodes, function(d) { return d.id || (d.id = ++self.i); });
+
+		// Enter any new nodes at the parent's previous position.
+		var nodeEnter = self.node.enter().append("g")
+			.attr("class", "node")
+			.attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+			.on("click", tree_click)
+			.on("dblclick", tree_double_click);
+
+		nodeEnter.append("circle")
+			.attr("class", "tree_node")
+			.attr("r", 1e-6)
+			.style("fill", tree_color);
+
+		nodeEnter.append("text")
+			.attr("x", function(d) { return d.children || d._children ? -10 : 10; })
+			.attr("dy", ".35em")
+			.attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+			.text(function(d) { return d.name; })
+			.style("fill-opacity", 1e-6);
+
+		// Transition nodes to their new position.
+		var nodeUpdate = self.node.transition()
+			.duration(self.duration)
+			.attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+		nodeUpdate.select("circle")
+			.attr("class", "tree_node")
+			.attr("r", 6)
+			.style("fill", tree_color);
+		
+		nodeUpdate.select("text")
+			.style("fill-opacity", 1);
+
+		// Transition exiting nodes to the parent's new position.
+		var nodeExit = self.node.exit().transition()
+			.duration(self.duration)
+			.attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+			.remove();
+
+		nodeExit.select("circle")
+			.attr("class", "tree_node")
+			.attr("r", 1e-6);
+
+		nodeExit.select("text")
+			.style("fill-opacity", 1e-6);
+
+		// Update the linksÉ
+		self.link = self.svg.selectAll("path.link")
+			.data(links, function(d) { return d.target.id; });
+
+		// Enter any new links at the parent's previous position.
+		self.link.enter().insert("path", "g")
+			.attr("class", "link")
+			.attr("d", function(d) {
+				var o = {x: source.x0, y: source.y0};
+				return self.diagonal({source: o, target: o});
+			})
+			.attr("fill", "none")
+			.attr("stroke", "#ccc")
+			.attr("stroke-width", "1.5px");
+
+		// Transition links to their new position.
+		self.link.transition()
+			.duration(self.duration)
+			.attr("d", self.diagonal)
+			.attr("fill", "none")
+			.attr("stroke", "#ccc")
+			.attr("stroke-width", "1.5px");
+
+		// Transition exiting nodes to the parent's new position.
+		self.link.exit().transition()
+			.duration(self.duration)
+			.attr("d", function(d) {
+				var o = {x: source.x, y: source.y};
+				return self.diagonal({source: o, target: o});
+			})
+			.attr("fill", "none")
+			.attr("stroke", "#ccc")
+			.attr("stroke-width", "1.5px")
+			.remove();
+
+		// Stash the old positions for transition.
+		nodes.forEach(function(d) {
+			d.x0 = d.x;
+			d.y0 = d.y;
+		});
+	}
+});
+
+function tree_color(d) {
+	if (d.children) {
+		return "white";
+	} else if (d._children && d._children.length != 0) {
+		return "rgb(154, 205, 50)";
+	} else {
+		//no children, hidden or otherwise
+		return "gray";
+	}
+}
+
+//Toggle children on click.
+function tree_click(d) {
+	console.log(d);
+	if (d.children) {
+		d._children = d.children;
+		d.children = null;
+	} else {
+		d.children = d._children;
+		d._children = null;
+	}
+	tree.update.call(tree, d);
+}
+
+function collapse(d) {
+	if (d.children) {
+		d._children = d.children;
+		d._children.forEach(collapse);
+		d.children = null;
+	}
+}
+
+function open(d) {
+	if (d._children) {
+		d.children = d._children;
+		d.children.forEach(open);
+		d._children = null;
+	}
+}
+
+function tree_double_click(d) {
+	if (d.children) {
+		collapse(d);
+	} else {
+		open(d);
+	}
+	tree.update.call(tree, d);
 }
