@@ -254,6 +254,7 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
             lastStart = 0
             for row in results:
                 if row[8] != lastID and lastID != 0:
+                    response_body["features"][i]["chr"] = chr_id
                     response_body["features"][i]["start"] = lastStart
                     response_body["features"][i]["end"] = lastEnd
                     response_body["features"][i]["uniqueID"] = lastID
@@ -264,6 +265,7 @@ def an_features(environ, start_response): # mdb rewritten 11/8/13 issue 246 - ad
                     i += 1
 
                 elif lastID == 0:
+                    response_body["features"][i]["chr"] = chr_id
                     response_body["features"][i]["start"] = row[6]
                     response_body["features"][i]["end"] = row[7]
                     response_body["features"][i]["uniqueID"] = row[8]

@@ -142,6 +142,7 @@ $(function() {
 			contentPanel
 				.update(typeId)
 				.done(function() { 
+					contentPanel.grid.search(''); // clear search filter
 					contentPanel.render();
 					schedule_poll();
 				});
