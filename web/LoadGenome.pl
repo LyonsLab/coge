@@ -8,7 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(create_genome_from_file create_genome_from_NCBI get_workflow_paths get_upload_path get_irods_path get_irods_file);
+use CoGe::Core::Storage qw(get_workflow_paths get_upload_path get_irods_path get_irods_file);
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
@@ -59,7 +59,6 @@ $MAX_SEARCH_RESULTS = 400;
     ftp_get_file         => \&ftp_get_file,
     upload_file          => \&upload_file,
     search_ncbi_nucleotide => \&search_ncbi_nucleotide,
-    load_genome          => \&load_genome,
     get_sequence_types   => \&get_sequence_types,
     create_sequence_type => \&create_sequence_type,
     create_source        => \&create_source,
@@ -67,7 +66,6 @@ $MAX_SEARCH_RESULTS = 400;
     search_organisms     => \&search_organisms,
     search_users         => \&search_users,
     get_sources          => \&get_sources,
-    get_load_log         => \&get_load_log,
 	check_login			 => \&check_login,
 	send_error_report    => \&send_error_report
 );
@@ -75,17 +73,17 @@ $MAX_SEARCH_RESULTS = 400;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    # Check for finished result
-    if ($WORKFLOW_ID) {
-    	my $log = get_load_log(workflow_id => $WORKFLOW_ID);
-    	if ($log) {
-            my $res = decode_json($log);
-            if ($res->{genome_id}) {
-                my $url = 'GenomeInfo.pl?embed=' . $EMBED . '&gid=' . $res->{genome_id};
-                print $FORM->redirect(-url => $url);
-            }
-        }
-    }
+    # Check for finished result # mdb removed 3/4/15 no longer auto-redirect, make user select result
+#    if ($WORKFLOW_ID) {
+#    	my $log = get_load_log(workflow_id => $WORKFLOW_ID);
+#    	if ($log) {
+#            my $res = decode_json($log);
+#            if ($res->{genome_id}) {
+#                my $url = 'GenomeInfo.pl?embed=' . $EMBED . '&gid=' . $res->{genome_id};
+#                print $FORM->redirect(-url => $url);
+#            }
+#        }
+#    }
     
     my $template;
     
@@ -128,6 +126,7 @@ sub generate_body {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         MAIN          => 1,
+        PAGE_TITLE    => $PAGE_TITLE,
         EMBED         => $EMBED,
         PAGE_NAME     => $PAGE_TITLE . '.pl',
         LOAD_ID       => $LOAD_ID,
@@ -142,6 +141,9 @@ sub generate_body {
         MAX_FTP_FILES            => 50,
         USER                     => $USER->user_name
     );
+    
+    $template->param( SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
+                      SPLASH_CONTENTS    => 'This page allows you to load genome sequences in FASTA file format.' );
 
     my $oid = $FORM->param("oid");
     my $organism = $coge->resultset('Organism')->find($oid) if $oid;
@@ -379,19 +381,18 @@ sub upload_file {
     my $filename  = '' . $FORM->param('input_upload_file');
     my $fh        = $FORM->upload('input_upload_file');
 
-    #	print STDERR "upload_file: $filename\n";
+    #   print STDERR "upload_file: $filename\n";
 
     my $size = 0;
     my $path;
     if ($fh) {
-        my $tmpfilename =
-          $FORM->tmpFileName( $FORM->param('input_upload_file') );
-        $path = 'upload/' . $filename;
-        my $targetpath = $TEMPDIR . 'upload/';
+        my $tmpfilename = $FORM->tmpFileName( $FORM->param('input_upload_file') );
+        $path = catfile('upload', $filename);
+        my $targetpath = catdir($TEMPDIR, 'upload');
         mkpath($targetpath);
-        $targetpath .= $filename;
+        $targetpath = catfile($targetpath, $filename);
 
-        #		print STDERR "temp files: $tmpfilename $targetpath\n";
+        #print STDERR "temp files: $tmpfilename $targetpath\n";
         copy( $tmpfilename, $targetpath );
         $size = -s $fh;
     }
@@ -410,139 +411,140 @@ sub check_login {
 	return ($USER && !$USER->is_public);
 }
 
-sub load_genome {
-    my %opts         = @_;
-    my $name         = $opts{name};
-    my $description  = $opts{description};
-    my $link         = $opts{link};
-    my $version      = $opts{version};
-    my $type_id      = $opts{type_id};
-    my $source_name  = $opts{source_name};
-    my $restricted   = $opts{restricted};
-    my $organism_id  = $opts{organism_id};
-    my $user_name    = $opts{user_name};
-    my $keep_headers = $opts{keep_headers};
-    my $items        = $opts{items};
-	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
-
-	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.
-	# Otherwise, command-line call fails with '-organism_id' being passed to
-	# restricted as option
-    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
-
-	# Check login
-    if ( !$user_name || !$USER->is_admin ) {
-        $user_name = $USER->user_name;
-    }
-    if ($user_name eq 'public') {
-    	return encode_json({ error => 'Not logged in' });
-    }
-
-    # Check data items
-    unless ($items) {
-        print STDERR "load_genome: no files specified\n";
-        return encode_json({ error => 'No files specified' });
-    }
-    $items = decode_json($items);
-    my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
-
-    # Setup staging area
-    my $stagepath = catdir($TEMPDIR, 'staging');
-    mkpath $stagepath;
-
-    # Gather NCBI accession numbers if present
-    my @accns;
-    foreach my $item (@$items) {
-        if ($item->{type} eq 'ncbi') {
-            my $path = $item->{path};
-            $path =~ s/\.\d+$//; # strip off version number
-            push @accns, $path;
-        }
-    }
-
-    # Submit workflow to add genome
-    my ($workflow_id, $error_msg, $info);
-    if (@accns) { # NCBI accession numbers specified
-        ($workflow_id, $error_msg) = create_genome_from_NCBI(
-            user => $USER,
-            accns => \@accns
-        );
-        
-        $info = 'from NCBI accn ' . join(', ', @accns);
-    }
-    else { # File-based load
-        ($workflow_id, $error_msg) = create_genome_from_file(
-            user => $USER,
-            metadata => {
-                name => $name,
-                description => $description,
-                version => $version,
-                source_name => $source_name,
-                restricted => $restricted,
-                organism_id => $organism_id,
-                type_id => $type_id
-            },
-            files => \@files
-        );
-        
-        # Check organism
-        my $organism = $coge->resultset('Organism')->find($organism_id);
-        return unless $organism;
-        
-        # Set description for logging
-        $info = '<i>"' . $organism->name;
-        $info .= " " . $name if $name;
-        $info .= ": " . $description if $description;
-        $info .= " (v" . $version . ")";
-        $info .= '"</i>';
-    }
-    unless ($workflow_id) {
-        return encode_json({ error => "Workflow submission failed: " . $error_msg });
-    }
-
-    # Get tiny link
-    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . ( $EMBED ? 1 : 0 )
-    );
-    
-    # Log it
-    CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        workflow_id => $workflow_id,
-        user_id     => $USER->id,
-        page        => "LoadGenome",
-        description => 'Load genome ' . $info,
-        link        => $tiny_link
-    );
-
-    return encode_json({ job_id => $workflow_id, link => $tiny_link });
-}
-
-sub get_load_log {
-    my %opts         = @_;
-    my $workflow_id = $opts{workflow_id};
-    return unless $workflow_id;
-    #TODO authenticate user access to workflow
-
-    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
-    return unless (-r $results_path);
-
-    my $result_file = catfile($results_path, '1');
-    return unless (-r $result_file);
-
-    my $result = CoGe::Accessory::TDS::read($result_file);
-    return unless $result;
-
-    my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
-    my $links = (exists $result->{links} ? $result->{links} : undef);
-
-    return encode_json(
-        {
-            genome_id   => $genome_id,
-            links       => $links
-        }
-    );
-}
+# mdb removed 7/8/15 - migrated to web services
+#sub load_genome {
+#    my %opts         = @_;
+#    my $name         = $opts{name};
+#    my $description  = $opts{description};
+#    my $link         = $opts{link};
+#    my $version      = $opts{version};
+#    my $type_id      = $opts{type_id};
+#    my $source_name  = $opts{source_name};
+#    my $restricted   = $opts{restricted};
+#    my $organism_id  = $opts{organism_id};
+#    my $user_name    = $opts{user_name};
+#    my $keep_headers = $opts{keep_headers};
+#    my $items        = $opts{items};
+#	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
+#
+#	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.
+#	# Otherwise, command-line call fails with '-organism_id' being passed to
+#	# restricted as option
+#    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
+#
+#	# Check login
+#    if ( !$user_name || !$USER->is_admin ) {
+#        $user_name = $USER->user_name;
+#    }
+#    if ($user_name eq 'public') {
+#    	return encode_json({ error => 'Not logged in' });
+#    }
+#
+#    # Check data items
+#    unless ($items) {
+#        print STDERR "load_genome: no files specified\n";
+#        return encode_json({ error => 'No files specified' });
+#    }
+#    $items = decode_json($items);
+#    my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
+#
+#    # Setup staging area
+#    my $stagepath = catdir($TEMPDIR, 'staging');
+#    mkpath $stagepath;
+#
+#    # Gather NCBI accession numbers if present
+#    my @accns;
+#    foreach my $item (@$items) {
+#        if ($item->{type} eq 'ncbi') {
+#            my $path = $item->{path};
+#            $path =~ s/\.\d+$//; # strip off version number
+#            push @accns, $path;
+#        }
+#    }
+#
+#    # Submit workflow to add genome
+#    my ($workflow_id, $error_msg, $info);
+#    if (@accns) { # NCBI accession numbers specified
+#        ($workflow_id, $error_msg) = create_genome_from_NCBI(
+#            user => $USER,
+#            accns => \@accns
+#        );
+#        
+#        $info = 'from NCBI accn ' . join(', ', @accns);
+#    }
+#    else { # File-based load
+#        ($workflow_id, $error_msg) = create_genome_from_file(
+#            user => $USER,
+#            metadata => {
+#                name => $name,
+#                description => $description,
+#                version => $version,
+#                source_name => $source_name,
+#                restricted => $restricted,
+#                organism_id => $organism_id,
+#                type_id => $type_id
+#            },
+#            files => \@files
+#        );
+#        
+#        # Check organism
+#        my $organism = $coge->resultset('Organism')->find($organism_id);
+#        return unless $organism;
+#        
+#        # Set description for logging
+#        $info = '<i>"' . $organism->name;
+#        $info .= " " . $name if $name;
+#        $info .= ": " . $description if $description;
+#        $info .= " (v" . $version . ")";
+#        $info .= '"</i>';
+#    }
+#    unless ($workflow_id) {
+#        return encode_json({ error => "Workflow submission failed: " . $error_msg });
+#    }
+#
+#    # Get tiny link
+#    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
+#        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . ( $EMBED ? 1 : 0 )
+#    );
+#    
+#    # Log it
+#    CoGe::Accessory::Web::log_history(
+#        db          => $coge,
+#        workflow_id => $workflow_id,
+#        user_id     => $USER->id,
+#        page        => "LoadGenome",
+#        description => 'Load genome ' . $info,
+#        link        => $tiny_link
+#    );
+#
+#    return encode_json({ job_id => $workflow_id, link => $tiny_link });
+#}
+#
+#sub get_load_log {
+#    my %opts         = @_;
+#    my $workflow_id = $opts{workflow_id};
+#    return unless $workflow_id;
+#    #TODO authenticate user access to workflow
+#
+#    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
+#    return unless (-r $results_path);
+#
+#    my $result_file = catfile($results_path, '1');
+#    return unless (-r $result_file);
+#
+#    my $result = CoGe::Accessory::TDS::read($result_file);
+#    return unless $result;
+#
+#    my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
+#    my $links = (exists $result->{links} ? $result->{links} : undef);
+#
+#    return encode_json(
+#        {
+#            genome_id   => $genome_id,
+#            links       => $links
+#        }
+#    );
+#}
 
 sub get_sequence_types {
     my $selected = 1;
