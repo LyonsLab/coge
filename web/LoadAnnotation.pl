@@ -8,16 +8,16 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
-use CoGe::Core::Storage qw( create_annotation_dataset get_workflow_paths get_irods_path get_irods_file );
+use CoGe::Core::Storage qw(create_annotation_dataset get_workflow_paths get_irods_path get_irods_file  get_upload_path);
 use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
-use URI::Escape::JavaScript qw(escape);
+use URI::Escape::JavaScript qw(escape unescape);
 use File::Path;
 use File::Copy;
 use File::Basename;
 use File::Slurp;
-use File::Spec::Functions qw( catdir catfile );
+use File::Spec::Functions qw(catdir catfile);
 use File::Listing qw(parse_dir);
 use LWP::Simple;
 use URI;
@@ -25,9 +25,8 @@ use Sort::Versions;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $LINK $EMBED
-  $TEMPDIR $BINDIR $USER $coge $FORM $TEMPURL
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID
+  $P $PAGE_TITLE $LINK $EMBED $TEMPDIR $USER $coge $FORM
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $WORKFLOW_ID
 );
 
 $PAGE_TITLE = 'LoadAnnotation';
@@ -39,11 +38,12 @@ $FORM = new CGI;
 );
 
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
-$BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 
-$JOB_ID  = $FORM->Vars->{'job_id'};
+# Get workflow_id and load_id for previous load if specified.  Otherwise
+# generate a new load_id for data upload.
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 
 $EMBED = $FORM->param('embed');
 
@@ -69,17 +69,17 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 sub generate_html {
     $EMBED = $FORM->param('embed');
     
-    # Check for finished result
-    if ($JOB_ID) {
-        my $log = get_load_log(workflow_id => $JOB_ID);
-        if ($log) {
-            my $res = decode_json($log);
-            if ($res->{genome_id}) {
-                my $url = 'GenomeInfo.pl?embed=' . $EMBED . '&gid=' . $res->{genome_id};
-                print $FORM->redirect(-url => $url);
-            }
-        }
-    }
+    # Check for finished result # mdb removed 3/4/15 no longer auto-redirect, make user select result
+#    if ($JOB_ID) {
+#        my $log = get_load_log(workflow_id => $JOB_ID);
+#        if ($log) {
+#            my $res = decode_json($log);
+#            if ($res->{genome_id}) {
+#                my $url = 'GenomeInfo.pl?embed=' . $EMBED . '&gid=' . $res->{genome_id};
+#                print $FORM->redirect(-url => $url);
+#            }
+#        }
+#    }
     
     my $template;
 
@@ -93,10 +93,10 @@ sub generate_html {
         				  PAGE_LINK  => $LINK,
         				  HOME       => $P->{SERVER},
                           HELP       => 'LoadAnnotation',
-                          WIKI_URL   => $P->{WIKI_URL} || '' );
-        $template->param( USER       => $USER->display_name || '' );
+                          WIKI_URL   => $P->{WIKI_URL} || '',
+                          USER       => $USER->display_name || '' );
         $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-    
+        
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
         $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
     
@@ -111,23 +111,19 @@ sub generate_html {
 
 sub generate_body {
     if ( $USER->user_name eq 'public' ) {
-        my $template =
-          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
         $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
         $template->param( LOGIN     => 1 );
         return $template->output;
     }
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param( MAIN      => 1 );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
 
     my $gid;
     $gid = $FORM->param('gid') if defined $FORM->param('gid');
     if ($gid) {
         my $genome = $coge->resultset('Genome')->find($gid);
-
         #TODO check permissions
         if ($genome) {
             $template->param(
@@ -137,24 +133,25 @@ sub generate_body {
         }
     }
 
-    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $P->{SERVER} . "$PAGE_TITLE.pl"
-    );
-
     $template->param(
+        MAIN          => 1,
+        PAGE_TITLE    => $PAGE_TITLE,
         EMBED         => $EMBED,
-    	LOAD_ID       => $LOAD_ID,
-    	JOB_ID        => $JOB_ID,
-        STATUS_URL    => 'api/v1/jobs/',
+        LOAD_ID       => $LOAD_ID,
+        WORKFLOW_ID   => $WORKFLOW_ID,
+        API_BASE_URL  => 'api/v1/', #TODO move into config file or module
+        HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadAnnotation',
         SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
-        FILE_SELECT_SINGLE       => 1,
         DEFAULT_TAB              => 0,
+        FILE_SELECT_SINGLE       => 1,
         DISABLE_IRODS_GET_ALL    => 1,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
-        USER                     => $USER->user_name
+        USER                     => $USER->user_name,
     );
+    $template->param( SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
+                      SPLASH_CONTENTS    => 'This page allows you to load genome sequences in FASTA file format.' );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
@@ -164,7 +161,7 @@ sub irods_get_path {
     my %opts = @_;
     my $path = $opts{path};
     $path = unescape($path);
-    print STDERR "irods_get_path ", $path, "\n";
+    #print STDERR "irods_get_path ", $path, "\n";
     
     unless ($path) {
         my $username = $USER->name;
@@ -220,7 +217,7 @@ sub irods_get_file {
     
     my $result = get_irods_file($path, $TEMPDIR);
 
-    return encode_json( { path => $result->{localpath}, size => $result->{size} } );
+    return encode_json( { path => $result->{path}, size => $result->{size} } );
 }
 
 sub load_from_ftp {
@@ -346,23 +343,21 @@ sub ftp_get_file {
 
 sub upload_file {
     my %opts      = @_;
-    my $filename;
-    $filename = '' . $FORM->param('input_upload_file') if defined $FORM->param('input_upload_file');
+    my $filename  = '' . $FORM->param('input_upload_file');
     my $fh        = $FORM->upload('input_upload_file');
 
-    #	print STDERR "upload_file: $filename\n";
+    #   print STDERR "upload_file: $filename\n";
 
     my $size = 0;
     my $path;
     if ($fh) {
-        my $tmpfilename =
-          $FORM->tmpFileName( $FORM->param('input_upload_file') );
-        $path = 'upload/' . $filename;
-        my $targetpath = $TEMPDIR . 'upload/';
+        my $tmpfilename = $FORM->tmpFileName( $FORM->param('input_upload_file') );
+        $path = catfile('upload', $filename);
+        my $targetpath = catdir($TEMPDIR, 'upload');
         mkpath($targetpath);
-        $targetpath .= $filename;
+        $targetpath = catfile($targetpath, $filename);
 
-        #		print STDERR "temp files: $tmpfilename $targetpath\n";
+        #print STDERR "temp files: $tmpfilename $targetpath\n";
         copy( $tmpfilename, $targetpath );
         $size = -s $fh;
     }
