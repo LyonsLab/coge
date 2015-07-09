@@ -148,7 +148,7 @@ $creator = $user unless $creator;
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
 unless ($genome) {
-    print $STDOUT "log: error finding genome id$gid\n";
+    print STDOUT "log: error finding genome id$gid\n";
     exit(-1);
 }
 
