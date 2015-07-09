@@ -142,6 +142,7 @@ Pipelines/lib/CoGe/Builder/Export/Experiment.pm
 Pipelines/lib/CoGe/Builder/Export/Fasta.pm
 Pipelines/lib/CoGe/Builder/Export/Gff.pm
 Pipelines/lib/CoGe/Builder/Load/Experiment.pm
+Pipelines/lib/CoGe/Builder/Load/BatchExperiment.pm
 Pipelines/lib/CoGe/Builder/Load/Genome.pm
 Pipelines/lib/CoGe/Builder/Load/Annotation.pm
 Pipelines/lib/CoGe/Builder/SNP/IdentifySNPs.pm
