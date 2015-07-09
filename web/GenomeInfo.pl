@@ -2038,7 +2038,9 @@ sub get_download_url {
     my $filename = basename($args{file});
     my $username = $USER->user_name;
 
-    return join('/', $config->{SERVER}, 
+    my $server = $config->{SERVER};
+    $server =~ s/\/$//;
+    return join('/', $server, 
         'api/v1/legacy/download', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
         "?username=$username&gid=$dsgid&filename=$filename");
 }
