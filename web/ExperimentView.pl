@@ -681,7 +681,7 @@ sub _get_experiment_info {
         { title => "Source", value => $exp->source->info_html },
         { title => "Version", value => $exp->version },
         { title => "Tags", value => $tags || '' },
-        { title => "Notebooks", value => $exp->notebooks_desc },
+        { title => "Notebooks", value => $exp->notebooks_desc($EMBED) },
         { title => "Restricted", value => $exp->restricted ? "Yes" : "No"},
         { title => "Creation", value => $creation}
     ];

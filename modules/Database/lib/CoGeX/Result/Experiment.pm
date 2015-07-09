@@ -245,9 +245,17 @@ sub notebooks {
     shift->lists(@_);
 }
 
-sub notebooks_desc {
+sub notebooks_desc { #FIXME move this view code out of here
     my $self = shift;
-    return join(',', map {local $_ = $_->name; s/&reg;\s*//; $_ } $self->notebooks) || '';
+    my $embed = shift || 0;
+    my @notebooks;
+    foreach my $notebook ($self->notebooks) {
+        my $link = "NotebookView.pl?nid=" . $notebook->id . "&embed=$embed";
+        my $desc = "<a href='$link'>" . $notebook->name . '</a>';
+        $desc =~ s/&reg;\s*//;
+        push @notebooks, $desc;
+    }
+    return join(',', @notebooks) || '';
 }
 
 #sub groups {
