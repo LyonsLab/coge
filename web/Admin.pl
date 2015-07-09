@@ -1002,7 +1002,7 @@ sub modify_item {
     my $id  = $opts{id};
     my $mod  = $opts{modification};
     my $type = $opts{type};
-    print STDERR "$mod $type $id\n";
+    #print STDERR "$mod $type $id\n";
     return 0 unless $id;
 
     my $item = $coge->resultset($type)->find($id);
@@ -1914,120 +1914,52 @@ sub get_total_table {
 
 ####
 #TAXONOMY STUFF
-my $taxonomic_tree_height = 0;
-my %taxonomic_tree = (
-	name => "root", 
-	children => [],
-);
+my %taxonomic_tree;
 
 sub gen_tree_json {
+	%taxonomic_tree  = (
+		name => "root", 
+		children => [],
+	);
 
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @organism_descriptions = CoGeDBI::get_table($db->storage->dbh, 'organism', undef, {description => "\"%;%\""}, " like ");
-	print $fh "test\n";
-	print STDERR "test\n";
 	my $organism_descriptions = $organism_descriptions[0];
 	
-	#print $fh Dumper($organism_descriptions);
-	print $fh "scalar(keys $organism_descriptions)\n";
-	
-	my $index = 0;
 	foreach my $organism (values %$organism_descriptions) {
 		my $taxon_string = $organism->{description};
 		my @taxons = split(/\s*;\s*/, $taxon_string);
+		
 		if($taxons[0]) {
+			$taxons[0] =~ s/^\s+|\s+$//g;
+			my $size = scalar @taxons;
+			$taxons[$size - 1] =~ s/^\s+|\s+$//g;
 			my $sub_tree = gen_subtree(\@taxons);
-			my $size = scalar(@taxons);
-			add_to_tree(\%taxonomic_tree, $sub_tree, $size);
+			add_to_tree(\%taxonomic_tree, $sub_tree);
 		}
-		$index++;
-		print $fh "$index\n";
-	} 
-
-	#my $index;
-	#for ($index = 0; $index < scalar(@strings); $index++) {
-	#	my $size = (length $strings[$index])/2;
-	#	my @temp;
-	#	my $i;
-	#	for ($i = 0; $i < $size; $i++) {
-	#		push(@temp, substr($strings[$index], $i*2, 1));
-	#	}
-	#	
-	#	my $sub_tree = gen_subtree(\@temp);
-	#	my $root_children = \@{$taxonomic_tree{children}}; #array reference
-	#	my $top_value = $sub_tree->{name};
-	#	my $find = check_tree($top_value, $taxonomic_tree);
-	#	
-	#	add_to_tree($taxonomic_tree, $sub_tree, $size);
-	#}
-				
-	print $fh Dumper(\%taxonomic_tree);
-    print $fh "\n";
-    print $fh $taxonomic_tree_height;
-    print $fh "\n";
+	}
     
 	return encode_json(\%taxonomic_tree);
 }
 
 sub check_tree {
-	my $search_term = $_[0];
-	my $sub_root = $_[1];
-	my $result = {
-		level => 0,
-		node => $sub_root,
-	};
-	
-	my $i;
-	for ($i = 0; $i < $taxonomic_tree_height; $i++) {
-		my $sub_result = check_level($search_term, $i + 1, $sub_root);
-		#level always starts at 1, to allow for the dummy root.
-		if ($sub_result->{level}) {
-			$result = $sub_result
-		}
+	my $search_term = shift;
+	if (scalar(@_) == 0) {
+		return undef;
 	}
-	return $result;
-}
-
-sub check_level {
-	my $search_term = $_[0];
-	my $level = $_[1];
-	my $sub_root = $_[2];
-	my $result = {
-		level => 0,
-		node => $sub_root,
-	};
 	
-	if ($level == 1) {
-		foreach my $child (@{$sub_root->{children}}) {
-			if ($child->{name} eq $search_term) {
-				$result = {
-					level => $level,
-					node => $child,
-				};
-				return $result;
+	my @new_roots;
+	foreach my $root (@_) {
+		foreach my $child (@{$root->{children}}) {
+			push (@new_roots, $child);
+			if(lc $search_term eq lc $child->{name}) {
+				return $child;
 			}
 		}
-		#none found
-		return $result;
-	} elsif ($level > 1) {
-		foreach my $child (@{$sub_root->{children}}) {
-			my $recursive_result = check_level($search_term, $level-1, $child);
-			if ($recursive_result->{level}) {
-				$result = {
-					level => $level,
-					node => $recursive_result->{node},
-				};
-				return $result;
-			}
-		}
-		return $result;
-	} elsif ($level == 0) {
-		print $fh "Something messed up.";
-		return 0;
 	}
+	return check_tree($search_term, @new_roots);
 }
 
-#the following code is broken.
 sub gen_subtree {
 	my @array = @{$_[0]};
 	if (scalar(@array) > 0) {
@@ -2035,8 +1967,9 @@ sub gen_subtree {
 			name => $array[0],
 			children => [],
 		};
+		#print $fh "$array[0]\n";
 		shift @array;
-		if(scalar(@array) > 0) {
+		if (scalar(@array) > 0) {
 			push ($hash->{children}, gen_subtree(\@array));
 		}
 		return $hash;
@@ -2046,66 +1979,42 @@ sub gen_subtree {
 sub add_to_tree {
 	my $root = $_[0];
 	my $sub_tree = $_[1];
-	#my $size = $_[2];
-	my $size = get_size($sub_tree);
     my $root_children = \@{$root->{children}}; #array reference
 	my $top_value = $sub_tree->{name};
 	my $find = check_tree($top_value, $root);
-	
-	if ($find->{level} == 0) {
+	if (!$find) {
+		#check for inconsistencies
+		add_fix($sub_tree);
+		
 		#add the subtree as a child of the root
 		push ($root_children, $sub_tree);
-		
-		#adjust tree_height
-		if ($size > $taxonomic_tree_height) {
-			$taxonomic_tree_height = $size;
-		}
-		
-		#check for inconsistencies
-		foreach my $child (@{$sub_tree->{children}}) {
-			add_fix($child);
-		}
-	} elsif ($find->{level} > 0) {
-		#adjust tree_height
-		if (($size + $find->{level} - 1) > $taxonomic_tree_height) {
-			$taxonomic_tree_height = $size + $find->{level} - 1;
-		}
-		
+	} else {
 		#recurse to the next level of the tree
 		foreach my $child (@{$sub_tree->{children}}) {
-			add_to_tree($find->{node}, $child, $size - 1);
+			add_to_tree($find, $child);
 		}
 	}
 }
 
 sub add_fix {
 	my $add_tree = $_[0];
-	my $i;
 	my $move_tree;
-	for ($i = 0; $i < scalar(@{$taxonomic_tree{children}}); $i++) {
-		if ($add_tree->{name} eq @{$taxonomic_tree{children}}[$i]->{name}) {
+	my $i;
+	for ($i = scalar(@{$taxonomic_tree{children}} - 1); $i > -1; $i--) {
+		if ((lc $add_tree->{name}) eq (lc @{$taxonomic_tree{children}}[$i]->{name})) {
 			#print $fh "Inconsistency Detected\n";
 			$move_tree = splice(@{$taxonomic_tree{children}}, $i, 1);
-			add_to_tree(\%taxonomic_tree, $move_tree, get_size($move_tree));
-		}
-	}
-	foreach my $child (@{$add_tree->{children}}) {
-		add_fix($child);
-	}
-}
-
-sub get_size {
-	my $tree = $_[0];
-	my $size = 0;
-	if (scalar(@{$tree->{children}}) > 0) {
-		foreach my $child (@{$tree->{children}}) {
-			my $child_size = get_size($child);
-			if ($child_size > $size) {
-				$size = $child_size;
+			
+			foreach my $child (@{$move_tree->{children}}) {
+				#print $fh "Moving: $child->{name} to $add_tree->{name}\n";
+				add_to_tree($add_tree, $child);
 			}
 		}
 	}
-	return $size + 1;
+	#check for further inconsistencies
+	foreach my $child (@{$add_tree->{children}}) {
+		add_fix($child);
+	}
 }
 
 close $fh;
