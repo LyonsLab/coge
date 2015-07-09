@@ -33,22 +33,6 @@
 <div id="wizard-container"></div>
 
 <!-- DIALOGS -->
-<div id="splash_dialog" class="dialog_box" title="Load Experiment" style="display:none;">
-	<div>
-		<br>
-		Welcome to Load Experiment!
-		<br><br>
-		This page allows you to load quantitative, polymorphism, or alignment data onto a genome from a
-		variety of file formats.
-		<br><br>
-		See <a href="<TMPL_VAR NAME=HELP_URL>">this article</a> for detailed instructions.
-		Or at any time you can click the <a href="<TMPL_VAR NAME=HELP_URL>">"Need help?"</a> link in the upper right of this page.
-	</div>
-    <br><br>
-    <span id="splash_ok_button" onClick="if($('#splash_dont_show_again').prop('checked'))$.cookie('splash_dont_show_again','true',{expires:10000});$('#splash_dialog').dialog('close');" class="r ui-button ui-corner-all">OK</span>
-    <input id="splash_dont_show_again" type="checkbox" /> <span class="small">Don't show this message again</span>
-</div>
-
 <div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
     <table class="small">
         <tr>
@@ -376,6 +360,8 @@
     </div>
 </script>
 
+<TMPL_INCLUDE NAME="widgets/Splash.tmpl">
+
 <TMPL_INCLUDE NAME='widgets/pipeline-options.tmpl'> 
 
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
@@ -447,11 +433,6 @@ $(function() {
     	coge.progress.begin();
     	coge.progress.update(WORKFLOW_ID);
     }
-
-    // Show splash popup
-	if (!$.cookie('splash_dont_show_again') && !WORKFLOW_ID) {
-		$('#splash_dialog').dialog({modal:true}).dialog('open');
-	}
 });
 </script>
 

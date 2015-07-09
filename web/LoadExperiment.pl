@@ -133,6 +133,7 @@ sub generate_body {
     
     $template->param(
         MAIN          => 1,
+        PAGE_TITLE    => $PAGE_TITLE,
         EMBED         => $EMBED,
     	LOAD_ID       => $LOAD_ID,
     	WORKFLOW_ID   => $WORKFLOW_ID,
@@ -145,6 +146,8 @@ sub generate_body {
         MAX_FTP_FILES            => 30,
         USER                     => $USER->user_name
     );
+    $template->param( SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
+                      SPLASH_CONTENTS    => 'This page allows you to load quantitative, polymorphism, or alignment data onto a genome from a variety of file formats.' );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
@@ -192,32 +195,12 @@ sub irods_get_path {
 sub irods_get_file {
     my %opts = @_;
     my $path = $opts{path};
+    
     $path = unescape($path);
-    my ($filename)   = $path =~ /([^\/]+)\s*$/;
-    my ($remotepath) = $path =~ /(.*)$filename$/;
+    
+    my $result = get_irods_file($path, $TEMPDIR);
 
-    #	print STDERR "irods_get_file $path $filename\n";
-
-    my $localpath     = catdir('irods', $remotepath);
-    my $localfullpath = catdir($TEMPDIR, $localpath);
-    $localpath = catfile($localpath, $filename);
-    my $localfilepath = catfile($localfullpath, $filename);
-
-    my $do_get = 1;
-
-    #	if (-e $localfilepath) {
-    #		my $remote_chksum = irods_chksum($path);
-    #		my $local_chksum = md5sum($localfilepath);
-    #		$do_get = 0 if ($remote_chksum eq $local_chksum);
-    #		print STDERR "$remote_chksum $local_chksum\n";
-    #	}
-
-    if ($do_get) {
-        mkpath($localfullpath);
-        CoGe::Accessory::IRODS::irods_iget( $path, $localfullpath );
-    }
-
-    return encode_json( { path => $localpath, size => -s $localfilepath } );
+    return encode_json( { path => $result->{path}, size => $result->{size} } );
 }
 
 sub load_from_ftp {
