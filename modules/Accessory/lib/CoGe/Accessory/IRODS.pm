@@ -50,7 +50,7 @@ sub irods_ils {
     my $path = shift;
     $path = '' unless $path;
     my %opts = @_;
-    my $escape_output = (defined %opts ? $opts{escape_output} : 0);
+    my $escape_output = $opts{escape_output} || 0;
     #print STDERR "irods_ils: path=$path\n";
     my $env_file = _irods_get_env_file();
     return { error => "Error: iRODS env file missing" } unless $env_file;
