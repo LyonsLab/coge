@@ -342,9 +342,11 @@ svg {
 		<div id="histo_dialog" class="dialog_box hidden" title="Histogram"></div>
 	</div>
 	<div id="tabs-6">
-		<div>
-			<span id="taxonomic_tree"></span>
-		</div>
+		<span style="margin-right:20px;">
+			Filter:
+			<input id="tree_filter" type="text" onkeyup="filter_tree()">
+		</span>
+		<span id="taxonomic_tree"></span>
 	</div>
 </div>
 

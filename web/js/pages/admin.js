@@ -2014,6 +2014,7 @@ var Taxon_tree = function(json, element) {
 	this.height = 8000 - this.margin.top - this.margin.bottom;
 	this.duration = 750;
 	this.root = json;
+	this.current_root = this.root;
 	this.node;
 	this.link;
 	this.svg;
@@ -2029,11 +2030,6 @@ var Taxon_tree = function(json, element) {
 	d3.select(self.frameElement).style("height", "800px");
 	
 	this.initialize(element);
-	for (var i = 0; i < this.root.children.length; i++) {
-		if (this.root.children[i].name == "Bacteria") {
-			console.log(this.root.children[i]);
-		}
-	}
 }
 
 $.extend(Taxon_tree.prototype, {
@@ -2045,6 +2041,9 @@ $.extend(Taxon_tree.prototype, {
 			.append("g")
 			.attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
 		
+		//
+		var nodes = self.tree.nodes(self.root).reverse();
+		
 		self.fix.call(self);
 	},
 	fix: function() {
@@ -2052,17 +2051,41 @@ $.extend(Taxon_tree.prototype, {
 		self.root.x0 = self.height / 2;
 		self.root.y0 = 0;
 
-		self.root.children.forEach(collapse);
-		self.update.call(self, self.root);
+		self.root.children.forEach(function(d) {
+			self.collapse.call(self, d);
+		});
+		self.update.call(self, self.root, self.current_root);
 	},
-	update: function(source) {
+	update: function(source, new_root) {
 		var self = this;
+		self.current_root = new_root;
+		console.log(new_root);
 		
 		// Compute the new tree layout.
-		var nodes = self.tree.nodes(self.root).reverse(),
-		 	links = self.tree.links(nodes);
-
+		var nodes = self.tree.nodes(self.current_root).reverse();
+		var links = self.tree.links(nodes);
+		
+		// deal with filtering complications
+		var add_depth = 0;
+		var add_nodes = [];
+		while (new_root.parent) {
+			add_depth++;
+			add_nodes.push(new_root.parent);
+			new_root = new_root.parent;
+		}
+		
+		// fix depth
+		for(var i = 0; i < nodes.length; i++) {
+			nodes[i].depth += add_depth;
+		}
+		for(var i = 0; i < add_nodes.length; i++) {
+			add_depth--;
+			add_nodes[i].depth = add_depth;
+			nodes.push(add_nodes[i]);
+		}
+		
 		console.log(nodes);
+		console.log(links);
 		
 		// Normalize for fixed-depth.
 		nodes.forEach(function(d) { d.y = d.depth * 180; });
@@ -2075,13 +2098,17 @@ $.extend(Taxon_tree.prototype, {
 		var nodeEnter = self.node.enter().append("g")
 			.attr("class", "node")
 			.attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
-			.on("click", tree_click)
-			.on("dblclick", tree_double_click);
+			.on("click", function(d) {
+				self.click.call(self, d);
+			})
+			.on("dblclick", function(d) {
+				self.double_click.call(self, d);
+			});
 
 		nodeEnter.append("circle")
 			.attr("class", "tree_node")
 			.attr("r", 1e-6)
-			.style("fill", tree_color);
+			.style("fill", self.color);
 
 		nodeEnter.append("text")
 			.attr("x", function(d) { return d.children || d._children ? -10 : 10; })
@@ -2098,7 +2125,7 @@ $.extend(Taxon_tree.prototype, {
 		nodeUpdate.select("circle")
 			.attr("class", "tree_node")
 			.attr("r", 6)
-			.style("fill", tree_color);
+			.style("fill", self.color);
 		
 		nodeUpdate.select("text")
 			.style("fill-opacity", 1);
@@ -2156,54 +2183,99 @@ $.extend(Taxon_tree.prototype, {
 			d.x0 = d.x;
 			d.y0 = d.y;
 		});
-	}
+	},
+	filter: function(search_text) {
+		var self = this;
+		if (search_text) {
+			var find = self.find.call(self, search_text, [self.root]);
+			if(find) {
+				self.update.call(self, self.root, find);
+			} else {
+				// Not found = no change
+				//self.update.call(self, self.root, current.root);
+			}
+		} else {
+			// Empty search text = reset filter
+			self.update.call(self, self.root, self.root);
+		}
+	},
+	find: function(search_text, nodes) {	//nodes is expected to be an array
+		var self = this;
+		//console.log(nodes);
+		var new_nodes = [];
+		if (nodes.length == 0) {
+			return null;
+		}
+		for (var i = 0; i < nodes.length; i++) {
+			var node = nodes[i];
+			if (node.name.toUpperCase() == search_text.toUpperCase()) {
+				return node;
+			}
+			if(node.children) {
+				for (var j = 0; j < node.children.length; j++) {
+					new_nodes.push(node.children[j]);
+				}
+			} else if (node._children) {
+				for (var j = 0; j < node._children.length; j++) {
+					new_nodes.push(node._children[j]);
+				}
+			}
+		}
+		return self.find.call(self, search_text, new_nodes);
+	},
+	color: function(d) {
+		if (d.children) {
+			return "white";
+		} else if (d._children && d._children.length != 0) {
+			return "rgb(154, 205, 50)";
+		} else {
+			//no children, hidden or otherwise
+			return "gray";
+		}
+	},
+	click: function(d) {
+		var self = this;
+		if (d.children) {
+			d._children = d.children;
+			d.children = null;
+		} else {
+			d.children = d._children;
+			d._children = null;
+		}
+		self.update.call(self, d, self.current_root);
+	},
+	double_click: function(d) {
+		var self = this;
+		if (d.children) {
+			self.collapse.call(self, d);
+		} else {
+			self.open.call(self, d);
+		}
+		tree.update.call(self, d, tree.current_root);
+	},
+	collapse: function(d) {
+		var self = this;
+		if (d.children) {
+			d._children = d.children;
+			d._children.forEach(function(d) {
+				self.collapse.call(self, d);
+			});
+			d.children = null;
+		}
+	},
+	open: function(d) {
+		var self = this;
+		if (d._children) {
+			d.children = d._children;
+			d.children.forEach(function(d) {
+				self.open.call(self, d);
+			});
+			d._children = null;
+		}
+	},
 });
 
-function tree_color(d) {
-	if (d.children) {
-		return "white";
-	} else if (d._children && d._children.length != 0) {
-		return "rgb(154, 205, 50)";
-	} else {
-		//no children, hidden or otherwise
-		return "gray";
-	}
-}
-
-//Toggle children on click.
-function tree_click(d) {
-	console.log(d);
-	if (d.children) {
-		d._children = d.children;
-		d.children = null;
-	} else {
-		d.children = d._children;
-		d._children = null;
-	}
-	tree.update.call(tree, d);
-}
-
-function collapse(d) {
-	if (d.children) {
-		d._children = d.children;
-		d._children.forEach(collapse);
-		d.children = null;
-	}
-}
-
-function open(d) {
-	if (d._children) {
-		d.children = d._children;
-		d.children.forEach(open);
-		d._children = null;
-	}
-}
-
-function tree_double_click(d) {
-	if (d.children) {
-		collapse(d);
-	} else {
-		open(d);
-	}
-	tree.update.call(tree, d);
+function filter_tree() {
+	var search_text = $('#tree_filter').val();
+    tree.filter(search_text);
 }
