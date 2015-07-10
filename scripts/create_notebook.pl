@@ -10,12 +10,11 @@ use Getopt::Long qw(GetOptions);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw(to_pathname);
 use CoGe::Core::Notebook qw(create_notebook);
-use CoGe::Core::Metadata qw(create_annotations);
 use CoGe::Core::Storage qw(get_workflow_results add_workflow_result);
 use CoGeX;
 
 our ($log_file, $config_file, $name, $description, $type, $userid, 
-    $restricted, $wid, $annotations);
+    $restricted, $wid);
 
 GetOptions(
     # Required workflow params
@@ -31,7 +30,6 @@ GetOptions(
     "type|t=s"          => \$type,
     "description|d=s"   => \$description,
     "restricted|r=s"    => \$restricted,
-    "annotations=s"     => \$annotations, # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
 );
 
 $| = 1;
@@ -72,27 +70,6 @@ my $notebook = create_notebook(
 unless ($notebook) {
     print STDERR "ERROR: couldn't create notebook\n";
     exit(-1);
-}
-
-# Add annotations to notebook and results
-if ($annotations) {
-    if ($notebook) {
-        CoGe::Core::Metadata::create_annotations(
-            db => $db, 
-            target => $notebook, 
-            annotations => $annotations, 
-            locked => 1
-        );
-    }
-    foreach my $result (@$results) {
-        CoGe::Core::Metadata::create_annotations(
-            db => $db, 
-            target_id => $result->{id}, 
-            target_type => $result->{type}, 
-            annotations => $annotations, 
-            locked => 1
-        );
-    }
 }
 
 # Add notebook to workflow result file
