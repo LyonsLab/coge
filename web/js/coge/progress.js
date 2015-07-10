@@ -77,6 +77,8 @@ var coge = window.coge = (function(namespace) {
 		    	log.html('Initializing ...');
 		    
 		    this.container.dialog('open');
+		    
+		    this.startTime = new Date().getTime();
 		},
 		
 		end: function() {
