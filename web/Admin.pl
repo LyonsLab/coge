@@ -35,7 +35,7 @@ $MAX_SEARCH_RESULTS = 400;
 
 my $node_types = CoGeX::node_types();
 my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
+open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
 
 #print STDERR $node_types->{user};
 
@@ -1766,14 +1766,6 @@ sub get_group_table {
 		my $notebooks = ${$table}{1};
 		my $note_size = 0;
 		foreach my $note_id (keys %$notebooks) {
-
-			#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-			#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-			#	print $fh scalar(keys @filtered_notebooks[0]);
-			#	print $fh "\n";
-			#print $fh Dumper(\%query);
-			#print $fh "\n";
-			#close $fh;	
 			my @filtered_notebooks;
 			if (keys %query) {
 				my %list_query = %query;
@@ -2017,4 +2009,6 @@ sub add_fix {
 	}
 }
 
-close $fh;
+if ($fh) {
+	close $fh;
+}
