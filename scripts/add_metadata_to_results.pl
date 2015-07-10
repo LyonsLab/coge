@@ -3,8 +3,10 @@ use v5.14;
 use strict;
 use warnings;
 
+use File::Path qw(mkpath);
 use Getopt::Long qw(GetOptions);
 
+use CoGe::Accessory::Utils qw(to_pathname);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Core::Metadata qw(create_annotations);
 use CoGe::Core::Storage qw(get_workflow_results);
@@ -56,5 +58,12 @@ foreach my $result (@$results) {
         locked => 1
     );
 }
+
+# Create log file -- signals task completion to JEX
+my $log_path = to_pathname($log_file);
+mkpath($log_path);
+open(my $fh, ">>", $log_file);
+say $fh "All done!";
+close($fh);
 
 exit;
