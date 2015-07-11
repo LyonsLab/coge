@@ -1,16 +1,21 @@
 package CoGe::Services::Data::Genome;
 use base 'CGI::Application';
 
+#
+# This is a legacy endpoint in support of genome loads from the DE.  Need to 
+# migrate the DE to the new API and deprecate this at some point.
+#
+
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Accessory::IRODS;
-use CoGe::Core::Storage qw(create_genome_from_file);
+use CoGe::Core::Storage;
+use CoGe::Builder::CommonTasks;
 use Data::Dumper;
 use JSON qw(decode_json encode_json);
 use URI::Escape::JavaScript qw(escape);
 use File::Path qw(mkpath);
-#use CGI::Application::Plugin::JSON 'to_json';
 
 sub setup {
     my $self = shift;
@@ -119,33 +124,70 @@ sub load {
 	});
 }
 
-sub irods_get_file {
-    my ($src_path, $dest_path) = @_;
+sub create_genome_from_file {
+    my %opts = @_;
+    my $user = $opts{user};
+    my $irods = $opts{irods};
+    my $files = $opts{files};
+    my $metadata = $opts{metadata};
+    #print STDERR "Storage::create_genome_from_file ", Dumper $metadata, " ", Dumper $files, "\n";
 
-    my ($filename)   = $src_path =~ /([^\/]+)\s*$/;
-    my ($remotepath) = $src_path =~ /(.*)$filename$/;
-
-    my $localpath     = 'irods/' . $remotepath;
-    my $localfullpath = $dest_path . $localpath;
-    $localpath .= '/' . $filename;
-    my $localfilepath = $localfullpath . '/' . $filename;
-    print STDERR "irods_get_file $src_path $filename $localfilepath\n";
-
-    my $do_get = 1;
-
-	# Verify checksum -- slow for large files
-    #	if (-e $localfilepath) {
-    #		my $remote_chksum = irods_chksum($path);
-    #		my $local_chksum = md5sum($localfilepath);
-    #		$do_get = 0 if ($remote_chksum ne $local_chksum);
-    #		print STDERR "$remote_chksum $local_chksum\n";
-    #	}
-
-    if ($do_get) {
-        mkpath($localfullpath);
-        CoGe::Accessory::IRODS::irods_iget( $src_path, $localfullpath );
-        return $localfilepath;
+    # Connect to workflow engine and get an id
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+    unless (defined $jex) {
+        return (undef, "Could not connect to JEX");
     }
+
+    # Create the workflow
+    my $workflow = $jex->create_workflow( name => 'Create Genome', init => 1 );
+    unless ($workflow and $workflow->id) {
+        return (undef, 'Could not create workflow');
+    }
+
+    # Setup log file, staging, and results paths
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
+
+    # Create list of files to load
+    my @staged_files;
+    push @staged_files, @$files if ($files);
+
+    # Create jobs to retrieve irods files
+    my %load_params;
+    foreach my $item (@$irods) {
+        next unless ($item->{type} eq 'irods');
+        %load_params = create_iget_job(irods_path => $item->{path}, local_path => $staging_dir);
+        unless ( %load_params ) {
+            return (undef, "Could not create iget task");
+        }
+        $workflow->add_job(\%load_params);
+        push @staged_files, $load_params{outputs}[0];
+    }
+
+    # Create load job
+    my $load_task = create_load_genome_job(
+        user => $self->user,
+        staging_dir => $staging_dir,
+        result_dir => $result_dir,
+        wid => $self->workflow->id,
+        organism_id => $organism->id,
+        input_files => \@staged_files,
+        irods_files => $irods, # for metadata markup
+        metadata => $metadata,
+    );
+    unless ( $load_task ) {
+        return (undef, "Could not create load task");
+    }
+    $workflow->add_job($load_task);
+
+    # Submit the workflow
+    my $result = $jex->submit_workflow($workflow);
+    if ($result->{status} =~ /error/i) {
+        return (undef, "Could not submit workflow");
+    }
+
+    return ($result->{id}, undef);
 }
 
 1;

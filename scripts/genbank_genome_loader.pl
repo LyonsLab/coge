@@ -15,19 +15,19 @@ use POSIX qw(ceil);
 
 my (
     $DEBUG,         $GO,              $autoupdate,  $autoskip,
-    @accns,         $tmpdir,          $help,        $user_chr,
+    @accns,         $staging_dir,     $help,        $user_chr,
     $ds_link,       $delete_src_file, $test,        $auto_increment_chr,
     $base_chr_name, $accn_file,       $max_entries, $user_id,
     $user_name,     $config,          $host,        $port,
     $db,            $dbuser,          $pass,        $install_dir,
-    $server,        $force,           $result_dir
+    $server,        $force,           $result_dir,  $wid
 );
 
 GetOptions(
     "debug"                     => \$DEBUG,
     "go"                        => \$GO,
     "accn|a=s"                  => \@accns,
-    "temp_dir|staging_dir|td=s" => \$tmpdir,
+    "staging_dir=s"             => \$staging_dir,
     "help|h"                    => \$help,
     "user_chr|chr=s"            => \$user_chr,
     "base_chr_name|basechr=s"   => \$base_chr_name,
@@ -41,23 +41,31 @@ GetOptions(
     "max_entries=i"             => \$max_entries,
     "user_id|uid=i"             => \$user_id,       #CoGe user id to which genome is associated
     "user_name=s"               => \$user_name,     #or CoGe user name to which genome is associated
+    "wid=s"                     => \$wid,            # workflow id
     "install_dir=s"             => \$install_dir,   #optional install path for sequences
-    "result_dir=s"              => \$result_dir,    #optional result path for JSON info
+#    "result_dir=s"              => \$result_dir,    #optional result path for JSON info
     "force|f"                   => \$force,         #force the install of a the genome
-
-    # Database params
-    "host=s"        => \$host,
-    "port|p=s"      => \$port,
-    "database|db=s" => \$db,
-    "user|u=s"      => \$dbuser,
-    "password|pw=s" => \$pass,
-
-    # Or use config file
-    "config=s" => \$config
+    "config=s"                  => \$config
 );
 
 $| = 1;
+print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
+
 help() if $help;
+
+# Setup staging path
+unless ($staging_dir) {
+    print STDOUT "log: error: staging_dir argument is missing\n";
+    exit(-1);
+}
+mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
+
+# Prevent loading again (issue #417)
+my $logdonefile = "$staging_dir/log.done";
+if (-e $logdonefile) {
+    print STDOUT "log: error: done file already exists: $logdonefile\n";
+    exit(-1);
+}
 
 $user_chr = 1 unless $user_chr;
 $DEBUG    = 0 unless defined $DEBUG; # set to 1 to enable debug printing
@@ -76,34 +84,15 @@ if ($config) {
     $pass = $P->{DBPASS};
 
     #other stuff
-    $tmpdir      = $P->{TEMPDIR} . "/ncbi/" unless defined $tmpdir;
     $install_dir = $P->{SEQDIR};
     $server      = $P->{SERVER};
 }
 
-$tmpdir = "/tmp/ncbi/" . ceil( rand(9999999999) ) unless $tmpdir; # set default directory to /tmp
-print STDERR "Initializing:  temp dir: ", $tmpdir, "\n";
-mkpath($tmpdir) unless -d $tmpdir;
-unless ( -d $tmpdir ) {
-    print "error: couldn't' create temporary directory ($tmpdir) for writing files\n";
-    exit(-1);
-}
-
-# Open log file
-$| = 1;
-#my $logfile = "$tmpdir/log.txt";
-#print STDERR "Logfile: $logfile\n";
-#open( my $log, ">>$logfile" ) or die "Error opening log file $logfile";
-#$log->autoflush(1);
-print STDOUT "Starting $0 (pid $$)\n";
-
 # Connect to database
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port";
-my $coge    = CoGeX->connect( $connstr, $dbuser, $pass );
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
+my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
+my $coge = CoGeX->connect( $connstr, $dbuser, $pass );
 unless ($coge) {
-    print STDOUT "log: error: couldn't connect to database\n";
+    print STDOUT "log: couldn't connect to database\n";
     exit(-1);
 }
 
@@ -176,7 +165,7 @@ accn: foreach my $accn (@accns) {
     $genbank->logfile(*STDOUT);
     $genbank->max_entries($max_entries) if $max_entries;
     $genbank->get_genbank_from_ncbi(
-        file => "$tmpdir/$accn.gbk",
+        file => "$staging_dir/$accn.gbk",
         accn => $accn
     );
     if ( !$genbank->sequence && !@{ $genbank->wgs_data } ) {
@@ -633,9 +622,7 @@ accn: foreach my $accn (@accns) {
 
             print STDOUT "log: Added genome id", $genome->id, "\n"; # !!!! don't change, gets parsed by calling code
             print STDOUT "Creating install path for sequences ...\n";
-            $install_dir =
-              "$install_dir/"
-              . CoGe::Core::Storage::get_tiered_path( $genome->id ) . "/";
+            $install_dir = catdir($install_dir, CoGe::Core::Storage::get_tiered_path( $genome->id ));
             if ($GO) {
                 mkpath($install_dir);
                 unless ( -d $install_dir ) {
@@ -674,26 +661,8 @@ accn: foreach my $accn (@accns) {
         print STDOUT "Deleting genbank src file: " . $genbank->srcfile . "\n";
         my $cmd = "rm " . $genbank->srcfile;
         `$cmd`;
-
-        #   `rm /tmp/gb/*`;
+        #`rm /tmp/gb/*`;
     }
-}
-
-unless ($genome) {
-    print STDOUT "log: No new datasets to load, see links above to existing ones\n";
-
-    # Save result document
-    if ($result_dir) {
-        mkpath($result_dir);
-        CoGe::Accessory::TDS::write(
-            catfile($result_dir, '1'),
-            {
-                links => \@links_to_existing
-            }
-        );
-    }
-
-    exit(-1);
 }
 
 #need to add previous datasets if new dataset was added to a genome
@@ -730,13 +699,13 @@ if ($GO) {
         }
     }
 }
-my $output_file = $install_dir . "/genome.faa";
+my $output_file = catfile($install_dir, "genome.faa");
 print STDOUT "log: Creating output sequence file and indexing\n";
+print STDOUT "file: $output_file\n";
 add_and_index_sequence( fasta => $fasta_output, file => $output_file ) if $GO;
 
 # Make user owner of new genome
 if ( $GO && $user ) {
-
     # mdb removed 6/17/14 issue 394 - don't create a user connector for NCBI loaded genomes
     #my $node_types = CoGeX::node_types();
     #my $conn       = $coge->resultset('UserConnector')->create(
@@ -763,23 +732,41 @@ if ( $GO && $user ) {
 #    );
 }
 
-# Save result document
-if ($result_dir) {
-    mkpath($result_dir);
-    CoGe::Accessory::TDS::write(
-        catfile($result_dir, '1'),
+# Save result
+unless (add_workflow_result($user_name, $wid, 
         {
-            genome_id => int($genome->id),
-            links => \@links_to_existing
-        }
-    );
+            type           => 'genome',
+            id             => int($genome->id),
+            name           => $genome->name,
+            description    => $genome->description,
+            info           => $genome->info,
+            version        => $genome->version,
+            link           => $genome->link,
+            links          => \@links_to_existing,
+            organism_id    => $genome->organism_id,
+            restricted     => $genome->restricted
+        })
+    )
+{
+    print STDOUT "log: error: could not add workflow result\n";
+    exit(-1);
 }
 
-print STDOUT "log: Finished loading genome!\n";
-#close($log);
+# Add genome ID to log - mdb added 7/8/15, needed after log output was moved to STDOUT for jex
+my $logtxtfile = "$staging_dir/log.txt";
+open(my $logh, '>', $logtxtfile);
+print $logh "genome id: " . $genome->id . "\n";
+close($logh);
+
+# Save workflow_id in genome data path -- #TODO move into own routine in Storage.pm
+CoGe::Accessory::TDS::write(
+    catfile($install_dir, 'metadata.json'),
+    {
+        workflow_id => int($wid)
+    }
+);
 
 # Create "log.done" file to indicate completion to JEX
-my $logdonefile = "$tmpdir/log.done";
 touch($logdonefile);
 
 exit;
@@ -797,8 +784,7 @@ sub add_and_index_sequence {
         exit;
     }
     if ( -r $file ) {
-        print STDOUT
-"log: error:  $file already exists.  Will not overwrite existing sequence.  Fatal error!\n";
+        print STDOUT "log: error:  $file already exists.  Will not overwrite existing sequence.  Fatal error!\n";
         exit(-1);
     }
     open( OUT, ">$file" ) || die "Died: can't open $file for writing: !$\n";
@@ -835,7 +821,7 @@ sub fasta_genomic_sequence {
         print STDOUT "$chr has previously been added to this genome.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
         return;
     }
-    print STDOUT "Loading genomic sequence ($seqlen nt)\n";    # if $DEBUG;
+    print STDOUT "Loading genomic sequence ($seqlen nt)\n";
 
 # no longer add to db, we use the index file instead. not sure if the rest of fasta_genomic_sequence is necessary
 #    $genome->add_to_genomic_sequences(
