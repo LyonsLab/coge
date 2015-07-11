@@ -20,11 +20,9 @@ use vars qw(
 
 my $DELIMITER = '\t';
 
-#-------------------------------------------------------------------------------
-
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
-    "result_dir=s"  => \$result_dir,     # results path
+#    "result_dir=s"  => \$result_dir,     # results path
     "files=s"       => \$file_str,       # input data file (JS escape)
     "name=s"        => \$notebook_name,  # notebook name (JS escaped) if not nid
     "desc=s"        => \$notebook_desc,  # notebook description (JS escaped)
@@ -36,9 +34,21 @@ GetOptions(
 );
 
 $| = 1;
-die unless ($staging_dir);
-mkpath($staging_dir) unless -r $staging_dir;
-print "Starting $0 (pid $$)\n", qx/ps -o args $$/;
+print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
+
+# Setup staging path
+unless ($staging_dir) {
+    print STDOUT "log: error: staging_dir argument is missing\n";
+    exit(-1);
+}
+mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
+
+# Prevent loading again (issue #417)
+my $logdonefile = "$staging_dir/log.done";
+if (-e $logdonefile) {
+    print STDOUT "log: error: done file already exists: $logdonefile\n";
+    exit(-1);
+}
 
 # Process and verify parameters
 $file_str      = unescape($file_str);
@@ -145,27 +155,27 @@ unless ($metadata) {
 }
 print "METADATA:\n", Dumper($metadata), "\n";
 
-#------------------------------------------------------------------------------
-
 # Load each data file
 ($notebook, my $items) = process_dir($data_dir, $metadata, $notebook);
 
-# Save result document
-if ($result_dir) {
-    mkpath($result_dir);
-    CoGe::Accessory::TDS::write(
-        catfile($result_dir, '1'),
+# Save result
+unless (add_workflow_result($user_name, $wid, 
         {
-            genome_id => int($genome->id),
-            notebook_id => int($notebook->id),
-            #experiments => $exp_ids
-        }
-    );
+            type        => 'notebook',
+            id          => int($notebook->id),
+            name        => $notebook->name,
+            description => $notebook->description,
+            genome_id   => int($genome->id)
+        })
+    )
+{
+    print STDOUT "log: error: could not add workflow result\n";
+    exit(-1);
 }
 
 # Create "log.done" file to indicate completion to JEX
-my $logdonefile = "$staging_dir/log.done";
 touch($logdonefile);
+print STDOUT "All done!\n";
 
 exit;
 
