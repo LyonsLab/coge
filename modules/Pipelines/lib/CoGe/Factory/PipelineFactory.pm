@@ -6,6 +6,9 @@ use CoGe::Builder::Export::Fasta;
 use CoGe::Builder::Export::Gff;
 use CoGe::Builder::Export::Experiment;
 use CoGe::Builder::Load::Experiment;
+use CoGe::Builder::Load::BatchExperiment;
+use CoGe::Builder::Load::Genome;
+use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
 
 has 'db' => (
@@ -53,6 +56,15 @@ sub get {
     }
     elsif ($message->{type} eq "load_experiment") {
         $builder = CoGe::Builder::Load::Experiment->new($request);
+    }
+    elsif ($message->{type} eq "load_batch") {
+        $builder = CoGe::Builder::Load::BatchExperiment->new($request);
+    }
+    elsif ($message->{type} eq "load_genome") {
+        $builder = CoGe::Builder::Load::Genome->new($request);
+    }
+    elsif ($message->{type} eq "load_annotation") {
+        $builder = CoGe::Builder::Load::Annotation->new($request);
     }
     elsif ($message->{type} eq "analyze_snps") {
         $builder = CoGe::Builder::SNP::IdentifySNPs->new($request);
