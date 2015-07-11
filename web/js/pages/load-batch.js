@@ -1,173 +1,3 @@
-//function load_batch() {
-//	// Validate data items
-//	var items = get_selected_files();
-//	if (items == null) {
-//		error_help('Files are still being transferred, please wait.');
-//		return;
-//	}
-//	else if (items.length == 0) {
-//		error_help('Please select some sequence files by clicking <b>Add Data</b>.');
-//		return;
-//	}
-//	var json = JSON.stringify(items);
-//	
-//	// Validate other fields
-//    var name = $('#edit_name').val();
-//    var description = $('#edit_description').val();
-//
-//    if (!genome_id) {
-//    	error_help('Please specify a genome.');
-//        return;
-//    }
-//    
-//    if (!name) {
-//    	error_help('Please specify a name.');
-//        return;
-//    }
-//
-//    var items = get_selected_files();
-//    if (items == null) {
-//    	error_help('Files are still being transferred, please wait.');
-//        return;
-//    }
-//    else if (items.length == 0) {
-//    	error_help('Please select a data file.');
-//        return;
-//    }
-//
-//    var assignee_user_name = $('#edit_user').val(); // input only exists if admin
-//
-//    // if Notebook field was cleared then ignore it and create new one based on name
-//    if ( !$('#edit_notebook').val() )
-//    	notebook_id = '';
-//    
-//    // Prevent concurrent executions - issue 101
-//    if ( $("#load_dialog").dialog( "isOpen" ) )
-//        return;
-//
-//    // Make sure user is still logged-in - issue 206
-//    if (!check_login()) {
-//        alert('Your session has expired, please log in again.');
-//        location.reload(true)
-//        return;
-//    }
-//
-//    // Open status dialog right away - issue 101
-//    reset_log();
-//    $('#load_dialog').dialog('open');
-//    $('#load_log').html('Initializing ...');
-//    newLoad = true;
-//
-//    $.ajax({
-//        data: {
-//            fname: 'load_batch',
-//            load_id: load_id,
-//            name: name,
-//            description: description,
-//            gid: genome_id,
-//            nid: notebook_id,
-//            assignee_user_name: assignee_user_name,
-//            items: json,
-//            timestamp: new Date().getTime()
-//        },
-//        success : function(data) {
-//            var obj = jQuery.parseJSON(data);
-//            if (obj && obj.error) {
-//                alert(obj.error);
-//                return;
-//            }
-//
-//            // Set link in status dialog
-//            $('#loading_msg span a').attr('href', obj.link).html(obj.link);
-//
-//            // Start status update
-//            if (obj.job_id) { // JEX status for load FASTQ
-//                job_id = obj.job_id;
-//                window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
-//                update_dialog(STATUS_URL + obj.job_id,  user_name, "#load_dialog", progress_formatter);
-//            }
-//        }
-//        // TODO: handle error, show in status dialog
-//    });
-//}
-//
-//function get_load_log(callback) {
-//    $.ajax({
-//        data: {
-//            dataType:    'text',
-//            fname:       'get_load_log',
-//            workflow_id: job_id,
-//            timestamp:   new Date().getTime()
-//        },
-//        success : function(data) {
-//            if (callback) {
-//            	var obj = jQuery.parseJSON(data);
-//                callback(obj);
-//                return;
-//            }
-//        }
-//    });
-//}
-//
-//function load_failed(logfile){
-//	// mdb added 6/24/14 - temporary message until JEX logging is improved
-//	var msg =
-//		'<div class="alert">' +
-//		'The CoGe Support Team has been notified of this error but please ' + 
-//		'feel free to contact us at <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> ' +
-//		'and we can help to determine the cause.' +
-//		'</div>';
-//	var log = $('#load_log');
-//	log.html( log.html() + msg );
-//
-//    if (logfile) {
-//        $("#logfile a").attr("href", logfile);
-//        $('#logfile').fadeIn();
-//    }
-//
-//    // Update dialog
-//    $('#loading_msg').hide();
-//    $('#error_msg').fadeIn();
-//    $('#cancel_load_button').fadeIn();
-//
-//
-//    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
-//	    $.ajax({
-//	        data: {
-//	            fname: "send_error_report",
-//	            load_id: load_id,
-//	            job_id: job_id
-//	        }
-//	    });
-//    }
-//}
-//
-//function load_succeeded(obj) {
-//    // Update globals
-//	batch_id = obj.batch_id;  // for continuing to ExperimentView
-//    notebook_id = obj.notebook_id;      // for continuing to NotebookView
-//
-//    // Update dialog
-//
-//    $('#loading_msg').hide();
-//    $('#finished_msg').fadeIn();
-//    $('#ok_button').fadeIn();
-//    if (notebook_id) { // qTeller pipeline experiment load
-//        $('#finish_load_button')
-//            .html('NotebookView').fadeIn()
-//            .unbind().on('click', function() {
-//                window.location.href = "NotebookView.pl?nid=" + notebook_id;
-//        });
-//    }
-//    else { // normal experiment load
-//        $('#finish_load_button')
-//            .html('ExperimentView').fadeIn()
-//            .unbind().on('click', function() {
-//                window.location.href = "ExperimentView.pl?eid=" + experiment_id;
-//        });
-//    }
-//}
-
 function BatchDescriptionView(opts) {
     this.batch = opts.batch;
     this.metadata = opts.metadata;
@@ -184,8 +14,6 @@ $.extend(BatchDescriptionView.prototype, {
         this.edit_genome = this.el.find("#edit_genome");
 
         if (this.metadata) {
-            this.el.find('#edit_name').val(this.metadata.name);
-            this.el.find('#edit_description').val(this.metadata.description);
             this.el.find('#edit_genome').val(this.metadata.genome);
         }
     },
@@ -216,16 +44,8 @@ $.extend(BatchDescriptionView.prototype, {
     },
 
     is_valid: function() {
-        var name = this.el.find('#edit_name').val();
-        var description = this.el.find('#edit_description').val();
         var genome = this.el.find('#edit_genome').val();
 
-        if (!name) {
-            if (this.onError)
-            	this.onError('Please specify an experiment name.');
-            return false;
-        }
-        
         if (!genome || genome === 'Search' || !this.gid) {
         	if (this.onError)
             	this.onError('Please specify a genome.');
@@ -234,8 +54,6 @@ $.extend(BatchDescriptionView.prototype, {
 
        $.extend(this.batch, {
             metadata: {
-                name: name,
-                description: description,
                 genome: genome,
             },
             gid: this.gid
@@ -245,6 +63,175 @@ $.extend(BatchDescriptionView.prototype, {
     },
 });
 
+function GeneralOptionsView(opts) {
+    this.data = {};
+    this.initialize();
+    this.onError = opts.onError;
+}
+
+$.extend(GeneralOptionsView.prototype, {
+    initialize: function() {
+        this.el = $($("#general-options-template").html());
+        this.edit_notebook = this.el.find("#edit_notebook");
+        this.notebook_container = this.el.find("#notebook-container");
+    },
+
+    is_valid: function() {
+        var notebook = this.edit_notebook.val();
+
+        this.data.notebook = this.el.find("#notebook").is(":checked");
+        this.data.notebook_type = this.el.find("[name=notebook] :checked").val();
+        this.data.notebook_name = notebook;
+        this.data.notebook_id = this.notebook_id;
+        this.data.email = this.el.find("#email").is(":checked");
+
+        if (this.data.notebook && this.data.notebook_type === "existing" && 
+        		(!notebook || notebook === 'Search' || !this.notebook_id)) 
+        {
+        	if (this.onError)
+            	this.onError('Please specify a notebook.');
+            return false;
+        }
+
+        return true;
+    },
+
+    get_options: function() {
+        return this.data;
+    },
+    
+    render: function() {
+        var self = this;
+
+        // jQuery Events
+        this.el.find("#notebook").unbind().change(this.toggleNotebook.bind(this));
+        this.el.find("[name=notebook]").unbind().click(function() {
+        	var option = $(this).val();
+        	self.edit_notebook.prop("disabled", (option === 'new' ? true : false));
+        });
+        this.edit_notebook.unbind().change(function() {
+            // Reset notebook_id when item has changed
+            self.notebook_id = undefined;
+        });
+
+        // jQuery UI
+        this.edit_notebook.autocomplete({
+            source:[],
+            select: function(event, ui) {
+                $(this).val(ui.item.label);
+                self.notebook_id = ui.item.value;
+                return false; // Prevent the widget from inserting the value.
+            },
+
+            focus: function(event, ui) {
+                return false; // Prevent the widget from inserting the value.
+            }
+        });
+    },
+    
+    toggleNotebook: function() {
+        this.notebook_enabled = this.el.find("#notebook").is(":checked");
+
+        if (this.notebook_enabled) 
+            this.notebook_container.slideDown();
+        else 
+            this.notebook_container.slideUp();
+    }
+});
+
+function AdminOptionsView() {
+    this.data = {};
+    this.initialize();
+}
+
+$.extend(AdminOptionsView.prototype, {
+    initialize: function() {
+        this.el = $($("#admin-options-template").html());
+        this.edit_user = this.el.find("#edit_user");
+    },
+
+    render: function() {
+        // jQuery UI
+        this.edit_user.unbind().autocomplete({
+            source:[],
+            focus: function() { return false; },
+        });
+    },
+
+    is_valid: function() {
+        //var ignore_cb = this.el.find('#ignore_missing_chrs');
+        //this.ignore_missing_chrs = ignore_cb.is(':checked');
+        if (this.edit_user.val()) {
+            this.data.user = this.edit_user.val();
+        }
+
+        return true;
+    },
+
+    get_options: function() {
+        return this.data;
+    }
+});
+
+function OptionsView(opts) {
+    this.batch = opts.batch;
+    this.admin = opts.admin;
+    this.onError = opts.onError;
+    this.title = "Options";
+    this.initialize();
+}
+
+$.extend(OptionsView.prototype, {
+    initialize: function() {
+        this.admin_view = new AdminOptionsView();
+        this.general_view = new GeneralOptionsView({onError: this.onError});
+        this.layout_view = new LayoutView({
+            template: "#options-layout-template",
+            layout: {
+                "#general-options": this.general_view
+            }
+        });
+
+        if (this.admin)
+            this.layout_view.updateLayout({"#admin-options": this.admin_view});
+
+        this.el = this.layout_view.el;
+        
+        this.batch.options = {};
+    },
+
+    // Validate and add all options to the batch
+    is_valid: function() {
+        if (!this.general_view.is_valid())
+            return false;
+
+        var options = $.extend({}, this.general_view.get_options());
+        if (this.admin) {
+            if (!this.admin_view.is_valid())
+                return false;
+            $.extend(options, this.admin_view.get_options());
+        }
+
+        $.extend(this.batch.options, options);
+        return true;
+    },
+
+    render: function() {
+        var file_type = this.batch.data[0].file_type;
+        if (!file_type) {
+            if (this.onError)
+            	this.onError("Please set the file type.");
+            return;
+        }
+
+        this.layout_view.updateLayout(
+            {"#analysis-options": this.analysis_view}
+        );
+
+        // Render the views added to the layout view
+        this.layout_view.renderLayout();
+    }
+});
 
 function render_template(template, container) {
     container.empty()
@@ -309,7 +296,7 @@ function search_users (search_term) {
 function search_notebooks (search_term) {
 	coge.services.search_notebooks(
 		search_term, 
-		user_name, 
+		USER_NAME, 
 		function(obj) {
 			var notebooks = obj.notebooks;
 			if (notebooks && notebooks.length > 0) {
@@ -390,13 +377,19 @@ function reset_load() {
 function initialize_wizard(opts) {
     current_batch = {};
     var root = $("#wizard-container");
-    var wizard = new Wizard({ 
+    var wizard = new Wizard({
     	onCompleted: load, 
     	data: current_batch, 
     	helpUrl: opts.helpUrl 
     });
+    wizard.addStep(new BatchDescriptionView({
+        batch: current_batch,
+        metadata: opts.metadata,
+        gid: opts.gid,
+        onError: wizard.error_help.bind(wizard)
+    }));
     wizard.addStep(new DataView(current_batch, { supportedFileTypes: ['gz'], onError: wizard.error_help.bind(wizard) }));
-    //wizard.addStep(new OptionsView({batch: current_batch, admin: opts.admin, onError: wizard.error_help }));
+    wizard.addStep(new OptionsView({ batch: current_batch, admin: opts.admin, onError: wizard.error_help.bind(wizard) }));
     wizard.addStep(new ConfirmationView(current_batch));
 
     // Render all the wizard sub views
