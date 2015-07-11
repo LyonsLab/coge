@@ -56,7 +56,7 @@ var coge = window.coge = (function(namespace) {
 			var c = this.container;
 			c.find('.log,.progress-link').html('');
 			c.find('.msg').show('');
-		    c.find('.ok,.error,.finished,.done,.cancel,.logfile').hide();
+		    c.find('.ok,.error,.finished,.done,.cancel,.logfile,.buttons').hide();
 		},
 			
 		begin: function(opts) {
@@ -86,19 +86,17 @@ var coge = window.coge = (function(namespace) {
 			this.container.dialog('close');
 		},
 		
-		succeeded: function(string) {
+		succeeded: function(results) {
 			var c = this.container;
 			
 		    // Update dialog
 		    c.find('.msg,.progress-link').hide();
 		    c.find('.finished').fadeIn();
-		    if (string)
-		    	c.find('.log').append(string)
 		    	
 		    // Show user-specified button template
 		    if (this.buttonTemplate) {
 		    	var template = $($("#"+this.buttonTemplate).html());
-		    	c.find('.buttons').append(template);
+		    	c.find('.buttons').html(template).fadeIn();
 		    }
 		    else { // default buttons
 		    	c.find('.ok').fadeIn();
@@ -106,15 +104,25 @@ var coge = window.coge = (function(namespace) {
 		    
 		    // User callback
 		    if (this.onSuccess)
-		    	this.onSuccess();
+		    	this.onSuccess(results);
+		},
+		
+		errorToString: function(error) {
+			var string = '';
+			for (key in error) {
+				string += error[key];
+			}
+			return string;
 		},
 
-		failed: function(string) {
+		failed: function(string, error) {
 			var c = this.container;
+			
+			var errorMsg = string + (error ? ': ' + this.errorToString(error) : '');
 			
 			// Show error message
 		    c.find('.log')
-		    	.append('<div class="alert">' + string + '</div><br>')
+		    	.append('<div class="alert">' + errorMsg + '</div><br>')
 		    	.append(
 		    		'<div class="alert">' +
 			        'The CoGe Support Team has been notified of this error but please ' +
@@ -314,6 +322,14 @@ var coge = window.coge = (function(namespace) {
 			else if (result.type === 'notebook') {
 				var url = 'NotebookView.pl?nid=' + result.id;
 				return "<div><a href='"+url+"'><img src='picts/notebook-icon.png' width='15' height='15'/> Notebook '"+result.name+"'</a></div>";
+			}
+			else if (result.type === 'genome') {
+				var url = 'GenomeInfo.pl?gid=' + result.id;
+				return "<div><a href='"+url+"'><img src='picts/dna-icon.png' width='15' height='15'/> Genome '"+result.info+"'</a></div>";
+			}
+			else if (result.type === 'dataset') {
+				var url = 'GenomeInfo.pl?dsid=' + result.id;
+				return "<div><a href='"+url+"'> Dataset '"+result.name+"'</a></div>";				
 			}
 		},
 		
