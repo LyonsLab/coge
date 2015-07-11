@@ -274,7 +274,7 @@ sub get_genome_seq {
         unless ($fasta) {
             	# remove header line
             	$seq =~ s/^(?:.*\n)//;
-#2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing
+                #2/17/14:  Note by EL:  THere is a problem where the following type sof regex sbustitutions fail if the string is longer then about 1G (http://www.perlmonks.org/?node_id=754854).  Need to take these strings and divide them into smaller pieces for processing
 
         	my @groups;
         	my $seq_length = length($seq);
