@@ -8,7 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_irods_path get_irods_file);
+use CoGe::Core::Storage qw(get_workflow_paths get_irods_path get_irods_file get_upload_path);
 use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
@@ -27,7 +27,7 @@ no warnings 'redefine';
 
 use vars qw(
   $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM $LINK $EMBED
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $JOB_ID
+  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $WORKFLOW_ID
 );
 
 $PAGE_TITLE = 'LoadBatch';
@@ -41,9 +41,11 @@ $FORM = new CGI;
 $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 $BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 
-$JOB_ID  = $FORM->Vars->{'job_id'};
+# Get workflow_id and load_id for previous load if specified.  Otherwise
+# generate a new load_id for data upload.
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 
 $EMBED = $FORM->param('embed');
 
@@ -58,7 +60,6 @@ $MAX_SEARCH_RESULTS = 100;
     load_batch              => \&load_batch,
     search_genomes          => \&search_genomes,
     search_users            => \&search_users,
-    get_load_log            => \&get_load_log,
     check_login			    => \&check_login,
     send_error_report       => \&send_error_report
 );
@@ -66,17 +67,17 @@ $MAX_SEARCH_RESULTS = 100;
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    # Check for finished result
-    if ($JOB_ID) {
-        my $log = get_load_log(workflow_id => $JOB_ID);
-        if ($log) {
-            my $res = decode_json($log);
-            if ($res->{notebook_id}) {
-                my $url = 'NotebookView.pl?nid=' . $res->{notebook_id};
-                print $FORM->redirect(-url => $url);
-            }
-        }
-    }
+    # Check for finished result # mdb removed 3/4/15 no longer auto-redirect, make user select result
+#    if ($JOB_ID) {
+#        my $log = get_load_log(workflow_id => $JOB_ID);
+#        if ($log) {
+#            my $res = decode_json($log);
+#            if ($res->{notebook_id}) {
+#                my $url = 'NotebookView.pl?nid=' . $res->{notebook_id};
+#                print $FORM->redirect(-url => $url);
+#            }
+#        }
+#    }
     
     my $template;
 
@@ -107,22 +108,17 @@ sub generate_html {
 
 sub generate_body {
     if ( $USER->user_name eq 'public' ) {
-        my $template =
-          HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-        $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
-        $template->param( LOGIN     => 1 );
+        my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        $template->param( PAGE_NAME => "$PAGE_TITLE.pl",
+                          LOGIN     => 1 );
         return $template->output;
     }
-
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-    $template->param( MAIN      => 1 );
-    $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+    
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 
     my $gid = $FORM->param('gid');
     if ($gid) {
         my $genome = $coge->resultset('Genome')->find($gid);
-
         #TODO check permissions
         if ($genome) {
             $template->param(
@@ -131,73 +127,66 @@ sub generate_body {
             );
         }
     }
-
     $template->param(
-        EMBED       => $EMBED,
-    	LOAD_ID     => $LOAD_ID,
-    	JOB_ID      => $JOB_ID,
-        STATUS_URL  => 'api/v1/jobs/',
+        MAIN          => 1,
+        PAGE_TITLE    => $PAGE_TITLE,
+        PAGE_NAME     => "$PAGE_TITLE.pl",
+        EMBED         => $EMBED,
+        LOAD_ID       => $LOAD_ID,
+        WORKFLOW_ID   => $WORKFLOW_ID,
+        API_BASE_URL  => 'api/v1/', #TODO move into config file or module
+        HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadBatch',
+        SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
         USER                     => $USER->user_name
     );
+    $template->param( SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
+                      SPLASH_CONTENTS    => 'This page allows you to load a set of experiments onto a genome from a variety of file formats.' );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
 }
 
 sub irods_get_path {
-    my %opts = @_;
-    my $path = $opts{path};
+    my %opts      = @_;
+    my $path      = $opts{path};
     $path = unescape($path);
-    print STDERR "irods_get_path ", $path, "\n";
-    
-    unless ($path) {
-        my $username = $USER->name;
-        my $basepath = CoGe::Accessory::Web::get_defaults()->{IRODSDIR};
-        $basepath =~ s/\<USER\>/$username/;
-        $path = $basepath;
-    }
-    
-    my $result = get_irods_path($path);
-    
-    if ($result->{error}) {
-        # Test for recent new account.  The iPlant IRODS isn't ready for a few
-        # minues the first time a user logs into CoGe.
-        # mdb added 3/31/14
-        my $isNewAccount = 0;
-        if ($USER->date ne '0000-00-00 00:00:00') {
-            my $dt_user = DateTime::Format::MySQL->parse_datetime( $USER->date );
-            my $dt_now = DateTime->now( time_zone => 'America/Phoenix' );
-            my $diff = $dt_now->subtract_datetime($dt_user);
-            my ( $years, $months, $days, $hours, $minutes ) = $diff->in_units('years', 'months', 'days', 'hours', 'minutes');
-            $isNewAccount = (!$years && !$months && !$days && !$hours && $minutes < 5) ? 1 : 0;
-        }
+    #print STDERR "irods_get_path: $path\n";
+    my $username = $USER->name;
+    my $basepath = $P->{IRODSDIR};
+    $basepath =~ s/\<USER\>/$username/;
+    $path = $basepath unless $path;
 
-        # Send support email
-        if (!$isNewAccount) {
-            my $email = $P->{SUPPORT_EMAIL};
-            my $body =
-                "irods ils command failed\n\n"
-              . 'User: '
-              . $USER->name . ' id='
-              . $USER->id . ' '
-              . $USER->date . "\n\n"
-              . $result->{error} . "\n\n"
-              . $P->{SERVER};
-            CoGe::Accessory::Web::send_email(
-                from    => $email,
-                to      => $email,
-                subject => "System error notification",
-                body    => $body
-            );
-        }
-        return encode_json($result);
+    if ( $path !~ /^$basepath/ ) {
+        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
+        return;
     }
 
-    return encode_json({ path => $path, items => $result->{items} });
+    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
+    #print STDERR "irods_get_path ", Dumper $result, "\n";
+    my $error  = $result->{error};
+    if ($error) {
+        my $email = $P->{SUPPORT_EMAIL};
+        my $body =
+            "irods ils command failed\n\n"
+          . 'User: '
+          . $USER->name . ' id='
+          . $USER->id . ' '
+          . $USER->date . "\n\n"
+          . $error . "\n\n"
+          . $P->{SERVER};
+        CoGe::Accessory::Web::send_email(
+            from    => $email,
+            to      => $email,
+            subject => "System error notification from $PAGE_TITLE",
+            body    => $body
+        );
+        return encode_json( { error => $error } );
+    }
+    return encode_json( { path => $path, items => $result->{items} } );
 }
 
 sub irods_get_file {
@@ -208,7 +197,7 @@ sub irods_get_file {
     
     my $result = get_irods_file($path, $TEMPDIR);
 
-    return encode_json( { path => $result->{localpath}, size => $result->{size} } );
+    return encode_json( { path => $result->{path}, size => $result->{size} } );
 }
 
 sub load_from_ftp {
@@ -337,19 +326,18 @@ sub upload_file {
     my $filename  = '' . $FORM->param('input_upload_file');
     my $fh        = $FORM->upload('input_upload_file');
 
-    #	print STDERR "upload_file: $filename\n";
+    #   print STDERR "upload_file: $filename\n";
 
     my $size = 0;
     my $path;
     if ($fh) {
-        my $tmpfilename =
-          $FORM->tmpFileName( $FORM->param('input_upload_file') );
-        $path = 'upload/' . $filename;
-        my $targetpath = $TEMPDIR . 'upload/';
+        my $tmpfilename = $FORM->tmpFileName( $FORM->param('input_upload_file') );
+        $path = catfile('upload', $filename);
+        my $targetpath = catdir($TEMPDIR, 'upload');
         mkpath($targetpath);
-        $targetpath .= $filename;
+        $targetpath = catfile($targetpath, $filename);
 
-        #		print STDERR "temp files: $tmpfilename $targetpath\n";
+        #print STDERR "temp files: $tmpfilename $targetpath\n";
         copy( $tmpfilename, $targetpath );
         $size = -s $fh;
     }
@@ -430,30 +418,6 @@ sub check_login {
 #
 #    return encode_json({ job_id => $workflow_id, link => $tiny_link });
 #}
-
-sub get_load_log {
-    my %opts         = @_;
-    my $workflow_id = $opts{workflow_id};
-    return unless $workflow_id;
-    #TODO authenticate user access to workflow
-
-    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
-    return unless (-r $results_path);
-
-    my $result_file = catfile($results_path, '1');
-    return unless (-r $result_file);
-
-    my $result = CoGe::Accessory::TDS::read($result_file);
-    return unless $result;
-
-    my $notebook_id = (exists $result->{notebook_id} ? $result->{notebook_id} : undef);
-
-    return encode_json(
-        {
-            notebook_id => $notebook_id
-        }
-    );
-}
 
 sub search_genomes
 {    # FIXME: common with LoadAnnotation et al., move into web service
