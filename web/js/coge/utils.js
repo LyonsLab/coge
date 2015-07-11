@@ -106,7 +106,7 @@ var coge = window.coge = (function(ns) {
     	        }
     	    }
     	    return str;
-    	}
+    	},
     };
 
     return ns;
