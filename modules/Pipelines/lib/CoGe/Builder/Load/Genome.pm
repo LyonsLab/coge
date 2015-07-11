@@ -3,12 +3,10 @@ package CoGe::Builder::Load::Genome;
 use Moose;
 
 use Data::Dumper qw(Dumper);
-use Switch;
 use File::Spec::Functions qw(catfile);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
-use CoGe::Core::Notebook qw(load_notebook);
 use CoGe::Builder::CommonTasks;
 
 sub build {
@@ -26,7 +24,7 @@ sub build {
     # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
     $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
 
-    # Get genome
+    # Get organism
     my $organism = $self->db->resultset('Organism')->find($organism_id);
     return unless $organism;
     
@@ -48,11 +46,12 @@ sub build {
     #
     # Build workflow
     #
-    my (@tasks, @input_files, @done_files, @additional_metadata);
+    my (@tasks, @input_files, @done_files, @ncbi_accns);
     
     # Create tasks to retrieve files #TODO Merge with Load/Experiment.pm
     my $upload_dir = get_upload_path($self->user->name, $load_id);
     foreach my $item (@$data) {
+        my $path = $item->{path};
         my $type = lc($item->{type});
         my $task;
         
@@ -60,41 +59,57 @@ sub build {
         # via the LoadGenome page.  
         #TODO Change the LoadGenome page to not actually transfer files in
         # an apache process -- instead let it be done here in the workflow.
-        my $filepath = catfile($upload_dir, $item->{path});
+        my $filepath = catfile($upload_dir, $path);
         if (-r $filepath) {
             push @input_files, $filepath;
             next;
         }
         
-        # Create task based on source type (IRODS, HTTP, FTP)
+        # Create task based on source type (IRODS, HTTP/FTP, NCBI)
         if ($type eq 'irods') {
-            my $irods_path = $item->{path};
+            my $irods_path = $path;
             $irods_path =~ s/^irods//; # strip of leading "irods" from LoadGenome page # FIXME remove this in FileSelect
             $task = create_iget_job(irods_path => $irods_path, local_path => $upload_dir);
-            return unless $task;
         }
         elsif ($type eq 'http' or $type eq 'ftp') {
             #TODO
         }
+        elsif ($type eq 'ncbi') { # NCBI accession number
+            $path =~ s/\.\d+$//; # strip off version number
+            push @ncbi_accns, $path;
+        }
         
         # Add task to workflow
-        $self->workflow->add_job($task);
-        push @input_files, $task->{outputs}[0];
+        if ($task) {
+            $self->workflow->add_job($task);
+            push @input_files, $task->{outputs}[0];
+        }
     }
     
-    # Submit workflow to generate genome
-    my $job = create_load_genome_job(
-        user => $self->user,
-        staging_dir => $staging_dir,
-        result_dir => $result_dir,
-        wid => $self->workflow->id,
-        gid => $genome->id,
-        input_file => $input_files[0],
-        metadata => $metadata,
-        normalize => $self->params->{normalize} ? $self->params->{normalize_method} : 0
-    );
-    push @tasks, $job;
-    push @done_files, $job->{outputs}->[1];
+    # Submit workflow to add genome
+    if (@ncbi_accns) { # NCBI-based load
+        my $task = create_load_genome_from_NCBI_job(
+            user => $self->user,
+            staging_dir => $staging_dir,
+            wid => $self->workflow->id,
+            ncbi_accns => \@ncbi_accns,
+            metadata => $metadata,
+        );
+        push @tasks, $task;
+        push @done_files, $task->{outputs}->[1];
+    }
+    else { # File-based load
+        my $task = create_load_genome_job(
+            user => $self->user,
+            staging_dir => $staging_dir,
+            wid => $self->workflow->id,
+            organism_id => $organism->id,
+            input_files => \@input_files,
+            metadata => $metadata,
+        );
+        push @tasks, $task;
+        push @done_files, $task->{outputs}->[1];
+    }
     
     # Send notification email #TODO merge with Load/Experiment.pm
 	if ( $self->params->{email} ) {

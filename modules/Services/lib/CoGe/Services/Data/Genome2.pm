@@ -129,4 +129,39 @@ sub fetch {
     });
 }
 
+sub add {
+    my $self = shift;
+    my $data = $self->req->json;
+    #print STDERR "CoGe::Services::Data::Genome2::add\n", Dumper $data, "\n";
+
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    # User authentication is required to add experiment
+    unless (defined $user) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        });
+        return;
+    }
+
+    # Valid data items
+    unless ($data->{source_data} && @{$data->{source_data}}) {
+        $self->render(json => {
+            error => { Error => "No data items specified" }
+        });
+        return;
+    }
+    
+    # Marshall incoming payload into format expected by Job Submit.
+    # Note: This is kind of a kludge -- is there a better way to do this using
+    # Mojolicious routing?
+    my $request = {
+        type => 'load_genome',
+        parameters => $data
+    };
+    
+    return CoGe::Services::Data::Job::add($self, $request);
+}
+
 1;

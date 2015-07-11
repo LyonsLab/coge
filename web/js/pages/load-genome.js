@@ -77,70 +77,6 @@ function create_organism() {
 	});
 }
 
-// mdb removed 7/8/15 - migrated to web services
-//function load_genome(genome) {
-//	var keep_headers = $('#keep_headers').val();
-//	
-//	// Prevent mix of NCBI and file data types
-////	var types = {};
-////	items.forEach(function(item) { types[item.type] = 1; });
-////	var isNCBI = 'ncbi' in types;
-////	if (Object.keys(types).length > 1 && isNCBI) {
-////		error_help('Cannot mix NCBI data with other types.');
-////		return;
-////	}
-//	
-//	// Build file list
-//	var items = genome.data.map(function(item) {
-//		return { path: item.path, type: item.type };
-//	});
-//
-//	// Open progress window
-//	coge.progress.begin();
-//	newLoad = true;
-//	
-//	console.log(genome);
-//
-//	$.ajax({ // TODO migrate to web services like load-experiment.js
-//		dataType: 'json',
-//		data: {
-//			fname: 'load_genome',
-//			load_id: load_id,
-//			name: genome.metadata.name,
-//			description: genome.metadata.description,
-//			link: genome.metadata.link,
-//			version: genome.metadata.version,
-//			type_id: genome.metadata.type,
-//			restricted: genome.metadata.restricted,
-//			organism_id: genome.organism_id,
-//			source_name: genome.metadata.source,
-//			user_name: USER_NAME,
-//			keep_headers: keep_headers,
-//			items: JSON.stringify(items),
-//			timestamp: new Date().getTime()
-//		},
-//		success : function(response) {
-//			// Handle reponse error
-//			if (!response || response.error) {
-//				if (!response)
-//					coge.progress.failed("Error: load_genome: invalid response from server");
-//				else
-//					coge.progress.failed(response.error);
-//				return;
-//			}
-//
-//			// Start status update
-//            if (response.job_id) { // JEX status for load FASTQ
-//                window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + response.job_id); // Add job_id to browser URL
-//                coge.progress.update(response.job_id, response.link);
-//            }
-//		},
-//		error: function(jqXHR, textStatus, errorThrown) { // transaction error callback
-//	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-//	    }
-//	});
-//}
-
 function load(genome) {
 	coge.progress.begin();
     newLoad = true;
@@ -182,8 +118,8 @@ function load(genome) {
 	);
 }
 
-function handle_action() {
-    var action = $("#finish_actions select").val();
+function handle_action(action) {
+    console.log('handle_action '+action);
 
     if (action === "genome") {
 	    window.location.href = "GenomeInfo.pl?embed=" + EMBED + "&gid=" + genome_id;
