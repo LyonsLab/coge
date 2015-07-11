@@ -122,7 +122,6 @@ sub build {
                 user => $self->user,
                 metadata => $metadata,
                 staging_dir => $staging_dir,
-                result_dir => $result_dir,
                 wid => $self->workflow->id,
                 gid => $gid,
                 bam_file => $bam_file
@@ -182,7 +181,6 @@ sub build {
         my $job = create_load_experiment_job(
             user => $self->user,
             staging_dir => $staging_dir,
-            result_dir => $result_dir,
             wid => $self->workflow->id,
             gid => $genome->id,
             input_file => $input_files[0],
