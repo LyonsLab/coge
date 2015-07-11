@@ -113,40 +113,6 @@ function search_notebooks (search_term) {
 	},function(){console.log('error');});
 }
 
-function LayoutView(options) {
-    this.template = $(options.template);
-    this.layout = options.layout;
-    this.initialize();
-}
-
-$.extend(LayoutView.prototype, {
-    initialize: function() {
-        this.el = $(this.template.html());
-    },
-
-    renderLayout: function() {
-        var elementId, section, view;
-
-        for (elementId in this.layout) {
-            if (this.layout.hasOwnProperty(elementId)) {
-                section = this.el.find(elementId);
-                view = this.layout[elementId];
-
-                section.empty();
-                section.html(view.el);
-
-                if (view.render) {
-                    view.render();
-                }
-            }
-        }
-    },
-
-    updateLayout: function(layout) {
-        this.layout = $.extend({}, this.layout, layout);
-    }
-});
-
 function ExperimentDescriptionView(opts) {
     this.experiment = opts.experiment;
     this.metadata = opts.metadata;
@@ -739,7 +705,7 @@ function OptionsView(opts) {
 $.extend(OptionsView.prototype, {
     initialize: function() {
         this.admin_view = new AdminOptionsView();
-        this.general_view = new GeneralOptionsView(onError: this.onError);
+        this.general_view = new GeneralOptionsView({onError: this.onError});
         this.layout_view = new LayoutView({
             template: "#options-layout-template",
             layout: {
