@@ -21,9 +21,11 @@ our @EXPORT = qw(
     generate_tbl export_to_irods generate_gff generate_features copy_and_mask
     create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
     create_bam_index_job create_gff_generation_job create_load_experiment_job
+    create_load_genome_job create_load_genome_from_NCBI_job create_load_batch_job
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job create_iget_job
+    create_load_annotation_job
     send_email_job add_items_to_notebook_job
 );
 
@@ -359,6 +361,8 @@ sub create_load_vcf_job {
     my $desc = 'Single nucleotide polymorphisms' . ($method ? " (determined by $method method)" : '');
 
     my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+    
     my $output_path = catdir($staging_dir, "load_vcf");
     
     my $result_file = get_workflow_results_file($username, $wid);
@@ -409,6 +413,8 @@ sub create_load_experiment_job {
     my $normalize = $opts{normalize} || 0;
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+    
     my $output_path = catdir($staging_dir, "load_experiment");
     
     my $result_file = get_workflow_results_file($user->name, $wid);
@@ -443,6 +449,196 @@ sub create_load_experiment_job {
             $result_file
         ],
         description => "Loading experiment ..."
+    };
+}
+
+sub create_load_genome_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $user = $opts{user};
+    my $metadata = $opts{metadata};
+    my $staging_dir = $opts{staging_dir};
+    my $wid = $opts{wid};
+    my $organism_id = $opts{organism_id};
+    my $input_files = $opts{input_files};
+    my $irods_files = $opts{irods_files};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_genome.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+    
+    my $output_path = catdir($staging_dir, "load_genome");
+    
+    my $result_file = get_workflow_results_file($user->name, $wid);
+
+    my $file_str = join(',', map { basename($_) } @$input_files);
+    my $irods_str = join(',', map { basename($_) } @$irods_files);
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-user_name', $user->name, 0],
+            ['-wid', $wid, 0],
+            ['-name', '"' . $metadata->{name} . '"', 0],
+            ['-desc', '"' . $metadata->{description} . '"', 0],
+            ['-link', '"' . $metadata->{link} . '"', 0],
+            ['-version', '"' . $metadata->{version} . '"', 0],
+            ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
+            ['-source_name', '"' . $metadata->{source} . '"', 0],
+            ['-organism_id', $organism_id, 0],
+            ['-type_id', '"' . $metadata->{type_id} . '"', 0],
+            ['-staging_dir', "./load_genome", 0],
+            ['-fasta_files', "'".$file_str."'", 0],
+            ['-irods_files', "'".$irods_str."'", 0],
+            ['-config', $CONF->{_CONFIG_PATH}, 1]
+        ],
+        inputs => [
+            $CONF->{_CONFIG_PATH}, 
+            @$input_files
+        ],
+        outputs => [
+            [$output_path, '1'],
+            catfile($output_path, "log.done"),
+            $result_file
+        ],
+        description => "Loading genome ..."
+    };
+}
+
+sub create_load_genome_from_NCBI_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $user = $opts{user};
+    my $metadata = $opts{metadata};
+    my $staging_dir = $opts{staging_dir};
+    my $wid = $opts{wid};
+    my $ncbi_accns = $opts{ncbi_accns};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "genbank_genome_loader.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+    
+    my $output_path = catdir($staging_dir, "load_genome_from_ncbi");
+    
+    my $result_file = get_workflow_results_file($user->name, $wid);
+
+    my $args = [
+        ['-user_name', $user->name, 0],
+        ['-wid', $wid, 0],
+        ['-staging_dir', "./load_genome_from_ncbi", 0],
+        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-GO', 1, 0]
+    ];
+    foreach (@$ncbi_accns) {
+        push @$args, ['-accn', "'$_'", 0];
+    }
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => [
+            $CONF->{_CONFIG_PATH}
+        ],
+        outputs => [
+            [$output_path, '1'],
+            catfile($output_path, "log.done"),
+            $result_file
+        ],
+        description => "Importing genome from NCBI ..."
+    };
+}
+
+sub create_load_annotation_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $user = $opts{user};
+    my $metadata = $opts{metadata};
+    my $staging_dir = $opts{staging_dir};
+    my $wid = $opts{wid};
+    my $gid = $opts{gid};
+    my $input_file = $opts{input_file};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_annotation.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+    
+    my $output_path = catdir($staging_dir, "load_annotation");
+    
+    my $result_file = get_workflow_results_file($user->name, $wid);
+    
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-user_name', $user->name, 0],
+            ['-wid', $wid, 0],
+            ['-name', '"' . ($metadata->{name} ? $metadata->{name} : '') . '"', 0],
+            ['-desc', '"' . ($metadata->{description} ? $metadata->{description} : ''). '"', 0],
+            ['-link', '"' . ($metadata->{link} ? $metadata->{link} : '') . '"', 0],
+            ['-version', '"' . $metadata->{version} . '"', 0],
+            ['-source_name', '"' . $metadata->{source} . '"', 0],
+            ['-gid', $gid, 0],
+            ['-staging_dir', "'".$staging_dir."'", 0],
+            ['-data_file', "'".$input_file."'", 0],
+            ['-config', $CONF->{_CONFIG_PATH}, 1]
+        ],
+        inputs => [
+            $CONF->{_CONFIG_PATH}, 
+            $input_file
+        ],
+        outputs => [
+            [$output_path, '1'],
+            catfile($output_path, "log.done"),
+            $result_file
+        ],
+        description => "Loading annotation ..."
+    };
+}
+
+sub create_load_batch_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $user = $opts{user};
+    my $metadata = $opts{metadata};
+    my $staging_dir = $opts{staging_dir};
+    my $wid = $opts{wid};
+    my $nid = $opts{nid};
+    my $gid = $opts{gid};
+    my $files = $opts{input_files};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_batch.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    my $file_str = join(',', @$files);
+
+    my $args = [
+        ['-user_name', $user->name, 0],
+        ['-name', '"' . $metadata->{name} . '"', 0],
+        ['-desc', '"' . $metadata->{description} . '"', 0],
+        ['-gid', $gid, 0],
+        ['-wid', $wid, 0],
+        ['-staging_dir', "'".$staging_dir."'", 0],
+        ['-files', "'".$file_str."'", 0],
+        ['-config', $CONF->{_CONFIG_PATH}, 1]    
+    ];
+    push $args, ['-nid', $nid, 0] if ($nid);
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => [
+            $CONF->{_CONFIG_PATH}, 
+            @$files
+        ],
+        outputs => [
+            [$staging_dir, 1],
+            catdir($staging_dir, 'log.done')
+        ],
+        description => "Loading batch experiments..."
     };
 }
 
