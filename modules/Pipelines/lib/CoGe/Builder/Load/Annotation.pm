@@ -8,6 +8,7 @@ use File::Spec::Functions qw(catfile);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
+use CoGe::Builder::CommonTasks;
 
 sub build {
     my $self = shift;
@@ -46,7 +47,7 @@ sub build {
     #
     # Build workflow
     #
-    my (@tasks, @input_files, @done_files, @additional_metadata);
+    my (@tasks, @input_files, @done_files);
     
     # Create tasks to retrieve files
     my $upload_dir = get_upload_path($self->user->name, $load_id);
@@ -81,18 +82,16 @@ sub build {
     }
     
     # Submit workflow to generate annotation
-    my $job = create_load_experiment_job(
+    my $load_task = create_load_annotation_job(
         user => $self->user,
         staging_dir => $staging_dir,
-        result_dir => $result_dir,
         wid => $self->workflow->id,
         gid => $genome->id,
         input_file => $input_files[0],
-        metadata => $metadata,
-        normalize => $self->params->{normalize} ? $self->params->{normalize_method} : 0
+        metadata => $metadata
     );
-    push @tasks, $job;
-    push @done_files, $job->{outputs}->[1];
+    push @tasks, $load_task;
+    push @done_files, $load_task->{outputs}->[1];
     
     #print STDERR Dumper \@tasks, "\n";
     $self->workflow->add_jobs(\@tasks);
