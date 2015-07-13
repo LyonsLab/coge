@@ -25,7 +25,7 @@ use CoGe::Accessory::IRODS;
 use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
+use CoGe::Core::Storage qw(get_workflow_paths get_upload_path get_irods_file);
 
 no warnings 'redefine';
 
