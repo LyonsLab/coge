@@ -356,69 +356,6 @@ sub check_login {
 	return ($USER && !$USER->is_public);
 }
 
-# mdb removed 7/13/15 -- migrated to web services
-#sub load_batch {
-#    my %opts        = @_;
-#    my $name        = $opts{name};
-#    my $description = $opts{description};
-#    my $assignee_user_name = $opts{assignee_user_name}; # to assign genome to (admin-only)
-#    my $gid         = $opts{gid};
-#    my $nid         = $opts{nid};
-#    $nid = '' unless $nid;
-#    my $items       = $opts{items};
-#
-#	print STDERR "load_batch: ", Dumper \%opts, "\n";
-#
-#    # Check login
-#    if ($USER->user_name eq 'public') {
-#        return encode_json({ error => 'Not logged in' });
-#    }
-#    
-#    # Get user object if assigning to another user (admin-only)
-#    my $assignee;
-#    if ( $assignee_user_name && $USER->is_admin ) {
-#        $assignee = $coge->resultset('User')->search({ user_name => $assignee_user_name });
-#    }
-#
-#    # Check data items
-#    return encode_json({ error => 'No files specified' }) unless $items;
-#    $items = decode_json($items);
-#    my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
-#
-#    # Submit workflow
-#    my ($workflow_id, $error_msg) = create_experiments_from_batch(
-#        genome => $gid,
-#        user => $USER,
-#        assignee => $assignee,
-#        notebook => $nid,
-#        metadata => {
-#            name => $name,
-#            description => $description
-#        },
-#        files => \@files
-#    );
-#    unless ($workflow_id) {
-#        return encode_json({ error => "Workflow submission failed: " . $error_msg });
-#    }
-#
-#    # Get tiny link
-#    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-#        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id
-#    );
-#    
-#    # Log it
-#    CoGe::Accessory::Web::log_history(
-#        db          => $coge,
-#        workflow_id => $workflow_id,
-#        user_id     => $USER->id,
-#        page        => "LoadBatch",
-#        description => 'Load batch '.scalar(@files).' experiments into notebook "'.$name.'"',
-#        link        => $tiny_link
-#    );
-#
-#    return encode_json({ job_id => $workflow_id, link => $tiny_link });
-#}
-
 sub search_genomes
 {    # FIXME: common with LoadAnnotation et al., move into web service
     my %opts        = @_;
