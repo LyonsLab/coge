@@ -70,15 +70,6 @@ my $logfile = "$staging_dir/load_annotation.log";
 open( my $log, ">$logfile" ) or die "Error opening log file $logfile";
 $log->autoflush(1);
 
-print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
-
-# Prevent loading again (issue #417)
-my $logdonefile = "$staging_dir/log.done";
-if (-e $logdonefile) {
-    print STDOUT "log: error: done file already exists: $logdonefile\n";
-    exit(-1);
-}
-
 # Process and verify parameters
 $data_file   = unescape($data_file);
 $name        = unescape($name);
@@ -506,7 +497,8 @@ unless (add_workflow_result($user_name, $wid,
         {
             type           => 'dataset',
             id             => int($dataset->id),
-            genome_id      => int($gid)
+            genome_id      => int($genome->id),
+            info           => $genome->info
         })
     )
 {
