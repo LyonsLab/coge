@@ -11,7 +11,7 @@ use Data::Dumper;
 sub list {
     my $self = shift;
     my $path = $self->stash('path');
-    print STDERR "IRODS::list ", $path, "\n";
+    #print STDERR "IRODS::list ", $path, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
