@@ -585,7 +585,7 @@ sub create_load_annotation_job {
             ['-version', '"' . $metadata->{version} . '"', 0],
             ['-source_name', '"' . $metadata->{source} . '"', 0],
             ['-gid', $gid, 0],
-            ['-staging_dir', "'".$staging_dir."'", 0],
+            ['-staging_dir', "./load_annotation", 0],
             ['-data_file', "'".$input_file."'", 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
