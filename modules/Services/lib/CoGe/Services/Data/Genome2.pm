@@ -1,8 +1,10 @@
 package CoGe::Services::Data::Genome2;
+
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;
 use CoGe::Services::Auth;
+use CoGe::Services::Data::Job;
 
 sub search {
     my $self = shift;
