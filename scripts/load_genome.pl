@@ -420,10 +420,10 @@ unless (add_workflow_result($user_name, $wid,
             info           => $genome->info,
             version        => $version,
             link           => $link,
-            type_id        => $type_id,
-            source_id      => $datasource->id,
-            organism_id    => $organism_id,
-            restricted     => $restricted
+            type_id        => int($type_id),
+            source_id      => int($datasource->id),
+            organism_id    => int($organism_id),
+            restricted     => ($restricted ? 'true' : 'false')
         })
     )
 {
