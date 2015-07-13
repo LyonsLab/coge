@@ -427,7 +427,7 @@ unless (add_workflow_result($user_name, $wid,
             description => $description,
             version     => $version,
             #link       => $link, #FIXME
-            data_source_id => $data_source->id,
+            source_id   => $data_source->id,
             data_type   => $data_type, #FIXME convert from number to string identifier
             row_count   => $count,
             genome_id   => $gid,
