@@ -39,10 +39,6 @@ sub build {
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
-    # Determine file type if not set
-    my $file_type = $data->[0]->{file_type}; # type of first data file
-    ($file_type) = detect_data_type($file_type, $data->[0]->{path}) unless $file_type;
-    
     #
     # Build workflow
     #
