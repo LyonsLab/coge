@@ -421,7 +421,7 @@ unless (add_workflow_result($user_name, $wid,
             version        => $version,
             link           => $link,
             type_id        => $type_id,
-            data_source_id => $datasource->id,
+            source_id      => $datasource->id,
             organism_id    => $organism_id,
             restricted     => $restricted
         })
