@@ -2011,7 +2011,7 @@ function init_taxon_tree(element) {
 var Taxon_tree = function(json, element) {
 	this.margin = {top: 20, right: 120, bottom: 20, left: 120};
 	this.width = 1960 - this.margin.right - this.margin.left;
-	this.height = 8000 - this.margin.top - this.margin.bottom;
+	this.height = 3200 - this.margin.top - this.margin.bottom;
 	this.duration = 750;
 	this.root = json;
 	this.current_root = this.root;
@@ -2041,7 +2041,7 @@ $.extend(Taxon_tree.prototype, {
 			.append("g")
 			.attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
 		
-		//
+		// Prepopulate the parent nodes of the tree.
 		var nodes = self.tree.nodes(self.root).reverse();
 		
 		self.fix.call(self);
@@ -2059,10 +2059,24 @@ $.extend(Taxon_tree.prototype, {
 	update: function(source, new_root) {
 		var self = this;
 		self.current_root = new_root;
-		console.log(new_root);
+		console.log(source.depth);
+		
+		//Adjust height based on the number of children
+		if (self.current_root.children) {
+			self.tree.size([(self.current_root.children.length*20) * Math.pow(1.1,source.depth), 1]);
+		} else if (self.current_root._children && self.current_root._children.length != 0) {
+			self.tree.size([self.current_root._children.length*20, 1]);
+		} else {
+			self.tree.size([1, 1]);
+		}
+		//set minimum height to 800
+		if (self.tree.size()[0] < 800) {
+			self.tree.size([800, 1]);
+		}
+		console.log(self.tree.size())
 		
 		// Compute the new tree layout.
-		var nodes = self.tree.nodes(self.current_root).reverse();
+		var nodes = self.tree.nodes(self.current_root); //.reverse();
 		var links = self.tree.links(nodes);
 		
 		// deal with filtering complications
@@ -2070,13 +2084,24 @@ $.extend(Taxon_tree.prototype, {
 		var add_nodes = [];
 		while (new_root.parent) {
 			add_depth++;
+			if (new_root.parent._children) {
+				new_root.parent.children = new_root.parent._children;
+				new_root.parent._children = null;
+			}
+			new_root.parent.x = new_root.x;
 			add_nodes.push(new_root.parent);
+			links.push({
+				source: new_root.parent,
+				target: new_root,
+			});
 			new_root = new_root.parent;
 		}
 		
 		// fix depth
+		var max_depth = 0;
 		for(var i = 0; i < nodes.length; i++) {
 			nodes[i].depth += add_depth;
+			max_depth = Math.max(max_depth, nodes[i].depth);
 		}
 		for(var i = 0; i < add_nodes.length; i++) {
 			add_depth--;
@@ -2084,12 +2109,9 @@ $.extend(Taxon_tree.prototype, {
 			nodes.push(add_nodes[i]);
 		}
 		
-		console.log(nodes);
-		console.log(links);
-		
 		// Normalize for fixed-depth.
-		nodes.forEach(function(d) { d.y = d.depth * 180; });
-
+		nodes.forEach(function(d) { d.y = d.depth * 1260/max_depth; });
+		
 		// Update the nodesÉ
 		self.node = self.svg.selectAll("g.node")
 			.data(nodes, function(d) { return d.id || (d.id = ++self.i); });
@@ -2106,7 +2128,7 @@ $.extend(Taxon_tree.prototype, {
 			});
 
 		nodeEnter.append("circle")
-			.attr("class", "tree_node")
+			.attr("class", "tree_node noselect")
 			.attr("r", 1e-6)
 			.style("fill", self.color);
 
@@ -2123,11 +2145,12 @@ $.extend(Taxon_tree.prototype, {
 			.attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
 
 		nodeUpdate.select("circle")
-			.attr("class", "tree_node")
+			.attr("class", "tree_node noselect")
 			.attr("r", 6)
 			.style("fill", self.color);
 		
 		nodeUpdate.select("text")
+			.attr("class", "noselect")
 			.style("fill-opacity", 1);
 
 		// Transition exiting nodes to the parent's new position.
