@@ -118,7 +118,7 @@ sub irods_ils {
     @result = sort { $a->{type} cmp $b->{type} } @result;    # directories before files
 
     #print STDERR Dumper \@result, "\n";
-    return { items => \@result };
+    return { path => $path, items => \@result };
 }
 
 sub irods_chksum {
