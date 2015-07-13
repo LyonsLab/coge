@@ -32,7 +32,7 @@ sub startup {
         
     $r->put("/genomes")
         ->name("genomes-add")
-        ->to("genome#add");
+        ->to("genome2#add");
 
     # Dataset routes
     #$r->get("/genomes/search/#term")
