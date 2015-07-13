@@ -17,7 +17,11 @@
 @font-face {
         font-family: 'Glyphicons Halflings';
         src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
-	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');}
+		src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), 
+			 url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), 
+			 url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), 
+			 url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+}
 
 .glyphicon {
         position: relative;
@@ -45,6 +49,12 @@ circle.node {
   stroke-width: 1.5px;
 }
 
+circle.tree_node {
+	cursor: pointer;
+	stroke: #119911;
+	stroke-width: 1.5px;
+}
+
 line.link {
   fill: none;
   stroke: #9ecae1;
@@ -57,6 +67,43 @@ div.legend {
   padding: 2px;
   text-align: center;
 }
+
+.bar rect {
+	fill: steelblue;
+	shape-rendering: crispEdges;
+}
+
+.bar text {
+	fill: #fff;
+}
+
+.axis path, .axis line {
+	fill: none;
+	stroke: #000;
+	shape-rendering: crispEdges;
+}
+
+svg {
+	font: 10px sans-serif;
+}
+
+.area {
+	fill: steelblue;
+	clip-path: url(#clip);
+}
+
+.axis path,
+.axis line {
+	fill: none;
+	stroke: #000;
+	shape-rendering: crispEdges;
+}
+
+.brush .extent {
+	stroke: #fff;
+	fill-opacity: .125;
+	shape-rendering: crispEdges;
+}
 </style>
 
 <div id="tabs" class="hidden">
@@ -66,6 +113,7 @@ div.legend {
 		<li><a href="#tabs-3">History</a></li>
 		<li><a href="#tabs-4">Graph</a></li>
 		<li><a href="#tabs-5">Reports</a></li>
+		<li><a href="#tabs-6">Taxonomy</a></li>
 	</ul>
 	<div id="tabs-1">
 		<div id="master" style="position:relative;">
@@ -140,10 +188,8 @@ div.legend {
 			</div>
 
 			<div><img id="loading2" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding-top:10px;padding-left:25px;display:none;" /></div>
-			
-			<div id="userResults" style="position:relative;left:20px;padding-top:10px;padding-bottom:10px;" class="hidden result">
-			
-			</div>
+				<div id="userResults" style="position:relative;left:20px;padding-top:10px;padding-bottom:10px;" class="hidden result">
+				</div>
 			</div>
 			
 			<div id="user_dialog" class="hidden dialog_box" title="Select User">
@@ -287,8 +333,20 @@ div.legend {
 		  <option value="Deleted">Deleted Only</option>
 		  <option value="Public">Public</options>
 		</select>
-		<img id="reports_loading" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;display:none;" />
+		<button id="histogram_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="init_histogram('histo_dialog')">Histogram</button>
+		<span id="reports_loading" class="hidden">
+			<img src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;margin-right:10px;" />
+			This may take 30 seconds.
+		</span>
 		<div id="reports"></div>
+		<div id="histo_dialog" class="dialog_box hidden" title="Histogram"></div>
+	</div>
+	<div id="tabs-6">
+		<span style="margin-right:20px;">
+			Filter:
+			<input id="tree_filter" type="text" onkeyup="filter_tree()">
+		</span>
+		<span id="taxonomic_tree"></span>
 	</div>
 </div>
 
@@ -400,7 +458,7 @@ $(function(){
 		    		return false;
 		    	},
 		});
-	$("#group_input").focus(); // why no work!?
+	$("#group_input").focus();
 });
 </script>
 <div style="margin:20px;margin-left:5px;">
@@ -445,6 +503,10 @@ $(function(){
 	<!--<br>
 	<span href="javascript:void(0)" onClick="$('#group_dialog').dialog('close');" class='ui-button ui-corner-all'>Done</span>-->
 </div>
+</TMPL_IF>
+
+<TMPL_IF NAME='Histo_dialog'>
+	<div id="histo_test2"></div>
 </TMPL_IF>
 
 <TMPL_IF NAME='ERROR_DIALOG'>

@@ -148,7 +148,7 @@ $creator = $user unless $creator;
 # Retrieve genome
 my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
 unless ($genome) {
-    print $STDOUT "log: error finding genome id$gid\n";
+    print STDOUT "log: error finding genome id$gid\n";
     exit(-1);
 }
 
@@ -217,7 +217,7 @@ if ( $data_file =~ /\.gz$/ ) {
 my (%data, %annos, %seen_types, %seen_attr);
 #TODO copy gff file into staging directory to read from instead of upload directory
 unless ( process_gff_file() ) {
-    print STDOUT "log: error: no annotations found, perhaps your file is missing required information, please check the <a href='http://genomevolution.org/wiki/index.php/GFF_ingestion'>documentation</a>\n";
+    print STDOUT "log: error: no annotations found, perhaps your file is missing required information, <span class='bold alert'>please check the <a href='http://genomevolution.org/wiki/index.php/GFF_ingestion'>GFF documentation</a></span>\n";
     exit(-1);
 }
 
