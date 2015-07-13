@@ -330,13 +330,13 @@ my $experiment = $coge->resultset('Experiment')->create(
         name        => $name,
         description => $description,
         version     => $version,
-        #link				=> $link, #FIXME
-        data_source_id => $data_source->id,
-        data_type      => $data_type,
-        row_count      => $count,
-        genome_id      => $gid,
-        creator_id     => $creator->id,
-        restricted     => $restricted
+        #link		=> $link, #FIXME
+        source_id   => int($data_source->id),
+        data_type   => int($data_type),
+        row_count   => int($count),
+        genome_id   => int($gid),
+        creator_id  => int($creator->id),
+        restricted  => ($restricted ? 'true' : 'false')
     }
 );
 print STDOUT "experiment id: " . $experiment->id . "\n";
