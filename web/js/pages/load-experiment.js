@@ -134,7 +134,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             this.el.find('#edit_name').val(this.metadata.name);
             this.el.find('#edit_description').val(this.metadata.description);
             this.el.find('#edit_version').val(this.metadata.version);
-            this.edit_source.val(this.metadata.source);
+            this.edit_source.val(this.metadata.source_name);
 
             if (!this.metadata.restricted)
                 this.el.find('#restricted').removeAttr('checked');
@@ -225,7 +225,7 @@ $.extend(ExperimentDescriptionView.prototype, {
                 description: description,
                 version: version,
                 restricted: restricted,
-                source: source,
+                source_name: source,
                 genome: genome,
             },
 
