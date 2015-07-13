@@ -423,7 +423,7 @@ unless (add_workflow_result($user_name, $wid,
             type_id        => int($type_id),
             source_id      => int($datasource->id),
             organism_id    => int($organism_id),
-            restricted     => ($restricted ? 'true' : 'false')
+            restricted     => $restricted
         })
     )
 {
