@@ -397,7 +397,7 @@ $.extend(GenomeDescriptionView.prototype, {
             this.el.find('#edit_description').val(this.metadata.description);
             this.el.find('#edit_version').val(this.metadata.version);
             this.select_type.val(this.metadata.type);
-            this.edit_source.val(this.metadata.source);
+            this.edit_source.val(this.metadata.source_name);
 
             if (!this.metadata.restricted)
                 this.el.find('#restricted').removeAttr('checked');
@@ -500,7 +500,7 @@ $.extend(GenomeDescriptionView.prototype, {
                 version: version,
                 type: type,
                 restricted: restricted,
-                source: source,
+                source_name: source,
                 organism: organism
             },
 
