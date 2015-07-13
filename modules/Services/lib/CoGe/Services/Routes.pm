@@ -17,7 +17,7 @@ sub startup {
         ->name("organisms-fetch")
         ->to("organism#fetch", id => undef);
 
-    $r->post("/organisms")
+    $r->put("/organisms")
         ->name("organisms-add")
         ->to("organism#add");
 
