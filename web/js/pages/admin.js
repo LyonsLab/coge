@@ -15,6 +15,7 @@ var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 var reports_grid;
+var tree;
 
 $(function () {
 	$( "#tabs" ).tabs({
@@ -32,6 +33,9 @@ $(function () {
 			}
 			if(current_tab == 4 && !reports_grid) {
 				init_reports();
+			}
+			if(current_tab == 5) {
+				init_taxon_tree("");
 			}
 		}
     });
@@ -74,6 +78,8 @@ $(function () {
 			schedule_update(5000);
 		}
 	});
+    
+    //var histo_test = new Histogram("histo_dialog");
 });
 
 //Initialize the Jobs tab
@@ -1704,25 +1710,30 @@ function DataGrid(params) {
 	this.elementId = params.elementId;
 	this.filter = params.filter;
 	this.selection = params.selection;
+	this.data;
 	
 	this.initialize();
 }
 
 $.extend(DataGrid.prototype, {
 	initialize: function() {
+		var self = this;
 		var element = this.elementId;
 		var fname;
+		$('#' + element).hide();
 		$('#' + element + '_loading').show();
 		switch (this.selection) {
 			case "user":
 				fname = 'get_user_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
 					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
+				$('#histogram_button').prop('disabled', false);
 				break;
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
 					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
+				$('#histogram_button').prop('disabled', false);
 				break;
 			case "total":
 				fname = 'get_total_table';
@@ -1733,6 +1744,7 @@ $.extend(DataGrid.prototype, {
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
 						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th></tr></thead></table>');
 				}
+				$('#histogram_button').prop('disabled', true);
 				break;
 		}
 		$.ajax({
@@ -1742,8 +1754,10 @@ $.extend(DataGrid.prototype, {
 			},
 			success: function(data) {
 				$('#' + element + '_loading').hide();
-				console.log(JSON.parse(data));
+				self.data = JSON.parse(data);
+				//console.log(self.data);
 				$('#' + element + '_table').dataTable(JSON.parse(data));
+				$('#' + element).show();
 			}
 		});
 		
@@ -1774,4 +1788,517 @@ function filter_report(index) {
 			break;
 	}
 	reports_grid.initialize();
+}
+
+var Histogram = function(element, json, parent) {
+	this.element = element;
+	this.json = json;
+	this.parent = parent;
+	//this.selection = selection;
+	
+	/*this.values = [];
+	this.max_value = 0;
+	this.min_value = Number.MAX_SAFE_INTEGER;
+	for(var i = 0; i < json.data.length; i++) {
+		var total_items = 0;
+		for(var j = 0; j < json.data[i].length; j++) {
+			if(selection == "total" || j != 0) {
+				var num = parseInt(json.data[i][j]);
+				total_items += num;
+				//console.log(json.data[i][j]);
+			}
+		}
+		this.values.push(total_items);
+		if(total_items > this.max_value) {
+			this.max_value = total_items;
+		}
+		if(total_items < this.min_value) {
+			this.min_value = total_items;
+		}
+	}*/
+	this.values = this.json.values;
+	this.min_value = this.json.min;
+	this.max_value = this.json.max;
+	
+	console.log(this.json);
+	
+	this.formatCount;
+	this.margin = {top: 10, right: 30, bottom: 30, left: 50};
+	this.width = 500 - this.margin.left - this.margin.right;
+	this.height = 500 - this.margin.top - this.margin.bottom;
+	this.x;
+	this.data;
+	this.y;
+	this.xAxis;
+	this.yAxis;
+	this.svg;
+	this.bar;
+	this.brush;
+	
+	this.initialize();
+}
+
+$.extend(Histogram.prototype, {
+	initialize: function() {
+		var self = this;
+		$("#" + this.element).html('');
+		//Generate a Bates distribution of 10 random variables.
+		//this.values = d3.range(1000).map(d3.random.bates(10));
+		//console.log(this.values);
+	
+		// A formatter for counts.
+		this.formatCount = d3.format(",.0f");
+	
+		/*this.margin = {top: 10, right: 30, bottom: 30, left: 50},
+		this.width = 500 - this.margin.left - this.margin.right,
+		this.height = 500 - this.margin.top - this.margin.bottom;*/
+	
+		this.x = d3.scale.linear()
+		    .domain([this.min_value, this.max_value])
+		    .range([0, this.width]);
+	
+		// Generate a histogram using twenty uniformly-spaced bins.
+		this.data = d3.layout.histogram()
+		    .bins(this.x.ticks(this.max_value))
+		    (this.values);
+	
+		this.y = d3.scale.log()
+		    .domain([1, d3.max(this.data, function(d) { return d.y; })])
+		    .range([this.height, 0]);
+	
+		this.xAxis = d3.svg.axis()
+		    .scale(this.x)
+		    .orient("bottom");
+		
+		this.yAxis = d3.svg.axis()
+	    	.scale(this.y)
+	    	.orient("left");
+		
+		this.brush = d3.svg.brush()
+	    	.x(this.x)
+	    	.on("brushend", function() {
+	    		self.brushed.call(self);
+	    	});
+	
+		this.svg = d3.select("#" + this.element).append("svg")
+	    	.attr("width", this.width + this.margin.left + this.margin.right)
+	    	.attr("height", this.height + this.margin.top + this.margin.bottom)
+	    	.append("g")
+	    	.attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+	
+		this.bar = this.svg.selectAll(".bar")
+		    .data(self.data)
+			.enter().append("g")
+		    .attr("class", "bar")
+		    .attr("transform", function(d) { 
+		    	if(d.y == 0) {
+		    		return "translate(" + self.x(d.x) + ", 0)";
+		    	}
+		    	return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
+		    });
+		
+		this.bar.append("rect")
+		    .attr("x", 1)
+		    .attr("width", self.x((self.data[0].dx * 2) - 1))
+		    .attr("height", function(d) { 
+		    	if(d.y == 0) {
+		    		return 0;
+		    	}
+		    	return self.height - self.y(d.y); 
+		    });
+	
+		/*this.bar.append("text")
+		    .attr("dy", ".75em")
+		    .attr("y", 6)
+		    .attr("x", this.x(this.data[0].dx) / 2)
+		    .attr("text-anchor", "top")
+		    .text(function(d) { return self.formatCount(d.y); });*/
+	
+		this.svg.append("g")
+		    .attr("class", "x axis")
+		    .attr("transform", "translate(0," + this.height + ")")
+		    .call(this.xAxis);
+		
+		this.svg.append("g")
+	    	.attr("class", "y axis")
+	    	.call(this.yAxis);
+		
+		this.svg.append("g")
+	    	.attr("class", "x brush")
+	    	.call(self.brush)
+	    	.selectAll("rect")
+	    	.attr("y", -6)
+	    	.attr("height", this.height + 7);
+		
+		$('#' + this.element)
+			.dialog({
+				resizeStop: function( event, ui ) { 
+					//self.svg.attr("transform", "scale(" + ui.size.width/ui.originalSize.width + " " + ui.size.height/ui.originalSize.height + ") translate(" + self.margin.left + "," + self.margin.top + ")");
+
+					var widthScale = ui.size.width/ui.originalSize.width;
+					var heightScale = ui.size.height/ui.originalSize.height;
+					self.width = (self.width + self.margin.left + self.margin.right)*widthScale - self.margin.left - self.margin.right;
+					self.height = (self.height + self.margin.top + self.margin.bottom + 30)*heightScale - self.margin.top - self.margin.bottom - 30;
+					self.initialize();
+				},
+			})
+			.dialog('open');
+	},
+	brushed: function() {
+		var self = this;
+		var extent = this.brush.extent();
+		var rangeExtent = [this.x( extent[0] ), this.x( extent[1] ) ];
+		var rangeWidth  = rangeExtent[1] - rangeExtent[0];
+		console.log(extent[0]);
+		console.log(rangeExtent[0]);
+		
+		var newValues = [];
+		for (var i = 0; i < this.values.length; i++) {
+			if (this.values[i] >= extent[0] && this.values[i] <= extent[1]) {
+				newValues.push(this.values[i]);
+			}
+		}
+		var newJson = {
+				min: Math.floor(extent[0]),
+				max: Math.ceil(extent[1]),
+				values: newValues,
+		};
+		//console.log(newJson);
+		var childHistogram = new Histogram(this.element, newJson, this);
+	}
+});
+
+function init_histogram(element) {
+	var json = reports_grid.data;
+	var values = [];
+	var max_value = 0;
+	var min_value = Number.MAX_SAFE_INTEGER;
+	for(var i = 0; i < json.data.length; i++) {
+		var total_items = 0;
+		for(var j = 0; j < json.data[i].length; j++) {
+			if(reports_grid.selection == "total" || j != 0) {
+				var num = parseInt(json.data[i][j]);
+				total_items += num;
+				//console.log(json.data[i][j]);
+			}
+		}
+		values.push(total_items);
+		if(total_items > max_value) {
+			max_value = total_items;
+		}
+		if(total_items < min_value) {
+			min_value = total_items;
+		}
+	}
+	var histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
+	return histogram;
+}
+
+function init_taxon_tree(element) {
+	if (!tree) {
+		$.ajax({
+			data: {
+				fname: "gen_tree_json",
+			},
+			success: function(data) {
+				console.log(JSON.parse(data));
+				tree = new Taxon_tree(JSON.parse(data), "taxonomic_tree");
+			}
+		});
+	}
+}
+
+var Taxon_tree = function(json, element) {
+	this.margin = {top: 20, right: 120, bottom: 20, left: 120};
+	this.width = 1960 - this.margin.right - this.margin.left;
+	this.height = 3200 - this.margin.top - this.margin.bottom;
+	this.duration = 750;
+	this.root = json;
+	this.current_root = this.root;
+	this.node;
+	this.link;
+	this.svg;
+	this.i = 0;
+	
+	this.tree = d3.layout.tree()
+		.size([this.height, this.width]);
+	
+	this.diagonal = d3.svg.diagonal()
+		.projection(function(d) { return [d.y, d.x]; });
+	
+
+	d3.select(self.frameElement).style("height", "800px");
+	
+	this.initialize(element);
+}
+
+$.extend(Taxon_tree.prototype, {
+	initialize: function(element) {
+		var self = this;
+		self.svg = d3.select("#" + element).append("svg")
+			.attr("width", self.width + self.margin.right + self.margin.left)
+			.attr("height", self.height + self.margin.top + self.margin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
+		
+		// Prepopulate the parent nodes of the tree.
+		var nodes = self.tree.nodes(self.root).reverse();
+		
+		self.fix.call(self);
+	},
+	fix: function() {
+		var self = this;
+		self.root.x0 = self.height / 2;
+		self.root.y0 = 0;
+
+		self.root.children.forEach(function(d) {
+			self.collapse.call(self, d);
+		});
+		self.update.call(self, self.root, self.current_root);
+	},
+	update: function(source, new_root) {
+		var self = this;
+		self.current_root = new_root;
+		console.log(source.depth);
+		
+		//Adjust height based on the number of children
+		if (self.current_root.children) {
+			self.tree.size([(self.current_root.children.length*20) * Math.pow(1.1,source.depth), 1]);
+		} else if (self.current_root._children && self.current_root._children.length != 0) {
+			self.tree.size([self.current_root._children.length*20, 1]);
+		} else {
+			self.tree.size([1, 1]);
+		}
+		//set minimum height to 800
+		if (self.tree.size()[0] < 800) {
+			self.tree.size([800, 1]);
+		}
+		console.log(self.tree.size())
+		
+		// Compute the new tree layout.
+		var nodes = self.tree.nodes(self.current_root); //.reverse();
+		var links = self.tree.links(nodes);
+		
+		// deal with filtering complications
+		var add_depth = 0;
+		var add_nodes = [];
+		while (new_root.parent) {
+			add_depth++;
+			if (new_root.parent._children) {
+				new_root.parent.children = new_root.parent._children;
+				new_root.parent._children = null;
+			}
+			new_root.parent.x = new_root.x;
+			add_nodes.push(new_root.parent);
+			links.push({
+				source: new_root.parent,
+				target: new_root,
+			});
+			new_root = new_root.parent;
+		}
+		
+		// fix depth
+		var max_depth = 0;
+		for(var i = 0; i < nodes.length; i++) {
+			nodes[i].depth += add_depth;
+			max_depth = Math.max(max_depth, nodes[i].depth);
+		}
+		for(var i = 0; i < add_nodes.length; i++) {
+			add_depth--;
+			add_nodes[i].depth = add_depth;
+			nodes.push(add_nodes[i]);
+		}
+		
+		// Normalize for fixed-depth.
+		nodes.forEach(function(d) { d.y = d.depth * 1260/max_depth; });
+		
+		// Update the nodesÉ
+		self.node = self.svg.selectAll("g.node")
+			.data(nodes, function(d) { return d.id || (d.id = ++self.i); });
+
+		// Enter any new nodes at the parent's previous position.
+		var nodeEnter = self.node.enter().append("g")
+			.attr("class", "node")
+			.attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+			.on("click", function(d) {
+				self.click.call(self, d);
+			})
+			.on("dblclick", function(d) {
+				self.double_click.call(self, d);
+			});
+
+		nodeEnter.append("circle")
+			.attr("class", "tree_node noselect")
+			.attr("r", 1e-6)
+			.style("fill", self.color);
+
+		nodeEnter.append("text")
+			.attr("x", function(d) { return d.children || d._children ? -10 : 10; })
+			.attr("dy", ".35em")
+			.attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+			.text(function(d) { return d.name; })
+			.style("fill-opacity", 1e-6);
+
+		// Transition nodes to their new position.
+		var nodeUpdate = self.node.transition()
+			.duration(self.duration)
+			.attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+		nodeUpdate.select("circle")
+			.attr("class", "tree_node noselect")
+			.attr("r", 6)
+			.style("fill", self.color);
+		
+		nodeUpdate.select("text")
+			.attr("class", "noselect")
+			.style("fill-opacity", 1);
+
+		// Transition exiting nodes to the parent's new position.
+		var nodeExit = self.node.exit().transition()
+			.duration(self.duration)
+			.attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+			.remove();
+
+		nodeExit.select("circle")
+			.attr("class", "tree_node")
+			.attr("r", 1e-6);
+
+		nodeExit.select("text")
+			.style("fill-opacity", 1e-6);
+
+		// Update the linksÉ
+		self.link = self.svg.selectAll("path.link")
+			.data(links, function(d) { return d.target.id; });
+
+		// Enter any new links at the parent's previous position.
+		self.link.enter().insert("path", "g")
+			.attr("class", "link")
+			.attr("d", function(d) {
+				var o = {x: source.x0, y: source.y0};
+				return self.diagonal({source: o, target: o});
+			})
+			.attr("fill", "none")
+			.attr("stroke", "#ccc")
+			.attr("stroke-width", "1.5px");
+
+		// Transition links to their new position.
+		self.link.transition()
+			.duration(self.duration)
+			.attr("d", self.diagonal)
+			.attr("fill", "none")
+			.attr("stroke", "#ccc")
+			.attr("stroke-width", "1.5px");
+
+		// Transition exiting nodes to the parent's new position.
+		self.link.exit().transition()
+			.duration(self.duration)
+			.attr("d", function(d) {
+				var o = {x: source.x, y: source.y};
+				return self.diagonal({source: o, target: o});
+			})
+			.attr("fill", "none")
+			.attr("stroke", "#ccc")
+			.attr("stroke-width", "1.5px")
+			.remove();
+
+		// Stash the old positions for transition.
+		nodes.forEach(function(d) {
+			d.x0 = d.x;
+			d.y0 = d.y;
+		});
+	},
+	filter: function(search_text) {
+		var self = this;
+		if (search_text) {
+			var find = self.find.call(self, search_text, [self.root]);
+			if(find) {
+				self.update.call(self, self.root, find);
+			} else {
+				// Not found = no change
+				//self.update.call(self, self.root, current.root);
+			}
+		} else {
+			// Empty search text = reset filter
+			self.update.call(self, self.root, self.root);
+		}
+	},
+	find: function(search_text, nodes) {	//nodes is expected to be an array
+		var self = this;
+		//console.log(nodes);
+		var new_nodes = [];
+		if (nodes.length == 0) {
+			return null;
+		}
+		for (var i = 0; i < nodes.length; i++) {
+			var node = nodes[i];
+			if (node.name.toUpperCase() == search_text.toUpperCase()) {
+				return node;
+			}
+			if(node.children) {
+				for (var j = 0; j < node.children.length; j++) {
+					new_nodes.push(node.children[j]);
+				}
+			} else if (node._children) {
+				for (var j = 0; j < node._children.length; j++) {
+					new_nodes.push(node._children[j]);
+				}
+			}
+		}
+		return self.find.call(self, search_text, new_nodes);
+	},
+	color: function(d) {
+		if (d.children) {
+			return "white";
+		} else if (d._children && d._children.length != 0) {
+			return "rgb(154, 205, 50)";
+		} else {
+			//no children, hidden or otherwise
+			return "gray";
+		}
+	},
+	click: function(d) {
+		var self = this;
+		if (d.children) {
+			d._children = d.children;
+			d.children = null;
+		} else {
+			d.children = d._children;
+			d._children = null;
+		}
+		self.update.call(self, d, self.current_root);
+	},
+	double_click: function(d) {
+		var self = this;
+		if (d.children) {
+			self.collapse.call(self, d);
+		} else {
+			self.open.call(self, d);
+		}
+		tree.update.call(self, d, tree.current_root);
+	},
+	collapse: function(d) {
+		var self = this;
+		if (d.children) {
+			d._children = d.children;
+			d._children.forEach(function(d) {
+				self.collapse.call(self, d);
+			});
+			d.children = null;
+		}
+	},
+	open: function(d) {
+		var self = this;
+		if (d._children) {
+			d.children = d._children;
+			d.children.forEach(function(d) {
+				self.open.call(self, d);
+			});
+			d._children = null;
+		}
+	},
+});
+
+function filter_tree() {
+	var search_text = $('#tree_filter').val();
+    tree.filter(search_text);
 }
