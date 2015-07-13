@@ -331,12 +331,12 @@ my $experiment = $coge->resultset('Experiment')->create(
         description => $description,
         version     => $version,
         #link		=> $link, #FIXME
-        source_id   => int($data_source->id),
+        data_source_id => int($data_source->id),
         data_type   => int($data_type),
         row_count   => int($count),
         genome_id   => int($gid),
         creator_id  => int($creator->id),
-        restricted  => ($restricted ? 'true' : 'false')
+        restricted  => $restricted
     }
 );
 print STDOUT "experiment id: " . $experiment->id . "\n";
@@ -421,16 +421,16 @@ print STDOUT "$cmd\n";
 # Save result
 unless (add_workflow_result($user_name, $wid, 
         {
-            type => 'experiment',
-            id => int($experiment->id),
+            type        => 'experiment',
+            id          => int($experiment->id),
             name        => $name,
             description => $description,
             version     => $version,
             #link       => $link, #FIXME
-            source_id   => $data_source->id,
-            data_type   => $data_type, #FIXME convert from number to string identifier
-            row_count   => $count,
-            genome_id   => $gid,
+            source_id   => int($data_source->id),
+            data_type   => int($data_type), #FIXME convert from number to string identifier
+            row_count   => int($count),
+            genome_id   => int($gid),
             restricted  => $restricted
         })
     )
