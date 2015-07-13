@@ -11,7 +11,7 @@ use Data::Dumper;
 sub list {
     my $self = shift;
     my $path = $self->stash('path');
-    #print STDERR "IRODS::list ", $path, "\n";
+    print STDERR "IRODS::list ", $path, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -20,16 +20,7 @@ sub list {
         return;
     }
 
-    # Setup path
-    #TODO set path to home if not specified
-    #my $username = $user->name;
-    #my $basepath = $conf->{IRODSDIR};
-    #$basepath =~ s/\<USER\>/$username/;
-    #$path = $basepath unless $path;
-    $path = '/' . $path;
-
     # Fetch directory listing
-    #my $result = CoGe::Accessory::IRODS::irods_ils($path);
     my $result = get_irods_path($path, $user->name);
     unless ($result) {
         $self->render(json => { error => { IRODS => 'Access denied' } });
@@ -42,7 +33,7 @@ sub list {
         return;
     }
 
-    $self->render(json => { path => $path, items => $result->{items} });
+    $self->render(json => { path => $result->{path}, items => $result->{items} });
 }
 
 sub fetch {

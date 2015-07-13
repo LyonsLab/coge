@@ -112,6 +112,10 @@ sub startup {
         ->to("job#results", id => undef, name => undef);
 
     # IRODS routes
+    $r->get("/irods/list/")
+        ->name("irods-list")
+        ->to("IRODS#list");
+        
     $r->get("/irods/list/(*path)")
         ->name("irods-list")
         ->to("IRODS#list");
