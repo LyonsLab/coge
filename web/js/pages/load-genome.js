@@ -60,21 +60,19 @@ function create_organism() {
 		return;
 	}
 
-	$.ajax({
-		data: {
-			fname: 'create_organism',
-			name: name,
-			desc: desc,
-		},
-		success : function(organism_id) {
-			if (organism_id) {
+	coge.services.add_organism({name: name, description: desc})
+		.done(function(response) {
+			if (response.id) {
 				$('#create_new_organism_dialog').dialog('close');
-				$('#edit_organism')
-					.val(name)
-					.data("organism_id", organism_id);
+//				$('#edit_organism')
+//					.val(name)
+//					.data("organism_id", organism_id);
+				genomeDescriptionView.set_organism(response.id, response.name);
 			}
-		}
-	});
+		})
+		.fail(function() {
+			//TODO
+		});
 }
 
 function load(genome) {
@@ -97,8 +95,8 @@ function load(genome) {
 		}
 	};
     
-    coge.services.submit_job(request, 
-    	function(response) { // success callback
+    coge.services.submit_job(request)
+    	.done(function(response) {
     		if (!response) {
     			coge.progress.failed("Error: empty response from server");
     			return;
@@ -111,78 +109,53 @@ function load(genome) {
 	        // Start status update
             window.history.pushState({}, "Title", PAGE_NAME + "?wid=" + response.id); // Add workflow id to browser URL
             coge.progress.update(response.id, response.site_url);
-	    },
-	    function(jqXHR, textStatus, errorThrown) { // error callback
+	    })
+	    .fail(function(jqXHR, textStatus, errorThrown) {
 	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-	    }
-	);
+	    });
 }
 
 function handle_action(action) {
     console.log('handle_action '+action);
 
-    if (action === "genome") {
+    if (action === "genome")
 	    window.location.href = "GenomeInfo.pl?embed=" + EMBED + "&gid=" + genome_id;
-    } 
-    else if (action === "annotation") {
+    else if (action === "annotation")
 	    window.location.href = "LoadAnnotation.pl?embed=" + EMBED + "&gid=" + genome_id;
-    } 
-    else { //if (action === "new") {
+    else //if (action === "new") 
         coge.progress.reset();
-    }
-}
-
-function wait_to_search (search_func, search_obj) {
-	if (pageObj.time)
-		clearTimeout(pageObj.time);
-
-	// FIXME: could generalize by passing select id instead of separate search_* functions
-	pageObj.time = setTimeout(
-		function() {
-			search_func(search_obj.value);
-		},
-		500
-	);
 }
 
 function search_organisms (search_term) {
 	if (search_term && search_term.length > 2) {
-		timestamps['search_organisms'] = new Date().getTime();
-		$.ajax({
-			data: {
-				fname: 'search_organisms',
-				search_term: search_term,
-				timestamp: timestamps['search_organisms']
-			},
-			success : function(data) {
-				var obj = jQuery.parseJSON(data);
-				if (obj && obj.items && obj.timestamp == timestamps['search_organisms']) {
-					$("#edit_organism")
-						.autocomplete({source: obj.items})
-						.autocomplete("search");
-				}
-			},
-		});
+		coge.services.search_organisms(search_term)
+			.done(function(result) {
+				var transformed = result.organisms.map(function(obj) {
+					return { label: obj.name, value: obj.id };
+				});
+				$("#edit_organism")
+					.autocomplete({source: transformed})
+					.autocomplete("search");
+			})
+			.fail(function() {
+				//TODO
+			});
 	}
 }
 
 function search_users (search_term) {
-	timestamps['search_users'] = new Date().getTime();
-	$.ajax({
-		data: {
-			fname: 'search_users',
-			search_term: search_term,
-			timestamp: timestamps['search_users']
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj && obj.items && obj.timestamp == timestamps['search_users']) {
-				$("#edit_user")
-					.autocomplete({source: obj.items})
-					.autocomplete("search");
-			}
-		},
-	});
+	coge.services.search_users(search_term)
+		.done(function(result) {
+			var transformed = result.users.map(function(obj) {
+				return obj.user_name;
+			});
+			$("#edit_user")
+				.autocomplete({source: transformed})
+				.autocomplete("search");
+		})
+		.fail(function() {
+			//TODO
+		});
 }
 
 function build_taxonomy_tree(items) {
@@ -361,7 +334,6 @@ function taxonomy_get_node(id) { // FIXME: cleanup and merge common stuff with s
 			}
 		}
 	);
-
 }
 
 function sort_name (a,b) {
@@ -371,6 +343,15 @@ function sort_name (a,b) {
 	if (nameA > nameB)
 		return 1
 	return 0 //default return value (no sorting)
+}
+
+function activate_on_input(elements, target) {
+	if (elements) {
+		elements.forEach(function(e) {
+			if ($('#'+e).val())
+				$('#'+target).removeClass('ui-state-disabled');
+		});
+	}
 }
 
 function GenomeDescriptionView(opts) {
@@ -437,18 +418,23 @@ $.extend(GenomeDescriptionView.prototype, {
     		}
     	});
     },
+    
+    set_organism: function(id, name) {
+    	this.edit_organism.val(name);
+    	this.organism_id = id;
+    },
 
     render: function() {
         var self = this;
+        
+        var edit_organism = this.edit_organism;
 
-        // jQuery Events
-        this.edit_organism.unbind().change(function() {
+        edit_organism.unbind().change(function() {
             // Reset organism_id when item has changed
             self.organism_id = undefined;
         });
 
-        // jQuery UI
-        this.edit_organism.autocomplete({
+        edit_organism.autocomplete({
             source:[],
             select: function(event, ui) {
                 $(this).val(ui.item.label);
@@ -459,6 +445,13 @@ $.extend(GenomeDescriptionView.prototype, {
             focus: function(event, ui) {
                 return false; // Prevent the widget from inserting the value.
             }
+        });
+        
+        edit_organism.keyup(function() {
+        	coge.utils.wait_to_search(search_organisms, self.edit_organism.get(0));
+        });
+        edit_organism.click(function() {
+        	$(this).autocomplete('search');
         });
 
         this.edit_source.autocomplete({source: this.sources});
@@ -503,17 +496,12 @@ $.extend(GenomeDescriptionView.prototype, {
                 source_name: source,
                 organism: organism
             },
-
             organism_id: this.organism_id
         });
 
         return true;
     },
 });
-
-function finish_load(results) {
-	
-}
 
 function reset_load() {
     window.history.pushState({}, "Title", PAGE_NAME);
@@ -528,6 +516,7 @@ function reset_load() {
     $('#wizard-container').hide().fadeIn();
 }
 
+var genomeDescriptionView; // needed by taxonomy browser
 function initialize_wizard(opts) {
     current_genome = {};
     var root = $("#wizard-container");
@@ -536,12 +525,13 @@ function initialize_wizard(opts) {
     	data: current_genome, 
     	helpUrl: opts.helpUrl 
     });
-    wizard.addStep(new GenomeDescriptionView({
+    genomeDescriptionView = new GenomeDescriptionView({
         genome: current_genome,
         metadata: opts.metadata,
         organism_id: opts.organism_id,
         onError: wizard.error_help.bind(wizard)
-    }));
+    });
+    wizard.addStep(genomeDescriptionView);
     wizard.addStep(new DataView(current_genome, { supportedFileTypes: ['fasta', 'faa', 'fa'], onError: wizard.error_help.bind(wizard) }));
     //wizard.addStep(new OptionsView({genome: current_genome, admin: opts.admin}));
     wizard.addStep(new ConfirmationView(current_genome));

@@ -38,10 +38,11 @@
     
 	    <div class="form-field">
 		    <label class="col-md-2">Organism:</label>
-		    <input class="col-md-8" id="edit_organism" type="search" placeholder="Search"
-		    	title="Enter the organism associated with the new genome. Start typing to narrow down the list of organisms to choose from." spellcheck="false"
-		    	onclick="$(this).autocomplete('search');"
-		    	onkeyup="wait_to_search(search_organisms, this);" size="50" value="<TMPL_VAR NAME='ORGANISM_NAME'>" />
+		    <input class="col-md-6" id="edit_organism" type="search" placeholder="Search"
+		    	title="Enter the organism associated with the new genome. Start typing to narrow down the list of organisms to choose from." spellcheck="false" size="50" value="<TMPL_VAR NAME='ORGANISM_NAME'>" />
+		    <div class="col-md-2">
+            	<span id="new_organism_button" title="Add a new organism" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input(['edit_organism_name'], 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>
+            </div>
 		    <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
 		</div>
 
@@ -57,7 +58,7 @@
 	        <div>
 	        	<select id="select_type" class="col-md-6"></select>
 	            <div class="col-md-2">
-	                <span id="new_type_button" title="Add a new sequence type" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all coge-button'>New</span>
+	                <span id="new_type_button" title="Add a new sequence type" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input(['edit_type_name'], 'create_type_button');" class='ui-button ui-corner-all coge-button'>New</span>
 	            </div>
 	        </div>
 	
@@ -70,7 +71,7 @@
             <div>
                 <input id="edit_source" type="search" class="col-md-6" placeholder="Search" title="Enter the source for the data for the new experiment. Start typing to select an exisisting source or click 'New' to add a source." size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
                 <div class="col-md-2">
-                    <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
+                    <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input(['edit_source_name'], 'create_source_button');" class='ui-button ui-corner-all'>New</span>
                 </div>
             </div>
 
@@ -141,76 +142,13 @@
 	<span class="r" style="padding-right:0.5em; padding-top:6px;">Next Step:</span>
 </script>
 
-<!--
-<div class="bold text" style="padding-top:1em;">1 - Describe the Genome</div>
-<div class="coge-bg inline padded ui-widget-content ui-corner-all">
-	<div class="small info">
-		Complete the form below to describe the genome sequence.
-		<div class="alert"><span class="small glyphicon glyphicon-asterisk"></span> denotes a required field</div>
-	</div>  
-	
-	<table class="small" style="padding-top:0.5em;">
-	  <tr>
-	    <td>Organism:</td>
-	    <td>
-	      <TMPL_IF NAME=ORGANISM_NAME>
-	        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" value="<TMPL_VAR NAME=ORGANISM_NAME>"size="50" spellcheck="false" />
-	      <TMPL_ELSE>
-	        <input id="edit_organism" type="search" placeholder="Search" onkeyup="wait_to_search(search_organisms, this.value);" size="50" spellcheck="false" />
-	      </TMPL_IF>
-	      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>
-	    </td>
-	    <td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
-	  </tr>
-	  <tr>
-	    <td>Version:</td>
-	    <td><input id="edit_version" type="textbox" size="10" spellcheck="false" /><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
-	  </tr>
-	  <tr>
-	    <td>Type:</td>
-	    <td>
-	      <select id="select_type" style="width:230px;"></select>
-	      <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all coge-button'>New</span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Source:</td>
-	    <td>
-	      <input id="edit_source" type="search" placeholder="Search" size="50" spellcheck="false" />
-	      <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span>
-	    </td>
-	    <td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
-	  </tr>
-	  <tr>
-	    <td>Restricted?</td>
-	    <td><input id="restricted" type="checkbox" checked></td>
-	  </tr>
-	  <tr id='more'>
-	    <td colspan="2"><span class="link" onclick="more();">more...</span></td>
-	  </tr>
-	  <tr class="hidden">
-	    <td>Name:</td>
-	    <td><input id="edit_name" type="textbox" placeholder="Optional" size="58" spellcheck="false" /></td>
-	  </tr>
-	  <tr class="hidden">
-	    <td>Description:</td>
-	    <td><textarea id="edit_description" placeholder="Optional" rows="5" cols="50" ></textarea></td>
-	  </tr>
-	  <tr class="hidden">
-	    <td>Link:</td>
-	    <td><input id="edit_link" type="textbox" placeholder="Optional" size="58" /></td>
-	  </tr>
-	</table>
-</div>
--->
-
 <!-- DIALOGS -->
 
 <div id="create_new_type_dialog" class="hidden dialog_box" title="Create New Sequence Type">
   <table class="small">
     <tr>
       <td>Name:</td>
-      <td><input id="edit_type_name" type="textbox" size="53" onkeyup="activate_on_input('edit_type_name', 'create_type_button');" /></td>
+      <td><input id="edit_type_name" type="textbox" size="53" onkeyup="activate_on_input(['edit_type_name'], 'create_type_button');" /></td>
     </tr>
     <tr>
       <td>Description:</td>
@@ -228,7 +166,7 @@
 	</div>
 	<div style="padding-top:10px;">
     	<span class="small">Search NCBI:</span>
-    	<input type="textbox" size="45" spellcheck="false" onkeyup="wait_to_search(search_ncbi_taxonomy, this);" />
+    	<input type="textbox" size="45" spellcheck="false" onkeyup="coge.utils.wait_to_search(search_ncbi_taxonomy, this);" />
 	    <img id="wait_ncbi" src="picts/ajax-loader.gif" style="opacity: 0;" />
 	</div>
 	<div id="tax_empty" class="hidden small" style="font-style:italic;color:gray;margin-top:15px;margin-left:20px;">No matches</div>
@@ -297,7 +235,7 @@ $(document).ready(function() {
   <tr>
     <td>Assign to user</td>
     <td>
-      <input id="edit_user" type="search" placeholder="search" onkeyup="wait_to_search(search_users, this);" size="10" />
+      <input id="edit_user" type="search" placeholder="search" onkeyup="coge.utils.wait_to_search(search_users, this);" size="10" />
     </td>
   </tr>
   <tr>

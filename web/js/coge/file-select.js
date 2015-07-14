@@ -294,7 +294,7 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		_irods_busy: function(busy) {
-			var status = $('#ids_status');
+			var status = this.container.find('#ids_status');
 			if (typeof busy === 'undefined' || busy) 
 				status.html('<img src="picts/ajax-loader.gif"/>').show();
 			else
@@ -302,7 +302,7 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		_irods_error: function(message) {
-			var status = $('#ids_status');
+			var status = this.container.find('#ids_status');
 			status.html('<span class="alert">'+message+'</span>').show();
 		},
 
@@ -313,9 +313,11 @@ var coge = window.coge = (function(namespace) {
 
 			path = self._resolve_path(path);
 
-			coge.services.irods_list(path, 
-				function(result) { // success
+			coge.services.irods_list(path)
+				.done(function(result) { //TODO move out into named function
 					self._irods_busy(false);
+					
+					var table = self.container.find('#ids_table');
 	
 					if (result == null) {
 						self._irods_error('No result');
@@ -326,7 +328,7 @@ var coge = window.coge = (function(namespace) {
 							self._irods_error('Access denied');
 							return;
 						}
-						$('#ids_table')
+						table
 							.html('<tr><td><span class="alert">'
 							+ 'The following error occurred while accessing the Data Store.<br><br>'
 							+ result.error + '<br><br>'
@@ -341,7 +343,7 @@ var coge = window.coge = (function(namespace) {
 						return;
 					}
 	
-					$('#ids_table').html('');
+					table.html('');
 					var parent_path = result.path.replace(/\/$/, '').split('/').slice(0,-1).join('/') + '/';
 	
 					// Save for later resolve_path()
@@ -351,7 +353,7 @@ var coge = window.coge = (function(namespace) {
 					$('#ids_current_path').html(result.path);
 	
 					if (result.items.length == 0)
-						$('#ids_table').append('<tr><td style="padding-left:20px;font-style:italic;color:gray;">(empty)</td></tr>');
+						table.append('<tr><td style="padding-left:20px;font-style:italic;color:gray;">(empty)</td></tr>');
 	
 					result.items.forEach(
 						function(obj) {
@@ -388,14 +390,13 @@ var coge = window.coge = (function(namespace) {
 								function() { $(this).css("background-color", "white"); }
 							);
 	
-							$('#ids_table').append(tr);
+							table.append(tr);
 						}
 					);					
-				},
-				function() { // error
+				})
+				.fail(function() {
 					// TODO
-				}
-			);
+				});
 		},
 
 // mdb removed 7/13/15 -- IRODS files are now transferred in workflow
@@ -421,8 +422,8 @@ var coge = window.coge = (function(namespace) {
 			
 			path = self._resolve_path(path);
 			
-			coge.services.irods_list(path, 
-				function(result) { // success
+			coge.services.irods_list(path) 
+				.done(function(result) {
 					self._irods_busy(false);
 					
 					if (!result || !result.items)
@@ -448,11 +449,10 @@ var coge = window.coge = (function(namespace) {
 							}
 						}
 					);				
-				},
-				function() { // error
+				})
+				.fail(function() {
 					//TODO
-				}
-			);
+				});
 		},
 
 		_units: function(val) {

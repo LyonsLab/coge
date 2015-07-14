@@ -44,73 +44,60 @@ function create_source() {
     });
 }
 
-function wait_to_search (search_func, search_obj) {
-    var search_term = search_obj.value;
-    if (search_term && search_term.length >= 3) {
-        if (pageObj.time) {
-            clearTimeout(pageObj.time);
-        }
-
-        pageObj.time = setTimeout(
-            function() {
-                search_func(search_obj.value);
-            },
-            250
-        );
-    }
-}
-
 function search_genomes (search_term) {
-    $.ajax({
-        data: {
-            fname: 'search_genomes',
-            search_term: search_term,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj.items) {
-                obj.items.forEach(function(element) {
-                    element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
-                });
-                $("#edit_genome")
-                	.autocomplete({source: obj.items})
-                	.autocomplete("search");
-            }
-        }
-    });
+	coge.services.search_genomes(search_term, { fast: true })
+		.done(function(result) { // success
+			var transformed = result.genomes.map(function(obj) {
+				var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
+				return { label: label, value: obj.id };
+			});
+			$("#edit_genome")
+				.autocomplete({source: transformed})
+				.autocomplete("search");
+		})
+		.fail(function() { // error
+			//TODO
+		});
 }
 
 function search_users (search_term) {
-    $.ajax({
-        data: {
-            fname: 'search_users',
-            search_term: search_term,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj && obj.items) {
-                $("#edit_user")
-                	.autocomplete({source: obj.items})
-                	.autocomplete("search");
-            }
-        }
-    });
+	coge.services.search_users(search_term)
+		.done(function(result) {
+			var transformed = result.users.map(function(obj) {
+				return obj.user_name;
+			});
+			$("#edit_user")
+				.autocomplete({source: transformed})
+				.autocomplete("search");
+		})
+		.fail(function() {
+			//TODO
+		});
 }
 
 function search_notebooks (search_term) {
-	coge.services.search_notebooks(search_term,USER_NAME,function(data){
-		if (data.notebooks) {
-			var items = [];
-			data.notebooks.forEach(function(notebook) {
-				items.push({label:notebook.name,value:notebook.id});
-		    });
-		    $("#edit_notebook")
-		    	.autocomplete({source: items})
-		    	.autocomplete("search");
-		}
-	},function(){console.log('error');});
+	coge.services.search_notebooks(search_term)
+		.done(function(data) { 
+			if (data.notebooks) {
+				var items = [];
+				data.notebooks.forEach(function(notebook) {
+					items.push({label:notebook.name,value:notebook.id});
+			    });
+			    $("#edit_notebook")
+			    	.autocomplete({source: items})
+			    	.autocomplete("search");
+			}
+		})
+		.fail(function() {
+			//TODO
+		});
+}
+
+function render_template(template, container) {
+    container.empty()
+    .hide()
+    .append(template)
+    .show();//.slideDown();
 }
 
 function ExperimentDescriptionView(opts) {
@@ -162,15 +149,15 @@ $.extend(ExperimentDescriptionView.prototype, {
 
     render: function() {
         var self = this;
+        
+        var edit_genome = this.edit_genome;
 
-        // jQuery Events
-        this.edit_genome.unbind().change(function() {
+        edit_genome.unbind().change(function() {
             // Reset gid when item has changed
             self.gid = undefined;
         });
 
-        // jQuery UI
-        this.edit_genome.autocomplete({
+        edit_genome.autocomplete({
             source:[],
             select: function(event, ui) {
                 $(this).val(ui.item.label);
@@ -182,6 +169,13 @@ $.extend(ExperimentDescriptionView.prototype, {
                 //$("#edit_genome").val(ui.item.label);
                 return false; // Prevent the widget from inserting the value.
             }
+        });
+        
+        edit_genome.keyup(function() {
+        	coge.utils.wait_to_search(search_genomes, self.edit_genome.get(0));
+        });
+        edit_genome.click(function() {
+        	$(this).autocomplete('search');
         });
 
         this.edit_source.autocomplete({source: this.sources});
@@ -235,13 +229,6 @@ $.extend(ExperimentDescriptionView.prototype, {
         return true;
     },
 });
-
-function render_template(template, container) {
-    container.empty()
-        .hide()
-        .append(template)
-        .show();//.slideDown();
-}
 
 function FindSNPView() {
     this.data = {};
@@ -792,9 +779,9 @@ function load(experiment) {
 			load_id:           load_id
 		}
 	};
-    
-    coge.services.submit_job(request, 
-    	function(response) { // success callback
+	
+    coge.services.submit_job(request) 
+    	.done(function(response) {
     		if (!response) {
     			coge.progress.failed("Error: empty response from server");
     			return;
@@ -807,11 +794,10 @@ function load(experiment) {
 	        // Start status update
             window.history.pushState({}, "Title", "LoadExperiment.pl" + "?wid=" + response.id); // Add workflow id to browser URL
             coge.progress.update(response.id, response.site_url);
-	    },
-	    function(jqXHR, textStatus, errorThrown) { // error callback
+	    })
+	    .fail(function(jqXHR, textStatus, errorThrown) {
 	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-	    }
-	);
+	    });
 }
 
 function reset_load() {

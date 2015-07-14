@@ -18,57 +18,34 @@ function create_source() {
 	});
 }
 
-function wait_to_search (search_func, search_obj) {
-	var search_term = search_obj.value;
-	if (!search_term || search_term.length >= 2) {
-		if (pageObj.time) {
-			clearTimeout(pageObj.time);
-		}
-
-		pageObj.time = setTimeout(
-			function() {
-				search_func(search_obj.value);
-			},
-			500
-		);
-	}
-}
-
 function search_genomes (search_term) {
-	$.ajax({
-		data: {
-			fname: 'search_genomes',
-			search_term: search_term,
-			timestamp: new Date().getTime()
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj.items) {
-				obj.items.forEach(function(element) {
-					element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
-				});
-				$("#edit_genome").autocomplete({source: obj.items});
-				$("#edit_genome").autocomplete("search");
-			}
-		},
-	});
+	coge.services.search_genomes(search_term)
+		.done(function(result) {
+			var transformed = result.genomes.map(function(obj) {
+				return { label: obj.info, value: obj.id };
+			});
+			$("#edit_genome")
+				.autocomplete({source: transformed})
+				.autocomplete("search");
+		})
+		.fail(function() {
+			//TODO
+		});
 }
 
 function search_users (search_term) {
-	$.ajax({
-		data: {
-			fname: 'search_users',
-			search_term: search_term,
-			timestamp: new Date().getTime()
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj && obj.items) {
-				$("#edit_user").autocomplete({source: obj.items});
-				$("#edit_user").autocomplete("search");
-			}
-		},
-	});
+	coge.services.search_users(search_term)
+		.done(function(result) {
+			var transformed = result.users.map(function(obj) {
+				return obj.user_name;
+			});
+			$("#edit_user")
+				.autocomplete({source: transformed})
+				.autocomplete("search");
+		})
+		.fail(function() {
+			//TODO
+		});
 }
 
 function load(annotation) {
@@ -91,8 +68,8 @@ function load(annotation) {
 		}
 	};
     
-    coge.services.submit_job(request, 
-    	function(response) { // success callback
+    coge.services.submit_job(request)
+    	.done(function(response) {
     		if (!response) {
     			coge.progress.failed("Error: empty response from server");
     			return;
@@ -105,11 +82,10 @@ function load(annotation) {
 	        // Start status update
             window.history.pushState({}, "Title", "LoadAnnotation.pl" + "?wid=" + response.id); // Add workflow id to browser URL
             coge.progress.update(response.id, response.site_url);
-	    },
-	    function(jqXHR, textStatus, errorThrown) { // error callback
+	    })
+	    .fail(function(jqXHR, textStatus, errorThrown) {
 	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-	    }
-	);
+	    });
 }
 
 function AnnotationDescriptionView(opts) {
@@ -230,13 +206,6 @@ $.extend(AnnotationDescriptionView.prototype, {
         return true;
     },
 });
-
-function render_template(template, container) {
-    container.empty()
-        .hide()
-        .append(template)
-        .show();//.slideDown();
-}
 
 function reset_load() {
     window.history.pushState({}, "Title", PAGE_NAME);

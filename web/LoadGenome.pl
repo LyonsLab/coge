@@ -8,14 +8,14 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_upload_path get_irods_path get_irods_file);
+use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
 use HTML::Template;
 use JSON::XS;
 use Sort::Versions;
 use File::Path qw(mkpath);
 use File::Copy qw(copy);
 use File::Basename;
-use File::Spec::Functions qw( catdir catfile );
+use File::Spec::Functions qw(catdir catfile);
 use File::Listing qw(parse_dir);
 use File::Slurp;
 use URI;
@@ -53,8 +53,6 @@ $EMBED = $FORM->param('embed');
 $MAX_SEARCH_RESULTS = 400;
 
 %FUNCTION = (
-    irods_get_path       => \&irods_get_path,
-    irods_get_file       => \&irods_get_file,
     load_from_ftp        => \&load_from_ftp,
     ftp_get_file         => \&ftp_get_file,
     upload_file          => \&upload_file,
@@ -62,11 +60,7 @@ $MAX_SEARCH_RESULTS = 400;
     get_sequence_types   => \&get_sequence_types,
     create_sequence_type => \&create_sequence_type,
     create_source        => \&create_source,
-    create_organism      => \&create_organism,
-    search_organisms     => \&search_organisms,
-    search_users         => \&search_users,
     get_sources          => \&get_sources,
-	check_login			 => \&check_login,
 	send_error_report    => \&send_error_report
 );
 
@@ -154,69 +148,6 @@ sub generate_body {
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
-}
-
-sub irods_get_path {
-    my %opts = @_;
-    my $path = $opts{path};
-    $path = unescape($path);
-    print STDERR "irods_get_path ", $path, "\n";
-    
-    unless ($path) {
-        my $username = $USER->name;
-        my $basepath = CoGe::Accessory::Web::get_defaults()->{IRODSDIR};
-        $basepath =~ s/\<USER\>/$username/;
-        $path = $basepath;
-    }
-    
-    my $result = get_irods_path($path);
-    
-    if ($result->{error}) {
-        # Test for recent new account.  The iPlant IRODS isn't ready for a few
-        # minues the first time a user logs into CoGe.
-        # mdb added 3/31/14
-        my $isNewAccount = 0;
-        if ($USER->date ne '0000-00-00 00:00:00') {
-            my $dt_user = DateTime::Format::MySQL->parse_datetime( $USER->date );
-            my $dt_now = DateTime->now( time_zone => 'America/Phoenix' );
-            my $diff = $dt_now->subtract_datetime($dt_user);
-            my ( $years, $months, $days, $hours, $minutes ) = $diff->in_units('years', 'months', 'days', 'hours', 'minutes');
-            $isNewAccount = (!$years && !$months && !$days && !$hours && $minutes < 5) ? 1 : 0;
-        }
-
-        # Send support email
-        if (!$isNewAccount) {
-            my $email = $P->{SUPPORT_EMAIL};
-            my $body =
-                "irods ils command failed\n\n"
-              . 'User: '
-              . $USER->name . ' id='
-              . $USER->id . ' '
-              . $USER->date . "\n\n"
-              . $result->{error} . "\n\n"
-              . $P->{SERVER};
-            CoGe::Accessory::Web::send_email(
-                from    => $email,
-                to      => $email,
-                subject => "System error notification",
-                body    => $body
-            );
-        }
-        return encode_json($result);
-    }
-
-    return encode_json({ path => $path, items => $result->{items} });
-}
-
-sub irods_get_file {
-    my %opts = @_;
-    my $path = $opts{path};
-    
-    $path = unescape($path);
-    
-    my $result = get_irods_file($path, $TEMPDIR);
-
-    return encode_json( { path => $result->{path}, size => $result->{size} } );
 }
 
 sub load_from_ftp {
@@ -406,146 +337,6 @@ sub upload_file {
     );
 }
 
-sub check_login {
-	#print STDERR $user->user_name . ' ' . int($user->is_public) . "\n";
-	return ($USER && !$USER->is_public);
-}
-
-# mdb removed 7/8/15 - migrated to web services
-#sub load_genome {
-#    my %opts         = @_;
-#    my $name         = $opts{name};
-#    my $description  = $opts{description};
-#    my $link         = $opts{link};
-#    my $version      = $opts{version};
-#    my $type_id      = $opts{type_id};
-#    my $source_name  = $opts{source_name};
-#    my $restricted   = $opts{restricted};
-#    my $organism_id  = $opts{organism_id};
-#    my $user_name    = $opts{user_name};
-#    my $keep_headers = $opts{keep_headers};
-#    my $items        = $opts{items};
-#	print STDERR "load_genome: organism_id=$organism_id name=$name description=$description version=$version type_id=$type_id restricted=$restricted\n";
-#
-#	# Added EL: 7/8/2013.  Solves the problem when restricted is unchecked.
-#	# Otherwise, command-line call fails with '-organism_id' being passed to
-#	# restricted as option
-#    $restricted = ( $restricted && $restricted eq 'true' ) ? 1 : 0;
-#
-#	# Check login
-#    if ( !$user_name || !$USER->is_admin ) {
-#        $user_name = $USER->user_name;
-#    }
-#    if ($user_name eq 'public') {
-#    	return encode_json({ error => 'Not logged in' });
-#    }
-#
-#    # Check data items
-#    unless ($items) {
-#        print STDERR "load_genome: no files specified\n";
-#        return encode_json({ error => 'No files specified' });
-#    }
-#    $items = decode_json($items);
-#    my @files = map { catfile($TEMPDIR, $_->{path}) } @$items;
-#
-#    # Setup staging area
-#    my $stagepath = catdir($TEMPDIR, 'staging');
-#    mkpath $stagepath;
-#
-#    # Gather NCBI accession numbers if present
-#    my @accns;
-#    foreach my $item (@$items) {
-#        if ($item->{type} eq 'ncbi') {
-#            my $path = $item->{path};
-#            $path =~ s/\.\d+$//; # strip off version number
-#            push @accns, $path;
-#        }
-#    }
-#
-#    # Submit workflow to add genome
-#    my ($workflow_id, $error_msg, $info);
-#    if (@accns) { # NCBI accession numbers specified
-#        ($workflow_id, $error_msg) = create_genome_from_NCBI(
-#            user => $USER,
-#            accns => \@accns
-#        );
-#        
-#        $info = 'from NCBI accn ' . join(', ', @accns);
-#    }
-#    else { # File-based load
-#        ($workflow_id, $error_msg) = create_genome_from_file(
-#            user => $USER,
-#            metadata => {
-#                name => $name,
-#                description => $description,
-#                version => $version,
-#                source_name => $source_name,
-#                restricted => $restricted,
-#                organism_id => $organism_id,
-#                type_id => $type_id
-#            },
-#            files => \@files
-#        );
-#        
-#        # Check organism
-#        my $organism = $coge->resultset('Organism')->find($organism_id);
-#        return unless $organism;
-#        
-#        # Set description for logging
-#        $info = '<i>"' . $organism->name;
-#        $info .= " " . $name if $name;
-#        $info .= ": " . $description if $description;
-#        $info .= " (v" . $version . ")";
-#        $info .= '"</i>';
-#    }
-#    unless ($workflow_id) {
-#        return encode_json({ error => "Workflow submission failed: " . $error_msg });
-#    }
-#
-#    # Get tiny link
-#    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-#        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . ( $EMBED ? 1 : 0 )
-#    );
-#    
-#    # Log it
-#    CoGe::Accessory::Web::log_history(
-#        db          => $coge,
-#        workflow_id => $workflow_id,
-#        user_id     => $USER->id,
-#        page        => "LoadGenome",
-#        description => 'Load genome ' . $info,
-#        link        => $tiny_link
-#    );
-#
-#    return encode_json({ job_id => $workflow_id, link => $tiny_link });
-#}
-#
-#sub get_load_log {
-#    my %opts         = @_;
-#    my $workflow_id = $opts{workflow_id};
-#    return unless $workflow_id;
-#    #TODO authenticate user access to workflow
-#
-#    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
-#    return unless (-r $results_path);
-#
-#    my $result_file = catfile($results_path, '1');
-#    return unless (-r $result_file);
-#
-#    my $result = CoGe::Accessory::TDS::read($result_file);
-#    return unless $result;
-#
-#    my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
-#    my $links = (exists $result->{links} ? $result->{links} : undef);
-#
-#    return encode_json(
-#        {
-#            genome_id   => $genome_id,
-#            links       => $links
-#        }
-#    );
-#}
-
 sub get_sequence_types {
     my $selected = 1;
 
@@ -579,21 +370,6 @@ sub create_sequence_type {
     return $type->id;
 }
 
-sub create_organism {
-    my %opts = @_;
-    my $name = $opts{name};
-    my $desc = $opts{desc};
-    return unless $name and $desc;
-    #print STDERR "create_organism $name $desc\n";
-
-    my $organism =
-      $coge->resultset('Organism')
-      ->find_or_create( { name => $name, description => $desc } );
-    return unless $organism;
-
-    return $organism->id;
-}
-
 sub get_debug_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
@@ -608,70 +384,6 @@ sub get_debug_log {
 
     my $result = read_file($result_file);
     return $result;
-}
-
-
-sub search_organisms {
-    my %opts        = @_;
-    my $search_term = $opts{search_term};
-    my $timestamp   = $opts{timestamp};
-
-    #	print STDERR "$search_term $timestamp\n";
-    return unless $search_term;
-
-    # Perform search
-    $search_term = '%' . $search_term . '%';
-    my @organisms = $coge->resultset("Organism")->search(
-        \[
-            'name LIKE ? OR description LIKE ?'
-            ,    #FIXME security hole: need to check 'restricted'
-            [ 'name', $search_term ], [ 'description', $search_term ]
-        ]
-    );
-
-    # Limit number of results displayed
-    if ( @organisms > $MAX_SEARCH_RESULTS ) {
-        return encode_json( { timestamp => $timestamp, items => undef } );
-    }
-
-    my @results;
-    foreach ( sort { $a->name cmp $b->name } @organisms ) {
-        push @results, { 'label' => $_->name, 'value' => $_->id };
-    }
-
-    return encode_json( { timestamp => $timestamp, items => \@results } );
-}
-
-sub search_users {
-    my %opts        = @_;
-    my $search_term = $opts{search_term};
-    my $timestamp   = $opts{timestamp};
-
-    #print STDERR "$search_term $timestamp\n";
-    return unless $search_term;
-
-    # Perform search
-    $search_term = '%' . $search_term . '%';
-    my @users = $coge->resultset("User")->search(
-        \[
-            'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
-            [ 'user_name',  $search_term ],
-            [ 'first_name', $search_term ],
-            [ 'last_name',  $search_term ]
-        ]
-    );
-
-    # Limit number of results displayed
-    # if (@users > $MAX_SEARCH_RESULTS) {
-    # 	return encode_json({timestamp => $timestamp, items => undef});
-    # }
-
-    return encode_json(
-        {
-            timestamp => $timestamp,
-            items     => [ sort map { $_->user_name } @users ]
-        }
-    );
 }
 
 sub get_sources {

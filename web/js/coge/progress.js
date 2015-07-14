@@ -309,7 +309,7 @@ var coge = window.coge = (function(namespace) {
 		    };
 			
 		    setTimeout(
-		    	function() { coge.services.fetch_job(self.job_id, update_handler, update_handler); },
+		    	function() { coge.services.fetch_job(self.job_id).always(update_handler); },
 		    	10
 		    );
 		},

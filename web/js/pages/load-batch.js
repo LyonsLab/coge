@@ -240,64 +240,40 @@ function render_template(template, container) {
         .show();//.slideDown();
 }
 
-function wait_to_search (search_func, search_obj) {
-    var search_term = search_obj.value;
-    if (!search_term || search_term.length >= 2) {
-        if (pageObj.time) {
-            clearTimeout(pageObj.time);
-        }
-
-        pageObj.time = setTimeout(
-            function() {
-                search_func(search_obj.value);
-            },
-            250
-        );
-    }
-}
-
 function search_genomes (search_term) {
-    $.ajax({
-        data: {
-            fname: 'search_genomes',
-            search_term: search_term,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj.items) {
-                obj.items.forEach(function(element) {
-                    element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
-                });
-                $("#edit_genome").autocomplete({source: obj.items});
-                $("#edit_genome").autocomplete("search");
-            }
-        },
-    });
+	coge.services.search_genomes(search_term, { fast: true })
+		.done(function(result) { // success
+			var transformed = result.genomes.map(function(obj) {
+				var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
+				return { label: label, value: obj.id };
+			});
+			$("#edit_genome")
+				.autocomplete({source: transformed})
+				.autocomplete("search");
+		})
+		.fail(function() { // error
+			//TODO
+		});
 }
 
 function search_users (search_term) {
-    $.ajax({
-        data: {
-            fname: 'search_users',
-            search_term: search_term,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj && obj.items) {
-                $("#edit_user").autocomplete({source: obj.items});
-                $("#edit_user").autocomplete("search");
-            }
-        },
-    });
+	coge.services.search_users(search_term)
+		.done(function(result) {
+			var transformed = result.users.map(function(obj) {
+				return obj.user_name;
+			});
+			$("#edit_user")
+				.autocomplete({source: transformed})
+				.autocomplete("search");
+		})
+		.fail(function() {
+			//TODO
+		});
 }
 
 function search_notebooks (search_term) {
-	coge.services.search_notebooks(
-		search_term, 
-		USER_NAME, 
-		function(obj) {
+	coge.services.search_notebooks(search_term)
+		.done(function(obj) {
 			var notebooks = obj.notebooks;
 			if (notebooks && notebooks.length > 0) {
 				var items = [];
@@ -313,8 +289,7 @@ function search_notebooks (search_term) {
 	            	.autocomplete({source: items})
 	            	.autocomplete("search");
 	        }
-		}
-	);
+		});
 }
 
 function load(batch) {
@@ -340,8 +315,8 @@ function load(batch) {
 		}
 	};
     
-    coge.services.submit_job(request, 
-    	function(response) { // success callback
+    coge.services.submit_job(request)
+    	.done(function(response) {
     		if (!response) {
     			coge.progress.failed("Error: empty response from server");
     			return;
@@ -354,11 +329,10 @@ function load(batch) {
 	        // Start status update
             window.history.pushState({}, "Title", "LoadBatch.pl" + "?wid=" + response.id); // Add workflow id to browser URL
             coge.progress.update(response.id, response.site_url);
-	    },
-	    function(jqXHR, textStatus, errorThrown) { // error callback
+	    })
+	    .fail(function(jqXHR, textStatus, errorThrown) {
 	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-	    }
-	);
+	    });
 }
 
 function reset_load() {
