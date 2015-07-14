@@ -7,7 +7,6 @@ use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
-use CoGe::Accessory::IRODS;
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
 use HTML::Template;
 use JSON::XS;
@@ -45,16 +44,11 @@ $TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 $EMBED = $FORM->param('embed');
 
 %FUNCTION = (
-    irods_get_path  => \&irods_get_path,
-    irods_get_file  => \&irods_get_file,
     load_from_ftp   => \&load_from_ftp,
     ftp_get_file    => \&ftp_get_file,
     upload_file     => \&upload_file,
-    load_annotation => \&load_annotation,
     get_sources     => \&get_sources,
     create_source   => \&create_source,
-    search_genomes  => \&search_genomes,
-    get_load_log    => \&get_load_log,
 	send_error_report => \&send_error_report
 );
 
