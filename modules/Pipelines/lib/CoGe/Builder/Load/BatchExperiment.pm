@@ -50,36 +50,11 @@ sub build {
     #
     my (@tasks, @input_files, @done_files);
     
-    # Create tasks to retrieve files #TODO Merge with Load/Experiment.pm
+    # Create tasks to retrieve files
     my $upload_dir = get_upload_path($self->user->name, $load_id);
-    foreach my $item (@$data) {
-        my $path = $item->{path};
-        my $type = lc($item->{type});
-        my $task;
-        
-        # Check if the file already exists which will be the case if called
-        # via the LoadGenome page.  
-        my $filepath = catfile($upload_dir, $path);
-        if (-r $filepath) {
-            push @input_files, $filepath;
-            next;
-        }
-        
-        # Create task based on source type (IRODS, HTTP/FTP, NCBI)
-        if ($type eq 'irods') {
-            my $irods_path = $path;
-            $irods_path =~ s/^irods//; # strip of leading "irods" from LoadGenome page # FIXME remove this in FileSelect
-            $task = create_iget_job(irods_path => $irods_path, local_path => $upload_dir);
-            #return unless $task;
-        }
-        elsif ($type eq 'http' or $type eq 'ftp') {
-            #TODO
-        }
-        
-        # Add task to workflow
-        $self->workflow->add_job($task);
-        push @input_files, $task->{outputs}[0];
-    }
+    my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data);
+    push @tasks, @{$data_workflow->{tasks}} if ($data_workflow->{tasks});
+    push @input_files, @{$data_workflow->{files}} if ($data_workflow->{files});
     
     # Add load batch task
     my $task = create_load_batch_job(
