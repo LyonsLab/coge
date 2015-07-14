@@ -9,6 +9,7 @@ use CoGe::Services::Data::Job;
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
+    my $fast = $self->param('fast');
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
@@ -52,27 +53,41 @@ sub search {
     } values %unique;
 
     # Format response
-    my @result = map {
-      {
-        id => int($_->id),
-        name => $_->name,
-        description => $_->description,
-        link => $_->link,
-        version => $_->version,
-        organism_id  => int($_->organism->id),
-        sequence_type => {
-            name => $_->type->name,
-            description => $_->type->description,
-        },
-        restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
-        chromosome_count => int($_->chromosome_count),
-        organism => {
-            id => int($_->organism->id),
-            name => $_->organism->name,
-            description => $_->organism->description
-        }
-      }
-    } @filtered;
+    my @result;
+    if ($fast) {
+        @result = map {
+          {
+            id => int($_->id),
+            info => $_->info
+          }
+        } @filtered;
+    }
+    else {
+        @result = map {
+          {
+            id => int($_->id),
+            name => $_->name,
+            description => $_->description,
+            link => $_->link,
+            version => $_->version,
+            info => $_->info,
+            organism_id  => int($_->organism->id),
+            sequence_type => {
+                name => $_->type->name,
+                description => $_->type->description,
+            },
+            restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+            chromosome_count => int($_->chromosome_count),
+            organism => {
+                id => int($_->organism->id),
+                name => $_->organism->name,
+                description => $_->organism->description
+            }
+          }
+        } @filtered;
+    }
+    
+    @result = sort { $a->{info} cmp $b->{info} } @result;
 
     $self->render(json => { genomes => \@result });
 }
