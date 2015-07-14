@@ -28,19 +28,17 @@ use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $USER $coge $FORM $LINK $WORKFLOW_ID $EMBED
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID
+  $CONF $PAGE_TITLE $TEMPDIR $USER $DB $FORM $LINK $WORKFLOW_ID $EMBED
+  %FUNCTION $LOAD_ID
 );
 
 $PAGE_TITLE = 'LoadGenome';
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
-
-$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
 # Get workflow_id and load_id for previous load if specified.  Otherwise
 # generate a new load_id for data upload.
@@ -49,8 +47,6 @@ $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_u
 $TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 
 $EMBED = $FORM->param('embed');
-
-$MAX_SEARCH_RESULTS = 400;
 
 %FUNCTION = (
     load_from_ftp        => \&load_from_ftp,
@@ -82,16 +78,16 @@ sub generate_html {
     my $template;
     
     if ($EMBED) {
-        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+        $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'embedded_page.tmpl' );
     }
     else {
-        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
 					      TITLE      => "Load Genome",
         				  PAGE_LINK  => $LINK,
-					      HOME       => $P->{SERVER},
+					      HOME       => $CONF->{SERVER},
                           HELP       => 'LoadGenome',
-                          WIKI_URL   => $P->{WIKI_URL} || '',
+                          WIKI_URL   => $CONF->{WIKI_URL} || '',
                           USER       => $USER->display_name || ''
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -100,7 +96,7 @@ sub generate_html {
     
         $template->param( ADJUST_BOX => 1 );
         $template->param( ADMIN_ONLY => $USER->is_admin );
-        $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+        $template->param( CAS_URL    => $CONF->{CAS_URL} || '' );
     }
     
     $template->param( BODY => generate_body() );
@@ -109,7 +105,7 @@ sub generate_html {
 
 sub generate_body {
     if ( $USER->user_name eq 'public' ) {
-        my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
         $template->param(
             PAGE_NAME => "$PAGE_TITLE.pl",
             LOGIN     => 1
@@ -117,7 +113,7 @@ sub generate_body {
         return $template->output;
     }
     
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         MAIN          => 1,
         PAGE_TITLE    => $PAGE_TITLE,
@@ -127,7 +123,7 @@ sub generate_body {
         WORKFLOW_ID   => $WORKFLOW_ID,
         API_BASE_URL  => 'api/v1/', #TODO move into config file or module
         HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadGenome',
-        SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
+        SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         ENABLE_NCBI              => 1,
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
@@ -140,7 +136,7 @@ sub generate_body {
                       SPLASH_CONTENTS    => 'This page allows you to load genome sequences in FASTA file format.' );
 
     my $oid = $FORM->param("oid");
-    my $organism = $coge->resultset('Organism')->find($oid) if $oid;
+    my $organism = $DB->resultset('Organism')->find($oid) if $oid;
     if ($organism) {
         $template->param(ORGANISM_NAME => $organism->name);
     }
@@ -342,7 +338,7 @@ sub get_sequence_types {
 
     my $html;
     foreach my $type ( sort { $a->name cmp $b->name }
-        $coge->resultset('GenomicSequenceType')->all() )
+        $DB->resultset('GenomicSequenceType')->all() )
     {
         $html .= '<option value="' . $type->id . '"';
         if ( $selected && $type->id == $selected )
@@ -363,7 +359,7 @@ sub create_sequence_type {
     return unless $name;
 
     my $type =
-      $coge->resultset('GenomicSequenceType')
+      $DB->resultset('GenomicSequenceType')
       ->find_or_create( { name => $name, description => $desc } );
     return unless $type;
 
@@ -391,7 +387,7 @@ sub get_sources {
     #my %opts = @_;
 
     my %unique;
-    foreach ( $coge->resultset('DataSource')->all() ) {
+    foreach ( $DB->resultset('DataSource')->all() ) {
         $unique{ $_->name }++;
     }
 
@@ -407,9 +403,7 @@ sub create_source {
     $link =~ s/^\s+//;
     $link = 'http://' . $link if ( not $link =~ /^(\w+)\:\/\// );
 
-    my $source =
-      $coge->resultset('DataSource')
-      ->find_or_create(
+    my $source = $DB->resultset('DataSource')->find_or_create(
         { name => $name, description => $desc, link => $link } );
     return unless ($source);
 
@@ -424,11 +418,11 @@ sub send_error_report {
     # Get the staging directory
     my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
-    my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
+    my $url = $CONF->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
     $url .= "load_id=$load_id";
 
-    my $email = $P->{SUPPORT_EMAIL};
+    my $email = $CONF->{SUPPORT_EMAIL};
 
     my $body =
         "Load failed\n\n"
