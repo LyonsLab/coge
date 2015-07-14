@@ -70,12 +70,10 @@ sub startup {
         ->name("notebooks-fetch")
         ->to("notebook#fetch", id => undef);
 
-    # User routes
-    # mdb 4/10/14: Removing search & fetch because they are available via the
-    # iPlant Trellis API.
-#    $r->get("/users/search/#term")
-#        ->name("users-search")
-#        ->to("user#search", term => undef);
+    # User routes -- not documented, only for internal use
+    $r->get("/users/search/#term")
+        ->name("users-search")
+        ->to("user#search", term => undef);
 
 #    $r->get("/users/:id" => [id => qr/\w+/])
 #        ->name("users-fetch")
