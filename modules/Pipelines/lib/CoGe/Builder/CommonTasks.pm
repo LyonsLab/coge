@@ -308,7 +308,7 @@ sub create_gunzip_job {
             $output_file,
             "$output_file.decompressed"
         ],
-        description => "Decompressing " . to_filename($input_file) . "..."
+        description => "Decompressing " . basename($input_file) . "..."
     };
 }
 
@@ -763,7 +763,7 @@ sub create_validate_fastq_job {
         outputs => [
             "$fastq.validated"
         ],
-        description => "Validating " . to_filename($fastq) . "..."
+        description => "Validating " . basename($fastq) . "..."
     };
 }
 
@@ -785,7 +785,7 @@ sub create_cutadapt_job {
     $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
     $validated = [ $validated ] unless (ref($validated) eq 'ARRAY');
     
-    my $name = join(', ', map { to_filename($_) } @$fastq);
+    my $name = join(', ', map { basename($_) } @$fastq);
     my @inputs = ( @$fastq, @$validated);
     my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
 
