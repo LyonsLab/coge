@@ -59,33 +59,9 @@ sub build {
     
     # Create tasks to retrieve files
     my $upload_dir = get_upload_path($self->user->name, $load_id);
-    foreach my $item (@$data) {
-        my $type = lc($item->{type});
-        my $task;
-        
-        # Check if the file already exists which will be the case if called
-        # via the LoadExperiment page.  
-        my $filepath = catfile($upload_dir, $item->{path});
-        if (-r $filepath) {
-            push @input_files, $filepath;
-            next;
-        }
-        
-        # Create task based on source type (IRODS, HTTP, FTP)
-        if ($type eq 'irods') {
-            my $irods_path = $item->{path};
-            $irods_path =~ s/^irods//; # strip of leading "irods" from LoadExperiment page # FIXME remove this in FileSelect
-            $task = create_iget_job(irods_path => $irods_path, local_path => $upload_dir);
-            return unless $task;
-        }
-        elsif ($type eq 'http' or $type eq 'ftp') {
-            #TODO
-        }
-        
-        # Add task to workflow
-        $self->workflow->add_job($task);
-        push @input_files, $task->{outputs}[0];
-    }
+    my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data);
+    push @tasks, @{$data_workflow->{tasks}} if ($data_workflow->{tasks});
+    push @input_files, @{$data_workflow->{files}} if ($data_workflow->{files});
     
     # Build analytical tasks based on file type
     if ( $file_type eq 'fastq' || $file_type eq 'bam' ) {

@@ -25,7 +25,7 @@ our @EXPORT = qw(
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job create_iget_job
-    create_load_annotation_job
+    create_load_annotation_job create_data_retrieval_workflow
     send_email_job add_items_to_notebook_job
 );
 
@@ -191,6 +191,47 @@ sub create_iget_job {
         inputs => [],
         outputs => [ $dest_file ],
         description => "Fetching $irods_path..."
+    };
+}
+
+sub create_data_retrieval_workflow {
+    my %opts = @_;
+    my $upload_dir = $opts{upload_dir};
+    my $data = $opts{data};
+    
+    my (@tasks, @files);
+    foreach my $item (@$data) {
+        my $type = lc($item->{type});
+        
+        # Check if the file already exists which will be the case if called
+        # via the load page.  
+        my $filepath = catfile($upload_dir, $item->{path});
+        if (-r $filepath) {
+            push @files, $filepath;
+            next;
+        }
+        
+        # Create task based on source type (IRODS, HTTP, FTP)
+        my $task;
+        if ($type eq 'irods') {
+            my $irods_path = $item->{path};
+            $irods_path =~ s/^irods//; # strip of leading "irods" from LoadExperiment page # FIXME remove this in FileSelect
+            $task = create_iget_job(irods_path => $irods_path, local_path => $upload_dir);
+        }
+        elsif ($type eq 'http' or $type eq 'ftp') {
+            #TODO
+        }
+        
+        # Add task to workflow
+        if ($task) {
+            push @tasks, $task;
+            push @files, $task->{outputs}[0];
+        }
+    }
+    
+    return {
+        tasks => \@tasks,
+        files => \@files
     };
 }
 
