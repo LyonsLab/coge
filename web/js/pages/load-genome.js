@@ -64,9 +64,6 @@ function create_organism() {
 		.done(function(response) {
 			if (response.id) {
 				$('#create_new_organism_dialog').dialog('close');
-//				$('#edit_organism')
-//					.val(name)
-//					.data("organism_id", organism_id);
 				genomeDescriptionView.set_organism(response.id, response.name);
 			}
 		})
