@@ -15,6 +15,7 @@ var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 var reports_grid;
+var histogram;
 var tree;
 
 $(function () {
@@ -66,6 +67,7 @@ $(function () {
     $("#hist_update_checkbox").change(function(e) {
     	toggle_hist_updater();
     });
+    $("#histo_dialog").dialog({autoOpen: false, width: 500, height: 500});
     
     //Setup idle timer
     $(document).mousemove(function() {
@@ -78,8 +80,6 @@ $(function () {
 			schedule_update(5000);
 		}
 	});
-    
-    //var histo_test = new Histogram("histo_dialog");
 });
 
 //Initialize the Jobs tab
@@ -1555,25 +1555,13 @@ Force.prototype.toggle_children = function(d) {
 
 Force.prototype.click = function(d) {
 	if (!d3.event.defaultPrevented) {
-		//if (d._size) {
-		//	var temp = d._size;
-		//	d._size = d.size;
-		//	d.size = temp;
-		//} else {
-		//	d._size = d.size;
-		//	d.size = 2025;
-		//}
-		
 		this.force.charge(
 			function(d, i) {
 				if(d.size) {
-					//return Math.pow(d.size, 1.0/3.0)*(-12);
-					//console.log(d.size + '!');
 					return Math.sqrt(d.size)*(-2.25);
 				}
 			}
 		);
-		//force.getAttribute("charge");
 		this.force.start();
 		
 		this.toggle_children(d);
@@ -1794,38 +1782,16 @@ var Histogram = function(element, json, parent) {
 	this.element = element;
 	this.json = json;
 	this.parent = parent;
-	//this.selection = selection;
-	
-	/*this.values = [];
-	this.max_value = 0;
-	this.min_value = Number.MAX_SAFE_INTEGER;
-	for(var i = 0; i < json.data.length; i++) {
-		var total_items = 0;
-		for(var j = 0; j < json.data[i].length; j++) {
-			if(selection == "total" || j != 0) {
-				var num = parseInt(json.data[i][j]);
-				total_items += num;
-				//console.log(json.data[i][j]);
-			}
-		}
-		this.values.push(total_items);
-		if(total_items > this.max_value) {
-			this.max_value = total_items;
-		}
-		if(total_items < this.min_value) {
-			this.min_value = total_items;
-		}
-	}*/
 	this.values = this.json.values;
 	this.min_value = this.json.min;
 	this.max_value = this.json.max;
 	
-	console.log(this.json);
+	$('#' + this.element).dialog('open');
 	
 	this.formatCount;
-	this.margin = {top: 10, right: 30, bottom: 30, left: 50};
-	this.width = 500 - this.margin.left - this.margin.right;
-	this.height = 500 - this.margin.top - this.margin.bottom;
+	this.margin = {top: 10, right: 30, bottom: 60, left: 50};
+	this.width = $('#' + this.element).outerWidth() - this.margin.left - this.margin.right;
+	this.height = $('#' + this.element).outerHeight() - this.margin.top - this.margin.bottom;
 	this.x;
 	this.data;
 	this.y;
@@ -1841,10 +1807,16 @@ var Histogram = function(element, json, parent) {
 $.extend(Histogram.prototype, {
 	initialize: function() {
 		var self = this;
-		$("#" + this.element).html('');
-		//Generate a Bates distribution of 10 random variables.
-		//this.values = d3.range(1000).map(d3.random.bates(10));
-		//console.log(this.values);
+		$("#" + this.element).html(
+			'<div><button id="histogram_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="histogram_zoom_out()">Zoom Out</button>' +
+			'<span style="margin-right:40px;">Graph Label Test</span></div>'
+		);
+
+		if (self.parent) {
+			$('#histogram_back_button').prop('disabled', false);
+		} else {
+			$('#histogram_back_button').prop('disabled', true);
+		}
 	
 		// A formatter for counts.
 		this.formatCount = d3.format(",.0f");
@@ -1859,11 +1831,14 @@ $.extend(Histogram.prototype, {
 	
 		// Generate a histogram using twenty uniformly-spaced bins.
 		this.data = d3.layout.histogram()
-		    .bins(this.x.ticks(this.max_value))
+		    .bins(this.x.ticks(this.max_value - this.min_value))
 		    (this.values);
 	
 		this.y = d3.scale.log()
-		    .domain([1, d3.max(this.data, function(d) { return d.y; })])
+		    .domain([1, Math.max(
+		    		d3.max(this.data, function(d) { return d.y; }),
+		    		2
+		    )])
 		    .range([this.height, 0]);
 	
 		this.xAxis = d3.svg.axis()
@@ -1891,17 +1866,21 @@ $.extend(Histogram.prototype, {
 			.enter().append("g")
 		    .attr("class", "bar")
 		    .attr("transform", function(d) { 
-		    	if(d.y == 0) {
-		    		return "translate(" + self.x(d.x) + ", 0)";
+		    	if (d.y == 1) {
+		    		return "translate(" + self.x(d.x) + ", " + self.y(1.1) + ")";
+		    	} else if (d.y == 0) {
+		    		return "translate(" + self.x(d.x) + ", " + self.y(1.1) + ")";
 		    	}
 		    	return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
 		    });
 		
 		this.bar.append("rect")
 		    .attr("x", 1)
-		    .attr("width", self.x((self.data[0].dx * 2) - 1))
-		    .attr("height", function(d) { 
-		    	if(d.y == 0) {
+		    .attr("width", (self.width / self.data.length)*0.9)
+		    .attr("height", function(d) {
+		    	if(d.y == 1) {
+		    		return self.height - self.y(1.1);
+		    	} else if (d.y == 0) {
 		    		return 0;
 		    	}
 		    	return self.height - self.y(d.y); 
@@ -1935,10 +1914,13 @@ $.extend(Histogram.prototype, {
 				resizeStop: function( event, ui ) { 
 					//self.svg.attr("transform", "scale(" + ui.size.width/ui.originalSize.width + " " + ui.size.height/ui.originalSize.height + ") translate(" + self.margin.left + "," + self.margin.top + ")");
 
-					var widthScale = ui.size.width/ui.originalSize.width;
+					self.width = $(this).outerWidth() - self.margin.left - self.margin.right;
+					self.height = $(this).outerHeight() - self.margin.top - self.margin.bottom;
+					
+					/*var widthScale = ui.size.width/ui.originalSize.width;
 					var heightScale = ui.size.height/ui.originalSize.height;
 					self.width = (self.width + self.margin.left + self.margin.right)*widthScale - self.margin.left - self.margin.right;
-					self.height = (self.height + self.margin.top + self.margin.bottom + 30)*heightScale - self.margin.top - self.margin.bottom - 30;
+					self.height = (self.height + self.margin.top + self.margin.bottom + 30)*heightScale - self.margin.top - self.margin.bottom - 30;*/
 					self.initialize();
 				},
 			})
@@ -1949,8 +1931,6 @@ $.extend(Histogram.prototype, {
 		var extent = this.brush.extent();
 		var rangeExtent = [this.x( extent[0] ), this.x( extent[1] ) ];
 		var rangeWidth  = rangeExtent[1] - rangeExtent[0];
-		console.log(extent[0]);
-		console.log(rangeExtent[0]);
 		
 		var newValues = [];
 		for (var i = 0; i < this.values.length; i++) {
@@ -1963,8 +1943,8 @@ $.extend(Histogram.prototype, {
 				max: Math.ceil(extent[1]),
 				values: newValues,
 		};
-		//console.log(newJson);
-		var childHistogram = new Histogram(this.element, newJson, this);
+		var parent = histogram;
+		histogram = new Histogram(self.element, newJson, parent);
 	}
 });
 
@@ -1990,8 +1970,12 @@ function init_histogram(element) {
 			min_value = total_items;
 		}
 	}
-	var histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
-	return histogram;
+	histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
+}
+
+function histogram_zoom_out() {
+	histogram = histogram.parent;
+	histogram.initialize();
 }
 
 function init_taxon_tree(element) {
