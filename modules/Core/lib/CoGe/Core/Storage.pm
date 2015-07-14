@@ -32,7 +32,7 @@ use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
-use CoGe::Accessory::IRODS qw(irods_iget);
+use CoGe::Accessory::IRODS qw(irods_iget irods_ils);
 use File::Basename;
 use POSIX qw(floor);
 use File::Spec::Functions;
@@ -41,7 +41,7 @@ use File::Find qw(find);
 use File::Slurp;
 use List::Util qw[min max];
 use File::Slurp;
-use JSON::XS qw(decode_json);
+use JSON::XS qw(encode_json decode_json);
 use Data::Dumper;
 use POSIX qw(ceil);
 
@@ -61,6 +61,7 @@ BEGIN {
       create_experiments_from_batch
       create_genome_from_file create_genome_from_NCBI
       create_annotation_dataset reverse_complement
+      get_irods_file get_irods_path
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
     @EXPORT_OK = qw(data_type);
@@ -1228,6 +1229,56 @@ sub _create_load_annotation_job {
         ],
         description => "Loading annotation data ..."
     );
+}
+
+sub get_irods_path {
+    my ($path) = @_;
+    #print STDERR "irods_get_path: ", $path, "\n";
+    
+# mdb removed 6/17/15 COGE-313
+#    if ( $path !~ /^$basepath/ ) {
+#        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
+#        return;
+#    }
+
+    # mdb added 6/17/15 COGE-313
+    if ( $path eq '/iplant/home/' ) {
+        #print STDERR "Attempt to access '$path' denied\n";
+        return;
+    }
+
+    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
+    #print STDERR Dumper $result, "\n";
+
+    return $result;
+}
+
+sub get_irods_file {
+    my ($src_path, $dest_path) = @_;
+    my ($filename)   = $src_path =~ /([^\/]+)\s*$/;
+    my ($remotepath) = $src_path =~ /(.*)$filename$/;
+
+    my $localpath     = 'irods/' . $remotepath;
+    my $localfullpath = catdir($dest_path . $localpath);
+    $localpath = catfile($localpath, $filename);
+    my $localfilepath = catfile($localfullpath, $filename);
+    #print STDERR "get_file $path $filename $localfilepath\n";
+
+    my $do_get = 1;
+
+    #   if (-e $localfilepath) {
+    #       my $remote_chksum = irods_chksum($path);
+    #       my $local_chksum = md5sum($localfilepath);
+    #       $do_get = 0 if ($remote_chksum eq $local_chksum);
+    #       print STDERR "$remote_chksum $local_chksum\n";
+    #   }
+
+    if ($do_get) {
+        mkpath($localfullpath);
+        CoGe::Accessory::IRODS::irods_iget( $src_path, $localfullpath );
+    }
+
+    return { path => $localpath, size => -s $localfilepath };
 }
 
 sub reverse_complement { #TODO move into Util.pm
