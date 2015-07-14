@@ -8,8 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::IRODS;
-use CoGe::Core::Storage qw(create_annotation_dataset get_workflow_paths get_irods_path get_irods_file  get_upload_path);
-use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
 use HTML::Template;
 use JSON::XS;
 use URI::Escape::JavaScript qw(escape unescape);
@@ -25,19 +24,17 @@ use Sort::Versions;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $LINK $EMBED $TEMPDIR $USER $coge $FORM
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $WORKFLOW_ID
+  $CONF $PAGE_TITLE $LINK $EMBED $TEMPDIR $USER $DB $FORM
+  %FUNCTION $LOAD_ID $WORKFLOW_ID
 );
 
 $PAGE_TITLE = 'LoadAnnotation';
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
-
-$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
 # Get workflow_id and load_id for previous load if specified.  Otherwise
 # generate a new load_id for data upload.
@@ -46,8 +43,6 @@ $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_u
 $TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 
 $EMBED = $FORM->param('embed');
-
-$MAX_SEARCH_RESULTS = 100;
 
 %FUNCTION = (
     irods_get_path  => \&irods_get_path,
@@ -83,16 +78,16 @@ sub generate_html {
     my $template;
 
     if ($EMBED) {
-        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+        $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'embedded_page.tmpl' );
     }
     else {
-        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
 					      TITLE      => "LoadAnnotation",
         				  PAGE_LINK  => $LINK,
-        				  HOME       => $P->{SERVER},
+        				  HOME       => $CONF->{SERVER},
                           HELP       => 'LoadAnnotation',
-                          WIKI_URL   => $P->{WIKI_URL} || '',
+                          WIKI_URL   => $CONF->{WIKI_URL} || '',
                           USER       => $USER->display_name || '' );
         $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
         
@@ -101,7 +96,7 @@ sub generate_html {
     
         $template->param( ADJUST_BOX => 1 );
         $template->param( ADMIN_ONLY => $USER->is_admin );
-        $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+        $template->param( CAS_URL    => $CONF->{CAS_URL} || '' );
     }
     
     $template->param( BODY => generate_body() );
@@ -110,19 +105,19 @@ sub generate_html {
 
 sub generate_body {
     if ( $USER->user_name eq 'public' ) {
-        my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
         $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
         $template->param( LOGIN     => 1 );
         return $template->output;
     }
 
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
 
     my $gid;
     $gid = $FORM->param('gid') if defined $FORM->param('gid');
     if ($gid) {
-        my $genome = $coge->resultset('Genome')->find($gid);
+        my $genome = $DB->resultset('Genome')->find($gid);
         #TODO check permissions
         if ($genome) {
             $template->param(
@@ -140,7 +135,7 @@ sub generate_body {
         WORKFLOW_ID   => $WORKFLOW_ID,
         API_BASE_URL  => 'api/v1/', #TODO move into config file or module
         HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadAnnotation',
-        SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
+        SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         DEFAULT_TAB              => 0,
         FILE_SELECT_SINGLE       => 1,
         DISABLE_IRODS_GET_ALL    => 1,
@@ -150,74 +145,11 @@ sub generate_body {
         USER                     => $USER->user_name,
     );
     $template->param( SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
-                      SPLASH_CONTENTS    => 'This page allows you to load genome sequences in FASTA file format.' );
+                      SPLASH_CONTENTS    => 'This page allows you to load genome annotation in GFF file format.' );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
 }
-
-#sub irods_get_path {
-#    my %opts = @_;
-#    my $path = $opts{path};
-#    $path = unescape($path);
-#    #print STDERR "irods_get_path ", $path, "\n";
-#    
-#    unless ($path) {
-#        my $username = $USER->name;
-#        my $basepath = CoGe::Accessory::Web::get_defaults()->{IRODSDIR};
-#        $basepath =~ s/\<USER\>/$username/;
-#        $path = $basepath;
-#    }
-#    
-#    my $result = get_irods_path($path);
-#    
-#    if ($result->{error}) {
-#        # Test for recent new account.  The iPlant IRODS isn't ready for a few
-#        # minues the first time a user logs into CoGe.
-#        # mdb added 3/31/14
-#        my $isNewAccount = 0;
-#        if ($USER->date ne '0000-00-00 00:00:00') {
-#            my $dt_user = DateTime::Format::MySQL->parse_datetime( $USER->date );
-#            my $dt_now = DateTime->now( time_zone => 'America/Phoenix' );
-#            my $diff = $dt_now->subtract_datetime($dt_user);
-#            my ( $years, $months, $days, $hours, $minutes ) = $diff->in_units('years', 'months', 'days', 'hours', 'minutes');
-#            $isNewAccount = (!$years && !$months && !$days && !$hours && $minutes < 5) ? 1 : 0;
-#        }
-#
-#        # Send support email
-#        if (!$isNewAccount) {
-#            my $email = $P->{SUPPORT_EMAIL};
-#            my $body =
-#                "irods ils command failed\n\n"
-#              . 'User: '
-#              . $USER->name . ' id='
-#              . $USER->id . ' '
-#              . $USER->date . "\n\n"
-#              . $result->{error} . "\n\n"
-#              . $P->{SERVER};
-#            CoGe::Accessory::Web::send_email(
-#                from    => $email,
-#                to      => $email,
-#                subject => "System error notification",
-#                body    => $body
-#            );
-#        }
-#        return encode_json($result);
-#    }
-#
-#    return encode_json({ path => $path, items => $result->{items} });
-#}
-#
-#sub irods_get_file {
-#    my %opts = @_;
-#    my $path = $opts{path};
-#    
-#    $path = unescape($path);
-#    
-#    my $result = get_irods_file($path, $TEMPDIR);
-#
-#    return encode_json( { path => $result->{path}, size => $result->{size} } );
-#}
 
 sub load_from_ftp {
     my %opts = @_;
@@ -370,169 +302,12 @@ sub upload_file {
     );
 }
 
-#sub load_annotation {
-#    my %opts        = @_;
-#    my $name        = $opts{name};
-#    my $description = $opts{description};
-#    my $link        = $opts{link};
-#    my $version     = $opts{version};
-#    my $source_name = $opts{source_name};
-#    my $user_name   = $opts{user_name};
-#    my $gid         = $opts{gid};
-#    my $items       = $opts{items};
-#
-#    # print STDERR "load_annotation: name=$name description=$description version=$version gid=$gid\n";
-#
-#    # Check login
-#    if ( !$user_name || !$USER->is_admin ) {
-#        $user_name = $USER->user_name;
-#    }
-#    if ($user_name eq 'public') {
-#        return encode_json({ error => 'Not logged in' });
-#    }
-#    
-#    # Check genome
-#    my $genome = $coge->resultset('Genome')->find($gid);
-#    return unless $genome;
-#
-#    # Check data items
-#    return encode_json({ error => "No data items" }) unless $items;
-#    $items = decode_json($items);
-#    #print STDERR Dumper $items;
-#
-#    # mdb added issue 309 - workaround here because checking perms in search_genomes() is too slow
-#    return encode_json({ error => "You do not have permission to modify this genome" })
-#        unless ($USER->is_admin || $USER->is_owner_editor( dsg => $gid ));
-#
-#    # Setup paths to files
-#    my @files = map { $TEMPDIR . $_->{path} } @$items;
-#
-#    # Submit workflow to add genome
-#    my ($workflow_id, $error_msg) = create_annotation_dataset(
-#        user => $USER,
-#        metadata => {
-#            name => $name,
-#            description => $description,
-#            link => $link,
-#            version => $version,
-#            source_name => $source_name,
-#            genome_id => $gid
-#        },
-#        files => \@files
-#    );
-#    unless ($workflow_id) {
-#        return encode_json({ error => "Workflow submission failed: " . $error_msg });
-#    }
-#
-#	# Get tiny link
-#    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-#        url => $P->{SERVER} . "$PAGE_TITLE.pl?job_id=" . $workflow_id . "&embed=" . $EMBED
-#    );
-#    
-#    # Log it
-#    my $info;
-#    $info .= " v" . $version;
-#    $info .= ' for genome <i>"' . $genome->organism->name;
-#    $info .= " (" . $genome->name . ")" if $genome->name;
-#    $info .= ": " . $genome->description if $genome->description;
-#    $info .= " (v" . $genome->version . ")";
-#    $info .= '"</i>';
-#    CoGe::Accessory::Web::log_history(
-#        db          => $coge,
-#        workflow_id => $workflow_id,
-#        user_id     => $USER->id,
-#        page        => "LoadAnnotation",
-#        description => 'Load annotation ' . $info,
-#        link        => $tiny_link
-#    );
-#
-#    return encode_json({ job_id => $workflow_id, link => $tiny_link });
-#}
-
-#sub get_load_log {
-#    my %opts         = @_;
-#    my $workflow_id = $opts{workflow_id};
-#    return unless $workflow_id;
-#    #TODO authenticate user access to workflow
-#
-#    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
-#    return unless (-r $results_path);
-#
-#    my $result_file = catfile($results_path, '1');
-#    return unless (-r $result_file);
-#
-#    my $result = CoGe::Accessory::TDS::read($result_file);
-#    return unless $result;
-#
-#    return encode_json(
-#        {
-#            genome_id   => $result->{genome_id},
-#            dataset_id  => $result->{dataset_id},
-#        }
-#    );
-#}
-
-#sub search_genomes {
-#    my %opts        = @_;
-#    my $search_term = $opts{search_term};
-#    my $timestamp   = $opts{timestamp};
-#
-#    #print STDERR "$search_term $timestamp\n";
-#    return unless $search_term;
-#
-#    # Perform search
-#    my $id = $search_term;
-#    $search_term = '%' . $search_term . '%';
-#
-#    # Get all matching organisms
-#    my @organisms = $coge->resultset("Organism")->search(
-#        \[
-#            'name LIKE ? OR description LIKE ?',
-#            [ 'name',        $search_term ],
-#            [ 'description', $search_term ]
-#        ]
-#    );
-#
-#    # Get all matching genomes
-#    my @genomes = $coge->resultset("Genome")->search(
-#        \[
-#            'genome_id = ? OR name LIKE ? OR description LIKE ?',
-#            [ 'genome_id',   $id ],
-#            [ 'name',        $search_term ],
-#            [ 'description', $search_term ]
-#        ]
-#    );
-#
-#	# Combine matching genomes with matching organism genomes, preventing duplicates
-#    my %unique;
-#    map {
-#        $unique{ $_->id } = $_ if ($USER->has_access_to_genome($_))
-#    } @genomes;
-#    foreach my $organism (@organisms) {
-#        map {
-#            $unique{ $_->id } = $_ if ($USER->has_access_to_genome($_))
-#        } $organism->genomes;
-#    }
-#
-#    # Limit number of results displayed
-#    if ( keys %unique > $MAX_SEARCH_RESULTS ) {
-#        return encode_json( { timestamp => $timestamp, items => undef } );
-#    }
-#
-#    my @items;
-#    foreach ( sort genomecmp values %unique ) {    #(keys %unique) {
-#        push @items, { label => $_->info, value => $_->id };
-#    }
-#
-#    return encode_json( { timestamp => $timestamp, items => \@items } );
-#}
-
 sub get_sources {
 
     #my %opts = @_;
 
     my %unique;
-    foreach ( $coge->resultset('DataSource')->all() ) {
+    foreach ( $DB->resultset('DataSource')->all() ) {
         $unique{ $_->name }++;
     }
 
@@ -549,7 +324,7 @@ sub create_source {
     $link = 'http://' . $link if ( not $link =~ /^(\w+)\:\/\// );
 
     my $source =
-      $coge->resultset('DataSource')
+      $DB->resultset('DataSource')
       ->find_or_create(
         { name => $name, description => $desc, link => $link } );
     return unless ($source);
@@ -581,11 +356,11 @@ sub send_error_report {
     # Get the staging directory
     my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
-    my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
+    my $url = $CONF->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
     $url .= "load_id=$load_id";
 
-    my $email = $P->{SUPPORT_EMAIL};
+    my $email = $CONF->{SUPPORT_EMAIL};
 
     my $body =
         "Load failed\n\n"

@@ -26,20 +26,19 @@ use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $BINDIR $USER $coge $FORM $LINK $EMBED
-  %FUNCTION $MAX_SEARCH_RESULTS $CONFIGFILE $LOAD_ID $WORKFLOW_ID
+  $CONF $PAGE_TITLE $TEMPDIR $BINDIR $USER $DB $FORM $LINK $EMBED
+  %FUNCTION $LOAD_ID $WORKFLOW_ID
 );
 
 $PAGE_TITLE = 'LoadBatch';
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
 
-$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
-$BINDIR     = $P->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
+$BINDIR     = $CONF->{SCRIPTDIR}; #$P->{BINDIR}; mdb changed 8/12/13 issue 177
 
 # Get workflow_id and load_id for previous load if specified.  Otherwise
 # generate a new load_id for data upload.
@@ -49,18 +48,10 @@ $TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 
 $EMBED = $FORM->param('embed');
 
-$MAX_SEARCH_RESULTS = 100;
-
 %FUNCTION = (
-    irods_get_path          => \&irods_get_path,
-    irods_get_file          => \&irods_get_file,
     load_from_ftp           => \&load_from_ftp,
     ftp_get_file            => \&ftp_get_file,
     upload_file             => \&upload_file,
-    load_batch              => \&load_batch,
-    search_genomes          => \&search_genomes,
-    search_users            => \&search_users,
-    check_login			    => \&check_login,
     send_error_report       => \&send_error_report
 );
 
@@ -85,21 +76,21 @@ sub generate_html {
     if ($EMBED) {
         $template =
           HTML::Template->new(
-            filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+            filename => $CONF->{TMPLDIR} . 'embedded_page.tmpl' );
     }
     else {    
-        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
 					      TITLE      => "LoadBatch",
         				  PAGE_LINK  => $LINK,
-        				  HOME       => $P->{SERVER},
+        				  HOME       => $CONF->{SERVER},
                           HELP       => 'LoadBatch',
-                          WIKI_URL   => $P->{WIKI_URL} || '',
+                          WIKI_URL   => $CONF->{WIKI_URL} || '',
                           USER       => $USER->display_name || '' );
         $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
         $template->param( ADJUST_BOX => 1 );
         $template->param( ADMIN_ONLY => $USER->is_admin );
-        $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+        $template->param( CAS_URL    => $CONF->{CAS_URL} || '' );
     }
     
     $template->param( BODY => generate_body() );
@@ -108,17 +99,17 @@ sub generate_html {
 
 sub generate_body {
     if ( $USER->user_name eq 'public' ) {
-        my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+        my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
         $template->param( PAGE_NAME => "$PAGE_TITLE.pl",
                           LOGIN     => 1 );
         return $template->output;
     }
     
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 
     my $gid = $FORM->param('gid');
     if ($gid) {
-        my $genome = $coge->resultset('Genome')->find($gid);
+        my $genome = $DB->resultset('Genome')->find($gid);
         #TODO check permissions
         if ($genome) {
             $template->param(
@@ -136,7 +127,7 @@ sub generate_body {
         WORKFLOW_ID   => $WORKFLOW_ID,
         API_BASE_URL  => 'api/v1/', #TODO move into config file or module
         HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadBatch',
-        SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
+        SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         DEFAULT_TAB              => 0,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
@@ -148,56 +139,6 @@ sub generate_body {
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
-}
-
-sub irods_get_path {
-    my %opts      = @_;
-    my $path      = $opts{path};
-    $path = unescape($path);
-    #print STDERR "irods_get_path: $path\n";
-    my $username = $USER->name;
-    my $basepath = $P->{IRODSDIR};
-    $basepath =~ s/\<USER\>/$username/;
-    $path = $basepath unless $path;
-
-    if ( $path !~ /^$basepath/ ) {
-        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
-        return;
-    }
-
-    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
-    #print STDERR "irods_get_path ", Dumper $result, "\n";
-    my $error  = $result->{error};
-    if ($error) {
-        my $email = $P->{SUPPORT_EMAIL};
-        my $body =
-            "irods ils command failed\n\n"
-          . 'User: '
-          . $USER->name . ' id='
-          . $USER->id . ' '
-          . $USER->date . "\n\n"
-          . $error . "\n\n"
-          . $P->{SERVER};
-        CoGe::Accessory::Web::send_email(
-            from    => $email,
-            to      => $email,
-            subject => "System error notification from $PAGE_TITLE",
-            body    => $body
-        );
-        return encode_json( { error => $error } );
-    }
-    return encode_json( { path => $path, items => $result->{items} } );
-}
-
-sub irods_get_file {
-    my %opts = @_;
-    my $path = $opts{path};
-    
-    $path = unescape($path);
-    
-    my $result = get_irods_file($path, $TEMPDIR);
-
-    return encode_json( { path => $result->{path}, size => $result->{size} } );
 }
 
 sub load_from_ftp {
@@ -351,98 +292,6 @@ sub upload_file {
     );
 }
 
-sub check_login {
-	#print STDERR $USER->user_name . ' ' . int($USER->is_public) . "\n";
-	return ($USER && !$USER->is_public);
-}
-
-sub search_genomes
-{    # FIXME: common with LoadAnnotation et al., move into web service
-    my %opts        = @_;
-    my $search_term = $opts{search_term};
-    my $timestamp   = $opts{timestamp};
-    #print STDERR "$search_term $timestamp\n";
-    return unless $search_term;
-
-    # Perform search
-    my $id = $search_term;
-    $search_term = '%' . $search_term . '%';
-
-    # Get all matching organisms
-    my @organisms = $coge->resultset("Organism")->search(
-        \[
-            'name LIKE ? OR description LIKE ?',
-            [ 'name',        $search_term ],
-            [ 'description', $search_term ]
-        ]
-    );
-
-    # Get all matching genomes
-    my @genomes = $coge->resultset("Genome")->search(
-        \[
-            'genome_id = ? OR name LIKE ? OR description LIKE ?',
-            [ 'genome_id',   $id ],
-            [ 'name',        $search_term ],
-            [ 'description', $search_term ]
-        ]
-    );
-
-    # Combine matching genomes with matching organism genomes, preventing duplicates
-    my %unique;
-    map {
-        $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
-    } @genomes;
-    foreach my $organism (@organisms) {
-        map {
-            $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
-        } $organism->genomes;
-    }
-
-    # Limit number of results displayed
-    if ( keys %unique > $MAX_SEARCH_RESULTS ) {
-        return encode_json( { timestamp => $timestamp, items => undef } );
-    }
-
-    my @items;
-    foreach ( sort genomecmp values %unique ) {    #(keys %unique) {
-        push @items, { label => $_->info, value => $_->id };
-    }
-
-    return encode_json( { timestamp => $timestamp, items => \@items } );
-}
-
-sub search_users {
-    my %opts        = @_;
-    my $search_term = $opts{search_term};
-    my $timestamp   = $opts{timestamp};
-
-    #print STDERR "$search_term $timestamp\n";
-    return unless $search_term;
-
-    # Perform search
-    $search_term = '%' . $search_term . '%';
-    my @users = $coge->resultset("User")->search(
-        \[
-            'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
-            [ 'user_name',  $search_term ],
-            [ 'first_name', $search_term ],
-            [ 'last_name',  $search_term ]
-        ]
-    );
-
-    # Limit number of results displayed
-    # if (@users > $MAX_SEARCH_RESULTS) {
-    # 	return encode_json({timestamp => $timestamp, items => undef});
-    # }
-
-    return encode_json(
-        {
-            timestamp => $timestamp,
-            items     => [ sort map { $_->user_name } @users ]
-        }
-    );
-}
-
 sub get_debug_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
@@ -467,11 +316,11 @@ sub send_error_report {
     # Get the staging directory
     my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
-    my $url = $P->{SERVER} . "$PAGE_TITLE.pl?";
+    my $url = $CONF->{SERVER} . "$PAGE_TITLE.pl?";
     $url .= "job_id=$job_id;" if $job_id;
     $url .= "load_id=$load_id";
 
-    my $email = $P->{SUPPORT_EMAIL};
+    my $email = $CONF->{SUPPORT_EMAIL};
 
     my $body =
         "Load batch experiment failed\n\n"
