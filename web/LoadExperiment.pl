@@ -64,7 +64,6 @@ $MAX_SEARCH_RESULTS = 1000;
     create_source           => \&create_source,
     search_genomes          => \&search_genomes,
     search_users            => \&search_users,
-    check_login			    => \&check_login,
     send_error_report       => \&send_error_report
 );
 
@@ -153,55 +152,55 @@ sub generate_body {
     return $template->output;
 }
 
-sub irods_get_path {
-    my %opts      = @_;
-    my $path      = $opts{path};
-    $path = unescape($path);
-    #print STDERR "irods_get_path: $path\n";
-    my $username = $USER->name;
-    my $basepath = $P->{IRODSDIR};
-    $basepath =~ s/\<USER\>/$username/;
-    $path = $basepath unless $path;
-
-    if ( $path !~ /^$basepath/ ) {
-        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
-        return;
-    }
-
-    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
-    #print STDERR "irods_get_path ", Dumper $result, "\n";
-    my $error  = $result->{error};
-    if ($error) {
-        my $email = $P->{SUPPORT_EMAIL};
-        my $body =
-            "irods ils command failed\n\n"
-          . 'User: '
-          . $USER->name . ' id='
-          . $USER->id . ' '
-          . $USER->date . "\n\n"
-          . $error . "\n\n"
-          . $P->{SERVER};
-        CoGe::Accessory::Web::send_email(
-            from    => $email,
-            to      => $email,
-            subject => "System error notification from $PAGE_TITLE",
-            body    => $body
-        );
-        return encode_json( { error => $error } );
-    }
-    return encode_json( { path => $path, items => $result->{items} } );
-}
-
-sub irods_get_file {
-    my %opts = @_;
-    my $path = $opts{path};
-    
-    $path = unescape($path);
-    
-    my $result = get_irods_file($path, $TEMPDIR);
-
-    return encode_json( { path => $result->{path}, size => $result->{size} } );
-}
+#sub irods_get_path {
+#    my %opts      = @_;
+#    my $path      = $opts{path};
+#    $path = unescape($path);
+#    #print STDERR "irods_get_path: $path\n";
+#    my $username = $USER->name;
+#    my $basepath = $P->{IRODSDIR};
+#    $basepath =~ s/\<USER\>/$username/;
+#    $path = $basepath unless $path;
+#
+#    if ( $path !~ /^$basepath/ ) {
+#        print STDERR "Attempt to access '$path' denied (basepath='$basepath')\n";
+#        return;
+#    }
+#
+#    my $result = CoGe::Accessory::IRODS::irods_ils($path, escape_output => 1);
+#    #print STDERR "irods_get_path ", Dumper $result, "\n";
+#    my $error  = $result->{error};
+#    if ($error) {
+#        my $email = $P->{SUPPORT_EMAIL};
+#        my $body =
+#            "irods ils command failed\n\n"
+#          . 'User: '
+#          . $USER->name . ' id='
+#          . $USER->id . ' '
+#          . $USER->date . "\n\n"
+#          . $error . "\n\n"
+#          . $P->{SERVER};
+#        CoGe::Accessory::Web::send_email(
+#            from    => $email,
+#            to      => $email,
+#            subject => "System error notification from $PAGE_TITLE",
+#            body    => $body
+#        );
+#        return encode_json( { error => $error } );
+#    }
+#    return encode_json( { path => $path, items => $result->{items} } );
+#}
+#
+#sub irods_get_file {
+#    my %opts = @_;
+#    my $path = $opts{path};
+#    
+#    $path = unescape($path);
+#    
+#    my $result = get_irods_file($path, $TEMPDIR);
+#
+#    return encode_json( { path => $result->{path}, size => $result->{size} } );
+#}
 
 sub load_from_ftp {
     my %opts = @_;
@@ -389,11 +388,6 @@ sub upload_file {
     );
 }
 
-sub check_login {
-	#print STDERR "LoadExperiment::check_login ", $USER->user_name, ' ', int($USER->is_public), "\n";
-	return ($USER && !$USER->is_public);
-}
-
 sub get_debug_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
@@ -410,93 +404,93 @@ sub get_debug_log {
     return $result;
 }
 
-sub search_genomes
-{    # FIXME: common with LoadAnnotation et al., move into web service
-    my %opts        = @_;
-    my $search_term = $opts{search_term};
-    my $timestamp   = $opts{timestamp};
-    #print STDERR "$search_term $timestamp\n";
-    return unless $search_term;
+#sub search_genomes
+#{    # FIXME: common with LoadAnnotation et al., move into web service
+#    my %opts        = @_;
+#    my $search_term = $opts{search_term};
+#    my $timestamp   = $opts{timestamp};
+#    #print STDERR "$search_term $timestamp\n";
+#    return unless $search_term;
+#
+#    # Perform search
+#    my $id = $search_term;
+#    $search_term = '%' . $search_term . '%';
+#
+#    # Get all matching organisms
+#    my @organisms = $coge->resultset("Organism")->search(
+#        \[
+#            'name LIKE ? OR description LIKE ?',
+#            [ 'name',        $search_term ],
+#            [ 'description', $search_term ]
+#        ]
+#    );
+#
+#    # Get all matching genomes
+#    my @genomes = $coge->resultset("Genome")->search(
+#        \[
+#            'genome_id = ? OR name LIKE ? OR description LIKE ?',
+#            [ 'genome_id',   $id ],
+#            [ 'name',        $search_term ],
+#            [ 'description', $search_term ]
+#        ]
+#    );
+#
+#    # Combine matching genomes with matching organism genomes, preventing duplicates
+#    my %unique;
+#    map {
+#        $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
+#    } @genomes;
+#    foreach my $organism (@organisms) {
+#        map {
+#            $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
+#        } $organism->genomes;
+#    }
+#
+#    # Limit number of results displayed
+#    if ( keys %unique > $MAX_SEARCH_RESULTS ) {
+#        return encode_json( { timestamp => $timestamp, items => undef } );
+#    }
+#
+#    my @items;
+#    #print STDERR Dumper \@items, "\n";
+#    foreach ( sort genomecmp values %unique ) {    #(keys %unique) {
+#        push @items, { label => $_->info, value => $_->id };
+#    }
+#
+#    return encode_json( { timestamp => $timestamp, items => \@items } );
+#}
 
-    # Perform search
-    my $id = $search_term;
-    $search_term = '%' . $search_term . '%';
-
-    # Get all matching organisms
-    my @organisms = $coge->resultset("Organism")->search(
-        \[
-            'name LIKE ? OR description LIKE ?',
-            [ 'name',        $search_term ],
-            [ 'description', $search_term ]
-        ]
-    );
-
-    # Get all matching genomes
-    my @genomes = $coge->resultset("Genome")->search(
-        \[
-            'genome_id = ? OR name LIKE ? OR description LIKE ?',
-            [ 'genome_id',   $id ],
-            [ 'name',        $search_term ],
-            [ 'description', $search_term ]
-        ]
-    );
-
-    # Combine matching genomes with matching organism genomes, preventing duplicates
-    my %unique;
-    map {
-        $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
-    } @genomes;
-    foreach my $organism (@organisms) {
-        map {
-            $unique{ $_->id } = $_ if ( $USER->has_access_to_genome($_) )
-        } $organism->genomes;
-    }
-
-    # Limit number of results displayed
-    if ( keys %unique > $MAX_SEARCH_RESULTS ) {
-        return encode_json( { timestamp => $timestamp, items => undef } );
-    }
-
-    my @items;
-    #print STDERR Dumper \@items, "\n";
-    foreach ( sort genomecmp values %unique ) {    #(keys %unique) {
-        push @items, { label => $_->info, value => $_->id };
-    }
-
-    return encode_json( { timestamp => $timestamp, items => \@items } );
-}
-
-sub search_users {
-    my %opts        = @_;
-    my $search_term = $opts{search_term};
-    my $timestamp   = $opts{timestamp};
-
-    #print STDERR "$search_term $timestamp\n";
-    return unless $search_term;
-
-    # Perform search
-    $search_term = '%' . $search_term . '%';
-    my @users = $coge->resultset("User")->search(
-        \[
-            'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
-            [ 'user_name',  $search_term ],
-            [ 'first_name', $search_term ],
-            [ 'last_name',  $search_term ]
-        ]
-    );
-
-    # Limit number of results displayed
-    # if (@users > $MAX_SEARCH_RESULTS) {
-    # 	return encode_json({timestamp => $timestamp, items => undef});
-    # }
-
-    return encode_json(
-        {
-            timestamp => $timestamp,
-            items     => [ sort map { $_->user_name } @users ]
-        }
-    );
-}
+#sub search_users {
+#    my %opts        = @_;
+#    my $search_term = $opts{search_term};
+#    my $timestamp   = $opts{timestamp};
+#
+#    #print STDERR "$search_term $timestamp\n";
+#    return unless $search_term;
+#
+#    # Perform search
+#    $search_term = '%' . $search_term . '%';
+#    my @users = $coge->resultset("User")->search(
+#        \[
+#            'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
+#            [ 'user_name',  $search_term ],
+#            [ 'first_name', $search_term ],
+#            [ 'last_name',  $search_term ]
+#        ]
+#    );
+#
+#    # Limit number of results displayed
+#    # if (@users > $MAX_SEARCH_RESULTS) {
+#    # 	return encode_json({timestamp => $timestamp, items => undef});
+#    # }
+#
+#    return encode_json(
+#        {
+#            timestamp => $timestamp,
+#            items     => [ sort map { $_->user_name } @users ]
+#        }
+#    );
+#}
 
 sub get_sources {
     my %unique;

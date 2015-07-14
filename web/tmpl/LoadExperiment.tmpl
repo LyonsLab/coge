@@ -94,8 +94,7 @@
             <label class="col-md-2">Genome:</label>
             <input class="col-md-8" id="edit_genome" type="search" placeholder="Search"
             	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
-            	onclick="$(this).autocomplete('search');"
-            	onkeyup="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+            	size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
     </div>
