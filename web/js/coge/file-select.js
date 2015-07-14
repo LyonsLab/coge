@@ -35,18 +35,13 @@ var coge = window.coge = (function(namespace) {
 				console.error('FileSelect widget error: loadId not defined!');
 				return;
 			}
-			
-			// Setup resize handler - mdb added 6/23/15
-//			var dialog = $("#tabs").parent(); // get parent dialog
-//			dialog.dialog({
-//		    	width: '50%',
-//		    	resizeStop: function(event, ui) {
-//		    		//console.log('resizeStop ' + ui.size.width + ' ' + ui.size.height + ' ' + ui.originalSize.width + ' ' + ui.originalSize.height);
-//		    		var heightChange = ui.size.height - ui.originalSize.height;
-//		    		var panel = $("#ids_panel");
-//		    		panel.height(panel.height() + heightChange);
-//		    	}
-//		    });
+		},
+		
+		resize: function(event, ui) {
+			//console.log('resizeStop ' + ui.size.width + ' ' + ui.size.height + ' ' + ui.originalSize.width + ' ' + ui.originalSize.height);
+    		var heightChange = ui.size.height - ui.originalSize.height;
+    		var panel = $("#ids_panel");
+    		panel.height(panel.height() + heightChange);
 		},
 		
 		render: function() {
@@ -54,6 +49,10 @@ var coge = window.coge = (function(namespace) {
 			
 			// Set default tab
 			self.container.tabs({selected: self.defaultTab});
+			
+			self.container.resizable({
+				stop: self.resize.bind(self)
+			});
 			
 			// Initialize irods view
 			self._irods_get_path();
