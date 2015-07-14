@@ -65,8 +65,6 @@ sub build {
         
         # Check if the file already exists which will be the case if called
         # via the LoadExperiment page.  
-        #TODO Change the LoadExperiment page to not actually transfer files in
-        # an apache process -- instead let it be done here in the workflow.
         my $filepath = catfile($upload_dir, $item->{path});
         if (-r $filepath) {
             push @input_files, $filepath;

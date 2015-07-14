@@ -59,8 +59,6 @@ sub build {
         
         # Check if the file already exists which will be the case if called
         # via the LoadGenome page.  
-        #TODO Change the LoadGenome page to not actually transfer files in
-        # an apache process -- instead let it be done here in the workflow.
         my $filepath = catfile($upload_dir, $path);
         if (-r $filepath) {
             push @input_files, $filepath;
