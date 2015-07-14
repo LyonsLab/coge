@@ -1,5 +1,7 @@
 /* global window, document, coge*/
 var coge = window.coge = (function(ns) {
+	var waitToSearchTimer;
+	
     ns.utils = {
         ascending: function(a, b) {
             return a < b ? -1 : a > b ? 1 : 0;
@@ -96,6 +98,28 @@ var coge = window.coge = (function(ns) {
 		        }
 		    }
 		    return str.join("&");
+    	},
+    	
+    	objToString: function(obj) {
+    	    var str = '<br>';
+    	    for (var p in obj) {
+    	        if (obj.hasOwnProperty(p)) {
+    	            str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + p + ': ' + obj[p] + '<br>';
+    	        }
+    	    }
+    	    return str;
+    	},
+    	
+    	wait_to_search: function(search_func, search_obj) {
+    		if (waitToSearchTimer)
+    			clearTimeout(waitToSearchTimer);
+
+    		waitToSearchTimer = setTimeout(
+    			function() {
+    				search_func(search_obj.value);
+    			},
+    			250
+    		);
     	}
     };
 

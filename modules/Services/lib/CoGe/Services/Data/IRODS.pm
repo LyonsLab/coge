@@ -3,6 +3,8 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;
 use CoGe::Accessory::IRODS;
+use CoGe::Accessory::Utils qw(get_unique_id);
+use CoGe::Core::Storage qw(get_irods_path get_irods_file);
 use CoGe::Services::Auth;
 use Data::Dumper;
 
@@ -18,28 +20,27 @@ sub list {
         return;
     }
 
-    # Setup path
-    #TODO set path to home if not specified
-    #my $username = $user->name;
-    #my $basepath = $conf->{IRODSDIR};
-    #$basepath =~ s/\<USER\>/$username/;
-    #$path = $basepath unless $path;
-    $path = '/' . $path;
-
     # Fetch directory listing
-    my $result = CoGe::Accessory::IRODS::irods_ils($path);
+    my $result = get_irods_path($path, $user->name);
+    unless ($result) {
+        $self->render(json => { error => { IRODS => 'Access denied' } });
+        return;
+    }
+    
     my $error  = $result->{error};
     if ($error) {
         $self->render(json => { error => { IRODS => $error } });
         return;
     }
 
-    $self->render(json => { path => $path, items => $result->{items} });
+    $self->render(json => { path => $result->{path}, items => $result->{items} });
 }
 
 sub fetch {
     my $self = shift;
     my $path = $self->stash('path');
+    my $load_id = $self->param('load_id');
+    $load_id = get_unique_id() unless $load_id;
     #print STDERR "IRODS::fetch ", $path, "\n";
     
     # Authenticate user and connect to the database
@@ -50,29 +51,10 @@ sub fetch {
     }
     
     $path = unescape($path);
-    my ($filename)   = $path =~ /([^\/]+)\s*$/;
-    my ($remotepath) = $path =~ /(.*)$filename$/;
+    my $uploadpath = get_upload_path($user->name, $load_id);
+    my $result = get_irods_file($path, $uploadpath);
 
-    my $localpath     = catdir('irods', $remotepath);
-    my $localfullpath = catdir($TEMPDIR, $localpath);
-    $localpath = catfile($localpath, $filename);
-    my $localfilepath = catfile($localfullpath, $filename);
-
-    my $do_get = 1;
-
-    #   if (-e $localfilepath) {
-    #       my $remote_chksum = irods_chksum($path);
-    #       my $local_chksum = md5sum($localfilepath);
-    #       $do_get = 0 if ($remote_chksum eq $local_chksum);
-    #       print STDERR "$remote_chksum $local_chksum\n";
-    #   }
-
-    if ($do_get) {
-        mkpath($localfullpath);
-        CoGe::Accessory::IRODS::irods_iget( $path, $localfullpath );
-    }
-
-    $self->render(json => { path => $localpath, size => -s $localfilepath } );
+    $self->render(json => $result );
 }
 
 1;

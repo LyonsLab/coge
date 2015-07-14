@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Services::Auth;
 
 sub search {
     my $self = shift;
@@ -32,13 +33,14 @@ sub search {
     );
 
     # Format response
-    my @result = map {
+    my @result = sort { $a->{name} cmp $b->{name} } map {
         {
-            id => $_->id,
+            id => int($_->id),
             name => $_->name,
             description => $_->description
         }
     } @organisms;
+    
     $self->render(json => { organisms => \@result });
 }
 
@@ -60,7 +62,7 @@ sub fetch {
     }
 
     $self->render(json => {
-        id => $id,
+        id => int($id),
         name => $organism->name,
         description => $organism->description,
     });
@@ -68,10 +70,41 @@ sub fetch {
 
 sub add {
     my $self = shift;
+    my $payload = $self->req->json;
+    
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    # User authentication is required
+    unless (defined $user) {
+        return $self->render(json => {
+            error => { Auth => "Access denied" }
+        });
+    }
+    
+    # Validate params
+    my $name = $payload->{name};
+    my $desc = $payload->{description};
+    unless ($name && $desc) {
+        return $self->render(json => {
+            error => { Invalid => "Invalid parameters" }
+        });
+    }
+    
+    # Add organism to DB
+    my $organism = $db->resultset('Organism')->find_or_create( { name => $name, description => $desc } );
+    unless (defined $organism) {
+        $self->render(json => {
+            error => { Error => "Unable to add organism"}
+        });
+        return;
+    }
+
     $self->render(json => {
-        error => { Auth => "Access denied"}
-    }, status => 401);
-    return;
+        id => int($organism->id),
+        name => $organism->name,
+        description => $organism->description,
+    });
 }
 
 1;
