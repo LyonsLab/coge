@@ -3,6 +3,7 @@
 use v5.10;
 use strict;
 
+use Switch;
 use CGI;
 use Data::Validate::URI qw(is_uri);
 use JSON::XS;
@@ -1479,13 +1480,12 @@ sub format_job_status {
     my $color;
     
     $status =~ s/terminated/cancelled/i;
+    $status = lc($status);
     
-    given ( $status ) {
-        when (/running/i)   { $color = 'yellowgreen'; }
-        when (/completed/i) { $color = 'cornflowerblue'; }
-        when (/scheduled/i) { $color = 'goldenrod'; }
-        default             { $color = 'salmon'; }
-    }
+    if ($status eq 'running')      { $color = 'yellowgreen' }
+    elsif ($status eq 'completed') { $color = 'cornflowerblue' }
+    elsif ($status eq 'scheduled') { $color = 'goldenrod' }
+    else                           { $color = 'salmon' }
     
     return '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:' . $color . ';">' . ucfirst($status) . '</span>';
 }
