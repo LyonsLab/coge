@@ -118,7 +118,7 @@ var coge = window.coge = (function(ns) {
     			function() {
     				search_func(search_obj.value);
     			},
-    			500
+    			250
     		);
     	}
     };
