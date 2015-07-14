@@ -27,8 +27,8 @@ var coge = window.coge = (function(namespace) {
 		
 		search_genomes: function(search_term, opts) {
 			// TODO add param validation
-			var opt_str = '';
-			if (opts.fast)
+			var opts_str = '';
+			if (opts && opts.fast)
 				opts_str = '?fast=1';
 			return this._ajax("GET", BASE_URL + "genomes/search/" + search_term + "/" + opts_str);
 		},
