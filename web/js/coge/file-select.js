@@ -35,7 +35,7 @@ var coge = window.coge = (function(namespace) {
 				console.error('FileSelect widget error: loadId not defined!');
 				return;
 			}
-
+			
 			// Setup resize handler - mdb added 6/23/15
 //			var dialog = $("#tabs").parent(); // get parent dialog
 //			dialog.dialog({
@@ -73,6 +73,17 @@ var coge = window.coge = (function(namespace) {
 			});
 			self.container.find('.fileselect-getall').click(function() {
 				self._irods_get_all_files(".");
+			});
+			
+			self.container.find('.fileselect-filter').unbind().bind('keyup', function() {
+				var search_term = self.container.find('.fileselect-filter').val();
+				self.container.find('#ids_table tr td:nth-child(1)').each(function() {
+					var obj = $(this);
+					if (obj.text().indexOf(search_term) >= 0)
+						obj.parent().show();
+					else
+						obj.parent().hide();
+				});
 			});
 			
 			self.container.find('#ftp_get_button').bind('click', function() {
@@ -140,11 +151,17 @@ var coge = window.coge = (function(namespace) {
 				return;
 			return files;
 		},
+		
+		_clear_filter: function() {
+			this.container.find('.fileselect-filter').val('');
+			return this;
+		},
 
 		_clear_list: function() {
 			timestamps['ftp'] = new Date().getTime(); // Cancel ftp transfers
 			this.fileTable.html('').hide();
 			$('#ftp_get_button').removeClass('ui-state-disabled');
+			return this;
 		},
 		
 		_add_file_to_list: function(filename, url) {
@@ -299,6 +316,7 @@ var coge = window.coge = (function(namespace) {
 				status.html('<img src="picts/ajax-loader.gif"/>').show();
 			else
 				status.html('<img src="picts/ajax-loader.gif"/>').hide();
+			return this;
 		},
 		
 		_irods_error: function(message) {
@@ -315,7 +333,8 @@ var coge = window.coge = (function(namespace) {
 
 			coge.services.irods_list(path)
 				.done(function(result) { //TODO move out into named function
-					self._irods_busy(false);
+					self._irods_busy(false)
+						._clear_filter();
 					
 					var table = self.container.find('#ids_table');
 	
