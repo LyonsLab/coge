@@ -193,9 +193,8 @@ sub ftp_get_file {
     #print STDERR "url=$url type=$type filepath=$filepath filename=$filename ", ($username and $password ? "$username $password" : ''), "\n";
     return unless ( $type and $filepath and $filename );
 
-    my $path         = $type . '/' . $filepath . '/' . $filename;
-    my $fullfilepath = $TEMPDIR . '/' . $type . '/' . $filepath;
-    #print STDERR "path=$path fullfilepath=$fullfilepath\n";
+    my $path         = catdir('ftp', $filepath, $filename);
+    my $fullfilepath = catdir($TEMPDIR, 'ftp', $filepath);
     mkpath($fullfilepath);
 
     # Simplest method (but doesn't allow login)
