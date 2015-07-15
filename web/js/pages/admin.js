@@ -1789,7 +1789,7 @@ var Histogram = function(element, json, parent) {
 	$('#' + this.element).dialog('open');
 	
 	this.formatCount;
-	this.margin = {top: 10, right: 30, bottom: 60, left: 50};
+	this.margin = {top: 10, right: 30, bottom: 80, left: 50};
 	this.width = $('#' + this.element).outerWidth() - this.margin.left - this.margin.right;
 	this.height = $('#' + this.element).outerHeight() - this.margin.top - this.margin.bottom;
 	this.x;
@@ -1808,8 +1808,8 @@ $.extend(Histogram.prototype, {
 	initialize: function() {
 		var self = this;
 		$("#" + this.element).html(
-			'<div><button id="histogram_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="histogram_zoom_out()">Zoom Out</button>' +
-			'<span style="margin-right:40px;">Graph Label Test</span></div>'
+			'<div><button id="histogram_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;" onclick="histogram_zoom_out()">Zoom Out</button>' +
+			'<span style="margin-right:40px;">Data: ' + $('#report_type').val() + ', Filter: ' + $('#report_filter').val() + '</span></div>'
 		);
 
 		if (self.parent) {
@@ -1820,10 +1820,6 @@ $.extend(Histogram.prototype, {
 	
 		// A formatter for counts.
 		this.formatCount = d3.format(",.0f");
-	
-		/*this.margin = {top: 10, right: 30, bottom: 30, left: 50},
-		this.width = 500 - this.margin.left - this.margin.right,
-		this.height = 500 - this.margin.top - this.margin.bottom;*/
 	
 		this.x = d3.scale.linear()
 		    .domain([this.min_value, this.max_value])
@@ -1897,10 +1893,20 @@ $.extend(Histogram.prototype, {
 		    .attr("class", "x axis")
 		    .attr("transform", "translate(0," + this.height + ")")
 		    .call(this.xAxis);
+
+		var x_label = this.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + (this.width/2 - 150) + "," + (this.height + this.margin.bottom/2.5) + ")")
+			.text("Total Data Sets (Notebooks + Genomes + Experiments)");
 		
 		this.svg.append("g")
 	    	.attr("class", "y axis")
 	    	.call(this.yAxis);
+		
+		this.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + this.margin.left/(-1.25) + "," + this.height/2 + ") rotate(270)")
+			.text("Frequency");
 		
 		this.svg.append("g")
 	    	.attr("class", "x brush")
@@ -1911,16 +1917,9 @@ $.extend(Histogram.prototype, {
 		
 		$('#' + this.element)
 			.dialog({
-				resizeStop: function( event, ui ) { 
-					//self.svg.attr("transform", "scale(" + ui.size.width/ui.originalSize.width + " " + ui.size.height/ui.originalSize.height + ") translate(" + self.margin.left + "," + self.margin.top + ")");
-
+				resizeStop: function( event, ui ) {
 					self.width = $(this).outerWidth() - self.margin.left - self.margin.right;
 					self.height = $(this).outerHeight() - self.margin.top - self.margin.bottom;
-					
-					/*var widthScale = ui.size.width/ui.originalSize.width;
-					var heightScale = ui.size.height/ui.originalSize.height;
-					self.width = (self.width + self.margin.left + self.margin.right)*widthScale - self.margin.left - self.margin.right;
-					self.height = (self.height + self.margin.top + self.margin.bottom + 30)*heightScale - self.margin.top - self.margin.bottom - 30;*/
 					self.initialize();
 				},
 			})
@@ -1929,12 +1928,15 @@ $.extend(Histogram.prototype, {
 	brushed: function() {
 		var self = this;
 		var extent = this.brush.extent();
-		var rangeExtent = [this.x( extent[0] ), this.x( extent[1] ) ];
-		var rangeWidth  = rangeExtent[1] - rangeExtent[0];
+		extent[0] = Math.floor(extent[0]);
+		extent[1] = Math.ceil(extent[1]);
 		
 		var newValues = [];
 		for (var i = 0; i < this.values.length; i++) {
 			if (this.values[i] >= extent[0] && this.values[i] <= extent[1]) {
+				console.log(extent[0]);
+				console.log(this.values[i]);
+				console.log("");
 				newValues.push(this.values[i]);
 			}
 		}
