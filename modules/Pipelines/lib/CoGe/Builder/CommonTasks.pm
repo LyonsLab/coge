@@ -1136,6 +1136,7 @@ sub create_gsnap_job {
         ["-d", $name, 0],
         ["--nthreads=32", '', 0],
         ["-n", $n, 0],
+        ["-N", '1', 0],
         ["--format=sam", '', 0],
         ["--gmap-mode=$gapmode", '', 1],
         ["--batch=5", '', 0],
