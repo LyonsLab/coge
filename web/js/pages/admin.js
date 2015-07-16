@@ -36,6 +36,7 @@ $(function () {
 				init_reports();
 			}
 			if(current_tab == 5) {
+				console.log($("#tabs").width());
 				init_taxon_tree("");
 			}
 		}
@@ -1710,29 +1711,29 @@ $.extend(DataGrid.prototype, {
 		var fname;
 		$('#' + element).hide();
 		$('#' + element + '_loading').show();
+		$('#report_type').prop('disabled', true);
+		$('#report_filter').prop('disabled', true);
+		$('#histogram_button').prop('disabled', true);
 		switch (this.selection) {
 			case "user":
 				fname = 'get_user_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
-				$('#histogram_button').prop('disabled', false);
+					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th><th>Total</th></tr></thead></table>');
 				break;
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
-				$('#histogram_button').prop('disabled', false);
+					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Total</th></tr></thead></table>');
 				break;
 			case "total":
 				fname = 'get_total_table';
 				if (this.filter == "none") {
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th></tr></thead></table>');
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th><th>Total</th></tr></thead></table>');
 				} else {
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th></tr></thead></table>');
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th></tr></thead></table>');
 				}
-				$('#histogram_button').prop('disabled', true);
 				break;
 		}
 		$.ajax({
@@ -1742,10 +1743,29 @@ $.extend(DataGrid.prototype, {
 			},
 			success: function(data) {
 				$('#' + element + '_loading').hide();
-				self.data = JSON.parse(data);
-				//console.log(self.data);
-				$('#' + element + '_table').dataTable(JSON.parse(data));
+				json = JSON.parse(data);
+				var values = [];
+				var max_value = 0;
+				var min_value = Number.MAX_SAFE_INTEGER;
+				for(var i = 0; i < json.data.length; i++) {
+					var total_items = 0;
+					for(var j = 0; j < json.data[i].length; j++) {
+						if(reports_grid.selection == "total" || j != 0) {
+							var num = parseInt(json.data[i][j]);
+							total_items += num;
+							//console.log(json.data[i][j]);
+						}
+					}
+					json.data[i].push(total_items);
+				}
+				self.data = json;
+				$('#' + element + '_table').dataTable(self.data);
 				$('#' + element).show();
+				if (self.selection != "total") {
+					$('#histogram_button').prop('disabled', false);
+				}
+				$('#report_type').prop('disabled', false);
+				$('#report_filter').prop('disabled', false);
 			}
 		});
 		
@@ -1956,14 +1976,7 @@ function init_histogram(element) {
 	var max_value = 0;
 	var min_value = Number.MAX_SAFE_INTEGER;
 	for(var i = 0; i < json.data.length; i++) {
-		var total_items = 0;
-		for(var j = 0; j < json.data[i].length; j++) {
-			if(reports_grid.selection == "total" || j != 0) {
-				var num = parseInt(json.data[i][j]);
-				total_items += num;
-				//console.log(json.data[i][j]);
-			}
-		}
+		var total_items = json.data[i][json.data[i].length - 1];
 		values.push(total_items);
 		if(total_items > max_value) {
 			max_value = total_items;
@@ -1995,8 +2008,9 @@ function init_taxon_tree(element) {
 }
 
 var Taxon_tree = function(json, element) {
+	var container_width = $("#tabs").width();
 	this.margin = {top: 20, right: 120, bottom: 20, left: 120};
-	this.width = 1960 - this.margin.right - this.margin.left;
+	this.width = container_width - this.margin.right - this.margin.left;
 	this.height = 3200 - this.margin.top - this.margin.bottom;
 	this.duration = 750;
 	this.root = json;
@@ -2011,9 +2025,12 @@ var Taxon_tree = function(json, element) {
 	
 	this.diagonal = d3.svg.diagonal()
 		.projection(function(d) { return [d.y, d.x]; });
-	
 
 	d3.select(self.frameElement).style("height", "800px");
+	
+	this.shifted;
+	var object = this;
+	$(document).on('keyup keydown', function(e){object.shifted = e.shiftKey;} );
 	
 	this.initialize(element);
 }
@@ -2045,7 +2062,6 @@ $.extend(Taxon_tree.prototype, {
 	update: function(source, new_root) {
 		var self = this;
 		self.current_root = new_root;
-		console.log(source.depth);
 		
 		//Adjust height based on the number of children
 		if (self.current_root.children) {
@@ -2059,7 +2075,6 @@ $.extend(Taxon_tree.prototype, {
 		if (self.tree.size()[0] < 800) {
 			self.tree.size([800, 1]);
 		}
-		console.log(self.tree.size())
 		
 		// Compute the new tree layout.
 		var nodes = self.tree.nodes(self.current_root); //.reverse();
@@ -2096,7 +2111,8 @@ $.extend(Taxon_tree.prototype, {
 		}
 		
 		// Normalize for fixed-depth.
-		nodes.forEach(function(d) { d.y = d.depth * 1260/max_depth; });
+		//nodes.forEach(function(d) { d.y = d.depth * 1260/max_depth; });
+		nodes.forEach(function(d) { d.y = d.depth * (self.width-100)/max_depth; });
 		
 		// Update the nodesÉ
 		self.node = self.svg.selectAll("g.node")
@@ -2107,12 +2123,13 @@ $.extend(Taxon_tree.prototype, {
 			.attr("class", "node")
 			.attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
 			.on("click", function(d) {
-				self.click.call(self, d);
-			})
-			.on("dblclick", function(d) {
-				self.double_click.call(self, d);
+				if (self.shifted) {
+					self.double_click.call(self, d);
+				} else {
+					self.click.call(self, d);
+				}
 			});
-
+		
 		nodeEnter.append("circle")
 			.attr("class", "tree_node noselect")
 			.attr("r", 1e-6)

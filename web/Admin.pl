@@ -1658,6 +1658,8 @@ sub get_user_table {
     	%query = ('deleted', '1');
     } elsif ($filter eq "public") {
     	%query = ('restricted', '0', 'deleted', '0');
+    } elsif ($filter eq "public (owned)") {
+    	%query = ('restricted', '0', 'deleted', '0', 'creator_id', '0');
     }
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @data;
