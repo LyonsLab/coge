@@ -201,16 +201,13 @@ sub gen_body {
         page => $PAGE_NAME,
         coge => $coge
     );
-    my $num_seqs;
-    $num_seqs = $form->param('num_seqs')
-      ;    #= get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
+    my $num_seqs = $form->param('num_seqs');#= get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
     $num_seqs = $NUM_SEQS unless defined $num_seqs;
 
     #$MAX_SEQS = 20 if $form->param('override');
     my $message;
     if ( !( $num_seqs =~ /^\d+$/ ) ) {
-        $message .=
-"Problem with requested number of sequences: '$num_seqs'.  Defaulting to $NUM_SEQS input sequences.";
+        $message .= "Problem with requested number of sequences: '$num_seqs'.  Defaulting to $NUM_SEQS input sequences.";
         $num_seqs = $NUM_SEQS;
     }
     elsif ( $num_seqs < 2 ) {
@@ -255,7 +252,8 @@ sub gen_body {
 
             # Check for available genomes
             next unless grep {
-                $_ && !$_->deleted && $USER->has_access_to_genome($_)
+                #$_ && !$_->deleted && $USER->has_access_to_genome($_) # mdb removed 7/16/15
+                $USER->has_access_to_genome($_) # mdb added 7/16/15
             } $feat->dataset->genomes;
 
             unless ($draccn)                    #no name!  This is a problem
@@ -267,12 +265,13 @@ sub gen_body {
         }
 
         # Check if all genomes have been deleted
-        if ($dsid) {
+        if ($dsid && !$dsgid) {
             my $dataset = $coge->resultset("Dataset")->find($dsid);
 
             if ($dataset) {
                 next unless grep {
-                    $_ && !$_->deleted && $USER->has_access_to_genome($_)
+                    #$_ && !$_->deleted && $USER->has_access_to_genome($_) # mdb removed 7/16/15
+                    $USER->has_access_to_genome($_) # mdb added 7/16/15 
                 } $dataset->genomes;
             }
         }
@@ -280,7 +279,8 @@ sub gen_body {
         ## Check if the genome was deleted
         if ($dsgid) {
             my $genome = $coge->resultset('Genome')->find($dsgid);
-            next unless $genome && !$genome->deleted && $USER->has_access_to_genome($genome);
+            #next unless $genome && !$genome->deleted && $USER->has_access_to_genome($genome); # mdb removed 7/16/15
+            next unless $genome && $USER->has_access_to_genome($genome); # mdb added 7/16/15
         }
 
         if ($draccn) {
@@ -295,21 +295,18 @@ sub gen_body {
                 while (my $ds = $rs->next()) {
                     if ($ds) {
                         next unless grep {
-                            $_ && !$_->deleted && $USER->has_access_to_genome($_)
+                            #$_ && !$_->deleted && $USER->has_access_to_genome($_) # mdb removed 7/16/15
+                            $USER->has_access_to_genome($_) # mdb added 7/16/15
                         } $ds->genomes;
                     }
                 }
             }
         }
-
-        my $drup = $form->param( 'dr' . $i . 'up' )
-          if defined $form->param( 'dr' . $i . 'up' );
-        my $drdown = $form->param( 'dr' . $i . 'down' )
-          if defined $form->param( 'dr' . $i . 'down' );
-        $drup = $form->param( 'drup' . $i )
-          if defined $form->param( 'drup' . $i );
-        $drdown = $form->param( 'drdown' . $i )
-          if defined $form->param( 'drdown' . $i );
+        
+        my $drup = $form->param( 'dr' . $i . 'up' ) if defined $form->param( 'dr' . $i . 'up' );
+        my $drdown = $form->param( 'dr' . $i . 'down' ) if defined $form->param( 'dr' . $i . 'down' );
+        $drup = $form->param( 'drup' . $i ) if defined $form->param( 'drup' . $i );
+        $drdown = $form->param( 'drdown' . $i ) if defined $form->param( 'drdown' . $i );
         $drup   = 10000 unless defined $drup;
         $drdown = 10000 unless defined $drdown;
 
@@ -322,15 +319,12 @@ sub gen_body {
         $gbstart = 1 unless defined $gbstart;
         my $gblength = $form->param( "gblength" . $i )
           if defined $form->param( "gblength" . $i );
-	$gblength = 0 unless defined $gblength;
+	    $gblength = 0 unless defined $gblength;
         my $revy = "checked" if $form->param( 'rev' . $i );
         my $revn = "checked" unless $revy;
 
-        $form->param( 'ref' . $i, 1 )
-          unless defined $form->param( 'ref' . $i )
-        ;    #when not specified, set to 1
-        $form->param( 'ref' . $i, 0 )
-          if $form->param( 'nref' . $i );    #backward compatiblity
+        $form->param( 'ref' . $i, 1 ) unless defined $form->param( 'ref' . $i ); #when not specified, set to 1
+        $form->param( 'ref' . $i, 0 ) if $form->param( 'nref' . $i );    #backward compatiblity
 
         my $refy = "checked" if $form->param( 'ref' . $i );
         my $refn = "checked" unless $refy;
@@ -392,8 +386,7 @@ sub gen_body {
             $opts{MASK_NCDS}   = "selected" if $mask eq "non-cds";
             $opts{MASK_NGENIC} = "selected" if $mask eq "non-genic";
         }
-        $opts{COGEPOS} =
-qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>}
+        $opts{COGEPOS} = qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>}
           if $pos;
         push @seq_sub, {%opts};
 
@@ -488,6 +481,7 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
 
     # Check if a genome was specified
     my $error = (scalar @seq_sub < $num_seqs) ? 1 : 0;
+    print STDERR "matt: error=$error num_seqs=$num_seqs seq_sub=", scalar(@seq_sub), "\n";
 
     $template->param( ERROR             => $error );
     $template->param( PAD_GS            => $pad_gs );
@@ -4459,7 +4453,6 @@ sub dataset_search {
             next if $USER->is_admin;
             $skip = 1
               if $item->restricted && !$USER->has_access_to_genome($item);
-	    $skip = 1 if $item->deleted;
         }
         next if $skip;
         my $ver     = $ds->version;
@@ -4549,7 +4542,6 @@ qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','
         } $ds->genomes
       )
     {
-      next if $dsg->deleted;
         my $dsgid_tmp = $dsg->id;
         my $title     = $dsg->name;
         $title = $dsg->organism->name unless $title;
