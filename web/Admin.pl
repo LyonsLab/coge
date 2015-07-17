@@ -93,12 +93,12 @@ sub gen_body {
 
 	#print STDERR "BODY\n";
 	# Hide this page if the user is not an Admin
-	unless ( $USER->is_admin ) {
-		my $template =
-		  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
-		$template->param( ADMIN_ONLY => 1 );
-		return $template->output;
-	}
+	#unless ( $USER->is_admin ) {
+	#	my $template =
+	#	  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+	#	$template->param( ADMIN_ONLY => 1 );
+	#	return $template->output;
+	#}
 
 	my $template =
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
@@ -1652,6 +1652,7 @@ sub get_user_table {
 	my %opts       = @_;
     my $filter = $opts{filter};
     my %query;
+    my %operators;
     if ($filter eq "restricted") {
     	%query = ('restricted', '1');
     } elsif ($filter eq "deleted") {
@@ -1660,6 +1661,7 @@ sub get_user_table {
     	%query = ('restricted', '0', 'deleted', '0');
     } elsif ($filter eq "public (owned)") {
     	%query = ('restricted', '0', 'deleted', '0', 'creator_id', '0');
+    	%operators = ('restricted', '=', 'deleted', '=', 'creator_id', '!=')
     }
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @data;
@@ -1678,7 +1680,13 @@ sub get_user_table {
 			if (keys %query) {
 				my %note_query = %query;
 				$note_query{list_id} = $note_id;
-				@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query);
+				if (%operators) {
+					my %note_operators = %operators;
+					$note_operators{list_id} = "=";
+					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query, \%note_operators);
+				} else {
+					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query);
+				}
 			} else {
 				$note_size++;
 			}
@@ -1694,7 +1702,13 @@ sub get_user_table {
 			if (keys %query) {
 				my %gen_query = %query;
 				$gen_query{genome_id} = $gen_id;
-				@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+				if (%operators) {
+					my %gen_operators = %operators;
+					$gen_operators{genome_id} = "=";
+					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query, \%gen_operators);
+				} else {
+					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+				}
 			} else {
 				$gen_size++;
 			}
@@ -1710,7 +1724,13 @@ sub get_user_table {
 			if (keys %query) {
 				my %exp_query = %query;
 				$exp_query{experiment_id} = $exp_id;
-				@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+				if (%operators) {
+					my %exp_operators = %operators;
+					$exp_operators{experiment_id} = "=";
+					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query, \%exp_operators);
+				} else {
+					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+				}
 			} else {
 				$exp_size++;
 			}
@@ -1738,7 +1758,7 @@ sub get_user_table {
 			bPaginate => 0,
 			columnDefs => [{ 
 				orderSequence => [ "desc", "asc" ], 
-				targets => [1, 2, 3, 4],
+				targets => [1, 2, 3, 4, 5],
 			}],
 		}
 	);
@@ -1748,18 +1768,31 @@ sub get_group_table {
 	my %opts       = @_;
     my $filter = $opts{filter};
     my %query;
+    my %operators;
+    my $shared = 0;
     if ($filter eq "restricted") {
     	%query = ('restricted', '1');
     } elsif ($filter eq "deleted") {
     	%query = ('deleted', '1');
     } elsif ($filter eq "public") {
     	%query = ('restricted', '0', 'deleted', '0');
+    } elsif ($filter eq "public (owned)") {
+    	%query = ('restricted', '0', 'deleted', '0', 'creator_id', '0');
+    	%operators = ('restricted', '=', 'deleted', '=', 'creator_id', '!=')
+    } elsif ($filter eq "shared") {
+    	%query = ('restricted', '1');
+    	$shared = 1;
     }
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @data;
 	push @data, []; 	#needed to format for dataTables
 	
 	my @groups = CoGeDBI::get_table($db->storage->dbh, 'user_group');
+	my @connectors;
+	if ($shared) { #get connection table if needed
+		@connectors = CoGeDBI::get_table($db->storage->dbh, 'user_connector', undef, {role_id => 2}, {role_id => "!="});
+	}
+	######TODO: add "shared" functionality
 	
 	keys $groups[0]; # reset the internal iterator so a prior each() doesn't affect the loop
 	while(my($id, $group) = each $groups[0]) {
@@ -1770,9 +1803,15 @@ sub get_group_table {
 		foreach my $note_id (keys %$notebooks) {
 			my @filtered_notebooks;
 			if (keys %query) {
-				my %list_query = %query;
-				$list_query{list_id} = $note_id;
-				@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%list_query);
+				my %note_query = %query;
+				$note_query{list_id} = $note_id;
+				if (%operators) {
+					my %note_operators = %operators;
+					$note_operators{list_id} = "=";
+					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query, \%note_operators);
+				} else {
+					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query);
+				}
 			} else {
 				$note_size++;
 			}
@@ -1788,7 +1827,13 @@ sub get_group_table {
 			if (keys %query) {
 				my %gen_query = %query;
 				$gen_query{genome_id} = $gen_id;
-				@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+				if (%operators) {
+					my %gen_operators = %operators;
+					$gen_operators{genome_id} = "=";
+					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query, \%gen_operators);
+				} else {
+					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+				}
 			} else {
 				$gen_size++;
 			}
@@ -1804,7 +1849,13 @@ sub get_group_table {
 			if (keys %query) {
 				my %exp_query = %query;
 				$exp_query{experiment_id} = $exp_id;
-				@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+				if (%operators) {
+					my %exp_operators = %operators;
+					$exp_operators{experiment_id} = "=";
+					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query, \%exp_operators);
+				} else {
+					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+				}
 			} else {
 				$exp_size++;
 			}
@@ -1833,7 +1884,7 @@ sub get_group_table {
 			bPaginate => 0,
 			columnDefs => [{ 
 				orderSequence => [ "desc", "asc" ], 
-				targets => [1, 2, 3, 4],
+				targets => [1, 2, 3, 4, 5],
 			}],
 		}
 	);
@@ -1881,7 +1932,55 @@ sub get_total_table {
 		my $gen_size = keys $genomes[0];
 		my $exp_size = keys $experiments[0];
 		@inner = ["$note_size", "$gen_size", "$exp_size"];
-	} else {
+	} elsif ($filter eq "public (owned)") {
+		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 0, deleted => 0, creator_id => 0}, {restricted => "=", deleted => "=", creator_id => "!="});
+		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 0, deleted => 0, creator_id => 0}, {restricted => "=", deleted => "=", creator_id => "!="});
+		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 0, deleted => 0, creator_id => 0}, {restricted => "=", deleted => "=", creator_id => "!="});
+    	
+    	my $note_size = keys $notebooks[0];
+		my $gen_size = keys $genomes[0];
+		my $exp_size = keys $experiments[0];
+		@inner = ["$note_size", "$gen_size", "$exp_size"];
+    } elsif ($filter eq "shared") {
+    	@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 1});
+		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 1});
+		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 1});
+		my @connectors = CoGeDBI::get_table($db->storage->dbh, 'user_connector', undef, {role_id => 2}, {role_id => "!="});
+		my $connectors = $connectors[0];
+		my $notebooks = $notebooks[0];
+		my $genomes = $genomes[0];
+		my $experiments = $experiments[0];
+		my $note_size = 0;
+		my $gen_size = 0;
+		my $exp_size = 0;
+		
+		foreach my $note_id (keys $notebooks) {
+			foreach my $connect_id (keys $connectors) {
+				if ($connectors->{$connect_id}->{child_id} == $note_id) {
+					$note_size++;
+					last;
+				}
+			}
+		}
+		foreach my $gen_id (keys $genomes) {
+			foreach my $connect_id (keys $connectors) {
+				if ($connectors->{$connect_id}->{child_id} == $gen_id) {
+					$gen_size++;
+					last;
+				}
+			}
+		}
+		foreach my $exp_id (keys $experiments) {
+			foreach my $connect_id (keys $connectors) {
+				if ($connectors->{$connect_id}->{child_id} == $exp_id) {
+					$exp_size++;
+					last;
+				}
+			}
+		}
+    	
+		@inner = ["$note_size", "$gen_size", "$exp_size"];
+    } else {
 		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list');
 		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome');
 		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment');
@@ -1917,7 +2016,7 @@ sub gen_tree_json {
 	);
 
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
-	my @organism_descriptions = CoGeDBI::get_table($db->storage->dbh, 'organism', undef, {description => "\"%;%\""}, " like ");
+	my @organism_descriptions = CoGeDBI::get_table($db->storage->dbh, 'organism', undef, {description => "\"%;%\""}, {description => " like "});
 	my $organism_descriptions = $organism_descriptions[0];
 	
 	foreach my $organism (values %$organism_descriptions) {
