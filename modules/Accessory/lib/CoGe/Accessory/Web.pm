@@ -123,7 +123,7 @@ sub init {
         coge        => $db
     ) unless $user;
 
-	my $link;
+	my ($link, $fname);
     if ($page_title) { # This is a page access and not a web service request
         # Make tmp directory
         my $tempdir = $CONF->{TEMPDIR} . '/' . $page_title . '/';
@@ -146,9 +146,12 @@ sub init {
 		    #    link        => $link
 		    #);
 		}
+		else {
+		    $fname = get_fname($cgi);
+		}
     }
 
-    print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . " user=" . ($user ? $user->name : '') . "\n";
+    print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . ($fname ? " fname=$fname" : '') . " user=" . ($user ? $user->name : '') . "\n";
 
     return ( $db, $user, $CONF, $link );
 }
@@ -205,11 +208,17 @@ sub set_defaults {
     $CONF = \(%$CONF, %$NEW_CONF);
 }
 
-sub is_ajax {
-	my ( $self, $form) = self_or_default(@_);
-	return 0 unless $form;
+sub get_fname {
+    my ( $self, $form) = self_or_default(@_);
+    return unless $form;
     my %args  = $form->Vars;
     my $fname = $args{'fname'};
+    return $fname;
+}
+
+sub is_ajax {
+	my ( $self, $form) = self_or_default(@_);
+    my $fname = get_fname($form);
     return (defined $fname and $fname ne '');
 }
 
@@ -241,7 +250,7 @@ sub dispatch {
         print $form->header, $resp;
     } else {
         my %args  = $form->Vars;
-        my $fname = $args{'fname'};
+        my $fname = get_fname($form);
         if ($fname) {
             die "Web::dispatch: function '$fname' not found!" if (not defined $functions->{$fname});
             #my %args = $form->Vars;

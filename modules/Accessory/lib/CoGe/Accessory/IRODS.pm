@@ -50,7 +50,7 @@ sub irods_ils {
     my $path = shift;
     $path = '' unless $path;
     my %opts = @_;
-    my $escape_output = $opts{escape_output} if (%opts);
+    my $escape_output = $opts{escape_output} || 0;
     #print STDERR "irods_ils: path=$path\n";
     my $env_file = _irods_get_env_file();
     return { error => "Error: iRODS env file missing" } unless $env_file;
@@ -89,7 +89,6 @@ sub irods_ils {
             ($name) = basename($line);# $line =~ /([^\/]+)\s*$/; # mdb modified 8/14/14 issue 441
             if ($name) { $name =~ s/\s*$//; $name .= '/'; }
             else       { $name = 'error' }
-            ( $size, $timestamp ) = ( '', '' );
         }
         else {                         # file
             $type = 'file';
@@ -107,19 +106,19 @@ sub irods_ils {
             $name      = escape($name);
 		}
 		
-        push @result,
-          {
+		my %item = (
             type      => $type,
-            size      => $size,
-            timestamp => $timestamp,
             name      => $name,
             path      => $path2
-          };
+		);
+		$item{size} = $size if $size;
+		$item{timestamp} = $timestamp if $timestamp;
+        push @result, \%item;
     }
     @result = sort { $a->{type} cmp $b->{type} } @result;    # directories before files
 
     #print STDERR Dumper \@result, "\n";
-    return { items => \@result };
+    return { path => $path, items => \@result };
 }
 
 sub irods_chksum {

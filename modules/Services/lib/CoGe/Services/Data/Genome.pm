@@ -1,16 +1,21 @@
 package CoGe::Services::Data::Genome;
 use base 'CGI::Application';
 
+#
+# This is a legacy endpoint in support of genome loads from the DE.  Need to 
+# migrate the DE to the new API and deprecate this at some point.
+#
+
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Accessory::IRODS;
-use CoGe::Core::Storage qw(create_genome_from_file);
+use CoGe::Core::Storage;
+use CoGe::Builder::CommonTasks;
 use Data::Dumper;
 use JSON qw(decode_json encode_json);
 use URI::Escape::JavaScript qw(escape);
 use File::Path qw(mkpath);
-#use CGI::Application::Plugin::JSON 'to_json';
 
 sub setup {
     my $self = shift;
@@ -79,80 +84,6 @@ sub load {
 	my $source_name = $user->name; #FIXME change to user's display_name
 	my $organism_id = 38378; # FIXME hardcoded to "test" organism, need to change to "unknown" or something
 
-    # Setup staging area
-#    my $LOAD_ID = get_unique_id();
-#	my $TEMPDIR = $conf->{SECTEMPDIR} . '/LoadGenome/' . $user->name . '/' . $LOAD_ID . '/';
-#    my $stagepath = $TEMPDIR . '/staging/';
-#    mkpath $stagepath;
-#	if (not -r $stagepath) {
-#		#$self->header_props( -status => 500 );
-#		return encode_json({
-#			success => JSON::false,
-#			error => 'Cannot create staging path'
-#		});
-#	}
-
-	# Open log file
-#    my $logfile = $stagepath . '/log.txt';
-#    open( my $log, ">$logfile" ) or die "Error creating log file";
-#    print $log "Starting load genome $stagepath\n"; #. "name=$name description=$description version=$version type_id=$type_id restricted=$restricted org_id=$organism_id\n";
-
-	# Copy files from iPlant Data Store to staging path
-#	foreach my $item (@{$data->{items}}) {
-#		print STDERR 'item: ', $item->{type}, ' ', $item->{path}, "\n";
-#		next unless ($item->{type} and $item->{type} eq 'irods');
-#		my $local_path = irods_get_file($item->{path}, $TEMPDIR);
-#		print STDERR 'local_path=', $local_path, "\n";
-#		unless (-r $local_path) {
-#			#$self->header_props( -status => 500 );
-#			return encode_json({
-#				success => JSON::false,
-#				error => 'Failed to retrieve file: ' . $item->{path}
-#			});
-#		}
-#		push @files, $local_path;
-#	}
-#	print STDERR Dumper \@files, "\n";
-
-	#FIXME: what happens when files take a long time to transfer? !!!!!!!!!!!!!!
-
-    # Verify and decompress files #TODO move this into scripts/load_genome.pl
-#    my @files;
-#    foreach my $item (@$items) {
-#        my $fullpath = $TEMPDIR . $item->{path};
-#		 $self->header_props( -status => 500 );
-#        return encode_json({ error => "File doesn't exist: $fullpath" }) if ( not -e $fullpath );
-#        my ( $path, $filename ) = $item->{path} =~ /^(.+)\/([^\/]+)$/;
-#        my ($fileext) = $filename =~ /\.([^\.]+)$/;
-#
-#        #print STDERR "$path $filename $fileext\n";
-#        if ( $fileext eq 'gz' ) {
-#            my $cmd = $P->{GUNZIP} . ' ' . $fullpath;
-#            #print STDERR "$cmd\n";
-#            `$cmd`;
-#            $fullpath =~ s/\.$fileext$//;
-#        }
-#
-#        #TODO support detecting/untarring tar files also
-#        push @files, $fullpath;
-#    }
-
-#    my $CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
-#    my $cmd = $conf->{SCRIPTDIR} . "/load_genome.pl ";
-#    $cmd .= '-user_name "' . $user->name . '" ';
-#    $cmd .= '-name "' . escape($data->{name}) . '" '        if $data->{name};
-#    $cmd .= '-desc "' . escape($data->{description}) . '" ' if $data->{description};
-#    $cmd .= '-link "' . escape($data->{link}) . '" '        if $data->{link};
-#    $cmd .= '-version "' . escape($data->{version}) . '" '  if $data->{version};
-#    $cmd .= '-type_id ' . $type_id . ' ';
-#    $cmd .= "-restricted " . $data->{restricted} . ' '      if $data->{restricted};
-#    $cmd .= '-organism_id ' . $organism_id . ' ';
-#    $cmd .= '-source_name "' . escape($source_name) . '" ';
-#    $cmd .= "-staging_dir $stagepath ";
-#    $cmd .= '-fasta_files "' . escape( join( ',', @files ) ) . '" ';
-#    $cmd .= '-irods_files "' . escape( join( ',', map { $_->{path} } @{$data->{items}} ) ) . '" ';
-#    $cmd .= "-config $CONFIGFILE"; #"-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
-
     my ($workflow_id, $error_msg) = create_genome_from_file(
         user => $user,
         metadata => {
@@ -174,23 +105,6 @@ sub load {
         });
     }
 
-    # Call load script
-#    print STDERR "$cmd\n";
-#    print $log "$cmd\n";
-#    close($log);
-#    if ( !defined( my $child_pid = fork() ) ) {
-#    	#$self->header_props( -status => 500 );
-#        return encode_json({
-#			success => JSON::false,
-#			error => "Cannot fork process: $!"
-#		});
-#    }
-#    elsif ( $child_pid == 0 ) {
-#        print STDERR "child running: $cmd\n";
-#        `$cmd`;
-#        return;
-#    }
-
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
         url => $conf->{SERVER} . "LoadGenome.pl?job_id=$workflow_id"
@@ -210,33 +124,70 @@ sub load {
 	});
 }
 
-sub irods_get_file {
-    my ($src_path, $dest_path) = @_;
+sub create_genome_from_file {
+    my %opts = @_;
+    my $user = $opts{user};
+    my $irods = $opts{irods};
+    my $files = $opts{files};
+    my $metadata = $opts{metadata};
+    #print STDERR "Storage::create_genome_from_file ", Dumper $metadata, " ", Dumper $files, "\n";
 
-    my ($filename)   = $src_path =~ /([^\/]+)\s*$/;
-    my ($remotepath) = $src_path =~ /(.*)$filename$/;
-
-    my $localpath     = 'irods/' . $remotepath;
-    my $localfullpath = $dest_path . $localpath;
-    $localpath .= '/' . $filename;
-    my $localfilepath = $localfullpath . '/' . $filename;
-    print STDERR "irods_get_file $src_path $filename $localfilepath\n";
-
-    my $do_get = 1;
-
-	# Verify checksum -- slow for large files
-    #	if (-e $localfilepath) {
-    #		my $remote_chksum = irods_chksum($path);
-    #		my $local_chksum = md5sum($localfilepath);
-    #		$do_get = 0 if ($remote_chksum ne $local_chksum);
-    #		print STDERR "$remote_chksum $local_chksum\n";
-    #	}
-
-    if ($do_get) {
-        mkpath($localfullpath);
-        CoGe::Accessory::IRODS::irods_iget( $src_path, $localfullpath );
-        return $localfilepath;
+    # Connect to workflow engine and get an id
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+    unless (defined $jex) {
+        return (undef, "Could not connect to JEX");
     }
+
+    # Create the workflow
+    my $workflow = $jex->create_workflow( name => 'Create Genome', init => 1 );
+    unless ($workflow and $workflow->id) {
+        return (undef, 'Could not create workflow');
+    }
+
+    # Setup log file, staging, and results paths
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
+    $workflow->logfile( catfile($result_dir, 'debug.log') );
+
+    # Create list of files to load
+    my @staged_files;
+    push @staged_files, @$files if ($files);
+
+    # Create jobs to retrieve irods files
+    my %load_params;
+    foreach my $item (@$irods) {
+        next unless ($item->{type} eq 'irods');
+        %load_params = create_iget_job(irods_path => $item->{path}, local_path => $staging_dir);
+        unless ( %load_params ) {
+            return (undef, "Could not create iget task");
+        }
+        $workflow->add_job(\%load_params);
+        push @staged_files, $load_params{outputs}[0];
+    }
+
+    # Create load job
+    my $load_task = create_load_genome_job(
+        user => $self->user,
+        staging_dir => $staging_dir,
+        result_dir => $result_dir,
+        wid => $self->workflow->id,
+        organism_id => $organism->id,
+        input_files => \@staged_files,
+        irods_files => $irods, # for metadata markup
+        metadata => $metadata,
+    );
+    unless ( $load_task ) {
+        return (undef, "Could not create load task");
+    }
+    $workflow->add_job($load_task);
+
+    # Submit the workflow
+    my $result = $jex->submit_workflow($workflow);
+    if ($result->{status} =~ /error/i) {
+        return (undef, "Could not submit workflow");
+    }
+
+    return ($result->{id}, undef);
 }
 
 1;

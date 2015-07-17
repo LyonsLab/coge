@@ -50,8 +50,10 @@ sub new {
 	my ($class, $gid) = @_;
 	my $self = {};
 	my $genome_file = get_genome_file($gid);
-	open(my $fh, $genome_file . '.fai');
-	$self->{fh} = $fh;
+	if ($genome_file) {
+	   open(my $fh, $genome_file . '.fai');
+	   $self->{fh} = $fh;
+	}
 	$self->{lines} = 0;
 	return bless $self, $class;
 }
@@ -254,6 +256,7 @@ sub next {
 	my $self = shift;
 	if (!$self->{fh}) {
 		print STDERR caller . "\n";
+		return 0;
 	}
 	my $line = readline($self->{fh});
 	if ($line) {

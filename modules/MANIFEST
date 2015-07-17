@@ -142,6 +142,9 @@ Pipelines/lib/CoGe/Builder/Export/Experiment.pm
 Pipelines/lib/CoGe/Builder/Export/Fasta.pm
 Pipelines/lib/CoGe/Builder/Export/Gff.pm
 Pipelines/lib/CoGe/Builder/Load/Experiment.pm
+Pipelines/lib/CoGe/Builder/Load/BatchExperiment.pm
+Pipelines/lib/CoGe/Builder/Load/Genome.pm
+Pipelines/lib/CoGe/Builder/Load/Annotation.pm
 Pipelines/lib/CoGe/Builder/SNP/IdentifySNPs.pm
 Pipelines/lib/CoGe/Builder/SNP/CoGeSNPs.pm
 Pipelines/lib/CoGe/Builder/SNP/GATK.pm
@@ -152,6 +155,7 @@ Pipelines/lib/CoGe/Builder/Tools/SynMap.pm
 Pipelines/lib/CoGe/Request/Request.pm
 Pipelines/lib/CoGe/Request/Genome.pm
 Pipelines/lib/CoGe/Request/Experiment.pm
+Pipelines/lib/CoGe/Request/Empty.pm
 Pipelines/lib/CoGe/Request/ExperimentAnalysis.pm
 Pipelines/lib/CoGe/Factory/PipelineFactory.pm
 Pipelines/lib/CoGe/Factory/RequestFactory.pm
