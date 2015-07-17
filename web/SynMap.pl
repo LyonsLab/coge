@@ -3148,8 +3148,20 @@ sub get_results {
         my $spa_result = "";
 
         if ($spa_url and $assemble) {
+	    #added by EHL: 6/17/15
+            #fixing problem where 
+	    my $genome1_chr_count = $genome1->chromosome_count();
+	    my $genome2_chr_count = $genome2->chromosome_count();
+	    my $flip =0;
+	    if ($genome1_chr_count >= $genome2_chr_count && $assemble > 0) {
+		$flip = 1;
+	    }
+
+	    if ($genome1_chr_count <= $genome2_chr_count && $assemble < 0) {
+		$flip = 1;
+	    }
             $spa_result = $spa_url
-                . qq{<a href="#" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2');">}
+                . qq{<a href="#" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2', '$flip');">}
                 . qq{Generate Pseudo-Assembled Genomic Sequence}
                 . qq{</a>};
         }
@@ -3653,6 +3665,7 @@ sub generate_assembly {
     my %opts = @_;
     my $gid1 = $opts{gid1};
     my $gid2 = $opts{gid2};
+    my $flip = $opts{flip}; #reverse the order from default
 
     unless ($gid1 and $gid2) {
         return encode_json({
@@ -3683,11 +3696,11 @@ sub generate_assembly {
         });
     }
 
-    my $filename = qq($gid1-$gid2-) . md5_hex($opts{input}) . ".tar.gz";
+    my $filename = qq($gid1-$gid2-) . md5_hex($opts{input}) .".".$flip. ".tar.gz";
     my $output = catfile($DIAGSDIR, $gid1, $gid2, "assembly", $filename);
 
     # Submit workflow
-    my $submission = generate_pseudo_assembly($JEX, $config, $opts{input}, $output);
+    my $submission = generate_pseudo_assembly($JEX, $config, $opts{input}, $output, $flip);
     $output =~ s/$DIR/$URL/;
 
     # Fixup success to return true or false
