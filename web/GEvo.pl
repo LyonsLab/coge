@@ -265,7 +265,7 @@ sub gen_body {
         }
 
         # Check if all genomes have been deleted
-        if ($dsid && !$dsgid) {
+        if ($dsid) {
             my $dataset = $coge->resultset("Dataset")->find($dsid);
 
             if ($dataset) {
@@ -481,7 +481,6 @@ sub gen_body {
 
     # Check if a genome was specified
     my $error = (scalar @seq_sub < $num_seqs) ? 1 : 0;
-    print STDERR "matt: error=$error num_seqs=$num_seqs seq_sub=", scalar(@seq_sub), "\n";
 
     $template->param( ERROR             => $error );
     $template->param( PAD_GS            => $pad_gs );
@@ -2916,7 +2915,7 @@ sub get_obj_from_genome_db {
 
         }
         $name = $accn unless $name;
-	print STDERR "\n" if $DEBUG;
+	    print STDERR "\n" if $DEBUG;
         print STDERR $name, " ID: ",$f->id,"\n" if $DEBUG;
         print STDERR "\t", $f->genbank_location_string(), "\n" if $DEBUG;
         print STDERR "\t", $f->genbank_location_string( recalibrate => $start ),
@@ -4448,11 +4447,10 @@ sub dataset_search {
     return unless $rs;
     while ( my $ds = $rs->next() ) {
         my $skip = 0;
-#	next if $ds->deleted;  #This function hasn't been pushed out yet
+        #next if $ds->deleted;  #This function hasn't been pushed out yet
         foreach my $item ( $ds->genomes ) {
             next if $USER->is_admin;
-            $skip = 1
-              if $item->restricted && !$USER->has_access_to_genome($item);
+            $skip = 1 if (!$USER->has_access_to_genome($item));
         }
         next if $skip;
         my $ver     = $ds->version;
@@ -4463,7 +4461,7 @@ sub dataset_search {
             my $typeid = $seqtype->id if $seqtype;
             unless ($typeid) {
                 print STDERR "Error retrieving sequence_type object for ",
-                  $ds->name, ": id ", $ds->id, "\n";
+                  $ds->name, ": dsid ", $ds->id, "\n";
                 next;
             }
             my $title =
@@ -4471,9 +4469,7 @@ sub dataset_search {
               . ( $ver ? "v$ver, " : '' ) . "dsid"
               . $ds->id . ")";
 
-            next
-              if $sources{ $ds->id }
-                  && $sources{ $ds->id }{typeid} < $typeid;
+            next if $sources{ $ds->id } && $sources{ $ds->id }{typeid} < $typeid;
             if ( $dsgid && !$dsid ) {
                 foreach my $item ( $ds->genomes ) {
                     $dsid = $ds->id if $dsgid == $item->id;
