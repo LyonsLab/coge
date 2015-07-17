@@ -10,10 +10,11 @@ var coge = window.coge = (function(namespace) {
 			this.baseUrl = opts.baseUrl;
 			this.userName = opts.userName;
 			this.supportEmail = opts.supportEmail;
-			this.success = opts.success;
+			this.onSuccess = opts.onSuccess;
 			this.onError = opts.onError;
 			this.onReset = opts.onReset;
-			this.formatter = opts.formatter || this.default_formatter;
+			this.formatter = opts.formatter || this._default_formatter;
+			this.buttonTemplate = opts.buttonTemplate;
 			
 			var c = this.container = $('<div class="dialog_box progress"></div>');
 			c.dialog({ 
@@ -51,15 +52,15 @@ var coge = window.coge = (function(namespace) {
 		    	this.onReset();
 		},
 		
-		reset_log: function() {
+		_reset_log: function() {
 			var c = this.container;
 			c.find('.log,.progress-link').html('');
 			c.find('.msg').show('');
-		    c.find('.ok,.error,.finished,.done,.cancel,.logfile').hide();
+		    c.find('.ok,.error,.finished,.done,.cancel,.logfile,.buttons').hide();
 		},
 			
 		begin: function(opts) {
-			this.reset_log();
+			this._reset_log();
 			
 			if (opts && opts.title)
 				this.container.dialog({title: opts.title});
@@ -85,25 +86,43 @@ var coge = window.coge = (function(namespace) {
 			this.container.dialog('close');
 		},
 		
-		succeeded: function(string) {
+		succeeded: function(results) {
 			var c = this.container;
 			
 		    // Update dialog
-		    c.find('.msg,.progress-link').hide();
-		    c.find('.finished,.ok').fadeIn();
-		    c.find('.log').append(string)
+		    c.find('.msg,.progress-link,.error,.cancel').hide();
+		    c.find('.finished').fadeIn();
+		    	
+		    // Show user-specified button template
+		    if (this.buttonTemplate) {
+		    	var template = $($("#"+this.buttonTemplate).html());
+		    	c.find('.buttons').html(template).fadeIn();
+		    }
+		    else { // default buttons
+		    	c.find('.ok').fadeIn();
+		    }
 		    
 		    // User callback
-		    if (this.success)
-		    	this.success();
+		    if (this.onSuccess)
+		    	this.onSuccess(results);
+		},
+		
+		_errorToString: function(error) {
+			var string = '';
+			for (key in error) {
+				string += error[key];
+			}
+			return string;
 		},
 
-		failed: function(string) {
+		failed: function(string, error) {
 			var c = this.container;
+			
+			var errorMsg = string + (error ? ': ' + this._errorToString(error) : '');
 			
 			// Show error message
 		    c.find('.log')
-		    	.append('<div class="alert">' + string + '</div><br>')
+		    	.append('<div class="alert">' + errorMsg + '</div><br>')
 		    	.append(
 		    		'<div class="alert">' +
 			        'The CoGe Support Team has been notified of this error but please ' +
@@ -119,7 +138,7 @@ var coge = window.coge = (function(namespace) {
 		    $('.logfile').fadeIn();
 
 		    // Update dialog
-		    c.find('.msg,.progress-link').hide();
+		    c.find('.msg,.progress-link,.buttons').hide();
 		    c.find('.error,.cancel').fadeIn();
 
 // FIXME restore this email reporting
@@ -200,14 +219,14 @@ var coge = window.coge = (function(namespace) {
 		            	return;
 		            }
 		            else {
-			            self.alert('Server not responding ('+self.ajaxError+')');
+			            self._alert('Server not responding ('+self.ajaxError+')');
 			            setTimeout($.proxy(self.update, self), retry_interval);
 			            return;
 		            }
 		        }
 		        
 		        self.ajaxError = 0;
-		        self.alert();
+		        self._alert();
 
 		        // Retry on missing status (probably won't ever happen)
 		        if (!json.status) {
@@ -226,7 +245,7 @@ var coge = window.coge = (function(namespace) {
 
 	            // Retry on JEX error status -- mdb added 6/30/15
 	            if (current_status == "error") {
-	            	self.alert('JEX error status');
+	            	self._alert('JEX error status');
 	            	setTimeout($.proxy(self.update, self), retry_interval);
 	            	return;
 	            }
@@ -252,8 +271,7 @@ var coge = window.coge = (function(namespace) {
 
 		            workflow_status.append("<br>Finished in " + duration);
 		            workflow_status.find('span').addClass('completed');
-		            if (json.results && json.results.length) 
-		            	self.succeeded(json.results);
+		            self.succeeded(json.results);
 		        }
 		        else if (current_status == "failed"
 		                //|| current_status == "error" // mdb removed 6/30/15 -- now handled first (see above code)
@@ -282,7 +300,7 @@ var coge = window.coge = (function(namespace) {
 		        if (json.results && json.results.length) {
 		        	log_content.append("<div class='bold'>Here are the results (click to open):</div>");
 		    	    json.results.forEach(function(result) {
-		    	    	var html = self.format_result(result);
+		    	    	var html = self._format_result(result);
 		    	    	log_content.append(html);
 		    	    });
 		        }
@@ -291,12 +309,12 @@ var coge = window.coge = (function(namespace) {
 		    };
 			
 		    setTimeout(
-		    	function() { coge.services.fetch_job(self.job_id, update_handler, update_handler); },
+		    	function() { coge.services.fetch_job(self.job_id).always(update_handler); },
 		    	10
 		    );
 		},
 		
-		format_result: function(result) {
+		_format_result: function(result) {
 			if (result.type === 'experiment') {
 				var url = 'ExperimentView.pl?eid=' + result.id;
 				return "<div><a href='"+url+"'><img src='picts/testtube-icon.png' width='15' height='15'/> Experiment '"+result.name+"'</a></div>";
@@ -305,9 +323,17 @@ var coge = window.coge = (function(namespace) {
 				var url = 'NotebookView.pl?nid=' + result.id;
 				return "<div><a href='"+url+"'><img src='picts/notebook-icon.png' width='15' height='15'/> Notebook '"+result.name+"'</a></div>";
 			}
+			else if (result.type === 'genome') {
+				var url = 'GenomeInfo.pl?gid=' + result.id;
+				return "<div><a href='"+url+"'><img src='picts/dna-icon.png' width='15' height='15'/> Genome '"+result.info+"'</a></div>";
+			}
+			else if (result.type === 'dataset') {
+				var url = 'GenomeInfo.pl?gid=' + result.genome_id;
+				return "<div><a href='"+url+"'> Dataset '"+result.info+"'</a></div>";				
+			}
 		},
 		
-		default_formatter: function(item) {
+		_default_formatter: function(item) {
 		    var msg;
 		    var row = $('<li>'+ item.description + ' </li>');
 
@@ -348,7 +374,7 @@ var coge = window.coge = (function(namespace) {
 		    return row;
 		},
 		
-		alert: function(string) {
+		_alert: function(string) {
 			var el = this.container.find(".alert");
 			if (!string)
 				el.html('').hide();
