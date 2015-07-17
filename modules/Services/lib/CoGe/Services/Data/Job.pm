@@ -18,7 +18,7 @@ use CoGe::Factory::PipelineFactory;
 sub add {
     my $self = shift;
     my $payload = shift || $self->req->json; # allow special payload to be passed in from other controllers
-    #print STDERR "CoGe::Services::Data::Job::add\n", Dumper $payload, "\n";
+    print STDERR "CoGe::Services::Data::Job::add\n", Dumper $payload, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -149,29 +149,7 @@ sub fetch {
         push @tasks, $t;
     }
 
-    # Add results (if any)
-    # mdb removed 2/27/15 for load_experiment2
-#    my ( undef, $result_dir ) = get_workflow_paths( $user->name, $id );
-#    my @results;
-#    if (-r $result_dir) {
-#        # Get list of result files in results path
-#        opendir(my $fh, $result_dir);
-#        foreach my $file ( readdir($fh) ) {
-#            my $fullpath = catfile($result_dir, $file);
-#            next unless -f $fullpath;
-#
-#            my $name = basename($file);
-#            push @results, {
-#                type => 'http',
-#                name => $name,
-#                path => url_for('api/v1/jobs/'.$id.'/results/'.$name,
-#                    username => $user->name
-#                ) # FIXME move api path into conf file ...?
-#            };
-#        }
-#        closedir($fh);
-#    }
-
+    # Add results
     my $results = get_workflow_results($user->name, $id);
 
     $self->render(json => {
@@ -182,44 +160,36 @@ sub fetch {
     });
 }
 
-#sub results { #TODO remove this, no longer necessary in load_experiment2
-#    my $self = shift;
-#    my $id = $self->stash('id');
-#    my $name = $self->stash('name');
-#    my $format = $self->stash('format');
-#
-#    # Authenticate user and connect to the database
-#    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-#
-#    # User authentication is required
-#    unless (defined $user) {
-#        $self->render(json => {
-#            error => { Auth => "Access denied" }
-#        });
-#        return;
-#    }
-#
-#    $name = "$name.$format" if $format;
-#    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $id);
-#    my $result_file = catfile($result_dir, $name);
-#
-#    unless (-r $result_file) {
-#        $self->render(json => {
-#            error => { Error => "Item not found" }
-#        });
-#        return;
-#    }
-#
-#    # Either download the file or display the results
-#    if ($name eq "1") {
-#        my $pResult = CoGe::Accessory::TDS::read($result_file);
-#        $self->render(json => $pResult);
-#    } 
-#    else {
-#        $self->res->headers->content_disposition("attachment; filename=$name;");
-#        $self->res->content->asset(Mojo::Asset::File->new(path => $result_file));
-#        $self->rendered(200);
-#    }
-#}
+sub results { # legacy for Genome Export via HTTP
+    my $self = shift;
+    my $id = $self->stash('id');
+    my $name = $self->stash('name');
+
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    # User authentication is required
+    unless (defined $user) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        });
+        return;
+    }
+
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $id);
+    my $result_file = catfile($result_dir, $name);
+
+    unless (-r $result_file) {
+        $self->render(json => {
+            error => { Error => "Item not found" }
+        });
+        return;
+    }
+
+    # Download the file
+    $self->res->headers->content_disposition("attachment; filename=$name;");
+    $self->res->content->asset(Mojo::Asset::File->new(path => $result_file));
+    $self->rendered(200);
+}
 
 1;
