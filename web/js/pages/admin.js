@@ -36,7 +36,6 @@ $(function () {
 				init_reports();
 			}
 			if(current_tab == 5) {
-				console.log($("#tabs").width());
 				init_taxon_tree("");
 			}
 		}
@@ -1759,6 +1758,7 @@ $.extend(DataGrid.prototype, {
 					json.data[i].push(total_items);
 				}
 				self.data = json;
+				console.log(self.data);
 				$('#' + element + '_table').dataTable(self.data);
 				$('#' + element).show();
 				if (self.selection != "total") {
@@ -1793,6 +1793,10 @@ function filter_report(index) {
 		case 2: reports_grid.filter = "deleted";
 			break;
 		case 3: reports_grid.filter = "public";
+			break;
+		case 4: reports_grid.filter = "public (owned)";
+			break;
+		case 5: reports_grid.filter = "shared";
 			break;
 	}
 	reports_grid.initialize();
