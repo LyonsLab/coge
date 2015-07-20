@@ -15,6 +15,7 @@ var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 var reports_grid;
+var histogram;
 var tree;
 
 $(function () {
@@ -66,6 +67,7 @@ $(function () {
     $("#hist_update_checkbox").change(function(e) {
     	toggle_hist_updater();
     });
+    $("#histo_dialog").dialog({autoOpen: false, width: 500, height: 500});
     
     //Setup idle timer
     $(document).mousemove(function() {
@@ -78,8 +80,6 @@ $(function () {
 			schedule_update(5000);
 		}
 	});
-    
-    //var histo_test = new Histogram("histo_dialog");
 });
 
 //Initialize the Jobs tab
@@ -1555,25 +1555,13 @@ Force.prototype.toggle_children = function(d) {
 
 Force.prototype.click = function(d) {
 	if (!d3.event.defaultPrevented) {
-		//if (d._size) {
-		//	var temp = d._size;
-		//	d._size = d.size;
-		//	d.size = temp;
-		//} else {
-		//	d._size = d.size;
-		//	d.size = 2025;
-		//}
-		
 		this.force.charge(
 			function(d, i) {
 				if(d.size) {
-					//return Math.pow(d.size, 1.0/3.0)*(-12);
-					//console.log(d.size + '!');
 					return Math.sqrt(d.size)*(-2.25);
 				}
 			}
 		);
-		//force.getAttribute("charge");
 		this.force.start();
 		
 		this.toggle_children(d);
@@ -1722,29 +1710,29 @@ $.extend(DataGrid.prototype, {
 		var fname;
 		$('#' + element).hide();
 		$('#' + element + '_loading').show();
+		$('#report_type').prop('disabled', true);
+		$('#report_filter').prop('disabled', true);
+		$('#histogram_button').prop('disabled', true);
 		switch (this.selection) {
 			case "user":
 				fname = 'get_user_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
-				$('#histogram_button').prop('disabled', false);
+					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th><th>Total</th></tr></thead></table>');
 				break;
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
-				$('#histogram_button').prop('disabled', false);
+					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Total</th></tr></thead></table>');
 				break;
 			case "total":
 				fname = 'get_total_table';
 				if (this.filter == "none") {
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th></tr></thead></table>');
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th><th>Total</th></tr></thead></table>');
 				} else {
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th></tr></thead></table>');
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th></tr></thead></table>');
 				}
-				$('#histogram_button').prop('disabled', true);
 				break;
 		}
 		$.ajax({
@@ -1754,10 +1742,34 @@ $.extend(DataGrid.prototype, {
 			},
 			success: function(data) {
 				$('#' + element + '_loading').hide();
-				self.data = JSON.parse(data);
-				//console.log(self.data);
-				$('#' + element + '_table').dataTable(JSON.parse(data));
+				json = JSON.parse(data);
+				var values = [];
+				var max_value = 0;
+				var min_value = Number.MAX_SAFE_INTEGER;
+				for(var i = 0; i < json.data.length; i++) {
+					var total_items = 0;
+					if (this.selection == "total") {
+						for(var j = 0; j < json.data[i].length; j++) {
+							var num = parseInt(json.data[i][j]);
+							total_items += num;
+						}
+					} else {
+						for(var j = 1; j < json.data[i].length - 1; j++) {  // ignores the "name", "users", "groups" columns
+							var num = parseInt(json.data[i][j]);
+							total_items += num;
+						}
+					}
+					json.data[i].push(total_items);
+				}
+				self.data = json;
+				console.log(self.data);
+				$('#' + element + '_table').dataTable(self.data);
 				$('#' + element).show();
+				if (self.selection != "total") {
+					$('#histogram_button').prop('disabled', false);
+				}
+				$('#report_type').prop('disabled', false);
+				$('#report_filter').prop('disabled', false);
 			}
 		});
 		
@@ -1786,6 +1798,10 @@ function filter_report(index) {
 			break;
 		case 3: reports_grid.filter = "public";
 			break;
+		case 4: reports_grid.filter = "public (owned)";
+			break;
+		case 5: reports_grid.filter = "shared";
+			break;
 	}
 	reports_grid.initialize();
 }
@@ -1794,38 +1810,16 @@ var Histogram = function(element, json, parent) {
 	this.element = element;
 	this.json = json;
 	this.parent = parent;
-	//this.selection = selection;
-	
-	/*this.values = [];
-	this.max_value = 0;
-	this.min_value = Number.MAX_SAFE_INTEGER;
-	for(var i = 0; i < json.data.length; i++) {
-		var total_items = 0;
-		for(var j = 0; j < json.data[i].length; j++) {
-			if(selection == "total" || j != 0) {
-				var num = parseInt(json.data[i][j]);
-				total_items += num;
-				//console.log(json.data[i][j]);
-			}
-		}
-		this.values.push(total_items);
-		if(total_items > this.max_value) {
-			this.max_value = total_items;
-		}
-		if(total_items < this.min_value) {
-			this.min_value = total_items;
-		}
-	}*/
 	this.values = this.json.values;
 	this.min_value = this.json.min;
 	this.max_value = this.json.max;
 	
-	console.log(this.json);
+	$('#' + this.element).dialog('open');
 	
 	this.formatCount;
-	this.margin = {top: 10, right: 30, bottom: 30, left: 50};
-	this.width = 500 - this.margin.left - this.margin.right;
-	this.height = 500 - this.margin.top - this.margin.bottom;
+	this.margin = {top: 10, right: 30, bottom: 80, left: 50};
+	this.width = $('#' + this.element).outerWidth() - this.margin.left - this.margin.right;
+	this.height = $('#' + this.element).outerHeight() - this.margin.top - this.margin.bottom;
 	this.x;
 	this.data;
 	this.y;
@@ -1841,17 +1835,19 @@ var Histogram = function(element, json, parent) {
 $.extend(Histogram.prototype, {
 	initialize: function() {
 		var self = this;
-		$("#" + this.element).html('');
-		//Generate a Bates distribution of 10 random variables.
-		//this.values = d3.range(1000).map(d3.random.bates(10));
-		//console.log(this.values);
+		$("#" + this.element).html(
+			'<div><button id="histogram_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;" onclick="histogram_zoom_out()">Zoom Out</button>' +
+			'<span style="margin-right:40px;">Data: ' + $('#report_type').val() + ', Filter: ' + $('#report_filter').val() + '</span></div>'
+		);
+
+		if (self.parent) {
+			$('#histogram_back_button').prop('disabled', false);
+		} else {
+			$('#histogram_back_button').prop('disabled', true);
+		}
 	
 		// A formatter for counts.
 		this.formatCount = d3.format(",.0f");
-	
-		/*this.margin = {top: 10, right: 30, bottom: 30, left: 50},
-		this.width = 500 - this.margin.left - this.margin.right,
-		this.height = 500 - this.margin.top - this.margin.bottom;*/
 	
 		this.x = d3.scale.linear()
 		    .domain([this.min_value, this.max_value])
@@ -1859,11 +1855,14 @@ $.extend(Histogram.prototype, {
 	
 		// Generate a histogram using twenty uniformly-spaced bins.
 		this.data = d3.layout.histogram()
-		    .bins(this.x.ticks(this.max_value))
+		    .bins(this.x.ticks(this.max_value - this.min_value))
 		    (this.values);
 	
 		this.y = d3.scale.log()
-		    .domain([1, d3.max(this.data, function(d) { return d.y; })])
+		    .domain([1, Math.max(
+		    		d3.max(this.data, function(d) { return d.y; }),
+		    		2
+		    )])
 		    .range([this.height, 0]);
 	
 		this.xAxis = d3.svg.axis()
@@ -1891,17 +1890,21 @@ $.extend(Histogram.prototype, {
 			.enter().append("g")
 		    .attr("class", "bar")
 		    .attr("transform", function(d) { 
-		    	if(d.y == 0) {
-		    		return "translate(" + self.x(d.x) + ", 0)";
+		    	if (d.y == 1) {
+		    		return "translate(" + self.x(d.x) + ", " + self.y(1.1) + ")";
+		    	} else if (d.y == 0) {
+		    		return "translate(" + self.x(d.x) + ", " + self.y(1.1) + ")";
 		    	}
 		    	return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
 		    });
 		
 		this.bar.append("rect")
 		    .attr("x", 1)
-		    .attr("width", self.x((self.data[0].dx * 2) - 1))
-		    .attr("height", function(d) { 
-		    	if(d.y == 0) {
+		    .attr("width", (self.width / self.data.length)*0.9)
+		    .attr("height", function(d) {
+		    	if(d.y == 1) {
+		    		return self.height - self.y(1.1);
+		    	} else if (d.y == 0) {
 		    		return 0;
 		    	}
 		    	return self.height - self.y(d.y); 
@@ -1918,10 +1921,20 @@ $.extend(Histogram.prototype, {
 		    .attr("class", "x axis")
 		    .attr("transform", "translate(0," + this.height + ")")
 		    .call(this.xAxis);
+
+		var x_label = this.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + (this.width/2 - 150) + "," + (this.height + this.margin.bottom/2.5) + ")")
+			.text("Total Data Sets (Notebooks + Genomes + Experiments)");
 		
 		this.svg.append("g")
 	    	.attr("class", "y axis")
 	    	.call(this.yAxis);
+		
+		this.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + this.margin.left/(-1.25) + "," + this.height/2 + ") rotate(270)")
+			.text("Frequency");
 		
 		this.svg.append("g")
 	    	.attr("class", "x brush")
@@ -1932,13 +1945,9 @@ $.extend(Histogram.prototype, {
 		
 		$('#' + this.element)
 			.dialog({
-				resizeStop: function( event, ui ) { 
-					//self.svg.attr("transform", "scale(" + ui.size.width/ui.originalSize.width + " " + ui.size.height/ui.originalSize.height + ") translate(" + self.margin.left + "," + self.margin.top + ")");
-
-					var widthScale = ui.size.width/ui.originalSize.width;
-					var heightScale = ui.size.height/ui.originalSize.height;
-					self.width = (self.width + self.margin.left + self.margin.right)*widthScale - self.margin.left - self.margin.right;
-					self.height = (self.height + self.margin.top + self.margin.bottom + 30)*heightScale - self.margin.top - self.margin.bottom - 30;
+				resizeStop: function( event, ui ) {
+					self.width = $(this).outerWidth() - self.margin.left - self.margin.right;
+					self.height = $(this).outerHeight() - self.margin.top - self.margin.bottom;
 					self.initialize();
 				},
 			})
@@ -1947,14 +1956,15 @@ $.extend(Histogram.prototype, {
 	brushed: function() {
 		var self = this;
 		var extent = this.brush.extent();
-		var rangeExtent = [this.x( extent[0] ), this.x( extent[1] ) ];
-		var rangeWidth  = rangeExtent[1] - rangeExtent[0];
-		console.log(extent[0]);
-		console.log(rangeExtent[0]);
+		extent[0] = Math.floor(extent[0]);
+		extent[1] = Math.ceil(extent[1]);
 		
 		var newValues = [];
 		for (var i = 0; i < this.values.length; i++) {
 			if (this.values[i] >= extent[0] && this.values[i] <= extent[1]) {
+				console.log(extent[0]);
+				console.log(this.values[i]);
+				console.log("");
 				newValues.push(this.values[i]);
 			}
 		}
@@ -1963,8 +1973,8 @@ $.extend(Histogram.prototype, {
 				max: Math.ceil(extent[1]),
 				values: newValues,
 		};
-		//console.log(newJson);
-		var childHistogram = new Histogram(this.element, newJson, this);
+		var parent = histogram;
+		histogram = new Histogram(self.element, newJson, parent);
 	}
 });
 
@@ -1974,14 +1984,7 @@ function init_histogram(element) {
 	var max_value = 0;
 	var min_value = Number.MAX_SAFE_INTEGER;
 	for(var i = 0; i < json.data.length; i++) {
-		var total_items = 0;
-		for(var j = 0; j < json.data[i].length; j++) {
-			if(reports_grid.selection == "total" || j != 0) {
-				var num = parseInt(json.data[i][j]);
-				total_items += num;
-				//console.log(json.data[i][j]);
-			}
-		}
+		var total_items = json.data[i][json.data[i].length - 1];
 		values.push(total_items);
 		if(total_items > max_value) {
 			max_value = total_items;
@@ -1990,8 +1993,12 @@ function init_histogram(element) {
 			min_value = total_items;
 		}
 	}
-	var histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
-	return histogram;
+	histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
+}
+
+function histogram_zoom_out() {
+	histogram = histogram.parent;
+	histogram.initialize();
 }
 
 function init_taxon_tree(element) {
@@ -2009,8 +2016,9 @@ function init_taxon_tree(element) {
 }
 
 var Taxon_tree = function(json, element) {
+	var container_width = $("#tabs").width();
 	this.margin = {top: 20, right: 120, bottom: 20, left: 120};
-	this.width = 1960 - this.margin.right - this.margin.left;
+	this.width = container_width - this.margin.right - this.margin.left;
 	this.height = 3200 - this.margin.top - this.margin.bottom;
 	this.duration = 750;
 	this.root = json;
@@ -2025,9 +2033,12 @@ var Taxon_tree = function(json, element) {
 	
 	this.diagonal = d3.svg.diagonal()
 		.projection(function(d) { return [d.y, d.x]; });
-	
 
 	d3.select(self.frameElement).style("height", "800px");
+	
+	this.shifted;
+	var object = this;
+	$(document).on('keyup keydown', function(e){object.shifted = e.shiftKey;} );
 	
 	this.initialize(element);
 }
@@ -2059,7 +2070,6 @@ $.extend(Taxon_tree.prototype, {
 	update: function(source, new_root) {
 		var self = this;
 		self.current_root = new_root;
-		console.log(source.depth);
 		
 		//Adjust height based on the number of children
 		if (self.current_root.children) {
@@ -2073,7 +2083,6 @@ $.extend(Taxon_tree.prototype, {
 		if (self.tree.size()[0] < 800) {
 			self.tree.size([800, 1]);
 		}
-		console.log(self.tree.size())
 		
 		// Compute the new tree layout.
 		var nodes = self.tree.nodes(self.current_root); //.reverse();
@@ -2110,7 +2119,8 @@ $.extend(Taxon_tree.prototype, {
 		}
 		
 		// Normalize for fixed-depth.
-		nodes.forEach(function(d) { d.y = d.depth * 1260/max_depth; });
+		//nodes.forEach(function(d) { d.y = d.depth * 1260/max_depth; });
+		nodes.forEach(function(d) { d.y = d.depth * (self.width-100)/max_depth; });
 		
 		// Update the nodesÉ
 		self.node = self.svg.selectAll("g.node")
@@ -2121,12 +2131,13 @@ $.extend(Taxon_tree.prototype, {
 			.attr("class", "node")
 			.attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
 			.on("click", function(d) {
-				self.click.call(self, d);
-			})
-			.on("dblclick", function(d) {
-				self.double_click.call(self, d);
+				if (self.shifted) {
+					self.double_click.call(self, d);
+				} else {
+					self.click.call(self, d);
+				}
 			});
-
+		
 		nodeEnter.append("circle")
 			.attr("class", "tree_node noselect")
 			.attr("r", 1e-6)
