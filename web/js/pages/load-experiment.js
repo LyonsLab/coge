@@ -47,13 +47,15 @@ function create_source() {
 function search_genomes (search_term) {
 	coge.services.search_genomes(search_term, { fast: true })
 		.done(function(result) { // success
-			var transformed = result.genomes.map(function(obj) {
-				var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
-				return { label: label, value: obj.id };
-			});
-			$("#edit_genome")
-				.autocomplete({source: transformed})
-				.autocomplete("search");
+			if (result && result.genomes) {
+				var transformed = result.genomes.map(function(obj) {
+					var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
+					return { label: label, value: obj.id };
+				});
+				$("#edit_genome")
+					.autocomplete({source: transformed})
+					.autocomplete("search");
+			}
 		})
 		.fail(function() { // error
 			//TODO
@@ -63,12 +65,14 @@ function search_genomes (search_term) {
 function search_users (search_term) {
 	coge.services.search_users(search_term)
 		.done(function(result) {
-			var transformed = result.users.map(function(obj) {
-				return obj.user_name;
-			});
-			$("#edit_user")
-				.autocomplete({source: transformed})
-				.autocomplete("search");
+			if (result && result.users) {
+				var transformed = result.users.map(function(obj) {
+					return obj.user_name;
+				});
+				$("#edit_user")
+					.autocomplete({source: transformed})
+					.autocomplete("search");
+			}
 		})
 		.fail(function() {
 			//TODO
