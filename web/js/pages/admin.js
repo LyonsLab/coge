@@ -1748,11 +1748,15 @@ $.extend(DataGrid.prototype, {
 				var min_value = Number.MAX_SAFE_INTEGER;
 				for(var i = 0; i < json.data.length; i++) {
 					var total_items = 0;
-					for(var j = 0; j < json.data[i].length; j++) {
-						if(reports_grid.selection == "total" || j != 0) {
+					if (this.selection == "total") {
+						for(var j = 0; j < json.data[i].length; j++) {
 							var num = parseInt(json.data[i][j]);
 							total_items += num;
-							//console.log(json.data[i][j]);
+						}
+					} else {
+						for(var j = 1; j < json.data[i].length - 1; j++) {  // ignores the "name", "users", "groups" columns
+							var num = parseInt(json.data[i][j]);
+							total_items += num;
 						}
 					}
 					json.data[i].push(total_items);

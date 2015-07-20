@@ -1653,6 +1653,7 @@ sub get_user_table {
     my $filter = $opts{filter};
     my %query;
     my %operators;
+    my $shared = 0;
     if ($filter eq "restricted") {
     	%query = ('restricted', '1');
     } elsif ($filter eq "deleted") {
@@ -1662,6 +1663,9 @@ sub get_user_table {
     } elsif ($filter eq "public (owned)") {
     	%query = ('restricted', '0', 'deleted', '0', 'creator_id', '0');
     	%operators = ('restricted', '=', 'deleted', '=', 'creator_id', '!=')
+    } elsif ($filter eq "shared") {
+    	%query = ('restricted', '1');
+    	$shared = 1;
     }
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @data;
@@ -1673,7 +1677,7 @@ sub get_user_table {
 	while(my($id, $user) = each $users[0]) {
 		my $table = CoGeDBI::get_user_access_table($db->storage->dbh, $id);
 		
-		my $notebooks = ${$table}{1};
+		my $notebooks = $table->{1};
 		my $note_size = 0;
 		foreach my $note_id (keys %$notebooks) {
 			my @filtered_notebooks;
@@ -1691,11 +1695,13 @@ sub get_user_table {
 				$note_size++;
 			}
 			if (scalar(@filtered_notebooks) != 0 && keys $filtered_notebooks[0]) {
-				$note_size++;
+				if ($shared == 0 || $table->{1}->{$note_id}->{role_id} != 2) {
+					$note_size++;
+				}
 			}
 		}
 		
-		my $genomes = ${$table}{2};
+		my $genomes = $table->{2};
 		my $gen_size = 0;
 		foreach my $gen_id (keys %$genomes) {
 			my @filtered_genomes;
@@ -1713,11 +1719,13 @@ sub get_user_table {
 				$gen_size++;
 			}
 			if (scalar(@filtered_genomes) != 0 && keys $filtered_genomes[0]) {
-				$gen_size++;
+				if ($shared == 0 || ($table->{2}->{$gen_id}->{role_id} && $table->{2}->{$gen_id}->{role_id} != 2)) {
+					$gen_size++;
+				}
 			}
 		}
 		
-		my $experiments = ${$table}{3};
+		my $experiments = $table->{3};
 		my $exp_size = 0;
 		foreach my $exp_id (keys %$experiments) {
 			my @filtered_experiments;
@@ -1735,11 +1743,13 @@ sub get_user_table {
 				$exp_size++;
 			}
 			if (scalar(@filtered_experiments) != 0 && keys $filtered_experiments[0]) {
-				$exp_size++;
+				if ($shared == 0 || ($table->{3}->{$exp_id}->{role_id} && $table->{3}->{$exp_id}->{role_id} != 2)) {
+					$exp_size++;
+				}
 			}
 		}
 		
-		my $groups = ${$table}{6};
+		my $groups = $table->{6};
 		my $group_size = keys %$groups;
 		
 		my @user_data;
@@ -1798,7 +1808,7 @@ sub get_group_table {
 	while(my($id, $group) = each $groups[0]) {
 		my $table = CoGeDBI::get_group_access_table($db->storage->dbh, $id);
 		
-		my $notebooks = ${$table}{1};
+		my $notebooks = $table->{1};
 		my $note_size = 0;
 		foreach my $note_id (keys %$notebooks) {
 			my @filtered_notebooks;
@@ -1816,11 +1826,13 @@ sub get_group_table {
 				$note_size++;
 			}
 			if (scalar(@filtered_notebooks) != 0 && keys $filtered_notebooks[0]) {
-				$note_size++;
+				if ($shared == 0 || $table->{1}->{$note_id}->{role_id} != 2) {
+					$note_size++;
+				}
 			}	
 		}
 			
-		my $genomes = ${$table}{2};
+		my $genomes = $table->{2};
 		my $gen_size = 0;
 		foreach my $gen_id (keys %$genomes) {
 			my @filtered_genomes;
@@ -1838,11 +1850,13 @@ sub get_group_table {
 				$gen_size++;
 			}
 			if (scalar(@filtered_genomes) != 0 && keys $filtered_genomes[0]) {
-				$gen_size++;
+				if ($shared == 0 || ($table->{2}->{$gen_id}->{role_id} && $table->{2}->{$gen_id}->{role_id} != 2)) {
+					$gen_size++;
+				}
 			}
 		}
 		
-		my $experiments = ${$table}{3};
+		my $experiments = $table->{3};
 		my $exp_size = 0;
 		foreach my $exp_id (keys %$experiments) {
 			my @filtered_experiments;
@@ -1860,7 +1874,9 @@ sub get_group_table {
 				$exp_size++;
 			}
 			if (scalar(@filtered_experiments) != 0 && keys $filtered_experiments[0]) {
-				$exp_size++;
+				if ($shared == 0 || ($table->{3}->{$exp_id}->{role_id} && $table->{3}->{$exp_id}->{role_id} != 2)) {
+					$exp_size++;
+				}
 			}
 		}
 		
