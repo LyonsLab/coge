@@ -168,10 +168,10 @@ sub create_genome_from_file {
 
     # Create load job
     my $load_task = create_load_genome_job(
-        user => $self->user,
+        user => $user,
         staging_dir => $staging_dir,
         result_dir => $result_dir,
-        wid => $self->workflow->id,
+        wid => $workflow->id,
         organism_id => $organism->id,
         input_files => \@staged_files,
         irods_files => $irods, # for metadata markup
