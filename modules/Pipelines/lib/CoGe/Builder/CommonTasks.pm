@@ -1123,6 +1123,7 @@ sub create_gsnap_job {
     my $gapmode = $params->{'--gap-mode'} // "none"; #/
     my $Q = $params->{'-Q'} // 1; #/
     my $n = $params->{'-n'} // 5; #/
+    my $N = $params->{'-N'} // 1; #/
     my $nofails = $params->{'--nofails'} // 1; #/
 
     my $name = basename($gmap);
@@ -1136,7 +1137,7 @@ sub create_gsnap_job {
         ["-d", $name, 0],
         ["--nthreads=32", '', 0],
         ["-n", $n, 0],
-        ["-N", '1', 0],
+        ["-N", $N, 0],
         ["--format=sam", '', 0],
         ["--gmap-mode=$gapmode", '', 1],
         ["--batch=5", '', 0],

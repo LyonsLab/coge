@@ -365,6 +365,7 @@ $.extend(AlignmentView.prototype, {
             this.data = {
                 alignment_params: { //TODO is there a way to automate this parameter passing?
                     tool: "gsnap",
+                    '-N': this.el.find("[id='-N']").val(),
                     '-n': this.el.find("[id='-n']").val(),
                     '-Q': this.el.find("[id='-Q']").is(":checked"),
                     '--gap-mode': this.el.find("[id='--gap-mode']").val(),
