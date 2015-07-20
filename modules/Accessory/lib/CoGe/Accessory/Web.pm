@@ -269,107 +269,109 @@ sub dispatch {
     }
 }
 
-sub dataset_search_for_feat_name {
-    my ( $self, $accn, $num, $dsid, $featid, $coge ) = self_or_default(@_);
-    $num = 1 unless $num;
-    return (
-qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">},
-        $num
-    ) unless $accn;
-    my $html;
-    my %sources;
-    my %restricted_orgs = %{ $self->restricted_orgs } if $self->restricted_orgs;
-    my $rs = $coge->resultset('Dataset')->search(
-        { 'feature_names.name' => $accn },
-        {
-            'join' => { 'features' => 'feature_names' },
-            'prefetch' => [ 'datasource', 'organism' ]
-        }
-    );
-    while ( my $ds = $rs->next() ) {
-        my $name    = $ds->name;
-        my $ver     = $ds->version;
-        my $desc    = $ds->description;
-        my $sname   = $ds->datasource->name;
-        my $ds_name = $ds->name;
-        my $org     = $ds->organism->name;
-        my $title   = "$org: $ds_name ($sname, v$ver)";
-        next if $restricted_orgs{$org};
-        $sources{ $ds->id } = { title => $title, version => $ver };
-    }
-    if ( keys %sources ) {
-        $html .= qq{
- <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);" >
- };
-        foreach my $id (
-            sort { $sources{$b}{version} <=> $sources{$a}{version} }
-            keys %sources
-          )
-        {
-            my $val = $sources{$id}{title};
-            $html .= qq{  <option value="$id"};
-            $html .= qq{ selected } if $dsid && $id == $dsid;
-            $html .= qq{>$val\n};
-        }
-        $html .= qq{</SELECT>\n};
-        my $count = scalar keys %sources;
-        $html .= qq{<font class=small>($count)</font>};
-    }
-    else {
-        $html .=
-qq{Accession not found <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};
-    }
-    return ( $html, $num );
-}
+# mdb removed 7/20/15 -- what is this doing here?
+#sub dataset_search_for_feat_name {
+#    my ( $self, $accn, $num, $dsid, $featid, $coge ) = self_or_default(@_);
+#    $num = 1 unless $num;
+#    return (
+#qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">},
+#        $num
+#    ) unless $accn;
+#    my $html;
+#    my %sources;
+#    my %restricted_orgs = %{ $self->restricted_orgs } if $self->restricted_orgs;
+#    my $rs = $coge->resultset('Dataset')->search(
+#        { 'feature_names.name' => $accn },
+#        {
+#            'join' => { 'features' => 'feature_names' },
+#            'prefetch' => [ 'datasource', 'organism' ]
+#        }
+#    );
+#    while ( my $ds = $rs->next() ) {
+#        my $name    = $ds->name;
+#        my $ver     = $ds->version;
+#        my $desc    = $ds->description;
+#        my $sname   = $ds->datasource->name;
+#        my $ds_name = $ds->name;
+#        my $org     = $ds->organism->name;
+#        my $title   = "$org: $ds_name ($sname, v$ver)";
+#        next if $restricted_orgs{$org};
+#        $sources{ $ds->id } = { title => $title, version => $ver };
+#    }
+#    if ( keys %sources ) {
+#        $html .= qq{
+# <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);" >
+# };
+#        foreach my $id (
+#            sort { $sources{$b}{version} <=> $sources{$a}{version} }
+#            keys %sources
+#          )
+#        {
+#            my $val = $sources{$id}{title};
+#            $html .= qq{  <option value="$id"};
+#            $html .= qq{ selected } if $dsid && $id == $dsid;
+#            $html .= qq{>$val\n};
+#        }
+#        $html .= qq{</SELECT>\n};
+#        my $count = scalar keys %sources;
+#        $html .= qq{<font class=small>($count)</font>};
+#    }
+#    else {
+#        $html .=
+#qq{Accession not found <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};
+#    }
+#    return ( $html, $num );
+#}
 
-sub feat_search_for_feat_name {
-    my ( $self, $accn, $dsid, $num, $coge ) = self_or_default(@_);
-    return qq{<input type="hidden" id="featid$num">\n} unless $dsid;
-    my @feats;
-    my $rs = $coge->resultset('Feature')->search(
-        {
-            'feature_names.name' => $accn,
-            'dataset.dataset_id' => "$dsid",
-        },
-        {
-            'join'     => [ 'feature_type', 'dataset', 'feature_names' ],
-            'prefetch' => [ 'feature_type', 'dataset' ],
-        }
-    );
-    my %seen;
-    while ( my $f = $rs->next() ) {
-        next unless $f->dataset->id == $dsid;
-
-        #	next if $f->feature_type->name =~ /CDS/i;
-        #	next if $f->feature_type->name =~ /RNA/i;
-        push @feats, $f unless $seen{ $f->id };
-        $seen{ $f->id } = 1;
-    }
-    my $html;
-    if (@feats) {
-        $html .= qq{<SELECT name = "featid$num" id = "featid$num" >};
-        foreach my $feat ( sort { $a->type->name cmp $b->type->name } @feats ) {
-            my $loc = "("
-              . $feat->type->name
-              . ") Chr:"
-              . $feat->chromosome . " "
-              . $feat->start . "-"
-              . $feat->stop;
-
-#working here, need to implement genbank_location_string before I can progress.  Need
-            $loc =~ s/(complement)|(join)//g;
-            my $fid = $feat->id;
-            $html .= qq {  <option value="$fid">$loc \n};
-        }
-        $html .= qq{</SELECT>\n};
-        my $count = scalar @feats;
-        $html .= qq{<font class=small>($count)</font>};
-    }
-    else {
-        $html .= qq{<input type="hidden" id="featid$num">\n};
-    }
-    return $html;
-}
+# mdb removed 7/20/15 -- what is this doing here?
+#sub feat_search_for_feat_name {
+#    my ( $self, $accn, $dsid, $num, $coge ) = self_or_default(@_);
+#    return qq{<input type="hidden" id="featid$num">\n} unless $dsid;
+#    my @feats;
+#    my $rs = $coge->resultset('Feature')->search(
+#        {
+#            'feature_names.name' => $accn,
+#            'dataset.dataset_id' => "$dsid",
+#        },
+#        {
+#            'join'     => [ 'feature_type', 'dataset', 'feature_names' ],
+#            'prefetch' => [ 'feature_type', 'dataset' ],
+#        }
+#    );
+#    my %seen;
+#    while ( my $f = $rs->next() ) {
+#        next unless $f->dataset->id == $dsid;
+#
+#        #	next if $f->feature_type->name =~ /CDS/i;
+#        #	next if $f->feature_type->name =~ /RNA/i;
+#        push @feats, $f unless $seen{ $f->id };
+#        $seen{ $f->id } = 1;
+#    }
+#    my $html;
+#    if (@feats) {
+#        $html .= qq{<SELECT name = "featid$num" id = "featid$num" >};
+#        foreach my $feat ( sort { $a->type->name cmp $b->type->name } @feats ) {
+#            my $loc = "("
+#              . $feat->type->name
+#              . ") Chr:"
+#              . $feat->chromosome . " "
+#              . $feat->start . "-"
+#              . $feat->stop;
+#
+##working here, need to implement genbank_location_string before I can progress.  Need
+#            $loc =~ s/(complement)|(join)//g;
+#            my $fid = $feat->id;
+#            $html .= qq {  <option value="$fid">$loc \n};
+#        }
+#        $html .= qq{</SELECT>\n};
+#        my $count = scalar @feats;
+#        $html .= qq{<font class=small>($count)</font>};
+#    }
+#    else {
+#        $html .= qq{<input type="hidden" id="featid$num">\n};
+#    }
+#    return $html;
+#}
 
 sub self_or_default {    #from CGI.pm
     return @_
@@ -457,32 +459,12 @@ sub login_cas_proxy {
     }
     return unless $uname; # Not logged in
 
-    my ($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
-    unless ($coge_user) {
-        # Create new user
-        $coge_user = $coge->resultset('User')->create(
-            {
-                user_name   => $uname,
-                first_name  => $fname,
-                last_name   => $lname,
-                email       => $email,
-                description => "Validated by iPlant"
-            }
-        );    #do we have a valid user in the database, if not create
-        $coge_user->insert;
-
-		# Log user creation
-        log_history(
-            db          => $coge,
-            user_id     => $coge_user->id,
-            page        => 'Web.pm',
-            description => 'create user',
-        );
-    }
+    # add user to database
+    my $user = add_user($coge, $uname, $fname, $lname, $email);
 
     #create a session ID for the user and log
     my $session_id = get_session_id($uname, $ENV{REMOTE_ADDR});
-    $coge->log_user( user => $coge_user, session => $session_id );
+    $coge->log_user( user => $user, session => $session_id );
 
 	# mdb added 10/19/12 - FIXME key/secret are hardcoded - wait: this will get replaced by openauth soon
 	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
@@ -495,15 +477,15 @@ sub login_cas_proxy {
     $request_ua->content_type("text/xml; charset=utf-8");
     $response = $ua->request($request_ua);
 
-    #if ($response->is_success()) {
-	    #print STDERR "status_line: " . $response->status_line() . "\n";
-	    #my $header = $response->header;
-	    $result = $response->content;
-	    #print STDERR "content: <begin>$result<end>\n";
-    #}
-    #else {
-    #	print STDERR "bad response\n";
-    #}
+#    if ($response->is_success()) {
+#	    print STDERR "status_line: " . $response->status_line() . "\n";
+#	    my $header = $response->header;
+#	    $result = $response->content;
+#	    print STDERR "content: <begin>$result<end>\n";
+#    }
+#    else {
+#    	print STDERR "bad response\n";
+#    }
 
     #gen and set the web cookie, yum!
     my $c = CoGe::Accessory::LogUser->gen_cookie(
@@ -511,15 +493,15 @@ sub login_cas_proxy {
         cookie_name => $cookie_name,
     );
 
-#    print STDERR "login_cas:  gen_cookie " . (Dumper $c) . "\n";
+    #print STDERR "login_cas:  gen_cookie " . (Dumper $c) . "\n";
     print CGI::header( -cookie => [$c] );
-    return $coge_user;
+    return $user;
 }
 
 sub parse_proxy_response {
 	my $response = shift;
 
-	if ($response =~ /authenticationSuccess/) {
+	if ($response && $response =~ /authenticationSuccess/) {
 		my ($user_name) = $response =~ /\<cas\:user\>(.*)\<\/cas\:user\>/;
 		my ($first_name) = $response =~ /\<cas\:firstName\>(.*)\<\/cas\:firstName\>/;
 		my ($last_name) = $response =~ /\<cas\:lastName\>(.*)\<\/cas\:lastName\>/;
@@ -569,33 +551,12 @@ sub login_cas_saml {
     my ( $uname, $fname, $lname, $email ) = parse_saml_response($result);
     return unless $uname; # Not logged in
 
-    # Find user in database
-    my ($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
-    unless ($coge_user) {
-        # Create new user
-        $coge_user = $coge->resultset('User')->create(
-            {
-                user_name   => $uname,
-                first_name  => $fname,
-                last_name   => $lname,
-                email       => $email,
-                description => "Validated by iPlant"
-            }
-        );    #do we have a valid user in the database, if not create
-        $coge_user->insert;
+    # Find/add user in database
+    my $user = add_user($coge, $uname, $fname, $lname, $email);
 
-		# Log user creation
-        log_history(
-            db          => $coge,
-            user_id     => $coge_user->id,
-            page        => 'Web.pm',
-            description => 'create user',
-        );
-    }
-
-    #create a session ID for the user and log
+    # Create a session ID for the user and log
     my $session_id = get_session_id($uname, $ENV{REMOTE_ADDR});
-    $coge->log_user( user => $coge_user, session => $session_id );
+    $coge->log_user( user => $user, session => $session_id );
 
 	# mdb added 10/19/12 - FIXME key/secret are hardcoded - wait: this will get replaced by openauth soon
 	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
@@ -609,15 +570,15 @@ sub login_cas_saml {
     $request_ua->content_type("text/xml; charset=utf-8");
     $response = $ua->request($request_ua);
 
-    #if ($response->is_success()) {
-	    #print STDERR "status_line: " . $response->status_line() . "\n";
-	    #my $header = $response->header;
-	    $result = $response->content;
-	    #print STDERR "content: <begin>$result<end>\n";
-    #}
-    #else {
-    #	print STDERR "bad response\n";
-    #}
+#    if ($response->is_success()) {
+#	    print STDERR "status_line: " . $response->status_line() . "\n";
+#	    my $header = $response->header;
+#	    $result = $response->content;
+#	    print STDERR "content: <begin>$result<end>\n";
+#    }
+#    else {
+#    	print STDERR "bad response\n";
+#    }
 
     #gen and set the web cookie, yum!
     my $c = CoGe::Accessory::LogUser->gen_cookie(
@@ -627,7 +588,7 @@ sub login_cas_saml {
 
 #    print STDERR "login_cas:  gen_cookie " . (Dumper $c) . "\n";
     print CGI::header( -cookie => [$c] );
-    return $coge_user;
+    return $user;
 }
 
 sub parse_saml_response {
@@ -719,6 +680,39 @@ sub login_cas4 {
     return unless $result;
     
     return;
+}
+
+sub add_user {
+    my ($db, $uname, $fname, $lname, $email) = @_;
+    return unless ($db and $uname and defined $fname and defined $lname and defined $email);
+    
+    # Do we already have this user in the database, if not create
+    my ($user) = $db->resultset('User')->search( { user_name => $uname } );
+    unless ($user) {
+        print STDERR "Web::add_user: adding user '$uname' to DB\n";
+        
+        # Create new user
+        $user = $db->resultset('User')->create(
+            {
+                user_name   => $uname,
+                first_name  => $fname,
+                last_name   => $lname,
+                email       => $email,
+                description => "Validated by iPlant"
+            }
+        );
+        $user->insert; # mdb: what is this for?
+
+        # Log user creation
+        log_history(
+            db          => $db,
+            user_id     => $user->id,
+            page        => 'Web.pm',
+            description => 'create user',
+        );
+    }
+    
+    return $user;
 }
 
 sub ajax_func {
