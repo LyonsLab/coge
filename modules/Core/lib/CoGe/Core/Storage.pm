@@ -685,7 +685,7 @@ sub get_workflow_results {
             push @all_results, {
                 type => 'http',
                 name => $name,
-                path => url_for('api/v1/jobs/'.$workflow_id.'/results/'.$name,
+                path => CoGe::Accessory::Web::url_for('api/v1/jobs/'.$workflow_id.'/results/'.$name,
                     username => $user_name
                 ) # FIXME move api path into conf file ...?
             };
