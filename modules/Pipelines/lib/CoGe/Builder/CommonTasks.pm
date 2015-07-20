@@ -1227,7 +1227,6 @@ sub add_items_to_notebook_job {
     my $user = $opts{user};
     my $wid = $opts{wid};
     my $notebook_id = $opts{notebook_id};
-    my $annotations = $opts{annotations}; # array ref
     my $staging_dir = $opts{staging_dir};
     my $done_files = $opts{done_files};
     
@@ -1238,14 +1237,10 @@ sub add_items_to_notebook_job {
     
     my $log_file = catfile($staging_dir, "add_items_to_notebook", "log.txt");
     
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
-    
     my $args = [
         ['-uid', $user->id, 0],
         ['-wid', $wid, 0],
         ['-notebook_id', $notebook_id, 0],
-        ['-annotations', qq{"$annotations_str"}, 0],
         ['-config', $CONF->{_CONFIG_PATH}, 1],
         ['-log', $log_file, 0]
     ];
