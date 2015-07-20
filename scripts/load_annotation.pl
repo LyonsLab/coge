@@ -13,6 +13,7 @@ use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw( commify units );
 use CoGe::Core::Genome qw(fix_chromosome_id);
+use CoGe::Core::Storage;
 use List::Util qw( min max );
 use Benchmark;
 
@@ -21,14 +22,15 @@ my $t1 = new Benchmark;
 my $GO          = 1;
 #my $DEBUG       = 0;
 my $DB_BATCH_SZ = 10 * 1000;
-use vars qw($staging_dir $result_dir $data_file
+use vars qw($staging_dir $data_file $wid
   $name $description $link $version $restricted $creator_id
   $gid $source_name $user_name $user_id $config $allow_all_chr
   $host $port $db $user $pass $P $GUNZIP);
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
-    "result_dir=s"  => \$result_dir,     # results path
+#    "result_dir=s"  => \$result_dir,     # results path
+    "wid=s"         => \$wid,            # workflow id
     "data_file=s"   => \$data_file,      # data file (JS escape)
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
@@ -46,15 +48,15 @@ GetOptions(
     "allow_all_chr=i" => \$allow_all_chr # Allow non-existent chromosomes
 );
 
-# Open log file for detailed feature info -- everything else goes to STDOUT for JEX
 $| = 1;
-die unless ($staging_dir);
-mkpath($staging_dir); # make sure this exists
-my $logfile = "$staging_dir/load_annotation.log";
-open( my $log, ">$logfile" ) or die "Error opening log file $logfile";
-$log->autoflush(1);
-
 print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
+
+# Setup staging path
+unless ($staging_dir) {
+    print STDOUT "log: error: staging_dir argument is missing\n";
+    exit(-1);
+}
+mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
@@ -62,6 +64,11 @@ if (-e $logdonefile) {
     print STDOUT "log: error: done file already exists: $logdonefile\n";
     exit(-1);
 }
+
+# Open log file for detailed feature info -- everything else goes to STDOUT for JEX
+my $logfile = "$staging_dir/load_annotation.log";
+open( my $log, ">$logfile" ) or die "Error opening log file $logfile";
+$log->autoflush(1);
 
 # Process and verify parameters
 $data_file   = unescape($data_file);
@@ -485,20 +492,23 @@ print STDOUT "Time to parse: "
   . ", Time to load: "
   . timestr( timediff( $t3, $t2 ) ) . "\n";
 
-# Save result document
-if ($result_dir) {
-    mkpath($result_dir);
-    CoGe::Accessory::TDS::write(
-        catfile($result_dir, '1'),
+# Save result
+unless (add_workflow_result($user_name, $wid, 
         {
-            genome_id  => int($gid),
-            dataset_id => int($dataset->id)
-        }
-    );
+            type           => 'dataset',
+            id             => int($dataset->id),
+            genome_id      => int($genome->id),
+            info           => $genome->info
+        })
+    )
+{
+    print STDOUT "log: error: could not add workflow result\n";
+    exit(-1);
 }
 
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
+print STDOUT "All done!\n";
 
 exit;
 

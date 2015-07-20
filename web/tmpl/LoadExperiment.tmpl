@@ -33,22 +33,6 @@
 <div id="wizard-container"></div>
 
 <!-- DIALOGS -->
-<div id="splash_dialog" class="dialog_box" title="Load Experiment" style="display:none;">
-	<div>
-		<br>
-		Welcome to Load Experiment!
-		<br><br>
-		This page allows you to load quantitative, polymorphism, or alignment data onto a genome from a
-		variety of file formats.
-		<br><br>
-		See <a href="https://genomevolution.org/wiki/index.php/LoadExperiment">this article</a> for detailed instructions.
-		Or at any time you can click the <a href="https://genomevolution.org/wiki/index.php/LoadExperiment">"Need help?"</a> link in the upper right of this page.
-	</div>
-    <br><br>
-    <span id="splash_ok_button" onClick="if($('#splash_dont_show_again').prop('checked'))$.cookie('splash_dont_show_again','true',{expires:10000});$('#splash_dialog').dialog('close');" class="r ui-button ui-corner-all">OK</span>
-    <input id="splash_dont_show_again" type="checkbox" /> <span class="small">Don't show this message again</span>
-</div>
-
 <div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
     <table class="small">
         <tr>
@@ -65,25 +49,6 @@
     <br>
     <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
 </div>
-
-<!-- Wizard Templates -->
-<script id="wizard-template" type="text/template">
-<div id="wizard" class="wizard wizard-coge">
-    <div class="header">
-        <div class="sections">
-        </div>
-        <div class="r small link">Need help?</div>
-    </div>
-    <div id='error_help_text' class='alert-box alert-box-warn hidden'></div>
-    <div id="step-container"></div>
-
-    <div class="nav-control coge-buttonset">
-        <button class="done ui-button ui-corner-all r">Start Loading</button>
-        <button class="next ui-button ui-corner-all r">Next</button>
-        <button class="prev ui-button ui-corner-all" disabled>Previous</button>
-    </div>
-</div
-</script>
 
 <!-- Step Templates-->
 <script id="description-template" type="text/template">
@@ -129,17 +94,15 @@
             <label class="col-md-2">Genome:</label>
             <input class="col-md-8" id="edit_genome" type="search" placeholder="Search"
             	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
-            	onclick="$(this).autocomplete('search');"
-            	onkeyup="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+            	size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
     </div>
 </script>
 
-
 <script id="data-template" type="text/template">
     <div class="step">
-        <div id="selector_container"></div>
+        <div id="selector_container"></div><br>
         <div id="files" class="hidden coge-padded">
             Selected file(s):<br>
             <table id="file_table" class="small" style="background-color:white;display:inline;"></table>
@@ -169,70 +132,70 @@
 </script>
 
 <script id="options-layout-template" type="text/template">
-<div>
-    <div id="analysis-options"></div>
-    <hr>
-    <div id="general-options"></div>
-    <hr>
-    <div id="admin-options"></div>
-</div>
+	<div>
+	    <div id="analysis-options"></div>
+	    <hr>
+	    <div id="general-options"></div>
+	    <hr>
+	    <div id="admin-options"></div>
+	</div>
 </script>
 
 <script id="admin-options-template" type="text/template">
-<div class="form-section">
-    <h4>Admin</h4>
-    <div class="form-field">
-        <label class="col-md-2">Assign to user:</label>
-        <input id="edit_user" type="search" placeholder="Search" spellcheck="false"
-        	onkeyup="wait_to_search(search_users, this);" size="20" />
-    </div>
-    <!--
-    <div class="form-field">
-        <label>Ignore missing chromosomes?</label>
-        <input id="ignore_missing_chrs" type="checkbox" />
-    </div>
-    -->
-</div>
+	<div class="form-section">
+	    <h4>Admin</h4>
+	    <div class="form-field">
+	        <label class="col-md-2">Assign to user:</label>
+	        <input id="edit_user" type="search" placeholder="Search" spellcheck="false"
+	        	onkeyup="coge.utils.wait_to_search(search_users, this);" size="20" />
+	    </div>
+	    <!--
+	    <div class="form-field">
+	        <label>Ignore missing chromosomes?</label>
+	        <input id="ignore_missing_chrs" type="checkbox" />
+	    </div>
+	    -->
+	</div>
 </script>
 
 <script id="general-options-template" type="text/template">
-<div class="form-section">
-    <h4>General Options</h4>
-
-    <div class="form-field">
-        <label class="col-md-2">Add results to notebook:</label>
-        <input id="notebook" type="checkbox" style="float:left;margin-right:10px;">
-        
-        <div id="notebook-container" class="form-group hidden">
-	    	<div style="padding-left:3em">
-	    		<div>
-					<input name="notebook" type="radio" value="new" checked>
-					<label>Create new notebook</label>
-				</div>
-				<div>
-					<input name="notebook" type="radio" value="existing">
-					<label>Use existing notebook: </label>
-					<input id="edit_notebook" type="search" placeholder="Search" spellcheck="false"
-						title="Enter the notebook to add the new experiment(s) to. Start typing to narrow down the list of notebooks to choose from."
-						onclick="$(this).autocomplete('search')";
-						onkeyup="wait_to_search(search_notebooks, this);" size="20" disabled />
+	<div class="form-section">
+	    <h4>General Options</h4>
+	
+	    <div class="form-field">
+	        <label class="col-md-2">Add results to notebook:</label>
+	        <input id="notebook" type="checkbox" style="float:left;margin-right:10px;">
+	        
+	        <div id="notebook-container" class="form-group hidden">
+		    	<div style="padding-left:3em">
+		    		<div>
+						<input name="notebook" type="radio" value="new" checked>
+						<label>Create new notebook</label>
+					</div>
+					<div>
+						<input name="notebook" type="radio" value="existing">
+						<label>Use existing notebook: </label>
+						<input id="edit_notebook" type="search" placeholder="Search" spellcheck="false"
+							title="Enter the notebook to add the new experiment(s) to. Start typing to narrow down the list of notebooks to choose from."
+							onclick="$(this).autocomplete('search')";
+							onkeyup="coge.utils.wait_to_search(search_notebooks, this);" size="20" disabled />
+					</div>
 				</div>
 			</div>
-		</div>
-    </div>
-    
-    <div class="form-field">
-        <label class="col-md-2">Send email when finished:</label>
-        <input id="email" type="checkbox">
-    </div>
-
-    <!-- TODO: Add ability to share the genome
-    <div class="form-field">
-        <label class="col-md-2">Share:</label>
-        <input id="share" type="checkbox">
-    </div>
-    -->
-</div>
+	    </div>
+	    
+	    <div class="form-field">
+	        <label class="col-md-2">Send email when finished:</label>
+	        <input id="email" type="checkbox">
+	    </div>
+	
+	    <!-- TODO: Add ability to share the genome
+	    <div class="form-field">
+	        <label class="col-md-2">Share:</label>
+	        <input id="share" type="checkbox">
+	    </div>
+	    -->
+	</div>
 </script>
 
 <script id="fastq-template" type="text/template">
@@ -269,32 +232,32 @@
 </script>
 
 <script id="poly-template" type="text/template">
-<div></div>
+	<div></div>
 </script>
 
 <script id="quant-template" type="text/template">
-<div class="form-section">
-    Please verify that your data file is formatted according to the requirements documented here:
-    <a href="https://genomevolution.org/wiki/index.php/LoadExperiment#CSV_File_Format">Quantitative File Formats</a>.
-</div>
-<div class="form-section">
-    <h4>Normalizing Data Options</h4>
-
-    <div class="form-field">
-        <label class="col-md-2">Enable:</label>
-        <input id="normalize" type="checkbox">
-    </div>
-    <div id="normalize_method" class="form-field hidden">
-        <label class="col-md-2">Method:</label>
-        <input id="percentage" type="radio" name="normalize_method" checked> Percentage
-        <input id="log10" type="radio" name="normalize_method" style="margin-left:20px"> Log10
-        <input id="loge" type="radio" name="normalize_method" style="margin-left:20px"> Natural Log
-    </div>
-</div>
+	<div class="form-section">
+	    Please verify that your data file is formatted according to the requirements documented here:
+	    <a href="<TMPL_VAR NAME=HELP_URL>#CSV_File_Format">Quantitative File Formats</a>.
+	</div>
+	<div class="form-section">
+	    <h4>Normalizing Data Options</h4>
+	
+	    <div class="form-field">
+	        <label class="col-md-2">Enable:</label>
+	        <input id="normalize" type="checkbox">
+	    </div>
+	    <div id="normalize_method" class="form-field hidden">
+	        <label class="col-md-2">Method:</label>
+	        <input id="percentage" type="radio" name="normalize_method" checked> Percentage
+	        <input id="log10" type="radio" name="normalize_method" style="margin-left:20px"> Log10
+	        <input id="loge" type="radio" name="normalize_method" style="margin-left:20px"> Natural Log
+	    </div>
+	</div>
 </script>
 
 <script id="confirm-template" type="text/template">
-    <div class="step info" data-title="Review and Load" data-step="3" data-validate="options">
+    <div class="step info">
         <h3>Description</h3>
         <div class="confirm-description padded"></div>
         <h3>Data</h3>
@@ -307,29 +270,29 @@
 <!-- Alignment Templates -->
 
 <script id="align-template" type="text/template">
-<div class="form-section">
-    <h4>Alignment</h4>
-
-    <div class="form-field">
-        <label class="col-md-2">Aligner:</label>
-        <div id="alignment">
-            <input name="aligner" type="radio" value="gsnap" checked>
-            <label for="gsnap">GSNAP</label>
-            <input name="aligner" type="radio" value="tophat">
-            <label for="gsnap">TopHat/Bowtie2</label>
-        </div>
-        
-        <label class="col-md-2 coge-padded-top">Read Type:</label>
-        <div id="read_type" class="coge-padded-top">
-		    <input name="read_type" type="radio" value="single" checked>
-		    <label for="single">Single-ended</label>
-		    <input name="read_type" type="radio" value="paired">
-		    <label for="paired">Paired-end</label>
+	<div class="form-section">
+	    <h4>Alignment</h4>
+	
+	    <div class="form-field">
+	        <label class="col-md-2">Aligner:</label>
+	        <div id="alignment">
+	            <input name="aligner" type="radio" value="gsnap" checked>
+	            <label for="gsnap">GSNAP</label>
+	            <input name="aligner" type="radio" value="tophat">
+	            <label for="gsnap">TopHat/Bowtie2</label>
+	        </div>
+	        
+	        <label class="col-md-2 coge-padded-top">Read Type:</label>
+	        <div id="read_type" class="coge-padded-top">
+			    <input name="read_type" type="radio" value="single" checked>
+			    <label for="single">Single-ended</label>
+			    <input name="read_type" type="radio" value="paired">
+			    <label for="paired">Paired-end</label>
+		    </div>
 	    </div>
-    </div>
-
-    <div id="align-container" class="hidden"></div>
-</div>
+	
+	    <div id="align-container" class="hidden"></div>
+	</div>
 </script>
 
 <script id="tophat-template" type="text/template">
@@ -396,107 +359,41 @@
     </div>
 </script>
 
-<script id="summary-pair-template" type="text/template">
-    <div>
-        <span class="name"></span>:
-        <span class="data"></span>
-    </div>
-</script>
+<TMPL_INCLUDE NAME="widgets/Splash.tmpl">
 
-<!-- SNP pipeline options -->
 <TMPL_INCLUDE NAME='widgets/pipeline-options.tmpl'> 
-
-<!-- FIXME: Have this as a separate plugin -->
-<script id="selector-template" type="text/template">
-    <div id='tabs' style='margin-top:0.5em;margin-bottom:1em;'>
-    <ul>
-        <li class="small"><a href="#tab-1">iPlant Data Store</a></li>
-        <li class="small"><a href="#tab-2">FTP/HTTP</a></li>
-        <li class="small"><a href="#tab-3">Upload</a></li>
-        <TMPL_IF NAME='ENABLE_NCBI'>
-        <li class="small"><a href="#tab-4">NCBI</a></li>
-        </TMPL_IF>
-    </ul>
-
-    <div id="tab-1" class="small">
-        <div style="white-space:nowrap;border-bottom:1px solid gray;">
-            <img id="ids_loading" src="picts/ajax-loader.gif" style="float:right;"/>
-            <span class='link' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'></span>Home</span>
-            <span class='link' style='padding-left:15px;' onclick='irods_get_path("..")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>
-            <span class='link' style='padding-left:15px;' onclick='irods_get_path(".")'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>
-            <TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
-            <span class='link' style='padding-left:15px;' onclick='irods_get_all_files(".")'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>
-            </TMPL_UNLESS>
-        </div>
-        <div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
-        <div style="overflow-y:auto;height:154px;">
-            <table id="ids_table" class="small" style="width:100%;"></table>
-        </div>
-    </div>
-
-    <div id="tab-2" class="small" style="height:200px;">
-        Enter the location of the file or directory to retrieve.<br><br>
-        URL: <input id="input_url" size="60" style="color:gray;"/>
-        <span id="ftp_get_button" onClick="load_from_ftp();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span><br>
-        <div class="link" onclick="$(this).hide(); $('#ftp_login').fadeIn();" style="padding-top:5px;">Login (optional)...</div>
-        <div id="ftp_login" style="display:none;padding-top:5px;">
-            Username: <input id="input_username" size="15" style="color:gray;"/>
-            Password: <input id="input_password" size="15" style="color:gray;"/>
-        </div>
-        <br>
-        <div id="ftp_status" class="note"></div>
-        <br>
-        <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
-    </div>
-
-    <div id="tab-3" class="small" style="height:200px;">
-        Select a file to upload from your computer.  This method is best for smaller files (less than 400M but will work with files up to several GB).
-        For larger files use the iPlant Data Store. <br><br><br>
-        File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
-    </div>
-
-    <TMPL_IF NAME='ENABLE_NCBI'>
-    <div id="tab-4" class="small" style="height:200px;">
-        Enter the NCBI accession number of the item to add.<br><br>
-        <div>
-        <span>Accession: <input id="input_accn" size="15" /></span>
-        <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span>
-        <span id="ncbi_status" class="note" style="padding-left:15px;min-height:50px;"></span>
-        </div>
-        <div class="note" style="padding-top:20px">
-            Note: The organism, version, type, and source fields do not need to be specified.  The restricted option
-            is ignored, all data from NCBI is made public.
-        </div>
-    </div>
-    </TMPL_IF>
-
-    </div>
-</script>
-
-<div id="selector-wrapper" class="hidden">
-    <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
-</div>
 
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
 
+<TMPL_INCLUDE NAME="widgets/FileSelect.tmpl">
+
+<TMPL_INCLUDE NAME="widgets/Wizard.tmpl">
+
 <script type="text/javascript">
+// Page constants
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
-const USER_NAME     = '<TMPL_VAR NAME="USER">'
+const USER_NAME     = '<TMPL_VAR NAME="USER">';
 const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
 const GENOME_ID     = '<TMPL_VAR NAME="GENOME_ID">';
 
-var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
-var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
-var EMBED = '<TMPL_VAR NAME="EMBED">';
+var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">';
+var WORKFLOW_ID 	  = '<TMPL_VAR NAME="WORKFLOW_ID">';
+var EMBED 			  = '<TMPL_VAR NAME="EMBED">';
 
-var pageObj = {}; //FIXME get rid of this -- used by FileSelect
+// File Select constants
+const DEFAULT_TAB              = '<TMPL_VAR NAME="DEFAULT_TAB">';
+const MAX_IRODS_LIST_FILES     = '<TMPL_VAR NAME="MAX_IRODS_LIST_FILES">';
+const MAX_IRODS_TRANSFER_FILES = '<TMPL_VAR NAME="MAX_IRODS_TRANSFER_FILES">';
+const MAX_FTP_FILES            = '<TMPL_VAR NAME="MAX_FTP_FILES">';
+const FILE_SELECT_SINGLE       = '<TMPL_VAR NAME="FILE_SELECT_SINGLE">';
+
 var newLoad = false;
 var wizard;
 
-$(document).ready(function() {
+$(function() {
 	// Set jQuery AJAX defaults
     $.ajaxSetup({
         type: "GET",
@@ -506,14 +403,22 @@ $(document).ready(function() {
     });
 
     // Configure dialogs
-    $(".dialog_box").dialog({autoOpen: false,minWidth: 400});
+    $(".dialog_box").dialog({autoOpen: false, minWidth: 400});
     
-    // Initialize CoGe packages
+    // Initialize wizard
+    wizard = initialize_wizard({ 
+    	admin: IS_ADMIN,
+    	helpUrl: HELP_URL,
+    	gid: GENOME_ID
+    });
+    
+    // Initialize CoGe web services
     coge.services.init({
     	baseUrl: API_BASE_URL,
     	userName: USER_NAME
     });
     
+    // Intialize progress window
     coge.progress.init({
     	title: "Loading Experiment",
     	baseUrl: API_BASE_URL,
@@ -521,27 +426,20 @@ $(document).ready(function() {
     	supportEmail: SUPPORT_EMAIL,
     	onReset: reset_load
     });
-
+    
     // Open status dialog
     if (WORKFLOW_ID) {
     	coge.progress.begin();
     	coge.progress.update(WORKFLOW_ID);
     }
-
-	if (!$.cookie('splash_dont_show_again') && !WORKFLOW_ID) {
-		$('#splash_dialog').dialog({modal:true}).dialog('open');
-	}
-	
-    wizard = initialize_wizard({ 
-    	admin: IS_ADMIN,
-    	helpUrl: HELP_URL,
-    	gid: GENOME_ID
-    });
 });
 </script>
+
 <script type="text/javascript" src="js/pages/load-experiment.js"></script>
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <script type="text/javascript" src="js/coge/services.js"></script>
 <script type="text/javascript" src="js/coge/progress.js"></script>
+<script type="text/javascript" src="js/coge/wizard.js"></script>
+<script type="text/javascript" src="js/coge/file-select.js"></script>
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
 </TMPL_IF> <!-- MAIN -->

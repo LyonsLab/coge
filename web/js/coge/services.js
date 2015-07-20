@@ -15,50 +15,66 @@ var coge = window.coge = (function(namespace) {
 				this.userName = opts.userName;
 			this.debug = 1;
 		},
-			
-		search_notebooks: function(search_term, user_name, success_callback, error_callback) {
-			// TODO add param validation
-			this._ajax("GET", BASE_URL + "notebooks/search/" + search_term + "/", null, success_callback);
-		},
 		
-		submit_job: function(request, success_callback, error_callback) {
-			this._ajax("PUT", BASE_URL + "jobs/", JSON.stringify(request), success_callback, error_callback);
+		search_organisms: function(search_term) {
+			// TODO add param validation
+			return this._ajax("GET", BASE_URL + "organisms/search/" + search_term + "/");
 		},
 
-		fetch_job: function(id, success_callback, error_callback) {
+		add_organism: function(request) {
+			return this._ajax("PUT", BASE_URL + "organisms/", JSON.stringify(request));
+		},
+		
+		search_genomes: function(search_term, opts) {
+			// TODO add param validation
+			var opts_str = '';
+			if (opts && opts.fast)
+				opts_str = '?fast=1';
+			return this._ajax("GET", BASE_URL + "genomes/search/" + search_term + "/" + opts_str);
+		},
+			
+		search_notebooks: function(search_term) {
+			// TODO add param validation
+			return this._ajax("GET", BASE_URL + "notebooks/search/" + search_term + "/");
+		},
+		
+		search_users: function(search_term) {
+			// TODO add param validation
+			return this._ajax("GET", BASE_URL + "users/search/" + search_term + "/");
+		},
+		
+		submit_job: function(request) {
+			return this._ajax("PUT", BASE_URL + "jobs/", JSON.stringify(request));
+		},
+		
+		fetch_job: function(id) {
 			this._debug('fetch_job');
 			if (!id) {
 				this._error('fetch_job: missing id value');
 				return;
 			}
-			this._ajax("GET", BASE_URL + "jobs/" + id, null, success_callback, error_callback);
+			return this._ajax("GET", BASE_URL + "jobs/" + id);
 		},
 		
-		irods_list: function(path, success_callback, error_callback) {
-			this._ajax("GET", BASE_URL + "irods/list/" + path, null, success_callback, error_callback);
+		irods_list: function(path) {
+			return this._ajax("GET", BASE_URL + "irods/list/" + path);
 		},
 		
-		_ajax: function(type, url, data, success, error) {
+		_ajax: function(type, url, data) { //, success, error) {
 			var self = this;
-		    $.ajax({
-		    	type: type,
-		    	url: url + "?username=" + this.userName,
-		    	dataType: "json",
-		        contentType: "application/json",
-		        xhrFields: {
-	                withCredentials: true
-	            },
-		        data: data,
-		        success: function(response) {
-		            if (success)
-		            	success(response);
-		        },
-		        error: function(jqXHR, textStatus, errorThrown) {
-		        	self._error('ajax:error: ' + textStatus + (errorThrown ? errorThrown : ''));
-		        	if (error)
-		        		error(jqXHR, textStatus, errorThrown);
-		        }
-		    });		
+		    return $.ajax({
+				    	type: type,
+				    	url: url + "?username=" + this.userName,
+				    	dataType: "json",
+				        contentType: "application/json",
+				        xhrFields: {
+			                withCredentials: true
+			            },
+				        data: data,
+				    })
+				    .fail(function(jqXHR, textStatus, errorThrown) { 
+				    	self._error('ajax:error: ' + jqXHR.status + ' ' + jqXHR.statusText); 
+				    });		
 		},
 		
 		_error: function(string) {
