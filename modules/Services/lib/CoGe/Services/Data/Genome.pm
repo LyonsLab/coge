@@ -16,6 +16,7 @@ use Data::Dumper;
 use JSON qw(decode_json encode_json);
 use URI::Escape::JavaScript qw(escape);
 use File::Path qw(mkpath);
+use File::Spec::Functions qw(catfile);
 
 sub setup {
     my $self = shift;
