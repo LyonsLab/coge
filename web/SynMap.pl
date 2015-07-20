@@ -176,7 +176,7 @@ $BLASTDBDIR = $config->{BLASTDB};
 
 $PYTHON        = $config->{PYTHON};                         #this was for python2.5
 $PYTHON26      = $config->{PYTHON};
-$DAG_TOOL      = $config->{DAG_TOOL};
+$DAG_TOOL      = 'nice ' . $config->{DAG_TOOL};
 $BLAST2BED     = $config->{BLAST2BED};
 $GENE_ORDER    = $DIR . "/bin/SynMap/gene_order.py";
 $TANDEM_FINDER = $config->{TANDEM_FINDER}
@@ -184,7 +184,7 @@ $TANDEM_FINDER = $config->{TANDEM_FINDER}
   ; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 
 #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
-$RUN_DAGCHAINER = $PYTHON26 . " " . $config->{DAGCHAINER};
+$RUN_DAGCHAINER = 'nice ' . $PYTHON26 . " " . $config->{DAGCHAINER};
 $EVAL_ADJUST    = $config->{EVALUE_ADJUST};
 
 $FIND_NEARBY = $config->{FIND_NEARBY}
@@ -192,7 +192,7 @@ $FIND_NEARBY = $config->{FIND_NEARBY}
   ; #the parameter here is for nucleotide distances -- will need to make dynamic when gene order is selected -- 5 perhaps?
 
 #programs to run Haibao Tang's quota_align program for merging diagonals and mapping coverage
-$QUOTA_ALIGN   = $config->{QUOTA_ALIGN};     #the program
+$QUOTA_ALIGN   = 'nice ' . $config->{QUOTA_ALIGN};     #the program
 $CLUSTER_UTILS = $config->{CLUSTER_UTILS};   #convert dag output to quota_align input
 $BLAST2RAW     = $config->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $config->{SYNTENY_SCORE};
@@ -1654,9 +1654,7 @@ sub go {
     my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
 
     foreach my $key ( keys %org_dirs ) {
-        my $cmd =
-          $ALGO_LOOKUP->{$blast}
-          {algo};    #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
+        my $cmd = 'nice ' . $ALGO_LOOKUP->{$blast}{algo};    #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
 
         my $fasta   = $org_dirs{$key}{fasta};
         my $db      = $org_dirs{$key}{db};

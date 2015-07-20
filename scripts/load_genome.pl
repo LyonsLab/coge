@@ -3,7 +3,7 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw( index_genome_file get_tiered_path );
+use CoGe::Core::Storage qw( index_genome_file get_tiered_path add_workflow_result );
 use CoGe::Core::Genome qw( fix_chromosome_id );
 use CoGe::Accessory::Utils qw( commify units print_fasta );
 use CoGe::Accessory::IRODS qw( irods_imeta $IRODS_METADATA_PREFIX );
@@ -18,9 +18,9 @@ use POSIX qw(ceil);
 use Benchmark;
 
 use vars qw($staging_dir $install_dir $fasta_files $irods_files
-  $name $description $link $version $type_id $restricted $message
+  $name $description $link $version $type_id $restricted $message $wid
   $organism_id $source_id $source_name $source_desc $user_id $user_name
-  $keep_headers $split $compress $result_dir $creator_id $ignore_chr_limit
+  $keep_headers $compress $creator_id $ignore_chr_limit
   $host $port $db $user $pass $config
   $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
 
@@ -32,7 +32,8 @@ $MAX_CHR_NAME_LENGTH = 255;
 GetOptions(
     "staging_dir=s" => \$staging_dir,
     "install_dir=s" => \$install_dir,    # optional, for debug
-    "result_dir=s"  => \$result_dir,     # results path
+#    "result_dir=s"  => \$result_dir,     # results path
+    "wid=s"         => \$wid,            # workflow id
     "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped) of files to load
     "irods_files=s" => \$irods_files,    # optional comma-separated list (JS escaped) of files to set metadata
     "name=s"        => \$name,           # genome name (JS escaped)
@@ -51,19 +52,19 @@ GetOptions(
     "creator_id=i"	=> \$creator_id,     # user ID to set as genome creator
     "keep_headers=i" => \$keep_headers,  # flag to keep original headers (no parsing)
     "ignore_chr_limit=i" => \$ignore_chr_limit, # flag to ignore chromosome/contig limit # mdb added 3/9/15 COGE-595
-    "split=i"    => \$split,       # split fasta into chr directory
     "compress=i" => \$compress,    # compress fasta into RAZF before indexing
     "config=s"   => \$config       # configuration file
 );
 
-# Open log file
 $| = 1;
-die unless ($staging_dir);
-mkpath($staging_dir); # make sure this exists
-#my $logfile = "$staging_dir/log.txt";
-#open( my $log, ">>$logfile" ) or die "Error opening log file: $logfile: $!";
-#$log->autoflush(1);
 print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
+
+# Setup staging path
+unless ($staging_dir) {
+    print STDOUT "log: error: staging_dir argument is missing\n";
+    exit(-1);
+}
+mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
@@ -83,7 +84,6 @@ $message     = unescape($message) if ($message);
 $source_name = unescape($source_name) if ($source_name);
 $source_desc = unescape($source_desc) if ($source_desc);
 $restricted  = '0' if ( not defined $restricted );
-$split       = 0 if ( not defined $split ); 	# split fasta into chr/ files (legacy method)
 $compress    = 0 if ( not defined $compress ); 	# RAZF compress the fasta file
 $type_id     = 1 if ( not defined $type_id );   # default genomic seq type to "unmasked"
 
@@ -184,7 +184,7 @@ my $rc = CoGe::Core::Storage::index_genome_file(
 );
 if ( $rc != 0 ) {
     print STDOUT "log: error: couldn't index fasta file\n";
-    exit(-1) if (!$split); # need to abort if not doing legacy method
+    exit(-1);
 }
 
 ################################################################################
@@ -277,16 +277,11 @@ unless ($install_dir) {
     }
     $install_dir = $P->{SEQDIR};
 }
-$install_dir = "$install_dir/"
-  . CoGe::Core::Storage::get_tiered_path( $genome->id ) . "/";
-print STDOUT "install path: $install_dir\n";
-
-# mdb removed 7/29/13, issue 77
-#$genome->file_path( $install_dir . $genome->id . ".faa" );
-#$genome->update;
+my $storage_path = catdir($install_dir, CoGe::Core::Storage::get_tiered_path( $genome->id ));
+print STDOUT 'Storage path: ', $storage_path, "\n";
 
 # This is a check for dev server which may be out-of-sync with prod
-if ( -e $install_dir ) {
+if ( -e $storage_path ) {
     print STDOUT "log: error: install path already exists\n";
     exit(-1);
 }
@@ -384,31 +379,19 @@ foreach my $chr ( sort keys %sequences ) {
 }
 
 # Copy files from staging directory to installation directory
-my $t1 = new Benchmark;
 print STDOUT "log: Copying files ...\n";
-unless ( mkpath($install_dir) ) {
-    print STDOUT "log: error in mkpath\n";
+mkpath($storage_path);
+unless (-r $storage_path) {
+    print STDOUT "log: error: could not create installation path\n";
     exit(-1);
 }
-if ($split) {
-    unless ( mkpath( $install_dir . "/chr" ) ) {
-        print STDOUT "log: error in mkpath\n";
-        exit(-1);
-    }
-    execute("cp -r $staging_dir/chr $install_dir");
-}
 
-# mdb changed 7/31/13, issue 77 - keep filename as "genome.faa" instead of "<gid>.faa"
-#my $genome_filename = $genome->id . ".faa";
-#execute( "cp $staging_dir/genome.faa $install_dir/$genome_filename" );
-execute("cp $staging_dir/genome.faa $install_dir/"); #FIXME use perl copy and detect failure
-execute("cp $staging_dir/genome.faa.fai $install_dir/");
+execute("cp $staging_dir/genome.faa $storage_path/"); #FIXME use perl copy and detect failure
+execute("cp $staging_dir/genome.faa.fai $storage_path/");
 if ($compress) {
-    execute("cp $staging_dir/genome.faa.razf $install_dir/");
-    execute("cp $staging_dir/genome.faa.razf.fai $install_dir/");
+    execute("cp $staging_dir/genome.faa.razf $storage_path/");
+    execute("cp $staging_dir/genome.faa.razf.fai $storage_path/");
 }
-my $time = timestr( timediff( new Benchmark, $t1 ) );
-print STDOUT "Took $time to copy\n";
 
 print STDOUT "log: "
   . commify($numSequences)
@@ -427,24 +410,44 @@ if ($irods_files) {
 	}
 }
 
-# Copy log file into installation directory
-#print STDOUT "log: All done!\n";
-#close($log);
-#`cp $staging_dir/log.txt $install_dir/`; #FIXME use perl copy and detect failure
-
-# Save result document
-if ($result_dir) {
-    mkpath($result_dir);
-    CoGe::Accessory::TDS::write(
-        catfile($result_dir, '1'),
+# Save result
+unless (add_workflow_result($user_name, $wid, 
         {
-            genome_id => int($genome->id)
-        }
-    );
+            type           => 'genome',
+            id             => int($genome->id),
+            name           => $name,
+            description    => $description,
+            info           => $genome->info,
+            version        => $version,
+            link           => $link,
+            type_id        => int($type_id),
+            source_id      => int($datasource->id),
+            organism_id    => int($organism_id),
+            restricted     => $restricted
+        })
+    )
+{
+    print STDOUT "log: error: could not add workflow result\n";
+    exit(-1);
 }
+
+# Add genome ID to log - mdb added 7/8/15, needed after log output was moved to STDOUT for jex
+my $logtxtfile = "$staging_dir/log.txt";
+open(my $logh, '>', $logtxtfile);
+print $logh "genome id: " . $genome->id . "\n";
+close($logh);
+
+# Save workflow_id in genome data path -- #TODO move into own routine in Storage.pm
+CoGe::Accessory::TDS::write(
+    catfile($storage_path, 'metadata.json'),
+    {
+        workflow_id => int($wid)
+    }
+);
 
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
+print STDOUT "All done!\n";
 
 exit;
 
@@ -541,14 +544,6 @@ sub process_fasta_file {
         $head .= "|" . $chr;
         print_fasta($out, $head, \$filteredSeq);
         close($out);
-
-        # Create individual file for chromosome
-        if ($split) {
-            mkpath("$target_dir/chr");
-            open( $out, ">$target_dir/chr/$chr" );
-            print $out $filteredSeq;
-            close($out);
-        }
 
         $pSeq->{$chr} = { size => length $filteredSeq, file => $filepath };
 

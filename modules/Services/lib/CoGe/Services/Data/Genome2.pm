@@ -1,12 +1,15 @@
 package CoGe::Services::Data::Genome2;
+
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;
 use CoGe::Services::Auth;
+use CoGe::Services::Data::Job;
 
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
+    my $fast = $self->param('fast');
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
@@ -50,27 +53,41 @@ sub search {
     } values %unique;
 
     # Format response
-    my @result = map {
-      {
-        id => int($_->id),
-        name => $_->name,
-        description => $_->description,
-        link => $_->link,
-        version => $_->version,
-        organism_id  => int($_->organism->id),
-        sequence_type => {
-            name => $_->type->name,
-            description => $_->type->description,
-        },
-        restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
-        chromosome_count => int($_->chromosome_count),
-        organism => {
-            id => int($_->organism->id),
-            name => $_->organism->name,
-            description => $_->organism->description
-        }
-      }
-    } @filtered;
+    my @result;
+    if ($fast) {
+        @result = map {
+          {
+            id => int($_->id),
+            info => $_->info
+          }
+        } @filtered;
+    }
+    else {
+        @result = map {
+          {
+            id => int($_->id),
+            name => $_->name,
+            description => $_->description,
+            link => $_->link,
+            version => $_->version,
+            info => $_->info,
+            organism_id  => int($_->organism->id),
+            sequence_type => {
+                name => $_->type->name,
+                description => $_->type->description,
+            },
+            restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+            chromosome_count => int($_->chromosome_count),
+            organism => {
+                id => int($_->organism->id),
+                name => $_->organism->name,
+                description => $_->organism->description
+            }
+          }
+        } @filtered;
+    }
+    
+    @result = sort { $a->{info} cmp $b->{info} } @result;
 
     $self->render(json => { genomes => \@result });
 }
@@ -127,6 +144,41 @@ sub fetch {
         experiments => [ map { int($_->id) } $genome->experiments ],
         additional_metadata => \@metadata
     });
+}
+
+sub add {
+    my $self = shift;
+    my $data = $self->req->json;
+    #print STDERR "CoGe::Services::Data::Genome2::add\n", Dumper $data, "\n";
+
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    # User authentication is required to add experiment
+    unless (defined $user) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        });
+        return;
+    }
+
+    # Valid data items
+    unless ($data->{source_data} && @{$data->{source_data}}) {
+        $self->render(json => {
+            error => { Error => "No data items specified" }
+        });
+        return;
+    }
+    
+    # Marshall incoming payload into format expected by Job Submit.
+    # Note: This is kind of a kludge -- is there a better way to do this using
+    # Mojolicious routing?
+    my $request = {
+        type => 'load_genome',
+        parameters => $data
+    };
+    
+    return CoGe::Services::Data::Job::add($self, $request);
 }
 
 1;

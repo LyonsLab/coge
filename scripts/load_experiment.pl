@@ -18,7 +18,7 @@ use CoGe::Core::Storage qw(add_workflow_result $DATA_TYPE_QUANT $DATA_TYPE_ALIGN
 use CoGe::Core::Experiment qw(@SUPPORTED_TYPES detect_data_type);
 use CoGe::Core::Metadata qw(create_annotations);
 
-use vars qw($staging_dir $result_file $install_dir $data_file $file_type 
+use vars qw($staging_dir $install_dir $data_file $file_type 
   $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
   $user_id $annotations $types $wid $host $port $db $user $pass $P);
@@ -330,13 +330,13 @@ my $experiment = $coge->resultset('Experiment')->create(
         name        => $name,
         description => $description,
         version     => $version,
-        #link				=> $link, #FIXME
-        data_source_id => $data_source->id,
-        data_type      => $data_type,
-        row_count      => $count,
-        genome_id      => $gid,
-        creator_id     => $creator->id,
-        restricted     => $restricted
+        #link		=> $link, #FIXME
+        data_source_id => int($data_source->id),
+        data_type   => int($data_type),
+        row_count   => int($count),
+        genome_id   => int($gid),
+        creator_id  => int($creator->id),
+        restricted  => $restricted
     }
 );
 print STDOUT "experiment id: " . $experiment->id . "\n";
@@ -421,16 +421,16 @@ print STDOUT "$cmd\n";
 # Save result
 unless (add_workflow_result($user_name, $wid, 
         {
-            type => 'experiment',
-            id => int($experiment->id),
+            type        => 'experiment',
+            id          => int($experiment->id),
             name        => $name,
             description => $description,
             version     => $version,
             #link       => $link, #FIXME
-            data_source_id => $data_source->id,
-            data_type   => $data_type, #FIXME convert from number to string identifier
-            row_count   => $count,
-            genome_id   => $gid,
+            source_id   => int($data_source->id),
+            data_type   => int($data_type), #FIXME convert from number to string identifier
+            row_count   => int($count),
+            genome_id   => int($gid),
             restricted  => $restricted
         })
     )
@@ -445,7 +445,7 @@ open(my $logh, '>', $logtxtfile);
 print $logh "experiment id: " . $experiment->id . "\n";
 close($logh);
 
-# Save job_id in experiment data path -- #TODO move into own routine in Storage.pm
+# Save workflow_id in experiment data path -- #TODO move into own routine in Storage.pm
 CoGe::Accessory::TDS::write(
     catfile($storage_path, 'metadata.json'),
     {

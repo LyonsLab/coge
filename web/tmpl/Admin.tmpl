@@ -321,17 +321,19 @@ svg {
 	</div>
 	<div class="small" id="tabs-5">
 		<span>Select Report: </span>
-		<select style="margin-right:20px;" onchange="change_report(this.selectedIndex)">
+		<select id="report_type" style="margin-right:20px;" onchange="change_report(this.selectedIndex)">
 		  <option value="Total">Total</option>
 		  <option value="By User">By User</option>
 		  <option value="By Group">By Group</option>
 		</select>
 		<span>Filter: </span>
-		<select style="margin-right:20px;" onchange="filter_report(this.selectedIndex)">
-		  <option value="Default">None</option>
+		<select id="report_filter" style="margin-right:20px;" onchange="filter_report(this.selectedIndex)">
+		  <option value="None">None</option>
 		  <option value="Restricted">Restricted Only</option>
 		  <option value="Deleted">Deleted Only</option>
 		  <option value="Public">Public</options>
+		  <option value="Public (Owned)">Public (Owned)</option>
+		  <option value="Restricted but Shared">Restricted but Shared</option>
 		</select>
 		<button id="histogram_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="init_histogram('histo_dialog')">Histogram</button>
 		<span id="reports_loading" class="hidden">
@@ -506,7 +508,7 @@ $(function(){
 </TMPL_IF>
 
 <TMPL_IF NAME='Histo_dialog'>
-	<div id="histo_test2"></div>
+	<div>Nothing to see here.</div>
 </TMPL_IF>
 
 <TMPL_IF NAME='ERROR_DIALOG'>

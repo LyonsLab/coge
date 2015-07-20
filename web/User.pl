@@ -3,6 +3,7 @@
 use v5.10;
 use strict;
 
+use Switch;
 use CGI;
 use Data::Validate::URI qw(is_uri);
 use JSON::XS;
@@ -29,29 +30,29 @@ use CoGe::Core::Genome qw(genomecmp);
 no warnings 'redefine';
 
 use vars qw(
-    $P $PAGE_TITLE $USER $LINK $coge %FUNCTION $FORM %ITEM_TYPE
+    $CONF $PAGE_TITLE $USER $LINK $DB %FUNCTION $FORM %ITEM_TYPE
     $MAX_SEARCH_RESULTS $JEX $node_types
 );
 
 $PAGE_TITLE = 'User';
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init(
     page_title => $PAGE_TITLE,
     cgi => $FORM
 );
 
 # Admins have ability to simulate other users using the "user_id" query parameter
 my $user_id = $FORM->Vars->{'user_id'};
-if ($user_id && $USER->is_admin) {
-    my $user = $coge->resultset('User')->find($user_id);
+if (defined $user_id && $USER->is_admin) {
+    my $user = $DB->resultset('User')->find($user_id);
     if (defined $user) {
         print STDERR "Switching to user '", $user->name, "'\n";
         $USER = $user;
     }
 }
 
-$JEX = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+$JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
 
 # debug for fileupload:
 # print STDERR $ENV{'REQUEST_METHOD'} . "\n" . $FORM->url . "\n" . Dumper($FORM->Vars) . "\n";	# debug
@@ -108,24 +109,24 @@ $node_types = CoGeX::node_types();
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( USER       => $USER->display_name || '',
                       PAGE_TITLE => 'User Profile',
 				      TITLE      => "My Profile",
     				  PAGE_LINK  => $LINK,
-    				  HOME       => $P->{SERVER},
+    				  HOME       => $CONF->{SERVER},
                       HELP       => 'User',
-                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      WIKI_URL   => $CONF->{WIKI_URL} || '',
     				  ADJUST_BOX => 1,
                       ADMIN_ONLY => $USER->is_admin,
-                      CAS_URL    => $P->{CAS_URL} || '' );
+                      CAS_URL    => $CONF->{CAS_URL} || '' );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => gen_body() );
     return $template->output;
 }
 
 sub gen_body {
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     
     if ( $USER->is_public ) {
         $template->param( PAGE_NAME => "$PAGE_TITLE.pl",
@@ -169,7 +170,7 @@ sub get_item_info {
 
     my $html;
     if ( $item_type eq 'group' ) {
-        my $group = $coge->resultset('UserGroup')->find($item_id);
+        my $group = $DB->resultset('UserGroup')->find($item_id);
         return unless $group;
         return unless ( $USER->is_admin or $group->has_member($USER) );
         
@@ -194,7 +195,7 @@ sub get_item_info {
             . qq{</div></div>};        
     }
     elsif ( $item_type eq 'notebook' ) {
-        my $notebook = $coge->resultset('List')->find($item_id);
+        my $notebook = $DB->resultset('List')->find($item_id);
         return unless $USER->has_access_to_list($notebook);
 
         my $group_str = join( '<br>',
@@ -233,7 +234,7 @@ sub get_item_info {
             . qq{</div></div>};
     }
     elsif ( $item_type eq 'genome' ) {
-        my $genome = $coge->resultset('Genome')->find($item_id);
+        my $genome = $DB->resultset('Genome')->find($item_id);
         return unless ( $USER->has_access_to_genome($genome) );
 
         my $date = ( $genome->datasets ? $genome->datasets()->[0]->date : 'unknown' );
@@ -279,7 +280,7 @@ sub get_item_info {
             . qq{</div></div>};
     }
     elsif ( $item_type eq 'experiment' ) {
-        my $experiment = $coge->resultset('Experiment')->find($item_id);
+        my $experiment = $DB->resultset('Experiment')->find($item_id);
         return unless $USER->has_access_to_experiment($experiment);
 
         my $group_str = join( '<br>', sort map { $_->name } $USER->groups_with_access($experiment) );
@@ -321,7 +322,7 @@ sub get_item_info {
             . qq{</div></div>};
     }
     elsif ( $item_type eq 'analyses' or $item_type eq 'loads' ) {
-        my $log = $coge->resultset('Log')->find($item_id);
+        my $log = $DB->resultset('Log')->find($item_id);
         return unless $log;
         
         $html .=
@@ -351,7 +352,7 @@ sub delete_items {
 
         #print STDERR "delete $item_id $item_type\n";
         if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
-            my $group = $coge->resultset('UserGroup')->find($item_id);
+            my $group = $DB->resultset('UserGroup')->find($item_id);
 		    return unless ( $group and $group->is_editable($USER) );
 		    return if ( $group->locked and !$USER->is_admin );
 
@@ -360,7 +361,7 @@ sub delete_items {
 			$type_name = 'user group';
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $coge->resultset('List')->find($item_id);
+            my $notebook = $DB->resultset('List')->find($item_id);
             return unless $notebook;
 
             if ( !$notebook->locked
@@ -373,7 +374,7 @@ sub delete_items {
             }
         }
         elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $coge->resultset('Genome')->find($item_id);
+            my $genome = $DB->resultset('Genome')->find($item_id);
             return unless $genome;
 
             if ( $USER->is_admin or $USER->is_owner( dsg => $genome ) ) {
@@ -383,7 +384,7 @@ sub delete_items {
             }
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $coge->resultset('Experiment')->find($item_id);
+            my $experiment = $DB->resultset('Experiment')->find($item_id);
             return unless $experiment;
 
             if ( $USER->is_admin or $USER->is_owner( experiment => $experiment ) )
@@ -397,7 +398,7 @@ sub delete_items {
         # Record in log
         if ($type_name) {
 			CoGe::Accessory::Web::log_history(
-			    db          => $coge,
+			    db          => $DB,
 			    user_id     => $USER->id,
 			    page        => $PAGE_TITLE,
 			    description => "delete $type_name id$item_id"
@@ -419,7 +420,7 @@ sub undelete_items {
 
         #print STDERR "undelete $item_id $item_type\n";
         if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
-            my $group = $coge->resultset('UserGroup')->find($item_id);
+            my $group = $DB->resultset('UserGroup')->find($item_id);
             return unless $group;
 
             if ( $group->is_editable($USER) ) {
@@ -429,7 +430,7 @@ sub undelete_items {
             }
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $coge->resultset('List')->find($item_id);
+            my $notebook = $DB->resultset('List')->find($item_id);
             return unless $notebook;
 
             if ( $USER->is_admin or $USER->is_owner( list => $notebook ) ) {
@@ -439,7 +440,7 @@ sub undelete_items {
             }
         }
         elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $coge->resultset('Genome')->find($item_id);
+            my $genome = $DB->resultset('Genome')->find($item_id);
             return unless $genome;
 
             if ( $USER->is_admin or $USER->is_owner( dsg => $genome ) ) {
@@ -449,7 +450,7 @@ sub undelete_items {
             }
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $coge->resultset('Experiment')->find($item_id);
+            my $experiment = $DB->resultset('Experiment')->find($item_id);
             return unless $experiment;
 
             if ( $USER->is_admin or $USER->is_owner( experiment => $experiment ) )
@@ -466,7 +467,7 @@ sub undelete_items {
         # Record in log
         if ($type_name) {
 			CoGe::Accessory::Web::log_history(
-			    db          => $coge,
+			    db          => $DB,
 			    user_id     => $USER->id,
 			    page        => $PAGE_TITLE,
 			    description => "undelete $type_name id$item_id"
@@ -486,7 +487,7 @@ sub undelete_items {
 #        next unless ( $item_id and $item_type );
 #        print STDERR "cancel $item_id $item_type\n";
 #
-#        my $job = $coge->resultset('Job')->find($item_id);
+#        my $job = $DB->resultset('Job')->find($item_id);
 #	    if ( ( !$job || $job->user_id != $USER->id ) && !$USER->is_admin ) {
 #	        return;
 #	    }
@@ -546,7 +547,7 @@ sub get_roles {
     my $selected = shift;
 
     my $html;
-    foreach my $role ( $coge->resultset('Role')->all() ) {
+    foreach my $role ( $DB->resultset('Role')->all() ) {
         next if ($role->name =~ /admin/i);# && !$USER->is_admin); # skip admin
         next if ($role->name =~ /owner/i && !$USER->is_admin); # skip owner
         my $name = $role->name;
@@ -580,7 +581,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 
         # print STDERR "get_share $item_id $item_type\n";
         if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $coge->resultset('Genome')->find($item_id);
+            my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
             map { $userconn{ $_->parent_id } = $_ }
               ( $genome->user_connectors, $genome->group_connectors );
@@ -589,7 +590,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
             $isEditable = 0 if ( not $USER->is_owner_editor( dsg => $genome ) );
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $coge->resultset('Experiment')->find($item_id);
+            my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
             map { $userconn{ $_->id } = $_ }
               ( $experiment->user_connectors, $experiment->group_connectors );
@@ -599,7 +600,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
               if ( not $USER->is_owner_editor( experiment => $experiment ) );
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $coge->resultset('List')->find($item_id);
+            my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
             map { $userconn{ $_->id } = $_ }
               ( $notebook->user_connectors, $notebook->group_connectors );
@@ -672,7 +673,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
     }
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+      HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         SHARE_DIALOG => 1,
         IS_EDITABLE  => $USER->is_admin || $isEditable,
@@ -710,7 +711,7 @@ sub get_group_dialog {
         next unless ( $item_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
 
         #print STDERR "get_group_dialog $item_id $item_type\n";
-        my $group = $coge->resultset('UserGroup')->find($item_id);
+        my $group = $DB->resultset('UserGroup')->find($item_id);
         next unless ( $group and $group->is_editable($USER) );
 		next if ( $group->locked and !$USER->is_admin );
 
@@ -755,7 +756,7 @@ sub get_group_dialog {
     }
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+      HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 
 	# If no editable groups then show error dialog
     if (!$lowest_role) {
@@ -788,9 +789,9 @@ sub search_share {
 
 # Search for matching users
 # $search_term = '%'.$search_term.'%';
-# foreach ($coge->resultset('User')->search_literal(
+# foreach ($DB->resultset('User')->search_literal(
 # 		"user_name LIKE '$search_term' OR first_name LIKE '$search_term' OR last_name LIKE '$search_term'"))
-    foreach ( $coge->resultset('User')->all ) {
+    foreach ( $DB->resultset('User')->all ) {
         next
           unless ( escape($_->user_name) =~ /$search_term/i
             || escape($_->display_name) =~ /$search_term/i );
@@ -800,7 +801,7 @@ sub search_share {
     }
 
     # Search for matching groups
-    foreach ( $coge->resultset('UserGroup')->all ) {
+    foreach ( $DB->resultset('UserGroup')->all ) {
         next unless ( escape($_->name) =~ /$search_term/i );
         my $label = $_->name . ' (' . $_->role->name . ' group)';
         my $value = $_->id . ':' . 'group'; #$ITEM_TYPE{group};
@@ -826,19 +827,19 @@ sub make_items_public {
 
         #print STDERR "make_items_public $item_id $item_type\n";
         if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $coge->resultset('Genome')->find($item_id);
+            my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
             $genome->restricted(!$make_public);
             $genome->update();
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $coge->resultset('Experiment')->find($item_id);
+            my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
             $experiment->restricted(!$make_public);
             $experiment->update();
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $coge->resultset('List')->find($item_id);
+            my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
             $notebook->restricted(!$make_public);
             $notebook->update();
@@ -870,17 +871,17 @@ sub add_items_to_user_or_group {
 
         # print STDERR "add_items_to_user_or_group $item_id $item_type\n";
         if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $coge->resultset('Genome')->find($item_id);
+            my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
             push @verified, { id => $item_id, type => $ITEM_TYPE{genome} };
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $coge->resultset('Experiment')->find($item_id);
+            my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
             push @verified, { id => $item_id, type => $ITEM_TYPE{experiment} };
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $coge->resultset('List')->find($item_id);
+            my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
             push @verified, { id => $item_id, type => $ITEM_TYPE{notebook} };
         }
@@ -890,7 +891,7 @@ sub add_items_to_user_or_group {
     # print STDERR "add_items_to_user_or_group $target_id $target_type\n";
     #TODO verify that user can use specified role (for admin/owner roles)
     if ( $target_type eq 'user' ) { #$ITEM_TYPE{user} ) {
-        my $user = $coge->resultset('User')->find($target_id);
+        my $user = $DB->resultset('User')->find($target_id);
         return unless $user;
 
         foreach (@verified) {
@@ -900,7 +901,7 @@ sub add_items_to_user_or_group {
 
             # Remove previous connection
             foreach (
-                $coge->resultset('UserConnector')->search(
+                $DB->resultset('UserConnector')->search(
                     {
                         parent_id   => $target_id,
                         parent_type => 5,            # FIXME hardcoded
@@ -914,7 +915,7 @@ sub add_items_to_user_or_group {
             }
 
             # Add new connection
-            my $conn = $coge->resultset('UserConnector')->create(
+            my $conn = $DB->resultset('UserConnector')->create(
                 {
                     parent_id   => $target_id,
                     parent_type => 5,            # FIXME hardcoded
@@ -927,14 +928,14 @@ sub add_items_to_user_or_group {
         }
     }
     elsif ( $target_type eq 'group' ) { #$ITEM_TYPE{group} ) {
-        my $group = $coge->resultset('UserGroup')->find($target_id);
+        my $group = $DB->resultset('UserGroup')->find($target_id);
         return unless $group;
 
         foreach (@verified) {
             my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
 
             # print STDERR "   group: $item_id $item_type\n";
-            my $conn = $coge->resultset('UserConnector')->find_or_create(
+            my $conn = $DB->resultset('UserConnector')->find_or_create(
                 {
                     parent_id   => $target_id,
                     parent_type => 6,                # FIXME hardcoded
@@ -967,10 +968,10 @@ sub remove_items_from_user_or_group {
 
         # print STDERR "remove_item_from_user $item_id $item_type\n";
         if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $coge->resultset('Genome')->find($item_id);
+            my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
 
-            my $conn = $coge->resultset('UserConnector')->find(
+            my $conn = $DB->resultset('UserConnector')->find(
                 {
                     parent_id   => $target_id,
                     parent_type => $target_type,
@@ -983,10 +984,10 @@ sub remove_items_from_user_or_group {
             $conn->delete;
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $coge->resultset('Experiment')->find($item_id);
+            my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
 
-            my $conn = $coge->resultset('UserConnector')->find(
+            my $conn = $DB->resultset('UserConnector')->find(
                 {
                     parent_id   => $target_id,
                     parent_type => $target_type,            #FIXME hardcoded
@@ -999,10 +1000,10 @@ sub remove_items_from_user_or_group {
             $conn->delete;
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $coge->resultset('List')->find($item_id);
+            my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
 
-            my $conn = $coge->resultset('UserConnector')->find(
+            my $conn = $DB->resultset('UserConnector')->find(
                 {
                     parent_id   => $target_id,
                     parent_type => $target_type,          #FIXME hardcoded
@@ -1033,12 +1034,12 @@ sub add_users_to_group {
     return unless ( $item_id and $item_type );
 
     if ( $item_type eq 'user' ) { #$ITEM_TYPE{user} ) {
-     	my $user = $coge->resultset('User')->find($item_id);
+     	my $user = $DB->resultset('User')->find($item_id);
       	return unless $user;
        	$users{$user->id} = $user;
     }
     elsif ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
-      	my $group = $coge->resultset('UserGroup')->find($item_id);
+      	my $group = $DB->resultset('UserGroup')->find($item_id);
         return unless $group;
         # TODO check that user has visibility of this group (one that they own or belong to)
 		map { $users{$_->id} = $_ } $group->users;
@@ -1051,14 +1052,14 @@ sub add_users_to_group {
 		#print STDERR "add_users_to_group $target_id\n";
 	    next unless ( $target_id and $target_type );
 	    next unless ( $target_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
-	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
+	    my $target_group = $DB->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
 
 		# Add users to this target group
     	foreach my $user (values %users) {
     		# Check for existing user connection to target group
-    		my $conn = $coge->resultset('UserConnector')->find(
+    		my $conn = $DB->resultset('UserConnector')->find(
 		        {
 		            parent_id   => $user->id,
 		            parent_type => 5,                #FIXME hardcoded to "user"
@@ -1069,7 +1070,7 @@ sub add_users_to_group {
 
 		    # Create new user connection if one wasn't found
 		    if (!$conn) {
-			    $conn = $coge->resultset('UserConnector')->create(
+			    $conn = $DB->resultset('UserConnector')->create(
 			        {
 			            parent_id   => $user->id,
 			            parent_type => 5,                #FIXME hardcoded to "user"
@@ -1083,7 +1084,7 @@ sub add_users_to_group {
 
 		    # Record in log
 		    CoGe::Accessory::Web::log_history(
-		        db          => $coge,
+		        db          => $DB,
 		        user_id     => $USER->id,
 		        page        => $PAGE_TITLE,
 		        description => 'add user id' . $user->id . ' to group id' . $target_id
@@ -1103,7 +1104,7 @@ sub remove_user_from_group {
     #print STDERR "remove_user_from_group: $user_id @target_items\n";
 
 	# Verify user
-	my $user = $coge->resultset('User')->find($user_id);
+	my $user = $DB->resultset('User')->find($user_id);
     return unless $user;
 
     # Remove users from the target groups
@@ -1113,12 +1114,12 @@ sub remove_user_from_group {
 		#print STDERR "remove_user_from_group $target_id\n";
 	    next unless ( $target_id and $target_type );
 	    next unless ( $target_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
-	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
+	    my $target_group = $DB->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
 
     	# Get user connection to target group
-    	my $conn = $coge->resultset('UserConnector')->find(
+    	my $conn = $DB->resultset('UserConnector')->find(
 		    {
 		        parent_id   => $user_id,
 		        parent_type => 5,                #FIXME hardcoded to "user"
@@ -1134,7 +1135,7 @@ sub remove_user_from_group {
 
 	    # Record in log
 	    CoGe::Accessory::Web::log_history(
-		    db          => $coge,
+		    db          => $DB,
 		    user_id     => $USER->id,
 		    page        => $PAGE_TITLE,
 		    description => 'remove user id' . $user_id . ' from group id' . $target_id
@@ -1153,7 +1154,7 @@ sub change_group_role {
     #print STDERR "change_group_role: $role_id @target_items\n";
 
 	# Verify role
-	my $role = $coge->resultset('Role')->find($role_id);
+	my $role = $DB->resultset('Role')->find($role_id);
     return unless $role;
 
     # Change role for the target groups
@@ -1163,7 +1164,7 @@ sub change_group_role {
 		#print STDERR "change_group_role $target_id\n";
 	    next unless ( $target_id and $target_type );
 	    next unless ( $target_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
-	    my $target_group = $coge->resultset('UserGroup')->find($target_id);
+	    my $target_group = $DB->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
 
@@ -1288,16 +1289,16 @@ sub get_contents {
     my $items = [];
 
     if ( $type eq 'genome' ) {
-        $items = get_genomes_for_user($coge->storage->dbh, $USER->id);
+        $items = get_genomes_for_user($DB->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'experiment' ) {
-        $items = get_experiments_for_user($coge->storage->dbh, $USER->id);
+        $items = get_experiments_for_user($DB->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'notebook' ) {
-        $items = get_lists_for_user($coge->storage->dbh, $USER->id);
+        $items = get_lists_for_user($DB->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'group' ) {
-        $items = get_groups_for_user($coge->storage->dbh, $USER->id);
+        $items = get_groups_for_user($DB->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'activity' ) {
         my $jobs = get_jobs($last_update);
@@ -1462,7 +1463,7 @@ sub summarize_jobs {
         }
     }
     
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         ACTIVITY_SUMMARY => 1,
         NUM_ANALYSES => $type_counts{analyses},
@@ -1479,13 +1480,12 @@ sub format_job_status {
     my $color;
     
     $status =~ s/terminated/cancelled/i;
+    $status = lc($status);
     
-    given ( $status ) {
-        when (/running/i)   { $color = 'yellowgreen'; }
-        when (/completed/i) { $color = 'cornflowerblue'; }
-        when (/scheduled/i) { $color = 'goldenrod'; }
-        default             { $color = 'salmon'; }
-    }
+    if ($status eq 'running')      { $color = 'yellowgreen' }
+    elsif ($status eq 'completed') { $color = 'cornflowerblue' }
+    elsif ($status eq 'scheduled') { $color = 'goldenrod' }
+    else                           { $color = 'salmon' }
     
     return '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:' . $color . ';">' . ucfirst($status) . '</span>';
 }
@@ -1505,7 +1505,7 @@ sub upload_image_file {
     if ($fh) {
         #print STDERR "$image_filename size=" . (-s $fh) . "\n";
         read( $fh, my $contents, -s $fh );
-        $image = $coge->resultset('Image')->create(
+        $image = $DB->resultset('Image')->create(
             {
                 filename => $image_filename,
                 image    => $contents
@@ -1539,10 +1539,10 @@ sub search_notebooks
     if ( !$search_term ) {
         my $sql = "locked=0"
           ;    # AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
-        $num_results = $coge->resultset("List")->count_literal($sql);
+        $num_results = $DB->resultset("List")->count_literal($sql);
         if ( $num_results < $MAX_SEARCH_RESULTS ) {
             foreach
-              my $notebook ( $coge->resultset("List")->search_literal($sql) )
+              my $notebook ( $DB->resultset("List")->search_literal($sql) )
             {
                 next unless $USER->has_access_to_list($notebook);
                 push @notebooks, $notebook;
@@ -1556,7 +1556,7 @@ sub search_notebooks
         # Get public lists and user's private lists
         $search_term = '%' . $search_term . '%';
         foreach my $notebook (
-            $coge->resultset("List")->search_literal(
+            $DB->resultset("List")->search_literal(
 "locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"
             )
           )
@@ -1599,7 +1599,7 @@ sub add_items_to_notebook {
 
     #print STDERR "add_items_to_notebook $nid $item_list\n";
 
-    my $notebook = $coge->resultset('List')->find($nid);
+    my $notebook = $DB->resultset('List')->find($nid);
     return unless $USER->has_access_to_list($notebook);
 
     foreach (@items) {
@@ -1615,7 +1615,7 @@ sub add_items_to_notebook {
 
         # print STDERR "add_item_to_notebook $item_id $item_type\n";
 
-        my $conn = $coge->resultset('ListConnector')->find_or_create({
+        my $conn = $DB->resultset('ListConnector')->find_or_create({
             parent_id  => $nid,
             child_id   => $item_id,
             child_type => $item_type
@@ -1635,11 +1635,11 @@ sub create_new_group {
 
     return if ( $USER->user_name eq "public" );
 
-    my $role = $coge->resultset('Role')->find($role_id);
+    my $role = $DB->resultset('Role')->find($role_id);
     return unless $role;
 
     # Create the new group
-    my $group = $coge->resultset('UserGroup')->create(
+    my $group = $DB->resultset('UserGroup')->create(
         {
             creator_user_id => $USER->id,
             name            => $name,
@@ -1650,7 +1650,7 @@ sub create_new_group {
     return unless $group;
 
     # Set user as owner
-    my $conn = $coge->resultset('UserConnector')->create(
+    my $conn = $DB->resultset('UserConnector')->create(
         {
             parent_id   => $USER->id,
             parent_type => 5,            #FIXME hardcoded to "user"
@@ -1666,7 +1666,7 @@ sub create_new_group {
 
     # Record in log
     CoGe::Accessory::Web::log_history(
-		db          => $coge,
+		db          => $DB,
 		user_id     => $USER->id,
 		page        => $PAGE_TITLE,
 		description => 'create user group id' . $group->id
@@ -1685,7 +1685,7 @@ sub create_new_notebook {
     return if ( $USER->user_name eq "public" );
 
     # Create the new list
-    my $list = $coge->resultset('List')->create(
+    my $list = $DB->resultset('List')->create(
         {
             name         => $name,
             description  => $desc,
@@ -1697,7 +1697,7 @@ sub create_new_notebook {
     return unless $list;
 
     # Set user as owner
-    my $conn = $coge->resultset('UserConnector')->create(
+    my $conn = $DB->resultset('UserConnector')->create(
         {
             parent_id   => $USER->id,
             parent_type => 5,           #FIXME hardcoded to "user"
@@ -1714,7 +1714,7 @@ sub create_new_notebook {
 
     # Record in log
     CoGe::Accessory::Web::log_history(
-        db          => $coge,
+        db          => $DB,
         user_id     => $USER->id,
         page        => "$PAGE_TITLE",
         description => 'create notebook id' . $list->id
@@ -1726,7 +1726,7 @@ sub create_new_notebook {
 sub get_notebook_types {
     my $selected = shift;
     my $html;
-    foreach my $type ( $coge->resultset('ListType')->all() ) {
+    foreach my $type ( $DB->resultset('ListType')->all() ) {
         next
           if ( $type->name =~ /owner/i )
           ;    # reserve this type for system-created lists
@@ -1749,7 +1749,7 @@ sub toggle_star {
     my %opts   = @_;
     my $log_id = $opts{log_id};
 
-    my $entry = $coge->resultset('Log')->find($log_id);
+    my $entry = $DB->resultset('Log')->find($log_id);
     return unless $entry;
 
     my $status = $entry->status;

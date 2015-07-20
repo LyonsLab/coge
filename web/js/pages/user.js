@@ -808,7 +808,6 @@ $.extend(DataGrid.prototype, {
 
     openItem: function(row) {
     	console.log('DataGrid.openItem');
-    	console.log(row);
     	if (row.type == 'group') // kludge
     		group_dialog();
     	else if (row.type == 'analyses' || row.type == 'loads')
@@ -1423,7 +1422,6 @@ function search_share () {
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
 			if (obj && test_timestamp('search_share', obj.timestamp) && obj.items) {
-				console.log(obj);
 				$("#share_input").autocomplete({source: obj.items}).autocomplete("search");
 				//$("#wait_notebook").animate({opacity:0});
 			}
