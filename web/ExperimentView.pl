@@ -80,7 +80,7 @@ sub edit_experiment_info {
 
     $template->param(
         EDIT_EXPERIMENT_INFO => 1,
-        EID                  => $eid,
+        EXPERIMENT_ID        => $eid,
         NAME                 => $exp->name,
         DESC                 => $desc,
         SOURCE               => $exp->source->name,
@@ -625,7 +625,7 @@ sub gen_body {
         MAIN            => 1,
         PAGE_NAME       => $PAGE_TITLE . '.pl',
         USER_NAME       => $USER->name,
-        EID             => $eid,
+        EXPERIMENT_ID   => $eid,
         DEFAULT_TYPE    => 'note',
         ITEMS            => commify($exp->row_count),
         FILE_SIZE       => commify(directory_size(get_experiment_path($exp->id))),
