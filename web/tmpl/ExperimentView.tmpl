@@ -15,7 +15,7 @@ const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
 const IRODS_HOME    = '<TMPL_VAR NAME=IRODS_HOME>';
 
-var EID = '<TMPL_VAR NAME="EID">';
+var EXPERIMENT_ID = '<TMPL_VAR NAME="EXPERIMENT_ID">';
 var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
 var newLoad = false;
 
@@ -32,8 +32,6 @@ $(document).ready(function() {
 
     $(".dialog_box").dialog({autoOpen: 0, width: 450});
 
-    //$("#progress_dialog").dialog({modal: true});
-
     $("#edit_tag_name").autocomplete({
         source: function() { get_experiment_tags(); },
         select: function(event, ui) { get_type_description( ui.item.label ); }
@@ -41,7 +39,7 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog(EID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    init_annotation_dialog(EXPERIMENT_ID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 
     // Initialize CoGe packages
     coge.services.init({
@@ -70,52 +68,67 @@ $(document).ready(function() {
 	<tr style="vertical-align:top">
 		<td>
 			<div>
-			    <div style="color:dimgray;font-weight:bold;">Info</div>
+			    <div class="bold text">Info</div>
 			    <div id='experiment_info' class="inline">
 			        <TMPL_VAR NAME="EXPERIMENT_INFO">
 			    </div>
 			</div>
 		</td>
 		<td>
-			<div style="padding-left:10px; padding-bottom:10px;">
-			    <div style="color:dimgray;font-weight:bold;">Statistics</div>
-			    <div class="inline top">
-			        <ul class="ui-widget-content ui-corner-all" style="padding: 2px;">
-			            <li>
-			                <span class="title5">Rows:</span>
-			                <span class="data5"><TMPL_VAR NAME="rows"><span>
-			            </li>
-			        </ul>
-			    </div>
+			<div style="padding-left:2em; padding-bottom:2em;">
+			    <div class="bold text">Statistics</div>
+			    <table class="inline top border-top">
+			        <tr style="padding:3px;">
+			            <td>
+			                <span class="title5">Items:</span>
+			            </td>
+			            <td>
+			                <span class="data5"><TMPL_VAR NAME="ITEMS"><span>
+			            </td>
+			        </tr>
+			        <tr style="padding:3px;">
+			            <td>
+		                	<span class="title5">Data size:</span>
+		                </td>
+		                <td>
+		                	<span class="data5"><TMPL_VAR NAME="FILE_SIZE"> bytes<span>
+		                </td>
+			        </tr>
+			    </table>
 			</div>
-			<div style="padding-left: 10px;">
-			    <div style="color:dimgray;font-weight:bold;">Tools</div>
-			    <div class="inline top">
-			    	<ul class="ui-widget-content ui-corner-all" style="padding: 2px;">
-			    		<li>
-			    			<span class="title5">Export data:</span>
+			<div style="padding-left:2em;">
+			    <div class="bold text">Tools</div>
+			    <table class="inline top border-top">
+			    	<tr style="padding:3px;">
+			    		<td>
+			    			<span class="title5">Export data to:</span>
+			    		</td>
+			    		<td>
 		            		<span class="data5 link" ondblclick="download_files();" onclick="download_files();">Download</span>
 		            		<TMPL_UNLESS NAME="PUBLIC">
 		            		|&nbsp;<span class="data5 link" ondblclick="export_data();" onclick="export_data();">iPlant Data Store</span>
 		            		</TMPL_UNLESS>
-		            	</li>
-		            	<TMPL_IF NAME="ALIGNMENT_TYPE">
-                    	<li>
+		            	</td>
+		            </tr>
+		            <TMPL_IF NAME="ALIGNMENT_TYPE">
+		            <tr style="padding:3px;">
+                    	<td>
                     		<span class="title5">Analyze:</span>
+                    	</td>
+                    	<td>
                     		<span class="data5 link" ondblclick="snpMenu.open();" onclick="snpMenu.open();">Identify SNPs</span>
-                    	</li>
-                    	</TMPL_IF>
-			        </ul>
-			    </div>
+                    	</td>
+			        </tr>
+			        </TMPL_IF>
+			    </table>
 		    </div>
 		</td>
 	</tr>
 </table>
-<br>
 
 <TMPL_IF NAME="EXPERIMENT_ANNOTATIONS">
-<div>
- <div style="color:dimgray;font-weight:bold;">Metadata</div>
+<div style="padding-top:2em;">
+ <div class="bold text">Metadata</div>
  <div id="experiment_annotations">
   <TMPL_VAR NAME="EXPERIMENT_ANNOTATIONS">
  </div>

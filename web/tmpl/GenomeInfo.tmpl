@@ -75,7 +75,7 @@ $(document).ready(function() {
     set_annotation_table();
 
     init_annotation_dialog(genome_id, default_type);
-
+    
     // Open status dialog
     if (job_id) {
         reset_log();
@@ -1212,10 +1212,13 @@ function get_experiments(e) {
             fname: 'get_experiments',
             gid: genome_id
         },
-
-        success:function(data) {
-            experiments.hide().html(data);
-            experiments.slideDown();
+        success:function(html) {
+            experiments
+            	.hide()
+            	.html(html)
+            	.slideDown();
+            var count = experiments.find('span').length;
+            $('#exp_count').html('('+count+')').show();
         }
     });
 }
@@ -1249,7 +1252,7 @@ function get_experiments(e) {
     <tr class="top">
         <td>
             <span class="bold text">Info</span>
-            <div id='genome_info' class="ui-widget-content ui-corner-all" style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
+            <div id='genome_info' style="width:400px;"><TMPL_VAR NAME="GENOME_INFO"></div>
 
             <div class="panel">
                 <TMPL_IF NAME='USER_CAN_EDIT'>
@@ -1262,7 +1265,7 @@ function get_experiments(e) {
                         <span class='ui-button ui-corner-all ui-button-go coge-button' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
                     </TMPL_IF>
                 </TMPL_IF>
-                <span class='ui-button ui-corner-all coge-button' onclick='location.href="GenomeView.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>"'>View</span>
+                <span class='ui-button ui-corner-all coge-button' onclick='location.href="GenomeView.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>"'>Browse</span>
             </div>
 
             <TMPL_IF NAME="GENOME_ANNOTATIONS">
@@ -1276,7 +1279,7 @@ function get_experiments(e) {
 
             <div class="bold text" style="padding-top:1em;">Sequence & Gene Annotation</div>
             <TMPL_IF NAME='DATASETS'>
-                <table id="datasets" class="small ui-widget-content ui-corner-all" style="color:gray;">
+                <table id="datasets" class="small border-top border-bottom" style="color:gray;">
                     <TMPL_VAR NAME='DATASETS'>
                 </table>
             </TMPL_IF>
@@ -1287,10 +1290,10 @@ function get_experiments(e) {
             </TMPL_IF>
         </td>
 
-        <td style="padding-left:10px;">
+        <td style="padding-left:2em;">
             <TMPL_VAR NAME="GENOME_DATA">
             <div class="left coge-table-header">Tools</div>
-            <table class="ui-corner-all ui-widget-content">
+            <table class="border-top">
                 <tr>
                     <td class='title5'>Download:</td>
                     <td class='data5'>	
@@ -1335,9 +1338,9 @@ function get_experiments(e) {
     </tr>
 </table>
 
-<div class="bold text" style="padding-top:1em;">Experiments (<tmpl_var name="EXP_COUNT">)</div>
+<div class="bold text" style="padding-top:1em;">Experiments <span id="exp_count" <TMPL_UNLESS NAME="EXP_COUNT">class="hidden"</TMPL_UNLESS> >(<TMPL_VAR NAME="EXP_COUNT">)</span></div>
 <TMPL_IF NAME='EXPERIMENTS'>
-    <table class="small ui-widget-content ui-corner-all">
+    <table class="small border-top border-bottom">
         <tr>
             <td>
                 <TMPL_VAR NAME='EXPERIMENTS'>
@@ -1443,7 +1446,7 @@ Are you sure you want to move this genome into your trash?<p>
 </TMPL_IF>
 
 <TMPL_IF NAME="DO_GENOME_INFO">
-    <table>
+    <table class="border-top border-bottom">
         <tr>
             <td class='title5' style='white-space:nowrap;'>Genome ID:</td>
             <td class='data5'><TMPL_VAR NAME="GID"></td>

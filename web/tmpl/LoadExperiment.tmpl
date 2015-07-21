@@ -314,11 +314,11 @@
             <div class="form-group">
                 <div class="form-entry">
                     <label>-q:</label>
-                    <input id="-q" type="number" title="(--trim-qualities) used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set --quality-base to 64." value="25"/>
+                    <input id="-q" type="number" title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64." value="25"/>
                 </div>
                 <div class="form-entry">
                     <label>-m:</label>
-                    <input id="-m" type="number" title="(--minimum-length) Use this to throw away processed reads shorter than N bases" value="17"/>
+                    <input id="-m" type="number" title="Use this to throw away processed reads shorter than N bases" value="17"/>
                 </div>
                 <div class="form-entry">
                     <label>--quality-base:</label>
@@ -330,14 +330,19 @@
         <div class="form-field">
             <label class="col-md-2">GSNAP: (<a href="http://research-pub.gene.com/gmap/" target="_blank" class="small link">docs</a>)</label>
             <div class="form-group">
+	            <div class="form-entry">
+		            <label>-N:</label>
+		            <input id="-N" type="number" title="Look for novel splicing (0=no (default), 1=yes)" value="1"/>
+		        </div>
+            
                 <div class="form-entry">
                     <label>-n:</label>
-                    <input id="-n" type="number" title="(--npaths) Maximum number of paths to print" value="5"/>
+                    <input id="-n" type="number" title="Maximum number of paths to print" value="5"/>
                 </div>
 
                 <div class="form-entry">
                     <label>-Q:</label>
-                    <input id="-Q" type="checkbox" title="(--quiet-if-excessive) If more than maximum number of paths are found, then nothing is printed." checked/>
+                    <input id="-Q" type="checkbox" title="If more than maximum number of paths are found, then nothing is printed." checked/>
                 </div>
                 <div class="form-entry">
                     <label>--gap-mode:</label>

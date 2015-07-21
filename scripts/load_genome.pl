@@ -398,7 +398,7 @@ print STDOUT "log: "
   . " sequences loaded totaling "
   . commify($seqLength) . " nt\n";
 
-# Update IRODS metadata
+# Update IRODS metadata #FIXME not working anymore, need to separate out into separate task in workflow
 if ($irods_files) {
 	my @irods = split( ',', $irods_files );
 	my %metadata = (

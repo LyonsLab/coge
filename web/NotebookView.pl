@@ -310,7 +310,7 @@ sub get_annotations {
 
     my $html;
     if ($num_annot) {
-        $html .= '<table id="list_annotation_table" class="ui-widget-content ui-corner-all" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        $html .= '<table id="list_annotation_table" class="border-top border-bottom" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
         foreach my $group ( sort keys %groups ) {
             my $first = 1;
             foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
@@ -358,7 +358,7 @@ sub get_annotations {
         $html .= '</tbody></table>';
     }
     elsif ($user_can_edit) {
-        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There are no additional metadata items for this notebook.</tr></td></table>';
+        $html .= '<table class="border-top border-bottom small padded note"><tr><td>There are no additional metadata items for this notebook.</tr></td></table>';
     }
 
     if ($user_can_edit) {
@@ -576,7 +576,7 @@ sub get_list_contents {
     my $list_count = $list->lists( count => 1 );
 
     if ($genome_count or $exp_count or $feat_count or $list_count) {
-        $html = '<table id="list_contents_table" class="ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;">';#<thead style="display:none;"></thead><tbody>';
+        $html = '<table id="list_contents_table" class="border-top border-bottom" style="border-spacing:0;border-collapse:collapse;">';
 
         #my $delete_count=0;
         foreach my $genome ( sort genomecmp $list->genomes ) {
@@ -673,7 +673,7 @@ sub get_list_contents {
         $html .= '</table>';#'</tbody></table>';
     }
     else {
-        $html .= '<table class="ui-widget-content ui-corner-all padded note"><tr><td>This notebook is empty.</tr></td></table>';
+        $html .= '<table class="border-top border-bottom padded note"><tr><td>This notebook is empty.</tr></td></table>';
     }
 
     if ($user_can_edit) {

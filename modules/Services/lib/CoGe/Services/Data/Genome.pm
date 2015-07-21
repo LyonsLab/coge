@@ -1,10 +1,10 @@
 package CoGe::Services::Data::Genome;
 use base 'CGI::Application';
 
-#
+################################################################################
 # This is a legacy endpoint in support of genome loads from the DE.  Need to 
 # migrate the DE to the new API and deprecate this at some point.
-#
+################################################################################
 
 use CoGeX;
 use CoGe::Accessory::Web;
@@ -16,6 +16,7 @@ use Data::Dumper;
 use JSON qw(decode_json encode_json);
 use URI::Escape::JavaScript qw(escape);
 use File::Path qw(mkpath);
+use File::Spec::Functions qw(catfile);
 
 sub setup {
     my $self = shift;
@@ -28,10 +29,10 @@ sub load {
     my $q = $self->query();
 	#my $ticket = $q->param('ticket'); # ugh: when POSTDATA is present, it doesn't have the ticket from URL
 	my $post = $q->param('POSTDATA');
-    print STDERR "Data::Genome::load ticket=$ticket\n";
-    print STDERR Dumper $q, "\n";
-	print STDERR "POSTDATA: $post", "\n";
-	print STDERR Dumper \%ENV, "\n";
+    print STDERR "Data::Genome::load ticket=$ticket\n",
+        Dumper $q, "\n",
+	    "POSTDATA: $post", "\n",
+	    Dumper \%ENV, "\n";
 
 	# Problem: when status is anything but 200 it adds on an html doc
 	# to the reponse even if type is 'application/json'
@@ -92,10 +93,9 @@ sub load {
             version => escape($data->{version}),
             source_name => escape($source_name),
             restricted => $data->{restricted},
-            organism_id => $organism_id,
             type_id => $type_id
         },
-        #files => \@files,
+        organism_id => $organism_id,
         irods => $data->{items}
     );
     unless ($workflow_id) {
@@ -124,15 +124,15 @@ sub load {
 	});
 }
 
-sub create_genome_from_file {
+sub create_genome_from_file { #TODO use CoGe::Builder::Load::Genome pipeline instead
     my %opts = @_;
     my $user = $opts{user};
     my $irods = $opts{irods};
-    my $files = $opts{files};
     my $metadata = $opts{metadata};
+    my $organism_id = $opts{organism_id};
     #print STDERR "Storage::create_genome_from_file ", Dumper $metadata, " ", Dumper $files, "\n";
 
-    # Connect to workflow engine and get an id
+    # Connect to workflow engine
     my $conf = CoGe::Accessory::Web::get_defaults();
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     unless (defined $jex) {
@@ -149,29 +149,24 @@ sub create_genome_from_file {
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
-    # Create list of files to load
-    my @staged_files;
-    push @staged_files, @$files if ($files);
-
     # Create jobs to retrieve irods files
-    my %load_params;
+    my @staged_files;
     foreach my $item (@$irods) {
         next unless ($item->{type} eq 'irods');
-        %load_params = create_iget_job(irods_path => $item->{path}, local_path => $staging_dir);
-        unless ( %load_params ) {
+        my $iget_task = create_iget_job(irods_path => $item->{path}, local_path => $staging_dir);
+        unless ( $iget_task ) {
             return (undef, "Could not create iget task");
         }
-        $workflow->add_job(\%load_params);
-        push @staged_files, $load_params{outputs}[0];
+        $workflow->add_job($iget_task);
+        push @staged_files, $iget_task->{outputs}[0];
     }
 
     # Create load job
     my $load_task = create_load_genome_job(
-        user => $self->user,
+        user => $user,
         staging_dir => $staging_dir,
-        result_dir => $result_dir,
-        wid => $self->workflow->id,
-        organism_id => $organism->id,
+        wid => $workflow->id,
+        organism_id => $organism_id,
         input_files => \@staged_files,
         irods_files => $irods, # for metadata markup
         metadata => $metadata,
