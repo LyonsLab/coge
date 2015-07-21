@@ -25,7 +25,7 @@ use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw(
-  $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $config $coge $FORM %FUNCTION
+  $P $PAGE_TITLE $TEMPDIR $SECTEMPDIR $LOAD_ID $USER $config $DB $FORM %FUNCTION
   $MAX_SEARCH_RESULTS $LINK $node_types $ERROR $HISTOGRAM $TEMPURL $SERVER $JEX
   $JOB_ID $EMBED
 );
@@ -37,7 +37,7 @@ $PAGE_TITLE = 'GenomeInfo';
 $node_types = CoGeX::node_types();
 
 $FORM = new CGI;
-( $coge, $USER, $config, $LINK ) = CoGe::Accessory::Web->init(
+( $DB, $USER, $config, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
@@ -109,7 +109,7 @@ sub get_genome_info_details {
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
     return " " unless $dsgid;
-    my $dsg = $coge->resultset("Genome")->find($dsgid);
+    my $dsg = $DB->resultset("Genome")->find($dsgid);
     return "Unable to get genome object for id: $dsgid" unless $dsg;
     my $html;
 
@@ -209,7 +209,7 @@ sub get_feature_counts {
     my $query;
     my $name;
     if ($dsid) {
-        my $ds = $coge->resultset('Dataset')->find($dsid);
+        my $ds = $DB->resultset('Dataset')->find($dsid);
         $name  = "dataset " . $ds->name;
         $query = qq{
 SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
@@ -224,7 +224,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         $name .= " chromosome $chr" if defined $chr;
     }
     elsif ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        my $dsg = $DB->resultset('Genome')->find($dsgid);
         $name = "dataset group ";
         $name .= $dsg->name ? $dsg->name : $dsg->organism->name;
         $query = qq{
@@ -238,7 +238,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 };
     }
 
-    my $dbh = $coge->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
+    my $dbh = $DB->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};
@@ -374,13 +374,13 @@ sub get_codon_usage {
 
     my (@items, @datasets);
     if ($dsid) {
-        my $ds = $coge->resultset('Dataset')->find($dsid);
+        my $ds = $DB->resultset('Dataset')->find($dsid);
         return "unable to find dataset id$dsid\n" unless $ds;
         push @items, $ds;
         push @datasets, $ds;
     }
     if ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        my $dsg = $DB->resultset('Genome')->find($dsgid);
         return "unable to find genome id $dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
         push @items, $dsg;
@@ -457,7 +457,7 @@ sub get_wobble_gc {
     $search = { "feature_type_id" => 3 };
     $search->{"me.chromosome"} = $chr if defined $chr;
 
-    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $genome = $DB->resultset('Genome')->find($dsgid);
     my $raw = get_wobble_histogram($genome);
 
     my @dsids;
@@ -564,7 +564,7 @@ sub get_wobble_gc_diff {
     my @dsids;
     push @dsids, $dsid if $dsid;
 
-    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $genome = $DB->resultset('Genome')->find($dsgid);
     my $data = get_wobble_gc_diff_histogram($genome);
     foreach my $ds ( $genome->datasets() ) {
         push @dsids, $ds->id;
@@ -597,8 +597,8 @@ sub get_wobble_gc_diff {
 
 sub export_features {
     my %args = @_;
-    my $genome = $coge->resultset('Genome')->find($args{gid});
-    my $ft = $coge->resultset('FeatureType')->find($args{fid});
+    my $genome = $DB->resultset('Genome')->find($args{gid});
+    my $ft = $DB->resultset('FeatureType')->find($args{fid});
 
     return 1 unless ($USER->has_access_to_genome($genome));
 
@@ -644,7 +644,7 @@ sub get_gc_for_genome {
     my $gstid = $opts{gstid};
     my $dsgid = $opts{dsgid};
 
-    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $genome = $DB->resultset('Genome')->find($dsgid);
     my $data = get_gc_stats($genome);
 
     # Skip if no data
@@ -675,7 +675,7 @@ sub get_gc_for_noncoding {
     my $n  = 0;
     my $x  = 0;
 
-    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $genome = $DB->resultset('Genome')->find($dsgid);
     my $stats = get_noncoding_gc_stats($genome);
 
     return
@@ -706,7 +706,7 @@ sub get_gc_for_feature_type {
     $typeid = 1 if $typeid eq "undefined";
     return unless $dsid || $dsgid;
 
-    my $genome = $coge->resultset('Genome')->find($dsgid);
+    my $genome = $DB->resultset('Genome')->find($dsgid);
     my $raw = get_feature_type_gc_histogram($genome, $typeid);
 
     my (@items, @datasets);
@@ -729,7 +729,7 @@ sub get_gc_for_feature_type {
     my $total = $gc + $at + $n;
     return "error" unless $total;
 
-    my $type = $coge->resultset('FeatureType')->find($typeid);
+    my $type = $DB->resultset('FeatureType')->find($typeid);
     my $file = $TEMPDIR . "/" . join( "_", @dsids );
 
     #perl -T flag
@@ -808,7 +808,7 @@ sub get_chr_length_hist {
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
     return "error", " " unless $dsgid;
-    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+    my ($dsg) = $DB->resultset('Genome')->find($dsgid);
     unless ($dsg) {
         my $error = "unable to create genome object using id $dsgid\n";
         return $error;
@@ -863,7 +863,7 @@ sub get_chr_length_hist {
 sub get_chromosomes {
     my %opts  = @_;
     my $gid = $opts{gid};
-#    my $rs = $coge->resultset('GenomicSequence')->search({genome_id=>$gid},{
+#    my $rs = $DB->resultset('GenomicSequence')->search({genome_id=>$gid},{
 #    	columns=>['chromosome','sequence_length']
 #    });
 	my $c = CoGe::Core::Chromosomes->new($gid);
@@ -897,7 +897,7 @@ sub cache_chr_fasta {
     	return encode_json(\%json);
     }
 
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $DB->resultset('Genome')->find($gid);
     return "unable to create genome object using id $gid" unless ($genome);
 
 	# Get sequence from file
@@ -923,7 +923,7 @@ sub get_genome_info {
     return unless ( $gid or $genome );
 
     unless ($genome) {
-        $genome = $coge->resultset('Genome')->find($gid);
+        $genome = $DB->resultset('Genome')->find($gid);
         return unless ($genome);
     }
 
@@ -960,7 +960,7 @@ sub edit_genome_info {
     my $gid  = $opts{gid};
     return unless ($gid);
 
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $DB->resultset('Genome')->find($gid);
     return unless ($genome);
 
     my $template =
@@ -1002,13 +1002,13 @@ sub update_genome_info {
     return "Error: missing params."
       unless ( $gid and $org_name and $version and $source_name );
 
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $DB->resultset('Genome')->find($gid);
     return "Error: can't find genome." unless ($genome);
 
-    my $organism = $coge->resultset('Organism')->find( { name => $org_name } );
+    my $organism = $DB->resultset('Organism')->find( { name => $org_name } );
     return "Error: can't find organism." unless ($organism);
 
-    my $source = $coge->resultset('DataSource')->find( { name => $source_name } );
+    my $source = $DB->resultset('DataSource')->find( { name => $source_name } );
     return "Error: can't find source." unless ($source);
 
     $genome->organism_id( $organism->id );
@@ -1039,7 +1039,7 @@ sub search_organisms {
 
     # Perform search
     $search_term = '%' . $search_term . '%';
-    my @organisms = $coge->resultset("Organism")->search(
+    my @organisms = $DB->resultset("Organism")->search(
         \[
             'name LIKE ? OR description LIKE ?',
             [ 'name',        $search_term ],
@@ -1067,7 +1067,7 @@ sub search_users {
 
     # Perform search
     $search_term = '%' . $search_term . '%';
-    my @users = $coge->resultset("User")->search(
+    my @users = $DB->resultset("User")->search(
         \[
             'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
             [ 'user_name',  $search_term ],
@@ -1099,12 +1099,12 @@ sub update_owner {
     return unless $USER->is_admin;
 
     # Make new user owner of genome
-    my $user = $coge->resultset('User')->find( { user_name => $user_name } );
+    my $user = $DB->resultset('User')->find( { user_name => $user_name } );
     unless ($user) {
         return "error finding user '$user_name'\n";
     }
 
-    my $conn = $coge->resultset('UserConnector')->find_or_create(
+    my $conn = $DB->resultset('UserConnector')->find_or_create(
         {
             parent_id   => $user->id,
             parent_type => $node_types->{user},
@@ -1118,7 +1118,7 @@ sub update_owner {
     }
 
     # Remove admin user as owner
-    $conn = $coge->resultset('UserConnector')->find(
+    $conn = $DB->resultset('UserConnector')->find(
         {
             parent_id   => $USER->id,
             parent_type => $node_types->{user},
@@ -1153,7 +1153,7 @@ sub get_genome_data {
 
     $gid = $genome->id if $genome;
     unless ($genome) {
-        $genome = $coge->resultset('Genome')->find($gid);
+        $genome = $DB->resultset('Genome')->find($gid);
         return unless ($genome);
     }
 
@@ -1180,12 +1180,12 @@ sub get_genome_download_links {
 #    print STDERR "delete_dataset $gid $dsid\n";
 #    return 0 unless ($gid and $dsid);
 #
-#    my $genome = $coge->resultset('Genome')->find($gid);
+#    my $genome = $DB->resultset('Genome')->find($gid);
 #    return 0 unless $genome;
 #    return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
 #
 #
-#    my $dataset = $coge->resultset('Dataset')->find($dsid);
+#    my $dataset = $DB->resultset('Dataset')->find($dsid);
 #    return 0 unless $dataset;
 #    return unless ($genome->dataset_connectors({ dataset_id => $dsid })); # make sure genome has specified dataset
 #
@@ -1195,7 +1195,7 @@ sub get_genome_download_links {
 #
 #    # Record in log
 #    CoGe::Accessory::Web::log_history(
-#          db          => $coge,
+#          db          => $DB,
 #          user_id     => $USER->id,
 #          page        => $PAGE_TITLE,
 #          description => "delete dataset id $dsid in genome id $gid"
@@ -1209,7 +1209,7 @@ sub get_sequence_types {
 
     my $html;
     foreach my $type ( sort { $a->info cmp $b->info }
-        $coge->resultset('GenomicSequenceType')->all() )
+        $DB->resultset('GenomicSequenceType')->all() )
     {
         $html .=
             '<option value="'
@@ -1228,7 +1228,7 @@ sub get_sources {
     #my %opts = @_;
 
     my %unique;
-    foreach ( $coge->resultset('DataSource')->all() ) {
+    foreach ( $DB->resultset('DataSource')->all() ) {
         $unique{ $_->name }++;
     }
 
@@ -1242,19 +1242,17 @@ sub get_experiments {
     return unless ( $gid or $genome );
 
     unless ($genome) {
-        $genome = $coge->resultset('Genome')->find($gid);
+        $genome = $DB->resultset('Genome')->find($gid);
         return unless ($genome);
     }
 
     my @rows;
     foreach my $exp ( sort experimentcmp $genome->experiments ) {
         next if ( $exp->deleted );
-        next if ($exp->restricted && !$USER->has_access_to_experiment($exp));
+        next if ( $exp->restricted && !$USER->has_access_to_experiment($exp) );
 
         my $id = $exp->id;
-        my %row;
-        $row{EXPERIMENT_INFO} = qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=$id")'>} . $exp->info . "</span>";
-        push @rows, \%row;
+        push @rows, { EXPERIMENT_INFO => qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=$id")'>} . $exp->info . "</span>" };
     }
     
     return '<span class="padded note">There are no experiments for this genome.</span>' unless @rows;
@@ -1281,7 +1279,7 @@ sub get_datasets {
     return unless ( $gid or $genome );
 
     unless ($genome) {
-        $genome = $coge->resultset('Genome')->find($gid);
+        $genome = $DB->resultset('Genome')->find($gid);
         return unless ($genome);
     }
 
@@ -1308,7 +1306,7 @@ sub delete_genome {
     print STDERR "delete_genome $gid\n";
     return 0 unless $gid;
 
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $DB->resultset('Genome')->find($gid);
     return 0 unless $genome;
     return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
     my $delete_or_undelete = ($genome->deleted ? 'undelete' : 'delete');
@@ -1318,7 +1316,7 @@ sub delete_genome {
 
     # Record in log
     CoGe::Accessory::Web::log_history(
-        db          => $coge,
+        db          => $DB,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
         description => "$delete_or_undelete genome id $gid"
@@ -1372,7 +1370,7 @@ sub copy_genome {
 
     # Record in log
     CoGe::Accessory::Web::log_history(
-        db          => $coge,
+        db          => $DB,
         user_id     => $USER->id,
         workflow_id => $workflow->id,
         page        => $PAGE_TITLE,
@@ -1438,13 +1436,13 @@ sub get_aa_usage {
 
     my (@items, @datasets);
     if ($dsid) {
-        my $ds = $coge->resultset('Dataset')->find($dsid);
+        my $ds = $DB->resultset('Dataset')->find($dsid);
         return "unable to find dataset id$dsid\n" unless $ds;
         push @items, $ds;
         push @datasets, $ds;
     }
     if ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        my $dsg = $DB->resultset('Genome')->find($dsgid);
         return "unable to find genome id $dsgid\n" unless $dsgid;
         $gstid = $dsg->type->id;
         push @items, $dsg;
@@ -1519,7 +1517,7 @@ sub export_fasta {
     my $gid = $opts{gid};
     #print STDERR "export_fasta $gid\n";
 
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $DB->resultset('Genome')->find($gid);
     return unless ($USER->has_access_to_genome($genome));
 
     my $src = $genome->file_path;
@@ -1561,7 +1559,7 @@ sub export_fasta {
 
 sub export_fasta_chr {
     my %args = @_;
-    my $dsg = $coge->resultset('Genome')->find($args{gid});
+    my $dsg = $DB->resultset('Genome')->find($args{gid});
     my $file = $args{file};
 #    print STDERR Dumper \%args;
 
@@ -1594,7 +1592,7 @@ sub get_annotations {
     my %opts = @_;
     my $gid  = $opts{gid};
     return "Must have valid genome id\n" unless ($gid);
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $DB->resultset('Genome')->find($gid);
 
     return "Access denied\n" unless $USER->has_access_to_genome($genome);
 
@@ -1669,7 +1667,7 @@ sub get_annotation {
 
     #TODO check user access here
 
-    my $ga = $coge->resultset('GenomeAnnotation')->find($aid);
+    my $ga = $DB->resultset('GenomeAnnotation')->find($aid);
     return unless $ga;
 
     my $type       = '';
@@ -1705,9 +1703,9 @@ sub add_annotation {
     # Create the type and type group if not already present
     my $group_rs;
     if ($type_group) {
-        $group_rs = $coge->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
+        $group_rs = $DB->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
     }
-    my $type_rs = $coge->resultset('AnnotationType')->find_or_create({
+    my $type_rs = $DB->resultset('AnnotationType')->find_or_create({
         name                     => $type,
         annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
     });
@@ -1716,7 +1714,7 @@ sub add_annotation {
     my $image;
     if ($fh) {
         read( $fh, my $contents, -s $fh );
-        $image = $coge->resultset('Image')->create({
+        $image = $DB->resultset('Image')->create({
             filename => $image_filename,
             image    => $contents
         });
@@ -1724,7 +1722,7 @@ sub add_annotation {
     }
 
     # Create the annotation
-    my $annot = $coge->resultset('GenomeAnnotation')->create({
+    my $annot = $DB->resultset('GenomeAnnotation')->create({
         genome_id          => $gid,
         annotation         => $annotation,
         link               => $link,
@@ -1750,15 +1748,15 @@ sub update_annotation {
 
     #TODO check user access here
 
-    my $ga = $coge->resultset('GenomeAnnotation')->find($aid);
+    my $ga = $DB->resultset('GenomeAnnotation')->find($aid);
     return unless $ga;
 
     # Create the type and type group if not already present
     my $group_rs;
     if ($type_group) {
-        $group_rs = $coge->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
+        $group_rs = $DB->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
     }
-    my $type_rs = $coge->resultset('AnnotationType')->find_or_create({
+    my $type_rs = $DB->resultset('AnnotationType')->find_or_create({
         name                     => $type,
         annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
     });
@@ -1768,7 +1766,7 @@ sub update_annotation {
     my $image;
     if ($fh) {
         read( $fh, my $contents, -s $fh );
-        $image = $coge->resultset('Image')->create({
+        $image = $DB->resultset('Image')->create({
             filename => $image_filename,
             image    => $contents
         });
@@ -1792,7 +1790,7 @@ sub remove_annotation {
     return "No genome annotation ID specified" unless $gaid;
     #return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 
-    my $ga = $coge->resultset('GenomeAnnotation')->find( { genome_annotation_id => $gaid } );
+    my $ga = $DB->resultset('GenomeAnnotation')->find( { genome_annotation_id => $gaid } );
     $ga->delete();
 
     return 1;
@@ -1810,13 +1808,13 @@ sub search_annotation_types {
 
     my $group;
     if ($type_group) {
-        $group = $coge->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
+        $group = $DB->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
     }
 
     my @types;
     if ($group) {
         #print STDERR "type_group=$type_group " . $group->id . "\n";
-        @types = $coge->resultset("AnnotationType")->search(
+        @types = $DB->resultset("AnnotationType")->search(
             \[ 'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
                 [ 'annotation_type_group_id', $group->id ],
                 [ 'name',                     $search_term ],
@@ -1825,7 +1823,7 @@ sub search_annotation_types {
         );
     }
     else {
-        @types = $coge->resultset("AnnotationType")->search(
+        @types = $DB->resultset("AnnotationType")->search(
             \[
                 'name LIKE ? OR description LIKE ?',
                 [ 'name',        $search_term ],
@@ -1843,7 +1841,7 @@ sub get_annotation_type_groups {
     #my %opts = @_;
     my %unique;
 
-    my $rs = $coge->resultset('AnnotationTypeGroup');
+    my $rs = $DB->resultset('AnnotationTypeGroup');
     while ( my $atg = $rs->next ) {
         $unique{ $atg->name }++;
     }
@@ -1857,7 +1855,7 @@ sub get_annotation_type_groups {
 
 sub get_tbl {
     my %args = @_;
-    my $dsg = $coge->resultset('Genome')->find($args{gid});
+    my $dsg = $DB->resultset('Genome')->find($args{gid});
 
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
@@ -1904,7 +1902,7 @@ sub export_tbl {
 
 sub get_bed {
     my %args = @_;
-    my $dsg = $coge->resultset('Genome')->find($args{gid});
+    my $dsg = $DB->resultset('Genome')->find($args{gid});
 
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
@@ -1936,7 +1934,7 @@ sub export_bed {
 
 sub get_gff {
     my %args = @_;
-    my $dsg = $coge->resultset('Genome')->find($args{gid});
+    my $dsg = $DB->resultset('Genome')->find($args{gid});
 
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
@@ -1973,7 +1971,7 @@ sub export_file_to_irods {
 	my $file_type = shift;
 	my $generate_func = shift;
     my %args = @_;
-    my $dsg = $coge->resultset('Genome')->find($args{gid});
+    my $dsg = $DB->resultset('Genome')->find($args{gid});
 
     # ensure user is logged in
     return $ERROR if $USER->is_public;
@@ -2071,32 +2069,30 @@ sub generate_html {
 }
 
 sub generate_body {
-    my $template =
-      HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    my $template = HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param( MAIN => 1, PAGE_NAME => "$PAGE_TITLE.pl" );
 
     my $gid = $FORM->param('gid');
     return "No genome specified" unless $gid;
 
-    my $genome = $coge->resultset('Genome')->find($gid);
+    my $genome = $DB->resultset('Genome')->find($gid);
     return "Genome id $gid not found" unless ($genome);
     return "Access denied" unless $USER->has_access_to_genome($genome);
 
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
     my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
 
-
     my $exp_count = $genome->experiments->count( { deleted => 0 } );
     my $experiments;
 
     if ($exp_count < 20) {
         $experiments = get_experiments( genome => $genome );
-    } else {
-        my $summary_template =
-        HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-
+    } 
+    else { # too many experiments to show on initial page load (ie, too slow)
+        my $summary_template = HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
         $summary_template->param(NOEXPERIMENTS => 1);
         $experiments = $summary_template->output;
+        $exp_count = 0; # disable count in view
     }
 
     $template->param( OID => $genome->organism->id );
