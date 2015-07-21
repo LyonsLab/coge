@@ -17,7 +17,7 @@ use Data::Dumper;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_log data_type get_download_path);
+use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_experiment_path get_log data_type get_download_path);
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
@@ -254,7 +254,7 @@ sub get_annotations {
     # Build annotation table
     my $html;
     if ($num_annot) {
-        $html .= '<table id="experiment_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        $html .= '<table id="experiment_annotation_table" class="border-top border-bottom small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
         foreach my $group ( sort keys %groups ) { # groups
             my $first_group = 1;
             foreach my $type ( sort keys %{ $groups{$group} } ) { # types
@@ -291,7 +291,7 @@ sub get_annotations {
         $html .= '</tbody></table>';
     }
     elsif ($user_can_edit) {
-        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There are no additional metadata items for this experiment.</tr></td></table>';
+        $html .= '<table class="border-top border-bottom small padded note"><tr><td>There are no additional metadata items for this experiment.</tr></td></table>';
     }
 
     if ($user_can_edit) {
@@ -627,7 +627,8 @@ sub gen_body {
         USER_NAME       => $USER->name,
         EID             => $eid,
         DEFAULT_TYPE    => 'note',
-        rows            => commify($exp->row_count),
+        ITEMS            => commify($exp->row_count),
+        FILE_SIZE       => commify(directory_size(get_experiment_path($exp->id))),
         IRODS_HOME      => get_irods_path(),
         WORKFLOW_ID     => $WORKFLOW_ID,
         STATUS_URL      => 'jex/status/',

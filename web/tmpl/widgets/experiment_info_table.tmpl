@@ -1,7 +1,7 @@
-<table cellpadding="0" class="ui-widget-content ui-corner-all">
+<table cellpadding="0" class="border-top border-bottom">
     <tbody>
-    <tmpl_loop name="fields">
-        <tr>
+    <TMPL_LOOP name="fields">
+        <tr style="padding:3px;">
             <td class="title5">
                 <tmpl_var name="title"/>:
             </td>
@@ -9,29 +9,28 @@
                 <tmpl_var name="value"/>
             </td>
         </tr>
-    </tmpl_loop>
+    </TMPL_LOOP>
     </tbody>
 </table>
 <div class="panel coge-buttonset">
-    <tmpl_if name="editable">
-            <span class="ui-button ui-corner-all" onclick="edit_experiment_info();">
-                Edit Info
-            </span>
-            <span class="ui-button ui-corner-all" onclick="$('#experiment_tag_edit_box').dialog('open');">
-                Add Tag
-            </span>
-        <tmpl_if name="restricted">
-            <span class="ui-button ui-corner-all" onclick="make_experiment_public();">
-                Make Public
-            </span>
-        <tmpl_else>
-            <span class="ui-button ui-corner-all" onclick="make_experiment_private();">
-                Make Private
-            </span>
-        </tmpl_if>
-    </tmpl_if>
-
+    <TMPL_IF name="editable">
+        <span class="ui-button ui-corner-all" onclick="edit_experiment_info();">
+            Edit Info
+        </span>
+        <span class="ui-button ui-corner-all" onclick="$('#experiment_tag_edit_box').dialog('open');">
+            Add Tag
+        </span>
+        <TMPL_IF name="restricted">
+        <span class="ui-button ui-corner-all" onclick="make_experiment_public();">
+            Make Public
+        </span>
+        <TMPL_ELSE>
+        <span class="ui-button ui-corner-all" onclick="make_experiment_private();">
+            Make Private
+        </span>
+        </TMPL_IF>
+    </TMPL_IF>
     <a style="color: inherit;" class="ui-button ui-corner-all" href="<tmpl_var name=genome_view_url>">
-        View
+        Browse
     </a>
 </div>
