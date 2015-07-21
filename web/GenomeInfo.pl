@@ -179,14 +179,14 @@ sub get_genome_info_details {
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
     $html .= "</td></tr>";
-    if ( my $exp_count = $dsg->experiments->count( { deleted => 0 } ) ) {
-        $html .= qq{<tr><td class="title5">Experiment count:</td>};
-        $html .=
-            qq{<td class="data5"><span class=link onclick=window.open('ExperimentList.pl?dsgid=}
-          . $dsg->id . "')>"
-          . $exp_count
-          . "</span></td></tr>";
-    }
+#    if ( my $exp_count = $dsg->experiments->count( { deleted => 0 } ) ) {
+#        $html .= qq{<tr><td class="title5">Experiment count:</td>};
+#        $html .=
+#            qq{<td class="data5"><span class=link onclick=window.open('ExperimentList.pl?dsgid=}
+#          . $dsg->id . "')>"
+#          . $exp_count
+#          . "</span></td></tr>";
+#    }
     $html .= "</table>";
 
     $html .= qq{<div class="left coge-table-header">Features</div>}
