@@ -656,17 +656,18 @@ sub _get_experiment_info {
 
     my $tags;
     foreach my $tag ( $exp->tags ) {
+       $tags .= '<span class="coge-tag">';
        $tags .= $tag->name;
        $tags .= ": " . $tag->description if $tag->description;
-
        if ($allow_edit) {
            $tags .=
                "<span onClick=\"remove_experiment_tag({eid: '"
              . $exp->id
              . "', etid: '"
              . $tag->id
-             . "'});\" class=\"link ui-icon ui-icon-trash\"></span>";
+             . "'});\" class=\"link ui-icon ui-icon-close\"></span>";
        }
+       $tags .= '</span> ';
     }
 
     my $view_link = "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid";
