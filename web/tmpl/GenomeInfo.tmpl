@@ -75,7 +75,7 @@ $(document).ready(function() {
     set_annotation_table();
 
     init_annotation_dialog(genome_id, default_type);
-
+    
     // Open status dialog
     if (job_id) {
         reset_log();
@@ -1212,10 +1212,13 @@ function get_experiments(e) {
             fname: 'get_experiments',
             gid: genome_id
         },
-
-        success:function(data) {
-            experiments.hide().html(data);
-            experiments.slideDown();
+        success:function(html) {
+            experiments
+            	.hide()
+            	.html(html)
+            	.slideDown();
+            var count = experiments.find('span').length;
+            $('#exp_count').html('('+count+')').show();
         }
     });
 }
@@ -1335,7 +1338,7 @@ function get_experiments(e) {
     </tr>
 </table>
 
-<div class="bold text" style="padding-top:1em;">Experiments <TMPL_IF NAME="EXP_COUNT">(<TMPL_VAR NAME="EXP_COUNT">)</TMPL_IF></div>
+<div class="bold text" style="padding-top:1em;">Experiments <span id="exp_count" <TMPL_UNLESS NAME="EXP_COUNT">class="hidden"</TMPL_UNLESS> >(<TMPL_VAR NAME="EXP_COUNT">)</span></div>
 <TMPL_IF NAME='EXPERIMENTS'>
     <table class="small border-top border-bottom">
         <tr>
