@@ -131,7 +131,9 @@ sub create_notebook {
             db          => $db,
             user_id     => $user->id,
             page        => "$page",
-            description => 'create notebook id' . $notebook->id
+            description => 'create notebook id' . $notebook->id,
+            parent_id   => $notebook->id,
+            parent_type => 1 #FIXME magic number
         );
     }
 

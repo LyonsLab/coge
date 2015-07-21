@@ -326,7 +326,7 @@ sub get_item_info {
         return unless $log;
         
         $html .=
-            '<b>Workflow id' . $log->workflow_id . '</b><br>'
+            '<b>Workflow id' . $log->parent_id . '</b><br>'
           . '<b>Type:</b> ' . $log->page . '<br>'
           . '<b>Description:</b> ' . $log->description . '<br>'
           . '<b>Date:</b> ' . $log->time . '<br>'
@@ -397,11 +397,14 @@ sub delete_items {
 
         # Record in log
         if ($type_name) {
+            my $item_type_code = node_types{$item_type};
 			CoGe::Accessory::Web::log_history(
 			    db          => $DB,
 			    user_id     => $USER->id,
 			    page        => $PAGE_TITLE,
-			    description => "delete $type_name id$item_id"
+			    description => "delete $type_name id$item_id",
+			    parent_id   => $item_id,
+			    parent_type => $item_type_code
 			);
         }
     }
@@ -466,11 +469,14 @@ sub undelete_items {
 
         # Record in log
         if ($type_name) {
+            my $item_type_code = node_types{$item_type};
 			CoGe::Accessory::Web::log_history(
 			    db          => $DB,
 			    user_id     => $USER->id,
 			    page        => $PAGE_TITLE,
-			    description => "undelete $type_name id$item_id"
+			    description => "undelete $type_name id$item_id",
+			    parent_id   => $item_id,
+			    parent_type => $item_type_code
 			);
         }
     }
@@ -1087,7 +1093,9 @@ sub add_users_to_group {
 		        db          => $DB,
 		        user_id     => $USER->id,
 		        page        => $PAGE_TITLE,
-		        description => 'add user id' . $user->id . ' to group id' . $target_id
+		        description => 'add user id' . $user->id . ' to group id' . $target_id,
+		        parent_id   => $target_id,
+		        parent_type => 6 #FIXME magic number
 		    );
 	    }
 	}
@@ -1138,7 +1146,9 @@ sub remove_user_from_group {
 		    db          => $DB,
 		    user_id     => $USER->id,
 		    page        => $PAGE_TITLE,
-		    description => 'remove user id' . $user_id . ' from group id' . $target_id
+		    description => 'remove user id' . $user_id . ' from group id' . $target_id,
+		    parent_id   => $target_id,
+		    parent_type => 6 #FIXME magic number
 		);
     }
 
@@ -1355,8 +1365,8 @@ sub get_jobs {
     
     # Get all jobs from the log table
     my @entries = $USER->logs(
-        {
-            workflow_id => { "!=" => undef},
+        {   parent_id => { "!=" => undef},
+            -or => { parent_type => 7, parent_type => undef }, #FIXME hardcoded to "workflow"
             type => { '!=' => 0 },
             #time => { '>=' => $last_update } # for faster refresh
         },
@@ -1364,7 +1374,7 @@ sub get_jobs {
     );
     
     # Add status info from job engine for currently active jobs
-    my @workflow_ids = map { $_->workflow_id } @entries;
+    my @workflow_ids = map { $_->parent_id } @entries;
     my $workflows = $JEX->find_workflows(\@workflow_ids);
     my %workflowsByID;
     foreach (@{$workflows}) {
@@ -1379,7 +1389,7 @@ sub get_jobs {
     # Extract relevant fields
     my @results;
     foreach my $entry (@entries) {
-        my $wid = $entry->workflow_id;
+        my $wid = $entry->parent_id;
         next unless defined $workflowsByID{$wid};
         
         push @results, {
@@ -1669,7 +1679,9 @@ sub create_new_group {
 		db          => $DB,
 		user_id     => $USER->id,
 		page        => $PAGE_TITLE,
-		description => 'create user group id' . $group->id
+		description => 'create user group id' . $group->id,
+		parent_id   => $group->id,
+		parent_type => 6 #FIXME magic number
 	);
 
     return 1;
@@ -1717,7 +1729,9 @@ sub create_new_notebook {
         db          => $DB,
         user_id     => $USER->id,
         page        => "$PAGE_TITLE",
-        description => 'create notebook id' . $list->id
+        description => 'create notebook id' . $list->id,
+        parent_id   => $list->id,
+        parent_type => 1 #FIXME magic number
     );
 
     return 1;

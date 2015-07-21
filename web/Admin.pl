@@ -1002,6 +1002,8 @@ sub modify_item {
     my $type = $opts{type};
     #print STDERR "$mod $type $id\n";
     return 0 unless $id;
+    my $item_type = $node_types->{lc($type)}; # mdb added 7/21/15 for newsfeed
+    die unless $item_type;
 
     my $item = $coge->resultset($type)->find($id);
     return 0 unless $item;
@@ -1022,7 +1024,9 @@ sub modify_item {
         db          => $coge,
         user_id     => $USER->id,
         page        => "Admin",
-        description => "$log_message $type id $id"
+        description => "$log_message $type id $id",
+        parent_id   => $id,
+        parent_type => $item_type
     );
 
     return 1;
@@ -1095,7 +1099,9 @@ sub add_users_to_group {
                 db          => $coge,
                 user_id     => $USER->id,
                 page        => "Admin",
-                description => 'add user id' . $user->id . ' to group id' . $target_id
+                description => 'add user id' . $user->id . ' to group id' . $target_id,
+                parent_id   => $target_id,
+                parent_type => 6 #FIXME magic number
             );
         }
     }
@@ -1146,7 +1152,9 @@ sub remove_user_from_group {
             db          => $coge,
             user_id     => $USER->id,
             page        => "Admin",
-            description => 'remove user id' . $user_id . ' from group id' . $target_id
+            description => 'remove user id' . $user_id . ' from group id' . $target_id,
+            parent_id   => $target_id,
+            parent_type => 6
         );
     }
 

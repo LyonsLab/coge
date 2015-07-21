@@ -450,7 +450,9 @@ CoGe::Accessory::Web::log_history(
     user_id     => $user->id,
     page        => "LoadAnnotation",
     description => 'load dataset id' . $dataset->id,
-    link        => 'GenomeView.pl?gid=' . $genome->id
+    link        => 'GenomeView.pl?gid=' . $genome->id,
+    parent_id   => $genome->id,
+    parent_type => 2 #FIXME magic number
 );
 print $log "log: All done!\n";
 close($log);
