@@ -576,7 +576,7 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
     }
 
     return
-        "<table cellpadding=0 class='ui-widget-content ui-corner-all'>"
+        "<table cellpadding=0 class='border-top border-bottom'>"
       . $anno_obj->to_String
       . "</table>";
 }
