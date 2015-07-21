@@ -738,7 +738,9 @@ sub add_item_to_list {
         user_id     => $USER->id,
         page        => "NotebookView",
         description => "add $type_name id$item_id to notebook $lid",
-        link        => "NotebookView.pl?nid=$lid"
+        link        => "NotebookView.pl?nid=$lid",
+        parent_id   => $lid,
+        parent_type => 1 #FIXME magic number
     );
 
     return 1;
@@ -773,7 +775,9 @@ sub remove_list_item {
             user_id     => $USER->id,
             page        => "NotebookView",
             description => "remove $type_name id$item_id from notebook $lid",
-            link        => "NotebookView.pl?nid=$lid"
+            link        => "NotebookView.pl?nid=$lid",
+            parent_id   => $lid,
+            parent_type => 1 #FIXME magic number
         );
     }
 

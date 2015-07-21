@@ -1400,7 +1400,8 @@ sub go_synfind {
         description => $log_msg,
         page        => $PAGE_TITLE,
         link        => $tiny_synfind_link,
-        workflow_id => $response->{id}
+        parent_id   => $response->{id},
+        parent_type => 7 #FIXME magic numbe
     ) if $response and $response->{id};
 
     my $log_url = $cogeweb->logfile;

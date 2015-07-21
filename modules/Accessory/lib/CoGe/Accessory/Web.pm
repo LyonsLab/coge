@@ -726,7 +726,8 @@ sub log_history {
     my %opts        = @_;
     my $db          = $opts{db};
     my $user_id     = $opts{user_id};
-    my $workflow_id = $opts{workflow_id};
+    my $parent_id   = $opts{parent_id};
+    my $parent_type = $opts{parent_type};
     my $page        = $opts{page};
     my $description = $opts{description};
     my $type        = $opts{type} || 0;
@@ -742,7 +743,8 @@ sub log_history {
             type        => $type,
             description => $description,
             link        => $link,
-            workflow_id => $workflow_id
+            parent_id   => $parent_id,
+            parent_type => $parent_type
         }
     );
 }

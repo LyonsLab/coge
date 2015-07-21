@@ -296,7 +296,9 @@ sub add_user_to_group {
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
-        description => 'add user id' . $uid . ' to group id' . $ugid
+        description => 'add user id' . $uid . ' to group id' . $ugid,
+        parent_id   => $ugid,
+        parent_type => 6 #FIXME magic number
     );
 
     return 1;
@@ -345,7 +347,9 @@ sub remove_user_from_group {
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
-        description => 'remove user id' . $uid . ' from group id' . $ugid
+        description => 'remove user id' . $uid . ' from group id' . $ugid,
+        parent_id   => $ugid,
+        parent_type => 6 #FIXME magic number
     );
 
     return 1;
