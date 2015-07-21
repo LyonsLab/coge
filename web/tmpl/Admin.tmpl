@@ -114,6 +114,7 @@ svg {
 		<li><a href="#tabs-4">Graph</a></li>
 		<li><a href="#tabs-5">Reports</a></li>
 		<li><a href="#tabs-6">Taxonomy</a></li>
+		<li><a href="#tabs-7">System Load</a></li>
 	</ul>
 	<div id="tabs-1">
 		<div id="master" style="position:relative;">
@@ -349,6 +350,14 @@ svg {
 			<input id="tree_filter" type="text" onkeyup="filter_tree()">
 		</span>
 		<span id="taxonomic_tree"></span>
+	</div>
+	<div id="tabs-7">
+		<select style="margin-left:10px;margin-right:20px;margin-bottom:20px" onchange="init_line_graph(this.selectedIndex)">
+			<option value="CoGe">CoGe</option>
+			<option value="GeCo">GeCo</option>
+		</select>
+		<span id="system_graph"></span>
+		<span id="system_graph2" class="hidden"></span>
 	</div>
 </div>
 

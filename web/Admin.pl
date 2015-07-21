@@ -90,15 +90,13 @@ sub gen_html {
 }
 
 sub gen_body {
-
-	#print STDERR "BODY\n";
 	# Hide this page if the user is not an Admin
-	#unless ( $USER->is_admin ) {
-	#	my $template =
-	#	  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
-	#	$template->param( ADMIN_ONLY => 1 );
-	#	return $template->output;
-	#}
+	unless ( $USER->is_admin ) {
+		my $template =
+		  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+		$template->param( ADMIN_ONLY => 1 );
+		return $template->output;
+	}
 
 	my $template =
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
