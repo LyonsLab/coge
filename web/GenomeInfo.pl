@@ -115,7 +115,7 @@ sub get_genome_info_details {
 
     #TABLE
     $html .= qq{<div class="left coge-table-header">Statistics</div>};
-    $html .= qq{<table style="padding: 2px; margin-bottom: 5px;" class="ui-corner-all ui-widget-content">};
+    $html .= qq{<table style="padding: 2px; margin-bottom: 5px;" class="border-top">};
     my $total_length = $dsg->length;
 
     # Count
@@ -190,7 +190,7 @@ sub get_genome_info_details {
     $html .= "</table>";
 
     $html .= qq{<div class="left coge-table-header">Features</div>}
-          .  qq{<div id="genome_features" style="margin-bottom: 5px;" class="small padded link ui-widget-content ui-corner-all" onclick="get_features('#genome_features');" >Click for Features</div>};
+          .  qq{<div id="genome_features" style="margin-bottom: 5px;" class="small padded link border-top" onclick="get_features('#genome_features');" >Click for Features</div>};
 
     return $html;
 }
@@ -253,14 +253,12 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     }
     my $gc_args;
     $gc_args = "chr: '$chr'," if defined $chr;
-    $gc_args .= "dsid: $dsid,"
-      if $dsid
-    ; #set a var so that histograms are only calculated for the dataset and not hte genome
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte genome
     $gc_args .= "typeid: ";
     my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
     $feat_list_string .= ";chr=$chr" if defined $chr;
     my $feat_string;
-    $feat_string .= qq{<table style="padding: 2px; margin-bottom: 5px;" class="ui-corner-all ui-widget-content">};
+    $feat_string .= qq{<table style="padding: 2px; margin-bottom: 5px;">};
 
     foreach my $type ( sort { $a cmp $b } keys %$feats ) {
         $feat_string .= "<tr valign=top>";
@@ -1622,7 +1620,7 @@ sub get_annotations {
 
     my $html;
     if ($num_annot) {
-        $html .= '<table id="genome_annotation_table" class="ui-widget-content ui-corner-all small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        $html .= '<table id="genome_annotation_table" class="border-top border-bottom small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
         foreach my $group ( sort keys %groups ) {
             my $first = 1;
             foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
@@ -1659,7 +1657,7 @@ sub get_annotations {
         $html .= '</tbody></table>';
     }
     elsif ($user_can_edit) {
-        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There are no additional metadata items for this genome.</tr></td></table>';
+        $html .= '<table class="border-top border-bottom small padded note"><tr><td>There are no additional metadata items for this genome.</tr></td></table>';
     }
 
     if ($user_can_edit) {
