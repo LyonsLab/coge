@@ -15,7 +15,7 @@ const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
 const IRODS_HOME    = '<TMPL_VAR NAME=IRODS_HOME>';
 
-var EID = '<TMPL_VAR NAME="EID">';
+var EXPERIMENT_ID = '<TMPL_VAR NAME="EXPERIMENT_ID">';
 var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
 var newLoad = false;
 
@@ -32,8 +32,6 @@ $(document).ready(function() {
 
     $(".dialog_box").dialog({autoOpen: 0, width: 450});
 
-    //$("#progress_dialog").dialog({modal: true});
-
     $("#edit_tag_name").autocomplete({
         source: function() { get_experiment_tags(); },
         select: function(event, ui) { get_type_description( ui.item.label ); }
@@ -41,7 +39,7 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog(EID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    init_annotation_dialog(EXPERIMENT_ID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 
     // Initialize CoGe packages
     coge.services.init({
