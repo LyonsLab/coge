@@ -237,7 +237,7 @@ sub generate_additional_metadata {
         }
         else { # gsnap
             push @annotations, qq{note|gmap_build};
-            push @annotations, 'note|gsnap ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-n', '-Q', '--gap-mode', '--nofails'));
+            push @annotations, 'note|gsnap ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-N', '-n', '-Q', '--gap-mode', '--nofails'));
         }
     }
     

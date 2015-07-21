@@ -1123,6 +1123,7 @@ sub create_gsnap_job {
     my $gapmode = $params->{'--gap-mode'} // "none"; #/
     my $Q = $params->{'-Q'} // 1; #/
     my $n = $params->{'-n'} // 5; #/
+    my $N = $params->{'-N'} // 1; #/
     my $nofails = $params->{'--nofails'} // 1; #/
 
     my $name = basename($gmap);
@@ -1136,7 +1137,7 @@ sub create_gsnap_job {
         ["-d", $name, 0],
         ["--nthreads=32", '', 0],
         ["-n", $n, 0],
-        ["-N", '1', 0],
+        ["-N", $N, 0],
         ["--format=sam", '', 0],
         ["--gmap-mode=$gapmode", '', 1],
         ["--batch=5", '', 0],
@@ -1227,7 +1228,6 @@ sub add_items_to_notebook_job {
     my $user = $opts{user};
     my $wid = $opts{wid};
     my $notebook_id = $opts{notebook_id};
-    my $annotations = $opts{annotations}; # array ref
     my $staging_dir = $opts{staging_dir};
     my $done_files = $opts{done_files};
     
@@ -1238,14 +1238,10 @@ sub add_items_to_notebook_job {
     
     my $log_file = catfile($staging_dir, "add_items_to_notebook", "log.txt");
     
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
-    
     my $args = [
         ['-uid', $user->id, 0],
         ['-wid', $wid, 0],
         ['-notebook_id', $notebook_id, 0],
-        ['-annotations', qq{"$annotations_str"}, 0],
         ['-config', $CONF->{_CONFIG_PATH}, 1],
         ['-log', $log_file, 0]
     ];

@@ -3,6 +3,7 @@ use base 'CGI::Application';
 
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Core::Storage qw( get_genome_seq );
 use Data::Dumper;
 
@@ -43,7 +44,9 @@ sub get {
 
     # Force browser to download as attachment
     if ( not defined $chr or $chr eq '' ) {
-        $self->header_add( -attachment => "genome_$gid.faa" );
+        my $genome_name = sanitize_name($genome->organism->name);
+        $genome_name = 'genome_'.$gid unless $genome_name;
+        $self->header_add( -attachment => "$genome_name.faa" );
     }
 
     # Get sequence from file

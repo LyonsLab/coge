@@ -3,7 +3,6 @@ package CoGe::Builder::Export::Fasta;
 use Moose;
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
-use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
 use CoGe::Builder::CommonTasks;
@@ -27,9 +26,11 @@ sub build {
     $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
     # Get genome data file path
-    return unless (defined $self->params && $self->params->{gid});
-    my $gid = $self->params->{gid};
+    return unless (defined $self->params && ($self->params->{gid} || $self->params->{genome_id}));
+    my $gid = $self->params->{gid} || $self->params->{genome_id};
+    return unless $gid;
     my $genome = $self->db->resultset("Genome")->find($gid);
+    return unless $genome;
     my $genome_file = get_genome_file($gid);
 
     # Determine name of exported file

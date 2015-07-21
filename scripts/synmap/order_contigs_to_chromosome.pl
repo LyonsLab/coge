@@ -15,7 +15,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::SynMap_report;
 
-our ($synfile, $OUTPUT, $coge, $DEBUG, $join, $CONFIG, $CONFIG_FILE, $GUNZIP, $TAR);
+our ($synfile, $OUTPUT, $coge, $DEBUG, $join, $flip, $CONFIG, $CONFIG_FILE, $GUNZIP, $TAR);
 
 GetOptions(
     "config|cfg=s" => \$CONFIG_FILE,
@@ -29,6 +29,8 @@ GetOptions(
     #Is the output sequence going to be joined together using "N"s for gaps.
     #Set to a number to be true, and whatever number it is will be the number of N's used to join sequence.
     "join=i"       => \$join,
+    "flip=i"             => \$flip, #flip which genome is reference and which is to be assembled
+
 );
 
 $join = 100 unless defined $join;
@@ -60,7 +62,9 @@ gunzip( $synfile . ".gz" ); #EL: gunzip was returning the input filename with th
 my ( $chr1, $chr2, $dsgid1, $dsgid2 ) =
   $synmap_report->parse_syn_blocks( file => $synfile );
 ( $chr1, $chr2, $dsgid1, $dsgid2 ) = ( $chr2, $chr1, $dsgid2, $dsgid1 )
-  if scalar @$chr1 < scalar @$chr2;
+  if scalar @$chr2 > scalar @$chr1;
+( $chr1, $chr2, $dsgid1, $dsgid2 ) = ( $chr2, $chr1, $dsgid2, $dsgid1 )
+  if $flip;
 
 my ($dsg1) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid1 } );
 #my ($dsg1) = $coge->resultset('Genome')->search( { 'me.genome_id' => $dsgid1 },
@@ -83,14 +87,14 @@ unless ($dsg2) {
 my $logfile = "log.txt";
 open( LOG, ">" . $logfile );
 my $org1 =
-    "Reference genome: "
+    "Pseudoassembly genome: "
   . $dsg1->organism->name . "v"
   . $dsg1->version . " "
   . $dsg1->source->[0]->name . " ";
 $org1 .= $dsg1->name if $dsg1->name;
 $org1 .= " (dsgid" . $dsg1->id . "): " . $dsg1->genomic_sequence_type->name;
 my $org2 .=
-    "Pseudoassembly genome: "
+    "Reference genome: "
   . $dsg2->organism->name . "v"
   . $dsg2->version . " "
   . $dsg2->source->[0]->name . " ";
@@ -232,19 +236,20 @@ sub print_sequence {
     my %opts   = @_;
     my $header = $opts{header};
     my $seq    = $opts{seq};
+    return unless $seq;
     #      $Text::Wrap::columns=80;
     print FAA ">" . $header, "\n";
     #      print FAA wrap('','',$seq),"\n";
     print FAA $seq, "\n";
 }
 
-sub gunzip {
-    my $file = shift;
-    return $file unless $file;
-    return $file unless $file =~ /\.gz$/;
-    my $tmp = $file;
-    $tmp =~ s/\.gz$//;
-    return $tmp if -r $tmp;
-    `$GUNZIP $file` if -r $file;
-    return -r $tmp ? $tmp : $file;
-}
+#sub gunzip {
+#    my $file = shift;
+#    return $file unless $file;
+#    return $file unless $file =~ /\.gz$/;
+#    my $tmp = $file;
+#    $tmp =~ s/\.gz$//;
+#    return $tmp if -r $tmp;
+#    `$GUNZIP $file` if -r $file;
+#    return -r $tmp ? $tmp : $file;
+#}

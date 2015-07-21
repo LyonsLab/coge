@@ -6,7 +6,7 @@ function get_experiment_info() {
     $.ajax({
         data: {
             fname: 'get_experiment_info',
-            eid: EID,
+            eid: EXPERIMENT_ID,
         },
         success : function (data) {
             $('#experiment_info').html(data);
@@ -18,7 +18,7 @@ function edit_experiment_info() {
     $.ajax({
         data: {
             fname: 'edit_experiment_info',
-            eid: EID,
+            eid: EXPERIMENT_ID,
         },
         success : function(data) {
             var obj = jQuery.parseJSON(data);
@@ -51,7 +51,7 @@ function update_experiment_info () {
     $.ajax({
         data: {
             fname: 'update_experiment_info',
-            eid: EID,
+            eid: EXPERIMENT_ID,
             name: name,
             desc: desc,
             source_id: source_id,
@@ -80,7 +80,7 @@ function make_experiment_public () {
     $.ajax({
         data: {
             fname: 'make_experiment_public',
-            eid: EID
+            eid: EXPERIMENT_ID
         },
         success : function(val) {
             get_experiment_info();
@@ -92,7 +92,7 @@ function make_experiment_private () {
     $.ajax({
         data: {
             fname: 'make_experiment_private',
-            eid: EID
+            eid: EXPERIMENT_ID
         },
         success : function(val) {
             get_experiment_info();
@@ -104,7 +104,7 @@ function add_experiment_type () {
     $.ajax({
         data: {
             fname: 'add_experiment_tag',
-            eid: EID
+            eid: EXPERIMENT_ID
         },
         success : function(data) {
             $("#experiment_tag_edit_box").dialog({
@@ -126,7 +126,7 @@ function add_tag_to_experiment () {
         $.ajax({
             data: {
                 fname: 'add_tag_to_experiment',
-                eid: EID,
+                eid: EXPERIMENT_ID,
                 name: name,
                 description: description
             },
@@ -140,7 +140,7 @@ function add_tag_to_experiment () {
 }
 
 function reset_location() {
-	window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EID);
+	window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EXPERIMENT_ID);
 }
 
 function download_files() {
@@ -154,7 +154,7 @@ function download_files() {
     $.ajax({
         data: {
             fname: "get_file_urls",
-            eid: EID
+            eid: EXPERIMENT_ID
         },
         dataType: "json",
         success : function(json) {
@@ -193,7 +193,7 @@ function toggle_load_log() { // TODO: shared with GenomeInfo.pl, move to module
 			$.ajax({
 		        data: {
 		            fname: 'get_load_log',
-		            eid: EID
+		            eid: EXPERIMENT_ID
 		        },
 		        success: function(data) {
 		        	if (data)
@@ -228,7 +228,7 @@ function export_data() {
     $.ajax({
         data: {
             fname: 'export_experiment_irods',
-            eid: EID
+            eid: EXPERIMENT_ID
         },
         success : function(filename) {
             if (filename) {  // finished successfully
@@ -359,11 +359,11 @@ var snpMenu = {
 			type: 'analyze_snps',
 			requester: {
 				page: PAGE_NAME,
-				url: PAGE_NAME + "?eid=" + EID,
+				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID,
 				user_name: USER_NAME
 			},
 			parameters: {
-				eid: EID,
+				eid: EXPERIMENT_ID,
 				snp_params: params
 			}
 		};
@@ -381,7 +381,7 @@ var snpMenu = {
 		  		}
 		  		
 		        // Start status update
-		  		window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EID + "&wid=" + response.id); // Add workflow id to browser URL
+		  		window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EXPERIMENT_ID + "&wid=" + response.id); // Add workflow id to browser URL
 		  		coge.progress.update(response.id, response.site_url);
 		    },
 		    function(jqXHR, textStatus, errorThrown) { // error callback
@@ -421,7 +421,7 @@ function remove_experiment_type (opts) {
     $.ajax({
         data: {
             fname: 'remove_experiment_type',
-            eid: EID,
+            eid: EXPERIMENT_ID,
             etid: etid,
         },
         success : function(val) {
@@ -435,7 +435,7 @@ function remove_experiment_tag (opts) {
     $.ajax({
         data: {
             fname: 'remove_experiment_tag',
-            eid: EID,
+            eid: EXPERIMENT_ID,
             etid: etid,
         },
         success : function(val) {
@@ -448,7 +448,7 @@ function get_annotations() {
     $.ajax({
         data: {
             fname: 'get_annotations',
-            eid: EID,
+            eid: EXPERIMENT_ID,
         },
         success : function(data) {
             $('#experiment_annotations').html(data);
@@ -461,7 +461,7 @@ function remove_annotation (eaid) {
     $.ajax({
         data: {
             fname: 'remove_annotation',
-            eid: EID,
+            eid: EXPERIMENT_ID,
             eaid: eaid,
         },
         success : function() {

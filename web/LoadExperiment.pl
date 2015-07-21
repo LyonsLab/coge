@@ -58,8 +58,6 @@ $EMBED = $FORM->param('embed');
     upload_file             => \&upload_file,
     get_sources             => \&get_sources,
     create_source           => \&create_source,
-    search_genomes          => \&search_genomes,
-    search_users            => \&search_users,
     send_error_report       => \&send_error_report
 );
 

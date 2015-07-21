@@ -27,10 +27,7 @@ var coge = window.coge = (function(namespace) {
 		
 		search_genomes: function(search_term, opts) {
 			// TODO add param validation
-			var opts_str = '';
-			if (opts && opts.fast)
-				opts_str = '?fast=1';
-			return this._ajax("GET", BASE_URL + "genomes/search/" + search_term + "/" + opts_str);
+			return this._ajax("GET", BASE_URL + "genomes/search/" + search_term + "/", null, opts);
 		},
 			
 		search_notebooks: function(search_term) {
@@ -60,11 +57,23 @@ var coge = window.coge = (function(namespace) {
 			return this._ajax("GET", BASE_URL + "irods/list/" + path);
 		},
 		
-		_ajax: function(type, url, data) { //, success, error) {
+		_ajax: function(type, url, data, opts) { //, success, error) {
 			var self = this;
+			
+			// Build param list
+			var opts_str = '';
+			if (this.userName)
+				opts_str += "username=" + this.userName;
+			for (key in opts) {
+				if (opts_str)
+					opts_str += "&";
+				opts_str += key + "=" + opts[key];
+			}
+			
+			// Return deferred
 		    return $.ajax({
 				    	type: type,
-				    	url: url + "?username=" + this.userName,
+				    	url: url + (opts_str ? "?" + opts_str : ''),
 				    	dataType: "json",
 				        contentType: "application/json",
 				        xhrFields: {

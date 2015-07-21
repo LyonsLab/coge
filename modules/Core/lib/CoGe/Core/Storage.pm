@@ -28,7 +28,7 @@ LICENSE file included with this module.
 use strict;
 use warnings;
 
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults url_for);
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
@@ -664,12 +664,37 @@ sub get_workflow_results {
         return;
     }
     
+    my @all_results;
+    
+    # Get results from .results file
     my (undef, $results_path) = get_workflow_paths($user_name, $workflow_id);
     my $results_file = catfile($results_path, '.results');
-    
     my $results = CoGe::Accessory::TDS::read($results_file);
-    return unless ($results && $results->{results} && @{$results->{results}});
-    return $results->{results};
+    push @all_results, @{$results->{results}} if ($results && $results->{results} && @{$results->{results}});
+    
+    # Get results from path (legacy method)
+    if (-r $results_path) {
+        # Get list of result files in results path
+        opendir(my $fh, $results_path);
+        foreach my $file ( readdir($fh) ) {
+            my $fullpath = catfile($results_path, $file);
+            next unless -f $fullpath;
+            next if $file =~ /^\./;
+
+            my $name = basename($file);
+            push @all_results, {
+                type => 'http',
+                name => $name,
+                path => CoGe::Accessory::Web::url_for('api/v1/jobs/'.$workflow_id.'/results/'.$name,
+                    username => $user_name
+                ) # FIXME move api path into conf file ...?
+            };
+        }
+        closedir($fh);
+    }
+    
+    return unless @all_results;
+    return \@all_results;
 }
 
 sub get_workflow_results_file {
