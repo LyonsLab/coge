@@ -22,13 +22,13 @@ sub fetch {
         return;
     }
 
-    
+    # Fetch log entries
+    my @entries = $db->resultset('Log')->search({ parent_id => $id, parent_type => $type });
 
     $self->render(json => {
         id => int($id),
-        status => $job_status->{status},
-        tasks => \@tasks,
-        results => $results
+        type => 'blah',
+        entries => \@entries
     });
 }
 
