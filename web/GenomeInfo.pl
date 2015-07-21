@@ -272,23 +272,19 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         $feat_string .=
           qq{<td class="data5"valign=top align=right>} . commify( $feats->{$type}{count} );
 
-        $feat_string .= "<td><div id=" . $type . "_type class=\"link small\"
-  onclick=\"
-  \$('#gc_histogram').dialog('option','title', 'Histogram of GC content for "
+        $feat_string .= "<td><div id=" . $type . "_type class=\"link small\" onclick=\"\$('#gc_histogram').dialog('option','title', 'Histogram of GC content for "
           . $feats->{$type}{name} . "s');"
           . "get_feat_gc({$gc_args"
           . $feats->{$type}{id} . "})\">"
           . '%GC Hist</div>';
 
         $feat_string .= "<td>|</td>";
-        $feat_string .=
-"<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"
+        $feat_string .= "<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"
           . "&ftid="
           . $feats->{$type}{id}
           . ";gstid=$gstid')\">FeatList";
         $feat_string .= "<td>|</td>";
-        $feat_string .=
-"<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?ftid="
+        $feat_string .= "<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?ftid="
           . $feats->{$type}{id} . ";";
         $feat_string .= "dsgid=$dsgid;" if $dsgid;
         $feat_string .= "dsid=$dsid;"   if $dsid;
@@ -311,8 +307,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 
         if ( $feats->{$type}{name} eq "CDS" ) {
             $feat_string .= "<td>|</td>";
-            $feat_string .=
-"<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?p=1;ftid="
+            $feat_string .= "<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?p=1;ftid="
               . $feats->{$type}{id};
             $feat_string .= ";dsgid=$dsgid" if $dsgid;
             $feat_string .= ";dsid=$dsid"   if $dsid;
@@ -339,26 +334,26 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 
         # Wobble codon
         $feat_string .=qq{<tr><td colspan="13" class="small link" id="wobble_gc"}
-        . qq{ onclick="get_content_dialog('#wobble_gc_histogram', 'get_wobble_gc', '$param');">}
-        . qq{Histogram of wobble codon GC content}
-        . qq{</td></tr>};
+            . qq{ onclick="get_content_dialog('#wobble_gc_histogram', 'get_wobble_gc', '$param');">}
+            . qq{Histogram of wobble codon GC content}
+            . qq{</td></tr>};
 
         # Diff content
         $feat_string .= qq{<tr><td colspan="13" class="small link" id="wobble_gc_diff"}
-        . qq{ onclick="get_content_dialog('#wobble_gc_diff_histogram','get_wobble_gc_diff', '$param');">}
-        . qq{Histogram of diff(CDS GC vs. wobble codon GC) content}
-        . qq{</td></tr>};
+            . qq{ onclick="get_content_dialog('#wobble_gc_diff_histogram','get_wobble_gc_diff', '$param');">}
+            . qq{Histogram of diff(CDS GC vs. wobble codon GC) content}
+            . qq{</td></tr>};
 
         #Codon usage tables
         $feat_string .= qq{<tr><td colspan="13" class="small link" id="codon_usage"}
-        . qq{ onclick="get_content_dialog('#codon_usage_table', 'get_codon_usage', '$param');">}
-        . qq{Codon usage table}
-        . qq{</td></tr>};
+            . qq{ onclick="get_content_dialog('#codon_usage_table', 'get_codon_usage', '$param');">}
+            . qq{Codon usage table}
+            . qq{</td></tr>};
 
         #Amino acid usage table
         $feat_string .= qq{<tr><td colspan="13" class="small link" id="aa_usage"}
-        . qq{ onclick="open_aa_usage_table('$param');">}
-        . qq{Amino acid usage table</td></tr>};
+            . qq{ onclick="open_aa_usage_table('$param');">}
+            . qq{Amino acid usage table</td></tr>};
     }
 
     $feat_string .= "</table>";
