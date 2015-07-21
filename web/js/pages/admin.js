@@ -17,6 +17,8 @@ var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mou
 var reports_grid;
 var histogram;
 var tree;
+var system_graph;
+var system_graph2;
 
 $(function () {
 	$( "#tabs" ).tabs({
@@ -26,17 +28,20 @@ $(function () {
             schedule_update(5000);
         },
 		show: function(event, ui) {
-			if(current_tab == 1 && !jobs_init) {
+			if (current_tab == 1 && !jobs_init) {
 				init_jobs_grid();
 			}
-			if(current_tab == 2 && !hist_init) {
+			if (current_tab == 2 && !hist_init) {
 				init_hist_grid();
 			}
-			if(current_tab == 4 && !reports_grid) {
+			if (current_tab == 4 && !reports_grid) {
 				init_reports();
 			}
-			if(current_tab == 5) {
-				init_taxon_tree("");
+			if (current_tab == 5) {
+				init_taxon_tree("taxonomic_tree");
+			}
+			if (current_tab == 6) {
+				init_system_load();
 			}
 		}
     });
@@ -1039,7 +1044,6 @@ function remove_user_from_group(user_id, id, type) {
 
 
 function modify_item(id, type, modification) {
-	console.log(type);
 	$.ajax({
 		data: {
 			fname: 'modify_item',
@@ -1054,7 +1058,6 @@ function modify_item(id, type, modification) {
 }
 
 function wait_to_search(search_func, search_term) {
-	//console.log(search_term);
 	pageObj.search_term = search_term;
 
 	if (pageObj.time) {
@@ -1065,7 +1068,6 @@ function wait_to_search(search_func, search_term) {
 	pageObj.time = setTimeout(
 		function() {
 			search_func(pageObj.search_term);
-			//console.log("request sent");
 		},
 		1000
 	);
@@ -1083,7 +1085,6 @@ function get_jobs() {
 	        running_only: running_only,
 	    },
 	    success: function(data) {
-	    	//console.log(data.jobs);
 	        jobs.load(data.jobs);
 	        entries = data.jobs.length;
 	        $("#filter_busy").hide();
@@ -1215,7 +1216,6 @@ function get_history() {
 			time_range: 0,
 		},
 		success : function(data) {
-			//console.log(data[0]);
 			hist.load(data);
 			hist_entries = data.length;
 			last_hist_update = data[0].date_time;
@@ -1231,7 +1231,6 @@ function get_history() {
 }
 
 function update_history() {
-	//console.log(last_hist_update);
 	$.ajax({
 		dataType: 'json',
 		data: {
@@ -1241,7 +1240,6 @@ function update_history() {
 			time_range: 0,
 		},
 		success: function(data) {
-			console.log(data);
 			if(data[0]) {
 				hist.insert(data);
 				last_hist_update = data[0].date_time;
@@ -1305,7 +1303,6 @@ var w = Math.max(800, $(window).width()-200),
 	group_force;
 
 function init_graph(selectId) {
-	//console.log(selectId);
 	if(selectId == 1) {
 		$('#group_chart').hide();
 		$('#group_legend').hide();
@@ -1316,7 +1313,6 @@ function init_graph(selectId) {
 			user_graph_init = true;
 			$("#loading4").show();
 			d3.json("?fname=get_user_nodes", function(json) {
-				console.log(json);
 				var root = json;
 				var nodes = flatten(root);
 				nodes.forEach(function(d) {
@@ -1389,7 +1385,6 @@ function init_graph(selectId) {
 			group_graph_init = true;
 			$("#loading4").show();
 			d3.json("?fname=get_group_nodes", function(json) {
-				console.log(json);
 				var root = json;
 				var nodes = flatten(root);
 				nodes.forEach(function(d) {
@@ -1550,7 +1545,6 @@ Force.prototype.toggle_children = function(d) {
 		d.children = d._children;
 		d._children = null;
 	}
-	//console.log(d.size);
 }
 
 Force.prototype.click = function(d) {
@@ -1584,7 +1578,6 @@ function flatten(root) {
 }
 
 function color(d, new_filters) {
-	//console.log(new_filters);
 	if(!new_filters[0].show && !new_filters[1].show) {
 		//normal filter
 		if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
@@ -1644,7 +1637,6 @@ Force.prototype.moveItems = (function(){
            
         for(var i=todoLink ; i < goal ; i++){
             l = self.link[0][i];
-            //console.log(l);
             l.setAttribute('x1', l.__data__.source.x);
             l.setAttribute('y1', l.__data__.source.y);
             l.setAttribute('x2', l.__data__.target.x);
@@ -1762,7 +1754,6 @@ $.extend(DataGrid.prototype, {
 					json.data[i].push(total_items);
 				}
 				self.data = json;
-				console.log(self.data);
 				$('#' + element + '_table').dataTable(self.data);
 				$('#' + element).show();
 				if (self.selection != "total") {
@@ -1962,9 +1953,6 @@ $.extend(Histogram.prototype, {
 		var newValues = [];
 		for (var i = 0; i < this.values.length; i++) {
 			if (this.values[i] >= extent[0] && this.values[i] <= extent[1]) {
-				console.log(extent[0]);
-				console.log(this.values[i]);
-				console.log("");
 				newValues.push(this.values[i]);
 			}
 		}
@@ -2008,8 +1996,7 @@ function init_taxon_tree(element) {
 				fname: "gen_tree_json",
 			},
 			success: function(data) {
-				console.log(JSON.parse(data));
-				tree = new Taxon_tree(JSON.parse(data), "taxonomic_tree");
+				tree = new Taxon_tree(JSON.parse(data), element);
 			}
 		});
 	}
@@ -2083,6 +2070,10 @@ $.extend(Taxon_tree.prototype, {
 		if (self.tree.size()[0] < 800) {
 			self.tree.size([800, 1]);
 		}
+		//set maximum height to 3100
+		if (self.tree.size()[0] > 3100) {
+			self.tree.size([3100, 1]);
+		}
 		
 		// Compute the new tree layout.
 		var nodes = self.tree.nodes(self.current_root); //.reverse();
@@ -2108,19 +2099,24 @@ $.extend(Taxon_tree.prototype, {
 		
 		// fix depth
 		var max_depth = 0;
-		for(var i = 0; i < nodes.length; i++) {
+		for (var i = 0; i < nodes.length; i++) {
 			nodes[i].depth += add_depth;
 			max_depth = Math.max(max_depth, nodes[i].depth);
 		}
-		for(var i = 0; i < add_nodes.length; i++) {
+		for (var i = 0; i < add_nodes.length; i++) {
 			add_depth--;
 			add_nodes[i].depth = add_depth;
 			nodes.push(add_nodes[i]);
 		}
 		
 		// Normalize for fixed-depth.
-		//nodes.forEach(function(d) { d.y = d.depth * 1260/max_depth; });
-		nodes.forEach(function(d) { d.y = d.depth * (self.width-100)/max_depth; });
+		nodes.forEach(function(d) { 
+			if (max_depth == 0) {
+				d.y = 0;
+			} else {
+				d.y = d.depth * (self.width-100)/max_depth;
+			}
+		});
 		
 		// Update the nodesÉ
 		self.node = self.svg.selectAll("g.node")
@@ -2235,7 +2231,6 @@ $.extend(Taxon_tree.prototype, {
 	},
 	find: function(search_text, nodes) {	//nodes is expected to be an array
 		var self = this;
-		//console.log(nodes);
 		var new_nodes = [];
 		if (nodes.length == 0) {
 			return null;
@@ -2313,3 +2308,214 @@ function filter_tree() {
 	var search_text = $('#tree_filter').val();
     tree.filter(search_text);
 }
+
+function init_line_graph(index) {
+	if (index == 0) {
+		if (system_graph) {
+			system_graph.initialize();
+		} else {
+			init_system_load();	
+		}
+		$("#system_graph2").hide();
+		$("#system_graph").show();
+	} else {
+		if (system_graph2) {
+			system_graph2.initialize();
+		} else {
+			init_system_load2();	
+		}
+		$("#system_graph").hide();
+		$("#system_graph2").show();
+	}
+}
+
+function init_system_load() {
+	$.ajax({
+	      url: "https://genomevolution.org/coge/data/system_load.txt",
+	      success: function (data){
+	            var strings =  data.split("\n");
+	            var json = [];
+	            for (var i = 0; i < strings.length - 1; i++) {
+	            	strings[i] = strings[i].split("\t");
+	            	json.push({
+	            		"x": strings[i][0],
+	            		"y": strings[i][3],
+	            	});
+	            }
+	            system_graph = new System_graph(json, "system_graph", null);
+	      }
+	});
+}
+
+function init_system_load2() {
+	$.ajax({
+	      url: "https://geco.iplantcollaborative.org/coge/data/system_load.txt",
+	      success: function (data){
+	            var strings =  data.split("\n");
+	            var json = [];
+	            for (var i = 0; i < strings.length - 1; i++) {
+	            	strings[i] = strings[i].split("\t");
+	            	json.push({
+	            		"x": strings[i][0],
+	            		"y": strings[i][3],
+	            	});
+	            }
+	            system_graph2 = new System_graph(json, "system_graph2", null);
+	      }
+	});
+}
+
+var System_graph = function(json, element, parent) {
+	var self = this;
+	this.parent = parent;
+	this.margin = {top: 30, right: 20, bottom: 30, left: 50},
+	this.width = 1200 - this.margin.left - this.margin.right,
+	this.height = 600 - this.margin.top - this.margin.bottom;
+	this.data = json;
+	this.element = element;
+	this.initialize();
+}
+
+$.extend(System_graph.prototype, {
+	initialize: function() {
+		var self = this;
+		
+		// Clear the element, add the zoom out button and svg container
+		$("#" + this.element).html(
+				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="' + self.element + '.zoom_out()">Zoom Out</button>' +
+				'<div id="' + self.element + '_container" style="height:700px;"> <div id="' + self.element + '_graph" style="float:left;width:1200px;"></div> </div>'
+		);
+		if (self.parent) {
+			$('#' + self.element + '_back_button').prop("disabled", false);
+		} else {
+			$('#' + self.element + '_back_button').prop("disabled", true);
+		}
+		
+		// Parse the date / time
+		self.timeFormat = d3.time.format("%H:%M:%S %m/%d/%Y");
+		
+		// Format the data
+		self.data.forEach(function(d) {
+			if (Object.prototype.toString.call(d.x) !== "[object Date]") {
+				d.x = self.timeFormat.parse(d.x);
+			}
+	        d.y = +d.y;
+	    });
+
+		// Set the ranges
+		self.x = d3.time.scale().range([0, self.width]);
+		self.y = d3.scale.linear().range([self.height, 0]);
+
+		// Define the axes
+		self.xAxis = d3.svg.axis().scale(self.x)
+		    .orient("bottom").ticks(10);
+
+		self.yAxis = d3.svg.axis().scale(self.y)
+		    .orient("left").ticks(10);
+		
+		// Define the line
+		self.valueline = d3.svg.line()
+		    .x(function(d) { return self.x(d.x); })
+		    .y(function(d) { return self.y(d.y); });
+		    
+		// Adds the svg canvas
+		self.svg = d3.select("#" + self.element + "_graph")
+		    .append("svg")
+		        .attr("width", self.width + self.margin.left + self.margin.right)
+		        .attr("height", self.height + self.margin.top + self.margin.bottom)
+		    .append("g")
+		        .attr("transform", 
+		              "translate(" + self.margin.left + "," + self.margin.top + ")");
+
+	    // Scale the range of the data
+	    self.x.domain(d3.extent(self.data, function(d) { return d.x; }));
+	    self.y.domain([0, d3.max(self.data, function(d) { return d.y; })]);
+
+	    // Add the valueline path.
+	    self.svg.append("path")
+	        .attr("class", "line")
+	        .attr("d", self.valueline(self.data))
+	    	.attr("fill", "none")
+	    	.attr("stroke", "#000");
+
+	    // Add the X Axis
+	    self.svg.append("g")
+	        .attr("class", "x axis")
+	        .attr("transform", "translate(0," + self.height + ")")
+	        .call(self.xAxis);
+
+	    // Add the Y Axis
+	    self.svg.append("g")
+	        .attr("class", "y axis")
+	        .call(self.yAxis);
+	    
+	    // Add a line at 32, representing the 32 cores we use.
+	    self.svg.append("svg:line")
+	    	.attr("x1", 0)
+	    	.attr("x2", self.width)
+	    	.attr("y1", self.y(32))
+	    	.attr("y2", self.y(32))
+	    	.attr("stroke", "red");
+	    
+	    // Add brush selection
+	    self.brush = d3.svg.brush()
+			.x(self.x)
+			.on("brushend", function() {
+				self.brushed.call(self);
+			});
+	    
+	    self.svg.append("g")
+    		.attr("class", "x brush")
+    		.call(self.brush)
+    		.selectAll("rect")
+    		.attr("y", -6)
+    		.attr("height", this.height + 7);
+	    
+	    self.init_data_table();
+	},
+	init_data_table: function () {
+		var self = this;
+		var total = 0;
+		var min = Number.MAX_SAFE_INTEGER;
+		var max = 0;
+		for (var i = 0; i < self.data.length; i++) {
+			if (self.data[i].y < min) {
+				min = self.data[i].y;
+			}
+			if (self.data[i].y > max) {
+				max = self.data[i].y;
+			}
+			total += self.data[i].y;
+		}
+		var average = Math.round(total/self.data.length * 100)/100;
+		$("#" + self.element + "_container").append("<div style='width:100%'>" +
+				"<div>Average: " + average + "</div>" +
+				"<div>Minimum: " + min + "</div>" +
+				"<div>Maximum: " + max + "</div>" +
+				"<div># of Data Points: " + self.data.length + "</div>" +
+				"</div>"
+		);
+	},
+	brushed: function() {
+		var self = this;
+		var extent = self.brush.extent();
+		
+		var newJson = [];
+		for (var i = 0; i < self.data.length; i++) {
+			if (extent[0] <= self.data[i].x && extent[1] >= self.data[i].x) {
+				newJson.push(self.data[i]);
+			}
+		}
+		if (newJson.length > 1) {
+			var parent = self;
+			self = new System_graph(newJson, self.element, parent);
+		}
+	},
+	zoom_out: function() {
+		var self = this;
+		while(self.parent) {
+			self = self.parent;
+		}
+		self.initialize();
+	}
+});
