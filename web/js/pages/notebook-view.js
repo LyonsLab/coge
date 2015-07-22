@@ -24,7 +24,7 @@ function edit_list_info () {
 	$.ajax({
 		data: {
 			fname: 'edit_list_info',
-			lid: "<TMPL_VAR NAME='LID'>",
+			lid: NOTEBOOK_ID,
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
@@ -46,7 +46,7 @@ function update_list_info (){
 	$.ajax({
 		data: {
 			fname: 'update_list_info',
-			lid: "<TMPL_VAR NAME='LID'>",
+			lid: NOTEBOOK_ID,
 			name: name,
 			desc: desc,
 			type: type
@@ -62,7 +62,7 @@ function get_list_info() {
 	$.ajax({
 		data: {
 			fname: 'get_list_info',
-			lid: "<TMPL_VAR NAME='LID'>"
+			lid: NOTEBOOK_ID
 		},
 		success : function (data) {
 			$('#list_info').html(data);
@@ -74,7 +74,7 @@ function make_list_public () {
 	$.ajax({
 		data: {
 			fname: 'make_list_public',
-			lid: "<TMPL_VAR NAME='LID'>",
+			lid: NOTEBOOK_ID,
 		},
 		success : function(val) {
 			get_list_info();
@@ -86,7 +86,7 @@ function make_list_private () {
 	$.ajax({
 		data: {
 			fname: 'make_list_private',
-			lid: "<TMPL_VAR NAME='LID'>",
+			lid: NOTEBOOK_ID,
 		},
 		success : function(val) {
 			get_list_info();
@@ -98,7 +98,7 @@ function add_list_items (opts) {
 	$.ajax({
 		data: {
 			fname: 'add_list_items',
-			lid: "<TMPL_VAR NAME='LID'>",
+			lid: NOTEBOOK_ID,
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
@@ -115,7 +115,7 @@ function add_selected_items (select_id){
 			$.ajax({
 				data: {
 					fname: 'add_item_to_list',
-					lid: "<TMPL_VAR NAME='LID'>",
+					lid: NOTEBOOK_ID,
 					item_spec : item_spec,
 				},
 				success :
@@ -142,7 +142,7 @@ function remove_list_item (obj, opts) {
 	$.ajax({
 		data: {
 			fname: 'remove_list_item',
-			lid: "<TMPL_VAR NAME='LID'>",
+			lid: NOTEBOOK_ID,
 			item_id: item_id,
 			item_type: item_type,
 		},
@@ -156,7 +156,7 @@ function get_list_contents() {
 	$.ajax({
 		data: {
 			fname: 'get_list_contents',
-			lid: "<TMPL_VAR NAME='LID'>",
+			lid: NOTEBOOK_ID,
 		},
 		success : function (data) {
 			$('#list_contents').html(data);
@@ -169,7 +169,7 @@ function get_annotations() {
 	$.ajax({
 		data: {
 			fname: 'get_annotations',
-			lid: "<TMPL_VAR NAME='LID'>",
+			lid: NOTEBOOK_ID,
 		},
 		success : function(data) {
 			$('#list_annotations').html(data);
@@ -182,7 +182,7 @@ function remove_annotation (laid) {
 	$.ajax({
 		data: {
 			fname: 'remove_annotation',
-			lid: "<TMPL_VAR NAME='LID'>",
+			lid: NOTEBOOK_ID,
 			laid: laid,
 		},
 		success : function(val) {
@@ -191,7 +191,7 @@ function remove_annotation (laid) {
 	});
 }
 
-function wait_to_search (search_func, search_term) {
+function wait_to_search (search_func, search_term) {  //TODO use version in utils
 	if (!search_term || search_term.length > 2) {
 		pageObj.search_term = search_term;
 		if (pageObj.time) {
@@ -210,7 +210,7 @@ function wait_to_search (search_func, search_term) {
 
 // FIXME: the search functions below are all the same, consolidate?
 
-function search_mystuff () {
+function search_mystuff () { //TODO migrate to web services
 	var search_term = $('#edit_mystuff_search').attr('value');
 
 	$("#wait_mystuff").animate({opacity:1});
@@ -220,7 +220,7 @@ function search_mystuff () {
 	$.ajax({
 		data: {
 			fname: 'search_mystuff',
-			lid: '<TMPL_VAR NAME="LID">',
+			lid: NOTEBOOK_ID,
 			search_term: search_term,
 			timestamp: pageObj.timestamp['mystuff']
 		},
@@ -234,7 +234,7 @@ function search_mystuff () {
 	});
 }
 
-function search_genomes () {
+function search_genomes () { //TODO migrate to web services
 	var search_term = $('#edit_genome_search').val();
 
 	$("#wait_genome").animate({opacity:1});
@@ -244,7 +244,7 @@ function search_genomes () {
 	$.ajax({
 		data: {
 			fname: 'search_genomes',
-			lid: '<TMPL_VAR NAME="LID">',
+			lid: NOTEBOOK_ID,
 			search_term: search_term,
 			timestamp: pageObj.timestamp['genomes']
 		},
@@ -258,7 +258,7 @@ function search_genomes () {
 	});
 }
 
-function search_experiments (search_term) {
+function search_experiments (search_term) { //TODO migrate to web services
 	var search_term = $('#edit_experiment_search').val();
 
 	$("#wait_experiment").animate({opacity:1});
@@ -268,7 +268,7 @@ function search_experiments (search_term) {
 	$.ajax({
 		data: {
 			fname: 'search_experiments',
-			lid: '<TMPL_VAR NAME="LID">',
+			lid: NOTEBOOK_ID,
 			search_term: search_term,
 			timestamp: pageObj.timestamp['experiments']
 		},
@@ -282,7 +282,7 @@ function search_experiments (search_term) {
 	});
 }
 
-function search_features () {
+function search_features () { //TODO migrate to web services
 	var search_term = $('#edit_feature_search').attr('value');
 
 	$("#wait_feature").animate({opacity:1});
@@ -292,7 +292,7 @@ function search_features () {
 	$.ajax({
 		data: {
 			fname: 'search_features',
-			lid: '<TMPL_VAR NAME="LID">',
+			lid: NOTEBOOK_ID,
 			search_term: search_term,
 			timestamp: pageObj.timestamp['features']
 		},
@@ -306,7 +306,7 @@ function search_features () {
 	});
 }
 
-function search_lists () {
+function search_lists () { //TODO migrate to web services
 	var search_term = $('#edit_list_search').attr('value');
 
 	$("#wait_list").animate({opacity:1});
@@ -316,7 +316,7 @@ function search_lists () {
 	$.ajax({
 		data: {
 			fname: 'search_lists',
-			lid: '<TMPL_VAR NAME="LID">',
+			lid: NOTEBOOK_ID,
 			search_term: search_term,
 			timestamp: pageObj.timestamp['lists']
 		},
@@ -334,7 +334,7 @@ function delete_list () {
 	$.ajax({
 		data: {
 			fname: 'delete_list',
-			lid: '<TMPL_VAR NAME="LID">',
+			lid: NOTEBOOK_ID,
 		},
 		success : function(val) {
 			location.reload();
@@ -348,7 +348,7 @@ function send_list_to() {
 	$.ajax({
 		data: {
 			fname: action,
-			lid: '<TMPL_VAR NAME="LID">'
+			lid: NOTEBOOK_ID
 		},
 		success : function(val) {
 			var items = jQuery.parseJSON(val);
