@@ -379,9 +379,10 @@ See Also   :
 sub info {
     my $self = shift;
     my $info = $self->name;
-    $info = "&reg; " . $info if $self->restricted;
-    $info .= ": " . $self->description if $self->description;
-    $info .= " (" . $self->type->name . ")" if $self->type;
+    $info = '&reg; ' . $info if $self->restricted;
+    $info .= ': ' . $self->description if $self->description;
+    #$info .= ' (' . $self->type->name . ')' if $self->type;
+    $info .= ' (' . $self->id . ')';
     return $info;
 }
 
@@ -407,7 +408,7 @@ sub info_html {
     my $self = shift;
     my $info = $self->info;
     return
-        qq{<span class=link onclick='window.open("NotebookView.pl?lid=}
+        qq{<span class=link onclick='window.open("NotebookView.pl?nid=}
       . $self->id
       . qq{")'>}
       . $info
