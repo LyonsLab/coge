@@ -441,8 +441,8 @@ sub info {
     my $self = shift;
     my $info = $self->name;
     $info .= ": " . $self->description if $self->description;
-
     # $info .= " (" . $self->role->name . ")";
+    $info .= ' (' . $self->id . ')';
     return $info;
 }
 
