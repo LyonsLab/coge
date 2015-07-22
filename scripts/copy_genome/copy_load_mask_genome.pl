@@ -10,18 +10,19 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Spec::Functions;
 use File::Path;
+use File::Slurp;
 use URI::Escape::JavaScript qw(escape);
 
-use vars qw($conf_file $coge $gid $restricted $P $mask $uid $staging_dir $result_dir $seq_only);
+use vars qw($conf_file $coge $gid $restricted $P $mask $uid $staging_dir $seq_only $wid);
 
 GetOptions(
     "conf_file|cf=s"   => \$conf_file,
     "staging_dir=s"    => \$staging_dir,
-    "result_dir=s"     => \$result_dir,
     "gid=i"            => \$gid,
     "restricted|r=i"   => \$restricted,
     "mask|m=i"         => \$mask,
     "uid=i"            => \$uid, # user id to assign the new genome to
+    "wid=i"            => \$wid, # workflow id
     "sequence_only=i"  => \$seq_only, #flag for only copying the sequences -- no structural annotations
 );
 
@@ -43,8 +44,13 @@ my $log = *STDOUT;
 print $log "Starting $0 (pid $$)\n";
 
 # Process and verify parameters
-if (not $uid) {
+unless ($uid) {
     print $log "log: error: uid not specified\n";
+    exit(-1);
+}
+
+unless ($wid) {
+    print $log "log: error: wid not specified\n";
     exit(-1);
 }
 
@@ -141,7 +147,6 @@ sub load_genome {
     my $cmd    = $fasta_genome_loader;
     $cmd .= " -ignore_chr_limit 1"; # mdb added 3/9/15 COGE-595
     $cmd .= " -staging_dir " . $staging_dir;
-    $cmd .= " -result_dir " . $result_dir;
     $cmd .= " -organism_id " . $genome->organism->id;
     $cmd .= " -name '" . escape($genome->name) . "'" if $genome->name;
     $cmd .= " -message 'Copy of genome gid:" . $genome->id . "'";
@@ -152,8 +157,8 @@ sub load_genome {
 
     $cmd .= ($ds ? " -source_id " . $ds->data_source->id : " -source_name Unknown");
     $cmd .= " -user_id " . $uid if $uid;
+    $cmd .= " -wid " . $wid;
     $cmd .= " -creator_id " . $creator->id if $creator;
-
     $cmd .= " -version '" . escape($genome->version) . "'";
     #$cmd .= " -ds_name '" . $ds->name . "'";
     #$cmd .= " -ds_desc '" . $ds->description . "'" if $ds->description;
@@ -169,13 +174,12 @@ sub load_genome {
 
     execute($cmd);
 
-    my $file = catfile($result_dir, "1");
-    my $result = CoGe::Accessory::TDS::read($file);
-    my $genomeid = $result->{genome_id};
-
+    # Get id for newly loaded genome from log file output of load_genome.pl
+    my $file = catfile($staging_dir, "log.txt");
+    my $log = read_file($file);
+    my ($genomeid) = $log =~ /genome id:\s+\d+/;
     unless ($genomeid) {
-        print $log "Unable able to find gid in log file: " . $staging_dir . "/log.txt";
-        exit(-1);
+        print $log "Unable able to find genome id in log file: $file\n";
     }
 
     return $genomeid;
