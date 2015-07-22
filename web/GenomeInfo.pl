@@ -1351,6 +1351,7 @@ sub copy_genome {
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     $args{uid} = $USER->id;
+    $args{wid} = $workflow->id;
     $args{staging_dir} = $staging_dir;
     $args{result_dir} = $result_dir;
 

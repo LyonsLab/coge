@@ -82,6 +82,7 @@ sub copy_and_mask {
             ["-conf", $CONF->{_CONFIG_PATH}, 0],
             ["-gid", $args{gid}, 0],
             ["-uid", $args{uid}, 0],
+            ["-wid", $args{wid}, 0],
             ["-mask", $args{mask}, 0],
             ["-staging_dir", $args{staging_dir}, 0],
             ["-result_dir", $args{result_dir}, 0],
