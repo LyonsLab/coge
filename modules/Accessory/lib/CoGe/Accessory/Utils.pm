@@ -30,6 +30,7 @@ use POSIX qw( ceil );
 use Data::GUID;
 use Data::Dumper;
 use File::Basename qw(fileparse);
+use File::Find;
 
 BEGIN {
     use vars qw ($VERSION $FASTA_LINE_LEN @ISA @EXPORT);
@@ -40,7 +41,7 @@ BEGIN {
     @ISA     = qw (Exporter);
     @EXPORT = qw( 
         units commify print_fasta get_unique_id get_link_coords 
-        format_time_diff sanitize_name execute 
+        format_time_diff sanitize_name execute directory_size
         trim js_escape html_escape to_filename to_pathname
         is_fastq_file detect_paired_end
     );
@@ -208,6 +209,14 @@ sub detect_paired_end {
         else { push @p2, $file; }
     }
     return (\@p1, \@p2);
+}
+
+# Returns the total size of all files in the directory (recursively)
+sub directory_size {
+    my $path = shift;
+    my $size = 0;
+    find(sub { $size += -s if -f $_ }, $path);
+    return $size;
 }
 
 1;

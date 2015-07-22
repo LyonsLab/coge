@@ -17,7 +17,7 @@ sub startup {
         ->name("organisms-fetch")
         ->to("organism#fetch", id => undef);
 
-    $r->post("/organisms")
+    $r->put("/organisms")
         ->name("organisms-add")
         ->to("organism#add");
 
@@ -29,6 +29,10 @@ sub startup {
     $r->get("/genomes/:id" => [id => qr/\d+/])
         ->name("genomes-fetch")
         ->to("genome2#fetch", id => undef);
+        
+    $r->put("/genomes")
+        ->name("genomes-add")
+        ->to("genome2#add");
 
     # Dataset routes
     #$r->get("/genomes/search/#term")
@@ -42,7 +46,6 @@ sub startup {
     $r->get("/datasets/:id/genomes" => [id => qr/\d+/])
         ->name("datasets-genomes")
         ->to("dataset#genomes", id => undef);
-
 
     # Experiment routes
     $r->get("/experiments/search/#term")
@@ -66,12 +69,10 @@ sub startup {
         ->name("notebooks-fetch")
         ->to("notebook#fetch", id => undef);
 
-    # User routes
-    # mdb 4/10/14: Removing search & fetch because they are available via the
-    # iPlant Trellis API.
-#    $r->get("/users/search/#term")
-#        ->name("users-search")
-#        ->to("user#search", term => undef);
+    # User routes -- not documented, only for internal use
+    $r->get("/users/search/#term")
+        ->name("users-search")
+        ->to("user#search", term => undef);
 
 #    $r->get("/users/:id" => [id => qr/\w+/])
 #        ->name("users-fetch")
@@ -107,10 +108,27 @@ sub startup {
         ->name("jobs-results")
         ->to("job#results", id => undef, name => undef);
 
+    # Log routes -- not documented, only for internal use
+#    $r->get("/logs/search/#term")
+#        ->name("logs-search")
+#        ->to("log#search", term => undef);
+        
+    $r->get("/logs/:type/:id" => [type => qr/\w+/, id => qr/\d+/])
+        ->name("logs-fetch")
+        ->to("log#fetch", id => undef, type => undef);
+
     # IRODS routes
+    $r->get("/irods/list/")
+        ->name("irods-list")
+        ->to("IRODS#list");
+        
     $r->get("/irods/list/(*path)")
         ->name("irods-list")
         ->to("IRODS#list");
+        
+    $r->get("/irods/fetch/(*path)")
+        ->name("irods-fetch")
+        ->to("IRODS#fetch");
         
     # Not found
     $r->any("*" => sub {

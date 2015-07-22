@@ -2,6 +2,8 @@ package CoGe::Request::Request;
 
 use Moose::Role;
 
+use Data::Dumper;
+
 has 'options' => (
     is        => 'ro',
     #isa       => 'HashRef',
@@ -42,8 +44,11 @@ sub execute {
     my $success = $self->jex->is_successful($resp);
     
     unless ($success) {
+        print STDERR 'JEX response: ', Dumper $resp, "\n";
         return {
-            success => JSON::false
+            success => JSON::false,
+            error => { JEX => 'failed to submit workflow' }
+            #TODO return $resp error message from JEX
         }
     }
 

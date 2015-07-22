@@ -9,12 +9,11 @@ use Getopt::Long qw(GetOptions);
 
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw(to_pathname);
-use CoGe::Core::Metadata qw(create_annotations);
 use CoGe::Core::Notebook qw(add_items_to_notebook load_notebook);
 use CoGe::Core::Storage qw(get_workflow_results add_workflow_result);
 use CoGeX;
 
-our ($userid, $wid, $log_file, $config_file, $notebook_id, $annotations);
+our ($userid, $wid, $log_file, $config_file, $notebook_id);
 
 GetOptions(
     # Required workflow params
@@ -27,7 +26,6 @@ GetOptions(
 
     # Notebook metadata
     "notebook_id=s"     => \$notebook_id,
-    "annotations=s"		=> \$annotations # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
 );
 
 $| = 1;
@@ -65,27 +63,6 @@ add_items_to_notebook(
 	notebook	=> $notebook,
 	item_list	=> \@items
 );
-
-# Add annotations to notebook and results
-if ($annotations) {
-    if ($notebook) {
-        CoGe::Core::Metadata::create_annotations(
-            db => $db, 
-            target => $notebook, 
-            annotations => $annotations, 
-            locked => 1
-        );
-    }
-    foreach my $result (@$results) {
-        CoGe::Core::Metadata::create_annotations(
-            db => $db, 
-            target_id => $result->{id}, 
-            target_type => $result->{type}, 
-            annotations => $annotations, 
-            locked => 1
-        );
-    }
-}
 
 # Add notebook to workflow result file
 add_workflow_result($user->name, $wid,

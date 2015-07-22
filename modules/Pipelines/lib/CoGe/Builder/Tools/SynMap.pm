@@ -17,7 +17,8 @@ BEGIN {
 }
 
 sub generate_pseudo_assembly {
-    my ($JEX, $config, $input, $output) = @_;
+    my ($JEX, $config, $input, $output, $flip) = @_;
+    $flip = 0 unless $flip;
 
     my $cmd = "synmap/order_contigs_to_chromosome.pl";
 
@@ -31,7 +32,7 @@ sub generate_pseudo_assembly {
             ["-cfg", $config->{_CONFIG_PATH}, 1],
             ["-input", $input, 1],
             ["-output", $output, 1],
-            ["-link", "", 0]
+	    ["-flip", $flip,1],
         ],
         inputs    => [$input, $config->{_CONFIG_PATH}],
         outputs   => [$output],

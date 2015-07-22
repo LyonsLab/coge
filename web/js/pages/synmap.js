@@ -1258,7 +1258,7 @@ function checkRequestSize(url) {
         });
     }
 
-    synmap.submit_assembly = function(e, input, gid1, gid2) {
+    synmap.submit_assembly = function(e, input, gid1, gid2,flip) {
         e.preventDefault();
 
         var promise = $.ajax({
@@ -1268,7 +1268,8 @@ function checkRequestSize(url) {
                 jquery_ajax: 1,
                 input: input,
                 gid1: gid1,
-                gid2: gid2
+                gid2: gid2,
+		flip: flip
             }
         });
 

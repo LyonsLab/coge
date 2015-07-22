@@ -176,7 +176,7 @@ $BLASTDBDIR = $config->{BLASTDB};
 
 $PYTHON        = $config->{PYTHON};                         #this was for python2.5
 $PYTHON26      = $config->{PYTHON};
-$DAG_TOOL      = $config->{DAG_TOOL};
+$DAG_TOOL      = 'nice ' . $config->{DAG_TOOL};
 $BLAST2BED     = $config->{BLAST2BED};
 $GENE_ORDER    = $DIR . "/bin/SynMap/gene_order.py";
 $TANDEM_FINDER = $config->{TANDEM_FINDER}
@@ -184,7 +184,7 @@ $TANDEM_FINDER = $config->{TANDEM_FINDER}
   ; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 
 #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
-$RUN_DAGCHAINER = $PYTHON26 . " " . $config->{DAGCHAINER};
+$RUN_DAGCHAINER = 'nice ' . $PYTHON26 . " " . $config->{DAGCHAINER};
 $EVAL_ADJUST    = $config->{EVALUE_ADJUST};
 
 $FIND_NEARBY = $config->{FIND_NEARBY}
@@ -192,7 +192,7 @@ $FIND_NEARBY = $config->{FIND_NEARBY}
   ; #the parameter here is for nucleotide distances -- will need to make dynamic when gene order is selected -- 5 perhaps?
 
 #programs to run Haibao Tang's quota_align program for merging diagonals and mapping coverage
-$QUOTA_ALIGN   = $config->{QUOTA_ALIGN};     #the program
+$QUOTA_ALIGN   = 'nice ' . $config->{QUOTA_ALIGN};     #the program
 $CLUSTER_UTILS = $config->{CLUSTER_UTILS};   #convert dag output to quota_align input
 $BLAST2RAW     = $config->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $config->{SYNTENY_SCORE};
@@ -1654,9 +1654,7 @@ sub go {
     my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
 
     foreach my $key ( keys %org_dirs ) {
-        my $cmd =
-          $ALGO_LOOKUP->{$blast}
-          {algo};    #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
+        my $cmd = 'nice ' . $ALGO_LOOKUP->{$blast}{algo};    #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
 
         my $fasta   = $org_dirs{$key}{fasta};
         my $db      = $org_dirs{$key}{db};
@@ -2437,12 +2435,13 @@ sub go {
     my $response = $JEX->submit_workflow($workflow);
 
     my $log = CoGe::Accessory::Web::log_history(
-        db      => $coge,
-        user_id => $USER->id,
+        db          => $coge,
+        user_id     => $USER->id,
         description => $log_msg,
-        page    => $PAGE_TITLE,
-        link => $tiny_link,
-        workflow_id => $response->{id}
+        page        => $PAGE_TITLE,
+        link        => $tiny_link,
+        parent_id   => $response->{id},
+        parent_type => 7 #FIXME magic number
     ) if $response and $response->{id};
 
     return encode_json({
@@ -3148,8 +3147,20 @@ sub get_results {
         my $spa_result = "";
 
         if ($spa_url and $assemble) {
+	    #added by EHL: 6/17/15
+            #fixing problem where 
+	    my $genome1_chr_count = $genome1->chromosome_count();
+	    my $genome2_chr_count = $genome2->chromosome_count();
+	    my $flip =0;
+	    if ($genome1_chr_count >= $genome2_chr_count && $assemble > 0) {
+		$flip = 1;
+	    }
+
+	    if ($genome1_chr_count <= $genome2_chr_count && $assemble < 0) {
+		$flip = 1;
+	    }
             $spa_result = $spa_url
-                . qq{<a href="#" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2');">}
+                . qq{<a href="#" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2', '$flip');">}
                 . qq{Generate Pseudo-Assembled Genomic Sequence}
                 . qq{</a>};
         }
@@ -3653,6 +3664,7 @@ sub generate_assembly {
     my %opts = @_;
     my $gid1 = $opts{gid1};
     my $gid2 = $opts{gid2};
+    my $flip = $opts{flip}; #reverse the order from default
 
     unless ($gid1 and $gid2) {
         return encode_json({
@@ -3683,11 +3695,11 @@ sub generate_assembly {
         });
     }
 
-    my $filename = qq($gid1-$gid2-) . md5_hex($opts{input}) . ".tar.gz";
+    my $filename = qq($gid1-$gid2-) . md5_hex($opts{input}) .".".$flip. ".tar.gz";
     my $output = catfile($DIAGSDIR, $gid1, $gid2, "assembly", $filename);
 
     # Submit workflow
-    my $submission = generate_pseudo_assembly($JEX, $config, $opts{input}, $output);
+    my $submission = generate_pseudo_assembly($JEX, $config, $opts{input}, $output, $flip);
     $output =~ s/$DIR/$URL/;
 
     # Fixup success to return true or false
