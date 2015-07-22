@@ -1,406 +1,15 @@
 <TMPL_IF NAME="MAIN">
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/filterlist.js"></SCRIPT>-->
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
-
-<SCRIPT language="JavaScript">
-$(document).ready(function(){
-	pageObj = new Object();
-	pageObj.timestamp = new Array();
-	pageObj.timers = new Array();
-
-	$.ajaxSetup({
-		type: "GET",
-		url: "<TMPL_VAR NAME='PAGE_NAME'>",
-		dataType: "html",
-		cache: false,
-	});
-
-	$(".dialog_box").dialog({autoOpen: false, width: 450});
-
-	set_contents_table();
-	set_annotation_table();
-
-	init_annotation_dialog(<TMPL_VAR NAME="LID">, '<TMPL_VAR NAME="DEFAULT_TYPE">');
-});
-
-function set_contents_table() {
-	$('#list_contents_table').tablesorter({widgets: ['zebra']});
-}
-
-function set_annotation_table() {
-	$('#list_annotation_table').tablesorter({widgets: ['zebra']});
-}
-
-function show_dialog(id, title, html, width, height) {
-	var d = $('#'+id);
-	if (title) { d.dialog("option", "title", title); }
-	if (html) { d.html(html); }
-	if (width) { d.dialog('option', 'width', width); }
-	else { width = d.dialog('option', 'width') };
-	if (height) { d.dialog('option', 'height', height); }
-	else { height = d.dialog('option', 'height') };
-	var xpos = $(window).width()/2 - width/2;
-	var ypos = 100;//$(window).height()/2 - height/2; // hardcode height because jquery not correctly reporting $(window).height()
-	d.dialog('option', 'position', [xpos, 100]);
-	d.dialog('open');
-}
-
-function edit_list_info () {
-	$.ajax({
-		data: {
-			fname: 'edit_list_info',
-			lid: "<TMPL_VAR NAME='LID'>",
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			show_dialog('list_info_edit_box', '', obj.output, 450);
-		},
-	});
-}
-
-function update_list_info (){
-	var name = $('#edit_name').val();
-	if (!name) {
-		alert('Please specify a name.');
-		return;
-	}
-
-	var desc = $('#edit_desc').val();
-	var type = $('#edit_type').val();
-
-	$.ajax({
-		data: {
-			fname: 'update_list_info',
-			lid: "<TMPL_VAR NAME='LID'>",
-			name: name,
-			desc: desc,
-			type: type
-		},
-		success : function(val) {
-			get_list_info();
-			$("#list_info_edit_box").dialog('close');
-		},
-	});
-}
-
-function get_list_info() {
-	$.ajax({
-		data: {
-			fname: 'get_list_info',
-			lid: "<TMPL_VAR NAME='LID'>"
-		},
-		success : function (data) {
-			$('#list_info').html(data);
-		}
-	});
-}
-
-function make_list_public () {
-	$.ajax({
-		data: {
-			fname: 'make_list_public',
-			lid: "<TMPL_VAR NAME='LID'>",
-		},
-		success : function(val) {
-			get_list_info();
-		}
-	});
-}
-
-function make_list_private () {
-	$.ajax({
-		data: {
-			fname: 'make_list_private',
-			lid: "<TMPL_VAR NAME='LID'>",
-		},
-		success : function(val) {
-			get_list_info();
-		},
-	});
-}
-
-function add_list_items (opts) {
-	$.ajax({
-		data: {
-			fname: 'add_list_items',
-			lid: "<TMPL_VAR NAME='LID'>",
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			show_dialog('list_contents_edit_box', '', obj.output, 600);
-		},
-	});
-}
-
-function add_selected_items (select_id){
-	var num_items = $('#' + select_id).find('option:selected').length;
-	$('#' + select_id).find('option:selected').each(
-		function() {
-			var item_spec = $(this).attr("value");
-			$.ajax({
-				data: {
-					fname: 'add_item_to_list',
-					lid: "<TMPL_VAR NAME='LID'>",
-					item_spec : item_spec,
-				},
-				success :
-					function(data) {
-						if (data != 1) { alert(data); }
-						else {
-							if (--num_items == 0) { // only do update on last item
-								get_list_contents();
-							}
-						}
-					},
-			});
-		}
-	);
-	$("#list_contents_edit_box").dialog('close');
-}
-
-function remove_list_item (obj, opts) {
-	var item_id = opts.item_id;
-	var item_type = opts.item_type;
-
-	$(obj).closest('tr').children().animate({opacity:0});
-
-	$.ajax({
-		data: {
-			fname: 'remove_list_item',
-			lid: "<TMPL_VAR NAME='LID'>",
-			item_id: item_id,
-			item_type: item_type,
-		},
-		success : function(val) {
-			get_list_contents();
-		},
-	});
-}
-
-function get_list_contents() {
-	$.ajax({
-		data: {
-			fname: 'get_list_contents',
-			lid: "<TMPL_VAR NAME='LID'>",
-		},
-		success : function (data) {
-			$('#list_contents').html(data);
-			set_contents_table();
-		}
-	});
-}
-
-function get_annotations() {
-	$.ajax({
-		data: {
-			fname: 'get_annotations',
-			lid: "<TMPL_VAR NAME='LID'>",
-		},
-		success : function(data) {
-			$('#list_annotations').html(data);
-			set_annotation_table();
-		}
-	});
-}
-
-function remove_annotation (laid) {
-	$.ajax({
-		data: {
-			fname: 'remove_annotation',
-			lid: "<TMPL_VAR NAME='LID'>",
-			laid: laid,
-		},
-		success : function(val) {
-			get_annotations();
-		},
-	});
-}
-
-function wait_to_search (search_func, search_term) {
-	if (!search_term || search_term.length > 2) {
-		pageObj.search_term = search_term;
-		if (pageObj.time) {
-			clearTimeout(pageObj.time);
-		}
-
-		// FIXME: could generalize by passing select id instead of separate search_* functions
-		pageObj.time = setTimeout(
-			function() {
-				search_func(pageObj.search_term);
-			},
-			500
-		);
-	}
-}
-
-// FIXME: the search functions below are all the same, consolidate?
-
-function search_mystuff () {
-	var search_term = $('#edit_mystuff_search').attr('value');
-
-	$("#wait_mystuff").animate({opacity:1});
-	$("#select_mystuff_items").html("<option disabled='disabled'>Searching...</option>");
-	pageObj.timestamp['mystuff'] = new Date().getTime();
-
-	$.ajax({
-		data: {
-			fname: 'search_mystuff',
-			lid: '<TMPL_VAR NAME="LID">',
-			search_term: search_term,
-			timestamp: pageObj.timestamp['mystuff']
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			if (items.timestamp == pageObj.timestamp['mystuff']) {
-				$("#select_mystuff_items").html(items.html);
-				$("#wait_mystuff").animate({opacity:0});
-			}
-		},
-	});
-}
-
-function search_genomes () {
-	var search_term = $('#edit_genome_search').val();
-
-	$("#wait_genome").animate({opacity:1});
-	$("#select_genome_items").html("<option disabled='disabled'>Searching...</option>");
-	pageObj.timestamp['genomes'] = new Date().getTime();
-
-	$.ajax({
-		data: {
-			fname: 'search_genomes',
-			lid: '<TMPL_VAR NAME="LID">',
-			search_term: search_term,
-			timestamp: pageObj.timestamp['genomes']
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			if (items.timestamp == pageObj.timestamp['genomes']) {
-				$("#select_genome_items").html(items.html);
-				$("#wait_genome").animate({opacity:0});
-			}
-		},
-	});
-}
-
-function search_experiments (search_term) {
-	var search_term = $('#edit_experiment_search').val();
-
-	$("#wait_experiment").animate({opacity:1});
-	$("#select_experiments_items").html("<option disabled='disabled'>Searching...</option>");
-	pageObj.timestamp['experiments'] = new Date().getTime();
-
-	$.ajax({
-		data: {
-			fname: 'search_experiments',
-			lid: '<TMPL_VAR NAME="LID">',
-			search_term: search_term,
-			timestamp: pageObj.timestamp['experiments']
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			if (items.timestamp == pageObj.timestamp['experiments']) {
-				$("#select_experiment_items").html(items.html);
-				$("#wait_experiment").animate({opacity:0});
-			}
-		},
-	});
-}
-
-function search_features () {
-	var search_term = $('#edit_feature_search').attr('value');
-
-	$("#wait_feature").animate({opacity:1});
-	$("#select_feature_items").html("<option disabled='disabled'>Searching...</option>");
-	pageObj.timestamp['features'] = new Date().getTime();
-
-	$.ajax({
-		data: {
-			fname: 'search_features',
-			lid: '<TMPL_VAR NAME="LID">',
-			search_term: search_term,
-			timestamp: pageObj.timestamp['features']
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			if (items.timestamp == pageObj.timestamp['features']) {
-				$("#select_feature_items").html(items.html);
-				$("#wait_feature").animate({opacity:0});
-			}
-		},
-	});
-}
-
-function search_lists () {
-	var search_term = $('#edit_list_search').attr('value');
-
-	$("#wait_list").animate({opacity:1});
-	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
-	pageObj.timestamp['lists'] = new Date().getTime();
-
-	$.ajax({
-		data: {
-			fname: 'search_lists',
-			lid: '<TMPL_VAR NAME="LID">',
-			search_term: search_term,
-			timestamp: pageObj.timestamp['lists']
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			if (items.timestamp == pageObj.timestamp['lists']) {
-				$("#select_list_items").html(items.html);
-				$("#wait_list").animate({opacity:0});
-			}
-		},
-	});
-}
-
-function delete_list () {
-	$.ajax({
-		data: {
-			fname: 'delete_list',
-			lid: '<TMPL_VAR NAME="LID">',
-		},
-		success : function(val) {
-			location.reload();
-		},
-	});
-}
-
-function send_list_to() {
-	var action = $('#checked_action').val();
-
-	$.ajax({
-		data: {
-			fname: action,
-			lid: '<TMPL_VAR NAME="LID">'
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			if (items.alert) {
-				alert(items.alert);
-			}
-			if (items.url) {
-				window.open(items.url, '_blank');
-			}
-		}
-	});
-}
-</SCRIPT>
-
 <table>
 	<tr class="top">
 		<td>
-			<div style="color:dimgray;font-weight:bold;">Info</div>
+			<div class="bold text">Info</div>
 			<div id="list_info">
 				<TMPL_VAR NAME="LIST_INFO">
 			</div>
 		</td>
 		<td style="padding-left:20px;">
 			<TMPL_IF NAME="LIST_ANNOTATIONS">
-				<span style="color:dimgray;font-weight:bold;">Metadata</span><br>
+				<span class="bold text">Metadata</span><br>
 				<div id='list_annotations'>
 					<TMPL_VAR NAME="LIST_ANNOTATIONS">
 				</div>
@@ -413,12 +22,11 @@ function send_list_to() {
 
 <TMPL_IF NAME="LIST_CONTENTS">
 	<div style="padding-left:5px;">
-		<span style="color:dimgray;font-weight:bold;">Contents</span><br>
+		<span class="bold text">Contents</span><br>
 		<div id="list_contents">
 			<TMPL_VAR NAME="LIST_CONTENTS">
 		</div>
 	</div>
-	<br>
 	<div class='small' style="padding-left:5px;">
 		Send contents to:
 		<select name="checked_action" id="checked_action">
@@ -445,7 +53,64 @@ function send_list_to() {
 
 <div id="list_contents_edit_box" class="dialog_box" title="Add Items to Notebook" style="display:none;"></div>
 
-</TMPL_IF>
+<br><br>
+<div id="newsfeed-section" style="padding-left:5px;">
+	<span class="bold text">History</span><br>
+	<table id="newsfeed" class="small border-top">
+	</table>
+</div>
+
+<script language="JavaScript">
+const NOTEBOOK_ID = '<TMPL_VAR NAME="NOTEBOOK_ID">';
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER">';
+const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
+
+$(function() {
+	pageObj = new Object();
+	pageObj.timestamp = new Array();
+	pageObj.timers = new Array();
+
+	$.ajaxSetup({
+		type: "GET",
+		url: "<TMPL_VAR NAME='PAGE_NAME'>",
+		dataType: "html",
+		cache: false,
+	});
+
+	$(".dialog_box").dialog({autoOpen: false, width: 450});
+
+	set_contents_table();
+	set_annotation_table();
+
+	init_annotation_dialog(NOTEBOOK_ID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+	
+	// Initialize web services
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
+    });
+	
+    // Initialize newsfeed
+	coge.newsfeed.init({ 
+		element_id: 'newsfeed',
+		id: NOTEBOOK_ID,
+		type: "notebook"
+	});
+});
+</SCRIPT>
+
+<script type="text/javascript" src="./js/pages/notebook-view.js"></script>
+<script type="text/javascript" src="./js/coge/services.js"></script>
+<script type="text/javascript" src="./js/coge/newsfeed.js"></script>
+<script type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
+<script type="text/javascript" src="./js/jquery.tablesorter.pager.js"></script>
+<!--<script type="text/javascript" src="./js/filterlist.js"></script>-->
+<script type="text/javascript" src="./js/jquery.fileupload.js"></script>
+</TMPL_IF> <!-- MAIN -->
 
 <TMPL_IF NAME='EDIT_LIST_INFO'>
 <table class="small">
@@ -469,7 +134,7 @@ function send_list_to() {
 </table>
 <br>
 <span onClick="update_list_info();" class='ui-button ui-corner-all'>Update</span>
-</TMPL_IF>
+</TMPL_IF> <!-- EDIT_LIST_INFO -->
 
 <TMPL_IF NAME='ADD_LIST_ITEMS'>
 <SCRIPT language="JavaScript">
@@ -611,7 +276,7 @@ $(document).ready(function() {
 	-->
 
 </div> <!-- tabs -->
-</TMPL_IF>
+</TMPL_IF> <!-- ADD_LIST_ITEMS -->
 
 <TMPL_IF NAME='ADMIN_AREA'>
 <br>
