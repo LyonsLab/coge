@@ -351,46 +351,47 @@ sub delete_items {
 		my $type_name;
 
         #print STDERR "delete $item_id $item_type\n";
+        my $item_obj;
         if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
-            my $group = $DB->resultset('UserGroup')->find($item_id);
-		    return unless ( $group and $group->is_editable($USER) );
-		    return if ( $group->locked and !$USER->is_admin );
+            $item_obj = $DB->resultset('UserGroup')->find($item_id);
+		    return unless ( $item_obj and $item_obj->is_editable($USER) );
+		    return if ( $item_obj->locked and !$USER->is_admin );
 
-			$group->deleted(1);
-            $group->update;
+			$item_obj->deleted(1);
+            $item_obj->update;
 			$type_name = 'user group';
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $DB->resultset('List')->find($item_id);
-            return unless $notebook;
+            $item_obj = $DB->resultset('List')->find($item_id);
+            return unless $item_obj;
 
-            if ( !$notebook->locked
-                and ( $USER->is_admin or $USER->is_owner( list => $notebook ) )
+            if ( !$item_obj->locked
+                and ( $USER->is_admin or $USER->is_owner( list => $item_obj ) )
               )
             {
-                $notebook->deleted(1);
-                $notebook->update;
+                $item_obj->deleted(1);
+                $item_obj->update;
                 $type_name = 'notebook';
             }
         }
         elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $DB->resultset('Genome')->find($item_id);
-            return unless $genome;
+            $item_obj = $DB->resultset('Genome')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( dsg => $genome ) ) {
-                $genome->deleted(1);
-                $genome->update;
+            if ( $USER->is_admin or $USER->is_owner( dsg => $item_obj ) ) {
+                $item_obj->deleted(1);
+                $item_obj->update;
                 $type_name = 'genome';
             }
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $DB->resultset('Experiment')->find($item_id);
-            return unless $experiment;
+            $item_obj = $DB->resultset('Experiment')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( experiment => $experiment ) )
+            if ( $USER->is_admin or $USER->is_owner( experiment => $item_obj ) )
             {
-                $experiment->deleted(1);
-                $experiment->update;
+                $item_obj->deleted(1);
+                $item_obj->update;
                 $type_name = 'experiment';
             }
         }
@@ -402,7 +403,7 @@ sub delete_items {
 			    db          => $DB,
 			    user_id     => $USER->id,
 			    page        => $PAGE_TITLE,
-			    description => "delete $type_name id$item_id",
+			    description => "deleted $type_name " . $item_obj->info_html,
 			    parent_id   => $item_id,
 			    parent_type => $item_type_code
 			);
@@ -422,44 +423,45 @@ sub undelete_items {
         my $type_name;
 
         #print STDERR "undelete $item_id $item_type\n";
+        my $item_obj;
         if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
-            my $group = $DB->resultset('UserGroup')->find($item_id);
-            return unless $group;
+            $item_obj = $DB->resultset('UserGroup')->find($item_id);
+            return unless $item_obj;
 
-            if ( $group->is_editable($USER) ) {
-                $group->deleted(0);
-                $group->update;
+            if ( $item_obj->is_editable($USER) ) {
+                $item_obj->deleted(0);
+                $item_obj->update;
                 $type_name = 'user group';
             }
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $DB->resultset('List')->find($item_id);
-            return unless $notebook;
+            $item_obj = $DB->resultset('List')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( list => $notebook ) ) {
-                $notebook->deleted(0);
-                $notebook->update;
+            if ( $USER->is_admin or $USER->is_owner( list => $item_obj ) ) {
+                $item_obj->deleted(0);
+                $item_obj->update;
                 $type_name = 'notebook';
             }
         }
         elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $DB->resultset('Genome')->find($item_id);
-            return unless $genome;
+            $item_obj = $DB->resultset('Genome')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( dsg => $genome ) ) {
-                $genome->deleted(0);
-                $genome->update;
+            if ( $USER->is_admin or $USER->is_owner( dsg => $item_obj ) ) {
+                $item_obj->deleted(0);
+                $item_obj->update;
                 $type_name = 'genome';
             }
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $DB->resultset('Experiment')->find($item_id);
-            return unless $experiment;
+            $item_obj = $DB->resultset('Experiment')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( experiment => $experiment ) )
+            if ( $USER->is_admin or $USER->is_owner( experiment => $item_obj ) )
             {
-                $experiment->deleted(0);
-                $experiment->update;
+                $item_obj->deleted(0);
+                $item_obj->update;
                 $type_name = 'experiment';
             }
         }
@@ -474,7 +476,7 @@ sub undelete_items {
 			    db          => $DB,
 			    user_id     => $USER->id,
 			    page        => $PAGE_TITLE,
-			    description => "undelete $type_name id$item_id",
+			    description => "undeleted $type_name " . $item_obj->info_html,
 			    parent_id   => $item_id,
 			    parent_type => $item_type_code
 			);
@@ -1093,7 +1095,7 @@ sub add_users_to_group {
 		        db          => $DB,
 		        user_id     => $USER->id,
 		        page        => $PAGE_TITLE,
-		        description => 'add user id' . $user->id . ' to group id' . $target_id,
+		        description => 'added user ' . $user->info_html . ' to group ' . $target_group->info_html,
 		        parent_id   => $target_id,
 		        parent_type => 6 #FIXME magic number
 		    );
@@ -1146,7 +1148,7 @@ sub remove_user_from_group {
 		    db          => $DB,
 		    user_id     => $USER->id,
 		    page        => $PAGE_TITLE,
-		    description => 'remove user id' . $user_id . ' from group id' . $target_id,
+		    description => 'removed user ' . $user->info_html . ' from group ' . $target_group->info_html,
 		    parent_id   => $target_id,
 		    parent_type => 6 #FIXME magic number
 		);
@@ -1679,7 +1681,7 @@ sub create_new_group {
 		db          => $DB,
 		user_id     => $USER->id,
 		page        => $PAGE_TITLE,
-		description => 'create user group id' . $group->id,
+		description => 'created group ' . $group->info_html,
 		parent_id   => $group->id,
 		parent_type => 6 #FIXME magic number
 	);
@@ -1729,7 +1731,7 @@ sub create_new_notebook {
         db          => $DB,
         user_id     => $USER->id,
         page        => "$PAGE_TITLE",
-        description => 'create notebook id' . $list->id,
+        description => 'created notebook ' . $list->info_html,
         parent_id   => $list->id,
         parent_type => 1 #FIXME magic number
     );

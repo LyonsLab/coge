@@ -278,6 +278,10 @@ sub add_user_to_group {
     if ( $group->locked && !$USER->is_admin ) {
         return "This group is locked and cannot be modified.";
     }
+    
+    # Find user -- only needed for display name
+    my $user = $coge->resultset('User')->find($uid);
+    return unless $user;
 
     # Create user connection to group
     my $conn = $coge->resultset('UserConnector')->create(
@@ -296,7 +300,7 @@ sub add_user_to_group {
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
-        description => 'add user id' . $uid . ' to group id' . $ugid,
+        description => 'added user ' . $user->info_html . ' to group ' . $group->info_html,
         parent_id   => $ugid,
         parent_type => 6 #FIXME magic number
     );
@@ -308,6 +312,10 @@ sub remove_user_from_group {
     my %opts = @_;
     my $ugid = $opts{ugid};
     my $uid  = $opts{uid};
+    
+    # Find user -- only needed for display name
+    my $user = $coge->resultset('User')->find($uid);
+    return unless $user;
 
     # Find group and check permission to modify
     my $group = $coge->resultset('UserGroup')->find($ugid);
@@ -326,7 +334,7 @@ sub remove_user_from_group {
     {                                               # only allow this for admins
         return "Can't remove the group creator!";
     }
-
+    
     # Remove all user connections to group
     foreach (
         $coge->resultset('UserConnector')->search(
@@ -347,7 +355,7 @@ sub remove_user_from_group {
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
-        description => 'remove user id' . $uid . ' from group id' . $ugid,
+        description => 'removed user ' . $user->info_html . ' to group ' . $group->info_html,
         parent_id   => $ugid,
         parent_type => 6 #FIXME magic number
     );
