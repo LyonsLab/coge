@@ -53,6 +53,15 @@ var coge = window.coge = (function(namespace) {
 			return this._ajax("GET", BASE_URL + "jobs/" + id);
 		},
 		
+		fetch_logs: function(id, type) {
+			this._debug('fetch_logs');
+			if (!id || !type) {
+				this._error('fetch_job: missing id/type value');
+				return;
+			}
+			return this._ajax("GET", BASE_URL + "logs/" + type + '/' + id);
+		},
+		
 		irods_list: function(path) {
 			return this._ajax("GET", BASE_URL + "irods/list/" + path);
 		},

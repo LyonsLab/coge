@@ -23,12 +23,30 @@ sub fetch {
     }
 
     # Fetch log entries
-    my @entries = $db->resultset('Log')->search({ parent_id => $id, parent_type => $type });
+    my @entries;
+    my $node_types = CoGeX::node_types();
+    my $type_code = $node_types->{$type};
+    @entries = $db->resultset('Log')->search({ parent_id => $id, parent_type => $type_code }) if $type_code;
+    
+    my @formatted = map { 
+        {   id => $_->id, 
+            description => $_->description,
+            time => $_->time,
+            link => $_->link,
+            user => {
+                id => $_->user_id,
+                name => $_->user->display_name,
+                image_id => $_->user->image_id
+            },
+            parent_id => $_->id,
+            parent_type => CoGeX->node_type_name($_->parent_type)
+        } 
+    } @entries;
 
     $self->render(json => {
         id => int($id),
-        type => 'blah',
-        entries => \@entries
+        type => $type,
+        entries => \@formatted
     });
 }
 

@@ -124,8 +124,10 @@ sub gen_body {
     $template->param(
         MAIN         => 1,
         PAGE_NAME    => $PAGE_TITLE . '.pl',
-        LID          => $lid,
-        DEFAULT_TYPE => 'note'
+        NOTEBOOK_ID  => $lid,
+        DEFAULT_TYPE => 'note',
+        API_BASE_URL => 'api/v1/', #TODO move into config file or module
+        USER         => $USER->user_name
     );
     $template->param( LIST_INFO => get_list_info( lid => $lid ) );
     $template->param( LIST_ANNOTATIONS => get_annotations( lid => $lid ) );
@@ -774,7 +776,7 @@ sub remove_list_item {
             db          => $coge,
             user_id     => $USER->id,
             page        => "NotebookView",
-            description => "remove $type_name id$item_id from notebook $lid",
+            description => "removed $type_name id$item_id from notebook $lid",
             link        => "NotebookView.pl?nid=$lid",
             parent_id   => $lid,
             parent_type => 1 #FIXME magic number
