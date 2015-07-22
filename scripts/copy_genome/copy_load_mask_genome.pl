@@ -70,8 +70,7 @@ $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 # Get paths to external scripts
 my $fasta_genome_loader   = $P->{SCRIPTDIR} . '/load_genome.pl';
-my $replicate_annotations =
-  $P->{SCRIPTDIR} . '/copy_genome/replicate_annotations.pl';
+my $replicate_annotations = $P->{SCRIPTDIR} . '/copy_genome/replicate_annotations.pl';
 my $windowmasker = $P->{SCRIPTDIR} . '/copy_genome/windowmasker';
 my $hard_mask    = $P->{SCRIPTDIR} . '/copy_genome/hard_mask.pl';
 
@@ -177,12 +176,13 @@ sub load_genome {
     # Get id for newly loaded genome from log file output of load_genome.pl
     my $file = catfile($staging_dir, "log.txt");
     my $log = read_file($file);
-    my ($genomeid) = $log =~ /genome id:\s+\d+/;
-    unless ($genomeid) {
+    my ($genome_id) = $log =~ /genome id:\s+(\d+)/;
+    unless ($genome_id) {
         print $log "Unable able to find genome id in log file: $file\n";
+        return;
     }
 
-    return $genomeid;
+    return $genome_id;
 }
 
 sub get_and_clean_sequence {
