@@ -48,7 +48,7 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 sub generate_html {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param(
-        TITLE      => 'much <span style="color: #119911">genomics. </span>so <span style="color: #119911">comparative.</span>',
+        TITLE      => 'very much <span style="color: #119911">genomics. </span>so <span style="color: #119911">comparative.</span>',
         PAGE_TITLE => 'Comparative Genomics',
         PAGE_LINK  => $LINK,
         HOME       => $P->{SERVER},
