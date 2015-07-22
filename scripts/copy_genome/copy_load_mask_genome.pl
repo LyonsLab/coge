@@ -251,19 +251,3 @@ sub execute {
         exit(-1);
     }
 }
-
-#sub usage {
-#    print STDERR qq{
-#Purpose:  take a genome ID from coge, generate a masked version of the genome, load it into CoGe, and map over the annotations
-#Usage:  $0  -conf_file <coge configuration file> -gid <coge database id for genome to be masked and copies> -uid <coge user id> -go 1
-#
-#Options:
-#   -go 1                  |      Make the database calls.  Default 0
-#   -conf_file | cf        |      CoGe conf file
-#   -gid                   |      CoGe genome id
-#   -mask                  |      Mask the genome with NCBI's windowmasker
-#   -restricted            |      mark genome as restricted (Defaults to whatever is set for gid's genome)
-#   -uid                   |      CoGe user id to whom the new genome will be assigned
-#};
-#    exit;
-#}
