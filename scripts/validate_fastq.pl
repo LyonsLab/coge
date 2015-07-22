@@ -45,7 +45,7 @@ sub validate_fastq_data_file {
             $count++;
 
             if (length $seq != length $qual) {
-                print STDOUT "log: error: invalid record \#$count: sequence line length differs from quality line length)\n",
+                print STDOUT "log: error: invalid record \#$count: sequence line length differs from quality line length\n",
                              "$line",
                              "$seq\n",
                              "$line3",

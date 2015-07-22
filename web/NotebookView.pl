@@ -124,8 +124,10 @@ sub gen_body {
     $template->param(
         MAIN         => 1,
         PAGE_NAME    => $PAGE_TITLE . '.pl',
-        LID          => $lid,
-        DEFAULT_TYPE => 'note'
+        NOTEBOOK_ID  => $lid,
+        DEFAULT_TYPE => 'note',
+        API_BASE_URL => 'api/v1/', #TODO move into config file or module
+        USER         => $USER->user_name
     );
     $template->param( LIST_INFO => get_list_info( lid => $lid ) );
     $template->param( LIST_ANNOTATIONS => get_annotations( lid => $lid ) );
@@ -310,7 +312,7 @@ sub get_annotations {
 
     my $html;
     if ($num_annot) {
-        $html .= '<table id="list_annotation_table" class="ui-widget-content ui-corner-all" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        $html .= '<table id="list_annotation_table" class="border-top border-bottom" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
         foreach my $group ( sort keys %groups ) {
             my $first = 1;
             foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
@@ -358,7 +360,7 @@ sub get_annotations {
         $html .= '</tbody></table>';
     }
     elsif ($user_can_edit) {
-        $html .= '<table class="ui-widget-content ui-corner-all small padded note"><tr><td>There are no additional metadata items for this notebook.</tr></td></table>';
+        $html .= '<table class="border-top border-bottom small padded note"><tr><td>There are no additional metadata items for this notebook.</tr></td></table>';
     }
 
     if ($user_can_edit) {
@@ -576,7 +578,7 @@ sub get_list_contents {
     my $list_count = $list->lists( count => 1 );
 
     if ($genome_count or $exp_count or $feat_count or $list_count) {
-        $html = '<table id="list_contents_table" class="ui-widget-content ui-corner-all" style="border-spacing:0;border-collapse:collapse;">';#<thead style="display:none;"></thead><tbody>';
+        $html = '<table id="list_contents_table" class="border-top border-bottom" style="border-spacing:0;border-collapse:collapse;">';
 
         #my $delete_count=0;
         foreach my $genome ( sort genomecmp $list->genomes ) {
@@ -673,7 +675,7 @@ sub get_list_contents {
         $html .= '</table>';#'</tbody></table>';
     }
     else {
-        $html .= '<table class="ui-widget-content ui-corner-all padded note"><tr><td>This notebook is empty.</tr></td></table>';
+        $html .= '<table class="border-top border-bottom padded note"><tr><td>This notebook is empty.</tr></td></table>';
     }
 
     if ($user_can_edit) {
@@ -738,7 +740,9 @@ sub add_item_to_list {
         user_id     => $USER->id,
         page        => "NotebookView",
         description => "add $type_name id$item_id to notebook $lid",
-        link        => "NotebookView.pl?nid=$lid"
+        link        => "NotebookView.pl?nid=$lid",
+        parent_id   => $lid,
+        parent_type => 1 #FIXME magic number
     );
 
     return 1;
@@ -772,8 +776,10 @@ sub remove_list_item {
             db          => $coge,
             user_id     => $USER->id,
             page        => "NotebookView",
-            description => "remove $type_name id$item_id from notebook $lid",
-            link        => "NotebookView.pl?nid=$lid"
+            description => "removed $type_name id$item_id from notebook $lid",
+            link        => "NotebookView.pl?nid=$lid",
+            parent_id   => $lid,
+            parent_type => 1 #FIXME magic number
         );
     }
 

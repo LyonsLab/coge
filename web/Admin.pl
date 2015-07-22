@@ -20,6 +20,8 @@ use CoGe::Accessory::Web;
 use Benchmark;
 no warnings 'redefine';
 
+$|=1;
+
 use vars
   qw($P $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE $JEX);
 
@@ -32,6 +34,8 @@ $JEX =
 $MAX_SEARCH_RESULTS = 400;
 
 my $node_types = CoGeX::node_types();
+my $filename = '/home/franka1/repos/coge/web/admin_error.log';
+open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
 
 #print STDERR $node_types->{user};
 
@@ -61,6 +65,7 @@ my $node_types = CoGeX::node_types();
     get_user_table					=> \&get_user_table,
     get_group_table					=> \&get_group_table,
     get_total_table					=> \&get_total_table,
+    gen_tree_json					=> \&gen_tree_json,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -85,8 +90,6 @@ sub gen_html {
 }
 
 sub gen_body {
-
-	#print STDERR "BODY\n";
 	# Hide this page if the user is not an Admin
 	unless ( $USER->is_admin ) {
 		my $template =
@@ -551,7 +554,6 @@ sub add_items_to_user_or_group {
 	#print STDERR Dumper(\@verified);
 
 	# Assign each item to user/group
-	# print STDERR "add_items_to_user_or_group $target_id $target_type\n";
 	#TODO verify that user can use specified role (for admin/owner roles)
 	if ( $target_type == $node_types->{user} ) {
 		my $user = $coge->resultset('User')->find($target_id);
@@ -590,7 +592,6 @@ sub add_items_to_user_or_group {
 				}
 			);
 
-			#print STDERR "$conn\n";
 			return unless $conn;
 		}
 	}
@@ -601,10 +602,6 @@ sub add_items_to_user_or_group {
 
 		foreach (@verified) {
 			my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
-
-			#print STDERR "   group: $item_id $item_type\n";
-			#my $var = $group->role_id;
-			#print STDERR "$target_id $var\n";
 
 			my $conn = $coge->resultset('UserConnector')->find_or_create(
 				{
@@ -962,8 +959,6 @@ sub search_share {
 	my $search_term = escape( $opts{search_term} );
 	my $timestamp   = $opts{timestamp};
 
-	#print STDERR "search_share $search_term $timestamp\n";
-
 	my @results;
 
 # Search for matching users
@@ -1005,8 +1000,10 @@ sub modify_item {
     my $id  = $opts{id};
     my $mod  = $opts{modification};
     my $type = $opts{type};
-    print STDERR "$mod $type $id\n";
+    #print STDERR "$mod $type $id\n";
     return 0 unless $id;
+    my $item_type = $node_types->{lc($type)}; # mdb added 7/21/15 for newsfeed
+    die unless $item_type;
 
     my $item = $coge->resultset($type)->find($id);
     return 0 unless $item;
@@ -1027,7 +1024,9 @@ sub modify_item {
         db          => $coge,
         user_id     => $USER->id,
         page        => "Admin",
-        description => "$log_message $type id $id"
+        description => "$log_message $type id $id",
+        parent_id   => $id,
+        parent_type => $item_type
     );
 
     return 1;
@@ -1100,7 +1099,9 @@ sub add_users_to_group {
                 db          => $coge,
                 user_id     => $USER->id,
                 page        => "Admin",
-                description => 'add user id' . $user->id . ' to group id' . $target_id
+                description => 'add user id' . $user->id . ' to group id' . $target_id,
+                parent_id   => $target_id,
+                parent_type => 6 #FIXME magic number
             );
         }
     }
@@ -1151,7 +1152,9 @@ sub remove_user_from_group {
             db          => $coge,
             user_id     => $USER->id,
             page        => "Admin",
-            description => 'remove user id' . $user_id . ' from group id' . $target_id
+            description => 'remove user id' . $user_id . ' from group id' . $target_id,
+            parent_id   => $target_id,
+            parent_type => 6
         );
     }
 
@@ -1219,15 +1222,6 @@ sub get_jobs_for_user {
 
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
     my @workflows = map { $_->workflow_id } @entries;
-    
-    ######
-    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    #my $print_thing = get_roles($lowest_role->name);
-    #print $fh Dumper(\@workflows);
-    #print $fh "\n";
-    #close $fh;
-    #print $fh Dumper(\@items);
     
     #my $workflows = $JEX->find_workflows(\@workflows, 'running');
     my $workflows;
@@ -1387,12 +1381,6 @@ sub get_history_for_user {
           };
     }
 
-    # print STDERR "items: " . @items . "\n";
-    #my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-    #open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-    #print $fh Dumper(\@items);
-    #close $fh;
-
     return encode_json(\@items);
 }
 
@@ -1501,7 +1489,7 @@ sub get_user_nodes {
     {
         if ( $conn->child_type == $node_types->{list} ) {
         	my @children = $childrenByList{ $conn->child_id};
-    		my $sub = @children[0];
+    		my $sub = $children[0];
     		my $size = 1;
     		if($sub) {
     			$size = scalar @{$sub};
@@ -1536,7 +1524,7 @@ sub get_user_nodes {
     my @users;
     foreach my $user ( $coge->resultset('User')->all ) {
     	my @children = $childrenByUser{ $user->id};
-    	my $sub = @children[0];
+    	my $sub = $children[0];
     	my $size = 1;
     	if($sub) {
     		$size = scalar @{$sub};
@@ -1602,7 +1590,7 @@ sub get_group_nodes {
     {
         if ( $conn->child_type == $node_types->{list} ) {
         	my @children = $childrenByList{ $conn->child_id};
-    		my $sub = @children[0];
+    		my $sub = $children[0];
     		my $size = 1;
     		if($sub) {
     			$size = scalar @{$sub};
@@ -1636,7 +1624,7 @@ sub get_group_nodes {
     my @groups;
     foreach my $group ( $coge->resultset('UserGroup')->all ) {
     	my @children = $childrenByGroup{ $group->id};
-    	my $sub = @children[0];
+    	my $sub = $children[0];
     	my $size = 1;
     	if($sub) {
     		$size = scalar @{$sub};
@@ -1670,12 +1658,20 @@ sub get_user_table {
 	my %opts       = @_;
     my $filter = $opts{filter};
     my %query;
+    my %operators;
+    my $shared = 0;
     if ($filter eq "restricted") {
     	%query = ('restricted', '1');
     } elsif ($filter eq "deleted") {
     	%query = ('deleted', '1');
     } elsif ($filter eq "public") {
     	%query = ('restricted', '0', 'deleted', '0');
+    } elsif ($filter eq "public (owned)") {
+    	%query = ('restricted', '0', 'deleted', '0', 'creator_id', '0');
+    	%operators = ('restricted', '=', 'deleted', '=', 'creator_id', '!=')
+    } elsif ($filter eq "shared") {
+    	%query = ('restricted', '1');
+    	$shared = 1;
     }
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @data;
@@ -1683,59 +1679,83 @@ sub get_user_table {
 	
 	my @users = CoGeDBI::get_table($db->storage->dbh, 'user');
 	
-	keys @users[0]; # reset the internal iterator so a prior each() doesn't affect the loop
-	while(my($id, $user) = each @users[0]) {
+	keys $users[0]; # reset the internal iterator so a prior each() doesn't affect the loop
+	while(my($id, $user) = each $users[0]) {
 		my $table = CoGeDBI::get_user_access_table($db->storage->dbh, $id);
 		
-		my $notebooks = ${$table}{1};
+		my $notebooks = $table->{1};
 		my $note_size = 0;
 		foreach my $note_id (keys %$notebooks) {
 			my @filtered_notebooks;
 			if (keys %query) {
 				my %note_query = %query;
 				$note_query{list_id} = $note_id;
-				@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query);
+				if (%operators) {
+					my %note_operators = %operators;
+					$note_operators{list_id} = "=";
+					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query, \%note_operators);
+				} else {
+					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query);
+				}
 			} else {
 				$note_size++;
 			}
-			if (scalar(@filtered_notebooks) != 0 && keys @filtered_notebooks[0]) {
-				$note_size++;
+			if (scalar(@filtered_notebooks) != 0 && keys $filtered_notebooks[0]) {
+				if ($shared == 0 || $table->{1}->{$note_id}->{role_id} != 2) {
+					$note_size++;
+				}
 			}
 		}
 		
-		my $genomes = ${$table}{2};
+		my $genomes = $table->{2};
 		my $gen_size = 0;
 		foreach my $gen_id (keys %$genomes) {
 			my @filtered_genomes;
 			if (keys %query) {
 				my %gen_query = %query;
 				$gen_query{genome_id} = $gen_id;
-				@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+				if (%operators) {
+					my %gen_operators = %operators;
+					$gen_operators{genome_id} = "=";
+					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query, \%gen_operators);
+				} else {
+					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+				}
 			} else {
 				$gen_size++;
 			}
-			if (scalar(@filtered_genomes) != 0 && keys @filtered_genomes[0]) {
-				$gen_size++;
+			if (scalar(@filtered_genomes) != 0 && keys $filtered_genomes[0]) {
+				if ($shared == 0 || ($table->{2}->{$gen_id}->{role_id} && $table->{2}->{$gen_id}->{role_id} != 2)) {
+					$gen_size++;
+				}
 			}
 		}
 		
-		my $experiments = ${$table}{3};
+		my $experiments = $table->{3};
 		my $exp_size = 0;
 		foreach my $exp_id (keys %$experiments) {
 			my @filtered_experiments;
 			if (keys %query) {
 				my %exp_query = %query;
 				$exp_query{experiment_id} = $exp_id;
-				@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+				if (%operators) {
+					my %exp_operators = %operators;
+					$exp_operators{experiment_id} = "=";
+					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query, \%exp_operators);
+				} else {
+					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+				}
 			} else {
 				$exp_size++;
 			}
-			if (scalar(@filtered_experiments) != 0 && keys @filtered_experiments[0]) {
-				$exp_size++;
+			if (scalar(@filtered_experiments) != 0 && keys $filtered_experiments[0]) {
+				if ($shared == 0 || ($table->{3}->{$exp_id}->{role_id} && $table->{3}->{$exp_id}->{role_id} != 2)) {
+					$exp_size++;
+				}
 			}
 		}
 		
-		my $groups = ${$table}{6};
+		my $groups = $table->{6};
 		my $group_size = keys %$groups;
 		
 		my @user_data;
@@ -1745,13 +1765,17 @@ sub get_user_table {
 		push @user_data, "$exp_size";
 		push @user_data, "$group_size";
 		
-		push @data[0], \@user_data;
+		push $data[0], \@user_data;
 	}
 	
 	return encode_json(
 		{
 			data => @data,
 			bPaginate => 0,
+			columnDefs => [{ 
+				orderSequence => [ "desc", "asc" ], 
+				targets => [1, 2, 3, 4, 5],
+			}],
 		}
 	);
 }
@@ -1760,76 +1784,105 @@ sub get_group_table {
 	my %opts       = @_;
     my $filter = $opts{filter};
     my %query;
+    my %operators;
+    my $shared = 0;
     if ($filter eq "restricted") {
     	%query = ('restricted', '1');
     } elsif ($filter eq "deleted") {
     	%query = ('deleted', '1');
     } elsif ($filter eq "public") {
     	%query = ('restricted', '0', 'deleted', '0');
+    } elsif ($filter eq "public (owned)") {
+    	%query = ('restricted', '0', 'deleted', '0', 'creator_id', '0');
+    	%operators = ('restricted', '=', 'deleted', '=', 'creator_id', '!=')
+    } elsif ($filter eq "shared") {
+    	%query = ('restricted', '1');
+    	$shared = 1;
     }
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @data;
 	push @data, []; 	#needed to format for dataTables
 	
 	my @groups = CoGeDBI::get_table($db->storage->dbh, 'user_group');
+	my @connectors;
+	if ($shared) { #get connection table if needed
+		@connectors = CoGeDBI::get_table($db->storage->dbh, 'user_connector', undef, {role_id => 2}, {role_id => "!="});
+	}
+	######TODO: add "shared" functionality
 	
-	keys @groups[0]; # reset the internal iterator so a prior each() doesn't affect the loop
-	while(my($id, $group) = each @groups[0]) {
+	keys $groups[0]; # reset the internal iterator so a prior each() doesn't affect the loop
+	while(my($id, $group) = each $groups[0]) {
 		my $table = CoGeDBI::get_group_access_table($db->storage->dbh, $id);
 		
-		my $notebooks = ${$table}{1};
+		my $notebooks = $table->{1};
 		my $note_size = 0;
 		foreach my $note_id (keys %$notebooks) {
-
-			#my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-			#open(my $fh, '>', $filename) or die "Could not open file '$filename' $!";
-			#	print $fh scalar(keys @filtered_notebooks[0]);
-			#	print $fh "\n";
-			#print $fh Dumper(\%query);
-			#print $fh "\n";
-			#close $fh;	
 			my @filtered_notebooks;
 			if (keys %query) {
-				my %list_query = %query;
-				$list_query{list_id} = $note_id;
-				@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%list_query);
+				my %note_query = %query;
+				$note_query{list_id} = $note_id;
+				if (%operators) {
+					my %note_operators = %operators;
+					$note_operators{list_id} = "=";
+					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query, \%note_operators);
+				} else {
+					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query);
+				}
 			} else {
 				$note_size++;
 			}
-			if (scalar(@filtered_notebooks) != 0 && keys @filtered_notebooks[0]) {
-				$note_size++;
+			if (scalar(@filtered_notebooks) != 0 && keys $filtered_notebooks[0]) {
+				if ($shared == 0 || $table->{1}->{$note_id}->{role_id} != 2) {
+					$note_size++;
+				}
 			}	
 		}
 			
-		my $genomes = ${$table}{2};
+		my $genomes = $table->{2};
 		my $gen_size = 0;
 		foreach my $gen_id (keys %$genomes) {
 			my @filtered_genomes;
 			if (keys %query) {
 				my %gen_query = %query;
 				$gen_query{genome_id} = $gen_id;
-				@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+				if (%operators) {
+					my %gen_operators = %operators;
+					$gen_operators{genome_id} = "=";
+					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query, \%gen_operators);
+				} else {
+					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
+				}
 			} else {
 				$gen_size++;
 			}
-			if (scalar(@filtered_genomes) != 0 && keys @filtered_genomes[0]) {
-				$gen_size++;
+			if (scalar(@filtered_genomes) != 0 && keys $filtered_genomes[0]) {
+				if ($shared == 0 || ($table->{2}->{$gen_id}->{role_id} && $table->{2}->{$gen_id}->{role_id} != 2)) {
+					$gen_size++;
+				}
 			}
 		}
 		
-		my $experiments = ${$table}{3};
+		my $experiments = $table->{3};
 		my $exp_size = 0;
 		foreach my $exp_id (keys %$experiments) {
 			my @filtered_experiments;
 			if (keys %query) {
 				my %exp_query = %query;
 				$exp_query{experiment_id} = $exp_id;
-				@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+				if (%operators) {
+					my %exp_operators = %operators;
+					$exp_operators{experiment_id} = "=";
+					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query, \%exp_operators);
+				} else {
+					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
+				}
 			} else {
 				$exp_size++;
 			}
-			if (scalar(@filtered_experiments) != 0 && keys @filtered_experiments[0]) {
-				$exp_size++;
+			if (scalar(@filtered_experiments) != 0 && keys $filtered_experiments[0]) {
+				if ($shared == 0 || ($table->{3}->{$exp_id}->{role_id} && $table->{3}->{$exp_id}->{role_id} != 2)) {
+					$exp_size++;
+				}
 			}
 		}
 		
@@ -1844,13 +1897,17 @@ sub get_group_table {
 		push @group_data, "$exp_size";
 		push @group_data, "$group_size";
 		
-		push @data[0], \@group_data;
+		push $data[0], \@group_data;
 	}
 	
 	return encode_json(
 		{
 			data => @data,
 			bPaginate => 0,
+			columnDefs => [{ 
+				orderSequence => [ "desc", "asc" ], 
+				targets => [1, 2, 3, 4, 5],
+			}],
 		}
 	);
 }
@@ -1875,40 +1932,88 @@ sub get_total_table {
 		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 1});
 		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 1});
 		
-		my $note_size = keys @notebooks[0];
-		my $gen_size = keys@genomes[0];
-		my $exp_size = keys @experiments[0];
+		my $note_size = keys $notebooks[0];
+		my $gen_size = keys $genomes[0];
+		my $exp_size = keys $experiments[0];
 		@inner = ["$note_size", "$gen_size", "$exp_size"];
 	} elsif ($filter eq "deleted") {
 		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {deleted => 1});
 		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {deleted => 1});
 		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {deleted => 1});
 		
-		my $note_size = keys @notebooks[0];
-		my $gen_size = keys@genomes[0];
-		my $exp_size = keys @experiments[0];
+		my $note_size = keys $notebooks[0];
+		my $gen_size = keys $genomes[0];
+		my $exp_size = keys $experiments[0];
 		@inner = ["$note_size", "$gen_size", "$exp_size"];
 	} elsif ($filter eq "public") {
 		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 0, deleted => 0});
 		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 0, deleted => 0});
 		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 0, deleted => 0});
 		
-		my $note_size = keys @notebooks[0];
-		my $gen_size = keys@genomes[0];
-		my $exp_size = keys @experiments[0];
+		my $note_size = keys $notebooks[0];
+		my $gen_size = keys $genomes[0];
+		my $exp_size = keys $experiments[0];
 		@inner = ["$note_size", "$gen_size", "$exp_size"];
-	} else {
+	} elsif ($filter eq "public (owned)") {
+		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 0, deleted => 0, creator_id => 0}, {restricted => "=", deleted => "=", creator_id => "!="});
+		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 0, deleted => 0, creator_id => 0}, {restricted => "=", deleted => "=", creator_id => "!="});
+		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 0, deleted => 0, creator_id => 0}, {restricted => "=", deleted => "=", creator_id => "!="});
+    	
+    	my $note_size = keys $notebooks[0];
+		my $gen_size = keys $genomes[0];
+		my $exp_size = keys $experiments[0];
+		@inner = ["$note_size", "$gen_size", "$exp_size"];
+    } elsif ($filter eq "shared") {
+    	@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 1});
+		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 1});
+		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 1});
+		my @connectors = CoGeDBI::get_table($db->storage->dbh, 'user_connector', undef, {role_id => 2}, {role_id => "!="});
+		my $connectors = $connectors[0];
+		my $notebooks = $notebooks[0];
+		my $genomes = $genomes[0];
+		my $experiments = $experiments[0];
+		my $note_size = 0;
+		my $gen_size = 0;
+		my $exp_size = 0;
+		
+		foreach my $note_id (keys $notebooks) {
+			foreach my $connect_id (keys $connectors) {
+				if ($connectors->{$connect_id}->{child_id} == $note_id) {
+					$note_size++;
+					last;
+				}
+			}
+		}
+		foreach my $gen_id (keys $genomes) {
+			foreach my $connect_id (keys $connectors) {
+				if ($connectors->{$connect_id}->{child_id} == $gen_id) {
+					$gen_size++;
+					last;
+				}
+			}
+		}
+		foreach my $exp_id (keys $experiments) {
+			foreach my $connect_id (keys $connectors) {
+				if ($connectors->{$connect_id}->{child_id} == $exp_id) {
+					$exp_size++;
+					last;
+				}
+			}
+		}
+    	
+		@inner = ["$note_size", "$gen_size", "$exp_size"];
+    } else {
 		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list');
 		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome');
 		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment');
 		@users = CoGeDBI::get_table($db->storage->dbh, 'user');
 		@groups = CoGeDBI::get_table($db->storage->dbh, 'user_group');
 		
-		my $note_size = keys @notebooks[0];
-		my $gen_size = keys@genomes[0];
-		my $exp_size = keys @experiments[0];
-		my $user_size = keys @users[0];
-		my $group_size = keys @groups[0];
+		my $note_size = keys $notebooks[0];
+		my $gen_size = keys $genomes[0];
+		my $exp_size = keys $experiments[0];
+		my $user_size = keys $users[0];
+		my $group_size = keys $groups[0];
 		@inner = ["$note_size", "$gen_size", "$exp_size", "$user_size", "$group_size"]; #because formatting
 	}
 	
@@ -1920,4 +2025,113 @@ sub get_total_table {
 			bPaginate => 0,
 		}
 	);
+}
+
+####
+#TAXONOMY STUFF
+my %taxonomic_tree;
+
+sub gen_tree_json {
+	%taxonomic_tree  = (
+		name => "root", 
+		children => [],
+	);
+
+	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+	my @organism_descriptions = CoGeDBI::get_table($db->storage->dbh, 'organism', undef, {description => "\"%;%\""}, {description => " like "});
+	my $organism_descriptions = $organism_descriptions[0];
+	
+	foreach my $organism (values %$organism_descriptions) {
+		my $taxon_string = $organism->{description};
+		my @taxons = split(/\s*;\s*/, $taxon_string);
+		
+		if($taxons[0]) {
+			$taxons[0] =~ s/^\s+|\s+$//g;
+			my $size = scalar @taxons;
+			$taxons[$size - 1] =~ s/^\s+|\s+$//g;
+			my $sub_tree = gen_subtree(\@taxons);
+			add_to_tree(\%taxonomic_tree, $sub_tree);
+		}
+	}
+    
+	return encode_json(\%taxonomic_tree);
+}
+
+sub check_tree {
+	my $search_term = shift;
+	if (scalar(@_) == 0) {
+		return undef;
+	}
+	
+	my @new_roots;
+	foreach my $root (@_) {
+		foreach my $child (@{$root->{children}}) {
+			push (@new_roots, $child);
+			if(lc $search_term eq lc $child->{name}) {
+				return $child;
+			}
+		}
+	}
+	return check_tree($search_term, @new_roots);
+}
+
+sub gen_subtree {
+	my @array = @{$_[0]};
+	if (scalar(@array) > 0) {
+		my $hash = {
+			name => $array[0],
+			children => [],
+		};
+		#print $fh "$array[0]\n";
+		shift @array;
+		if (scalar(@array) > 0) {
+			push ($hash->{children}, gen_subtree(\@array));
+		}
+		return $hash;
+	}
+}
+
+sub add_to_tree {
+	my $root = $_[0];
+	my $sub_tree = $_[1];
+    my $root_children = \@{$root->{children}}; #array reference
+	my $top_value = $sub_tree->{name};
+	my $find = check_tree($top_value, $root);
+	if (!$find) {
+		#check for inconsistencies
+		add_fix($sub_tree);
+		
+		#add the subtree as a child of the root
+		push ($root_children, $sub_tree);
+	} else {
+		#recurse to the next level of the tree
+		foreach my $child (@{$sub_tree->{children}}) {
+			add_to_tree($find, $child);
+		}
+	}
+}
+
+sub add_fix {
+	my $add_tree = $_[0];
+	my $move_tree;
+	my $i;
+	for ($i = scalar(@{$taxonomic_tree{children}} - 1); $i > -1; $i--) {
+		if ((lc $add_tree->{name}) eq (lc @{$taxonomic_tree{children}}[$i]->{name})) {
+			#print $fh "Inconsistency Detected\n";
+			$move_tree = splice(@{$taxonomic_tree{children}}, $i, 1);
+			
+			foreach my $child (@{$move_tree->{children}}) {
+				#print $fh "Moving: $child->{name} to $add_tree->{name}\n";
+				add_to_tree($add_tree, $child);
+			}
+		}
+	}
+	#check for further inconsistencies
+	foreach my $child (@{$add_tree->{children}}) {
+		add_fix($child);
+	}
+}
+
+if ($fh) {
+	close $fh;
 }

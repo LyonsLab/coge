@@ -1,579 +1,66 @@
-<script type="text/javascript">
-// Begin Widget API -----------------------------------------------------------
-
-// Required global vars
-//    load_id
-//
-// Required callbacks
-//    file_selected()
-//    file_finished()
-//    file_canceled()
-
-function get_selected_files() {
-	var items = new Array();
-	var transferring = 0;
-
-	$('#file_table').find('tr').each(
-		function() {
-			var error = $(this).data('error');
-			if (!error) {
-				var path = $(this).data('path');
-				var type = $(this).data('type');
-				
-				if (path) { // file is finished
-					items.push({
-						'type': type,
-						'path': path,
-					});
-				}
-				else { // file is still transferring
-					transferring++;
-					return;
-				}
-			}
-		}
-	);
-
-	if (transferring || !items.length)
-		return null;
-
-	return items;
-}
-
-function clear_list() {
-	timestamps['ftp'] = new Date().getTime(); // Cancel ftp transfers
-	$('#file_table').html('').hide();
-	$('#ftp_get_button').removeClass('ui-state-disabled');
-	$('#files_clear').addClass('ui-state-disabled');
-}
-
-// End Widget API -------------------------------------------------------------
-
-$(document).ready(function() {
-	//FIXME this function is firing twice, not sure why - tempfix is mutex
-	if (typeof alreadyDone != 'undefined') {
-		return;
-	}
-	alreadyDone = 1;
-
-	if (!load_id) {
-		console.error('FileSelect widget error: load_id not defined!')
-	}
-
-	$("#tabs").tabs({selected:<TMPL_VAR NAME='DEFAULT_TAB'>});
-
-	irods_get_path();
-
-	$('#input_url').bind('keyup focus click', function() {
-		if ( $('#input_url').val() ) {
-			$('#ftp_get_button').removeClass('ui-state-disabled');
-		}
-		else {
-			$('#ftp_get_button').addClass('ui-state-disabled');
-		}
-	});
-
-	$('#input_accn').bind('keyup focus click', function() {
-		if ( $('#input_accn').val() ) {
-			$('#ncbi_get_button').removeClass('ui-state-disabled');
-		}
-		else {
-			$('#ncbi_get_button').addClass('ui-state-disabled');
-		}
-	});
-
-	$('#input_upload_file').fileupload({
-    	dataType: 'json',
-// mdb 10/29/13 - moved below
-//    	formData: {
-//    		fname: 'upload_file',
-//    		load_id: load_id
-//    	},
-    	add:
-    		function(e, data) {
-    			var filename = data.files[0].name;
-				if ( !add_file_to_list(filename, 'file://'+filename) ) {
-					alert('File already exists.');
-				}
-				else {
-					// mdb 10/29/13 - moved from above to prevent stale load_id value, issue 236
-					$('#input_upload_file').fileupload('option', { formData: {
-			    		fname: 'upload_file',
-			    		load_id: load_id
-			    	}});
-
-					data.submit();
-				}
-    		},
-		done:
-			function(e, data) {
-				finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
-			}
-	});
-});
-
-function add_file_to_list(filename, url) {
-	var tr = $('#file_table tr').filter(
-		function() {
-			return (url == $(this).data('url'));
-		}
-	);
-
-	if (tr.length) { // already exists
-		return 0;
-	}
-
-	var tr = $('<tr class="note middle" style="height:1em;"><td style="padding-right:15px;">' +
-			'<span class="text">Name:</span> ' + filename +
-			'</td>' + '</tr>');
-	var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
-	$(tr).append(td).fadeIn();
-	$(tr).data('url', url);
-
-	<TMPL_IF NAME='FILE_SELECT_SINGLE'>
-		$('#file_table').empty(); // remove all rows
-	</TMPL_IF>
-
-	$('#file_table').append(tr).show();
-
-	// Call template user's generic hander if defined
-	if (typeof file_selected === 'function') {
-		file_selected(filename, url);
-	}
-
-	return 1;
-}
-
-function vilify_file_in_list(url, error) {
-	// Find item in list and set error
-	var tr = $('#file_table tr').filter(
-		function() {
-			return (url == $(this).data('url'));
-		}
-	);
-	$(tr).data({
-		error: true
-	});
+<script id="fileselect-template" type="text/template">
+	<div id='fileselect-tabs'>
+	  <ul>
+	    <li class="small"><a href="#fileselect-tab-1">iPlant Data Store</a></li>
+	    <li class="small"><a href="#fileselect-tab-2">FTP/HTTP</a></li>
+	    <li class="small"><a href="#fileselect-tab-3">Upload</a></li>
+	    <TMPL_IF NAME='ENABLE_NCBI'>
+	    <li class="small"><a href="#fileselect-tab-4">NCBI</a></li>
+	    </TMPL_IF>
+	  </ul>
 	
-	$(tr).children().last().remove();
+	  <div id="fileselect-tab-1" class="small">
+		<div style="white-space:nowrap;border-bottom:1px solid gray;">
+			<span id="ids_status" style="float:right;"></span>
+			<input class="fileselect-filter" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;" />
+			<span class='link fileselect-home'><span class='ui-icon ui-icon-home'></span>Home</span>&nbsp;&nbsp;
+			<span class='link fileselect-shared'><span class='ui-icon ui-icon-folder-collapsed'></span>Community Data</span>&nbsp;&nbsp;
+			<span class='link fileselect-up'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>&nbsp;&nbsp;
+			<span class='link fileselect-refresh'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>&nbsp;&nbsp;
+			<TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
+			<span class='link fileselect-getall'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>
+			</TMPL_UNLESS>
+		</div>
+		<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
+	    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
+	    	<table id="ids_table" class="small" style="width:100%;"></table>
+	    </div>
+	  </div>
 	
-	$(tr).append(
-		$('<td><span style="margin-right:15px;">' + (error ? error : 'failed') + '</span></td>' +
-		  '<td><span onClick="cancel_callback(this);" class="link ui-icon ui-icon-closethick"></span></td>')
-			.css({
-				'font-style': 'normal',
-				'color': 'red'
-			})
-			.fadeIn()
-	);
-}
-
-function finish_file_in_list(type, url, path, size) {
-	// Find item in list and update fields
-	var tr = $('#file_table tr').filter(
-		function() {
-			return (url == $(this).data('url'));
-		}
-	);
-	$(tr).data({
-		path: path,
-		type: type
-	});
-
-	// Animate completion in list
-	$(tr).children().last().remove();
-	$(tr).append(
-		$('<td>' +
-			'<span style="margin-right:15px;">' + '<span class="text">Size:</span> ' + units(size) + '</span>' + '</td>' +
-			'<td>' +
-			'<span onClick="cancel_callback(this);" class="link ui-icon ui-icon-closethick"></span>' +
-		  '</td>'
-		).fadeIn()
-	).css({
-		'font-style': 'normal',
-		'color': 'black'
-	});
-
-	// Call template user's generic hander if defined
-	if (typeof file_finished === 'function')
-		file_finished(size, url);
-}
-
-function cancel_callback(that) {
-	// Remove from file list
-	$(that).parents('tr').hide('fast',
-		function() {
-			$(this).remove();
-
-			// Hide table if empty // mdb removed 3/25/15 -- handled in calling code
-//			var file_table = $('#file_table');
-//			if (file_table.find('tr').length == 0)
-//				file_table.hide();
-
-			// Call template user's generic hander if defined
-			if (typeof file_canceled === 'function')
-				file_canceled();
-		}
-	);
-}
-
-function activate_on_input(input_id, button_id) {
-	var a;
-	if (input_id instanceof Array) 
-		a = input_id;
-	else {
-		a = new Array(1);
-		a[0] = input_id;
-	}
-
-	var hide = a.length;
-	for (var i in a) {
-		if ( $('#'+a[i]).val() ) 
-			hide--;
-	}
-
-	if (hide)
-		$('#'+button_id).addClass('ui-state-disabled');
-	else
-		$('#'+button_id).removeClass('ui-state-disabled');
-}
-
-function resolve_path(path) {
-	if (path == '.')
-		return pageObj.current_path;
-	else if (path == '..')
-		return pageObj.parent_path;
-	return path;
-}
-
-function irods_get_path (path) {
-	$('#ids_loading').fadeIn();
-
-	path = resolve_path(path);
-
-	$.ajax({
-		data: {
-			fname: 'irods_get_path',
-			path: path,
-			load_id: load_id,
-		},
-		success : function(data) {
-			$('#ids_loading').fadeOut();
-
-			var result = jQuery.parseJSON(data);
-			if (result == null) 
-				return;
-			if (result.error) {
-				$('#ids_table')
-					.html('<tr><td><span class="alert">'
-					+ 'The following error occurred while accessing the Data Store.<br><br>'
-					+ result.error + '<br><br>'
-					+ 'We apologize for the inconvenience.  Our support staff have already been notified and will resolve the issue ASAP. '
-					+ 'If you just logged into CoGe for the first time, give the system a few minutes to setup your Data Store connection and try again.  '
-					+ 'Please contact <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> with any questions or comments.'
-					+'</span></td></tr>');
-				return;
-			}
-			if (result.items.length > <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>) {
-				alert("Too many files (" + result.items.length + ") to display, the limit is <TMPL_VAR NAME='MAX_IRODS_LIST_FILES'>.");
-				return;
-			}
-
-			$('#ids_table').html('');
-			var parent_path = result.path.replace(/\/$/, '').split('/').slice(0,-1).join('/') + '/';
-
-			// Save for later resolve_path()
-			pageObj.parent_path = parent_path;
-			pageObj.current_path = result.path;
-
-			$('#ids_current_path').html(result.path);
-
-			if (result.items.length == 0) {
-				$('#ids_table').append('<tr><td style="padding-left:20px;font-style:italic;color:gray;">(empty)</td></tr>');
-			}
-
-			result.items.forEach(
-				function(obj) {
-					// Build row in to be displayed
-					var icon;
-					if (obj.type == 'directory') {
-						icon = '<span class="ui-icon ui-icon-folder-collapsed"></span>';
-					}
-					else {
-						icon = '<span class="ui-icon ui-icon-document"></span>';
-					}
-					tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;">' 
-							+ icon
-							+ decodeURIComponent(obj.name) + '</td><td>'
-							+ decodeURIComponent(obj.size) + '</td><td>' 
-							+ decodeURIComponent(obj.timestamp) + '</td></tr>'); // mdb added decodeURI 8/14/14 issue 441
-					if (obj.type == 'directory') {
-						$(tr).click(
-							function() {
-								irods_get_path(obj.path);
-							}
-						);
-					}
-					else {
-						$(tr).click(
-							function() {
-								if ( add_file_to_list(decodeURIComponent(obj.name), 'irods://'+obj.path) ) {
-									irods_get_file(obj.path);
-								}
-								else {
-									alert('File already exists.');
-								}
-							}
-						);
-					}
-
-					$(tr).hover(
-						function() {$(this).css({"cursor":"pointer", "background-color":"greenyellow"});},
-						function() {$(this).css("background-color", "white");}
-					);
-
-					$('#ids_table').append(tr);
-				}
-			);
-		}
-	});
-}
-
-function irods_get_file(path) {
-	$.ajax({
-		data: {
-			fname: 'irods_get_file',
-			path: path,
-			load_id: load_id
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			finish_file_in_list('irods', 'irods://'+path, obj.path, obj.size);
-		},
-	});
-}
-
-function irods_get_all_files (path) {
-	path = resolve_path(path);
-
-	$.ajax({
-		data: {
-			fname: 'irods_get_path',
-			path: path,
-			load_id: load_id,
-		},
-		success : function(data) {
-			var result = jQuery.parseJSON(data);
-			if (!result || !result.items) {
-				return;
-			}
-			if (result.items.length > <TMPL_VAR NAME='MAX_IRODS_TRANSFER_FILES'>) {
-				alert("Too many files (" + result.items.length + ") to retrieve at one time, the limit is <TMPL_VAR NAME='MAX_IRODS_TRANSFER_FILES'>.");
-				return;
-			}
-
-			var count = 0;
-			result.items.forEach(
-				function(obj) {
-					if (obj.type == 'file') {
-						setTimeout(
-							function() {
-								if ( add_file_to_list(obj.name, 'irods://'+obj.path) ) {
-									irods_get_file(obj.path);
-								}
-							},
-							500 * count++
-						);
-					}
-				}
-			);
-		}
-	});
-}
-
-function units(val) {
-	if (isNaN(val)) {
-		return val;
-	}
-	else if (val < 1024) { //>
-		return val;
-	}
-	else if (val < 1024*1024) { //>
-		return Math.ceil(val/1024) + 'K';
-	}
-	else if (val < 1024*1024*1024) { //>
-		return Math.ceil(val/(1024*1024)) + 'M';
-	}
-	else {
-		return Math.ceil(val/(1024*1024*1024)) + 'G';
-	}
-}
-
-function ftp_get_file(url, username, password) {
-	$.ajax({
-		data: {
-			fname: 'ftp_get_file',
-			load_id: load_id,
-			url: url,
-			username: username,
-			password: password,
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (!obj || obj.error) {
-				console.error('ftp_get_file error: ' + (obj.error ? obj.error : 'null'));
-				vilify_file_in_list(url, obj.error);
-				return;
-			}
-			
-			finish_file_in_list('ftp', url, obj.path, obj.size);
-		},
-	});
-}
-
-function load_from_ftp() {
-	var url = $('#input_url').val();
-	var username = $('#input_username').val();
-	var password = $('#input_password').val();
-
-	$('#ftp_get_button').addClass('ui-state-disabled');
-	$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Contacting host...');
-
-	$.ajax({
-		data: {
-			fname: 'load_from_ftp',
-			url: url,
-			load_id: load_id,
-		},
-		success : function(data) {
-			var filelist = jQuery.parseJSON(data);
-			if (!filelist || filelist.length == 0) {
-				alert("Location not found.");
-				return;
-			}
-			if (filelist.length > <TMPL_VAR NAME='MAX_FTP_FILES'>) {
-				alert("Too many files (" + filelist.length + ") at specified location, limit is <TMPL_VAR NAME='MAX_FTP_FILES'>.");
-				return;
-			}
-
-			pageObj.filecount = filelist.length;
-			$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Retrieving '+pageObj.filecount+' files');
-
-			var count = 0;
-			filelist.forEach(
-				function(obj) {
-					setTimeout(
-						function() {
-							if (add_file_to_list(obj.name, obj.url)) {
-								ftp_get_file(obj.url, username, password);
-							}
-							if (--pageObj.filecount == 0) { // FTP transfer complete
-								$('#ftp_get_button').removeClass('ui-state-disabled');
-								$('#ftp_status').html('');
-							}
-						},
-						500 * count++
-					);
-				}
-			);
-		},
-	});
-}
-
-function load_from_ncbi() {
-	var accn = $('#input_accn').val();
-
-	$('#ncbi_get_button').addClass('ui-state-disabled');
-	$('#ncbi_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI...');
-
-	$.ajax({
-		data: {
-			fname: 'search_ncbi_nucleotide',
-			accn: accn,
-			load_id: load_id,
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {
-				if (obj.error) {
-					$('#ncbi_status').html(obj.error);
-					return;
-				}
-				else if (typeof obj.id != 'undefined') {
-					if (add_file_to_list(obj.name, 'ncbi://'+obj.id)) {
-						finish_file_in_list('ncbi', 'ncbi://'+obj.id, obj.id, '');
-					}
-				}
-			}
-
-			$('#ncbi_get_button').removeClass('ui-state-disabled');
-			$('#ncbi_status').html('');
-		},
-	});
-}
-</script>
-
-<div id='tabs' style='margin-top:0.5em;margin-bottom:1em;'>
-  <ul>
-    <li class="small"><a href="#tab-1">iPlant Data Store</a></li>
-    <li class="small"><a href="#tab-2">FTP/HTTP</a></li>
-    <li class="small"><a href="#tab-3">Upload</a></li>
-    <TMPL_IF NAME='ENABLE_NCBI'>
-    <li class="small"><a href="#tab-4">NCBI</a></li>
-    </TMPL_IF>
-  </ul>
-
-  <div id="tab-1" class="small">
-	<div style="white-space:nowrap;border-bottom:1px solid gray;">
-		<img id="ids_loading" src="picts/ajax-loader.gif" style="float:right;"/>
-		<span class='link' onclick='irods_get_path()'><span class='ui-icon ui-icon-home'></span>Home</span>&nbsp;&nbsp;
-		<span class='link' onclick='irods_get_path("/iplant/home/shared")'><span class='ui-icon ui-icon-folder-collapsed'></span>Community Data</span>&nbsp;&nbsp;
-		<span class='link' onclick='irods_get_path("..")'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>&nbsp;&nbsp;
-		<span class='link' onclick='irods_get_path(".")'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>&nbsp;&nbsp;
-		<TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
-		<span class='link' onclick='irods_get_all_files(".")'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>
-		</TMPL_UNLESS>
+	  <div id="fileselect-tab-2" class="small" style="height:200px;">
+	  	Enter the location of the file or directory to retrieve.<br><br>
+	    URL: <input id="input_url" size="60" style="color:gray;"/>
+	    <span id="ftp_get_button" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span><br>
+	    <div class="link" onclick="$(this).hide(); $('#ftp_login').fadeIn();" style="padding-top:5px;">Login (optional)...</div>
+	    <div id="ftp_login" style="display:none;padding-top:5px;">
+	    	Username: <input id="input_username" size="15" style="color:gray;"/>
+	    	Password: <input id="input_password" size="15" style="color:gray;"/>
+	    </div>
+	    <br>
+	    <div id="ftp_status" class="note"></div>
+	    <br>
+	    <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
+	  </div>
+	
+	  <div id="fileselect-tab-3" class="small" style="height:200px;">
+		Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum).
+		For larger files use the iPlant Data Store. <br><br><br>
+	    File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
+	  </div>
+	
+	  <TMPL_IF NAME='ENABLE_NCBI'>
+	  <div id="fileselect-tab-4" class="small" style="height:200px;">
+	    Enter the NCBI accession number of the item to add.<br><br>
+	    <div>
+	      <span>Accession: <input id="input_accn" size="15" /></span>
+	      <span id="ncbi_get_button" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span>
+	      <span id="ncbi_status" class="note" style="padding-left:15px;min-height:50px;"></span>
+	    </div>
+	    <div class="note" style="padding-top:20px">
+	    	Note: The organism, version, type, and source fields do not need to be specified.  The restricted option
+	    	is ignored, all data from NCBI is made public.
+	    </div>
+	  </div>
+	  </TMPL_IF>
 	</div>
-	<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
-    <div style="overflow-y:auto;height:154px;">
-    	<table id="ids_table" class="small" style="width:100%;"></table>
-    </div>
-  </div>
-
-  <div id="tab-2" class="small" style="height:200px;">
-  	Enter the location of the file or directory to retrieve.<br><br>
-    URL: <input id="input_url" size="60" style="color:gray;"/>
-    <span id="ftp_get_button" onClick="load_from_ftp();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span><br>
-    <div class="link" onclick="$(this).hide(); $('#ftp_login').fadeIn();" style="padding-top:5px;">Login (optional)...</div>
-    <div id="ftp_login" style="display:none;padding-top:5px;">
-    	Username: <input id="input_username" size="15" style="color:gray;"/>
-    	Password: <input id="input_password" size="15" style="color:gray;"/>
-    </div>
-    <br>
-    <div id="ftp_status" class="note"></div>
-    <br>
-    <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
-  </div>
-
-  <div id="tab-3" class="small" style="height:200px;">
-	Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum).
-	For larger files use the iPlant Data Store. <br><br><br>
-    File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
-  </div>
-
-  <TMPL_IF NAME='ENABLE_NCBI'>
-  <div id="tab-4" class="small" style="height:200px;">
-    Enter the NCBI accession number of the item to add.<br><br>
-    <div>
-      <span>Accession: <input id="input_accn" size="15" /></span>
-      <span id="ncbi_get_button" onClick="load_from_ncbi();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span>
-      <span id="ncbi_status" class="note" style="padding-left:15px;min-height:50px;"></span>
-    </div>
-    <div class="note" style="padding-top:20px">
-    	Note: The organism, version, type, and source fields do not need to be specified.  The restricted option
-    	is ignored, all data from NCBI is made public.
-    </div>
-  </div>
-  </TMPL_IF>
-
-</div>
+</script>

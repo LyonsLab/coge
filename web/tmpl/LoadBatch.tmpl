@@ -1,8 +1,8 @@
-<TMPL_IF NAME='MAIN'>
-<script type="text/javascript" src="js/coge/utils.js"></script>
-<script type="text/javascript" src="js/coge/services.js"></script>
-<script type="text/javascript" src="js/jquery.fileupload.js"></script>
+<TMPL_IF NAME='LOGIN'>
+    <TMPL_INCLUDE NAME="widgets/Login.tmpl">
+</TMPL_IF>
 
+<TMPL_IF NAME='MAIN'>
 <style type="text/css">
 @font-face {
     font-family: 'Glyphicons Halflings';
@@ -26,22 +26,146 @@
 }
 </style>
 
+<div id="wizard-container"></div>
+
+<!-- Step Templates-->
+<script id="description-template" type="text/template">
+<div class="step">
+    <div class="form-field">
+        <label class="col-md-2">Genome:</label>
+        <input class="col-md-8" id="edit_genome" type="search" placeholder="Search"
+        	title="Enter the genome associated with the new experiments. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+        	onclick="$(this).autocomplete('search');"
+        	onkeyup="coge.utils.wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+        <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
+    </div>
+</div>
+</script>
+
+<script id="data-template" type="text/template">
+    <div class="step">
+        <div id="selector_container"></div><br>
+        <div id="files" class="hidden coge-padded">
+            Selected file(s):<br>
+            <table id="file_table" class="small" style="background-color:white;display:inline;"></table>
+            <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
+                File type:
+                <select id="file_type_selector">
+                    <option value="">Select a file type</option>
+                    <option value="gz">Tarball</option>
+                </select>
+            </span>
+        </div>
+    </div>
+</script>
+
+<script id="options-layout-template" type="text/template">
+<div>
+    <div id="analysis-options"></div>
+    <hr>
+    <div id="general-options"></div>
+    <hr>
+    <div id="admin-options"></div>
+</div>
+</script>
+
+<script id="admin-options-template" type="text/template">
+<div class="form-section">
+    <h4>Admin</h4>
+    <div class="form-field">
+        <label class="col-md-2">Assign to user:</label>
+        <input id="edit_user" type="search" placeholder="Search" spellcheck="false"
+        	onkeyup="coge.utils.wait_to_search(search_users, this);" size="20" />
+    </div>
+</div>
+</script>
+
+<script id="general-options-template" type="text/template">
+<div class="form-section">
+    <h4>General Options</h4>
+
+    <div class="form-field">
+        <label class="col-md-2">Add results to notebook:</label>
+        <input id="notebook" type="checkbox" style="float:left;margin-right:10px;">
+        
+        <div id="notebook-container" class="form-group hidden">
+	    	<div style="padding-left:3em">
+	    		<div>
+					<input name="notebook" type="radio" value="new" checked>
+					<label>Create new notebook</label>
+				</div>
+				<div>
+					<input name="notebook" type="radio" value="existing">
+					<label>Use existing notebook: </label>
+					<input id="edit_notebook" type="search" placeholder="Search" spellcheck="false"
+						title="Enter the notebook to add the new experiment(s) to. Start typing to narrow down the list of notebooks to choose from."
+						onclick="$(this).autocomplete('search')";
+						onkeyup="coge.utils.wait_to_search(search_notebooks, this);" size="20" disabled />
+				</div>
+			</div>
+		</div>
+    </div>
+    
+    <div class="form-field">
+        <label class="col-md-2">Send email when finished:</label>
+        <input id="email" type="checkbox">
+    </div>
+
+    <!-- TODO: Add ability to share the genome
+    <div class="form-field">
+        <label class="col-md-2">Share:</label>
+        <input id="share" type="checkbox">
+    </div>
+    -->
+</div>
+</script>
+
+<script id="confirm-template" type="text/template">
+	<div class="step info">
+	    <h3>Description</h3>
+	    <div class="confirm-description padded"></div>
+	    <h3>Data</h3>
+	    <div class="confirm-data padded"></div>
+	    <h3>Options</h3>
+	    <div class="confirm-options padded"></div>
+	</div>
+</script>
+
+
+<TMPL_INCLUDE NAME="widgets/Splash.tmpl">
+
+<TMPL_INCLUDE NAME="widgets/Progress.tmpl">
+
+<TMPL_INCLUDE NAME="widgets/FileSelect.tmpl">
+
+<TMPL_INCLUDE NAME="widgets/Wizard.tmpl">
+
 <script type="text/javascript">
-const STATUS_URL = '<TMPL_VAR NAME="STATUS_URL">';
-const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
+// Page constants
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER">';
+const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
+const GENOME_ID     = '<TMPL_VAR NAME="GENOME_ID">';
 
-var timestamps = new Array();
-var load_id = '<TMPL_VAR NAME="LOAD_ID">'; // required by FileSelect.tmpl
-var job_id = '<TMPL_VAR NAME="JOB_ID">';
-var embed = '<TMPL_VAR NAME="EMBED">';
-var experiment_id;
-var notebook_id = '<TMPL_VAR NAME="NOTEBOOK_ID">';
-var genome_id = '<TMPL_VAR NAME="GENOME_ID">';
-var pageObj = {};
+var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">';
+var WORKFLOW_ID 	  = '<TMPL_VAR NAME="WORKFLOW_ID">';
+var EMBED 			  = '<TMPL_VAR NAME="EMBED">';
+
+// File Select constants
+const DEFAULT_TAB              = '<TMPL_VAR NAME="DEFAULT_TAB">';
+const MAX_IRODS_LIST_FILES     = '<TMPL_VAR NAME="MAX_IRODS_LIST_FILES">';
+const MAX_IRODS_TRANSFER_FILES = '<TMPL_VAR NAME="MAX_IRODS_TRANSFER_FILES">';
+const MAX_FTP_FILES            = '<TMPL_VAR NAME="MAX_FTP_FILES">';
+const FILE_SELECT_SINGLE       = '<TMPL_VAR NAME="FILE_SELECT_SINGLE">';
+
 var newLoad = false;
-var user_name = '<TMPL_VAR NAME="USER">';
+var wizard;
 
-$(document).ready(function(){
+$(function() {
+	// Set jQuery AJAX defaults
     $.ajaxSetup({
         type: "GET",
         url: PAGE_NAME,
@@ -49,612 +173,44 @@ $(document).ready(function(){
         cache: false,
     });
 
-    $(".dialog_box").dialog({autoOpen: false, width: 500});
-    $('#load_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
-    $('#load_dialog').dialog({modal: true, closeOnEscape: false})
-
-    $("#edit_genome").autocomplete({
-        source:[],
-        select: function(event, ui) {
-            $('#edit_genome').val(ui.item.label);
-            genome_id = ui.item.value;
-            return false; // Prevent the widget from inserting the value.
-        },
-        focus: function(event, ui) {
-            return false; // Prevent the widget from inserting the value.
-        }
+    // Configure dialogs
+    $(".dialog_box").dialog({autoOpen: false, minWidth: 400});
+    
+    // Initialize wizard
+    wizard = initialize_wizard({ 
+    	admin: IS_ADMIN,
+    	helpUrl: HELP_URL,
+    	gid: GENOME_ID
     });
     
-    $("#edit_notebook").autocomplete({
-        source:[],
-        select: function(event, ui) {
-            $('#edit_notebook').val(ui.item.label);
-            notebook_id = ui.item.value;
-            return false; // Prevent the widget from inserting the value.
-        },
-        focus: function(event, ui) {
-            return false; // Prevent the widget from inserting the value.
-        }
+    // Initialize CoGe web services
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
     });
-
+    
+    // Intialize progress window
+    coge.progress.init({
+    	title: "Loading Batch of Experiments",
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME,
+    	supportEmail: SUPPORT_EMAIL,
+    	onReset: reset_load
+    });
+    
     // Open status dialog
-    if (job_id) {
-        $('#loading_msg').hide();
-        $('#load_dialog').dialog('open');
-        update_dialog(STATUS_URL + job_id, user_name, "#load_dialog", progress_formatter);
+    if (WORKFLOW_ID) {
+    	coge.progress.begin();
+    	coge.progress.update(WORKFLOW_ID);
     }
 });
-
-function file_selected(filename, url) {
-	$('#no_files').hide();
-    $('#file_select_dialog').dialog('close');
-    $('#select_file_button').hide();
-    $('#select_file_type').show();
-}
-
-function file_finished(size, url) {}
-
-function file_canceled() {
-    $('#select_file_type').hide()
-        .find("option[value=autodetect")
-        .prop("selected", true)
-        .change()
-
-    $('#select_file_button').show();
-}
-
-function error_help(s) {
-	$('#error_help_text')
-		.html(s)
-		.show()
-		.delay(10*1000)
-		.fadeOut(1500);
-}
-
-function reset_log() {
-    $('#load_log').html('');
-    $('#loading_msg').show();
-    $('#finished_msg,#error_msg,#ok_button,#finish_load_button,#cancel_load_button,#logfile').hide();
-}
-
-function check_login() {
-    var logged_in = false;
-
-    $.ajax({
-        async: false,
-        data: {
-            fname: 'check_login',
-        },
-        success : function(rc) {
-            logged_in = rc;
-        }
-    });
-
-    return logged_in;
-}
-
-function load_batch() {
-	// Validate data items
-	var items = get_selected_files();
-	if (items == null) {
-		error_help('Files are still being transferred, please wait.');
-		return;
-	}
-	else if (items.length == 0) {
-		error_help('Please select some sequence files by clicking <b>Add Data</b>.');
-		return;
-	}
-	var json = JSON.stringify(items);
-	
-	// Validate other fields
-    var name = $('#edit_name').val();
-    var description = $('#edit_description').val();
-
-    if (!genome_id) {
-    	error_help('Please specify a genome.');
-        return;
-    }
-    
-    if (!name) {
-    	error_help('Please specify a name.');
-        return;
-    }
-
-    var items = get_selected_files();
-    if (items == null) {
-    	error_help('Files are still being transferred, please wait.');
-        return;
-    }
-    else if (items.length == 0) {
-    	error_help('Please select a data file.');
-        return;
-    }
-
-    var assignee_user_name = $('#edit_user').val(); // input only exists if admin
-
-    // if Notebook field was cleared then ignore it and create new one based on name
-    if ( !$('#edit_notebook').val() )
-    	notebook_id = '';
-    
-    // Prevent concurrent executions - issue 101
-    if ( $("#load_dialog").dialog( "isOpen" ) )
-        return;
-
-    // Make sure user is still logged-in - issue 206
-    if (!check_login()) {
-        alert('Your session has expired, please log in again.');
-        location.reload(true)
-        return;
-    }
-
-    // Open status dialog right away - issue 101
-    reset_log();
-    $('#load_dialog').dialog('open');
-    $('#load_log').html('Initializing ...');
-    newLoad = true;
-
-    $.ajax({
-        data: {
-            fname: 'load_batch',
-            load_id: load_id,
-            name: name,
-            description: description,
-            gid: genome_id,
-            nid: notebook_id,
-            assignee_user_name: assignee_user_name,
-            items: json,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj && obj.error) {
-                alert(obj.error);
-                return;
-            }
-
-            // Set link in status dialog
-            $('#loading_msg span a').attr('href', obj.link).html(obj.link);
-
-            // Start status update
-            if (obj.job_id) { // JEX status for load FASTQ
-                job_id = obj.job_id;
-                window.history.pushState({}, "Title", PAGE_NAME + "?job_id=" + obj.job_id); // Add job_id to browser URL
-                update_dialog(STATUS_URL + obj.job_id,  user_name, "#load_dialog", progress_formatter);
-            }
-        }
-        // TODO: handle error, show in status dialog
-    });
-}
-
-function get_load_log(callback) {
-    $.ajax({
-        data: {
-            dataType:    'text',
-            fname:       'get_load_log',
-            workflow_id: job_id,
-            timestamp:   new Date().getTime()
-        },
-        success : function(data) {
-            if (callback) {
-            	var obj = jQuery.parseJSON(data);
-                callback(obj);
-                return;
-            }
-        }
-    });
-}
-
-function load_failed(logfile){
-	// mdb added 6/24/14 - temporary message until JEX logging is improved
-	var msg =
-		'<div class="alert">' +
-		'The CoGe Support Team has been notified of this error but please ' + 
-		'feel free to contact us at <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> ' +
-		'and we can help to determine the cause.' +
-		'</div>';
-	var log = $('#load_log');
-	log.html( log.html() + msg );
-
-    if (logfile) {
-        $("#logfile a").attr("href", logfile);
-        $('#logfile').fadeIn();
-    }
-
-    // Update dialog
-    $('#loading_msg').hide();
-    $('#error_msg').fadeIn();
-    $('#cancel_load_button').fadeIn();
-
-
-    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
-	    $.ajax({
-	        data: {
-	            fname: "send_error_report",
-	            load_id: load_id,
-	            job_id: job_id
-	        }
-	    });
-    }
-}
-
-function load_succeeded(obj) {
-    // Update globals
-    experiment_id = obj.experiment_id;  // for continuing to ExperimentView
-    notebook_id = obj.notebook_id;      // for continuing to NotebookView
-
-    // Update dialog
-
-    $('#loading_msg').hide();
-    $('#finished_msg').fadeIn();
-    $('#ok_button').fadeIn();
-    if (notebook_id) { // qTeller pipeline experiment load
-        $('#finish_load_button')
-            .html('NotebookView').fadeIn()
-            .unbind().on('click', function() {
-                window.location.href = "NotebookView.pl?nid=" + notebook_id;
-        });
-    }
-    else { // normal experiment load
-        $('#finish_load_button')
-            .html('ExperimentView').fadeIn()
-            .unbind().on('click', function() {
-                window.location.href = "ExperimentView.pl?eid=" + experiment_id;
-        });
-    }
-}
-
-function reset_load() {
-    window.history.pushState({}, "Title", PAGE_NAME);
-    $('#load_dialog').dialog('close');
-
-    // Reset file selector
-    file_canceled();
-    clear_list();
-}
-
-function wait_to_search (search_func, search_obj) {
-    var search_term = search_obj.value;
-    if (!search_term || search_term.length >= 2) {
-        if (pageObj.time) {
-            clearTimeout(pageObj.time);
-        }
-
-        pageObj.time = setTimeout(
-            function() {
-                search_func(search_obj.value);
-            },
-            250
-        );
-    }
-}
-
-function search_genomes (search_term) {
-    $.ajax({
-        data: {
-            fname: 'search_genomes',
-            search_term: search_term,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj.items) {
-                obj.items.forEach(function(element) {
-                    element.label = element.label.replace(/&reg;/g, "\u00ae"); // (R)
-                });
-                $("#edit_genome").autocomplete({source: obj.items});
-                $("#edit_genome").autocomplete("search");
-            }
-        },
-    });
-}
-
-function search_users (search_term) {
-    $.ajax({
-        data: {
-            fname: 'search_users',
-            search_term: search_term,
-            timestamp: new Date().getTime()
-        },
-        success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj && obj.items) {
-                $("#edit_user").autocomplete({source: obj.items});
-                $("#edit_user").autocomplete("search");
-            }
-        },
-    });
-}
-
-function search_notebooks (search_term) {
-	coge.services.search_notebooks(
-		search_term, 
-		user_name, 
-		function(obj) {
-			var notebooks = obj.notebooks;
-			if (notebooks && notebooks.length > 0) {
-				var items = [];
-				notebooks.forEach(function(n) {
-					var label = n.name + (n.description ? ': ' + n.description : '');
-					//TODO //if (n.restricted) label = "\u00ae" + label; // (R)// Add (R) html symbol
-	                items.push({
-	                	label: label,
-	                	value: n.id
-	                });
-	            });
-	            $("#edit_notebook")
-	            	.autocomplete({source: items})
-	            	.autocomplete("search");
-	        }
-		}
-	);
-}
-
-function progress_formatter(item) {
-    var msg;
-    var row = $('<li>'+ item.description + ' </li>');
-
-    var job_status = $('<span></span>');
-
-    if (item.status == 'scheduled')
-        job_status.append(item.status).addClass('down bold');
-    else if (item.status == 'completed')
-        job_status.append(item.status).addClass('completed bold');
-    else if (item.status == 'running')
-        job_status.append(item.status).addClass('running bold');
-    else if (item.status == 'skipped')
-        job_status.append("already generated").addClass('skipped bold');
-    else if (item.status == 'cancelled')
-        job_status.append(item.status).addClass('alert bold');
-    else if (item.status == 'failed')
-        job_status.append(item.status).addClass('alert bold');
-    else
-        return;
-
-    row.append(job_status);
-
-    if (item.elapsed)  {
-        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
-    }
-
-    if (item.log) {
-        var p = item.log.split("\n");
-
-        var pElements = p.map(function(item) {
-            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
-            return $("<div></div>").append(norm);
-        });
-
-        var log = $("<div></div>").html(pElements).addClass("padded");
-        row.append(log);
-    }
-
-    return row;
-}
-
-function update_dialog(request, user, identifier, formatter) {
-    var get_status = function () {
-        $.ajax({
-            type: 'GET',
-            url: request,
-            dataType: 'json',
-            data: {
-                username: user
-            },
-            success: update_callback,
-            error: update_callback,
-            xhrFields: {
-                withCredentials: true
-            }
-        });
-    };
-
-    var update_callback = function(json) {
-        var dialog = $(identifier);
-        var workflow_status = $("<p></p>");
-        var data = $("<ul></ul>");
-        var results = [];
-        var current_status;
-        var timeout = 2000;
-
-        var callback = function() {
-            update_dialog(request, user, identifier, formatter);
-        }
-
-        if (json.error) {
-            pageObj.error++;
-            if (pageObj.error > 3) {
-                workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
-                var logfile;
-
-                if (json.results && json.results.length) {
-                    logfile = json.results[0].path;
-                }
-                load_failed(logfile);
-                return;
-            }
-        } else {
-            pageObj.error = 0;
-        }
-
-        if (json.status) {
-            current_status = json.status.toLowerCase();
-            workflow_status.html("Workflow status: ");
-            workflow_status.append($('<span></span>').html(json.status));
-            workflow_status.addClass('bold');
-        } else {
-            setTimeout(callback, timeout);
-            return;
-        }
-
-        if (json.tasks) {
-            var jobs = json.tasks;
-            for (var index = 0; index < jobs.length; index++) {
-                var item = formatter(jobs[index]);
-                if (item) {
-                    results.push(item);
-                }
-            }
-        }
-
-        if (!dialog.dialog('isOpen')) {
-            return;
-        }
-
-        //FIXME Update when a workflow supports elapsed time
-        if (current_status == "completed") {
-            var total = json.tasks.reduce(function(a, b) {
-                if (!b.elapsed) return a;
-
-                return a + b.elapsed;
-            }, 0);
-
-            var duration = coge.utils.toPrettyDuration(total);
-
-            workflow_status.append("<br>Finished in " + duration);
-            workflow_status.find('span').addClass('completed');
-            get_load_log(function(result) {
-                load_succeeded(result);
-            });
-
-        }
-        else if (current_status == "failed"
-                || current_status == "error"
-                || current_status == "terminated"
-                || current_status == "cancelled")
-        {
-            workflow_status.find('span').addClass('alert');
-            var logfile;
-
-            if (json.results && json.results.length) {
-                logfile = json.results[0].path;
-            }
-            load_failed(logfile);
-        }
-        else if (current_status == "notfound") {
-            setTimeout(callback, timeout);
-            return;
-        }
-        else {
-            workflow_status.find('span').addClass('running');
-            setTimeout(callback, timeout);
-        }
-
-        results.push(workflow_status);
-        data.append(results);
-        dialog.find('#load_log').html(data);
-    };
-
-    get_status();
-}
 </script>
 
-<div class="bold text" style="padding-top:1em;">1 - Describe the Data</div>
-<div class="coge-bg inline padded ui-widget-content ui-corner-all">
-	<div class="small info">
-		Complete the form below to describe the batch of experiments.<br>
-		A notebook of the experiments will be created with the given Name and Description.
-		<div class="alert"><span class="small glyphicon glyphicon-asterisk"></span> denotes a required field</div>
-	</div>
-	
-	<table class="small" style="padding-top:0.5em;">
-	  <tr>
-	    <td>Name:</td>
-	    <td>
-	    	<input id="edit_name" type="textbox" size="50" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-	    	<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Description:</td>
-	    <td><textarea id="edit_description" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea></td>
-	  </tr>
-	  <tr>
-	    <td>Genome:</td>
-	    <td>
-	      <input id="edit_genome" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_genomes, this);" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
-	      <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>Notebook:</td>
-	    <td>
-	      <input id="edit_notebook" type="search" placeholder="Search" spellcheck="false" onkeypress="wait_to_search(search_notebooks, this);" size="50" value="<TMPL_VAR NAME='NOTEBOOK_NAME'>" />
-	    </td>
-	  </tr>	  
-	</table>
-</div>
-
-<div class="bold text" style="padding-top:2em;">2 - Add Data</div>
-<div class="coge-bg inline padded ui-widget-content ui-corner-all">
-	<div class="small info" style="width:50em; padding-bottom:1em;">
-	  Use the <b>Add Data</b> button to select the metadata/experiment data files to be loaded from:<br>
-	  <span class="indent">1) iPlant Data Store, 2) FTP/HTTP site, 3) browser upload</span><br>
-	</div>
-	<div class="l" style="padding-right:0.75em;">
-		<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all coge-button'>Add Data</span><br>
-		<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all coge-button' style="margin-top:0.5em;">Clear List</span>
-	</div>
-	<div class="padded" style="background-color: white; overflow:hidden; width:auto; min-height:8em; border:1px solid lightgray; margin-right:5px; margin-bottom:5px;">
-		<div class="small bold text">Selected files:</div>
-		<div>
-			<div id="no_files" class="indent small padded note">You haven't selected any files yet, click "Add Data"</div>
-			<table id='file_table' class="small padded"></table>
-		</div>
-	</div>
-</div>
-
-<div class="middle" style="padding-top:2em;">
-	<span onDblClick="load_batch();" onClick="load_batch();" class='ui-button ui-corner-all ui-button-go coge-button-lg'>Load Batch</span>
-	<span id='error_help_text' class='indent alert italic'></span>
-</div>
-
-<div id="file_select_dialog" class="hidden dialog_box" title="Select Data Files ...">
-  <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
-  <span onClick="$('#file_select_dialog').dialog('close');" style="float:right;" class="ui-button ui-corner-all">Done</span>
-</div>
-
-<div id="load_dialog" class="dialog_box" title="Loading Batch Experiments ..." style="display:none;">
-  <div id="load_log" class="small padded ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
-  </div>
-  <br>
-  <div id="loading_msg">
-    <span class="small" style="float:right;">Link: <a></a></span>
-    Please wait ... <img src="picts/ajax-loader.gif"/>
-  </div>
-  <div class="coge-buttonset">
-	  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
-	  <span id="error_msg" style="display:none;">An error occurred <img src="picts/thumbs_down.png"></span>
-	  <span id="ok_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Load Another</span>
-	  <span id="finish_load_button" style="display:none;float:right;" class="ui-button ui-corner-all">ExperimentView</span>
-	  <span id="cancel_load_button" onClick="reset_load();" style="display:none;float:right;" class="ui-button ui-corner-all">Cancel</span>
-      <span id="logfile" class="hidden"><a href="">Logfile</a></span>
-  </div>
-</div>
-
-<TMPL_IF NAME='ADMIN_AREA'>
-<script>
-$(document).ready(function() {
-    $("#edit_user").autocomplete({
-        source:[],
-        focus: function() { return false; },
-    });
-});
-</script>
-<br><br><hr>
-<span style="color:dimgray;font-weight:bold;">Admin Functions</span><br>
-<table class="small ui-widget-content ui-corner-all">
-  <tr>
-    <td>Assign to user:</td>
-    <td>
-      <input id="edit_user" type="search" placeholder="Search" spellcheck="false" onkeyup="wait_to_search(search_users, this.value);" size="10" />
-    </td>
-  </tr>
-</table>
-<br>
-</TMPL_IF>
-
+<script type="text/javascript" src="js/pages/load-batch.js"></script>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/coge/progress.js"></script>
+<script type="text/javascript" src="js/coge/wizard.js"></script>
+<script type="text/javascript" src="js/coge/file-select.js"></script>
+<script type="text/javascript" src="js/jquery.fileupload.js"></script>
 </TMPL_IF> <!-- MAIN -->
-
-<TMPL_IF NAME='LOGIN'>
-    <TMPL_INCLUDE NAME="widgets/Login.tmpl">
-</TMPL_IF>

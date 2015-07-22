@@ -51,15 +51,23 @@ sub get_table {
     my $dbh = shift;         # database connection handle
     my $table = shift;       # table name
     my $hash_fields = shift; # array ref of field names to use as hash keys
-    my $conditions = shift;  
+    my $conditions = shift;
+    my $operator_hash = shift; #hash ref of the comparison operators to be used, with the conditions as keys
     $hash_fields = [$table.'_id'] unless $hash_fields;
+     my $operator_string = "=" unless $operator_hash;
     
     # Build query string
     my $query = "SELECT * FROM $table";
-    if ($conditions) {
-        $query .= ' WHERE ' . join(' AND ', map { $_.'='.$conditions->{$_} } keys %$conditions);
+    if ($operator_hash) {
+    	if ($conditions) {
+    		$query .= ' WHERE ' . join(' AND ', map { $_.$operator_hash->{$_}.$conditions->{$_} } keys %$conditions);
+    	}
+    } else {
+	    if ($conditions) {
+	        $query .= ' WHERE ' . join(' AND ', map { $_.$operator_string.$conditions->{$_} } keys %$conditions);
+	    }
+	    #print STDERR $query, "\n";
     }
-    #print STDERR $query, "\n";
     
     # Execute query
     my $sth = $dbh->prepare($query);

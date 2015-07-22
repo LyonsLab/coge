@@ -15,6 +15,10 @@ var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 var reports_grid;
+var histogram;
+var tree;
+var system_graph;
+var system_graph2;
 
 $(function () {
 	$( "#tabs" ).tabs({
@@ -24,14 +28,20 @@ $(function () {
             schedule_update(5000);
         },
 		show: function(event, ui) {
-			if(current_tab == 1 && !jobs_init) {
+			if (current_tab == 1 && !jobs_init) {
 				init_jobs_grid();
 			}
-			if(current_tab == 2 && !hist_init) {
+			if (current_tab == 2 && !hist_init) {
 				init_hist_grid();
 			}
-			if(current_tab == 4 && !reports_grid) {
+			if (current_tab == 4 && !reports_grid) {
 				init_reports();
+			}
+			if (current_tab == 5) {
+				init_taxon_tree("taxonomic_tree");
+			}
+			if (current_tab == 6) {
+				init_system_load();
 			}
 		}
     });
@@ -62,6 +72,7 @@ $(function () {
     $("#hist_update_checkbox").change(function(e) {
     	toggle_hist_updater();
     });
+    $("#histo_dialog").dialog({autoOpen: false, width: 500, height: 500});
     
     //Setup idle timer
     $(document).mousemove(function() {
@@ -1033,7 +1044,6 @@ function remove_user_from_group(user_id, id, type) {
 
 
 function modify_item(id, type, modification) {
-	console.log(type);
 	$.ajax({
 		data: {
 			fname: 'modify_item',
@@ -1048,7 +1058,6 @@ function modify_item(id, type, modification) {
 }
 
 function wait_to_search(search_func, search_term) {
-	//console.log(search_term);
 	pageObj.search_term = search_term;
 
 	if (pageObj.time) {
@@ -1059,7 +1068,6 @@ function wait_to_search(search_func, search_term) {
 	pageObj.time = setTimeout(
 		function() {
 			search_func(pageObj.search_term);
-			//console.log("request sent");
 		},
 		1000
 	);
@@ -1077,7 +1085,6 @@ function get_jobs() {
 	        running_only: running_only,
 	    },
 	    success: function(data) {
-	    	//console.log(data.jobs);
 	        jobs.load(data.jobs);
 	        entries = data.jobs.length;
 	        $("#filter_busy").hide();
@@ -1209,7 +1216,6 @@ function get_history() {
 			time_range: 0,
 		},
 		success : function(data) {
-			//console.log(data[0]);
 			hist.load(data);
 			hist_entries = data.length;
 			last_hist_update = data[0].date_time;
@@ -1225,7 +1231,6 @@ function get_history() {
 }
 
 function update_history() {
-	//console.log(last_hist_update);
 	$.ajax({
 		dataType: 'json',
 		data: {
@@ -1235,7 +1240,6 @@ function update_history() {
 			time_range: 0,
 		},
 		success: function(data) {
-			console.log(data);
 			if(data[0]) {
 				hist.insert(data);
 				last_hist_update = data[0].date_time;
@@ -1299,7 +1303,6 @@ var w = Math.max(800, $(window).width()-200),
 	group_force;
 
 function init_graph(selectId) {
-	//console.log(selectId);
 	if(selectId == 1) {
 		$('#group_chart').hide();
 		$('#group_legend').hide();
@@ -1310,7 +1313,6 @@ function init_graph(selectId) {
 			user_graph_init = true;
 			$("#loading4").show();
 			d3.json("?fname=get_user_nodes", function(json) {
-				console.log(json);
 				var root = json;
 				var nodes = flatten(root);
 				nodes.forEach(function(d) {
@@ -1383,7 +1385,6 @@ function init_graph(selectId) {
 			group_graph_init = true;
 			$("#loading4").show();
 			d3.json("?fname=get_group_nodes", function(json) {
-				console.log(json);
 				var root = json;
 				var nodes = flatten(root);
 				nodes.forEach(function(d) {
@@ -1544,30 +1545,17 @@ Force.prototype.toggle_children = function(d) {
 		d.children = d._children;
 		d._children = null;
 	}
-	//console.log(d.size);
 }
 
 Force.prototype.click = function(d) {
 	if (!d3.event.defaultPrevented) {
-		//if (d._size) {
-		//	var temp = d._size;
-		//	d._size = d.size;
-		//	d.size = temp;
-		//} else {
-		//	d._size = d.size;
-		//	d.size = 2025;
-		//}
-		
 		this.force.charge(
 			function(d, i) {
 				if(d.size) {
-					//return Math.pow(d.size, 1.0/3.0)*(-12);
-					//console.log(d.size + '!');
 					return Math.sqrt(d.size)*(-2.25);
 				}
 			}
 		);
-		//force.getAttribute("charge");
 		this.force.start();
 		
 		this.toggle_children(d);
@@ -1590,7 +1578,6 @@ function flatten(root) {
 }
 
 function color(d, new_filters) {
-	//console.log(new_filters);
 	if(!new_filters[0].show && !new_filters[1].show) {
 		//normal filter
 		if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
@@ -1650,7 +1637,6 @@ Force.prototype.moveItems = (function(){
            
         for(var i=todoLink ; i < goal ; i++){
             l = self.link[0][i];
-            //console.log(l);
             l.setAttribute('x1', l.__data__.source.x);
             l.setAttribute('y1', l.__data__.source.y);
             l.setAttribute('x2', l.__data__.target.x);
@@ -1704,34 +1690,40 @@ function DataGrid(params) {
 	this.elementId = params.elementId;
 	this.filter = params.filter;
 	this.selection = params.selection;
+	this.data;
 	
 	this.initialize();
 }
 
 $.extend(DataGrid.prototype, {
 	initialize: function() {
+		var self = this;
 		var element = this.elementId;
 		var fname;
+		$('#' + element).hide();
 		$('#' + element + '_loading').show();
+		$('#report_type').prop('disabled', true);
+		$('#report_filter').prop('disabled', true);
+		$('#histogram_button').prop('disabled', true);
 		switch (this.selection) {
 			case "user":
 				fname = 'get_user_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th></tr></thead></table>');
+					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th><th>Total</th></tr></thead></table>');
 				break;
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th></tr></thead></table>');
+					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Total</th></tr></thead></table>');
 				break;
 			case "total":
 				fname = 'get_total_table';
 				if (this.filter == "none") {
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th></tr></thead></table>');
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th><th>Total</th></tr></thead></table>');
 				} else {
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th></tr></thead></table>');
+						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th></tr></thead></table>');
 				}
 				break;
 		}
@@ -1742,8 +1734,33 @@ $.extend(DataGrid.prototype, {
 			},
 			success: function(data) {
 				$('#' + element + '_loading').hide();
-				console.log(JSON.parse(data));
-				$('#' + element + '_table').dataTable(JSON.parse(data));
+				json = JSON.parse(data);
+				var values = [];
+				var max_value = 0;
+				var min_value = Number.MAX_SAFE_INTEGER;
+				for(var i = 0; i < json.data.length; i++) {
+					var total_items = 0;
+					if (this.selection == "total") {
+						for(var j = 0; j < json.data[i].length; j++) {
+							var num = parseInt(json.data[i][j]);
+							total_items += num;
+						}
+					} else {
+						for(var j = 1; j < json.data[i].length - 1; j++) {  // ignores the "name", "users", "groups" columns
+							var num = parseInt(json.data[i][j]);
+							total_items += num;
+						}
+					}
+					json.data[i].push(total_items);
+				}
+				self.data = json;
+				$('#' + element + '_table').dataTable(self.data);
+				$('#' + element).show();
+				if (self.selection != "total") {
+					$('#histogram_button').prop('disabled', false);
+				}
+				$('#report_type').prop('disabled', false);
+				$('#report_filter').prop('disabled', false);
 			}
 		});
 		
@@ -1772,6 +1789,733 @@ function filter_report(index) {
 			break;
 		case 3: reports_grid.filter = "public";
 			break;
+		case 4: reports_grid.filter = "public (owned)";
+			break;
+		case 5: reports_grid.filter = "shared";
+			break;
 	}
 	reports_grid.initialize();
 }
+
+var Histogram = function(element, json, parent) {
+	this.element = element;
+	this.json = json;
+	this.parent = parent;
+	this.values = this.json.values;
+	this.min_value = this.json.min;
+	this.max_value = this.json.max;
+	
+	$('#' + this.element).dialog('open');
+	
+	this.formatCount;
+	this.margin = {top: 10, right: 30, bottom: 80, left: 50};
+	this.width = $('#' + this.element).outerWidth() - this.margin.left - this.margin.right;
+	this.height = $('#' + this.element).outerHeight() - this.margin.top - this.margin.bottom;
+	this.x;
+	this.data;
+	this.y;
+	this.xAxis;
+	this.yAxis;
+	this.svg;
+	this.bar;
+	this.brush;
+	
+	this.initialize();
+}
+
+$.extend(Histogram.prototype, {
+	initialize: function() {
+		var self = this;
+		$("#" + this.element).html(
+			'<div><button id="histogram_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;" onclick="histogram_zoom_out()">Zoom Out</button>' +
+			'<span style="margin-right:40px;">Data: ' + $('#report_type').val() + ', Filter: ' + $('#report_filter').val() + '</span></div>'
+		);
+
+		if (self.parent) {
+			$('#histogram_back_button').prop('disabled', false);
+		} else {
+			$('#histogram_back_button').prop('disabled', true);
+		}
+	
+		// A formatter for counts.
+		this.formatCount = d3.format(",.0f");
+	
+		this.x = d3.scale.linear()
+		    .domain([this.min_value, this.max_value])
+		    .range([0, this.width]);
+	
+		// Generate a histogram using twenty uniformly-spaced bins.
+		this.data = d3.layout.histogram()
+		    .bins(this.x.ticks(this.max_value - this.min_value))
+		    (this.values);
+	
+		this.y = d3.scale.log()
+		    .domain([1, Math.max(
+		    		d3.max(this.data, function(d) { return d.y; }),
+		    		2
+		    )])
+		    .range([this.height, 0]);
+	
+		this.xAxis = d3.svg.axis()
+		    .scale(this.x)
+		    .orient("bottom");
+		
+		this.yAxis = d3.svg.axis()
+	    	.scale(this.y)
+	    	.orient("left");
+		
+		this.brush = d3.svg.brush()
+	    	.x(this.x)
+	    	.on("brushend", function() {
+	    		self.brushed.call(self);
+	    	});
+	
+		this.svg = d3.select("#" + this.element).append("svg")
+	    	.attr("width", this.width + this.margin.left + this.margin.right)
+	    	.attr("height", this.height + this.margin.top + this.margin.bottom)
+	    	.append("g")
+	    	.attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+	
+		this.bar = this.svg.selectAll(".bar")
+		    .data(self.data)
+			.enter().append("g")
+		    .attr("class", "bar")
+		    .attr("transform", function(d) { 
+		    	if (d.y == 1) {
+		    		return "translate(" + self.x(d.x) + ", " + self.y(1.1) + ")";
+		    	} else if (d.y == 0) {
+		    		return "translate(" + self.x(d.x) + ", " + self.y(1.1) + ")";
+		    	}
+		    	return "translate(" + self.x(d.x) + "," + self.y(d.y) + ")"; 
+		    });
+		
+		this.bar.append("rect")
+		    .attr("x", 1)
+		    .attr("width", (self.width / self.data.length)*0.9)
+		    .attr("height", function(d) {
+		    	if(d.y == 1) {
+		    		return self.height - self.y(1.1);
+		    	} else if (d.y == 0) {
+		    		return 0;
+		    	}
+		    	return self.height - self.y(d.y); 
+		    });
+	
+		/*this.bar.append("text")
+		    .attr("dy", ".75em")
+		    .attr("y", 6)
+		    .attr("x", this.x(this.data[0].dx) / 2)
+		    .attr("text-anchor", "top")
+		    .text(function(d) { return self.formatCount(d.y); });*/
+	
+		this.svg.append("g")
+		    .attr("class", "x axis")
+		    .attr("transform", "translate(0," + this.height + ")")
+		    .call(this.xAxis);
+
+		var x_label = this.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + (this.width/2 - 150) + "," + (this.height + this.margin.bottom/2.5) + ")")
+			.text("Total Data Sets (Notebooks + Genomes + Experiments)");
+		
+		this.svg.append("g")
+	    	.attr("class", "y axis")
+	    	.call(this.yAxis);
+		
+		this.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + this.margin.left/(-1.25) + "," + this.height/2 + ") rotate(270)")
+			.text("Frequency");
+		
+		this.svg.append("g")
+	    	.attr("class", "x brush")
+	    	.call(self.brush)
+	    	.selectAll("rect")
+	    	.attr("y", -6)
+	    	.attr("height", this.height + 7);
+		
+		$('#' + this.element)
+			.dialog({
+				resizeStop: function( event, ui ) {
+					self.width = $(this).outerWidth() - self.margin.left - self.margin.right;
+					self.height = $(this).outerHeight() - self.margin.top - self.margin.bottom;
+					self.initialize();
+				},
+			})
+			.dialog('open');
+	},
+	brushed: function() {
+		var self = this;
+		var extent = this.brush.extent();
+		extent[0] = Math.floor(extent[0]);
+		extent[1] = Math.ceil(extent[1]);
+		
+		var newValues = [];
+		for (var i = 0; i < this.values.length; i++) {
+			if (this.values[i] >= extent[0] && this.values[i] <= extent[1]) {
+				newValues.push(this.values[i]);
+			}
+		}
+		var newJson = {
+				min: Math.floor(extent[0]),
+				max: Math.ceil(extent[1]),
+				values: newValues,
+		};
+		var parent = histogram;
+		histogram = new Histogram(self.element, newJson, parent);
+	}
+});
+
+function init_histogram(element) {
+	var json = reports_grid.data;
+	var values = [];
+	var max_value = 0;
+	var min_value = Number.MAX_SAFE_INTEGER;
+	for(var i = 0; i < json.data.length; i++) {
+		var total_items = json.data[i][json.data[i].length - 1];
+		values.push(total_items);
+		if(total_items > max_value) {
+			max_value = total_items;
+		}
+		if(total_items < min_value) {
+			min_value = total_items;
+		}
+	}
+	histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
+}
+
+function histogram_zoom_out() {
+	histogram = histogram.parent;
+	histogram.initialize();
+}
+
+function init_taxon_tree(element) {
+	if (!tree) {
+		$.ajax({
+			data: {
+				fname: "gen_tree_json",
+			},
+			success: function(data) {
+				tree = new Taxon_tree(JSON.parse(data), element);
+			}
+		});
+	}
+}
+
+var Taxon_tree = function(json, element) {
+	var container_width = $("#tabs").width();
+	this.margin = {top: 20, right: 120, bottom: 20, left: 120};
+	this.width = container_width - this.margin.right - this.margin.left;
+	this.height = 3200 - this.margin.top - this.margin.bottom;
+	this.duration = 750;
+	this.root = json;
+	this.current_root = this.root;
+	this.node;
+	this.link;
+	this.svg;
+	this.i = 0;
+	
+	this.tree = d3.layout.tree()
+		.size([this.height, this.width]);
+	
+	this.diagonal = d3.svg.diagonal()
+		.projection(function(d) { return [d.y, d.x]; });
+
+	d3.select(self.frameElement).style("height", "800px");
+	
+	this.shifted;
+	var object = this;
+	$(document).on('keyup keydown', function(e){object.shifted = e.shiftKey;} );
+	
+	this.initialize(element);
+}
+
+$.extend(Taxon_tree.prototype, {
+	initialize: function(element) {
+		var self = this;
+		self.svg = d3.select("#" + element).append("svg")
+			.attr("width", self.width + self.margin.right + self.margin.left)
+			.attr("height", self.height + self.margin.top + self.margin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")");
+		
+		// Prepopulate the parent nodes of the tree.
+		var nodes = self.tree.nodes(self.root).reverse();
+		
+		self.fix.call(self);
+	},
+	fix: function() {
+		var self = this;
+		self.root.x0 = self.height / 2;
+		self.root.y0 = 0;
+
+		self.root.children.forEach(function(d) {
+			self.collapse.call(self, d);
+		});
+		self.update.call(self, self.root, self.current_root);
+	},
+	update: function(source, new_root) {
+		var self = this;
+		self.current_root = new_root;
+		
+		//Adjust height based on the number of children
+		if (self.current_root.children) {
+			self.tree.size([(self.current_root.children.length*20) * Math.pow(1.1,source.depth), 1]);
+		} else if (self.current_root._children && self.current_root._children.length != 0) {
+			self.tree.size([self.current_root._children.length*20, 1]);
+		} else {
+			self.tree.size([1, 1]);
+		}
+		//set minimum height to 800
+		if (self.tree.size()[0] < 800) {
+			self.tree.size([800, 1]);
+		}
+		//set maximum height to 3100
+		if (self.tree.size()[0] > 3100) {
+			self.tree.size([3100, 1]);
+		}
+		
+		// Compute the new tree layout.
+		var nodes = self.tree.nodes(self.current_root); //.reverse();
+		var links = self.tree.links(nodes);
+		
+		// deal with filtering complications
+		var add_depth = 0;
+		var add_nodes = [];
+		while (new_root.parent) {
+			add_depth++;
+			if (new_root.parent._children) {
+				new_root.parent.children = new_root.parent._children;
+				new_root.parent._children = null;
+			}
+			new_root.parent.x = new_root.x;
+			add_nodes.push(new_root.parent);
+			links.push({
+				source: new_root.parent,
+				target: new_root,
+			});
+			new_root = new_root.parent;
+		}
+		
+		// fix depth
+		var max_depth = 0;
+		for (var i = 0; i < nodes.length; i++) {
+			nodes[i].depth += add_depth;
+			max_depth = Math.max(max_depth, nodes[i].depth);
+		}
+		for (var i = 0; i < add_nodes.length; i++) {
+			add_depth--;
+			add_nodes[i].depth = add_depth;
+			nodes.push(add_nodes[i]);
+		}
+		
+		// Normalize for fixed-depth.
+		nodes.forEach(function(d) { 
+			if (max_depth == 0) {
+				d.y = 0;
+			} else {
+				d.y = d.depth * (self.width-100)/max_depth;
+			}
+		});
+		
+		// Update the nodesÉ
+		self.node = self.svg.selectAll("g.node")
+			.data(nodes, function(d) { return d.id || (d.id = ++self.i); });
+
+		// Enter any new nodes at the parent's previous position.
+		var nodeEnter = self.node.enter().append("g")
+			.attr("class", "node")
+			.attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+			.on("click", function(d) {
+				if (self.shifted) {
+					self.double_click.call(self, d);
+				} else {
+					self.click.call(self, d);
+				}
+			});
+		
+		nodeEnter.append("circle")
+			.attr("class", "tree_node noselect")
+			.attr("r", 1e-6)
+			.style("fill", self.color);
+
+		nodeEnter.append("text")
+			.attr("x", function(d) { return d.children || d._children ? -10 : 10; })
+			.attr("dy", ".35em")
+			.attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+			.text(function(d) { return d.name; })
+			.style("fill-opacity", 1e-6);
+
+		// Transition nodes to their new position.
+		var nodeUpdate = self.node.transition()
+			.duration(self.duration)
+			.attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+		nodeUpdate.select("circle")
+			.attr("class", "tree_node noselect")
+			.attr("r", 6)
+			.style("fill", self.color);
+		
+		nodeUpdate.select("text")
+			.attr("class", "noselect")
+			.style("fill-opacity", 1);
+
+		// Transition exiting nodes to the parent's new position.
+		var nodeExit = self.node.exit().transition()
+			.duration(self.duration)
+			.attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+			.remove();
+
+		nodeExit.select("circle")
+			.attr("class", "tree_node")
+			.attr("r", 1e-6);
+
+		nodeExit.select("text")
+			.style("fill-opacity", 1e-6);
+
+		// Update the linksÉ
+		self.link = self.svg.selectAll("path.link")
+			.data(links, function(d) { return d.target.id; });
+
+		// Enter any new links at the parent's previous position.
+		self.link.enter().insert("path", "g")
+			.attr("class", "link")
+			.attr("d", function(d) {
+				var o = {x: source.x0, y: source.y0};
+				return self.diagonal({source: o, target: o});
+			})
+			.attr("fill", "none")
+			.attr("stroke", "#ccc")
+			.attr("stroke-width", "1.5px");
+
+		// Transition links to their new position.
+		self.link.transition()
+			.duration(self.duration)
+			.attr("d", self.diagonal)
+			.attr("fill", "none")
+			.attr("stroke", "#ccc")
+			.attr("stroke-width", "1.5px");
+
+		// Transition exiting nodes to the parent's new position.
+		self.link.exit().transition()
+			.duration(self.duration)
+			.attr("d", function(d) {
+				var o = {x: source.x, y: source.y};
+				return self.diagonal({source: o, target: o});
+			})
+			.attr("fill", "none")
+			.attr("stroke", "#ccc")
+			.attr("stroke-width", "1.5px")
+			.remove();
+
+		// Stash the old positions for transition.
+		nodes.forEach(function(d) {
+			d.x0 = d.x;
+			d.y0 = d.y;
+		});
+	},
+	filter: function(search_text) {
+		var self = this;
+		if (search_text) {
+			var find = self.find.call(self, search_text, [self.root]);
+			if(find) {
+				self.update.call(self, self.root, find);
+			} else {
+				// Not found = no change
+				//self.update.call(self, self.root, current.root);
+			}
+		} else {
+			// Empty search text = reset filter
+			self.update.call(self, self.root, self.root);
+		}
+	},
+	find: function(search_text, nodes) {	//nodes is expected to be an array
+		var self = this;
+		var new_nodes = [];
+		if (nodes.length == 0) {
+			return null;
+		}
+		for (var i = 0; i < nodes.length; i++) {
+			var node = nodes[i];
+			if (node.name.toUpperCase() == search_text.toUpperCase()) {
+				return node;
+			}
+			if(node.children) {
+				for (var j = 0; j < node.children.length; j++) {
+					new_nodes.push(node.children[j]);
+				}
+			} else if (node._children) {
+				for (var j = 0; j < node._children.length; j++) {
+					new_nodes.push(node._children[j]);
+				}
+			}
+		}
+		return self.find.call(self, search_text, new_nodes);
+	},
+	color: function(d) {
+		if (d.children) {
+			return "white";
+		} else if (d._children && d._children.length != 0) {
+			return "rgb(154, 205, 50)";
+		} else {
+			//no children, hidden or otherwise
+			return "gray";
+		}
+	},
+	click: function(d) {
+		var self = this;
+		if (d.children) {
+			d._children = d.children;
+			d.children = null;
+		} else {
+			d.children = d._children;
+			d._children = null;
+		}
+		self.update.call(self, d, self.current_root);
+	},
+	double_click: function(d) {
+		var self = this;
+		if (d.children) {
+			self.collapse.call(self, d);
+		} else {
+			self.open.call(self, d);
+		}
+		tree.update.call(self, d, tree.current_root);
+	},
+	collapse: function(d) {
+		var self = this;
+		if (d.children) {
+			d._children = d.children;
+			d._children.forEach(function(d) {
+				self.collapse.call(self, d);
+			});
+			d.children = null;
+		}
+	},
+	open: function(d) {
+		var self = this;
+		if (d._children) {
+			d.children = d._children;
+			d.children.forEach(function(d) {
+				self.open.call(self, d);
+			});
+			d._children = null;
+		}
+	},
+});
+
+function filter_tree() {
+	var search_text = $('#tree_filter').val();
+    tree.filter(search_text);
+}
+
+function init_line_graph(index) {
+	if (index == 0) {
+		if (system_graph) {
+			system_graph.initialize();
+		} else {
+			init_system_load();	
+		}
+		$("#system_graph2").hide();
+		$("#system_graph").show();
+	} else {
+		if (system_graph2) {
+			system_graph2.initialize();
+		} else {
+			init_system_load2();	
+		}
+		$("#system_graph").hide();
+		$("#system_graph2").show();
+	}
+}
+
+function init_system_load() {
+	$.ajax({
+	      url: "https://genomevolution.org/coge/data/system_load.txt",
+	      success: function (data){
+	            var strings =  data.split("\n");
+	            var json = [];
+	            for (var i = 0; i < strings.length - 1; i++) {
+	            	strings[i] = strings[i].split("\t");
+	            	json.push({
+	            		"x": strings[i][0],
+	            		"y": strings[i][3],
+	            	});
+	            }
+	            system_graph = new System_graph(json, "system_graph", null);
+	      }
+	});
+}
+
+function init_system_load2() {
+	$.ajax({
+	      url: "https://geco.iplantcollaborative.org/coge/data/system_load.txt",
+	      success: function (data){
+	            var strings =  data.split("\n");
+	            var json = [];
+	            for (var i = 0; i < strings.length - 1; i++) {
+	            	strings[i] = strings[i].split("\t");
+	            	json.push({
+	            		"x": strings[i][0],
+	            		"y": strings[i][3],
+	            	});
+	            }
+	            system_graph2 = new System_graph(json, "system_graph2", null);
+	      }
+	});
+}
+
+var System_graph = function(json, element, parent) {
+	var self = this;
+	this.parent = parent;
+	this.margin = {top: 30, right: 20, bottom: 30, left: 50},
+	this.width = 1200 - this.margin.left - this.margin.right,
+	this.height = 600 - this.margin.top - this.margin.bottom;
+	this.data = json;
+	this.element = element;
+	this.initialize();
+}
+
+$.extend(System_graph.prototype, {
+	initialize: function() {
+		var self = this;
+		
+		// Clear the element, add the zoom out button and svg container
+		$("#" + this.element).html(
+				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="' + self.element + '.zoom_out()">Zoom Out</button>' +
+				'<div id="' + self.element + '_container" style="height:700px;"> <div id="' + self.element + '_graph" style="float:left;width:1200px;"></div> </div>'
+		);
+		if (self.parent) {
+			$('#' + self.element + '_back_button').prop("disabled", false);
+		} else {
+			$('#' + self.element + '_back_button').prop("disabled", true);
+		}
+		
+		// Parse the date / time
+		self.timeFormat = d3.time.format("%H:%M:%S %m/%d/%Y");
+		
+		// Format the data
+		self.data.forEach(function(d) {
+			if (Object.prototype.toString.call(d.x) !== "[object Date]") {
+				d.x = self.timeFormat.parse(d.x);
+			}
+	        d.y = +d.y;
+	    });
+
+		// Set the ranges
+		self.x = d3.time.scale().range([0, self.width]);
+		self.y = d3.scale.linear().range([self.height, 0]);
+
+		// Define the axes
+		self.xAxis = d3.svg.axis().scale(self.x)
+		    .orient("bottom").ticks(10);
+
+		self.yAxis = d3.svg.axis().scale(self.y)
+		    .orient("left").ticks(10);
+		
+		// Define the line
+		self.valueline = d3.svg.line()
+		    .x(function(d) { return self.x(d.x); })
+		    .y(function(d) { return self.y(d.y); });
+		    
+		// Adds the svg canvas
+		self.svg = d3.select("#" + self.element + "_graph")
+		    .append("svg")
+		        .attr("width", self.width + self.margin.left + self.margin.right)
+		        .attr("height", self.height + self.margin.top + self.margin.bottom)
+		    .append("g")
+		        .attr("transform", 
+		              "translate(" + self.margin.left + "," + self.margin.top + ")");
+
+	    // Scale the range of the data
+	    self.x.domain(d3.extent(self.data, function(d) { return d.x; }));
+	    self.y.domain([0, d3.max(self.data, function(d) { return d.y; })]);
+
+	    // Add the valueline path.
+	    self.svg.append("path")
+	        .attr("class", "line")
+	        .attr("d", self.valueline(self.data))
+	    	.attr("fill", "none")
+	    	.attr("stroke", "#000");
+
+	    // Add the X Axis
+	    self.svg.append("g")
+	        .attr("class", "x axis")
+	        .attr("transform", "translate(0," + self.height + ")")
+	        .call(self.xAxis);
+
+	    // Add the Y Axis
+	    self.svg.append("g")
+	        .attr("class", "y axis")
+	        .call(self.yAxis);
+	    
+	    // Add a line at 32, representing the 32 cores we use.
+	    self.svg.append("svg:line")
+	    	.attr("x1", 0)
+	    	.attr("x2", self.width)
+	    	.attr("y1", self.y(32))
+	    	.attr("y2", self.y(32))
+	    	.attr("stroke", "red");
+	    
+	    // Add brush selection
+	    self.brush = d3.svg.brush()
+			.x(self.x)
+			.on("brushend", function() {
+				self.brushed.call(self);
+			});
+	    
+	    self.svg.append("g")
+    		.attr("class", "x brush")
+    		.call(self.brush)
+    		.selectAll("rect")
+    		.attr("y", -6)
+    		.attr("height", this.height + 7);
+	    
+	    self.init_data_table();
+	},
+	init_data_table: function () {
+		var self = this;
+		var total = 0;
+		var min = Number.MAX_SAFE_INTEGER;
+		var max = 0;
+		for (var i = 0; i < self.data.length; i++) {
+			if (self.data[i].y < min) {
+				min = self.data[i].y;
+			}
+			if (self.data[i].y > max) {
+				max = self.data[i].y;
+			}
+			total += self.data[i].y;
+		}
+		var average = Math.round(total/self.data.length * 100)/100;
+		$("#" + self.element + "_container").append("<div style='width:100%'>" +
+				"<div>Average: " + average + "</div>" +
+				"<div>Minimum: " + min + "</div>" +
+				"<div>Maximum: " + max + "</div>" +
+				"<div># of Data Points: " + self.data.length + "</div>" +
+				"</div>"
+		);
+	},
+	brushed: function() {
+		var self = this;
+		var extent = self.brush.extent();
+		
+		var newJson = [];
+		for (var i = 0; i < self.data.length; i++) {
+			if (extent[0] <= self.data[i].x && extent[1] >= self.data[i].x) {
+				newJson.push(self.data[i]);
+			}
+		}
+		if (newJson.length > 1) {
+			var parent = self;
+			self = new System_graph(newJson, self.element, parent);
+		}
+	},
+	zoom_out: function() {
+		var self = this;
+		while(self.parent) {
+			self = self.parent;
+		}
+		self.initialize();
+	}
+});

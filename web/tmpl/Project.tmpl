@@ -1,0 +1,183 @@
+<TMPL_IF NAME='LOGIN'>
+    <TMPL_INCLUDE NAME="widgets/Login.tmpl">
+</TMPL_IF>
+
+<TMPL_IF NAME='MAIN'>
+
+<style>
+	body { 
+	  color: #666;
+	}
+
+	/* STRUCTURE */
+	#pagewrap {
+		/*padding: 5px;*/
+		width: 100%/*960px*/;
+		/*margin: 20px auto;*/
+	}
+	#header {
+		height: 50px;
+		padding: 0 15px;
+	}
+	#left {
+		width: 27%/*290px*/;
+		float: left;
+		padding: 5px 15px;
+	}
+
+	#middle {
+		width: 36%/*294px*/; /* Account for margins + border values */
+		float: left;
+		padding: 5px 15px;
+		margin: 0px 5px 5px 5px;
+	}
+
+	#right {
+		width: 27%/*270px*/;
+		padding: 5px 15px;
+		float: left;
+	}
+
+	/************************************************************************************
+	MEDIA QUERIES
+	*************************************************************************************/
+	/* for 980px or less */
+	@media screen and (max-width: 980px) {
+		#pagewrap {
+			width: 94%;
+		}
+		#left {
+			width: 41%;
+			padding: 1% 4%;
+		}
+		#middle {
+			width: 41%;
+			padding: 1% 4%;
+			margin: 0px 0px 5px 5px;
+			float: right;
+		}
+		
+		#right {
+			clear: both;
+			padding: 1% 4%;
+			width: auto;
+			float: none;
+		}
+
+		#header {
+			padding: 1% 4%;
+		}
+	}
+
+	/* for 700px or less */
+	@media screen and (max-width: 600px) {
+		#left {
+			width: auto;
+			float: none;
+		}
+		
+		#middle {
+			width: auto;
+			float: none;
+			margin-left: 0px;
+		}
+		
+		#right {
+			width: auto;
+			float: none;
+		}
+
+	}
+
+	/* for 480px or less */
+	@media screen and (max-width: 480px) {
+		#header {
+			height: auto;
+		}
+		h1 {
+			font-size: 2em;
+		}
+		#right {
+			display: none;
+		}
+	}
+
+	#left {
+		background: #f8f8f8;
+	}
+	#right {
+		background: #f0efef;
+	}
+	#header, #left, #middle, #right {
+		margin-bottom: 5px;
+	}
+	#left, #middle, #right {
+		border: solid 1px #ccc;
+	}
+</style>
+	
+<div id="pagewrap">
+	<section id="header">
+		<h2>Project Test</h2>
+	</section>
+		
+	<section id="left">
+		<h3>Team Members</h3>
+		<p></p>
+	</section>
+	
+	<section id="middle">
+		<h3>2nd Content Area</h3>
+		<p>At full width all three columns will be displayed side by side. As the page is resized the third column will collapse under the first and second. At the smallest screen size all three columns will be stacked on top of one another.</p>
+		<p>Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril delenit augue duis dolore te feugait nulla facilisi.</p>
+	</section>
+	
+	<aside id="right">
+		<h3>3rd Content Area</h3>
+		<p>Eodem modo typi, qui nunc nobis videntur parum clari, fiant sollemnes in futurum.</p>
+		<p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.</p>
+		<p>Eodem modo typi, qui nunc nobis videntur parum clari, fiant sollemnes in futurum.</p>
+	</aside>
+</div>
+
+<!-- DIALOGS -->
+
+<script type="text/javascript">
+// Page constants
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const PAGE_TITLE    = '<TMPL_VAR NAME="PAGE_TITLE">';
+const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER">';
+const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
+
+var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">';
+var WORKFLOW_ID 	  = '<TMPL_VAR NAME="WORKFLOW_ID">';
+var EMBED 			  = '<TMPL_VAR NAME="EMBED">';
+
+$(function() {
+	// Set jQuery AJAX defaults
+    $.ajaxSetup({
+        type: "GET",
+        url: PAGE_NAME,
+        dataType: "html",
+        cache: false,
+    });
+
+    // Configure dialogs
+    $(".dialog_box").dialog({autoOpen: false, minWidth: 400});
+    
+    // Initialize CoGe web services
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
+    });
+    
+});
+</script>
+
+<script type="text/javascript" src="js/pages/project.js"></script>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+</TMPL_IF> <!-- MAIN -->
