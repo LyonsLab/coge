@@ -72,7 +72,7 @@ $(function () {
     $("#hist_update_checkbox").change(function(e) {
     	toggle_hist_updater();
     });
-    $("#histo_dialog").dialog({autoOpen: false, width: 500, height: 500});
+    $("#histogram").dialog({autoOpen: false, width: 500, height: 500});
     
     //Setup idle timer
     $(document).mousemove(function() {
@@ -1798,6 +1798,7 @@ function filter_report(index) {
 }
 
 var Histogram = function(element, json, parent) {
+	var self = this;
 	this.element = element;
 	this.json = json;
 	this.parent = parent;
@@ -1807,18 +1808,18 @@ var Histogram = function(element, json, parent) {
 	
 	$('#' + this.element).dialog('open');
 	
-	this.formatCount;
 	this.margin = {top: 10, right: 30, bottom: 80, left: 50};
 	this.width = $('#' + this.element).outerWidth() - this.margin.left - this.margin.right;
 	this.height = $('#' + this.element).outerHeight() - this.margin.top - this.margin.bottom;
-	this.x;
+	/*this.x;
+	this.formatCount;
 	this.data;
 	this.y;
 	this.xAxis;
 	this.yAxis;
 	this.svg;
 	this.bar;
-	this.brush;
+	this.brush;*/
 	
 	this.initialize();
 }
@@ -1827,14 +1828,17 @@ $.extend(Histogram.prototype, {
 	initialize: function() {
 		var self = this;
 		$("#" + this.element).html(
-			'<div><button id="histogram_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;" onclick="histogram_zoom_out()">Zoom Out</button>' +
+			'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;">Zoom Out</button>' +
 			'<span style="margin-right:40px;">Data: ' + $('#report_type').val() + ', Filter: ' + $('#report_filter').val() + '</span></div>'
 		);
+		$('#' + this.element + '_back_button').on("click", function() {
+			self.zoom_out.call(self);
+		});
 
 		if (self.parent) {
-			$('#histogram_back_button').prop('disabled', false);
+			$('#' + self.element + '_back_button').prop('disabled', false);
 		} else {
-			$('#histogram_back_button').prop('disabled', true);
+			$('#' + self.element + '_back_button').prop('disabled', true);
 		}
 	
 		// A formatter for counts.
@@ -1961,8 +1965,16 @@ $.extend(Histogram.prototype, {
 				max: Math.ceil(extent[1]),
 				values: newValues,
 		};
-		var parent = histogram;
-		histogram = new Histogram(self.element, newJson, parent);
+		var parent = self;
+		self = new Histogram(self.element, newJson, parent);
+	},
+	zoom_out: function() {
+		var self = this;
+		if (self.parent) {
+			self = self.parent;
+			self.child = null;
+		}
+		self.initialize();
 	}
 });
 
@@ -1982,11 +1994,6 @@ function init_histogram(element) {
 		}
 	}
 	histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
-}
-
-function histogram_zoom_out() {
-	histogram = histogram.parent;
-	histogram.initialize();
 }
 
 function init_taxon_tree(element) {
@@ -2314,7 +2321,7 @@ function init_line_graph(index) {
 		if (system_graph) {
 			system_graph.initialize();
 		} else {
-			init_system_load();	
+			init_system_load();
 		}
 		$("#system_graph2").hide();
 		$("#system_graph").show();
@@ -2368,6 +2375,7 @@ function init_system_load2() {
 var System_graph = function(json, element, parent) {
 	var self = this;
 	this.parent = parent;
+	this.child = null;
 	this.margin = {top: 30, right: 20, bottom: 30, left: 50},
 	this.width = 1200 - this.margin.left - this.margin.right,
 	this.height = 600 - this.margin.top - this.margin.bottom;
@@ -2382,11 +2390,15 @@ $.extend(System_graph.prototype, {
 		
 		// Clear the element, add the zoom out button and svg container
 		$("#" + this.element).html(
-				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="' + self.element + '.zoom_out()">Zoom Out</button>' +
+				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;">Zoom Out</button>' +
 				'<div id="' + self.element + '_container" style="height:700px;"> <div id="' + self.element + '_graph" style="float:left;width:1200px;"></div> </div>'
 		);
 		if (self.parent) {
-			$('#' + self.element + '_back_button').prop("disabled", false);
+			$('#' + self.element + '_back_button')
+				.prop("disabled", false)
+				.on("click", function() {
+					self.zoom_out.call(self);
+				});
 		} else {
 			$('#' + self.element + '_back_button').prop("disabled", true);
 		}
@@ -2509,6 +2521,7 @@ $.extend(System_graph.prototype, {
 		if (newJson.length > 1) {
 			var parent = self;
 			self = new System_graph(newJson, self.element, parent);
+			parent.child = self;
 		}
 	},
 	zoom_out: function() {
