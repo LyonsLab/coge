@@ -721,15 +721,6 @@ if ( $GO && $user ) {
     #   print STDOUT "log: error creating user connector\n";
     #   exit(-1);
     #}
-
-    # Log in history - mdb removed 11/14/14, this logging is redundant to LoadGenome.pl
-#    CoGe::Accessory::Web::log_history(
-#        db          => $coge,
-#        user_id     => $user->id,
-#        page        => "LoadGenome",
-#        description => 'load genome id' . $genome->id,
-#        link        => 'GenomeInfo.pl?gid=' . $genome->id
-#    );
 }
 
 # Save result
