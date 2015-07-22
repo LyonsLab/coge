@@ -790,19 +790,6 @@ sub get_tiny_link {
     return $url unless is_uri($response_url);
 
     return $response_url;
-
-    # Log the page
-# mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167
-#    if ( $db and not $disable_logging ) {
-#        $page =~ s/.pl$//;    # remove trailing .pl extension
-#        log_history(
-#            db          => $db,
-#            user_id     => $user_id,
-#            page        => $page,
-#            description => ( $log_msg ? $log_msg : 'page access' ),
-#            link        => $tiny
-#        );
-#    }
 }
 
 sub schedule_job {
