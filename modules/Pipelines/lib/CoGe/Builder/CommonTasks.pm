@@ -64,11 +64,7 @@ sub generate_results {
 }
 
 sub copy_and_mask {
-    my %args = (
-        mask => 0,
-        seq_only => 0,
-        @_
-    );
+    my %args = @_;
 
     my $desc = $args{mask} ? "Copying and masking genome" : "Copying genome";
     $desc .= " (no annotations)" if $args{seq_only};
