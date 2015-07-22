@@ -1336,7 +1336,7 @@ sub copy_genome {
     my $mask = $args{mask};
     my $seq_only = $args{seq_only};
 
-    print STDERR "copy_and_mask_genome: gid=$gid mask=$mask\n";
+    print STDERR "GenomeInfo::copy_and_mask_genome: gid=$gid mask=$mask seq_only=$seq_only\n";
 
     if ($USER->is_public) {
         return 'Not logged in';
@@ -1353,7 +1353,6 @@ sub copy_genome {
     $args{uid} = $USER->id;
     $args{wid} = $workflow->id;
     $args{staging_dir} = $staging_dir;
-    $args{result_dir} = $result_dir;
 
     my %task = copy_and_mask(%args);
     $workflow->add_job(\%task);
@@ -1402,7 +1401,6 @@ sub get_progress_log {
     return unless $workflow_id;
     
     my $results = get_workflow_results($USER->name, $workflow_id);
-    print STDERR Dumper $results, "\n";
     return unless $results;
 
     my $genome_id;
