@@ -1011,10 +1011,11 @@ sub modify_item {
     
     my $log_message;
     if ($mod eq "delete") {
-        $log_message = ( $item->deleted ? 'undelete' : 'delete' );
+        $log_message = ( $item->deleted ? 'undeleted' : 'deleted' );
         $item->deleted( !$item->deleted );    # do undelete if already deleted
-    } elsif ($mod eq "restrict") {
-    	$log_message = ( $item->restricted ? 'unrestrict' : 'restrict' );
+    } 
+    elsif ($mod eq "restrict") {
+    	$log_message = ( $item->restricted ? 'unrestricted' : 'restricted' );
     	$item->restricted( !$item->restricted );    # do undelete if already deleted
     }
     $item->update;
@@ -1024,7 +1025,7 @@ sub modify_item {
         db          => $coge,
         user_id     => $USER->id,
         page        => "Admin",
-        description => "$log_message $type id $id",
+        description => "$log_message $type " . $item->info_html,
         parent_id   => $id,
         parent_type => $item_type
     );
@@ -1099,7 +1100,7 @@ sub add_users_to_group {
                 db          => $coge,
                 user_id     => $USER->id,
                 page        => "Admin",
-                description => 'add user id' . $user->id . ' to group id' . $target_id,
+                description => 'added user ' . $user->info_html . ' to group ' . $target_group->info_html,
                 parent_id   => $target_id,
                 parent_type => 6 #FIXME magic number
             );
@@ -1152,7 +1153,7 @@ sub remove_user_from_group {
             db          => $coge,
             user_id     => $USER->id,
             page        => "Admin",
-            description => 'remove user id' . $user_id . ' from group id' . $target_id,
+            description => 'removed user ' . $user->info_html . ' from group ' . $target_group->info_html,
             parent_id   => $target_id,
             parent_type => 6
         );
