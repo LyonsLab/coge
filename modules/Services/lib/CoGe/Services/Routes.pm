@@ -113,9 +113,9 @@ sub startup {
 #        ->name("logs-search")
 #        ->to("log#search", term => undef);
         
-    $r->get("/logs/notebook/:id" => [id => qr/\d+/])
+    $r->get("/logs/:type/:id" => [type => qr/\w+/, id => qr/\d+/])
         ->name("logs-fetch")
-        ->to("log#fetch", id => undef, type => 1);
+        ->to("log#fetch", id => undef, type => undef);
 
     # IRODS routes
     $r->get("/irods/list/")
