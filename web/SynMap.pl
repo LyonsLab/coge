@@ -2435,12 +2435,13 @@ sub go {
     my $response = $JEX->submit_workflow($workflow);
 
     my $log = CoGe::Accessory::Web::log_history(
-        db      => $coge,
-        user_id => $USER->id,
+        db          => $coge,
+        user_id     => $USER->id,
         description => $log_msg,
-        page    => $PAGE_TITLE,
-        link => $tiny_link,
-        workflow_id => $response->{id}
+        page        => $PAGE_TITLE,
+        link        => $tiny_link,
+        parent_id   => $response->{id},
+        parent_type => 7 #FIXME magic number
     ) if $response and $response->{id};
 
     return encode_json({

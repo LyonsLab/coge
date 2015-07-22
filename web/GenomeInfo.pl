@@ -1319,7 +1319,9 @@ sub delete_genome {
         db          => $DB,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
-        description => "$delete_or_undelete genome id $gid"
+        description => "$delete_or_undelete genome id $gid",
+        parent_id   => $gid,
+        parent_type => 2 #FIXME magic number
     );
 
     return 1;

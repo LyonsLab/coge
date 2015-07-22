@@ -907,7 +907,8 @@ sub blast_search {
         page        => $PAGE_TITLE,
         description => $log_msg,
         link        => $link,
-        workflow_id => $response->{id}
+        parent_id   => $response->{id},
+        parent_type => 7 #FIXME magic number
     ) if $response and $response->{id};
 
     return encode_json({
