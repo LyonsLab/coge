@@ -85,7 +85,6 @@ sub copy_and_mask {
             ["-wid", $args{wid}, 0],
             ["-mask", $args{mask}, 0],
             ["-staging_dir", $args{staging_dir}, 0],
-            ["-result_dir", $args{result_dir}, 0],
             ["-sequence_only", $args{seq_only}, 0]
         ],
         description => $desc
