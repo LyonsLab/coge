@@ -1400,27 +1400,20 @@ sub get_progress_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
-    #TODO authenticate user access to workflow
+    
+    my $results = get_workflow_results($USER->name, $workflow_id);
+    print STDERR Dumper $results, "\n";
+    return unless $results;
 
-    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
-    return unless (-r $results_path);
-
-    my $result_file = catfile($results_path, '1');
-    return unless (-r $result_file);
-
-    my $result = CoGe::Accessory::TDS::read($result_file);
-
-    return unless $result;
-
-    my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
-    my $links = (exists $result->{links} ? $result->{links} : undef);
-
-    return encode_json(
-        {
-            genome_id   => $genome_id,
-            links       => $links
+    my $genome_id;
+    foreach (@$results) {
+        if ($_->{type} eq 'genome') {
+            $genome_id = $_->{id};
+            last;
         }
-    );
+    }
+
+    return encode_json({ genome_id => $genome_id });
 }
 
 sub get_aa_usage {
