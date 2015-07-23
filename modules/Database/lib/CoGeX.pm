@@ -386,7 +386,8 @@ sub node_types {
         feature    => 4,
         user       => 5,
         user_group => 6,
-        group      => 6    # alias for user_group
+        group      => 6,   # alias for user_group
+        workflow   => 7
     );
     return wantarray ? %types : \%types;
 }

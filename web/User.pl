@@ -326,7 +326,7 @@ sub get_item_info {
         return unless $log;
         
         $html .=
-            '<b>Workflow id' . $log->workflow_id . '</b><br>'
+            '<b>Workflow id' . $log->parent_id . '</b><br>'
           . '<b>Type:</b> ' . $log->page . '<br>'
           . '<b>Description:</b> ' . $log->description . '<br>'
           . '<b>Date:</b> ' . $log->time . '<br>'
@@ -351,57 +351,61 @@ sub delete_items {
 		my $type_name;
 
         #print STDERR "delete $item_id $item_type\n";
+        my $item_obj;
         if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
-            my $group = $DB->resultset('UserGroup')->find($item_id);
-		    return unless ( $group and $group->is_editable($USER) );
-		    return if ( $group->locked and !$USER->is_admin );
+            $item_obj = $DB->resultset('UserGroup')->find($item_id);
+		    return unless ( $item_obj and $item_obj->is_editable($USER) );
+		    return if ( $item_obj->locked and !$USER->is_admin );
 
-			$group->deleted(1);
-            $group->update;
+			$item_obj->deleted(1);
+            $item_obj->update;
 			$type_name = 'user group';
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $DB->resultset('List')->find($item_id);
-            return unless $notebook;
+            $item_obj = $DB->resultset('List')->find($item_id);
+            return unless $item_obj;
 
-            if ( !$notebook->locked
-                and ( $USER->is_admin or $USER->is_owner( list => $notebook ) )
+            if ( !$item_obj->locked
+                and ( $USER->is_admin or $USER->is_owner( list => $item_obj ) )
               )
             {
-                $notebook->deleted(1);
-                $notebook->update;
+                $item_obj->deleted(1);
+                $item_obj->update;
                 $type_name = 'notebook';
             }
         }
         elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $DB->resultset('Genome')->find($item_id);
-            return unless $genome;
+            $item_obj = $DB->resultset('Genome')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( dsg => $genome ) ) {
-                $genome->deleted(1);
-                $genome->update;
+            if ( $USER->is_admin or $USER->is_owner( dsg => $item_obj ) ) {
+                $item_obj->deleted(1);
+                $item_obj->update;
                 $type_name = 'genome';
             }
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $DB->resultset('Experiment')->find($item_id);
-            return unless $experiment;
+            $item_obj = $DB->resultset('Experiment')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( experiment => $experiment ) )
+            if ( $USER->is_admin or $USER->is_owner( experiment => $item_obj ) )
             {
-                $experiment->deleted(1);
-                $experiment->update;
+                $item_obj->deleted(1);
+                $item_obj->update;
                 $type_name = 'experiment';
             }
         }
 
         # Record in log
         if ($type_name) {
+            my $item_type_code = node_types{$item_type};
 			CoGe::Accessory::Web::log_history(
 			    db          => $DB,
 			    user_id     => $USER->id,
 			    page        => $PAGE_TITLE,
-			    description => "delete $type_name id$item_id"
+			    description => "deleted $type_name " . $item_obj->info_html,
+			    parent_id   => $item_id,
+			    parent_type => $item_type_code
 			);
         }
     }
@@ -419,44 +423,45 @@ sub undelete_items {
         my $type_name;
 
         #print STDERR "undelete $item_id $item_type\n";
+        my $item_obj;
         if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
-            my $group = $DB->resultset('UserGroup')->find($item_id);
-            return unless $group;
+            $item_obj = $DB->resultset('UserGroup')->find($item_id);
+            return unless $item_obj;
 
-            if ( $group->is_editable($USER) ) {
-                $group->deleted(0);
-                $group->update;
+            if ( $item_obj->is_editable($USER) ) {
+                $item_obj->deleted(0);
+                $item_obj->update;
                 $type_name = 'user group';
             }
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            my $notebook = $DB->resultset('List')->find($item_id);
-            return unless $notebook;
+            $item_obj = $DB->resultset('List')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( list => $notebook ) ) {
-                $notebook->deleted(0);
-                $notebook->update;
+            if ( $USER->is_admin or $USER->is_owner( list => $item_obj ) ) {
+                $item_obj->deleted(0);
+                $item_obj->update;
                 $type_name = 'notebook';
             }
         }
         elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            my $genome = $DB->resultset('Genome')->find($item_id);
-            return unless $genome;
+            $item_obj = $DB->resultset('Genome')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( dsg => $genome ) ) {
-                $genome->deleted(0);
-                $genome->update;
+            if ( $USER->is_admin or $USER->is_owner( dsg => $item_obj ) ) {
+                $item_obj->deleted(0);
+                $item_obj->update;
                 $type_name = 'genome';
             }
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            my $experiment = $DB->resultset('Experiment')->find($item_id);
-            return unless $experiment;
+            $item_obj = $DB->resultset('Experiment')->find($item_id);
+            return unless $item_obj;
 
-            if ( $USER->is_admin or $USER->is_owner( experiment => $experiment ) )
+            if ( $USER->is_admin or $USER->is_owner( experiment => $item_obj ) )
             {
-                $experiment->deleted(0);
-                $experiment->update;
+                $item_obj->deleted(0);
+                $item_obj->update;
                 $type_name = 'experiment';
             }
         }
@@ -466,11 +471,14 @@ sub undelete_items {
 
         # Record in log
         if ($type_name) {
+            my $item_type_code = node_types{$item_type};
 			CoGe::Accessory::Web::log_history(
 			    db          => $DB,
 			    user_id     => $USER->id,
 			    page        => $PAGE_TITLE,
-			    description => "undelete $type_name id$item_id"
+			    description => "undeleted $type_name " . $item_obj->info_html,
+			    parent_id   => $item_id,
+			    parent_type => $item_type_code
 			);
         }
     }
@@ -873,17 +881,17 @@ sub add_items_to_user_or_group {
         if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
             my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
-            push @verified, { id => $item_id, type => $ITEM_TYPE{genome} };
+            push @verified, { id => $item_id, type => $ITEM_TYPE{genome}, type_name => $item_type, info => $genome->info_html };
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
             my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
-            push @verified, { id => $item_id, type => $ITEM_TYPE{experiment} };
+            push @verified, { id => $item_id, type => $ITEM_TYPE{experiment}, type_name => $item_type, info => $experiment->info_html };
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
             my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
-            push @verified, { id => $item_id, type => $ITEM_TYPE{notebook} };
+            push @verified, { id => $item_id, type => $ITEM_TYPE{notebook}, type_name => $item_type, info => $notebook->info_html };
         }
     }
 
@@ -895,13 +903,11 @@ sub add_items_to_user_or_group {
         return unless $user;
 
         foreach (@verified) {
-            my ( $item_id, $item_type ) = ( $_->{id}, $_->{type} );
-
+            my ( $item_id, $item_type, $item_type_name, $item_info ) = ( $_->{id}, $_->{type}, $_->{type_name}, $_->{info} );
             # print STDERR "   user: $item_id $item_type\n";
 
             # Remove previous connection
-            foreach (
-                $DB->resultset('UserConnector')->search(
+            foreach ($DB->resultset('UserConnector')->search(
                     {
                         parent_id   => $target_id,
                         parent_type => 5,            # FIXME hardcoded
@@ -925,6 +931,16 @@ sub add_items_to_user_or_group {
                 }
             );
             return unless $conn;
+            
+            # Record in log
+            CoGe::Accessory::Web::log_history(
+                db          => $DB,
+                user_id     => $USER->id,
+                page        => $PAGE_TITLE,
+                description => "shared $item_type_name $item_info with user " . $user->info,
+                parent_id   => $target_id,
+                parent_type => 6 #FIXME magic number
+            );
         }
     }
     elsif ( $target_type eq 'group' ) { #$ITEM_TYPE{group} ) {
@@ -932,7 +948,7 @@ sub add_items_to_user_or_group {
         return unless $group;
 
         foreach (@verified) {
-            my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
+            my ( $item_id, $item_type, $item_type_name, $item_info ) = ( $_->{id}, $_->{type}, $_->{type_name}, $_->{info} );
 
             # print STDERR "   group: $item_id $item_type\n";
             my $conn = $DB->resultset('UserConnector')->find_or_create(
@@ -945,6 +961,16 @@ sub add_items_to_user_or_group {
                 }
             );
             return unless $conn;
+            
+            # Record in log
+            CoGe::Accessory::Web::log_history(
+                db          => $DB,
+                user_id     => $USER->id,
+                page        => $PAGE_TITLE,
+                description => "shared $item_type_name $item_info with group " . $group->info_html,
+                parent_id   => $target_id,
+                parent_type => 6 #FIXME magic number
+            );
         }
     }
 
@@ -1087,7 +1113,9 @@ sub add_users_to_group {
 		        db          => $DB,
 		        user_id     => $USER->id,
 		        page        => $PAGE_TITLE,
-		        description => 'add user id' . $user->id . ' to group id' . $target_id
+		        description => 'added user ' . $user->info . ' to group ' . $target_group->info_html,
+		        parent_id   => $target_id,
+		        parent_type => 6 #FIXME magic number
 		    );
 	    }
 	}
@@ -1138,7 +1166,9 @@ sub remove_user_from_group {
 		    db          => $DB,
 		    user_id     => $USER->id,
 		    page        => $PAGE_TITLE,
-		    description => 'remove user id' . $user_id . ' from group id' . $target_id
+		    description => 'removed user ' . $user->info . ' from group ' . $target_group->info_html,
+		    parent_id   => $target_id,
+		    parent_type => 6 #FIXME magic number
 		);
     }
 
@@ -1355,8 +1385,8 @@ sub get_jobs {
     
     # Get all jobs from the log table
     my @entries = $USER->logs(
-        {
-            workflow_id => { "!=" => undef},
+        {   parent_id => { "!=" => undef},
+            -or => [ parent_type => 7, parent_type => undef ], #FIXME magic number
             type => { '!=' => 0 },
             #time => { '>=' => $last_update } # for faster refresh
         },
@@ -1364,7 +1394,7 @@ sub get_jobs {
     );
     
     # Add status info from job engine for currently active jobs
-    my @workflow_ids = map { $_->workflow_id } @entries;
+    my @workflow_ids = map { $_->parent_id } @entries;
     my $workflows = $JEX->find_workflows(\@workflow_ids);
     my %workflowsByID;
     foreach (@{$workflows}) {
@@ -1379,7 +1409,7 @@ sub get_jobs {
     # Extract relevant fields
     my @results;
     foreach my $entry (@entries) {
-        my $wid = $entry->workflow_id;
+        my $wid = $entry->parent_id;
         next unless defined $workflowsByID{$wid};
         
         push @results, {
@@ -1669,7 +1699,9 @@ sub create_new_group {
 		db          => $DB,
 		user_id     => $USER->id,
 		page        => $PAGE_TITLE,
-		description => 'create user group id' . $group->id
+		description => 'created group ' . $group->info_html,
+		parent_id   => $group->id,
+		parent_type => 6 #FIXME magic number
 	);
 
     return 1;
@@ -1717,7 +1749,9 @@ sub create_new_notebook {
         db          => $DB,
         user_id     => $USER->id,
         page        => "$PAGE_TITLE",
-        description => 'create notebook id' . $list->id
+        description => 'created notebook ' . $list->info_html,
+        parent_id   => $list->id,
+        parent_type => 1 #FIXME magic number
     );
 
     return 1;

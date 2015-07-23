@@ -1309,7 +1309,7 @@ sub delete_genome {
     my $genome = $DB->resultset('Genome')->find($gid);
     return 0 unless $genome;
     return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
-    my $delete_or_undelete = ($genome->deleted ? 'undelete' : 'delete');
+    my $delete_or_undelete = ($genome->deleted ? 'undeleted' : 'deleted');
     #print STDERR "delete_genome " . $genome->deleted . "\n";
     $genome->deleted( !$genome->deleted ); # do undelete if already deleted
     $genome->update;
@@ -1319,7 +1319,9 @@ sub delete_genome {
         db          => $DB,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
-        description => "$delete_or_undelete genome id $gid"
+        description => "$delete_or_undelete genome " . $genome->info_html,
+        parent_id   => $gid,
+        parent_type => 2 #FIXME magic number
     );
 
     return 1;
@@ -1372,7 +1374,8 @@ sub copy_genome {
     CoGe::Accessory::Web::log_history(
         db          => $DB,
         user_id     => $USER->id,
-        workflow_id => $workflow->id,
+        parent_id   => $workflow->id,
+        parent_type => 7, #FIXME magic number
         page        => $PAGE_TITLE,
         description => $desc,
         link => $tiny_link
