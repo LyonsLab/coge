@@ -64,6 +64,7 @@ $(document).ready(function() {
         timeout: 86400,
         dataType: "html",
         cache: false,
+        timeout: 5*60*60*100 // 5 hours -- mdb added 7/22/15 for AA usage, codon usage, etc.
     });
 
     $(".dialog_box").dialog({ autoOpen: false, width: '30em' });
@@ -1172,6 +1173,8 @@ function open_aa_usage_table(chromosome)
             $('#aa_table').tablesorter();
         }
     });
+    
+    return false;
 }
 
 function get_content_dialog(id, request, chromosome) {
