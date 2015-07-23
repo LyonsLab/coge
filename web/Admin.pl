@@ -1100,7 +1100,7 @@ sub add_users_to_group {
                 db          => $coge,
                 user_id     => $USER->id,
                 page        => "Admin",
-                description => 'added user ' . $user->info_html . ' to group ' . $target_group->info_html,
+                description => 'added user ' . $user->info . ' to group ' . $target_group->info_html,
                 parent_id   => $target_id,
                 parent_type => 6 #FIXME magic number
             );
@@ -1153,7 +1153,7 @@ sub remove_user_from_group {
             db          => $coge,
             user_id     => $USER->id,
             page        => "Admin",
-            description => 'removed user ' . $user->info_html . ' from group ' . $target_group->info_html,
+            description => 'removed user ' . $user->info . ' from group ' . $target_group->info_html,
             parent_id   => $target_id,
             parent_type => 6
         );
