@@ -881,17 +881,17 @@ sub add_items_to_user_or_group {
         if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
             my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
-            push @verified, { id => $item_id, type => $ITEM_TYPE{genome} };
+            push @verified, { id => $item_id, type => $ITEM_TYPE{genome}, type_name => $item_type, info => $genome->info_html };
         }
         elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
             my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
-            push @verified, { id => $item_id, type => $ITEM_TYPE{experiment} };
+            push @verified, { id => $item_id, type => $ITEM_TYPE{experiment}, type_name => $item_type, info => $experiment->info_html };
         }
         elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
             my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
-            push @verified, { id => $item_id, type => $ITEM_TYPE{notebook} };
+            push @verified, { id => $item_id, type => $ITEM_TYPE{notebook}, type_name => $item_type, info => $notebook->info_html };
         }
     }
 
@@ -903,13 +903,11 @@ sub add_items_to_user_or_group {
         return unless $user;
 
         foreach (@verified) {
-            my ( $item_id, $item_type ) = ( $_->{id}, $_->{type} );
-
+            my ( $item_id, $item_type, $item_type_name, $item_info ) = ( $_->{id}, $_->{type}, $_->{type_name}, $_->{info} );
             # print STDERR "   user: $item_id $item_type\n";
 
             # Remove previous connection
-            foreach (
-                $DB->resultset('UserConnector')->search(
+            foreach ($DB->resultset('UserConnector')->search(
                     {
                         parent_id   => $target_id,
                         parent_type => 5,            # FIXME hardcoded
@@ -933,6 +931,16 @@ sub add_items_to_user_or_group {
                 }
             );
             return unless $conn;
+            
+            # Record in log
+            CoGe::Accessory::Web::log_history(
+                db          => $DB,
+                user_id     => $USER->id,
+                page        => $PAGE_TITLE,
+                description => "shared $item_type_name $item_info with user " . $user->info,
+                parent_id   => $target_id,
+                parent_type => 6 #FIXME magic number
+            );
         }
     }
     elsif ( $target_type eq 'group' ) { #$ITEM_TYPE{group} ) {
@@ -940,7 +948,7 @@ sub add_items_to_user_or_group {
         return unless $group;
 
         foreach (@verified) {
-            my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
+            my ( $item_id, $item_type, $item_type_name, $item_info ) = ( $_->{id}, $_->{type}, $_->{type_name}, $_->{info} );
 
             # print STDERR "   group: $item_id $item_type\n";
             my $conn = $DB->resultset('UserConnector')->find_or_create(
@@ -953,6 +961,16 @@ sub add_items_to_user_or_group {
                 }
             );
             return unless $conn;
+            
+            # Record in log
+            CoGe::Accessory::Web::log_history(
+                db          => $DB,
+                user_id     => $USER->id,
+                page        => $PAGE_TITLE,
+                description => "shared $item_type_name $item_info with group " . $group->info_html,
+                parent_id   => $target_id,
+                parent_type => 6 #FIXME magic number
+            );
         }
     }
 
@@ -1095,7 +1113,7 @@ sub add_users_to_group {
 		        db          => $DB,
 		        user_id     => $USER->id,
 		        page        => $PAGE_TITLE,
-		        description => 'added user ' . $user->info_html . ' to group ' . $target_group->info_html,
+		        description => 'added user ' . $user->info . ' to group ' . $target_group->info_html,
 		        parent_id   => $target_id,
 		        parent_type => 6 #FIXME magic number
 		    );
@@ -1148,7 +1166,7 @@ sub remove_user_from_group {
 		    db          => $DB,
 		    user_id     => $USER->id,
 		    page        => $PAGE_TITLE,
-		    description => 'removed user ' . $user->info_html . ' from group ' . $target_group->info_html,
+		    description => 'removed user ' . $user->info . ' from group ' . $target_group->info_html,
 		    parent_id   => $target_id,
 		    parent_type => 6 #FIXME magic number
 		);
@@ -1368,7 +1386,7 @@ sub get_jobs {
     # Get all jobs from the log table
     my @entries = $USER->logs(
         {   parent_id => { "!=" => undef},
-            -or => { parent_type => 7, parent_type => undef }, #FIXME hardcoded to "workflow"
+            -or => [ parent_type => 7, parent_type => undef ], #FIXME magic number
             type => { '!=' => 0 },
             #time => { '>=' => $last_update } # for faster refresh
         },
