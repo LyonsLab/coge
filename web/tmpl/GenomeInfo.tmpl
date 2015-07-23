@@ -61,7 +61,6 @@ $(document).ready(function() {
     $.ajaxSetup({
         type: "GET",
         url: PAGE_NAME,
-        timeout: 86400,
         dataType: "html",
         cache: false,
         timeout: 5*60*60*100 // 5 hours -- mdb added 7/22/15 for AA usage, codon usage, etc.
