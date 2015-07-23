@@ -108,6 +108,15 @@ sub startup {
         ->name("jobs-results")
         ->to("job#results", id => undef, name => undef);
 
+    # Log routes -- not documented, only for internal use
+#    $r->get("/logs/search/#term")
+#        ->name("logs-search")
+#        ->to("log#search", term => undef);
+        
+    $r->get("/logs/:type/:id" => [type => qr/\w+/, id => qr/\d+/])
+        ->name("logs-fetch")
+        ->to("log#fetch", id => undef, type => undef);
+
     # IRODS routes
     $r->get("/irods/list/")
         ->name("irods-list")

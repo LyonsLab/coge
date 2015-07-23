@@ -170,6 +170,7 @@ Services/lib/CoGe/Services/Data/Organism.pm
 Services/lib/CoGe/Services/Data/Sequence.pm
 Services/lib/CoGe/Services/Data/User.pm
 Services/lib/CoGe/Services/Data/Job.pm
+Services/lib/CoGe/Services/Data/Log.pm
 Services/lib/CoGe/Services/JBrowse/Annotation.pm
 Services/lib/CoGe/Services/JBrowse/Configuration.pm
 Services/lib/CoGe/Services/JBrowse/Experiment.pm

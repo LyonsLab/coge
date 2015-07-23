@@ -76,7 +76,8 @@ sub add {
         # Log job submission
         CoGe::Accessory::Web::log_history(
             db          => $db,
-            workflow_id => $workflow->id,
+            parent_id   => $workflow->id,
+            parent_type => 7, #FIXME magic number
             user_id     => $user->id,
             page        => ($page ? $page : "API"),
             description => $workflow->name,

@@ -726,7 +726,8 @@ sub log_history {
     my %opts        = @_;
     my $db          = $opts{db};
     my $user_id     = $opts{user_id};
-    my $workflow_id = $opts{workflow_id};
+    my $parent_id   = $opts{parent_id};
+    my $parent_type = $opts{parent_type};
     my $page        = $opts{page};
     my $description = $opts{description};
     my $type        = $opts{type} || 0;
@@ -742,7 +743,8 @@ sub log_history {
             type        => $type,
             description => $description,
             link        => $link,
-            workflow_id => $workflow_id
+            parent_id   => $parent_id,
+            parent_type => $parent_type
         }
     );
 }
@@ -788,19 +790,6 @@ sub get_tiny_link {
     return $url unless is_uri($response_url);
 
     return $response_url;
-
-    # Log the page
-# mdb removed 10/10/13 -- Move logging functionality out of this to fix issue 167
-#    if ( $db and not $disable_logging ) {
-#        $page =~ s/.pl$//;    # remove trailing .pl extension
-#        log_history(
-#            db          => $db,
-#            user_id     => $user_id,
-#            page        => $page,
-#            description => ( $log_msg ? $log_msg : 'page access' ),
-#            link        => $tiny
-#        );
-#    }
 }
 
 sub schedule_job {
