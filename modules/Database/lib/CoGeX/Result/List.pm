@@ -382,7 +382,7 @@ sub info {
     $info = '&reg; ' . $info if $self->restricted;
     $info .= ': ' . $self->description if $self->description;
     #$info .= ' (' . $self->type->name . ')' if $self->type;
-    $info .= ' (' . $self->id . ')';
+    $info .= ' (id' . $self->id . ')';
     return $info;
 }
 

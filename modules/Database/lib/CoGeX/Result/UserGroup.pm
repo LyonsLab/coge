@@ -442,7 +442,7 @@ sub info {
     my $info = $self->name;
     $info .= ": " . $self->description if $self->description;
     # $info .= " (" . $self->role->name . ")";
-    $info .= ' (' . $self->id . ')';
+    $info .= ' (id' . $self->id . ')';
     return $info;
 }
 
