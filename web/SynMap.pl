@@ -2433,23 +2433,30 @@ sub go {
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 
     my $response = $JEX->submit_workflow($workflow);
-
-    my $log = CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        user_id     => $USER->id,
-        description => $log_msg,
-        page        => $PAGE_TITLE,
-        link        => $tiny_link,
-        parent_id   => $response->{id},
-        parent_type => 7 #FIXME magic number
-    ) if $response and $response->{id};
-
-    return encode_json({
-        link     => $tiny_link,
-        request  => "jex/synmap/status/" . $response->{id},
-        status   => $response->{status},
-        success  => $JEX->is_successful($response) ? JSON::true : JSON::false
-    });
+    
+    if ($response and $response->{id}) {
+        my $log = CoGe::Accessory::Web::log_history(
+            db          => $coge,
+            user_id     => $USER->id,
+            description => $log_msg,
+            page        => $PAGE_TITLE,
+            link        => $tiny_link,
+            parent_id   => $response->{id},
+            parent_type => 7 #FIXME magic number
+        );
+    
+        return encode_json({
+            link     => $tiny_link,
+            request  => "jex/synmap/status/" . $response->{id},
+            status   => $response->{status},
+            success  => $JEX->is_successful($response) ? JSON::true : JSON::false
+        });
+    }
+    else {
+        return encode_json({
+            success  => JSON::false
+        });
+    }
 }
 
 sub get_results {
