@@ -33,7 +33,7 @@ $JEX =
 
 $MAX_SEARCH_RESULTS = 400;
 
-my $node_types = CoGeX::node_types();
+our $node_types = CoGeX::node_types();
 my $filename = '/home/franka1/repos/coge/web/admin_error.log';
 open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
 
@@ -2021,7 +2021,7 @@ sub get_total_table {
 
 ####
 #TAXONOMY STUFF
-my %taxonomic_tree;
+our %taxonomic_tree;
 
 sub gen_tree_json {
 	%taxonomic_tree  = (
