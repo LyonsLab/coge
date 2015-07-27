@@ -914,7 +914,7 @@ sub gff {
                             chr         => $chr,
                             ds          => $ds,
                             cds_exon    => $cds_exon,
-			    prior_genes => \%prior_genes
+			                prior_genes => \%prior_genes
                         )
                       )
                     {
@@ -930,10 +930,9 @@ sub gff {
                             ids2names   => \%ids2names,
                             id_type     => $id_type,
                             unique_ids  => \%unique_ids,
-                            unique_parent_annotations =>
-                              $unique_parent_annotations,
+                            unique_parent_annotations => $unique_parent_annotations,
                             prev_annos => \%prev_annos,
-			    add_chr => $add_chr
+			                add_chr => $add_chr
                         );
                         $output .= $tmp if $tmp;
                         next main;
@@ -955,7 +954,7 @@ sub gff {
                     id        => $count,
                     parent_id => 0,
                     type      => $ft->name,
-		    prior_genes=> \%prior_genes
+		            prior_genes => \%prior_genes
                   };
                 $count++;
             }
@@ -977,7 +976,7 @@ sub gff {
                     unique_ids                => \%unique_ids,
                     unique_parent_annotations => $unique_parent_annotations,
                     prev_annos                => \%prev_annos,
-		    add_chr                   => $add_chr
+		            add_chr                   => $add_chr
                 );
                 $output .= $tmp if $tmp;
                 next;
@@ -997,7 +996,7 @@ sub gff {
                     chr         => $chr,
                     ds          => $ds,
                     cds_exon    => $cds_exon,
-		    prior_genes => \%prior_genes
+		            prior_genes => \%prior_genes
                 )
               )
             {
@@ -1015,7 +1014,7 @@ sub gff {
                     unique_ids                => \%unique_ids,
                     unique_parent_annotations => $unique_parent_annotations,
                     prev_annos                => \%prev_annos,
-		    add_chr 		      => $add_chr
+		            add_chr 		          => $add_chr
                 );
                 $output .= $tmp if $tmp;
                 next main;
@@ -1032,7 +1031,7 @@ sub gff {
             $parent_id--;
             while ( my $f = $sub_rs->next() ) {
                 if ( $fids{ $f->feature_id } ) { next; }
-		#next if $f->type->name =~ /pseudogene/i; #skip pseudogene stuff:  EHL 6/1/15
+		        #next if $f->type->name =~ /pseudogene/i; #skip pseudogene stuff:  EHL 6/1/15
                 my $ftn = $self->process_feature_type_name( $f->feature_type->name );
                 push @{ $notes{gene}{"Encoded_feature"} }, $self->escape_gff($ftn);
                 foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
@@ -1096,7 +1095,7 @@ sub gff {
                     unique_ids                => \%unique_ids,
                     unique_parent_annotations => $unique_parent_annotations,
                     prev_annos                => \%prev_annos,
-		    add_chr                   => $add_chr
+		            add_chr                   => $add_chr
                 );
                 $output .= $tmp if $tmp;
                 last;
@@ -1199,7 +1198,7 @@ sub _search_rna {
               $self->process_feature_type_name( $f->feature_type->name );
             $fids->{ $f->feature_id } = 1;    #feat_id has been used;
             $types->{ $f->feature_type->name }++;
-	    foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
+	        foreach my $loc ( sort { $a->start <=> $b->start } $f->locs() ) {
                 next
                   if $loc->start > $parent_feat->stop
                       || $loc->stop < $parent_feat->start
@@ -1213,7 +1212,7 @@ sub _search_rna {
                     id        => $$count,
                     parent_id => $parent_id,
                     type      => $f->feature_type->name,
-		    prior_genes=> $prior_genes
+		            prior_genes=> $prior_genes
                   };
                 $$count++ if $cds_exon;
                 push @$out,
@@ -1225,7 +1224,7 @@ sub _search_rna {
                     id        => $$count,
                     parent_id => $parent_id,
                     type      => "exon",
-		    prior_genes=> $prior_genes,
+		            prior_genes=> $prior_genes,
                   }
                   if $cds_exon;
 

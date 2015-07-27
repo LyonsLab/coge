@@ -979,20 +979,17 @@ sub gff {
     my $debug   = $opts{debug};
     my $print   = $opts{print};
     my $annos   = $opts{annos};
-    my $cds     = $opts{cds};       #only print CDS gene features
+    my $cds     = $opts{cds}; #only print CDS gene features
     my $chr		= $opts{chr}; #optional, set to only include features on a particular chromosome
     my $add_chr = $opts{add_chr};
-    my $unique_parent_annotations =
-      $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
-    my $id_type =
-      $opts{id_type};    #type of ID (name, num):  unique number; unique name
+    my $unique_parent_annotations = $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
+    my $id_type = $opts{id_type}; #type of ID (name, num):  unique number; unique name
     $id_type = "name" unless defined $id_type;
 
-    my $name_unique =
-      $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
+    my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
     my $base_url = $opts{base_url}; #server for coge to link back to GenomeInfo
 
-    my $output;           #store the goodies
+    my $output; #store the goodies
     $output .= "##gff-version\t3\n";
     $output .= "##Generate by CoGe\n";
     $output .= "##Organism name: " . $self->organism->name . "\n";
@@ -1019,7 +1016,7 @@ sub gff {
             id_type                   => $id_type,
             unique_parent_annotations => $unique_parent_annotations,
             chr						  => $chr,
-	    add_chr => $add_chr
+	        add_chr                   => $add_chr
         );
         $output .= $tmp if $tmp;
     }
