@@ -5,6 +5,7 @@ use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(format_time_diff);
 use CoGe::Accessory::Jex;
+use CoGe::Core::Search;
 use HTML::Template;
 use JSON qw(encode_json);
 use Data::Dumper;
@@ -12,7 +13,6 @@ use List::Compare;
 use CoGeX;
 use CoGeX::Result::User;
 use CoGeDBI;
-use Data::Dumper;
 use URI::Escape::JavaScript qw(escape unescape);
 use Time::Piece;
 use JSON::XS;
@@ -112,6 +112,13 @@ sub user_is_admin {
 	return $USER->is_admin;
 }
 
+sub search_stuff {
+	#my $search_term = $opts{search_term};	# Takes in the entire string, to be processed later
+    #my $timestamp   = $opts{timestamp};
+    say STDERR "DB: $coge";
+	return CoGe::Core::Search->search(@_, db=>$coge, USER=>$USER);
+}
+=pod
 sub search_stuff {
     my %opts        = @_;
     my $search_term = $opts{search_term};
@@ -425,6 +432,7 @@ sub search_stuff {
 	#print STDERR "Successful search\n";
 	return encode_json( { timestamp => $timestamp, items => \@results } );
 }
+=cut
 
 sub user_info {
 
