@@ -755,6 +755,28 @@ sub chromosomes {
 
 ################################################ subroutine header begin ##
 
+=head2 chromosomes
+
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub chromosomes_all {
+    my $self = shift;
+    return CoGe::Core::Chromosomes->new($self->id)->all;
+}
+
+################################################ subroutine header begin ##
+
 =head2 chromosome_lengths
 
  Usage     :

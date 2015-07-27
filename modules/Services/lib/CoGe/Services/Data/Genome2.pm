@@ -124,7 +124,8 @@ sub fetch {
             type_group => $_->type->group
         }
     } $genome->annotations;
-
+    
+    # Generate response
     $self->render(json => {
         id => int($genome->id),
         name => $genome->name,
@@ -142,6 +143,7 @@ sub fetch {
             description => $genome->type->description,
         },
         chromosome_count => int($genome->chromosome_count),
+        chromosomes => \@{$genome->chromosomes_all},
         experiments => [ map { int($_->id) } $genome->experiments ],
         additional_metadata => \@metadata
     });
