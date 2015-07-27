@@ -377,10 +377,12 @@ sub send_to_list              #send to list
 
     # Record in the log
     CoGe::Accessory::Web::log_history(
-            db          => $coge,
-            user_id     => $USER->id,
-            page        => $PAGE_NAME,
-            description => 'create list from experiments id' . $list->id
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => $PAGE_NAME,
+        description => 'created experiment list ' . $list->info_html,
+        parent_id   => $list->id,
+        parent_type => 1 #FIXME magic number
     );
 
     my $url = "NotebookView.pl?lid=" . $list->id;

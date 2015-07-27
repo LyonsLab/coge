@@ -850,7 +850,7 @@ function formatter(item) {
 function update_dialog(request, identifier, result, formatter, args) {
     var get_status = function () {
         $.ajax({
-            type: 'GET',
+            type: 'POST',
             url: request,
             dataType: 'json',
             success: update_callback,

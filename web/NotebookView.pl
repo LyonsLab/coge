@@ -739,7 +739,7 @@ sub add_item_to_list {
         db          => $coge,
         user_id     => $USER->id,
         page        => "NotebookView",
-        description => "add $type_name id$item_id to notebook $lid",
+        description => "added $type_name id$item_id to notebook " . $list->info_html,
         link        => "NotebookView.pl?nid=$lid",
         parent_id   => $lid,
         parent_type => 1 #FIXME magic number
@@ -776,7 +776,7 @@ sub remove_list_item {
             db          => $coge,
             user_id     => $USER->id,
             page        => "NotebookView",
-            description => "removed $type_name id$item_id from notebook $lid",
+            description => "removed $type_name id$item_id from notebook " . $list->info_html,
             link        => "NotebookView.pl?nid=$lid",
             parent_id   => $lid,
             parent_type => 1 #FIXME magic number
