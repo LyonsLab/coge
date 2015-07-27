@@ -373,7 +373,7 @@ sub run {
     # many of the these programs are finicky about what the filename is
     # and won't even run without the properly named file.  Ack
     my $exit_status;
-    my $cmd = "echo '$aln' | " . $self->codeml() . " 2>/dev/null";
+    my $cmd = "echo '$aln' | nice " . $self->codeml() . " 2>/dev/null";
 #  $self->croak("unable to find or run executable for 'codeml': $cmd") unless $cmd && -e $cmd && -x _;
 #       if( $self->{'_branchLengths'} ) {
 #	   open(RUN, "echo $self->{'_branchLengths'} | $cmd |") or $self->croak("Cannot open exe $codemlexe");

@@ -32,7 +32,6 @@ $MAX_CHR_NAME_LENGTH = 255;
 GetOptions(
     "staging_dir=s" => \$staging_dir,
     "install_dir=s" => \$install_dir,    # optional, for debug
-#    "result_dir=s"  => \$result_dir,     # results path
     "wid=s"         => \$wid,            # workflow id
     "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped) of files to load
     "irods_files=s" => \$irods_files,    # optional comma-separated list (JS escaped) of files to set metadata
@@ -86,6 +85,11 @@ $source_desc = unescape($source_desc) if ($source_desc);
 $restricted  = '0' if ( not defined $restricted );
 $compress    = 0 if ( not defined $compress ); 	# RAZF compress the fasta file
 $type_id     = 1 if ( not defined $type_id );   # default genomic seq type to "unmasked"
+
+unless ($wid) {
+    print STDOUT "log: error: wid not specified\n";
+    exit(-1);
+}
 
 if (not $source_id and not $source_name) {
 	print STDOUT "log: error: source not specified, use source_id or source_name\n";
@@ -411,7 +415,7 @@ if ($irods_files) {
 }
 
 # Save result
-unless (add_workflow_result($user_name, $wid, 
+unless (add_workflow_result($user->name, $wid, 
         {
             type           => 'genome',
             id             => int($genome->id),
@@ -434,7 +438,7 @@ unless (add_workflow_result($user_name, $wid,
 # Add genome ID to log - mdb added 7/8/15, needed after log output was moved to STDOUT for jex
 my $logtxtfile = "$staging_dir/log.txt";
 open(my $logh, '>', $logtxtfile);
-print $logh "genome id: " . $genome->id . "\n";
+print $logh "genome id: " . $genome->id . "\n"; # needed by copy_load_mask_genome.pl
 close($logh);
 
 # Save workflow_id in genome data path -- #TODO move into own routine in Storage.pm

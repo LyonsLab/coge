@@ -647,7 +647,7 @@ sub get_workflow_paths {
 sub add_workflow_result {
     my ( $user_name, $workflow_id, $result ) = @_;
     unless ($user_name && $workflow_id && $result) {
-        print STDERR "Storage::add_result ERROR: missing required param\n";
+        print STDERR "Storage::add_workflow_result ERROR: missing required param\n";
         return;
     }
     

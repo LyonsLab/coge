@@ -1,3 +1,4 @@
+var user_is_admin = false;
 var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common location
 var timestamps = new Array();
 var jobs_timers = new Array();
@@ -83,6 +84,20 @@ $(function () {
 		if (idleTime > IDLE_TIME) {
 			// User was idle for a while, refresh page
 			schedule_update(5000);
+		}
+	});
+    
+    //See if the current user is an admin
+    $.ajax({
+		data: {
+			fname: 'user_is_admin',
+		},
+		success: function(data) {
+			if (data == 1) {
+				user_is_admin = true;
+			} else {
+				uesr_is_admin = false;
+			}
 		}
 	});
 });
@@ -381,7 +396,7 @@ function search_stuff (search_term) {
 							genList = genList + "<span>";
 						}
 						genList = genList + (obj.items[i].label) + " <a href=\"GenomeInfo.pl?gid=" + (obj.items[i].id) + "\">Info </a>";
-						genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ", 2, " + obj.items[i].restricted + ")'>Edit Access</button>";
+						genList = genList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 2, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						genList = genList + "</span></td></tr>";
 						genCounter++;
 					}
@@ -401,7 +416,7 @@ function search_stuff (search_term) {
 							expList = expList + "<span>";
 						}
 						expList = expList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"ExperimentView.pl?eid=" + (obj.items[i].id) + "\">Info </a>";
-						expList = expList + "<button onclick='share_dialog(" + obj.items[i].id + ", 3, " + obj.items[i].restricted + ")'>Edit Access</button>";
+						expList = expList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 3, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						expList = expList + "</span></td></tr>";
 						expCounter++;
 					}
@@ -421,7 +436,7 @@ function search_stuff (search_term) {
 							noteList = noteList + "<span>";
 						}
 						noteList = noteList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"NotebookView.pl?lid=" + (obj.items[i].id) + "\">Info </a>";
-						noteList = noteList + "<button onclick='share_dialog(" + obj.items[i].id + ", 1 , " + obj.items[i].restricted + ")'>Edit Access</button>";
+						noteList = noteList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 1 , " + obj.items[i].restricted + ")'>Edit Access</button>";
 						noteList = noteList + "</span></td></tr>";
 						noteCounter++;
 					}
@@ -548,6 +563,11 @@ function search_stuff (search_term) {
 				}
 				
 				$("#loading").hide();
+				if (!user_is_admin) {
+					$(".access").hide();
+				} else {
+					$(".access").show();
+				}
 			},
 		});
 		previous_search = search_term;
@@ -637,7 +657,7 @@ function remove_items_from_user_or_group(target_item, id, type) {
 var previous_user = 0;
 var previous_type = 0;
 
-// indicates the part of the Admin page currently being displayed. 0 --> "master", 1 --> "user info"
+// indicates the part of the search tab currently being displayed. 0 --> "master", 1 --> "user info"
 var current_page = 0;
 
 function search_user(userID, search_type) {
@@ -646,9 +666,10 @@ function search_user(userID, search_type) {
 		//current_page=1;
 	}
 	if(previous_user != userID) {
-		//$('#userResults').hide();
+		$('#userResults').hide();
 		//$('#userResults').html("Loading...");
 		user_info(userID, search_type);
+		$('#userResults').show();
 	}
 	previous_user = userID;
 	previous_type = search_type;
@@ -719,7 +740,7 @@ function user_info(userID, search_type) {
                             	genList = genList + "<span>";
                             }
         					genList = genList + (current.label) + " <a href=\"GenomeInfo.pl?gid=" + (current.id) + "\">Info </a>";
-        					genList = genList + "<button onclick='share_dialog(" + current.id + ", 2, " + current.restricted + ")'>Edit Access</button>";
+        					genList = genList + "<button class='access' onclick='share_dialog(" + current.id + ", 2, " + current.restricted + ")'>Edit Access</button>";
         					genList = genList + "</span></td></tr>";
         					genCounter++;
         				}
@@ -748,7 +769,7 @@ function user_info(userID, search_type) {
         						expList = expList + "<span>";
         					}
         					expList = expList + (current.label) + " (ID: " + (current.id) + ") <a href=\"ExperimentView.pl?eid=" + (current.id) + "\">Info </a>";
-        					expList = expList + "<button onclick='share_dialog(" + current.id + ", 3, " + current.restricted + ")'>Edit Access</button>";
+        					expList = expList + "<button class='access' onclick='share_dialog(" + current.id + ", 3, " + current.restricted + ")'>Edit Access</button>";
         					expList = expList + "</span></td></tr>";
         					expCounter++;
         				}
@@ -777,7 +798,7 @@ function user_info(userID, search_type) {
         						noteList = noteList + "<span>";
         					}
         					noteList = noteList + (current.label) + " (ID: " + (current.id) + ") <a href=\"NotebookView.pl?lid=" + (current.id) + "\">Info </a>";
-        					noteList = noteList + "<button onclick='share_dialog(" + current.id + ", , " + current.restricted + ")'>Edit Access</button>";
+        					noteList = noteList + "<button class='access' onclick='share_dialog(" + current.id + ", , " + current.restricted + ")'>Edit Access</button>";
         					noteList = noteList + "</span></td></tr>";
         					noteCounter++;
         				}
@@ -893,6 +914,11 @@ function user_info(userID, search_type) {
         		}
         	}
         	$("#loading2").hide();
+        	if (!user_is_admin) {
+				$(".access").hide();
+			} else {
+				$(".access").show();
+			}
         }
 	});
 }
@@ -1742,12 +1768,12 @@ $.extend(DataGrid.prototype, {
 					var total_items = 0;
 					if (this.selection == "total") {
 						for(var j = 0; j < json.data[i].length; j++) {
-							var num = parseInt(json.data[i][j]);
+							var num = parseInt(json.data[i][j], 10);
 							total_items += num;
 						}
 					} else {
 						for(var j = 1; j < json.data[i].length - 1; j++) {  // ignores the "name", "users", "groups" columns
-							var num = parseInt(json.data[i][j]);
+							var num = parseInt(json.data[i][j], 10);
 							total_items += num;
 						}
 					}
@@ -1811,15 +1837,6 @@ var Histogram = function(element, json, parent) {
 	this.margin = {top: 10, right: 30, bottom: 80, left: 50};
 	this.width = $('#' + this.element).outerWidth() - this.margin.left - this.margin.right;
 	this.height = $('#' + this.element).outerHeight() - this.margin.top - this.margin.bottom;
-	/*this.x;
-	this.formatCount;
-	this.data;
-	this.y;
-	this.xAxis;
-	this.yAxis;
-	this.svg;
-	this.bar;
-	this.brush;*/
 	
 	this.initialize();
 }
@@ -1926,7 +1943,7 @@ $.extend(Histogram.prototype, {
 	    	.attr("class", "y axis")
 	    	.call(this.yAxis);
 		
-		this.svg.append("text")
+		var y_label = this.svg.append("text")
 			.attr("font-size", "1.25em")
 			.attr("transform", "translate(" + this.margin.left/(-1.25) + "," + this.height/2 + ") rotate(270)")
 			.text("Frequency");
@@ -2338,37 +2355,39 @@ function init_line_graph(index) {
 
 function init_system_load() {
 	$.ajax({
-	      url: "https://genomevolution.org/coge/data/system_load.txt",
-	      success: function (data){
-	            var strings =  data.split("\n");
-	            var json = [];
-	            for (var i = 0; i < strings.length - 1; i++) {
-	            	strings[i] = strings[i].split("\t");
-	            	json.push({
-	            		"x": strings[i][0],
-	            		"y": strings[i][3],
-	            	});
-	            }
-	            system_graph = new System_graph(json, "system_graph", null);
-	      }
+		url: "https://genomevolution.org/coge/data/system_load.txt",
+		success: function (data){
+			var strings =  data.split("\n");
+			var json = [];
+			for (var i = 0; i < strings.length - 1; i++) {
+				strings[i] = strings[i].split("\t");
+				json.push({
+					"time": strings[i][0],
+					"load": strings[i][3],
+					"memory": parseInt(strings[i][4], 10)/1000,
+				});
+			}
+			system_graph = new System_graph(json, "system_graph", null);
+		}
 	});
 }
 
 function init_system_load2() {
 	$.ajax({
-	      url: "https://geco.iplantcollaborative.org/coge/data/system_load.txt",
-	      success: function (data){
-	            var strings =  data.split("\n");
-	            var json = [];
-	            for (var i = 0; i < strings.length - 1; i++) {
-	            	strings[i] = strings[i].split("\t");
-	            	json.push({
-	            		"x": strings[i][0],
-	            		"y": strings[i][3],
-	            	});
-	            }
-	            system_graph2 = new System_graph(json, "system_graph2", null);
-	      }
+		url: "https://geco.iplantcollaborative.org/coge/data/system_load.txt",
+		success: function (data){
+			var strings =  data.split("\n");
+			var json = [];
+			for (var i = 0; i < strings.length - 1; i++) {
+				strings[i] = strings[i].split("\t");
+				json.push({
+					"time": strings[i][0],
+					"load": strings[i][3],
+					"memory": parseInt(strings[i][4], 10)/1000,
+				});
+			}
+			system_graph2 = new System_graph(json, "system_graph2", null);
+		}
 	});
 }
 
@@ -2376,10 +2395,11 @@ var System_graph = function(json, element, parent) {
 	var self = this;
 	this.parent = parent;
 	this.child = null;
-	this.margin = {top: 30, right: 20, bottom: 30, left: 50},
+	this.margin = {top: 30, right: 80, bottom: 30, left: 50},
 	this.width = 1200 - this.margin.left - this.margin.right,
 	this.height = 600 - this.margin.top - this.margin.bottom;
 	this.data = json;
+	console.log(json);
 	this.element = element;
 	this.initialize();
 }
@@ -2391,7 +2411,7 @@ $.extend(System_graph.prototype, {
 		// Clear the element, add the zoom out button and svg container
 		$("#" + this.element).html(
 				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;">Zoom Out</button>' +
-				'<div id="' + self.element + '_container" style="height:700px;"> <div id="' + self.element + '_graph" style="float:left;width:1200px;"></div> </div>'
+				'<div id="' + self.element + '_container" style="height:750px;"> <div id="' + self.element + '_graph" style="float:left;width:1200px;"></div> </div>'
 		);
 		if (self.parent) {
 			$('#' + self.element + '_back_button')
@@ -2408,27 +2428,46 @@ $.extend(System_graph.prototype, {
 		
 		// Format the data
 		self.data.forEach(function(d) {
-			if (Object.prototype.toString.call(d.x) !== "[object Date]") {
-				d.x = self.timeFormat.parse(d.x);
+			if (Object.prototype.toString.call(d.time) !== "[object Date]") {
+				d.time = self.timeFormat.parse(d.time);
 			}
-	        d.y = +d.y;
+			if (d.load) {
+				d.load = +d.load;
+			}
+	        if (d.memory) {
+	        	d.memory = +d.memory;
+	        }
 	    });
 
 		// Set the ranges
 		self.x = d3.time.scale().range([0, self.width]);
-		self.y = d3.scale.linear().range([self.height, 0]);
+		self.yLoad = d3.scale.linear().range([self.height, 0]);
+		self.yMemory = d3.scale.linear().range([self.height, 0]);
 
 		// Define the axes
 		self.xAxis = d3.svg.axis().scale(self.x)
-		    .orient("bottom").ticks(10);
+			.orient("bottom").ticks(10);
 
-		self.yAxis = d3.svg.axis().scale(self.y)
+		self.yLoadAxis = d3.svg.axis().scale(self.yLoad)
 		    .orient("left").ticks(10);
+
+		self.yMemAxis = d3.svg.axis().scale(self.yMemory)
+	    	.orient("right").ticks(10);
 		
-		// Define the line
+		// Define the lines
 		self.valueline = d3.svg.line()
-		    .x(function(d) { return self.x(d.x); })
-		    .y(function(d) { return self.y(d.y); });
+		    .x(function(d) { return self.x(d.time); })
+		    .y(function(d) { return self.yLoad(d.load); });
+		
+		self.valueline2 = d3.svg.line()
+	    	.x(function(d) { return self.x(d.time); })
+	    	.y(function(d) { 
+	    		if (d.memory) {
+	    			return self.yMemory(d.memory); 
+	    		} else {
+	    			return self.yMemory(0);
+	    		}
+	    	});
 		    
 		// Adds the svg canvas
 		self.svg = d3.select("#" + self.element + "_graph")
@@ -2440,15 +2479,22 @@ $.extend(System_graph.prototype, {
 		              "translate(" + self.margin.left + "," + self.margin.top + ")");
 
 	    // Scale the range of the data
-	    self.x.domain(d3.extent(self.data, function(d) { return d.x; }));
-	    self.y.domain([0, d3.max(self.data, function(d) { return d.y; })]);
+	    self.x.domain(d3.extent(self.data, function(d) { return d.time; }));
+	    self.yLoad.domain([0, d3.max(self.data, function(d) { return d.load; })]);
+	    self.yMemory.domain([0, d3.max(self.data, function(d) { return d.memory; })]);
 
-	    // Add the valueline path.
+	    // Add the valueline paths.
 	    self.svg.append("path")
 	        .attr("class", "line")
 	        .attr("d", self.valueline(self.data))
 	    	.attr("fill", "none")
-	    	.attr("stroke", "#000");
+	    	.attr("stroke", "#119911");
+	    
+	    self.svg.append("path")
+        	.attr("class", "line")
+        	.attr("d", self.valueline2(self.data))
+        	.attr("fill", "none")
+        	.attr("stroke", "blue");
 
 	    // Add the X Axis
 	    self.svg.append("g")
@@ -2456,17 +2502,34 @@ $.extend(System_graph.prototype, {
 	        .attr("transform", "translate(0," + self.height + ")")
 	        .call(self.xAxis);
 
-	    // Add the Y Axis
+	    // Add the Y Axes
 	    self.svg.append("g")
 	        .attr("class", "y axis")
-	        .call(self.yAxis);
+	        .style("fill", "#119911")
+	        .call(self.yLoadAxis);
 	    
-	    // Add a line at 32, representing the 32 cores we use.
+	    var yLoadLabel = self.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + self.margin.left/(-1.25) + "," + self.height/2 + ") rotate(270)")
+			.text("Load");
+	    
+	    self.svg.append("g")
+        	.attr("class", "y axis")
+        	.attr("transform", "translate(" + self.width + ", 0)")
+        	.style("fill", "blue")
+        	.call(self.yMemAxis);
+	    
+	    var yMemLabel = self.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + (self.width + self.margin.right/2) + "," + (self.height/2 - 20) + ") rotate(90)")
+			.text("Memory");
+	    
+	    // Add a line at 32 load, representing the 32 cores we use.
 	    self.svg.append("svg:line")
 	    	.attr("x1", 0)
 	    	.attr("x2", self.width)
-	    	.attr("y1", self.y(32))
-	    	.attr("y2", self.y(32))
+	    	.attr("y1", self.yLoad(32))
+	    	.attr("y2", self.yLoad(32))
 	    	.attr("stroke", "red");
 	    
 	    // Add brush selection
@@ -2487,23 +2550,50 @@ $.extend(System_graph.prototype, {
 	},
 	init_data_table: function () {
 		var self = this;
-		var total = 0;
-		var min = Number.MAX_SAFE_INTEGER;
-		var max = 0;
+		var loadTotal = 0;
+		var loadCount = 0;
+		var minLoad = Number.MAX_SAFE_INTEGER;
+		var maxLoad = 0;
+		
+		var memTotal = 0;
+		var memCount = 0;
+		var minMem = Number.MAX_SAFE_INTEGER;
+		var maxMem = 0;
+		
 		for (var i = 0; i < self.data.length; i++) {
-			if (self.data[i].y < min) {
-				min = self.data[i].y;
+			if (self.data[i].load) {
+				if (self.data[i].load < minLoad) {
+					minLoad = self.data[i].load;
+				}
+				if (self.data[i].load > maxLoad) {
+					maxLoad = self.data[i].load;
+				}
+				loadTotal += self.data[i].load;
+				loadCount++;
 			}
-			if (self.data[i].y > max) {
-				max = self.data[i].y;
+			
+			if (self.data[i].memory) {
+				if (self.data[i].memory < minMem) {
+					minMem = self.data[i].memory;
+				}
+				if (self.data[i].memory > maxMem) {
+					maxMem = self.data[i].memory;
+				}
+				memTotal += self.data[i].memory;
+				memCount++;
 			}
-			total += self.data[i].y;
 		}
-		var average = Math.round(total/self.data.length * 100)/100;
+		var avgLoad = Math.round(loadTotal/loadCount * 100)/100;
+		var avgMem = Math.round(memTotal/memCount * 100)/100;
 		$("#" + self.element + "_container").append("<div style='width:100%'>" +
-				"<div>Average: " + average + "</div>" +
-				"<div>Minimum: " + min + "</div>" +
-				"<div>Maximum: " + max + "</div>" +
+				"<div>Average Load: " + avgLoad + "</div>" +
+				"<div>Min Load: " + minLoad + "</div>" +
+				"<div>Max Load: " + maxLoad + "</div>" +
+				"<div>-------------------------</div>" +
+				"<div>Average Memory: " + avgMem + "</div>" +
+				"<div>Min Memory: " + minMem + "</div>" +
+				"<div>Max Memory: " + maxMem + "</div>" +
+				"<div>-------------------------</div>" +
 				"<div># of Data Points: " + self.data.length + "</div>" +
 				"</div>"
 		);
@@ -2514,7 +2604,7 @@ $.extend(System_graph.prototype, {
 		
 		var newJson = [];
 		for (var i = 0; i < self.data.length; i++) {
-			if (extent[0] <= self.data[i].x && extent[1] >= self.data[i].x) {
+			if (extent[0] <= self.data[i].time && extent[1] >= self.data[i].time) {
 				newJson.push(self.data[i]);
 			}
 		}
