@@ -157,7 +157,7 @@ function init_jobs_grid() {
     }
     var job_columns = [
         checkbox.getColumnDefinition(),
-        {id: 'id', name: 'Id', field: 'workflow_id', maxWidth: 50, sortable: true},
+        {id: 'id', name: 'Id', field: 'parent_id', maxWidth: 50, sortable: true},
         {id: 'started', name: 'Started', field: 'started', minWidth: 75,
             sortable: true},
         {id: 'completed', name: 'Completed', field: 'completed', minWidth: 75,
@@ -1210,7 +1210,7 @@ function submit_task(task, predicate) {
     jQuery.each(validRows, function(index,row) {
         var argument_list =  {
             fname: task,
-            job: row.workflow_id,
+            job: row.parent_id,
         };
 
         $.ajax({
@@ -1323,9 +1323,7 @@ var colors = [
         	{ name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
 ];
 
-var w = Math.max(800, $(window).width()-200),
-	h = Math.max(800, $(window).height()-300),
-	user_force,
+var user_force,
 	group_force;
 
 function init_graph(selectId) {
@@ -1339,64 +1337,13 @@ function init_graph(selectId) {
 			user_graph_init = true;
 			$("#loading4").show();
 			d3.json("?fname=get_user_nodes", function(json) {
-				var root = json;
-				var nodes = flatten(root);
-				nodes.forEach(function(d) {
-					d._children = d.children;
-					d.children = null;
-				});
-				
-				svg = d3.select("#user_chart").append("svg")
-					.attr("width", w)
-					.attr("height", h);
-				
-				var link = svg.selectAll(".link");
-				var node = svg.selectAll(".node");
-				
 				var user_filters = [
 				                    { name: 'deleted', 		color: 'Red', 		show: 0 },
 				                    { name: 'restricted', 	color: 'Grey',	 	show: 0 },
 				                    { name: '||||||||',		color: 'White',		show: 1 },
 				];
-				user_filters.forEach(function(element, index) {
-					var item =
-						$('<div class="link legend selected">'+user_filters[index].name+'</div>')
-							.css('color', user_filters[index].color)
-							.css('background-color', '')
-							.click(function() {
-								$(this).toggleClass('selected');
-								if ($(this).hasClass('selected')) {
-									$(this).css('color', user_filters[index].color);
-									$(this).css('background-color', '');
-								}
-								else {
-									$(this).css('color', 'white');
-									$(this).css('background-color', user_filters[index].color);
-								}
-								user_filters[index].show = !user_filters[index].show;
-								
-								var nodes = flatten(root);
-								nodes.forEach(function(d) {
-									return color(d, user_filters);
-								});
-								user_force.update();
-							});
-
-					$('#user_legend')
-						.append(item);
-				});
 				
-				colors.forEach(function(element, index) {
-					var item =
-						$('<div class="link legend selected">'+colors[index].name+'</div>')
-							.css('color', 'white')
-							.css('background-color', colors[index].color);
-	
-					$('#user_legend')
-						.append(item);
-				});
-				
-				var user_force = new Force(root, link, node, user_filters);
+				var user_force = new Force(json, user_filters, "user", colors);
 				$("#loading4").hide();
 				user_force.update();
 			});
@@ -1411,64 +1358,13 @@ function init_graph(selectId) {
 			group_graph_init = true;
 			$("#loading4").show();
 			d3.json("?fname=get_group_nodes", function(json) {
-				var root = json;
-				var nodes = flatten(root);
-				nodes.forEach(function(d) {
-					d._children = d.children;
-					d.children = null;
-				});
-				
-				svg = d3.select("#group_chart").append("svg")
-					.attr("width", w)
-					.attr("height", h);
-			
-				var link = svg.selectAll(".link");
-				var node = svg.selectAll(".node");
-				
 				var group_filters = [
 				                     { name: 'deleted', 		color: 'Red', 		show: 0 },
-				                     { name: 'restricted', 	color: 'Grey',	 	show: 0 },
+				                     { name: 'restricted', 		color: 'Grey',	 	show: 0 },
 				                     { name: '||||||||',		color: 'White',		show: 1 },
 				];
-				group_filters.forEach(function(element, index) {
-					var item =
-						$('<div class="link legend selected">'+group_filters[index].name+'</div>')
-							.css('color', group_filters[index].color)
-							.css('background-color', 'white')
-							.click(function() {
-								$(this).toggleClass('selected');
-								if ($(this).hasClass('selected')) {
-									$(this).css('color', group_filters[index].color);
-									$(this).css('background-color', '');
-								}
-								else {
-									$(this).css('color', 'white');
-									$(this).css('background-color', group_filters[index].color);
-								}
-								group_filters[index].show = !group_filters[index].show;
-								
-								var nodes = flatten(root);
-								nodes.forEach(function(d) {
-									return color(d, group_filters);
-								});
-								group_force.update();
-							});
-
-					$('#group_legend')
-						.append(item);
-				});
 				
-				colors.forEach(function(element, index) {
-					var item =
-						$('<div class="link legend selected">'+colors[index].name+'</div>')
-							.css('color', 'white')
-							.css('background-color', colors[index].color);
-	
-					$('#group_legend')
-						.append(item);
-				});
-				
-				var group_force = new Force(root, link, node, group_filters);
+				var group_force = new Force(json, group_filters, "group", colors);
 				$("#loading4").hide();
 				group_force.update();
 			});
@@ -1476,240 +1372,287 @@ function init_graph(selectId) {
 	}
 }
 
-var Force = function(root, link, node, filters) {
+var Force = function(root, filters, element, colors) {
 	var self = this;
-	this.link = link;
-	this.node = node;
+	this.width = Math.max(800, $(window).width()-200);
+	this.height = Math.max(800, $(window).height()-300);
 	this.root = root;
+	this.colors = colors;
 	this.filters = filters;
+	this.element = element;
+	
+	this.svg = d3.select('#' + self.element + '_chart').append("svg")
+		.attr("width", self.width)
+		.attr("height", self.height);
+	
+	this.link = self.svg.selectAll(".link");
+	this.node = self.svg.selectAll(".node");
+	
+	var nodes = self.flatten(root);
+	nodes.forEach(function(d) {
+		d._children = d.children;
+		d.children = null;
+	});
+	
+	self.filters.forEach(function(element, index) {
+		var item =
+			$('<div class="link legend selected">'+self.filters[index].name+'</div>')
+				.css('color', self.filters[index].color)
+				.css('background-color', '')
+				.click(function() {
+					$(this).toggleClass('selected');
+					if ($(this).hasClass('selected')) {
+						$(this).css('color', self.filters[index].color);
+						$(this).css('background-color', '');
+					}
+					else {
+						$(this).css('color', 'white');
+						$(this).css('background-color', self.filters[index].color);
+					}
+					self.filters[index].show = !self.filters[index].show;
+					
+					var nodes = self.flatten(root);
+					nodes.forEach(function(d) {
+						return self.color.call(self, d);
+					});
+					self.update();
+				});
+
+		$('#' + self.element + '_legend')
+			.append(item);
+	});
+	
+	self.colors.forEach(function(element, index) {
+		var item =
+			$('<div class="link legend selected">'+self.colors[index].name+'</div>')
+				.css('color', 'white')
+				.css('background-color', self.colors[index].color);
+
+		$('#' + self.element + '_legend')
+			.append(item);
+	});
+	
 	this.force = d3.layout.force()
-		.size([w, h])
+		.size([self.width, self.height])
 		.on("tick", function() {
 			self.tick.call(self);
 		})
 		.gravity(1);
 }
 
-Force.prototype.update = function() {
-	var self = this;
-	var nodes = flatten(this.root),
-		links = d3.layout.tree().links(nodes);
-	
-	// Restart the force layout.
-	this.force
- 		.nodes(nodes)
- 		.links(links)
- 		.start();
-
-	// Update the links…
-	this.link = this.link.data(links, function(d) { return d.target.id; });
-
-	// Exit any old links.
-	this.link.exit().remove();
-
-	// Enter any new links.
-	this.link.enter().insert("line", ".node")
-		.attr("class", "link")
-		.attr("x1", function(d) { return d.source.x; })
-		.attr("y1", function(d) { return d.source.y; })
-		.attr("x2", function(d) { return d.target.x; })
-		.attr("y2", function(d) { return d.target.y; });
-
-	// Update the nodes…
-	this.node = this.node.data(nodes, function(d) { return d.id; })
-		.style("fill", function(d) {
-			return color(d, self.filters);
-		})
-		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; });
-		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5});
-
-	// Exit any old nodes.
-	this.node.exit().remove();
-
-	// Enter any new nodes.
-	this.node.enter().append("circle")
-		.attr("class", "node")
-		.attr("cx", function(d) { return d.x; })
-		.attr("cy", function(d) { return d.y; })
-		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
-		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5})
-		.style("fill", function(d) {
-			return color(d, self.filters);
-		})
-		.on("click", function(d) {
-			self.click.call(self, d);
-		})
-		.call(this.force.drag)
-		.append("svg:title").text(function(d) { 
-			if(d.info) {
-				return d.info; 
-			} else {
-				return d.name;
-			}
-		});
-}
-
-Force.prototype.tick = function() {
-	/*this.link.attr("x1", function(d) { return d.source.x; })
-		.attr("y1", function(d) { return d.source.y; })
-		.attr("x2", function(d) { return d.target.x; })
-		.attr("y2", function(d) { return d.target.y; });
-	
-	this.node.attr("cx", function(d) { return d.x; })
-		.attr("cy", function(d) { return d.y; });*/
-	
-	var self = this;
-	self.moveItems.call(self);
-}
-
-//Toggle children on click.
-Force.prototype.toggle_children = function(d) {
-	if (d.children) {
-		d._children = d.children;
-		d.children = null;
-	} else {
-		d.children = d._children;
-		d._children = null;
-	}
-}
-
-Force.prototype.click = function(d) {
-	if (!d3.event.defaultPrevented) {
-		this.force.charge(
-			function(d, i) {
-				if(d.size) {
-					return Math.sqrt(d.size)*(-2.25);
-				}
-			}
-		);
-		this.force.start();
+$.extend(Force.prototype, {
+	update: function() {
+		var self = this;
+		var nodes = self.flatten(self.root),
+			links = d3.layout.tree().links(nodes);
 		
-		this.toggle_children(d);
-		this.update();
-	}
-}
+		// Restart the force layout.
+		this.force
+	 		.nodes(nodes)
+	 		.links(links)
+	 		.start();
 
-//Returns a list of all nodes under the root.
-function flatten(root) {
-	var nodes = [], i = 0;
+		// Update the links…
+		this.link = this.link.data(links, function(d) { return d.target.id; });
 
-	function recurse(node) {
-		if (node.children) node.children.forEach(recurse);
-		if (!node.id) node.id = ++i;
-		nodes.push(node);
-	}
+		// Exit any old links.
+		this.link.exit().remove();
 
-	recurse(root);
-	return nodes;
-}
+		// Enter any new links.
+		this.link.enter().insert("line", ".node")
+			.attr("class", "link")
+			.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+			.attr("x2", function(d) { return d.target.x; })
+			.attr("y2", function(d) { return d.target.y; });
 
-function color(d, new_filters) {
-	if(!new_filters[0].show && !new_filters[1].show) {
-		//normal filter
-		if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
-			if (d.type) {
-				return colors[d.type-1].color;
+		// Update the nodes…
+		this.node = this.node.data(nodes, function(d) { return d.id; })
+			.style("fill", function(d) {
+				return self.color(d, self.filters);
+			})
+			//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; });
+			.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5});
+
+		// Exit any old nodes.
+		this.node.exit().remove();
+
+		// Enter any new nodes.
+		this.node.enter().append("circle")
+			.attr("class", "node")
+			.attr("cx", function(d) { return d.x; })
+			.attr("cy", function(d) { return d.y; })
+			//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
+			.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5})
+			.style("fill", function(d) {
+				return self.color.call(self, d);
+			})
+			.on("click", function(d) {
+				self.click.call(self, d);
+			})
+			.call(this.force.drag)
+			.append("svg:title").text(function(d) { 
+				if(d.info) {
+					return d.info; 
+				} else {
+					return d.name;
+				}
+			});
+	},
+	tick: function() {
+		/*this.link.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+			.attr("x2", function(d) { return d.target.x; })
+			.attr("y2", function(d) { return d.target.y; });
+		
+		this.node.attr("cx", function(d) { return d.x; })
+			.attr("cy", function(d) { return d.y; });*/
+		
+		var self = this;
+		self.moveItems.call(self);
+	},
+	toggle_children: function(d) {
+		if (d.children) {
+			d._children = d.children;
+			d.children = null;
+		} else {
+			d.children = d._children;
+			d._children = null;
+		}
+	},
+	click: function(d) {
+		if (!d3.event.defaultPrevented) {
+			this.force.charge(
+				function(d, i) {
+					if(d.size) {
+						return Math.sqrt(d.size)*(-2.25);
+					}
+				}
+			);
+			this.force.start();
+			
+			this.toggle_children(d);
+			this.update();
+		}
+	},	
+	flatten: function(root) {	//Returns a list of all nodes under the root.
+		var nodes = [], i = 0;
+
+		function recurse(node) {
+			if (node.children) node.children.forEach(recurse);
+			if (!node.id) node.id = ++i;
+			nodes.push(node);
+		}
+
+		recurse(root);
+		return nodes;
+	},
+	color: function(d) {
+		var self = this;
+		if(!self.filters[0].show && !self.filters[1].show) {
+			//normal filter
+			if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
+				if (d.type) {
+					return self.colors[d.type-1].color;
+				}
+				return 'white';
+			} else {
+				return 'black';
 			}
-			return 'white';
 		} else {
-			return 'black';
+			if(d.deleted == 1 && d.restricted == 1 && self.filters[0].show && self.filters[1].show) {
+				return 'yellow';
+			} else if (d.deleted == 1 && self.filters[0].show) {
+				return self.filters[0].color;
+			} else if (d.restricted == 1 && self.filters[1].show) {
+				return self.filters[1].color;
+			} else {
+				return 'yellowGreen';
+			}
 		}
-	} else {
-		if(d.deleted == 1 && d.restricted == 1 && new_filters[0].show && new_filters[1].show) {
-			return 'yellow';
-		} else if (d.deleted == 1 && new_filters[0].show) {
-			return new_filters[0].color;
-		} else if (d.restricted == 1 && new_filters[1].show) {
-			return new_filters[1].color;
-		} else {
-			return 'yellowGreen';
-		}
-	}
-}
-
-//Optimization of the Tick function.
-Force.prototype.moveItems = (function(){
-	var self = this;
-	var node = self.node;
-	var link = self.link;
-    var todoNode = 0;
-    var todoLink = 0;
-    var MAX_NODES = 240;
-    var MAX_LINKS = MAX_NODES/2;
-      
-    var restart = false;
-       
-    function moveSomeNodes(){
-    	var self = this;
-        var n;
-        var goal = Math.min(todoNode+MAX_NODES, self.node[0].length);
-          
-        for(var i=todoNode ; i < goal ; i++){
-            n = self.node[0][i];
-            n.setAttribute('cx', n.__data__.x);
-            n.setAttribute('cy', n.__data__.y);
-        }
-            
-        todoNode = goal;
-        requestAnimationFrame(function() {
-        	moveSome.call(self);
-        });
-    }
-      
-    function moveSomeLinks(){
-    	var self = this;
-        var l;
-        var goal = Math.min(todoLink+MAX_LINKS, self.link[0].length);
-           
-        for(var i=todoLink ; i < goal ; i++){
-            l = self.link[0][i];
-            l.setAttribute('x1', l.__data__.source.x);
-            l.setAttribute('y1', l.__data__.source.y);
-            l.setAttribute('x2', l.__data__.target.x);
-            l.setAttribute('y2', l.__data__.target.y);
-        }
-          
-        todoLink = goal;
-        requestAnimationFrame(function() {
-        	moveSome.call(self);
-        });
-    }
-        
-    function moveSome(){
-    	var self = this;
-        //console.time('moveSome')
-        if(todoNode < self.node[0].length) // some more nodes to do
-            moveSomeNodes.call(self)
-        else{ // nodes are done
-            if(todoLink < self.link[0].length) // some more links to do
-                moveSomeLinks.call(self)
-            else{ // both nodes and links are done
-                if(restart){
-                    restart = false;
-                    todoNode = 0;
-                    todoLink = 0;
-                    requestAnimationFrame(function() {
-                    	moveSome.call(self);
-                    });
-                }
-            }
-        }
-        //console.timeEnd('moveSome')
-    }
-        
-        
-    return function moveItems(){
-    	var self = this;
-        if(!restart){
-            restart = true;
-            requestAnimationFrame(function() {
-            	moveSome.call(self);
-            });
-        }
-    };
- 
-})();
-
+	},
+	moveItems: (function() {		//Optimization of the Tick function.
+		var self = this;
+		var node = self.node;
+		var link = self.link;
+	    var todoNode = 0;
+	    var todoLink = 0;
+	    var MAX_NODES = 240;
+	    var MAX_LINKS = MAX_NODES/2;
+	      
+	    var restart = false;
+	       
+	    function moveSomeNodes(){
+	    	var self = this;
+	        var n;
+	        var goal = Math.min(todoNode+MAX_NODES, self.node[0].length);
+	          
+	        for(var i=todoNode ; i < goal ; i++){
+	            n = self.node[0][i];
+	            n.setAttribute('cx', n.__data__.x);
+	            n.setAttribute('cy', n.__data__.y);
+	        }
+	            
+	        todoNode = goal;
+	        requestAnimationFrame(function() {
+	        	moveSome.call(self);
+	        });
+	    }
+	      
+	    function moveSomeLinks(){
+	    	var self = this;
+	        var l;
+	        var goal = Math.min(todoLink+MAX_LINKS, self.link[0].length);
+	           
+	        for(var i=todoLink ; i < goal ; i++){
+	            l = self.link[0][i];
+	            l.setAttribute('x1', l.__data__.source.x);
+	            l.setAttribute('y1', l.__data__.source.y);
+	            l.setAttribute('x2', l.__data__.target.x);
+	            l.setAttribute('y2', l.__data__.target.y);
+	        }
+	          
+	        todoLink = goal;
+	        requestAnimationFrame(function() {
+	        	moveSome.call(self);
+	        });
+	    }
+	        
+	    function moveSome(){
+	    	var self = this;
+	        //console.time('moveSome')
+	        if(todoNode < self.node[0].length) // some more nodes to do
+	            moveSomeNodes.call(self)
+	        else{ // nodes are done
+	            if(todoLink < self.link[0].length) // some more links to do
+	                moveSomeLinks.call(self)
+	            else{ // both nodes and links are done
+	                if(restart){
+	                    restart = false;
+	                    todoNode = 0;
+	                    todoLink = 0;
+	                    requestAnimationFrame(function() {
+	                    	moveSome.call(self);
+	                    });
+	                }
+	            }
+	        }
+	        //console.timeEnd('moveSome')
+	    }
+	        
+	        
+	    return function moveItems(){
+	    	var self = this;
+	        if(!restart){
+	            restart = true;
+	            requestAnimationFrame(function() {
+	            	moveSome.call(self);
+	            });
+	        }
+	    };
+	 
+	})(),
+});
 
 //Tab 5, Summary
 function DataGrid(params) {
