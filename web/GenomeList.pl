@@ -841,7 +841,9 @@ sub send_to_list          #send to list
         db          => $coge,
         user_id     => $USER->id,
         page        => $PAGE_NAME,
-        description => 'create list from genomes id' . $list->id
+        description => 'created genome list ' . $list->info_html,
+        parent_id   => $list->id,
+        parent_type => 1 #FIXME magic number
     );
 
     my $url = "NotebookView.pl?lid=" . $list->id;

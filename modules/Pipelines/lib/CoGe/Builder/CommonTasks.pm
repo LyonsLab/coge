@@ -64,11 +64,7 @@ sub generate_results {
 }
 
 sub copy_and_mask {
-    my %args = (
-        mask => 0,
-        seq_only => 0,
-        @_
-    );
+    my %args = @_;
 
     my $desc = $args{mask} ? "Copying and masking genome" : "Copying genome";
     $desc .= " (no annotations)" if $args{seq_only};
@@ -82,9 +78,9 @@ sub copy_and_mask {
             ["-conf", $CONF->{_CONFIG_PATH}, 0],
             ["-gid", $args{gid}, 0],
             ["-uid", $args{uid}, 0],
+            ["-wid", $args{wid}, 0],
             ["-mask", $args{mask}, 0],
             ["-staging_dir", $args{staging_dir}, 0],
-            ["-result_dir", $args{result_dir}, 0],
             ["-sequence_only", $args{seq_only}, 0]
         ],
         description => $desc

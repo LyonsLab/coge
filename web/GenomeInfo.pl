@@ -1309,7 +1309,7 @@ sub delete_genome {
     my $genome = $DB->resultset('Genome')->find($gid);
     return 0 unless $genome;
     return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
-    my $delete_or_undelete = ($genome->deleted ? 'undelete' : 'delete');
+    my $delete_or_undelete = ($genome->deleted ? 'undeleted' : 'deleted');
     #print STDERR "delete_genome " . $genome->deleted . "\n";
     $genome->deleted( !$genome->deleted ); # do undelete if already deleted
     $genome->update;
@@ -1319,7 +1319,7 @@ sub delete_genome {
         db          => $DB,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
-        description => "$delete_or_undelete genome id $gid",
+        description => "$delete_or_undelete genome " . $genome->info_html,
         parent_id   => $gid,
         parent_type => 2 #FIXME magic number
     );
@@ -1338,7 +1338,7 @@ sub copy_genome {
     my $mask = $args{mask};
     my $seq_only = $args{seq_only};
 
-    print STDERR "copy_and_mask_genome: gid=$gid mask=$mask\n";
+    print STDERR "GenomeInfo::copy_and_mask_genome: gid=$gid mask=$mask seq_only=$seq_only\n";
 
     if ($USER->is_public) {
         return 'Not logged in';
@@ -1353,8 +1353,8 @@ sub copy_genome {
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     $args{uid} = $USER->id;
+    $args{wid} = $workflow->id;
     $args{staging_dir} = $staging_dir;
-    $args{result_dir} = $result_dir;
 
     my %task = copy_and_mask(%args);
     $workflow->add_job(\%task);
@@ -1374,7 +1374,8 @@ sub copy_genome {
     CoGe::Accessory::Web::log_history(
         db          => $DB,
         user_id     => $USER->id,
-        workflow_id => $workflow->id,
+        parent_id   => $workflow->id,
+        parent_type => 7, #FIXME magic number
         page        => $PAGE_TITLE,
         description => $desc,
         link => $tiny_link
@@ -1401,27 +1402,19 @@ sub get_progress_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
-    #TODO authenticate user access to workflow
+    
+    my $results = get_workflow_results($USER->name, $workflow_id);
+    return unless $results;
 
-    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
-    return unless (-r $results_path);
-
-    my $result_file = catfile($results_path, '1');
-    return unless (-r $result_file);
-
-    my $result = CoGe::Accessory::TDS::read($result_file);
-
-    return unless $result;
-
-    my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
-    my $links = (exists $result->{links} ? $result->{links} : undef);
-
-    return encode_json(
-        {
-            genome_id   => $genome_id,
-            links       => $links
+    my $genome_id;
+    foreach (@$results) {
+        if ($_->{type} eq 'genome') {
+            $genome_id = $_->{id};
+            last;
         }
-    );
+    }
+
+    return encode_json({ genome_id => $genome_id });
 }
 
 sub get_aa_usage {
