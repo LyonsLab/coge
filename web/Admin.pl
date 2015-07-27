@@ -1220,7 +1220,7 @@ sub get_jobs_for_user {
             #{ description => { 'not like' => 'page access' } },
             {
                 type     => { '!='  => 0 },
-                workflow_id  => { "!=" => undef}
+                parent_id  => { "!=" => undef}
             },
             { order_by => { -desc => 'time' } },
         );
@@ -1229,7 +1229,7 @@ sub get_jobs_for_user {
         @entries = $coge->resultset('Log')->search(
             {
                 user_id => $USER->id,
-                workflow_id  => { "!=" => undef},
+                parent_id  => { "!=" => undef},
 
                 #{ description => { 'not like' => 'page access' } }
                 type => { '!=' => 0 }
@@ -1239,7 +1239,7 @@ sub get_jobs_for_user {
     }
 
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
-    my @workflows = map { $_->workflow_id } @entries;
+    my @workflows = map { $_->parent_id } @entries;
     
     #my $workflows = $JEX->find_workflows(\@workflows, 'running');
     my $workflows;
@@ -1276,14 +1276,14 @@ sub get_jobs_for_user {
 
     my $index = 1;
     foreach (@entries) {
-        my $entry = $workflow_results{$_->workflow_id};
+        my $entry = $workflow_results{$_->parent_id};
 
         # A log entry must correspond to a workflow
         next unless $entry;
         
         push @job_items, {
             id => int($index++),
-            workflow_id => $_->workflow_id,
+            parent_id => $_->parent_id,
             user  => $users{$_->user_id} || "public",
             tool  => $_->page,
             link  => $_->link,
@@ -1294,7 +1294,7 @@ sub get_jobs_for_user {
 
     # Filter repeated entries
     foreach (reverse @job_items) {
-        my $wid = $_->{workflow_id};
+        my $wid = $_->{parent_id};
         next if (defined $wid and defined $workflow_results{$wid}{seen});
         $workflow_results{$wid}{seen}++ if (defined $wid);
 
