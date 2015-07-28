@@ -153,7 +153,7 @@ sub search {
 
 		foreach ( sort { $a->user_name cmp $b->user_name } @users ) {
 			push @results,
-			  { 'type' => "user", 'label' => $_->user_name, 'id' => $_->id };
+			  { 'type' => "user", 'first' => $_->first_name, 'last' => $_->last_name, 'username' => $_->user_name, 'id' => $_->id, 'email' => $_->email };
 		}
 	}
 	
