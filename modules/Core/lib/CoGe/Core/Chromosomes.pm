@@ -237,6 +237,32 @@ sub names {
 
 ################################################ subroutine header begin ##
 
+=head2 all
+
+ Usage     :
+ Purpose   : 
+ Returns   : array of hashes of all names/lengths of all chromosomes for the genome
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub all {
+    my $self = shift;
+    my @a;
+    while ($self->next) {
+        push @a, { name => $self->name, length => int($self->length) };
+    }
+    return wantarray ? @a : \@a;
+}
+
+################################################ subroutine header begin ##
+
 =head2 next
 
  Usage     :

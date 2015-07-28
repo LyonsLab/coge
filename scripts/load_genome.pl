@@ -40,7 +40,7 @@ GetOptions(
     "message=s"		=> \$message,		 # message (JS escaped)
     "link=s"        => \$link,           # link (JS escaped)
     "version=s"     => \$version,        # genome version (JS escaped)
-    "type_id=i"     => \$type_id,        # genomic_sequence_type_id
+    "type_id=s"     => \$type_id,        # genomic_sequence_type_id
     "restricted=i"  => \$restricted,     # genome restricted flag
     "organism_id=i" => \$organism_id,    # organism ID
     "source_id=i"	=> \$source_id,		 # data source id

@@ -53,12 +53,14 @@
 
 <div id="list_contents_edit_box" class="dialog_box" title="Add Items to Notebook" style="display:none;"></div>
 
+<!--
 <br><br>
 <div id="newsfeed-section" style="padding-left:5px;">
 	<span class="bold text">History</span><br>
 	<table id="newsfeed" class="small border-top">
 	</table>
 </div>
+-->
 
 <script language="JavaScript">
 const NOTEBOOK_ID = '<TMPL_VAR NAME="NOTEBOOK_ID">';
@@ -94,12 +96,12 @@ $(function() {
     	userName: USER_NAME
     });
 	
-    // Initialize newsfeed
-	coge.newsfeed.init({ 
-		element_id: 'newsfeed',
-		id: NOTEBOOK_ID,
-		type: "notebook"
-	});
+    // Initialize newsfeed - not ready to deploy yet
+//	coge.newsfeed.init({ 
+//		element_id: 'newsfeed',
+//		id: NOTEBOOK_ID,
+//		type: "notebook"
+//	});
 });
 </SCRIPT>
 

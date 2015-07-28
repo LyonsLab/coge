@@ -130,9 +130,9 @@ sub get_genome_info_details {
     $html .= qq{</td></tr>};
     
  
-    my $gstid    = $dsg->genomic_sequence_type->id;
-    my $gst_name = $dsg->genomic_sequence_type->name;
-    $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
+    my $gstid    = ($dsg->genomic_sequence_type ? $dsg->genomic_sequence_type->id : '');
+    my $gst_name = ($dsg->genomic_sequence_type ? $dsg->genomic_sequence_type->name : '');
+    $gst_name .= ": " . $dsg->type->description if ( $dsg->type && $dsg->type->description );
 
     # Sequence Type
     $html .= qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
@@ -933,7 +933,7 @@ sub get_genome_info {
         DO_GENOME_INFO => 1,
         ORGANISM       => $genome->organism->name,
         VERSION        => $genome->version,
-        TYPE           => $genome->type->info,
+        TYPE           => ($genome->type ? $genome->type->info : ''),
         SOURCE         => get_genome_sources($genome),
         LINK           => $genome->link,
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
