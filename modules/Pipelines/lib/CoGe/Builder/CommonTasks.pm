@@ -529,7 +529,7 @@ sub create_load_genome_job {
             ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
             ['-source_name', '"' . $metadata->{source_name} . '"', 0],
             ['-organism_id', $organism_id, 0],
-            ['-type_id', '"' . $metadata->{type_id} . '"', 0],
+            ['-type_id', '"' . $metadata->{type} . '"', 0],
             ['-staging_dir', "./load_genome", 0],
             ['-fasta_files', "'".$file_str."'", 0],
             ['-irods_files', "'".$irods_str."'", 0],
