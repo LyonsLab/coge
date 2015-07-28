@@ -1994,7 +1994,9 @@ sub info {
 =head2 clean_locations
 
  Usage     : $self->clean_locations
- Purpose   : returns wantarray of location objects.  Checks them for consistency due to some bad loads where locations had bad starts, stops, chromosomes and strands
+ Purpose   : returns wantarray of location objects.  
+             Checks them for consistency due to some bad loads where locations 
+             had bad starts, stops, chromosomes and strands.
 
  Returns   : returns wantarray of location ojects
  Argument  : none

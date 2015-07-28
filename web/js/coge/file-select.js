@@ -1,5 +1,8 @@
 /* 
- * CoGe File Selector Dialog
+ * CoGe File Selector
+ * 
+ * Requires coge.utils, coge.services
+ * 
  */
 
 var coge = window.coge = (function(namespace) {
@@ -348,8 +351,8 @@ var coge = window.coge = (function(namespace) {
 						}
 						table
 							.html('<tr><td><span class="alert">'
-							+ 'The following error occurred while accessing the Data Store.<br><br>'
-							+ result.error + '<br><br>'
+							+ 'The following error occurred while accessing the Data Store.<br>'
+							+ coge.utils.objToString(result.error) + '<br>'
 							+ 'We apologize for the inconvenience.  Our support staff have already been notified and will resolve the issue ASAP. '
 							+ 'If you just logged into CoGe for the first time, give the system a few minutes to setup your Data Store connection and try again.  '
 							+ 'Please contact <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> with any questions or comments.'

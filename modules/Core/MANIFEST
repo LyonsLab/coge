@@ -6,3 +6,4 @@ lib/CoGe/Core/List.pm
 lib/CoGe/Core/Metadata.pm
 lib/CoGe/Core/Notebook.pm
 lib/CoGe/Core/Storage.pm
+lib/CoGe/Core/Search.pm

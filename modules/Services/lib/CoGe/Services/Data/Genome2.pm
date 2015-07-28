@@ -124,7 +124,15 @@ sub fetch {
             type_group => $_->type->group
         }
     } $genome->annotations;
-
+    
+    # Build chromosome list
+    my $chromosomes = $genome->chromosomes_all;
+    foreach (@$chromosomes) {
+        my $num_genes = $genome->feature_count(chr => $_->{name}, feature_type_id => 1); #FIXME magic number for 'gene' type
+        $_->{gene_count} = $num_genes;
+    }
+    
+    # Generate response
     $self->render(json => {
         id => int($genome->id),
         name => $genome->name,
@@ -142,6 +150,7 @@ sub fetch {
             description => $genome->type->description,
         },
         chromosome_count => int($genome->chromosome_count),
+        chromosomes => $chromosomes,
         experiments => [ map { int($_->id) } $genome->experiments ],
         additional_metadata => \@metadata
     });
