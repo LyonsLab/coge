@@ -42,7 +42,9 @@ $(function () {
 				init_taxon_tree("taxonomic_tree");
 			}
 			if (current_tab == 6) {
-				init_system_load();
+				if (!system_graph) {
+					init_system_load();
+				}
 			}
 		}
     });
@@ -367,16 +369,20 @@ function search_stuff (search_term) {
 				for (var i = 0; i < obj.items.length; i++) {
 					if (obj.items[i].type == "user") {
 						userList = userList + "<tr><td><span>";
-						userList = userList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") ";
-						userList = userList + "<button onclick=\"search_user(" + (obj.items[i].id) + ",'user')\">Show Data</button>";
+						userList = userList + obj.items[i].first + " " + obj.items[i].last + ", ";
+						if (user_is_admin) {
+							userList = userList + obj.items[i].email;
+						}
+						userList = userList + " (" + obj.items[i].username + ", id" + obj.items[i].id + ") ";
+						userList = userList + "<button onclick=\"search_user(" + obj.items[i].id + ",'user')\">Show Data</button>";
 						userList = userList + "</span></td></tr>";
 						userCounter++;
 					}
 
 					if (obj.items[i].type == "organism") {
 						orgList = orgList + "<tr><td><span title='" + obj.items[i].description + "'>";
-						orgList = orgList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")";
-						orgList = orgList + " <a href=\"OrganismView.pl?oid=" + (obj.items[i].id) + "\">Info </a>";
+						orgList = orgList + obj.items[i].label + " (id" + obj.items[i].id + ")";
+						orgList = orgList + " <a href=\"OrganismView.pl?oid=" + obj.items[i].id + "\">Info </a>";
 						orgList = orgList + "</span></td></tr>";
 						orgCounter++;
 					}
@@ -395,7 +401,7 @@ function search_stuff (search_term) {
 						} else {
 							genList = genList + "<span>";
 						}
-						genList = genList + (obj.items[i].label) + " <a href=\"GenomeInfo.pl?gid=" + (obj.items[i].id) + "\">Info </a>";
+						genList = genList + obj.items[i].label + " <a href=\"GenomeInfo.pl?gid=" + obj.items[i].id + "\">Info </a>";
 						genList = genList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 2, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						genList = genList + "</span></td></tr>";
 						genCounter++;
@@ -415,7 +421,7 @@ function search_stuff (search_term) {
 						} else {
 							expList = expList + "<span>";
 						}
-						expList = expList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"ExperimentView.pl?eid=" + (obj.items[i].id) + "\">Info </a>";
+						expList = expList + obj.items[i].label + " (id" + obj.items[i].id + ") <a href=\"ExperimentView.pl?eid=" + obj.items[i].id + "\">Info </a>";
 						expList = expList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 3, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						expList = expList + "</span></td></tr>";
 						expCounter++;
@@ -435,7 +441,7 @@ function search_stuff (search_term) {
 						} else {
 							noteList = noteList + "<span>";
 						}
-						noteList = noteList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"NotebookView.pl?lid=" + (obj.items[i].id) + "\">Info </a>";
+						noteList = noteList + obj.items[i].label + " <a href=\"NotebookView.pl?lid=" + obj.items[i].id + "\">Info </a>";
 						noteList = noteList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 1 , " + obj.items[i].restricted + ")'>Edit Access</button>";
 						noteList = noteList + "</span></td></tr>";
 						noteCounter++;
@@ -448,8 +454,8 @@ function search_stuff (search_term) {
 						} else {
 							usrgroupList = usrgroupList + "<span>";
 						}
-						usrgroupList = usrgroupList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") ";
-						usrgroupList = usrgroupList + "<button onclick=\"search_user(" + (obj.items[i].id) + ",'group')\">Show Data</button>";
+						usrgroupList = usrgroupList + obj.items[i].label + " (id" + obj.items[i].id + ") ";
+						usrgroupList = usrgroupList + "<button onclick=\"search_user(" + obj.items[i].id + ",'group')\">Show Data</button>";
 						usrgroupList = usrgroupList + "</span></td></tr>";
 						usrgroupCounter++;
 					}
@@ -700,7 +706,7 @@ function user_info(userID, search_type) {
 		success : function(data) {
 			//console.log("Ajax success");
 			var obj = jQuery.parseJSON(data);
-        	//console.log(obj.items);
+        	//console.log(obj);
         		
         	var htmlBlock = "";
 
@@ -739,7 +745,7 @@ function user_info(userID, search_type) {
                             } else {
                             	genList = genList + "<span>";
                             }
-        					genList = genList + (current.label) + " <a href=\"GenomeInfo.pl?gid=" + (current.id) + "\">Info </a>";
+        					genList = genList + current.label + " <a href=\"GenomeInfo.pl?gid=" + current.id + "\">Info </a>";
         					genList = genList + "<button class='access' onclick='share_dialog(" + current.id + ", 2, " + current.restricted + ")'>Edit Access</button>";
         					genList = genList + "</span></td></tr>";
         					genCounter++;
@@ -768,7 +774,7 @@ function user_info(userID, search_type) {
         					} else {
         						expList = expList + "<span>";
         					}
-        					expList = expList + (current.label) + " (ID: " + (current.id) + ") <a href=\"ExperimentView.pl?eid=" + (current.id) + "\">Info </a>";
+        					expList = expList + current.label + " (id" + current.id + ") <a href=\"ExperimentView.pl?eid=" + current.id + "\">Info </a>";
         					expList = expList + "<button class='access' onclick='share_dialog(" + current.id + ", 3, " + current.restricted + ")'>Edit Access</button>";
         					expList = expList + "</span></td></tr>";
         					expCounter++;
@@ -797,7 +803,7 @@ function user_info(userID, search_type) {
         					} else {
         						noteList = noteList + "<span>";
         					}
-        					noteList = noteList + (current.label) + " (ID: " + (current.id) + ") <a href=\"NotebookView.pl?lid=" + (current.id) + "\">Info </a>";
+        					noteList = noteList + current.label + " <a href=\"NotebookView.pl?lid=" + current.id + "\">Info </a>";
         					noteList = noteList + "<button class='access' onclick='share_dialog(" + current.id + ", , " + current.restricted + ")'>Edit Access</button>";
         					noteList = noteList + "</span></td></tr>";
         					noteCounter++;
@@ -805,7 +811,7 @@ function user_info(userID, search_type) {
 						
         				if (current.type == "user") {
         					userList = userList + "<tr><td><span>";
-        					userList = userList + (current.label) + " (ID: " + (current.id) + ") ";
+        					userList = userList + current.first + " " + current.last + ", " + current.email + " (id" + current.id + ") ";
         					userList = userList + "<button onclick=\"search_user(" + current.id + ",'user')\">Search</button>";
         					userList = userList + "</span></td></tr>";
         					userCounter++;
@@ -817,12 +823,14 @@ function user_info(userID, search_type) {
         		var genBlock = "", noteBlock = "", expBlock = "", userBlock = "", nameBlock = "";
 				
         		nameBlock = nameBlock + "<div style=\"padding-top:10px;\">"
-        		if (i == 0) {
+        		if (search_type == "user" && i == 0) {
         			nameBlock = nameBlock + "<img src='picts/user-icon.png' width='15' height='15'><span> ";
+        			nameBlock = nameBlock + obj.items[i].first + " " + obj.items[i].last + ", " + obj.items[i].email + " (" + obj.items[i].username + ", id" + obj.items[i].user_id + "): </span>";
         		} else {
         			nameBlock = nameBlock + "<img src='picts/group-icon.png' width='15' height='15'><span> ";
+        			nameBlock = nameBlock + obj.items[i].user + " (id" + obj.items[i].user_id + "): </span>";
         		}
-        		nameBlock = nameBlock + obj.items[i].user + " (ID: " + obj.items[i].user_id + "): </span>";
+        		
         		
         		if (search_type =='group') {
         			nameBlock = nameBlock + "<button onclick='group_dialog(" + obj.items[i].user_id + ", 6 )'>Edit Group</button></div>";
@@ -2339,10 +2347,9 @@ var System_graph = function(json, element, parent) {
 	this.parent = parent;
 	this.child = null;
 	this.margin = {top: 30, right: 80, bottom: 30, left: 50},
-	this.width = 1200 - this.margin.left - this.margin.right,
-	this.height = 600 - this.margin.top - this.margin.bottom;
+	this.width = $(window).width()*.75 - this.margin.left - this.margin.right,
+	this.height = $(window).height()*.5 - this.margin.top - this.margin.bottom;
 	this.data = json;
-	console.log(json);
 	this.element = element;
 	this.initialize();
 }
@@ -2354,7 +2361,8 @@ $.extend(System_graph.prototype, {
 		// Clear the element, add the zoom out button and svg container
 		$("#" + this.element).html(
 				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;">Zoom Out</button>' +
-				'<div id="' + self.element + '_container" style="height:750px;"> <div id="' + self.element + '_graph" style="float:left;width:1200px;"></div> </div>'
+				'<div id="' + self.element + '_container" style="height:' + (self.height + 250) + 'px;">' +
+				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 200) + 'px;"></div> </div>'
 		);
 		if (self.parent) {
 			$('#' + self.element + '_back_button')

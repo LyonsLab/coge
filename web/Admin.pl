@@ -462,7 +462,9 @@ sub user_info {
 		}
 	}
 
-	foreach my $currentUser (@users) {
+	my $i;
+	for ($i = 0; $i < scalar(@users); $i++) {
+		my $currentUser = $users[$i];
 		my @current;
 
 		# Find notebooks
@@ -475,7 +477,7 @@ sub user_info {
 					'label'         => $child->info,
 					'id'            => $child->id,
 					'role'          => $_->role_id,
-					'deleted'        => $child->deleted,
+					'deleted'       => $child->deleted,
 					'restricted'    => $child->restricted
 				  };
 			}
@@ -515,19 +517,31 @@ sub user_info {
 		}
 
 		# Find users if searching a user group
-		if ( $search_type eq "group" ) {
+		if ( $search_type eq "group" ) {	
 			foreach ( $user->users ) {
 				push @current,
-				  { 'type' => "user", 'label' => $_->name, 'id' => $_->id };
+				  { 'type' => "user", 'first' => $_->first_name, 'last' => $_->last_name, 'username' => $_->user_name, 'id' => $_->id, 'email' => $_->email };
 			}
 		}
-
-		push @results,
-		  {
-			'user'    => $currentUser->name,
-			'user_id' => $currentUser->id,
-			'result'  => \@current
-		  };
+		
+		if ($search_type eq "user" && $i == 0) {
+			push @results,
+			  {
+			  	'first'		=> $currentUser->first_name,
+			  	'last'		=> $currentUser->last_name,
+				'username'	=> $currentUser->user_name,
+				'email'		=> $currentUser->email,
+				'user_id' 	=> $currentUser->id,
+				'result' 	=> \@current
+			  };	  
+		} else {
+			push @results,
+			  {
+				'user'		=> $currentUser->name,
+				'user_id' 	=> $currentUser->id,
+				'result' 	=> \@current
+			  };
+		}
 	}
 
 	return encode_json( { timestamp => $timestamp, items => \@results } );
