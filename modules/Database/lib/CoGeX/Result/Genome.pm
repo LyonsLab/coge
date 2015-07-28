@@ -1172,15 +1172,16 @@ sub features {
     return wantarray ? @feats : \@feats;
 }
 
-sub feature_count { # mdb added 11/22/13
+sub feature_count {
 	my $self = shift;
 	my %opts = @_;
-    my $chr = $opts{chr};
+    my $chr = $opts{chr}; # optional
+    my $feature_type_id = $opts{feature_type_id}; # optional
 
     my $total = 0;
     foreach my $ds ( $self->datasets ) {
-    	my $n = $ds->features( chromosome => $chr )->count;
-    	$total += $n if ($n);
+    	my $n = $ds->features( chromosome => $chr, feature_type_id => $feature_type_id )->count;
+    	$total += $n if $n;
     }
 
     return $total;
