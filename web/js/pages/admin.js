@@ -46,6 +46,9 @@ $(function () {
 					init_system_load();
 				}
 			}
+			if (current_tab == 7) {
+				$("#tabs-8").html('<iframe src="https://genomevolution.org/greentea/" height="100%" width="100%"></iframe>');
+			}
 		}
     });
 	
@@ -344,7 +347,6 @@ function change_tab(tab) {
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
 		$("#loading").show();
-		timestamps['search_stuff'] = new Date().getTime();
 		$.ajax({
 			//type: "POST",
 			//dataType: "json",
@@ -352,14 +354,14 @@ function search_stuff (search_term) {
 			data: {
 				fname: 'search_stuff',
 				search_term: search_term,
-				timestamp: timestamps['search_stuff']
+				//timestamp: timestamps['search_stuff']
 			},
 			success : function(data) {
-				//console.log(data);
+				//console.log(JSON.parse(data));
 				//$('#loading').hide();
 				var obj = jQuery.parseJSON(data);
 				
-				if (obj && obj.items && obj.timestamp != timestamps['search_stuff']) {
+				if (!obj || !obj.items) {
 					return;
 				}
 

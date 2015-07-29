@@ -115,6 +115,7 @@ svg {
 		<li><a href="#tabs-5">Reports</a></li>
 		<li><a href="#tabs-6">Taxonomy</a></li>
 		<li><a href="#tabs-7">System Load</a></li>
+		<li><a href="#tabs-8">Analytics</a></li>
 	</ul>
 	<div id="tabs-1">
 		<div id="master" style="position:relative;">
@@ -359,6 +360,9 @@ svg {
 		<span id="system_graph"></span>
 		<span id="system_graph2" class="hidden"></span>
 	</div>
+	<div id="tabs-8">
+		<!--<iframe src="https://genomevolution.org/greentea/" height="100%" width="100%"></iframe>-->
+	</div>
 </div>
 
 </TMPL_IF>
@@ -516,9 +520,9 @@ $(function(){
 </div>
 </TMPL_IF>
 
-<TMPL_IF NAME='Histo_dialog'>
+<!--<TMPL_IF NAME='Histogram'>
 	<div>Nothing to see here.</div>
-</TMPL_IF>
+</TMPL_IF>-->
 
 <TMPL_IF NAME='ERROR_DIALOG'>
 <div class="small" align='center'>
