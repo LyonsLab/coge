@@ -43,7 +43,8 @@ BEGIN {
     @EXPORT = qw( 
         get_table get_user_access_table get_experiments get_distinct_feat_types
         get_genomes_for_user get_experiments_for_user get_lists_for_user
-        get_groups_for_user get_group_access_table
+        get_groups_for_user get_group_access_table get_features get_feature_types
+        get_feature_names get_feature_annotations get_locations
     );
 }
 
@@ -357,6 +358,136 @@ sub get_experiments {
     #print STDERR Dumper $results, "\n";
     
     return wantarray ? values %$results : $results;
+}
+
+sub get_features {
+    my $dbh = shift;         # database connection handle
+    my $genome_id = shift;   # genome id 
+    my $dataset_id = shift;  # dataset id
+    return unless ($dbh and ($genome_id or $dataset_id));
+    
+    # Execute query
+    my $query = qq{
+        SELECT f.feature_id AS id, f.feature_type_id AS type_id, ft.name AS type_name,
+            f.start AS start, f.stop AS stop, f.strand AS strand, f.chromosome AS chromosome
+        FROM dataset_connector AS dc 
+        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
+        JOIN feature_type AS ft ON (ft.feature_type_id=f.feature_type_id)
+    };
+    if ($genome_id) {
+        $query .= " WHERE (dc.genome_id=$genome_id)";
+    }
+    else {
+        $query .= " WHERE (dc.dataset_id=$dataset_id)";
+    }
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_hashref(['chromosome', 'id']);
+    #print STDERR Dumper $results, "\n";
+    
+    return $results;
+}
+
+sub get_feature_types {
+    my $dbh = shift; # database connection handle
+    return unless $dbh;
+    
+    # Execute query
+    my $query = qq{
+        SELECT ft.feature_type_id AS ftid, ft.name AS name, ft.description AS description
+        FROM feature_type AS ft
+    };
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_hashref(['ftid']);
+    #print STDERR Dumper $results, "\n";
+    
+    return $results;
+}
+
+sub get_feature_names {
+    my $dbh = shift;         # database connection handle
+    my $genome_id = shift;   # genome id
+    my $dataset_id = shift;  # dataset id
+    return unless ($dbh and ($genome_id or $dataset_id));
+    
+    # Execute query
+    my $query = qq{
+        SELECT f.feature_id AS fid, fn.feature_name_id AS fnid, fn.name AS name, fn.primary_name AS primary_name
+        FROM dataset_connector AS dc 
+        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
+        JOIN feature_name AS fn ON (fn.feature_id=f.feature_id)
+    };
+    if ($genome_id) {
+        $query .= " WHERE (dc.genome_id=$genome_id)";
+    }
+    else {
+        $query .= " WHERE (dc.dataset_id=$dataset_id)";
+    }
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_hashref(['fid', 'fnid']);
+    #print STDERR Dumper $results, "\n";
+    
+    return $results;
+}
+
+sub get_feature_annotations {
+    my $dbh = shift;         # database connection handle
+    my $genome_id = shift;   # genome id
+    my $dataset_id = shift;  # dataset id
+    return unless ($dbh and ($genome_id or $dataset_id));
+    
+    # Execute query
+    my $query = qq{
+        SELECT f.feature_id AS fid, fa.feature_annotation_id AS faid,
+            fa.annotation AS annotation, at.name AS atname, atg.name AS atgname
+        FROM dataset_connector AS dc 
+        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
+        JOIN feature_annotation AS fa ON (fa.feature_id=f.feature_id)
+        JOIN annotation_type AS at ON (fa.annotation_type_id=at.annotation_type_id)
+        JOIN annotation_type_group AS atg ON (at.annotation_type_group_id=atg.annotation_type_group_id)
+    };
+    if ($genome_id) {
+        $query .= " WHERE (dc.genome_id=$genome_id)";
+    }
+    else {
+        $query .= " WHERE (dc.dataset_id=$dataset_id)";
+    }
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_hashref(['fid', 'faid']);
+    #print STDERR Dumper $results, "\n";
+    
+    return $results;
+}
+
+sub get_locations {
+    my $dbh = shift;         # database connection handle
+    my $genome_id = shift;   # genome id
+    my $dataset_id = shift;  # dataset id
+    return unless ($dbh and ($genome_id or $dataset_id));
+    
+    # Execute query
+    my $query = qq{
+        SELECT f.feature_id AS fid, l.location_id AS lid, l.start AS start,
+            l.stop AS stop, l.strand AS strand, l.chromosome AS chr
+        FROM dataset_connector AS dc 
+        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
+        JOIN location AS l ON (l.feature_id=f.feature_id)
+    };
+    if ($genome_id) {
+        $query .= " WHERE (dc.genome_id=$genome_id)";
+    }
+    else {
+        $query .= " WHERE (dc.dataset_id=$dataset_id)";
+    }
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_hashref(['fid', 'lid']);
+    #print STDERR Dumper $results, "\n";
+    
+    return $results;
 }
 
 1;
