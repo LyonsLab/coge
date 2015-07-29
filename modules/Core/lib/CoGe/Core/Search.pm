@@ -23,7 +23,7 @@ sub search {
 	shift @_;
 	my %opts = @_;
     my $search_term = $opts{search_term};	# Takes in the entire string, to be processed later
-    my $timestamp   = $opts{timestamp};
+    #my $timestamp   = $opts{timestamp};
 	my $db 			= $opts{db};
 	my $USER		= $opts{USER};
 	say STDERR "$db";
@@ -334,7 +334,8 @@ sub search {
 	}
 
 	#print STDERR "Successful search\n";
-	return encode_json( { timestamp => $timestamp, items => \@results } );
+	#return encode_json( { timestamp => $timestamp, items => \@results } );
+	return @results;
 }
 
 1;
