@@ -383,7 +383,7 @@ function search_stuff (search_term) {
 
 					if (obj.items[i].type == "organism") {
 						orgList = orgList + "<tr><td><span title='" + obj.items[i].description + "'>";
-						orgList = orgList + obj.items[i].label + " (id" + obj.items[i].id + ")";
+						orgList = orgList + obj.items[i].name + " (id" + obj.items[i].id + ")";
 						orgList = orgList + " <a href=\"OrganismView.pl?oid=" + obj.items[i].id + "\">Info </a>";
 						orgList = orgList + "</span></td></tr>";
 						orgCounter++;
@@ -403,7 +403,7 @@ function search_stuff (search_term) {
 						} else {
 							genList = genList + "<span>";
 						}
-						genList = genList + obj.items[i].label + " <a href=\"GenomeInfo.pl?gid=" + obj.items[i].id + "\">Info </a>";
+						genList = genList + obj.items[i].name + " <a href=\"GenomeInfo.pl?gid=" + obj.items[i].id + "\">Info </a>";
 						genList = genList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 2, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						genList = genList + "</span></td></tr>";
 						genCounter++;
@@ -423,7 +423,7 @@ function search_stuff (search_term) {
 						} else {
 							expList = expList + "<span>";
 						}
-						expList = expList + obj.items[i].label + " (id" + obj.items[i].id + ") <a href=\"ExperimentView.pl?eid=" + obj.items[i].id + "\">Info </a>";
+						expList = expList + obj.items[i].name + " (id" + obj.items[i].id + ") <a href=\"ExperimentView.pl?eid=" + obj.items[i].id + "\">Info </a>";
 						expList = expList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 3, " + obj.items[i].restricted + ")'>Edit Access</button>";
 						expList = expList + "</span></td></tr>";
 						expCounter++;
@@ -443,7 +443,7 @@ function search_stuff (search_term) {
 						} else {
 							noteList = noteList + "<span>";
 						}
-						noteList = noteList + obj.items[i].label + " <a href=\"NotebookView.pl?lid=" + obj.items[i].id + "\">Info </a>";
+						noteList = noteList + obj.items[i].name + " <a href=\"NotebookView.pl?lid=" + obj.items[i].id + "\">Info </a>";
 						noteList = noteList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 1 , " + obj.items[i].restricted + ")'>Edit Access</button>";
 						noteList = noteList + "</span></td></tr>";
 						noteCounter++;
@@ -456,7 +456,7 @@ function search_stuff (search_term) {
 						} else {
 							usrgroupList = usrgroupList + "<span>";
 						}
-						usrgroupList = usrgroupList + obj.items[i].label + " (id" + obj.items[i].id + ") ";
+						usrgroupList = usrgroupList + obj.items[i].name + " (id" + obj.items[i].id + ") ";
 						usrgroupList = usrgroupList + "<button onclick=\"search_user(" + obj.items[i].id + ",'group')\">Show Data</button>";
 						usrgroupList = usrgroupList + "</span></td></tr>";
 						usrgroupCounter++;
@@ -747,7 +747,7 @@ function user_info(userID, search_type) {
                             } else {
                             	genList = genList + "<span>";
                             }
-        					genList = genList + current.label + " <a href=\"GenomeInfo.pl?gid=" + current.id + "\">Info </a>";
+        					genList = genList + current.name + " <a href=\"GenomeInfo.pl?gid=" + current.id + "\">Info </a>";
         					genList = genList + "<button class='access' onclick='share_dialog(" + current.id + ", 2, " + current.restricted + ")'>Edit Access</button>";
         					genList = genList + "</span></td></tr>";
         					genCounter++;
@@ -776,7 +776,7 @@ function user_info(userID, search_type) {
         					} else {
         						expList = expList + "<span>";
         					}
-        					expList = expList + current.label + " (id" + current.id + ") <a href=\"ExperimentView.pl?eid=" + current.id + "\">Info </a>";
+        					expList = expList + current.name + " (id" + current.id + ") <a href=\"ExperimentView.pl?eid=" + current.id + "\">Info </a>";
         					expList = expList + "<button class='access' onclick='share_dialog(" + current.id + ", 3, " + current.restricted + ")'>Edit Access</button>";
         					expList = expList + "</span></td></tr>";
         					expCounter++;
@@ -805,7 +805,7 @@ function user_info(userID, search_type) {
         					} else {
         						noteList = noteList + "<span>";
         					}
-        					noteList = noteList + current.label + " <a href=\"NotebookView.pl?lid=" + current.id + "\">Info </a>";
+        					noteList = noteList + current.name + " <a href=\"NotebookView.pl?lid=" + current.id + "\">Info </a>";
         					noteList = noteList + "<button class='access' onclick='share_dialog(" + current.id + ", , " + current.restricted + ")'>Edit Access</button>";
         					noteList = noteList + "</span></td></tr>";
         					noteCounter++;

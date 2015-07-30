@@ -9,17 +9,9 @@ sub startup {
     my $r = $self->routes->namespaces(["CoGe::Services::Data"]);
     
     # Global Search routes
-    $r->get("/globalsearch/search/#term")
-        ->name("globalsearch-search")
-        ->to("globalsearch#search", term => undef);
-	
-    $r->get("/globalsearch/:id" => [id => qr/\d+/])
-        ->name("globalsearch-fetch")
-        ->to("globalsearch#fetch", id => undef);
-        
-    $r->put("/globalsearch")
-        ->name("globalsearch-add")
-        ->to("globalsearch#add");
+    $r->get("/global/search/#term")
+        ->name("global-search")
+        ->to("search#search", term => undef);
 
     # Organism routes
     $r->get("/organisms/search/#term")

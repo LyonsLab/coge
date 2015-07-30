@@ -116,7 +116,7 @@ sub search_stuff {
 	#my $search_term = $opts{search_term};	# Takes in the entire string, to be processed later
     #my $timestamp   = $opts{timestamp};
     say STDERR "DB: $coge";
-	my @results = CoGe::Core::Search->search(@_, db=>$coge, USER=>$USER);
+	my @results = CoGe::Core::Search::search(@_, db=>$coge, user=>$USER);
 	#print STDERR Dumper(\@results);
 	return encode_json( {items => \@results } );
 }

@@ -11,7 +11,6 @@ lib/CoGe/Services/Data/Organism.pm
 lib/CoGe/Services/Data/Sequence.pm
 lib/CoGe/Services/Data/User.pm
 lib/CoGe/Services/Data/Job.pm
-lib/CoGe/Services/Data/Globalsearch.pm
 lib/CoGe/Services/JBrowse/Annotation.pm
 lib/CoGe/Services/JBrowse/Configuration.pm
 lib/CoGe/Services/JBrowse/Experiment.pm
