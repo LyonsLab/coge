@@ -20,13 +20,13 @@ BEGIN {
 }
 
 sub search {
-	shift @_;
+	#shift @_;
 	my %opts = @_;
     my $search_term = $opts{search_term};	# Takes in the entire string, to be processed later
     #my $timestamp   = $opts{timestamp};
 	my $db 			= $opts{db};
-	my $USER		= $opts{USER};
-	say STDERR "$db";
+	my $user		= $opts{user};
+	my $show_users	= $opts{show_users};
 
     my @searchArray = split( ' ', $search_term );
     my @specialTerms;
@@ -89,6 +89,12 @@ sub search {
 			}
 		}
 	}
+	
+	#only show public data if $user is undefined
+	if (!$user) {
+		$type = "restricted";
+		@restricted = [ restricted => 0 ];
+	}
 
     # Perform organism search
     if (   $type eq 'none'
@@ -120,7 +126,7 @@ sub search {
 		if ( $type eq 'none' || $type eq 'organism' ) {
 			foreach ( sort { $a->name cmp $b->name } @organisms ) {
 				push @results,
-				  { 'type' => "organism", 'label' => $_->name, 'id' => $_->id, 'description' => $_->description };
+				  { 'type' => "organism", 'name' => $_->name, 'id' => $_->id, 'description' => $_->description };
 			}
 		}
 		@idList = map { $_->id } @organisms;
@@ -129,35 +135,37 @@ sub search {
 	#print STDERR "organism done\n";
 
 	# Perform user search
-	if ( $type eq 'none' || $type eq 'user' ) {
-		my @usrArray;
-		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-			my $and_or;
-            if ($searchArray[$i]{"not_like"}) {
-                $and_or = "-and";
-            } else {
-                $and_or = "-or";
-            }
-			push @usrArray,
-			  [
-				$and_or => [
-					user_name  => $searchArray[$i],
-					first_name => $searchArray[$i],
-					user_id    => $searchArray[$i],
-					last_name => $searchArray[$i]
-				]
-			  ];
+	if ($show_users) {
+		if ( $type eq 'none' || $type eq 'user' ) {
+			my @usrArray;
+			for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+				my $and_or;
+	            if ($searchArray[$i]{"not_like"}) {
+	                $and_or = "-and";
+	            } else {
+	                $and_or = "-or";
+	            }
+				push @usrArray,
+				  [
+					$and_or => [
+						user_name  => $searchArray[$i],
+						first_name => $searchArray[$i],
+						user_id    => $searchArray[$i],
+						last_name => $searchArray[$i]
+					]
+				  ];
+			}
+			my @users =
+			  $db->resultset("User")->search( { -and => [ @usrArray, ], } );
+	
+			foreach ( sort { $a->user_name cmp $b->user_name } @users ) {
+				push @results,
+				  { 'type' => "user", 'first' => $_->first_name, 'last' => $_->last_name, 'username' => $_->user_name, 'id' => $_->id, 'email' => $_->email };
+			}
 		}
-		my @users =
-		  $db->resultset("User")->search( { -and => [ @usrArray, ], } );
-
-		foreach ( sort { $a->user_name cmp $b->user_name } @users ) {
-			push @results,
-			  { 'type' => "user", 'first' => $_->first_name, 'last' => $_->last_name, 'username' => $_->user_name, 'id' => $_->id, 'email' => $_->email };
-		}
+	#print STDERR "user done\n";
 	}
 	
-	#print STDERR "user done\n";
 
 	# Perform genome search (corresponding to Organism results)
 	if (   $type eq 'none'
@@ -176,11 +184,11 @@ sub search {
 		);
 
 		foreach ( sort { $a->id cmp $b->id } @genomes ) {
-			if ($USER->has_access_to_genome($_)) {
+			if (!$user || $user->has_access_to_genome($_)) {
 				push @results,
 				  {
 					'type'          => "genome",
-					'label'         => $_->info,
+					'name'         => $_->info,
 					'id'            => $_->id,
 					'deleted'       => $_->deleted,
 					'restricted'    => $_->restricted
@@ -198,11 +206,11 @@ sub search {
 		  ->search( { -and => [ @genIDArray, @restricted, @deleted, ], } );
 
 		foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
-			if ($USER->has_access_to_genome($_)) {
+			if (!$user || $user->has_access_to_genome($_)) {
 				push @results,
 				  {
 					'type'          => "genome",
-					'label'         => $_->info,
+					'name'         => $_->info,
 					'id'            => $_->id,
 					'deleted'       => $_->deleted,
 					'restricted'    => $_->restricted
@@ -241,11 +249,11 @@ sub search {
 		  ->search( { -and => [ @expArray, @restricted, @deleted, ], } );
 
 		foreach ( sort { $a->name cmp $b->name } @experiments ) {
-			if ($USER->has_access_to_experiment($_)) {
+			if (!$user || $user->has_access_to_experiment($_)) {
 				push @results,
 				  {
 					'type'          => "experiment",
-					'label'         => $_->name,
+					'name'         => $_->name,
 					'id'            => $_->id,
 					'deleted'       => $_->deleted,
 					'restricted'    => $_->restricted
@@ -284,11 +292,11 @@ sub search {
 		  ->search( { -and => [ @noteArray, @restricted, @deleted, ], } );
 
 		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
-			if ($USER->has_access_to_list($_)) {
+			if (!$user || $user->has_access_to_list($_)) {
 				push @results,
 				  {
 					'type'          => "notebook",
-					'label'         => $_->info,
+					'name'         => $_->info,
 					'id'            => $_->id,
 					'deleted'       => $_->deleted,
 					'restricted'    => $_->restricted
@@ -300,36 +308,38 @@ sub search {
 	#print STDERR "notebook done\n";
 
 	# Perform user group search
-	if ( $type eq 'none' || $type eq 'usergroup' || $type eq 'deleted' ) {
-		my @usrGArray;
-		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-			my $and_or;
-            if ($searchArray[$i]{"not_like"}) {
-                $and_or = "-and";
-            } else {
-                $and_or = "-or";
-            }
-			push @usrGArray,
-			  [
-				$and_or => [
-					name          => $searchArray[$i],
-					description   => $searchArray[$i],
-					user_group_id => $searchArray[$i]
-				]
-			  ];
-		}
-		my @userGroup =
-		  $db->resultset("UserGroup")
-		  ->search( { -and => [ @usrGArray, @deleted, ], } );
-
-		foreach ( sort { $a->name cmp $b->name } @userGroup ) {
-			push @results,
-			  {
-				'type'    => "user_group",
-				'label'   => $_->name,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
-			  };
+	if ($show_users) {
+		if ( $type eq 'none' || $type eq 'usergroup' || $type eq 'deleted' ) {
+			my @usrGArray;
+			for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+				my $and_or;
+	            if ($searchArray[$i]{"not_like"}) {
+	                $and_or = "-and";
+	            } else {
+	                $and_or = "-or";
+	            }
+				push @usrGArray,
+				  [
+					$and_or => [
+						name          => $searchArray[$i],
+						description   => $searchArray[$i],
+						user_group_id => $searchArray[$i]
+					]
+				  ];
+			}
+			my @userGroup =
+			  $db->resultset("UserGroup")
+			  ->search( { -and => [ @usrGArray, @deleted, ], } );
+	
+			foreach ( sort { $a->name cmp $b->name } @userGroup ) {
+				push @results,
+				  {
+					'type'    => "user_group",
+					'name'   => $_->name,
+					'id'      => $_->id,
+					'deleted' => $_->deleted
+				  };
+			}
 		}
 	}
 
