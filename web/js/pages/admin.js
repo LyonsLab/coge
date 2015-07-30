@@ -22,10 +22,15 @@ var system_graph;
 var system_graph2;
 
 $(function () {
+	// Initialize CoGe web services
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
+    });
+	
 	$( "#tabs" ).tabs({
 		select: function(event, ui) {
-            var theSelectedTab = ui.index;
-            change_tab(theSelectedTab);
+            current_tab = ui.index;
             schedule_update(5000);
         },
 		show: function(event, ui) {
@@ -338,126 +343,115 @@ function init_reports() {
 	});
 }
 
-function change_tab(tab) {
-	current_tab = tab;
-	//console.log(tab);
-}
-
 //Tab 1 Search
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
 		$("#loading").show();
-		$.ajax({
-			//type: "POST",
-			//dataType: "json",
-			//contentType: "application/json; charset=utf8",
-			data: {
-				fname: 'search_stuff',
-				search_term: search_term,
-				//timestamp: timestamps['search_stuff']
-			},
-			success : function(data) {
-				//console.log(JSON.parse(data));
-				//$('#loading').hide();
-				var obj = jQuery.parseJSON(data);
+		
+		coge.services.search_global(search_term)
+			.done(function(response) {
+				console.log(response);
+				var obj = response;
 				
-				if (!obj || !obj.items) {
+				if (!obj || !obj.results) {
 					return;
 				}
+				
+				console.log
 
 				var userCounter = 0, orgCounter = 0, genCounter = 0, expCounter = 0, noteCounter = 0, usrgroupCounter = 0;
 				var userList = "", orgList = "", genList = "", expList = "", noteList = "", usrgroupList = "";
 
-				for (var i = 0; i < obj.items.length; i++) {
-					if (obj.items[i].type == "user") {
+				for (var i = 0; i < obj.results.length; i++) {
+					if (obj.results[i].type == "user") {
 						userList = userList + "<tr><td><span>";
-						userList = userList + obj.items[i].first + " " + obj.items[i].last + ", ";
+						userList = userList + obj.results[i].first + " " + obj.results[i].last + ", ";
 						if (user_is_admin) {
-							userList = userList + obj.items[i].email;
+							userList = userList + obj.results[i].email;
 						}
-						userList = userList + " (" + obj.items[i].username + ", id" + obj.items[i].id + ") ";
-						userList = userList + "<button onclick=\"search_user(" + obj.items[i].id + ",'user')\">Show Data</button>";
+						userList = userList + " (" + obj.results[i].username + ", id" + obj.results[i].id + ") ";
+						userList = userList + "<button onclick=\"search_user(" + obj.results[i].id + ",'user')\">Show Data</button>";
 						userList = userList + "</span></td></tr>";
 						userCounter++;
 					}
 
-					if (obj.items[i].type == "organism") {
-						orgList = orgList + "<tr><td><span title='" + obj.items[i].description + "'>";
-						orgList = orgList + obj.items[i].name + " (id" + obj.items[i].id + ")";
-						orgList = orgList + " <a href=\"OrganismView.pl?oid=" + obj.items[i].id + "\">Info </a>";
+					if (obj.results[i].type == "organism") {
+						orgList = orgList + "<tr><td><span title='" + obj.results[i].description + "'>";
+						orgList = orgList + obj.results[i].name + " (id" + obj.results[i].id + ")";
+						orgList = orgList + " <a href=\"OrganismView.pl?oid=" + obj.results[i].id + "\">Info </a>";
 						orgList = orgList + "</span></td></tr>";
 						orgCounter++;
 					}
 	
-					if (obj.items[i].type == "genome") {
-						genList = genList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'Genome', 'restrict');\"";
-						if (obj.items[i].restricted == 1) {
+					if (obj.results[i].type == "genome") {
+						genList = genList + "<tr><td><span onclick=\"modify_item(" + obj.results[i].id + ", 'Genome', 'restrict');\"";
+						if (obj.results[i].restricted == 1) {
 							genList = genList + " class=\"link ui-icon ui-icon-locked\"></span>";
 						} else {
 							genList = genList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
 						}
-						genList = genList + "<span onclick=\"modify_item(" + obj.items[i].id + ", 'Genome', 'delete');\"";
+						genList = genList + "<span onclick=\"modify_item(" + obj.results[i].id + ", 'Genome', 'delete');\"";
 						genList = genList + " class=\"link ui-icon ui-icon-trash\"></span>";
-						if (obj.items[i].deleted == 1) {
+						if (obj.results[i].deleted == 1) {
 							genList = genList + "<span style=\"color: red\">";
 						} else {
 							genList = genList + "<span>";
 						}
-						genList = genList + obj.items[i].name + " <a href=\"GenomeInfo.pl?gid=" + obj.items[i].id + "\">Info </a>";
-						genList = genList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 2, " + obj.items[i].restricted + ")'>Edit Access</button>";
+						genList = genList + obj.results[i].name + " <a href=\"GenomeInfo.pl?gid=" + obj.results[i].id + "\">Info </a>";
+						genList = genList + "<button class='access' onclick='share_dialog(" + obj.results[i].id + ", 2, " + obj.results[i].restricted + ")'>Edit Access</button>";
 						genList = genList + "</span></td></tr>";
 						genCounter++;
 					}
 	
-					if (obj.items[i].type == "experiment") {
-						expList = expList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'Experiment', 'restrict');\"";
-						if (obj.items[i].restricted == 1) {
+					if (obj.results[i].type == "experiment") {
+						expList = expList + "<tr><td><span onclick=\"modify_item(" + obj.results[i].id + ", 'Experiment', 'restrict');\"";
+						if (obj.results[i].restricted == 1) {
 							expList = expList + " class=\"link ui-icon ui-icon-locked\"></span>";
 						} else {
 							expList = expList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
 						}
-						expList = expList + "<span onclick=\"modify_item(" + obj.items[i].id + ", 'Experiment', 'delete');\"";
+						expList = expList + "<span onclick=\"modify_item(" + obj.results[i].id + ", 'Experiment', 'delete');\"";
 						expList = expList + " class=\"link ui-icon ui-icon-trash\"></span>";
-						if (obj.items[i].deleted == 1) {
+						if (obj.results[i].deleted == 1) {
 							expList = expList + "<span style=\"color: red\">";
 						} else {
 							expList = expList + "<span>";
 						}
-						expList = expList + obj.items[i].name + " (id" + obj.items[i].id + ") <a href=\"ExperimentView.pl?eid=" + obj.items[i].id + "\">Info </a>";
-						expList = expList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 3, " + obj.items[i].restricted + ")'>Edit Access</button>";
+						expList = expList + obj.results[i].name + " (id" + obj.results[i].id + ") <a href=\"ExperimentView.pl?eid=" + obj.results[i].id + "\">Info </a>";
+						expList = expList + "<button class='access' onclick='share_dialog(" + obj.results[i].id + ", 3, " + obj.results[i].restricted + ")'>Edit Access</button>";
 						expList = expList + "</span></td></tr>";
 						expCounter++;
 					}
 	
-					if (obj.items[i].type == "notebook") {
-						noteList = noteList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'List', 'restrict');\"";
-						if (obj.items[i].restricted == 1) {
+					if (obj.results[i].type == "notebook") {
+						noteList = noteList + "<tr><td><span onclick=\"modify_item(" + obj.results[i].id + ", 'List', 'restrict');\"";
+						if (obj.results[i].restricted == 1) {
 							noteList = noteList + " class=\"link ui-icon ui-icon-locked\"></span>";
 						} else {
 							noteList = noteList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
 						}
-						noteList = noteList + "<span onclick=\"modify_item(" + obj.items[i].id + ", 'List', 'delete');\"";
+						noteList = noteList + "<span onclick=\"modify_item(" + obj.results[i].id + ", 'List', 'delete');\"";
 						noteList = noteList + " class=\"link ui-icon ui-icon-trash\"></span>";
-						if (obj.items[i].deleted == 1) {
+						if (obj.results[i].deleted == 1) {
 							noteList = noteList + "<span style=\"color: red\">";
 						} else {
 							noteList = noteList + "<span>";
 						}
-						noteList = noteList + obj.items[i].name + " <a href=\"NotebookView.pl?lid=" + obj.items[i].id + "\">Info </a>";
-						noteList = noteList + "<button class='access' onclick='share_dialog(" + obj.items[i].id + ", 1 , " + obj.items[i].restricted + ")'>Edit Access</button>";
+						noteList = noteList + obj.results[i].name + " <a href=\"NotebookView.pl?lid=" + obj.results[i].id + "\">Info </a>";
+						noteList = noteList + "<button class='access' onclick='share_dialog(" + obj.results[i].id + ", 1 , " + obj.results[i].restricted + ")'>Edit Access</button>";
 						noteList = noteList + "</span></td></tr>";
 						noteCounter++;
 					}
 							
-					if (obj.items[i].type == "user_group") {
+					if (obj.results[i].type == "user_group") {
 						usrgroupList = usrgroupList + "<tr><td>";
-						if (obj.items[i].deleted == 1) {
+						if (obj.results[i].deleted == 1) {
 							usrgroupList = usrgroupList + "<span style=\"color: red\">";
 						} else {
 							usrgroupList = usrgroupList + "<span>";
 						}
-						usrgroupList = usrgroupList + obj.items[i].name + " (id" + obj.items[i].id + ") ";
-						usrgroupList = usrgroupList + "<button onclick=\"search_user(" + obj.items[i].id + ",'group')\">Show Data</button>";
+						usrgroupList = usrgroupList + obj.results[i].name + " (id" + obj.results[i].id + ") ";
+						usrgroupList = usrgroupList + "<button onclick=\"search_user(" + obj.results[i].id + ",'group')\">Show Data</button>";
 						usrgroupList = usrgroupList + "</span></td></tr>";
 						usrgroupCounter++;
 					}
@@ -576,8 +570,14 @@ function search_stuff (search_term) {
 				} else {
 					$(".access").show();
 				}
-			},
-		});
+
+			})
+			.fail(function() {
+				//TODO: Find some way to test this without breaking anything.
+				$("#loading").hide();
+				$("#masterTable").html("An error occured. Please reload the page and try again.");
+			});
+		
 		previous_search = search_term;
 	}
 }

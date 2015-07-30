@@ -16,6 +16,11 @@ var coge = window.coge = (function(namespace) {
 			this.debug = 1;
 		},
 		
+		search_global: function(search_term) {
+			console.log(search_term);
+			return this._ajax("GET", BASE_URL + "global/search/" + search_term + "/");
+		},
+		
 		search_organisms: function(search_term) {
 			// TODO add param validation
 			return this._ajax("GET", BASE_URL + "organisms/search/" + search_term + "/");

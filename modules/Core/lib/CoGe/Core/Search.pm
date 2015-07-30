@@ -20,20 +20,19 @@ BEGIN {
 }
 
 sub search {
-	#shift @_;
 	my %opts = @_;
     my $search_term = $opts{search_term};	# Takes in the entire string, to be processed later
-    #my $timestamp   = $opts{timestamp};
 	my $db 			= $opts{db};
 	my $user		= $opts{user};
 	my $show_users	= $opts{show_users};
+
+	say STDERR "TESTING\n";
+    say STDERR Dumper($user);
 
     my @searchArray = split( ' ', $search_term );
     my @specialTerms;
     my @idList;
     my @results;
-
-    #return unless $search_term;
 
     #Set up the necessary arrays of serch terms and special conditions
     for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
@@ -44,7 +43,6 @@ sub search {
             	my $bang_index = index($searchArray[$i], '!');
             	my $new_term = substr($searchArray[$i], 0, $bang_index) . substr($searchArray[$i], $bang_index + 1);
             	$searchArray[$i] = { 'not_like', '%' . $new_term . '%' };
-            	#print STDERR Dumper($searchArray[$i]);
             }
         }
         else {
@@ -54,8 +52,6 @@ sub search {
             push @specialTerms, { 'tag' => $splitTerm[0], 'term' => $splitTerm[1] };
         }
     }
-
-	#print STDERR Dumper(\@searchArray);
 
 	#Set the special conditions
 	my $type = "none";    #Specifies a particular field to show
@@ -131,8 +127,6 @@ sub search {
 		}
 		@idList = map { $_->id } @organisms;
 	}
-	
-	#print STDERR "organism done\n";
 
 	# Perform user search
 	if ($show_users) {
@@ -163,7 +157,6 @@ sub search {
 				  { 'type' => "user", 'first' => $_->first_name, 'last' => $_->last_name, 'username' => $_->user_name, 'id' => $_->id, 'email' => $_->email };
 			}
 		}
-	#print STDERR "user done\n";
 	}
 	
 
@@ -218,8 +211,6 @@ sub search {
 			}
 		}
 	}
-	
-	#print STDERR "genome done\n";
 
 	# Perform experiment search
 	if (   $type eq 'none'
@@ -262,8 +253,6 @@ sub search {
 		}
 	}
 
-    #print STDERR "experiment done\n";
-
 	# Perform notebook search
 	if (   $type eq 'none'
 		|| $type eq 'notebook'
@@ -304,8 +293,6 @@ sub search {
 			}
 		}
 	}
-	
-	#print STDERR "notebook done\n";
 
 	# Perform user group search
 	if ($show_users) {
@@ -342,8 +329,6 @@ sub search {
 			}
 		}
 	}
-
-	#print STDERR "Successful search\n";
 	#return encode_json( { timestamp => $timestamp, items => \@results } );
 	return @results;
 }
