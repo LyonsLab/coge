@@ -43,7 +43,7 @@ BEGIN {
     @EXPORT = qw( 
         get_table get_user_access_table get_experiments get_distinct_feat_types
         get_genomes_for_user get_experiments_for_user get_lists_for_user
-        get_groups_for_user get_group_access_table
+        get_groups_for_user get_group_access_table get_feature_counts
     );
 }
 
@@ -357,6 +357,34 @@ sub get_experiments {
     #print STDERR Dumper $results, "\n";
     
     return wantarray ? values %$results : $results;
+}
+
+sub get_feature_counts {
+    my $dbh = shift;         # database connection handle
+    my $genome_id = shift;
+    my $dataset_id = shift;
+    return unless ($dbh and ($genome_id or $dataset_id));
+    #print STDERR "CoGeDBI::get_feature_counts $genome_id\n";
+    
+    # Get user/group list connections
+    my $query = qq{
+        SELECT f.chromosome AS chromosome, f.feature_type_id AS type_id, count(*) AS count
+        FROM dataset_connector AS dc
+        JOIN feature AS f ON (dc.dataset_id=f.dataset_id)
+    };
+    if ($genome_id) {
+        $query .= " WHERE (dc.genome_id=$genome_id)";
+    }
+    else {
+        $query .= " WHERE (dc.dataset_id=$dataset_id)";
+    }
+    $query .= " GROUP BY f.chromosome, f.feature_type_id";
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_hashref(['chromosome', 'type_id']);
+    #print STDERR Dumper $results, "\n";
+
+    return $results;
 }
 
 1;
