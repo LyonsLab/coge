@@ -7,6 +7,7 @@ use List::Compare;
 use CoGeX;
 use CoGeX::Result::User;
 use CoGeDBI;
+use Mojo::JSON;
 use Data::Dumper;
 use JSON qw(encode_json);
 
@@ -21,13 +22,11 @@ BEGIN {
 
 sub search {
 	my %opts = @_;
+	
     my $search_term = $opts{search_term};	# Takes in the entire string, to be processed later
 	my $db 			= $opts{db};
 	my $user		= $opts{user};
 	my $show_users	= $opts{show_users};
-
-	say STDERR "TESTING\n";
-    say STDERR Dumper($user);
 
     my @searchArray = split( ' ', $search_term );
     my @specialTerms;
@@ -121,8 +120,12 @@ sub search {
 
 		if ( $type eq 'none' || $type eq 'organism' ) {
 			foreach ( sort { $a->name cmp $b->name } @organisms ) {
-				push @results,
-				  { 'type' => "organism", 'name' => $_->name, 'id' => $_->id, 'description' => $_->description };
+				push @results, { 
+					'type' => "organism", 
+				  	'name' => $_->name, 
+				  	'id' => int $_->id, 
+				  	'description' => $_->description 
+				};
 			}
 		}
 		@idList = map { $_->id } @organisms;
@@ -153,8 +156,14 @@ sub search {
 			  $db->resultset("User")->search( { -and => [ @usrArray, ], } );
 	
 			foreach ( sort { $a->user_name cmp $b->user_name } @users ) {
-				push @results,
-				  { 'type' => "user", 'first' => $_->first_name, 'last' => $_->last_name, 'username' => $_->user_name, 'id' => $_->id, 'email' => $_->email };
+				push @results, { 
+					'type' => "user", 
+					'first' => $_->first_name, 
+					'last' => $_->last_name, 
+					'username' => $_->user_name, 
+					'id' => int $_->id, 
+					'email' => $_->email 
+				};
 			}
 		}
 	}
@@ -178,14 +187,13 @@ sub search {
 
 		foreach ( sort { $a->id cmp $b->id } @genomes ) {
 			if (!$user || $user->has_access_to_genome($_)) {
-				push @results,
-				  {
+				push @results, {
 					'type'          => "genome",
-					'name'         => $_->info,
-					'id'            => $_->id,
-					'deleted'       => $_->deleted,
-					'restricted'    => $_->restricted
-				  };
+					'name'          => $_->info,
+					'id'            => int $_->id,
+					'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
+					'restricted' 	=> $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+				};
 			}
 		}
 
@@ -200,14 +208,13 @@ sub search {
 
 		foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
 			if (!$user || $user->has_access_to_genome($_)) {
-				push @results,
-				  {
+				push @results, {
 					'type'          => "genome",
-					'name'         => $_->info,
-					'id'            => $_->id,
-					'deleted'       => $_->deleted,
-					'restricted'    => $_->restricted
-				  };
+					'name'          => $_->info,
+					'id'            => int $_->id,
+					'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
+					'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+				};
 			}
 		}
 	}
@@ -241,14 +248,13 @@ sub search {
 
 		foreach ( sort { $a->name cmp $b->name } @experiments ) {
 			if (!$user || $user->has_access_to_experiment($_)) {
-				push @results,
-				  {
+				push @results, {
 					'type'          => "experiment",
-					'name'         => $_->name,
-					'id'            => $_->id,
-					'deleted'       => $_->deleted,
-					'restricted'    => $_->restricted
-				  };
+					'name'          => $_->name,
+					'id'            => int $_->id,
+					'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
+					'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+				};
 			}
 		}
 	}
@@ -282,14 +288,13 @@ sub search {
 
 		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
 			if (!$user || $user->has_access_to_list($_)) {
-				push @results,
-				  {
+				push @results, {
 					'type'          => "notebook",
-					'name'         => $_->info,
-					'id'            => $_->id,
-					'deleted'       => $_->deleted,
-					'restricted'    => $_->restricted
-				  };
+					'name'          => $_->info,
+					'id'            => int $_->id,
+					'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
+					'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+				};
 			}
 		}
 	}
@@ -319,13 +324,12 @@ sub search {
 			  ->search( { -and => [ @usrGArray, @deleted, ], } );
 	
 			foreach ( sort { $a->name cmp $b->name } @userGroup ) {
-				push @results,
-				  {
+				push @results, {
 					'type'    => "user_group",
-					'name'   => $_->name,
-					'id'      => $_->id,
-					'deleted' => $_->deleted
-				  };
+					'name'    => $_->name,
+					'id'      => int  $_->id,
+					'deleted' => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
+				};
 			}
 		}
 	}
