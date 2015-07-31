@@ -446,7 +446,7 @@ sub get_feature_annotations {
         JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
         JOIN feature_annotation AS fa ON (fa.feature_id=f.feature_id)
         JOIN annotation_type AS at ON (fa.annotation_type_id=at.annotation_type_id)
-        JOIN annotation_type_group AS atg ON (at.annotation_type_group_id=atg.annotation_type_group_id)
+        LEFT JOIN annotation_type_group AS atg ON (at.annotation_type_group_id=atg.annotation_type_group_id)
     };
     if ($genome_id) {
         $query .= " WHERE (dc.genome_id=$genome_id)";
