@@ -775,11 +775,7 @@ sub fasta {
 See Also   : genome->gff
 =cut
 ################################################## subroutine header end ##
-our $FEATURES;
-our $FEATURE_NAMES;
-our $FEATURE_ANNOS;
-our $FEATURE_LOCS;
-our %FEATURES_BY_NAME;
+our ($FEATURES, $FEATURE_NAMES, $FEATURE_ANNOS, $FEATURE_LOCS, %FEATURES_BY_NAME);
 sub feature_sort { $a->{start} <=> $b->{start} || $a->{type_id} <=> $b->{type_id} };
 sub gff {
     my $self = shift;
@@ -802,19 +798,12 @@ sub gff {
     $count = 0 unless ($count && $count =~ /^\d+$/);
     $ds = $self unless $ds;
 
-    # mdb added 4/22/14 issue 364 - cache db objects to improve performance
-#    my $cache;
-#    $cache->{feature_annotations} = {};
-#    $cache->{annotation_type} = {};
-    
     # mdb added 7/28/15
     my $dbh = $self->{_result_source}{schema}{storage}->dbh;
     $FEATURES      = get_features($dbh, undef, $self->id);
     $FEATURE_NAMES = get_feature_names($dbh, undef, $self->id);
     $FEATURE_ANNOS = get_feature_annotations($dbh, undef, $self->id);
     $FEATURE_LOCS  = get_locations($dbh, undef, $self->id);
-    #print STDERR Dumper $FEATURE_NAMES, "\n";
-    print STDERR "matt: done loading tables\n";
     foreach my $fnameHash (values %$FEATURE_NAMES) {
         foreach my $fname (values %$fnameHash) {
             my $name = $fname->{name};
@@ -822,7 +811,6 @@ sub gff {
             $FEATURES_BY_NAME{$name}{$fid} = 1;
         }
     }
-    print STDERR "matt: done building name index\n";
 
     # Generate GFF header
     my @chrs;
@@ -930,7 +918,6 @@ sub gff {
 			                prior_genes => \%prior_genes))
                     {
                         my $tmp = $self->_format_gff_line(
-#                            cache       => $cache,
                             out         => \@out,
                             notes       => \%notes,
                             cds         => $cds,
@@ -974,7 +961,6 @@ sub gff {
 #			unless ( $ft->id == 1 && @feat_names )    #if not a gene, don't do the next set of searches.
             unless ( $feat->{type_name} =~ /gene/i && @feat_names ) {
                 my $tmp = $self->_format_gff_line(
-#                    cache                     => $cache,
                     out                       => \@out,
                     notes                     => \%notes,
                     cds                       => $cds,
@@ -1012,7 +998,6 @@ sub gff {
               )
             {
                 my $tmp = $self->_format_gff_line(
-#                    cache                     => $cache,
                     out                       => \@out,
                     notes                     => \%notes,
                     cds                       => $cds,
@@ -1043,7 +1028,7 @@ sub gff {
             $parent_id--;
             #while ( my $f = $sub_rs->next() ) {
             foreach my $f (@$sub_rs) {
-                if ( $fids{ $f->{id} } ) { next; }
+                next if ( $fids{ $f->{id} } );
 		        #next if $f->type->name =~ /pseudogene/i; #skip pseudogene stuff:  EHL 6/1/15
                 my $ftn = $self->process_feature_type_name( $f->{type_name} );
                 push @{ $notes{gene}{"Encoded_feature"} }, $self->escape_gff($ftn);
@@ -1051,7 +1036,7 @@ sub gff {
                     next if ($loc->{start} > $feat->{stop} || $loc->{stop} < $feat->{start});
                     #outside of genes boundaries;  Have to count it as something else
                     #sometimes mRNA features are missing.  This is due to the original dataset not having them enumerated.
-                    # Need to do some special stuff for such cases where a CDS retrieved in the absense of an mRNA)
+                    # Need to do some special stuff for such cases where a CDS retrieved in the absense of an mRNA
                     if ( $f->{type_name} eq "CDS" ) {
                         #let's add the mRNA, change the parent and count (id)
                         push @out, {
@@ -1092,7 +1077,6 @@ sub gff {
                     $types{ $f->{type_name} }++;
                 }
                 my $tmp = $self->_format_gff_line(
-#                    cache                     => $cache,
                     out                       => \@out,
                     notes                     => \%notes,
                     cds                       => $cds,
@@ -1154,6 +1138,7 @@ sub _feat_locs {
 
 sub _feat_annos {
     my $fid = shift;
+    #print STDERR "_feat_annos\n";
     my @annos = values %{$FEATURE_ANNOS->{$fid}};
     return wantarray ? @annos : \@annos;
 }
@@ -1165,7 +1150,7 @@ sub _feat_search {
     my $skip_ftids  = $opts{skip_ftids};
     my $ds          = $opts{ds};
     my $chr         = $opts{chr};
-    print STDERR "_feat_search\n";
+    #print STDERR "_feat_search\n";
     
     my %feats;
     foreach my $name (@$name_search) {
@@ -1176,7 +1161,7 @@ sub _feat_search {
         }
     }
     
-    return [ values %feats ];
+    return [ sort feature_sort values %feats ];
     
 #    return $ds->features(
 #        {
@@ -1208,7 +1193,7 @@ sub _search_rna {
     my $ds          = $opts{ds};
     my $cds_exon    = $opts{cds_exon}; #CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
     my $prior_genes = $opts{prior_genes};
-    print STDERR "_search_rna\n";
+    #print STDERR "_search_rna\n";
 
     my $rna_rs = $self->_feat_search(
         name_search => $name_search,
@@ -1307,7 +1292,7 @@ sub _process_rna {
     push @{ $notes->{gene}{"encoded_feature"} }, $self->escape_gff($ftn);
     $fids->{ $f->{id} } = 1;    #feat_id has been used;
     $types->{ $f->{type_name} }++;
-    print STDERR "_process_rna\n";
+    #print STDERR "_process_rna\n";
 
     #have mRNA.  mRNA in CoGe translates to what most people have settled on calling exons.  the output mRNA therefore needs to be a replicate of the gene
     unless ($parent_id) {
@@ -1348,35 +1333,6 @@ sub _process_rna {
     return $parent_id;
 }
 
-# mdb added 4/22/14 issue 364 - cache DB objects to improve performance
-#sub _annotation_type {
-#    my ($feat_anno, $cache) = @_;
-#    my $annotation_type_id = $feat_anno->annotation_type_id;
-##    print STDERR "**** _annotation_type: ".$annotation_type_id."\n";
-#    if (not exists $cache->{$annotation_type_id}) {
-#        $cache->{$annotation_type_id} = $feat_anno->annotation_type;
-#    }
-##    else {
-##        print STDERR "**** using cache\n";
-##    }
-#    return $cache->{$annotation_type_id};
-#}
-
-# mdb added 4/22/14 issue 364 - cache DB objects to improve performance
-#sub _feature_annotations {
-#    my ($feature, $cache) = @_;
-#    my $feature_id = $feature->id;
-##    print STDERR "**** _feature_annotations: ".$feature_id."\n";
-#    if (not exists($cache->{$feature_id})) {
-#        my @annotations = $feature->annotations;
-#        $cache->{$feature_id} = \@annotations;
-#    }
-##    else {
-##        print STDERR "**** using cache\n";
-##    }
-#    return $cache->{$feature_id};
-#}
-
 sub _format_gff_line {
     my $self  = shift;
     my %opts  = @_;
@@ -1393,8 +1349,7 @@ sub _format_gff_line {
     my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
     my $unique_ids  = $opts{unique_ids};  #hash for making sure that each used ID happens once for each ID
     my $add_chr     = $opts{add_chr};     #flag to add "chr" before the chromosome
-#    my $cache = $opts{cache};
-    print STDERR "_format_gff_line\n";
+    #print STDERR "_format_gff_line\n";
     
     my $output;
     foreach my $item (@$out) {
@@ -1476,13 +1431,13 @@ sub _format_gff_line {
         my $anno_stuff;
         if ($annos) {
             my %annos;
-            foreach my $anno ( _feat_annos($f->{id}) ) { #( @{_feature_annotations($f, $cache->{feature_annotations})} ) { #$f->annotations ) {
+            foreach my $anno ( _feat_annos($f->{id}) ) { #$f->annotations ) {
                 next unless defined $anno->{annotation};
-                print STDERR Dumper $anno, "\n";
+                #print STDERR Dumper $anno, "\n";
                 if (   $unique_parent_annos
                     && $prev_annos->{$parent_id}{ $anno->{annotation} } )
                 {
-                #we have used this annotation in a parent annotation
+                    #we have used this annotation in a parent annotation
                     $prev_annos->{$id}{ $anno->{annotation} } = 1;
                     next;
                 }
@@ -1491,52 +1446,46 @@ sub _format_gff_line {
                     $prev_annos->{$parent_id}{ $anno->{annotation} } = 1;
                 }
                 my $atn;      #attribute name
-                my $stuff;    #annotation;
-                #my $anno_type = _annotation_type($anno, $cache->{annotation_type});
+                my $value;    #annotation;
     
-                #some anno_types have a group.  If there is a group, that should be the attr name, otherwise it is the anno type;
+                #if there is a group it should be the attr name otherwise it is the anno type
                 if ($anno->{atgname}) { #$anno_type->annotation_type_group ) {
                     $atn = $anno->{atgname}; #$anno_type->annotation_type_group->name;
-                    $stuff .= $anno->{atname} . ', '; #$anno_type->name . ", ";
+                    $value .= $anno->{atname} . ', '; #$anno_type->name . ", ";
                 }
                 else {
                     $atn = $anno->{atname}; #$anno_type->name;
                 }
                 $atn = $self->escape_gff($atn);
                 $atn =~ s/\s+/_/g;
-                $atn = "Note" unless $atn;
-                $stuff .= $anno->{annotation};
-                $stuff = $self->escape_gff($stuff);
-                my $tmp;
-                #$tmp .= $atn."=".$stuff;
-                $annos{$atn}{$stuff} = 1;
+                $atn = 'Note' unless $atn;
+                $value .= $anno->{annotation};
+                $value = $self->escape_gff($value);
+                $annos{$atn}{$value} = 1;
             }
     
-            #$anno_stuff = join (";", keys %annos);
-            foreach my $key ( keys %annos ) {
-                $anno_stuff .= $key . "=" . join( ",", keys %{ $annos{$key} } ) . ";";
+            foreach my $key ( sort keys %annos ) {
+                $anno_stuff .= $key . '=' . join( ',', sort keys %{ $annos{$key} } ) . ';';
             }
         }
 
-        #escape stuff
-        #assemble gene info for printing
+        #assemble GFF line for printing
 	    my $chr = $f->{chromosome};
-	    $chr = "chr".$chr if $add_chr;
-        my $str = join(
+	    $chr = 'chr' . $chr if $add_chr;
+        my $anno_str = join(
             "\t",
-            (   $chr, 'CoGe', $parsed_type, $start,
-                $stop,          ".",    ($f->{strand} == 1 ? '+' : '-'),      ".",
-                $attrs
+            (   $chr, 'CoGe', $parsed_type, $start, $stop, '.',
+                ($f->{strand} == 1 ? '+' : '-'), 
+                '.', $attrs
             )
         );
-        $str .= ";$anno_stuff" if $anno_stuff;
-        $str =~ s/;$//g;
-        my $tmp = $str . "\n";
-        $output .= $tmp;
+        $anno_str .= ";$anno_stuff" if $anno_stuff;
+        $anno_str =~ s/;$//g;
+        $output .= $anno_str . "\n";
     }
     
     print $output if ($print and $output);
-    return $output;    #, \@feat_names;
+    return $output;
 }
 
 sub process_feature_type_name {
