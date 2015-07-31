@@ -11,7 +11,7 @@ sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
     my $fast = $self->param('fast');
-    $fast = ($fast eq '1' || $fast eq 'true');
+    $fast = (defined $fast && ($fast eq '1' || $fast eq 'true'));
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
