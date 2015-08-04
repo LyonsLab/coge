@@ -413,7 +413,9 @@ sub get_feature_names {
     
     # Execute query
     my $query = qq{
-        SELECT f.feature_id AS fid, fn.feature_name_id AS fnid, fn.name AS name, fn.primary_name AS primary_name
+        SELECT f.feature_id AS fid, f.chromosome AS chr,
+            fn.feature_name_id AS fnid, fn.name AS name, fn.primary_name AS primary_name,
+            dc.dataset_id AS dsid
         FROM dataset_connector AS dc 
         JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
         JOIN feature_name AS fn ON (fn.feature_id=f.feature_id)
@@ -445,7 +447,7 @@ sub get_feature_annotations {
         FROM dataset_connector AS dc 
         JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
         JOIN feature_annotation AS fa ON (fa.feature_id=f.feature_id)
-        JOIN annotation_type AS at ON (fa.annotation_type_id=at.annotation_type_id)
+        LEFT JOIN annotation_type AS at ON (fa.annotation_type_id=at.annotation_type_id)
         LEFT JOIN annotation_type_group AS atg ON (at.annotation_type_group_id=atg.annotation_type_group_id)
     };
     if ($genome_id) {
