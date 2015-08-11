@@ -1929,26 +1929,25 @@ sub export_bed {
 
 sub get_gff {
     my %args = @_;
+    
+    # Get genome and check permission
     my $dsg = $DB->resultset('Genome')->find($args{gid});
-
-    # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
+    # Create workflow
+    my $workflow = $JEX->create_workflow( name => "Export gff" );
     $args{basename} = sanitize_name($dsg->organism->name);
+    my ($output, $task) = generate_gff(%args);
+    $workflow->add_job($task);
 
-    my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(%args);
-#    print STDERR "get_gff: ", $output, "\n",
-#                 "get_gff: ", Dumper \%task, "\n";
-    $workflow->add_job(\%task);
-
+    # Submit workflow and block until completion
     my $response = $JEX->submit_workflow($workflow);
-#    say STDERR "get_gff: wid=" . $response->{id};
+    say STDERR "GenomeInfo::get_gff: wid=" . $response->{id};
     $JEX->wait_for_completion($response->{id});
 
     my %json;
     $json{file} = basename($output);
-    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
+    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output)) ];
 
     return encode_json(\%json);
 }
