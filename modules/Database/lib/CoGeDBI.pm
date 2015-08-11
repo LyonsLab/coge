@@ -44,7 +44,7 @@ BEGIN {
         get_table get_user_access_table get_experiments get_distinct_feat_types
         get_genomes_for_user get_experiments_for_user get_lists_for_user
         get_groups_for_user get_group_access_table get_features get_feature_types
-        get_feature_names get_feature_annotations get_locations
+        get_feature_names get_feature_annotations get_locations 
     );
 }
 
@@ -413,7 +413,7 @@ sub get_feature_names {
     
     # Execute query
     my $query = qq{
-        SELECT f.feature_id AS fid, f.chromosome AS chr,
+        SELECT f.feature_id AS fid, f.chromosome AS chr, f.feature_type_id AS ftid,
             fn.feature_name_id AS fnid, fn.name AS name, fn.primary_name AS primary_name,
             dc.dataset_id AS dsid
         FROM dataset_connector AS dc 
