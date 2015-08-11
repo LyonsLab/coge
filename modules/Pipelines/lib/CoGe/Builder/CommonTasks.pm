@@ -239,6 +239,7 @@ sub generate_gff {
         cds     => 0,
         nu      => 0,
         upa     => 0,
+        add_chr => 0
     );
     @args{(keys %inputs)} = (values %inputs);
 
