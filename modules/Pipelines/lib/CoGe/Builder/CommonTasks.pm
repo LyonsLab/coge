@@ -250,13 +250,12 @@ sub generate_gff {
     $args{basename} = $args{gid} unless $args{basename};
 
     # Generate the output filename
-    my @attributes = qw(annos cds id_type nu upa add_chr);
-    my $param_string = join "-", map { $_ . $args{$_} } @attributes;
+    my $param_string = join( "-", map { $_ . $args{$_} } qw(annos cds id_type nu upa add_chr) );
     my $filename = $args{basename} . "_" . $param_string;
     if ($args{chr}) {
     	$filename .= "_" . $args{chr};
     }
-    $filename .= ".gid".$args{gid};
+    $filename .= ".gid" . $args{gid};
     $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
@@ -278,12 +277,13 @@ sub generate_gff {
     push @$args, ['-add_chr', $args{add_chr}, 0] if (defined $args{add_chr});
     
     # Return workflow definition
-    return $output_file, (
+    return $output_file, {
         cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
+        script  => undef,
         args    => $args,
-        outputs => [$output_file],
-        description => "Generating gff..."
-    );
+        outputs => [ $output_file ],
+        description => "Generating GFF..."
+    };
 }
 
 sub create_gunzip_job {
