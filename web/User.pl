@@ -44,7 +44,7 @@ $FORM = new CGI;
 
 # Admins have ability to simulate other users using the "user_id" query parameter
 my $user_id = $FORM->Vars->{'user_id'};
-if (defined $user_id && $USER->is_admin) {
+if (defined $user_id && $USER->is_admin && $user_id != $USER->id) {
     my $user = $DB->resultset('User')->find($user_id);
     if (defined $user) {
         print STDERR "Switching to user '", $user->name, "'\n";
