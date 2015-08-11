@@ -775,7 +775,7 @@ See Also   : genome->gff
 =cut
 ################################################## subroutine header end ##
 our ($FEATURES, $FEATURE_NAMES, $FEATURE_ANNOS, $FEATURE_LOCS, %FEATURES_BY_NAME);
-sub feature_sort { $a->{start} <=> $b->{start} || $a->{type_id} <=> $b->{type_id} };
+sub feature_sort { $a->{start} <=> $b->{start} || $a->{type_id} <=> $b->{type_id} || $a->{id} <=> $b->{id} };
 sub gff {
     my $self = shift;
     my %opts = @_;
@@ -791,40 +791,34 @@ sub gff {
     my $unique_parent_annotations = $opts{unique_parent_annotations}; #flag so that annotations are not propogated to children if they are contained by their parent
     my $id_type  = $opts{id_type};  #type of ID (name, num):  unique number; unique name
     my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
-    my $chromosome = $opts{chr}; #optional, set to only include features on a particular chromosome
-    my $add_chr = $opts{add_chr}; #option to add "chr" before chromosome name
+    my $chromosome = $opts{chr};    #optional, set to only include features on a particular chromosome
+    my $add_chr = $opts{add_chr};   #option to add "chr" before chromosome name
     $id_type = "name" unless defined $id_type;
     $count = 0 unless ($count && $count =~ /^\d+$/);
     $ds = $self unless $ds;
 
-    # mdb added 7/28/15
+    # mdb added 7/28/15 - performance improvement
     my $dbh = $self->{_result_source}{schema}{storage}->dbh;
     $FEATURES      = get_features($dbh, undef, $self->id);
     $FEATURE_NAMES = get_feature_names($dbh, undef, $self->id);
     $FEATURE_ANNOS = get_feature_annotations($dbh, undef, $self->id);
     $FEATURE_LOCS  = get_locations($dbh, undef, $self->id);
-    foreach my $fnameHash (values %$FEATURE_NAMES) {
-        foreach my $fname (values %$fnameHash) {
+    foreach (values %$FEATURE_NAMES) {
+        foreach my $fname (values %$_) {
             my $name = $fname->{name};
-            my $fid = $fname->{fid};
-            my $chr = $fname->{chr};
-            my $dsid = $fname->{dsid};
-            $FEATURES_BY_NAME{$dsid}{$chr}{$name}{$fid} = 1;
+            my $fid  = $fname->{fid};
+            my $chr  = $fname->{chr};
+            $FEATURES_BY_NAME{$chr}{$name}{$fid} = 1;
         }
     }
 
     # Generate GFF header
-    my @chrs;
     my %chrs;
     foreach my $chr ( $ds->get_chromosomes ) {
         $chrs{$chr} = $ds->last_chromosome_position($chr);
     }
-    if ($chromosome) {
-    	@chrs = ($chromosome);
-    }
-    else {
-	    @chrs = sort { $a cmp $b } keys %chrs;
-    }
+    my @chrs = keys %chrs;
+    @chrs = ($chromosome) if ($chromosome);
 
     my $tmp;
     $tmp = "##gff-version\t3\n" unless $no_gff_head;
@@ -841,6 +835,7 @@ sub gff {
         print $tmp if $print;
     }
 
+    # Generate GFF entries
     my %fids = ();  #skip fids that we have processed
     my %types;      #track the number of different feature types encountered
     my %ids2names;  #lookup table for unique id numbers to unique id names (determined by $id_type)
@@ -853,7 +848,7 @@ sub gff {
 
     #my $prefetch = [ 'feature_type', 'feature_names' ];
     #push @$prefetch, {'annotations' => 'annotation_type'} if $annos;
-    foreach my $chr (@chrs) {
+    foreach my $chr (sort @chrs) {
         my %seen = (); #for storage of seen names organized by $feat_name{$name}
 #        my $rs_feat = $ds->features(
 #            { chromosome => $chr }, # mdb added 4/23/14 issue 364
@@ -874,8 +869,8 @@ sub gff {
             $types{ $feat->{type_name} }++;
             $count++;
             
-            my @out;      #store hashref of items for output
-            my %notes;    #additional annotations to add to gff line
+            my @out;   #store hashref of items for output
+            my %notes; #additional annotations to add to gff line
             my @feat_names = _feat_names($feat->{id});
             if ($name_re) {
                 @feat_names = grep { $_ =~ /$name_re/i } @feat_names;#$feat->names;
@@ -896,7 +891,7 @@ sub gff {
                         $match         = 1;
                         $prior_gene    = $prior_genes{$name};
                         $prior_gene_id = $name;
-                        last name_search;
+                        last;
                     }
                 }
                 if ($match) {
@@ -1016,7 +1011,7 @@ sub gff {
             my $sub_rs = $self->_feat_search(
                 name_search => \@feat_names,
                 skip_ftids  => [1, 2], #1 == gene; 2 == mRNA
-                ds          => $ds,
+                #ds          => $ds,
                 chr         => $chr,
             );
             
@@ -1124,7 +1119,6 @@ sub _feat_locs {
         next if ($loc->{stop} < $feature->{start} || $loc->{stop} > $feature->{stop});
         push @locs, $loc;
     }
-    
     my @sorted = sort { $a->{start} <=> $b->{start} || $a->{lid} <=> $b->{lid} } @locs;
     return wantarray ? @sorted : \@sorted;
 }
@@ -1141,13 +1135,13 @@ sub _feat_search {
     my %opts        = @_;
     my $name_search = $opts{name_search};
     my $skip_ftids  = $opts{skip_ftids};
-    my $ds          = $opts{ds};
+    #my $ds          = $opts{ds};
     my $chr         = $opts{chr};
     #print STDERR "_feat_search\n";
     
     my %feats;
     foreach my $name (@$name_search) {
-        foreach my $fid (keys %{$FEATURES_BY_NAME{$ds->id}{$chr}{$name}}) {
+        foreach my $fid (keys %{$FEATURES_BY_NAME{$chr}{$name}}) {
             my $f = $FEATURES->{$chr}{$fid};
             next if (grep { $f->{type_id} eq $_ } @$skip_ftids);
             $feats{$fid} = $f;
@@ -1191,7 +1185,7 @@ sub _search_rna {
     my $rna_rs = $self->_feat_search(
         name_search => $name_search,
         skip_ftids  => [1], # gene type
-        ds          => $ds,
+        #ds          => $ds,
         chr         => $chr
     );
 
@@ -1220,7 +1214,7 @@ sub _search_rna {
         my $sub_rs = $self->_feat_search(
             name_search => [ _feat_names($f->{id}) ], #[ $f->names ],
             skip_ftids  => [ 1, $f->{type_id} ],
-            ds          => $ds,
+            #ds          => $ds,
             chr         => $chr,
         );
 
@@ -1304,18 +1298,18 @@ sub _process_rna {
     $parent_id = $$count;
     $$count++;
     foreach my $loc ( _feat_locs($f) ) { #$f->locs() ) {
-        push @$out,
-          {
-            f         => $f,
-            start     => $loc->{start},
-            stop      => $loc->{stop},
-            name_re   => $name_re,
-            id        => $$count,
-            parent_id => $parent_id,
-            type      => "exon"
-          }
-          unless $cds_exon;
-        $$count++ unless $cds_exon;
+        unless ($cds_exon) {
+            push @$out, {
+                f         => $f,
+                start     => $loc->{start},
+                stop      => $loc->{stop},
+                name_re   => $name_re,
+                id        => $$count,
+                parent_id => $parent_id,
+                type      => "exon"
+            };
+            $$count++;
+        }
     }
     
     return $parent_id;
