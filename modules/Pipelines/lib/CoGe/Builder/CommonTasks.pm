@@ -267,7 +267,6 @@ sub generate_gff {
         ['-gid', $args{gid}, 0],
         ['-f', $filename, 0],
         ['-config', $CONF->{_CONFIG_PATH}, 0],
-        # Parameters
         ['-cds', $args{cds}, 0],
         ['-annos', $args{annos}, 0],
         ['-nu', $args{nu}, 0],

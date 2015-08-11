@@ -10,7 +10,7 @@ use URI::Escape::JavaScript qw(unescape);
 
 our ($DEBUG, $db, $user, $pass, $id, $config, $host, $port, $P,
      $filename, $annos, $cds, $chr, $name_unique, $staging_dir,
-     $id_type, $upa, $coge, $add_chr);
+     $id_type, $upa, $coge, $add_chr, $overwrite);
 
 GetOptions(
     "debug=s"                         => \$DEBUG,
@@ -24,6 +24,7 @@ GetOptions(
     "id_type|type=s"                  => \$id_type,
     "unique_parent_annotations|upa=i" => \$upa,
     "add_chr=i"                       => \$add_chr, #flag to add "chr" before chromosome
+    "overwrite=i"                     => \$overwrite,
 
     # Database params
     "host|h=s"          => \$host,
@@ -52,7 +53,10 @@ my $file = catfile($staging_dir, $filename);
 my $file_temp = $file . ".tmp";
 
 # Check if file already exists
-exit if -r $file;
+if (-r $file && !$overwrite) {
+    say STDERR "file already exists\n";
+    exit;
+}
 
 # Verify parameters
 if (not $id) {
@@ -79,14 +83,14 @@ unless ($coge) {
     exit(-1);
 }
 
-my ($item, $org);
-$item = $coge->resultset('Genome')->find($id);
-$org = $item->organism->name . "id";
+my ($genome, $org);
+$genome = $coge->resultset('Genome')->find($id);
+$org = $genome->organism->name . "id";
 
 open(my $fh, ">", $file_temp) or die "Error creating gff file";
 
 #print STDERR "chr: $chr\n";
-print $fh $item->gff(
+print $fh $genome->gff(
     print                     => 0,
     annos                     => $annos,
     cds                       => $cds,
