@@ -1945,11 +1945,10 @@ sub get_gff {
     say STDERR "GenomeInfo::get_gff: wid=" . $response->{id};
     $JEX->wait_for_completion($response->{id});
 
-    my %json;
-    $json{file} = basename($output);
-    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output)) ];
-
-    return encode_json(\%json);
+    return encode_json({
+        file => basename($output),
+        files => [ get_download_url(dsgid => $args{gid}, file => basename($output)) ]
+    });
 }
 
 sub export_gff {
