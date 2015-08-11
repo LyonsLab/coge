@@ -248,6 +248,7 @@ sub get_item_info {
           . '<b>Type:</b> ' . ( $genome->type ? $genome->type->name : '' ) . '<br>'
           . '<b>Source:</b> ' . ( $genome->source ? $genome->source->[0]->name : '' ) . '<br>'
           . '<b>Created:</b> ' . $date . '<br>'
+          . '<b>Annotated:</b> ' . ($genome->has_gene_features ? 'yes' : 'no') . '<br>'
           . '<b>Experiments:</b> ' . $genome->experiments . '<br>'
           . '<b>Groups with access:</b><br>'
           . '<div style="padding-left:20px;">'
