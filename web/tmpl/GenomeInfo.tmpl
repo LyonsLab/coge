@@ -1299,21 +1299,21 @@ function get_experiments(e) {
                 <tr>
                     <td class='title5'>Download:</td>
                     <td class='data5'>	
-                        <a class='link' href='<TMPL_VAR NAME="DOWNLOAD_URL">'>Fasta Sequences</a>&nbsp|
-                        <span class='link' onclick="get_gff()">Export GFF</span>&nbsp|
-                        <span class='link' onclick="get_tbl()">Export TBL</span>&nbsp|
-                        <span class='link' onclick="get_bed()">Export BED</span>
+                        <a class='link' href='<TMPL_VAR NAME="DOWNLOAD_URL">'>FASTA</a>&nbsp|
+                        <span class='link' onclick="get_gff()">GFF</span>&nbsp|
+                        <span class='link' onclick="get_tbl()">TBL</span>&nbsp|
+                        <span class='link' onclick="get_bed()">BED</span>
                     </td>
                 </tr>
                 <TMPL_IF NAME="LOGON">
                 <tr>
-                    <td class='title5'>iPlant Data Store:</td>
+                    <td class='title5'>Export to iPlant Data Store:</td>
                     <td class='data5'>
-                        <span class='link' ondblclick="export_fasta()" onclick="export_fasta()">Fasta Sequences</span>
+                        <span class='link' ondblclick="export_fasta()" onclick="export_fasta()">FASTA</span>
                         &nbsp|
-                        <span class='link' ondblclick="export_gff()" onclick="export_gff()">Export GFF</span>&nbsp|
-                        <span class='link' ondblclick="export_tbl()" onclick="export_tbl()">Export TBL</span>&nbsp|
-                        <span class='link' ondblclick="export_bed()" onclick="export_bed()">Export BED</span>
+                        <span class='link' ondblclick="export_gff()" onclick="export_gff()">GFF</span>&nbsp|
+                        <span class='link' ondblclick="export_tbl()" onclick="export_tbl()">TBL</span>&nbsp|
+                        <span class='link' ondblclick="export_bed()" onclick="export_bed()">BED</span>
                     </td>
                 </tr>
                 <tr>
