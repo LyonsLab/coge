@@ -207,16 +207,11 @@ my $org2length = 0;
 map { $org2length += $_->{length} } values %$org2info;
 
 unless ( $org1length && $org2length ) {
-    print STDERR qq{
-Error:  one or both of the genomes has no effective length:
- Org1:  $org1length
- Org2:  $org2length
-  };
+    print STDERR "Error: one or both of the genomes has no effective length: Org1: $org1length Org2: $org2length\n";
+    print STDERR 'org1info: ', Dumper $org1info, "\n", 'org2info: ', Dumper $org2info, "\n";
 
     if ( $axis_metric && $axis_metric =~ /gene/ ) {
-        print STDERR qq{
-Possible source of error is using genes as axis metric when one or both genomes has no CDSs.
-};
+        print STDERR qq{Possible source of error is using genes as axis metric when one or both genomes has no CDSs.};
     }
     exit;
 }
@@ -543,8 +538,8 @@ sub draw_dots {
 
         my @line = split /\t/;
         my $val;
-        my @item1 = split /\|\|/, $line[1];
-        my @item2 = split /\|\|/, $line[5];
+        my @item1 = split(/\|\|/, $line[1]);
+        my @item2 = split(/\|\|/, $line[5]);
         my $fid1  = $item1[6];
         my $fid2  = $item2[6];
         if ( $color_type && $color_type eq "inv" && $item1[4] && $item2[4] ) {
@@ -1326,8 +1321,7 @@ sub get_dsg_order {
     my $chr            = $opts{chr};
     my $minsize        = $opts{minsize};
     my $chr_sort_order = $opts{chr_sort_order};
-    my $skip_random =
-      $opts{skip_random}; #skip "random" chromosome where sequences are added ad hoc
+    my $skip_random    = $opts{skip_random}; #skip "random" chromosome where sequences are added ad hoc
 
     my %data;
 #    foreach my $gs ( $dsg->genomic_sequences ) {
