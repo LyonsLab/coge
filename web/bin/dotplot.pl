@@ -1304,8 +1304,8 @@ sub get_pairs {
         next if /^#/;
         next unless $_;
         my @line  = split /\t/;
-        my @item1 = split /\|\|/, $line[1];
-        my @item2 = split /\|\|/, $line[5];
+        my @item1 = split(/\|\|/, $line[1]);
+        my @item2 = split(/\|\|/, $line[5]);
         next unless $item1[6] && $item2[6];
         if ($chr1) {
             next unless $item1[0] eq $chr1 || $item2[0] eq $chr1;
@@ -1353,7 +1353,7 @@ sub get_dsg_order {
         $data{ $c->name }{chr_length} = $len;
         $data{ $c->name }{length}     = $len;
     }
-    #how to sort chromosomes for diplay?
+    #how to sort chromosomes for display?
     my @ordered;
     if ( $chr_sort_order =~ /^n/i )    #sorting by name
     {
@@ -1361,20 +1361,17 @@ sub get_dsg_order {
 #old below
 #	my @numbered;
 #	my @lettered;
-#	foreach my $chr (keys %data)
-#	  {
-#	    if ($chr =~ /\d+/)
-#	      {
-#		push @numbered, $chr;
-#	      }
-#	    else
-#	      {
-#		push @lettered, $chr;
-#	      }
-#	  }
+#	foreach my $chr (keys %data) {
+#	    if ($chr =~ /\d+/) {
+#		    push @numbered, $chr;
+#	    }
+#	    else {
+#		    push @lettered, $chr;
+#	    }
+#	}
 #	@ordered = ( (sort {chr_sort($a) <=> chr_sort($b) } @numbered), (sort { $a cmp $b } @lettered));
     }
-    elsif ( $chr_sort_order =~ /^s/i )    #sorting by size
+    elsif ( $chr_sort_order =~ /^s/i ) #sorting by size
     {
         @ordered =
           sort { $data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data;
