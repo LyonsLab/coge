@@ -99,7 +99,7 @@ sub generate_bed {
     my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
-    return $output_file, (
+    return $output_file, {
         cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.pl"),
         args => [
             ['-gid', $args{gid}, 0],
@@ -107,7 +107,7 @@ sub generate_bed {
             ['-config', $CONF->{_CONFIG_PATH}, 0],
         ],
         outputs => [$output_file]
-    );
+    };
 }
 
 sub generate_features {
@@ -141,7 +141,7 @@ sub generate_tbl {
     my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
-    return $output_file, (
+    return $output_file, {
         cmd     => catfile($CONF->{SCRIPTDIR}, "export_NCBI_TBL.pl"),
         args    => [
             ['-gid', $args{gid}, 0],
@@ -149,7 +149,7 @@ sub generate_tbl {
             ["-config", $CONF->{_CONFIG_PATH}, 0]
         ],
         outputs => [$output_file]
-    );
+    };
 }
 
 sub export_to_irods {
