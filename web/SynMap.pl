@@ -1818,7 +1818,7 @@ sub go {
         args        => \@dagtoolargs,
         inputs      => [$filtered_blastfile],
         outputs     => [$dag_file12_all],
-        description => "Formatting for DagChainer...",
+        description => "Formatting for DAGChainer...",
     });
 
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
