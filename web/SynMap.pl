@@ -2087,11 +2087,8 @@ sub go {
             description => "Converting to genomic coordinates...",
         });
 
-        CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-        CoGe::Accessory::Web::write_log(
-"Added conversion gene order coordinates back to genomic coordinates",
-            $cogeweb->logfile
-        );
+        CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
+        CoGe::Accessory::Web::write_log("Added conversion gene order coordinates back to genomic coordinates", $cogeweb->logfile);
 
         $final_dagchainer_file = $final_dagchainer_file . ".gcoords";
     }
