@@ -147,7 +147,8 @@ sub fetch {
     }
 
     # Add results
-    my $results = get_workflow_results($user->name, $id);
+    my $user_name = ($user->is_admin ? undef : $user->name); # mdb added 8/12/15 - enables admins to see all workflow results
+    my $results = get_workflow_results($user_name, $id);
 
     $self->render(json => {
         id => int($id),
