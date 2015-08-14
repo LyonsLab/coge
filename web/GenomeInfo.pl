@@ -120,7 +120,7 @@ sub get_genome_info_details {
 
     # Count
     my $chr_num = $dsg->chromosome_count();
-    $html .= qq{<tr><td class="title5">Chromosome count:</td</td>}
+    $html .= qq{<tr><td class="title5">Chromosomes/contigs:</td</td>}
         . qq{<td class="data5">} . commify($chr_num);
 
     # Histogram
