@@ -43,7 +43,7 @@ our (
     $ALGO_LOOKUP,  $GZIP,          $GUNZIP,         %FUNCTIONS,
     $JEX,          $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
     $GEN_FASTA,    $RUN_ALIGNMENT, $RUN_COVERAGE,   $GEVO_LINKS,
-    $PROCESS_DUPS, $DOTPLOT_DOTS,  $SEQUENCE_SIZE_LIMIT
+    $PROCESS_DUPS, $DOTPLOT_DOTS,  $SEQUENCE_SIZE_LIMIT, $FRAC_BIAS
 );
 
 $DEBUG = 0;
@@ -104,8 +104,9 @@ $GEN_FASTA     = $config->{GEN_FASTA};
 $RUN_ALIGNMENT = $config->{RUN_ALIGNMENT};
 $RUN_COVERAGE  = $config->{RUN_COVERAGE};
 $PROCESS_DUPS  = $config->{PROCESS_DUPS};
-$GEVO_LINKS =  $config->{GEVO_LINKS};
-$DOTPLOT_DOTS = $config->{DOTPLOT_DOTS};
+$GEVO_LINKS    = $config->{GEVO_LINKS};
+$DOTPLOT_DOTS  = $config->{DOTPLOT_DOTS};
+$FRAC_BIAS     = $config->{FRAC_BIAS};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -1158,6 +1159,9 @@ sub get_query_link {
     my $depth_org_1_ratio = $url_options{depth_org_1_ratio};
     my $depth_org_2_ratio = $url_options{depth_org_2_ratio};
     my $depth_overlap     = $url_options{depth_overlap};
+    
+    #options for fractionation bias
+    my $frac_bias         = $url_options{frac_bias};
 
     #fids that are passed in for highlighting the pair in the dotplot
     my $fid1 = $url_options{fid1};
@@ -1240,6 +1244,7 @@ sub get_query_link {
     $synmap_link .= ";do1=$depth_org_1_ratio" if $depth_org_1_ratio;
     $synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
     $synmap_link .= ";do=$depth_overlap"      if $depth_overlap;
+    $synmap_link .= ";fb=1"                   if $frac_bias;
     $synmap_link .= ";flip=1"                 if $flip;
     $synmap_link .= ";cs=$color_scheme";
     $synmap_link .= ";cmin=$codeml_min"
