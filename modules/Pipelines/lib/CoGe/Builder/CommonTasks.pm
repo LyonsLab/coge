@@ -513,8 +513,10 @@ sub create_load_genome_job {
     
     my $result_file = get_workflow_results_file($user->name, $wid);
 
-    my $file_str = join(',', map { basename($_) } @$input_files);
-    my $irods_str = join(',', map { basename($_) } @$irods_files);
+    my $file_str = '';
+    $file_str = join(',', map { basename($_) } @$input_files) if ($input_files && @$input_files);
+    my $irods_str = '';
+    $irods_str = join(',', map { basename($_) } @$irods_files) if ($irods_files && @$irods_files);
 
     return {
         cmd => $cmd,
