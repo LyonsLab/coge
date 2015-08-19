@@ -8,7 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Web qw(url_for);
-use CoGe::Accessory::Utils qw( commify );
+use CoGe::Accessory::Utils qw( commify sanitize_name );
 use CoGe::Builder::Tools::SynMap qw(generate_pseudo_assembly);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -43,7 +43,7 @@ our (
     $ALGO_LOOKUP,  $GZIP,          $GUNZIP,         %FUNCTIONS,
     $JEX,          $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
     $GEN_FASTA,    $RUN_ALIGNMENT, $RUN_COVERAGE,   $GEVO_LINKS,
-    $PROCESS_DUPS, $DOTPLOT_DOTS,  $SEQUENCE_SIZE_LIMIT, $FRAC_BIAS
+    $PROCESS_DUPS, $DOTPLOT_DOTS,  $SEQUENCE_SIZE_LIMIT
 );
 
 $DEBUG = 0;
@@ -106,7 +106,6 @@ $RUN_COVERAGE  = $config->{RUN_COVERAGE};
 $PROCESS_DUPS  = $config->{PROCESS_DUPS};
 $GEVO_LINKS    = $config->{GEVO_LINKS};
 $DOTPLOT_DOTS  = $config->{DOTPLOT_DOTS};
-$FRAC_BIAS     = $config->{FRAC_BIAS};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -2422,6 +2421,32 @@ sub go {
         outputs      => [$condensed],
         description => "Generating GEvo links...",
     });
+
+    if ($opts{frac_bias}) {
+    	my $organism_name;
+    	my $target_id;
+    	my $query_id;
+    	if ($depth_org_1_ratio < $depth_org_2_ratio) {
+    		$organism_name = $genome1->organism->name;
+    		$target_id = $dsgid1;
+    		$query_id = $dsgid2;
+    	}
+    	else {
+    		$organism_name = $genome2->organism->name;
+    		$target_id = $dsgid2;
+    		$query_id = $dsgid1;
+    	}
+   		my $gff_name = sanitize_name($organism_name) . "-1-name-0-0-id-" . $dir1 . "-1.gff";
+   		my $output_dir = $config->{DIAGSDIR} . '/' . $dir1 . '/' . $dir2 . '/';
+	    $workflow->add_job({
+	        cmd         => $config->{SCRIPTDIR} . '/fractionation_bias_geco.py',
+	        script      => undef,
+	        args        => ["$final_dagchainer_file.ks", $gff_name, $target_id, $query_id, $output_dir],
+	        inputs      => ["$final_dagchainer_file.ks"],
+	        outputs      => [$output_dir . 'html/fractbias_figure1.png'],
+	        description => "Running Fractination Bias...",
+	    });
+    }
 
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Added GEvo links generation", $cogeweb->logfile);
