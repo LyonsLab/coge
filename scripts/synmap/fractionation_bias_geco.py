@@ -9,11 +9,11 @@ matplotlib.use('Agg')
 #Allows arguments in command line
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("align", help="File path to SynMap syntenic alignment data output (aligncoords.gcoords file)")
-parser.add_argument("gff", help="File path to target genome GFF file")
-parser.add_argument("targetID", help="Target genome CoGe ID number. The target genome is the one with fewer subgenomes. Used to determine which side of the SynMap output file the target genome data exists.")
-parser.add_argument("queryID", help="Query genome CoGe ID number. The query genome is the one with more subgenomes. Used to determine which side of the SynMap output file the target genome data exists.")
-parser.add_argument("output", help="File path to output directory. Specify SynMap directory: 'storage/coge/data/diags' file path.")
+parser.add_argument("--align", help="File path to SynMap syntenic alignment data output (aligncoords.gcoords file)")
+parser.add_argument("--gff", help="File path to target genome GFF file")
+parser.add_argument("--targetID", help="Target genome CoGe ID number. The target genome is the one with fewer subgenomes. Used to determine which side of the SynMap output file the target genome data exists.")
+#parser.add_argument("--queryID", help="Query genome CoGe ID number. The query genome is the one with more subgenomes. Used to determine which side of the SynMap output file the target genome data exists.")
+parser.add_argument("--output", help="File path to output directory. Specify SynMap directory: 'storage/coge/data/diags' file path.")
 args = parser.parse_args()
 
 #For importing data and parsing data
@@ -67,14 +67,14 @@ with open(gff_import_file) as gff_file:
             species_name = genus_species.replace(' ','_')
             species_name_filter = species_name.translate(None, '(){}[]')
 
-#Create output file path for text and csv: args.output = = storage/coge/data/diags/
+#Create output file path for text and csv: args.output = = storage/coge/data/diags/lowestID/highestID/
 #Parsed data and raw output to csv files
-gff_sort_output_file = (args.output+str(species_name_filter)+"gff_sort.txt")
-synmap_dictionary_output_file = (args.output+str(species_name_filter)+ "synmap_data_structure.txt")
-fract_bias_raw_output_file = (args.output+str(species_name_filter)+ "fractbias_output.csv")
+gff_sort_output_file = (args.output+"gff_sort.txt")
+synmap_dictionary_output_file = (args.output+"synmap_data_structure.txt")
+fract_bias_raw_output_file = (args.output+"fractbias_output.csv")
 
 #Analysis of parsed data
-retention_calc_output_file = ("Window_output_"+str(species_name_filter+".csv"))
+retention_calc_output_file = ("fractbias_sliding_window_output.csv"))
 target_lst = []
 query_lst = []
 
@@ -360,7 +360,7 @@ for tchr in output_dict:
             ax[-1].legend(output_dict[tchr], loc=1, frameon=False, title="Query Chromosome", fontsize=10)
         import operator
 fig.tight_layout()
-plt.savefig(args.output+"html/"+str(species_name_filter)+"fractbias_figure1.png")
+plt.savefig(args.output+"html/"+"fractbias_figure1.png")
 print "finished plotting"
 
 # In[ ]:

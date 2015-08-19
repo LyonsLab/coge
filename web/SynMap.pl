@@ -2422,26 +2422,28 @@ sub go {
         description => "Generating GEvo links...",
     });
 
-    if ($opts{frac_bias}) {
+    if ($opts{frac_bias} =~ /true/i) {
     	my $organism_name;
     	my $target_id;
-    	my $query_id;
     	if ($depth_org_1_ratio < $depth_org_2_ratio) {
     		$organism_name = $genome1->organism->name;
     		$target_id = $dsgid1;
-    		$query_id = $dsgid2;
     	}
     	else {
     		$organism_name = $genome2->organism->name;
     		$target_id = $dsgid2;
-    		$query_id = $dsgid1;
     	}
    		my $gff_name = sanitize_name($organism_name) . "-1-name-0-0-id-" . $dir1 . "-1.gff";
-   		my $output_dir = $config->{DIAGSDIR} . '/' . $dir1 . '/' . $dir2 . '/';
+   		my $output_dir = $config->{DIAGSDIR} . $dir1 . '/' . $dir2 . '/';
 	    $workflow->add_job({
-	        cmd         => $config->{SCRIPTDIR} . '/fractionation_bias_geco.py',
+	        cmd         => $config->{SCRIPTDIR} . '/synmap/fractionation_bias_geco.py',
 	        script      => undef,
-	        args        => ["$final_dagchainer_file.ks", $gff_name, $target_id, $query_id, $output_dir],
+	        args        => [
+	        	['--align', "$final_dagchainer_file.ks", 0],
+	        	['--gff', $gff_name, 0],
+	        	['--target', $target_id, 0],
+	        	['--output', $output_dir, 0]
+	        ],
 	        inputs      => ["$final_dagchainer_file.ks"],
 	        outputs      => [$output_dir . 'html/fractbias_figure1.png'],
 	        description => "Running Fractination Bias...",
