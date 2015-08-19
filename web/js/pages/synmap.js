@@ -1412,6 +1412,7 @@ function checkRequestSize(url) {
             depth_org_2_ratio: $('#depth_org_2_ratio').val(),
             depth_overlap: $('#depth_overlap').val(),
             frac_bias: $('#frac_bias')[0].checked,
+            window_size: $('#window_size').val(),
             fid1: pageObj.fid1,
             fid2: pageObj.fid2,
             show_non_syn_dots: $('#show_non_syn_dots')[0].checked,

@@ -1161,6 +1161,7 @@ sub get_query_link {
     
     #options for fractionation bias
     my $frac_bias         = $url_options{frac_bias};
+    my $window_size       = $url_options{window_size};
 
     #fids that are passed in for highlighting the pair in the dotplot
     my $fid1 = $url_options{fid1};
@@ -1244,6 +1245,7 @@ sub get_query_link {
     $synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
     $synmap_link .= ";do=$depth_overlap"      if $depth_overlap;
     $synmap_link .= ";fb=1"                   if $frac_bias;
+    $synmap_link .= ";ws=$window_size"        if $window_size;
     $synmap_link .= ";flip=1"                 if $flip;
     $synmap_link .= ";cs=$color_scheme";
     $synmap_link .= ";cmin=$codeml_min"
@@ -2442,6 +2444,7 @@ sub go {
 	        	['--align', "$final_dagchainer_file.ks", 0],
 	        	['--gff', $gff_name, 0],
 	        	['--target', $target_id, 0],
+	        	['--windowsize', $opts{window_size}, 0],
 	        	['--output', $output_dir, 0]
 	        ],
 	        inputs      => ["$final_dagchainer_file.ks"],
@@ -2999,6 +3002,11 @@ sub get_results {
             } else {
                 $warn = qq{The histogram was not generated no ks or kn data found.};
             }
+        }
+        
+        if ($opts{frac_bias} =~ /true/i) {
+   			my $output_dir = $config->{DIAGSDIR} . $dir1 . '/' . $dir2 . '/';
+        	$results->param( frac_bias => $output_dir . 'html/fractbias_figure1.png');
         }
 
         my $final_dagchainer_file_condensed =
