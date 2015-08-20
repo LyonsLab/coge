@@ -4,13 +4,9 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::Asset::File;
 #use IO::Compress::Gzip 'gzip';
 use Data::Dumper;
-use File::Basename qw( basename );
-use File::Spec::Functions qw( catdir catfile );
-use CoGeX;
-use CoGe::Services::Auth;
-use CoGe::Accessory::Web qw(url_for);
+use File::Spec::Functions qw( catfile );
+use CoGe::Services::Auth qw( init );
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::TDS;
 use CoGe::Core::Storage qw( get_workflow_paths get_workflow_results );
 use CoGe::Factory::RequestFactory;
 use CoGe::Factory::PipelineFactory;
@@ -151,7 +147,8 @@ sub fetch {
     }
 
     # Add results
-    my $results = get_workflow_results($user->name, $id);
+    my $user_name = ($user->is_admin ? undef : $user->name); # mdb added 8/12/15 - enables admins to see all workflow results
+    my $results = get_workflow_results($user_name, $id);
 
     $self->render(json => {
         id => int($id),

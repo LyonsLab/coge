@@ -658,8 +658,8 @@ sub add_workflow_result {
 }
 
 sub get_workflow_results {
-    my ( $user_name, $workflow_id ) = @_;
-    unless ($user_name && $workflow_id) {
+    my ( $user_name, $workflow_id ) = @_; # user_name can be blank for admins
+    unless ($workflow_id) {
         print STDERR "Storage::get_workflow_results ERROR: missing required param\n";
         return;
     }

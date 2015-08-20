@@ -99,7 +99,7 @@ sub generate_bed {
     my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
-    return $output_file, (
+    return $output_file, {
         cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.pl"),
         args => [
             ['-gid', $args{gid}, 0],
@@ -107,7 +107,7 @@ sub generate_bed {
             ['-config', $CONF->{_CONFIG_PATH}, 0],
         ],
         outputs => [$output_file]
-    );
+    };
 }
 
 sub generate_features {
@@ -141,7 +141,7 @@ sub generate_tbl {
     my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
-    return $output_file, (
+    return $output_file, {
         cmd     => catfile($CONF->{SCRIPTDIR}, "export_NCBI_TBL.pl"),
         args    => [
             ['-gid', $args{gid}, 0],
@@ -149,7 +149,7 @@ sub generate_tbl {
             ["-config", $CONF->{_CONFIG_PATH}, 0]
         ],
         outputs => [$output_file]
-    );
+    };
 }
 
 sub export_to_irods {
@@ -239,6 +239,7 @@ sub generate_gff {
         cds     => 0,
         nu      => 0,
         upa     => 0,
+        add_chr => 0
     );
     @args{(keys %inputs)} = (values %inputs);
 
@@ -249,13 +250,12 @@ sub generate_gff {
     $args{basename} = $args{gid} unless $args{basename};
 
     # Generate the output filename
-    my @attributes = qw(annos cds id_type nu upa add_chr);
-    my $param_string = join "-", map { $_ . $args{$_} } @attributes;
+    my $param_string = join( "-", map { $_ . $args{$_} } qw(annos cds id_type nu upa add_chr) );
     my $filename = $args{basename} . "_" . $param_string;
     if ($args{chr}) {
     	$filename .= "_" . $args{chr};
     }
-    $filename .= ".gid".$args{gid};
+    $filename .= ".gid" . $args{gid};
     $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
@@ -267,7 +267,6 @@ sub generate_gff {
         ['-gid', $args{gid}, 0],
         ['-f', $filename, 0],
         ['-config', $CONF->{_CONFIG_PATH}, 0],
-        # Parameters
         ['-cds', $args{cds}, 0],
         ['-annos', $args{annos}, 0],
         ['-nu', $args{nu}, 0],
@@ -278,12 +277,13 @@ sub generate_gff {
     push @$args, ['-add_chr', $args{add_chr}, 0] if (defined $args{add_chr});
     
     # Return workflow definition
-    return $output_file, (
+    return $output_file, {
         cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
+        script  => undef,
         args    => $args,
-        outputs => [$output_file],
-        description => "Generating gff..."
-    );
+        outputs => [ $output_file ],
+        description => "Generating GFF..."
+    };
 }
 
 sub create_gunzip_job {
@@ -513,8 +513,10 @@ sub create_load_genome_job {
     
     my $result_file = get_workflow_results_file($user->name, $wid);
 
-    my $file_str = join(',', map { basename($_) } @$input_files);
-    my $irods_str = join(',', map { basename($_) } @$irods_files);
+    my $file_str = '';
+    $file_str = join(',', map { basename($_) } @$input_files) if ($input_files && @$input_files);
+    my $irods_str = '';
+    $irods_str = join(',', map { basename($_) } @$irods_files) if ($irods_files && @$irods_files);
 
     return {
         cmd => $cmd,

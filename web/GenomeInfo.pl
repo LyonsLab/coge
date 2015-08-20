@@ -120,7 +120,7 @@ sub get_genome_info_details {
 
     # Count
     my $chr_num = $dsg->chromosome_count();
-    $html .= qq{<tr><td class="title5">Chromosome count:</td</td>}
+    $html .= qq{<tr><td class="title5">Chromosomes/contigs:</td</td>}
         . qq{<td class="data5">} . commify($chr_num);
 
     # Histogram
@@ -1858,8 +1858,8 @@ sub get_tbl {
     $args{basename} = sanitize_name($dsg->organism->name);
 
     my $workflow = $JEX->create_workflow(name => "Export Tbl");
-    my ($output, %task) = generate_tbl(%args);
-    $workflow->add_job(\%task);
+    my ($output, $task) = generate_tbl(%args);
+    $workflow->add_job($task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1905,8 +1905,8 @@ sub get_bed {
     $args{basename} = sanitize_name($dsg->organism->name);
 
     my $workflow = $JEX->create_workflow(name => "Export bed file");
-    my ($output, %task) = generate_bed(%args);
-    $workflow->add_job(\%task);
+    my ($output, $task) = generate_bed(%args);
+    $workflow->add_job($task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1929,28 +1929,26 @@ sub export_bed {
 
 sub get_gff {
     my %args = @_;
+    
+    # Get genome and check permission
     my $dsg = $DB->resultset('Genome')->find($args{gid});
-
-    # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
+    # Create workflow
+    my $workflow = $JEX->create_workflow( name => "Export gff" );
     $args{basename} = sanitize_name($dsg->organism->name);
+    my ($output, $task) = generate_gff(%args);
+    $workflow->add_job($task);
 
-    my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(%args);
-#    print STDERR "get_gff: ", $output, "\n",
-#                 "get_gff: ", Dumper \%task, "\n";
-    $workflow->add_job(\%task);
-
+    # Submit workflow and block until completion
     my $response = $JEX->submit_workflow($workflow);
-#    say STDERR "get_gff: wid=" . $response->{id};
+    say STDERR "GenomeInfo::get_gff: wid=" . $response->{id};
     $JEX->wait_for_completion($response->{id});
 
-    my %json;
-    $json{file} = basename($output);
-    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
-
-    return encode_json(\%json);
+    return encode_json({
+        file => basename($output),
+        files => [ get_download_url(dsgid => $args{gid}, file => basename($output)) ]
+    });
 }
 
 sub export_gff {
@@ -1980,8 +1978,8 @@ sub export_file_to_irods {
     $args{basename} = sanitize_name($dsg->organism->name);
 
     my $workflow = $JEX->create_workflow(name => "Export " . $file_type);
-    my ($output, %task) = $generate_func->(%args);
-    $workflow->add_job(\%task);
+    my ($output, $task) = $generate_func->(%args);
+    $workflow->add_job($task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
