@@ -483,7 +483,7 @@ sub process_fasta_file {
         my $sectionName;
         my $sectionLen = length($section);
         my $filteredSeq;
-        my $CHUNK_LEN = 1*1000;
+        my $CHUNK_LEN = 10_000; # 8/19/15 COGE-647 mdb increased from 1000 for section headers >1000 chars
         my $ofs = 0;
         while ($ofs < $sectionLen) {
             my $chunk = substr($section, $ofs, $CHUNK_LEN);
@@ -535,11 +535,13 @@ sub process_fasta_file {
         }
         if ( $filteredSeq =~ /\W/ ) {
             print STDOUT "log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
+            #print STDOUT "log: error: chromosome name $sectionName\n";
+            #print STDOUT "log: error: $filteredSeq\n";
             exit(-1);
         }
 
         # Append sequence to master file
-	my $out;
+        my $out;
         unless (open( $out, ">>$target_dir/genome.faa" )) {
             print STDOUT "log: error: Couldn't open genome.faa\n";
             exit(-1);
