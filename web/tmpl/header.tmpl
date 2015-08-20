@@ -8,6 +8,10 @@
 <meta name="google-site-verification" content="voXZn_uzuPQj7YtCxw5ogRAW5PgalKg-8rA_VT7TooA" />
 <meta name="google-site-verification" content="LFIw-oo_UpW85cg_ONvoPuH1IpWYjlfmipsWhOvo1kk" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
 <TMPL_INCLUDE NAME="header_includes.tmpl">
 
@@ -38,7 +42,7 @@
 	}
 	#search input#search_token {
 		width: 40em;
-		height: 1.5em;
+		height: 2em;
 		background: #ffffff;
 		border: none;
 		font-size: 1em;
@@ -46,8 +50,8 @@
 		color: #119911;
 	}
 	#search_button {
-		width: 1.5em;
-		height: 1.3em;
+		width: 4em;
+		height: 2.4em;
 		margin-left: 0.5em;
 		border-color:#65d022;
 	}
@@ -57,6 +61,7 @@
 
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <link rel="shortcut icon" href="picts/urlicon/favicon.ico">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 </HEAD>
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
@@ -222,45 +227,51 @@ $(document).ready( function() {
     </noscript>
 -->
 
-<div id="main" class="container" style="height:4em;">
-	<div id="logo" style="float:left;width:15%;">
-		<!--<img style="vertical-align:bottom;height:2.5em;margin:0.5em" class="l" src='picts/CoGe.svg'>-->
-		<div style="float:left;margin-left:0.5em;margin-top:0.5em"><font face="impact" color="#41AD41" size="20">CoGe</font></div>
-		<!--<img style="margin-top:0.5em;height:2.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>-->
-	</div>
-	<div id="search" style="float:left;width:45%;">
-		<div id="searchBar" class="inline padded ui-corner-all" style="margin-top:1em;">
-	    	<td>
-	        	<input id="search_token" type="search" id="search_token" placeholder="Search Database" spellcheck="false" />
-			</td>
-			<span id="search_button" class="ui-button coge-button ui-state-active">
-            	<span style="margin-top:0.15em;font-size:15;" class="glyphicon glyphicon-search"></span>
-            </span>
+<nav class="navbar navbar-default" style="height:5em">
+	<div id="main" class="container" style="height:5em;width:100%">
+		<div id="logo" style="float:left;width:15%;">
+			<!--<img style="vertical-align:bottom;height:2.5em;margin:0.5em" class="l" src='picts/CoGe.svg'>-->
+			<div style="float:left;margin-left:0.5em;margin-top:0em"><font face="impact" color="#41AD41" size="20">CoGe</font></div>
+			<!--<img style="margin-top:0.5em;height:2.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>-->
+		</div>
+		<div id="search" style="float:left;width:45%;">
+			<div id="searchBar" class="inline padded ui-corner-all" style="margin-top:1em;">
+		    	<td>
+		        	<input id="search_token" type="search" id="search_token" placeholder="Search Database" spellcheck="false" />
+				</td>
+				<span id="search_button" class="ui-button coge-button ui-state-active">
+	            	<span style="margin-top:0.25em;font-size:15;" class="glyphicon glyphicon-search"></span>
+	            </span>
+			</div>
+		</div>
+		<div id="login" style="float:right;width:10%">
+			<button id="login_button" class="ui-button ui-corner-all coge-button" style="margin-top:1em;margin-right:2em;background:white;color:#119911;">Log in</button>
+		</div>
+		<div class="collapse navbar-collapse" id="menu" style="float:left;width:25%;margin-top:1em;">
+			<ul class="nav navbar-nav">
+				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">Profile</li>
+				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">History</li>
+				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">Admin</li>
+				<li class="dropdown">
+					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools <span class="caret"></span></a>
+					<ul class="dropdown-menu">
+						<li><a href="#">1</a></li>
+						<li><a href="#">2</a></li>
+						<li><a href="#">3</a></li>
+					</ul>
+				</li>
+				<li class="dropdown">
+					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
+					<ul class="dropdown-menu">
+						<li><a href="#">1</a></li>
+						<li><a href="#">2</a></li>
+						<li><a href="#">3</a></li>
+					</ul>
+				</li>
+			</ul>
 		</div>
 	</div>
-	<div id="login" style="float:right;width:10%">
-		<button id="login_button" class="ui-button ui-corner-all coge-button" style="margin-top:1em;margin-right:2em;background:white;color:#119911;">Log in</button>
-	</div>
-	<div id="menu">
-		<div style="float:left;width:25%;margin-top:1em;">
-			<span class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">Profile</span>
-			<span class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">History</span>
-			<span class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">Admin</span>
-			<select class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;width:6em">
-			  <option value="default">Tools</option>
-			  <option value="saab">Saab</option>
-			  <option value="mercedes">Mercedes</option>
-			  <option value="audi">Audi</option>
-			</select>
-			<select class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;width:6em">
-			  <option value="default">Help</option>
-			  <option value="saab">Saab</option>
-			  <option value="mercedes">Mercedes</option>
-			  <option value="audi">Audi</option>
-			</select>
-		</div>
-	</div>
-</div>
+</nav>
 
 </header>
 <!--<div class="tagline"><TMPL_VAR NAME="TITLE"></div>-->
