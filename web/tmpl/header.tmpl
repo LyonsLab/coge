@@ -11,6 +11,48 @@
 
 <TMPL_INCLUDE NAME="header_includes.tmpl">
 
+<style type="text/css">
+	@font-face {
+		font-family: 'Glyphicons Halflings';
+		src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+		src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+	}
+	
+	.glyphicon {
+		position: relative;
+		top: 1px;
+		display: inline-block;
+		font-family: 'Glyphicons Halflings';
+		font-style: normal;
+		font-weight: normal;
+		line-height: 1;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+	
+	.glyphicon-search:before {
+		content: "\e003";
+	}
+	.container {
+		background-color: #E7F5E7;
+	}
+	#search input#search_token {
+		width: 40em;
+		height: 1.5em;
+		background: #ffffff;
+		border: none;
+		font-size: 1em;
+		float: left;
+		color: #119911;
+	}
+	#search_button {
+		width: 1.5em;
+		height: 1.3em;
+		margin-left: 0.5em;
+		border-color:#65d022;
+	}
+</style>
+
 <TMPL_VAR NAME="HEAD">
 
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
@@ -114,12 +156,14 @@ $(document).ready( function() {
     </div>
 -->
 
+<!--
 <header class="clearfix">
     <div id="brand">
         <a href="<TMPL_VAR NAME=HOME>">
             <img style="vertical-align:bottom;height:3.4em" class="l" src='picts/CoGe.svg'>
         </a>
     </div>
+-->
 <!--
     <div id="logo">
         <a href="<TMPL_VAR NAME=HOME>">
@@ -127,7 +171,7 @@ $(document).ready( function() {
         </a>
     </div>
 -->
-
+<!--
     <TMPL_UNLESS NAME="MENU">
         <div id="menubar" class="coge-menubar r" style="visibility:hidden;">
             <span style="float:right; margin-right: 20px;">
@@ -176,5 +220,47 @@ $(document).ready( function() {
 
     Unfortunately, we have detected that your browser currently has JavaScript disabled. In order for CoGe to function properly, JavaScript must be enabled in your browser. For instruction on how to do so in Mozilla Firefox, please click <a href="http://www.mozilla.org/support/firefox/options#content" target="_blank">here</a>. After enabling JavaScript, simply refresh the page, or click <a href="javascript:location.reload(true);" target="_self">here</a>.
     </noscript>
+-->
+
+<div id="main" class="container" style="height:4em;">
+	<div id="logo" style="float:left;width:15%;">
+		<!--<img style="vertical-align:bottom;height:2.5em;margin:0.5em" class="l" src='picts/CoGe.svg'>-->
+		<div style="float:left;margin-left:0.5em;margin-top:0.5em"><font face="impact" color="#41AD41" size="20">CoGe</font></div>
+		<!--<img style="margin-top:0.5em;height:2.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>-->
+	</div>
+	<div id="search" style="float:left;width:45%;">
+		<div id="searchBar" class="inline padded ui-corner-all" style="margin-top:1em;">
+	    	<td>
+	        	<input id="search_token" type="search" id="search_token" placeholder="Search Database" spellcheck="false" />
+			</td>
+			<span id="search_button" class="ui-button coge-button ui-state-active">
+            	<span style="margin-top:0.15em;font-size:15;" class="glyphicon glyphicon-search"></span>
+            </span>
+		</div>
+	</div>
+	<div id="login" style="float:right;width:10%">
+		<button id="login_button" class="ui-button ui-corner-all coge-button" style="margin-top:1em;margin-right:2em;background:white;color:#119911;">Log in</button>
+	</div>
+	<div id="menu">
+		<div style="float:left;width:25%;margin-top:1em;">
+			<span class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">Profile</span>
+			<span class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">History</span>
+			<span class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">Admin</span>
+			<select class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;width:6em">
+			  <option value="default">Tools</option>
+			  <option value="saab">Saab</option>
+			  <option value="mercedes">Mercedes</option>
+			  <option value="audi">Audi</option>
+			</select>
+			<select class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;width:6em">
+			  <option value="default">Help</option>
+			  <option value="saab">Saab</option>
+			  <option value="mercedes">Mercedes</option>
+			  <option value="audi">Audi</option>
+			</select>
+		</div>
+	</div>
+</div>
+
 </header>
-<div class="tagline"><TMPL_VAR NAME="TITLE"></div>
+<!--<div class="tagline"><TMPL_VAR NAME="TITLE"></div>-->
