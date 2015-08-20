@@ -25,6 +25,9 @@ def main(input, output, gid1, gid2, feature1, feature2):
 
     if not(os.path.exists(input)):
         logging.error("Input file: (%s) not found.", input)
+        
+    if os.stat(input).st_size == 0:
+        logging.error("Input file: (%s) is empty.", input)
 
     if not(feature1 == "genomic") and not(feature2 == "genomic"):
         logging.info("No genomic features were specified.")

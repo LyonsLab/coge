@@ -428,13 +428,15 @@ sub fix_chromosome_id {
     $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 chromosome name is 00 (or something like that)
     $chr =~ s/^0+// unless $chr eq '0';
     $chr =~ s/^_+//;
-    $chr =~ s/\s+/ /;
+    $chr =~ s/\s+/ /g;
     $chr =~ s/^\s//;
     $chr =~ s/\s$//;
-    $chr =~ s/\//_/; # mdb added 12/17/13 issue 266 - replace '/' with '_'
-    $chr =~ s/\|$//; # mdb added 3/14/14 issue 332 - remove trailing pipes
-    $chr =~ s/\(/_/; # mdb added 2/11/15 COGE-587 - replace '(' with '_'
-    $chr =~ s/\)/_/; # mdb added 2/11/15 COGE-587 - replace ')' with '_'
+    $chr =~ s/\//_/g; # mdb added 12/17/13 issue 266 - replace '/' with '_'
+    $chr =~ s/\|$//;  # mdb added 3/14/14 issue 332 - remove trailing pipes
+    $chr =~ s/\|/_/g; # mdb added 8/13/15 - convert pipes to underscore
+    $chr =~ s/\(/_/g; # mdb added 2/11/15 COGE-587 - replace '(' with '_'
+    $chr =~ s/\)/_/g; # mdb added 2/11/15 COGE-587 - replace ')' with '_'
+    $chr =~ s/_+/_/g; # mdb added 8/13/15 - convert multiple underscores to single underscore
     return if ($chr eq '');
 
     # Convert 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed

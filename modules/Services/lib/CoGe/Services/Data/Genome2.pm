@@ -2,15 +2,16 @@ package CoGe::Services::Data::Genome2;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
-use CoGeX;
-use CoGe::Services::Auth;
+use CoGe::Services::Auth qw(init);
 use CoGe::Services::Data::Job;
+use CoGeDBI qw(get_feature_counts);
+use Data::Dumper;
 
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
     my $fast = $self->param('fast');
-    $fast = ($fast eq '1' || $fast eq 'true');
+    $fast = (defined $fast && ($fast eq '1' || $fast eq 'true'));
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
@@ -127,9 +128,11 @@ sub fetch {
     
     # Build chromosome list
     my $chromosomes = $genome->chromosomes_all;
+    my $feature_counts = get_feature_counts($db->storage->dbh, $genome->id);
     foreach (@$chromosomes) {
-        my $num_genes = $genome->feature_count(chr => $_->{name}, feature_type_id => 1); #FIXME magic number for 'gene' type
-        $_->{gene_count} = $num_genes;
+        my $name = $_->{name};
+        $_->{gene_count} = int($feature_counts->{$name}{1}{count});
+        $_->{CDS_count} = int($feature_counts->{$name}{3}{count});
     }
     
     # Generate response
