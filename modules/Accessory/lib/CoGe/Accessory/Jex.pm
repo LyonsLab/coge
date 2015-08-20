@@ -53,7 +53,7 @@ sub create_workflow {
         $id = $response->{id};
 
         unless ($id) {
-            print STDERR "CoGe::Accessory::Jex ERROR: Failed to initialize workflow\n";
+            print STDERR "CoGe::Accessory::Jex ERROR: Failed to initialize workflow ", ($opts{name} ? "'".$opts{name}."'" : '') , "\n";
             return;
         }
     }
