@@ -131,9 +131,15 @@ sub startup {
         ->name("irods-list")
         ->to("IRODS#list");
         
-    $r->get("/irods/fetch/(*path)")
-        ->name("irods-fetch")
-        ->to("IRODS#fetch");
+# mdb removed 8/24/15 -- not used
+#    $r->get("/irods/fetch/(*path)")
+#        ->name("irods-fetch")
+#        ->to("IRODS#fetch");
+
+    # FTP routes
+    $r->get("/ftp/list/")
+        ->name("ftp-list")
+        ->to("FTP#list");
         
     # Not found
     $r->any("*" => sub {
