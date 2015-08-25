@@ -1391,7 +1391,7 @@ sub _format_gff_line {
     	$parent_is_gene = 0 unless defined $parent_is_gene;
     	if ($parent_id && $is_RNA && !$is_mRNA &&! $prior_genes->{$parent_id}  && !$parent_is_gene) {
     	    my $temp_id = $parent_id;
-    	    while (!$parent_is_gene) { #FIXME potential infinite loop, mdb 7/31/15
+    	    while (!$parent_is_gene && $temp_id > 0) { # mdb added $temp_id > 0 8/25/15 to prevent infinite loop
     		    $temp_id--;
     		    $parent_is_gene = $prior_genes->{$temp_id}{type_name} =~ /gene/ ? 1 : 0 if $prior_genes->{$temp_id};
     	    }
