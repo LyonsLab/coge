@@ -17,8 +17,6 @@ use File::Basename;
 use File::Slurp;
 use File::Spec::Functions qw(catdir catfile);
 use File::Listing qw(parse_dir);
-use LWP::Simple;
-use URI;
 use Sort::Versions;
 no warnings 'redefine';
 
