@@ -513,8 +513,10 @@ sub create_load_genome_job {
     
     my $result_file = get_workflow_results_file($user->name, $wid);
 
-    my $file_str = join(',', map { basename($_) } @$input_files);
-    my $irods_str = join(',', map { basename($_) } @$irods_files);
+    my $file_str = '';
+    $file_str = join(',', map { basename($_) } @$input_files) if ($input_files && @$input_files);
+    my $irods_str = '';
+    $irods_str = join(',', map { basename($_) } @$irods_files) if ($irods_files && @$irods_files);
 
     return {
         cmd => $cmd,
@@ -523,13 +525,13 @@ sub create_load_genome_job {
             ['-user_name', $user->name, 0],
             ['-wid', $wid, 0],
             ['-name', '"' . $metadata->{name} . '"', 0],
-            ['-desc', '"' . $metadata->{description} . '"', 0],
-            ['-link', '"' . $metadata->{link} . '"', 0],
+            ['-desc', '"' . ($metadata->{description} ? $metadata->{description} : '') . '"', 0],
+            ['-link', '"' . ($metadata->{link} ? $metadata->{link} : '') . '"', 0],
             ['-version', '"' . $metadata->{version} . '"', 0],
             ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
             ['-source_name', '"' . $metadata->{source_name} . '"', 0],
             ['-organism_id', $organism_id, 0],
-            ['-type_id', '"' . $metadata->{type} . '"', 0],
+            ['-type_id', '"' . ( $metadata->{type} ? $metadata->{type} : 1 ) . '"', 0], # default to "unmasked"
             ['-staging_dir', "./load_genome", 0],
             ['-fasta_files', "'".$file_str."'", 0],
             ['-irods_files', "'".$irods_str."'", 0],

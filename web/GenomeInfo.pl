@@ -1587,8 +1587,9 @@ sub get_annotations {
     my %opts = @_;
     my $gid  = $opts{gid};
     return "Must have valid genome id\n" unless ($gid);
+    
     my $genome = $DB->resultset('Genome')->find($gid);
-
+    return "Genome not found\n" unless $genome;
     return "Access denied\n" unless $USER->has_access_to_genome($genome);
 
     my $user_can_edit =
