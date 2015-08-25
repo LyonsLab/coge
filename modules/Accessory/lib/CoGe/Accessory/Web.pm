@@ -27,7 +27,6 @@ use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
 use URI;
-use namespace::clean; # should be last, see http://blog.twoshortplanks.com/2010/07/17/clea/
 
 =head1 NAME
 
@@ -64,8 +63,7 @@ BEGIN {
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
                    send_email get_defaults set_defaults url_for get_job 
-                   schedule_job render_template ftp_get_path ftp_get_file 
-                   split_url
+                   schedule_job render_template ftp_get_path ftp_get_file split_url
                );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
@@ -1144,6 +1142,16 @@ sub url_for {
     return $scheme . join("/", @parts) . $query_string;;
 }
 
+sub split_url {
+    my $url = shift;
+    return unless $url;
+    my $uri = URI->new($url);
+    my $type = $uri->scheme;
+    my ($filename, $filepath) = fileparse($uri->path);
+    $filepath = $uri->host . $filepath;
+    return ($filename, $filepath);
+}
+
 sub ftp_get_path { # mdb 8/24/15 copied from LoadExperiment.pl
     my %opts = @_;
     my $url  = $opts{url};
@@ -1173,15 +1181,6 @@ sub ftp_get_path { # mdb 8/24/15 copied from LoadExperiment.pl
     }
 
     return wantarray ? @files : \@files;
-}
-
-sub split_url {
-    my $url = shift;
-    my $uri = URI->new($url);
-    my $type = $uri->scheme;
-    my ($filename, $filepath) = fileparse($uri->path);
-    $filepath = $uri->host . $filepath;
-    return ($filename, $filepath);
 }
 
 sub ftp_get_file { # mdb 8/24/15 copied from LoadExperiment.pl
