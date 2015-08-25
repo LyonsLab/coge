@@ -243,7 +243,7 @@ sub create_data_retrieval_workflow {
         }
         elsif ($type eq 'http' or $type eq 'ftp') {
             $task = create_ftp_get_job(
-                url => $item->{url},
+                url => $item->{url} || $item->{path},
                 username => $item->{username},
                 pasword => $item->{password},
                 dest_path => $upload_dir
