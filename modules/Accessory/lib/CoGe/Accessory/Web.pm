@@ -27,6 +27,7 @@ use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
 use URI;
+use namespace::clean; # should be last, see http://blog.twoshortplanks.com/2010/07/17/clea/
 
 =head1 NAME
 
@@ -1092,6 +1093,57 @@ sub send_email {
     $mailer->close();
 }
 
+sub url_for {
+    my ($path, %params) = @_;
+
+    # Error if CONFIG not set
+    croak "CONFIG was not found." unless $CONF;
+
+    my $SERVER = $CONF->{SERVER};
+    my $BASE_URL = $CONF->{URL};
+
+    # Error if SERVER not found
+    croak "SERVER option not found in CONFIG." unless $SERVER;
+
+    # Configures the default scheme
+    my $scheme = $CONF->{SECURE} ? "https://" : "http://";
+
+    # SERVER may override the default scheme
+    if ($SERVER =~ /(?<scheme>https?:\/{2})/) {
+        $scheme = $+{scheme};
+    }
+
+    # Strip leading /
+    $path =~ s/^\///;
+
+    # Strip leading and trailing /
+    $BASE_URL =~ s/^\///;
+    $BASE_URL =~ s/\/$//;
+
+    # Strip BASE URL from SERVER
+    $SERVER =~ s/$BASE_URL//i;
+
+    # Strip scheme and /
+    $SERVER =~ s/\/*$//;
+    $SERVER =~ s/^https?:\/{2}//;
+    $SERVER =~ s/\/$//;
+
+    # Build up parts and ignore BASE_URL if not set
+    my @parts = (length $BASE_URL) ? ($SERVER, $BASE_URL, $path)
+                                   : ($SERVER, $path);
+
+    # Build query string from params
+    my ($query_string, @pairs) = ("", ());
+
+    foreach my $key (sort keys %params) {
+        push @pairs, $key . "=" . $params{$key};
+    }
+
+    $query_string = "?" . join("&", @pairs) if @pairs;
+
+    return $scheme . join("/", @parts) . $query_string;;
+}
+
 sub ftp_get_path { # mdb 8/24/15 copied from LoadExperiment.pl
     my %opts = @_;
     my $url  = $opts{url};
@@ -1207,57 +1259,6 @@ sub ftp_get_file { # mdb 8/24/15 copied from LoadExperiment.pl
         path => $relative_path,
         size => -s catfile($full_path, $filename)
     };
-}
-
-sub url_for {
-    my ($path, %params) = @_;
-
-    # Error if CONFIG not set
-    croak "CONFIG was not found." unless $CONF;
-
-    my $SERVER = $CONF->{SERVER};
-    my $BASE_URL = $CONF->{URL};
-
-    # Error if SERVER not found
-    croak "SERVER option not found in CONFIG." unless $SERVER;
-
-    # Configures the default scheme
-    my $scheme = $CONF->{SECURE} ? "https://" : "http://";
-
-    # SERVER may override the default scheme
-    if ($SERVER =~ /(?<scheme>https?:\/{2})/) {
-        $scheme = $+{scheme};
-    }
-
-    # Strip leading /
-    $path =~ s/^\///;
-
-    # Strip leading and trailing /
-    $BASE_URL =~ s/^\///;
-    $BASE_URL =~ s/\/$//;
-
-    # Strip BASE URL from SERVER
-    $SERVER =~ s/$BASE_URL//i;
-
-    # Strip scheme and /
-    $SERVER =~ s/\/*$//;
-    $SERVER =~ s/^https?:\/{2}//;
-    $SERVER =~ s/\/$//;
-
-    # Build up parts and ignore BASE_URL if not set
-    my @parts = (length $BASE_URL) ? ($SERVER, $BASE_URL, $path)
-                                   : ($SERVER, $path);
-
-    # Build query string from params
-    my ($query_string, @pairs) = ("", ());
-
-    foreach my $key (sort keys %params) {
-        push @pairs, $key . "=" . $params{$key};
-    }
-
-    $query_string = "?" . join("&", @pairs) if @pairs;
-
-    return $scheme . join("/", @parts) . $query_string;;
 }
 
 1;
