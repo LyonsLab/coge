@@ -562,7 +562,9 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
           . "Users with access"
           . "</span>" );
     $anno_type->Type_delimit(": <td class='data5'>");
-    my $users = join( ', ', map { $_->display_name } $self->users );
+    my $users = ( $self->restricted ? 
+        join( ', ', map { $_->display_name } $self->users ) :
+        'Everyone' );
     $anno_type->add_Annot( $users . "</td>" );
     $anno_obj->add_Annot($anno_type);
 
