@@ -13,14 +13,12 @@ use File::Copy qw(copy);
 use File::Spec::Functions qw(catdir catfile);
 use Sort::Versions;
 use Data::Dumper;
-
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::IRODS;
 use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Core::Storage qw(get_workflow_paths get_upload_path get_irods_file);
+use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
 
 no warnings 'redefine';
 
