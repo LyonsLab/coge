@@ -143,11 +143,11 @@ sub generate_body {
     return $template->output;
 }
 
+sub upload_file {
     my %opts      = @_;
     my $filename  = '' . $FORM->param('input_upload_file');
     my $fh        = $FORM->upload('input_upload_file');
-
-    #   print STDERR "upload_file: $filename\n";
+    #print STDERR "upload_file: $filename\n";
 
     my $size = 0;
     my $path;
@@ -173,7 +173,6 @@ sub generate_body {
 }
 
 sub get_sources {
-
     #my %opts = @_;
 
     my %unique;
