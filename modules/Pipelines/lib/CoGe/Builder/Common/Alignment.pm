@@ -68,6 +68,7 @@ sub build {
         
         # Validate
         my $validate_task = create_validate_fastq_job($input_file, $done_file);
+        print STDERR Dumper $validate_task, "\n";
         push @validated, @{$validate_task->{outputs}}[0];
         push @tasks, $validate_task;
     }

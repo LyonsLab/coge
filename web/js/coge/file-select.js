@@ -147,7 +147,7 @@ var coge = window.coge = (function(namespace) {
 		
 		get_selected_files: function() {
 			var files = this.selectedFiles.filter(function(file) {
-				return ( file.path && !file.isTransferring && !file.error );
+				return ( (file.path || file.url) && !file.isTransferring && !file.error );
 			});
 			if (!files || files.length == 0)
 				return;
@@ -166,7 +166,7 @@ var coge = window.coge = (function(namespace) {
 			return this;
 		},
 		
-		_add_file_to_list: function(filename, url) {
+		_add_file_to_list: function(filename, url, username, password) { // username/password only for FTP
 			var self = this;
 			
 			// Skip if file already exists in file table
@@ -188,7 +188,13 @@ var coge = window.coge = (function(namespace) {
 			self.fileTable.append(tr).show();
 			
 			// Add file to internal list
-			var file = { name: filename, url: url, tr: tr };
+			var file = { 
+				name: filename, 
+				url: url, 
+				tr: tr
+			};
+			if (username) file.username = username;
+			if (password) file.password = password;
 			self.selectedFiles.push(file);
 
 			// Call template user's generic hander if defined
@@ -238,7 +244,10 @@ var coge = window.coge = (function(namespace) {
 			file.isTransferring = false;
 			
 			// Create view of file
-			var td1 = $('<td><span style="margin-right:15px;"><span class="text">Size:</span> ' + self._units(size) + '</span></td>').fadeIn();
+			var td1 = $('<td></td>');
+			if (size)
+				td1.html('<span style="margin-right:15px;"><span class="text">Size:</span> ' + self._units(size) + '</span>');
+			td1.fadeIn();
 			var closeIcon = $('<span class="link ui-icon ui-icon-closethick"></span>');
 			closeIcon.click(self._cancel_callback.bind(self, file));
 			var td2 = $('<td></td>').append(closeIcon).fadeIn();
@@ -496,29 +505,30 @@ var coge = window.coge = (function(namespace) {
 				}	
 			)[0];
 		},
-		
-		_ftp_get_file: function(url, username, password) {
-			var self = this;
-			$.ajax({
-				data: {
-					fname: 'ftp_get_file',
-					load_id: self.loadId,
-					url: url,
-					username: username,
-					password: password,
-				},
-				success : function(data) {
-					var obj = jQuery.parseJSON(data); //FIXME change ajax type to "json" and remove this
-					if (!obj || obj.error) {
-						console.error('ftp_get_file error: ' + (obj.error ? obj.error : 'null'));
-						self._vilify_file_in_list(url, obj.error);
-						return;
-					}
-					
-					self._finish_file_in_list('ftp', url, obj.path, obj.size);
-				},
-			});
-		},
+
+// mdb removed 8/24/15 COGE-644 -- HTTP/FTP files are now transferred in workflow
+//		_ftp_get_file: function(url, username, password) {
+//			var self = this;
+//			$.ajax({
+//				data: {
+//					fname: 'ftp_get_file',
+//					load_id: self.loadId,
+//					url: url,
+//					username: username,
+//					password: password,
+//				},
+//				success : function(data) {
+//					var obj = jQuery.parseJSON(data); //FIXME change ajax type to "json" and remove this
+//					if (!obj || obj.error) {
+//						console.error('ftp_get_file error: ' + (obj.error ? obj.error : 'null'));
+//						self._vilify_file_in_list(url, obj.error);
+//						return;
+//					}
+//					
+//					self._finish_file_in_list('ftp', url, obj.path, obj.size);
+//				},
+//			});
+//		},
 
 		_load_from_ftp: function() {
 			var self = this;
@@ -530,14 +540,9 @@ var coge = window.coge = (function(namespace) {
 			$('#ftp_get_button').addClass('ui-state-disabled');
 			$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Contacting host...');
 
-			$.ajax({
-				data: {
-					fname: 'load_from_ftp',
-					url: url,
-					load_id: self.loadId,
-				},
-				success : function(data) {
-					var filelist = jQuery.parseJSON(data); //FIXME change ajax type to "json" and remove this
+			coge.services.ftp_list(url)
+				.done(function(result) {
+					var filelist = result.items;
 					if (!filelist || filelist.length == 0) {
 						alert("Location not found.");
 						return;
@@ -555,22 +560,25 @@ var coge = window.coge = (function(namespace) {
 						function(obj) {
 							setTimeout(
 								function() {
-									if (self._add_file_to_list(obj.name, obj.url)) {
-										self._ftp_get_file(obj.url, username, password);
+									if (self._add_file_to_list(obj.name, obj.url, username, password)) {
+										//self._ftp_get_file(obj.url, username, password); // mdb removed 8/24/15 COGE-644
+										self._finish_file_in_list('ftp', obj.url, obj.path, obj.size); // mdb added 8/24/15 COGE-644
 									}
 									if (--self.filecount == 0) { // FTP transfer complete
 										$('#ftp_get_button').removeClass('ui-state-disabled');
 										$('#ftp_status').html('');
 									}
 								},
-								500 * count++
+								250 * count++
 							);
 						}
 					);
-				},
-			});
+				})
+				.fail(function() {
+					//TODO
+				});
 		},
-
+		
 		_load_from_ncbi: function() {
 			var self = this;
 			
