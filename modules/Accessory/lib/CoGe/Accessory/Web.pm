@@ -27,6 +27,7 @@ use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
 use URI;
+use namespace::clean; # needs to be last, http://blog.twoshortplanks.com/2010/07/17/clea/
 
 =head1 NAME
 
