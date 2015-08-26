@@ -819,11 +819,13 @@ sub gff {
 
     # Generate GFF header
     print STDERR "Generating GFF header\n" if $debug;
-    my %chrs;
-    foreach my $chr ( $ds->get_chromosomes( ftid => 4 ) ) {
-        $chrs{$chr} = $ds->last_chromosome_position($chr);
-    }
-    my @chrs = keys %chrs;
+# mdb removed 8/26/15 -- performance improvement
+#    my %chrs;
+#    foreach my $chr (get_chromosomes_from_features($dbh, undef, $self->id)) { #( $ds->get_chromosomes( ftid => 4 ) ) {
+#        $chrs{$chr} = $ds->last_chromosome_position($chr);
+#    }
+    my $chrs = $ds->first_genome->chromosome_lengths_by_name(); # mdb added 8/26/15 -- performance improvement
+    my @chrs = keys %$chrs;
     @chrs = ($chromosome) if ($chromosome);
     
     my $tmp;
@@ -835,8 +837,8 @@ sub gff {
     $output .= $tmp if $tmp;
     print $tmp if $print && !$no_gff_head;
     foreach my $chr (@chrs) {
-        next unless $chrs{$chr};
-        $tmp = "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
+        next unless $chrs->{$chr};
+        $tmp = "##sequence-region $chr 1 " . $chrs->{$chr} . "\n";
         $output .= $tmp;
         print $tmp if $print;
     }
