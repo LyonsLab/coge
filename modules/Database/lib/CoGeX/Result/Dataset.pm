@@ -807,6 +807,7 @@ sub gff {
     $FEATURE_ANNOS = get_feature_annotations($dbh, undef, $self->id);
     print STDERR "Pre-caching feature locations\n" if $debug;
     $FEATURE_LOCS  = get_locations($dbh, undef, $self->id);
+    print STDERR "Indexing features by name\n" if $debug;
     foreach (values %$FEATURE_NAMES) {
         foreach my $fname (values %$_) {
             my $name = $fname->{name};
@@ -817,6 +818,7 @@ sub gff {
     }
 
     # Generate GFF header
+    print STDERR "Generating GFF header\n" if $debug;
     my %chrs;
     foreach my $chr ( $ds->get_chromosomes ) {
         $chrs{$chr} = $ds->last_chromosome_position($chr);
@@ -840,6 +842,7 @@ sub gff {
     }
 
     # Generate GFF entries
+    print STDERR "Generating GFF entries\n" if $debug;
     my %fids = ();  #skip fids that we have processed
     my %types;      #track the number of different feature types encountered
     my %ids2names;  #lookup table for unique id numbers to unique id names (determined by $id_type)
