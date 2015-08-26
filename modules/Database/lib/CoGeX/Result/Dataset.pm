@@ -799,9 +799,13 @@ sub gff {
 
     # mdb added 7/28/15 - performance improvement
     my $dbh = $self->{_result_source}{schema}{storage}->dbh;
+    print STDERR "Pre-caching features\n" if $debug;
     $FEATURES      = get_features($dbh, undef, $self->id);
+    print STDERR "Pre-caching feature names\n" if $debug;
     $FEATURE_NAMES = get_feature_names($dbh, undef, $self->id);
+    print STDERR "Pre-caching feature annotations\n" if $debug;
     $FEATURE_ANNOS = get_feature_annotations($dbh, undef, $self->id);
+    print STDERR "Pre-caching feature locations\n" if $debug;
     $FEATURE_LOCS  = get_locations($dbh, undef, $self->id);
     foreach (values %$FEATURE_NAMES) {
         foreach my $fname (values %$_) {
