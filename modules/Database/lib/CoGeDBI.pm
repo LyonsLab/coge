@@ -568,7 +568,7 @@ sub get_chromosomes {
     my $sth = $dbh->prepare($query);
     $sth->execute();
     my $results = $sth->fetchall_arrayref({});
-    print STDERR Dumper $results, "\n";
+    #print STDERR Dumper $results, "\n";
     
     return wantarray ? @$results : $results;
 }
