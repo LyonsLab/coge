@@ -819,13 +819,17 @@ sub gff {
 
     # Generate GFF header
     print STDERR "Generating GFF header\n" if $debug;
-    my %chrs;
-    foreach my $chr ( $ds->get_chromosomes ) {
-        $chrs{$chr} = $ds->last_chromosome_position($chr);
-    }
+# mdb removed 8/26/15 -- performance improvement
+#    my %chrs;
+#    foreach my $chr ( $ds->get_chromosomes ) {
+#        $chrs{$chr} = $ds->last_chromosome_position($chr);
+#    }
+    # mdb added 8/26/15 -- performance improvement
+    my %chrs = map { $_->{chr} => $_->{stop} } CoGeDBI::get_chromosomes($dbh, undef, $self->id);
+    
     my @chrs = keys %chrs;
     @chrs = ($chromosome) if ($chromosome);
-
+    
     my $tmp;
     $tmp = "##gff-version\t3\n" unless $no_gff_head;
     $tmp .= "##CoGe Dataset ID: ".$ds->id."\n";
