@@ -520,6 +520,9 @@ sub gen_body {
 	my $depth_overlap = 40;
 	$depth_overlap = $FORM->param('do') if $FORM->param('do');
 	$template->param( DEPTH_OVERLAP => $depth_overlap );
+	
+	$template->param( FRAC_BIAS => "checked" ) if $FORM->param('fb');
+	$template->param( WINDOW_SIZE => $FORM->param('ws') ) if $FORM->param('ws');
 
 	$template->param( 'BOX_DIAGS' => "checked" ) if $FORM->param('bd');
 	my $spa = $FORM->param('sp') if $FORM->param('sp');
@@ -2583,7 +2586,7 @@ sub go {
 					[ '--windowsize', $opts{window_size},          0 ],
 					[ '--output',     $output_dir,                 0 ]
 				],
-				inputs      => [$condensed, $gff_job->{outputs}],
+				inputs      => [$condensed, $gff_job->{outputs}->[0]],
 				outputs     => [ $output_dir . 'html/fractbias_figure1.png' ],
 				description => "Running Fractination Bias...",
 			}
@@ -3157,20 +3160,23 @@ sub get_results {
 			my $frac_image_url = _filename_to_link(
 				file     => $output_dir . 'html/fractbias_figure1.png',
 				msg      => qq{Fractionation Bias},
-				required => 1,
+				required => 1
 			);
 			$results->param( frac_bias => $frac_image_url );
 			$gff_sort_output_file = _filename_to_link(
-				file => $output_dir . 'gff_sort_output_file',
-				msg  => qq{GFF Sort output file}
+				file => $output_dir . 'gff_sort.txt',
+				msg  => qq{GFF Sort output file},
+				required => 1
 			);
 			$synmap_dictionary_output_file = _filename_to_link(
-				file => $output_dir . 'synmap_dictionary_output_file',
-				msg  => qq{SynMap dictionary output file}
+				file => $output_dir . 'synmap_data_structure.txt',
+				msg  => qq{SynMap dictionary output file},
+				required => 1
 			);
 			$fract_bias_raw_output_file = _filename_to_link(
-				file => $output_dir . 'fract_bias_raw_output_file',
-				msg  => qq{Fractionation Bias raw output file}
+				file => $output_dir . 'fractbias_output.csv',
+				msg  => qq{Fractionation Bias raw output file},
+				required => 1
 			);
 		}
 
@@ -3468,7 +3474,6 @@ sub get_results {
 				result   => undef
 			  };
 		}
-
 		$results->param( files => $rows );
 
 		########################################################################

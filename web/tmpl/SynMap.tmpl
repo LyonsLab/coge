@@ -186,11 +186,11 @@ div.deleted { display: none; }
         <ul style="list-style-type: none; padding: 0; margin: 0;">
             <li>
                 <label>Run:</label>
-                <input type="checkbox" id="frac_bias" name="frac_bias" />
+                <input type="checkbox" id="frac_bias" name="frac_bias" <tmpl_var name=frac_bias> />
             </li>
             <li>
                 <label>Window size:</label>
-                <input type="text" id="window_size" name="window_size" />
+                <input type="text" id="window_size" name="window_size" value="<tmpl_var name=window_size>" />
             </li>
         </ul>
     </fieldset>
