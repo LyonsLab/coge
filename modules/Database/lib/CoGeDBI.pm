@@ -45,7 +45,8 @@ BEGIN {
         get_genomes_for_user get_experiments_for_user get_lists_for_user
         get_groups_for_user get_group_access_table get_datasets
         get_feature_counts get_features get_feature_types
-        get_feature_names get_feature_annotations get_locations get_chromosomes
+        get_feature_names get_feature_annotations get_locations 
+        get_chromosomes get_chromosomes_from_features
     );
 }
 
@@ -571,6 +572,32 @@ sub get_chromosomes {
     #print STDERR Dumper $results, "\n";
     
     return wantarray ? @$results : $results;
+}
+
+sub get_chromosomes_from_features {
+    my $dbh = shift;         # database connection handle
+    my $genome_id = shift;   # genome id
+    my $dataset_id = shift;  # dataset id
+    return unless ($dbh and ($genome_id or $dataset_id));
+    
+    # Execute query
+    my $query = qq{
+        SELECT f.chromosome AS chr
+        FROM dataset_connector AS dc 
+        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
+    };
+    if ($genome_id) {
+        $query .= " WHERE dc.genome_id=$genome_id";
+    }
+    else { # dataset_id
+        $query .= " WHERE dc.dataset_id=$dataset_id";
+    }
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_hashref(['chr']);
+    #print STDERR Dumper $results, "\n";
+    
+    return wantarray ? keys %$results : [ keys %$results ];
 }
 
 1;
