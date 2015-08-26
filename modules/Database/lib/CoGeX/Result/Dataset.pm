@@ -825,7 +825,7 @@ sub gff {
 #        $chrs{$chr} = $ds->last_chromosome_position($chr);
 #    }
     my $chrs = $ds->first_genome->chromosome_lengths_by_name(); # mdb added 8/26/15 -- performance improvement
-    my @chrs = keys %$FEATURES_BY_NAME;
+    my @chrs = keys %FEATURES_BY_NAME;
     @chrs = ($chromosome) if ($chromosome);
     
     my $tmp;
