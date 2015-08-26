@@ -11,7 +11,7 @@ use Data::Dumper;
 
 use CoGe::Accessory::Utils qw(sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
 
 require Exporter;
@@ -190,6 +190,31 @@ sub create_iget_job {
     };
 }
 
+sub create_ftp_get_job {
+    my %opts = @_;
+    my $url = $opts{url};
+    my $username = $opts{username} // ''; #/;
+    my $password = $opts{password} // ''; #/;
+    my $dest_path = $opts{dest_path};
+    
+    my ($filename, $path) = split_url($url);
+    my $output_file = catdir($dest_path, $path, $filename);
+    
+    return {
+        cmd => catfile($CONF->{SCRIPTDIR}, "ftp.pl"),
+        script => undef,
+        args => [
+            ['-url',       "'".$url."'",       0],
+            ['-username',  "'".$username."'",  0],
+            ["-password",  "'".$password."'",  0],
+            ["-dest_path", $dest_path,         0]
+        ],
+        inputs => [],
+        outputs => [ $output_file ],
+        description => "Fetching $url..."
+    };
+}
+
 sub create_data_retrieval_workflow {
     my %opts = @_;
     my $upload_dir = $opts{upload_dir};
@@ -200,11 +225,13 @@ sub create_data_retrieval_workflow {
         my $type = lc($item->{type});
         
         # Check if the file already exists which will be the case if called
-        # via the load page.  
-        my $filepath = catfile($upload_dir, $item->{path});
-        if (-r $filepath) {
-            push @files, $filepath;
-            next;
+        # via the load page.
+        if ($item->{path}) {
+            my $filepath = catfile($upload_dir, $item->{path});
+            if (-r $filepath) {
+                push @files, $filepath;
+                next;
+            }
         }
         
         # Create task based on source type (IRODS, HTTP, FTP)
@@ -215,7 +242,12 @@ sub create_data_retrieval_workflow {
             $task = create_iget_job(irods_path => $irods_path, local_path => $upload_dir);
         }
         elsif ($type eq 'http' or $type eq 'ftp') {
-            #TODO
+            $task = create_ftp_get_job(
+                url => $item->{url} || $item->{path},
+                username => $item->{username},
+                pasword => $item->{password},
+                dest_path => $upload_dir
+            );
         }
         
         # Add task to workflow

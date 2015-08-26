@@ -77,7 +77,7 @@ $description = unescape($description);
 $link        = unescape($link);
 $version     = unescape($version);
 $source_name = unescape($source_name);
-$restricted  = '0' if ( not defined $restricted );
+$restricted  = '0' if ( not defined $restricted ); # doesn't really matter, datasets inherit permissions from genome
 
 if (not defined $user_id and not defined $user_name) {
     print STDOUT "log: error: user not specified, use user_id or user_name\n";

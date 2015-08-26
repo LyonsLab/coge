@@ -110,10 +110,6 @@ $.extend(AnnotationDescriptionView.prototype, {
             this.el.find('#edit_description').val(this.metadata.description);
             this.el.find('#edit_version').val(this.metadata.version);
             this.edit_source.val(this.metadata.source);
-
-            if (!this.metadata.restricted)
-                this.el.find('#restricted').removeAttr('checked');
-
             this.el.find('#edit_genome').val(this.metadata.genome);
         }
     },
@@ -167,7 +163,6 @@ $.extend(AnnotationDescriptionView.prototype, {
         var description = this.el.find('#edit_description').val();
         var link = this.el.find('#edit_link').val();
         var version = this.el.find('#edit_version').val();
-        var restricted = this.el.find('#restricted').is(':checked');
         var genome = this.el.find('#edit_genome').val();
 
         if (!genome || genome === 'Search' || !this.gid) {
@@ -195,7 +190,6 @@ $.extend(AnnotationDescriptionView.prototype, {
                 description: description,
                 link: link,
                 version: version,
-                restricted: restricted,
                 source: source,
                 genome: genome,
             },

@@ -71,6 +71,10 @@ var coge = window.coge = (function(namespace) {
 			return this._ajax("GET", BASE_URL + "irods/list/" + path);
 		},
 		
+		ftp_list: function(url) {
+			return this._ajax("GET", BASE_URL + "ftp/list/", null, { url: url });
+		},
+		
 		_ajax: function(type, url, data, opts) { //, success, error) {
 			var self = this;
 			
