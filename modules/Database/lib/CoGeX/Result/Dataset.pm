@@ -5,8 +5,8 @@ use warnings;
 use Data::Dumper;
 use POSIX;
 use Carp qw (cluck);
-use CoGe::Core::Storage qw( reverse_complement );
-use CoGeDBI;
+use CoGe::Core::Storage qw(reverse_complement);
+use CoGeDBI qw(get_features get_feature_names get_feature_annotations get_locations);
 
 use base 'DBIx::Class::Core';
 
@@ -821,7 +821,7 @@ sub gff {
     print STDERR "Generating GFF header\n" if $debug;
 # mdb removed 8/26/15 -- performance improvement
 #    my %chrs;
-#    foreach my $chr (get_chromosomes_from_features($dbh, undef, $self->id)) { #( $ds->get_chromosomes( ftid => 4 ) ) {
+#    foreach my $chr ( $ds->get_chromosomes() ) {
 #        $chrs{$chr} = $ds->last_chromosome_position($chr);
 #    }
     my $chrs = $ds->first_genome->chromosome_lengths_by_name(); # mdb added 8/26/15 -- performance improvement
