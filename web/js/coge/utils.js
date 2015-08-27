@@ -110,7 +110,10 @@ var coge = window.coge = (function(ns) {
     	    return str;
     	},
     	
-    	wait_to_search: function(search_func, search_obj) {
+    	wait_to_search: function(search_func, search_obj, wait_time) {
+    		if (!wait_time)
+    			wait_time = 250;
+    		
     		if (waitToSearchTimer)
     			clearTimeout(waitToSearchTimer);
 
@@ -118,7 +121,7 @@ var coge = window.coge = (function(ns) {
     			function() {
     				search_func(search_obj.value);
     			},
-    			250
+    			wait_time
     		);
     	}
     };
