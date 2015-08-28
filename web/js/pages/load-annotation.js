@@ -19,14 +19,21 @@ function create_source() {
 }
 
 function search_genomes (search_term) {
+	var edit_genome = $("#edit_genome");
+	edit_genome.autocomplete("close");
+	var spinner = $('#edit_genome_busy');
+	spinner.show();
+	
 	coge.services.search_genomes(search_term)
-		.done(function(result) {
-			var transformed = result.genomes.map(function(obj) {
-				return { label: obj.info, value: obj.id };
+		.done(function(response) {
+			var results = response.genomes.map(function(obj) {
+				var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
+				return { label: label, value: obj.id };
 			});
-			$("#edit_genome")
-				.autocomplete({source: transformed})
+			edit_genome
+				.autocomplete({source: results})
 				.autocomplete("search");
+			spinner.hide();
 		})
 		.fail(function() {
 			//TODO
