@@ -5,6 +5,9 @@ use Data::Dumper;
 
 sub startup {
     my $self = shift;
+    
+    # mdb added 8/27/15 -- prevent "Your secret passphrase needs to be changed" message
+    $self->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies
 
     my $r = $self->routes->namespaces(["CoGe::Services::Data"]);
     

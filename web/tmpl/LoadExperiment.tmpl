@@ -67,22 +67,17 @@
 
         <div class="form-field">
             <label class="col-md-2">Version:</label>
-            <input id="edit_version" type="textbox" class="col-md-8" size="10" title="Enter whatever version info you would like for the new experiment. Note: the system will automatically prepend a 'v' to whatever you enter." value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
+            <input id="edit_version" type="textbox" class="col-md-2" size="10" title="Enter whatever version info you would like for the new experiment. Note: the system will automatically prepend a 'v' to whatever you enter." value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
 
         <div class="form-field">
             <label class="col-md-2">Source:</label>
-
-            <div>
                 <input id="edit_source" type="search" class="col-md-6" placeholder="Search" title="Enter the source for the data for the new experiment. Start typing to select an exisisting source or click 'New' to add a source." size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
-
                 <div class="col-md-2">
                     <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
+                    <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
                 </div>
-            </div>
-
-            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
 
         <div class="form-field">
@@ -92,9 +87,11 @@
 
         <div class="form-field">
             <label class="col-md-2">Genome:</label>
-            <input class="col-md-8" id="edit_genome" type="search" placeholder="Search"
+            <input class="col-md-6" id="edit_genome" type="search" placeholder="Search"
             	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
-            	size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" />
+            	size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" 
+            	style="float:left;" />
+            <img id="edit_genome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
     </div>
