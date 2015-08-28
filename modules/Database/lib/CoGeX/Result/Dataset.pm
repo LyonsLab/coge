@@ -5,8 +5,8 @@ use warnings;
 use Data::Dumper;
 use POSIX;
 use Carp qw (cluck);
-use CoGe::Core::Storage qw( reverse_complement );
-use CoGeDBI;
+use CoGe::Core::Storage qw(reverse_complement);
+use CoGeDBI qw(get_features get_feature_names get_feature_annotations get_locations);
 
 use base 'DBIx::Class::Core';
 
@@ -799,10 +799,15 @@ sub gff {
 
     # mdb added 7/28/15 - performance improvement
     my $dbh = $self->{_result_source}{schema}{storage}->dbh;
+    print STDERR "Pre-caching features\n" if $debug;
     $FEATURES      = get_features($dbh, undef, $self->id);
+    print STDERR "Pre-caching feature names\n" if $debug;
     $FEATURE_NAMES = get_feature_names($dbh, undef, $self->id);
+    print STDERR "Pre-caching feature annotations\n" if $debug;
     $FEATURE_ANNOS = get_feature_annotations($dbh, undef, $self->id);
+    print STDERR "Pre-caching feature locations\n" if $debug;
     $FEATURE_LOCS  = get_locations($dbh, undef, $self->id);
+    print STDERR "Indexing features by name\n" if $debug;
     foreach (values %$FEATURE_NAMES) {
         foreach my $fname (values %$_) {
             my $name = $fname->{name};
@@ -813,13 +818,16 @@ sub gff {
     }
 
     # Generate GFF header
-    my %chrs;
-    foreach my $chr ( $ds->get_chromosomes ) {
-        $chrs{$chr} = $ds->last_chromosome_position($chr);
-    }
-    my @chrs = keys %chrs;
+    print STDERR "Generating GFF header\n" if $debug;
+# mdb removed 8/26/15 -- performance improvement
+#    my %chrs;
+#    foreach my $chr ( $ds->get_chromosomes() ) {
+#        $chrs{$chr} = $ds->last_chromosome_position($chr);
+#    }
+    my $chrs = $ds->first_genome->chromosome_lengths_by_name(); # mdb added 8/26/15 -- performance improvement
+    my @chrs = keys %FEATURES_BY_NAME;
     @chrs = ($chromosome) if ($chromosome);
-
+    
     my $tmp;
     $tmp = "##gff-version\t3\n" unless $no_gff_head;
     $tmp .= "##CoGe Dataset ID: ".$ds->id."\n";
@@ -829,13 +837,14 @@ sub gff {
     $output .= $tmp if $tmp;
     print $tmp if $print && !$no_gff_head;
     foreach my $chr (@chrs) {
-        next unless $chrs{$chr};
-        $tmp = "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
+        next unless $chrs->{$chr};
+        $tmp = "##sequence-region $chr 1 " . $chrs->{$chr} . "\n";
         $output .= $tmp;
         print $tmp if $print;
     }
 
     # Generate GFF entries
+    print STDERR "Generating GFF entries\n" if $debug;
     my %fids = ();  #skip fids that we have processed
     my %types;      #track the number of different feature types encountered
     my %ids2names;  #lookup table for unique id numbers to unique id names (determined by $id_type)
