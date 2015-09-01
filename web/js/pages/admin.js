@@ -1,13 +1,14 @@
 var user_is_admin = false;
 var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common location
 var timestamps = new Array();
-var jobs_timers = new Array();
+//var jobs_timers = new Array();
 var hist_timers = new Array();
 var current_tab = 0;
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
-var jobs_updating = true;
-var jobs_init = false;
-var running_only = 1;
+var jobs_grid;
+//var jobs_updating = true;
+//var jobs_init = false;
+//var running_only = 1;
 var hist_init = false;
 var user_graph_init = false;
 var group_graph_init = false;
@@ -34,7 +35,7 @@ $(function () {
             schedule_update(5000);
         },
 		show: function(event, ui) {
-			if (current_tab == 1 && !jobs_init) {
+			if (current_tab == 1 && !jobs_grid) {
 				init_jobs_grid();
 			}
 			if (current_tab == 2 && !hist_init) {
@@ -74,15 +75,19 @@ $(function () {
     $("#show_select,#job_search_type").change(function(e) {
         update_filter();
     });
-    $("#job_update_checkbox").change(function(e) {
-    	toggle_job_updater();
-    });
-    $("#running_checkbox").change(function(e) {
-    	toggle_running();
-    });
+    /*$("#job_update_checkbox")
+    	.change(function(e) {
+    		jobs_grid.toggle_updater();
+    	})
+    	.disabled(true);
+    $("#running_checkbox")
+    	.change(function(e) {
+    		toggle_running();
+    	})
+    	.disabled(true);
     $("#hist_update_checkbox").change(function(e) {
     	toggle_hist_updater();
-    });
+    })*/;
     $("#histogram").dialog({autoOpen: false, width: 500, height: 500});
     
     //Setup idle timer
@@ -114,78 +119,13 @@ $(function () {
 
 //Initialize the Jobs tab
 function init_jobs_grid() {
-	var searchFilter = function(item, args) {
-        var link = item['link'] ? item['link'].toLowerCase() : '',
-            tool = item['tool'] ? item['tool'].toLowerCase() : '',
-            status = item['status'] ? item['status'].toLowerCase() : '',
-            started = item['started'] ? item['started'].toLowerCase() : '',
-            completed = item['completed'] ? item['completed'].toLowerCase() : '',
-            user = item['user'] ? item['user'].toLowerCase() : '';
-
-        if (args.searchType == 1) {
-            if (args.searchString != "" &&
-                link.indexOf(args.searchString) == -1 &&
-                tool.indexOf(args.searchString) == -1 &&
-                status.indexOf(args.searchString) == -1 &&
-                started.indexOf(args.searchString) == -1 &&
-                completed.indexOf(args.searchString) == -1
-                && user.indexOf(args.searchString) == -1) {
-                return false;
-            }
-        } else {
-            if (args.searchString != "" &&
-                link.indexOf(args.searchString) != -1 ||
-                tool.indexOf(args.searchString) != -1 ||
-                status.indexOf(args.searchString) != -1 ||
-                started.indexOf(args.searchString) != -1 ||
-                completed.indexOf(args.searchString) != -1
-
-                || user.indexOf(args.searchString) != -1 ) {
-                return false;
-            }
-        }
-
-        return true;
-    };
-
-    var job_options = {
-        editable: true,
-        enableCellNavigation: true,
-        asyncEditorLoading: true,
-        forceFitColumns: true,
-        filter: searchFilter,
-        comparator: coge.ascending,
-    };
-
-    var checkbox = new Slick.CheckboxSelectColumn({
-            cssClass: 'slick-cell-checkboxsel'
-    });
-
-    var linkformatter = function(row, cell, value, columnDef, dataContext) {
-        return '<a href="' + dataContext['link'] + '" target="_blank">'
-        + dataContext['link'] + '</a>'
-    }
-    var job_columns = [
-        checkbox.getColumnDefinition(),
-        {id: 'id', name: 'Id', field: 'parent_id', maxWidth: 50, sortable: true},
-        {id: 'started', name: 'Started', field: 'started', minWidth: 75,
-            sortable: true},
-        {id: 'completed', name: 'Completed', field: 'completed', minWidth: 75,
-            sortable: true},
-        {id: 'elapsed', name: 'Elapsed', field: 'elapsed', minWidth: 55,
-            sortable: true},
-        {id: 'user', name: 'User', field: 'user', sortable: true, minWidth: 75},
-        {id: 'tool', name: 'Tool', field: 'tool', minWidth: 75,
-            sortable: true},
-        {id: 'link', name: 'Link to Analysis', field: 'link', minWidth: 250,
-            sortable: false, formatter: linkformatter },
-        {id: 'status', name: 'Status', field: 'status', minWidth: 75,
-            sortable: true}
-    ];
-
-    window.jobs = new coge.Grid('#jobs', job_options, job_columns);
-    jobs.grid.registerPlugin(checkbox);
-    get_jobs();
+	jobs_grid = new JobGrid({
+		elementId: "jobs",
+		filter: "none",
+		running_only: 1,
+		schedule_update: schedule_update,
+		cancel_update: cancel_update,
+	});
 }
 
 //Initialize the History tab
@@ -336,7 +276,7 @@ function init_hist_grid() {
 
 //initialize Reports tab
 function init_reports() {
-	reports_grid = new DataGrid({
+	reports_grid = new ReportGrid({
 		elementId: "reports",
 		filter: "none",
 		selection: "total",
@@ -1110,35 +1050,164 @@ function wait_to_search(search_func, search_term) {
 }
 
 //The following javascript deals with Tab2, the Jobs tab
-var job_flag = false;
-function get_jobs() {
-	if(!job_flag) {
-		job_flag = true;
-		cancel_update("jobs");
-		$.ajax({
-			dataType: 'json',
-		    data: {
-		        jquery_ajax: 1,
-		        fname: 'get_jobs',
-		        time_range: 0,
-		        running_only: running_only,
-		    },
-		    success: function(data) {
-		        jobs.load(data.jobs);
-		        entries = data.jobs.length;
-		        $("#filter_busy").hide();
-		        update_filter();
-		        jobs_init = true;
-		    },
-		    complete: function(data) {
-		    	job_flag = false;
-		    	schedule_update(5000);
-		    }
-		});
-	}
+function JobGrid(params) {
+	this.elementId = params.elementId;
+	this.filter = params.filter;
+	this.running_only = params.running_only;
+	this.schedule_update = params.schedule_update;
+	this.cancel_update = params.cancel_update;
+	this.timers = new Array();
+	this.updating = true;
+	this.flag = false;
+	this.data;
+	this.table;
+	
+	this.initialize();
 }
 
-function update_filter() {
+$.extend(JobGrid.prototype, {
+	initialize: function() {
+		var self = this;
+		$('#' + self.elementId).hide();
+		$('#' + self.elementId + '_loading').show();
+		//$('#report_filter').prop('disabled', true);
+		//$('#histogram_button').prop('disabled', true);
+		$('#' + this.elementId).html('<table id="' + this.elementId + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+				+ '<thead><tr><th>ID</th><th>Started</th><th>Completed</th><th>Elapsed</th><th>User</th><th>Tool</th><th>Link to Analysis</th><th>Status</th></tr></thead></table>');
+		$('#' + self.elementId + '_update_checkbox').change(function(e) {
+    		self.toggle_updating.call(self);
+    	});
+		$('#' + self.elementId + '_running_checkbox').change(function(e) {
+			self.toggle_running.call(self);
+		});
+		$('#' + self.elementId + '_cancel').click( function () {
+			self.cancel_job.call(self);
+		});
+		
+		self.get_data.call(self);
+	},
+	get_data: function() {
+		var self = this;
+		if(!self.flag) {
+			self.flag = true;
+			cancel_update("jobs");
+			//$("#" + self.elementId + "_update_checkbox").prop('disabled', true);
+		    //$("#" + self.elementId + "_running_checkbox").prop('disabled', true);
+			$.ajax({
+				dataType: 'json',
+			    data: {
+			        jquery_ajax: 1,
+			        fname: 'get_jobs',
+			        time_range: 0,
+			        running_only: self.running_only,
+			    },
+			    success: function(data) {
+			    	console.log(data)
+			    	self.data = data.data;
+			    	self.table = $('#' + self.elementId + '_table').DataTable().clear().rows.add(self.data).draw();
+					
+			    	$('#' + self.elementId + '_loading').hide();
+					$('#' + self.elementId).show();
+			    },
+			    complete: function(data) {
+			    	self.flag = false;
+
+			    	$('#' + self.elementId + '_table tbody').off( 'click' );
+					$('#' + self.elementId + '_table tbody').on( 'click', 'tr', function () {
+				        if ( $(this).hasClass('selected') ) {
+				            $(this).removeClass('selected');
+				        }
+				        else {
+				            self.table.$('tr.selected').removeClass('selected');
+				            $(this).addClass('selected');
+				        }
+				    } );
+			    	
+			    	self.schedule_update(5000);
+			    }
+			});
+		}
+	},
+	update: function(delay) {
+		var self = this;
+		if (self.updating) {
+			console.log("Updating jobs");
+			self.cancel_update("jobs");
+			self.timers['update'] = window.setTimeout(
+				function() { self.get_data.call(self); },
+				delay
+			);
+		}
+	},
+	toggle_updating: function() {
+		var self = this;
+		self.updating = !self.updating;
+		if (self.updating) {
+			self.schedule_update(5000);
+		}
+	},
+	toggle_running: function() {
+		var self = this;
+		if(self.running_only == 0) {
+			self.running_only = 1;
+		} else {
+			self.running_only = 0;
+		}
+		self.get_data();
+	},
+	cancel_job: function() {
+		var self = this;
+		var parent_id = self.table.row('.selected').data()[0];
+	    self.submit_task("cancel_job", parent_id);
+		
+		self.get_jobs.call(self);
+	},
+	restart_job: function() {
+		var self = this;
+		var parent_id = self.table.row('.selected').data()[0];
+	    self.submit_task("restart_job", parent_id);
+	    
+	    self.get_jobs.call(self);
+	},
+	submit_task: function(task, parent_id) {
+		var self = this;
+	    /*var selectedIndexes = window.jobs.grid.getSelectedRows();
+
+	    var selectedRows = selectedIndexes.map(function(item) {
+	        return window.jobs.dataView.getItem(item);
+	    });
+
+	    var validRows = selectedRows.filter(predicate);
+
+	    // No rows were valid
+	    if (!validRows.length) return;*/
+
+	    //jQuery.each(validRows, function(index,row) {
+	        var argument_list =  {
+	            fname: task,
+	            job: parent_id,
+	        };
+
+	        $.ajax({
+	            type: "GET",
+	            dataType: "json",
+	            data: argument_list,
+	            success: function(data) {
+	                if (data.status) {
+	                	
+	                    //row.status = data.status;
+	                    //window.jobs.dataView.updateItem(row.id, row);
+	                }
+	            }
+	        });
+	    //});
+
+	    // Deselect all rows
+	   // window.jobs.grid.setSelectedRows([]);
+	}
+});
+
+/*function update_filter() {
     jobs.dataView.setFilterArgs({
         show: $('#show_select').val(),
         searchType: $('#job_search_type').val(),
@@ -1147,34 +1216,13 @@ function update_filter() {
 
     jobs.filter();
     $('#job_filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
-}
-
-function toggle_job_updater() {
-	jobs_updating = !jobs_updating;
-	if (jobs_updating) {
-		schedule_update(5000);
-	}
-}
-
-function toggle_running() {
-	if(running_only == 0) {
-		running_only = 1;
-	} else {
-		running_only = 0;
-	}
-	get_jobs();
-}
+}*/
 
 function schedule_update(delay) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME && delay !== undefined) {
-		if(current_tab == 1 && jobs_updating) {
-			console.log("Updating jobs");
-			cancel_update("jobs");
-			jobs_timers['update'] = window.setTimeout(
-				function() { get_jobs(); },
-				delay
-			);
+		if(current_tab == 1 && jobs_grid) {
+			jobs_grid.update(delay);
 		}
 		if(current_tab == 2 && hist_updating && hist_init) {
 			console.log("Updating hist");
@@ -1189,60 +1237,12 @@ function schedule_update(delay) {
 }
 
 function cancel_update(page) {
-	//if(page == "jobs") {
-		clearTimeout(jobs_timers['update']);
-	//}
+	if(jobs_grid) {
+		clearTimeout(jobs_grid.timers['update']);
+	}
 	//if(page == "hist") {
 		clearTimeout(hist_timers['update']);
 	//}
-}
-
-function cancel_job() {
-    submit_task("cancel_job", function(row) {
-        return row.status.toLowerCase() === 'running'
-    });
-}
-
-function restart_job() {
-    submit_task("restart_job", function(row) {
-        return row.status.toLowerCase() === 'cancelled' ||
-               row.status.toLowerCase() === 'stopped';
-    });
-}
-
-function submit_task(task, predicate) {
-    var selectedIndexes = window.jobs.grid.getSelectedRows();
-
-    var selectedRows = selectedIndexes.map(function(item) {
-        return window.jobs.dataView.getItem(item);
-    });
-
-    var validRows = selectedRows.filter(predicate);
-
-    // No rows were valid
-    if (!validRows.length) return;
-
-    jQuery.each(validRows, function(index,row) {
-        var argument_list =  {
-            fname: task,
-            job: row.parent_id,
-        };
-
-        $.ajax({
-            type: "GET",
-            dataType: "json",
-            data: argument_list,
-            success: function(data) {
-                if (data.status) {
-                    row.status = data.status;
-                    window.jobs.dataView.updateItem(row.id, row);
-                }
-            }
-        });
-    });
-
-    // Deselect all rows
-    window.jobs.grid.setSelectedRows([]);
 }
 
 
@@ -1675,7 +1675,7 @@ $.extend(Force.prototype, {
 });
 
 //Tab 5, Summary
-function DataGrid(params) {
+function ReportGrid(params) {
 	this.elementId = params.elementId;
 	this.filter = params.filter;
 	this.selection = params.selection;
@@ -1684,7 +1684,7 @@ function DataGrid(params) {
 	this.initialize();
 }
 
-$.extend(DataGrid.prototype, {
+$.extend(ReportGrid.prototype, {
 	initialize: function() {
 		var self = this;
 		var element = this.elementId;
@@ -1724,6 +1724,7 @@ $.extend(DataGrid.prototype, {
 			success: function(data) {
 				$('#' + element + '_loading').hide();
 				json = JSON.parse(data);
+				console.log(json);
 				var values = [];
 				var max_value = 0;
 				var min_value = Number.MAX_SAFE_INTEGER;

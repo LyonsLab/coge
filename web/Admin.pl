@@ -92,12 +92,12 @@ sub gen_html {
 
 sub gen_body {
 	# Hide this page if the user is not an Admin
-	#unless ( $USER->is_admin ) {
-	#	my $template =
-	#	  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
-	#	$template->param( ADMIN_ONLY => 1 );
-	#	return $template->output;
-	#}
+	unless ( $USER->is_admin ) {
+		my $template =
+		  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+		$template->param( ADMIN_ONLY => 1 );
+		return $template->output;
+	}
 
 	my $template =
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
@@ -984,27 +984,41 @@ sub get_jobs_for_user {
         # A log entry must correspond to a workflow
         next unless $entry;
         
-        push @job_items, {
-            id => int($index++),
-            parent_id => $_->parent_id,
-            user  => $users{$_->user_id} || "public",
-            tool  => $_->page,
-            link  => $_->link,
-            %{$entry}
-        };
+        # [ID, Started, Completed, Elapsed, User, Tool, Link. Status]
+        push @job_items, [
+            $_->parent_id,
+            #int($index++),
+            $entry->{started},
+            $entry->{completed},
+            $entry->{elapsed},
+            $users{$_->user_id} || "public",
+            $_->page,
+            $_->link,
+            $entry->{status},
+        ];
     }
     my @filtered;
 
     # Filter repeated entries
     foreach (reverse @job_items) {
-        my $wid = $_->{parent_id};
+    	my @job = @$_;
+        #my $wid = $_->{parent_id};
+        my $wid = $job[0];
         next if (defined $wid and defined $workflow_results{$wid}{seen});
         $workflow_results{$wid}{seen}++ if (defined $wid);
 
-        unshift @filtered, $_;
+		#shift @job;
+        unshift @filtered, \@job;
     }
 
-    return encode_json({ jobs => \@filtered });
+    return encode_json({ 
+    	data => \@filtered,
+    	#bPaginate => 0,
+		#columnDefs => [{ 
+		#	orderSequence => [ "desc", "asc" ], 
+		#	targets => [1, 2, 3, 4, 5],
+		#}],
+    });
 }
 
 sub cancel_job {
