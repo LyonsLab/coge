@@ -57,7 +57,7 @@ open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
     add_users_to_group              => \&add_users_to_group,
     remove_user_from_group          => \&remove_user_from_group,
     change_group_role               => \&change_group_role,
-    get_history_for_user            => \&get_history_for_user,
+    get_history            			=> \&get_history_for_user,
     toggle_star                     => \&toggle_star,
     update_comment                  => \&update_comment,
     update_history                  => \&update_history,
@@ -1014,10 +1014,10 @@ sub get_jobs_for_user {
     return encode_json({ 
     	data => \@filtered,
     	#bPaginate => 0,
-		#columnDefs => [{ 
-		#	orderSequence => [ "desc", "asc" ], 
-		#	targets => [1, 2, 3, 4, 5],
-		#}],
+		columnDefs => [{ 
+			orderSequence => [ "desc", "asc" ], 
+			targets => [0, 1, 2],
+		}],
     });
 }
 
@@ -1103,20 +1103,20 @@ sub get_history_for_user {
 
     my @items;
     foreach (@entries) {
-        push @items,
-          {
-            id          => $_->id,
-            starred     => ( $_->status != 0 ),
-            date_time   => $_->time,
-            user        => ( $_->user_id ? $users{ $_->user_id } : 'public' ),
-            page        => $_->page,
-            description => $_->description,
-            link        => ( $_->link ? $_->link : '' ),
-            comment     => $_->comment
-          };
+    	#[Date/Time, User, Page, Descrition, Link, Comment]
+        push @items, [
+			#id          => $_->id,
+			#starred     => ( $_->status != 0 ),
+			$_->time,
+			( $_->user_id ? $users{ $_->user_id } : 'public' ),
+			$_->page,
+			$_->description,
+			( $_->link ? $_->link : '' ),
+			$_->comment
+		];
     }
 
-    return encode_json(\@items);
+    return encode_json({data => \@items});
 }
 
 sub toggle_star {
@@ -1169,20 +1169,20 @@ sub update_history {
     
     my @items;
     foreach (@entries) {
-        push @items,
-          {
-            id          => $_->id,
-            starred     => ( $_->status != 0 ),
-            date_time   => $_->time,
-            user        => ( $_->user_id ? $users{ $_->user_id } : 'public' ),
-            page        => $_->page,
-            description => $_->description,
-            link        => ( $_->link ? $_->link : '' ),
-            comment     => $_->comment
-          };
+    	#[Date/Time, User, Page, Descrition, Link, Comment]
+        push @items, [
+            #id          => $_->id,
+            #starred     => ( $_->status != 0 ),
+			$_->time,
+			( $_->user_id ? $users{ $_->user_id } : 'public' ),
+			$_->page,
+			$_->description,
+			( $_->link ? $_->link : '' ),
+			$_->comment
+		];
     }
 
-    return encode_json(\@items);
+    return encode_json({new_rows => \@items});
 }	
 
 

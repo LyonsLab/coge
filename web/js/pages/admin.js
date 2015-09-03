@@ -6,14 +6,10 @@ var hist_timers = new Array();
 var current_tab = 0;
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
 var jobs_grid;
-//var jobs_updating = true;
-//var jobs_init = false;
-//var running_only = 1;
-var hist_init = false;
+var hist_grid;
 var user_graph_init = false;
 var group_graph_init = false;
-var hist_updating = true;
-var hist_entries = 0;
+//var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 var reports_grid;
@@ -38,7 +34,7 @@ $(function () {
 			if (current_tab == 1 && !jobs_grid) {
 				init_jobs_grid();
 			}
-			if (current_tab == 2 && !hist_init) {
+			if (current_tab == 2 && !hist_grid) {
 				init_hist_grid();
 			}
 			if (current_tab == 4 && !reports_grid) {
@@ -121,7 +117,7 @@ $(function () {
 function init_jobs_grid() {
 	jobs_grid = new JobGrid({
 		elementId: "jobs",
-		filter: "none",
+		//filter: "none",
 		running_only: 1,
 		schedule_update: schedule_update,
 		cancel_update: cancel_update,
@@ -130,147 +126,10 @@ function init_jobs_grid() {
 
 //Initialize the History tab
 function init_hist_grid() {
-	var hist_filter = function(item, args) {
-    	var date_time 	= (item['date_time'] ? item['date_time'].toLowerCase() : '');
-    	var user_name 	= (item['user'] ? item['user'].toLowerCase() : '');
-    	var description = (item['description'] ? item['description'].toLowerCase() : '');
-    	var page 		= (item['page'] ? item['page'].toLowerCase() : '');
-    	var link 		= (item['link'] ? item['link'].toLowerCase() : '');
-    	var comment 	= (item['comment'] ? item['comment'].toLowerCase() : '');
-
-    	var show = 1;
-    	if (args.show != 0) {
-    		if (args.show == -1) { // Starred
-    			show = item['starred'];
-    		}
-    		else if (args.show == -2) { // Commented
-    			show = comment;
-    		}
-    		else if (args.show == -3) { // Mine
-    			show = (user_name == '<TMPL_VAR NAME="USER_NAME">');
-    		}
-    		else if (args.show > 0) { // Time Range
-    			var diff = new Date() - new Date(date_time.replace(/-/g, '/'));
-    			show = (diff <= args.show*60*60*1000);
-    		}
-    	}
-    	if (!show) {
-    		return false;
-    	}
-
-    	if (args.searchString != "") {
-    		//FIXME optimize
-    		if (args.searchType == 1) { // Contains
-    			if (date_time.indexOf(args.searchString) == -1 &&
-    				user_name.indexOf(args.searchString) == -1 &&
-    				description.indexOf(args.searchString) == -1 &&
-    				page.indexOf(args.searchString) == -1 &&
-    				link.indexOf(args.searchString) == -1 &&
-    				comment.toLowerCase().indexOf(args.searchString) == -1 )
-    			{
-    				return false;
-    			}
-    		}
-    		else { // Does not contain
-    			if (date_time.indexOf(args.searchString) != -1 ||
-    				user_name.indexOf(args.searchString) != -1 ||
-    				description.indexOf(args.searchString) != -1 ||
-    				page.indexOf(args.searchString) != -1 ||
-    				link.indexOf(args.searchString) != -1 ||
-    				comment.toLowerCase().indexOf(args.searchString) != -1 )
-    			{
-    				return false;
-    			}
-    		}
-    	}
-
-    	return true;
-    };
-    
-    var hist_options = {
-    		editable: true,
-    		enableCellNavigation: true,
-    		asyncEditorLoading: true,
-    		forceFitColumns: true,
-    		filter: hist_filter,
-            comparator: coge.ascending,
-    };
-    
-    var hist_columns = [
-               	{id: "starred", name: "", field: "starred", maxWidth: 25, cssClass: "cell-centered",
-               		formatter: function (row, cell, value, columnDef, dataContext) {
-               			if (value) {
-               				return '<img id="'+dataContext['id']+'" src="picts/star-full.png" onclick="toggle_star(this);">'
-               			}
-               			return '<img id="'+dataContext['id']+'" src="picts/star-hollow.png" onclick="toggle_star(this);">';
-               		}},
-               	{id: "date_time", name: "Date/Time", field: "date_time", minWidth: 160, maxWidth: 160, sortable: true, cssClass: "cell-centered"},
-               	{id: "user", name: "User", field: "user", minWidth: 30, maxWidth: 80, sortable: true, cssClass: "cell-normal"/*,
-               		formatter: function ( row, cell, value, columnDef, dataContext ) {
-                           return '<a target="_blank" href="User.pl?name=' + value + '">' + value + '</a>';
-                       }*/},
-               	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 100, sortable: true, cssClass: "cell-normal"},
-               	{id: "description", name: "Description", field: "description", minWidth: 100, sortable: true, cssClass: "cell-normal",
-               		formatter: function ( row, cell, value, columnDef, dataContext ) {
-                           return '<span>' + value + '</span>';
-                       }},
-               	{id: "link", name: "Link", field: "link", minWidth: 100, maxWidth: 250, cssClass: "cell-normal",
-               		formatter: function ( row, cell, value, columnDef, dataContext ) {
-                           return '<a target="_blank" href="' + value + '">' + value + '</a>';
-                       }},
-               	{id: "comment", name: "Comments (click to edit)", field: "comment", minWidth: 100, sortable: true, cssClass: "cell-normal",
-               		editor: Slick.Editors.Text, validator: requiredFieldValidator}
-               ];
-    
-    window.hist = new coge.Grid('#history', hist_options, hist_columns);
-    get_history();
-    
-    hist.grid.onCellChange.subscribe(function (e, args) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'update_comment',
-				log_id: args.item.id,
-				comment: args.item.comment
-			},
-			success: function() {
-				hist.dataView.updateItem(args.item.id, args.item);
-			}
-		});
-	});
-    
-    hist.grid.onSort.subscribe(function (e, args) {
-		sortcol = args.sortCol.field;
-		hist.dataView.sort(args.sortAsc);
-	});
-
-	// Wire up model events to drive the grid
-	hist.dataView.onRowCountChanged.subscribe(function (e, args) {
-		hist.grid.updateRowCount();
-		hist.grid.render();
-		if ($("#history").is(":not(visible)")) {
-			$("#history").slideDown();
-		}
-	});
-	hist.dataView.onRowsChanged.subscribe(function (e, args) {
-		hist.grid.invalidateRows(args.rows);
-		hist.grid.render();
-	});
-
-	// Wire up the show selector to apply the filter to the model
-	$("#hist_show_select,#hist_search_type").change(function (e) {
-		updateHistFilter();
-	});
-
-	// Wire up the search textbox to apply the filter to the model
-	$("#hist_search_input").keyup(function (e) {
-		Slick.GlobalEditorLock.cancelCurrentEdit();
-
-		if (e.which == 27) { // Clear on Esc
-			this.value = "";
-		}
-
-		updateHistFilter();
+	hist_grid = new HistGrid({
+		elementId: "history",
+		schedule_update: schedule_update,
+		cancel_update: cancel_update,
 	});
 }
 
@@ -1052,7 +911,7 @@ function wait_to_search(search_func, search_term) {
 //The following javascript deals with Tab2, the Jobs tab
 function JobGrid(params) {
 	this.elementId = params.elementId;
-	this.filter = params.filter;
+	//this.filter = params.filter;
 	this.running_only = params.running_only;
 	this.schedule_update = params.schedule_update;
 	this.cancel_update = params.cancel_update;
@@ -1083,6 +942,21 @@ $.extend(JobGrid.prototype, {
 		$('#' + self.elementId + '_cancel').click( function () {
 			self.cancel_job.call(self);
 		});
+		$('#' + self.elementId + '_restart').click( function () {
+			self.restart_job.call(self);
+		});
+		
+		//Setup table formatting
+		self.table = $('#' + self.elementId + '_table').DataTable({
+    		columnDefs : [
+    		              { 
+    		            	  orderSequence : [ "desc", "asc" ], 
+    		            	  targets : [0, 1, 2] 
+    		              }
+    		             ],
+    		iDisplayLength: 25,
+    		order: [[1, "desc"]],
+	    });
 		
 		self.get_data.call(self);
 	},
@@ -1090,7 +964,7 @@ $.extend(JobGrid.prototype, {
 		var self = this;
 		if(!self.flag) {
 			self.flag = true;
-			cancel_update("jobs");
+			self.cancel_update("jobs");
 			//$("#" + self.elementId + "_update_checkbox").prop('disabled', true);
 		    //$("#" + self.elementId + "_running_checkbox").prop('disabled', true);
 			$.ajax({
@@ -1104,7 +978,10 @@ $.extend(JobGrid.prototype, {
 			    success: function(data) {
 			    	console.log(data)
 			    	self.data = data.data;
-			    	self.table = $('#' + self.elementId + '_table').DataTable().clear().rows.add(self.data).draw();
+			    	self.table
+				    	.clear()
+				    	.rows.add(self.data)
+				    	.draw();
 					
 			    	$('#' + self.elementId + '_loading').hide();
 					$('#' + self.elementId).show();
@@ -1160,63 +1037,32 @@ $.extend(JobGrid.prototype, {
 		var parent_id = self.table.row('.selected').data()[0];
 	    self.submit_task("cancel_job", parent_id);
 		
-		self.get_jobs.call(self);
+		self.get_data.call(self);
 	},
 	restart_job: function() {
 		var self = this;
 		var parent_id = self.table.row('.selected').data()[0];
 	    self.submit_task("restart_job", parent_id);
-	    
-	    self.get_jobs.call(self);
+
+	    self.get_data.call(self);
 	},
 	submit_task: function(task, parent_id) {
 		var self = this;
-	    /*var selectedIndexes = window.jobs.grid.getSelectedRows();
+		var argument_list =  {
+			fname: task,
+			job: parent_id,
+		};
 
-	    var selectedRows = selectedIndexes.map(function(item) {
-	        return window.jobs.dataView.getItem(item);
-	    });
-
-	    var validRows = selectedRows.filter(predicate);
-
-	    // No rows were valid
-	    if (!validRows.length) return;*/
-
-	    //jQuery.each(validRows, function(index,row) {
-	        var argument_list =  {
-	            fname: task,
-	            job: parent_id,
-	        };
-
-	        $.ajax({
-	            type: "GET",
-	            dataType: "json",
-	            data: argument_list,
-	            success: function(data) {
-	                if (data.status) {
-	                	
-	                    //row.status = data.status;
-	                    //window.jobs.dataView.updateItem(row.id, row);
-	                }
-	            }
-	        });
-	    //});
-
-	    // Deselect all rows
-	   // window.jobs.grid.setSelectedRows([]);
+		$.ajax({
+			type: "GET",
+			dataType: "json",
+			data: argument_list,
+			success: function(data) {
+				//DO NOTHING (atm)
+			}
+		});
 	}
 });
-
-/*function update_filter() {
-    jobs.dataView.setFilterArgs({
-        show: $('#show_select').val(),
-        searchType: $('#job_search_type').val(),
-        searchString: $('#job_search_bar').val().toLowerCase()
-    });
-
-    jobs.filter();
-    $('#job_filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
-}*/
 
 function schedule_update(delay) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
@@ -1224,13 +1070,8 @@ function schedule_update(delay) {
 		if(current_tab == 1 && jobs_grid) {
 			jobs_grid.update(delay);
 		}
-		if(current_tab == 2 && hist_updating && hist_init) {
-			console.log("Updating hist");
-			cancel_update("hist");
-			hist_timers['update'] = window.setTimeout(
-				function() { update_history(); },
-				delay
-			);
+		if(current_tab == 2 && hist_grid) {
+			hist_grid.update(delay);
 		}
 		return;
 	}	
@@ -1240,14 +1081,136 @@ function cancel_update(page) {
 	if(jobs_grid) {
 		clearTimeout(jobs_grid.timers['update']);
 	}
-	//if(page == "hist") {
-		clearTimeout(hist_timers['update']);
-	//}
+	if(hist_grid) {
+		clearTimeout(hist_grid.timers['update']);
+	}
 }
 
 
 //The following Javascript deals with Tab3, the History page
-var hist_flag = false;
+function HistGrid(params) {
+	this.elementId = params.elementId;
+	this.schedule_update = params.schedule_update;
+	this.cancel_update = params.cancel_update;
+	this.timers = new Array();
+	this.updating = true;
+	this.flag = false;
+	this.data;
+	this.table;
+	this.last_update;
+	
+	this.initialize();
+}
+
+$.extend(HistGrid.prototype, {
+	initialize: function() {
+		var self = this;
+		$('#' + self.elementId).hide();
+		$('#' + self.elementId + '_loading').show();
+		$('#' + this.elementId).html('<table id="' + this.elementId + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+				+ '<thead><tr><th>Date/Time</th><th>User</th><th>Page</th><th>Description</th><th>Link</th><th>Comments</th></tr></thead></table>');
+		$('#' + self.elementId + '_update_checkbox').change(function(e) {
+    		self.toggle_updating.call(self);
+    	});
+		
+		//Setup table formatting
+		self.table = $('#' + self.elementId + '_table').DataTable({
+    		columnDefs : [
+    		              { 
+    		            	  orderSequence : [ "desc", "asc" ], 
+    		            	  targets : [0] 
+    		              }
+    		             ],
+    		iDisplayLength: 25,
+    		order: [[0, "desc"]],
+	    });
+		
+		self.get_data.call(self);
+	},
+	get_data: function() {
+		var self = this;
+		if(!self.flag) {
+			self.flag = true;
+			self.cancel_update("hist");
+			$.ajax({
+				dataType: 'json',
+			    data: {
+			        jquery_ajax: 1,
+			        fname: 'get_history',
+			        time_range: 0,
+			    },
+			    success: function(data) {
+			    	console.log(data)
+			    	self.data = data.data;
+			    	self.table
+				    	.clear()
+				    	.rows.add(self.data)
+				    	.draw();
+			    	console.log(self.data[0][0])
+			    	self.last_update = self.data[0][0];
+					
+			    	$('#' + self.elementId + '_loading').hide();
+					$('#' + self.elementId).show();
+			    },
+			    complete: function(data) {
+			    	self.flag = false;
+
+			    	$('#' + self.elementId + '_table tbody').off( 'click' );
+					$('#' + self.elementId + '_table tbody').on( 'click', 'tr', function () {
+				        if ( $(this).hasClass('selected') ) {
+				            $(this).removeClass('selected');
+				        }
+				        else {
+				            self.table.$('tr.selected').removeClass('selected');
+				            $(this).addClass('selected');
+				        }
+				    } );
+			    	
+			    	self.schedule_update(5000);
+			    }
+			});
+		}
+	},
+	update: function(delay) {
+		var self = this;
+		if (self.updating) {
+			console.log("Updating hist");
+			self.cancel_update("hist");
+			self.timers['update'] = window.setTimeout(
+				function() {
+					$.ajax({
+						dataType: 'json',
+						data: {
+							jquery_ajax: 1,
+							fname: 'update_history',
+							timestamp: self.last_update,
+							time_range: 0,
+						},
+						success: function(data) {
+							console.log(data);
+							if(data.new_rows[0]) {
+								self.table.rows.add(data.new_rows).draw();
+								self.last_update = data.new_rows[0].date_time;
+							}
+						},
+						complete: function(data) {
+							self.schedule_update(5000);
+					    }
+					})
+				},
+				delay
+			);
+		}
+	},
+	toggle_updating: function() {
+		var self = this;
+		self.updating = !self.updating;
+		if (self.updating) {
+			self.schedule_update(5000);
+		}
+	}
+});
+/*var hist_flag = false;
 function get_history() {
 	if(!hist_flag) {
 		hist_flag = true;
@@ -1330,7 +1293,7 @@ function toggle_star(img) {
 			else { $(img).attr({src:"picts/star-full.png"}); }
 		}
 	});
-}
+}*/
 
 
 //Tab 4, the User Graph
