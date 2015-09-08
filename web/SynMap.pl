@@ -185,7 +185,7 @@ $PYTHON        = $config->{PYTHON};                    #this was for python2.5
 $PYTHON26      = $config->{PYTHON};
 $DAG_TOOL      = 'nice ' . $SCRIPTDIR . 'dag_tools.py';
 $BLAST2BED     = $SCRIPTDIR . 'blast2bed.pl';
-$GENE_ORDER    = $SCRIPTDIR . 'gene_order.py";
+$GENE_ORDER    = $SCRIPTDIR . 'gene_order.py';
 $TANDEM_FINDER = $config->{TANDEM_FINDER}
   . " -d 5 -s -r"
   ; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
