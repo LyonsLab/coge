@@ -71,19 +71,6 @@ $(function () {
     $("#show_select,#job_search_type").change(function(e) {
         update_filter();
     });
-    /*$("#job_update_checkbox")
-    	.change(function(e) {
-    		jobs_grid.toggle_updater();
-    	})
-    	.disabled(true);
-    $("#running_checkbox")
-    	.change(function(e) {
-    		toggle_running();
-    	})
-    	.disabled(true);
-    $("#hist_update_checkbox").change(function(e) {
-    	toggle_hist_updater();
-    })*/;
     $("#histogram").dialog({autoOpen: false, width: 500, height: 500});
     
     //Setup idle timer
@@ -1190,7 +1177,7 @@ $.extend(HistGrid.prototype, {
 							console.log(data);
 							if(data.new_rows[0]) {
 								self.table.rows.add(data.new_rows).draw();
-								self.last_update = data.new_rows[0].date_time;
+								self.last_update = data.new_rows[0][0];
 							}
 						},
 						complete: function(data) {
