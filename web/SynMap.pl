@@ -3157,12 +3157,9 @@ sub get_results {
 		my $fract_bias_raw_output_file;
 		if ( $opts{frac_bias} =~ /true/i ) {
 			my $output_dir = $config->{DIAGSDIR} . $dir1 . '/' . $dir2 . '/';
-			my $frac_image_url = _filename_to_link(
-				file     => $output_dir . 'html/fractbias_figure1.png',
-				msg      => qq{Fractionation Bias},
-				required => 1
-			);
-			$results->param( frac_bias => $frac_image_url );
+			my $output_url = $output_dir;
+			$output_url =~ s/$DIR/$URL/;
+			$results->param( frac_bias => $output_url . 'html/fractbias_figure1.png' );
 			$gff_sort_output_file = _filename_to_link(
 				file => $output_dir . 'gff_sort.txt',
 				msg  => qq{GFF Sort output file},

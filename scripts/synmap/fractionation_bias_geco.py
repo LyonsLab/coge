@@ -1,11 +1,11 @@
-# coding: utf-8
+"""Geco version of FractBias SynMap Tool"""
+#geco specific code highlighted by '<--------' comments
 
-"""Imports"""
-#Sets matplotlib to not output figures in a window (will cause an error if removed)
-import matplotlib
+#Sets matplotlib to not output figures in a window (will cause an error if removed) <--------
+import matplotlib #<--------
 matplotlib.use('Agg')
 
-#Specifically for using code on server
+#Specifically for using code on server     <--------
 #Allows arguments in command line
 import argparse
 parser = argparse.ArgumentParser()
@@ -17,10 +17,10 @@ parser.add_argument("--windowsize", help="Sets the size of the sliding window fo
 parser.add_argument("--output", help="File path to output directory. Specify SynMap directory: 'storage/coge/data/diags' file path.")
 args = parser.parse_args()
 
-#For importing data and parsing data
+
+#For importing data and parsing data and benchmarking program
 from operator import itemgetter
-import pprint
-from optparse import OptionParser
+from datetime import datetime, timedelta
 
 #Converting parsed data into raw parsed data output to csv
 import csv
@@ -29,13 +29,11 @@ from itertools import islice, izip
 
 #For analyzing raw parsed data
 import collections, re
+from collections import OrderedDict
 
     #had to uninstall python-dateutil and use old version dateutil 2.2 to avoid error
     #sudo pip uninstall python-dateutil
     #sudo pip install python-dateutil==2.2
-
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np 
 import matplotlib.gridspec as gridspec
@@ -45,15 +43,19 @@ import matplotlib.gridspec as gridspec
 from natsort import natsorted, natsort_key
 import matplotlib
 
+#PATH TO RUN IN DESKTOP
+#Sorghum/Maize comparison
+#python fractionation_bias_geco.py --align /home/bjoyce3/sorghum_maize/Sorghum_maize_synmap_results.txt --gff /home/bjoyce3/sorghum_maize/Sorghum_bicolor_annos1-cds0-id_typename-nu1-upa1-add_chr0.gid6807.gff --target 6807 --windowsize 100 --output /home/bjoyce3/sorghum_maize/
 
-# In[8]:
+#pina/rice comparison
+#python fractionation_bias_geco.py --align /home/bjoyce3/pinarice/SynMapKsMerge120Sdepth10_Osativa-Acomosus2-1Acomv6.txt --gff /home/bjoyce3/pinarice/Ananas_comosus_pineapple_v6.gff --target 25734 --windowsize 100 --output /home/bjoyce3/pinarice
+
 
 """Methods and Global Variables"""
 
-
-#For importing data and parsing
-synmap_import_file = args.align
-gff_import_file = args.gff
+#For importing data and parsing <---------
+synmap_import_file = args.align     #<-----------
+gff_import_file = args.gff     #<-----------
 
 # initialize dictionary to contain the array of syntenic genome1_chrs, genome1_genes, genome2_chrs, and genome2_genes
 d = {}
@@ -68,20 +70,17 @@ with open(gff_import_file) as gff_file:
             species_name = genus_species.replace(' ','_')
             species_name_filter = species_name.translate(None, '(){}[]')
 
-#Create output file path for text and csv: args.output = = storage/coge/data/diags/lowestID/highestID/
-#Parsed data and raw output to csv files
+
+#Parsed data and raw output to csv <-----------
 gff_sort_output_file = (args.output+"gff_sort.txt")
 synmap_dictionary_output_file = (args.output+"synmap_data_structure.txt")
 fract_bias_raw_output_file = (args.output+"fractbias_output.csv")
 
 #Analysis of parsed data
-retention_calc_output_file = ("fractbias_sliding_window_output.csv")
+retention_calc_output_file = ("fractbias_sliding_window_output.csv") #<--------
 target_lst = []
 query_lst = []
 
-#Tests genome IDs for target and query genomes passed into program
-
-#Creates a data structure containing the number of target chromosomes and query chromosomes
 def chr_id(input_dict):
     for item in input_dict:
         if not item in target_lst:
@@ -109,36 +108,57 @@ def window(seq, n):
 #gff_import_file = '/Users/bjoyce3/Desktop/SynMapFractBiasInput/Sorghum-MaizeSynMap/Sorghum_bicolor_annos1-cds0-id_typename-nu1-upa1-add_chr0.gid6807.gff'
 
 
-# In[9]:
+'''Importing Data and Making Data Structures'''
+# 
+# Reads SynMap and GFF files and parse data into data arrays. 
+# 
+# SynMap data is put into nested dictionary called 'd':
+# d{target_chr
+#     {target_gene
+#         {query_chr
+#             {query gene}
+#   }}}
+# 
+# GFF data is put into a nested dictionary call 'gff_genes':
+# 
 
-"""Importing
-Reads SynMap and GFF CDS files and parse data into columns in array
 """
+Reads SynMap and GFF files and parse data into columns in array
 
-print "making synmap data structure"
+"""
+print "Making Synmap Data Structure"
+t0 = datetime.now()
 
 with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic genes
     synmap_rowcount = 0
     cols = []  # list for parsing columns from SynMap data
     for line in f:  # for loop to parse columns
         new_line = line.replace('||', '\t')  #converts || into tabs for universal delimination
-        if line[0] != '#' and line[0] != '\n':  #sorts out columns containing syntenic block information/headings
+        if line[0] != '#' and line[0] != '\n' and line[0] != '{' and line[0] != '}' and (line[0] != "\\"):  #sorts out columns containing syntenic block information/headings
             cols = new_line.split('\t', )  #splits all syntenic gene pair lines into parsed columns in a list
             synmap_rowcount += 1
-            if synmap_rowcount == 1:
+            global target_chr
+            global target_gene
+            global query_chr
+            global query_gene
+            if synmap_rowcount == 1:            
                 #clean ID subgenome A from the column on left of data
                 ida = cols[2]
                 ida = ida[1:cols[2].index('_')]
             if args.target == ida:
-                target_chr = cols[3]
-                target_gene = str(cols[6]).rstrip('.')  #puts all genome1_genes with synteny into a list
-                query_chr = str(cols[15])  #puts all genome2_chrs with synteny to genes in genome1 into a list
-                query_gene = str(cols[18]).rstrip('.')  #puts all genome2_genes with synteny to genes in a genome1 into a list
+                if 'scaffold' not in cols[3] and 'Scaffold' not in cols[3]:
+                    target_chr = cols[3]
+                    target_gene = str(cols[6]).rstrip('.')  #puts all genome1_genes with synteny into a list
+                if 'scaffold' not in cols[15] and 'Scaffold' not in cols[15]:
+                    query_chr = str(cols[15])  #puts all genome2_chrs with synteny to genes in genome1 into a list
+                    query_gene = str(cols[18]).rstrip('.')  #puts all genome2_genes with synteny to genes in a genome1 into a list
             else:
-                target_chr = cols[15]
-                target_gene = str(cols[18])  #puts all genome1_genes with synteny into a list
-                query_chr = str(cols[3])  #puts all genome2_chrs with synteny to genes in genome1 into a list
-                query_gene = str(cols[6])  #puts all genome2_genes with synteny to genes in a genome1 into a list
+                if 'scaffold' not in cols[15] and 'Scaffold' not in cols[15]:
+                    target_chr = cols[15]
+                    target_gene = str(cols[18])  #puts all genome1_genes with synteny into a list
+                if 'scaffold' not in cols[3] and 'Scaffold' not in cols[3]:
+                    query_chr = str(cols[3])  #puts all genome2_chrs with synteny to genes in genome1 into a list
+                    query_gene = str(cols[6])  #puts all genome2_genes with synteny to genes in a genome1 into a list
 
             if not target_chr in d:
                 d[target_chr] = {}  #initializes the nested dictionary-primary level at genome1_chromosome
@@ -146,16 +166,12 @@ with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic
                 d[target_chr][target_gene] = {}  #initializes first nesting in dictionary-second level at genome1_genes
             if not query_chr in d[target_chr][target_gene]:
                 d[target_chr][target_gene][query_chr] = query_gene  #initializes nested dictionary-third level at genome2_chr
-            
-print "finished synmap data structure"          
 
+t1 = datetime.now()
 
-# In[ ]:
+'''Reads GFF from target genome and puts into data strcuture gff_genes'''
+print "Reading GFF File"
 
-
-'''Reads GFF from genome1 (target) and parses data'''
-
-print "reading gff file"
 
 with open(gff_import_file, 'r') as g:  # opens gff file
     gffcols = []  #list of parsed gff columns
@@ -175,38 +191,29 @@ with open(gff_import_file, 'r') as g:  # opens gff file
                 if not chr in gff_genes:
                     gff_genes[chr] = []  #initializes chr list in dictionary if chr does not exist yet
                 gff_genes[chr].append(dict(gene_name=gene_name1, start=start, stop=stop))
-
-print "finished reading gff"
-
-'''Sorts GFF genes within chromosome by start position'''
-
-print "sorting gff"
-
+                
+'''Sorts GFF genes within target chromosomes by start position'''
 for chr in gff_genes:
     gff_genes_sorted = sorted(gff_genes[chr], key=itemgetter('start'))  #Creates dictionary for searching genes against::CONSIDER sorting on midpoint of genes rather than
     gff_genes[chr] = gff_genes_sorted
 
-print "gff sorted"
-
     #CONSIDER WRITING A CHECK PROGRAM TO RETURN TRUE IF ALL VALUES ARE SORTED OR FALSE
 
-
-# In[ ]:
+t2 = datetime.now()
 
 '''Writes out SynMap dictionary and sorted GFF gene list to document for parsed output'''
-print "writing out gff and synmap data structure to csv "
+print "Writing Out GFF and SynMap Data Structure to CSV"
+
 
 with open(str(gff_sort_output_file), 'w') as h:
-    h.write(str(gff_genes))
+	h.write(str(gff_genes))
 with open(synmap_dictionary_output_file, 'w+') as i:
     i.write(str(d))
 
-
-# In[ ]:
+t3 = datetime.now()
 
 '''Determine syntenic gene pairs present and output Raw Data CSV file from parsed data'''
-
-print "calling syntenic pairs and processing raw synmap data"
+print "Calling Syntenic Pairs and Processing Raw SynMap Data"
 
 chr_id(d)
 target_lst = natsorted(target_lst)
@@ -250,20 +257,25 @@ with open(str(fract_bias_raw_output_file), 'w') as csvfile:
             rows.extend(syntenic_query_gene_name)
             writer.writerow(rows)
 
+t4 = datetime.now()
 
-print "finished calling syntenic pairs present/absent"
+# Analysis of Data Structures
+# Looks through each chromosome in target genome (tchr), and goes through each gene gene on that target chromosome
+# (determined by the GFF uploaded above according to bp position on that target chromosome) to compare to the query genome (query chromsomes).
 
-# In[ ]:
 
-# '''Analysis: for each chromosome in genome1 read the genes on a chromosome and compare to subgenome array of syntenic genes'''
 
-print "running sliding window analysis"
+'''Analysis: for each chromosome in target genome it reads the genes on a chromosome and compares to all query subgenomes'''
+print "Running Sliding Window Analysis"
 
 data_output0 = []
 data_output1 = []
 data_output2 = []
 data_output3 = []
 output_dict = {}
+window_size = 100
+window_size_int = 0
+
 #Process windows 100genes/sliding window and 
 #output to nested dictionary data structure output_dict{target chr:}{query chr}{window count:retention%}
 for tchr in windanalysis_input_dict:
@@ -275,21 +287,29 @@ for tchr in windanalysis_input_dict:
             output_dict[tchr] = {}  #initializes the nested dictionary-primary level at genome1_chromosome
         if not qchr in output_dict[tchr]:
             output_dict[tchr][qchr] = {}  #initializes first nesting in dictionary-second level at genome1_genes
-
+        window_size_int = int(args.windowsize) #<------------ Have to match up the two arguements to int for logical comparison below, geco sees args.input as 'string'
         try:
-            if (int(len(windanalysis_input_dict[tchr][qchr]))) >= args.windowsize:
-                for each in window(windanalysis_input_dict[tchr][qchr], args.windowsize):
+            if (int(len(windanalysis_input_dict[tchr][qchr]))) >= window_size_int:   #<--------- changed to args.windowsize
+                for each in window(windanalysis_input_dict[tchr][qchr], window_size_int):  #<--------- changed to args.windowsize
                     counter += 1
-                    data_output2 = sum(each)
-                    output_dict[tchr][qchr][counter] = data_output2                       
+                    data_output2 = float(sum(each)) / float(window_size)
+                    output_dict[tchr][qchr][counter] = round(data_output2*100.) 
         except KeyError:
             continue
 
-print "finished sliding windows analysis"
-                            
-#Sort output_dict for tchr alphanumberic at top level 
-#alphanumbsort = lambda k,v: [k, int(v)]
-#output_dict = collections.OrderedDict(sorted(output_dict.items(), key=lambda t: alphanumbsort(*re.match(r'([a-zA-Z]+)(\d+)',t[0]).groups())))
+#BRASSICA DATA DOES NOT PROCESS         
+            
+#Sort output_dict for tchr alphanumberic at top level
+#if tchr are only integers (not alpha&numeric) the except statement will sort just integers
+try:
+    alphanumbsort = lambda k,v: [k, int(v)]
+    output_dict = collections.OrderedDict(sorted(output_dict.items(), key=lambda t: alphanumbsort(*re.match(r'([a-zA-Z]+)(\d+)',t[0]).groups())))
+except AttributeError:
+    #sorted(output_dict, key=lambda x: output_dict[x])
+    natsorted(output_dict[tchr])
+    
+t5 = datetime.now()
+
 
 """#Output processed data to a csv file for downstream analysis
 with open(retention_calc_output_file, 'wb') as csvf:
@@ -302,21 +322,20 @@ with open(retention_calc_output_file, 'wb') as csvf:
             #Prints into two columns
             writer.writerows(izip( output_dict[tchr][qchr]))"""
 
-#Statistics Output NEEDS FIXING
+
+##Statistics Output NEEDS FIXING
 
 #for tchr in output_dict:
     #for qchr in output_dict[tchr]:
         #print np.mean(output_dict[tchr][qchr])
         #print np.median_grouped(output_dict[tchr][qchr])
 
+"""Plotting"""
 
-# In[ ]:
-print "Starting up plotting library"
-import matplotlib.pyplot as plt
-import numpy as np
+print "Plotting FractBias Data"
 
 #define figure size, column layout, grid layout
-figsize = (18 , 60)
+figsize = (15, 20)
 cols = 2
 gs = gridspec.GridSpec(len(output_dict) // cols + 1, cols)
 
@@ -325,16 +344,17 @@ tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
              (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),  
              (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),  
              (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),  
-             (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)]  
+             (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)] 
   
 # Scale the RGB values to the [0, 1] range, which is the format matplotlib accepts  
 for i in range(len(tableau20)):  
     r, g, b = tableau20[i]  
-    tableau20[i] = (r / 255., g / 255., b / 255.)  
+    tableau20[i] = (r / 255., g / 255., b / 255.)
 
 fig = plt.figure(figsize=figsize)
 subplt_count = -1
 ax = []
+
 for tchr in output_dict:
     subplt_count += 1
     print "Plotting target chromosome: "+str(subplt_count)
@@ -345,6 +365,7 @@ for tchr in output_dict:
     
     for qchr in output_dict[tchr]:
         count += 1
+        #print output_dict[tchr][qchr]
         if (max(output_dict[tchr][qchr].itervalues()))>0:
             x = output_dict[tchr][qchr].keys()
             y = output_dict[tchr][qchr].values()    
@@ -354,65 +375,33 @@ for tchr in output_dict:
         ax[-1].spines["right"].set_visible(False)
         ax[-1].get_xaxis().tick_bottom()
         ax[-1].get_yaxis().tick_left()
-        ax[-1].plot(x, y, color=tableau20[count], lw=3)
+        ax[-1].plot(x, y, color=tableau20[count], lw=2)
         ax[-1].set_title(label='Target Chromosome: '+species_name_filter+" "+ tchr, fontweight='bold', fontsize=14)
         ax[-1].set_xlabel('Window Iteration', fontsize=12, fontweight='bold')
-        ax[-1].set_ylabel('% Retention', fontsize=12, fontweight='bold')
+        ax[-1].set_ylabel('Retention (%)', fontsize=12, fontweight='bold')
         if (max(output_dict[tchr][qchr].itervalues()))>0:
             ax[-1].legend(output_dict[tchr], loc=1, frameon=False, title="Query Chromosome", fontsize=10)
 
 fig.tight_layout()
-plt.savefig(args.output+"html/"+"fractbias_figure1.png")
-print "finished plotting"
+plt.savefig(args.output+"html/"+"fractbias_figure1.png") #<--------
 
-# In[ ]:
-
+t6 = datetime.now()
 
 
-
-# In[ ]:
-
-"""Export Processed Fractional Bias Data to JSON File
-import json
-import csv
-
-with open("myFile.json", "w") as f:
-    json.dump(output_dict,f)
-    
-x = json.loads(output_dict)
+"""Printing Out Benchmarking Times"""
+benchmark_synmap_data = t1 - t0
+benchmark_gff_data = t2 - t1
+benchmark_output_data = t3 - t2
+benchmark_processing_data = t4 - t3
+benchmark_sliding_window = t5 - t4
+benchmark_plotting = t6 - t5
+benchmark_total = t6 - t0
 
 
-
-
-f = csv.writer(open("test.csv", "wb+"))
-
-# Write CSV Header, If you dont need that, remove this line
-#f.writerow(["pk", "model", "codename", "name", "content_type"])
-
-for x in x:
-    f.writerow([x["tchr"], 
-                x["tchr"]["qchr"]])
-"""
-
-
-# In[ ]:
-
-'''import os
-from lightning import Lightning
-
-from numpy import random, asarray, arange
-from sklearn import datasets
-from scipy.ndimage.filters import gaussian_filter
-from seaborn import color_palette
-
-
-# replace with your own host and credentials, e.g. http://localhost:3000 or http://my-lightning-server.herokuapp.com
-host = 'http://lightning-docs.herokuapp.com'
-auth = (os.getenv('LIGHTNING_USERNAME'), os.getenv('LIGHTNING_PASSWORD'))
-
-lgn = Lightning(ipython=True, host=host, auth=auth)
-lgn.create_session('fractbias');'''
-
-
-
-
+print "SynMap Data Processing Time: " + str(benchmark_synmap_data)
+print "GFF Data Processing Time: " + str(benchmark_gff_data)
+print "Data Structure Output Time: " + str(benchmark_output_data)
+print "Raw Data Processing Time: " + str(benchmark_processing_data)
+print "Sliding Window Analysis Time: " + str(benchmark_sliding_window)
+print "Plotting Graphs Time: " + str(benchmark_plotting)
+print "Total Time: " + str(benchmark_total)
