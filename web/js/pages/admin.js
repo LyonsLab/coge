@@ -17,6 +17,8 @@ var histogram;
 var tree;
 var system_graph;
 var system_graph2;
+var query_counter;
+var tab7_init = false;
 
 $(function () {
 	// Initialize CoGe web services
@@ -31,6 +33,7 @@ $(function () {
             schedule_update(5000);
         },
 		show: function(event, ui) {
+			//Remember that current_tab is 0-indexed but #tabs is 1-indexed.
 			if (current_tab == 1 && !jobs_grid) {
 				init_jobs_grid();
 			}
@@ -49,7 +52,15 @@ $(function () {
 				}
 			}
 			if (current_tab == 7) {
-				$("#tabs-8").html('<iframe src="https://genomevolution.org/greentea/" height="100%" width="100%"></iframe>');
+				if (!tab7_init) {
+					$("#tabs-8").html('<iframe src="https://genomevolution.org/greentea/" height="100%" width="100%"></iframe>');
+					tab7_init = true;
+				}
+			}
+			if (current_tab == 8) {
+				if (!query_counter) {
+					init_database_tab();
+				}
 			}
 		}
     });
@@ -126,6 +137,15 @@ function init_reports() {
 		elementId: "reports",
 		filter: "none",
 		selection: "total",
+	});
+}
+
+//Initialize Database tab
+function init_database_tab() {
+	query_counter = new Query_Counter({
+		elementId: "database",
+		schedule_update: schedule_update,
+		cancel_update: cancel_update,
 	});
 }
 
@@ -951,7 +971,7 @@ $.extend(JobGrid.prototype, {
 		var self = this;
 		if(!self.flag) {
 			self.flag = true;
-			self.cancel_update("jobs");
+			self.cancel_update();
 			//$("#" + self.elementId + "_update_checkbox").prop('disabled', true);
 		    //$("#" + self.elementId + "_running_checkbox").prop('disabled', true);
 			$.ajax({
@@ -996,7 +1016,7 @@ $.extend(JobGrid.prototype, {
 		var self = this;
 		if (self.updating) {
 			console.log("Updating jobs");
-			self.cancel_update("jobs");
+			self.cancel_update();
 			self.timers['update'] = window.setTimeout(
 				function() { self.get_data.call(self); },
 				delay
@@ -1054,22 +1074,28 @@ $.extend(JobGrid.prototype, {
 function schedule_update(delay) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME && delay !== undefined) {
-		if(current_tab == 1 && jobs_grid) {
+		if (current_tab == 1 && jobs_grid) {
 			jobs_grid.update(delay);
 		}
-		if(current_tab == 2 && hist_grid) {
+		if (current_tab == 2 && hist_grid) {
 			hist_grid.update(delay);
+		}
+		if (current_tab == 8 && query_counter) {
+			query_counter.update(delay);
 		}
 		return;
 	}	
 }
 
-function cancel_update(page) {
-	if(jobs_grid) {
+function cancel_update() {
+	if (jobs_grid) {
 		clearTimeout(jobs_grid.timers['update']);
 	}
-	if(hist_grid) {
+	if (hist_grid) {
 		clearTimeout(hist_grid.timers['update']);
+	}
+	if (query_counter) {
+		clearTimeout(query_counter.timers['update']);
 	}
 }
 
@@ -1118,7 +1144,7 @@ $.extend(HistGrid.prototype, {
 		var self = this;
 		if(!self.flag) {
 			self.flag = true;
-			self.cancel_update("hist");
+			self.cancel_update();
 			$.ajax({
 				dataType: 'json',
 			    data: {
@@ -1162,7 +1188,7 @@ $.extend(HistGrid.prototype, {
 		var self = this;
 		if (self.updating) {
 			console.log("Updating hist");
-			self.cancel_update("hist");
+			self.cancel_update();
 			self.timers['update'] = window.setTimeout(
 				function() {
 					$.ajax({
@@ -2534,5 +2560,55 @@ $.extend(System_graph.prototype, {
 			self = self.parent;
 		}
 		self.initialize();
+	}
+});
+
+var Query_Counter = function(params) {
+	this.elementId = params.elementId;
+	this.schedule_update = params.schedule_update;
+	this.cancel_update = params.cancel_update;
+	this.timers = new Array();
+	this.total_queries;
+	this.queries_per_second = 0;
+	this.updating = true;
+	this.get_data();
+}
+
+$.extend(Query_Counter.prototype, {
+	update: function(delay) {
+		var self = this;
+		if (self.updating) {
+			console.log("Updating query count");
+			self.cancel_update();
+			self.timers['update'] = window.setTimeout(
+				function() { self.get_data.call(self); },
+				delay
+			);
+		}
+	},
+	get_data: function() {
+		var self = this;
+		$.ajax({
+	        data: {
+	                fname: 'get_total_queries',
+	        },
+	        success : function(data) {
+	                if (data) {
+	                		var data = JSON.parse(data);
+	                		if (self.total_queries) {
+	                			var delta = data.Queries - self.total_queries;
+	                			console.log(delta);
+	                			self.queries_per_second = delta/5;
+	                		}
+	                		self.total_queries = data.Queries;
+	                        
+	                		$("#" + self.elementId + "_total").html("<span>Total Database Queries: " + self.total_queries + "</span>");
+	                		$("#" + self.elementId + "_per_second").html("<span>Queries per Second: " + self.queries_per_second + "</span>");
+	                }
+	        },
+	        complete: function() {
+	        	self.schedule_update(5000);
+	        }
+		});
 	}
 });

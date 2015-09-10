@@ -67,6 +67,7 @@ open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
     get_group_table					=> \&get_group_table,
     get_total_table					=> \&get_total_table,
     gen_tree_json					=> \&gen_tree_json,
+    get_total_queries				=> \&get_total_queries,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1808,7 +1809,7 @@ sub gen_tree_json {
 			return $hash;
 		}
 	};
-	
+
 	*add_fix = sub {
 		my $add_tree = $_[0];
 		my $move_tree;
@@ -1872,6 +1873,22 @@ sub gen_tree_json {
 	}
     
 	return encode_json(\%taxonomic_tree);
+}
+
+	
+####
+#DATABASE TAB
+	
+sub get_total_queries {
+	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+	#my $num_queries = CoGeDBI::get_table($db->storage->dbh, 'organism', undef, {description => "\"%;%\""}, {description => " like "});
+	
+	my $query = 'SHOW STATUS WHERE Variable_name="Queries"';
+	my $sth = $db->storage->dbh->prepare($query);
+	$sth->execute();
+	my $results = $sth->fetchall_hashref("Variable_name");
+	
+	return encode_json({Queries => $results->{Queries}->{Value}});
 }
 
 if ($fh) {
