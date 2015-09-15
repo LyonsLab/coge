@@ -40,7 +40,9 @@ sub get_cookie_session {
     my $cookie_name = $opts{cookie_name};
     my %cookies     = fetch CGI::Cookie;
 
-    print STDERR "LogUser::get_cookie_session cookie=$cookie_name " . (defined $cookies{$cookie_name} ? 'exists' : '!exists') . "\n" if $DEBUG;
+    print STDERR "LogUser::get_cookie_session cookie=$cookie_name ", (defined $cookies{$cookie_name} ? 'exists' : '!exists'), "\n" if $DEBUG;
+    print STDERR "LogUser::get_cookie_session cookies: ", Dumper \%cookies, "\n" if $DEBUG;
+
     if ( $cookie_name && ref $cookies{$cookie_name} ) {
         my %session = $cookies{$cookie_name}->value;
         return $session{session};
