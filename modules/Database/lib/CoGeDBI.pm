@@ -46,7 +46,7 @@ BEGIN {
         get_groups_for_user get_group_access_table get_datasets
         get_feature_counts get_features get_feature_types
         get_feature_names get_feature_annotations get_locations 
-        get_chromosomes get_chromosomes_from_features
+        get_chromosomes get_chromosomes_from_features get_total_queries
     );
 }
 
@@ -598,6 +598,17 @@ sub get_chromosomes_from_features {
     #print STDERR Dumper $results, "\n";
     
     return wantarray ? keys %$results : [ keys %$results ];
+}
+
+sub get_total_queries {
+	my $dbh = shift;
+	
+	my $query = 'SHOW STATUS WHERE Variable_name="Queries"';
+	my $sth = $dbh->prepare($query);
+	$sth->execute();
+	my $results = $sth->fetchall_hashref("Variable_name");
+	
+	return $results;
 }
 
 1;
