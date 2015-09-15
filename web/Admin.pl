@@ -1881,12 +1881,7 @@ sub gen_tree_json {
 	
 sub get_total_queries {
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
-	#my $num_queries = CoGeDBI::get_table($db->storage->dbh, 'organism', undef, {description => "\"%;%\""}, {description => " like "});
-	
-	my $query = 'SHOW STATUS WHERE Variable_name="Queries"';
-	my $sth = $db->storage->dbh->prepare($query);
-	$sth->execute();
-	my $results = $sth->fetchall_hashref("Variable_name");
+	my $results = CoGeDBI::get_total_queries($db->storage->dbh);
 	
 	return encode_json({Queries => $results->{Queries}->{Value}});
 }
