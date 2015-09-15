@@ -9,7 +9,7 @@ matplotlib.use('Agg')
 #Allows arguments in command line
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--align", help="File path to SynMap syntenic alignment data output (aligncoords.gcoords file)")
+parser.add_argument("--align", help="File path to SynMap syntenic alignment data output (aligncoords.gcoords.ks file)")
 parser.add_argument("--gff", help="File path to target genome GFF file")
 parser.add_argument("--target", help="Target genome CoGe ID number. The target genome is the one with fewer subgenomes. Used to determine which side of the SynMap output file the target genome data exists.")
 parser.add_argument("--windowsize", help="Sets the size of the sliding window for analysis")
@@ -368,20 +368,18 @@ for tchr in output_dict:
         #print output_dict[tchr][qchr]
         if (max(output_dict[tchr][qchr].itervalues()))>0:
             x = output_dict[tchr][qchr].keys()
-            y = output_dict[tchr][qchr].values()    
+            y = output_dict[tchr][qchr].values()
+            ax[-1].spines["top"].set_visible(False)
+            ax[-1].spines["right"].set_visible(False)
+            ax[-1].get_xaxis().tick_bottom()
+            ax[-1].get_yaxis().tick_left()
+            ax[-1].plot(x, y, color=tableau20[count], lw=2)
+            ax[-1].set_title(label='Target Chromosome: '+species_name_filter+" "+ tchr, fontweight='bold', fontsize=14)
+            ax[-1].set_xlabel('Window Iteration', fontsize=12, fontweight='bold')
+            ax[-1].set_ylabel('Retention (%)', fontsize=12, fontweight='bold')
+            ax[-1].legend(output_dict[tchr], loc=1, frameon=False, title="Query Chromosome", fontsize=10)
         else:
             continue
-        ax[-1].spines["top"].set_visible(False)
-        ax[-1].spines["right"].set_visible(False)
-        ax[-1].get_xaxis().tick_bottom()
-        ax[-1].get_yaxis().tick_left()
-        ax[-1].plot(x, y, color=tableau20[count], lw=2)
-        ax[-1].set_title(label='Target Chromosome: '+species_name_filter+" "+ tchr, fontweight='bold', fontsize=14)
-        ax[-1].set_xlabel('Window Iteration', fontsize=12, fontweight='bold')
-        ax[-1].set_ylabel('Retention (%)', fontsize=12, fontweight='bold')
-        if (max(output_dict[tchr][qchr].itervalues()))>0:
-            ax[-1].legend(output_dict[tchr], loc=1, frameon=False, title="Query Chromosome", fontsize=10)
-
 fig.tight_layout()
 plt.savefig(args.output+"html/"+"fractbias_figure1.png") #<--------
 
