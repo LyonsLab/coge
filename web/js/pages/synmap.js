@@ -1228,6 +1228,11 @@ function checkRequestSize(url) {
             alert('BlastP only works if both genomes have protein coding sequences (CDS) AND CDS is selected for both!');
             return;
         }
+        
+        if ($('#frac_bias')[0].checked && $('#depth_algo').val() == 0) {
+        	alert('You can only run Fractination Bias if you select the Quota Align algorithm for Syntenic Depth.');
+        	return;
+        }
 
         var overlay = $("#overlay").show();
 
