@@ -143,22 +143,22 @@ with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic
             global query_gene
             if synmap_rowcount == 1:            
                 #clean ID subgenome A from the column on left of data
-                ida = cols[2]
-                ida = ida[1:cols[2].index('_')]
-            if args.target == ida:
-                if 'scaffold' not in cols[3] and 'Scaffold' not in cols[3]:
-                    target_chr = cols[3]
-                    target_gene = str(cols[6]).rstrip('.')  #puts all genome1_genes with synteny into a list
-                if 'scaffold' not in cols[15] and 'Scaffold' not in cols[15]:
-                    query_chr = str(cols[15])  #puts all genome2_chrs with synteny to genes in genome1 into a list
-                    query_gene = str(cols[18]).rstrip('.')  #puts all genome2_genes with synteny to genes in a genome1 into a list
+                ida = cols[0]
+                ida = ida[1:cols[0].index('_')]
+            if args_target == ida:
+                if 'scaffold' not in cols[1] and 'Scaffold' not in cols[1]:
+                    target_chr = cols[1]
+                    target_gene = str(cols[4]).rstrip('.')  #puts all genome1_genes with synteny into a list
+                if 'scaffold' not in cols[13] and 'Scaffold' not in cols[13]:
+                    query_chr = str(cols[13])  #puts all genome2_chrs with synteny to genes in genome1 into a list
+                    query_gene = str(cols[16]).rstrip('.')  #puts all genome2_genes with synteny to genes in a genome1 into a list
             else:
-                if 'scaffold' not in cols[15] and 'Scaffold' not in cols[15]:
-                    target_chr = cols[15]
-                    target_gene = str(cols[18])  #puts all genome1_genes with synteny into a list
-                if 'scaffold' not in cols[3] and 'Scaffold' not in cols[3]:
-                    query_chr = str(cols[3])  #puts all genome2_chrs with synteny to genes in genome1 into a list
-                    query_gene = str(cols[6])  #puts all genome2_genes with synteny to genes in a genome1 into a list
+                if 'scaffold' not in cols[13] and 'Scaffold' not in cols[13]:
+                    target_chr = cols[13]
+                    target_gene = str(cols[16])  #puts all genome1_genes with synteny into a list
+                if 'scaffold' not in cols[1] and 'Scaffold' not in cols[1]:
+                    query_chr = str(cols[1])  #puts all genome2_chrs with synteny to genes in genome1 into a list
+                    query_gene = str(cols[4])  #puts all genome2_genes with synteny to genes in a genome1 into a list
 
             if not target_chr in d:
                 d[target_chr] = {}  #initializes the nested dictionary-primary level at genome1_chromosome
@@ -375,9 +375,9 @@ for tchr in output_dict:
             ax[-1].get_yaxis().tick_left()
             ax[-1].plot(x, y, color=tableau20[count], lw=2)
             ax[-1].set_title(label='Target Chromosome: '+species_name_filter+" "+ tchr, fontweight='bold', fontsize=14)
-            ax[-1].set_xlabel('Window Iteration', fontsize=12, fontweight='bold')
-            ax[-1].set_ylabel('Retention (%)', fontsize=12, fontweight='bold')
-            ax[-1].legend(output_dict[tchr], loc=1, frameon=False, title="Query Chromosome", fontsize=10)
+            ax[-1].set_xlabel('Window Iteration\n(Gene order number on chromosome)', fontsize=12, fontweight='bold')
+            ax[-1].set_ylabel('Retention %\n(# Syntenic Genes/window size)', fontsize=12, fontweight='bold')
+            ax[-1].legend(loc=1, frameon=False, title="Query Chromosome", fontsize=10)
         else:
             continue
 fig.tight_layout()
