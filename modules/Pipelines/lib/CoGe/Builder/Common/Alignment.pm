@@ -140,7 +140,7 @@ sub build {
     
     # Add aligner workflow
     my ($alignment_tasks, $alignment_results);
-    if ($alignment_params->{tool} eq 'tophat') {
+    if ($alignment_params && $alignment_params->{tool} eq 'tophat') {
         # Generate gff if genome annotated
         my $gff_file;
         if ( $genome->has_gene_features ) {
@@ -164,7 +164,7 @@ sub build {
             params => $alignment_params,
         );
     }
-    elsif ($alignment_params->{tool} eq 'gsnap') {
+    else { # ($alignment_params->{tool} eq 'gsnap') {
         ($alignment_tasks, $alignment_results) = create_gsnap_workflow(
             gid => $gid,
             fasta => catfile($fasta_cache_dir, $reheader_fasta),
@@ -175,11 +175,12 @@ sub build {
             params => $alignment_params,
         );
     }
-    else {
-        my $error = "Unrecognized alignment tool '" . $alignment_params->{tool};
-        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-        return { error => $error };
-    }
+# mdb removed 9/15/15 -- make GSNAP the default aligner
+#    else {
+#        my $error = "Unrecognized alignment tool '" . $alignment_params->{tool};
+#        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
+#        return { error => $error };
+#    }
     push @tasks, @$alignment_tasks;
 
     # Sort and index the bam output file
