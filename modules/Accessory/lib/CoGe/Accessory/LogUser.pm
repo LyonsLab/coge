@@ -8,6 +8,8 @@ use CoGeX::Result::User;
 use Exporter 'import';
 our @EXPORT_OK = qw(get_cookie_session);
 
+our $DEBUG = 0;
+
 #FIXME: Should have no knowledge of cookies but only sessions
 sub get_user {
     my $self        = shift;
@@ -17,6 +19,7 @@ sub get_user {
     my ( $user, $uid, $session );    # = "Public";
 
     $session = get_cookie_session(cookie_name => $cookie_name);
+    print STDERR "LogUser::get_user: session=$session\n" if $DEBUG;
 
     if ($session) {
         my ($user_session) = $coge->resultset("UserSession")->find( { session => $session } );
@@ -37,7 +40,9 @@ sub get_cookie_session {
     my $cookie_name = $opts{cookie_name};
     my %cookies     = fetch CGI::Cookie;
 
-    #print STDERR "LogUser::get_user cookie=$cookie_name " . (defined $cookies{$cookie_name} ? 'exists' : '!exists') . "\n";
+    print STDERR "LogUser::get_cookie_session cookie=$cookie_name ", (defined $cookies{$cookie_name} ? 'exists' : '!exists'), "\n" if $DEBUG;
+    print STDERR "LogUser::get_cookie_session cookies: ", Dumper \%cookies, "\n" if $DEBUG;
+
     if ( $cookie_name && ref $cookies{$cookie_name} ) {
         my %session = $cookies{$cookie_name}->value;
         return $session{session};
@@ -54,7 +59,7 @@ sub gen_cookie {
     my $exp         = $opts{exp} || '+7d'; # issue 48, this field must have lowercase-only
     my $cookie_name = $opts{cookie_name};
     my %params      = ( -name => $cookie_name, -path => "/" );
-#   print STDERR "LogUser::gen_cookie session=$session cookie_name=$cookie_name\n";
+    print STDERR "LogUser::gen_cookie session=$session cookie_name=$cookie_name\n" if $DEBUG;
 
     $params{-expires} = $exp if $exp;
     $params{ -values } = { session => $session } if $session;
