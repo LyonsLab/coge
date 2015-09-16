@@ -145,7 +145,7 @@ with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic
                 #clean ID subgenome A from the column on left of data
                 ida = cols[0]
                 ida = ida[1:cols[0].index('_')]
-            if args_target == ida:
+            if args.target == ida:
                 if 'scaffold' not in cols[1] and 'Scaffold' not in cols[1]:
                     target_chr = cols[1]
                     target_gene = str(cols[4]).rstrip('.')  #puts all genome1_genes with synteny into a list
@@ -373,7 +373,7 @@ for tchr in output_dict:
             ax[-1].spines["right"].set_visible(False)
             ax[-1].get_xaxis().tick_bottom()
             ax[-1].get_yaxis().tick_left()
-            ax[-1].plot(x, y, color=tableau20[count], lw=2)
+            ax[-1].plot(x, y, color=tableau20[count], lw=2, label=str(qchr))
             ax[-1].set_title(label='Target Chromosome: '+species_name_filter+" "+ tchr, fontweight='bold', fontsize=14)
             ax[-1].set_xlabel('Window Iteration\n(Gene order number on chromosome)', fontsize=12, fontweight='bold')
             ax[-1].set_ylabel('Retention %\n(# Syntenic Genes/window size)', fontsize=12, fontweight='bold')
@@ -381,7 +381,7 @@ for tchr in output_dict:
         else:
             continue
 fig.tight_layout()
-plt.savefig(args.output+"html/"+"fractbias_figure1.png") #<--------
+plt.savefig(args.output+"/html/"+"fractbias_figure1.png") #<--------
 
 t6 = datetime.now()
 

@@ -1593,13 +1593,13 @@ sub go {
 				  . '/synmap/fractionation_bias_geco.py',
 				script => undef,
 				args   => [
-					[ '--align',      "$final_dagchainer_file.ks", 0 ],
+					[ '--align',      "$final_dagchainer_file", 0 ],
 					[ '--gff',        $gff_job->{outputs}->[0],    0 ],
 					[ '--target',     $target_id,                  0 ],
 					[ '--windowsize', $opts{window_size},          0 ],
 					[ '--output',     $output_dir,                 0 ]
 				],
-				inputs      => ["$final_dagchainer_file.ks", $condensed, $gff_job->{outputs}->[0]],
+				inputs      => ["$final_dagchainer_file", $condensed, $gff_job->{outputs}->[0]],
 				outputs     => [ catfile(catdir($output_dir, 'html'), 'fractbias_figure1.png') ],
 				description => "Running Fractination Bias...",
 			}
