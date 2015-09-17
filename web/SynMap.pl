@@ -100,12 +100,12 @@ $LAST =
 $GZIP          = $config->{GZIP};
 $GUNZIP        = $config->{GUNZIP};
 $SCRIPTDIR     = $config->{SCRIPTDIR} . '/synmap/';
-$KSCALC        = $SCRIPTDIR . 'kscalc.pl';
-$GEN_FASTA     = $SCRIPTDIR . 'generate_fasta.pl';
-$RUN_ALIGNMENT = $SCRIPTDIR . 'quota_align_merge.pl';
-$RUN_COVERAGE  = $SCRIPTDIR . 'quota_align_coverage.pl';
-$PROCESS_DUPS  = $SCRIPTDIR . 'process_dups.pl';
-$GEVO_LINKS    = $SCRIPTDIR . 'gevo_links.pl';
+$KSCALC        = catfile($SCRIPTDIR, 'kscalc.pl');
+$GEN_FASTA     = catfile($SCRIPTDIR, 'generate_fasta.pl');
+$RUN_ALIGNMENT = catfile($SCRIPTDIR, 'quota_align_merge.pl');
+$RUN_COVERAGE  = catfile($SCRIPTDIR, 'quota_align_coverage.pl');
+$PROCESS_DUPS  = catfile($SCRIPTDIR, 'process_dups.pl');
+$GEVO_LINKS    = catfile($SCRIPTDIR, 'gevo_links.pl');
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -176,9 +176,9 @@ $BLASTDBDIR = $config->{BLASTDB};
 
 $PYTHON        = $config->{PYTHON};                         #this was for python2.5
 $PYTHON26      = $config->{PYTHON};
-$DAG_TOOL      = 'nice ' . $SCRIPTDIR . 'dag_tools.py';
-$BLAST2BED     = $SCRIPTDIR . 'blast2bed.pl';
-$GENE_ORDER    = $SCRIPTDIR . 'gene_order.py';
+$DAG_TOOL      = 'nice ' . catfile($SCRIPTDIR, 'dag_tools.py');
+$BLAST2BED     = catfile($SCRIPTDIR, 'blast2bed.pl');
+$GENE_ORDER    = catfile($SCRIPTDIR, 'gene_order.py');
 $TANDEM_FINDER = $config->{TANDEM_FINDER} . " -d 5 -s -r"; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 
 #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
@@ -196,7 +196,7 @@ $BLAST2RAW     = $config->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $config->{SYNTENY_SCORE};
 
 $DOTPLOT     = $config->{DOTPLOT} . " -cf " . $config->{_CONFIG_PATH};
-$SVG_DOTPLOT = $SCRIPTDIR . 'dotplot.py';
+$SVG_DOTPLOT = catfile($SCRIPTDIR, 'dotplot.py');
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";

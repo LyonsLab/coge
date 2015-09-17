@@ -76,9 +76,10 @@ $LAST =
   . " -a $MAX_PROC --path="
   . $config->{LAST_PATH};
 
-$GEN_FASTA        = $config->{GEN_FASTA};
+$SCRIPTDIR        = $config->{SCRIPTDIR} . '/synmap/';
+$GEN_FASTA        = catfile($SCRIPTDIR, 'generate_fasta.pl');
 $CONVERT_BLAST    = $config->{CONVERT_BLAST};
-$BLAST2BED        = $config->{BlAST2BED};
+$BLAST2BED        = catfile($SCRIPTDIR, 'blast2bed.pl');
 $BLAST2RAW        = $config->{BLAST2RAW};
 $SYNTENY_SCORE    = $config->{SYNTENY_SCORE};
 $PYTHON26         = $config->{PYTHON};
