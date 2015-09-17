@@ -17,7 +17,11 @@
 $(function(){
 	//Show splash popup
 	if (!$.cookie('<TMPL_VAR NAME=SPLASH_COOKIE_NAME>') && !'<TMPL_VAR NAME=WORKFLOW_ID>') {
-		$('.splash_dialog').dialog({modal:true}).dialog('open');
+		$('.splash_dialog').dialog({
+			modal: true,
+			width: '30em',
+			create: function (event) { $(event.target).parent().css('position', 'fixed');}, // mdb added 8/26/15 -- fix position in iframe
+		}).dialog('open');
 	}
 });
 </script>

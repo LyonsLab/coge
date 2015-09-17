@@ -16,8 +16,9 @@ use File::Basename;
 use File::Temp;
 use File::Spec::Functions;
 use HTML::Template;
-use LWP::Simple qw(!get !head !getprint !getstore !mirror);
+use LWP::Simple qw(!getprint !getstore !mirror);
 use LWP::UserAgent;
+use File::Listing qw(parse_dir);
 use JSON;
 use HTTP::Request;
 use XML::Simple;
@@ -26,6 +27,7 @@ use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
 use URI;
+use namespace::clean; # needs to be last, http://blog.twoshortplanks.com/2010/07/17/clea/
 
 =head1 NAME
 
@@ -62,7 +64,8 @@ BEGIN {
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
                    send_email get_defaults set_defaults url_for get_job 
-                   schedule_job render_template );
+                   schedule_job render_template ftp_get_path ftp_get_file split_url
+               );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
     $NOT_FOUND = "The action could not be found";
@@ -1138,6 +1141,124 @@ sub url_for {
     $query_string = "?" . join("&", @pairs) if @pairs;
 
     return $scheme . join("/", @parts) . $query_string;;
+}
+
+sub split_url {
+    my $url = shift;
+    return unless $url;
+    my $uri = URI->new($url);
+    my $type = $uri->scheme;
+    my ($filename, $filepath) = fileparse($uri->path);
+    $filepath = $uri->host . $filepath;
+    return ($filename, $filepath);
+}
+
+sub ftp_get_path { # mdb 8/24/15 copied from LoadExperiment.pl
+    my %opts = @_;
+    my $url  = $opts{url};
+
+    my @files;
+
+    print STDERR Dumper head($url);
+    my ($content_type, $size) = head($url);
+    if ($content_type && $content_type eq 'text/ftp-dir-listing') { # directory
+        my $listing = get($url);
+        my $dir     = parse_dir($listing);
+        #print STDERR Dumper $dir, "\n";
+        foreach (@$dir) {
+            my ( $filename, $filetype, $filesize, $filetime, $filemode ) = @$_;
+            if ( $filetype eq 'f' ) {
+                push @files, { name => $filename, url => $url . $filename };
+            }
+        }
+    }
+    elsif ($size) { # a single file
+        my ($filename) = $url =~ /([^\/]+?)(?:\?|$)/;
+        push @files, { name => $filename, url => $url };
+    }
+    else { # error (url not found)
+        print STDERR "Web::ftp_get_path: ERROR, url not found\n";
+        return;
+    }
+
+    return wantarray ? @files : \@files;
+}
+
+sub ftp_get_file { # mdb 8/24/15 copied from LoadExperiment.pl
+    my %opts      = @_;
+    my $url       = $opts{url};
+    my $username  = $opts{username};
+    my $password  = $opts{password};
+    my $dest_path = $opts{dest_path};
+
+    my ($filename, $filepath) = split_url($url);
+    # print STDERR "$type $filepath $filename $username $password\n";
+    return unless ( $filepath and $filename );
+
+    my $relative_path = catdir($filepath, $filename);
+    my $full_path     = catdir($dest_path, $filepath);
+    mkpath($full_path);
+
+    # Simplest method (but doesn't allow login)
+    #   print STDERR "getstore: $url\n";
+    #   my $res_code = getstore($url, $full_path . '/' . $filename);
+    #   print STDERR "response: $res_code\n";
+    # TODO check response code here
+
+    # Alternate method with progress callback
+    #   my $ua = new LWP::UserAgent;
+    #   my $expected_length;
+    #   my $bytes_received = 0;
+    #   $ua->request(HTTP::Request->new('GET', $url),
+    #       sub {
+    #           my($chunk, $res) = @_;
+    #           print STDERR "matt: " . $res->header("Content_Type") . "\n";
+    #
+    #           $bytes_received += length($chunk);
+    #           unless (defined $expected_length) {
+    #               $expected_length = $res->content_length || 0;
+    #           }
+    #           if ($expected_length) {
+    #               printf STDERR "%d%% - ",
+    #               100 * $bytes_received / $expected_length;
+    #           }
+    #           print STDERR "$bytes_received bytes received\n";
+    #
+    #           # XXX Should really do something with the chunk itself
+    #       });
+
+    # Current method (allows optional login)
+    my $ua = new LWP::UserAgent;
+    my $request = HTTP::Request->new( GET => $url );
+    $request->authorization_basic( $username, $password )
+      if ( $username and $password );
+
+    #$request->content_type("text/xml; charset=utf-8"); # mdb removed 3/30/15 COGE-599
+    my $response = $ua->request($request);
+    #print STDERR "content: <begin>", $response->content , "<end>\n"; # debug
+    if ( $response->is_success() ) {
+        #my $header = $response->header;
+        my $result = $response->content;
+        open( my $fh, ">$full_path/$filename" );
+        if ($fh) {
+            binmode $fh;    # could be binary data
+            print $fh $result;
+            close($fh);
+        }
+    }
+    else {                  # error
+        my $status = $response->status_line();
+        print STDERR "Web::ftp_get: ERROR, status=$status\n";
+        return {
+            path => $relative_path,
+            error => $status
+        };
+    }
+
+    return {
+        path => $relative_path,
+        size => -s catfile($full_path, $filename)
+    };
 }
 
 1;

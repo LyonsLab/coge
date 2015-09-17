@@ -182,6 +182,15 @@ sub lengths {
     return wantarray ? @a : \@a;
 }
 
+sub lengths_by_name {
+    my $self = shift;
+    my %lengths;
+    while ($self->next) {
+        $lengths{$self->name} = $self->length;
+    }
+    return \%lengths;
+}
+
 ################################################ subroutine header begin ##
 
 =head2 name

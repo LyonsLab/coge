@@ -43,7 +43,7 @@ our (
     $ALGO_LOOKUP,  $GZIP,          $GUNZIP,         %FUNCTIONS,
     $JEX,          $GENE_ORDER,    $PAGE_TITLE,     $KSCALC,
     $GEN_FASTA,    $RUN_ALIGNMENT, $RUN_COVERAGE,   $GEVO_LINKS,
-    $PROCESS_DUPS, $DOTPLOT_DOTS,  $SEQUENCE_SIZE_LIMIT
+    $PROCESS_DUPS, $SEQUENCE_SIZE_LIMIT, $SCRIPTDIR
 );
 
 $DEBUG = 0;
@@ -99,13 +99,13 @@ $LAST =
 #  . $config->{LASTDB};
 $GZIP          = $config->{GZIP};
 $GUNZIP        = $config->{GUNZIP};
-$KSCALC        = $config->{KSCALC};
-$GEN_FASTA     = $config->{GEN_FASTA};
-$RUN_ALIGNMENT = $config->{RUN_ALIGNMENT};
-$RUN_COVERAGE  = $config->{RUN_COVERAGE};
-$PROCESS_DUPS  = $config->{PROCESS_DUPS};
-$GEVO_LINKS =  $config->{GEVO_LINKS};
-$DOTPLOT_DOTS = $config->{DOTPLOT_DOTS};
+$SCRIPTDIR     = $config->{SCRIPTDIR} . '/synmap/';
+$KSCALC        = catfile($SCRIPTDIR, 'kscalc.pl');
+$GEN_FASTA     = catfile($SCRIPTDIR, 'generate_fasta.pl');
+$RUN_ALIGNMENT = catfile($SCRIPTDIR, 'quota_align_merge.pl');
+$RUN_COVERAGE  = catfile($SCRIPTDIR, 'quota_align_coverage.pl');
+$PROCESS_DUPS  = catfile($SCRIPTDIR, 'process_dups.pl');
+$GEVO_LINKS    = catfile($SCRIPTDIR, 'gevo_links.pl');
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -176,12 +176,10 @@ $BLASTDBDIR = $config->{BLASTDB};
 
 $PYTHON        = $config->{PYTHON};                         #this was for python2.5
 $PYTHON26      = $config->{PYTHON};
-$DAG_TOOL      = 'nice ' . $config->{DAG_TOOL};
-$BLAST2BED     = $config->{BLAST2BED};
-$GENE_ORDER    = $DIR . "/bin/SynMap/gene_order.py";
-$TANDEM_FINDER = $config->{TANDEM_FINDER}
-  . " -d 5 -s -r"
-  ; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
+$DAG_TOOL      = 'nice ' . catfile($SCRIPTDIR, 'dag_tools.py');
+$BLAST2BED     = catfile($SCRIPTDIR, 'blast2bed.pl');
+$GENE_ORDER    = catfile($SCRIPTDIR, 'gene_order.py');
+$TANDEM_FINDER = $config->{TANDEM_FINDER} . " -d 5 -s -r"; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 
 #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
 $RUN_DAGCHAINER = 'nice ' . $PYTHON26 . " " . $config->{DAGCHAINER};
@@ -198,7 +196,7 @@ $BLAST2RAW     = $config->{BLAST2RAW};       #find local duplicates
 $SYNTENY_SCORE = $config->{SYNTENY_SCORE};
 
 $DOTPLOT     = $config->{DOTPLOT} . " -cf " . $config->{_CONFIG_PATH};
-$SVG_DOTPLOT = $config->{SVG_DOTPLOT};
+$SVG_DOTPLOT = catfile($SCRIPTDIR, 'dotplot.py');
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";

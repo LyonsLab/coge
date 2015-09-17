@@ -85,7 +85,7 @@ sub load {
 	my $source_name = $user->name; #FIXME change to user's display_name
 	my $organism_id = 38378; # FIXME hardcoded to "test" organism, need to change to "unknown" or something
 
-    my ($workflow_id, $error_msg) = create_genome_from_file(
+    my ($workflow, $error_msg) = create_genome_from_file(
         user => $user,
         metadata => {
             name => escape($data->{name}),
@@ -98,7 +98,7 @@ sub load {
         organism_id => $organism_id,
         irods => $data->{items}
     );
-    unless ($workflow_id) {
+    unless ($workflow->id) {
         return encode_json({
             success => JSON::false,
             error => "Workflow submission failed: " . $error_msg
@@ -107,7 +107,7 @@ sub load {
 
     # Get tiny link
     my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $conf->{SERVER} . "LoadGenome.pl?job_id=$workflow_id"
+        url => $conf->{SERVER} . "LoadGenome.pl?job_id=" . $workflow->id
     );
     unless ($tiny_link) {
     	#$self->header_props( -status => 500 );
@@ -116,8 +116,17 @@ sub load {
 			error => 'Link generation failed'
 		});
     }
+    
+    CoGe::Accessory::Web::log_history(
+        db          => $db,
+        parent_id   => $workflow->id,
+        parent_type => 7, #FIXME magic number
+        user_id     => $user->id,
+        page        => "API (legacy DE)",
+        description => $workflow->name,
+        link        => ($tiny_link ? $tiny_link : '')
+    );
 
-	print STDERR "link: $tiny_link\n";
 	return encode_json({
 		success => JSON::true,
 		link => $tiny_link
@@ -140,7 +149,12 @@ sub create_genome_from_file { #TODO use CoGe::Builder::Load::Genome pipeline ins
     }
 
     # Create the workflow
-    my $workflow = $jex->create_workflow( name => 'Create Genome', init => 1 );
+    my $info;
+    $info .= $metadata->{organism} if $metadata->{organism};
+    $info .= " (" . $metadata->{name} . ")"  if $metadata->{name};
+    $info .= ": " . $metadata->{description} if $metadata->{description};
+    $info .= " (v" . $metadata->{version} . ")";
+    my $workflow = $jex->create_workflow( name => "Load Genome \"$info\"", init => 1 );
     unless ($workflow and $workflow->id) {
         return (undef, 'Could not create workflow');
     }
@@ -181,8 +195,8 @@ sub create_genome_from_file { #TODO use CoGe::Builder::Load::Genome pipeline ins
     if ($result->{status} =~ /error/i) {
         return (undef, "Could not submit workflow");
     }
-
-    return ($result->{id}, undef);
+    
+    return ($workflow, undef);
 }
 
 1;

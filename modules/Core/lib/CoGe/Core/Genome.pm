@@ -41,10 +41,12 @@ sub genomecmp($$) {
 
     my $namea = $a->name ? $a->name :  "";
     my $nameb = $b->name ? $b->name :  "";
+    my $typea = $a->type ? $a->type->id : 0;
+    my $typeb = $b->type ? $b->type->id : 0;
 
     $a->organism->name cmp $b->organism->name
       || versioncmp( $b->version, $a->version )
-      || $a->type->id <=> $b->type->id
+      || $typea <=> $typeb
       || $namea cmp $nameb
       || $b->id cmp $a->id;
 }

@@ -36,25 +36,26 @@ sub list {
     $self->render(json => { path => $result->{path}, items => $result->{items} });
 }
 
-sub fetch {
-    my $self = shift;
-    my $path = $self->stash('path');
-    my $load_id = $self->param('load_id');
-    $load_id = get_unique_id() unless $load_id;
-    #print STDERR "IRODS::fetch ", $path, "\n";
-    
-    # Authenticate user and connect to the database
-    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-    unless ($user) {
-        $self->render(json => { error => { Error => 'Access denied' } });
-        return;
-    }
-    
-    $path = unescape($path);
-    my $uploadpath = get_upload_path($user->name, $load_id);
-    my $result = get_irods_file($path, $uploadpath);
-
-    $self->render(json => $result );
-}
+# mdb removed 8/24/15 -- not used
+#sub fetch {
+#    my $self = shift;
+#    my $path = $self->stash('path');
+#    my $load_id = $self->param('load_id');
+#    $load_id = get_unique_id() unless $load_id;
+#    #print STDERR "IRODS::fetch ", $path, "\n";
+#    
+#    # Authenticate user and connect to the database
+#    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+#    unless ($user) {
+#        $self->render(json => { error => { Error => 'Access denied' } });
+#        return;
+#    }
+#    
+#    $path = unescape($path);
+#    my $uploadpath = get_upload_path($user->name, $load_id);
+#    my $result = get_irods_file($path, $uploadpath);
+#
+#    $self->render(json => $result );
+#}
 
 1;

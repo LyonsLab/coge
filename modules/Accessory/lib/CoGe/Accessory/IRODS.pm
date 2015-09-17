@@ -82,16 +82,26 @@ sub irods_ils {
     my @result;
     foreach my $line (@ils) {
         #print STDERR $line, "\n";
-        my ( $type, $backup, $size, $timestamp, $name );
+        my ( $type, $backup, $size, $timestamp, $name, $order );
         chomp $line;
-        if ( $line =~ /^\s*C\-/ ) {    # directory
-            $type = 'directory';
-            ($name) = basename($line);# $line =~ /([^\/]+)\s*$/; # mdb modified 8/14/14 issue 441
-            if ($name) { $name =~ s/\s*$//; $name .= '/'; }
-            else       { $name = 'error' }
+        
+        if ( $line =~ /^\s*C\-/ ) { # directory or link
+            if ( $line =~ /(\S+)\s+linkPoint/ ) { # link # mdb added 9/15/15
+                $type = 'link';
+                $order = 1;
+                ($name) = basename($1);
+            }
+            else { # directory
+                $type = 'directory';
+                $order = 1;
+                ($name) = basename($line);# $line =~ /([^\/]+)\s*$/; # mdb modified 8/14/14 issue 441
+                if ($name) { $name =~ s/\s*$//; $name .= '/'; }
+                else       { $name = 'error' }
+            }
         }
-        else {                         # file
+        else { # file
             $type = 'file';
+            $order = 2;
             #( undef, undef, $backup, undef, $size, $timestamp, undef, $name ) = split( /\s+/, $line ); # mdb removed 8/14/14 issue 441
             ($backup, $size, $timestamp, $name) = $line =~ /\s+\S+\s+(\d+)\s+\S+\s+(\S+)\s+(\S+)\s+\S+\s+(.+)/; # mdb added 8/14/14 issue 441
         }
@@ -109,13 +119,14 @@ sub irods_ils {
 		my %item = (
             type      => $type,
             name      => $name,
-            path      => $path2
+            path      => $path2,
+            order     => $order
 		);
 		$item{size} = $size if $size;
 		$item{timestamp} = $timestamp if $timestamp;
         push @result, \%item;
     }
-    @result = sort { $a->{type} cmp $b->{type} } @result;    # directories before files
+    @result = sort { $a->{order} cmp $b->{order} } @result; # directories/links before files
 
     #print STDERR Dumper \@result, "\n";
     return { path => $path, items => \@result };
