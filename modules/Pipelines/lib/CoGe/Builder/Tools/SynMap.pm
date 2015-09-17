@@ -1,6 +1,7 @@
 package CoGe::Builder::Tools::SynMap;
 
-use v5.14;
+use Moose;
+
 use strict;
 use warnings;
 
@@ -8,6 +9,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw( get_defaults );
 use CoGe::Accessory::Workflow;
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
+use Data::Dumper;
 use File::Path;
 use File::Spec::Functions;
 use JSON qw( encode_json );
@@ -23,378 +25,18 @@ BEGIN {
     @EXPORT_OK = qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
 }
 
-sub algo_lookup {
-	#in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
-	my $config			= get_defaults();
-	my $MAX_PROC		= $config->{MAX_PROC};
-	my $blast_options	= " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6";
-	my $TBLASTX			= $config->{TBLASTX} . $blast_options;
-	my $BLASTN			= $config->{BLASTN} . $blast_options;
-	my $BLASTP			= $config->{BLASTP} . $blast_options;
-	my $LASTZ			= $config->{PYTHON} . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . $config->{LASTZ};
-	my $LAST			= $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH};
-	return {
-		0 => {
-			algo => $BLASTN . " -task megablast",    #megablast
-			opt             => "MEGA_SELECT",  #select option for html template file
-			filename        => "megablast",
-			displayname     => "MegaBlast",
-			html_select_val => 0,
-			formatdb        => 1,
-		},
-		1 => {
-			algo     => $BLASTN . " -task dc-megablast",   #discontinuous megablast,
-			opt      => "DCMEGA_SELECT",
-			filename => "dcmegablast",
-			displayname     => "Discontinuous MegaBlast",
-			html_select_val => 1,
-			formatdb        => 1,
-		},
-		2 => {
-			algo            => $BLASTN . " -task blastn",    #blastn
-			opt             => "BLASTN_SELECT",
-			filename        => "blastn",
-			displayname     => "BlastN",
-			html_select_val => 2,
-			formatdb        => 1,
-		},
-		3 => {
-			algo            => $TBLASTX,                     #tblastx
-			opt             => "TBLASTX_SELECT",
-			filename        => "tblastx",
-			displayname     => "TBlastX",
-			html_select_val => 3,
-			formatdb        => 1,
-		},
-		4 => {
-			algo            => $LASTZ,                       #lastz
-			opt             => "LASTZ_SELECT",
-			filename        => "lastz",
-			displayname     => "(B)lastZ",
-			html_select_val => 4,
-		},
-		5 => {
-			algo            => $BLASTP . " -task blastp",    #blastn
-			opt             => "BLASTP_SELECT",
-			filename        => "blastp",
-			displayname     => "BlastP",
-			html_select_val => 5,
-			formatdb        => 1,
-		},
-		6 => {
-			algo            => $LAST,                        #last
-			opt             => "LAST_SELECT",
-			filename        => "last",
-			displayname     => "Last",
-			html_select_val => 6,
-		}
-	};
-}
-
-sub check_address_validity {
-	my $address = shift;
-	return 'valid' unless $address;
-	my $validity =
-	  $address =~
-/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/
-	  ? 'valid'
-	  : 'invalid';
-	return $validity;
-}
-
-sub gen_org_name {
-	my %opts      = @_;
-	my $db        = $opts{db};
-	my $dsgid     = $opts{dsgid};
-	my $feat_type = $opts{feat_type} || 1;
-#	my $write_log = $opts{write_log} || 0;
-	my ($dsg) = $db->resultset('Genome')->search( { genome_id => $dsgid },
-		{ join => 'organism', prefetch => 'organism' } );
-
-	my $org_name = $dsg->organism->name;
-	my $title =
-	    $org_name . " (v"
-	  . $dsg->version
-	  . ", dsgid"
-	  . $dsgid . ") "
-	  . $feat_type;
-	$title =~ s/(`|')//g;
-
-#	if ( $cogeweb and $write_log ) {
-#		CoGe::Accessory::Web::write_log( "Generated organism name:",
-#			$cogeweb->logfile );
-#		CoGe::Accessory::Web::write_log( " " x (2) . $title,
-#			$cogeweb->logfile );
-#		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-#	}
-	return ( $org_name, $title );
-}
-
-sub generate_pseudo_assembly {
-    my ($config, $input, $output, $flip) = @_;
-    $flip = 0 unless $flip;
-
-    my $cmd = "synmap/order_contigs_to_chromosome.pl";
-
-	my $JEX = CoGe::Accessory::Jex->new(host => $config->{JOBSERVER}, port => $config->{JOBPORT});
-    my $workflow = $JEX->create_workflow(
-        name => "Generate Pseudo Assembly"
-    );
-
-    $workflow->add_job({
-        cmd  => catfile($config->{SCRIPTDIR}, $cmd),
-        args => [
-            ["-cfg", $config->{_CONFIG_PATH}, 1],
-            ["-input", $input, 1],
-            ["-output", $output, 1],
-	    ["-flip", $flip,1],
-        ],
-        inputs    => [$input, $config->{_CONFIG_PATH}],
-        outputs   => [$output],
-        description => "Generating pseudo assembly"
-    });
-
-    my $response = $JEX->submit_workflow($workflow);
-
-    return {
-        id => $response->{id},
-        success => $JEX->is_successful($response),
-        output => $output
-    };
-}
-
-sub get_query_link {
-	my $config = shift;
-	my $db = shift;
-	my %url_options  = @_;
-	my $dagchainer_D = $url_options{D};
-
-   #  my $dagchainer_g = $url_options{g}; #depreciated -- will be a factor of -D
-	my $dagchainer_A = $url_options{A};
-	my $Dm           = $url_options{Dm};
-	my $gm           = $url_options{gm};
-	($Dm) = $Dm =~ /(\d+)/;
-	($gm) = $gm =~ /(\d+)/;
-
-#   my $repeat_filter_cvalue = $url_options{c}; #parameter to be passed to run_adjust_dagchainer_evals
-	my $cscore =
-	  $url_options{csco}; #c-score for filtering low quality blast hits, fed to blast to raw
-	my $dupdist =
-	  $url_options{tdd};    #tandem duplication distance, fed to blast to raw
-	my $regen_images = $url_options{regen_images};
-	my $email        = $url_options{email};
-	my $job_title    = $url_options{jobtitle};
-	my $width        = $url_options{width};
-	my $basename     = $url_options{basename};
-	my $blast        = $url_options{blast};
-
-	my $feat_type1 = $url_options{feat_type1};
-	my $feat_type2 = $url_options{feat_type2};
-
-	my $dsgid1 = $url_options{dsgid1};
-	my $dsgid2 = $url_options{dsgid2};
-
-	unless ( $dsgid1 and $dsgid2 ) {
-		return encode_json( { error => "Missing a genome id." } );
-	}
-
-	my $ks_type = $url_options{ks_type};
-	my $assemble = $url_options{assemble} =~ /true/i ? 1 : 0;
-	$assemble = 2 if $assemble && $url_options{show_non_syn} =~ /true/i;
-	$assemble *= -1 if $assemble && $url_options{spa_ref_genome} < 0;
-	my $axis_metric       = $url_options{axis_metric};
-	my $axis_relationship = $url_options{axis_relationship};
-	my $min_chr_size      = $url_options{min_chr_size};
-	my $dagchainer_type   = $url_options{dagchainer_type};
-	my $color_type        = $url_options{color_type};
-	my $merge_algo = $url_options{merge_algo};    #is there a merging function?
-
-	#options for finding syntenic depth coverage by quota align (Bao's algo)
-	my $depth_algo        = $url_options{depth_algo};
-	my $depth_org_1_ratio = $url_options{depth_org_1_ratio};
-	my $depth_org_2_ratio = $url_options{depth_org_2_ratio};
-	my $depth_overlap     = $url_options{depth_overlap};
-
-	#options for fractionation bias
-	my $frac_bias   = $url_options{frac_bias};
-	my $window_size = $url_options{window_size};
-
-	#fids that are passed in for highlighting the pair in the dotplot
-	my $fid1 = $url_options{fid1};
-	my $fid2 = $url_options{fid2};
-
-	#will non-syntenic dots be shown?
-	my $snsd = $url_options{show_non_syn_dots} =~ /true/i ? 1 : 0;
-	my $ALGO_LOOKUP = algo_lookup();
-	my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
-
-	#will the axis be flipped?
-	my $flip = $url_options{flip};
-	$flip = $flip =~ /true/i ? 1 : 0;
-
-	#are axes labeled?
-	my $clabel = $url_options{clabel};
-	$clabel = $clabel =~ /true/i ? 1 : 0;
-
-	#are random chr skipped
-	my $skip_rand = $url_options{skip_rand};
-	$skip_rand = $skip_rand =~ /true/i ? 1 : 0;
-
-	#which color scheme for ks/kn dots?
-	my $color_scheme = $url_options{color_scheme};
-
-	#codeml min and max calues
-	my $codeml_min = $url_options{codeml_min};
-	$codeml_min = undef
-	  unless $codeml_min =~ /\d/ && $codeml_min =~ /^-?\d*.?\d*$/;
-	my $codeml_max = $url_options{codeml_max};
-	$codeml_max = undef
-	  unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
-	my $logks = $url_options{logks};
-	$logks = $logks eq "true" ? 1 : 0;
-
-	#how are the chromosomes to be sorted?
-	my $chr_sort_order = $url_options{chr_sort_order};
-
-	#draw a box around identified diagonals?
-	my $box_diags = $url_options{box_diags};
-	$box_diags = $box_diags eq "true" ? 1 : 0;
-
-	my ( $org_name1, $titleA ) = gen_org_name(
-		db		  => $db,
-		dsgid     => $dsgid1,
-		feat_type => $feat_type1,
-		write_log => 0
-	);
-
-	my ( $org_name2, $titleB ) = gen_org_name(
-		db		  => $db,
-		dsgid     => $dsgid2,
-		feat_type => $feat_type2,
-		write_log => 0
-	);
-
-	# Sort by genome id
-	(
-		$dsgid1, $org_name1, $feat_type1, $depth_org_1_ratio, $dsgid2,
-		$org_name2, $feat_type2, $depth_org_2_ratio
-	  )
-	  = (
-		$dsgid2, $org_name2, $feat_type2, $depth_org_2_ratio, $dsgid1,
-		$org_name1, $feat_type1, $depth_org_1_ratio
-	  ) if ( $dsgid2 lt $dsgid1 );
-
-	my $synmap_link =
-		$config->{SERVER}
-	  . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2"
-	  . ";D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;"
-	  . "ft2=$feat_type2;autogo=1";
-
-	$synmap_link .= ";Dm=$Dm"       if defined $Dm;
-	$synmap_link .= ";csco=$cscore" if $cscore;
-	$synmap_link .= ";tdd=$dupdist" if defined $dupdist;
-	$synmap_link .= ";gm=$gm"       if defined $gm;
-	$synmap_link .= ";snsd=$snsd";
-
-	$synmap_link .= ";bd=$box_diags"          if $box_diags;
-	$synmap_link .= ";mcs=$min_chr_size"      if $min_chr_size;
-	$synmap_link .= ";sp=$assemble"           if $assemble;
-	$synmap_link .= ";ma=$merge_algo"         if $merge_algo;
-	$synmap_link .= ";da=$depth_algo"         if $depth_algo;
-	$synmap_link .= ";do1=$depth_org_1_ratio" if $depth_org_1_ratio;
-	$synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
-	$synmap_link .= ";do=$depth_overlap"      if $depth_overlap;
-	$synmap_link .= ";fb=1"                   if $frac_bias;
-	$synmap_link .= ";ws=$window_size"        if $window_size;
-	$synmap_link .= ";flip=1"                 if $flip;
-	$synmap_link .= ";cs=$color_scheme";
-	$synmap_link .= ";cmin=$codeml_min"
-	  if defined $codeml_min;   #$codeml_min=~/\d/ && $codeml_min=~/^\d*.?\d*$/;
-	$synmap_link .= ";cmax=$codeml_max"
-	  if defined $codeml_max;   #$codeml_max=~/\d/ && $codeml_max=~/^\d*.?\d*$/;
-	$synmap_link .= ";logks=$logks"        if defined $logks;
-	$synmap_link .= ";cl=0"                if $clabel eq "0";
-	$synmap_link .= ";sr=$skip_rand"       if defined $skip_rand;
-	$synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
-
-	$email = 0 if check_address_validity($email) eq 'invalid';
-
-	$feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
-	$feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
-	$feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
-	$feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
-
-	$synmap_link .= ";dt=$dagchainer_type";
-
-	if ($ks_type) {
-		my $num;
-		if    ( $ks_type eq "ks" )    { $num = 1; }
-		elsif ( $ks_type eq "kn" )    { $num = 2; }
-		elsif ( $ks_type eq "kn_ks" ) { $num = 3; }
-		$synmap_link .= ";ks=$num";
-	}
-	$synmap_link .= ";am=g" if $axis_metric       && $axis_metric       =~ /g/i;
-	$synmap_link .= ";ar=s" if $axis_relationship && $axis_relationship =~ /s/i;
-	$synmap_link .= ";ct=$color_type" if $color_type;
-
-	my $tiny_link = CoGe::Accessory::Web::get_tiny_link( url => $synmap_link );
-
-	return $tiny_link;
-}
-
-sub go {
+sub add_jobs {
 	my %opts = @_;
-	foreach my $k ( keys %opts ) {
-		$opts{$k} =~ s/^\s+//;
-		$opts{$k} =~ s/\s+$//;
-	}
+	my $workflow = $opts{workflow};
+	my $db = $opts{db};
+	my $user = $opts{user};
+	my $config = $opts{config};
+	my $cogeweb = $opts{cogeweb};
+
 	my $dsgid1 = $opts{dsgid1};
 	my $dsgid2 = $opts{dsgid2};
-
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "You must select two genomes."
-		}
-	) unless ( $dsgid1 && $dsgid2 );
-
-	my ($db, $user, $config) = CoGe::Accessory::Web->init();
-
-	my ($genome1) = $db->resultset('Genome')->find($dsgid1);
-	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
-
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "The Genome $dsgid1 could not be found."
-		}
-	) unless $genome1;
-
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "The Genome $dsgid2 could not be found."
-		}
-	) unless $genome2;
-
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "Genome $dsgid1 primary data is missing."
-		}
-	) unless -r $genome1->file_path;
-
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "Genome $dsgid2 primary data is missing."
-		}
-	) unless -r $genome2->file_path;
-
 	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
-	my $TEMPDIR = catdir($config->{TEMPDIR}, 'SynMap');
-	my $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR )->basefilename;
 	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
 	my $DIAGSDIR		= $config->{DIAGSDIR};
 	my $SCRIPTDIR		= catdir($config->{SCRIPTDIR}, 'synmap');
@@ -415,13 +57,15 @@ sub go {
 	my $FORMATDB		= $config->{FORMATDB};
 	my $BLASTDBDIR		= $config->{BLASTDB};
 	my $FASTADIR		= $config->{FASTADIR};
-	my $JEX = CoGe::Accessory::Jex->new(host => $config->{JOBSERVER}, port => $config->{JOBPORT});
 
 	############################################################################
 	# Fetch organism name and title
 	############################################################################
 	my $feat_type1 = $opts{feat_type1};
 	my $feat_type2 = $opts{feat_type2};
+
+	my ($genome1) = $db->resultset('Genome')->find($dsgid1);
+	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
 
 	# Block large genomic-genomic jobs from running
 	if (
@@ -447,11 +91,6 @@ sub go {
 	}
 
 	my $basename = $opts{basename};
-	$cogeweb = CoGe::Accessory::Web::initialize_basefile(
-		basename => $basename,
-		tempdir  => $TEMPDIR
-	);
-
 	my ( $org_name1, $title1 ) = gen_org_name(
 		db		  => $db,
 		dsgid     => $dsgid1,
@@ -467,35 +106,6 @@ sub go {
 	);
 
 	my $ks_type = $opts{ks_type};
-	############################################################################
-	# Initialize Jobs
-	############################################################################
-
-	my $tiny_link = get_query_link($config, $db, @_);
-
-	my $log_msg =
-
-#"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
-	  "$org_name1 v. $org_name2";
-	$log_msg .= " Ks" if $ks_type;
-
-	say STDERR "tiny_link is required for logging." unless defined($tiny_link);
-
-	my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-	my $workflow_name = "synmap-$tiny_id";
-
-	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Creating Workflow", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Link to Regenerate Analysis",
-		$cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "$tiny_link", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "",           $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Created Workflow: synmap-$workflow_name",
-		$cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 	############################################################################
 	# Parameters
 	############################################################################
@@ -608,9 +218,6 @@ sub go {
 	# Generate Fasta files
 	############################################################################
 	my ( $fasta1, $fasta2 );
-	my $workflow = undef;
-	my $status   = undef;
-
 	#my @dsgs = ([$dsgid1, $feat_type1]);
 	#push @dsgs, [$dsgid2, $feat_type2]
 	#  unless $dsgid1 == $dsgid2 && $feat_type1 eq $feat_type2;
@@ -627,11 +234,6 @@ sub go {
 	#        #    $file = $FASTADIR . "/$gid-$feat_type.fasta";
 	#        #}
 	#    }
-	$workflow = $JEX->create_workflow(
-		name    => $workflow_name,
-		logfile => $cogeweb->logfile,
-	);
-
 	if ( $feat_type1 eq "genomic" ) {
 		$fasta1 = $genome1->file_path;
 
@@ -744,15 +346,11 @@ sub go {
 	}
 	my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
 	my %org_dirs = (
-		$orgkey1 . "_"
-		  . $orgkey2 => {
+		$orgkey1 . "_" . $orgkey2 => {
 			fasta    => $fasta1,
 			db       => $blastdb,
-			basename => $dsgid1 . "_" 
-			  . $dsgid2
-			  . ".$feat_type1-$feat_type2."
-			  . $ALGO_LOOKUP->{$blast}{filename},
-			dir => "$DIAGSDIR/$dir1/$dir2",
+			basename => $dsgid1 . "_" . $dsgid2 . ".$feat_type1-$feat_type2." . $ALGO_LOOKUP->{$blast}{filename},
+			dir      => "$DIAGSDIR/$dir1/$dir2",
 		  },
 	);
 
@@ -1247,7 +845,7 @@ sub go {
 	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
 	$out .= $base;
 
-	my $json_basename = "$out";
+#	my $json_basename = "$out";
 	$out .= "_ct$color_type" if defined $color_type;
 	$out .= ".w$width";
 
@@ -1612,6 +1210,410 @@ sub go {
 
 	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+}
+
+sub algo_lookup {
+	#in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
+	my $config			= get_defaults();
+	my $MAX_PROC		= $config->{MAX_PROC};
+	my $blast_options	= " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6";
+	my $TBLASTX			= $config->{TBLASTX} . $blast_options;
+	my $BLASTN			= $config->{BLASTN} . $blast_options;
+	my $BLASTP			= $config->{BLASTP} . $blast_options;
+	my $LASTZ			= $config->{PYTHON} . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . $config->{LASTZ};
+	my $LAST			= $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH};
+	return {
+		0 => {
+			algo => $BLASTN . " -task megablast",    #megablast
+			opt             => "MEGA_SELECT",  #select option for html template file
+			filename        => "megablast",
+			displayname     => "MegaBlast",
+			html_select_val => 0,
+			formatdb        => 1,
+		},
+		1 => {
+			algo     => $BLASTN . " -task dc-megablast",   #discontinuous megablast,
+			opt      => "DCMEGA_SELECT",
+			filename => "dcmegablast",
+			displayname     => "Discontinuous MegaBlast",
+			html_select_val => 1,
+			formatdb        => 1,
+		},
+		2 => {
+			algo            => $BLASTN . " -task blastn",    #blastn
+			opt             => "BLASTN_SELECT",
+			filename        => "blastn",
+			displayname     => "BlastN",
+			html_select_val => 2,
+			formatdb        => 1,
+		},
+		3 => {
+			algo            => $TBLASTX,                     #tblastx
+			opt             => "TBLASTX_SELECT",
+			filename        => "tblastx",
+			displayname     => "TBlastX",
+			html_select_val => 3,
+			formatdb        => 1,
+		},
+		4 => {
+			algo            => $LASTZ,                       #lastz
+			opt             => "LASTZ_SELECT",
+			filename        => "lastz",
+			displayname     => "(B)lastZ",
+			html_select_val => 4,
+		},
+		5 => {
+			algo            => $BLASTP . " -task blastp",    #blastn
+			opt             => "BLASTP_SELECT",
+			filename        => "blastp",
+			displayname     => "BlastP",
+			html_select_val => 5,
+			formatdb        => 1,
+		},
+		6 => {
+			algo            => $LAST,                        #last
+			opt             => "LAST_SELECT",
+			filename        => "last",
+			displayname     => "Last",
+			html_select_val => 6,
+		}
+	};
+}
+
+sub build {
+    my $self = shift;
+    
+    # Validate inputs
+    my $gid1 = $self->params->{gid1};
+    return unless $gid1;
+    my $gid2 = $self->params->{gid2};
+    return unless $gid2;
+
+ 	my $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => catdir($self->conf->{TEMPDIR}, 'SynMap') );
+    add_jobs(workflow => $self->workflow, db => $self->db, user => $self->user, config => $self->conf, cogeweb => $cogeweb, dsgid1 => $gid1, dsgid2 => $gid2);
+    
+    return 1;
+}
+
+sub check_address_validity {
+	my $address = shift;
+	return 'valid' unless $address;
+	my $validity =
+	  $address =~
+/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/
+	  ? 'valid'
+	  : 'invalid';
+	return $validity;
+}
+
+sub gen_org_name {
+	my %opts      = @_;
+	my $db        = $opts{db};
+	my $dsgid     = $opts{dsgid};
+	my $feat_type = $opts{feat_type} || 1;
+#	my $write_log = $opts{write_log} || 0;
+	my ($dsg) = $db->resultset('Genome')->search( { genome_id => $dsgid },
+		{ join => 'organism', prefetch => 'organism' } );
+
+	my $org_name = $dsg->organism->name;
+	my $title =
+	    $org_name . " (v"
+	  . $dsg->version
+	  . ", dsgid"
+	  . $dsgid . ") "
+	  . $feat_type;
+	$title =~ s/(`|')//g;
+
+#	if ( $cogeweb and $write_log ) {
+#		CoGe::Accessory::Web::write_log( "Generated organism name:",
+#			$cogeweb->logfile );
+#		CoGe::Accessory::Web::write_log( " " x (2) . $title,
+#			$cogeweb->logfile );
+#		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+#	}
+	return ( $org_name, $title );
+}
+
+sub generate_pseudo_assembly {
+    my ($config, $input, $output, $flip) = @_;
+    $flip = 0 unless $flip;
+
+    my $cmd = "synmap/order_contigs_to_chromosome.pl";
+
+	my $JEX = CoGe::Accessory::Jex->new(host => $config->{JOBSERVER}, port => $config->{JOBPORT});
+    my $workflow = $JEX->create_workflow(name => "Generate Pseudo Assembly");
+
+    $workflow->add_job({
+        cmd  => catfile($config->{SCRIPTDIR}, $cmd),
+        args => [
+            ["-cfg", $config->{_CONFIG_PATH}, 1],
+            ["-input", $input, 1],
+            ["-output", $output, 1],
+	    ["-flip", $flip,1],
+        ],
+        inputs    => [$input, $config->{_CONFIG_PATH}],
+        outputs   => [$output],
+        description => "Generating pseudo assembly"
+    });
+
+    my $response = $JEX->submit_workflow($workflow);
+
+    return {
+        id => $response->{id},
+        success => $JEX->is_successful($response),
+        output => $output
+    };
+}
+
+sub get_query_link {
+	my $config = shift;
+	my $db = shift;
+	my %url_options  = @_;
+	my $dagchainer_D = $url_options{D};
+
+   #  my $dagchainer_g = $url_options{g}; #depreciated -- will be a factor of -D
+	my $dagchainer_A = $url_options{A};
+	my $Dm           = $url_options{Dm};
+	my $gm           = $url_options{gm};
+	($Dm) = $Dm =~ /(\d+)/;
+	($gm) = $gm =~ /(\d+)/;
+
+#   my $repeat_filter_cvalue = $url_options{c}; #parameter to be passed to run_adjust_dagchainer_evals
+	my $cscore =
+	  $url_options{csco}; #c-score for filtering low quality blast hits, fed to blast to raw
+	my $dupdist =
+	  $url_options{tdd};    #tandem duplication distance, fed to blast to raw
+	my $regen_images = $url_options{regen_images};
+	my $email        = $url_options{email};
+	my $job_title    = $url_options{jobtitle};
+	my $width        = $url_options{width};
+	my $basename     = $url_options{basename};
+	my $blast        = $url_options{blast};
+
+	my $feat_type1 = $url_options{feat_type1};
+	my $feat_type2 = $url_options{feat_type2};
+
+	my $dsgid1 = $url_options{dsgid1};
+	my $dsgid2 = $url_options{dsgid2};
+
+	unless ( $dsgid1 and $dsgid2 ) {
+		return encode_json( { error => "Missing a genome id." } );
+	}
+
+	my $assemble = $url_options{assemble} =~ /true/i ? 1 : 0;
+	$assemble = 2 if $assemble && $url_options{show_non_syn} =~ /true/i;
+	$assemble *= -1 if $assemble && $url_options{spa_ref_genome} < 0;
+	my $axis_metric       = $url_options{axis_metric};
+	my $axis_relationship = $url_options{axis_relationship};
+	my $min_chr_size      = $url_options{min_chr_size};
+	my $dagchainer_type   = $url_options{dagchainer_type};
+	my $color_type        = $url_options{color_type};
+	my $merge_algo = $url_options{merge_algo};    #is there a merging function?
+
+	#options for finding syntenic depth coverage by quota align (Bao's algo)
+	my $depth_algo        = $url_options{depth_algo};
+	my $depth_org_1_ratio = $url_options{depth_org_1_ratio};
+	my $depth_org_2_ratio = $url_options{depth_org_2_ratio};
+	my $depth_overlap     = $url_options{depth_overlap};
+
+	#options for fractionation bias
+	my $frac_bias   = $url_options{frac_bias};
+	my $window_size = $url_options{window_size};
+
+	#fids that are passed in for highlighting the pair in the dotplot
+	my $fid1 = $url_options{fid1};
+	my $fid2 = $url_options{fid2};
+
+	#will non-syntenic dots be shown?
+	my $snsd = $url_options{show_non_syn_dots} =~ /true/i ? 1 : 0;
+	my $ALGO_LOOKUP = algo_lookup();
+	my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
+
+	#will the axis be flipped?
+	my $flip = $url_options{flip};
+	$flip = $flip =~ /true/i ? 1 : 0;
+
+	#are axes labeled?
+	my $clabel = $url_options{clabel};
+	$clabel = $clabel =~ /true/i ? 1 : 0;
+
+	#are random chr skipped
+	my $skip_rand = $url_options{skip_rand};
+	$skip_rand = $skip_rand =~ /true/i ? 1 : 0;
+
+	#which color scheme for ks/kn dots?
+	my $color_scheme = $url_options{color_scheme};
+
+	#codeml min and max calues
+	my $codeml_min = $url_options{codeml_min};
+	$codeml_min = undef
+	  unless $codeml_min =~ /\d/ && $codeml_min =~ /^-?\d*.?\d*$/;
+	my $codeml_max = $url_options{codeml_max};
+	$codeml_max = undef
+	  unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
+	my $logks = $url_options{logks};
+	$logks = $logks eq "true" ? 1 : 0;
+
+	#how are the chromosomes to be sorted?
+	my $chr_sort_order = $url_options{chr_sort_order};
+
+	#draw a box around identified diagonals?
+	my $box_diags = $url_options{box_diags};
+	$box_diags = $box_diags eq "true" ? 1 : 0;
+
+	my ( $org_name1, $titleA ) = gen_org_name(
+		db		  => $db,
+		dsgid     => $dsgid1,
+		feat_type => $feat_type1,
+		write_log => 0
+	);
+
+	my ( $org_name2, $titleB ) = gen_org_name(
+		db		  => $db,
+		dsgid     => $dsgid2,
+		feat_type => $feat_type2,
+		write_log => 0
+	);
+
+	# Sort by genome id
+	(
+		$dsgid1, $org_name1, $feat_type1, $depth_org_1_ratio, $dsgid2,
+		$org_name2, $feat_type2, $depth_org_2_ratio
+	  )
+	  = (
+		$dsgid2, $org_name2, $feat_type2, $depth_org_2_ratio, $dsgid1,
+		$org_name1, $feat_type1, $depth_org_1_ratio
+	  ) if ( $dsgid2 lt $dsgid1 );
+
+	my $synmap_link =
+		$config->{SERVER}
+	  . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2"
+	  . ";D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;"
+	  . "ft2=$feat_type2;autogo=1";
+
+	$synmap_link .= ";Dm=$Dm"       if defined $Dm;
+	$synmap_link .= ";csco=$cscore" if $cscore;
+	$synmap_link .= ";tdd=$dupdist" if defined $dupdist;
+	$synmap_link .= ";gm=$gm"       if defined $gm;
+	$synmap_link .= ";snsd=$snsd";
+
+	$synmap_link .= ";bd=$box_diags"          if $box_diags;
+	$synmap_link .= ";mcs=$min_chr_size"      if $min_chr_size;
+	$synmap_link .= ";sp=$assemble"           if $assemble;
+	$synmap_link .= ";ma=$merge_algo"         if $merge_algo;
+	$synmap_link .= ";da=$depth_algo"         if $depth_algo;
+	$synmap_link .= ";do1=$depth_org_1_ratio" if $depth_org_1_ratio;
+	$synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
+	$synmap_link .= ";do=$depth_overlap"      if $depth_overlap;
+	$synmap_link .= ";fb=1"                   if $frac_bias;
+	$synmap_link .= ";ws=$window_size"        if $window_size;
+	$synmap_link .= ";flip=1"                 if $flip;
+	$synmap_link .= ";cs=$color_scheme";
+	$synmap_link .= ";cmin=$codeml_min"
+	  if defined $codeml_min;   #$codeml_min=~/\d/ && $codeml_min=~/^\d*.?\d*$/;
+	$synmap_link .= ";cmax=$codeml_max"
+	  if defined $codeml_max;   #$codeml_max=~/\d/ && $codeml_max=~/^\d*.?\d*$/;
+	$synmap_link .= ";logks=$logks"        if defined $logks;
+	$synmap_link .= ";cl=0"                if $clabel eq "0";
+	$synmap_link .= ";sr=$skip_rand"       if defined $skip_rand;
+	$synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
+
+	$email = 0 if check_address_validity($email) eq 'invalid';
+
+	$feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
+	$feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
+	$feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
+	$feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
+
+	$synmap_link .= ";dt=$dagchainer_type";
+
+	my $ks_type = $url_options{ks_type};
+	if ($ks_type) {
+		my $num;
+		if    ( $ks_type eq "ks" )    { $num = 1; }
+		elsif ( $ks_type eq "kn" )    { $num = 2; }
+		elsif ( $ks_type eq "kn_ks" ) { $num = 3; }
+		$synmap_link .= ";ks=$num";
+	}
+	$synmap_link .= ";am=g" if $axis_metric       && $axis_metric       =~ /g/i;
+	$synmap_link .= ";ar=s" if $axis_relationship && $axis_relationship =~ /s/i;
+	$synmap_link .= ";ct=$color_type" if $color_type;
+
+	my $tiny_link = CoGe::Accessory::Web::get_tiny_link( url => $synmap_link );
+
+	return $tiny_link;
+}
+
+sub go {
+	my %opts = @_;
+	foreach my $k ( keys %opts ) {
+		$opts{$k} =~ s/^\s+//;
+		$opts{$k} =~ s/\s+$//;
+	}
+	my $dsgid1 = $opts{dsgid1};
+	my $dsgid2 = $opts{dsgid2};
+
+	return encode_json(
+		{
+			success => JSON::false,
+			error   => "You must select two genomes."
+		}
+	) unless ( $dsgid1 && $dsgid2 );
+
+	my ($db, $user, $config) = CoGe::Accessory::Web->init();
+
+	my ($genome1) = $db->resultset('Genome')->find($dsgid1);
+	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
+
+	return encode_json(
+		{
+			success => JSON::false,
+			error   => "The Genome $dsgid1 could not be found."
+		}
+	) unless $genome1;
+
+	return encode_json(
+		{
+			success => JSON::false,
+			error   => "The Genome $dsgid2 could not be found."
+		}
+	) unless $genome2;
+
+	return encode_json(
+		{
+			success => JSON::false,
+			error   => "Genome $dsgid1 primary data is missing."
+		}
+	) unless -r $genome1->file_path;
+
+	return encode_json(
+		{
+			success => JSON::false,
+			error   => "Genome $dsgid2 primary data is missing."
+		}
+	) unless -r $genome2->file_path;
+
+	my $tiny_link = get_query_link($config, $db, @_);
+	say STDERR "tiny_link is required for logging." unless defined($tiny_link);
+	my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
+	my $workflow_name = "synmap-$tiny_id";
+
+	my $cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $opts{basename}, tempdir => catdir($config->{TEMPDIR}, 'SynMap') );
+	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "Creating Workflow", $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "Link to Regenerate Analysis", $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "$tiny_link", $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "Created Workflow: synmap-$workflow_name", $cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+
+	my $JEX = CoGe::Accessory::Jex->new(host => $config->{JOBSERVER}, port => $config->{JOBPORT});
+	my $workflow = $JEX->create_workflow(name => $workflow_name, logfile => $cogeweb->logfile);
+
+	add_jobs(workflow => $workflow, db => $db, user => $user, config => $config, cogeweb => $cogeweb, @_);
 
 	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
 	CoGe::Accessory::Web::write_log( "Running Workflow", $cogeweb->logfile );
@@ -1621,6 +1623,13 @@ sub go {
 	my $response = $JEX->submit_workflow($workflow);
 
 	if ( $response and $response->{id} ) {
+		my $feat_type1 = $opts{feat_type1};
+		my $feat_type2 = $opts{feat_type2};
+		my ( $org_name1, $title1 ) = gen_org_name(db => $db, dsgid => $dsgid1, feat_type => $feat_type1, write_log => 1);
+		my ( $org_name2, $title2 ) = gen_org_name(db => $db, dsgid => $dsgid2, feat_type => $feat_type2, write_log => 1);
+		my $log_msg = "$org_name1 v. $org_name2"; #"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
+		$log_msg .= " Ks" if $opts{ks_type};
+
 		my $log = CoGe::Accessory::Web::log_history(
 			db          => $db,
 			user_id     => $user->id,
@@ -1646,5 +1655,7 @@ sub go {
 		return encode_json( { success => JSON::false } );
 	}
 }
+
+with qw(CoGe::Builder::Buildable);
 
 1;
