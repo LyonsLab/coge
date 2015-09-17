@@ -69,6 +69,9 @@ sub get {
     elsif ($message->{type} eq "analyze_snps") {
         $builder = CoGe::Builder::SNP::IdentifySNPs->new($request);
     }
+    elsif ($message->{type} eq "synmap") {
+        $builder = CoGe::Builder::Tools::SynMap->new($request);
+    }
     else {
         print STDERR "PipelineFactory::get unknown type\n";
         return;

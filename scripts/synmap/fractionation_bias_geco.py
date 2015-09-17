@@ -132,6 +132,7 @@ t0 = datetime.now()
 with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic genes
     synmap_rowcount = 0
     cols = []  # list for parsing columns from SynMap data
+    decimal_strip_check_target_gene = 0
     for line in f:  # for loop to parse columns
         new_line = line.replace('||', '\t')  #converts || into tabs for universal delimination
         if line[0] != '#' and line[0] != '\n' and line[0] != '{' and line[0] != '}' and (line[0] != "\\"):  #sorts out columns containing syntenic block information/headings
@@ -149,6 +150,9 @@ with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic
                 if 'scaffold' not in cols[1] and 'Scaffold' not in cols[1]:
                     target_chr = cols[1]
                     target_gene = str(cols[4]).rstrip('.')  #puts all genome1_genes with synteny into a list
+                    decimal_strip_check_target_gene = target_gene.find('.')
+                    if not decimal_strip_check_target_gene == (-1):
+                        target_gene = target_gene[:(decimal_strip_check_target_gene)]
                 if 'scaffold' not in cols[13] and 'Scaffold' not in cols[13]:
                     query_chr = str(cols[13])  #puts all genome2_chrs with synteny to genes in genome1 into a list
                     query_gene = str(cols[16]).rstrip('.')  #puts all genome2_genes with synteny to genes in a genome1 into a list
@@ -156,6 +160,9 @@ with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic
                 if 'scaffold' not in cols[13] and 'Scaffold' not in cols[13]:
                     target_chr = cols[13]
                     target_gene = str(cols[16])  #puts all genome1_genes with synteny into a list
+                    decimal_strip_check_target_gene = target_gene.find('.')
+                    if not decimal_strip_check_target_gene == (-1):
+                        target_gene = target_gene[:(decimal_strip_check_target_gene)]
                 if 'scaffold' not in cols[1] and 'Scaffold' not in cols[1]:
                     query_chr = str(cols[1])  #puts all genome2_chrs with synteny to genes in genome1 into a list
                     query_gene = str(cols[4])  #puts all genome2_genes with synteny to genes in a genome1 into a list
@@ -335,53 +342,63 @@ with open(retention_calc_output_file, 'wb') as csvf:
 print "Plotting FractBias Data"
 
 #define figure size, column layout, grid layout
-figsize = (15, 20)
+figsize = (15, (len(target_lst)*2.4))
 cols = 2
 gs = gridspec.GridSpec(len(output_dict) // cols + 1, cols)
 
-# These are the "Tableau 20" colors as RGB  
-tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),  
-             (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),  
-             (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),  
-             (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),  
-             (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)] 
-  
-# Scale the RGB values to the [0, 1] range, which is the format matplotlib accepts  
-for i in range(len(tableau20)):  
-    r, g, b = tableau20[i]  
+
+
+# These are the "Tableau 20" colors as RGB
+tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
+             (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),
+             (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),
+             (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),
+             (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)]
+
+# Scale the RGB values to the [0, 1] range, which is the format matplotlib accepts
+for i in range(len(tableau20)):
+    r, g, b = tableau20[i]
     tableau20[i] = (r / 255., g / 255., b / 255.)
 
-fig = plt.figure(figsize=figsize)
+#Alternate color palettes Seaborn/Brewer
+
+current_palette = sns.color_palette("Set2", 40)
+#tableau20
+
+fig = plt.figure(figsize=figsize, frameon=False)
 subplt_count = -1
 ax = []
-
 for tchr in output_dict:
     subplt_count += 1
-    print "Plotting target chromosome: "+str(subplt_count)
-    count = 0 
+    print "Plotting subplot: "+str(subplt_count)
+    count = 0
     row = (subplt_count // cols)
     col = subplt_count % cols
     ax.append(fig.add_subplot(gs[row, col]))
-    
     for qchr in output_dict[tchr]:
         count += 1
-        #print output_dict[tchr][qchr]
         if (max(output_dict[tchr][qchr].itervalues()))>0:
             x = output_dict[tchr][qchr].keys()
             y = output_dict[tchr][qchr].values()
+            #Sets up plotting conditions
             ax[-1].spines["top"].set_visible(False)
             ax[-1].spines["right"].set_visible(False)
+            ax[-1].spines["left"].set_visible(True)
+            ax[-1].spines["bottom"].set_visible(True)
+            ax[-1].patch.set_visible(False)
             ax[-1].get_xaxis().tick_bottom()
             ax[-1].get_yaxis().tick_left()
-            ax[-1].plot(x, y, color=tableau20[count], lw=2, label=str(qchr))
-            ax[-1].set_title(label='Target Chromosome: '+species_name_filter+" "+ tchr, fontweight='bold', fontsize=14)
-            ax[-1].set_xlabel('Window Iteration\n(Gene order number on chromosome)', fontsize=12, fontweight='bold')
-            ax[-1].set_ylabel('Retention %\n(# Syntenic Genes/window size)', fontsize=12, fontweight='bold')
-            ax[-1].legend(loc=1, frameon=False, title="Query Chromosome", fontsize=10)
+            ax[-1].plot(x, y, color=current_palette[count], lw=2, label=str(qchr))
+            ax[-1].set_title(label='Target Chromosome: '+species_name_filter+" "+ tchr, fontweight='bold', fontsize=14, y=1.1, loc='left')
+            ax[-1].set_xlabel('Window Iteration\n(Gene number)', fontsize=12, fontweight='bold')
+            ax[-1].set_ylabel('% Retention\n(#Syntenic genes/window size)', fontsize=12, fontweight='bold')
+            ax[-1].legend(bbox_to_anchor=(1.25, 1.1), loc=1, frameon=False, title="       Query\nChromosome", fontsize=10)
+
         else:
             continue
-fig.tight_layout()
-plt.savefig(args.output+"/html/"+"fractbias_figure1.png") #<--------
+
+fig.subplots_adjust(wspace=0.45, hspace=0.6)
+plt.savefig(args.output+"/html/"+"fractbias_figure1.png", transparent=True) #<--------
 
 t6 = datetime.now()
 
