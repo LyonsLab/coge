@@ -86,6 +86,12 @@ jQuery(document).ready(function(){
     if (document.URL.indexOf('genomevolution.org') == -1 && document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
         $('#brand').addClass("dev");
     }
+    
+    //Setup API
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
+    });
 });
 
 function browserAlert(){
@@ -139,7 +145,7 @@ function add_button_states (ids) {
 }
 
 //initialize superfish plugin (dropdown menu)
-$(document).ready( function() {
+/*$(document).ready( function() {
     $('ul.sf-menu').supersubs({
             minWidth:    8,   // minimum width of sub-menus in em units
             maxWidth:    27,   // maximum width of sub-menus in em units
@@ -149,7 +155,14 @@ $(document).ready( function() {
         delay: 300
     });
     $('#menubar').css('visibility', 'visible'); // mdb added 10/21/13 -- hidden on startup to prevent "glitching" in rendering
-});
+});*/
+
+function search() {
+	var token = $('#search_token').val();
+	console.log(token);
+	//window.location.href = "api/v1/global/search/" + token;
+	window.location.href = "SearchResults.pl?s=" + token;
+}
 
 </script>
 
@@ -239,7 +252,7 @@ $(document).ready( function() {
 		    	<td>
 		        	<input id="search_token" type="search" id="search_token" placeholder="Search Database" spellcheck="false" />
 				</td>
-				<span id="search_button" class="ui-button coge-button ui-state-active">
+				<span id="search_button" class="ui-button coge-button ui-state-active" onclick="search()">
 	            	<span style="margin-top:0.25em;font-size:15;" class="glyphicon glyphicon-search"></span>
 	            </span>
 			</div>
