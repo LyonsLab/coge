@@ -64,10 +64,12 @@ __PACKAGE__->belongs_to("user"			=> "CoGeX::Result::User", 		{ "foreign.user_id"
 __PACKAGE__->belongs_to("parent_group" 	=> "CoGeX::Result::UserGroup",  { "foreign.user_group_id" => "self.parent_id" } );
 __PACKAGE__->belongs_to("child_group" 	=> "CoGeX::Result::UserGroup",  { "foreign.user_group_id" => "self.child_id" } );
 __PACKAGE__->belongs_to("experiment" 	=> "CoGeX::Result::Experiment",	{ "foreign.experiment_id" => "self.child_id" } );
-__PACKAGE__->belongs_to("genome"     	=> "CoGeX::Result::Genome",     { "foreign.genome_id" => "self.child_id" },{
-					 join=>['genomic_sequence_type', 'organism'],
-					 prefetch=>['genomic_sequence_type', 'organism'],
-					} );
+__PACKAGE__->belongs_to("genome"     	=> "CoGeX::Result::Genome",     { "foreign.genome_id" => "self.child_id" } );
+# mdb removed 8/21/15 COGE-648
+#,{
+#					 join=>['genomic_sequence_type', 'organism'],
+#					 prefetch=>['genomic_sequence_type', 'organism'],
+#					} );
 __PACKAGE__->belongs_to("feature"    	=> "CoGeX::Result::Feature",    { "foreign.feature_id" => "self.child_id" } );
 __PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_id" => "self.child_id" } );
 # mdb removed 3/17/15 due to error after upgrade to ubuntu 14.04 and perl 5.18.2:

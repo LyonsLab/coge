@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGe::Services::Auth qw(init);
 use CoGe::Services::Data::Job;
+use CoGe::Core::Genome qw(genomecmp);
 use CoGeDBI qw(get_feature_counts);
 use Data::Dumper;
 
@@ -50,7 +51,7 @@ sub search {
     }
 
     # Filter response
-    my @filtered = grep {
+    my @filtered = sort genomecmp grep {
         !$_->restricted || (defined $user && $user->has_access_to_genome($_))
     } values %unique;
 
@@ -75,6 +76,7 @@ sub search {
             info => $_->info,
             organism_id  => int($_->organism->id),
             sequence_type => {
+                id => $_->type->id,
                 name => $_->type->name,
                 description => $_->type->description,
             },
@@ -89,8 +91,6 @@ sub search {
         } @filtered;
     }
     
-    @result = sort { $a->{info} cmp $b->{info} } @result;
-
     $self->render(json => { genomes => \@result });
 }
 
