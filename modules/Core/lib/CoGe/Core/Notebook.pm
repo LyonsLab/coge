@@ -14,7 +14,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook load_notebook notebookcmp %ITEM_TYPE );
+    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook get_notebook notebookcmp %ITEM_TYPE );
 
     my $node_types = CoGeX::node_types();
 
@@ -34,7 +34,7 @@ BEGIN {
     );
 }
 
-sub load_notebook {
+sub get_notebook {
     my %opts = @_;
     my $db = $opts{db};
     my $id = $opts{id};
@@ -43,13 +43,13 @@ sub load_notebook {
 
 	my $notebook = $db->resultset('List')->find($id);
 	unless ($notebook) {
-    	print STDERR "error reading notebook from db in CoGe::Core::Notebook::load_notebook\n";
+    	print STDERR "error reading notebook from db in CoGe::Core::Notebook::get_notebook\n";
 		return undef;
 	}
 
 	if ($user) { # check permissions if user specified
 		if ($notebook->restricted && !$user->has_access_to_list($notebook)) {
-	    	print STDERR "attempt to load notebook without user permissions in CoGe::Core::Notebook::load_notebook\n";
+	    	print STDERR "attempt to load notebook without user permissions in CoGe::Core::Notebook::get_notebook\n";
 			return undef;
 		}
 	}

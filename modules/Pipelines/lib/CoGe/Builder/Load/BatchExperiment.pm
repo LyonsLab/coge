@@ -8,7 +8,6 @@ use File::Spec::Functions qw(catfile);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
-use CoGe::Core::Notebook qw(load_notebook);
 use CoGe::Builder::CommonTasks;
 
 sub build {

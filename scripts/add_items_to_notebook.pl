@@ -9,7 +9,7 @@ use Getopt::Long qw(GetOptions);
 
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Utils qw(to_pathname);
-use CoGe::Core::Notebook qw(add_items_to_notebook load_notebook);
+use CoGe::Core::Notebook qw(add_items_to_notebook get_notebook);
 use CoGe::Core::Storage qw(get_workflow_results add_workflow_result);
 use CoGeX;
 
@@ -49,7 +49,7 @@ my $results = get_workflow_results($user->name, $wid);
 exit unless $results;
 
 # load notebook
-my $notebook = load_notebook(
+my $notebook = get_notebook(
 	db		=> $db,
 	id		=> $notebook_id,
 	user	=> $user
