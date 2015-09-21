@@ -15,7 +15,10 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook get_notebook notebookcmp %ITEM_TYPE );
+    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook 
+                  get_notebook notebookcmp %ITEM_TYPE 
+                  delete_notebook undelete_notebook 
+              );
 
     my $node_types = CoGeX::node_types();
 
@@ -184,6 +187,80 @@ sub add_items_to_notebook {
         return unless $conn;
     }
 
+    return 1;
+}
+
+sub delete_notebook {
+    my %opts = @_;
+    my $db       = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
+    my $user     = $opts{user};     # user object
+    my $notebook_id = $opts{notebook_id}; # notebook id
+    my $page     = $opts{page};
+    return unless ($db and $notebook_id and $user);
+    #print STDERR "delete_notebook\n";
+    
+    # Get notebook from DB
+    my $notebook = $db->resultset('List')->find($notebook_id);
+    return 0 unless $notebook;
+    
+    # Verify that user has editor access to the notebook
+    if (!$user->is_admin && ($notebook->locked || !$user->is_owner( list => $notebook_id )) ) {
+        return 0;
+    }
+    
+    # Delete notebook
+    $notebook->deleted(1);
+    $notebook->update;
+    
+    # Record in log
+    if ($page) {
+        CoGe::Accessory::Web::log_history(
+            db          => $db,
+            user_id     => $user->id,
+            page        => "$page",
+            description => 'deleted notebook ' . $notebook->info,
+            parent_id   => $notebook->id,
+            parent_type => 1 #FIXME magic number
+        );
+    }
+    
+    return 1;
+}
+
+sub undelete_notebook {
+    my %opts = @_;
+    my $db       = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
+    my $user     = $opts{user};     # user object
+    my $notebook_id = $opts{notebook_id}; # notebook id
+    my $page     = $opts{page};
+    return unless ($db and $notebook_id and $user);
+    #print STDERR "undelete_notebook\n";
+    
+    # Get notebook from DB
+    my $notebook = $db->resultset('List')->find($notebook_id);
+    return 0 unless $notebook;
+    
+    # Verify that user has editor access to the notebook
+    if (!$user->is_admin && ($notebook->locked || !$user->is_owner( list => $notebook_id )) ) {
+        return 0;
+    }
+    
+    # Undelete notebook
+    $notebook->deleted(0);
+    $notebook->update;
+    
+    # Record in log
+    if ($page) {
+        CoGe::Accessory::Web::log_history(
+            db          => $db,
+            user_id     => $user->id,
+            page        => "$page",
+            description => 'undeleted notebook ' . $notebook->info,
+            parent_id   => $notebook->id,
+            parent_type => 1 #FIXME magic number
+        );
+    }
+    
     return 1;
 }
 
