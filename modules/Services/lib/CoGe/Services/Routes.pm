@@ -86,6 +86,10 @@ sub startup {
     $r->get("/notebooks/:id" => [id => qr/\d+/])
         ->name("notebooks-fetch")
         ->to("notebook#fetch", id => undef);
+        
+    $r->put("/notebooks")
+        ->name("notebooks-add")
+        ->to("notebook#add");
 
     # User routes -- not documented, only for internal use
     $r->get("/users/search/#term")

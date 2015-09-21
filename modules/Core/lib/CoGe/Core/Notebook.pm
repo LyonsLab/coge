@@ -3,6 +3,7 @@ use v5.14;
 use strict;
 use warnings;
 use Data::Dumper qw(Dumper);
+use Switch;
 
 use CoGeX;
 
@@ -91,34 +92,44 @@ sub create_notebook {
     my $user    = $opts{user};
     my $name    = $opts{name};
     my $desc    = $opts{desc};
-    my $type_id = $opts{type_id};
+    my $type    = $opts{type};    # string type name (or use type_id)
+    my $type_id = $opts{type_id}; # type id (or use type)
     my $page    = $opts{page};
-    return unless ($name and $type_id and $db and $user);
+    return unless ($name and ($type or $type_id) and $db and $user);
     my $items = $opts{item_list}; # optional
     return if ( $user->is_public );
+    
+    # Convert type string to id #FIXME move this into function in DBIX module ...?
+    unless ($type_id) {
+        $type_id = 5; #FIXME hardcoded to "mixed"
+        switch($type) {
+            case 'genome'     { $type_id = 1; }
+            case 'experiment' { $type_id = 2; }
+            case 'owner'      { $type_id = 3; } # deprecated
+            case 'feature'    { $type_id = 4; }
+            case 'mixed'      { $type_id = 5; }
+            case 'other'      { $type_id = 6; }
+        }
+    }
 
     # Create the new list
-    my $notebook = $db->resultset('List')->create(
-        {
-            name         => $name,
-            description  => $desc,
-            list_type_id => $type_id,
-            creator_id   => $user->id,
-            restricted   => 1
-        }
-    );
+    my $notebook = $db->resultset('List')->create({
+        name         => $name,
+        description  => $desc,
+        list_type_id => $type_id,
+        creator_id   => $user->id,
+        restricted   => 1
+    });
     return unless $notebook;
 
     # Set user as owner
-    my $conn = $db->resultset('UserConnector')->create(
-        {
-            parent_id   => $user->id,
-            parent_type => 5,           #FIXME hardcoded to "user"
-            child_id    => $notebook->id,
-            child_type  => 1,           #FIXME hardcoded to "list"
-            role_id     => 2            #FIXME hardcoded to "owner"
-        }
-    );
+    my $conn = $db->resultset('UserConnector')->create({
+        parent_id   => $user->id,
+        parent_type => 5,           #FIXME hardcoded to "user"
+        child_id    => $notebook->id,
+        child_type  => 1,           #FIXME hardcoded to "list"
+        role_id     => 2            #FIXME hardcoded to "owner"
+    });
     return unless $conn;
 
     # Add selected items to new notebook
