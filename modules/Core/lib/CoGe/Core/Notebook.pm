@@ -3,6 +3,7 @@ use v5.14;
 use strict;
 use warnings;
 use Data::Dumper qw(Dumper);
+use Switch;
 
 use CoGeX;
 
@@ -14,7 +15,10 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook load_notebook notebookcmp %ITEM_TYPE );
+    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook 
+                  get_notebook notebookcmp %ITEM_TYPE 
+                  delete_notebook undelete_notebook 
+              );
 
     my $node_types = CoGeX::node_types();
 
@@ -34,7 +38,7 @@ BEGIN {
     );
 }
 
-sub load_notebook {
+sub get_notebook {
     my %opts = @_;
     my $db = $opts{db};
     my $id = $opts{id};
@@ -43,13 +47,13 @@ sub load_notebook {
 
 	my $notebook = $db->resultset('List')->find($id);
 	unless ($notebook) {
-    	print STDERR "error reading notebook from db in CoGe::Core::Notebook::load_notebook\n";
+    	print STDERR "error reading notebook from db in CoGe::Core::Notebook::get_notebook\n";
 		return undef;
 	}
 
 	if ($user) { # check permissions if user specified
 		if ($notebook->restricted && !$user->has_access_to_list($notebook)) {
-	    	print STDERR "attempt to load notebook without user permissions in CoGe::Core::Notebook::load_notebook\n";
+	    	print STDERR "attempt to load notebook without user permissions in CoGe::Core::Notebook::get_notebook\n";
 			return undef;
 		}
 	}
@@ -91,34 +95,44 @@ sub create_notebook {
     my $user    = $opts{user};
     my $name    = $opts{name};
     my $desc    = $opts{desc};
-    my $type_id = $opts{type_id};
+    my $type    = $opts{type};    # string type name (or use type_id)
+    my $type_id = $opts{type_id}; # type id (or use type)
     my $page    = $opts{page};
-    return unless ($name and $type_id and $db and $user);
+    return unless ($name and ($type or $type_id) and $db and $user);
     my $items = $opts{item_list}; # optional
     return if ( $user->is_public );
+    
+    # Convert type string to id #FIXME move this into function in DBIX module ...?
+    unless ($type_id) {
+        $type_id = 5; #FIXME hardcoded to "mixed"
+        switch($type) {
+            case 'genome'     { $type_id = 1; }
+            case 'experiment' { $type_id = 2; }
+            case 'owner'      { $type_id = 3; } # deprecated
+            case 'feature'    { $type_id = 4; }
+            case 'mixed'      { $type_id = 5; }
+            case 'other'      { $type_id = 6; }
+        }
+    }
 
     # Create the new list
-    my $notebook = $db->resultset('List')->create(
-        {
-            name         => $name,
-            description  => $desc,
-            list_type_id => $type_id,
-            creator_id   => $user->id,
-            restricted   => 1
-        }
-    );
+    my $notebook = $db->resultset('List')->create({
+        name         => $name,
+        description  => $desc,
+        list_type_id => $type_id,
+        creator_id   => $user->id,
+        restricted   => 1
+    });
     return unless $notebook;
 
     # Set user as owner
-    my $conn = $db->resultset('UserConnector')->create(
-        {
-            parent_id   => $user->id,
-            parent_type => 5,           #FIXME hardcoded to "user"
-            child_id    => $notebook->id,
-            child_type  => 1,           #FIXME hardcoded to "list"
-            role_id     => 2            #FIXME hardcoded to "owner"
-        }
-    );
+    my $conn = $db->resultset('UserConnector')->create({
+        parent_id   => $user->id,
+        parent_type => 5,           #FIXME hardcoded to "user"
+        child_id    => $notebook->id,
+        child_type  => 1,           #FIXME hardcoded to "list"
+        role_id     => 2            #FIXME hardcoded to "owner"
+    });
     return unless $conn;
 
     # Add selected items to new notebook
@@ -173,6 +187,80 @@ sub add_items_to_notebook {
         return unless $conn;
     }
 
+    return 1;
+}
+
+sub delete_notebook {
+    my %opts = @_;
+    my $db       = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
+    my $user     = $opts{user};     # user object
+    my $notebook_id = $opts{notebook_id}; # notebook id
+    my $page     = $opts{page};
+    return unless ($db and $notebook_id and $user);
+    #print STDERR "delete_notebook\n";
+    
+    # Get notebook from DB
+    my $notebook = $db->resultset('List')->find($notebook_id);
+    return 0 unless $notebook;
+    
+    # Verify that user has editor access to the notebook
+    if (!$user->is_admin && ($notebook->locked || !$user->is_owner( list => $notebook_id )) ) {
+        return 0;
+    }
+    
+    # Delete notebook
+    $notebook->deleted(1);
+    $notebook->update;
+    
+    # Record in log
+    if ($page) {
+        CoGe::Accessory::Web::log_history(
+            db          => $db,
+            user_id     => $user->id,
+            page        => "$page",
+            description => 'deleted notebook "' . $notebook->info . '"',
+            parent_id   => $notebook->id,
+            parent_type => 1 #FIXME magic number
+        );
+    }
+    
+    return 1;
+}
+
+sub undelete_notebook {
+    my %opts = @_;
+    my $db       = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
+    my $user     = $opts{user};     # user object
+    my $notebook_id = $opts{notebook_id}; # notebook id
+    my $page     = $opts{page};
+    return unless ($db and $notebook_id and $user);
+    #print STDERR "undelete_notebook\n";
+    
+    # Get notebook from DB
+    my $notebook = $db->resultset('List')->find($notebook_id);
+    return 0 unless $notebook;
+    
+    # Verify that user has editor access to the notebook
+    if (!$user->is_admin && ($notebook->locked || !$user->is_owner( list => $notebook_id )) ) {
+        return 0;
+    }
+    
+    # Undelete notebook
+    $notebook->deleted(0);
+    $notebook->update;
+    
+    # Record in log
+    if ($page) {
+        CoGe::Accessory::Web::log_history(
+            db          => $db,
+            user_id     => $user->id,
+            page        => "$page",
+            description => 'undeleted notebook "' . $notebook->info . '"',
+            parent_id   => $notebook->id,
+            parent_type => 1 #FIXME magic number
+        );
+    }
+    
     return 1;
 }
 
