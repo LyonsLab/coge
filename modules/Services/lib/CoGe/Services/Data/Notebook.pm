@@ -4,6 +4,7 @@ use Mojo::JSON;
 use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Core::Notebook;
+use Data::Dumper;
 
 sub search {
     my $self = shift;
@@ -83,6 +84,52 @@ sub fetch {
         restricted => $notebook->restricted ? Mojo::JSON->true : Mojo::JSON->false,
         additional_metadata => \@metadata,
         items => \@items
+    });
+}
+
+sub add {
+    my $self = shift;
+    my $data = $self->req->json;
+    print STDERR "CoGe::Services::Data::Notebook::add\n", Dumper $data, "\n";
+
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    # User authentication is required to add notebook
+    unless (defined $user) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        });
+        return;
+    }
+    
+    # Validate parameters
+    my $metadata = $data->{metadata};
+    unless ($metadata->{name}) {
+        $self->render(json => {
+            error => { Invalid => "Notebook name not specified" }
+        });
+        return;
+    }
+    
+    # Create the notebook
+    my $notebook = create_notebook(
+        db => $db,
+        user => $user,
+        name => $metadata->{name},
+        desc => $metadata->{description} || '',
+        type => $metadata->{type} || ''
+    );
+    unless ($notebook) {
+        $self->render(json => {
+            error => { Error => "Could not create notebook" }
+        });
+        return;
+    }    
+
+    $self->render(json => { 
+        success => Mojo::JSON->true,
+        id => $notebook->id
     });
 }
 
