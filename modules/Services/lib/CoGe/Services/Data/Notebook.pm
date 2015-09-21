@@ -41,6 +41,7 @@ sub fetch {
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
+    # Get notebook from DB
     my $notebook = $db->resultset("List")->find($id);
     unless (defined $notebook) {
         $self->render(json => {
@@ -49,6 +50,7 @@ sub fetch {
         return;
     }
 
+    # Verify that user has read access to the notebook
     unless ( !$notebook->restricted || (defined $user && $user->has_access_to_genome($notebook)) ) {
         $self->render(json => {
             error => { Auth => "Access denied"}
@@ -118,7 +120,8 @@ sub add {
         user => $user,
         name => $metadata->{name},
         desc => $metadata->{description} || '',
-        type => $metadata->{type} || ''
+        type => $metadata->{type} || '',
+        page => 'API'
     );
     unless ($notebook) {
         $self->render(json => {
@@ -131,6 +134,41 @@ sub add {
         success => Mojo::JSON->true,
         id => $notebook->id
     });
+}
+
+sub remove {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get notebook from DB
+    my $notebook = $db->resultset("List")->find($id);
+    unless (defined $notebook) {
+        $self->render(json => {
+            error => { Error => "Item not found"}
+        });
+        return;
+    }
+
+    # Attempt to delete the notebook
+    my $success = delete_notebook(
+        db => $db, 
+        user => $user, 
+        notebook_id => $id, page => 'API'
+    );
+    unless ($success) {
+        $self->render(json => {
+            error => { Error => "Access denied"}
+        });
+        return;
+    }
+    
+    $self->render(json => { 
+        success => Mojo::JSON->true,
+        id => $notebook->id
+    });    
 }
 
 1;
