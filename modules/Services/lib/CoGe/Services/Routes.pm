@@ -90,6 +90,10 @@ sub startup {
     $r->put("/notebooks")
         ->name("notebooks-add")
         ->to("notebook#add");
+        
+    $r->delete("/notebooks/:id" => [id => qr/\d+/])
+        ->name("notebooks-remove")
+        ->to("notebook#remove");
 
     # User routes -- not documented, only for internal use
     $r->get("/users/search/#term")
