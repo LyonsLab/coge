@@ -218,7 +218,7 @@ sub delete_notebook {
             db          => $db,
             user_id     => $user->id,
             page        => "$page",
-            description => 'deleted notebook ' . $notebook->info,
+            description => 'deleted notebook "' . $notebook->info . '"',
             parent_id   => $notebook->id,
             parent_type => 1 #FIXME magic number
         );
@@ -255,7 +255,7 @@ sub undelete_notebook {
             db          => $db,
             user_id     => $user->id,
             page        => "$page",
-            description => 'undeleted notebook ' . $notebook->info,
+            description => 'undeleted notebook "' . $notebook->info . '"',
             parent_id   => $notebook->id,
             parent_type => 1 #FIXME magic number
         );
