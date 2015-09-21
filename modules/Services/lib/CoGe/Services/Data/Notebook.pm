@@ -152,12 +152,22 @@ sub remove {
         return;
     }
 
-    # Attempt to delete the notebook
-    my $success = delete_notebook(
-        db => $db, 
-        user => $user, 
-        notebook_id => $id, page => 'API'
-    );
+    # Attempt to delete/undelete the notebook
+    my $success;
+    if ($notebook->deleted) {
+        $success = undelete_notebook(
+            db => $db, 
+            user => $user, 
+            notebook_id => $id, page => 'API'
+        );
+    }
+    else {
+        $success = delete_notebook(
+            db => $db, 
+            user => $user, 
+            notebook_id => $id, page => 'API'
+        );
+    }
     unless ($success) {
         $self->render(json => {
             error => { Error => "Access denied"}
