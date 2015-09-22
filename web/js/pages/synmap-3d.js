@@ -243,7 +243,7 @@ $.extend(ExperimentDescriptionView.prototype, {
 	    y_gid: this.y_gid,
 	    z_gid: this.z_gid
         });
-
+	console.log(current_experiment);
         return true;
     },
 });
@@ -251,22 +251,68 @@ $.extend(ExperimentDescriptionView.prototype, {
 function GeneralOptionsView(opts) {
     this.data = {};
     this.initialize();
+    this.usr_hide = opts.hide;
+    this.usr_minLen = opts.minLen;
+    this.usr_sort = opts.sortBy;
     this.onError = opts.onError;
 }
 
 $.extend(GeneralOptionsView.prototype, {
     initialize: function() {
         this.el = $($("#general-options-template").html());
-        //this.edit_notebook = this.el.find("#edit_notebook");
-        //this.notebook_container = this.el.find("#notebook-container");
+	this.no_synt = this.el.find("#nosynt");
+	this.min_len = this.el.find("#min_length");
+	this.sortby = this.el.find("#sortby");
+
+	if (this.usr_hide) {
+	    console.log("SHOULD HIDE");
+	    this.no_synt.prop("checked", true)
+        }
     },
 
     is_valid: function() {
-        return true;
+        var no_synt = this.no_synt.is(":checked");
+	var min_len = this.min_len.val();
+	var sortby = this.sortby.val();
+	
+	if (min_len < 0) {
+	    if (this.onError)
+	    this.onError('Minimum chromosome length must be greater than 0.')
+	    return false;
+	}
+
+	this.data.hide = no_synt;
+	this.data.min_len = min_len;
+	this.data.sortby = sortby;
+	//console.log(this.data);
+	return true;
     },
 
     get_options: function() {
         return this.data;
+    }
+});
+
+function AdvancedOptionView() {
+    this.data = {};
+    this.initialize();
+}
+
+$.extend(AdvancedOptionView.prototype, {
+    initialize: function() {
+	this.el = $($("#advanced-options-template").html());
+        this.vr = this.el.find("#vr");
+    },
+
+    is_valid: function() {
+	var vr = this.vr.is(":checked");
+	this.data.vr = vr;
+	//console.log(this.data);
+	return true;
+    },
+
+    get_options: function() {
+	return this.data;
     }
 });
 
@@ -295,21 +341,27 @@ function OptionsView(opts) {
     this.onError = opts.onError;
     this.title = "Options";
     this.initialize();
+    this.hide = opts.hide;
 }
 
 $.extend(OptionsView.prototype, {
     initialize: function() {
-        this.admin_view = new AdminOptionsView();
-        this.general_view = new GeneralOptionsView({onError: this.onError});
+        //this.admin_view = new AdminOptionsView();
+        this.general_view = new GeneralOptionsView({
+		onError: this.onError,
+		hide: this.hide
+	});
+	this.advanced_view = new AdvancedOptionView();
         this.layout_view = new LayoutView({
             template: "#options-layout-template",
             layout: {
-                "#general-options": this.general_view
+                "#general-options": this.general_view,
+		"#advanced-options": this.advanced_view
             }
         });
 
-        if (this.admin)
-            this.layout_view.updateLayout({"#admin-options": this.admin_view});
+        //if (this.admin)
+        //    this.layout_view.updateLayout({"#admin-options": this.admin_view});
 
         this.el = this.layout_view.el;
         
@@ -322,44 +374,24 @@ $.extend(OptionsView.prototype, {
             return false;
 
         var options = $.extend({}, this.general_view.get_options(), this.advanced_view.get_options());
-        if (this.admin) {
+        /* AKB Removed Admin Options
+	if (this.admin) {
             if (!this.admin_view.is_valid())
                 return false;
             $.extend(options, this.admin_view.get_options());
         }
-
+	*/
         $.extend(this.experiment.options, options);
+	console.log(options);
         return true;
     },
 
     render: function() {
-	this.advanced_view = new AdvancedOptionView();
-        this.layout_view.updateLayout(
-            {"#advanced-options": this.advanced_view}
-        );
-
         // Render the views added to the layout view
         this.layout_view.renderLayout();
     },
 });
 
-function AdvancedOptionView() {
-    this.initialize();
-}
-
-$.extend(AdvancedOptionView.prototype, {
-    initialize: function() {
-	this.el = $($("#advanced-options-template").html());
-    },
-
-    is_valid: function() {
-	return true;
-    },
-
-    get_options: function() {
-	return {};
-    }
-});
 
 /* TODO: AKB-Need to make launch(experiment), but use this as a template.
 function load(experiment) {
@@ -421,7 +453,6 @@ function reset_launch() { //AKB - Renamed from reset_load()
     initialize_wizard({
         admin: IS_ADMIN,
         metadata: current_experiment.metadata,
-        //gid: current_experiment.gid, //AKB - replaced with x_gid, y_gid, z_gid
 	x_gid: current_experiment.x_gid,
 	y_gid: current_experiment.y_gid,
 	z_gid: current_experiment.z_gid
@@ -441,14 +472,22 @@ function initialize_wizard(opts) {
     wizard.addStep(new ExperimentDescriptionView({
         experiment: current_experiment,
         metadata: opts.metadata,
-        //gid: opts.gid, AKB - replaced with x_gid, y_gid, z_gid
         x_gid: opts.x_gid,
         y_gid: opts.y_gid,
         z_gid: opts.z_gid,
         onError: wizard.error_help.bind(wizard)
     }));
-    //wizard.addStep(new DataView(current_experiment, { supportedFileTypes: SUPPORTED_FILE_TYPES, onError: wizard.error_help.bind(wizard) })); //AKB - removed
-    wizard.addStep(new OptionsView({experiment: current_experiment, admin: opts.admin, onError: wizard.error_help }));
+
+    wizard.addStep(new OptionsView({
+	experiment: current_experiment,
+	hide: opts.hide,
+	minLen: opts.minLen,
+	sortBy: opts.sortBy,
+	vr: opts.vr, 
+	admin: opts.admin, 
+	onError: wizard.error_help.bind(wizard) 
+    }));
+
     wizard.addStep(new ConfirmationView(current_experiment));
 
     // Render all the wizard sub views
