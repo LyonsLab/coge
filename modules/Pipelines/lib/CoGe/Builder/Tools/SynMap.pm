@@ -33,8 +33,8 @@ sub add_jobs {
 	my $config = $opts{config};
 	my $cogeweb = $opts{cogeweb};
 
-	my $dsgid1 = $opts{dsgid1};
-	my $dsgid2 = $opts{dsgid2};
+	my $dsgid1 = $opts{dsgid1} || $opts{genome_id1};
+	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
 	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
 	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
@@ -145,9 +145,8 @@ sub add_jobs {
 	my $min_chr_size      = $opts{min_chr_size};
 	my $dagchainer_type   = $opts{dagchainer_type};
 	my $color_type        = $opts{color_type};
-	my $merge_algo = $opts{merge_algo};    #is there a merging function?
-	                                       #will non-syntenic dots be shown?
-	my $snsd      = $opts{show_non_syn_dots} =~ /true/i ? 1 : 0;
+	my $merge_algo        = $opts{merge_algo}; #is there a merging function? will non-syntenic dots be shown?
+	my $snsd              = $opts{show_non_syn_dots} =~ /true/i ? 1 : 0;
 #	my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
 
 	#will the axis be flipped?
@@ -1288,6 +1287,8 @@ sub build {
     return unless $gid1;
     my $gid2 = $self->params->{gid2};
     return unless $gid2;
+    
+    basename
 
  	my $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => catdir($self->conf->{TEMPDIR}, 'SynMap') );
     add_jobs(workflow => $self->workflow, db => $self->db, user => $self->user, config => $self->conf, cogeweb => $cogeweb, dsgid1 => $gid1, dsgid2 => $gid2);
@@ -1365,6 +1366,29 @@ sub generate_pseudo_assembly {
     };
 }
 
+sub get_defaults {
+	return {
+		feat_type1 => 1,
+		feat_type2 => 1,
+		ks_type => 0,
+		blast => 6,
+		D => 20,
+		A => 5,
+		Dm => 0,
+		gm => 0,
+		csco => 0,
+		axis_metric => 'nt',
+		axis_relationship => 'r',
+		dagchainer_type => 'geneorder',
+		merge_algo => 1,
+		clabel => 1,
+		skip_rand => 1,
+		color_scheme => 1,
+		chr_sort_order => 'S',
+		logks => 1
+	}
+}
+
 sub get_query_link {
 	my $config = shift;
 	my $db = shift;
@@ -1421,13 +1445,13 @@ sub get_query_link {
 	my $window_size = $url_options{window_size};
 
 	#fids that are passed in for highlighting the pair in the dotplot
-	my $fid1 = $url_options{fid1};
-	my $fid2 = $url_options{fid2};
+#	my $fid1 = $url_options{fid1};
+#	my $fid2 = $url_options{fid2};
 
 	#will non-syntenic dots be shown?
 	my $snsd = $url_options{show_non_syn_dots} =~ /true/i ? 1 : 0;
 	my $ALGO_LOOKUP = algo_lookup();
-	my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
+#	my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
 
 	#will the axis be flipped?
 	my $flip = $url_options{flip};

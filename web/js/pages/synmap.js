@@ -261,13 +261,13 @@ function fill_jobtitle(){
     $('#jobtitle').val(title);
 }
 
-function update_basename(basename){
-    pageObj.basename=basename;
-}
+//function update_basename(basename){
+//    pageObj.basename=basename;
+//}
 
-function reset_basename(){
-    if(pageObj.basename) pageObj.basename=0;
-}
+//function reset_basename(){
+//    if(pageObj.basename) pageObj.basename=0;
+//}
 
 function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb) {
     var url = 'dsg1='+dsgid1+';dsg2='+dsgid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;

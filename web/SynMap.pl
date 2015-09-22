@@ -1325,10 +1325,10 @@ sub get_results {
 	############################################################################
 	my $dag_file12       = $filtered_blastfile . ".dag";
 	my $dag_file12_all   = $dag_file12 . ".all";
-	my $query_dup_file   = $opts{query_dup_files};
-	my $subject_dup_file = $opts{subject_dup_files};
-	my $query            = "a" . $dsgid1;
-	my $subject          = "b" . $dsgid2;
+#	my $query_dup_file   = $opts{query_dup_files};
+#	my $subject_dup_file = $opts{subject_dup_files};
+#	my $query            = "a" . $dsgid1;
+#	my $subject          = "b" . $dsgid2;
 
 	############################################################################
 	# Convert to gene order
