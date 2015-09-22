@@ -15,6 +15,7 @@ parser.add_argument("--target", help="Target genome CoGe ID number. The target g
 parser.add_argument("--windowsize", help="Sets the size of the sliding window for analysis")
 #parser.add_argument("--queryID", help="Query genome CoGe ID number. The query genome is the one with more subgenomes. Used to determine which side of the SynMap output file the target genome data exists.")
 parser.add_argument("--output", help="File path to output directory. Specify SynMap directory: 'storage/coge/data/diags' file path.")
+parser.add_argument("--allgenes", help="Determines whether all genes in target genome gff or only conserved genes should be used in analysis")
 args = parser.parse_args()
 
 
@@ -37,15 +38,14 @@ from collections import OrderedDict
 import matplotlib.pyplot as plt
 import numpy as np 
 import matplotlib.gridspec as gridspec
-
+import seaborn as sns
 
 #had to install this using pip on local computer
-from natsort import natsorted, natsort_key
-import matplotlib
+from natsort import natsorted
 
 #PATH TO RUN IN DESKTOP
 #Sorghum/Maize comparison
-#python fractionation_bias_geco.py --align /home/bjoyce3/sorghum_maize/Sorghum_maize_synmap_results.txt --gff /home/bjoyce3/sorghum_maize/Sorghum_bicolor_annos1-cds0-id_typename-nu1-upa1-add_chr0.gid6807.gff --target 6807 --windowsize 100 --output /home/bjoyce3/sorghum_maize/
+#python fractionation_bias_geco_from_ipython_v2.py --align /home/bjoyce3/sorghum_maize/SorghumMaize_gcoords_merge60_syntenicdepth40.txt --gff /home/bjoyce3/sorghum_maize/Sorghum_bicolor_6807_prodrun.gff --target 6807 --windowsize 100 --output /home/bjoyce3/sorghum_maize/ --allgenes True
 
 #pina/rice comparison
 #python fractionation_bias_geco.py --align /home/bjoyce3/pinarice/SynMapKsMerge120Sdepth10_Osativa-Acomosus2-1Acomv6.txt --gff /home/bjoyce3/pinarice/Ananas_comosus_pineapple_v6.gff --target 25734 --windowsize 100 --output /home/bjoyce3/pinarice
@@ -234,35 +234,82 @@ with open(str(fract_bias_raw_output_file), 'w') as csvfile:
     writer = csv.writer(csvfile, dialect='excel', delimiter=',', lineterminator='\n')
     writer.writerow(headers)
 
-    for tchr in gff_genes:
-        col0 = chr #writes Pineapple chr number
-        count = 0
-        for diction in gff_genes[tchr]:
-            gene = diction['gene_name']
-            col1 = gene #writes pineapple gene name
-            count += 1
-            col2 = count #writes pineapple gene number on pineapple chr
-            #Find the query chr genes and output to columns: first gff info (col0-3), query chr (col 4-n), query chr-gene (col n+1-m)
-            syntenic_query_gene_presence_data = []
-            syntenic_query_gene_name = []
-            for qchr in query_lst:
-                if not tchr in windanalysis_input_dict:
-                    windanalysis_input_dict[tchr] = {}  #initializes the nested dictionary-primary level at genome1_chromosome
-                if not qchr in windanalysis_input_dict[tchr]:
-                    windanalysis_input_dict[tchr][qchr] = []  #initializes first nesting in dictionary-second level at genome1_genes
-                try:
-                    syn_gene = d[tchr][gene][qchr]
-                    syntenic_query_gene_presence_data.append(True)
-                    syntenic_query_gene_name.append(syn_gene)
-                    windanalysis_input_dict[tchr][qchr].append(True)
-                except KeyError:
-                    syntenic_query_gene_presence_data.append(False)
-                    syntenic_query_gene_name.append(".")
-                    windanalysis_input_dict[tchr][qchr].append(False)
-            rows = [tchr, col1, col2]
-            rows.extend(syntenic_query_gene_presence_data)
-            rows.extend(syntenic_query_gene_name)
-            writer.writerow(rows)
+    if args.allgenes == True:
+        for tchr in gff_genes:
+            col0 = chr #writes Pineapple chr number
+            count = 0
+            for diction in gff_genes[tchr]:
+                gene = diction['gene_name']
+                col1 = gene #writes pineapple gene name
+                count += 1
+                col2 = count #writes pineapple gene number on pineapple chr
+                #Find the query chr genes and output to columns: first gff info (col0-3), query chr (col 4-n), query chr-gene (col n+1-m)
+                syntenic_query_gene_presence_data = []
+                syntenic_query_gene_name = []
+                for qchr in query_lst:
+                    if not tchr in windanalysis_input_dict:
+                        windanalysis_input_dict[tchr] = {}  #initializes the nested dictionary-primary level at genome1_chromosome
+                    if not qchr in windanalysis_input_dict[tchr]:
+                        windanalysis_input_dict[tchr][qchr] = []  #initializes first nesting in dictionary-second level at genome1_genes
+                    try:
+                        syn_gene = d[tchr][gene][qchr]
+                        syntenic_query_gene_presence_data.append(True)
+                        syntenic_query_gene_name.append(syn_gene)
+                        windanalysis_input_dict[tchr][qchr].append(True)
+                    except KeyError:
+                        syntenic_query_gene_presence_data.append(False)
+                        syntenic_query_gene_name.append("")
+                        windanalysis_input_dict[tchr][qchr].append(False)
+                rows = [tchr, col1, col2]
+                rows.extend(syntenic_query_gene_presence_data)
+                rows.extend(syntenic_query_gene_name)
+                writer.writerow(rows)
+
+    elif args.allgenes == False:
+        for tchr in gff_genes:
+            col0 = chr #writes Pineapple chr number
+            count = 0
+            for diction in gff_genes[tchr]:
+                gene = diction['gene_name']
+                col1 = gene #writes pineapple gene name
+                count += 1
+                col2 = count #writes pineapple gene number on pineapple chr
+                #Find the query chr genes and output to columns: first gff info (col0-3), query chr (col 4-n), query chr-gene (col n+1-m)
+                syntenic_query_gene_presence_data = []
+                syntenic_query_gene_name = []
+                for qchr in query_lst:
+                    if not tchr in windanalysis_input_dict:
+                        windanalysis_input_dict[tchr] = {}  #initializes the nested dictionary-primary level at genome1_chromosome
+                    if not qchr in windanalysis_input_dict[tchr]:
+                        windanalysis_input_dict[tchr][qchr] = []  #initializes first nesting in dictionary-second level at genome1_genes
+                    try:
+                        syn_gene = d[tchr][gene][qchr]
+                        syntenic_query_gene_presence_data.append(True)
+                    except KeyError:
+                        syntenic_query_gene_presence_data.append(False)
+
+                if sum(syntenic_query_gene_presence_data) >= 1:
+                    for qchr in query_lst:
+                        try:
+                            syn_gene = d[tchr][gene][qchr]
+                            syntenic_query_gene_name.append(syn_gene)
+                            windanalysis_input_dict[tchr][qchr].append(True)
+                        except KeyError:
+                            syntenic_query_gene_name.append("")
+                            windanalysis_input_dict[tchr][qchr].append(False)
+                    rows = [tchr, col1, col2]
+                    rows.extend(syntenic_query_gene_presence_data)
+                    rows.extend(syntenic_query_gene_name)
+                    writer.writerow(rows)
+
+                elif sum(syntenic_query_gene_presence_data) < 1:
+                    continue
+                else:
+                    print 'Target gene not classified'
+                    continue
+
+    else:
+        print "Genes to be used (all genes or at least one syntenic gene) are not defined"
 
 t4 = datetime.now()
 
@@ -313,8 +360,9 @@ try:
     output_dict = collections.OrderedDict(sorted(output_dict.items(), key=lambda t: alphanumbsort(*re.match(r'([a-zA-Z]+)(\d+)',t[0]).groups())))
 except AttributeError:
     #sorted(output_dict, key=lambda x: output_dict[x])
-    natsorted(output_dict[tchr])
-    
+    #natsorted(output_dict[tchr])
+    print "Alphanumeric sort didn't work"
+
 t5 = datetime.now()
 
 
