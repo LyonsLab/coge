@@ -152,13 +152,17 @@ const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER">';
 const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
 //const GENOME_ID     = '<TMPL_VAR NAME="GENOME_ID">'; AKB - Replaced with X, Y, and Z
-const X_GENOME_ID     = '<TMPL_VAR NAME="X_GENOME_ID">';
-const Y_GENOME_ID     = '<TMPL_VAR NAME="Y_GENOME_ID">';
-const Z_GENOME_ID     = '<TMPL_VAR NAME="Z_GENOME_ID">';
+const X_GENOME_ID   = '<TMPL_VAR NAME="X_GENOME_ID">';
+const Y_GENOME_ID   = '<TMPL_VAR NAME="Y_GENOME_ID">';
+const Z_GENOME_ID   = '<TMPL_VAR NAME="Z_GENOME_ID">';
+const HIDE_NOSYNT   = '<TMPL_VAR NAME="HIDE_NOSYNT">';
+const MIN_LEN       = '<TMPL_VAR NAME="MIN_LEN">';
+const SORTBY	    = '<TMPL_VAR NAME="SORTBY">';
+const VR            = '<TMPL_VAR NAME="VR">';
 
 var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">';
-var WORKFLOW_ID 	  = '<TMPL_VAR NAME="WORKFLOW_ID">';
-var EMBED 			  = '<TMPL_VAR NAME="EMBED">';
+var WORKFLOW_ID       = '<TMPL_VAR NAME="WORKFLOW_ID">';
+var EMBED 	      = '<TMPL_VAR NAME="EMBED">';
 
 // File Select constants
 const DEFAULT_TAB              = '<TMPL_VAR NAME="DEFAULT_TAB">';
@@ -186,12 +190,15 @@ $(function() {
     wizard = initialize_wizard({ 
     	admin: IS_ADMIN,
     	helpUrl: HELP_URL,
-    	//gid: GENOME_ID, AKB- Replaced with X, Y, Z
 	x_gid: X_GENOME_ID,
 	y_gid: Y_GENOME_ID,
-	z_gid: Z_GENOME_ID
+	z_gid: Z_GENOME_ID,
+	hide: HIDE_NOSYNT,
+	minLen: MIN_LEN,
+	sortBy: SORTBY,
+	vr: VR	
     });
-    
+
     // Initialize CoGe web services
     coge.services.init({
     	baseUrl: API_BASE_URL,

@@ -34,7 +34,7 @@ use vars qw(
   %FUNCTION $LOAD_ID $WORKFLOW_ID
 );
 
-$PAGE_TITLE = 'SynMap3d';
+$PAGE_TITLE = 'SynMap3D';
 
 $FORM = new CGI;
 ( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init(
@@ -44,9 +44,9 @@ $FORM = new CGI;
 
 # Get workflow_id and load_id for previous load if specified.  Otherwise
 # generate a new load_id for data upload.
-# AKB-Removed $WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
+# AKB TODO $TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 
 $EMBED = $FORM->param('embed');
 
@@ -67,7 +67,7 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
-		          TITLE      => "SynMap 3d",
+		          TITLE      => "SynMap 3D",
         	          PAGE_LINK  => $LINK,
 			  HOME       => $CONF->{SERVER},
                           HELP       => 'SynMap3d',
@@ -88,25 +88,12 @@ sub generate_body {
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
     
-    # Force login
-    if ( $USER->is_public ) {
-        $template->param( LOGIN => 1 );
-        return $template->output;
-    }
-    
-    # AKB - Replaced with X, Y and Z Genome IDs (below)
-    # Set genome ID if specified
-    #my $gid = $FORM->param('gid');
-    #if ($gid) {
-    #    my $genome = $DB->resultset('Genome')->find($gid);
-    #    if ($genome && $USER->has_access_to_genome($genome)) { # check permission
-    #        $template->param(
-    #            GENOME_NAME => $genome->info,
-    #            GENOME_ID   => $genome->id
-    #        );
-    #    }
+    # Force login - AKB Removed
+    #if ( $USER->is_public ) {
+    #    $template->param( LOGIN => 1 );
+    #    return $template->output;
     #}
-
+    
     # Set genome IDs if specified
     my $x_gid = $FORM->param('x_gid');
     my $y_gid = $FORM->param('y_gid');
@@ -138,7 +125,20 @@ sub generate_body {
             );
         }
     }
-    
+
+    # Set options if specified
+    my $hide_nosynt = $FORM->param('hide');
+    my $min_len = $FORM->param('min_len');
+    my $sortby = $FORM->param('sortby');
+    my $vr = $FORM->param('vr');
+    if ($hide_nosynt) {
+	$template->param( HIDE_NOSYNT => $hide_nosynt );
+    }
+    if ($min_len) {}
+    if ($sortby) {}
+    if ($vr) {}
+
+
     $template->param(
         MAIN          => 1,
         PAGE_TITLE    => $PAGE_TITLE,
