@@ -82,15 +82,22 @@ sub irods_ils {
     my @result;
     foreach my $line (@ils) {
         #print STDERR $line, "\n";
-        my ( $type, $backup, $size, $timestamp, $name );
+        my ( $type, $backup, $size, $timestamp, $name, $sort );
         chomp $line;
-        if ( $line =~ /^\s*C\-/ ) {    # directory
-            $type = 'directory';
-            ($name) = basename($line);# $line =~ /([^\/]+)\s*$/; # mdb modified 8/14/14 issue 441
-            if ($name) { $name =~ s/\s*$//; $name .= '/'; }
-            else       { $name = 'error' }
+        
+        if ( $line =~ /^\s*C\-/ ) { # directory or link
+            if ( $line =~ /(\S+)\s+linkPoint/ ) { # link # mdb added 9/15/15
+                $type = 'link';
+                ($name) = basename($1);
+            }
+            else { # directory
+                $type = 'directory';
+                ($name) = basename($line);# $line =~ /([^\/]+)\s*$/; # mdb modified 8/14/14 issue 441
+                if ($name) { $name =~ s/\s*$//; $name .= '/'; }
+                else       { $name = 'error' }
+            }
         }
-        else {                         # file
+        else { # file
             $type = 'file';
             #( undef, undef, $backup, undef, $size, $timestamp, undef, $name ) = split( /\s+/, $line ); # mdb removed 8/14/14 issue 441
             ($backup, $size, $timestamp, $name) = $line =~ /\s+\S+\s+(\d+)\s+\S+\s+(\S+)\s+(\S+)\s+\S+\s+(.+)/; # mdb added 8/14/14 issue 441

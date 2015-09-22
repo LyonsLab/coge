@@ -391,14 +391,16 @@ var coge = window.coge = (function(namespace) {
 							var icon;
 							if (obj.type == 'directory')
 								icon = '<span class="ui-icon ui-icon-folder-collapsed"></span>';
-							else
+							else if (obj.type == 'link') 
+								icon = '<span class="ui-icon ui-icon-link"></span>';
+							else // assume file type
 								icon = '<span class="ui-icon ui-icon-document"></span>';
 							tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;">' 
 									+ icon
 									+ decodeURIComponent(obj.name) + '</td><td>'
 									+ (obj.size ? decodeURIComponent(obj.size) : '') + '</td><td>' 
 									+ (obj.timestamp ? decodeURIComponent(obj.timestamp) : '') + '</td></tr>'); // mdb added decodeURI 8/14/14 issue 441
-							if (obj.type == 'directory') {
+							if (obj.type == 'directory' || obj.type == 'link') {
 								$(tr).click(
 									function() {
 										self._irods_get_path(obj.path);
