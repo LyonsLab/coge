@@ -120,7 +120,7 @@ sub get_genome_info_details {
 
     # Count
     my $chr_num = $dsg->chromosome_count();
-    $html .= qq{<tr><td class="title5">Chromosome count:</td</td>}
+    $html .= qq{<tr><td class="title5">Chromosomes/contigs:</td</td>}
         . qq{<td class="data5">} . commify($chr_num);
 
     # Histogram
@@ -130,9 +130,9 @@ sub get_genome_info_details {
     $html .= qq{</td></tr>};
     
  
-    my $gstid    = $dsg->genomic_sequence_type->id;
-    my $gst_name = $dsg->genomic_sequence_type->name;
-    $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
+    my $gstid    = ($dsg->genomic_sequence_type ? $dsg->genomic_sequence_type->id : '');
+    my $gst_name = ($dsg->genomic_sequence_type ? $dsg->genomic_sequence_type->name : '');
+    $gst_name .= ": " . $dsg->type->description if ( $dsg->type && $dsg->type->description );
 
     # Sequence Type
     $html .= qq{<tr><td class="title5">Sequence type:<td class="data5" title="gstid$gstid">}
@@ -933,7 +933,7 @@ sub get_genome_info {
         DO_GENOME_INFO => 1,
         ORGANISM       => $genome->organism->name,
         VERSION        => $genome->version,
-        TYPE           => $genome->type->info,
+        TYPE           => ($genome->type ? $genome->type->info : ''),
         SOURCE         => get_genome_sources($genome),
         LINK           => $genome->link,
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
@@ -1309,7 +1309,7 @@ sub delete_genome {
     my $genome = $DB->resultset('Genome')->find($gid);
     return 0 unless $genome;
     return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $gid ) );
-    my $delete_or_undelete = ($genome->deleted ? 'undelete' : 'delete');
+    my $delete_or_undelete = ($genome->deleted ? 'undeleted' : 'deleted');
     #print STDERR "delete_genome " . $genome->deleted . "\n";
     $genome->deleted( !$genome->deleted ); # do undelete if already deleted
     $genome->update;
@@ -1319,7 +1319,7 @@ sub delete_genome {
         db          => $DB,
         user_id     => $USER->id,
         page        => $PAGE_TITLE,
-        description => "$delete_or_undelete genome id $gid",
+        description => "$delete_or_undelete genome " . $genome->info_html,
         parent_id   => $gid,
         parent_type => 2 #FIXME magic number
     );
@@ -1338,7 +1338,7 @@ sub copy_genome {
     my $mask = $args{mask};
     my $seq_only = $args{seq_only};
 
-    print STDERR "copy_and_mask_genome: gid=$gid mask=$mask\n";
+    print STDERR "GenomeInfo::copy_and_mask_genome: gid=$gid mask=$mask seq_only=$seq_only\n";
 
     if ($USER->is_public) {
         return 'Not logged in';
@@ -1353,8 +1353,8 @@ sub copy_genome {
     $workflow->logfile( catfile($result_dir, 'debug.log') );
 
     $args{uid} = $USER->id;
+    $args{wid} = $workflow->id;
     $args{staging_dir} = $staging_dir;
-    $args{result_dir} = $result_dir;
 
     my %task = copy_and_mask(%args);
     $workflow->add_job(\%task);
@@ -1374,7 +1374,8 @@ sub copy_genome {
     CoGe::Accessory::Web::log_history(
         db          => $DB,
         user_id     => $USER->id,
-        workflow_id => $workflow->id,
+        parent_id   => $workflow->id,
+        parent_type => 7, #FIXME magic number
         page        => $PAGE_TITLE,
         description => $desc,
         link => $tiny_link
@@ -1401,27 +1402,19 @@ sub get_progress_log {
     my %opts         = @_;
     my $workflow_id = $opts{workflow_id};
     return unless $workflow_id;
-    #TODO authenticate user access to workflow
+    
+    my $results = get_workflow_results($USER->name, $workflow_id);
+    return unless $results;
 
-    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
-    return unless (-r $results_path);
-
-    my $result_file = catfile($results_path, '1');
-    return unless (-r $result_file);
-
-    my $result = CoGe::Accessory::TDS::read($result_file);
-
-    return unless $result;
-
-    my $genome_id = (exists $result->{genome_id} ? $result->{genome_id} : undef);
-    my $links = (exists $result->{links} ? $result->{links} : undef);
-
-    return encode_json(
-        {
-            genome_id   => $genome_id,
-            links       => $links
+    my $genome_id;
+    foreach (@$results) {
+        if ($_->{type} eq 'genome') {
+            $genome_id = $_->{id};
+            last;
         }
-    );
+    }
+
+    return encode_json({ genome_id => $genome_id });
 }
 
 sub get_aa_usage {
@@ -1594,8 +1587,9 @@ sub get_annotations {
     my %opts = @_;
     my $gid  = $opts{gid};
     return "Must have valid genome id\n" unless ($gid);
+    
     my $genome = $DB->resultset('Genome')->find($gid);
-
+    return "Genome not found\n" unless $genome;
     return "Access denied\n" unless $USER->has_access_to_genome($genome);
 
     my $user_can_edit =
@@ -1865,8 +1859,8 @@ sub get_tbl {
     $args{basename} = sanitize_name($dsg->organism->name);
 
     my $workflow = $JEX->create_workflow(name => "Export Tbl");
-    my ($output, %task) = generate_tbl(%args);
-    $workflow->add_job(\%task);
+    my ($output, $task) = generate_tbl(%args);
+    $workflow->add_job($task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1912,8 +1906,8 @@ sub get_bed {
     $args{basename} = sanitize_name($dsg->organism->name);
 
     my $workflow = $JEX->create_workflow(name => "Export bed file");
-    my ($output, %task) = generate_bed(%args);
-    $workflow->add_job(\%task);
+    my ($output, $task) = generate_bed(%args);
+    $workflow->add_job($task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};
@@ -1936,28 +1930,26 @@ sub export_bed {
 
 sub get_gff {
     my %args = @_;
+    
+    # Get genome and check permission
     my $dsg = $DB->resultset('Genome')->find($args{gid});
-
-    # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
+    # Create workflow
+    my $workflow = $JEX->create_workflow( name => "Export gff" );
     $args{basename} = sanitize_name($dsg->organism->name);
+    my ($output, $task) = generate_gff(%args);
+    $workflow->add_job($task);
 
-    my $workflow = $JEX->create_workflow(name => "Export gff");
-    my ($output, %task) = generate_gff(%args);
-#    print STDERR "get_gff: ", $output, "\n",
-#                 "get_gff: ", Dumper \%task, "\n";
-    $workflow->add_job(\%task);
-
+    # Submit workflow and block until completion
     my $response = $JEX->submit_workflow($workflow);
-#    say STDERR "get_gff: wid=" . $response->{id};
+    say STDERR "GenomeInfo::get_gff: wid=" . $response->{id};
     $JEX->wait_for_completion($response->{id});
 
-    my %json;
-    $json{file} = basename($output);
-    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
-
-    return encode_json(\%json);
+    return encode_json({
+        file => basename($output),
+        files => [ get_download_url(dsgid => $args{gid}, file => basename($output)) ]
+    });
 }
 
 sub export_gff {
@@ -1987,8 +1979,8 @@ sub export_file_to_irods {
     $args{basename} = sanitize_name($dsg->organism->name);
 
     my $workflow = $JEX->create_workflow(name => "Export " . $file_type);
-    my ($output, %task) = $generate_func->(%args);
-    $workflow->add_job(\%task);
+    my ($output, $task) = $generate_func->(%args);
+    $workflow->add_job($task);
 
     my $response = $JEX->submit_workflow($workflow);
     say STDERR "RESPONSE ID: " . $response->{id};

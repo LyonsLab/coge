@@ -82,7 +82,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     my @experiments;
     foreach my $e (@all_experiments) {
         unless ( $user->has_access_to_experiment($e) ) {
-        	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities access denied to experiment $eid\n";
+        	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities access denied to experiment $eid for user '", $user->name, "'\n";
         	next;
         }
         push @experiments, $e;
@@ -210,7 +210,7 @@ sub features {
     my @experiments;
     foreach my $e (@all_experiments) {
         unless ( $user->has_access_to_experiment($e) ) {
-        	print STDERR "JBrowse::Experiment::features access denied to experiment id$eid\n";
+        	print STDERR "JBrowse::Experiment::features access denied to experiment $eid for user '", $user->name, "'\n";
         	next;
     	}
         push @experiments, $e;

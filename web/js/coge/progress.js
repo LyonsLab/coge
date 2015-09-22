@@ -297,7 +297,7 @@ var coge = window.coge = (function(namespace) {
 		        results.push(workflow_status);
 		        log_content.append(results);
 		        
-		        if (json.results && json.results.length) {
+		        if (json.results && json.results.length > 1) { // Ignore first result (debug.log)
 		        	log_content.append("<div class='bold'>Here are the results (click to open):</div>");
 		    	    json.results.forEach(function(result) {
 		    	    	var html = self._format_result(result);

@@ -16,7 +16,7 @@ sub fetch {
 
     # User authentication is required
     unless (defined $user) {
-        $self->render(json => {
+        $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
         return;

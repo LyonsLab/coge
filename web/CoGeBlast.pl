@@ -921,8 +921,7 @@ sub blast_search {
 
 sub get_results {
     my %opts = @_;
-
-    #	print STDERR Dumper \%opts;
+    #print STDERR Dumper \%opts;
 
     my $color_hsps = $opts{color_hsps};
     my $program    = $opts{program};
@@ -969,11 +968,7 @@ sub get_results {
         url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
     );
 
-    my $list_link =
-        qq{<a href="$genomes_url" target_"blank">}
-      . @dsg_ids
-      . ' genome'
-      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+    my $list_link = qq{<a href="$genomes_url" target_"blank">} . @dsg_ids . ' genome' . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
 
     my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
 
@@ -997,9 +992,7 @@ sub get_results {
         zthreshold   => $zthreshold,
         zmask        => $zmask,
         type         => $type,
-
-        #Genomes
-        dsgid      => $blastable
+        dsgid        => $blastable # genomes
     );
 
     # Optional parameters
@@ -1018,9 +1011,7 @@ sub get_results {
 
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 
-    $width = 400
-      unless $width =~
-          /^\d+$/;    #something wrong with how width is calculated in tmpl file
+    $width = 400 unless $width =~ /^\d+$/; # something wrong with how width is calculated in tmpl file -- # mdb what does this mean!?
 
     my $t1 = new Benchmark;
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);

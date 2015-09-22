@@ -1,17 +1,15 @@
+var user_is_admin = false;
 var ITEM_TYPE_USER = 5; //TODO: This is duplicated elsewhere, move to a common location
 var timestamps = new Array();
-var jobs_timers = new Array();
+//var jobs_timers = new Array();
 var hist_timers = new Array();
 var current_tab = 0;
 var previous_search = ""; //indicates the previous search term, used to refresh after a delete
-var jobs_updating = true;
-var jobs_init = false;
-var running_only = 1;
-var hist_init = false;
+var jobs_grid;
+var hist_grid;
 var user_graph_init = false;
 var group_graph_init = false;
-var hist_updating = true;
-var hist_entries = 0;
+//var hist_entries = 0;
 var last_hist_update;
 var IDLE_TIME = 30*1000; // stop polling after this lapse, then poll on next mousemove
 var reports_grid;
@@ -19,19 +17,27 @@ var histogram;
 var tree;
 var system_graph;
 var system_graph2;
+var query_counter;
+var tab7_init = false;
 
 $(function () {
+	// Initialize CoGe web services
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
+    });
+	
 	$( "#tabs" ).tabs({
 		select: function(event, ui) {
-            var theSelectedTab = ui.index;
-            change_tab(theSelectedTab);
+            current_tab = ui.index;
             schedule_update(5000);
         },
 		show: function(event, ui) {
-			if (current_tab == 1 && !jobs_init) {
+			//Remember that current_tab is 0-indexed but #tabs is 1-indexed.
+			if (current_tab == 1 && !jobs_grid) {
 				init_jobs_grid();
 			}
-			if (current_tab == 2 && !hist_init) {
+			if (current_tab == 2 && !hist_grid) {
 				init_hist_grid();
 			}
 			if (current_tab == 4 && !reports_grid) {
@@ -41,7 +47,20 @@ $(function () {
 				init_taxon_tree("taxonomic_tree");
 			}
 			if (current_tab == 6) {
-				init_system_load();
+				if (!system_graph) {
+					init_system_load();
+				}
+			}
+			if (current_tab == 7) {
+				if (!tab7_init) {
+					$("#tabs-8").html('<iframe src="https://genomevolution.org/greentea/" height="100%" width="100%"></iframe>');
+					tab7_init = true;
+				}
+			}
+			if (current_tab == 8) {
+				if (!query_counter) {
+					init_database_tab();
+				}
 			}
 		}
     });
@@ -63,16 +82,7 @@ $(function () {
     $("#show_select,#job_search_type").change(function(e) {
         update_filter();
     });
-    $("#job_update_checkbox").change(function(e) {
-    	toggle_job_updater();
-    });
-    $("#running_checkbox").change(function(e) {
-    	toggle_running();
-    });
-    $("#hist_update_checkbox").change(function(e) {
-    	toggle_hist_updater();
-    });
-    $("#histo_dialog").dialog({autoOpen: false, width: 500, height: 500});
+    $("#histogram").dialog({autoOpen: false, width: 500, height: 500});
     
     //Setup idle timer
     $(document).mousemove(function() {
@@ -85,356 +95,169 @@ $(function () {
 			schedule_update(5000);
 		}
 	});
+    
+    //See if the current user is an admin
+    $.ajax({
+		data: {
+			fname: 'user_is_admin',
+		},
+		success: function(data) {
+			if (data == 1) {
+				user_is_admin = true;
+			} else {
+				uesr_is_admin = false;
+			}
+		}
+	});
 });
 
 //Initialize the Jobs tab
 function init_jobs_grid() {
-	var searchFilter = function(item, args) {
-        var link = item['link'] ? item['link'].toLowerCase() : '',
-            tool = item['tool'] ? item['tool'].toLowerCase() : '',
-            status = item['status'] ? item['status'].toLowerCase() : '',
-            started = item['started'] ? item['started'].toLowerCase() : '',
-            completed = item['completed'] ? item['completed'].toLowerCase() : '',
-            user = item['user'] ? item['user'].toLowerCase() : '';
-
-        if (args.searchType == 1) {
-            if (args.searchString != "" &&
-                link.indexOf(args.searchString) == -1 &&
-                tool.indexOf(args.searchString) == -1 &&
-                status.indexOf(args.searchString) == -1 &&
-                started.indexOf(args.searchString) == -1 &&
-                completed.indexOf(args.searchString) == -1
-                && user.indexOf(args.searchString) == -1) {
-                return false;
-            }
-        } else {
-            if (args.searchString != "" &&
-                link.indexOf(args.searchString) != -1 ||
-                tool.indexOf(args.searchString) != -1 ||
-                status.indexOf(args.searchString) != -1 ||
-                started.indexOf(args.searchString) != -1 ||
-                completed.indexOf(args.searchString) != -1
-
-                || user.indexOf(args.searchString) != -1 ) {
-                return false;
-            }
-        }
-
-        return true;
-    };
-
-    var job_options = {
-        editable: true,
-        enableCellNavigation: true,
-        asyncEditorLoading: true,
-        forceFitColumns: true,
-        filter: searchFilter,
-        comparator: coge.ascending,
-    };
-
-    var checkbox = new Slick.CheckboxSelectColumn({
-            cssClass: 'slick-cell-checkboxsel'
-    });
-
-    var linkformatter = function(row, cell, value, columnDef, dataContext) {
-        return '<a href="' + dataContext['link'] + '" target="_blank">'
-        + dataContext['link'] + '</a>'
-    }
-    var job_columns = [
-        checkbox.getColumnDefinition(),
-        {id: 'id', name: 'Id', field: 'workflow_id', maxWidth: 50, sortable: true},
-        {id: 'started', name: 'Started', field: 'started', minWidth: 75,
-            sortable: true},
-        {id: 'completed', name: 'Completed', field: 'completed', minWidth: 75,
-            sortable: true},
-        {id: 'elapsed', name: 'Elapsed', field: 'elapsed', minWidth: 55,
-            sortable: true},
-        {id: 'user', name: 'User', field: 'user', sortable: true, minWidth: 75},
-        {id: 'tool', name: 'Tool', field: 'tool', minWidth: 75,
-            sortable: true},
-        {id: 'link', name: 'Link to Analysis', field: 'link', minWidth: 250,
-            sortable: false, formatter: linkformatter },
-        {id: 'status', name: 'Status', field: 'status', minWidth: 75,
-            sortable: true}
-    ];
-
-    window.jobs = new coge.Grid('#jobs', job_options, job_columns);
-    jobs.grid.registerPlugin(checkbox);
-    get_jobs();
+	jobs_grid = new JobGrid({
+		elementId: "jobs",
+		//filter: "none",
+		running_only: 1,
+		schedule_update: schedule_update,
+		cancel_update: cancel_update,
+	});
 }
 
 //Initialize the History tab
 function init_hist_grid() {
-	var hist_filter = function(item, args) {
-    	var date_time 	= (item['date_time'] ? item['date_time'].toLowerCase() : '');
-    	var user_name 	= (item['user'] ? item['user'].toLowerCase() : '');
-    	var description = (item['description'] ? item['description'].toLowerCase() : '');
-    	var page 		= (item['page'] ? item['page'].toLowerCase() : '');
-    	var link 		= (item['link'] ? item['link'].toLowerCase() : '');
-    	var comment 	= (item['comment'] ? item['comment'].toLowerCase() : '');
-
-    	var show = 1;
-    	if (args.show != 0) {
-    		if (args.show == -1) { // Starred
-    			show = item['starred'];
-    		}
-    		else if (args.show == -2) { // Commented
-    			show = comment;
-    		}
-    		else if (args.show == -3) { // Mine
-    			show = (user_name == '<TMPL_VAR NAME="USER_NAME">');
-    		}
-    		else if (args.show > 0) { // Time Range
-    			var diff = new Date() - new Date(date_time.replace(/-/g, '/'));
-    			show = (diff <= args.show*60*60*1000);
-    		}
-    	}
-    	if (!show) {
-    		return false;
-    	}
-
-    	if (args.searchString != "") {
-    		//FIXME optimize
-    		if (args.searchType == 1) { // Contains
-    			if (date_time.indexOf(args.searchString) == -1 &&
-    				user_name.indexOf(args.searchString) == -1 &&
-    				description.indexOf(args.searchString) == -1 &&
-    				page.indexOf(args.searchString) == -1 &&
-    				link.indexOf(args.searchString) == -1 &&
-    				comment.toLowerCase().indexOf(args.searchString) == -1 )
-    			{
-    				return false;
-    			}
-    		}
-    		else { // Does not contain
-    			if (date_time.indexOf(args.searchString) != -1 ||
-    				user_name.indexOf(args.searchString) != -1 ||
-    				description.indexOf(args.searchString) != -1 ||
-    				page.indexOf(args.searchString) != -1 ||
-    				link.indexOf(args.searchString) != -1 ||
-    				comment.toLowerCase().indexOf(args.searchString) != -1 )
-    			{
-    				return false;
-    			}
-    		}
-    	}
-
-    	return true;
-    };
-    
-    var hist_options = {
-    		editable: true,
-    		enableCellNavigation: true,
-    		asyncEditorLoading: true,
-    		forceFitColumns: true,
-    		filter: hist_filter,
-            comparator: coge.ascending,
-    };
-    
-    var hist_columns = [
-               	{id: "starred", name: "", field: "starred", maxWidth: 25, cssClass: "cell-centered",
-               		formatter: function (row, cell, value, columnDef, dataContext) {
-               			if (value) {
-               				return '<img id="'+dataContext['id']+'" src="picts/star-full.png" onclick="toggle_star(this);">'
-               			}
-               			return '<img id="'+dataContext['id']+'" src="picts/star-hollow.png" onclick="toggle_star(this);">';
-               		}},
-               	{id: "date_time", name: "Date/Time", field: "date_time", minWidth: 160, maxWidth: 160, sortable: true, cssClass: "cell-centered"},
-               	{id: "user", name: "User", field: "user", minWidth: 30, maxWidth: 80, sortable: true, cssClass: "cell-normal"/*,
-               		formatter: function ( row, cell, value, columnDef, dataContext ) {
-                           return '<a target="_blank" href="User.pl?name=' + value + '">' + value + '</a>';
-                       }*/},
-               	{id: "page", name: "Page", field: "page", minWidth: 90, maxWidth: 100, sortable: true, cssClass: "cell-normal"},
-               	{id: "description", name: "Description", field: "description", minWidth: 100, sortable: true, cssClass: "cell-normal",
-               		formatter: function ( row, cell, value, columnDef, dataContext ) {
-                           return '<span>' + value + '</span>';
-                       }},
-               	{id: "link", name: "Link", field: "link", minWidth: 100, maxWidth: 250, cssClass: "cell-normal",
-               		formatter: function ( row, cell, value, columnDef, dataContext ) {
-                           return '<a target="_blank" href="' + value + '">' + value + '</a>';
-                       }},
-               	{id: "comment", name: "Comments (click to edit)", field: "comment", minWidth: 100, sortable: true, cssClass: "cell-normal",
-               		editor: Slick.Editors.Text, validator: requiredFieldValidator}
-               ];
-    
-    window.hist = new coge.Grid('#history', hist_options, hist_columns);
-    get_history();
-    
-    hist.grid.onCellChange.subscribe(function (e, args) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'update_comment',
-				log_id: args.item.id,
-				comment: args.item.comment
-			},
-			success: function() {
-				hist.dataView.updateItem(args.item.id, args.item);
-			}
-		});
-	});
-    
-    hist.grid.onSort.subscribe(function (e, args) {
-		sortcol = args.sortCol.field;
-		hist.dataView.sort(args.sortAsc);
-	});
-
-	// Wire up model events to drive the grid
-	hist.dataView.onRowCountChanged.subscribe(function (e, args) {
-		hist.grid.updateRowCount();
-		hist.grid.render();
-		if ($("#history").is(":not(visible)")) {
-			$("#history").slideDown();
-		}
-	});
-	hist.dataView.onRowsChanged.subscribe(function (e, args) {
-		hist.grid.invalidateRows(args.rows);
-		hist.grid.render();
-	});
-
-	// Wire up the show selector to apply the filter to the model
-	$("#hist_show_select,#hist_search_type").change(function (e) {
-		updateHistFilter();
-	});
-
-	// Wire up the search textbox to apply the filter to the model
-	$("#hist_search_input").keyup(function (e) {
-		Slick.GlobalEditorLock.cancelCurrentEdit();
-
-		if (e.which == 27) { // Clear on Esc
-			this.value = "";
-		}
-
-		updateHistFilter();
+	hist_grid = new HistGrid({
+		elementId: "history",
+		schedule_update: schedule_update,
+		cancel_update: cancel_update,
 	});
 }
 
 //initialize Reports tab
 function init_reports() {
-	reports_grid = new DataGrid({
+	reports_grid = new ReportGrid({
 		elementId: "reports",
 		filter: "none",
 		selection: "total",
 	});
 }
 
-function change_tab(tab) {
-	current_tab = tab;
-	//console.log(tab);
+//Initialize Database tab
+function init_database_tab() {
+	query_counter = new Query_Counter({
+		elementId: "database",
+		schedule_update: schedule_update,
+		cancel_update: cancel_update,
+	});
 }
 
 //Tab 1 Search
 function search_stuff (search_term) {
 	if(search_term.length > 2) {
 		$("#loading").show();
-		timestamps['search_stuff'] = new Date().getTime();
-		$.ajax({
-			//type: "POST",
-			//dataType: "json",
-			//contentType: "application/json; charset=utf8",
-			data: {
-				fname: 'search_stuff',
-				search_term: search_term,
-				timestamp: timestamps['search_stuff']
-			},
-			success : function(data) {
-				//console.log(data);
-				//$('#loading').hide();
-				var obj = jQuery.parseJSON(data);
+		
+		coge.services.search_global(search_term)
+			.done(function(response) {
+				console.log(response);
+				var obj = response;
 				
-				if (obj && obj.items && obj.timestamp != timestamps['search_stuff']) {
+				if (!obj || !obj.results) {
 					return;
 				}
+				
+				console.log
 
 				var userCounter = 0, orgCounter = 0, genCounter = 0, expCounter = 0, noteCounter = 0, usrgroupCounter = 0;
 				var userList = "", orgList = "", genList = "", expList = "", noteList = "", usrgroupList = "";
 
-				for (var i = 0; i < obj.items.length; i++) {
-					if (obj.items[i].type == "user") {
+				for (var i = 0; i < obj.results.length; i++) {
+					if (obj.results[i].type == "user") {
 						userList = userList + "<tr><td><span>";
-						userList = userList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") ";
-						userList = userList + "<button onclick=\"search_user(" + (obj.items[i].id) + ",'user')\">Show Data</button>";
+						userList = userList + obj.results[i].first + " " + obj.results[i].last + ", ";
+						if (user_is_admin) {
+							userList = userList + obj.results[i].email;
+						}
+						userList = userList + " (" + obj.results[i].username + ", id" + obj.results[i].id + ") ";
+						userList = userList + "<button onclick=\"search_user(" + obj.results[i].id + ",'user')\">Show Data</button>";
 						userList = userList + "</span></td></tr>";
 						userCounter++;
 					}
 
-					if (obj.items[i].type == "organism") {
-						orgList = orgList + "<tr><td><span title='" + obj.items[i].description + "'>";
-						orgList = orgList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ")";
-						orgList = orgList + " <a href=\"OrganismView.pl?oid=" + (obj.items[i].id) + "\">Info </a>";
+					if (obj.results[i].type == "organism") {
+						orgList = orgList + "<tr><td><span title='" + obj.results[i].description + "'>";
+						orgList = orgList + obj.results[i].name + " (id" + obj.results[i].id + ")";
+						orgList = orgList + " <a href=\"OrganismView.pl?oid=" + obj.results[i].id + "\">Info </a>";
 						orgList = orgList + "</span></td></tr>";
 						orgCounter++;
 					}
 	
-					if (obj.items[i].type == "genome") {
-						genList = genList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'Genome', 'restrict');\"";
-						if (obj.items[i].restricted == 1) {
+					if (obj.results[i].type == "genome") {
+						genList = genList + "<tr><td><span onclick=\"modify_item(" + obj.results[i].id + ", 'Genome', 'restrict');\"";
+						if (obj.results[i].restricted == 1) {
 							genList = genList + " class=\"link ui-icon ui-icon-locked\"></span>";
 						} else {
 							genList = genList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
 						}
-						genList = genList + "<span onclick=\"modify_item(" + obj.items[i].id + ", 'Genome', 'delete');\"";
+						genList = genList + "<span onclick=\"modify_item(" + obj.results[i].id + ", 'Genome', 'delete');\"";
 						genList = genList + " class=\"link ui-icon ui-icon-trash\"></span>";
-						if (obj.items[i].deleted == 1) {
+						if (obj.results[i].deleted == 1) {
 							genList = genList + "<span style=\"color: red\">";
 						} else {
 							genList = genList + "<span>";
 						}
-						genList = genList + (obj.items[i].label) + " <a href=\"GenomeInfo.pl?gid=" + (obj.items[i].id) + "\">Info </a>";
-						genList = genList + "<button onclick='share_dialog(" + obj.items[i].id + ", 2, " + obj.items[i].restricted + ")'>Edit Access</button>";
+						genList = genList + obj.results[i].name + " <a href=\"GenomeInfo.pl?gid=" + obj.results[i].id + "\">Info </a>";
+						genList = genList + "<button class='access' onclick='share_dialog(" + obj.results[i].id + ", 2, " + obj.results[i].restricted + ")'>Edit Access</button>";
 						genList = genList + "</span></td></tr>";
 						genCounter++;
 					}
 	
-					if (obj.items[i].type == "experiment") {
-						expList = expList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'Experiment', 'restrict');\"";
-						if (obj.items[i].restricted == 1) {
+					if (obj.results[i].type == "experiment") {
+						expList = expList + "<tr><td><span onclick=\"modify_item(" + obj.results[i].id + ", 'Experiment', 'restrict');\"";
+						if (obj.results[i].restricted == 1) {
 							expList = expList + " class=\"link ui-icon ui-icon-locked\"></span>";
 						} else {
 							expList = expList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
 						}
-						expList = expList + "<span onclick=\"modify_item(" + obj.items[i].id + ", 'Experiment', 'delete');\"";
+						expList = expList + "<span onclick=\"modify_item(" + obj.results[i].id + ", 'Experiment', 'delete');\"";
 						expList = expList + " class=\"link ui-icon ui-icon-trash\"></span>";
-						if (obj.items[i].deleted == 1) {
+						if (obj.results[i].deleted == 1) {
 							expList = expList + "<span style=\"color: red\">";
 						} else {
 							expList = expList + "<span>";
 						}
-						expList = expList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"ExperimentView.pl?eid=" + (obj.items[i].id) + "\">Info </a>";
-						expList = expList + "<button onclick='share_dialog(" + obj.items[i].id + ", 3, " + obj.items[i].restricted + ")'>Edit Access</button>";
+						expList = expList + obj.results[i].name + " (id" + obj.results[i].id + ") <a href=\"ExperimentView.pl?eid=" + obj.results[i].id + "\">Info </a>";
+						expList = expList + "<button class='access' onclick='share_dialog(" + obj.results[i].id + ", 3, " + obj.results[i].restricted + ")'>Edit Access</button>";
 						expList = expList + "</span></td></tr>";
 						expCounter++;
 					}
 	
-					if (obj.items[i].type == "notebook") {
-						noteList = noteList + "<tr><td><span onclick=\"modify_item(" + obj.items[i].id + ", 'List', 'restrict');\"";
-						if (obj.items[i].restricted == 1) {
+					if (obj.results[i].type == "notebook") {
+						noteList = noteList + "<tr><td><span onclick=\"modify_item(" + obj.results[i].id + ", 'List', 'restrict');\"";
+						if (obj.results[i].restricted == 1) {
 							noteList = noteList + " class=\"link ui-icon ui-icon-locked\"></span>";
 						} else {
 							noteList = noteList + " class=\"link ui-icon ui-icon-unlocked\"></span>";
 						}
-						noteList = noteList + "<span onclick=\"modify_item(" + obj.items[i].id + ", 'List', 'delete');\"";
+						noteList = noteList + "<span onclick=\"modify_item(" + obj.results[i].id + ", 'List', 'delete');\"";
 						noteList = noteList + " class=\"link ui-icon ui-icon-trash\"></span>";
-						if (obj.items[i].deleted == 1) {
+						if (obj.results[i].deleted == 1) {
 							noteList = noteList + "<span style=\"color: red\">";
 						} else {
 							noteList = noteList + "<span>";
 						}
-						noteList = noteList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") <a href=\"NotebookView.pl?lid=" + (obj.items[i].id) + "\">Info </a>";
-						noteList = noteList + "<button onclick='share_dialog(" + obj.items[i].id + ", 1 , " + obj.items[i].restricted + ")'>Edit Access</button>";
+						noteList = noteList + obj.results[i].name + " <a href=\"NotebookView.pl?lid=" + obj.results[i].id + "\">Info </a>";
+						noteList = noteList + "<button class='access' onclick='share_dialog(" + obj.results[i].id + ", 1 , " + obj.results[i].restricted + ")'>Edit Access</button>";
 						noteList = noteList + "</span></td></tr>";
 						noteCounter++;
 					}
 							
-					if (obj.items[i].type == "user_group") {
+					if (obj.results[i].type == "user_group") {
 						usrgroupList = usrgroupList + "<tr><td>";
-						if (obj.items[i].deleted == 1) {
+						if (obj.results[i].deleted == 1) {
 							usrgroupList = usrgroupList + "<span style=\"color: red\">";
 						} else {
 							usrgroupList = usrgroupList + "<span>";
 						}
-						usrgroupList = usrgroupList + (obj.items[i].label) + " (ID: " + (obj.items[i].id) + ") ";
-						usrgroupList = usrgroupList + "<button onclick=\"search_user(" + (obj.items[i].id) + ",'group')\">Show Data</button>";
+						usrgroupList = usrgroupList + obj.results[i].name + " (id" + obj.results[i].id + ") ";
+						usrgroupList = usrgroupList + "<button onclick=\"search_user(" + obj.results[i].id + ",'group')\">Show Data</button>";
 						usrgroupList = usrgroupList + "</span></td></tr>";
 						usrgroupCounter++;
 					}
@@ -548,8 +371,19 @@ function search_stuff (search_term) {
 				}
 				
 				$("#loading").hide();
-			},
-		});
+				if (!user_is_admin) {
+					$(".access").hide();
+				} else {
+					$(".access").show();
+				}
+
+			})
+			.fail(function() {
+				//TODO: Find some way to test this without breaking anything.
+				$("#loading").hide();
+				$("#masterTable").html("An error occured. Please reload the page and try again.");
+			});
+		
 		previous_search = search_term;
 	}
 }
@@ -637,7 +471,7 @@ function remove_items_from_user_or_group(target_item, id, type) {
 var previous_user = 0;
 var previous_type = 0;
 
-// indicates the part of the Admin page currently being displayed. 0 --> "master", 1 --> "user info"
+// indicates the part of the search tab currently being displayed. 0 --> "master", 1 --> "user info"
 var current_page = 0;
 
 function search_user(userID, search_type) {
@@ -646,9 +480,10 @@ function search_user(userID, search_type) {
 		//current_page=1;
 	}
 	if(previous_user != userID) {
-		//$('#userResults').hide();
+		$('#userResults').hide();
 		//$('#userResults').html("Loading...");
 		user_info(userID, search_type);
+		$('#userResults').show();
 	}
 	previous_user = userID;
 	previous_type = search_type;
@@ -679,7 +514,7 @@ function user_info(userID, search_type) {
 		success : function(data) {
 			//console.log("Ajax success");
 			var obj = jQuery.parseJSON(data);
-        	//console.log(obj.items);
+        	//console.log(obj);
         		
         	var htmlBlock = "";
 
@@ -718,8 +553,8 @@ function user_info(userID, search_type) {
                             } else {
                             	genList = genList + "<span>";
                             }
-        					genList = genList + (current.label) + " <a href=\"GenomeInfo.pl?gid=" + (current.id) + "\">Info </a>";
-        					genList = genList + "<button onclick='share_dialog(" + current.id + ", 2, " + current.restricted + ")'>Edit Access</button>";
+        					genList = genList + current.label + " <a href=\"GenomeInfo.pl?gid=" + current.id + "\">Info </a>";
+        					genList = genList + "<button class='access' onclick='share_dialog(" + current.id + ", 2, " + current.restricted + ")'>Edit Access</button>";
         					genList = genList + "</span></td></tr>";
         					genCounter++;
         				}
@@ -747,8 +582,8 @@ function user_info(userID, search_type) {
         					} else {
         						expList = expList + "<span>";
         					}
-        					expList = expList + (current.label) + " (ID: " + (current.id) + ") <a href=\"ExperimentView.pl?eid=" + (current.id) + "\">Info </a>";
-        					expList = expList + "<button onclick='share_dialog(" + current.id + ", 3, " + current.restricted + ")'>Edit Access</button>";
+        					expList = expList + current.label + " (id" + current.id + ") <a href=\"ExperimentView.pl?eid=" + current.id + "\">Info </a>";
+        					expList = expList + "<button class='access' onclick='share_dialog(" + current.id + ", 3, " + current.restricted + ")'>Edit Access</button>";
         					expList = expList + "</span></td></tr>";
         					expCounter++;
         				}
@@ -776,15 +611,15 @@ function user_info(userID, search_type) {
         					} else {
         						noteList = noteList + "<span>";
         					}
-        					noteList = noteList + (current.label) + " (ID: " + (current.id) + ") <a href=\"NotebookView.pl?lid=" + (current.id) + "\">Info </a>";
-        					noteList = noteList + "<button onclick='share_dialog(" + current.id + ", , " + current.restricted + ")'>Edit Access</button>";
+        					noteList = noteList + current.label + " <a href=\"NotebookView.pl?lid=" + current.id + "\">Info </a>";
+        					noteList = noteList + "<button class='access' onclick='share_dialog(" + current.id + ", , " + current.restricted + ")'>Edit Access</button>";
         					noteList = noteList + "</span></td></tr>";
         					noteCounter++;
         				}
 						
         				if (current.type == "user") {
         					userList = userList + "<tr><td><span>";
-        					userList = userList + (current.label) + " (ID: " + (current.id) + ") ";
+        					userList = userList + current.first + " " + current.last + ", " + current.email + " (id" + current.id + ") ";
         					userList = userList + "<button onclick=\"search_user(" + current.id + ",'user')\">Search</button>";
         					userList = userList + "</span></td></tr>";
         					userCounter++;
@@ -796,12 +631,14 @@ function user_info(userID, search_type) {
         		var genBlock = "", noteBlock = "", expBlock = "", userBlock = "", nameBlock = "";
 				
         		nameBlock = nameBlock + "<div style=\"padding-top:10px;\">"
-        		if (i == 0) {
+        		if (search_type == "user" && i == 0) {
         			nameBlock = nameBlock + "<img src='picts/user-icon.png' width='15' height='15'><span> ";
+        			nameBlock = nameBlock + obj.items[i].first + " " + obj.items[i].last + ", " + obj.items[i].email + " (" + obj.items[i].username + ", id" + obj.items[i].user_id + "): </span>";
         		} else {
         			nameBlock = nameBlock + "<img src='picts/group-icon.png' width='15' height='15'><span> ";
+        			nameBlock = nameBlock + obj.items[i].user + " (id" + obj.items[i].user_id + "): </span>";
         		}
-        		nameBlock = nameBlock + obj.items[i].user + " (ID: " + obj.items[i].user_id + "): </span>";
+        		
         		
         		if (search_type =='group') {
         			nameBlock = nameBlock + "<button onclick='group_dialog(" + obj.items[i].user_id + ", 6 )'>Edit Group</button></div>";
@@ -893,6 +730,11 @@ function user_info(userID, search_type) {
         		}
         	}
         	$("#loading2").hide();
+        	if (!user_is_admin) {
+				$(".access").hide();
+			} else {
+				$(".access").show();
+			}
         }
 	});
 }
@@ -1074,160 +916,340 @@ function wait_to_search(search_func, search_term) {
 }
 
 //The following javascript deals with Tab2, the Jobs tab
-function get_jobs() {
-	cancel_update("jobs");
-	$.ajax({
-		dataType: 'json',
-	    data: {
-	        jquery_ajax: 1,
-	        fname: 'get_jobs',
-	        time_range: 0,
-	        running_only: running_only,
-	    },
-	    success: function(data) {
-	        jobs.load(data.jobs);
-	        entries = data.jobs.length;
-	        $("#filter_busy").hide();
-	        update_filter();
-	        jobs_init = true;
-	    },
-	    complete: function(data) {
-	    	schedule_update(5000);
-	    }
-	});
+function JobGrid(params) {
+	this.elementId = params.elementId;
+	//this.filter = params.filter;
+	this.running_only = params.running_only;
+	this.schedule_update = params.schedule_update;
+	this.cancel_update = params.cancel_update;
+	this.timers = new Array();
+	this.updating = true;
+	this.flag = false;
+	this.data;
+	this.table;
+	
+	this.initialize();
 }
 
-function update_filter() {
-    jobs.dataView.setFilterArgs({
-        show: $('#show_select').val(),
-        searchType: $('#job_search_type').val(),
-        searchString: $('#job_search_bar').val().toLowerCase()
-    });
+$.extend(JobGrid.prototype, {
+	initialize: function() {
+		var self = this;
+		$('#' + self.elementId).hide();
+		$('#' + self.elementId + '_loading').show();
+		//$('#report_filter').prop('disabled', true);
+		//$('#histogram_button').prop('disabled', true);
+		$('#' + this.elementId).html('<table id="' + this.elementId + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+				+ '<thead><tr><th>ID</th><th>Started</th><th>Completed</th><th>Elapsed</th><th>User</th><th>Tool</th><th>Link to Analysis</th><th>Status</th></tr></thead></table>');
+		$('#' + self.elementId + '_update_checkbox').change(function(e) {
+    		self.toggle_updating.call(self);
+    	});
+		$('#' + self.elementId + '_running_checkbox').change(function(e) {
+			self.toggle_running.call(self);
+		});
+		$('#' + self.elementId + '_cancel').click( function () {
+			self.cancel_job.call(self);
+		});
+		$('#' + self.elementId + '_restart').click( function () {
+			self.restart_job.call(self);
+		});
+		
+		//Setup table formatting
+		self.table = $('#' + self.elementId + '_table').DataTable({
+    		columnDefs : [
+    		              { 
+    		            	  orderSequence : [ "desc", "asc" ], 
+    		            	  targets : [0, 1, 2] 
+    		              }
+    		             ],
+    		iDisplayLength: 25,
+    		order: [[1, "desc"]],
+	    });
+		
+		self.get_data.call(self);
+	},
+	get_data: function() {
+		var self = this;
+		if(!self.flag) {
+			self.flag = true;
+			self.cancel_update();
+			//$("#" + self.elementId + "_update_checkbox").prop('disabled', true);
+		    //$("#" + self.elementId + "_running_checkbox").prop('disabled', true);
+			$.ajax({
+				dataType: 'json',
+			    data: {
+			        jquery_ajax: 1,
+			        fname: 'get_jobs',
+			        time_range: 0,
+			        running_only: self.running_only,
+			    },
+			    success: function(data) {
+			    	console.log(data)
+			    	self.data = data.data;
+			    	self.table
+				    	.clear()
+				    	.rows.add(self.data)
+				    	.draw();
+					
+			    	$('#' + self.elementId + '_loading').hide();
+					$('#' + self.elementId).show();
+			    },
+			    complete: function(data) {
+			    	self.flag = false;
 
-    jobs.filter();
-    $('#job_filter_count').html('Showing ' + jobs.dataView.getLength() + ' of ' + entries + ' results');
-}
+			    	$('#' + self.elementId + '_table tbody').off( 'click' );
+					$('#' + self.elementId + '_table tbody').on( 'click', 'tr', function () {
+				        if ( $(this).hasClass('selected') ) {
+				            $(this).removeClass('selected');
+				        }
+				        else {
+				            self.table.$('tr.selected').removeClass('selected');
+				            $(this).addClass('selected');
+				        }
+				    } );
+			    	
+			    	self.schedule_update(5000);
+			    }
+			});
+		}
+	},
+	update: function(delay) {
+		var self = this;
+		if (self.updating) {
+			console.log("Updating jobs");
+			self.cancel_update();
+			self.timers['update'] = window.setTimeout(
+				function() { self.get_data.call(self); },
+				delay
+			);
+		}
+	},
+	toggle_updating: function() {
+		var self = this;
+		self.updating = !self.updating;
+		if (self.updating) {
+			self.schedule_update(5000);
+		}
+	},
+	toggle_running: function() {
+		var self = this;
+		if(self.running_only == 0) {
+			self.running_only = 1;
+		} else {
+			self.running_only = 0;
+		}
+		self.get_data();
+	},
+	cancel_job: function() {
+		var self = this;
+		var parent_id = self.table.row('.selected').data()[0];
+	    self.submit_task("cancel_job", parent_id);
+		
+		self.get_data.call(self);
+	},
+	restart_job: function() {
+		var self = this;
+		var parent_id = self.table.row('.selected').data()[0];
+	    self.submit_task("restart_job", parent_id);
 
-function toggle_job_updater() {
-	jobs_updating = !jobs_updating;
-	if (jobs_updating) {
-		schedule_update(5000);
+	    self.get_data.call(self);
+	},
+	submit_task: function(task, parent_id) {
+		var self = this;
+		var argument_list =  {
+			fname: task,
+			job: parent_id,
+		};
+
+		$.ajax({
+			type: "GET",
+			dataType: "json",
+			data: argument_list,
+			success: function(data) {
+				//DO NOTHING (atm)
+			}
+		});
 	}
-}
-
-function toggle_running() {
-	if(running_only == 0) {
-		running_only = 1;
-	} else {
-		running_only = 0;
-	}
-	get_jobs();
-}
+});
 
 function schedule_update(delay) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME && delay !== undefined) {
-		if(current_tab == 1 && jobs_updating) {
-			console.log("Updating jobs");
-			cancel_update("jobs");
-			jobs_timers['update'] = window.setTimeout(
-				function() { get_jobs(); },
-				delay
-			);
+		if (current_tab == 1 && jobs_grid) {
+			jobs_grid.update(delay);
 		}
-		if(current_tab == 2 && hist_updating && hist_init) {
-			console.log("Updating hist");
-			cancel_update("hist");
-			hist_timers['update'] = window.setTimeout(
-				function() { update_history(); },
-				delay
-			);
+		if (current_tab == 2 && hist_grid) {
+			hist_grid.update(delay);
+		}
+		if (current_tab == 8 && query_counter) {
+			query_counter.update(delay);
 		}
 		return;
 	}	
 }
 
-function cancel_update(page) {
-	if(page == "jobs") {
-		clearTimeout(jobs_timers['update']);
+function cancel_update() {
+	if (jobs_grid) {
+		clearTimeout(jobs_grid.timers['update']);
 	}
-	if(page == "hist") {
-		clearTimeout(hist_timers['update']);
+	if (hist_grid) {
+		clearTimeout(hist_grid.timers['update']);
+	}
+	if (query_counter) {
+		clearTimeout(query_counter.timers['update']);
 	}
 }
 
-function cancel_job() {
-    submit_task("cancel_job", function(row) {
-        return row.status.toLowerCase() === 'running'
-    });
+
+//The following Javascript deals with Tab3, the History page
+function HistGrid(params) {
+	this.elementId = params.elementId;
+	this.schedule_update = params.schedule_update;
+	this.cancel_update = params.cancel_update;
+	this.timers = new Array();
+	this.updating = true;
+	this.flag = false;
+	this.data;
+	this.table;
+	this.last_update;
+	
+	this.initialize();
 }
 
-function restart_job() {
-    submit_task("restart_job", function(row) {
-        return row.status.toLowerCase() === 'cancelled' ||
-               row.status.toLowerCase() === 'stopped';
-    });
-}
+$.extend(HistGrid.prototype, {
+	initialize: function() {
+		var self = this;
+		$('#' + self.elementId).hide();
+		$('#' + self.elementId + '_loading').show();
+		$('#' + this.elementId).html('<table id="' + this.elementId + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+				+ '<thead><tr><th>Date/Time</th><th>User</th><th>Page</th><th>Description</th><th>Link</th><th>Comments</th></tr></thead></table>');
+		$('#' + self.elementId + '_update_checkbox').change(function(e) {
+    		self.toggle_updating.call(self);
+    	});
+		
+		//Setup table formatting
+		self.table = $('#' + self.elementId + '_table').DataTable({
+    		columnDefs : [
+    		              { 
+    		            	  orderSequence : [ "desc", "asc" ], 
+    		            	  targets : [0] 
+    		              }
+    		             ],
+    		iDisplayLength: 25,
+    		order: [[0, "desc"]],
+	    });
+		
+		self.get_data.call(self);
+	},
+	get_data: function() {
+		var self = this;
+		if(!self.flag) {
+			self.flag = true;
+			self.cancel_update();
+			$.ajax({
+				dataType: 'json',
+			    data: {
+			        jquery_ajax: 1,
+			        fname: 'get_history',
+			        time_range: 0,
+			    },
+			    success: function(data) {
+			    	console.log(data)
+			    	self.data = data.data;
+			    	self.table
+				    	.clear()
+				    	.rows.add(self.data)
+				    	.draw();
+			    	console.log(self.data[0][0])
+			    	self.last_update = self.data[0][0];
+					
+			    	$('#' + self.elementId + '_loading').hide();
+					$('#' + self.elementId).show();
+			    },
+			    complete: function(data) {
+			    	self.flag = false;
 
-function submit_task(task, predicate) {
-    var selectedIndexes = window.jobs.grid.getSelectedRows();
-
-    var selectedRows = selectedIndexes.map(function(item) {
-        return window.jobs.dataView.getItem(item);
-    });
-
-    var validRows = selectedRows.filter(predicate);
-
-    // No rows were valid
-    if (!validRows.length) return;
-
-    jQuery.each(validRows, function(index,row) {
-        var argument_list =  {
-            fname: task,
-            job: row.workflow_id,
-        };
-
-        $.ajax({
-            type: "GET",
-            dataType: "json",
-            data: argument_list,
-            success: function(data) {
-                if (data.status) {
-                    row.status = data.status;
-                    window.jobs.dataView.updateItem(row.id, row);
-                }
-            }
-        });
-    });
-
-    // Deselect all rows
-    window.jobs.grid.setSelectedRows([]);
-}
-
-
-//The following Javascript deals with Tab3, the History page 
+			    	$('#' + self.elementId + '_table tbody').off( 'click' );
+					$('#' + self.elementId + '_table tbody').on( 'click', 'tr', function () {
+				        if ( $(this).hasClass('selected') ) {
+				            $(this).removeClass('selected');
+				        }
+				        else {
+				            self.table.$('tr.selected').removeClass('selected');
+				            $(this).addClass('selected');
+				        }
+				    } );
+			    	
+			    	self.schedule_update(5000);
+			    }
+			});
+		}
+	},
+	update: function(delay) {
+		var self = this;
+		if (self.updating) {
+			console.log("Updating hist");
+			self.cancel_update();
+			self.timers['update'] = window.setTimeout(
+				function() {
+					$.ajax({
+						dataType: 'json',
+						data: {
+							jquery_ajax: 1,
+							fname: 'update_history',
+							timestamp: self.last_update,
+							time_range: 0,
+						},
+						success: function(data) {
+							console.log(data);
+							if(data.new_rows[0]) {
+								self.table.rows.add(data.new_rows).draw();
+								self.last_update = data.new_rows[0][0];
+							}
+						},
+						complete: function(data) {
+							self.schedule_update(5000);
+					    }
+					})
+				},
+				delay
+			);
+		}
+	},
+	toggle_updating: function() {
+		var self = this;
+		self.updating = !self.updating;
+		if (self.updating) {
+			self.schedule_update(5000);
+		}
+	}
+});
+/*var hist_flag = false;
 function get_history() {
-	$("#loading3").show();
-	$.ajax({
-		dataType: 'json',
-		data: {
-			jquery_ajax: 1,
-			fname: 'get_history_for_user',
-			time_range: 0,
-		},
-		success : function(data) {
-			hist.load(data);
-			hist_entries = data.length;
-			last_hist_update = data[0].date_time;
-			updateHistFilter();
-			
-			hist_init = true;
-			$("#loading3").hide();
-		},
-	    complete: function(data) {
-	    	schedule_update(5000);
-	    }
-	});
+	if(!hist_flag) {
+		hist_flag = true;
+		$("#loading3").show();
+		$.ajax({
+			dataType: 'json',
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_history_for_user',
+				time_range: 0,
+			},
+			success : function(data) {
+				hist.load(data);
+				hist_entries = data.length;
+				last_hist_update = data[0].date_time;
+				updateHistFilter();
+				
+				hist_init = true;
+				$("#loading3").hide();
+			},
+		    complete: function(data) {
+		    	hist_flag = false;
+		    	schedule_update(5000);
+		    }
+		});
+	}
 }
 
 function update_history() {
@@ -1284,7 +1306,7 @@ function toggle_star(img) {
 			else { $(img).attr({src:"picts/star-full.png"}); }
 		}
 	});
-}
+}*/
 
 
 //Tab 4, the User Graph
@@ -1297,9 +1319,7 @@ var colors = [
         	{ name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
 ];
 
-var w = Math.max(800, $(window).width()-200),
-	h = Math.max(800, $(window).height()-300),
-	user_force,
+var user_force,
 	group_force;
 
 function init_graph(selectId) {
@@ -1313,64 +1333,13 @@ function init_graph(selectId) {
 			user_graph_init = true;
 			$("#loading4").show();
 			d3.json("?fname=get_user_nodes", function(json) {
-				var root = json;
-				var nodes = flatten(root);
-				nodes.forEach(function(d) {
-					d._children = d.children;
-					d.children = null;
-				});
-				
-				svg = d3.select("#user_chart").append("svg")
-					.attr("width", w)
-					.attr("height", h);
-				
-				var link = svg.selectAll(".link");
-				var node = svg.selectAll(".node");
-				
 				var user_filters = [
 				                    { name: 'deleted', 		color: 'Red', 		show: 0 },
 				                    { name: 'restricted', 	color: 'Grey',	 	show: 0 },
 				                    { name: '||||||||',		color: 'White',		show: 1 },
 				];
-				user_filters.forEach(function(element, index) {
-					var item =
-						$('<div class="link legend selected">'+user_filters[index].name+'</div>')
-							.css('color', user_filters[index].color)
-							.css('background-color', '')
-							.click(function() {
-								$(this).toggleClass('selected');
-								if ($(this).hasClass('selected')) {
-									$(this).css('color', user_filters[index].color);
-									$(this).css('background-color', '');
-								}
-								else {
-									$(this).css('color', 'white');
-									$(this).css('background-color', user_filters[index].color);
-								}
-								user_filters[index].show = !user_filters[index].show;
-								
-								var nodes = flatten(root);
-								nodes.forEach(function(d) {
-									return color(d, user_filters);
-								});
-								user_force.update();
-							});
-
-					$('#user_legend')
-						.append(item);
-				});
 				
-				colors.forEach(function(element, index) {
-					var item =
-						$('<div class="link legend selected">'+colors[index].name+'</div>')
-							.css('color', 'white')
-							.css('background-color', colors[index].color);
-	
-					$('#user_legend')
-						.append(item);
-				});
-				
-				var user_force = new Force(root, link, node, user_filters);
+				var user_force = new Force(json, user_filters, "user", colors);
 				$("#loading4").hide();
 				user_force.update();
 			});
@@ -1385,64 +1354,13 @@ function init_graph(selectId) {
 			group_graph_init = true;
 			$("#loading4").show();
 			d3.json("?fname=get_group_nodes", function(json) {
-				var root = json;
-				var nodes = flatten(root);
-				nodes.forEach(function(d) {
-					d._children = d.children;
-					d.children = null;
-				});
-				
-				svg = d3.select("#group_chart").append("svg")
-					.attr("width", w)
-					.attr("height", h);
-			
-				var link = svg.selectAll(".link");
-				var node = svg.selectAll(".node");
-				
 				var group_filters = [
 				                     { name: 'deleted', 		color: 'Red', 		show: 0 },
-				                     { name: 'restricted', 	color: 'Grey',	 	show: 0 },
+				                     { name: 'restricted', 		color: 'Grey',	 	show: 0 },
 				                     { name: '||||||||',		color: 'White',		show: 1 },
 				];
-				group_filters.forEach(function(element, index) {
-					var item =
-						$('<div class="link legend selected">'+group_filters[index].name+'</div>')
-							.css('color', group_filters[index].color)
-							.css('background-color', 'white')
-							.click(function() {
-								$(this).toggleClass('selected');
-								if ($(this).hasClass('selected')) {
-									$(this).css('color', group_filters[index].color);
-									$(this).css('background-color', '');
-								}
-								else {
-									$(this).css('color', 'white');
-									$(this).css('background-color', group_filters[index].color);
-								}
-								group_filters[index].show = !group_filters[index].show;
-								
-								var nodes = flatten(root);
-								nodes.forEach(function(d) {
-									return color(d, group_filters);
-								});
-								group_force.update();
-							});
-
-					$('#group_legend')
-						.append(item);
-				});
 				
-				colors.forEach(function(element, index) {
-					var item =
-						$('<div class="link legend selected">'+colors[index].name+'</div>')
-							.css('color', 'white')
-							.css('background-color', colors[index].color);
-	
-					$('#group_legend')
-						.append(item);
-				});
-				
-				var group_force = new Force(root, link, node, group_filters);
+				var group_force = new Force(json, group_filters, "group", colors);
 				$("#loading4").hide();
 				group_force.update();
 			});
@@ -1450,243 +1368,290 @@ function init_graph(selectId) {
 	}
 }
 
-var Force = function(root, link, node, filters) {
+var Force = function(root, filters, element, colors) {
 	var self = this;
-	this.link = link;
-	this.node = node;
+	this.width = Math.max(800, $(window).width()-200);
+	this.height = Math.max(800, $(window).height()-300);
 	this.root = root;
+	this.colors = colors;
 	this.filters = filters;
+	this.element = element;
+	
+	this.svg = d3.select('#' + self.element + '_chart').append("svg")
+		.attr("width", self.width)
+		.attr("height", self.height);
+	
+	this.link = self.svg.selectAll(".link");
+	this.node = self.svg.selectAll(".node");
+	
+	var nodes = self.flatten(root);
+	nodes.forEach(function(d) {
+		d._children = d.children;
+		d.children = null;
+	});
+	
+	self.filters.forEach(function(element, index) {
+		var item =
+			$('<div class="link legend selected">'+self.filters[index].name+'</div>')
+				.css('color', self.filters[index].color)
+				.css('background-color', '')
+				.click(function() {
+					$(this).toggleClass('selected');
+					if ($(this).hasClass('selected')) {
+						$(this).css('color', self.filters[index].color);
+						$(this).css('background-color', '');
+					}
+					else {
+						$(this).css('color', 'white');
+						$(this).css('background-color', self.filters[index].color);
+					}
+					self.filters[index].show = !self.filters[index].show;
+					
+					var nodes = self.flatten(root);
+					nodes.forEach(function(d) {
+						return self.color.call(self, d);
+					});
+					self.update();
+				});
+
+		$('#' + self.element + '_legend')
+			.append(item);
+	});
+	
+	self.colors.forEach(function(element, index) {
+		var item =
+			$('<div class="link legend selected">'+self.colors[index].name+'</div>')
+				.css('color', 'white')
+				.css('background-color', self.colors[index].color);
+
+		$('#' + self.element + '_legend')
+			.append(item);
+	});
+	
 	this.force = d3.layout.force()
-		.size([w, h])
+		.size([self.width, self.height])
 		.on("tick", function() {
 			self.tick.call(self);
 		})
 		.gravity(1);
 }
 
-Force.prototype.update = function() {
-	var self = this;
-	var nodes = flatten(this.root),
-		links = d3.layout.tree().links(nodes);
-	
-	// Restart the force layout.
-	this.force
- 		.nodes(nodes)
- 		.links(links)
- 		.start();
-
-	// Update the links…
-	this.link = this.link.data(links, function(d) { return d.target.id; });
-
-	// Exit any old links.
-	this.link.exit().remove();
-
-	// Enter any new links.
-	this.link.enter().insert("line", ".node")
-		.attr("class", "link")
-		.attr("x1", function(d) { return d.source.x; })
-		.attr("y1", function(d) { return d.source.y; })
-		.attr("x2", function(d) { return d.target.x; })
-		.attr("y2", function(d) { return d.target.y; });
-
-	// Update the nodes…
-	this.node = this.node.data(nodes, function(d) { return d.id; })
-		.style("fill", function(d) {
-			return color(d, self.filters);
-		})
-		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; });
-		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5});
-
-	// Exit any old nodes.
-	this.node.exit().remove();
-
-	// Enter any new nodes.
-	this.node.enter().append("circle")
-		.attr("class", "node")
-		.attr("cx", function(d) { return d.x; })
-		.attr("cy", function(d) { return d.y; })
-		//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
-		.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5})
-		.style("fill", function(d) {
-			return color(d, self.filters);
-		})
-		.on("click", function(d) {
-			self.click.call(self, d);
-		})
-		.call(this.force.drag)
-		.append("svg:title").text(function(d) { 
-			if(d.info) {
-				return d.info; 
-			} else {
-				return d.name;
-			}
-		});
-}
-
-Force.prototype.tick = function() {
-	/*this.link.attr("x1", function(d) { return d.source.x; })
-		.attr("y1", function(d) { return d.source.y; })
-		.attr("x2", function(d) { return d.target.x; })
-		.attr("y2", function(d) { return d.target.y; });
-	
-	this.node.attr("cx", function(d) { return d.x; })
-		.attr("cy", function(d) { return d.y; });*/
-	
-	var self = this;
-	self.moveItems.call(self);
-}
-
-//Toggle children on click.
-Force.prototype.toggle_children = function(d) {
-	if (d.children) {
-		d._children = d.children;
-		d.children = null;
-	} else {
-		d.children = d._children;
-		d._children = null;
-	}
-}
-
-Force.prototype.click = function(d) {
-	if (!d3.event.defaultPrevented) {
-		this.force.charge(
-			function(d, i) {
-				if(d.size) {
-					return Math.sqrt(d.size)*(-2.25);
-				}
-			}
-		);
-		this.force.start();
+$.extend(Force.prototype, {
+	update: function() {
+		var self = this;
+		var nodes = self.flatten(self.root),
+			links = d3.layout.tree().links(nodes);
 		
-		this.toggle_children(d);
-		this.update();
-	}
-}
+		// Restart the force layout.
+		this.force
+	 		.nodes(nodes)
+	 		.links(links)
+	 		.start();
 
-//Returns a list of all nodes under the root.
-function flatten(root) {
-	var nodes = [], i = 0;
+		// Update the links…
+		this.link = this.link.data(links, function(d) { return d.target.id; });
 
-	function recurse(node) {
-		if (node.children) node.children.forEach(recurse);
-		if (!node.id) node.id = ++i;
-		nodes.push(node);
-	}
+		// Exit any old links.
+		this.link.exit().remove();
 
-	recurse(root);
-	return nodes;
-}
+		// Enter any new links.
+		this.link.enter().insert("line", ".node")
+			.attr("class", "link")
+			.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+			.attr("x2", function(d) { return d.target.x; })
+			.attr("y2", function(d) { return d.target.y; });
 
-function color(d, new_filters) {
-	if(!new_filters[0].show && !new_filters[1].show) {
-		//normal filter
-		if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
-			if (d.type) {
-				return colors[d.type-1].color;
+		// Update the nodes…
+		this.node = this.node.data(nodes, function(d) { return d.id; })
+			.style("fill", function(d) {
+				return self.color(d, self.filters);
+			})
+			//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; });
+			.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5});
+
+		// Exit any old nodes.
+		this.node.exit().remove();
+
+		// Enter any new nodes.
+		this.node.enter().append("circle")
+			.attr("class", "node")
+			.attr("cx", function(d) { return d.x; })
+			.attr("cy", function(d) { return d.y; })
+			//.attr("r", function(d) { return Math.sqrt(d.size) / 10 || 4.5; })
+			.attr("r", function(d) { return Math.pow(d.size, 1.0/3.0)/3 || 4.5})
+			.style("fill", function(d) {
+				return self.color.call(self, d);
+			})
+			.on("click", function(d) {
+				self.click.call(self, d);
+			})
+			.call(this.force.drag)
+			.append("svg:title").text(function(d) { 
+				if(d.info) {
+					return d.info; 
+				} else {
+					return d.name;
+				}
+			});
+	},
+	tick: function() {
+		/*this.link.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+			.attr("x2", function(d) { return d.target.x; })
+			.attr("y2", function(d) { return d.target.y; });
+		
+		this.node.attr("cx", function(d) { return d.x; })
+			.attr("cy", function(d) { return d.y; });*/
+		
+		var self = this;
+		self.moveItems.call(self);
+	},
+	toggle_children: function(d) {
+		if (d.children) {
+			d._children = d.children;
+			d.children = null;
+		} else {
+			d.children = d._children;
+			d._children = null;
+		}
+	},
+	click: function(d) {
+		if (!d3.event.defaultPrevented) {
+			this.force.charge(
+				function(d, i) {
+					if(d.size) {
+						return Math.sqrt(d.size)*(-2.25);
+					}
+				}
+			);
+			this.force.start();
+			
+			this.toggle_children(d);
+			this.update();
+		}
+	},	
+	flatten: function(root) {	//Returns a list of all nodes under the root.
+		var nodes = [], i = 0;
+
+		function recurse(node) {
+			if (node.children) node.children.forEach(recurse);
+			if (!node.id) node.id = ++i;
+			nodes.push(node);
+		}
+
+		recurse(root);
+		return nodes;
+	},
+	color: function(d) {
+		var self = this;
+		if(!self.filters[0].show && !self.filters[1].show) {
+			//normal filter
+			if((d.children || d._children) || (d.type == 2 || d.type == 3 || d.type == 4)) {
+				if (d.type) {
+					return self.colors[d.type-1].color;
+				}
+				return 'white';
+			} else {
+				return 'black';
 			}
-			return 'white';
 		} else {
-			return 'black';
+			if(d.deleted == 1 && d.restricted == 1 && self.filters[0].show && self.filters[1].show) {
+				return 'yellow';
+			} else if (d.deleted == 1 && self.filters[0].show) {
+				return self.filters[0].color;
+			} else if (d.restricted == 1 && self.filters[1].show) {
+				return self.filters[1].color;
+			} else {
+				return 'yellowGreen';
+			}
 		}
-	} else {
-		if(d.deleted == 1 && d.restricted == 1 && new_filters[0].show && new_filters[1].show) {
-			return 'yellow';
-		} else if (d.deleted == 1 && new_filters[0].show) {
-			return new_filters[0].color;
-		} else if (d.restricted == 1 && new_filters[1].show) {
-			return new_filters[1].color;
-		} else {
-			return 'yellowGreen';
-		}
-	}
-}
-
-//Optimization of the Tick function.
-Force.prototype.moveItems = (function(){
-	var self = this;
-	var node = self.node;
-	var link = self.link;
-    var todoNode = 0;
-    var todoLink = 0;
-    var MAX_NODES = 240;
-    var MAX_LINKS = MAX_NODES/2;
-      
-    var restart = false;
-       
-    function moveSomeNodes(){
-    	var self = this;
-        var n;
-        var goal = Math.min(todoNode+MAX_NODES, self.node[0].length);
-          
-        for(var i=todoNode ; i < goal ; i++){
-            n = self.node[0][i];
-            n.setAttribute('cx', n.__data__.x);
-            n.setAttribute('cy', n.__data__.y);
-        }
-            
-        todoNode = goal;
-        requestAnimationFrame(function() {
-        	moveSome.call(self);
-        });
-    }
-      
-    function moveSomeLinks(){
-    	var self = this;
-        var l;
-        var goal = Math.min(todoLink+MAX_LINKS, self.link[0].length);
-           
-        for(var i=todoLink ; i < goal ; i++){
-            l = self.link[0][i];
-            l.setAttribute('x1', l.__data__.source.x);
-            l.setAttribute('y1', l.__data__.source.y);
-            l.setAttribute('x2', l.__data__.target.x);
-            l.setAttribute('y2', l.__data__.target.y);
-        }
-          
-        todoLink = goal;
-        requestAnimationFrame(function() {
-        	moveSome.call(self);
-        });
-    }
-        
-    function moveSome(){
-    	var self = this;
-        //console.time('moveSome')
-        if(todoNode < self.node[0].length) // some more nodes to do
-            moveSomeNodes.call(self)
-        else{ // nodes are done
-            if(todoLink < self.link[0].length) // some more links to do
-                moveSomeLinks.call(self)
-            else{ // both nodes and links are done
-                if(restart){
-                    restart = false;
-                    todoNode = 0;
-                    todoLink = 0;
-                    requestAnimationFrame(function() {
-                    	moveSome.call(self);
-                    });
-                }
-            }
-        }
-        //console.timeEnd('moveSome')
-    }
-        
-        
-    return function moveItems(){
-    	var self = this;
-        if(!restart){
-            restart = true;
-            requestAnimationFrame(function() {
-            	moveSome.call(self);
-            });
-        }
-    };
- 
-})();
-
+	},
+	moveItems: (function() {		//Optimization of the Tick function.
+		var self = this;
+		var node = self.node;
+		var link = self.link;
+	    var todoNode = 0;
+	    var todoLink = 0;
+	    var MAX_NODES = 240;
+	    var MAX_LINKS = MAX_NODES/2;
+	      
+	    var restart = false;
+	       
+	    function moveSomeNodes(){
+	    	var self = this;
+	        var n;
+	        var goal = Math.min(todoNode+MAX_NODES, self.node[0].length);
+	          
+	        for(var i=todoNode ; i < goal ; i++){
+	            n = self.node[0][i];
+	            n.setAttribute('cx', n.__data__.x);
+	            n.setAttribute('cy', n.__data__.y);
+	        }
+	            
+	        todoNode = goal;
+	        requestAnimationFrame(function() {
+	        	moveSome.call(self);
+	        });
+	    }
+	      
+	    function moveSomeLinks(){
+	    	var self = this;
+	        var l;
+	        var goal = Math.min(todoLink+MAX_LINKS, self.link[0].length);
+	           
+	        for(var i=todoLink ; i < goal ; i++){
+	            l = self.link[0][i];
+	            l.setAttribute('x1', l.__data__.source.x);
+	            l.setAttribute('y1', l.__data__.source.y);
+	            l.setAttribute('x2', l.__data__.target.x);
+	            l.setAttribute('y2', l.__data__.target.y);
+	        }
+	          
+	        todoLink = goal;
+	        requestAnimationFrame(function() {
+	        	moveSome.call(self);
+	        });
+	    }
+	        
+	    function moveSome(){
+	    	var self = this;
+	        //console.time('moveSome')
+	        if(todoNode < self.node[0].length) // some more nodes to do
+	            moveSomeNodes.call(self)
+	        else{ // nodes are done
+	            if(todoLink < self.link[0].length) // some more links to do
+	                moveSomeLinks.call(self)
+	            else{ // both nodes and links are done
+	                if(restart){
+	                    restart = false;
+	                    todoNode = 0;
+	                    todoLink = 0;
+	                    requestAnimationFrame(function() {
+	                    	moveSome.call(self);
+	                    });
+	                }
+	            }
+	        }
+	        //console.timeEnd('moveSome')
+	    }
+	        
+	        
+	    return function moveItems(){
+	    	var self = this;
+	        if(!restart){
+	            restart = true;
+	            requestAnimationFrame(function() {
+	            	moveSome.call(self);
+	            });
+	        }
+	    };
+	 
+	})(),
+});
 
 //Tab 5, Summary
-function DataGrid(params) {
+function ReportGrid(params) {
 	this.elementId = params.elementId;
 	this.filter = params.filter;
 	this.selection = params.selection;
@@ -1695,7 +1660,7 @@ function DataGrid(params) {
 	this.initialize();
 }
 
-$.extend(DataGrid.prototype, {
+$.extend(ReportGrid.prototype, {
 	initialize: function() {
 		var self = this;
 		var element = this.elementId;
@@ -1735,6 +1700,7 @@ $.extend(DataGrid.prototype, {
 			success: function(data) {
 				$('#' + element + '_loading').hide();
 				json = JSON.parse(data);
+				console.log(json);
 				var values = [];
 				var max_value = 0;
 				var min_value = Number.MAX_SAFE_INTEGER;
@@ -1742,12 +1708,12 @@ $.extend(DataGrid.prototype, {
 					var total_items = 0;
 					if (this.selection == "total") {
 						for(var j = 0; j < json.data[i].length; j++) {
-							var num = parseInt(json.data[i][j]);
+							var num = parseInt(json.data[i][j], 10);
 							total_items += num;
 						}
 					} else {
 						for(var j = 1; j < json.data[i].length - 1; j++) {  // ignores the "name", "users", "groups" columns
-							var num = parseInt(json.data[i][j]);
+							var num = parseInt(json.data[i][j], 10);
 							total_items += num;
 						}
 					}
@@ -1798,6 +1764,7 @@ function filter_report(index) {
 }
 
 var Histogram = function(element, json, parent) {
+	var self = this;
 	this.element = element;
 	this.json = json;
 	this.parent = parent;
@@ -1807,18 +1774,9 @@ var Histogram = function(element, json, parent) {
 	
 	$('#' + this.element).dialog('open');
 	
-	this.formatCount;
 	this.margin = {top: 10, right: 30, bottom: 80, left: 50};
 	this.width = $('#' + this.element).outerWidth() - this.margin.left - this.margin.right;
 	this.height = $('#' + this.element).outerHeight() - this.margin.top - this.margin.bottom;
-	this.x;
-	this.data;
-	this.y;
-	this.xAxis;
-	this.yAxis;
-	this.svg;
-	this.bar;
-	this.brush;
 	
 	this.initialize();
 }
@@ -1827,14 +1785,17 @@ $.extend(Histogram.prototype, {
 	initialize: function() {
 		var self = this;
 		$("#" + this.element).html(
-			'<div><button id="histogram_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;" onclick="histogram_zoom_out()">Zoom Out</button>' +
+			'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;">Zoom Out</button>' +
 			'<span style="margin-right:40px;">Data: ' + $('#report_type').val() + ', Filter: ' + $('#report_filter').val() + '</span></div>'
 		);
+		$('#' + this.element + '_back_button').on("click", function() {
+			self.zoom_out.call(self);
+		});
 
 		if (self.parent) {
-			$('#histogram_back_button').prop('disabled', false);
+			$('#' + self.element + '_back_button').prop('disabled', false);
 		} else {
-			$('#histogram_back_button').prop('disabled', true);
+			$('#' + self.element + '_back_button').prop('disabled', true);
 		}
 	
 		// A formatter for counts.
@@ -1922,7 +1883,7 @@ $.extend(Histogram.prototype, {
 	    	.attr("class", "y axis")
 	    	.call(this.yAxis);
 		
-		this.svg.append("text")
+		var y_label = this.svg.append("text")
 			.attr("font-size", "1.25em")
 			.attr("transform", "translate(" + this.margin.left/(-1.25) + "," + this.height/2 + ") rotate(270)")
 			.text("Frequency");
@@ -1961,8 +1922,16 @@ $.extend(Histogram.prototype, {
 				max: Math.ceil(extent[1]),
 				values: newValues,
 		};
-		var parent = histogram;
-		histogram = new Histogram(self.element, newJson, parent);
+		var parent = self;
+		self = new Histogram(self.element, newJson, parent);
+	},
+	zoom_out: function() {
+		var self = this;
+		if (self.parent) {
+			self = self.parent;
+			self.child = null;
+		}
+		self.initialize();
 	}
 });
 
@@ -1982,11 +1951,6 @@ function init_histogram(element) {
 		}
 	}
 	histogram = new Histogram(element, {min: min_value, max: max_value, values: values}, null);
-}
-
-function histogram_zoom_out() {
-	histogram = histogram.parent;
-	histogram.initialize();
 }
 
 function init_taxon_tree(element) {
@@ -2314,7 +2278,7 @@ function init_line_graph(index) {
 		if (system_graph) {
 			system_graph.initialize();
 		} else {
-			init_system_load();	
+			init_system_load();
 		}
 		$("#system_graph2").hide();
 		$("#system_graph").show();
@@ -2331,46 +2295,49 @@ function init_line_graph(index) {
 
 function init_system_load() {
 	$.ajax({
-	      url: "https://genomevolution.org/coge/data/system_load.txt",
-	      success: function (data){
-	            var strings =  data.split("\n");
-	            var json = [];
-	            for (var i = 0; i < strings.length - 1; i++) {
-	            	strings[i] = strings[i].split("\t");
-	            	json.push({
-	            		"x": strings[i][0],
-	            		"y": strings[i][3],
-	            	});
-	            }
-	            system_graph = new System_graph(json, "system_graph", null);
-	      }
+		url: "https://genomevolution.org/coge/data/system_load.txt",
+		success: function (data){
+			var strings =  data.split("\n");
+			var json = [];
+			for (var i = 0; i < strings.length - 1; i++) {
+				strings[i] = strings[i].split("\t");
+				json.push({
+					"time": strings[i][0],
+					"load": strings[i][3],
+					"memory": parseInt(strings[i][4], 10)/1000,
+				});
+			}
+			system_graph = new System_graph(json, "system_graph", null);
+		}
 	});
 }
 
 function init_system_load2() {
 	$.ajax({
-	      url: "https://geco.iplantcollaborative.org/coge/data/system_load.txt",
-	      success: function (data){
-	            var strings =  data.split("\n");
-	            var json = [];
-	            for (var i = 0; i < strings.length - 1; i++) {
-	            	strings[i] = strings[i].split("\t");
-	            	json.push({
-	            		"x": strings[i][0],
-	            		"y": strings[i][3],
-	            	});
-	            }
-	            system_graph2 = new System_graph(json, "system_graph2", null);
-	      }
+		url: "https://geco.iplantcollaborative.org/coge/data/system_load.txt",
+		success: function (data){
+			var strings =  data.split("\n");
+			var json = [];
+			for (var i = 0; i < strings.length - 1; i++) {
+				strings[i] = strings[i].split("\t");
+				json.push({
+					"time": strings[i][0],
+					"load": strings[i][3],
+					"memory": parseInt(strings[i][4], 10)/1000,
+				});
+			}
+			system_graph2 = new System_graph(json, "system_graph2", null);
+		}
 	});
 }
 
 var System_graph = function(json, element, parent) {
 	var self = this;
 	this.parent = parent;
-	this.margin = {top: 30, right: 20, bottom: 30, left: 50},
-	this.width = 1200 - this.margin.left - this.margin.right,
-	this.height = 600 - this.margin.top - this.margin.bottom;
+	this.child = null;
+	this.margin = {top: 30, right: 80, bottom: 30, left: 50},
+	this.width = $(window).width()*.75 - this.margin.left - this.margin.right,
+	this.height = $(window).height()*.5 - this.margin.top - this.margin.bottom;
 	this.data = json;
 	this.element = element;
 	this.initialize();
@@ -2382,11 +2349,16 @@ $.extend(System_graph.prototype, {
 		
 		// Clear the element, add the zoom out button and svg container
 		$("#" + this.element).html(
-				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="' + self.element + '.zoom_out()">Zoom Out</button>' +
-				'<div id="' + self.element + '_container" style="height:700px;"> <div id="' + self.element + '_graph" style="float:left;width:1200px;"></div> </div>'
+				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;">Zoom Out</button>' +
+				'<div id="' + self.element + '_container" style="height:' + (self.height + 250) + 'px;">' +
+				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 200) + 'px;"></div> </div>'
 		);
 		if (self.parent) {
-			$('#' + self.element + '_back_button').prop("disabled", false);
+			$('#' + self.element + '_back_button')
+				.prop("disabled", false)
+				.on("click", function() {
+					self.zoom_out.call(self);
+				});
 		} else {
 			$('#' + self.element + '_back_button').prop("disabled", true);
 		}
@@ -2396,27 +2368,46 @@ $.extend(System_graph.prototype, {
 		
 		// Format the data
 		self.data.forEach(function(d) {
-			if (Object.prototype.toString.call(d.x) !== "[object Date]") {
-				d.x = self.timeFormat.parse(d.x);
+			if (Object.prototype.toString.call(d.time) !== "[object Date]") {
+				d.time = self.timeFormat.parse(d.time);
 			}
-	        d.y = +d.y;
+			if (d.load) {
+				d.load = +d.load;
+			}
+	        if (d.memory) {
+	        	d.memory = +d.memory;
+	        }
 	    });
 
 		// Set the ranges
 		self.x = d3.time.scale().range([0, self.width]);
-		self.y = d3.scale.linear().range([self.height, 0]);
+		self.yLoad = d3.scale.linear().range([self.height, 0]);
+		self.yMemory = d3.scale.linear().range([self.height, 0]);
 
 		// Define the axes
 		self.xAxis = d3.svg.axis().scale(self.x)
-		    .orient("bottom").ticks(10);
+			.orient("bottom").ticks(10);
 
-		self.yAxis = d3.svg.axis().scale(self.y)
+		self.yLoadAxis = d3.svg.axis().scale(self.yLoad)
 		    .orient("left").ticks(10);
+
+		self.yMemAxis = d3.svg.axis().scale(self.yMemory)
+	    	.orient("right").ticks(10);
 		
-		// Define the line
+		// Define the lines
 		self.valueline = d3.svg.line()
-		    .x(function(d) { return self.x(d.x); })
-		    .y(function(d) { return self.y(d.y); });
+		    .x(function(d) { return self.x(d.time); })
+		    .y(function(d) { return self.yLoad(d.load); });
+		
+		self.valueline2 = d3.svg.line()
+	    	.x(function(d) { return self.x(d.time); })
+	    	.y(function(d) { 
+	    		if (d.memory) {
+	    			return self.yMemory(d.memory); 
+	    		} else {
+	    			return self.yMemory(0);
+	    		}
+	    	});
 		    
 		// Adds the svg canvas
 		self.svg = d3.select("#" + self.element + "_graph")
@@ -2428,15 +2419,22 @@ $.extend(System_graph.prototype, {
 		              "translate(" + self.margin.left + "," + self.margin.top + ")");
 
 	    // Scale the range of the data
-	    self.x.domain(d3.extent(self.data, function(d) { return d.x; }));
-	    self.y.domain([0, d3.max(self.data, function(d) { return d.y; })]);
+	    self.x.domain(d3.extent(self.data, function(d) { return d.time; }));
+	    self.yLoad.domain([0, d3.max(self.data, function(d) { return d.load; })]);
+	    self.yMemory.domain([0, d3.max(self.data, function(d) { return d.memory; })]);
 
-	    // Add the valueline path.
+	    // Add the valueline paths.
 	    self.svg.append("path")
 	        .attr("class", "line")
 	        .attr("d", self.valueline(self.data))
 	    	.attr("fill", "none")
-	    	.attr("stroke", "#000");
+	    	.attr("stroke", "#119911");
+	    
+	    self.svg.append("path")
+        	.attr("class", "line")
+        	.attr("d", self.valueline2(self.data))
+        	.attr("fill", "none")
+        	.attr("stroke", "blue");
 
 	    // Add the X Axis
 	    self.svg.append("g")
@@ -2444,17 +2442,34 @@ $.extend(System_graph.prototype, {
 	        .attr("transform", "translate(0," + self.height + ")")
 	        .call(self.xAxis);
 
-	    // Add the Y Axis
+	    // Add the Y Axes
 	    self.svg.append("g")
 	        .attr("class", "y axis")
-	        .call(self.yAxis);
+	        .style("fill", "#119911")
+	        .call(self.yLoadAxis);
 	    
-	    // Add a line at 32, representing the 32 cores we use.
+	    var yLoadLabel = self.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + self.margin.left/(-1.25) + "," + self.height/2 + ") rotate(270)")
+			.text("Load");
+	    
+	    self.svg.append("g")
+        	.attr("class", "y axis")
+        	.attr("transform", "translate(" + self.width + ", 0)")
+        	.style("fill", "blue")
+        	.call(self.yMemAxis);
+	    
+	    var yMemLabel = self.svg.append("text")
+			.attr("font-size", "1.25em")
+			.attr("transform", "translate(" + (self.width + self.margin.right/2) + "," + (self.height/2 - 20) + ") rotate(90)")
+			.text("Memory");
+	    
+	    // Add a line at 32 load, representing the 32 cores we use.
 	    self.svg.append("svg:line")
 	    	.attr("x1", 0)
 	    	.attr("x2", self.width)
-	    	.attr("y1", self.y(32))
-	    	.attr("y2", self.y(32))
+	    	.attr("y1", self.yLoad(32))
+	    	.attr("y2", self.yLoad(32))
 	    	.attr("stroke", "red");
 	    
 	    // Add brush selection
@@ -2475,23 +2490,50 @@ $.extend(System_graph.prototype, {
 	},
 	init_data_table: function () {
 		var self = this;
-		var total = 0;
-		var min = Number.MAX_SAFE_INTEGER;
-		var max = 0;
+		var loadTotal = 0;
+		var loadCount = 0;
+		var minLoad = Number.MAX_SAFE_INTEGER;
+		var maxLoad = 0;
+		
+		var memTotal = 0;
+		var memCount = 0;
+		var minMem = Number.MAX_SAFE_INTEGER;
+		var maxMem = 0;
+		
 		for (var i = 0; i < self.data.length; i++) {
-			if (self.data[i].y < min) {
-				min = self.data[i].y;
+			if (self.data[i].load) {
+				if (self.data[i].load < minLoad) {
+					minLoad = self.data[i].load;
+				}
+				if (self.data[i].load > maxLoad) {
+					maxLoad = self.data[i].load;
+				}
+				loadTotal += self.data[i].load;
+				loadCount++;
 			}
-			if (self.data[i].y > max) {
-				max = self.data[i].y;
+			
+			if (self.data[i].memory) {
+				if (self.data[i].memory < minMem) {
+					minMem = self.data[i].memory;
+				}
+				if (self.data[i].memory > maxMem) {
+					maxMem = self.data[i].memory;
+				}
+				memTotal += self.data[i].memory;
+				memCount++;
 			}
-			total += self.data[i].y;
 		}
-		var average = Math.round(total/self.data.length * 100)/100;
+		var avgLoad = Math.round(loadTotal/loadCount * 100)/100;
+		var avgMem = Math.round(memTotal/memCount * 100)/100;
 		$("#" + self.element + "_container").append("<div style='width:100%'>" +
-				"<div>Average: " + average + "</div>" +
-				"<div>Minimum: " + min + "</div>" +
-				"<div>Maximum: " + max + "</div>" +
+				"<div>Average Load: " + avgLoad + "</div>" +
+				"<div>Min Load: " + minLoad + "</div>" +
+				"<div>Max Load: " + maxLoad + "</div>" +
+				"<div>-------------------------</div>" +
+				"<div>Average Memory: " + avgMem + "</div>" +
+				"<div>Min Memory: " + minMem + "</div>" +
+				"<div>Max Memory: " + maxMem + "</div>" +
+				"<div>-------------------------</div>" +
 				"<div># of Data Points: " + self.data.length + "</div>" +
 				"</div>"
 		);
@@ -2502,13 +2544,14 @@ $.extend(System_graph.prototype, {
 		
 		var newJson = [];
 		for (var i = 0; i < self.data.length; i++) {
-			if (extent[0] <= self.data[i].x && extent[1] >= self.data[i].x) {
+			if (extent[0] <= self.data[i].time && extent[1] >= self.data[i].time) {
 				newJson.push(self.data[i]);
 			}
 		}
 		if (newJson.length > 1) {
 			var parent = self;
 			self = new System_graph(newJson, self.element, parent);
+			parent.child = self;
 		}
 	},
 	zoom_out: function() {
@@ -2517,5 +2560,55 @@ $.extend(System_graph.prototype, {
 			self = self.parent;
 		}
 		self.initialize();
+	}
+});
+
+var Query_Counter = function(params) {
+	this.elementId = params.elementId;
+	this.schedule_update = params.schedule_update;
+	this.cancel_update = params.cancel_update;
+	this.timers = new Array();
+	this.total_queries;
+	this.queries_per_second = 0;
+	this.updating = true;
+	this.get_data();
+}
+
+$.extend(Query_Counter.prototype, {
+	update: function(delay) {
+		var self = this;
+		if (self.updating) {
+			console.log("Updating query count");
+			self.cancel_update();
+			self.timers['update'] = window.setTimeout(
+				function() { self.get_data.call(self); },
+				delay
+			);
+		}
+	},
+	get_data: function() {
+		var self = this;
+		$.ajax({
+	        data: {
+	                fname: 'get_total_queries',
+	        },
+	        success : function(data) {
+	                if (data) {
+	                		var data = JSON.parse(data);
+	                		if (self.total_queries) {
+	                			var delta = data.Queries - self.total_queries;
+	                			console.log(delta);
+	                			self.queries_per_second = delta/5;
+	                		}
+	                		self.total_queries = data.Queries;
+	                        
+	                		$("#" + self.elementId + "_total").html("<span>Total Database Queries: " + self.total_queries + "</span>");
+	                		$("#" + self.elementId + "_per_second").html("<span>Queries per Second: " + self.queries_per_second + "</span>");
+	                }
+	        },
+	        complete: function() {
+	        	self.schedule_update(5000);
+	        }
+		});
 	}
 });

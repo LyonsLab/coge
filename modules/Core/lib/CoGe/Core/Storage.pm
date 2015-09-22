@@ -630,7 +630,7 @@ sub get_workflow_paths {
         my $staging_dir = catdir($tmp_path, 'staging');
         my @tmp = read_dir($staging_dir);
         my @wdir = grep { -d "$staging_dir/$_/$workflow_id" } read_dir($staging_dir);
-        print STDERR Dumper "wdir:\n", \@wdir, "\n";
+        #print STDERR Dumper "wdir:\n", \@wdir, "\n";
         if (@wdir != 1) {
             print STDERR "Storage::get_workflow_paths ERROR: ambiguous user directory\n";
             return;
@@ -647,7 +647,7 @@ sub get_workflow_paths {
 sub add_workflow_result {
     my ( $user_name, $workflow_id, $result ) = @_;
     unless ($user_name && $workflow_id && $result) {
-        print STDERR "Storage::add_result ERROR: missing required param\n";
+        print STDERR "Storage::add_workflow_result ERROR: missing required param\n";
         return;
     }
     
@@ -658,8 +658,8 @@ sub add_workflow_result {
 }
 
 sub get_workflow_results {
-    my ( $user_name, $workflow_id ) = @_;
-    unless ($user_name && $workflow_id) {
+    my ( $user_name, $workflow_id ) = @_; # user_name can be blank for admins
+    unless ($workflow_id) {
         print STDERR "Storage::get_workflow_results ERROR: missing required param\n";
         return;
     }

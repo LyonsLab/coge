@@ -543,7 +543,7 @@ sub create_notebook { #FIXME use routine CoGe::Core::Notebook
         db          => $coge,
         user_id     => $user->id,
         page        => "LoadBatch",
-        description => 'Create notebook "'.$name.'" id' . $list->id,
+        description => 'created notebook ' . list->info,
         parent_id   => $list->id,
         parent_type => 1 #FIXME magic number
     );

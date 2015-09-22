@@ -29,11 +29,12 @@ sub build {
     return unless $organism;
     
     # Initialize workflow
-    my $info = '"' . $metadata->{name};
+    my $info;
+    $info .= $metadata->{organism} if $metadata->{organism};
+    $info .= " (" . $metadata->{name} . ")"  if $metadata->{name};
     $info .= ": " . $metadata->{description} if $metadata->{description};
     $info .= " (v" . $metadata->{version} . ")";
-    $info .= '"';
-    $self->workflow($self->jex->create_workflow(name => "Load Genome " . $info, init => 1));
+    $self->workflow($self->jex->create_workflow(name => "Load Genome \"$info\"", init => 1));
     return unless ($self->workflow && $self->workflow->id);
     
     my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);

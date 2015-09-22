@@ -4,13 +4,9 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::Asset::File;
 #use IO::Compress::Gzip 'gzip';
 use Data::Dumper;
-use File::Basename qw( basename );
-use File::Spec::Functions qw( catdir catfile );
-use CoGeX;
-use CoGe::Services::Auth;
-use CoGe::Accessory::Web qw(url_for);
+use File::Spec::Functions qw( catfile );
+use CoGe::Services::Auth qw( init );
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::TDS;
 use CoGe::Core::Storage qw( get_workflow_paths get_workflow_results );
 use CoGe::Factory::RequestFactory;
 use CoGe::Factory::PipelineFactory;
@@ -25,7 +21,7 @@ sub add {
 
     # User authentication is required
     unless (defined $user) {
-        return $self->render(json => {
+        return $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
     }
@@ -57,21 +53,29 @@ sub add {
     }
     my $response = $request_handler->execute($workflow);
     
-    # Get tiny link #FIXME should this be moved client-side?
+    # Pipeline was submitted successfully
     if ($response->{success}) {
-        # Get tiny URL
+        # Get a tiny URL to a status page
         my ($page, $link);
-        if ($payload->{requester}) { # request is from web page - external API requests will not have a 'requester' field
+        if ($payload->{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
             $page = $payload->{requester}->{page};
             my $url = $payload->{requester}->{url};
             if ($url) {
                 $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $url . "&wid=" . $workflow->id );
             }
-            elsif ($page) { 
+            elsif ($page) {
                 $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
             }
-            $response->{site_url} = $link if $link;
         }
+        else { # otherwise infer status page by job type (for the DE) #TODO move this somewhere more appropriate
+            if ($payload->{type} eq 'load_genome') {
+                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . 'LoadGenome.pl' . "?wid=" . $workflow->id );
+            }
+            elsif ($payload->{type} eq 'load_experiment') {
+                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . 'LoadExperiment.pl' . "?wid=" . $workflow->id );
+            }
+        }
+        $response->{site_url} = $link if $link;
         
         # Log job submission
         CoGe::Accessory::Web::log_history(
@@ -85,7 +89,7 @@ sub add {
         );
     }
     
-    # Convert success to boolean
+    # Convert 'success' to boolean
     $response->{success} = ($response->{success} ? Mojo::JSON->true : Mojo::JSON->false);
 
     return $self->render(json => $response);
@@ -100,7 +104,7 @@ sub fetch {
 
     # User authentication is required
     unless (defined $user) {
-        $self->render(json => {
+        $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
         return;
@@ -151,7 +155,8 @@ sub fetch {
     }
 
     # Add results
-    my $results = get_workflow_results($user->name, $id);
+    my $user_name = ($user->is_admin ? undef : $user->name); # mdb added 8/12/15 - enables admins to see all workflow results
+    my $results = get_workflow_results($user_name, $id);
 
     $self->render(json => {
         id => int($id),
@@ -171,7 +176,7 @@ sub results { # legacy for Genome Export via HTTP
 
     # User authentication is required
     unless (defined $user) {
-        $self->render(json => {
+        $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
         return;

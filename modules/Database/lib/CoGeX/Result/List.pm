@@ -379,9 +379,10 @@ See Also   :
 sub info {
     my $self = shift;
     my $info = $self->name;
-    $info = "&reg; " . $info if $self->restricted;
-    $info .= ": " . $self->description if $self->description;
-    $info .= " (" . $self->type->name . ")" if $self->type;
+    $info = '&reg; ' . $info if $self->restricted;
+    $info .= ': ' . $self->description if $self->description;
+    #$info .= ' (' . $self->type->name . ')' if $self->type;
+    $info .= ' (id' . $self->id . ')';
     return $info;
 }
 
@@ -407,7 +408,7 @@ sub info_html {
     my $self = shift;
     my $info = $self->info;
     return
-        qq{<span class=link onclick='window.open("NotebookView.pl?lid=}
+        qq{<span class=link onclick='window.open("NotebookView.pl?nid=}
       . $self->id
       . qq{")'>}
       . $info
@@ -561,7 +562,9 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
           . "Users with access"
           . "</span>" );
     $anno_type->Type_delimit(": <td class='data5'>");
-    my $users = join( ', ', map { $_->display_name } $self->users );
+    my $users = ( $self->restricted ? 
+        join( ', ', map { $_->display_name } $self->users ) :
+        'Everyone' );
     $anno_type->add_Annot( $users . "</td>" );
     $anno_obj->add_Annot($anno_type);
 

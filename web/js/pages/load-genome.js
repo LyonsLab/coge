@@ -125,14 +125,20 @@ function handle_action(action) {
 
 function search_organisms (search_term) {
 	if (search_term && search_term.length > 2) {
+		var edit_organism = $("#edit_organism");
+		edit_organism.autocomplete("close");
+		var spinner = $('#edit_organism_busy');
+		spinner.css('visibility', 'visible');
+		
 		coge.services.search_organisms(search_term)
-			.done(function(result) {
-				var transformed = result.organisms.map(function(obj) {
+			.done(function(response) {
+				var transformed = response.organisms.map(function(obj) {
 					return { label: obj.name, value: obj.id };
 				});
-				$("#edit_organism")
+				edit_organism
 					.autocomplete({source: transformed})
 					.autocomplete("search");
+				spinner.css('visibility', 'hidden');
 			})
 			.fail(function() {
 				//TODO
@@ -423,7 +429,6 @@ $.extend(GenomeDescriptionView.prototype, {
 
     render: function() {
         var self = this;
-        
         var edit_organism = this.edit_organism;
 
         edit_organism.unbind().change(function() {
@@ -438,7 +443,6 @@ $.extend(GenomeDescriptionView.prototype, {
                 self.organism_id = ui.item.value;
                 return false; // Prevent the widget from inserting the value.
             },
-
             focus: function(event, ui) {
                 return false; // Prevent the widget from inserting the value.
             }

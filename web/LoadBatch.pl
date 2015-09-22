@@ -6,9 +6,8 @@ use strict;
 use CGI;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_irods_path get_irods_file get_upload_path);
+use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
 use CoGe::Core::Genome qw(genomecmp);
 use HTML::Template;
 use JSON::XS;
@@ -19,8 +18,6 @@ use File::Basename;
 use File::Slurp;
 use File::Spec::Functions qw( catdir catfile );
 use File::Listing qw(parse_dir);
-use LWP::Simple;
-use URI;
 use Sort::Versions;
 use Data::Dumper;
 no warnings 'redefine';
@@ -49,8 +46,6 @@ $TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 $EMBED = $FORM->param('embed');
 
 %FUNCTION = (
-    load_from_ftp           => \&load_from_ftp,
-    ftp_get_file            => \&ftp_get_file,
     upload_file             => \&upload_file,
     send_error_report       => \&send_error_report
 );
@@ -139,127 +134,6 @@ sub generate_body {
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
-}
-
-sub load_from_ftp {
-    my %opts = @_;
-    my $url  = $opts{url};
-
-    my @files;
-
-    my ($content_type) = head($url);
-    if ($content_type) {
-        if ( $content_type eq 'text/ftp-dir-listing' ) {    # directory
-            my $listing = get($url);
-            my $dir     = parse_dir($listing);
-            foreach (@$dir) {
-                my ( $filename, $filetype, $filesize, $filetime, $filemode ) =
-                  @$_;
-                if ( $filetype eq 'f' ) {
-                    push @files, { name => $filename, url => $url . $filename };
-                }
-            }
-        }
-        else {                                              # file
-            my ($filename) = $url =~ /([^\/]+?)(?:\?|$)/;
-            push @files, { name => $filename, url => $url };
-        }
-    }
-    else {    # error (url not found)
-        return;
-    }
-
-    return encode_json( \@files );
-}
-
-sub ftp_get_file {
-    my %opts      = @_;
-    my $url       = $opts{url};
-    my $username  = $opts{username};
-    my $password  = $opts{password};
-
-    #my ( $type, $filepath, $filename ) = $url =~ /^(ftp|http):\/\/(.+)\/(\S+)$/; # mdb removed 1/6/14, issue 274
-	# mdb added 1/6/14, issue 274
-	my $uri = URI->new($url);
-	my $type = $uri->scheme;
-	my ($filename, $filepath) = fileparse($uri->path);
-	$filepath = $uri->host . $filepath;
-
-    # print STDERR "$type $filepath $filename $username $password\n";
-    return unless ( $type and $filepath and $filename );
-
-    my $path         = catdir('ftp', $filepath, $filename);
-    my $fullfilepath = catdir($TEMPDIR, 'ftp', $filepath);
-    mkpath($fullfilepath);
-
-    # Simplest method (but doesn't allow login)
-    #	print STDERR "getstore: $url\n";
-    #	my $res_code = getstore($url, $fullfilepath . '/' . $filename);
-    #	print STDERR "response: $res_code\n";
-    # TODO check response code here
-
-    # Alternate method with progress callback
-    #	my $ua = new LWP::UserAgent;
-    #	my $expected_length;
-    #	my $bytes_received = 0;
-    #	$ua->request(HTTP::Request->new('GET', $url),
-    #		sub {
-    #			my($chunk, $res) = @_;
-    #			print STDERR "matt: " . $res->header("Content_Type") . "\n";
-    #
-    #			$bytes_received += length($chunk);
-    #			unless (defined $expected_length) {
-    #				$expected_length = $res->content_length || 0;
-    #			}
-    #			if ($expected_length) {
-    #				printf STDERR "%d%% - ",
-    #				100 * $bytes_received / $expected_length;
-    #			}
-    #			print STDERR "$bytes_received bytes received\n";
-    #
-    #			# XXX Should really do something with the chunk itself
-##			print STDERR $chunk;
-    #		});
-
-    # Current method (allows optional login)
-    my $ua = new LWP::UserAgent;
-    my $request = HTTP::Request->new( GET => $url );
-    $request->authorization_basic( $username, $password )
-      if ( $username and $password );
-
-    #print STDERR "request uri: " . $request->uri . "\n";
-    $request->content_type("text/xml; charset=utf-8");
-    my $response = $ua->request($request);
-    if ( $response->is_success() ) {
-
-        #my $header = $response->header;
-        my $result = $response->content;
-
-        #print STDERR "content: <begin>$result<end>\n";
-        open( my $fh, ">$fullfilepath/$filename" );
-        if ($fh) {
-            binmode $fh;    # could be binary data
-            print $fh $result;
-            close($fh);
-        }
-    }
-    else {                  # error
-        my $status = $response->status_line();
-        print STDERR "status_line: $status\n";
-        return encode_json(
-            {
-                path      => $path,
-                size      => "Failed: $status"
-            }
-        );
-    }
-
-    return encode_json(
-        {
-            path      => $path,
-            size      => -s $fullfilepath . '/' . $filename
-        }
-    );
 }
 
 sub upload_file {

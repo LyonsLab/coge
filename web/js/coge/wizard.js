@@ -192,7 +192,7 @@ $.extend(DataView.prototype, {
         	    	self.el.find("#select_file_type").hide();
         	    }
         	    else {
-	        	    var file_type = self.autodetect_file_type(files[0].path);
+	        	    var file_type = self.autodetect_file_type(files[0].name);
 	        	    if (file_type)
 	        	    	self.el.find("#file_type_selector").val(file_type);
 	        	    self.el.find("#select_file_type").show();
@@ -307,7 +307,7 @@ $.extend(ConfirmationView.prototype, {
         for(index = 0; index < data.length; index++) {
             newpair = this.pair_template.clone();
             newpair.find(".name").html("File");
-            var filename = data[index].path.replace(/^.*[\\\/]/, '')
+            var filename = data[index].name.replace(/^.*[\\\/]/, '')
             newpair.find(".data").html(filename);
             this.data.append(newpair);
         }

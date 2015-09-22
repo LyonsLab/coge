@@ -54,7 +54,7 @@ GetOptions(
     ,    #display sort order for chromosomes, "Name|N" || "Size|S";
     "config_file|cf=s" => \$conffile,
     "skip_random|sr=i" => \$skip_random
-    ,    #flag or skipping chromosome containing the wod 'random' in their name
+    ,    #flag or skipping chromosome containing the word 'random' in their name
     "force_box|fb" => \$force_box
     , #flag to make dotplot dimensions a box instead of relative on genomic content
     "chr_order|co=s" => \$chr_order
@@ -117,11 +117,11 @@ my $synmap_report = new CoGe::Accessory::SynMap_report;
 my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
 my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
 unless ($dsg1) {
-    warn "No genome found with dbid $dsgid1\n";
+    warn "No genome found with id $dsgid1\n";
     return;
 }
 unless ($dsg2) {
-    warn "No genome found with dbid $dsgid2\n";
+    warn "No genome found with id $dsgid2\n";
     return;
 }
 
@@ -153,19 +153,19 @@ if ( $axis_metric && $axis_metric =~ /gene/ )    #add in gene information
     get_gene_info( dsgid => $dsgid2, info => $org2info );
 }
 
-#will need to reorder whichever genome has more chromosomes/contigs
-
+# Reorder whichever genome has more chromosomes/contigs
 my $spa_info_file = $basename . ".spa_info.txt";
 if ($assemble) {
     my $skip_non_aligned_contigs = $assemble && $assemble =~ /2/ ? 1 : 0;
-#    print STDERR $alignfile;
-    my ( $org1_association, $org2_association ) =
-      $synmap_report->parse_syn_blocks( file => $alignfile )
-      if $assemble;
+    print STDERR 'alignfile=', $alignfile, "\n";
+    my ( $org1_association, $org2_association );
+    ( $org1_association, $org2_association ) =
+        $synmap_report->parse_syn_blocks( file => $alignfile ) if $assemble;
     #print STDERR Dumper $org1_association, $org2_association;
+    
     my $output;
-    if (   @$org1_association > @$org2_association && $assemble > 0
-        || @$org1_association < @$org2_association && $assemble < 0 )
+    if (   (@$org1_association > @$org2_association && $assemble > 0)
+        || (@$org1_association < @$org2_association && $assemble < 0) )
     {
         $output = reord(
             reorder     => $org1_order,
@@ -190,6 +190,7 @@ if ($assemble) {
     open OUT, ">$spa_info_file";
     print OUT $output;
     close OUT;
+    
     add_rev_info( info => $org1info, assoc => $org1_association );
     add_rev_info( info => $org2info, assoc => $org2_association );
 }
@@ -197,9 +198,7 @@ if ($assemble) {
 calc_abs_start_pos( order => $org1_order, info => $org1info );
 calc_abs_start_pos( order => $org2_order, info => $org2info );
 
-#print "IN DOTPLOT\n";
 #my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
-
 my $org1length = 0;
 map { $org1length += $_->{length} } values %$org1info;
 #my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
@@ -207,16 +206,9 @@ my $org2length = 0;
 map { $org2length += $_->{length} } values %$org2info;
 
 unless ( $org1length && $org2length ) {
-    print STDERR qq{
-Error:  one or both of the genomes has no effective length:
- Org1:  $org1length
- Org2:  $org2length
-  };
-
+    print STDERR "Error: one or both of the genomes has no effective length: Org1: $org1length Org2: $org2length\n";
     if ( $axis_metric && $axis_metric =~ /gene/ ) {
-        print STDERR qq{
-Possible source of error is using genes as axis metric when one or both genomes has no CDSs.
-};
+        print STDERR qq{Possible source of error is using genes as axis metric when one or both genomes has no CDSs.};
     }
     exit;
 }
@@ -543,8 +535,8 @@ sub draw_dots {
 
         my @line = split /\t/;
         my $val;
-        my @item1 = split /\|\|/, $line[1];
-        my @item2 = split /\|\|/, $line[5];
+        my @item1 = split(/\|\|/, $line[1]);
+        my @item2 = split(/\|\|/, $line[5]);
         my $fid1  = $item1[6];
         my $fid2  = $item2[6];
         if ( $color_type && $color_type eq "inv" && $item1[4] && $item2[4] ) {
@@ -1093,10 +1085,10 @@ sub reord {
     my $order       = $opts{order};
     my $reorder     = $opts{reorder};
     my $association = $opts{assoc};
-    #    print STDERR Dumper $reorder, $association;
     my $skip        = $opts{skip};
     my $skip_random = $opts{skip_random};
     my $info        = $opts{info};          #for determining orientation
+    print STDERR 'reord: info=', scalar(@$info), ' order=', scalar(@$order), ' reorder=', scalar(@$reorder), ' assoc=', scalar(@$association), ' skip=', $skip, ' skip_random=', $skip_random, "\n";
 
     #create mapping hash of which contigs are in the reverse orientation
     my %rev_info;
@@ -1304,8 +1296,8 @@ sub get_pairs {
         next if /^#/;
         next unless $_;
         my @line  = split /\t/;
-        my @item1 = split /\|\|/, $line[1];
-        my @item2 = split /\|\|/, $line[5];
+        my @item1 = split(/\|\|/, $line[1]);
+        my @item2 = split(/\|\|/, $line[5]);
         next unless $item1[6] && $item2[6];
         if ($chr1) {
             next unless $item1[0] eq $chr1 || $item2[0] eq $chr1;
@@ -1326,8 +1318,7 @@ sub get_dsg_order {
     my $chr            = $opts{chr};
     my $minsize        = $opts{minsize};
     my $chr_sort_order = $opts{chr_sort_order};
-    my $skip_random =
-      $opts{skip_random}; #skip "random" chromosome where sequences are added ad hoc
+    my $skip_random    = $opts{skip_random}; #skip "random" chromosome where sequences are added ad hoc
 
     my %data;
 #    foreach my $gs ( $dsg->genomic_sequences ) {
@@ -1353,28 +1344,25 @@ sub get_dsg_order {
         $data{ $c->name }{chr_length} = $len;
         $data{ $c->name }{length}     = $len;
     }
-    #how to sort chromosomes for diplay?
+    #how to sort chromosomes for display?
     my @ordered;
     if ( $chr_sort_order =~ /^n/i )    #sorting by name
     {
         @ordered = sort { versioncmp( $a, $b ) } keys %data;
-#old below
-#	my @numbered;
-#	my @lettered;
-#	foreach my $chr (keys %data)
-#	  {
-#	    if ($chr =~ /\d+/)
-#	      {
-#		push @numbered, $chr;
-#	      }
-#	    else
-#	      {
-#		push @lettered, $chr;
-#	      }
-#	  }
-#	@ordered = ( (sort {chr_sort($a) <=> chr_sort($b) } @numbered), (sort { $a cmp $b } @lettered));
+        #old below
+        #	my @numbered;
+        #	my @lettered;
+        #	foreach my $chr (keys %data) {
+        #	    if ($chr =~ /\d+/) {
+        #		    push @numbered, $chr;
+        #	    }
+        #	    else {
+        #		    push @lettered, $chr;
+        #	    }
+        #	}
+        #	@ordered = ( (sort {chr_sort($a) <=> chr_sort($b) } @numbered), (sort { $a cmp $b } @lettered));
     }
-    elsif ( $chr_sort_order =~ /^s/i )    #sorting by size
+    elsif ( $chr_sort_order =~ /^s/i ) #sorting by size
     {
         @ordered =
           sort { $data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data;

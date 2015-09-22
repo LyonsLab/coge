@@ -17,6 +17,8 @@ GetOptions(
 	"dsgid2=i"        => \$dsgid2,
 );
 
+print STDOUT "Starting $0 (pid $$)\n";
+
 my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307";
 $coge = CoGeX->connect( $connstr, $user, $pass );
 
@@ -39,9 +41,7 @@ my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
 my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
 
 unless ( $dsg1 && $dsg2 ) {
-	print STDERR qq{
-Error:  unable to create a datasetgroup object for one of the IDs
-} if $DEBUG;
+	print STDERR "Error:  unable to create a datasetgroup object for one of the IDs\n" if $DEBUG;
 	exit;
 }
 
@@ -49,18 +49,14 @@ my $ds1 = map_chr_to_ds($dsg1);
 my $ds2 = map_chr_to_ds($dsg2);
 
 unless ( scalar keys %$ds1 == scalar keys %$ds2 ) {
-	print STDERR qq{
-Chromosome count mismatch!  Continuing.  Check errors below.
-} if $DEBUG;
+	print STDERR "Chromosome count mismatch!  Continuing.  Check errors below.\n" if $DEBUG;
 }
 
 foreach my $chr1 ( sort $dsg1->chromosomes ) {
 	unless ( $ds2->{$chr1} ) {
-		print STDERR
-"Chromosome $chr1 does not exist in dataset_group_2.  Please check the chromosome names if you think this is in error.  Skipping to next chromosome\n" if $DEBUG;
+		print STDERR "Chromosome $chr1 does not exist in dataset_group_2.  Please check the chromosome names if you think this is in error.  Skipping to next chromosome\n" if $DEBUG;
 		next;
 	}
-#	foreach my $ds_1 (@{$ds1->{$chr1}})
 	foreach my $ds_1 ($dsg1->datasets)
 	  {
 	    #print STDERR $ds_1->id,"\t", $ds_1->name,"\n";

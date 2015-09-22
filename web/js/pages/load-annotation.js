@@ -19,14 +19,21 @@ function create_source() {
 }
 
 function search_genomes (search_term) {
+	var edit_genome = $("#edit_genome");
+	edit_genome.autocomplete("close");
+	var spinner = $('#edit_genome_busy');
+	spinner.show();
+	
 	coge.services.search_genomes(search_term)
-		.done(function(result) {
-			var transformed = result.genomes.map(function(obj) {
-				return { label: obj.info, value: obj.id };
+		.done(function(response) {
+			var results = response.genomes.map(function(obj) {
+				var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
+				return { label: label, value: obj.id };
 			});
-			$("#edit_genome")
-				.autocomplete({source: transformed})
+			edit_genome
+				.autocomplete({source: results})
 				.autocomplete("search");
+			spinner.hide();
 		})
 		.fail(function() {
 			//TODO
@@ -110,10 +117,6 @@ $.extend(AnnotationDescriptionView.prototype, {
             this.el.find('#edit_description').val(this.metadata.description);
             this.el.find('#edit_version').val(this.metadata.version);
             this.edit_source.val(this.metadata.source);
-
-            if (!this.metadata.restricted)
-                this.el.find('#restricted').removeAttr('checked');
-
             this.el.find('#edit_genome').val(this.metadata.genome);
         }
     },
@@ -167,7 +170,6 @@ $.extend(AnnotationDescriptionView.prototype, {
         var description = this.el.find('#edit_description').val();
         var link = this.el.find('#edit_link').val();
         var version = this.el.find('#edit_version').val();
-        var restricted = this.el.find('#restricted').is(':checked');
         var genome = this.el.find('#edit_genome').val();
 
         if (!genome || genome === 'Search' || !this.gid) {
@@ -195,7 +197,6 @@ $.extend(AnnotationDescriptionView.prototype, {
                 description: description,
                 link: link,
                 version: version,
-                restricted: restricted,
                 source: source,
                 genome: genome,
             },

@@ -2,15 +2,17 @@ package CoGe::Services::Data::Genome2;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
-use CoGeX;
-use CoGe::Services::Auth;
+use CoGe::Services::Auth qw(init);
 use CoGe::Services::Data::Job;
+use CoGe::Core::Genome qw(genomecmp);
+use CoGeDBI qw(get_feature_counts);
+use Data::Dumper;
 
 sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
     my $fast = $self->param('fast');
-    $fast = ($fast eq '1' || $fast eq 'true');
+    $fast = (defined $fast && ($fast eq '1' || $fast eq 'true'));
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
@@ -49,7 +51,7 @@ sub search {
     }
 
     # Filter response
-    my @filtered = grep {
+    my @filtered = sort genomecmp grep {
         !$_->restricted || (defined $user && $user->has_access_to_genome($_))
     } values %unique;
 
@@ -74,6 +76,7 @@ sub search {
             info => $_->info,
             organism_id  => int($_->organism->id),
             sequence_type => {
+                id => $_->type->id,
                 name => $_->type->name,
                 description => $_->type->description,
             },
@@ -88,8 +91,6 @@ sub search {
         } @filtered;
     }
     
-    @result = sort { $a->{info} cmp $b->{info} } @result;
-
     $self->render(json => { genomes => \@result });
 }
 
@@ -124,7 +125,17 @@ sub fetch {
             type_group => $_->type->group
         }
     } $genome->annotations;
-
+    
+    # Build chromosome list
+    my $chromosomes = $genome->chromosomes_all;
+    my $feature_counts = get_feature_counts($db->storage->dbh, $genome->id);
+    foreach (@$chromosomes) {
+        my $name = $_->{name};
+        $_->{gene_count} = int($feature_counts->{$name}{1}{count});
+        $_->{CDS_count} = int($feature_counts->{$name}{3}{count});
+    }
+    
+    # Generate response
     $self->render(json => {
         id => int($genome->id),
         name => $genome->name,
@@ -142,6 +153,7 @@ sub fetch {
             description => $genome->type->description,
         },
         chromosome_count => int($genome->chromosome_count),
+        chromosomes => $chromosomes,
         experiments => [ map { int($_->id) } $genome->experiments ],
         additional_metadata => \@metadata
     });
@@ -150,20 +162,21 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    #print STDERR "CoGe::Services::Data::Genome2::add\n", Dumper $data, "\n";
+    print STDERR "CoGe::Services::Data::Genome2::add\n", Dumper $data, "\n";
 
-    # Authenticate user and connect to the database
-    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+# mdb removed 9/17/15 -- auth is handled by Job::add below, redundant token validation breaks CAS proxyValidate
+#    # Authenticate user and connect to the database
+#    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+#
+#    # User authentication is required to add experiment
+#    unless (defined $user) {
+#        $self->render(json => {
+#            error => { Auth => "Access denied" }
+#        });
+#        return;
+#    }
 
-    # User authentication is required to add experiment
-    unless (defined $user) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        });
-        return;
-    }
-
-    # Valid data items
+    # Valid data items # TODO move into request validation
     unless ($data->{source_data} && @{$data->{source_data}}) {
         $self->render(json => {
             error => { Error => "No data items specified" }

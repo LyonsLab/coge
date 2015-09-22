@@ -10,7 +10,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Core::Notebook qw(notebookcmp);
+use CoGe::Core::Notebook qw(notebookcmp delete_notebook undelete_notebook);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -739,7 +739,7 @@ sub add_item_to_list {
         db          => $coge,
         user_id     => $USER->id,
         page        => "NotebookView",
-        description => "add $type_name id$item_id to notebook $lid",
+        description => "added $type_name id$item_id to notebook " . $list->info_html,
         link        => "NotebookView.pl?nid=$lid",
         parent_id   => $lid,
         parent_type => 1 #FIXME magic number
@@ -776,7 +776,7 @@ sub remove_list_item {
             db          => $coge,
             user_id     => $USER->id,
             page        => "NotebookView",
-            description => "removed $type_name id$item_id from notebook $lid",
+            description => "removed $type_name id$item_id from notebook " . $list->info_html,
             link        => "NotebookView.pl?nid=$lid",
             parent_id   => $lid,
             parent_type => 1 #FIXME magic number
@@ -1256,23 +1256,20 @@ sub featurecmp {
 sub delete_list {
     my %opts = @_;
     my $lid  = $opts{lid};
-    return 0 unless $lid;           #return "No LID specified" unless $lid;
+    return 0 unless $lid;
 
     my $list = $coge->resultset('List')->find($lid);
-    return 0 unless $list;    #return "Cannot find list $lid\n" unless $list;
-    return 0 unless ( $USER->is_admin or $USER->is_owner( list => $lid ) );
+    return 0 unless $list;
 
-    if ( $list->locked && !$USER->is_admin ) {
-        return
-          0;   #"This is a locked list.  Admin permission is needed to modify.";
+    my $success;
+    if ($list->deleted) {
+        $success = undelete_notebook(db => $coge, user => $USER, notebook_id => $lid, page => $PAGE_TITLE);
     }
-
-    $list->deleted(!$list->deleted); # do undelete if already deleted
-    $list->update;
-
-    #FIXME: Add logging for this function
-
-    return 1;
+    else {
+        $success = delete_notebook(db => $coge, user => $USER, notebook_id => $lid, page => $PAGE_TITLE);
+    }
+   
+    return $success;
 }
 
 sub send_to_blast {

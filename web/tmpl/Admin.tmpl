@@ -4,12 +4,18 @@
 
 <TMPL_IF NAME='MAIN'>
 <script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/services.js"></script>
 <!--<script src="js/coge/colors.js"</script>-->
 <script lanaguage="javascript" type="text/javascript" src="js/pages/admin.js"></script>
 <SCRIPT type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 <SCRIPT type="text/javascript" src="./js/jstree/jquery.jstree.js"></SCRIPT>
 <script src="js/vendor/d3/d3.min.js"></script>
 <script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript">
+	//Page constants
+	const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+	const USER_NAME     = '<TMPL_VAR NAME="USER">';
+</script>
 
 <link rel="stylesheet" href="css/dataTables.css" type="text/css"/>
 <style type="text/css">
@@ -115,6 +121,8 @@ svg {
 		<li><a href="#tabs-5">Reports</a></li>
 		<li><a href="#tabs-6">Taxonomy</a></li>
 		<li><a href="#tabs-7">System Load</a></li>
+		<li><a href="#tabs-8">Analytics</a></li>
+		<li><a href="#tabs-9">Database</a></li>
 	</ul>
 	<div id="tabs-1">
 		<div id="master" style="position:relative;">
@@ -213,94 +221,26 @@ svg {
 		<div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
 	</div>
 	<div id="tabs-2">
-		<div class="small" style="padding-top:15px;height:27px;">
-			Filter:
-			<input type="text" id="job_search_bar">
-		 	<select id="job_search_type">
-		 	<option value="1">Contains</option>
-		 	<option value="0">Does NOT contain</option>
-		 	</select>
-		 	<span id='job_filter_count' style="margin-left:20px;margin-right:20px;"></span>
-		 	<img id='filter_busy' src="picts/ajax-loader.gif" />
-		 	
-		 	<input type="checkbox" id="job_update_checkbox" checked>
+		<div>
+			<input type="checkbox" id="jobs_update_checkbox" checked>
 			<span> Auto-Update</span>
-			
-			<input type="checkbox" id="running_checkbox" style="margin-left:20px;" checked>
+			<input type="checkbox" id="jobs_running_checkbox" style="margin-left:20px;" checked>
 			<span> Running</span>
+			<img id='jobs_loading' style="padding-left:1em" src="picts/ajax-loader.gif" />
 		</div>
-			
-		<span id="test" class="ui-button ui-corner-all" onclick="cancel_job()">Cancel selected jobs</span>
-		<span class="ui-button ui-button-go ui-corner-all" onclick="restart_job()">Restart selected jobs</span>
-	
-		<div id="jobs" style="max-width:95%; height: 900px; display:true; font-size: 0.8em; margin-top: 5px;">
+		<div style="padding-top:1em">
+			<span id="jobs_cancel" class="ui-button ui-corner-all">Cancel selected job</span>
+			<span id="jobs_restart" class="ui-button ui-button-go ui-corner-all">Restart selected job</span>
 		</div>
-	
-		<link rel="stylesheet" href="js/vendor/slickgrid/slick.grid.css" type="text/css"/>
-		<link rel="stylesheet" href="js/vendor/slickgrid/controls/slick.pager.css" type="text/css"/>
-		<!--<link rel="stylesheet" href="js/vendor/slickgrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/> -->
-		<link rel="stylesheet" href="js/vendor/slickgrid/controls/slick.columnpicker.css" type="text/css"/>
-		  <style>
-		    .cell-centered {
-				text-align: center;
-				vertical-align: middle;
-				font-size: small;
-		    }
-		    .cell-normal {
-				vertical-align: middle;
-				font-size: small;
-		    }
-		    .slick-cell-checkbox-sel {
-		        background: #f0f0f0;
-		        border-right-color: silver,
-		        border-right-style: solid;
-		    }
-		  </style>
-		<script src="js/vendor/slickgrid/lib/jquery-ui-1.8.16.custom.min.js"></script>
-		<script src="js/vendor/slickgrid/lib/jquery.event.drag-2.2.js"></script>
-		<script src="js/vendor/slickgrid/slick.core.js"></script>
-		<script src="js/vendor/slickgrid/slick.formatters.js"></script>
-		<script src="js/vendor/slickgrid/slick.editors.js"></script>
-		<script src="js/vendor/slickgrid/plugins/slick.rowselectionmodel.js"></script>
-		<script src="js/vendor/slickgrid/plugins/slick.checkboxselectcolumn.js"></script>
-		<script src="js/vendor/slickgrid/slick.grid.js"></script>
-		<script src="js/vendor/slickgrid/slick.dataview.js"></script>
-		<script src="js/vendor/slickgrid/controls/slick.pager.js"></script>
-		<script src="js/vendor/slickgrid/controls/slick.columnpicker.js"></script>
-	
-		<script src="js/coge/utils.js"></script>
-		<script src="js/coge/grid.js"></script>
+		<div id="jobs" style="padding-top:1em"></div>
 	</div>
 	<div id="tabs-3">
 		<div class="small" style="padding-top:15px;padding-bottom:5px;height:27px;">
-			<span style="padding-right:10px">
-				Show:
-				<select id="hist_show_select">
-					<option value="0">All</option>
-					<TMPL_IF NAME="OPTION_ALL"><option selected='selected' value="-3">Mine</option></TMPL_IF>
-					<option value="-1">Starred</option>
-					<option value="-2">Comments</option>
-					<option value="1">Last hour</option>
-					<option value="12">Last 12 hrs</option>
-					<option value="24">Last 24 hrs</option>
-					<option value="168">Last week</option>
-					<option value="720">Last month</option>
-				</select>
-			</span>
-			<span style="margin-right:20px;">
-				Filter:
-				<input id="hist_search_input" type="text">
-				<select id="hist_search_type">
-					<option value="1">Contains</option>
-					<option value="0">Does NOT contain</option>
-				</select>
-				<span id='hist_filter_count' style="margin-left:20px;color:darkgray;font-style:italic;"></span>
-			</span>
-			<input type="checkbox" id="hist_update_checkbox" checked>
+			<input type="checkbox" id="history_update_checkbox" checked>
 			<span> Auto-Update</span>
 		</div>
 		
-		<img id="loading3" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;display:none;" />
+		<img id="history_loading" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;display:none;" />
 		
 		<div id="history" style="max-width:95%;height:80%;display:none;"></div>
 	</div>
@@ -336,13 +276,13 @@ svg {
 		  <option value="Public (Owned)">Public (Owned)</option>
 		  <option value="Restricted but Shared">Restricted but Shared</option>
 		</select>
-		<button id="histogram_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="init_histogram('histo_dialog')">Histogram</button>
+		<button id="histogram_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="init_histogram('histogram')">Histogram</button>
 		<span id="reports_loading" class="hidden">
 			<img src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;margin-right:10px;" />
 			This may take 30 seconds.
 		</span>
 		<div id="reports"></div>
-		<div id="histo_dialog" class="dialog_box hidden" title="Histogram"></div>
+		<div id="histogram" class="dialog_box hidden" title="Histogram"></div>
 	</div>
 	<div id="tabs-6">
 		<span style="margin-right:20px;">
@@ -358,6 +298,13 @@ svg {
 		</select>
 		<span id="system_graph"></span>
 		<span id="system_graph2" class="hidden"></span>
+	</div>
+	<div id="tabs-8">
+		<!--<iframe src="https://genomevolution.org/greentea/" height="100%" width="100%"></iframe>-->
+	</div>
+	<div id="tabs-9">
+		<div id="database_total"></div>
+		<div id="database_per_second"></div>
 	</div>
 </div>
 
@@ -516,9 +463,9 @@ $(function(){
 </div>
 </TMPL_IF>
 
-<TMPL_IF NAME='Histo_dialog'>
+<!--<TMPL_IF NAME='Histogram'>
 	<div>Nothing to see here.</div>
-</TMPL_IF>
+</TMPL_IF>-->
 
 <TMPL_IF NAME='ERROR_DIALOG'>
 <div class="small" align='center'>
