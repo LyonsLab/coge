@@ -41,6 +41,8 @@ Core/lib/CoGe/Core/Genome.pm
 Core/lib/CoGe/Core/Metadata.pm
 Core/lib/CoGe/Core/Notebook.pm
 Core/lib/CoGe/Core/Storage.pm
+Core/lib/CoGe/Core/Search.pm
+Core/lib/CoGe/Core/Chromosomes.pm
 Database/lib/CoGeX.pm
 Database/lib/CoGeDBI.pm
 Database/lib/DBIxProfiler.pm
@@ -171,6 +173,9 @@ Services/lib/CoGe/Services/Data/Sequence.pm
 Services/lib/CoGe/Services/Data/User.pm
 Services/lib/CoGe/Services/Data/Job.pm
 Services/lib/CoGe/Services/Data/Log.pm
+Services/lib/CoGe/Services/Data/Search.pm
+Services/lib/CoGe/Services/Data/IRODS.pm
+Services/lib/CoGe/Services/Data/FTP.pm
 Services/lib/CoGe/Services/JBrowse/Annotation.pm
 Services/lib/CoGe/Services/JBrowse/Configuration.pm
 Services/lib/CoGe/Services/JBrowse/Experiment.pm

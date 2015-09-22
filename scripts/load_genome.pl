@@ -32,7 +32,6 @@ $MAX_CHR_NAME_LENGTH = 255;
 GetOptions(
     "staging_dir=s" => \$staging_dir,
     "install_dir=s" => \$install_dir,    # optional, for debug
-#    "result_dir=s"  => \$result_dir,     # results path
     "wid=s"         => \$wid,            # workflow id
     "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped) of files to load
     "irods_files=s" => \$irods_files,    # optional comma-separated list (JS escaped) of files to set metadata
@@ -41,7 +40,7 @@ GetOptions(
     "message=s"		=> \$message,		 # message (JS escaped)
     "link=s"        => \$link,           # link (JS escaped)
     "version=s"     => \$version,        # genome version (JS escaped)
-    "type_id=i"     => \$type_id,        # genomic_sequence_type_id
+    "type_id=s"     => \$type_id,        # genomic_sequence_type_id
     "restricted=i"  => \$restricted,     # genome restricted flag
     "organism_id=i" => \$organism_id,    # organism ID
     "source_id=i"	=> \$source_id,		 # data source id
@@ -86,6 +85,11 @@ $source_desc = unescape($source_desc) if ($source_desc);
 $restricted  = '0' if ( not defined $restricted );
 $compress    = 0 if ( not defined $compress ); 	# RAZF compress the fasta file
 $type_id     = 1 if ( not defined $type_id );   # default genomic seq type to "unmasked"
+
+unless ($wid) {
+    print STDOUT "log: error: wid not specified\n";
+    exit(-1);
+}
 
 if (not $source_id and not $source_name) {
 	print STDOUT "log: error: source not specified, use source_id or source_name\n";
@@ -411,7 +415,7 @@ if ($irods_files) {
 }
 
 # Save result
-unless (add_workflow_result($user_name, $wid, 
+unless (add_workflow_result($user->name, $wid, 
         {
             type           => 'genome',
             id             => int($genome->id),
@@ -434,7 +438,7 @@ unless (add_workflow_result($user_name, $wid,
 # Add genome ID to log - mdb added 7/8/15, needed after log output was moved to STDOUT for jex
 my $logtxtfile = "$staging_dir/log.txt";
 open(my $logh, '>', $logtxtfile);
-print $logh "genome id: " . $genome->id . "\n";
+print $logh "genome id: " . $genome->id . "\n"; # needed by copy_load_mask_genome.pl
 close($logh);
 
 # Save workflow_id in genome data path -- #TODO move into own routine in Storage.pm
@@ -479,7 +483,7 @@ sub process_fasta_file {
         my $sectionName;
         my $sectionLen = length($section);
         my $filteredSeq;
-        my $CHUNK_LEN = 1*1000;
+        my $CHUNK_LEN = 10_000; # 8/19/15 COGE-647 mdb increased from 1000 for section headers >1000 chars
         my $ofs = 0;
         while ($ofs < $sectionLen) {
             my $chunk = substr($section, $ofs, $CHUNK_LEN);
@@ -531,11 +535,13 @@ sub process_fasta_file {
         }
         if ( $filteredSeq =~ /\W/ ) {
             print STDOUT "log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
+            #print STDOUT "log: error: chromosome name $sectionName\n";
+            #print STDOUT "log: error: $filteredSeq\n";
             exit(-1);
         }
 
         # Append sequence to master file
-	my $out;
+        my $out;
         unless (open( $out, ">>$target_dir/genome.faa" )) {
             print STDOUT "log: error: Couldn't open genome.faa\n";
             exit(-1);

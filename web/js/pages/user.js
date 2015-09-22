@@ -1075,6 +1075,8 @@ $.extend(TocPanel.prototype, {
 		});
 		
 		//TODO dynamically generate html from types here instead of statically in User.tmpl
+		
+		this.element.show();
     },
     
     clearSelection: function() {

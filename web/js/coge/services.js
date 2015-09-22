@@ -16,6 +16,11 @@ var coge = window.coge = (function(namespace) {
 			this.debug = 1;
 		},
 		
+		search_global: function(search_term) {
+			console.log(search_term);
+			return this._ajax("GET", BASE_URL + "global/search/" + search_term + "/");
+		},
+		
 		search_organisms: function(search_term) {
 			// TODO add param validation
 			return this._ajax("GET", BASE_URL + "organisms/search/" + search_term + "/");
@@ -64,6 +69,10 @@ var coge = window.coge = (function(namespace) {
 		
 		irods_list: function(path) {
 			return this._ajax("GET", BASE_URL + "irods/list/" + path);
+		},
+		
+		ftp_list: function(url) {
+			return this._ajax("GET", BASE_URL + "ftp/list/", null, { url: url });
 		},
 		
 		_ajax: function(type, url, data, opts) { //, success, error) {

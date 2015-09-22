@@ -369,8 +369,8 @@ var snpMenu = {
 		};
 		
 		// Submit request
-		coge.services.submit_job(request, 
-			function(response) { // success callback
+		coge.services.submit_job(request)
+			.done(function(response) {
 		  		if (!response) {
 		  			coge.progress.failed("Error: empty response from server");
 		  			return;
@@ -383,11 +383,10 @@ var snpMenu = {
 		        // Start status update
 		  		window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EXPERIMENT_ID + "&wid=" + response.id); // Add workflow id to browser URL
 		  		coge.progress.update(response.id, response.site_url);
-		    },
-		    function(jqXHR, textStatus, errorThrown) { // error callback
+		    })
+		    .fail(function(jqXHR, textStatus, errorThrown) {
 		    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-		    }
-		);
+		    });
 	}
 }
 

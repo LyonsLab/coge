@@ -5,6 +5,7 @@ use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(format_time_diff);
 use CoGe::Accessory::Jex;
+use CoGe::Core::Search;
 use HTML::Template;
 use JSON qw(encode_json);
 use Data::Dumper;
@@ -12,7 +13,6 @@ use List::Compare;
 use CoGeX;
 use CoGeX::Result::User;
 use CoGeDBI;
-use Data::Dumper;
 use URI::Escape::JavaScript qw(escape unescape);
 use Time::Piece;
 use JSON::XS;
@@ -33,13 +33,14 @@ $JEX =
 
 $MAX_SEARCH_RESULTS = 400;
 
-my $node_types = CoGeX::node_types();
+our $node_types = CoGeX::node_types();
 my $filename = '/home/franka1/repos/coge/web/admin_error.log';
 open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
 
 #print STDERR $node_types->{user};
 
 %FUNCTION = (
+	user_is_admin					=> \&user_is_admin,
 	search_users                    => \&search_users,
 	search_stuff                    => \&search_stuff,
 	user_info                       => \&user_info,
@@ -56,7 +57,7 @@ open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
     add_users_to_group              => \&add_users_to_group,
     remove_user_from_group          => \&remove_user_from_group,
     change_group_role               => \&change_group_role,
-    get_history_for_user            => \&get_history_for_user,
+    get_history            			=> \&get_history_for_user,
     toggle_star                     => \&toggle_star,
     update_comment                  => \&update_comment,
     update_history                  => \&update_history,
@@ -66,6 +67,7 @@ open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
     get_group_table					=> \&get_group_table,
     get_total_table					=> \&get_total_table,
     gen_tree_json					=> \&gen_tree_json,
+    get_total_queries				=> \&get_total_queries,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -100,317 +102,18 @@ sub gen_body {
 
 	my $template =
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
-	$template->param( MAIN => 1 );
+	$template->param( 	MAIN 			=> 1,
+						API_BASE_URL  	=> 'api/v1/',  
+						USER			=> $USER->user_name,	
+					);
 
 	#print STDERR $node_types->{user};
 	#$template->param( ITEM_TYPE_USER => $node_types->{user} );
 	return $template->output;
 }
 
-sub search_stuff {
-    my %opts        = @_;
-    my $search_term = $opts{search_term};
-    my $timestamp   = $opts{timestamp};
-
-    my @searchArray = split( ' ', $search_term );
-    my @specialTerms;
-    my @idList;
-    my @results;
-
-    #return unless $search_term;
-
-    #Set up the necessary arrays of serch terms and special conditions
-    for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-        if ( index( $searchArray[$i], "::" ) == -1 ) {
-            if ( index( $searchArray[$i], '!' ) == -1 ) {
-                $searchArray[$i] = { 'like', '%' . $searchArray[$i] . '%' };
-            } else {
-            	my $bang_index = index($searchArray[$i], '!');
-            	my $new_term = substr($searchArray[$i], 0, $bang_index) . substr($searchArray[$i], $bang_index + 1);
-            	$searchArray[$i] = { 'not_like', '%' . $new_term . '%' };
-            	#print STDERR Dumper($searchArray[$i]);
-            }
-        }
-        else {
-            my @splitTerm = split( '::', $searchArray[$i] );
-            splice( @searchArray, $i, 1 );
-            $i--;
-            push @specialTerms, { 'tag' => $splitTerm[0], 'term' => $splitTerm[1] };
-        }
-    }
-
-	#print STDERR Dumper(\@searchArray);
-
-	#Set the special conditions
-	my $type = "none";    #Specifies a particular field to show
-	my @restricted =
-	  [ -or => [ restricted => 0, restricted => 1 ] ]; 
-	  #Specifies either restricted(1) OR unrestriced(0) results. Default is all.
-	my @deleted =
-	  [ -or => [ deleted => 0, deleted => 1 ] ]; 
-	  #Specifies either deleted(1) OR non-deleted(0) results. Default is all.
-	for ( my $i = 0 ; $i < @specialTerms ; $i++ ) {
-		if ( $specialTerms[$i]{tag} eq 'type' ) {
-			$type = $specialTerms[$i]{term};
-		}
-		if ( $specialTerms[$i]{tag} eq 'restricted' ) {
-			@restricted = [ restricted => $specialTerms[$i]{term} ];
-			if ( $type eq "none" ) {
-				$type = 'restricted'; 
-				#Sets the "type" so that only fields relevant to restriction are shown. (i.e. there are no restricted users.)
-			}
-		}
-		if (
-			$specialTerms[$i]{tag} eq 'deleted'
-			&& (   $specialTerms[$i]{term} eq '0'
-				|| $specialTerms[$i]{term} eq '1' )
-		  )
-		{
-			@deleted = [ deleted => $specialTerms[$i]{term} ];
-			if ( $type eq "none" ) {
-				$type = 'deleted'; 
-				#Sets the "type" so that only fields relevant to deletion are shown. (i.e. there are no deleted users).
-			}
-		}
-	}
-
-    # Perform organism search
-    if (   $type eq 'none'
-        || $type eq 'organism'
-        || $type eq 'genome'
-        || $type eq 'restricted'
-        || $type eq 'deleted' )
-    {
-        my @orgArray;
-        for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-            my $and_or;
-            if ($searchArray[$i]{"not_like"}) {
-                $and_or = "-and";
-			} else {
-				$and_or = "-or";
-			}
-			push @orgArray,
-			  [
-				$and_or => [
-					name        => $searchArray[$i],
-					description => $searchArray[$i],
-					organism_id => $searchArray[$i]
-				]
-			  ];
-		}
-		my @organisms =
-		  $coge->resultset("Organism")->search( { -and => [ @orgArray, ], } );
-
-		if ( $type eq 'none' || $type eq 'organism' ) {
-			foreach ( sort { $a->name cmp $b->name } @organisms ) {
-				push @results,
-				  { 'type' => "organism", 'label' => $_->name, 'id' => $_->id, 'description' => $_->description };
-			}
-		}
-		@idList = map { $_->id } @organisms;
-	}
-	
-	#print STDERR "organism done\n";
-
-	# Perform user search
-	if ( $type eq 'none' || $type eq 'user' ) {
-		my @usrArray;
-		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-			my $and_or;
-            if ($searchArray[$i]{"not_like"}) {
-                $and_or = "-and";
-            } else {
-                $and_or = "-or";
-            }
-			push @usrArray,
-			  [
-				$and_or => [
-					user_name  => $searchArray[$i],
-					first_name => $searchArray[$i],
-					user_id    => $searchArray[$i],
-					last_name => $searchArray[$i]
-				]
-			  ];
-		}
-		my @users =
-		  $coge->resultset("User")->search( { -and => [ @usrArray, ], } );
-
-		foreach ( sort { $a->user_name cmp $b->user_name } @users ) {
-			push @results,
-			  { 'type' => "user", 'label' => $_->user_name, 'id' => $_->id };
-		}
-	}
-	
-	#print STDERR "user done\n";
-
-	# Perform genome search (corresponding to Organism results)
-	if (   $type eq 'none'
-		|| $type eq 'genome'
-		|| $type eq 'restricted'
-		|| $type eq 'deleted' )
-	{
-		my @genomes = $coge->resultset("Genome")->search(
-			{
-				-and => [
-					organism_id => { -in => \@idList },
-					@restricted,
-					@deleted,
-				],
-			}
-		);
-
-		foreach ( sort { $a->id cmp $b->id } @genomes ) {
-			push @results,
-			  {
-				'type'          => "genome",
-				'label'         => $_->info,
-				'id'            => $_->id,
-				'deleted'       => $_->deleted,
-				'restricted'    => $_->restricted
-			  };
-		}
-
-		# Perform direct genome search (by genome ID)
-		my @genIDArray;
-		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-			push @genIDArray, [ -or => [ genome_id => $searchArray[$i] ] ];
-		}
-		my @genomeIDs =
-		  $coge->resultset("Genome")
-		  ->search( { -and => [ @genIDArray, @restricted, @deleted, ], } );
-
-		foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
-			push @results,
-			  {
-				'type'          => "genome",
-				'label'         => $_->info,
-				'id'            => $_->id,
-				'deleted'       => $_->deleted,
-				'restricted'    => $_->restricted
-			  };
-		}
-	}
-	
-	#print STDERR "genome done\n";
-
-	# Perform experiment search
-	if (   $type eq 'none'
-		|| $type eq 'experiment'
-		|| $type eq 'restricted'
-		|| $type eq 'deleted' )
-	{
-		my @expArray;
-		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-			my $and_or;
-            if ($searchArray[$i]{"not_like"}) {
-                $and_or = "-and";
-            } else {
-                $and_or = "-or";
-            }
-			push @expArray,
-			  [
-				$and_or => [
-					name          => $searchArray[$i],
-					description   => $searchArray[$i],
-					experiment_id => $searchArray[$i]
-				]
-			  ];
-		}
-		my @experiments =
-		  $coge->resultset("Experiment")
-		  ->search( { -and => [ @expArray, @restricted, @deleted, ], } );
-
-		foreach ( sort { $a->name cmp $b->name } @experiments ) {
-			push @results,
-			  {
-				'type'          => "experiment",
-				'label'         => $_->name,
-				'id'            => $_->id,
-				'deleted'       => $_->deleted,
-				'restricted'    => $_->restricted
-			  };
-		}
-	}
-
-    #print STDERR "experiment done\n";
-
-	# Perform notebook search
-	if (   $type eq 'none'
-		|| $type eq 'notebook'
-		|| $type eq 'restricted'
-		|| $type eq 'deleted' )
-	{
-		my @noteArray;
-		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-			my $and_or;
-            if ($searchArray[$i]{"not_like"}) {
-                $and_or = "-and";
-            } else {
-                $and_or = "-or";
-            }
-			push @noteArray,
-			  [
-				$and_or => [
-					name        => $searchArray[$i],
-					description => $searchArray[$i],
-					list_id     => $searchArray[$i]
-				]
-			  ];
-		}
-		my @notebooks =
-		  $coge->resultset("List")
-		  ->search( { -and => [ @noteArray, @restricted, @deleted, ], } );
-
-		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
-			push @results,
-			  {
-				'type'          => "notebook",
-				'label'         => $_->info,
-				'id'            => $_->id,
-				'deleted'       => $_->deleted,
-				'restricted'    => $_->restricted
-			  };
-		}
-	}
-	
-	#print STDERR "notebook done\n";
-
-	# Perform user group search
-	if ( $type eq 'none' || $type eq 'usergroup' || $type eq 'deleted' ) {
-		my @usrGArray;
-		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-			my $and_or;
-            if ($searchArray[$i]{"not_like"}) {
-                $and_or = "-and";
-            } else {
-                $and_or = "-or";
-            }
-			push @usrGArray,
-			  [
-				$and_or => [
-					name          => $searchArray[$i],
-					description   => $searchArray[$i],
-					user_group_id => $searchArray[$i]
-				]
-			  ];
-		}
-		my @userGroup =
-		  $coge->resultset("UserGroup")
-		  ->search( { -and => [ @usrGArray, @deleted, ], } );
-
-		foreach ( sort { $a->name cmp $b->name } @userGroup ) {
-			push @results,
-			  {
-				'type'    => "user_group",
-				'label'   => $_->name,
-				'id'      => $_->id,
-				'deleted' => $_->deleted
-			  };
-		}
-	}
-
-	#print STDERR "Successful search\n";
-	return encode_json( { timestamp => $timestamp, items => \@results } );
+sub user_is_admin {
+	return $USER->is_admin;
 }
 
 sub user_info {
@@ -441,68 +144,86 @@ sub user_info {
 		}
 	}
 
-	foreach my $currentUser (@users) {
+	my $i;
+	for ($i = 0; $i < scalar(@users); $i++) {
+		my $currentUser = $users[$i];
 		my @current;
 
 		# Find notebooks
 		foreach ( $currentUser->child_connectors( { child_type => 1 } ) ) {
 			$child = $_->child;
-			
-			push @current,
-			  {
-				'type'          => "notebook",
-				'label'         => $child->info,
-				'id'            => $child->id,
-				'role'          => $_->role_id,
-				'deleted'        => $child->deleted,
-				'restricted'    => $child->restricted
-			  };
+			if ($USER->has_access_to_list($child)) {
+				push @current,
+				  {
+					'type'          => "notebook",
+					'label'         => $child->info,
+					'id'            => $child->id,
+					'role'          => $_->role_id,
+					'deleted'       => $child->deleted,
+					'restricted'    => $child->restricted
+				  };
+			}
 		}
 
 		# Find genomes
 		foreach ( $currentUser->child_connectors( { child_type => 2 } ) ) {
 			$child = $_->child;
-			push @current,
-			  {
-				'type'          => "genome",
-				'label'         => $child->info,
-				'id'            => $child->id,
-				'role'          => $_->role_id,
-				'deleted'       => $child->deleted,
-                'restricted'    => $child->restricted
-			  };
+			if ($USER->has_access_to_genome($child)) {
+				push @current,
+				  {
+					'type'          => "genome",
+					'label'         => $child->info,
+					'id'            => $child->id,
+					'role'          => $_->role_id,
+					'deleted'       => $child->deleted,
+	                'restricted'    => $child->restricted
+				  };
+			}
 		}
 
 		# Find experiments
 		foreach ( $currentUser->child_connectors( { child_type => 3 } ) ) {
 			$child = $_->child;
-			push @current,
-			  {
-				'type'          => "experiment",
-				'label'         => $child->name,
-				'id'            => $child->id,
-				'info'          => $child->info,
-				'role'          => $_->role_id,
-				'deleted'       => $child->deleted,
-                'restricted'    => $child->restricted
-			  };
-
-		}
-
-		# Find users if searching a user group
-		if ( $search_type eq "group" ) {
-			foreach ( $user->users ) {
+			if ($USER->has_access_to_experiment($child)) {
 				push @current,
-				  { 'type' => "user", 'label' => $_->name, 'id' => $_->id };
+				  {
+					'type'          => "experiment",
+					'label'         => $child->name,
+					'id'            => $child->id,
+					'info'          => $child->info,
+					'role'          => $_->role_id,
+					'deleted'       => $child->deleted,
+	                'restricted'    => $child->restricted
+				  };
 			}
 		}
 
-		push @results,
-		  {
-			'user'    => $currentUser->name,
-			'user_id' => $currentUser->id,
-			'result'  => \@current
-		  };
+		# Find users if searching a user group
+		if ( $search_type eq "group" ) {	
+			foreach ( $user->users ) {
+				push @current,
+				  { 'type' => "user", 'first' => $_->first_name, 'last' => $_->last_name, 'username' => $_->user_name, 'id' => $_->id, 'email' => $_->email };
+			}
+		}
+		
+		if ($search_type eq "user" && $i == 0) {
+			push @results,
+			  {
+			  	'first'		=> $currentUser->first_name,
+			  	'last'		=> $currentUser->last_name,
+				'username'	=> $currentUser->user_name,
+				'email'		=> $currentUser->email,
+				'user_id' 	=> $currentUser->id,
+				'result' 	=> \@current
+			  };	  
+		} else {
+			push @results,
+			  {
+				'user'		=> $currentUser->name,
+				'user_id' 	=> $currentUser->id,
+				'result' 	=> \@current
+			  };
+		}
 	}
 
 	return encode_json( { timestamp => $timestamp, items => \@results } );
@@ -1011,10 +732,11 @@ sub modify_item {
     
     my $log_message;
     if ($mod eq "delete") {
-        $log_message = ( $item->deleted ? 'undelete' : 'delete' );
+        $log_message = ( $item->deleted ? 'undeleted' : 'deleted' );
         $item->deleted( !$item->deleted );    # do undelete if already deleted
-    } elsif ($mod eq "restrict") {
-    	$log_message = ( $item->restricted ? 'unrestrict' : 'restrict' );
+    } 
+    elsif ($mod eq "restrict") {
+    	$log_message = ( $item->restricted ? 'unrestricted' : 'restricted' );
     	$item->restricted( !$item->restricted );    # do undelete if already deleted
     }
     $item->update;
@@ -1024,7 +746,7 @@ sub modify_item {
         db          => $coge,
         user_id     => $USER->id,
         page        => "Admin",
-        description => "$log_message $type id $id",
+        description => "$log_message $type " . $item->info_html,
         parent_id   => $id,
         parent_type => $item_type
     );
@@ -1099,7 +821,7 @@ sub add_users_to_group {
                 db          => $coge,
                 user_id     => $USER->id,
                 page        => "Admin",
-                description => 'add user id' . $user->id . ' to group id' . $target_id,
+                description => 'added user ' . $user->info . ' to group ' . $target_group->info_html,
                 parent_id   => $target_id,
                 parent_type => 6 #FIXME magic number
             );
@@ -1152,7 +874,7 @@ sub remove_user_from_group {
             db          => $coge,
             user_id     => $USER->id,
             page        => "Admin",
-            description => 'remove user id' . $user_id . ' from group id' . $target_id,
+            description => 'removed user ' . $user->info . ' from group ' . $target_group->info_html,
             parent_id   => $target_id,
             parent_type => 6
         );
@@ -1202,7 +924,7 @@ sub get_jobs_for_user {
             #{ description => { 'not like' => 'page access' } },
             {
                 type     => { '!='  => 0 },
-                workflow_id  => { "!=" => undef}
+                parent_id  => { "!=" => undef}
             },
             { order_by => { -desc => 'time' } },
         );
@@ -1211,7 +933,7 @@ sub get_jobs_for_user {
         @entries = $coge->resultset('Log')->search(
             {
                 user_id => $USER->id,
-                workflow_id  => { "!=" => undef},
+                parent_id  => { "!=" => undef},
 
                 #{ description => { 'not like' => 'page access' } }
                 type => { '!=' => 0 }
@@ -1221,7 +943,7 @@ sub get_jobs_for_user {
     }
 
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
-    my @workflows = map { $_->workflow_id } @entries;
+    my @workflows = map { $_->parent_id } @entries;
     
     #my $workflows = $JEX->find_workflows(\@workflows, 'running');
     my $workflows;
@@ -1258,32 +980,46 @@ sub get_jobs_for_user {
 
     my $index = 1;
     foreach (@entries) {
-        my $entry = $workflow_results{$_->workflow_id};
+        my $entry = $workflow_results{$_->parent_id};
 
         # A log entry must correspond to a workflow
         next unless $entry;
         
-        push @job_items, {
-            id => int($index++),
-            workflow_id => $_->workflow_id,
-            user  => $users{$_->user_id} || "public",
-            tool  => $_->page,
-            link  => $_->link,
-            %{$entry}
-        };
+        # [ID, Started, Completed, Elapsed, User, Tool, Link. Status]
+        push @job_items, [
+            $_->parent_id,
+            #int($index++),
+            $entry->{started},
+            $entry->{completed},
+            $entry->{elapsed},
+            $users{$_->user_id} || "public",
+            $_->page,
+            $_->link,
+            $entry->{status},
+        ];
     }
     my @filtered;
 
     # Filter repeated entries
     foreach (reverse @job_items) {
-        my $wid = $_->{workflow_id};
+    	my @job = @$_;
+        #my $wid = $_->{parent_id};
+        my $wid = $job[0];
         next if (defined $wid and defined $workflow_results{$wid}{seen});
         $workflow_results{$wid}{seen}++ if (defined $wid);
 
-        unshift @filtered, $_;
+		#shift @job;
+        unshift @filtered, \@job;
     }
 
-    return encode_json({ jobs => \@filtered });
+    return encode_json({ 
+    	data => \@filtered,
+    	#bPaginate => 0,
+		columnDefs => [{ 
+			orderSequence => [ "desc", "asc" ], 
+			targets => [0, 1, 2],
+		}],
+    });
 }
 
 sub cancel_job {
@@ -1368,20 +1104,20 @@ sub get_history_for_user {
 
     my @items;
     foreach (@entries) {
-        push @items,
-          {
-            id          => $_->id,
-            starred     => ( $_->status != 0 ),
-            date_time   => $_->time,
-            user        => ( $_->user_id ? $users{ $_->user_id } : 'public' ),
-            page        => $_->page,
-            description => $_->description,
-            link        => ( $_->link ? $_->link : '' ),
-            comment     => $_->comment
-          };
+    	#[Date/Time, User, Page, Descrition, Link, Comment]
+        push @items, [
+			#id          => $_->id,
+			#starred     => ( $_->status != 0 ),
+			$_->time,
+			( $_->user_id ? $users{ $_->user_id } : 'public' ),
+			$_->page,
+			$_->description,
+			( $_->link ? $_->link : '' ),
+			$_->comment
+		];
     }
 
-    return encode_json(\@items);
+    return encode_json({data => \@items});
 }
 
 sub toggle_star {
@@ -1434,20 +1170,20 @@ sub update_history {
     
     my @items;
     foreach (@entries) {
-        push @items,
-          {
-            id          => $_->id,
-            starred     => ( $_->status != 0 ),
-            date_time   => $_->time,
-            user        => ( $_->user_id ? $users{ $_->user_id } : 'public' ),
-            page        => $_->page,
-            description => $_->description,
-            link        => ( $_->link ? $_->link : '' ),
-            comment     => $_->comment
-          };
+    	#[Date/Time, User, Page, Descrition, Link, Comment]
+        push @items, [
+            #id          => $_->id,
+            #starred     => ( $_->status != 0 ),
+			$_->time,
+			( $_->user_id ? $users{ $_->user_id } : 'public' ),
+			$_->page,
+			$_->description,
+			( $_->link ? $_->link : '' ),
+			$_->comment
+		];
     }
 
-    return encode_json(\@items);
+    return encode_json({new_rows => \@items});
 }	
 
 
@@ -2029,13 +1765,95 @@ sub get_total_table {
 
 ####
 #TAXONOMY STUFF
-my %taxonomic_tree;
 
 sub gen_tree_json {
-	%taxonomic_tree  = (
+	my %taxonomic_tree  = (
 		name => "root", 
 		children => [],
 	);
+	
+	### 
+	# Helper functions:
+	###
+
+	*check_tree = sub {
+		my $search_term = shift;
+		if (scalar(@_) == 0) {
+			return undef;
+		}
+		
+		my @new_roots;
+		foreach my $root (@_) {
+			foreach my $child (@{$root->{children}}) {
+				push (@new_roots, $child);
+				if(lc $search_term eq lc $child->{name}) {
+					return $child;
+				}
+			}
+		}
+		return check_tree($search_term, @new_roots);
+	};
+	
+	*gen_subtree = sub {
+		my @array = @{$_[0]};
+		if (scalar(@array) > 0) {
+			my $hash = {
+				name => $array[0],
+				children => [],
+			};
+			#print $fh "$array[0]\n";
+			shift @array;
+			if (scalar(@array) > 0) {
+				push ($hash->{children}, gen_subtree(\@array));
+			}
+			return $hash;
+		}
+	};
+
+	*add_fix = sub {
+		my $add_tree = $_[0];
+		my $move_tree;
+		my $i;
+		for ($i = scalar(@{$taxonomic_tree{children}} - 1); $i > -1; $i--) {
+			if ((lc $add_tree->{name}) eq (lc @{$taxonomic_tree{children}}[$i]->{name})) {
+				#print $fh "Inconsistency Detected\n";
+				$move_tree = splice(@{$taxonomic_tree{children}}, $i, 1);
+				
+				foreach my $child (@{$move_tree->{children}}) {
+					#print $fh "Moving: $child->{name} to $add_tree->{name}\n";
+					add_to_tree($add_tree, $child);
+				}
+			}
+		}
+		#check for further inconsistencies
+		foreach my $child (@{$add_tree->{children}}) {
+			add_fix($child);
+		}
+	};
+	
+	*add_to_tree = sub {
+		my $root = $_[0];
+		my $sub_tree = $_[1];
+	    my $root_children = \@{$root->{children}}; #array reference
+		my $top_value = $sub_tree->{name};
+		my $find = check_tree($top_value, $root);
+		if (!$find) {
+			#check for inconsistencies
+			add_fix($sub_tree);
+			
+			#add the subtree as a child of the root
+			push ($root_children, $sub_tree);
+		} else {
+			#recurse to the next level of the tree
+			foreach my $child (@{$sub_tree->{children}}) {
+				add_to_tree($find, $child);
+			}
+		}
+	};
+	
+	###
+	# Main code
+	###
 
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @organism_descriptions = CoGeDBI::get_table($db->storage->dbh, 'organism', undef, {description => "\"%;%\""}, {description => " like "});
@@ -2057,79 +1875,15 @@ sub gen_tree_json {
 	return encode_json(\%taxonomic_tree);
 }
 
-sub check_tree {
-	my $search_term = shift;
-	if (scalar(@_) == 0) {
-		return undef;
-	}
 	
-	my @new_roots;
-	foreach my $root (@_) {
-		foreach my $child (@{$root->{children}}) {
-			push (@new_roots, $child);
-			if(lc $search_term eq lc $child->{name}) {
-				return $child;
-			}
-		}
-	}
-	return check_tree($search_term, @new_roots);
-}
-
-sub gen_subtree {
-	my @array = @{$_[0]};
-	if (scalar(@array) > 0) {
-		my $hash = {
-			name => $array[0],
-			children => [],
-		};
-		#print $fh "$array[0]\n";
-		shift @array;
-		if (scalar(@array) > 0) {
-			push ($hash->{children}, gen_subtree(\@array));
-		}
-		return $hash;
-	}
-}
-
-sub add_to_tree {
-	my $root = $_[0];
-	my $sub_tree = $_[1];
-    my $root_children = \@{$root->{children}}; #array reference
-	my $top_value = $sub_tree->{name};
-	my $find = check_tree($top_value, $root);
-	if (!$find) {
-		#check for inconsistencies
-		add_fix($sub_tree);
-		
-		#add the subtree as a child of the root
-		push ($root_children, $sub_tree);
-	} else {
-		#recurse to the next level of the tree
-		foreach my $child (@{$sub_tree->{children}}) {
-			add_to_tree($find, $child);
-		}
-	}
-}
-
-sub add_fix {
-	my $add_tree = $_[0];
-	my $move_tree;
-	my $i;
-	for ($i = scalar(@{$taxonomic_tree{children}} - 1); $i > -1; $i--) {
-		if ((lc $add_tree->{name}) eq (lc @{$taxonomic_tree{children}}[$i]->{name})) {
-			#print $fh "Inconsistency Detected\n";
-			$move_tree = splice(@{$taxonomic_tree{children}}, $i, 1);
-			
-			foreach my $child (@{$move_tree->{children}}) {
-				#print $fh "Moving: $child->{name} to $add_tree->{name}\n";
-				add_to_tree($add_tree, $child);
-			}
-		}
-	}
-	#check for further inconsistencies
-	foreach my $child (@{$add_tree->{children}}) {
-		add_fix($child);
-	}
+####
+#DATABASE TAB
+	
+sub get_total_queries {
+	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+	my $results = CoGeDBI::get_total_queries($db->storage->dbh);
+	
+	return encode_json({Queries => $results->{Queries}->{Value}});
 }
 
 if ($fh) {

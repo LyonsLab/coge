@@ -11,7 +11,7 @@ use Data::Dumper;
 
 use CoGe::Accessory::Utils qw(sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
 
 require Exporter;
@@ -64,11 +64,7 @@ sub generate_results {
 }
 
 sub copy_and_mask {
-    my %args = (
-        mask => 0,
-        seq_only => 0,
-        @_
-    );
+    my %args = @_;
 
     my $desc = $args{mask} ? "Copying and masking genome" : "Copying genome";
     $desc .= " (no annotations)" if $args{seq_only};
@@ -82,9 +78,9 @@ sub copy_and_mask {
             ["-conf", $CONF->{_CONFIG_PATH}, 0],
             ["-gid", $args{gid}, 0],
             ["-uid", $args{uid}, 0],
+            ["-wid", $args{wid}, 0],
             ["-mask", $args{mask}, 0],
             ["-staging_dir", $args{staging_dir}, 0],
-            ["-result_dir", $args{result_dir}, 0],
             ["-sequence_only", $args{seq_only}, 0]
         ],
         description => $desc
@@ -103,7 +99,7 @@ sub generate_bed {
     my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
-    return $output_file, (
+    return $output_file, {
         cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.pl"),
         args => [
             ['-gid', $args{gid}, 0],
@@ -111,7 +107,7 @@ sub generate_bed {
             ['-config', $CONF->{_CONFIG_PATH}, 0],
         ],
         outputs => [$output_file]
-    );
+    };
 }
 
 sub generate_features {
@@ -145,7 +141,7 @@ sub generate_tbl {
     my $path = get_download_path('genome', $args{gid});
     my $output_file = catfile($path, $filename);
 
-    return $output_file, (
+    return $output_file, {
         cmd     => catfile($CONF->{SCRIPTDIR}, "export_NCBI_TBL.pl"),
         args    => [
             ['-gid', $args{gid}, 0],
@@ -153,7 +149,7 @@ sub generate_tbl {
             ["-config", $CONF->{_CONFIG_PATH}, 0]
         ],
         outputs => [$output_file]
-    );
+    };
 }
 
 sub export_to_irods {
@@ -194,6 +190,31 @@ sub create_iget_job {
     };
 }
 
+sub create_ftp_get_job {
+    my %opts = @_;
+    my $url = $opts{url};
+    my $username = $opts{username} // ''; #/;
+    my $password = $opts{password} // ''; #/;
+    my $dest_path = $opts{dest_path};
+    
+    my ($filename, $path) = split_url($url);
+    my $output_file = catdir($dest_path, $path, $filename);
+    
+    return {
+        cmd => catfile($CONF->{SCRIPTDIR}, "ftp.pl"),
+        script => undef,
+        args => [
+            ['-url',       "'".$url."'",       0],
+            ['-username',  "'".$username."'",  0],
+            ["-password",  "'".$password."'",  0],
+            ["-dest_path", $dest_path,         0]
+        ],
+        inputs => [],
+        outputs => [ $output_file ],
+        description => "Fetching $url..."
+    };
+}
+
 sub create_data_retrieval_workflow {
     my %opts = @_;
     my $upload_dir = $opts{upload_dir};
@@ -204,11 +225,13 @@ sub create_data_retrieval_workflow {
         my $type = lc($item->{type});
         
         # Check if the file already exists which will be the case if called
-        # via the load page.  
-        my $filepath = catfile($upload_dir, $item->{path});
-        if (-r $filepath) {
-            push @files, $filepath;
-            next;
+        # via the load page.
+        if ($item->{path}) {
+            my $filepath = catfile($upload_dir, $item->{path});
+            if (-r $filepath) {
+                push @files, $filepath;
+                next;
+            }
         }
         
         # Create task based on source type (IRODS, HTTP, FTP)
@@ -219,7 +242,12 @@ sub create_data_retrieval_workflow {
             $task = create_iget_job(irods_path => $irods_path, local_path => $upload_dir);
         }
         elsif ($type eq 'http' or $type eq 'ftp') {
-            #TODO
+            $task = create_ftp_get_job(
+                url => $item->{url} || $item->{path},
+                username => $item->{username},
+                pasword => $item->{password},
+                dest_path => $upload_dir
+            );
         }
         
         # Add task to workflow
@@ -243,6 +271,7 @@ sub generate_gff {
         cds     => 0,
         nu      => 0,
         upa     => 0,
+        add_chr => 0
     );
     @args{(keys %inputs)} = (values %inputs);
 
@@ -253,13 +282,12 @@ sub generate_gff {
     $args{basename} = $args{gid} unless $args{basename};
 
     # Generate the output filename
-    my @attributes = qw(annos cds id_type nu upa add_chr);
-    my $param_string = join "-", map { $_ . $args{$_} } @attributes;
+    my $param_string = join( "-", map { $_ . $args{$_} } qw(annos cds id_type nu upa add_chr) );
     my $filename = $args{basename} . "_" . $param_string;
     if ($args{chr}) {
     	$filename .= "_" . $args{chr};
     }
-    $filename .= ".gid".$args{gid};
+    $filename .= ".gid" . $args{gid};
     $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
@@ -271,7 +299,6 @@ sub generate_gff {
         ['-gid', $args{gid}, 0],
         ['-f', $filename, 0],
         ['-config', $CONF->{_CONFIG_PATH}, 0],
-        # Parameters
         ['-cds', $args{cds}, 0],
         ['-annos', $args{annos}, 0],
         ['-nu', $args{nu}, 0],
@@ -282,12 +309,13 @@ sub generate_gff {
     push @$args, ['-add_chr', $args{add_chr}, 0] if (defined $args{add_chr});
     
     # Return workflow definition
-    return $output_file, (
+    return $output_file, {
         cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
+        script  => undef,
         args    => $args,
-        outputs => [$output_file],
-        description => "Generating gff..."
-    );
+        outputs => [ $output_file ],
+        description => "Generating GFF..."
+    };
 }
 
 sub create_gunzip_job {
@@ -517,8 +545,10 @@ sub create_load_genome_job {
     
     my $result_file = get_workflow_results_file($user->name, $wid);
 
-    my $file_str = join(',', map { basename($_) } @$input_files);
-    my $irods_str = join(',', map { basename($_) } @$irods_files);
+    my $file_str = '';
+    $file_str = join(',', map { basename($_) } @$input_files) if ($input_files && @$input_files);
+    my $irods_str = '';
+    $irods_str = join(',', map { basename($_) } @$irods_files) if ($irods_files && @$irods_files);
 
     return {
         cmd => $cmd,
@@ -527,13 +557,13 @@ sub create_load_genome_job {
             ['-user_name', $user->name, 0],
             ['-wid', $wid, 0],
             ['-name', '"' . $metadata->{name} . '"', 0],
-            ['-desc', '"' . $metadata->{description} . '"', 0],
-            ['-link', '"' . $metadata->{link} . '"', 0],
+            ['-desc', '"' . ($metadata->{description} ? $metadata->{description} : '') . '"', 0],
+            ['-link', '"' . ($metadata->{link} ? $metadata->{link} : '') . '"', 0],
             ['-version', '"' . $metadata->{version} . '"', 0],
             ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
             ['-source_name', '"' . $metadata->{source_name} . '"', 0],
             ['-organism_id', $organism_id, 0],
-            ['-type_id', '"' . $metadata->{type_id} . '"', 0],
+            ['-type_id', '"' . ( $metadata->{type} ? $metadata->{type} : 1 ) . '"', 0], # default to "unmasked"
             ['-staging_dir', "./load_genome", 0],
             ['-fasta_files', "'".$file_str."'", 0],
             ['-irods_files', "'".$irods_str."'", 0],
