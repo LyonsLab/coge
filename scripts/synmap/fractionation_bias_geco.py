@@ -72,9 +72,9 @@ with open(gff_import_file) as gff_file:
 
 
 #Parsed data and raw output to csv <-----------
-gff_sort_output_file = (args.output+"gff_sort.txt")
-synmap_dictionary_output_file = (args.output+"synmap_data_structure.txt")
-fract_bias_raw_output_file = (args.output+"fractbias_output.csv")
+gff_sort_output_file = (args.output+"/gff_sort.txt")
+synmap_dictionary_output_file = (args.output+"/synmap_data_structure.txt")
+fract_bias_raw_output_file = (args.output+"/fractbias_output.csv")
 
 #Analysis of parsed data
 retention_calc_output_file = ("fractbias_sliding_window_output.csv") #<--------
@@ -234,7 +234,7 @@ with open(str(fract_bias_raw_output_file), 'w') as csvfile:
     writer = csv.writer(csvfile, dialect='excel', delimiter=',', lineterminator='\n')
     writer.writerow(headers)
 
-    if args.allgenes == True:
+    if args.allgenes == 'True':
         for tchr in gff_genes:
             col0 = chr #writes Pineapple chr number
             count = 0
@@ -265,7 +265,7 @@ with open(str(fract_bias_raw_output_file), 'w') as csvfile:
                 rows.extend(syntenic_query_gene_name)
                 writer.writerow(rows)
 
-    elif args.allgenes == False:
+    elif args.allgenes == 'False':
         for tchr in gff_genes:
             col0 = chr #writes Pineapple chr number
             count = 0

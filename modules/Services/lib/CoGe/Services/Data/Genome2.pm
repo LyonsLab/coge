@@ -162,20 +162,21 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    #print STDERR "CoGe::Services::Data::Genome2::add\n", Dumper $data, "\n";
+    print STDERR "CoGe::Services::Data::Genome2::add\n", Dumper $data, "\n";
 
-    # Authenticate user and connect to the database
-    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+# mdb removed 9/17/15 -- auth is handled by Job::add below, redundant token validation breaks CAS proxyValidate
+#    # Authenticate user and connect to the database
+#    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+#
+#    # User authentication is required to add experiment
+#    unless (defined $user) {
+#        $self->render(json => {
+#            error => { Auth => "Access denied" }
+#        });
+#        return;
+#    }
 
-    # User authentication is required to add experiment
-    unless (defined $user) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        });
-        return;
-    }
-
-    # Valid data items
+    # Valid data items # TODO move into request validation
     unless ($data->{source_data} && @{$data->{source_data}}) {
         $self->render(json => {
             error => { Error => "No data items specified" }

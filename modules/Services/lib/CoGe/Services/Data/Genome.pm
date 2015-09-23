@@ -77,7 +77,7 @@ sub load {
 
 	# Set defaults #TODO review these values
 	$data->{name} = '' unless (defined $data->{name});
-	$data->{description} = '' unless (defined $data->{desription});
+	$data->{description} = '' unless (defined $data->{description});
 	$data->{link} = '' unless (defined $data->{link});
 	$data->{version} = '1' unless (defined $data->{version});
 	$data->{restricted} = (defined $data->{restricted} && ($data->{restricted} eq 'true' || $data->{restricted} eq '1') ? 1 : 0 );
