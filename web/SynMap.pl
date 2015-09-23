@@ -417,7 +417,15 @@ sub gen_body {
 	$template->param( DEPTH_OVERLAP => $depth_overlap );
 	
 	$template->param( FRAC_BIAS => "checked" ) if $FORM->param('fb');
-	$template->param( WINDOW_SIZE => $FORM->param('ws') ) if $FORM->param('ws');
+	my $fb_window_size = 100;
+	$fb_window_size = $FORM->param('fb_ws') if $FORM->param('fb_ws');
+	$template->param( FB_WINDOW_SIZE => $fb_window_size );
+	if (!$FORM->param('fb_tg')) {
+		$template->param( FB_ALL_GENES => "checked" );
+	}
+	else {
+		$template->param ( FB_TARGET_GENES => "checked" );
+	}
 
 	$template->param( 'BOX_DIAGS' => "checked" ) if $FORM->param('bd');
 	my $spa = $FORM->param('sp') if $FORM->param('sp');
@@ -1593,6 +1601,9 @@ sub get_results {
 			my $output_dir = $config->{DIAGSDIR} . $dir1 . '/' . $dir2 . '/';
 			my $output_url = $output_dir;
 			$output_url =~ s/$DIR/$URL/;
+			if (! -r $output_dir . 'html/fractbias_figure1.png') {
+				return encode_json( { error => "The fractionation bias image could not be found." } );
+			}
 			$results->param( frac_bias => $output_url . 'html/fractbias_figure1.png' );
 			$gff_sort_output_file = _filename_to_link(
 				file => $output_dir . 'gff_sort.txt',

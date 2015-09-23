@@ -1190,13 +1190,14 @@ sub add_jobs {
 				  . '/synmap/fractionation_bias_geco.py',
 				script => undef,
 				args   => [
-					[ '--align',      "$final_dagchainer_file", 0 ],
+					[ '--align',      $final_dagchainer_file,      0 ],
 					[ '--gff',        $gff_job->{outputs}->[0],    0 ],
 					[ '--target',     $target_id,                  0 ],
-					[ '--windowsize', $opts{window_size},          0 ],
+					[ '--windowsize', $opts{fb_window_size},       0 ],
+					[ '--allgenes',   ($opts{fb_target_genes} eq 'true') ? 'False' : 'True', 0 ],
 					[ '--output',     $output_dir,                 0 ]
 				],
-				inputs      => ["$final_dagchainer_file", $condensed, $gff_job->{outputs}->[0]],
+				inputs      => [$final_dagchainer_file, $condensed, $gff_job->{outputs}->[0]],
 				outputs     => [ catfile(catdir($output_dir, 'html'), 'fractbias_figure1.png') ],
 				description => "Running Fractination Bias...",
 			}
@@ -1288,7 +1289,7 @@ sub build {
     my $gid2 = $self->params->{gid2};
     return unless $gid2;
     
-    basename
+#    basename
 
  	my $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => catdir($self->conf->{TEMPDIR}, 'SynMap') );
     add_jobs(workflow => $self->workflow, db => $self->db, user => $self->user, config => $self->conf, cogeweb => $cogeweb, dsgid1 => $gid1, dsgid2 => $gid2);
@@ -1305,6 +1306,29 @@ sub check_address_validity {
 	  ? 'valid'
 	  : 'invalid';
 	return $validity;
+}
+
+sub defaults {
+	return {
+		feat_type1 => 1,
+		feat_type2 => 1,
+		ks_type => 0,
+		blast => 6,
+		D => 20,
+		A => 5,
+		Dm => 0,
+		gm => 0,
+		csco => 0,
+		axis_metric => 'nt',
+		axis_relationship => 'r',
+		dagchainer_type => 'geneorder',
+		merge_algo => 1,
+		clabel => 1,
+		skip_rand => 1,
+		color_scheme => 1,
+		chr_sort_order => 'S',
+		logks => 1
+	}
 }
 
 sub gen_org_name {
@@ -1366,29 +1390,6 @@ sub generate_pseudo_assembly {
     };
 }
 
-sub get_defaults {
-	return {
-		feat_type1 => 1,
-		feat_type2 => 1,
-		ks_type => 0,
-		blast => 6,
-		D => 20,
-		A => 5,
-		Dm => 0,
-		gm => 0,
-		csco => 0,
-		axis_metric => 'nt',
-		axis_relationship => 'r',
-		dagchainer_type => 'geneorder',
-		merge_algo => 1,
-		clabel => 1,
-		skip_rand => 1,
-		color_scheme => 1,
-		chr_sort_order => 'S',
-		logks => 1
-	}
-}
-
 sub get_query_link {
 	my $config = shift;
 	my $db = shift;
@@ -1432,7 +1433,7 @@ sub get_query_link {
 	my $min_chr_size      = $url_options{min_chr_size};
 	my $dagchainer_type   = $url_options{dagchainer_type};
 	my $color_type        = $url_options{color_type};
-	my $merge_algo = $url_options{merge_algo};    #is there a merging function?
+	my $merge_algo        = $url_options{merge_algo};    #is there a merging function?
 
 	#options for finding syntenic depth coverage by quota align (Bao's algo)
 	my $depth_algo        = $url_options{depth_algo};
@@ -1441,8 +1442,9 @@ sub get_query_link {
 	my $depth_overlap     = $url_options{depth_overlap};
 
 	#options for fractionation bias
-	my $frac_bias   = $url_options{frac_bias};
-	my $window_size = $url_options{window_size};
+	my $frac_bias         = $url_options{frac_bias};
+	my $fb_window_size    = $url_options{fb_window_size};
+	my $fb_target_genes   = $url_options{fb_target_genes};
 
 	#fids that are passed in for highlighting the pair in the dotplot
 #	my $fid1 = $url_options{fid1};
@@ -1530,7 +1532,8 @@ sub get_query_link {
 	$synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
 	$synmap_link .= ";do=$depth_overlap"      if $depth_overlap;
 	$synmap_link .= ";fb=1"                   if $frac_bias;
-	$synmap_link .= ";ws=$window_size"        if $window_size;
+	$synmap_link .= ";fb_ws=$fb_window_size"  if $fb_window_size;
+	$synmap_link .= ";fb_tg=1"                if $fb_target_genes eq 'true';
 	$synmap_link .= ";flip=1"                 if $flip;
 	$synmap_link .= ";cs=$color_scheme";
 	$synmap_link .= ";cmin=$codeml_min"

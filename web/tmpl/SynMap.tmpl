@@ -190,7 +190,11 @@ div.deleted { display: none; }
             </li>
             <li>
                 <label>Window size:</label>
-                <input type="text" id="window_size" name="window_size" value="<tmpl_var name=window_size>" />
+                <input type="text" id="fb_window_size" name="fb_window_size" value="<tmpl_var name=fb_window_size>" />
+            </li>
+            <li>
+            	<input type="radio" id="fb_all_genes" name="fb_genes" value="all_genes" <tmpl_var name=fb_all_genes> /> Use all genes in target genome for analysis<br />
+            	<input type="radio" id="fb_target_genes" name="fb_genes" value="target_genes" <tmpl_var name=fb_target_genes> /> Use only target genome genes that match to at least one chromosome in query genome
             </li>
         </ul>
     </fieldset>

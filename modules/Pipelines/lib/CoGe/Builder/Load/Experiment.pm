@@ -9,7 +9,6 @@ use File::Spec::Functions qw(catfile);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
 use CoGe::Core::Experiment qw(detect_data_type);
-use CoGe::Core::Notebook qw(load_notebook);
 use CoGe::Builder::CommonTasks;
 use CoGe::Builder::Common::Alignment qw(build);
 use CoGe::Builder::Expression::qTeller qw(build);
