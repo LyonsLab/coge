@@ -9,7 +9,17 @@ sub startup {
     # mdb added 8/27/15 -- prevent "Your secret passphrase needs to be changed" message
     $self->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies
 
+    # Instantiate router
     my $r = $self->routes->namespaces(["CoGe::Services::Data"]);
+    
+    # TODO: Authenticate user here instead of redundantly in each submodule
+#    my $app = $self;
+#    $self->hook(before_dispatch => sub {
+#        my $c = shift;
+#        # Authenticate user and connect to the database
+#        my ($db, $user, $conf) = CoGe::Services::Auth::init($app);
+#        $c->stash(db => $db, user => $user, conf => $conf);
+#    });
     
     # Global Search routes
     $r->get("/global/search/#term")
@@ -76,6 +86,14 @@ sub startup {
     $r->get("/notebooks/:id" => [id => qr/\d+/])
         ->name("notebooks-fetch")
         ->to("notebook#fetch", id => undef);
+        
+    $r->put("/notebooks")
+        ->name("notebooks-add")
+        ->to("notebook#add");
+        
+    $r->delete("/notebooks/:id" => [id => qr/\d+/])
+        ->name("notebooks-remove")
+        ->to("notebook#remove");
 
     # User routes -- not documented, only for internal use
     $r->get("/users/search/#term")

@@ -98,11 +98,12 @@ sub validate {
         }
         
         # Validate proxy ticket and get user credentials
+        $this_url =~ s/\?.+$//; # remove query params
         my $url = $CAS_URL.'/proxyValidate?service='.$this_url.'&ticket='.$token;
         my $res = $ua->get($url)->res;
         print STDERR Dumper $res, "\n";
-        ($uname, $fname, $lname, $email) = parse_proxy_response($res);
         
+        ($uname, $fname, $lname, $email) = parse_proxy_response($res->{content}{asset}{content});
         unless ($uname) {
             print STDERR 'CoGe::Services::Auth::validate: CAS failed to authenticate, message=',
                 ' url=', $url, "\n";
@@ -118,8 +119,10 @@ sub validate {
             return;
         }
         
-        # Validate token and get user credentials
-        my $url = $USER_API_URL . '/' . $username;
+        # Validate token and get user credentials.  We lookup the 'me' profile 
+        # for the given token to verify that it belongs to given username.
+        # See "Finding yourself" at http://preview.agaveapi.co/documentation/beginners-guides/user-discovery/
+        my $url = $USER_API_URL . '/me';
         my $res = $ua->get($url, { Authorization => "Bearer $token" })->res;
         #print STDERR Dumper $res, "\n";
         unless ($res and $res->{message} eq 'OK') {
@@ -130,9 +133,12 @@ sub validate {
             return;
         }
         
-        my $authResponse = decode_json('{"' . $res->{content}->{post_buffer}); #FIXME this is a hack because the response is malformed
+        # Extract user information and verify that the given username owns the given token
+        my $authResponse = decode_json('{"' . $res->{content}->{post_buffer}); #FIXME this is a hack because the response is malformed for some unknown reason
         #print STDERR Dumper $authResponse, "\n";
-        unless ($authResponse && $authResponse->{status} =~ /success/i && $authResponse->{result}) {
+        unless ($authResponse && $authResponse->{status} =~ /success/i &&
+                $authResponse->{result} && $authResponse->{result}->{username} eq $username)
+        {
             print STDERR 'CoGe::Services::Auth::validate: Agave failed to authenticate, message=',
                 ($authResponse ? $authResponse->{message} : 'undef'),
                 ' url=', $url, "\n";

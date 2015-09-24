@@ -77,7 +77,7 @@ sub add {
 
     # User authentication is required
     unless (defined $user) {
-        return $self->render(json => {
+        return $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
     }
