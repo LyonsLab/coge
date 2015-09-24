@@ -5,7 +5,7 @@ use CoGe::Request::Experiment;
 use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
 use CoGe::Request::Empty;
-CoGe::Request::SynMap
+use CoGe::Request::SynMap;
 
 has 'user'    => (
     is        => 'ro',
