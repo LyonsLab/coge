@@ -2,9 +2,6 @@ package CoGe::Builder::Tools::SynMap;
 
 use Moose;
 
-use strict;
-use warnings;
-
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw( get_defaults );
 use CoGe::Accessory::Workflow;
@@ -90,7 +87,7 @@ sub add_jobs {
 		);
 	}
 
-	my $basename = $opts{basename};
+#	my $basename = $opts{basename};
 	my ( $org_name1, $title1 ) = gen_org_name(
 		db		  => $db,
 		dsgid     => $dsgid1,
@@ -954,8 +951,7 @@ sub add_jobs {
 	my @plotargs   = ();
 	my @plotinputs = ();
 
-	($basename) =
-	  $final_dagchainer_file =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
+	my $basename = $final_dagchainer_file =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
 	$width = 1000 unless defined($width);
 
 	my $dotfile = "$out";
@@ -1282,18 +1278,23 @@ sub algo_lookup {
 
 sub build {
     my $self = shift;
-    
+
     # Validate inputs
-    my $gid1 = $self->params->{gid1};
-    return unless $gid1;
-    my $gid2 = $self->params->{gid2};
-    return unless $gid2;
-    
-#    basename
+    my $genome_id1 = $self->params->{genome_id1};
+    return unless $genome_id1;
+    my $genome_id2 = $self->params->{genome_id2};
+    return unless $genome_id2;
 
  	my $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => catdir($self->conf->{TEMPDIR}, 'SynMap') );
-    add_jobs(workflow => $self->workflow, db => $self->db, user => $self->user, config => $self->conf, cogeweb => $cogeweb, dsgid1 => $gid1, dsgid2 => $gid2);
-    
+    add_jobs(
+    	workflow => $self->workflow,
+    	db => $self->db,
+    	user => $self->user,
+    	config => $self->conf,
+    	cogeweb => $cogeweb,
+    	genome_id1 => $genome_id1,
+    	genome_id2 => $genome_id2);
+
     return 1;
 }
 
@@ -1412,7 +1413,7 @@ sub get_query_link {
 	my $email        = $url_options{email};
 	my $job_title    = $url_options{jobtitle};
 	my $width        = $url_options{width};
-	my $basename     = $url_options{basename};
+#	my $basename     = $url_options{basename};
 	my $blast        = $url_options{blast};
 
 	my $feat_type1 = $url_options{feat_type1};

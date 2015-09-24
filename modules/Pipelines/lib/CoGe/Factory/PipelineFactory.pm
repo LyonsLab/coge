@@ -10,6 +10,7 @@ use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
+use CoGe::Builder::Tools::SynMap;
 
 has 'db' => (
     is => 'ro',
