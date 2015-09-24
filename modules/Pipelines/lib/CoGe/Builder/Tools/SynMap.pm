@@ -6,6 +6,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw( get_defaults );
 use CoGe::Accessory::Workflow;
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
+use CoGe::Core::Storage qw( get_workflow_paths );
 use Data::Dumper;
 use File::Path;
 use File::Spec::Functions;
@@ -1284,16 +1285,29 @@ sub build {
     return unless $genome_id1;
     my $genome_id2 = $self->params->{genome_id2};
     return unless $genome_id2;
+#    my $metadata = $self->params->{metadata};
+#warn "build";
+#    return unless $metadata;
+#warn "metadata";
+#    $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
+#    my $info = '"' . $metadata->{name};
+#    $info .= ": " . $metadata->{description} if $metadata->{description};
+#    $info .= " (v" . $metadata->{version} . ")";
+#    $info .= '"';
+    $self->workflow($self->jex->create_workflow(name => "SynMap", init => 1));
+    return unless ($self->workflow && $self->workflow->id);
+    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
+    $self->workflow->logfile(catfile($result_dir, "debug.log"));
 
  	my $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => catdir($self->conf->{TEMPDIR}, 'SynMap') );
+ 	my %opts = (%{defaults()}, %{$self->params});
     add_jobs(
     	workflow => $self->workflow,
     	db => $self->db,
     	user => $self->user,
     	config => $self->conf,
     	cogeweb => $cogeweb,
-    	genome_id1 => $genome_id1,
-    	genome_id2 => $genome_id2);
+    	%opts);
 
     return 1;
 }
@@ -1311,24 +1325,32 @@ sub check_address_validity {
 
 sub defaults {
 	return {
-		feat_type1 => 1,
-		feat_type2 => 1,
-		ks_type => 0,
-		blast => 6,
-		D => 20,
 		A => 5,
-		Dm => 0,
-		gm => 0,
-		csco => 0,
+		assemble => 'false',
 		axis_metric => 'nt',
 		axis_relationship => 'r',
-		dagchainer_type => 'geneorder',
-		merge_algo => 1,
-		clabel => 1,
-		skip_rand => 1,
-		color_scheme => 1,
+		blast => 6,
+		box_diags => 'false',
 		chr_sort_order => 'S',
-		logks => 1
+		clabel => 1,
+		codeml_max => '',
+		codeml_min => '',
+		color_scheme => 1,
+		csco => 0,
+		D => 20,
+		dagchainer_type => 'geneorder',
+		depth_algo => 0,
+		Dm => 0,
+		feat_type1 => 1,
+		feat_type2 => 1,
+		flip => 'false',
+		frac_bias => 'false',
+		gm => 0,
+		ks_type => 0,
+		logks => 1,
+		merge_algo => 1,
+		show_non_syn_dots => 'false',
+		skip_rand => 1
 	}
 }
 
