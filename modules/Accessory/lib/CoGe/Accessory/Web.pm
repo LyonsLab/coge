@@ -65,6 +65,7 @@ BEGIN {
     @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
                    send_email get_defaults set_defaults url_for get_job 
                    schedule_job render_template ftp_get_path ftp_get_file split_url
+                   parse_proxy_response
                );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
@@ -504,7 +505,7 @@ sub login_cas_proxy {
 sub parse_proxy_response {
 	my $response = shift;
 
-	if ($response && $response =~ /authenticationSuccess/) {
+	if (defined $response && $response =~ /authenticationSuccess/) {
 		my ($user_name) = $response =~ /\<cas\:user\>(.*)\<\/cas\:user\>/;
 		my ($first_name) = $response =~ /\<cas\:firstName\>(.*)\<\/cas\:firstName\>/;
 		my ($last_name) = $response =~ /\<cas\:lastName\>(.*)\<\/cas\:lastName\>/;
