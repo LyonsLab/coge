@@ -14,7 +14,8 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotations export_annotations to_annotations );
+    @EXPORT = qw( create_annotations export_annotations 
+                  to_annotations tags_to_string );
 }
 
 sub create_annotations {
@@ -209,6 +210,18 @@ sub to_annotations {
     }
     
     return wantarray ? @annotations : \@annotations;
+}
+
+sub tags_to_string {
+    my $tags_array = shift;
+    
+    my $tags_str = '';
+    if ($tags_array && @$tags_array) {
+        my %tags = map { $_ => 1 } (@$tags_array);
+        $tags_str = join(';', map { $_ =~ s/\;//g; $_ } sort keys %tags);
+    }
+    
+    return $tags_str;
 }
 
 1;
