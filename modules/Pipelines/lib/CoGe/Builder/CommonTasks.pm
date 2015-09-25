@@ -725,6 +725,7 @@ sub create_load_bam_job {
     # Required arguments
     my $user = $opts{user};
     my $metadata = $opts{metadata};
+    my $additional_metadata = $opts{additional_metadata};
     my $staging_dir = $opts{staging_dir};
     my $annotations = $opts{annotations};
     my $wid = $opts{wid};

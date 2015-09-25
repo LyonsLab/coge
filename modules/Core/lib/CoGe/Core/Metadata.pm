@@ -14,7 +14,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotations export_annotations );
+    @EXPORT = qw( create_annotations export_annotations to_annotations );
 }
 
 sub create_annotations {
@@ -180,6 +180,35 @@ sub export_annotations {
     }
 
     return @files;
+}
+
+# Convert metadata hash to a string that can be passed to load scripts (eg, load_experiment.pl).
+# The output of this function is eventually parsed by create_annotations() above.
+sub to_annotations {
+    my $md_array = shift; # array of metadata hash refs
+    # [
+    #    {
+    #       Òtype_groupÓ: "string",
+    #       ÒtypeÓ: "string",
+    #       ÒtextÓ: "string",
+    #       ÒlinkÓ: "string"
+    #    }
+    # ]
+    # will be converted to
+    # link|type_group|type|text;link|type_group|type|text;...
+    
+    my @annotations;
+    foreach my $md (@$md_array) {
+        next unless ($md->{type} && $md->{text}); # minimum required fields
+        
+        my @fields = map { $md->{$_} || '' } ('link', 'type_group', 'type', 'text');
+        shift @fields unless $fields[0]; # remove undefined link
+        shift @fields unless $fields[0]; # remove undefined type_group
+        
+        push @annotations, join('|', @fields);
+    }
+    
+    return wantarray ? @annotations : \@annotations;
 }
 
 1;
