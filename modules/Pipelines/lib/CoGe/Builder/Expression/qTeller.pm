@@ -36,6 +36,7 @@ sub build {
     my $user = $opts{user};
     my $input_file = $opts{input_file}; # path to bam file
     my $metadata = $opts{metadata};
+    my $additional_metadata = $opts{additional_metadata};
     my $wid = $opts{wid};
     my $params = $opts{params};
 
@@ -50,10 +51,11 @@ sub build {
 
     # Set metadata for the pipeline being used
     my $annotations = generate_additional_metadata($params, $isAnnotated);
-
-    my @tasks;
+    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+    push @$annotations, @annotations2;
 
     # Reheader the fasta file
+    my @tasks;
     my $fasta = get_genome_file($gid);
     my $reheader_fasta = to_filename($fasta) . ".reheader.faa";
     push @tasks, create_fasta_reheader_job( 
