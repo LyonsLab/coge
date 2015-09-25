@@ -46,7 +46,7 @@ GetOptions(
     "user_name=s"   => \$user_name,      # user name to assign experiment (alternative to user_id)
     "creator_id=i"  => \$creator_id,     # user ID to set as experiment creator
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
-    "tags=s"       => \$tags,            # optional: semicolon-separated list of experiment type names
+    "tags=s"        => \$tags,           # optional: semicolon-separated list of experiment tag names
     "normalize=s"   => \$normalize,      # optional: percentage, log10 or loge    
     "config=s"      => \$config,         # configuration file
 
@@ -343,11 +343,11 @@ print STDOUT "experiment id: " . $experiment->id . "\n";
 
 # Create tags
 if ($tags) {
-    foreach my $type_name ( split(/\s*;\s*/, $tags) ) {
+    foreach my $name ( split(/\s*;\s*/, $tags) ) {
         # Try to find a matching type by name, ignoring description
-        my $type = $coge->resultset('ExperimentType')->find({ name => $type_name });
+        my $type = $coge->resultset('ExperimentType')->find({ name => $name });
         if (!$type) {
-            $type = $coge->resultset('ExperimentType')->create({ name => $type_name }); # null description
+            $type = $coge->resultset('ExperimentType')->create({ name => $name }); # null description
         }
         unless ($type) {
             print STDOUT "log: error creating experiment type\n";
