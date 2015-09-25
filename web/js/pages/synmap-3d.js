@@ -4,9 +4,9 @@ var concat = Array.prototype.concat;
 
 // Global experiment data
 var current_experiment = {};
-var focus = undefined;
+var edit_focus = undefined;
 
-//AKB - Need to work on this "search-genomes"
+//AKB - Modified search_genomes to work on multiple genomes.
 function search_genomes (search_term) {
 	coge.services.search_genomes(search_term, { fast: true })
 		.done(function(result) { // success
@@ -15,15 +15,15 @@ function search_genomes (search_term) {
 					var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
 					return { label: label, value: obj.id };
 				});
-				if (focus == 'x') {
+				if (edit_focus == 'x') {
 					$('#edit_xgenome')
 						.autocomplete({source: transformed})
 						.autocomplete("search");
-				} else if (focus == 'y') {
+				} else if (edit_focus == 'y') {
 					$('#edit_ygenome')
 						.autocomplete({source: transformed})
 						.autocomplete("search");
-				} else if (focus == 'z') {
+				} else if (edit_focus == 'z') {
 					$('#edit_zgenome')
 						.autocomplete({source: transformed})
 						.autocomplete("search");
@@ -35,45 +35,6 @@ function search_genomes (search_term) {
 		});
 }
 
-/* AKB removed - probably wont need
-function search_users (search_term) {
-	coge.services.search_users(search_term)
-		.done(function(result) {
-			if (result && result.users) {
-				var transformed = result.users.map(function(obj) {
-					return obj.user_name;
-				});
-				$("#edit_user")
-					.autocomplete({source: transformed})
-					.autocomplete("search");
-			}
-		})
-		.fail(function() {
-			//TODO
-		});
-}
-*/
-
-/* AKB removed - probably won't need
-function search_notebooks (search_term) {
-	coge.services.search_notebooks(search_term)
-		.done(function(data) { 
-			if (data.notebooks) {
-				var items = [];
-				data.notebooks.forEach(function(notebook) {
-					items.push({label:notebook.name,value:notebook.id});
-			    });
-			    $("#edit_notebook")
-			    	.autocomplete({source: items})
-			    	.autocomplete("search");
-			}
-		})
-		.fail(function() {
-			//TODO
-		});
-}
-*/
-
 function render_template(template, container) {
     container.empty()
     .hide()
@@ -84,12 +45,10 @@ function render_template(template, container) {
 function ExperimentDescriptionView(opts) {
     this.experiment = opts.experiment;
     this.metadata = opts.metadata;
-    //this.gid = opts.gid; AKB - replaced with x_gid, y_gid, z_gid
     this.x_gid = opts.x_gid;
     this.y_gid = opts.y_gid;
     this.z_gid = opts.z_gid;
     this.onError = opts.onError;
-    this.sources = undefined;
     this.title = "Select Genomes";
     this.initialize();
 }
@@ -98,8 +57,8 @@ $.extend(ExperimentDescriptionView.prototype, {
     initialize: function() {
         this.el = $($("#genomes-template").html());
         this.edit_xgenome = this.el.find("#edit_xgenome");
-	this.edit_ygenome = this.el.find("#edit_ygenome");
-	this.edit_zgenome = this.el.find("#edit_zgenome")
+		this.edit_ygenome = this.el.find("#edit_ygenome");
+		this.edit_zgenome = this.el.find("#edit_zgenome")
         if (this.metadata) {
             //this.el.find('#edit_name').val(this.metadata.name);
             //this.el.find('#edit_description').val(this.metadata.description);
@@ -117,8 +76,8 @@ $.extend(ExperimentDescriptionView.prototype, {
         var self = this;
         
         var edit_xgenome = this.edit_xgenome;
-	var edit_ygenome = this.edit_ygenome;
-	var edit_zgenome = this.edit_zgenome;
+		var edit_ygenome = this.edit_ygenome;
+		var edit_zgenome = this.edit_zgenome;
 
         edit_xgenome.unbind().change(function() {
             // Reset gid when item has changed
@@ -175,51 +134,49 @@ $.extend(ExperimentDescriptionView.prototype, {
        
  
         edit_xgenome.keyup(function() {
-		focus = 'x';
+			edit_focus = 'x';
         	coge.utils.wait_to_search(search_genomes, self.edit_xgenome.get(0));
         });
         edit_xgenome.click(function() {
-		focus = 'x';
+			edit_focus = 'x';
         	$(this).autocomplete('search');
         });
         edit_ygenome.keyup(function() {
-        	focus = 'y';
-		coge.utils.wait_to_search(search_genomes, self.edit_ygenome.get(0));
+        	edit_focus = 'y';
+			coge.utils.wait_to_search(search_genomes, self.edit_ygenome.get(0));
         });
         edit_ygenome.click(function() {
-        	focus = 'y';
-		$(this).autocomplete('search');
+        	edit_focus = 'y';
+			$(this).autocomplete('search');
         });
         edit_zgenome.keyup(function() {
-        	focus = 'z';
-		coge.utils.wait_to_search(search_genomes, self.edit_zgenome.get(0));
+        	edit_focus = 'z';
+			coge.utils.wait_to_search(search_genomes, self.edit_zgenome.get(0));
         });
         edit_zgenome.click(function() {
-        	focus = 'z';
-		$(this).autocomplete('search');
+        	edit_focus = 'z';
+			$(this).autocomplete('search');
         });
-
-        //this.edit_source.autocomplete({source: this.sources});
     },
 
     is_valid: function() {
         var xgenome = this.el.find('#edit_xGenome').val();
-	var ygenome = this.el.find('#edit_yGenome').val();
-	var zgenome = this.el.find('#edit_zGenome').val();
+		var ygenome = this.el.find('#edit_yGenome').val();
+		var zgenome = this.el.find('#edit_zGenome').val();
         
-	if (!xgenome || xgenome === 'Search' || !this.x_gid) {
+		if (!xgenome || xgenome === 'Search' || !this.x_gid) {
         	if (this.onError)
             	this.onError('Please specify an X-axis genome.');
             return false;
         }
 
-	if (!ygenome || ygenome === 'Search' || !this.y_gid) {
+		if (!ygenome || ygenome === 'Search' || !this.y_gid) {
         	if (this.onError)
             	this.onError('Please specify a Y-axis genome.');
             return false;
         }
 
-	if (!zgenome || zgenome === 'Search' || !this.z_gid) {
+		if (!zgenome || zgenome === 'Search' || !this.z_gid) {
         	if (this.onError)
             	this.onError('Please specify a Z-axis genome.');
             return false;
@@ -227,23 +184,15 @@ $.extend(ExperimentDescriptionView.prototype, {
 
        $.extend(this.experiment, {
             metadata: {
-		xgenome: xgenome,
-		ygenome: ygenome,
-		zgenome: zgenome
-                //name: name,
-                //description: description,
-                //version: version,
-                //restricted: restricted,
-                //source_name: source,
-                //genome: genome,
+				xgenome: xgenome,
+				ygenome: ygenome,
+				zgenome: zgenome
             },
 	    
-	    //gid: this.gid,
             x_gid: this.x_gid,
-	    y_gid: this.y_gid,
-	    z_gid: this.z_gid
+	    	y_gid: this.y_gid,
+	    	z_gid: this.z_gid
         });
-	console.log(current_experiment);
         return true;
     },
 });
@@ -260,32 +209,31 @@ function GeneralOptionsView(opts) {
 $.extend(GeneralOptionsView.prototype, {
     initialize: function() {
         this.el = $($("#general-options-template").html());
-	this.no_synt = this.el.find("#nosynt");
-	this.min_len = this.el.find("#min_length");
-	this.sortby = this.el.find("#sortby");
-
-	if (this.usr_hide) {
-	    console.log("SHOULD HIDE");
-	    this.no_synt.prop("checked", true)
+		this.no_synt = this.el.find("#nosynt");
+		this.min_len = this.el.find("#min_length");
+		this.sortby = this.el.find("#sortby");
+		//TODO: Add function selection from URL
+		if (this.usr_hide) {
+	    	console.log("SHOULD HIDE");
+	    	this.no_synt.prop("checked", true)
         }
     },
 
     is_valid: function() {
         var no_synt = this.no_synt.is(":checked");
-	var min_len = this.min_len.val();
-	var sortby = this.sortby.val();
+		var min_len = this.min_len.val();
+		var sortby = this.sortby.val();
 	
-	if (min_len < 0) {
-	    if (this.onError)
-	    this.onError('Minimum chromosome length must be greater than 0.')
-	    return false;
-	}
+		if (min_len < 0) {
+	    	if (this.onError)
+	    	this.onError('Minimum chromosome length must be greater than 0.')
+	    	return false;
+		}
 
-	this.data.hide = no_synt;
-	this.data.min_len = min_len;
-	this.data.sortby = sortby;
-	//console.log(this.data);
-	return true;
+		this.data.hide = no_synt;
+		this.data.min_len = min_len;
+		this.data.sortby = sortby;
+		return true;
     },
 
     get_options: function() {
@@ -305,14 +253,13 @@ $.extend(AdvancedOptionView.prototype, {
     },
 
     is_valid: function() {
-	var vr = this.vr.is(":checked");
-	this.data.vr = vr;
-	//console.log(this.data);
-	return true;
+		var vr = this.vr.is(":checked");
+		this.data.vr = vr;
+		return true;
     },
 
     get_options: function() {
-	return this.data;
+		return this.data;
     }
 });
 
@@ -344,28 +291,29 @@ function OptionsView(opts) {
     this.hide = opts.hide;
 }
 
+//AKB - Removed Admin Options (commented out in this extend)
 $.extend(OptionsView.prototype, {
     initialize: function() {
         //this.admin_view = new AdminOptionsView();
         this.general_view = new GeneralOptionsView({
-		onError: this.onError,
-		hide: this.hide
-	});
-	this.advanced_view = new AdvancedOptionView();
-        this.layout_view = new LayoutView({
-            template: "#options-layout-template",
-            layout: {
-                "#general-options": this.general_view,
-		"#advanced-options": this.advanced_view
-            }
-        });
+			onError: this.onError,
+			hide: this.hide
+		});
+	
+		this.advanced_view = new AdvancedOptionView();
+    	this.layout_view = new LayoutView({
+        	template: "#options-layout-template",
+			layout: {
+        		"#general-options": this.general_view,
+				"#advanced-options": this.advanced_view
+        	}
+    	});
 
-        //if (this.admin)
-        //    this.layout_view.updateLayout({"#admin-options": this.admin_view});
+		//if (this.admin)
+		//    this.layout_view.updateLayout({"#admin-options": this.admin_view});
 
-        this.el = this.layout_view.el;
-        
-        this.experiment.options = {};
+		this.el = this.layout_view.el;
+		this.experiment.options = {};
     },
 
     // Validate and add all options to the experiment
@@ -374,15 +322,14 @@ $.extend(OptionsView.prototype, {
             return false;
 
         var options = $.extend({}, this.general_view.get_options(), this.advanced_view.get_options());
-        /* AKB Removed Admin Options
-	if (this.admin) {
+
+		/*if (this.admin) {
             if (!this.admin_view.is_valid())
                 return false;
             $.extend(options, this.admin_view.get_options());
-        }
-	*/
+        }*/
+
         $.extend(this.experiment.options, options);
-	console.log(options);
         return true;
     },
 
@@ -393,7 +340,7 @@ $.extend(OptionsView.prototype, {
 });
 
 
-/* TODO: AKB-Need to make launch(experiment), but use this as a template.
+/* AKB- Commented out because will use launch. SAVE AS TEMPLATE!
 function load(experiment) {
 	coge.progress.begin();
     newLoad = true;
@@ -425,7 +372,7 @@ function load(experiment) {
 	
     coge.services.submit_job(request) 
     	.done(function(response) {
-    		if (!response) {
+   		if (!response) {
     			coge.progress.failed("Error: empty response from server");
     			return;
     		}
@@ -444,7 +391,65 @@ function load(experiment) {
 }
 */
 
-function launch(experiment) {};
+function launch(experiment) {
+	//AKB - Code to Add Div Above Wizard
+	//$('#wizard').before('<div> I AM A NEW DIV YAYYYYYYY!!!!!!</div>');
+
+	coge.progress.begin();
+    this.xgid = experiment.x_gid;
+    this.ygid = experiment.y_gid;
+    this.zgid = experiment.z_gid;
+    var xy_request = {
+    	type: 'synmap',
+		requester: {
+			page:      PAGE_NAME,
+			user_name: USER_NAME
+		},
+		parameters: {
+			genome_id1: this.xgid,
+			genome_id2: this.ygid,
+			ks_type: 'kn_ks'
+		}
+    };
+    var xz_request = {
+    	type: 'synmap',
+		parameters: {
+			genome_id1: this.xgid,
+			genome_id2: this.zgid,
+			ks_type: 'kn_ks'
+		}
+    };
+    var yz_request = {
+    	type: 'synmap',
+		parameters: {
+			genome_id1: this.ygid,
+			genome_id2: this.zgid,
+			ks_type: 'kn_ks'
+		}
+    };
+
+    coge.services.submit_job(xy_request)
+		.done(function(response) {
+	    	if (!response) {
+				coge.progress.failed("Error: empty response from server");
+				return;
+	    	}
+	    	else if (!response.success || !response.id) {
+				coge.progress.failed("Error: failed to start workflow", response.error);
+	    	}
+			else if (response.success) {
+				console.log("SUCCESS!!!");
+			}
+			//Start status update
+            window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to browser URL
+			coge.progress.update(response.id, response.site_url);
+		})
+		.fail(function(jqXHR, textStatus, errorThrown) {
+			coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+		})
+
+    console.log(experiment);
+};
 
 function reset_launch() { //AKB - Renamed from reset_load()
     window.history.pushState({}, "Title", PAGE_NAME);
@@ -465,10 +470,11 @@ function initialize_wizard(opts) {
     current_experiment = {};
     var root = $("#wizard-container");
     var wizard = new Wizard({ 
-    	onCompleted: launch, //TODO - AKB, changed from 'load' 
+    	onCompleted: launch, //AKB, changed from 'load' 
     	data: current_experiment, 
     	helpUrl: opts.helpUrl 
     });
+
     wizard.addStep(new ExperimentDescriptionView({
         experiment: current_experiment,
         metadata: opts.metadata,
@@ -479,13 +485,13 @@ function initialize_wizard(opts) {
     }));
 
     wizard.addStep(new OptionsView({
-	experiment: current_experiment,
-	hide: opts.hide,
-	minLen: opts.minLen,
-	sortBy: opts.sortBy,
-	vr: opts.vr, 
-	admin: opts.admin, 
-	onError: wizard.error_help.bind(wizard) 
+		experiment: current_experiment,
+		hide: opts.hide,
+		minLen: opts.minLen,
+		sortBy: opts.sortBy,
+		vr: opts.vr, 
+		admin: opts.admin, 
+		onError: wizard.error_help.bind(wizard) 
     }));
 
     wizard.addStep(new ConfirmationView(current_experiment));
