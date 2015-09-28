@@ -13,14 +13,9 @@ use File::Spec::Functions;
 use JSON qw( encode_json );
 use POSIX;
 
-our (@EXPORT_OK, @ISA, $VERSION);
-
 BEGIN {
-    require Exporter;
-
-    $VERSION = 0.1;
-    @ISA = qw(Exporter);
-    @EXPORT_OK = qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
+	use Exporter 'import';
+	our @EXPORT_OK = qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
 }
 
 sub add_jobs {
