@@ -1,0 +1,232 @@
+<TMPL_IF NAME='LOGIN'>
+    <TMPL_INCLUDE NAME="widgets/Login.tmpl">
+</TMPL_IF>
+
+<TMPL_IF NAME='MAIN'>
+<style type="text/css">
+@font-face {
+	font-family: 'Glyphicons Halflings';
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+}
+
+.glyphicon {
+	position: relative;
+	top: 1px;
+	display: inline-block;
+	font-family: 'Glyphicons Halflings';
+	font-style: normal;
+	font-weight: normal;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.glyphicon-asterisk:before {
+	content: "\2a";
+}
+
+.jstree li a ins { display:none !important; }
+.jstree.jstree-focused { background:white; }
+</style>
+
+<div id="wizard-container"></div>
+
+<!-- Step Templates-->
+<script id="genomes-template" type="text/template">
+    <div class="step">
+
+        <div class="form-field">
+            <label class="col-md-2">X-Axis Genome:</label>
+            <input class="col-md-8" id="edit_xgenome" type="search" placeholder="Search"
+            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            	size="50" value="<TMPL_VAR NAME='X_GENOME_NAME'>" />
+            <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+        </div>
+        
+
+        <div class="form-field">
+            <label class="col-md-2">Y-Axis Genome:</label>
+            <input class="col-md-8" id="edit_ygenome" type="search" placeholder="Search"
+            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            	size="50" value="<TMPL_VAR NAME='Y_GENOME_NAME'>" />
+            <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+        </div>
+
+
+        <div class="form-field">
+            <label class="col-md-2">Z-Axis Genome:</label>
+            <input class="col-md-8" id="edit_zgenome" type="search" placeholder="Search"
+            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            	size="50" value="<TMPL_VAR NAME='Z_GENOME_NAME'>" />
+            <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+        </div>
+    
+    </div>
+</script>
+
+<script id="options-layout-template" type="text/template">
+	<div>
+            <!--<div id="admin-options"></div>-->
+	    <div id="general-options"></div>
+	    <div id="advanced-options"></div>
+	</div>
+</script>
+
+<script id="admin-options-template" type="text/template">
+	<!--
+	<div class="form-section">
+	    <h4>Admin</h4>
+	    <div class="form-field">
+	    </div>
+	</div>
+	<hr>
+	-->
+</script>
+
+<script id="general-options-template" type="text/template">
+	<div class="form-section">
+	    <h4>General Options</h4>
+
+            <div class="form-field">
+		<label class="col-md-2">Hide contigs without synteny:</label>
+		<input id="nosynt" type="checkbox">
+	    </div>
+	
+	    <div class="form-field">
+		<label class="col-md-2">Minimum chromosome length:</label>
+		<input id="min_length" type="number" value="0">
+	    </div>
+
+	    <div class="form-field">
+		<label class="col-md-2">Sort chromosomes by:</label>
+		<select id="sortby">
+		    <option value="length">Length</option>
+		    <option value="name">Name</option>
+		</select>
+	    </div>
+	</div>
+	<hr>
+</script>
+
+<script id="advanced-options-template" type="text/template">
+	<div class="form-section">
+	    <h4>Advanced Options</h4>
+
+	    <div class="form-field">
+		<label class="col-md-2">Enable VR mode:</label>
+		<input id="vr" type="checkbox">
+	   </div>
+	</div>	
+</script>
+
+
+<script id="confirm-template" type="text/template">
+    <div class="step info">
+        <h3>Genomes</h3>
+        <div class="confirm-genomes padded"></div>
+        <h3>Options</h3>
+        <div class="confirm-options padded"></div>
+    </div>
+</script>
+
+<!-- Alignment Templates -->
+
+
+<TMPL_INCLUDE NAME="widgets/Splash.tmpl">
+
+<TMPL_INCLUDE NAME='widgets/pipeline-options.tmpl'> 
+
+<TMPL_INCLUDE NAME="widgets/Progress.tmpl">
+
+<TMPL_INCLUDE NAME="widgets/FileSelect.tmpl">
+
+<TMPL_INCLUDE NAME="widgets/Wizard.tmpl">
+
+<script type="text/javascript">
+// Page constants
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER">';
+const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
+//const GENOME_ID     = '<TMPL_VAR NAME="GENOME_ID">'; AKB - Replaced with X, Y, and Z
+const X_GENOME_ID   = '<TMPL_VAR NAME="X_GENOME_ID">';
+const Y_GENOME_ID   = '<TMPL_VAR NAME="Y_GENOME_ID">';
+const Z_GENOME_ID   = '<TMPL_VAR NAME="Z_GENOME_ID">';
+const HIDE_NOSYNT   = '<TMPL_VAR NAME="HIDE_NOSYNT">';
+const MIN_LEN       = '<TMPL_VAR NAME="MIN_LEN">';
+const SORTBY	    = '<TMPL_VAR NAME="SORTBY">';
+const VR            = '<TMPL_VAR NAME="VR">';
+
+var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">';
+var WORKFLOW_ID       = '<TMPL_VAR NAME="WORKFLOW_ID">';
+var EMBED 	      = '<TMPL_VAR NAME="EMBED">';
+
+// File Select constants
+const DEFAULT_TAB              = '<TMPL_VAR NAME="DEFAULT_TAB">';
+const MAX_IRODS_LIST_FILES     = '<TMPL_VAR NAME="MAX_IRODS_LIST_FILES">';
+const MAX_IRODS_TRANSFER_FILES = '<TMPL_VAR NAME="MAX_IRODS_TRANSFER_FILES">';
+const MAX_FTP_FILES            = '<TMPL_VAR NAME="MAX_FTP_FILES">';
+const FILE_SELECT_SINGLE       = '<TMPL_VAR NAME="FILE_SELECT_SINGLE">';
+
+var newLoad = false;
+var wizard;
+
+$(function() {
+	// Set jQuery AJAX defaults
+    $.ajaxSetup({
+        type: "GET",
+        url: PAGE_NAME,
+        dataType: "html",
+        cache: false,
+    });
+
+    // Configure dialogs
+    $(".dialog_box").dialog({autoOpen: false, minWidth: 400});
+    
+    // Initialize wizard
+    wizard = initialize_wizard({ 
+    	admin: IS_ADMIN,
+    	helpUrl: HELP_URL,
+	x_gid: X_GENOME_ID,
+	y_gid: Y_GENOME_ID,
+	z_gid: Z_GENOME_ID,
+	hide: HIDE_NOSYNT,
+	minLen: MIN_LEN,
+	sortBy: SORTBY,
+	vr: VR	
+    });
+
+    // Initialize CoGe web services
+    coge.services.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME
+    });
+    
+    // Intialize progress window
+    coge.progress.init({
+    	title: "Loading Experiment",
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME,
+    	supportEmail: SUPPORT_EMAIL,
+    	onReset: reset_launch
+    });
+    
+    // Open status dialog
+    if (WORKFLOW_ID) {
+    	coge.progress.begin();
+    	coge.progress.update(WORKFLOW_ID);
+    }
+});
+</script>
+
+<script type="text/javascript" src="js/pages/synmap-3d.js"></script>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/coge/progress.js"></script>
+<script type="text/javascript" src="js/coge/wizard.js"></script>
+<script type="text/javascript" src="js/coge/file-select.js"></script>
+<script type="text/javascript" src="js/jquery.fileupload.js"></script>
+</TMPL_IF> <!-- MAIN -->
