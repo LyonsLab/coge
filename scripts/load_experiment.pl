@@ -21,7 +21,7 @@ use CoGe::Core::Metadata qw(create_annotations);
 use vars qw($staging_dir $install_dir $data_file $file_type 
   $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
-  $user_id $annotations $types $wid $host $port $db $user $pass $P);
+  $user_id $annotations $tags $wid $host $port $db $user $pass $P);
 
 #my $MIN_QUANT_COLUMNS = 5;
 #my $MAX_QUANT_COLUMNS = 6;
@@ -46,7 +46,7 @@ GetOptions(
     "user_name=s"   => \$user_name,      # user name to assign experiment (alternative to user_id)
     "creator_id=i"  => \$creator_id,     # user ID to set as experiment creator
     "annotations=s" => \$annotations,    # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
-    "types=s"       => \$types,          # optional: semicolon-separated list of experiment type names
+    "tags=s"        => \$tags,           # optional: semicolon-separated list of experiment tag names
     "normalize=s"   => \$normalize,      # optional: percentage, log10 or loge    
     "config=s"      => \$config,         # configuration file
 
@@ -341,13 +341,13 @@ my $experiment = $coge->resultset('Experiment')->create(
 );
 print STDOUT "experiment id: " . $experiment->id . "\n";
 
-# Create types
-if ($types) {
-    foreach my $type_name ( split(/\s*;\s*/, $types) ) {
+# Create tags
+if ($tags) {
+    foreach my $name ( split(/\s*;\s*/, $tags) ) {
         # Try to find a matching type by name, ignoring description
-        my $type = $coge->resultset('ExperimentType')->find({ name => $type_name });
+        my $type = $coge->resultset('ExperimentType')->find({ name => $name });
         if (!$type) {
-            $type = $coge->resultset('ExperimentType')->create({ name => $type_name }); # null description
+            $type = $coge->resultset('ExperimentType')->create({ name => $name }); # null description
         }
         unless ($type) {
             print STDOUT "log: error creating experiment type\n";

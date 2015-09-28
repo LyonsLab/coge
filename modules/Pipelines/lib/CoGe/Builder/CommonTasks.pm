@@ -13,6 +13,7 @@ use CoGe::Accessory::Utils qw(sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
 use CoGe::Accessory::Web qw(get_defaults split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
+use CoGe::Core::Metadata qw(tags_to_string);
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -437,6 +438,10 @@ sub create_load_vcf_job {
     
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+    
+    my @tags = ( 'VCF' ); # add VCF tag
+    push @tags, @{$metadata->{tags}} if $metadata->{tags};
+    my $tags_str = tags_to_string(\@tags);
 
     return {
         cmd => $cmd,
@@ -450,7 +455,7 @@ sub create_load_vcf_job {
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
             ['-source_name', "'".$metadata->{source}."'", 0],
-            ['-types', qq{"SNP"}, 0],
+            ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-staging_dir', "./load_vcf", 0],
             ['-file_type', qq["vcf"], 0],
@@ -493,6 +498,8 @@ sub create_load_experiment_job {
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
 
+    my $tags_str = tags_to_string($metadata->{tags});
+
     return {
         cmd => $cmd,
         script => undef,
@@ -505,10 +512,9 @@ sub create_load_experiment_job {
             ['-version', "'" . $metadata->{version} . "'", 0],
             ['-restricted', "'" . $metadata->{restricted} . "'", 0],
             ['-source_name', "'" . $metadata->{source_name} . "'", 0],
-            #['-types', qq{"BAM"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
+            ['-tags', qq["$tags_str"], 0],
             ['-staging_dir', "./load_experiment", 0],
-            #['-file_type', qq["bam"], 0],
             ['-data_file', $input_file, 0],
             ['-normalize', $normalize, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
@@ -725,6 +731,7 @@ sub create_load_bam_job {
     # Required arguments
     my $user = $opts{user};
     my $metadata = $opts{metadata};
+    my $additional_metadata = $opts{additional_metadata};
     my $staging_dir = $opts{staging_dir};
     my $annotations = $opts{annotations};
     my $wid = $opts{wid};
@@ -740,6 +747,10 @@ sub create_load_bam_job {
     
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+    
+    my @tags = ( 'BAM' ); # add BAM tag
+    push @tags, @{$metadata->{tags}} if $metadata->{tags};
+    my $tags_str = tags_to_string(\@tags);
 
     return {
         cmd => $cmd,
@@ -753,7 +764,7 @@ sub create_load_bam_job {
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
             ['-source_name', "'" . $metadata->{source} . "'", 0],
-            ['-types', qq{"BAM"}, 0],
+            ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-staging_dir', "./load_bam", 0],
             ['-file_type', qq["bam"], 0],

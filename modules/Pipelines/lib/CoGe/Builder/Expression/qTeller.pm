@@ -17,6 +17,7 @@ use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Workflow;
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_workflow_results_file);
+use CoGe::Core::Metadata qw(to_annotations tags_to_string);
 use CoGe::Builder::CommonTasks;
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -36,6 +37,7 @@ sub build {
     my $user = $opts{user};
     my $input_file = $opts{input_file}; # path to bam file
     my $metadata = $opts{metadata};
+    my $additional_metadata = $opts{additional_metadata};
     my $wid = $opts{wid};
     my $params = $opts{params};
 
@@ -50,10 +52,11 @@ sub build {
 
     # Set metadata for the pipeline being used
     my $annotations = generate_additional_metadata($params, $isAnnotated);
-
-    my @tasks;
+    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+    push @$annotations, @annotations2;
 
     # Reheader the fasta file
+    my @tasks;
     my $fasta = get_genome_file($gid);
     my $reheader_fasta = to_filename($fasta) . ".reheader.faa";
     push @tasks, create_fasta_reheader_job( 
@@ -283,6 +286,10 @@ sub create_load_csv_job { #TODO move into CommonTasks.pm
     
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+    
+    my @tags = ( 'Expression' ); # add Expression tag
+    push @tags, @{$metadata->{tags}} if $metadata->{tags};
+    my $tags_str = tags_to_string(\@tags);
 
     return {
         cmd => $cmd,
@@ -296,7 +303,7 @@ sub create_load_csv_job { #TODO move into CommonTasks.pm
             ['-source_name', '"'.$metadata->{source}.'"', 0],
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
-            ['-types', qq{"Expression"}, 0],
+            ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq{"$annotations_str"}, 0],
             ['-staging_dir', "./load_csv", 0],
             ['-file_type', "csv", 0],
@@ -335,6 +342,10 @@ sub create_load_bed_job { #TODO move into CommonTasks.pm
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
     
+    my @tags = ( 'Expression' ); # add Expression tag
+    push @tags, @{$metadata->{tags}} if $metadata->{tags};
+    my $tags_str = tags_to_string(\@tags);
+    
     return {
         cmd => $cmd,
         script => undef,
@@ -347,7 +358,7 @@ sub create_load_bed_job { #TODO move into CommonTasks.pm
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
             ['-source_name', '"'.$metadata->{source}.'"', 0],
-            ['-types', qq{"Expression"}, 0],
+            ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq{"$annotations_str"}, 0],
             ['-staging_dir', "./load_bed", 0],
             ['-file_type', "bed", 0],
