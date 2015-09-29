@@ -573,6 +573,7 @@ sub process_gff_file {
     my $last_RNA   = "mRNA"; #storage for the last RNA type seen.  For converting exons to appropriate RNA type.
     while ( my $line = <$in> ) {
         $line_num++;
+        last if $line =~ /^##FASTA/; # mdb added 9/28/15 COGE-656
         next if $line =~ /^#/;
         next if $line =~ /^Error/;
         chomp $line;
