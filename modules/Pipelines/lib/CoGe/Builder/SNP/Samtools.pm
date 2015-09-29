@@ -13,6 +13,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
+use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::CommonTasks;
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -36,6 +37,7 @@ sub build {
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
+    my $additional_metadata => $opts->{additional_metadata};
     my $params = $opts->{params};
 
     # Setup paths
@@ -47,6 +49,8 @@ sub build {
     my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
     
     my $annotations = generate_additional_metadata($params);
+    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+    push @$annotations, @annotations2;
 
     my $conf = {
         staging_dir => $staging_dir,
