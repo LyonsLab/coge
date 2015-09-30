@@ -18,6 +18,16 @@ BEGIN {
 	our @EXPORT_OK = qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
 }
 
+sub add_job {
+	my $workflow = shift;
+	my $user = shift;
+	my $params = shift;
+	my $args = $params->{args};
+	push @$args, ['-user_name', $user->name, 0];
+	push @$args, ['-wid', $workflow->id, 0];
+	$workflow->add_job($params);
+}
+
 sub add_jobs {
 	my %opts = @_;
 	my $workflow = $opts{workflow};
@@ -242,7 +252,7 @@ sub add_jobs {
 		push @fasta1args, [ "--feature_type", $feat_type1, 1 ];
 		push @fasta1args, [ "--fasta",        $fasta1,     1 ];
 
-		$workflow->add_job(
+		add_job($workflow, $user,
 			{
 				cmd         => $GEN_FASTA,
 				script      => undef,
@@ -276,7 +286,7 @@ sub add_jobs {
 		push @fasta2args, [ "--feature_type", $feat_type2, 1 ];
 		push @fasta2args, [ "--fasta",        $fasta2,     1 ];
 
-		$workflow->add_job(
+		add_job($workflow, $user,
 			{
 				cmd         => $GEN_FASTA,
 				script      => undef,
@@ -859,7 +869,7 @@ sub add_jobs {
 		push @ksargs, [ '--dbfile',    $ks_db,                 1 ];
 		push @ksargs, [ '--blockfile', $ks_blocks_file,        1 ];
 
-		$workflow->add_job(
+		add_job($workflow, $user,
 			{
 				cmd         => $KSCALC,
 				script      => undef,

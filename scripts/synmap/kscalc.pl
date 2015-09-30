@@ -18,7 +18,7 @@ use CoGe::Algos::KsCalc;
 our (
     $cogeweb, $basename, $infile,  $dbfile,   $blockfile, $coge,
     $P,       $TEMPDIR,  $NWALIGN, $MAX_PROC, $DBNAME,    $DBHOST,
-    $DBPORT,  $DBUSER,   $DBPASS,  $CONFIG
+    $DBPORT,  $DBUSER,   $DBPASS,  $CONFIG,   $wid,       $user_name,
 );
 
 GetOptions(
@@ -27,6 +27,8 @@ GetOptions(
     "dbfile=s"     => \$dbfile,
     "blockfile=s"  => \$blockfile,
     "config|cfg=s" => \$CONFIG,
+    "wid=s"			=> \$wid,
+    "user_name=s"	=> \$user_name,
 );
 
 $P = CoGe::Accessory::Web::get_defaults($CONFIG);
@@ -82,12 +84,17 @@ sub run {
 
     CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+    warn "-----gen----";
     $ret = gen_ks_blocks_file(
         infile  => $infile,
         dbfile  => $dbfile,
         outfile => $blockfile
     );
+    warn $ret;
     die if $ret;
+    warn $wid;
+	add_workflow_result($user_name, $wid, { kscalc => $blockfile }) if $wid;
+	warn "done";
 }
 
 sub batch_add {
