@@ -1313,8 +1313,8 @@ sub get_results {
 	# filter it and creating a new rawblast and moving the old to
 	# rawblast.orig
 	#
-	my $query_bed   = $raw_blastfile . ".q.bed";
-	my $subject_bed = $raw_blastfile . ".s.bed";
+#	my $query_bed   = $raw_blastfile . ".q.bed";
+#	my $subject_bed = $raw_blastfile . ".s.bed";
 
 	###########################################################################
 	# Converting blast to raw and finding local duplications
