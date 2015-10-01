@@ -12,8 +12,9 @@ use Data::Dumper;
 use File::Spec;
 use CoGeX;
 use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw( write_log );
 use CoGe::Algos::KsCalc;
+use CoGe::Core::Storage qw( add_workflow_result );
 
 our (
     $cogeweb, $basename, $infile,  $dbfile,   $blockfile, $coge,
@@ -50,8 +51,7 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 
-my $connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+my $connstr = "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 $cogeweb = CoGe::Accessory::Web::initialize_basefile(
@@ -67,34 +67,26 @@ sub run {
     ($outfile) = $infile =~ /^(.*?protein-protein)/ unless $outfile;
     exit 1 unless $outfile;
 
-    CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log(
-        "Running CodeML for synonymous/nonsynonmous rate calculations",
-        $cogeweb->logfile );
+    write_log( "#" x (20), $cogeweb->logfile );
+    write_log( "Running CodeML for synonymous/nonsynonmous rate calculations", $cogeweb->logfile );
 
     my $ret = gen_ks_db( infile => $infile, outfile => $dbfile );
     die if $ret;
 
-    CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+    write_log( "#" x (20), $cogeweb->logfile );
+    write_log( "", $cogeweb->logfile );
 
-    CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Generate Ks Blocks File",
-        $cogeweb->logfile );
-
-    CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-    warn "-----gen----";
-    $ret = gen_ks_blocks_file(
+    write_log( "#" x (20), $cogeweb->logfile );
+    write_log( "Generate Ks Blocks File", $cogeweb->logfile );
+    write_log( "#" x (20), $cogeweb->logfile );
+    write_log( "", $cogeweb->logfile );
+    gen_ks_blocks_file(
         infile  => $infile,
         dbfile  => $dbfile,
         outfile => $blockfile
     );
-    warn $ret;
-    die if $ret;
-    warn $wid;
 	add_workflow_result($user_name, $wid, { kscalc => $blockfile }) if $wid;
-	warn "done";
+	exit;
 }
 
 sub batch_add {
@@ -145,9 +137,8 @@ sub gen_ks_db {
     my %opts    = @_;
     my $infile  = $opts{infile};
     my $outfile = $opts{outfile};
-    CoGe::Accessory::Web::write_log( "Generating ks data.", $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "initializing ks database $outfile",
-        $cogeweb->logfile );
+    write_log( "Generating ks data.", $cogeweb->logfile );
+    write_log( "initializing ks database $outfile", $cogeweb->logfile );
     my $create = qq{
 CREATE TABLE ks_data
 (
@@ -280,8 +271,7 @@ DNA_align_2
     my $completion_time = timestr( timediff( $finished_time, $start_time ) );
     say STDERR "Completed in: $completion_time";
 
-    CoGe::Accessory::Web::write_log( "Completed generating ks data.",
-        $cogeweb->logfile );
+    write_log( "Completed generating ks data.", $cogeweb->logfile );
 
     return 0;
 }
@@ -293,15 +283,12 @@ sub get_ks_data {
     unless ( -r $db_file ) {
         return \%ksdata;
     }
-    CoGe::Accessory::Web::write_log( "\tconnecting to ks database $db_file",
-        $cogeweb->logfile );
+    write_log( "\tconnecting to ks database $db_file", $cogeweb->logfile );
     my $select = "select * from ks_data";
     my $dbh    = DBI->connect( "dbi:SQLite:dbname=$db_file", "", "" );
     my $sth    = $dbh->prepare($select);
     $sth->execute();
-    CoGe::Accessory::Web::write_log(
-        "\texecuting select all from ks database $db_file",
-        $cogeweb->logfile );
+    write_log( "\texecuting select all from ks database $db_file", $cogeweb->logfile );
     my $total   = 0;
     my $no_data = 0;
 
@@ -322,15 +309,11 @@ sub get_ks_data {
           }
           : {};    # unless $data->[3] eq "";
     }
-    CoGe::Accessory::Web::write_log(
-        "\tgathered data from ks database $db_file",
-        $cogeweb->logfile );
+    write_log("\tgathered data from ks database $db_file", $cogeweb->logfile);
     $sth->finish;
     undef $sth;
     $dbh->disconnect();
-    CoGe::Accessory::Web::write_log(
-        "\tdisconnecting from ks database $db_file",
-        $cogeweb->logfile );
+    write_log("\tdisconnecting from ks database $db_file", $cogeweb->logfile);
     return \%ksdata;
 }
 
@@ -374,8 +357,6 @@ sub gen_ks_blocks_file {
     ) if $block_title;
     print OUT $output;
     close OUT;
-
-    return 0;
 }
 
 sub initialize_nwalign_servers {
@@ -446,9 +427,6 @@ sub process_block {
     }
     chomp $header;
     $header .= "  Mean Ks:  $mean_ks\tMean Kn: $mean_kn\n";
-    $header .= join( "\t",
-        "#Ks",
-        qw(Kn a<db_genome_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_genome_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval block_score GEVO_link)
-    ) . "\n";
+    $header .= "#Ks\tKn\ta<db_genome_id>_<chr>\tchr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1\tstart1\tstop1\tb<db_genome_id>_<chr>\tchr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2\tstart2\tstop2\teval\tblock_score\tGEVO_link\n";
     return $header . $output;
 }
