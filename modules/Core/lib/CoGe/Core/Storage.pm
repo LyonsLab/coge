@@ -632,7 +632,7 @@ sub get_workflow_paths {
         my @wdir = grep { -d "$staging_dir/$_/$workflow_id" } read_dir($staging_dir);
         #print STDERR Dumper "wdir:\n", \@wdir, "\n";
         if (@wdir != 1) {
-            print STDERR "Storage::get_workflow_paths ERROR: ambiguous user directory\n";
+            print STDERR "Storage::get_workflow_paths WARNING: ambiguous user directory\n";
             return;
         }
         $user_name = $wdir[0];
