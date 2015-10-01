@@ -3,7 +3,7 @@ package CoGe::Builder::Tools::SynMap;
 use Moose;
 
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web qw( get_defaults );
+use CoGe::Accessory::Web qw( get_defaults write_log );
 use CoGe::Accessory::Workflow;
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Core::Storage qw( get_workflow_paths );
@@ -239,9 +239,9 @@ sub add_jobs {
 	if ( $feat_type1 eq "genomic" ) {
 		$fasta1 = $genome1->file_path;
 
-		CoGe::Accessory::Web::write_log( "Fetched fasta file for:",
+		write_log( "Fetched fasta file for:",
 			$cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( " " x (2) . $org_name1,
+		write_log( " " x (2) . $org_name1,
 			$cogeweb->logfile );
 	}
 	else {
@@ -263,19 +263,19 @@ sub add_jobs {
 			}
 		);
 
-		CoGe::Accessory::Web::write_log( "Added fasta file generation for:",
+		write_log( "Added fasta file generation for:",
 			$cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( " " x (2) . $org_name1,
+		write_log( " " x (2) . $org_name1,
 			$cogeweb->logfile );
 	}
 
 	if ( $feat_type2 eq "genomic" ) {
 		$fasta2 = $genome2->file_path;
 
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( "Fetched fasta file for:",
+		write_log( "", $cogeweb->logfile );
+		write_log( "Fetched fasta file for:",
 			$cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( " " x (2) . $org_name2,
+		write_log( " " x (2) . $org_name2,
 			$cogeweb->logfile );
 	}
 	else {
@@ -297,10 +297,10 @@ sub add_jobs {
 			}
 		);
 
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( "Added fasta file generation for:",
+		write_log( "", $cogeweb->logfile );
+		write_log( "Added fasta file generation for:",
 			$cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( " " x (2) . $org_name2,
+		write_log( " " x (2) . $org_name2,
 			$cogeweb->logfile );
 	}
 
@@ -337,10 +337,10 @@ sub add_jobs {
 			}
 		);
 
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( "Added BlastDB generation",
+		write_log( "", $cogeweb->logfile );
+		write_log( "Added BlastDB generation",
 			$cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( $blastdb, $cogeweb->logfile );
+		write_log( $blastdb, $cogeweb->logfile );
 	}
 	else {
 		$blastdb = $fasta2;
@@ -417,8 +417,8 @@ sub add_jobs {
 		);
 	}
 
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log(
+	write_log( "", $cogeweb->logfile );
+	write_log(
 		"Added genome comparison (algorithm: "
 		  . $ALGO_LOOKUP->{$blast}{displayname} . ")",
 		$cogeweb->logfile
@@ -458,8 +458,8 @@ sub add_jobs {
 		}
 	);
 
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Added .bed files creation",
+	write_log( "", $cogeweb->logfile );
+	write_log( "Added .bed files creation",
 		$cogeweb->logfile );
 
 	###########################################################################
@@ -500,13 +500,13 @@ sub add_jobs {
 		}
 	);
 
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+	write_log( "", $cogeweb->logfile );
 	my $msg = "Added Filtering results of tandem ";
 	$msg .= "duplicates (tandem duplication distance: $dupdist";
 	$msg .= ", c-score: $cscore" if $cscore;
 	$msg .= ")";
 
-	CoGe::Accessory::Web::write_log( $msg, $cogeweb->logfile );
+	write_log( $msg, $cogeweb->logfile );
 
  #TODO: This feature is currently disabled
  #needed to comment out as the bed files and blast files have changed in SynFind
@@ -552,8 +552,8 @@ sub add_jobs {
 		}
 	);
 
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log(
+	write_log( "", $cogeweb->logfile );
+	write_log(
 		"Added convertion of blast file to dagchainer input file",
 		$cogeweb->logfile );
 
@@ -565,8 +565,8 @@ sub add_jobs {
 
 	if ( $dagchainer_type eq "geneorder" ) {
 
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log(
+		write_log( "", $cogeweb->logfile );
+		write_log(
 			"Added convertion of dagchainer input into gene order coordinates",
 			$cogeweb->logfile
 		);
@@ -600,13 +600,13 @@ sub add_jobs {
  #B Pedersen's program for automatically adjusting the evals in the dag file to
  # remove bias from local gene duplicates and transposons
  #   $dag_file12 .= "_c" . $repeat_filter_cvalue;
- #   CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
- #   CoGe::Accessory::Web::write_log( "Adjusting evalue of blast hits to correct
+ #   write_log( "#" x (20), $cogeweb->logfile );
+ #   write_log( "Adjusting evalue of blast hits to correct
  #   for repeat sequences", $cogeweb->logfile );
  #   run_adjust_dagchainer_evals( infile => $all_file, outfile => $dag_file12,
  #   cvalue => $repeat_filter_cvalue );
- #   CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
- #   CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+ #   write_log( "#" x (20), $cogeweb->logfile );
+ #   write_log( "", $cogeweb->logfile );
 
 	# This step will fail if the dag_file_all is larger than the system memory
 	# limit. If this file does not exist, let's send a warning to the log file
@@ -615,8 +615,8 @@ sub add_jobs {
 		|| ( -r $dag_file12 . ".gz" && -s $dag_file12 . ".gz" ) )
 	{
 		$dag_file12 = $all_file;
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log(
+		write_log( "", $cogeweb->logfile );
+		write_log(
 			"WARNING: sub run_adjust_dagchainer_evals failed. "
 			  . "Perhaps due to Out of Memory error. "
 			  . "Proceeding without this step!",
@@ -680,8 +680,8 @@ sub add_jobs {
 			}
 		);
 		$post_dagchainer_file = $merged_dagchainer_file;
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log(
+		write_log( "", $cogeweb->logfile );
+		write_log(
 			"Added DagChainer (merge: enabled,"
 			  . " Maximum distance between two blocks: $Dm genes, "
 			  . " Average distance expected between syntenic blocks: $gm genes)",
@@ -703,8 +703,8 @@ sub add_jobs {
 		);
 
 		$post_dagchainer_file = $dagchainer_file;
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( "Added DagChainer (merge: disabled)",
+		write_log( "", $cogeweb->logfile );
+		write_log( "Added DagChainer (merge: disabled)",
 			$cogeweb->logfile );
 	}
 
@@ -733,8 +733,8 @@ sub add_jobs {
 				description => "Merging Syntenic Blocks...",
 			}
 		);
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log(
+		write_log( "", $cogeweb->logfile );
+		write_log(
 			"Added Merge Syntenic Blocks"
 			  . " (Maximum distance between two blocks: $Dm genes)",
 			$cogeweb->logfile
@@ -785,14 +785,14 @@ sub add_jobs {
 			}
 		);
 
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log(
+		write_log( "", $cogeweb->logfile );
+		write_log(
 			"Added Syntenic Depth "
 			  . "(ratio: $depth_org_1_ratio/$depth_org_2_ratio, "
 			  . "overlap: $depth_overlap)",
 			$cogeweb->logfile
 		);
-		CoGe::Accessory::Web::write_log( "$org_name1 -vs- $org_name2",
+		write_log( "$org_name1 -vs- $org_name2",
 			$cogeweb->logfile );
 		$final_dagchainer_file = $quota_align_coverage;
 	}
@@ -817,8 +817,8 @@ sub add_jobs {
 			}
 		);
 
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log(
+		write_log( "", $cogeweb->logfile );
+		write_log(
 "Added conversion gene order coordinates back to genomic coordinates",
 			$cogeweb->logfile
 		);
@@ -880,8 +880,8 @@ sub add_jobs {
 			}
 		);
 
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log(
+		write_log( "", $cogeweb->logfile );
+		write_log(
 			"Added ($ks_type) calculation of syntenic CDS pairs and color dots",
 			$cogeweb->logfile
 		);
@@ -911,8 +911,8 @@ sub add_jobs {
 			}
 		);
 
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( "Added generation of svg dotplot",
+		write_log( "", $cogeweb->logfile );
+		write_log( "Added generation of svg dotplot",
 			$cogeweb->logfile );
 	}
 	else {
@@ -945,8 +945,8 @@ sub add_jobs {
 			}
 		);
 
-		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-		CoGe::Accessory::Web::write_log( "Added generation of svg dotplot",
+		write_log( "", $cogeweb->logfile );
+		write_log( "Added generation of svg dotplot",
 			$cogeweb->logfile );
 
 	}
@@ -1095,16 +1095,16 @@ sub add_jobs {
 	#        description => "Generating dotplot dots...",
 	#    );
 	#
-	#    CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	#    CoGe::Accessory::Web::write_log( "Added dotplot generation",
+	#    write_log( "", $cogeweb->logfile );
+	#    write_log( "Added dotplot generation",
 	#        $cogeweb->logfile );
 
 	############################################################################
 	# Post Processing
 	############################################################################
 
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Final Post Processing",
+	write_log( "", $cogeweb->logfile );
+	write_log( "Final Post Processing",
 		$cogeweb->logfile );
 
 	my $subject_dup_args = [
@@ -1140,8 +1140,8 @@ sub add_jobs {
 			description => "Processing Query Tandem Duplicate File...",
 		}
 	);
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log(
+	write_log( "", $cogeweb->logfile );
+	write_log(
 		"Added Processing of Tandem Duplicate Files",
 		$cogeweb->logfile );
 
@@ -1206,12 +1206,10 @@ sub add_jobs {
 		);
 	}
 
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Added GEvo links generation",
-		$cogeweb->logfile );
-
-	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+	write_log( "", $cogeweb->logfile );
+	write_log( "Added GEvo links generation", $cogeweb->logfile );
+	write_log( "#" x (25), $cogeweb->logfile );
+	write_log( "", $cogeweb->logfile );
 }
 
 sub algo_lookup {
@@ -1378,11 +1376,11 @@ sub gen_org_name {
 	$title =~ s/(`|')//g;
 
 #	if ( $cogeweb and $write_log ) {
-#		CoGe::Accessory::Web::write_log( "Generated organism name:",
+#		write_log( "Generated organism name:",
 #			$cogeweb->logfile );
-#		CoGe::Accessory::Web::write_log( " " x (2) . $title,
+#		write_log( " " x (2) . $title,
 #			$cogeweb->logfile );
-#		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+#		write_log( "", $cogeweb->logfile );
 #	}
 	return ( $org_name, $title );
 }
@@ -1654,26 +1652,26 @@ sub go {
 	my $workflow_name = "synmap-$tiny_id";
 
 	my $cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $opts{basename}, tempdir => catdir($config->{TEMPDIR}, 'SynMap') );
-	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Creating Workflow", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Link to Regenerate Analysis", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "$tiny_link", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Created Workflow: synmap-$workflow_name", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+	write_log( "#" x (25), $cogeweb->logfile );
+	write_log( "Creating Workflow", $cogeweb->logfile );
+	write_log( "#" x (25), $cogeweb->logfile );
+	write_log( "", $cogeweb->logfile );
+	write_log( "#" x (25), $cogeweb->logfile );
+	write_log( "Link to Regenerate Analysis", $cogeweb->logfile );
+	write_log( "$tiny_link", $cogeweb->logfile );
+	write_log( "", $cogeweb->logfile );
+	write_log( "Created Workflow: synmap-$workflow_name", $cogeweb->logfile );
+	write_log( "", $cogeweb->logfile );
 
 	my $JEX = CoGe::Accessory::Jex->new(host => $config->{JOBSERVER}, port => $config->{JOBPORT});
 	my $workflow = $JEX->create_workflow(name => $workflow_name, logfile => $cogeweb->logfile);
 
 	add_jobs(workflow => $workflow, db => $db, user => $user, config => $config, cogeweb => $cogeweb, @_);
 
-	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "Running Workflow", $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-	CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+	write_log( "#" x (25), $cogeweb->logfile );
+	write_log( "Running Workflow", $cogeweb->logfile );
+	write_log( "#" x (25), $cogeweb->logfile );
+	write_log( "", $cogeweb->logfile );
 
 	my $response = $JEX->submit_workflow($workflow);
 
