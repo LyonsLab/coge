@@ -963,7 +963,13 @@ $.extend(JobGrid.prototype, {
     		              { 
     		            	  orderSequence : [ "desc", "asc" ], 
     		            	  targets : [0, 1, 2] 
-    		              }
+    		              },
+    		              {
+     		            	 "render": function ( data, type, full, meta ) {
+     		            	      return '<a href="'+data+'" target="_blank">'+data+'</a>';
+     		            	 },
+     		            	 targets : 6
+     		             }
     		             ],
     		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[1, "desc"]],
@@ -1139,11 +1145,25 @@ $.extend(HistGrid.prototype, {
 		//Setup table formatting
 		self.table = $('#' + self.elementId + '_table').DataTable({
     		columnDefs: [
-    		              { 
-    		            	  orderSequence : [ "desc", "asc" ], 
-    		            	  targets : [0] 
-    		              }
-    		             ],
+    		             { 
+    		            	 orderSequence : [ "desc", "asc" ], 
+    		            	 targets : 0 
+    		             },
+    		             {
+    		            	 "render": function ( data, type, full, meta ) {
+    		            	      return '<a href="'+data+'" target="_blank">'+data+'</a>';
+    		            	 },
+    		            	 targets : 4
+    		             }
+    		            ],
+    		columns:	[
+    		        	 { data: 0 },
+    		        	 { data: 1 },
+    		        	 { data: 2 },
+    		        	 { data: 3 },
+    		        	 { data: 4 },
+    		        	 { data: 5 }
+    		        	],
     		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[0, "desc"]],
     		scrollY: self.height,
