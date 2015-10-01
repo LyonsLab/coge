@@ -32,7 +32,7 @@ our @EXPORT = qw(
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
 
-sub link_results {
+sub link_results { #FIXME deprecated, remove soon
    my ($input, $output, $result_dir, $conf) = @_;
 
    return {
@@ -48,7 +48,7 @@ sub link_results {
    };
 }
 
-sub generate_results {
+sub generate_results { #FIXME deprecated, remove soon
    my ($input, $type, $result_dir, $conf, $dependency) = @_;
 
    return {
