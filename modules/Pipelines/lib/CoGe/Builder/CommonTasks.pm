@@ -891,6 +891,96 @@ sub create_gff_generation_job {
     };
 }
 
+sub create_hisat2_workflow {
+    my %opts = @_;
+
+    # Required arguments
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $validated = $opts{validated};
+    my $staging_dir = $opts{staging_dir};
+    my $params = $opts{params};
+
+    my ($index, %build) = create_hisat2_build_job($gid, $fasta);
+    
+    my %hisat2 = create_hisat2_job(
+        staging_dir => $staging_dir,
+        fasta => $fasta,
+        fastq => $fastq,
+        validated => $validated,
+        index_name => $index,
+        index_files => ($build{outputs}),
+        params => $params,
+    );
+
+    # Return the sam output name and jobs required
+    my @tasks = ( \%build, \%hisat2 );
+    my %results = (
+        sam_file => $hisat2{outputs}->[0]
+    );
+    return \@tasks, \%results;
+}
+
+sub create_hisat2_job {
+    my $index_files = $opts{index_files};
+    my $name = 'genome.reheader';
+
+    my $inputs = [
+        $fasta,
+        @$fastq,
+        @$validated,
+        @$index_files
+    ];
+
+    my $cmd = 'nice ' . $CONF->{HISAT2};
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => [
+        ],
+        inputs => $inputs,
+        outputs => [
+            catfile($staging_dir, "accepted_hits.sam")
+        ],
+        description => "Aligning sequences (HISAT2)..."
+    );
+}
+
+sub create_hisat2_build_job {
+    my $gid = shift;
+    my $fasta = shift;
+    my $name = 'genome.reheader';
+    
+    my $cmd = 'nice ' . $CONF->{HISAT2_BUILD};
+    my $cache_dir = catdir($CONF->{CACHEDIR}, $gid, "hisat2_index");
+    die "ERROR: HISAT2_BUILD is not in the config." unless ($cmd);
+
+    return catdir($cache_dir, $name), (
+        cmd => $cmd,
+        script => undef,
+        args => [
+        	['-p', '8', 0],
+            ["", $fasta, 1],
+            ["", $name, 0],
+        ],
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            catfile($cache_dir, $name . ".1.bt2"),
+            catfile($cache_dir, $name . ".2.bt2"),
+            catfile($cache_dir, $name . ".3.bt2"),
+            catfile($cache_dir, $name . ".4.bt2"),
+            catfile($cache_dir, $name . ".5.bt2"),
+            catfile($cache_dir, $name . ".6.bt2"),
+            catfile($cache_dir, $name . ".7.bt2"),
+            catfile($cache_dir, $name . ".8.bt2")
+        ],
+        description => "Indexing genome sequence with hisat2-build..."
+    );
+}
+
 sub create_tophat_workflow {
     my %opts = @_;
 
