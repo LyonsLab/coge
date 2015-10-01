@@ -3,7 +3,10 @@
 use strict;
 use warnings;
 
-use lib '../lib';
+# Set the module include path -- this is primarily for sandboxes in the dev
+# environment.  On production the directory will not exist and will be skipped.
+use lib '../../modules/perl';
+
 use Mojolicious::Commands;
 
 Mojolicious::Commands->start_app("CoGe::Services::Routes");

@@ -141,6 +141,8 @@ sub validate {
         {
             print STDERR 'CoGe::Services::Auth::validate: Agave failed to authenticate, message=',
                 ($authResponse ? $authResponse->{message} : 'undef'),
+                ' username=',
+                ($authResponse ? $authResponse->{result}->{username} : 'undef'),
                 ' url=', $url, "\n";
             print STDERR Dumper $authResponse, "\n" if ($authResponse);
             return;
