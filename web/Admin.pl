@@ -1005,6 +1005,7 @@ sub get_jobs_for_user {
     	my @job = @$_;
         #my $wid = $_->{parent_id};
         my $wid = $job[0];
+        #say STDERR $wid;
         next if (defined $wid and defined $workflow_results{$wid}{seen});
         $workflow_results{$wid}{seen}++ if (defined $wid);
 
@@ -1073,39 +1074,55 @@ sub _check_job_args {
 sub get_history_for_user {
     my %opts       = @_;
     my $time_range = $opts{time_range};    # in hours
+    my $timestamp = $opts{timestamp};
+    
+    if ($timestamp) {
+	    $timestamp = "'" . $timestamp . "'";
+    } else {
+    	$timestamp = "'9999-12-31 23:59:59'";
+    }
+    
     $time_range = 24 if ( not defined $time_range or $time_range !~ /[-\d]/ );
     my $include_page_accesses = $opts{include_pages_accesses};
 
     my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
+    
     my @entries;
-    if ( $USER->is_admin ) {
-        if ( $time_range == 0 ) {
-            @entries = $coge->resultset('Log')->search(
-
-                #{ description => { 'not like' => 'page access' } },
-                { type     => { '!='  => 0 } },
-                { order_by => { -desc => 'time' } }
-            );
-        }
-    }
-    else {
-        if ( $time_range == 0 or $time_range == -3 ) {
-            @entries = $coge->resultset('Log')->search(
-                {
-                    user_id => $USER->id,
-
-                    #{ description => { 'not like' => 'page access' } }
-                    type => { '!=' => 0 }
-                },
-                { order_by => { -desc => 'time' } }
-            );
-        }
-    }
+	if ( $USER->is_admin ) {
+		if ( $time_range == 0 ) {
+			@entries = $coge->resultset('Log')->search(
+				{ 
+					'time' => { '<' => \$timestamp }, 
+					type => { '!=' => 0 }
+				},
+				{ 
+					order_by => { -desc => 'time' },
+					rows => 1000
+				}
+			);
+		}
+	}
+	else {
+		if ( $time_range == 0 or $time_range == -3 ) {
+			@entries = $coge->resultset('Log')->search(
+				{
+					user_id => $USER->id,
+					'time' => { '<' => \$timestamp },
+					#{ description => { 'not like' => 'page access' } }
+					type => { '!=' => 0 }
+				},
+				{ 
+					order_by => { -desc => 'time' },
+					rows => 1000
+				}
+			);
+		}
+	}
 
     my @items;
     foreach (@entries) {
-    	#[Date/Time, User, Page, Descrition, Link, Comment]
-        push @items, [
+	    #[Date/Time, User, Page, Descrition, Link, Comment]
+	    push @items, [
 			#id          => $_->id,
 			#starred     => ( $_->status != 0 ),
 			$_->time,
