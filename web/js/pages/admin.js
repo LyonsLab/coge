@@ -928,6 +928,10 @@ function JobGrid(params) {
 	this.data;
 	this.table;
 	
+	this.width = $('#' + this.elementId).outerWidth();
+	this.height = $('#' + this.elementId).outerHeight() - 100;
+	console.log(this.height);
+	
 	this.initialize();
 }
 
@@ -961,8 +965,10 @@ $.extend(JobGrid.prototype, {
     		            	  targets : [0, 1, 2] 
     		              }
     		             ],
-    		iDisplayLength: 25,
+    		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[1, "desc"]],
+    		scrollY: self.height,
+    		lengthChange: false,
 	    });
 		
 		self.get_data.call(self);
@@ -1111,6 +1117,10 @@ function HistGrid(params) {
 	this.data;
 	this.table;
 	this.last_update;
+	this.oldest_timestamp;
+	
+	this.width = $('#' + this.elementId).outerWidth();
+	this.height = $('#' + this.elementId).outerHeight() - 100;
 	
 	this.initialize();
 }
@@ -1128,14 +1138,16 @@ $.extend(HistGrid.prototype, {
 		
 		//Setup table formatting
 		self.table = $('#' + self.elementId + '_table').DataTable({
-    		columnDefs : [
+    		columnDefs: [
     		              { 
     		            	  orderSequence : [ "desc", "asc" ], 
     		            	  targets : [0] 
     		              }
     		             ],
-    		iDisplayLength: 25,
+    		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[0, "desc"]],
+    		scrollY: self.height,
+    		lengthChange: false,
 	    });
 		
 		self.get_data.call(self);
@@ -1145,6 +1157,7 @@ $.extend(HistGrid.prototype, {
 		if(!self.flag) {
 			self.flag = true;
 			self.cancel_update();
+			
 			$.ajax({
 				dataType: 'json',
 			    data: {
@@ -1160,10 +1173,24 @@ $.extend(HistGrid.prototype, {
 				    	.rows.add(self.data)
 				    	.draw();
 			    	console.log(self.data[0][0])
-			    	self.last_update = self.data[0][0];
+			    	
+			    	//Record most recent timestamp
+			    	if (!self.last_update) {
+			    		self.last_update = self.data[0][0];
+			    	}
+			    	
+			    	//Record oldest timestamp
+			    	self.oldest_timestamp = self.data[self.data.length - 1][0];
+			    	console.log(self.oldest_timestamp);
 					
 			    	$('#' + self.elementId + '_loading').hide();
 					$('#' + self.elementId).show();
+					
+
+					//Populate remaining pages
+					if (self.data.length > 0) {
+						self.get_more_data();
+					}
 			    },
 			    complete: function(data) {
 			    	self.flag = false;
@@ -1178,11 +1205,37 @@ $.extend(HistGrid.prototype, {
 				            $(this).addClass('selected');
 				        }
 				    } );
-			    	
-			    	self.schedule_update(5000);
 			    }
 			});
 		}
+	},
+	get_more_data: function() {
+		var self = this;
+		$.ajax({
+			dataType: 'json',
+		    data: {
+		        jquery_ajax: 1,
+		        fname: 'get_history',
+		        time_range: 0,
+		        timestamp: self.oldest_timestamp,
+		    },
+		    success: function(data) {
+		    	//console.log(data)
+		    	self.data = data.data;
+		    	self.table
+			    	//.clear()
+			    	.rows.add(self.data)
+			    	.draw(false);
+			   	
+			   	//Record oldest timestamp && recurse
+		    	if(self.data.length > 0) {
+		    		self.oldest_timestamp = self.data[self.data.length - 1][0];
+					self.get_more_data();
+				} else {
+					self.schedule_update(5000);
+				}
+		    }
+		});
 	},
 	update: function(delay) {
 		var self = this;
@@ -1202,7 +1255,7 @@ $.extend(HistGrid.prototype, {
 						success: function(data) {
 							console.log(data);
 							if(data.new_rows[0]) {
-								self.table.rows.add(data.new_rows).draw();
+								self.table.rows.add(data.new_rows).draw(false);
 								self.last_update = data.new_rows[0][0];
 							}
 						},
