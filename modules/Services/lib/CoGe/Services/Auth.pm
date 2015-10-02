@@ -65,7 +65,7 @@ sub init {
     
         # Add new user to DB
         if (!$user) {
-            # TODO add user to database -- right now the user must login via web site before they can use the API
+            # Add user to database
             print STDERR "CoGe::Services::Auth::init: adding user '", $username, "'\n";
             $user = add_user($coge, $uname, $fname, $lname, $email);
         }
