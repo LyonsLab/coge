@@ -4,7 +4,8 @@ use Mojo::UserAgent;
 use Data::Dumper;
 use URI::Escape::JavaScript qw(unescape);
 use JSON qw(decode_json);
-use CoGe::Accessory::Web qw(get_defaults add_user parse_proxy_response);
+use CoGe::Accessory::Web qw(get_defaults add_user parse_proxy_response jwt_decode_token);
+use File::Spec::Functions qw(catfile);
 
 sub init {
     my $self = shift;
@@ -12,10 +13,11 @@ sub init {
     #print STDERR Dumper $self, "\n";
     my $username  = $self->param('username');
     my $token     = $self->param('token');
-    my $use_cas   = $self->param('use_cas'); # mdb added 7/20/15 for DE
+    my $token2    = $self->req->headers->header('x-iplant-de-jwt'); # mdb added 9/23/15 for DE
     my $remote_ip = $ENV{REMOTE_ADDR}; #$self->req->env->{HTTP_X_FORWARDED_FOR};
     print STDERR "CoGe::Services::Auth::init: username=", ($username ? $username : ''), 
                  " token=", ($token ? $token : ''), 
+                 " token2=", ($token2 ? $token2 : ''), 
                  " remote_ip=", ($remote_ip ? $remote_ip : ''), "\n";
 
     # Get config
@@ -42,7 +44,7 @@ sub init {
         $user = $db->resultset('User')->find( { user_name => $username } );
     }
 
-    # Check for existing user session (browser-only)
+    # Check for existing user session (cookie enabled browser only)
     my $session_id = unescape($self->cookie($conf->{COOKIE_NAME}));
     if ($session_id) {
         #print STDERR "session_id: ", $session_id, "\n";
@@ -55,9 +57,15 @@ sub init {
     }
 
     # Otherwise, try to validate user token
-    if ($token) {
-        my $this_url = $self->req->url->to_abs; # get URL of this request
-        my ($uname, $fname, $lname, $email) = validate($username, $token, $use_cas, $this_url);
+    if ($token || $token2) {
+        my ($uname, $fname, $lname, $email);
+        if ($token) { # Agave
+            ($uname, $fname, $lname, $email) = validate_agave($username, $token);
+        }
+        else { # DE JWT
+            ($uname, $fname, $lname, $email) = validate_jwt($token2, $conf);
+        }
+        
         unless ($uname) {
             print STDERR "CoGe::Services::Auth::init: token validation failed\n";
             return ( $db, undef, $conf );
@@ -65,9 +73,8 @@ sub init {
     
         # Add new user to DB
         if (!$user) {
-            # Add user to database
-            print STDERR "CoGe::Services::Auth::init: adding user '", $username, "'\n";
-            $user = add_user($coge, $uname, $fname, $lname, $email);
+            print STDERR "CoGe::Services::Auth::init: adding user '", $uname, "'\n";
+            $user = add_user($db, $uname, $fname, $lname, $email);
         }
         
         return ( $db, $user, $conf );
@@ -78,83 +85,110 @@ sub init {
     return ( $db, undef, $conf );
 }
 
-sub validate {
-    my ($username, $token, $use_cas, $this_url) = @_;
+sub validate_jwt {
+    my $token = shift;
+    my $conf = shift;
+    return unless $token;
+    print STDERR "CoGe::Services::Auth::validate_jwt\n";
+    
+    # Get path to DE public key file
+    my $de_public_key_path = catfile($conf->{RESOURCEDIR}, $conf->{DE_PUBLIC_KEY});
+    unless ($de_public_key_path) {
+        print STDERR "CoGe::Services::Auth::init: missing DE_PUBLIC_KEY in config file\n";
+        return;
+    }
+    
+    # Decode token and get payload
+    my $claims = jwt_decode_token($token, $de_public_key_path);
+    unless ($claims) {
+        print STDERR "CoGe::Services::Auth::validate_jwt: JWT token decoding failed\n";
+        return;
+    }
+        
+    my $uname = $claims->{'sub'};
+    my $fname = $claims->{'given_name'};
+    my $lname = $claims->{'family_name'};
+    my $email = $claims->{'email'};
+        
+    print STDERR "CoGe::Services::Auth::validate_jwt: success! ", ($uname ? $uname : ''), "\n";
+    return ($uname, $fname, $lname, $email);
+}
+
+sub validate_agave {
+    my ($username, $token) = @_;
     return unless ($username and $token);
-    print STDERR "CoGe::Services::Auth::validate: username=$username token=$token\n";
+    print STDERR "CoGe::Services::Auth::validate_agave: username=$username token=$token\n";
     
     my ($uname, $fname, $lname, $email);
 
     # Note: Mojolicious requires IO::Socket::SSL 1.75, do "cpan upgrade IO::Socket::SSL"
     my $ua = Mojo::UserAgent->new;
-    
+
     # CAS Proxy - mdb added 7/20/15 for DE -------------------------------------
-    if ($use_cas) {
-        # Get URL for CAS
-        my $CAS_URL = get_defaults()->{CAS_URL};
-        unless ($CAS_URL) {
-            print STDERR "CoGe::Services::Auth::validate: missing CAS_URL\n";
-            return;
-        }
-        
-        # Validate proxy ticket and get user credentials
-        $this_url =~ s/\?.+$//; # remove query params
-        my $url = $CAS_URL.'/proxyValidate?service='.$this_url.'&ticket='.$token;
-        my $res = $ua->get($url)->res;
-        print STDERR Dumper $res, "\n";
-        
-        ($uname, $fname, $lname, $email) = parse_proxy_response($res->{content}{asset}{content});
-        unless ($uname) {
-            print STDERR 'CoGe::Services::Auth::validate: CAS failed to authenticate, message=',
-                ' url=', $url, "\n";
-            return;
-        }
-    }
-    # Agave API ---------------------------------------------------------------
-    else {
-        # Get URL for Agave User API endpoint
-        my $USER_API_URL = get_defaults()->{USER_API_URL};
-        unless ($USER_API_URL) {
-            print STDERR "CoGe::Services::Auth::validate: missing USER_API_URL\n";
-            return;
-        }
-        
-        # Validate token and get user credentials.  We lookup the 'me' profile 
-        # for the given token to verify that it belongs to given username.
-        # See "Finding yourself" at http://preview.agaveapi.co/documentation/beginners-guides/user-discovery/
-        my $url = $USER_API_URL . '/me';
-        my $res = $ua->get($url, { Authorization => "Bearer $token" })->res;
-        #print STDERR Dumper $res, "\n";
-        unless ($res and $res->{message} eq 'OK') {
-            print STDERR 'CoGe::Services::Auth::validate: user agent error, message=',
-                ($res ? $res->{message} : 'undef'),
-                ' url=', $url, "\n";
-            print STDERR Dumper $res, "\n" if ($res);
-            return;
-        }
-        
-        # Extract user information and verify that the given username owns the given token
-        my $authResponse = decode_json('{"' . $res->{content}->{post_buffer}); #FIXME this is a hack because the response is malformed for some unknown reason
-        #print STDERR Dumper $authResponse, "\n";
-        unless ($authResponse && $authResponse->{status} =~ /success/i &&
-                $authResponse->{result} && $authResponse->{result}->{username} eq $username)
-        {
-            print STDERR 'CoGe::Services::Auth::validate: Agave failed to authenticate, message=',
-                ($authResponse ? $authResponse->{message} : 'undef'),
-                ' username=',
-                ($authResponse ? $authResponse->{result}->{username} : 'undef'),
-                ' url=', $url, "\n";
-            print STDERR Dumper $authResponse, "\n" if ($authResponse);
-            return;
-        }
-        
-        $uname = $authResponse->{result}->{username};
-        $fname = $authResponse->{result}->{firstName};
-        $lname = $authResponse->{result}->{lastName};
-        $email = $authResponse->{result}->{email};
+#    if ($token_type eq 'cas') {
+#        # Get URL for CAS
+#        my $CAS_URL = get_defaults()->{CAS_URL};
+#        unless ($CAS_URL) {
+#            print STDERR "CoGe::Services::Auth::validate: missing CAS_URL\n";
+#            return;
+#        }
+#        
+#        # Validate proxy ticket and get user credentials
+#        $this_url =~ s/\?.+$//; # remove query params
+#        my $url = $CAS_URL.'/proxyValidate?service='.$this_url.'&ticket='.$token;
+#        my $res = $ua->get($url)->res;
+#        print STDERR Dumper $res, "\n";
+#        
+#        ($uname, $fname, $lname, $email) = parse_proxy_response($res->{content}{asset}{content});
+#        unless ($uname) {
+#            print STDERR 'CoGe::Services::Auth::validate_agave: CAS failed to authenticate, message=',
+#                ' url=', $url, "\n";
+#            return;
+#        }
+#    }
+
+    # Agave API (default) ------------------------------------------------------
+    
+    # Get URL for Agave User API endpoint
+    my $USER_API_URL = get_defaults()->{USER_API_URL};
+    unless ($USER_API_URL) {
+        print STDERR "CoGe::Services::Auth::validate_agave: missing USER_API_URL\n";
+        return;
     }
 
-    print STDERR "CoGe::Services::Auth::validate: success! " . ($uname ? $uname : '') . ' ' . ($this_url ? $this_url : '') . "\n";
+    # Validate token and get user credentials.  We lookup the 'me' profile 
+    # for the given token to verify that it belongs to given username.
+    # See "Finding yourself" at http://preview.agaveapi.co/documentation/beginners-guides/user-discovery/
+    my $url = $USER_API_URL . '/me';
+    my $res = $ua->get($url, { Authorization => "Bearer $token" })->res;
+    #print STDERR Dumper $res, "\n";
+    unless ($res and $res->{message} eq 'OK') {
+        print STDERR 'CoGe::Services::Auth::validate: user agent error, message=',
+            ($res ? $res->{message} : 'undef'),
+            ' url=', $url, "\n";
+        print STDERR Dumper $res, "\n" if ($res);
+        return;
+    }
+    
+    # Extract user information and verify that the given username owns the given token
+    my $authResponse = decode_json('{"' . $res->{content}->{post_buffer}); #FIXME this is a hack because the response is malformed for some unknown reason
+    #print STDERR Dumper $authResponse, "\n";
+    unless ($authResponse && $authResponse->{status} =~ /success/i &&
+            $authResponse->{result} && $authResponse->{result}->{username} eq $username)
+    {
+        print STDERR 'CoGe::Services::Auth::validate_agave: Agave failed to authenticate, message=',
+            ($authResponse ? $authResponse->{message} : 'undef'),
+            ' url=', $url, "\n";
+        print STDERR Dumper $authResponse, "\n" if ($authResponse);
+        return;
+    }
+    
+    $uname = $authResponse->{result}->{username};
+    $fname = $authResponse->{result}->{firstName};
+    $lname = $authResponse->{result}->{lastName};
+    $email = $authResponse->{result}->{email};
+
+    print STDERR "CoGe::Services::Auth::validate_agave: success! ", ($uname ? $uname : ''), "\n";
     return ($uname, $fname, $lname, $email);
 }
 
