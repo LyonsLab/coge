@@ -161,7 +161,6 @@ sub validate_agave {
     # See "Finding yourself" at http://preview.agaveapi.co/documentation/beginners-guides/user-discovery/
     my $url = $USER_API_URL . '/me';
     my $res = $ua->get($url, { Authorization => "Bearer $token" })->res;
-    #print STDERR Dumper $res, "\n";
     unless ($res and $res->{message} eq 'OK') {
         print STDERR 'CoGe::Services::Auth::validate: user agent error, message=',
             ($res ? $res->{message} : 'undef'),
