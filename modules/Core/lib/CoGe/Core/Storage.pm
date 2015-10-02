@@ -673,7 +673,7 @@ sub get_workflow_results {
     push @all_results, @{$results->{results}} if ($results && $results->{results} && @{$results->{results}});
     
     # Get results from path (legacy method)
-    if (-r $results_path) {
+    if ($results_path && -r $results_path) {
         # Get list of result files in results path
         opendir(my $fh, $results_path);
         foreach my $file ( readdir($fh) ) {
