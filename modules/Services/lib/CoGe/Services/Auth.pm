@@ -4,7 +4,7 @@ use Mojo::UserAgent;
 use Data::Dumper;
 use URI::Escape::JavaScript qw(unescape);
 use JSON qw(decode_json);
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw(get_defaults add_user parse_proxy_response);
 
 sub init {
     my $self = shift;
