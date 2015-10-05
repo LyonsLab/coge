@@ -27,7 +27,7 @@ our @EXPORT = qw(
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job create_iget_job
     create_load_annotation_job create_data_retrieval_workflow
-    send_email_job add_items_to_notebook_job
+    send_email_job add_items_to_notebook_job create_hisat2_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -913,7 +913,6 @@ sub create_hisat2_workflow {
         index_files => ($build{outputs}),
         params => $params,
     );
-
     # Return the sam output name and jobs required
     my @tasks = ( \%build, \%hisat2 );
     my %results = (
@@ -923,13 +922,16 @@ sub create_hisat2_workflow {
 }
 
 sub create_hisat2_job {
+    my %opts = @_;
+    my $fasta       = $opts{fasta};
     my $index_files = $opts{index_files};
+    my $staging_dir = $opts{staging_dir};
     my $name = 'genome.reheader';
 
     my $inputs = [
         $fasta,
-        @$fastq,
-        @$validated,
+#        @$fastq,
+#        @$validated,
         @$index_files
     ];
 
@@ -938,6 +940,7 @@ sub create_hisat2_job {
         cmd => $cmd,
         script => undef,
         args => [
+
         ],
         inputs => $inputs,
         outputs => [
