@@ -832,7 +832,9 @@ sub gff {
     $tmp = "##gff-version\t3\n" unless $no_gff_head;
     $tmp .= "##CoGe Dataset ID: ".$ds->id."\n";
     $tmp .= "##CoGe Dataset Name: ". $ds->name."\n" if $ds->name;
-    $tmp .= "##CoGe Dataset Desc: ". $ds->desc."\n" if $ds->desc;
+    my $desc = $ds->desc;
+    $desc =~ s/\n/ /g if $desc;
+    $tmp .= "##CoGe Dataset Desc: ". $desc."\n" if $desc;
     my $output;
     $output .= $tmp if $tmp;
     print $tmp if $print && !$no_gff_head;

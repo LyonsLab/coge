@@ -627,9 +627,9 @@ sub get_workflow_paths {
     my $tmp_path = CoGe::Accessory::Web::get_defaults()->{SECTEMPDIR};
     my ($staging_path, $results_path);
     if (!$user_name) {
-        my $staging_dir = catdir($tmp_path, 'staging');
-        my @tmp = read_dir($staging_dir);
-        my @wdir = grep { -d "$staging_dir/$_/$workflow_id" } read_dir($staging_dir);
+        my $results_dir = catdir($tmp_path, 'results');
+        my @tmp = read_dir($results_dir);
+        my @wdir = grep { -d "$results_dir/$_/$workflow_id" } read_dir($results_dir);
         #print STDERR Dumper "wdir:\n", \@wdir, "\n";
         if (@wdir != 1) {
             warn "Storage::get_workflow_paths ERROR: ambiguous user directory";
@@ -674,7 +674,7 @@ sub get_workflow_results {
     push @all_results, @{$results->{results}} if ($results && $results->{results} && @{$results->{results}});
     
     # Get results from path (legacy method)
-    if (-r $results_path) {
+    if ($results_path && -r $results_path) {
         # Get list of result files in results path
         opendir(my $fh, $results_path);
         foreach my $file ( readdir($fh) ) {
