@@ -904,10 +904,11 @@ sub create_hisat2_workflow {
     my ($index, %build) = create_hisat2_build_job($gid, $fasta);
     
     my %hisat2 = create_hisat2_job(
-        staging_dir => $staging_dir,
         fastq => $fastq,
+        gid => $gid,
         index_files => ($build{outputs}),
-        read_type => $read_type
+        read_type => $read_type,
+        staging_dir => $staging_dir
     );
     
     my %bam = create_samtools_bam_job($hisat2{outputs}->[0], $staging_dir);
@@ -922,6 +923,7 @@ sub create_hisat2_workflow {
 sub create_hisat2_job {
     my %opts = @_;
     my $fastq       = $opts{fastq};
+    my $gid         = $opts{gid};
     my $index_files = $opts{index_files};
     my $read_type   = $opts{read_type};
     my $staging_dir = $opts{staging_dir};
@@ -930,7 +932,8 @@ sub create_hisat2_job {
         cmd => 'nice ' . $CONF->{HISAT2},
         script => undef,
         args => [
-			['-U', $fastq, 1],
+        	['-x', catdir($CONF->{CACHEDIR}, $gid, "hisat2_index"), 0],
+			['-U', '"' . $fastq . '"', 0],
 			['-S', 'hisat2.sam', 0]
         ],
         inputs => [ @$fastq, @$index_files ],
@@ -944,6 +947,7 @@ sub create_hisat2_build_job {
     my $fasta = shift;
 
     my $cache_dir = catdir($CONF->{CACHEDIR}, $gid, "hisat2_index");
+	make_path $cache_dir unless (-d $cache_dir);
     my $name = catfile($cache_dir, 'genome.reheader');
     
     return catdir($cache_dir, $name), (
@@ -951,19 +955,19 @@ sub create_hisat2_build_job {
         script => undef,
         args => [
         	['-p', '8', 0],
-            ["", catfile($cache_dir, 'fasta', $fasta), 0],
+            ["", $fasta, 0],
             ["", $name, 0],
         ],
         inputs => [ $fasta ],
         outputs => [
-            $name . ".1.bt2",
-            $name . ".2.bt2",
-            $name . ".3.bt2",
-            $name . ".4.bt2",
-            $name . ".5.bt2",
-            $name . ".6.bt2",
-            $name . ".7.bt2",
-            $name . ".8.bt2"
+            $name . ".1.ht2",
+            $name . ".2.ht2",
+            $name . ".3.ht2",
+            $name . ".4.ht2",
+            $name . ".5.ht2",
+            $name . ".6.ht2",
+            $name . ".7.ht2",
+            $name . ".8.ht2"
         ],
         description => "Indexing genome sequence with hisat2-build..."
     );
