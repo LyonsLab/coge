@@ -152,6 +152,16 @@
         <div style='clear: both;'> </div>
     </tmpl_if>
         </li>
+        <li>
+    <tmpl_if name="frac_bias">
+        <div class='small link ui-widget-content ui-corner-all padded' style='float:left'
+            onclick="window.open('<tmpl_var name=frac_bias>')">
+            Fractionation Bias<br>
+        <img src="<tmpl_var name=frac_bias>">
+        </div>
+        <div style='clear: both;'> </div>
+    </tmpl_if>
+        </li>
     </ul>
 </div>
 

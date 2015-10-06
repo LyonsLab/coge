@@ -13,13 +13,14 @@ use Parallel::ForkManager;
 use CoGeX;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Core::Storage qw(add_workflow_result);
 use DBIxProfiler;
 
 $| = 1;
 our (
     $cogeweb, $basename, $gid,     $feature, $fasta,  $coge,
     $P,       $TEMPDIR,  $NWALIGN, $DBNAME,  $DBHOST, $DBPORT,
-    $DBUSER,  $DBPASS,   $CONFIG,  $debug
+    $DBUSER,  $DBPASS,   $CONFIG,  $debug,   $wid,    $user_name,
 );
 
 GetOptions(
@@ -28,6 +29,8 @@ GetOptions(
     "fasta|f=s"         => \$fasta,
     "config|cfg=s"      => \$CONFIG,
     "debug"             => \$debug,
+    "wid=s"				=> \$wid,
+    "user_name=s"		=> \$user_name,
 );
 
 $P = CoGe::Accessory::Web::get_defaults($CONFIG);
@@ -235,7 +238,10 @@ sub gen_fasta {
     open( OUT, ">$file" ) || die "Can't open $file for writing: $!";
     print OUT $output;
     close OUT;
-    return 1 if -r $file;
+    if -r $file {
+    	add_workflow_result($user_name, $wid, { fasta => $file });
+    	return 1;
+    }
 
     CoGe::Accessory::Web::write_log( "Error with fasta file creation", $cogeweb->logfile );
     return 0;
