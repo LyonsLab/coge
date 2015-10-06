@@ -364,7 +364,6 @@ $.extend(AlignmentView.prototype, {
 
     is_valid: function() {
         var aligner = this.el.find("#alignment :checked").val();
-
         // Pick the aligner and set the options
         if (aligner === "gsnap") {
             this.data = {
@@ -383,7 +382,7 @@ $.extend(AlignmentView.prototype, {
                     '--quality-base': this.el.find("[id='--quality-base']").val()
                 }
             };
-        } else if (aligner == "tophat") {
+        } else if (aligner === "tophat") {
             this.data = {
                 alignment_params: {
                     tool: "tophat",
