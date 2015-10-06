@@ -393,9 +393,9 @@ function load(experiment) {
 
 function launch(experiment) {
 	//AKB - Code to Add Div Above Wizard
-	//$('#wizard').before('<div> I AM A NEW DIV YAYYYYYYY!!!!!!</div>');
+	$('#wizard').before('<div id="analysis"> I AM A NEW DIV YAYYYYYYY!!!!!!</div>');
 
-	coge.progress.begin();
+	//coge.progress.begin();
     this.xgid = experiment.x_gid;
     this.ygid = experiment.y_gid;
     this.zgid = experiment.z_gid;
@@ -427,7 +427,17 @@ function launch(experiment) {
 			ks_type: 'kn_ks'
 		}
     };
-
+    var api_link = 'https://geco.iplantc.org/sdavey/coge/api/v1/jobs?username=' + USER_NAME;
+    $.ajax(api_link, {
+        method: 'PUT',
+        data: xy_request,
+        success: function(data) {
+            alert(data.id);
+            console.log(data);
+        }
+    });
+ 
+    /*
     coge.services.submit_job(xy_request)
 		.done(function(response) {
 	    	if (!response) {
@@ -446,7 +456,7 @@ function launch(experiment) {
 		})
 		.fail(function(jqXHR, textStatus, errorThrown) {
 			coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-		})
+		})*/
 
     console.log(experiment);
 };
