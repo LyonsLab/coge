@@ -927,6 +927,10 @@ function JobGrid(params) {
 	this.data;
 	this.table;
 	
+	this.width = $('#' + this.elementId).outerWidth();
+	this.height = $('#' + this.elementId).outerHeight() - 100;
+	console.log(this.height);
+	
 	this.initialize();
 }
 
@@ -960,8 +964,10 @@ $.extend(JobGrid.prototype, {
     		            	  targets : [0, 1, 2] 
     		              }
     		             ],
-    		iDisplayLength: 25,
+    		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[1, "desc"]],
+    		scrollY: self.height,
+    		lengthChange: false,
 	    });
 		
 		self.get_data.call(self);
@@ -1111,6 +1117,9 @@ function HistGrid(params) {
 	this.table;
 	this.last_update;
 	
+	this.width = $('#' + this.elementId).outerWidth();
+	this.height = $('#' + this.elementId).outerHeight() - 100;
+	
 	this.initialize();
 }
 
@@ -1127,14 +1136,16 @@ $.extend(HistGrid.prototype, {
 		
 		//Setup table formatting
 		self.table = $('#' + self.elementId + '_table').DataTable({
-    		columnDefs : [
+    		columnDefs: [
     		              { 
     		            	  orderSequence : [ "desc", "asc" ], 
     		            	  targets : [0] 
     		              }
     		             ],
-    		iDisplayLength: 25,
+    		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[0, "desc"]],
+    		scrollY: self.height,
+    		lengthChange: false,
 	    });
 		
 		self.get_data.call(self);
