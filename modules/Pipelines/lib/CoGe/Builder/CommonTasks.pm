@@ -898,54 +898,43 @@ sub create_hisat2_workflow {
     my $gid = $opts{gid};
     my $fasta = $opts{fasta};
     my $fastq = $opts{fastq};
-    my $validated = $opts{validated};
+    my $read_type = $opts{'read_type'} // "single"; #/
     my $staging_dir = $opts{staging_dir};
-    my $params = $opts{params};
 
     my ($index, %build) = create_hisat2_build_job($gid, $fasta);
     
     my %hisat2 = create_hisat2_job(
         staging_dir => $staging_dir,
-        fasta => $fasta,
         fastq => $fastq,
-        validated => $validated,
-        index_name => $index,
         index_files => ($build{outputs}),
-        params => $params,
+        read_type => $read_type
     );
-    # Return the sam output name and jobs required
-    my @tasks = ( \%build, \%hisat2 );
+    
+    my %bam = create_samtools_bam_job($hisat2{outputs}->[0], $staging_dir);
+
+    my @tasks = ( \%build, \%hisat2, \%bam );
     my %results = (
-        sam_file => $hisat2{outputs}->[0]
+        bam_file => $bam{outputs}->[0]
     );
     return \@tasks, \%results;
 }
 
 sub create_hisat2_job {
     my %opts = @_;
-    my $fasta       = $opts{fasta};
+    my $fastq       = $opts{fastq};
     my $index_files = $opts{index_files};
+    my $read_type   = $opts{read_type};
     my $staging_dir = $opts{staging_dir};
-    my $name = 'genome.reheader';
 
-    my $inputs = [
-        $fasta,
-#        @$fastq,
-#        @$validated,
-        @$index_files
-    ];
-
-    my $cmd = 'nice ' . $CONF->{HISAT2};
     return (
-        cmd => $cmd,
+        cmd => 'nice ' . $CONF->{HISAT2},
         script => undef,
         args => [
-
+			['-U', $fastq, 1],
+			['-S', 'hisat2.sam', 0]
         ],
-        inputs => $inputs,
-        outputs => [
-            catfile($staging_dir, "accepted_hits.sam")
-        ],
+        inputs => [ @$fastq, @$index_files ],
+        outputs => [ catfile($staging_dir, 'hisat2.sam') ],
         description => "Aligning sequences (HISAT2)..."
     );
 }
@@ -953,32 +942,28 @@ sub create_hisat2_job {
 sub create_hisat2_build_job {
     my $gid = shift;
     my $fasta = shift;
-    my $name = 'genome.reheader';
-    
-    my $cmd = 'nice ' . $CONF->{HISAT2_BUILD};
-    my $cache_dir = catdir($CONF->{CACHEDIR}, $gid, "hisat2_index");
-    die "ERROR: HISAT2_BUILD is not in the config." unless ($cmd);
 
+    my $cache_dir = catdir($CONF->{CACHEDIR}, $gid, "hisat2_index");
+    my $name = catfile($cache_dir, 'genome.reheader');
+    
     return catdir($cache_dir, $name), (
-        cmd => $cmd,
+        cmd => 'nice ' . $CONF->{HISAT2_BUILD},
         script => undef,
         args => [
         	['-p', '8', 0],
-            ["", $fasta, 1],
+            ["", catfile($cache_dir, 'fasta', $fasta), 0],
             ["", $name, 0],
         ],
-        inputs => [
-            $fasta
-        ],
+        inputs => [ $fasta ],
         outputs => [
-            catfile($cache_dir, $name . ".1.bt2"),
-            catfile($cache_dir, $name . ".2.bt2"),
-            catfile($cache_dir, $name . ".3.bt2"),
-            catfile($cache_dir, $name . ".4.bt2"),
-            catfile($cache_dir, $name . ".5.bt2"),
-            catfile($cache_dir, $name . ".6.bt2"),
-            catfile($cache_dir, $name . ".7.bt2"),
-            catfile($cache_dir, $name . ".8.bt2")
+            $name . ".1.bt2",
+            $name . ".2.bt2",
+            $name . ".3.bt2",
+            $name . ".4.bt2",
+            $name . ".5.bt2",
+            $name . ".6.bt2",
+            $name . ".7.bt2",
+            $name . ".8.bt2"
         ],
         description => "Indexing genome sequence with hisat2-build..."
     );
