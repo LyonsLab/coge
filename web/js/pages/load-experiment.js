@@ -345,7 +345,8 @@ $.extend(AlignmentView.prototype, {
         this.align_container = this.el.find("#align-container");
         this.align_templates = {
             gsnap: $($("#gsnap-template").html()),
-            tophat: $($("#tophat-template").html())
+            tophat: $($("#tophat-template").html()),
+            hisat2: $($("#hisat2-template").html())
         };
     },
 
@@ -363,7 +364,6 @@ $.extend(AlignmentView.prototype, {
 
     is_valid: function() {
         var aligner = this.el.find("#alignment :checked").val();
-
         // Pick the aligner and set the options
         if (aligner === "gsnap") {
             this.data = {
@@ -382,7 +382,7 @@ $.extend(AlignmentView.prototype, {
                     '--quality-base': this.el.find("[id='--quality-base']").val()
                 }
             };
-        } else {
+        } else if (aligner === "tophat") {
             this.data = {
                 alignment_params: {
                     tool: "tophat",
@@ -390,6 +390,13 @@ $.extend(AlignmentView.prototype, {
                     read_type: this.el.find("#read_type :checked").val()
                 }
             }
+        } else {
+        	this.data = {
+        		alignment_params: {
+        			tool: "hisat2",
+        			'--phred33': this.el.find("[id='--phred33']").is(":checked")
+        		}
+        	}
         }
 
         return true;
