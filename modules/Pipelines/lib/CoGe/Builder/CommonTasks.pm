@@ -932,8 +932,8 @@ sub create_hisat2_job {
         cmd => 'nice ' . $CONF->{HISAT2},
         script => undef,
         args => [
-        	['-x', catdir($CONF->{CACHEDIR}, $gid, "hisat2_index"), 0],
-			['-U', '"' . $fastq . '"', 0],
+        	['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
+			['-U', join(',', @$fastq), 0],
 			['-S', 'hisat2.sam', 0]
         ],
         inputs => [ @$fastq, @$index_files ],
