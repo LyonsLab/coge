@@ -1,1 +1,1 @@
-cd modules; perl Makefile.PL lib=./perl; make install; 
+cd ~/dev/coge/modules; perl Makefile.PL lib=./perl; make install; 
