@@ -74,6 +74,7 @@ $node_types = CoGeX::node_types();
     activity_viz  		=> 105,
     activity_analyses	=> 106,
     activity_loads      => 107,
+    metadata			=> 108,
     user          		=> $node_types->{user},
     group         		=> $node_types->{group},
     notebook      		=> $node_types->{list},
@@ -1328,13 +1329,15 @@ sub get_contents {
     elsif ( $type eq 'notebook' ) {
         $items = get_lists_for_user($DB->storage->dbh, $USER->id);
     }
+    elsif ( $type eq 'metadata' ) {
+    	return get_metadata_pane();
+    }
     elsif ( $type eq 'group' ) {
         $items = get_groups_for_user($DB->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'activity' ) {
         my $jobs = get_jobs($last_update);
-        my $summary_html = summarize_jobs($jobs);
-        return $summary_html;
+        return summarize_jobs($jobs);
     }
     elsif ( $type eq 'analyses' ) {
         my $jobs = get_jobs($last_update);
@@ -1379,6 +1382,14 @@ sub get_contents {
 
 #    print STDERR Dumper \@items, "\n";
     return encode_json($items);
+}
+
+sub get_metadata_pane {
+	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+	$template->param(
+		METADATA => 1
+	);
+	return $template->output;
 }
 
 sub get_jobs {

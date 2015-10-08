@@ -18,3 +18,4 @@ web/js/jbrowse/plugins/*
 !web/js/jbrowse/plugins/
 !web/js/jbrowse/plugins/CoGe
 \#*\#
+modules/perl

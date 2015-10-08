@@ -84,6 +84,21 @@
 	<div onClick="create_new_notebook();" class="r ui-button ui-corner-all coge-button">Create Notebook</div>
 </div>
 
+<div id="upload_experiment_metadata_dialog" class="dialog_box hidden" title="Upload Experiment Metadata">
+	<table class="small">
+		<tr>
+			<td colspan="2" style="padding-bottom: 10px;">
+				Select the tab delimited file containing the metadata. The first row must contain the names for the columns. The first column of the following rows must contain a comma delimited list of experiment IDs indicating to which experiments the metadata for that row will be added.
+			</td>
+		</tr>
+		<tr>
+			<td><input id="experiment_metadata_file" name="file" type="file" required/></td>
+		</tr>
+	</table>
+	<br />
+	<div onClick="if(!$('#experiment_metadata_file').val())alert('Please choose the file to upload.');else upload_experiment_metadata();" class="r ui-button ui-corner-all coge-button">Upload</div>
+</div>
+
 <div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
 
 <div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
@@ -192,6 +207,7 @@ div.deleted { display: none; }
 					</ul>
 				</li>
 				<li><span data-type="notebook">Notebooks</span></li>
+				<li><span data-type="metadata">Metadata</span></li>
 				<li><span data-type="group">User Groups</span></li>
 				<li><span data-type="shared">Shared with me</span></li>
 				<li><span data-type="activity">Activity</span>
@@ -252,7 +268,8 @@ div.deleted { display: none; }
 //	group: 				'<TMPL_VAR NAME="ITEM_TYPE.GROUP">',
 //	notebook: 			'<TMPL_VAR NAME="ITEM_TYPE.NOTEBOOK">',
 //	genome: 			'<TMPL_VAR NAME="ITEM_TYPE.GENOME">',
-//	experiment: 		'<TMPL_VAR NAME="ITEM_TYPE.EXPERIMENT">'
+//	experiment: 		'<TMPL_VAR NAME="ITEM_TYPE.EXPERIMENT">',
+//	metadata: 			'<TMPL_VAR NAME="ITEM_TYPE.METADATA">'
 //};
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 const USER_ID = '<TMPL_VAR NAME="USER_ID">';
@@ -505,3 +522,23 @@ $(function(){
 	<TMPL_INCLUDE NAME="widgets/Login.tmpl">
 </TMPL_IF>
 
+<TMPL_IF NAME='METADATA'>
+	<br>
+	<table style="table-layout:fixed;width:100%;">
+		<tr>
+			<td>
+				<div class="bold text padded">Experiments</div>
+				<span onclick="upload_experiment_metadata_dialog();" class="ui-button ui-corner-all coge-button">Upload</span>
+			</td>
+			<td>
+				<div class="bold text padded">Genomes</div>
+				<span onclick="upload_experiment_metadata_dialog();" class="ui-button ui-corner-all coge-button">Upload</span>
+			</td>
+			<td>
+				<div class="bold text padded">Notebooks</div>
+				<span onclick="upload_experiment_metadata_dialog();" class="ui-button ui-corner-all coge-button">Upload</span>
+			</td>
+		</tr>
+	</table>
+	<br>
+</TMPL_IF>
