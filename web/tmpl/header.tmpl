@@ -37,10 +37,7 @@
 	.glyphicon-search:before {
 		content: "\e003";
 	}
-	.container {
-		background-color: #E7F5E7;
-	}
-	#search input#search_token {
+	/*#search input#search_token {
 		width: 40em;
 		height: 2em;
 		background: #ffffff;
@@ -48,13 +45,13 @@
 		font-size: 1em;
 		float: left;
 		color: #119911;
-	}
-	#search_button {
+	}*/
+	/*#search_button {
 		width: 4em;
 		height: 2.4em;
-		margin-left: 0.5em;
+		padding-left: 0.5em;
 		border-color:#65d022;
-	}
+	}*/
 </style>
 
 <TMPL_VAR NAME="HEAD">
@@ -66,7 +63,7 @@
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
 
-<div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
+<div id="logout_dialog" class="collapse dialog_box" title="Log out of CoGe">
     <div style="text-align:center;padding:30px;">
         <div class="info">Would you like to log out of all iPlant applications?</div>
         <br><br>
@@ -164,6 +161,13 @@ function search() {
 	window.location.href = "SearchResults.pl?s=" + token;
 }
 
+function searchKey(event) {
+	if (event.which == 13) {
+		event.preventDefault(); //Without this, the page just reloads
+		search();
+	}
+}
+
 </script>
 
 <div style="min-height:100%">
@@ -240,32 +244,45 @@ function search() {
     </noscript>
 -->
 
-<nav class="navbar navbar-default" style="height:5em">
-	<div id="main" class="container" style="height:5em;width:100%">
-		<div id="logo" style="float:left;width:15%;">
-			<!--<img style="vertical-align:bottom;height:2.5em;margin:0.5em" class="l" src='picts/CoGe.svg'>-->
-			<div style="float:left;margin-left:0.5em;margin-top:0em"><font face="impact" color="#41AD41" size="20">CoGe</font></div>
-			<!--<img style="margin-top:0.5em;height:2.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>-->
-		</div>
-		<div id="search" style="float:left;width:45%;">
-			<div id="searchBar" class="inline padded ui-corner-all" style="margin-top:1em;">
-		    	<td>
-		        	<input id="search_token" type="search" id="search_token" placeholder="Search Database" spellcheck="false" />
-				</td>
-				<span id="search_button" class="ui-button coge-button ui-state-active" onclick="search()">
-	            	<span style="margin-top:0.25em;font-size:15;" class="glyphicon glyphicon-search"></span>
-	            </span>
+<nav class="navbar navbar-default" style="height:5em;background-color:#E7F5E7;">
+	<div id="main" class="container-fluid" style="width:100%;background-color:#E7F5E7;">
+	
+		<!--Header contains logo and search bar-->
+		<div class="navbar-header" style="padding-top:0.5em;">
+			<div id="logo" class="navbar-brand"> <!-- style="float:left;width:15%;" -->
+				<div><!--style="float:left;padding-left:0.5em;padding-top:0em"-->
+					<font face="impact" color="#41AD41" size="20">CoGe</font>
+				</div>
 			</div>
+			
+			<form class="navbar-form navbar-left" role="search">
+		        <div class="form-group">
+		        	<input id="search_token" style="width:40vw;" type="text" class="form-control" placeholder="Search Database" spellcheck="false" onkeypress="searchKey(event)">
+		        </div>
+		        <button id="search_button" type="button" class="btn btn-default" style="border-color:#65d022;"onclick="search();">
+		        	<span style="font-size:1.4em;" class="glyphicon glyphicon-search"></span>
+		        </button>
+	        </form>
+			
+			<!--<div id="search" style="float:left;width:45%;">
+				<div id="searchBar" class="inline padded ui-corner-all" style="padding-top:1em;">
+			    	<td>
+			        	<input id="search_token" type="search" placeholder="Search Database" spellcheck="false" onkeypress="searchKey(event)"/ >
+					</td>
+					<span id="search_button" class="ui-button coge-button ui-state-active" onclick="search();">
+		            	<span style="padding-top:0.25em;font-size:15;" class="glyphicon glyphicon-search"></span>
+		            </span>
+				</div>
+			</div>-->
 		</div>
-		<div id="login" style="float:right;width:10%">
-			<button id="login_button" class="ui-button ui-corner-all coge-button" style="margin-top:1em;margin-right:2em;background:white;color:#119911;">Log in</button>
-		</div>
-		<div class="collapse navbar-collapse" id="menu" style="float:left;width:25%;margin-top:1em;">
+		
+		<!--Buttons-->
+		<div class="collapse navbar-collapse navbar-right" id="menu"> <!-- style="float:left;width:25%;padding-top:1em;padding-right:2em;"-->
 			<ul class="nav navbar-nav">
-				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">Profile</li>
-				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">History</li>
-				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;">Admin</li>
-				<li class="dropdown">
+				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;margin-top:1.75em">Profile</li>
+				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;margin-top:1.75em">History</li>
+				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;margin-top:1.75em">Admin</li>
+				<li class="dropdown" style="padding-top:0.5em;">
 					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools <span class="caret"></span></a>
 					<ul class="dropdown-menu">
 						<li><a href="#">1</a></li>
@@ -273,13 +290,22 @@ function search() {
 						<li><a href="#">3</a></li>
 					</ul>
 				</li>
-				<li class="dropdown">
+				<li class="dropdown" style="padding-top:0.5em;">
 					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
 					<ul class="dropdown-menu">
 						<li><a href="#">1</a></li>
 						<li><a href="#">2</a></li>
 						<li><a href="#">3</a></li>
 					</ul>
+				</li>
+				<li>
+					<div id="login"> <!-- style="float:right;width:10%"-->
+						<TMPL_IF NAME="LOGON">
+							<input type="image" src="image.pl" style="height:50%;margin-top:1em;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
+						<TMPL_ELSE>
+							<button id="login_button" class="ui-button ui-corner-all coge-button" style="padding-top:1.75em;background:white;color:#119911;" onClick="login_cas();return true;">Log in</button>
+						</TMPL_IF>
+					</div>
 				</li>
 			</ul>
 		</div>
