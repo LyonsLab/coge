@@ -962,7 +962,13 @@ $.extend(JobGrid.prototype, {
     		              { 
     		            	  orderSequence : [ "desc", "asc" ], 
     		            	  targets : [0, 1, 2] 
-    		              }
+    		              },
+    		              {
+     		            	 "render": function ( data, type, full, meta ) {
+     		            	      return '<a href="'+data+'" target="_blank">'+data+'</a>';
+     		            	 },
+     		            	 targets : 6
+     		             }
     		             ],
     		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[1, "desc"]],
@@ -1116,6 +1122,7 @@ function HistGrid(params) {
 	this.data;
 	this.table;
 	this.last_update;
+	this.oldest_timestamp;
 	
 	this.width = $('#' + this.elementId).outerWidth();
 	this.height = $('#' + this.elementId).outerHeight() - 100;
@@ -1137,11 +1144,25 @@ $.extend(HistGrid.prototype, {
 		//Setup table formatting
 		self.table = $('#' + self.elementId + '_table').DataTable({
     		columnDefs: [
-    		              { 
-    		            	  orderSequence : [ "desc", "asc" ], 
-    		            	  targets : [0] 
-    		              }
-    		             ],
+    		             { 
+    		            	 orderSequence : [ "desc", "asc" ], 
+    		            	 targets : 0 
+    		             },
+    		             {
+    		            	 "render": function ( data, type, full, meta ) {
+    		            	      return '<a href="'+data+'" target="_blank">'+data+'</a>';
+    		            	 },
+    		            	 targets : 4
+    		             }
+    		            ],
+    		columns:	[
+    		        	 { data: 0 },
+    		        	 { data: 1 },
+    		        	 { data: 2 },
+    		        	 { data: 3 },
+    		        	 { data: 4 },
+    		        	 { data: 5 }
+    		        	],
     		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[0, "desc"]],
     		scrollY: self.height,
@@ -1155,6 +1176,7 @@ $.extend(HistGrid.prototype, {
 		if(!self.flag) {
 			self.flag = true;
 			self.cancel_update();
+			
 			$.ajax({
 				dataType: 'json',
 			    data: {
@@ -1170,10 +1192,24 @@ $.extend(HistGrid.prototype, {
 				    	.rows.add(self.data)
 				    	.draw();
 			    	console.log(self.data[0][0])
-			    	self.last_update = self.data[0][0];
+			    	
+			    	//Record most recent timestamp
+			    	if (!self.last_update) {
+			    		self.last_update = self.data[0][0];
+			    	}
+			    	
+			    	//Record oldest timestamp
+			    	self.oldest_timestamp = self.data[self.data.length - 1][0];
+			    	console.log(self.oldest_timestamp);
 					
 			    	$('#' + self.elementId + '_loading').hide();
 					$('#' + self.elementId).show();
+					
+
+					//Populate remaining pages
+					if (self.data.length > 0) {
+						self.get_more_data();
+					}
 			    },
 			    complete: function(data) {
 			    	self.flag = false;
@@ -1188,11 +1224,37 @@ $.extend(HistGrid.prototype, {
 				            $(this).addClass('selected');
 				        }
 				    } );
-			    	
-			    	self.schedule_update(5000);
 			    }
 			});
 		}
+	},
+	get_more_data: function() {
+		var self = this;
+		$.ajax({
+			dataType: 'json',
+		    data: {
+		        jquery_ajax: 1,
+		        fname: 'get_history',
+		        time_range: 0,
+		        timestamp: self.oldest_timestamp,
+		    },
+		    success: function(data) {
+		    	//console.log(data)
+		    	self.data = data.data;
+		    	self.table
+			    	//.clear()
+			    	.rows.add(self.data)
+			    	.draw(false);
+			   	
+			   	//Record oldest timestamp && recurse
+		    	if(self.data.length > 0) {
+		    		self.oldest_timestamp = self.data[self.data.length - 1][0];
+					self.get_more_data();
+				} else {
+					self.schedule_update(5000);
+				}
+		    }
+		});
 	},
 	update: function(delay) {
 		var self = this;
@@ -1212,7 +1274,7 @@ $.extend(HistGrid.prototype, {
 						success: function(data) {
 							console.log(data);
 							if(data.new_rows[0]) {
-								self.table.rows.add(data.new_rows).draw();
+								self.table.rows.add(data.new_rows).draw(false);
 								self.last_update = data.new_rows[0][0];
 							}
 						},

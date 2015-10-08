@@ -277,6 +277,8 @@
 	            <label for="gsnap">GSNAP</label>
 	            <input name="aligner" type="radio" value="tophat">
 	            <label for="gsnap">TopHat/Bowtie2</label>
+	            <input name="aligner" type="radio" value="hisat2">
+				<label>HISAT2</label>
 	        </div>
 	        
 	        <label class="col-md-2 coge-padded-top">Read Type:</label>
@@ -290,6 +292,21 @@
 	
 	    <div id="align-container" class="hidden"></div>
 	</div>
+</script>
+
+<script id="hisat2-template" type="text/template">
+    <div id="hisat2">
+        <div class="form-field">
+            <label class="col-md-2">HISAT2: (<a href="http://ccb.jhu.edu/software/hisat2/manual.shtml#paired-end-example" target="_blank" class="small link">docs</a>)</label>
+            <div>
+                <label>encoding:</label>
+				<input id="--phred33" name="hisat2_encoding" type="radio" value="33" checked>
+				<label>phred33</label>
+				<input name="hisat2_encoding" type="radio" value="64">
+				<label>phred64</label>
+            </div>
+        </div>
+    </div>
 </script>
 
 <script id="tophat-template" type="text/template">

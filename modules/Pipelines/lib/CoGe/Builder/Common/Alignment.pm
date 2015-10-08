@@ -70,7 +70,6 @@ sub build {
         
         # Validate
         my $validate_task = create_validate_fastq_job($input_file, $done_file);
-        print STDERR Dumper $validate_task, "\n";
         push @validated, @{$validate_task->{outputs}}[0];
         push @tasks, $validate_task;
     }
@@ -142,7 +141,17 @@ sub build {
     
     # Add aligner workflow
     my ($alignment_tasks, $alignment_results);
-    if ($alignment_params && $alignment_params->{tool} eq 'tophat') {
+    if ($alignment_params && $alignment_params->{tool} eq 'hisat2') {
+        ($alignment_tasks, $alignment_results) = create_hisat2_workflow(
+            gid => $gid,
+            fasta => $fasta,
+        	fastq => \@trimmed,
+            read_type => $alignment_params->{read_type},
+            staging_dir => $staging_dir,
+            params => $alignment_params,
+        );    	
+    }
+    elsif ($alignment_params && $alignment_params->{tool} eq 'tophat') {
         # Generate gff if genome annotated
         my $gff_file;
         if ( $genome->has_gene_features ) {

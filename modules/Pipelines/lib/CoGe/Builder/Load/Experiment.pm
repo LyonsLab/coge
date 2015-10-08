@@ -95,7 +95,7 @@ sub build {
             
             my $annotations = CoGe::Core::Metadata::to_annotations($additional_metadata);
             
-            push @tasks, create_load_bam_job(
+            my $bam_task = create_load_bam_job(
                 user => $self->user,
                 metadata => $metadata,
                 annotations => $annotations,
@@ -104,6 +104,8 @@ sub build {
                 gid => $gid,
                 bam_file => $bam_file
             );
+            push @tasks, $bam_task;
+            push @done_files, $bam_task->{outputs}->[1];
         }
         else { # error -- should never happen
             die "invalid file type";
@@ -158,7 +160,7 @@ sub build {
         my $annotations = CoGe::Core::Metadata::to_annotations($additional_metadata);
         
         # Submit workflow to generate experiment
-        my $job = create_load_experiment_job(
+        my $load_task = create_load_experiment_job(
             user => $self->user,
             staging_dir => $staging_dir,
             wid => $self->workflow->id,
@@ -168,8 +170,8 @@ sub build {
             annotations => $annotations,
             normalize => $self->params->{normalize} ? $self->params->{normalize_method} : 0
         );
-        push @tasks, $job;
-        push @done_files, $job->{outputs}->[1];
+        push @tasks, $load_task;
+        push @done_files, $load_task->{outputs}->[1];
     }
     
     # Create notebook
