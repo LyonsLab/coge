@@ -2135,7 +2135,7 @@ sub go {
             push @ksargs, [ '--blockfile', $ks_blocks_file,         1 ];
 
             $workflow->add_job({
-                cmd         => $KSCALC,
+                cmd         => "nice $KSCALC",
                 script      => undef,
                 args        => \@ksargs,
                 inputs      => [$final_dagchainer_file],
