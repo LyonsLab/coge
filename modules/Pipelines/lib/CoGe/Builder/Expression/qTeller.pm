@@ -151,7 +151,7 @@ sub generate_additional_metadata {
 
 sub create_cufflinks_job { #TODO move into CommonTasks.pm
     my ($gff, $fasta, $bam, $staging_dir) = @_;
-    my $cmd = $CONF->{CUFFLINKS};
+    my $cmd = 'nice ' . $CONF->{CUFFLINKS};
     die "ERROR: CUFFLINKS is not in the config." unless ($cmd);
 
     return {
