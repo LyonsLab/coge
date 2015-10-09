@@ -391,74 +391,190 @@ function load(experiment) {
 }
 */
 
-function launch(experiment) {
-	//AKB - Code to Add Div Above Wizard
-	$('#wizard').before('<div id="analysis"> I AM A NEW DIV YAYYYYYYY!!!!!!</div>');
+function getBgColor(slideValue) {
+    var colorCodes = ["#f5f5f5", "#dcdcdc", "#c4c4c4", "#ababab", "#939393",
+                      "#7a7a7a", "#626262", "#494949", "#313131", "#181818"];
+    return colorCodes[slideValue-1];
+}
 
-	//coge.progress.begin();
-    this.xgid = experiment.x_gid;
-    this.ygid = experiment.y_gid;
-    this.zgid = experiment.z_gid;
+var visVisible = false;
+function showVisualizer(data) {
+    console.log(data)
+
+    if (visVisible) {
+        //Refresh function can go here.
+    } else {
+        $('#analysis').css("display", "");
+	    //$('#wizard').before('<div id="analysis">Visualizer DIV!</div>');
+    }
+
+    $(document).ready( function() {
+        /* Halt scrolling when controlling visualization. */
+        $('#canvas').hover( function() {
+            $("body").css("overflow", "hidden");
+        }, function() {
+            $("body").css("overflow", "scroll");
+        });
+
+        /* Change background color with slider */
+        var renderDiv = $("#rendering");
+        var bg_slider = $("#bgslider");
+        renderDiv.css("background-color", getBgColor(bg_slider.val()));
+        bg_slider.change( function() {
+            renderDiv.css("background-color", getBgColor(bg_slider.val()));
+        });
+    });
+}
+
+function launch(experiment) {
+    var xgid = experiment.x_gid;
+    var ygid = experiment.y_gid;
+    var zgid = experiment.z_gid;
+    var final_experiment = experiment;
+    final_experiment.links = {};
+    var fileDir = "/home/asherkhb/repos/coge/web/data/diags/"
+    var fileTag = ".CDS_CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks" 
+    
     var xy_request = {
-    	type: 'synmap',
-		requester: {
-			page:      PAGE_NAME,
-			user_name: USER_NAME
-		},
-		parameters: {
-			genome_id1: this.xgid,
-			genome_id2: this.ygid,
-			ks_type: 'kn_ks'
-		}
+        type: 'synmap',
+        requester: {
+		    page:      PAGE_NAME,
+		    user_name: USER_NAME
+	    },
+        parameters: {
+            genome_id1: xgid,
+            genome_id2: ygid,
+            ks_type: "kn_ks"
+        }
     };
     var xz_request = {
     	type: 'synmap',
 		parameters: {
-			genome_id1: this.xgid,
-			genome_id2: this.zgid,
+			genome_id1: xgid,
+			genome_id2: zgid,
 			ks_type: 'kn_ks'
 		}
     };
     var yz_request = {
     	type: 'synmap',
 		parameters: {
-			genome_id1: this.ygid,
-			genome_id2: this.zgid,
+			genome_id1: ygid,
+			genome_id2: zgid,
 			ks_type: 'kn_ks'
 		}
     };
-    var api_link = 'https://geco.iplantc.org/sdavey/coge/api/v1/jobs?username=' + USER_NAME;
-    $.ajax(api_link, {
-        method: 'PUT',
-        data: xy_request,
-        success: function(data) {
-            alert(data.id);
-            console.log(data);
+  
+    function buildLink(id1, id2) {
+        var link = ''
+        if (parseInt(id1, 10) <= parseInt(id2, 10)) {
+            link = fileDir + id1 + '/' + id2 + '/' + id1 + '_' + id2 + fileTag;
         }
-    });
- 
-    /*
-    coge.services.submit_job(xy_request)
-		.done(function(response) {
-	    	if (!response) {
-				coge.progress.failed("Error: empty response from server");
-				return;
-	    	}
-	    	else if (!response.success || !response.id) {
-				coge.progress.failed("Error: failed to start workflow", response.error);
-	    	}
-			else if (response.success) {
-				console.log("SUCCESS!!!");
-			}
-			//Start status update
-            window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to browser URL
-			coge.progress.update(response.id, response.site_url);
-		})
-		.fail(function(jqXHR, textStatus, errorThrown) {
-			coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-		})*/
+        else {
+            link = fileDir + id2 + '/' + id1 + '/' + id2 + '_' + id1 + fileTag;
+        }
+        return link;
+    } 
+    // Compute XY Comparison
+    // onSuccess: Launch XZ Comparison
+    function makeXY() {
+        coge.progress.init({title: "Running Analysis 1/3",
+                            onSuccess: function(results) {
+                                coge.progress.end();
+                                final_experiment.links.xy = buildLink(xgid, ygid);
+                                makeXZ();
+                            } 
+                           });
+        coge.progress.begin()
+        
+        coge.services.submit_job(xy_request)
+            .done(function(response) {
+                if (!response) {
+                    coge.progress.failed("Error: empty response from server");
+                    return;
+                }
+                else if (!response.success || !response.id) {
+                    coge.progress.failed("Error: failed to start workflow", response.error);
+                }
+                else if (response.success) {
+                    console.log("SUCCESS!!!");
+                }
+                //Start status update
+                window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to browser URL
+                coge.progress.update(response.id, response.site_url);
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+            })
+    }
+    
+    // Compute XZ Comparison
+    // onSuccess: Launch YZ Comparison
+    function makeXZ() { 
+        coge.progress.init({title: "Running Analysis 2/3",
+                            onSuccess: function(results) {
+                                coge.progress.end();
+                                final_experiment.links.xz = buildLink(xgid, zgid);
+                                makeYZ();
+                            } 
+                           });
+        coge.progress.begin()
+        
+        coge.services.submit_job(xz_request)
+            .done(function(response) {
+                if (!response) {
+                    coge.progress.failed("Error: empty response from server");
+                    return;
+                }
+                else if (!response.success || !response.id) {
+                    coge.progress.failed("Error: failed to start workflow", response.error);
+                }
+                else if (response.success) {
+                    console.log("SUCCESS!!!");
+                }
+                //Start status update
+                window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to browser URL
+                coge.progress.update(response.id, response.site_url);
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+            })
+    }
 
-    console.log(experiment);
+    // Compute YZ Comparison
+    // onSuccess: Analyses are complete 
+    function makeYZ() {
+        coge.progress.init({title: "Running Analysis 3/3",
+                            onSuccess: function(results) {
+                                final_experiment.links.yz = buildLink(ygid, zgid);
+                                showVisualizer(final_experiment);
+                            } 
+                           });
+        coge.progress.begin()
+        
+        coge.services.submit_job(yz_request)
+            .done(function(response) {
+                if (!response) {
+                    coge.progress.failed("Error: empty response from server");
+                    return;
+                }
+                else if (!response.success || !response.id) {
+                    coge.progress.failed("Error: failed to start workflow", response.error);
+                }
+                else if (response.success) {
+                    console.log("SUCCESS!!!");
+                }
+                //Start status update
+                window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to browser URL
+                coge.progress.update(response.id, response.site_url);
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+            })
+    }
+
+    // Start Comparisons
+    makeXY();
+    //console.log(experiment);
 };
 
 function reset_launch() { //AKB - Renamed from reset_load()

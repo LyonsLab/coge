@@ -88,11 +88,11 @@ sub generate_body {
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
     
-    # Force login - AKB Removed
-    #if ( $USER->is_public ) {
-    #    $template->param( LOGIN => 1 );
-    #    return $template->output;
-    #}
+    # Force login 
+    if ( $USER->is_public ) {
+        $template->param( LOGIN => 1 );
+        return $template->output;
+    }
     
     # Set genome IDs if specified
     my $x_gid = $FORM->param('x_gid');
