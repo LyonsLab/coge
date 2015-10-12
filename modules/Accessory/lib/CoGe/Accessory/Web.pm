@@ -966,12 +966,10 @@ sub check_taint {
     return 1 unless $v;
     if ( $v =~ /^([-\w\._=\s+\/,#\]\['"%\|]+)$/ ) {
         $v = $1;
-
         # $v now untainted
         return ( 1, $v );
     }
     else {
-
         # data should be thrown out
         carp "'$v' failed taint check\n";
         return (0);

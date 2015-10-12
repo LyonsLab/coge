@@ -27,7 +27,7 @@ our @EXPORT = qw(
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job create_iget_job
     create_load_annotation_job create_data_retrieval_workflow
-    send_email_job add_items_to_notebook_job
+    send_email_job add_items_to_notebook_job create_hisat2_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -889,6 +889,88 @@ sub create_gff_generation_job {
         ],
         description => "Generating genome annotations GFF file..."
     };
+}
+
+sub create_hisat2_workflow {
+    my %opts = @_;
+
+    # Required arguments
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $read_type = $opts{'read_type'} // "single"; #/
+    my $staging_dir = $opts{staging_dir};
+
+    my ($index, %build) = create_hisat2_build_job($gid, $fasta);
+    
+    my %hisat2 = create_hisat2_job(
+        fastq => $fastq,
+        gid => $gid,
+        index_files => ($build{outputs}),
+        read_type => $read_type,
+        staging_dir => $staging_dir
+    );
+    
+    my %bam = create_samtools_bam_job($hisat2{outputs}->[0], $staging_dir);
+
+    my @tasks = ( \%build, \%hisat2, \%bam );
+    my %results = (
+        bam_file => $bam{outputs}->[0]
+    );
+    return \@tasks, \%results;
+}
+
+sub create_hisat2_job {
+    my %opts = @_;
+    my $fastq       = $opts{fastq};
+    my $gid         = $opts{gid};
+    my $index_files = $opts{index_files};
+    my $read_type   = $opts{read_type};
+    my $staging_dir = $opts{staging_dir};
+
+    return (
+        cmd => 'nice ' . $CONF->{HISAT2},
+        script => undef,
+        args => [
+        	['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
+			['-U', join(',', @$fastq), 0],
+			['-S', 'hisat2.sam', 0]
+        ],
+        inputs => [ @$fastq, @$index_files ],
+        outputs => [ catfile($staging_dir, 'hisat2.sam') ],
+        description => "Aligning sequences (HISAT2)..."
+    );
+}
+
+sub create_hisat2_build_job {
+    my $gid = shift;
+    my $fasta = shift;
+
+    my $cache_dir = catdir($CONF->{CACHEDIR}, $gid, "hisat2_index");
+	make_path $cache_dir unless (-d $cache_dir);
+    my $name = catfile($cache_dir, 'genome.reheader');
+    
+    return catdir($cache_dir, $name), (
+        cmd => 'nice ' . $CONF->{HISAT2_BUILD},
+        script => undef,
+        args => [
+        	['-p', '8', 0],
+            ["", $fasta, 0],
+            ["", $name, 0],
+        ],
+        inputs => [ $fasta ],
+        outputs => [
+            $name . ".1.ht2",
+            $name . ".2.ht2",
+            $name . ".3.ht2",
+            $name . ".4.ht2",
+            $name . ".5.ht2",
+            $name . ".6.ht2",
+            $name . ".7.ht2",
+            $name . ".8.ht2"
+        ],
+        description => "Indexing genome sequence with hisat2-build..."
+    );
 }
 
 sub create_tophat_workflow {
