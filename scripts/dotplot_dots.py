@@ -2,6 +2,7 @@ __author__ = 'senorrift'
 # Dependencies:
 
 from json import dump
+from os import path
 from requests import get
 from sys import argv, stderr
 
@@ -19,7 +20,8 @@ log = {}
 # Assign input to variable "synmap_output", raise error and exit if not specified.
 try:
     input_ksfile = argv[1]
-    output_dir = argv[2].rstrip('/')
+    output_dir = path.dirname(input_ksfile).rstrip("/")
+    #output_dir = argv[2].rstrip("/")
 except IndexError:
     log["status"] = "failed"
     log["message"] = "Error: input/output specification"
