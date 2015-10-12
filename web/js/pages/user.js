@@ -1697,21 +1697,19 @@ function create_new_notebook() {
     });
 }
 
-function upload_experiment_metadata() {
-	$('#experiment_metadata_file').fileupload('send', {
-		files: $('#experiment_metadata_file')[0].files[0],
+var metadata_type;
+function upload_metadata() {
+	$('#metadata_file').fileupload('send', {
+		files: $('#metadata_file')[0].files[0],
 		formData: {
-			fname: 'upload_experiment_metadata',
-			parent_id: parent_id,
-			type_group: type_group,
-			type: type,
-			annotation: annotation,
-			link: link
+			fname: 'upload_metadata',
+			type: metadata_type
 		}
 	});
 }
 
-function upload_experiment_metadata_dialog() {
+function upload_metadata_dialog(type) {
+	metadata_type = type;
 	$('#upload_experiment_metadata_dialog').dialog({
 		width:'28em'
 	}).dialog('open');

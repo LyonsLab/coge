@@ -84,19 +84,19 @@
 	<div onClick="create_new_notebook();" class="r ui-button ui-corner-all coge-button">Create Notebook</div>
 </div>
 
-<div id="upload_experiment_metadata_dialog" class="dialog_box hidden" title="Upload Experiment Metadata">
+<div id="upload_metadata_dialog" class="dialog_box hidden" title="Upload Metadata">
 	<table class="small">
 		<tr>
 			<td colspan="2" style="padding-bottom: 10px;">
-				Select the tab delimited file containing the metadata. The first row must contain the names for the columns. The first column of the following rows must contain a comma delimited list of experiment IDs indicating to which experiments the metadata for that row will be added.
+				Select the tab delimited file containing the metadata. The first row must contain the names for the columns. The first column of the following rows must contain a comma delimited list of IDs indicating to which object(s) (experiment, genome or notebook) the metadata for that row will be added.
 			</td>
 		</tr>
 		<tr>
-			<td><input id="experiment_metadata_file" name="experiment_metadata_file" type="file" required/></td>
+			<td><input id="metadata_file" name="metadata_file" type="file" required/></td>
 		</tr>
 	</table>
 	<br />
-	<div onClick="if(!$('#experiment_metadata_file').val())alert('Please choose the file to upload.');else upload_experiment_metadata();" class="r ui-button ui-corner-all coge-button">Upload</div>
+	<div onClick="if(!$('#metadata_file').val())alert('Please choose the file to upload.');else upload_metadata();" class="r ui-button ui-corner-all coge-button">Upload</div>
 </div>
 
 <div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
@@ -528,15 +528,15 @@ $(function(){
 		<tr>
 			<td>
 				<div class="bold text padded">Experiments</div>
-				<span onclick="upload_experiment_metadata_dialog();" class="ui-button ui-corner-all coge-button">Upload</span>
+				<span onclick="upload_metadata_dialog('Experiment');" class="ui-button ui-corner-all coge-button">Upload</span>
 			</td>
 			<td>
 				<div class="bold text padded">Genomes</div>
-				<span onclick="upload_experiment_metadata_dialog();" class="ui-button ui-corner-all coge-button">Upload</span>
+				<span onclick="upload_metadata_dialog('Genome');" class="ui-button ui-corner-all coge-button">Upload</span>
 			</td>
 			<td>
 				<div class="bold text padded">Notebooks</div>
-				<span onclick="upload_experiment_metadata_dialog();" class="ui-button ui-corner-all coge-button">Upload</span>
+				<span onclick="upload_metadata_dialog('Notebook');" class="ui-button ui-corner-all coge-button">Upload</span>
 			</td>
 		</tr>
 	</table>
