@@ -1566,20 +1566,28 @@ sub upload_image_file {
     return;
 }
 
-sub upload_experiment_metadata {
-	my $fh = $FORM->upload('experiment_metadata_file');
+sub upload_metadata {
+    my %opts = @_;
+    my $type = $opts{type};
+	my $fh = $FORM->upload('metadata_file');
 	if ($fh) {
 		my $file = new Text::Delimited;
 		$file->open($fh);
 		my @header = $file->fields;
 		while ( my $row = $file->read ) {
+			my $annotations;
+			foreach my $i (1 .. $#header) {
+				if ($i == 1) {
+					$annotations .= ';' if length($annotations);
+				}
+				$annotations .= $header[$i] . '|' . $row->{$header[$i]};
+			}
 			my $col0 = $row->{__DATA__}->[0];
 			my @ids = split (/,/, $col0);
 			foreach (@ids) {
-				my $experiment = $DB->resultset('Experiment')->find($_);
-				CoGe::Core::Metadata::create_annotations(db => $DB, target => $experiment, annotations => $annotations, locked => 1);
+				my $target = $DB->resultset($type)->find($_);
+				CoGe::Core::Metadata::create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
 			}
-			
 		}
 		$file->close;
 	}
