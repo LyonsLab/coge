@@ -9,6 +9,7 @@ use Data::Validate::URI qw(is_uri);
 use JSON::XS;
 use HTML::Template;
 use Sort::Versions;
+use Text::Delimited;
 use Time::Piece;
 use List::Util qw(first);
 use URI::Escape::JavaScript qw(escape unescape);
@@ -104,7 +105,8 @@ $node_types = CoGeX::node_types();
     create_new_notebook             => \&create_new_notebook,
     toggle_star                     => \&toggle_star,
     cancel_job				        => \&cancel_job,
-    comment_job                     => \&comment_job
+    comment_job                     => \&comment_job,
+    upload_experiment_metadata		=> \&upload_experiment_metadata
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1562,6 +1564,25 @@ sub upload_image_file {
     }
 
     return;
+}
+
+sub upload_experiment_metadata {
+	my $fh = $FORM->upload('experiment_metadata_file');
+	if ($fh) {
+		my $file = new Text::Delimited;
+		$file->open($fh);
+		my @header = $file->fields;
+		while ( my $row = $file->read ) {
+			my $col0 = $row->{__DATA__}->[0];
+			my @ids = split (/,/, $col0);
+			foreach (@ids) {
+				my $experiment = $DB->resultset('Experiment')->find($_);
+				CoGe::Core::Metadata::create_annotations(db => $DB, target => $experiment, annotations => $annotations, locked => 1);
+			}
+			
+		}
+		$file->close;
+	}
 }
 
 sub search_notebooks
