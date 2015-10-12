@@ -1697,6 +1697,20 @@ function create_new_notebook() {
     });
 }
 
+function upload_experiment_metadata() {
+	$('#experiment_metadata_file').fileupload('send', {
+		files: $('#experiment_metadata_file')[0].files[0],
+		formData: {
+			fname: 'upload_experiment_metadata',
+			parent_id: parent_id,
+			type_group: type_group,
+			type: type,
+			annotation: annotation,
+			link: link
+		}
+	});
+}
+
 function upload_experiment_metadata_dialog() {
 	$('#upload_experiment_metadata_dialog').dialog({
 		width:'28em'
