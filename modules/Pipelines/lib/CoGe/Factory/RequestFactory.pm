@@ -55,8 +55,10 @@ sub get {
     elsif ($type eq "load_genome") {
         return CoGe::Request::Empty->new($options);
     }
-    elsif ($type eq "synmap") {
-        return CoGe::Request::SynMap->new($options);
+    elsif ($type eq "synmap" ||
+    	$type eq "dotplots_dots")
+    {
+        return CoGe::Request::TwoGenomes->new($options);
     }
     else {
         print STDERR "RequestFactory: error: unrecognized job type '", $type, "'\n";

@@ -3,7 +3,7 @@ package CoGe::Builder::Tools::SynMap;
 use Moose;
 
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web qw( get_defaults write_log );
+use CoGe::Accessory::Web qw( get_defaults );
 use CoGe::Accessory::Workflow;
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Core::Storage qw( get_workflow_paths );
@@ -90,15 +90,13 @@ sub add_jobs {
 	my ( $org_name1, $title1 ) = gen_org_name(
 		db        => $db,
 		dsgid     => $dsgid1,
-		feat_type => $feat_type1,
-		write_log => 1
+		feat_type => $feat_type1
 	);
 
 	my ( $org_name2, $title2 ) = gen_org_name(
 		db        => $db,
 		dsgid     => $dsgid2,
-		feat_type => $feat_type2,
-		write_log => 1
+		feat_type => $feat_type2
 	);
 
 	my $ks_type = $opts{ks_type};
@@ -234,8 +232,8 @@ sub add_jobs {
 	if ( $feat_type1 eq "genomic" ) {
 		$fasta1 = $genome1->file_path;
 
-		write_log( "Fetched fasta file for:", $cogeweb->logfile );
-		write_log( " " x (2) . $org_name1, $cogeweb->logfile );
+		$workflow->log( "Fetched fasta file for:" );
+		$workflow->log( " " x (2) . $org_name1 );
 	}
 	else {
 		my @fasta1args = ();
@@ -256,16 +254,16 @@ sub add_jobs {
 			}
 		);
 
-		write_log( "Added fasta file generation for:", $cogeweb->logfile );
-		write_log( " " x (2) . $org_name1, $cogeweb->logfile );
+		$workflow->log( "Added fasta file generation for:" );
+		$workflow->log( " " x (2) . $org_name1 );
 	}
 
 	if ( $feat_type2 eq "genomic" ) {
 		$fasta2 = $genome2->file_path;
 
-		write_log( "",                        $cogeweb->logfile );
-		write_log( "Fetched fasta file for:", $cogeweb->logfile );
-		write_log( " " x (2) . $org_name2, $cogeweb->logfile );
+		$workflow->log( "" );
+		$workflow->log( "Fetched fasta file for:" );
+		$workflow->log( " " x (2) . $org_name2 );
 	}
 	else {
 		$fasta2 = $FASTADIR . "/$dsgid2-$feat_type2.fasta";
@@ -286,9 +284,9 @@ sub add_jobs {
 			}
 		);
 
-		write_log( "",                                 $cogeweb->logfile );
-		write_log( "Added fasta file generation for:", $cogeweb->logfile );
-		write_log( " " x (2) . $org_name2, $cogeweb->logfile );
+		$workflow->log( "" );
+		$workflow->log( "Added fasta file generation for:" );
+		$workflow->log( " " x (2) . $org_name2 );
 	}
 
 	############################################################################
@@ -298,7 +296,6 @@ sub add_jobs {
 	my $ALGO_LOOKUP = algo_lookup();
 	if ( $ALGO_LOOKUP->{$blast}{formatdb} ) {
 
-		#		my $write_log = 0;
 		my $basename = "$BLASTDBDIR/$dsgid2-$feat_type2";
 
 		my @blastdbargs = ();
@@ -325,9 +322,9 @@ sub add_jobs {
 			}
 		);
 
-		write_log( "",                         $cogeweb->logfile );
-		write_log( "Added BlastDB generation", $cogeweb->logfile );
-		write_log( $blastdb,                   $cogeweb->logfile );
+		$workflow->log( "" );
+		$workflow->log( "Added BlastDB generation" );
+		$workflow->log( $blastdb );
 	}
 	else {
 		$blastdb = $fasta2;
@@ -408,12 +405,10 @@ sub add_jobs {
 		);
 	}
 
-	write_log( "", $cogeweb->logfile );
-	write_log(
+	$workflow->log( "" );
+	$workflow->log(
 		"Added genome comparison (algorithm: "
-		  . $ALGO_LOOKUP->{$blast}{displayname} . ")",
-		$cogeweb->logfile
-	);
+		  . $ALGO_LOOKUP->{$blast}{displayname} . ")");
 
 	###########################################################################
 	# Converting blast to bed and finding local duplications
@@ -449,8 +444,8 @@ sub add_jobs {
 		}
 	);
 
-	write_log( "",                          $cogeweb->logfile );
-	write_log( "Added .bed files creation", $cogeweb->logfile );
+	$workflow->log( "" );
+	$workflow->log( "Added .bed files creation" );
 
 	###########################################################################
 	# Converting blast to raw and finding local duplications
@@ -490,13 +485,13 @@ sub add_jobs {
 		}
 	);
 
-	write_log( "", $cogeweb->logfile );
+	$workflow->log( "" );
 	my $msg = "Added Filtering results of tandem ";
 	$msg .= "duplicates (tandem duplication distance: $dupdist";
 	$msg .= ", c-score: $cscore" if $cscore;
 	$msg .= ")";
 
-	write_log( $msg, $cogeweb->logfile );
+	$workflow->log( $msg );
 
  #TODO: This feature is currently disabled
  #needed to comment out as the bed files and blast files have changed in SynFind
@@ -542,9 +537,8 @@ sub add_jobs {
 		}
 	);
 
-	write_log( "", $cogeweb->logfile );
-	write_log( "Added convertion of blast file to dagchainer input file",
-		$cogeweb->logfile );
+	$workflow->log( "" );
+	$workflow->log( "Added convertion of blast file to dagchainer input file" );
 
 	############################################################################
 	# Convert to gene order
@@ -554,11 +548,8 @@ sub add_jobs {
 
 	if ( $dagchainer_type eq "geneorder" ) {
 
-		write_log( "", $cogeweb->logfile );
-		write_log(
-			"Added convertion of dagchainer input into gene order coordinates",
-			$cogeweb->logfile
-		);
+		$workflow->log( "" );
+		$workflow->log("Added convertion of dagchainer input into gene order coordinates");
 
 		my @geneorderargs = ();
 		push @geneorderargs, [ "",           $dag_file12_all,           1 ];
@@ -589,13 +580,13 @@ sub add_jobs {
   #B Pedersen's program for automatically adjusting the evals in the dag file to
   # remove bias from local gene duplicates and transposons
   #   $dag_file12 .= "_c" . $repeat_filter_cvalue;
-  #   write_log( "#" x (20), $cogeweb->logfile );
-  #   write_log( "Adjusting evalue of blast hits to correct
-  #   for repeat sequences", $cogeweb->logfile );
+  #   $workflow->log( "#" x (20) );
+  #   $workflow->log( "Adjusting evalue of blast hits to correct
+  #   for repeat sequences" );
   #   run_adjust_dagchainer_evals( infile => $all_file, outfile => $dag_file12,
   #   cvalue => $repeat_filter_cvalue );
-  #   write_log( "#" x (20), $cogeweb->logfile );
-  #   write_log( "", $cogeweb->logfile );
+  #   $workflow->log( "#" x (20) );
+  #   $workflow->log( "" );
 
 	# This step will fail if the dag_file_all is larger than the system memory
 	# limit. If this file does not exist, let's send a warning to the log file
@@ -604,13 +595,11 @@ sub add_jobs {
 		|| ( -r $dag_file12 . ".gz" && -s $dag_file12 . ".gz" ) )
 	{
 		$dag_file12 = $all_file;
-		write_log( "", $cogeweb->logfile );
-		write_log(
+		$workflow->log( "" );
+		$workflow->log(
 			"WARNING: sub run_adjust_dagchainer_evals failed. "
 			  . "Perhaps due to Out of Memory error. "
-			  . "Proceeding without this step!",
-			$cogeweb->logfile
-		);
+			  . "Proceeding without this step!");
 	}
 
 	############################################################################
@@ -669,13 +658,11 @@ sub add_jobs {
 			}
 		);
 		$post_dagchainer_file = $merged_dagchainer_file;
-		write_log( "", $cogeweb->logfile );
-		write_log(
+		$workflow->log( "" );
+		$workflow->log(
 			"Added DagChainer (merge: enabled,"
 			  . " Maximum distance between two blocks: $Dm genes, "
-			  . " Average distance expected between syntenic blocks: $gm genes)",
-			$cogeweb->logfile
-		);
+			  . " Average distance expected between syntenic blocks: $gm genes)");
 	}
 	else {
 		push @dagargs, [ ">", $dagchainer_file, 1 ];
@@ -692,8 +679,8 @@ sub add_jobs {
 		);
 
 		$post_dagchainer_file = $dagchainer_file;
-		write_log( "",                                   $cogeweb->logfile );
-		write_log( "Added DagChainer (merge: disabled)", $cogeweb->logfile );
+		$workflow->log( "" );
+		$workflow->log( "Added DagChainer (merge: disabled)" );
 	}
 
 	############################################################################
@@ -721,12 +708,10 @@ sub add_jobs {
 				description => "Merging Syntenic Blocks...",
 			}
 		);
-		write_log( "", $cogeweb->logfile );
-		write_log(
+		$workflow->log( "" );
+		$workflow->log(
 			"Added Merge Syntenic Blocks"
-			  . " (Maximum distance between two blocks: $Dm genes)",
-			$cogeweb->logfile
-		);
+			  . " (Maximum distance between two blocks: $Dm genes)");
 
 		$post_dagchainer_file = $merged_dagchainer_file;
 	}
@@ -734,7 +719,7 @@ sub add_jobs {
 	$post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
 
 	#add pairs that were skipped by dagchainer
-	$post_dagchainer_file_w_nearby = $post_dagchainer_file;
+	$post_dagchainer_file_w_nearby = $post_dagchainer_file; # are the previous two lines necessary if we just overwrite here?
 
 	#TODO: Run find nearby is currently disabled
 	#run_find_nearby(
@@ -773,14 +758,12 @@ sub add_jobs {
 			}
 		);
 
-		write_log( "", $cogeweb->logfile );
-		write_log(
+		$workflow->log( "" );
+		$workflow->log(
 			"Added Syntenic Depth "
 			  . "(ratio: $depth_org_1_ratio/$depth_org_2_ratio, "
-			  . "overlap: $depth_overlap)",
-			$cogeweb->logfile
-		);
-		write_log( "$org_name1 -vs- $org_name2", $cogeweb->logfile );
+			  . "overlap: $depth_overlap)");
+		$workflow->log( "$org_name1 -vs- $org_name2" );
 		$final_dagchainer_file = $quota_align_coverage;
 	}
 	else {
@@ -804,11 +787,8 @@ sub add_jobs {
 			}
 		);
 
-		write_log( "", $cogeweb->logfile );
-		write_log(
-"Added conversion gene order coordinates back to genomic coordinates",
-			$cogeweb->logfile
-		);
+		$workflow->log( "" );
+		$workflow->log("Added conversion gene order coordinates back to genomic coordinates");
 
 		$final_dagchainer_file = $final_dagchainer_file . ".gcoords";
 	}
@@ -867,11 +847,8 @@ sub add_jobs {
 			}
 		);
 
-		write_log( "", $cogeweb->logfile );
-		write_log(
-			"Added ($ks_type) calculation of syntenic CDS pairs and color dots",
-			$cogeweb->logfile
-		);
+		$workflow->log( "" );
+		$workflow->log("Added ($ks_type) calculation of syntenic CDS pairs and color dots");
 
 		####################################################################
 		# Generate svg dotplot
@@ -898,8 +875,8 @@ sub add_jobs {
 			}
 		);
 
-		write_log( "",                                $cogeweb->logfile );
-		write_log( "Added generation of svg dotplot", $cogeweb->logfile );
+		$workflow->log( "" );
+		$workflow->log( "Added generation of svg dotplot" );
 	}
 	else {
 		$ks_type = undef;
@@ -931,8 +908,8 @@ sub add_jobs {
 			}
 		);
 
-		write_log( "",                                $cogeweb->logfile );
-		write_log( "Added generation of svg dotplot", $cogeweb->logfile );
+		$workflow->log( "" );
+		$workflow->log( "Added generation of svg dotplot" );
 
 	}
 
@@ -1080,17 +1057,13 @@ sub add_jobs {
 	#        outputs     => $dot_outputs,
 	#        description => "Generating dotplot dots...",
 	#    );
-	#
-	#    write_log( "", $cogeweb->logfile );
-	#    write_log( "Added dotplot generation",
-	#        $cogeweb->logfile );
 
 	############################################################################
 	# Post Processing
 	############################################################################
 
-	write_log( "",                      $cogeweb->logfile );
-	write_log( "Final Post Processing", $cogeweb->logfile );
+	$workflow->log( "" );
+	$workflow->log( "Final Post Processing" );
 
 	my $subject_dup_args = [
 		[ '--config', $config->{_CONFIG_PATH}, 0 ],
@@ -1125,9 +1098,8 @@ sub add_jobs {
 			description => "Processing Query Tandem Duplicate File...",
 		}
 	);
-	write_log( "", $cogeweb->logfile );
-	write_log( "Added Processing of Tandem Duplicate Files",
-		$cogeweb->logfile );
+	$workflow->log( "" );
+	$workflow->log( "Added Processing of Tandem Duplicate Files" );
 
 	my $condensed = "$final_dagchainer_file.condensed";
 
@@ -1202,10 +1174,10 @@ sub add_jobs {
 		);
 	}
 
-	write_log( "",                            $cogeweb->logfile );
-	write_log( "Added GEvo links generation", $cogeweb->logfile );
-	write_log( "#" x (25), $cogeweb->logfile );
-	write_log( "", $cogeweb->logfile );
+	$workflow->log( "" );
+	$workflow->log( "Added GEvo links generation" );
+	$workflow->log( "#" x (25) );
+	$workflow->log( "" );
 }
 
 sub algo_lookup {
@@ -1357,7 +1329,6 @@ sub gen_org_name {
 	my $dsgid     = $opts{dsgid};
 	my $feat_type = $opts{feat_type} || 1;
 
-	#	my $write_log = $opts{write_log} || 0;
 	my ($dsg) = $db->resultset('Genome')->search( { genome_id => $dsgid },
 		{ join => 'organism', prefetch => 'organism' } );
 
@@ -1370,13 +1341,6 @@ sub gen_org_name {
 	  . $feat_type;
 	$title =~ s/(`|')//g;
 
-	#	if ( $cogeweb and $write_log ) {
-	#		write_log( "Generated organism name:",
-	#			$cogeweb->logfile );
-	#		write_log( " " x (2) . $title,
-	#			$cogeweb->logfile );
-	#		write_log( "", $cogeweb->logfile );
-	#	}
 	return ( $org_name, $title );
 }
 
@@ -1517,15 +1481,13 @@ sub get_query_link {
 	my ( $org_name1, $titleA ) = gen_org_name(
 		db        => $db,
 		dsgid     => $dsgid1,
-		feat_type => $feat_type1,
-		write_log => 0
+		feat_type => $feat_type1
 	);
 
 	my ( $org_name2, $titleB ) = gen_org_name(
 		db        => $db,
 		dsgid     => $dsgid2,
-		feat_type => $feat_type2,
-		write_log => 0
+		feat_type => $feat_type2
 	);
 
 	# Sort by genome id
@@ -1656,16 +1618,16 @@ sub go {
 		basename => $opts{basename},
 		tempdir  => catdir( $config->{TEMPDIR}, 'SynMap' )
 	);
-	write_log( "#" x (25), $cogeweb->logfile );
-	write_log( "Creating Workflow", $cogeweb->logfile );
-	write_log( "#" x (25), $cogeweb->logfile );
-	write_log( "", $cogeweb->logfile );
-	write_log( "#" x (25), $cogeweb->logfile );
-	write_log( "Link to Regenerate Analysis",             $cogeweb->logfile );
-	write_log( "$tiny_link",                              $cogeweb->logfile );
-	write_log( "",                                        $cogeweb->logfile );
-	write_log( "Created Workflow: synmap-$workflow_name", $cogeweb->logfile );
-	write_log( "",                                        $cogeweb->logfile );
+	$workflow->log( "#" x (25) );
+	$workflow->log( "Creating Workflow" );
+	$workflow->log( "#" x (25) );
+	$workflow->log( "" );
+	$workflow->log( "#" x (25) );
+	$workflow->log( "Link to Regenerate Analysis" );
+	$workflow->log( "$tiny_link" );
+	$workflow->log( "" );
+	$workflow->log( "Created Workflow: synmap-$workflow_name" );
+	$workflow->log( "" );
 
 	my $JEX = CoGe::Accessory::Jex->new(
 		host => $config->{JOBSERVER},
@@ -1684,10 +1646,10 @@ sub go {
 		@_
 	);
 
-	write_log( "#" x (25), $cogeweb->logfile );
-	write_log( "Running Workflow", $cogeweb->logfile );
-	write_log( "#" x (25), $cogeweb->logfile );
-	write_log( "", $cogeweb->logfile );
+	$workflow->log( "#" x (25) );
+	$workflow->log( "Running Workflow" );
+	$workflow->log( "#" x (25) );
+	$workflow->log( "" );
 
 	my $response = $JEX->submit_workflow($workflow);
 
@@ -1697,14 +1659,12 @@ sub go {
 		my ( $org_name1, $title1 ) = gen_org_name(
 			db        => $db,
 			dsgid     => $dsgid1,
-			feat_type => $feat_type1,
-			write_log => 1
+			feat_type => $feat_type1
 		);
 		my ( $org_name2, $title2 ) = gen_org_name(
 			db        => $db,
 			dsgid     => $dsgid2,
-			feat_type => $feat_type2,
-			write_log => 1
+			feat_type => $feat_type2
 		);
 		my $log_msg = "$org_name1 v. $org_name2"
 		  ; #"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
