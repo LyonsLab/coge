@@ -466,7 +466,7 @@ function launch(experiment) {
   
     function buildLink(id1, id2) {
         var link = ''
-        if (id1 <= id2i) {
+        if (id1 <= id2) {
             link = fileDir + id1 + '/' + id2 + '/' + id1 + '_' + id2 + fileTag;
         }
         else {
@@ -545,13 +545,56 @@ function launch(experiment) {
     function makeYZ() {
         coge.progress.init({title: "Running Analysis 3/3",
                             onSuccess: function(results) {
+                                coge.progress.end();
                                 final_experiment.links.yz = buildLink(ygid, zgid);
-                                showVisualizer(final_experiment);
+                                //showVisualizer(final_experiment);
+                                dotsXY();
                             } 
                            });
         coge.progress.begin()
         
         coge.services.submit_job(yz_request)
+            .done(function(response) {
+                if (!response) {
+                    coge.progress.failed("Error: empty response from server");
+                    return;
+                }
+                else if (!response.success || !response.id) {
+                    coge.progress.failed("Error: failed to start workflow", response.error);
+                }
+                else if (response.success) {
+                    console.log("SUCCESS!!!");
+                }
+                //Start status update
+                window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to browser URL
+                coge.progress.update(response.id, response.site_url);
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+            })
+    }
+
+    // Compute XY dotplot_dots
+    // onSuccess: Launch dots XZ. 
+    function dotsXY() {
+        var xy_dot_req = {
+            type: 'dotplot_dots',
+            parameters: {
+                genome_id1: xgid,
+                genome_id2: ygid,
+                ksfile: final_experiment.links.xy
+            }
+        };
+
+        coge.progress.init({title: "Running Analysis 4/3",
+                            onSuccess: function(results) {
+                                //final_experiment.links.yz = buildLink(ygid, zgid);
+                                //showVisualizer(final_experiment);
+                            } 
+                           });
+        coge.progress.begin()
+        
+        coge.services.submit_job(xy_dot_req)
             .done(function(response) {
                 if (!response) {
                     coge.progress.failed("Error: empty response from server");
