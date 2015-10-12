@@ -1,4 +1,4 @@
-package CoGe::Request::SynMap;
+package CoGe::Request::TwoGenomes;
 
 use Moose;
 use CoGe::Request::Request;
