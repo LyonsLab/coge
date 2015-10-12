@@ -1618,6 +1618,15 @@ sub go {
 		basename => $opts{basename},
 		tempdir  => catdir( $config->{TEMPDIR}, 'SynMap' )
 	);
+
+	my $JEX = CoGe::Accessory::Jex->new(
+		host => $config->{JOBSERVER},
+		port => $config->{JOBPORT}
+	);
+	my $workflow = $JEX->create_workflow(
+		name    => $workflow_name,
+		logfile => $cogeweb->logfile
+	);
 	$workflow->log( "#" x (25) );
 	$workflow->log( "Creating Workflow" );
 	$workflow->log( "#" x (25) );
@@ -1628,15 +1637,6 @@ sub go {
 	$workflow->log( "" );
 	$workflow->log( "Created Workflow: synmap-$workflow_name" );
 	$workflow->log( "" );
-
-	my $JEX = CoGe::Accessory::Jex->new(
-		host => $config->{JOBSERVER},
-		port => $config->{JOBPORT}
-	);
-	my $workflow = $JEX->create_workflow(
-		name    => $workflow_name,
-		logfile => $cogeweb->logfile
-	);
 
 	add_jobs(
 		workflow => $workflow,
