@@ -11,7 +11,6 @@ use File::Spec::Functions qw(catdir catfile);
 use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
 
-use CoGe::Accessory::Jex;
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web qw(get_defaults);
