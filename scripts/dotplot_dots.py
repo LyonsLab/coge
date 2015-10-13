@@ -6,8 +6,8 @@ from os import path
 from requests import get
 from sys import argv, stderr
 
-# api_base = "https://genomevolution.org/coge/api/v1/genomes/"
-api_base = "https://geco.iplantc.org/asherkhb/coge/api/v1/genomes/"
+api_base = "https://genomevolution.org/coge/api/v1/genomes/"
+# api_base = "https://geco.iplantc.org/asherkhb/coge/api/v1/genomes/" MAYBE BROKEN?
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Define Input/Outputs
@@ -132,7 +132,7 @@ elif len(sp1_id) < 1 or len(sp2_id) < 1:
 else:
     sp1_id = sp1_id[0]
     sp2_id = sp2_id[0]
-    output_dir = "%s/%s/%s" % (output_dir, str(sp1_id), str(sp2_id))
+    # output_dir = "%s/%s/%s" % (output_dir, str(sp1_id), str(sp2_id))
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Build & Dump Output JSON
