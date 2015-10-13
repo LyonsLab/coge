@@ -100,32 +100,31 @@ function browserAlert(){
 function setup_button_states (id) {
 //$(function() {
          //button effects on events
-           var item;
+	var item;
 
-           if (id) { item='#'+id; }
-           else { item = '.ui-button'; }
-         $(item+':not(.ui-state-disabled)')
-            .hover( function(){
-                $(this).addClass("ui-state-hover");
-            },
-                function(){
-                $(this).removeClass("ui-state-hover");
-            });
-         $(item+':not(.ui-button-toggle)') //buttons that aren't toggle-able
-                        .mousedown(function(){
-                            $(this).addClass("ui-state-active");
-                        })
-            .mouseup(function(){
-                    $(this).removeClass("ui-state-active");
-                        });
-             $(item+'.ui-button-toggle') // buttons that are toggle-able
-                       .click(function(){
-                if( $(this).hasClass('ui-state-active') ){
-                    $(this).removeClass("ui-state-active");
-                    }
-                else { $(this).addClass("ui-state-active");
-                }
-                        });
+	if (id) { item='#'+id; }
+	else { item = '.ui-button'; }
+	$(item+':not(.ui-state-disabled)')
+		.hover( function(){
+			$(this).addClass("ui-state-hover");
+		},
+		function(){
+			$(this).removeClass("ui-state-hover");
+		});
+	$(item+':not(.ui-button-toggle)') //buttons that aren't toggle-able
+		.mousedown(function(){
+			$(this).addClass("ui-state-active");
+		})
+		.mouseup(function(){
+			$(this).removeClass("ui-state-active");
+		});
+	$(item+'.ui-button-toggle') // buttons that are toggle-able
+		.click(function(){
+			if( $(this).hasClass('ui-state-active') ){
+				$(this).removeClass("ui-state-active");
+			}
+			else { $(this).addClass("ui-state-active"); }
+		});
 
 }
 
@@ -170,89 +169,17 @@ function searchKey(event) {
 
 </script>
 
-<div style="min-height:100%">
+<!--<div style="min-height:100%">-->
 
-<!--
-    <div class="error-box">
-    Please note:  the iPlant Data Store will be unavailable Tuesday, December 16th for scheduled maintenance, preventing data import into CoGe.
-    </div>
--->
-
-<!--
-<header class="clearfix">
-    <div id="brand">
-        <a href="<TMPL_VAR NAME=HOME>">
-            <img style="vertical-align:bottom;height:3.4em" class="l" src='picts/CoGe.svg'>
-        </a>
-    </div>
--->
-<!--
-    <div id="logo">
-        <a href="<TMPL_VAR NAME=HOME>">
-            <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>
-        </a>
-    </div>
--->
-<!--
-    <TMPL_UNLESS NAME="MENU">
-        <div id="menubar" class="coge-menubar r" style="visibility:hidden;">
-            <span style="float:right; margin-right: 20px;">
-                <ul class="sf-menu">
-                    <li><a href="User.pl" target="_self">My Profile</a></li>
-                    <li><a href='User.pl?p=analyses' target="_self">My History</a></li>
-                    <tmpl_if name="ADMIN_ONLY">
-                        <li><a href='Admin.pl'>Admin</a></li>
-                    </tmpl_if>
-                    <li><a href='javascript:void(0)'>Tools</a>
-                        <ul>
-                            <li><a href="OrganismView.pl">OrganismView</a></li>
-                            <li><a href="CoGeBlast.pl">CoGeBlast</a></li>
-                            <li><a href="FeatView.pl">FeatView</a></li>
-                            <li><a href="SynFind.pl">SynFind</a></li>
-                            <li><a href="SynMap.pl">SynMap</a></li>
-                            <li><a href="GEvo.pl">GEvo</a></li>
-                        </ul>
-                    </li>
-                    <li><a href='javascript:void(0)'>Help</a>
-                        <ul>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
-                            <li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
-                        </ul>
-                    </li>
-                    <li><a href="./" target="_self">Home</a></li>
-                </ul>
-            </span>
-            <span class="login">
-                <TMPL_IF NAME="LOGON">
-                    <span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <span onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');" class="small bold link">Sign-out</span></span>
-                <TMPL_ELSE>
-                    <span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a> <a href="<TMPL_VAR NAME=WIKI_URL>/How_to_get_a_CoGe_account" target=_login_info><br>New here? Get a CoGe account.</a></span>
-            </TMPL_IF>
-            </span>
-        </div>
-    </TMPL_UNLESS>
-    <noscript>
-    Welcome to CoGe -- a new system for a new kind of comparative genomics.  CoGe is designed for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes.
-
-    Unfortunately, we have detected that your browser currently has JavaScript disabled. In order for CoGe to function properly, JavaScript must be enabled in your browser. For instruction on how to do so in Mozilla Firefox, please click <a href="http://www.mozilla.org/support/firefox/options#content" target="_blank">here</a>. After enabling JavaScript, simply refresh the page, or click <a href="javascript:location.reload(true);" target="_self">here</a>.
-    </noscript>
--->
-
-<nav class="navbar navbar-default" style="height:5em;background-color:#E7F5E7;">
+<nav class="navbar navbar-default" style="height:5em;background-color:#E7F5E7;margin-bottom:0px;">
 	<div id="main" class="container-fluid" style="width:100%;background-color:#E7F5E7;">
 	
 		<!--Header contains logo and search bar-->
 		<div class="navbar-header" style="padding-top:0.5em;">
 			<div id="logo" class="navbar-brand"> <!-- style="float:left;width:15%;" -->
-				<div><!--style="float:left;padding-left:0.5em;padding-top:0em"-->
+				<a href="<TMPL_VAR NAME=HOME>">
 					<font face="impact" color="#41AD41" size="20">CoGe</font>
-				</div>
+				</a>
 			</div>
 			
 			<form class="navbar-form navbar-left" role="search">
@@ -263,39 +190,37 @@ function searchKey(event) {
 		        	<span style="font-size:1.4em;" class="glyphicon glyphicon-search"></span>
 		        </button>
 	        </form>
-			
-			<!--<div id="search" style="float:left;width:45%;">
-				<div id="searchBar" class="inline padded ui-corner-all" style="padding-top:1em;">
-			    	<td>
-			        	<input id="search_token" type="search" placeholder="Search Database" spellcheck="false" onkeypress="searchKey(event)"/ >
-					</td>
-					<span id="search_button" class="ui-button coge-button ui-state-active" onclick="search();">
-		            	<span style="padding-top:0.25em;font-size:15;" class="glyphicon glyphicon-search"></span>
-		            </span>
-				</div>
-			</div>-->
 		</div>
 		
 		<!--Buttons-->
 		<div class="collapse navbar-collapse navbar-right" id="menu"> <!-- style="float:left;width:25%;padding-top:1em;padding-right:2em;"-->
 			<ul class="nav navbar-nav">
-				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;margin-top:1.75em">Profile</li>
-				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;margin-top:1.75em">History</li>
-				<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;margin-top:1.75em">Admin</li>
+				<li class="ui-button ui-corner-all coge-button" onclick="location.href='User.pl';" style="background:white;color:#119911;margin-top:1.75em">Profile</li>
+				<TMPL_IF NAME="ADMIN_ONLY">
+					<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;margin-top:1.75em">Admin</li>
+				</TMPL_IF>
 				<li class="dropdown" style="padding-top:0.5em;">
 					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools <span class="caret"></span></a>
 					<ul class="dropdown-menu">
-						<li><a href="#">1</a></li>
-						<li><a href="#">2</a></li>
-						<li><a href="#">3</a></li>
+						<li><a href="OrganismView.pl">OrganismView</a></li>
+	                    <li><a href="CoGeBlast.pl">CoGeBlast</a></li>
+	                    <li><a href="FeatView.pl">FeatView</a></li>
+	                    <li><a href="SynFind.pl">SynFind</a></li>
+	                    <li><a href="SynMap.pl">SynMap</a></li>
+	                    <li><a href="GEvo.pl">GEvo</a></li>
 					</ul>
 				</li>
 				<li class="dropdown" style="padding-top:0.5em;">
 					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
 					<ul class="dropdown-menu">
-						<li><a href="#">1</a></li>
-						<li><a href="#">2</a></li>
-						<li><a href="#">3</a></li>
+						<li><a href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
+	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+	                    <li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
+	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
+	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
+	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
+	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
+	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
 					</ul>
 				</li>
 				<li>
@@ -303,7 +228,7 @@ function searchKey(event) {
 						<TMPL_IF NAME="LOGON">
 							<input type="image" src="image.pl" style="height:50%;margin-top:1em;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
 						<TMPL_ELSE>
-							<button id="login_button" class="ui-button ui-corner-all coge-button" style="padding-top:1.75em;background:white;color:#119911;" onClick="login_cas();return true;">Log in</button>
+							<button id="login_button" class="ui-button ui-corner-all coge-button" style="margin-top:1.75em;background:white;color:#119911;" onClick="login_cas();return true;">Log in</button>
 						</TMPL_IF>
 					</div>
 				</li>
@@ -312,5 +237,5 @@ function searchKey(event) {
 	</div>
 </nav>
 
-</header>
+<!--</header>-->
 <!--<div class="tagline"><TMPL_VAR NAME="TITLE"></div>-->
