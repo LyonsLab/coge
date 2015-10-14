@@ -32,9 +32,10 @@ has 'jex' => (
 );
 
 sub execute {
-    my ($self, $workflow) = @_;
+    my ($self, $pipeline) = @_;
 
     # Check for workflow
+    my $workflow = $pipeline->workflow;
     return {
         success => JSON::false,
         error => { Error => "failed to build workflow" }
@@ -42,7 +43,6 @@ sub execute {
 
     my $resp = $self->jex->submit_workflow($workflow);
     my $success = $self->jex->is_successful($resp);
-    
     unless ($success) {
         print STDERR 'JEX response: ', Dumper $resp, "\n";
         return {
@@ -52,10 +52,12 @@ sub execute {
         }
     }
 
-    return {
+    my $response = {
         id => $resp->{id},
-        success => JSON::true
+        success => JSON::true        
     };
+    $response->{site_url} = $pipeline->site_url if ($pipeline->site_url);
+    return $response;
 }
 
 1;
