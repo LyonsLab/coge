@@ -578,7 +578,7 @@ function launch(experiment) {
     // onSuccess: Launch dots XZ. 
     function dotsXY() {
         var xy_dot_req = {
-            type: 'dotplots_dots',
+            type: 'dotplot_dots',
             parameters: {
                 genome_id1: xgid,
                 genome_id2: ygid,
