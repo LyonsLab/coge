@@ -1567,6 +1567,7 @@ sub upload_image_file {
 }
 
 sub upload_metadata {
+	warn "upload_metadata";
     my %opts = @_;
     my $type = $opts{type};
 	my $fh = $FORM->upload('metadata_file');
