@@ -28,7 +28,7 @@ sub add {
 
     # Create request and validate the required fields
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex); #FIXME why jex here?
+    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
     my $request_handler = $request_factory->get($payload);
     unless ($request_handler and $request_handler->is_valid) {
         return $self->render(json => {
@@ -45,47 +45,25 @@ sub add {
 
     # Create pipeline to execute job
     my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex, db => $db);
-    my $workflow = $pipeline_factory->get($payload);
-    unless ($workflow) {
+    my $pipeline = $pipeline_factory->get($payload);
+    unless ($pipeline && $pipeline->workflow) {
         return $self->render(json => {
             error => { Error => "Failed to generate pipeline" }
         });
     }
-    my $response = $request_handler->execute($workflow);
+    my $response = $request_handler->execute($pipeline);
     
     # Pipeline was submitted successfully
     if ($response->{success}) {
-        # Get a tiny URL to a status page
-        my ($page, $link);
-        if ($payload->{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
-            $page = $payload->{requester}->{page};
-            my $url = $payload->{requester}->{url};
-            if ($url) {
-                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $url . "&wid=" . $workflow->id );
-            }
-            elsif ($page) {
-                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
-            }
-        }
-        else { # otherwise infer status page by job type (for the DE) #TODO move this somewhere more appropriate
-            if ($payload->{type} eq 'load_genome') {
-                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . 'LoadGenome.pl' . "?wid=" . $workflow->id );
-            }
-            elsif ($payload->{type} eq 'load_experiment') {
-                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . 'LoadExperiment.pl' . "?wid=" . $workflow->id );
-            }
-        }
-        $response->{site_url} = $link if $link;
-        
-        # Log job submission
+        # Log submission
         CoGe::Accessory::Web::log_history(
             db          => $db,
-            parent_id   => $workflow->id,
+            parent_id   => $pipeline->workflow->id,
             parent_type => 7, #FIXME magic number
             user_id     => $user->id,
-            page        => ($page ? $page : "API"),
-            description => $workflow->name,
-            link        => ($link ? $link : '')
+            page        => $pipeline->page,
+            description => $pipeline->workflow->name,
+            link        => ($response->{site_url} ? $response->{site_url} : '')
         );
     }
     
