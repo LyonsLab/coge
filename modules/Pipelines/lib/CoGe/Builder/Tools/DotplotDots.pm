@@ -14,7 +14,7 @@ sub build {
 	return unless $genome_id2;
 	my $ksfile = $self->params->{ksfile};
 	return unless $ksfile;
-
+warn $ENV{COGE_HOME};
 	my $DIAGSDIR      = $self->conf->{DIAGSDIR};
 	my $SCRIPTDIR     = $self->conf->{SCRIPTDIR};
 	my ( $dir1, $dir2 ) = sort ( $genome_id1, $genome_id2 );
