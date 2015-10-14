@@ -579,6 +579,10 @@ function launch(experiment) {
     function dotsXY() {
         var xy_dot_req = {
             type: 'dotplot_dots',
+            requester: {
+		        page:      PAGE_NAME,
+		        user_name: USER_NAME
+	        },
             parameters: {
                 genome_id1: xgid,
                 genome_id2: ygid,

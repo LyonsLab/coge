@@ -66,16 +66,17 @@ sub generate_html {
     }
     else {
         $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
-        $template->param( PAGE_TITLE => $PAGE_TITLE,
-		          TITLE      => "SynMap 3D",
-        	          PAGE_LINK  => $LINK,
-			  HOME       => $CONF->{SERVER},
-                          HELP       => 'SynMap3d',
-                          WIKI_URL   => $CONF->{WIKI_URL} || '',
-			  ADJUST_BOX => 1,
-                          ADMIN_ONLY => $USER->is_admin,
-                          USER       => $USER->display_name || '',
-                          CAS_URL    => $CONF->{CAS_URL} || ''
+        $template->param( 
+            PAGE_TITLE   => $PAGE_TITLE,
+            TITLE        => "SynMap 3D",
+            PAGE_LINK    => $LINK,
+            HOME         => $CONF->{SERVER},
+            HELP         => 'SynMap3d',
+            WIKI_URL     => $CONF->{WIKI_URL} || '',
+			ADJUST_BOX   => 1,
+            ADMIN_ONLY   => $USER->is_admin,
+            USER         => $USER->display_name || '',
+            CAS_URL      => $CONF->{CAS_URL} || ''
         );
         $template->param( LOGON      => 1 ) unless $USER->is_public;
     }
@@ -86,7 +87,10 @@ sub generate_html {
 
 sub generate_body {
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-    $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+    $template->param( 
+            PAGE_NAME => "$PAGE_TITLE.pl",
+            API_BASE_URL => 'api/v1/'
+    );
     
     # Force login 
     if ( $USER->is_public ) {
