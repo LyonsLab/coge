@@ -57,7 +57,7 @@ sub build {
     # Send notification email #TODO move into shared module
     if ( $self->params->{email} ) {
         # Build message body
-        my $body = 'Export of experiment "' . $exp_name . '" has finished.';
+        my $body = 'Export of experiment "' . $exp_name . '" (id' . $eid . ') has finished.';
         $body .= "\nLink: " . $self->site_url if $self->site_url;
         $body .= "\n\nNote: you received this email because you submitted a job on " .
             "CoGe (http://genomevolution.org) and selected the option to be emailed " .
