@@ -4,29 +4,21 @@ use Moose;
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
+use CoGe::Core::Storage qw(get_genome_file);
 use CoGe::Builder::CommonTasks;
 
-use File::Spec::Functions;
+use File::Spec::Functions qw(catfile);
 use Data::Dumper;
 #use URI::Escape::JavaScript qw(escape);
+
+sub get_name {
+    return "Export FASTA";
+}
 
 sub build {
     my $self = shift;
 
-    # Initialize workflow
-    $self->workflow( $self->jex->create_workflow(name => "Export FASTA", init => 1) );
-    return unless ($self->workflow && $self->workflow->id);
-
-    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
-
-    my $dest_type = $self->params->{dest_type};
-       $dest_type = "http" unless $dest_type;
-
-    $self->workflow->logfile(catfile($result_dir, "debug.log"));
-
     # Get genome data file path
-    return unless (defined $self->params && ($self->params->{gid} || $self->params->{genome_id}));
     my $gid = $self->params->{gid} || $self->params->{genome_id};
     return unless $gid;
     my $genome = $self->db->resultset("Genome")->find($gid);
@@ -39,18 +31,46 @@ sub build {
     my $output_file = $genome_name.'.faa';
 
     # Setup tasks to export/download the file
+    my @done_files;
+    my $dest_type = $self->params->{dest_type};
+       $dest_type = "http" unless $dest_type;
     if ($dest_type eq "irods") { # irods export
         my $irods_base = $self->params->{dest_path};
         $irods_base = irods_get_base_path($self->user->name) unless $irods_base;
 
         my $irods_dest = catfile($irods_base, $output_file);
-        my $irods_done = catfile($staging_dir, "irods.done");
+        my $irods_done = catfile($self->staging_dir, "irods.done");
 
         $self->workflow->add_job( export_to_irods($genome_file, $irods_dest, $self->params->{overwrite}, $irods_done) );
-        $self->workflow->add_job( generate_results($irods_dest, $dest_type, $result_dir, $self->conf, $irods_done) );
+        my $results_task = generate_results($irods_dest, $dest_type, $self->result_dir, $self->conf, $irods_done);
+        $self->workflow->add_job($results_task);
+        push @done_files, $results_task->{outputs}->[0];
     }
     else { # http download
-        $self->workflow->add_job( link_results($genome_file, $output_file, $result_dir, $self->conf) );
+        my $results_task = link_results($genome_file, $output_file, $self->result_dir, $self->conf);
+        $self->workflow->add_job($results_task);
+        push @done_files, $results_task->{outputs}->[0];
+    }
+    
+    # Send notification email #TODO move into shared module
+    if ( $self->params->{email} ) {
+        # Build message body
+        my $body = 'FASTA export for genome "' . $genome_name . '" has finished.';
+        $body .= "\nLink: " . $self->site_url if $self->site_url;
+        $body .= "\n\nNote: you received this email because you submitted a job on " .
+            "CoGe (http://genomevolution.org) and selected the option to be emailed " .
+            "when finished.";
+        
+        # Create task
+        $self->workflow->add_job(
+            send_email_job(
+                to => $self->user->email,
+                subject => 'CoGe FASTA export done',
+                body => $body,
+                staging_dir => $self->staging_dir,
+                done_files => \@done_files
+            )
+        );
     }
     
     return 1;

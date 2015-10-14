@@ -36,8 +36,6 @@ sub build {
     
     my @tasks;
     
-    # Setup paths to data files
-    #FIXME this is for LoadExperiment, also need to handle IRODS/FTP/HTTP data from API
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
 
     # Check multiple files (if more than one file then all should be FASTQ)

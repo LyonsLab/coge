@@ -1429,7 +1429,7 @@ sub add_metadata_to_results_job {
 
 sub send_email_job {
     my %opts = @_;
-    my $from = $opts{from};
+    my $from = 'CoGe Support <coge.genome@gmail.com>';
     my $to = $opts{to};
     my $subject = $opts{subject};
     my $body = $opts{body};
