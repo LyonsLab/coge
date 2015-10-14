@@ -108,6 +108,14 @@ sub log {
     close OUT;
 }
 
+sub log_section{
+	my $self = shift;
+	$self->log( "#" x (25) );
+	$self->log( shift );
+	$self->log( "#" x (25) );
+	$self->log( "" );
+}
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 1;
