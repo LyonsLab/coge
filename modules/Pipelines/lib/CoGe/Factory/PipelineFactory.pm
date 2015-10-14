@@ -2,6 +2,9 @@ package CoGe::Factory::PipelineFactory;
 
 use Moose;
 
+use File::Spec::Functions qw(catfile);
+use CoGe::Core::Storage qw(get_workflow_paths);
+
 use CoGe::Builder::Export::Fasta;
 use CoGe::Builder::Export::Gff;
 use CoGe::Builder::Export::Experiment;
@@ -10,7 +13,7 @@ use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
-use CoGe::Builder::Tools::DotplotsDots;
+use CoGe::Builder::Tools::DotplotDots;
 use CoGe::Builder::Tools::SynMap;
 
 has 'db' => (
@@ -49,10 +52,10 @@ sub get {
     my $builder;
     if ($message->{type} eq "export_gff") {
         $builder = CoGe::Builder::Export::Gff->new($request);
-    } 
+    }
     elsif ($message->{type} eq "export_fasta") {
         $builder = CoGe::Builder::Export::Fasta->new($request);
-    } 
+    }
     elsif ($message->{type} eq "export_experiment") {
         $builder = CoGe::Builder::Export::Experiment->new($request);
     }
@@ -74,13 +77,45 @@ sub get {
     elsif ($message->{type} eq "synmap") {
         $builder = CoGe::Builder::Tools::SynMap->new($request);
     }
-    elsif ($message->{type} eq "dotplots_dots") {
-        $builder = CoGe::Builder::Tools::DotplotsDots->new($request);
+    elsif ($message->{type} eq "dotplot_dots") {
+        $builder = CoGe::Builder::Tools::DotplotDots->new($request);
     }
     else {
         print STDERR "PipelineFactory::get unknown type\n";
         return;
     }
+    
+    # Initialize workflow
+    $builder->workflow( $self->jex->create_workflow(name => $builder->get_name, init => 1) );
+    return unless ($builder->workflow && $builder->workflow->id);
+    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $builder->workflow->id);
+    $builder->staging_dir($staging_dir);
+    $builder->result_dir($result_dir);
+    $builder->workflow->logfile(catfile($result_dir, "debug.log"));
+    
+    # Get a tiny URL to a status page
+    my ($page, $link);
+    if ($message->{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
+        $page = $message->{requester}->{page};
+        my $url = $message->{requester}->{url}; #FIXME why page and url separate? merge these ...
+        if ($url) {
+            $link = CoGe::Accessory::Web::get_tiny_link( url => $self->conf->{SERVER} . $url . "&wid=" . $builder->workflow->id );
+        }
+        elsif ($page) {
+            $link = CoGe::Accessory::Web::get_tiny_link( url => $self->conf->{SERVER} . $page . "?wid=" . $builder->workflow->id );
+        }
+    }
+    else { # otherwise infer status page by job type (for the DE)
+        $page = 'API';
+        if ($message->{type} eq 'load_genome') {
+            $link = CoGe::Accessory::Web::get_tiny_link( url => $self->conf->{SERVER} . 'LoadGenome.pl' . "?wid=" . $builder->workflow->id );
+        }
+        elsif ($message->{type} eq 'load_experiment') {
+            $link = CoGe::Accessory::Web::get_tiny_link( url => $self->conf->{SERVER} . 'LoadExperiment.pl' . "?wid=" . $builder->workflow->id );
+        }
+    }
+    $builder->page($page) if $page;
+    $builder->site_url($link) if $link;
 
     # Construct the workflow
     my $rc = $builder->build;
@@ -88,9 +123,9 @@ sub get {
         print STDERR "PipelineFactory::get build failed\n";
         return;
     }
-
+    
     # Fetch the workflow constructed
-    return $builder->get;
+    return $builder;
 }
 
 1;
