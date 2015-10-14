@@ -1,6 +1,7 @@
 package CoGe::Builder::Export::Gff;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
@@ -45,7 +46,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;

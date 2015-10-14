@@ -1,6 +1,8 @@
 package CoGe::Request::Experiment;
 
 use Moose;
+with qw(CoGe::Request::Request);
+
 use CoGe::Request::Request;
 use JSON;
 
@@ -21,5 +23,4 @@ sub has_access {
     return $self->user->has_access_to_experiment($experiment);
 }
 
-with qw(CoGe::Request::Request);
 1;

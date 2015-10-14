@@ -1,6 +1,7 @@
 package CoGe::Builder::Export::Experiment;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils;
@@ -65,7 +66,5 @@ sub export_experiment {
         outputs => [$output]
     );
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;
