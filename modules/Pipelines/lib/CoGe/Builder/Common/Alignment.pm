@@ -141,12 +141,12 @@ sub build {
     my ($alignment_tasks, $alignment_results);
     if ($alignment_params && $alignment_params->{tool} eq 'hisat2') {
         ($alignment_tasks, $alignment_results) = create_hisat2_workflow(
-            gid => $gid,
             fasta => $fasta,
         	fastq => \@trimmed,
+            gid => $gid,
+            '--phred33' => $alignment_params->{'--phred33'},
             read_type => $alignment_params->{read_type},
-            staging_dir => $staging_dir,
-            params => $alignment_params,
+            staging_dir => $staging_dir
         );    	
     }
     elsif ($alignment_params && $alignment_params->{tool} eq 'tophat') {
