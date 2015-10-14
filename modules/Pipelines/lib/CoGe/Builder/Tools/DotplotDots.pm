@@ -2,7 +2,7 @@ package CoGe::Builder::Tools::DotplotDots;
 
 use Moose;
 
-use File::Path;
+use File::Spec::Functions;
 
 sub build {
 	my $self = shift;
