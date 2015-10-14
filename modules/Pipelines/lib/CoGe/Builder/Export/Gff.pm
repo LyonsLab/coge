@@ -5,8 +5,7 @@ with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
-use CoGe::Core::Storage;
-use CoGe::Builder::CommonTasks;
+use CoGe::Builder::CommonTasks qw(generate_gff export_to_irods generate_results link_results send_email_job);
 
 use File::Basename qw(basename);
 use File::Spec::Functions;
@@ -28,7 +27,6 @@ sub build {
     return unless $gid;
 
     # Get genome
-    return unless (defined $self->params && $gid);
     my $genome = $self->db->resultset("Genome")->find($gid);
     my $genome_name = $self->params->{basename} = sanitize_name($genome->organism->name);
     $genome_name = 'genome_'.$gid unless $genome_name;
@@ -58,7 +56,7 @@ sub build {
     # Send notification email #TODO move into shared module
     if ( $self->params->{email} ) {
         # Build message body
-        my $body = 'GFF export for genome "' . $genome_name . '" has finished.';
+        my $body = 'GFF export for genome "' . $genome_name . '" (id' . $gid . ') has finished.';
         $body .= "\nLink: " . $self->site_url if $self->site_url;
         $body .= "\n\nNote: you received this email because you submitted a job on " .
             "CoGe (http://genomevolution.org) and selected the option to be emailed " .
