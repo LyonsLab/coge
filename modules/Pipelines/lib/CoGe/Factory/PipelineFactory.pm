@@ -13,7 +13,7 @@ use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
-use CoGe::Builder::Tools::DotplotsDots;
+use CoGe::Builder::Tools::DotplotDots;
 use CoGe::Builder::Tools::SynMap;
 
 has 'db' => (
@@ -77,8 +77,8 @@ sub get {
     elsif ($message->{type} eq "synmap") {
         $builder = CoGe::Builder::Tools::SynMap->new($request);
     }
-    elsif ($message->{type} eq "dotplots_dots") {
-        $builder = CoGe::Builder::Tools::DotplotsDots->new($request);
+    elsif ($message->{type} eq "dotplot_dots") {
+        $builder = CoGe::Builder::Tools::DotplotDots->new($request);
     }
     else {
         print STDERR "PipelineFactory::get unknown type\n";
