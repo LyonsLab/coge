@@ -1710,7 +1710,7 @@ function upload_metadata() {
 
 function upload_metadata_dialog(type) {
 	metadata_type = type;
-	$('#upload_experiment_metadata_dialog').dialog({
+	$('#upload_metadata_dialog').dialog({
 		width:'28em'
 	}).dialog('open');
 }
