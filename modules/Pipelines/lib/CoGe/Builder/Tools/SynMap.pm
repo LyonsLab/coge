@@ -24,7 +24,6 @@ sub add_jobs {
 	my $workflow = $opts{workflow};
 	my $db       = $opts{db};
 	my $config   = $opts{config};
-	my $cogeweb  = $opts{cogeweb};
 
 	my $dsgid1 = $opts{dsgid1} || $opts{genome_id1};
 	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
@@ -1263,18 +1262,11 @@ sub build {
 	my $genome_id2 = $self->params->{genome_id2};
 	return unless $genome_id2;
 
-	$self->workflow( $self->jex->create_workflow( name => "SynMap", init => 1 ) );
-	return unless ( $self->workflow && $self->workflow->id );
-	my ( $staging_dir, $result_dir ) = get_workflow_paths( $self->user->name, $self->workflow->id );
-	$self->workflow->logfile( catfile( $result_dir, "debug.log" ) );
-
-	my $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => catdir( $self->conf->{TEMPDIR}, 'SynMap' ) );
 	my %opts = ( %{ defaults() }, %{ $self->params } );
 	add_jobs(
 		workflow => $self->workflow,
 		db       => $self->db,
 		config   => $self->conf,
-		cogeweb  => $cogeweb,
 		%opts
 	);
 
@@ -1378,6 +1370,10 @@ sub generate_pseudo_assembly {
 		success => $JEX->is_successful($response),
 		output  => $output
 	};
+}
+
+sub get_name {
+	return 'SynMap';
 }
 
 sub get_query_link {
@@ -1614,42 +1610,29 @@ sub go {
 	my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
 	my $workflow_name = "synmap-$tiny_id";
 
-	my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-		basename => $opts{basename},
-		tempdir  => catdir( $config->{TEMPDIR}, 'SynMap' )
-	);
-
 	my $JEX = CoGe::Accessory::Jex->new(
 		host => $config->{JOBSERVER},
 		port => $config->{JOBPORT}
 	);
-	my $workflow = $JEX->create_workflow(
-		name    => $workflow_name,
-		logfile => $cogeweb->logfile
-	);
-	$workflow->log( "#" x (25) );
-	$workflow->log( "Creating Workflow" );
-	$workflow->log( "#" x (25) );
-	$workflow->log( "" );
-	$workflow->log( "#" x (25) );
+	my $workflow = $JEX->create_workflow( name => $workflow_name );
+    my ($staging_dir, $result_dir) = get_workflow_paths(user->name, $workflow->id);
+    $workflow->logfile(catfile($result_dir, "debug.log"));
+
+	$workflow->log_section( "Creating Workflow" );
 	$workflow->log( "Link to Regenerate Analysis" );
 	$workflow->log( "$tiny_link" );
 	$workflow->log( "" );
-	$workflow->log( "Created Workflow: synmap-$workflow_name" );
+	$workflow->log( "Created Workflow: $workflow_name" );
 	$workflow->log( "" );
 
 	add_jobs(
 		workflow => $workflow,
 		db       => $db,
 		config   => $config,
-		cogeweb  => $cogeweb,
 		@_
 	);
 
-	$workflow->log( "#" x (25) );
-	$workflow->log( "Running Workflow" );
-	$workflow->log( "#" x (25) );
-	$workflow->log( "" );
+	$workflow->log_section( "Running Workflow" );
 
 	my $response = $JEX->submit_workflow($workflow);
 
