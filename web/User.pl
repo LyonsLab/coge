@@ -9,7 +9,6 @@ use Data::Validate::URI qw(is_uri);
 use JSON::XS;
 use HTML::Template;
 use Sort::Versions;
-use Text::Delimited;
 use Time::Piece;
 use List::Util qw(first);
 use URI::Escape::JavaScript qw(escape unescape);
@@ -28,6 +27,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Metadata qw(create_annotations);
 no warnings 'redefine';
 
 use vars qw(
@@ -106,7 +106,7 @@ $node_types = CoGeX::node_types();
     toggle_star                     => \&toggle_star,
     cancel_job				        => \&cancel_job,
     comment_job                     => \&comment_job,
-    upload_experiment_metadata		=> \&upload_experiment_metadata
+    upload_metadata					=> \&upload_metadata
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1567,31 +1567,31 @@ sub upload_image_file {
 }
 
 sub upload_metadata {
-	warn "upload_metadata";
     my %opts = @_;
     my $type = $opts{type};
-	my $fh = $FORM->upload('metadata_file');
-	if ($fh) {
-		my $file = new Text::Delimited;
-		$file->open($fh);
-		my @header = $file->fields;
-		while ( my $row = $file->read ) {
-			my $annotations;
-			foreach my $i (1 .. $#header) {
-				if ($i == 1) {
-					$annotations .= ';' if length($annotations);
-				}
-				$annotations .= $header[$i] . '|' . $row->{$header[$i]};
-			}
-			my $col0 = $row->{__DATA__}->[0];
-			my @ids = split (/,/, $col0);
+    open(DATA, '<:crlf', $FORM->tmpFileName($FORM->param('metadata_file')));
+    my $line = <DATA>;
+    chomp $line;
+    my @headers = split(/\t/, $line);
+	while (<DATA>) {
+		chomp $_;
+		next if !$_;
+		my @row = split(/\t/, $_);
+		my $annotations;
+		for my $i (1..$#row) {
+			next if !$row[$i];
+			$annotations .= ';' if $annotations;
+			$annotations .= $headers[$i] . '|' . $row[$i];
+		}
+		if ($annotations) {
+			my @ids = split(/,/, $row[0]);
 			foreach (@ids) {
 				my $target = $DB->resultset($type)->find($_);
-				CoGe::Core::Metadata::create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
+				create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
 			}
 		}
-		$file->close;
 	}
+	close DATA;
 }
 
 sub search_notebooks
