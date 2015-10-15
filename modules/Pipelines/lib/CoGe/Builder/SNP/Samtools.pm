@@ -37,7 +37,7 @@ sub build {
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
-    my $additional_metadata => $opts->{additional_metadata};
+    my $additional_metadata = $opts->{additional_metadata};
     my $params = $opts->{params};
 
     # Setup paths
