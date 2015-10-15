@@ -1,6 +1,7 @@
 package CoGe::Builder::Load::Genome;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catfile);
@@ -99,7 +100,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;
