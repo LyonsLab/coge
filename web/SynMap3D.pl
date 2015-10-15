@@ -11,7 +11,7 @@ use URI::Escape::JavaScript qw(unescape);
 #use File::Path;
 #use File::Copy;
 #use File::Basename;
-#use File::Spec::Functions qw(catdir catfile);
+use File::Spec::Functions qw(catdir catfile);
 #use File::Listing qw(parse_dir);
 #use File::Slurp;
 use LWP::Simple;
@@ -22,6 +22,7 @@ use Data::Dumper;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
+use CoGe::Accessory::Jex;
 use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(genomecmp);
@@ -31,7 +32,7 @@ no warnings 'redefine';
 
 use vars qw(
   $CONF $PAGE_TITLE $TEMPDIR $USER $DB $FORM $LINK $EMBED
-  %FUNCTION $LOAD_ID $WORKFLOW_ID
+  %FUNCTION $LOAD_ID $WORKFLOW_ID $JEX
 );
 
 $PAGE_TITLE = 'SynMap3D';
@@ -42,6 +43,8 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
+$JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
+
 # Get workflow_id and load_id for previous load if specified.  Otherwise
 # generate a new load_id for data upload.
 $WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
@@ -51,7 +54,9 @@ $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_u
 $EMBED = $FORM->param('embed');
 
 %FUNCTION = (
-    send_error_report       => \&send_error_report
+    dotplot_dots        => \&dotplot_dots,
+    merge_three_dots    => \&merge_three_dots,
+    send_error_report   => \&send_error_report
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -176,6 +181,37 @@ sub get_debug_log {
 
     my $result = read_file($result_file);
     return $result;
+}
+
+sub dotplot_dots {
+    my %opts = @_;
+    my $genome_id1 = $opts{genome_id1};
+    my $genome_id2 = $opts{genome_id2};
+    my $ksfile = $opts{ksfile};
+
+    my $DIAGSDIR = $CONF->{DIAGSDIR};
+    my $SCRIPTDIR   = $CONF->{SCRIPTDIR};
+    my ( $dir1, $dir2 ) = sort ( $genome_id1, $genome_id2 );
+
+    my $cmd = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile;
+    my %outputs = [catfile($DIAGSDIR, $dir1, $dir2, 'log.json'),
+                  catfile($DIAGSDIR, $dir1, $dir2, 'dots.json')];
+    my $description = "running dotplot_dots...";
+
+    my $workflow = $JEX->create_workflow( name => "Finding Syntenic Points");
+    $workflow->add_job({
+        cmd => $cmd,
+        outputs => %outputs,
+        description => $description,
+    });
+    my $response = $JEX->submit_workflow($workflow);
+
+    return $response;
+}
+
+sub three_dots_merge {
+    my %opts = @_;
+    return;
 }
 
 sub send_error_report {

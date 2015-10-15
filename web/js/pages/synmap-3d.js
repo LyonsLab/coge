@@ -433,7 +433,7 @@ function launch(experiment) {
     var final_experiment = experiment;
     final_experiment.links = {};
     var fileDir = "/home/asherkhb/repos/coge/web/data/diags/"
-    var fileTag = ".CDS_CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks" 
+    var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks" 
     
     var xy_request = {
         type: 'synmap',
@@ -574,9 +574,31 @@ function launch(experiment) {
             })
     }
 
+    function dotsXY() {
+        coge.progress.init({title: "Running Analysis 4/3",
+                            onSuccess: function(results) {
+                                //final_experiment.links.yz = buildLink(ygid, zgid);
+                                //showVisualizer(final_experiment);
+                            } 
+                           });
+        coge.progress.begin()
+        
+        $.ajax({ data: {fname: "dotplot_dots",
+                        genome_id1: xgid,
+                        genome_id2: ygid,
+                        ksfile: final_experiment.links.xy
+                        }
+                })
+        .done(function(response) {
+            //coge.progress.update(response.id, response.site_url);
+            console.log(response);  
+        })        
+        //console.log(me)
+    }
+
     // Compute XY dotplot_dots
     // onSuccess: Launch dots XZ. 
-    function dotsXY() {
+    /*function dotsXY() {
         var xy_dot_req = {
             type: 'dotplot_dots',
             requester: {
@@ -617,10 +639,11 @@ function launch(experiment) {
             .fail(function(jqXHR, textStatus, errorThrown) {
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
             })
-    }
+    }*/
 
     // Start Comparisons
-    makeXY();
+    //makeXY(); AKB UNCOMMENT THIS TO RESUME FUNCTIONING!
+    dotsXY();
     //console.log(experiment);
 };
 
