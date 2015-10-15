@@ -9,7 +9,7 @@ use File::Path qw(make_path);
 use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
-use CoGe::Accessory::Utils qw(sanitize_name to_filename);
+use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
 use CoGe::Accessory::Web qw(get_defaults split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
@@ -915,11 +915,11 @@ sub create_gff_generation_job {
 sub create_hisat2_workflow {
     my %opts = @_;
 
-    # Required arguments
-    my $gid = $opts{gid};
-    my $fasta = $opts{fasta};
-    my $fastq = $opts{fastq};
-    my $read_type = $opts{'read_type'} // "single"; #/
+    my $fasta       = $opts{fasta};
+    my $fastq       = $opts{fastq};
+    my $gid         = $opts{gid};
+    my $phred33     = $opts{'--phred33'};
+    my $read_type   = $opts{read_type} // 'single';
     my $staging_dir = $opts{staging_dir};
 
     my ($index, %build) = create_hisat2_build_job($gid, $fasta);
@@ -928,6 +928,7 @@ sub create_hisat2_workflow {
         fastq => $fastq,
         gid => $gid,
         index_files => ($build{outputs}),
+        '--phred33' => $phred33,
         read_type => $read_type,
         staging_dir => $staging_dir
     );
@@ -946,17 +947,33 @@ sub create_hisat2_job {
     my $fastq       = $opts{fastq};
     my $gid         = $opts{gid};
     my $index_files = $opts{index_files};
+    my $phred33     = $opts{'--phred33'};
     my $read_type   = $opts{read_type};
     my $staging_dir = $opts{staging_dir};
 
-    return (
+	my $args = [
+		['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
+		['-S', 'hisat2.sam', 0]
+    ];
+    if ($read_type eq 'single') {
+    	push $args, ['-U', join(',', @$fastq), 0];
+    }
+    else {
+		my ($m1, $m2) = detect_paired_end($fastq);
+    	push $args, ['-1', join(',', sort @$m1), 0];
+    	push $args, ['-2', join(',', sort @$m2), 0];
+	}
+	if ($phred33) {
+		push $args, ['', '--phred33', 0];
+	}
+	else {
+		push $args, ['', '--phred64', 0];
+	}
+
+	return (
         cmd => 'nice ' . $CONF->{HISAT2},
         script => undef,
-        args => [
-        	['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
-			['-U', join(',', @$fastq), 0],
-			['-S', 'hisat2.sam', 0]
-        ],
+        args => $args,
         inputs => [ @$fastq, @$index_files ],
         outputs => [ catfile($staging_dir, 'hisat2.sam') ],
         description => "Aligning sequences (HISAT2)..."
@@ -976,8 +993,8 @@ sub create_hisat2_build_job {
         script => undef,
         args => [
         	['-p', '8', 0],
-            ["", $fasta, 0],
-            ["", $name, 0],
+            ['', $fasta, 0],
+            ['', $name, 0],
         ],
         inputs => [ $fasta ],
         outputs => [
