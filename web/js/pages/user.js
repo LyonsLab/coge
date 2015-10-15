@@ -1697,22 +1697,19 @@ function create_new_notebook() {
     });
 }
 
-var metadata_type;
-function upload_metadata() {
-	$('#metadata_file').fileupload('send', {
-		files: $('#metadata_file')[0].files[0],
-		formData: {
-			fname: 'upload_metadata',
-			type: metadata_type
-		}
-	});
-}
-
 function upload_metadata_dialog(type) {
-	metadata_type = type;
 	$('#upload_metadata_dialog').dialog({
 		width:'28em'
 	}).dialog('open');
+	$('#metadata_file').fileupload({
+		done: function() {
+			$('#upload_metadata_dialog').dialog('close');
+		},
+		formData: {
+			fname: 'upload_metadata',
+			type: type
+		}
+	});
 }
 
 function send_menu() {
