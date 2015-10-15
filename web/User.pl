@@ -1586,7 +1586,7 @@ sub upload_metadata {
 		if ($annotations) {
 			my @ids = split(/,/, $row[0]);
 			foreach (@ids) {
-				my $target = $DB->resultset($type)->find($_);
+				my $target = $DB->resultset($type eq 'Notebook' ? 'List' : $type)->find($_);
 				create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
 			}
 		}
