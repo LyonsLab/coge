@@ -28,6 +28,7 @@ our @EXPORT = qw(
     create_notebook_job create_bam_sort_job create_iget_job
     create_load_annotation_job create_data_retrieval_workflow
     send_email_job add_items_to_notebook_job create_hisat2_workflow
+    export_experiment_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -169,6 +170,26 @@ sub export_to_irods {
         inputs => [$src],
         outputs => [$done_file]
    };
+}
+
+sub export_experiment_job {
+    my %args = @_;
+    my $eid = $args{eid};
+    my $output = $args{output};
+
+    return {
+        cmd => catdir($CONF->{SCRIPTDIR}, "export_experiment_or_genome.pl"),
+        description => "Generating experiment files",
+        args => [
+            ["-id", $eid, 0],
+            ["-type", '"experiment"', 0],
+            ["-output", $output, 1],
+            ["-conf", $CONF->{_CONFIG_PATH}, 0],
+            ["-dir", ".", ""]
+        ],
+        inputs => [],
+        outputs => [$output]
+    };
 }
 
 sub create_iget_job {
