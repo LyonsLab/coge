@@ -491,7 +491,7 @@ $.extend(ContentPanel.prototype, {
     	this.selectedView = viewId;
     	var view = this.views[viewId];
     	
-    	// 
+    	// Setup requests for content data
     	var promises = new Array();
     	view.dataTypes.forEach(function (dataType) {
     		var deferred = $.Deferred();
@@ -511,7 +511,7 @@ $.extend(ContentPanel.prototype, {
         return $.when.apply($, promises).then(function(schemas) {
 	            console.log("ContentPanel.update: DONE");
 	        }, function(e) {
-	            console.log("My ajax failed");
+	            console.log("ContentPanel.update: FAILED");
 	        });
     },
     
