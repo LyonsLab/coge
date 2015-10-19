@@ -510,6 +510,7 @@ $.extend(ContentPanel.prototype, {
         
         return $.when.apply($, promises).then(function(schemas) {
 	            console.log("ContentPanel.update: DONE");
+	            self.grid.clearSelection();
 	        }, function(e) {
 	            console.log("ContentPanel.update: FAILED");
 	        });
@@ -806,7 +807,7 @@ $.extend(DataGrid.prototype, {
     },
     
     clearSelection: function() {
-    	this.dataTable.api().rows('.selected').removeClass('selected');
+    	this.dataTable.$('tr.selected').removeClass('selected'); // unselect all
     },
     
     selectItem: function(item) {
