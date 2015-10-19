@@ -402,7 +402,7 @@ sub delete_items {
 
         # Record in log
         if ($type_name) {
-            my $item_type_code = node_types{$item_type};
+            my $item_type_code = $node_types->{$item_type};
 			CoGe::Accessory::Web::log_history(
 			    db          => $DB,
 			    user_id     => $USER->id,
@@ -475,7 +475,7 @@ sub undelete_items {
 
         # Record in log
         if ($type_name) {
-            my $item_type_code = node_types{$item_type};
+            my $item_type_code = $node_types->{$item_type};
 			CoGe::Accessory::Web::log_history(
 			    db          => $DB,
 			    user_id     => $USER->id,
