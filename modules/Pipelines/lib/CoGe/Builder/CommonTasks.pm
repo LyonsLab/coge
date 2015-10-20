@@ -220,7 +220,7 @@ sub create_data_retrieval_workflow {
     my $upload_dir = $opts{upload_dir};
     my $data = $opts{data};
     
-    my (@tasks, @files);
+    my (@tasks, @files, @ncbi);
     foreach my $item (@$data) {
         my $type = lc($item->{type});
         
@@ -249,6 +249,10 @@ sub create_data_retrieval_workflow {
                 dest_path => $upload_dir
             );
         }
+        elsif ($type eq 'ncbi') {
+            #TODO move file retrieval from genbank_genome_loader.pl to here
+            push @ncbi, $item->{path};
+        }
         
         # Add task to workflow
         if ($task) {
@@ -259,7 +263,8 @@ sub create_data_retrieval_workflow {
     
     return {
         tasks => \@tasks,
-        files => \@files
+        files => \@files,
+        ncbi  => \@ncbi
     };
 }
 
