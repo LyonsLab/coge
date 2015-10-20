@@ -54,7 +54,9 @@ $(document).ready(function() {
     	onReset: reset_location
     });
     
+    // Initialize analysis dialogs
     snpMenu.init();
+    expressionMenu.init();
     
     // Open status dialog
     if (WORKFLOW_ID) {
@@ -117,7 +119,7 @@ $(document).ready(function() {
                     	</td>
                     	<td>
                     		<span class="data5 link" ondblclick="snpMenu.open();" onclick="snpMenu.open();">SNPs</span> |
-                    		<span class="data5 link" ondblclick="snpMenu.open();" onclick="snpMenu.open();">Expression</span>
+                    		<span class="data5 link" ondblclick="expressionMenu.open();" onclick="expressionMenu.open();">Expression</span>
                     	</td>
 			        </tr>
 			        </TMPL_IF>
