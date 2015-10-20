@@ -106,7 +106,10 @@ $node_types = CoGeX::node_types();
     toggle_star                     => \&toggle_star,
     cancel_job				        => \&cancel_job,
     comment_job                     => \&comment_job,
-    upload_metadata					=> \&upload_metadata
+    upload_metadata					=> \&upload_metadata,
+    get_experiment_metadata_stats	=> \&get_experiment_metadata_stats,
+    get_genome_metadata_stats		=> \&get_genome_metadata_stats,
+    get_notebook_metadata_stats		=> \&get_notebook_metadata_stats    
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1332,7 +1335,9 @@ sub get_contents {
         $items = get_lists_for_user($DB->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'metadata' ) {
-    	return get_metadata_pane();
+		my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+		$template->param( METADATA => 1 );
+		return $template->output;
     }
     elsif ( $type eq 'group' ) {
         $items = get_groups_for_user($DB->storage->dbh, $USER->id);
@@ -1384,14 +1389,6 @@ sub get_contents {
 
 #    print STDERR Dumper \@items, "\n";
     return encode_json($items);
-}
-
-sub get_metadata_pane {
-	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-	$template->param(
-		METADATA => 1
-	);
-	return $template->output;
 }
 
 sub get_jobs {
@@ -1592,6 +1589,10 @@ sub upload_metadata {
 		}
 	}
 	close DATA;
+}
+
+sub get_experiment_metadata_stats {
+	
 }
 
 sub search_notebooks
