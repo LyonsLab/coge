@@ -1,6 +1,7 @@
 package CoGe::Builder::Load::Experiment;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use Switch;
@@ -16,7 +17,17 @@ use CoGe::Builder::Expression::qTeller qw(build);
 use CoGe::Builder::SNP::CoGeSNPs qw(build);
 use CoGe::Builder::SNP::Samtools qw(build);
 use CoGe::Builder::SNP::Platypus qw(build);
-use CoGe::Builder::SNP::GATK qw(build);
+#use CoGe::Builder::SNP::GATK qw(build);
+
+sub get_name {
+    my $self = shift;
+    my $metadata = $self->params->{metadata};
+    my $info = '"' . $metadata->{name};
+    $info .= ": " . $metadata->{description} if $metadata->{description};
+    $info .= " (v" . $metadata->{version} . ")";
+    $info .= '"';
+    return "Load Experiment " . $info;
+}
 
 sub build {
     my $self = shift;
@@ -38,17 +49,6 @@ sub build {
     my $genome = $self->db->resultset('Genome')->find($gid);
     return unless $genome;
     
-    # Initialize workflow
-    my $info = '"' . $metadata->{name};
-    $info .= ": " . $metadata->{description} if $metadata->{description};
-    $info .= " (v" . $metadata->{version} . ")";
-    $info .= '"';
-    $self->workflow($self->jex->create_workflow(name => "Load Experiment " . $info, init => 1));
-    return unless ($self->workflow && $self->workflow->id);
-    
-    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
-    $self->workflow->logfile(catfile($result_dir, "debug.log"));
-
     # Determine file type if not set
     my $file_type = $data->[0]->{file_type}; # type of first data file
     ($file_type) = detect_data_type($file_type, $data->[0]->{path}) unless $file_type;
@@ -99,7 +99,7 @@ sub build {
                 user => $self->user,
                 metadata => $metadata,
                 annotations => $annotations,
-                staging_dir => $staging_dir,
+                staging_dir => $self->staging_dir,
                 wid => $self->workflow->id,
                 gid => $gid,
                 bam_file => $bam_file
@@ -147,7 +147,7 @@ sub build {
                 case 'coge'     { $snp_workflow = CoGe::Builder::SNP::CoGeSNPs::build($snp_params); }
                 case 'samtools' { $snp_workflow = CoGe::Builder::SNP::Samtools::build($snp_params); }
                 case 'platypus' { $snp_workflow = CoGe::Builder::SNP::Platypus::build($snp_params); }
-                case 'gatk'     { $snp_workflow = CoGe::Builder::SNP::GATK::build($snp_params); }
+                #case 'gatk'     { $snp_workflow = CoGe::Builder::SNP::GATK::build($snp_params); } # not currently supported
                 else            { die "unknown SNP method"; }
             }
             push @tasks, @{$snp_workflow->{tasks}};
@@ -162,7 +162,7 @@ sub build {
         # Submit workflow to generate experiment
         my $load_task = create_load_experiment_job(
             user => $self->user,
-            staging_dir => $staging_dir,
+            staging_dir => $self->staging_dir,
             wid => $self->workflow->id,
             gid => $genome->id,
             input_file => $input_files[0],
@@ -182,7 +182,7 @@ sub build {
                 notebook_id => $self->params->{notebook_id},
                 user => $self->user, 
                 wid => $self->workflow->id,
-                staging_dir => $staging_dir,
+                staging_dir => $self->staging_dir,
                 done_files => \@done_files
             );
             push @tasks, $t;
@@ -193,7 +193,7 @@ sub build {
                 user => $self->user,
                 wid => $self->workflow->id,
                 metadata => $metadata,
-                staging_dir => $staging_dir,
+                staging_dir => $self->staging_dir,
                 done_files => \@done_files
             );
             push @tasks, $t;
@@ -201,30 +201,21 @@ sub build {
         }
     }
     
-    # Send notification email
+    # Send notification email #TODO move into shared module
 	if ( $self->params->{email} ) {
-	    # Get tiny link
-	    my $link;
-	    if ($self->requester && $self->requester->{page}) {
-	        $link = CoGe::Accessory::Web::get_tiny_link( 
-	            url => $self->conf->{SERVER} . $self->requester->{page} . "?wid=" . $self->workflow->id 
-	        );
-	    }
-	    
 	    # Build message body
 	    my $body = 'Experiment "' . $metadata->{name} . '" has finished loading.';
-        $body .= "\nLink: $link" if $link;
-        $body .= "\n\nNote: you received this email because you submitted an experiment on " .
+        $body .= "\nLink: " . $self->site_url if $self->site_url;
+        $body .= "\n\nNote: you received this email because you submitted a job on " .
             "CoGe (http://genomevolution.org) and selected the option to be emailed " .
             "when finished.";
 	    
 		# Create task
 		push @tasks, send_email_job(
-			from => 'CoGe Support <coge.genome@gmail.com>',
 			to => $self->user->email,
 			subject => 'CoGe Load Experiment done',
 			body => $body,
-			staging_dir => $staging_dir,
+			staging_dir => $self->staging_dir,
 			done_files => \@done_files
 		);
 	}
@@ -234,7 +225,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;

@@ -1,6 +1,8 @@
 package CoGe::Request::Empty;
 
 use Moose;
+with qw(CoGe::Request::Request);
+
 use CoGe::Request::Request;
 
 sub is_valid {
@@ -13,5 +15,4 @@ sub has_access {
     return 1;
 }
 
-with qw(CoGe::Request::Request);
 1;

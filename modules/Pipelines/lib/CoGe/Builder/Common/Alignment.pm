@@ -36,8 +36,6 @@ sub build {
     
     my @tasks;
     
-    # Setup paths to data files
-    #FIXME this is for LoadExperiment, also need to handle IRODS/FTP/HTTP data from API
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
 
     # Check multiple files (if more than one file then all should be FASTQ)
@@ -143,12 +141,12 @@ sub build {
     my ($alignment_tasks, $alignment_results);
     if ($alignment_params && $alignment_params->{tool} eq 'hisat2') {
         ($alignment_tasks, $alignment_results) = create_hisat2_workflow(
-            gid => $gid,
             fasta => $fasta,
         	fastq => \@trimmed,
+            gid => $gid,
+            '--phred33' => $alignment_params->{'--phred33'},
             read_type => $alignment_params->{read_type},
-            staging_dir => $staging_dir,
-            params => $alignment_params,
+            staging_dir => $staging_dir
         );    	
     }
     elsif ($alignment_params && $alignment_params->{tool} eq 'tophat') {
@@ -246,7 +244,18 @@ sub generate_additional_metadata {
     }
 
     if ($alignment_params && $alignment_params->{tool}) {
-        if ($alignment_params->{tool} eq 'tophat') { # tophat
+        if ($alignment_params->{tool} eq 'hisat2') {
+            push @annotations, qq{note|hisat2_build};
+            my $params = join(' ', map { $_.' '.$alignment_params->{$_} } ('-p', '-x', '-S'));
+            if ($alignment_params->{'--phred33'}) {
+            	$params .= ' --phred33';
+            }
+            else {
+            	$params .= ' --phred64';
+            }
+            push @annotations, 'note|hisat2 ' . $params;
+        }
+        elsif ($alignment_params->{tool} eq 'tophat') {
             push @annotations, qq{note|bowtie2_build};
             push @annotations, 'note|tophat ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-g'));
         }
