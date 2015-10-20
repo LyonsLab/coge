@@ -952,6 +952,7 @@ sub create_hisat2_job {
     my $staging_dir = $opts{staging_dir};
 
 	my $args = [
+		['-p', '32', 0],
 		['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
 		['-S', 'hisat2.sam', 0]
     ];
@@ -992,7 +993,7 @@ sub create_hisat2_build_job {
         cmd => 'nice ' . $CONF->{HISAT2_BUILD},
         script => undef,
         args => [
-        	['-p', '8', 0],
+        	['-p', '32', 0],
             ['', $fasta, 0],
             ['', $name, 0],
         ],
