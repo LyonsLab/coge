@@ -394,38 +394,22 @@ var expressionMenu = {
     init: function() {
     	var self = this;
     	this.dialog = $('<div class="dialog_box small" style="padding:1em;"></div>');
-    	var template = $($("#snp-template2").html());
+    	var template = $($("#expression-template").html()).find('#expression-container');
+    	template.removeClass('hidden');
     	
-        var options_templates = {
-            coge:     $($("#coge-snp-template").html()),
-            samtools: $($("#samtools-snp-template").html()),
-            platypus: $($("#platypus-snp-template").html()),
-            gatk:     $($("#gatk-snp-template").html())
-        };
-        	
-        var options_container = template.find('#snp-container');
-        options_container.removeClass('hidden');
-        
-        this.method = template.find('#snp-method');
-        this.method.removeAttr("disabled");
-        
     	var render = function() {
-            var selected = self.method.val();
-            render_template(options_templates[selected], options_container);
             render_template(template, self.dialog);
         };
-        
-        $(document).on('change', '#snp-method', render);
         
         render();
         
     	this.dialog.dialog({ 
-    		title: "Select SNP Analysis Options",
+    		title: "Select Expression Analysis Options",
     		width: '35em',
     		autoOpen: false,
     		buttons: [
     	        {
-    	            text: " Identify SNPs ",
+    	            text: " Measure Expression ",
     	            "class": "coge-button", //FIXME isn't working
     	            click: function() {
     	            	self.close();
@@ -445,37 +429,7 @@ var expressionMenu = {
     },
 
 	is_valid: function () {
-		var method = this.method.val();
-		
-		//TODO this can be automated
-	    if (method === "coge") {
-	        return { 
-	            method: method,
-	            'min-read-depth':   this.dialog.find("#min-read-depth").val(),
-	            'min-base-quality': this.dialog.find("#min-base-quality").val(),
-	            'min-allele-count': this.dialog.find("#min-allele-count").val(),
-	            'min-allele-freq':  this.dialog.find("#min-allele-freq").val(),
-	            scale: this.dialog.find("#scale").val()
-	        };
-	    } 
-	    else if (method === "samtools") {
-	    	return {
-	            method: method,
-	            'min-read-depth': this.dialog.find("#min-read-depth").val(),
-	            'max-read-depth': this.dialog.find("#max-read-depth").val(),
-	        };
-	    } 
-	    else if (method === "platypus") {
-	    	return {
-	            method: method
-	        };
-	    } 
-	    else if (method === "gatk") {
-	    	return {
-	            method: method
-	        };
-	    }
-	    return;
+	    return true;
 	},
 	
 	submit: function() { 
@@ -490,7 +444,7 @@ var expressionMenu = {
 		var params = this.is_valid();
 	
 		coge.progress.begin({ 
-			title: "Identifying SNPs ...",
+			title: "Measuring Expression ...",
 			width: '60%',
 	    	height: '50%'
 		});
@@ -498,7 +452,7 @@ var expressionMenu = {
 	  
 		// Build request
 		var request = {
-			type: 'analyze_snps',
+			type: 'analyze_expression',
 			requester: {
 				page: PAGE_NAME,
 				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID,
@@ -506,7 +460,7 @@ var expressionMenu = {
 			},
 			parameters: {
 				eid: EXPERIMENT_ID,
-				snp_params: params
+				expression_params: params
 			}
 		};
 		
