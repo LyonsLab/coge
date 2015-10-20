@@ -30,7 +30,7 @@ sub build {
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
-    my $additional_metadata => $opts->{additional_metadata};
+    my $additional_metadata = $opts->{additional_metadata};
 
     # Setup paths
     my $gid = $genome->id;

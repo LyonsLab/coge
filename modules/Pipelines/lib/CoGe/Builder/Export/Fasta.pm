@@ -1,11 +1,12 @@
 package CoGe::Builder::Export::Fasta;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Core::Storage qw(get_genome_file);
-use CoGe::Builder::CommonTasks;
+use CoGe::Builder::CommonTasks qw(generate_gff export_to_irods generate_results link_results send_email_job);
 
 use File::Spec::Functions qw(catfile);
 use Data::Dumper;
@@ -55,7 +56,7 @@ sub build {
     # Send notification email #TODO move into shared module
     if ( $self->params->{email} ) {
         # Build message body
-        my $body = 'FASTA export for genome "' . $genome_name . '" has finished.';
+        my $body = 'FASTA export for genome "' . $genome_name . '" (id' . $gid . ') has finished.';
         $body .= "\nLink: " . $self->site_url if $self->site_url;
         $body .= "\n\nNote: you received this email because you submitted a job on " .
             "CoGe (http://genomevolution.org) and selected the option to be emailed " .
@@ -75,7 +76,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;

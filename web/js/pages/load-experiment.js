@@ -395,7 +395,12 @@ $.extend(AlignmentView.prototype, {
         		alignment_params: {
         			tool: "hisat2",
         			'--phred33': this.el.find("[id='--phred33']").is(":checked")
-        		}
+        		},
+                trimming_params: {
+                    '-q': this.el.find("[id='-q']").val(),
+                    '-m': this.el.find("[id='-m']").val(),
+                    '--quality-base': this.el.find("[id='--quality-base']").val()
+                }
         	}
         }
 
