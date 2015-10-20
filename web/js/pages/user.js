@@ -1717,6 +1717,7 @@ function upload_metadata_dialog(type) {
 	}).dialog('open');
 	$('#metadata_file').fileupload({
 		done: function() {
+			alert('metadata added.');
 			$('#upload_metadata_dialog').dialog('close');
 		},
 		formData: {
