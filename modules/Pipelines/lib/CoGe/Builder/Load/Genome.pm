@@ -50,6 +50,7 @@ sub build {
     my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data);
     push @tasks, @{$data_workflow->{tasks}} if ($data_workflow->{tasks});
     push @input_files, @{$data_workflow->{files}} if ($data_workflow->{files});
+    push @ncbi_accns, @{$data_workflow->{ncbi}} if ($data_workflow->{ncbi});
     
     # Submit workflow to add genome
     if (@ncbi_accns) { # NCBI-based load
