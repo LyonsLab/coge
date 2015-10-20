@@ -129,7 +129,7 @@ my $TAR = $P->{TAR};
 # Process each file into staging area
 my %sequences;
 my $seqLength;
-my $numSequences;
+my $numSequences = 0;
 my @files = split( ',', $fasta_files );
 foreach my $file (@files) {
     my $filename = basename($file);# =~ /^.+\/([^\/]+)$/;
