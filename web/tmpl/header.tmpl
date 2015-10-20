@@ -8,10 +8,6 @@
 <meta name="google-site-verification" content="voXZn_uzuPQj7YtCxw5ogRAW5PgalKg-8rA_VT7TooA" />
 <meta name="google-site-verification" content="LFIw-oo_UpW85cg_ONvoPuH1IpWYjlfmipsWhOvo1kk" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script type="text/javascript" src="js/coge/utils.js"></script>
-<script type="text/javascript" src="js/coge/services.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
 <TMPL_INCLUDE NAME="header_includes.tmpl">
 
@@ -37,33 +33,17 @@
 	.glyphicon-search:before {
 		content: "\e003";
 	}
-	/*#search input#search_token {
-		width: 40em;
-		height: 2em;
-		background: #ffffff;
-		border: none;
-		font-size: 1em;
-		float: left;
-		color: #119911;
-	}*/
-	/*#search_button {
-		width: 4em;
-		height: 2.4em;
-		padding-left: 0.5em;
-		border-color:#65d022;
-	}*/
 </style>
 
 <TMPL_VAR NAME="HEAD">
 
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 <link rel="shortcut icon" href="picts/urlicon/favicon.ico">
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 </HEAD>
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
 
-<div id="logout_dialog" class="collapse dialog_box" title="Log out of CoGe">
+<div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
     <div style="text-align:center;padding:30px;">
         <div class="info">Would you like to log out of all iPlant applications?</div>
         <br><br>
@@ -73,6 +53,7 @@
 </div>
 
 <TMPL_VAR NAME="JAVASCRIPT">
+
 <script>
 jQuery(document).ready(function(){
     pageObj = new Object();
@@ -154,7 +135,7 @@ function add_button_states (ids) {
 });*/
 
 function search() {
-	var token = $('#search_token').val();
+	var token = $('#header_search_token').val();
 	console.log(token);
 	//window.location.href = "api/v1/global/search/" + token;
 	window.location.href = "SearchResults.pl?s=" + token;
@@ -167,75 +148,80 @@ function searchKey(event) {
 	}
 }
 
+function toggleDropdown(element) {
+	console.log("Huzzah!");
+	$(element).toggle();
+}
+
 </script>
 
-<!--<div style="min-height:100%">-->
-
-<nav class="navbar navbar-default" style="height:5em;background-color:#E7F5E7;margin-bottom:0px;">
-	<div id="main" class="container-fluid" style="width:100%;background-color:#E7F5E7;">
-	
-		<!--Header contains logo and search bar-->
-		<div class="navbar-header" style="padding-top:0.5em;">
-			<div id="logo" class="navbar-brand"> <!-- style="float:left;width:15%;" -->
-				<a href="<TMPL_VAR NAME=HOME>">
-					<font face="impact" color="#41AD41" size="20">CoGe</font>
-				</a>
-			</div>
-			
-			<form class="navbar-form navbar-left" role="search">
-		        <div class="form-group">
-		        	<input id="search_token" style="width:40vw;" type="text" class="form-control" placeholder="Search Database" spellcheck="false" onkeypress="searchKey(event)">
-		        </div>
-		        <button id="search_button" type="button" class="btn btn-default" style="border-color:#65d022;"onclick="search();">
-		        	<span style="font-size:1.4em;" class="glyphicon glyphicon-search"></span>
-		        </button>
-	        </form>
-		</div>
+<div class="header">
 		
-		<!--Buttons-->
-		<div class="collapse navbar-collapse navbar-right" id="menu"> <!-- style="float:left;width:25%;padding-top:1em;padding-right:2em;"-->
-			<ul class="nav navbar-nav">
-				<li class="ui-button ui-corner-all coge-button" onclick="location.href='User.pl';" style="background:white;color:#119911;margin-top:1.75em">Profile</li>
-				<TMPL_IF NAME="ADMIN_ONLY">
-					<li class="ui-button ui-corner-all coge-button" style="background:white;color:#119911;margin-top:1.75em">Admin</li>
-				</TMPL_IF>
-				<li class="dropdown" style="padding-top:0.5em;">
-					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools <span class="caret"></span></a>
-					<ul class="dropdown-menu">
-						<li><a href="OrganismView.pl">OrganismView</a></li>
-	                    <li><a href="CoGeBlast.pl">CoGeBlast</a></li>
-	                    <li><a href="FeatView.pl">FeatView</a></li>
-	                    <li><a href="SynFind.pl">SynFind</a></li>
-	                    <li><a href="SynMap.pl">SynMap</a></li>
-	                    <li><a href="GEvo.pl">GEvo</a></li>
-					</ul>
-				</li>
-				<li class="dropdown" style="padding-top:0.5em;">
-					<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
-					<ul class="dropdown-menu">
-						<li><a href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
-	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
-	                    <li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
-	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
-	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
-	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
-	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
-	                    <li><a href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
-					</ul>
+	<!--Header contains logo and search bar-->
+	<ul id="header_main" class="header-main" style="margin-left:1em">
+		<li id="brand" style="margin-right:1em;margin-top:0.25em;">
+			<a href="<TMPL_VAR NAME=HOME>">
+				<font face="impact" color="#41AD41" size="20">CoGe</font>
+			</a>
+		</li>
+		
+		<li>
+			<ul class="header-search">
+				<li>
+					<div class="header-searchbar">
+				    	<input id="header_search_token" type="text" placeholder="Search Database" spellcheck="false" onkeypress="searchKey(event)">
+				    </div>
 				</li>
 				<li>
-					<div id="login"> <!-- style="float:right;width:10%"-->
-						<TMPL_IF NAME="LOGON">
-							<input type="image" src="image.pl" style="height:50%;margin-top:1em;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
-						<TMPL_ELSE>
-							<button id="login_button" class="ui-button ui-corner-all coge-button" style="margin-top:1.75em;background:white;color:#119911;" onClick="login_cas();return true;">Log in</button>
-						</TMPL_IF>
-					</div>
-				</li>
+				    <button id="header_search_button" class="ui-button ui-corner-all coge-button" type="button" onclick="search();">
+				    	<span style="font-size:1.4em;" class="glyphicon glyphicon-search"></span>
+				    </button>
+			    </li>
 			</ul>
-		</div>
-	</div>
-</nav>
+	    </li>
+	</ul>
+	
+	<!--Buttons and links-->
+	<ul id="header_menu" class="header-menu">
+		<li>
+			<div id="login">
+				<TMPL_IF NAME="LOGON">
+					<input type="image" src="image.pl" style="height:50%;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
+				<TMPL_ELSE>
+					<button id="header_login_button" class="ui-button ui-corner-all coge-button" onClick="login_cas();return true;">Log in</button>
+				</TMPL_IF>
+			</div>
+		</li>
+		<li class="dropdown ui-button ui-corner-all coge-button" onclick="toggleDropdown('#help_drop')">
+			<span class="dropdown-label">Help</span>
+			<ul id="help_drop" class="dropdown-menu hidden">
+				<li><a href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
+				<li><a href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+				<li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
+				<li><a href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
+				<li><a href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
+				<li><a href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
+				<li><a href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
+				<li><a href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
+			</ul>
+		</li>
+		<li class="dropdown ui-button ui-corner-all coge-button" onclick="toggleDropdown('#tool_drop')">
+			<span class="dropdown-label">Tools</span>
+			<ul id="tool_drop" class="dropdown-menu hidden">
+				<li><a href="OrganismView.pl">OrganismView</a></li>
+				<li><a href="CoGeBlast.pl">CoGeBlast</a></li>
+				<li><a href="FeatView.pl">FeatView</a></li>
+				<li><a href="SynFind.pl">SynFind</a></li>
+				<li><a href="SynMap.pl">SynMap</a></li>
+				<li><a href="GEvo.pl">GEvo</a></li>
+			</ul>
+		</li>
+		<TMPL_IF NAME="ADMIN_ONLY">
+			<li class="ui-button ui-corner-all coge-button" onclick="location.href='Admin.pl';">Admin</li>
+		</TMPL_IF>
+		<li class="ui-button ui-corner-all coge-button" onclick="location.href='User.pl';">Profile</li>
+	</ul>
+</div>
 
 <!--</header>-->
 <!--<div class="tagline"><TMPL_VAR NAME="TITLE"></div>-->
