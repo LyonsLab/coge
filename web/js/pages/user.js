@@ -491,7 +491,7 @@ $.extend(ContentPanel.prototype, {
     	this.selectedView = viewId;
     	var view = this.views[viewId];
     	
-    	// 
+    	// Setup requests for content data
     	var promises = new Array();
     	view.dataTypes.forEach(function (dataType) {
     		var deferred = $.Deferred();
@@ -510,8 +510,9 @@ $.extend(ContentPanel.prototype, {
         
         return $.when.apply($, promises).then(function(schemas) {
 	            console.log("ContentPanel.update: DONE");
+	            self.grid.clearSelection();
 	        }, function(e) {
-	            console.log("My ajax failed");
+	            console.log("ContentPanel.update: FAILED");
 	        });
     },
     
@@ -655,14 +656,27 @@ $.extend(DataGrid.prototype, {
 	            $(tr).removeClass('selected');
 	        }
 	        else { // select
-	        	if (event.ctrlKey || event.metaKey)
-	        		; // do-nothing for multi-select
-	        	else if (event.shiftKey)
-	        		; //TODO handle block selection
+	        	if (event.ctrlKey || event.metaKey) // multi select
+	        		; // no action required
+	        	else if (event.shiftKey) { // block select
+		            var oSettings = dataTable.fnSettings(),
+			            fromPos = dataTable.fnGetPosition(self.lastRowSelected),
+		            	toPos = dataTable.fnGetPosition(tr),
+		            	fromIndex = $.inArray(fromPos, oSettings.aiDisplay),
+		            	toIndex = $.inArray(toPos, oSettings.aiDisplay),
+			            start = (fromIndex < toIndex ? fromIndex : toIndex),
+			            end = (fromIndex < toIndex ? toIndex : fromIndex);
+		            
+		            for (var i = start; i <= end; i++) {
+		            	var tr2 = dataTable.api().row(oSettings.aiDisplay[i]).node();
+		            	$(tr2).addClass('selected'); // select item
+		            }
+	        	}
 	        	else
-	        		self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
+	        		dataTable.$('tr.selected').removeClass('selected'); // unselect all
 	        	
 	            $(tr).addClass('selected'); // select item
+	            self.lastRowSelected = tr;
 	        }
 	        
 	        self.selectItem(row);
@@ -793,7 +807,7 @@ $.extend(DataGrid.prototype, {
     },
     
     clearSelection: function() {
-    	this.dataTable.api().rows('.selected').removeClass('selected');
+    	this.dataTable.$('tr.selected').removeClass('selected'); // unselect all
     },
     
     selectItem: function(item) {

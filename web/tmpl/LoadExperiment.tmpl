@@ -297,6 +297,24 @@
 <script id="hisat2-template" type="text/template">
     <div id="hisat2">
         <div class="form-field">
+            <label class="col-md-2">CutAdapt: (<a href="https://cutadapt.readthedocs.org/en/stable/guide.html" target="_blank" class="small link">docs</a>)</label>
+            <div class="form-group">
+                <div class="form-entry">
+                    <label>-q:</label>
+                    <input id="-q" type="number" title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64." value="25"/>
+                </div>
+                <div class="form-entry">
+                    <label>-m:</label>
+                    <input id="-m" type="number" title="Use this to throw away processed reads shorter than N bases" value="17"/>
+                </div>
+                <div class="form-entry">
+                    <label>--quality-base:</label>
+                    <input id="--quality-base" type="number" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)" value="32"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-field">
             <label class="col-md-2">HISAT2: (<a href="http://ccb.jhu.edu/software/hisat2/manual.shtml#paired-end-example" target="_blank" class="small link">docs</a>)</label>
             <div>
                 <label>encoding:</label>

@@ -1,17 +1,24 @@
 package CoGe::Builder::SNP::IdentifySNPs;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use Switch;
 use File::Spec::Functions qw(catfile);
 
-use CoGe::Core::Storage qw(get_workflow_paths get_upload_path get_experiment_files);
+use CoGe::Core::Storage qw(get_upload_path get_experiment_files);
 use CoGe::Builder::CommonTasks;
 use CoGe::Builder::SNP::CoGeSNPs qw(build);
 use CoGe::Builder::SNP::Samtools qw(build);
 use CoGe::Builder::SNP::Platypus qw(build);
 use CoGe::Builder::SNP::GATK qw(build);
+
+sub get_name {
+    my $self = shift;
+    my $method = $self->params->{snp_params}->{method};
+    return 'Identify SNPs' . ( $method ? ' using '.$method.' method' : '' );
+}
 
 sub build {
     my $self = shift;
@@ -39,15 +46,9 @@ sub build {
     # Get input file
     my $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     
-    # Initialize workflow
-    my $workflow_name = 'Identify SNPs' . ( $method ? ' using '.$method.' method' : '' );
-    $self->workflow($self->jex->create_workflow(name => $workflow_name, init => 1));
-    return unless ($self->workflow && $self->workflow->id);
-    
-    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
-    $self->workflow->logfile(catfile($result_dir, "debug.log"));
-    
+    #
     # Build workflow steps
+    #
     my @tasks;
     
     # Add SNP workflow
@@ -74,7 +75,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;
