@@ -1,6 +1,7 @@
 package CoGe::Builder::Load::Annotation;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use Switch;
@@ -64,7 +65,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;

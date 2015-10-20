@@ -93,7 +93,7 @@ sub get {
     $builder->result_dir($result_dir);
     $builder->workflow->logfile(catfile($result_dir, "debug.log"));
     
-    # Get a tiny URL to a status page
+    # Get a tiny URL to a status page #TODO simplyify this
     my ($page, $link);
     if ($message->{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
         $page = $message->{requester}->{page};
@@ -120,11 +120,10 @@ sub get {
     # Construct the workflow
     my $rc = $builder->build;
     unless ($rc) {
-        print STDERR "PipelineFactory::get build failed\n";
+        print STDERR "PipelineFactory::get build failed, rc=$rc\n";
         return;
     }
     
-    # Fetch the workflow constructed
     return $builder;
 }
 

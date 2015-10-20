@@ -1,6 +1,7 @@
 package CoGe::Builder::Load::Experiment;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use Switch;
@@ -16,7 +17,7 @@ use CoGe::Builder::Expression::qTeller qw(build);
 use CoGe::Builder::SNP::CoGeSNPs qw(build);
 use CoGe::Builder::SNP::Samtools qw(build);
 use CoGe::Builder::SNP::Platypus qw(build);
-use CoGe::Builder::SNP::GATK qw(build);
+#use CoGe::Builder::SNP::GATK qw(build);
 
 sub get_name {
     my $self = shift;
@@ -146,7 +147,7 @@ sub build {
                 case 'coge'     { $snp_workflow = CoGe::Builder::SNP::CoGeSNPs::build($snp_params); }
                 case 'samtools' { $snp_workflow = CoGe::Builder::SNP::Samtools::build($snp_params); }
                 case 'platypus' { $snp_workflow = CoGe::Builder::SNP::Platypus::build($snp_params); }
-                case 'gatk'     { $snp_workflow = CoGe::Builder::SNP::GATK::build($snp_params); }
+                #case 'gatk'     { $snp_workflow = CoGe::Builder::SNP::GATK::build($snp_params); } # not currently supported
                 else            { die "unknown SNP method"; }
             }
             push @tasks, @{$snp_workflow->{tasks}};
@@ -224,7 +225,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;
