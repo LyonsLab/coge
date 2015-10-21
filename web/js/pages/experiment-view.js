@@ -429,7 +429,9 @@ var expressionMenu = {
     },
 
 	is_valid: function () {
-	    return true;
+	    return {
+	    	'-Q': this.dialog.find("[id='-Q']").val()
+	    };
 	},
 	
 	submit: function() { 
