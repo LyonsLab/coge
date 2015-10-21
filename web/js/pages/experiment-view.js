@@ -405,7 +405,7 @@ var expressionMenu = {
         
     	this.dialog.dialog({ 
     		title: "Select Expression Analysis Options",
-    		width: '35em',
+    		width: '30em',
     		autoOpen: false,
     		buttons: [
     	        {
