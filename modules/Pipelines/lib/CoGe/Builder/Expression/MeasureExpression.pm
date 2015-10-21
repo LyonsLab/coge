@@ -53,7 +53,7 @@ sub build {
         genome => $genome,
         input_file => $bam_file,
         metadata => $metadata,
-        additional_metadata => $additional_metadata,
+        additional_metadata => $self->params->{additional_metadata},
         params => $self->params->{expression_params}
     );
     push @tasks, @{$expression_workflow->{tasks}};
