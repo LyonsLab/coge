@@ -72,6 +72,9 @@ sub get {
     elsif ($message->{type} eq "analyze_snps") {
         $builder = CoGe::Builder::SNP::IdentifySNPs->new($request);
     }
+    elsif ($message->{type} eq "analyze_expression") {
+        $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
+    }
     else {
         print STDERR "PipelineFactory::get unknown type\n";
         return;
