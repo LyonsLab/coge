@@ -1336,7 +1336,12 @@ sub get_contents {
     }
     elsif ( $type eq 'metadata' ) {
 		my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-		$template->param( METADATA => 1 );
+		$template->param(
+			METADATA => 1,
+			EXPERIMENT_METADATA_STATS => get_stats('experiment', get_experiments_for_user($DB->storage->dbh, $USER->id)),
+			GENOME_METADATA_STATS => get_stats('genome', get_genomes_for_user($DB->storage->dbh, $USER->id)),
+			NOTEBOOK_METADATA_STATS => get_stats('list', get_lists_for_user($DB->storage->dbh, $USER->id))
+		);
 		return $template->output;
     }
     elsif ( $type eq 'group' ) {
@@ -1389,6 +1394,32 @@ sub get_contents {
 
 #    print STDERR Dumper \@items, "\n";
     return encode_json($items);
+}
+
+sub get_stats {
+	my $type = shift;
+	my $items = shift;
+	return '' if !@$items;
+	my $sql = 'select annotation_type.name,count(*) from ' . $type . '_annotation join annotation_type on annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id where ' . $type . '_id in (' .
+		join( ',', map { $_->{'id'} } @$items ) .
+		') group by annotation_type.name';
+	my $sth = $DB->storage->dbh->prepare($sql);
+    $sth->execute();
+    my ($name, $count);
+    $sth->bind_columns(\$name, \$count);
+	my $html = '<table class="border-top border-bottom">';
+	my $odd_even = 1;
+    while (my $row = $sth->fetch) {
+    	$html .= '<tr class="';
+    	$html .= $odd_even ? 'odd' : 'even';
+    	$odd_even ^= 1;
+    	$html .= '"><td class="title5" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:right;">';
+    	$html .= $name;
+    	$html .= '</td><td class="data5">';
+    	$html .= $count;
+    	$html .= '</td></tr>';
+    }
+    return $html . '</table>';
 }
 
 sub get_jobs {
@@ -1589,10 +1620,6 @@ sub upload_metadata {
 		}
 	}
 	close DATA;
-}
-
-sub get_experiment_metadata_stats {
-	
 }
 
 sub search_notebooks

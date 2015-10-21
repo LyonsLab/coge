@@ -524,27 +524,31 @@ $(function(){
 	<br>
 	<table style="table-layout:fixed;width:100%;">
 		<tr>
-			<td>
-				<div class="bold text padded">Experiments</div>
-				<span onclick="upload_metadata_dialog('Experiment');" class="ui-button ui-corner-all coge-button">Upload</span>
-				<div id="experiment_metadata_stats"></div>
+			<td style="vertical-align:top">
+				<div>
+					<div class="bold text padded">Experiments</div>
+					<span onclick="upload_metadata_dialog('Experiment');" class="ui-button ui-corner-all coge-button">Upload</span>
+				</div>
+				<br>
+				<TMPL_VAR NAME="EXPERIMENT_METADATA_STATS">
 			</td>
-			<td>
-				<div class="bold text padded">Genomes</div>
-				<span onclick="upload_metadata_dialog('Genome');" class="ui-button ui-corner-all coge-button">Upload</span>
-				<div id="genome_metadata_stats"></div>
+			<td style="vertical-align:top">
+				<div>
+					<div class="bold text padded">Genomes</div>
+					<span onclick="upload_metadata_dialog('Genome');" class="ui-button ui-corner-all coge-button">Upload</span>
+				</div>
+				<br>
+				<TMPL_VAR NAME="GENOME_METADATA_STATS">
 			</td>
-			<td>
-				<div class="bold text padded">Notebooks</div>
-				<span onclick="upload_metadata_dialog('Notebook');" class="ui-button ui-corner-all coge-button">Upload</span>
-				<div id="notebook_metadata_stats"></div>
+			<td style="vertical-align:top">
+				<div>
+					<div class="bold text padded">Notebooks</div>
+					<span onclick="upload_metadata_dialog('Notebook');" class="ui-button ui-corner-all coge-button">Upload</span>
+				</div>
+				<br>
+				<TMPL_VAR NAME="NOTEBOOK_METADATA_STATS">
 			</td>
 		</tr>
 	</table>
-	<script>
-		$.ajax({ data: { fname: 'get_experiment_metadata_stats' }, success: function(html) { $('#experiment_metadata_stats').html(html); }});
-		$.ajax({ data: { fname: 'get_genome_metadata_stats' }, success: function(html) { $('#genome_metadata_stats').html(html); }});
-		$.ajax({ data: { fname: 'get_notebook_metadata_stats' }, success: function(html) { $('#notebook_metadata_stats').html(html); }});
-	</script>
 	<br>
 </TMPL_IF>
