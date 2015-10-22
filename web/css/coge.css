@@ -1862,9 +1862,10 @@ div.dataTables_scrollBody {
     /*vertical-align: middle;*/
     height: 2.5em;
     margin-top: 1em;
+    cursor: pointer;
 }
 
-.coge-header-button div {
+.coge-header-button > div {
 	font-size: 25px;
 	font-family: impact;
 	/*padding-top: 0.25em;*/
@@ -1874,7 +1875,7 @@ div.dataTables_scrollBody {
 
 .coge-login-button > div {
 	/*font-family: impact;*/
-	font-size: 14;
+	font-size: 12;
 	color: grey;
 	text-align: center;
 }
@@ -1900,7 +1901,7 @@ div.dataTables_scrollBody {
 }
 
 .dropdown-menu > li {
-	padding: 3px 20px;
+	padding: 3px 3px;
 	/*clear: both;*/
 	font-weight: normal;
 	/*line-height: 1.42857143;*/
@@ -1912,3 +1913,6 @@ div.dataTables_scrollBody {
 	background-color:	#E7F5E7;
 }
 
+.dropdown-menu > li > a {
+	display: block;
+}

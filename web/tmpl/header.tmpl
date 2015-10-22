@@ -161,8 +161,7 @@ function toggleDropdown(element) {
 }
 
 </script>
-
-<div class="coge-header">
+<header class="coge-header">
 		
 	<!--Header contains logo and search bar-->
 	<ul id="header_main" class="coge-header-main" style="margin-left:1em">
@@ -193,8 +192,8 @@ function toggleDropdown(element) {
 		<TMPL_IF NAME="LOGON">
 			<li id="login" class="coge-login-button">
 					<div><TMPL_VAR NAME="USER"></div>
-					<input type="image" src="image.pl" style="height:3em;width:3em;padding-left:33%;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
-					<div><a href="#" class="link" style="" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Sign Out</a></div>
+					<input type="image" src="image.pl" style="height:3em;width:3em;margin-left:33%;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
+					<div><a href="#" class="link" style="" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
 			</li>
 		<TMPL_ELSE>
 			<li id="header_login_button" class="coge-header-button" onclick="login_cas();return true;">
@@ -230,7 +229,6 @@ function toggleDropdown(element) {
 		</TMPL_IF>
 		<li class="coge-header-button" onclick="location.href='User.pl';"><div>Profile</div></li>
 	</ul>
-</div>
+</header>
 
-<!--</header>-->
 <!--<div class="tagline"><TMPL_VAR NAME="TITLE"></div>-->
