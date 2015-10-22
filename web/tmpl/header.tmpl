@@ -21,6 +21,7 @@
 	.glyphicon {
 		position: relative;
 		top: 1px;
+		right: 4px;
 		display: inline-block;
 		font-family: 'Glyphicons Halflings';
 		font-style: normal;
@@ -149,16 +150,22 @@ function searchKey(event) {
 }
 
 function toggleDropdown(element) {
-	console.log("Huzzah!");
+	console.log(element + '_label');
 	$(element).toggle();
+	
+	if( $(element + '_label').find('img').attr('src') == "picts/arrow-right-icon.png" ) {
+    	$(element + '_label').find('img').attr("src", "picts/arrow-down-icon.png");
+    } else {
+    	$(element + '_label').find('img').attr("src", "picts/arrow-right-icon.png");
+    }
 }
 
 </script>
 
-<div class="header">
+<div class="coge-header">
 		
 	<!--Header contains logo and search bar-->
-	<ul id="header_main" class="header-main" style="margin-left:1em">
+	<ul id="header_main" class="coge-header-main" style="margin-left:1em">
 		<li id="brand" style="margin-right:1em;margin-top:0.25em;">
 			<a href="<TMPL_VAR NAME=HOME>">
 				<font face="impact" color="#41AD41" size="20">CoGe</font>
@@ -166,15 +173,15 @@ function toggleDropdown(element) {
 		</li>
 		
 		<li>
-			<ul class="header-search">
+			<ul class="coge-header-search">
 				<li>
-					<div class="header-searchbar">
+					<div class="coge-header-searchbar">
 				    	<input id="header_search_token" type="text" placeholder="Search Database" spellcheck="false" onkeypress="searchKey(event)">
 				    </div>
 				</li>
 				<li>
 				    <button id="header_search_button" class="ui-button ui-corner-all coge-button" type="button" onclick="search();">
-				    	<span style="font-size:1.4em;" class="glyphicon glyphicon-search"></span>
+				    	<span style="font-size:1.5em;" class="glyphicon glyphicon-search"></span>
 				    </button>
 			    </li>
 			</ul>
@@ -182,18 +189,20 @@ function toggleDropdown(element) {
 	</ul>
 	
 	<!--Buttons and links-->
-	<ul id="header_menu" class="header-menu">
-		<li>
-			<div id="login">
-				<TMPL_IF NAME="LOGON">
-					<input type="image" src="image.pl" style="height:50%;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
-				<TMPL_ELSE>
-					<button id="header_login_button" class="ui-button ui-corner-all coge-button" onClick="login_cas();return true;">Log in</button>
-				</TMPL_IF>
-			</div>
-		</li>
-		<li class="dropdown ui-button ui-corner-all coge-button" onclick="toggleDropdown('#help_drop')">
-			<span class="dropdown-label">Help</span>
+	<ul id="header_menu" class="coge-header-menu">
+		<TMPL_IF NAME="LOGON">
+			<li id="login" class="coge-login-button">
+					<div><TMPL_VAR NAME="USER"></div>
+					<input type="image" src="image.pl" style="height:3em;width:3em;padding-left:33%;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
+					<div><a href="#" class="link" style="" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Sign Out</a></div>
+			</li>
+		<TMPL_ELSE>
+			<li id="header_login_button" class="coge-header-button" onclick="login_cas();return true;">
+					<div>Log in</div>
+			</li>
+		</TMPL_IF>
+		<li class="dropdown coge-header-button" onclick="toggleDropdown('#help_drop')">
+			<div id="help_drop_label" class="dropdown-label">Help <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;padding-bottom:0.15em;"></div>
 			<ul id="help_drop" class="dropdown-menu hidden">
 				<li><a href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
 				<li><a href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
@@ -205,8 +214,8 @@ function toggleDropdown(element) {
 				<li><a href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
 			</ul>
 		</li>
-		<li class="dropdown ui-button ui-corner-all coge-button" onclick="toggleDropdown('#tool_drop')">
-			<span class="dropdown-label">Tools</span>
+		<li class="dropdown coge-header-button" onclick="toggleDropdown('#tool_drop')">
+			<div id="tool_drop_label" class="dropdown-label">Tools <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;padding-bottom:0.15em;"></div>
 			<ul id="tool_drop" class="dropdown-menu hidden">
 				<li><a href="OrganismView.pl">OrganismView</a></li>
 				<li><a href="CoGeBlast.pl">CoGeBlast</a></li>
@@ -217,9 +226,9 @@ function toggleDropdown(element) {
 			</ul>
 		</li>
 		<TMPL_IF NAME="ADMIN_ONLY">
-			<li class="ui-button ui-corner-all coge-button" onclick="location.href='Admin.pl';">Admin</li>
+			<li class="coge-header-button" onclick="location.href='Admin.pl';"><div>Admin</div></li>
 		</TMPL_IF>
-		<li class="ui-button ui-corner-all coge-button" onclick="location.href='User.pl';">Profile</li>
+		<li class="coge-header-button" onclick="location.href='User.pl';"><div>Profile</div></li>
 	</ul>
 </div>
 
