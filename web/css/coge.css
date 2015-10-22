@@ -1807,84 +1807,105 @@ div.dataTables_scrollBody {
  * Header Menu
  */
 
-.header {
-	height: 4em;
-	background-color: #E7F5E7;
+@media (min-width: 1054px) {
+	.coge-header {
+		height: 4em;
+		background-color: #E7F5E7;
+	}
 }
 
-.header-main li {
+@media (max-width: 1053px) {
+	.coge-header {
+		height: 8em;
+		background-color: #E7F5E7;
+	}
+}
+
+.coge-header-main li {
 	float: left;	
 }
 
-.header-menu li {
+.coge-header-menu > li {
 	float: right;
-	margin-right: 1em;
+	min-width: 6em;
 }
 
-.header-search button {
+.coge-header-search button {
 	border-color: #65d022;
 	height: 2.75em;
 	width: 3em;
 	margin-top: 0.95em;
 }
 
-.header-searchbar {
+.coge-header-searchbar {
 	margin-right: 1em;
 	margin-top: 1em;
 }
 
-.header-search input {
+.coge-header-search input {
 	width: 40vw;
 	/*height: 3em;*/
 	font-size:	1.5em;
 	font-family: impact;
 }
 
-.header-menu {
-	padding-top: 1.2em;
+.coge-header-menu {
+	/*padding-top: 1.2em;*/
 }
 
+.coge-header-button {
+    font-weight: 600;
+    font-size: 0.875em;
+    line-height: 1.5;
+    border: 1px solid #7adf39;
+    background: #beef9f;
+    /*vertical-align: middle;*/
+    height: 2.5em;
+    margin-top: 1em;
+}
 
+.coge-header-button div {
+	font-size: 25px;
+	font-family: impact;
+	/*padding-top: 0.25em;*/
+	text-align: center;
+	color: grey;
+}
 
-
+.coge-login-button > div {
+	/*font-family: impact;*/
+	font-size: 14;
+	color: grey;
+	text-align: center;
+}
 
 .dropdown {
-  position: relative;
+	position: relative;
 }
 .dropdown-toggle:focus {
-  outline: 0;
+	outline: 0;
 }
 .dropdown-menu {
-  position: absolute;
-  /*top: 100%;*/
-  left: -130;
-  z-index: 1000;
-  display: none;
-  /*float: left;*/
-  min-width: 160px;
-  padding: 5px 0;
-  margin: 2px 0 0;
-  font-size: 14px;
-  /*text-align: center;
-  list-style: none;*/
-  background-color: #fff;
-  /*-webkit-background-clip: padding-box;
-          background-clip: padding-box;*/
-  border: 1px solid #ccc;
-  border: 1px solid rgba(0, 0, 0, .15);
-  border-radius: 4px;
-  /*-webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, .175);
-          box-shadow: 0 6px 12px rgba(0, 0, 0, .175);*/
+	position: absolute;
+	/*left: -42;*/
+	/*z-index: 1000;*/
+	min-width: 6em;
+	/*padding: 5px 0;
+	margin: 2px 0 0;*/
+	font-size: 14px;
+	background-color: #beef9f;
+	border: 1px solid rgba(0, 0, 0, .15);
+	border-radius: 4px;
+	text-align:	center;
 }
 
-.dropdown-menu > li > a {
-  display: block;
-  padding: 3px 20px;
-  clear: both;
-  font-weight: normal;
-  line-height: 1.42857143;
-  color: #333;
-  white-space: nowrap;
+.dropdown-menu > li {
+	padding: 3px 20px;
+	/*clear: both;*/
+	font-weight: normal;
+	/*line-height: 1.42857143;*/
+	/*color: #333;*/
+	white-space: nowrap;
 }
 
 .dropdown-menu > li:hover {
