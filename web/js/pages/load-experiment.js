@@ -394,7 +394,8 @@ $.extend(AlignmentView.prototype, {
         	this.data = {
         		alignment_params: {
         			tool: "hisat2",
-        			'--phred33': this.el.find("[id='--phred33']").is(":checked")
+        			'--phred33': this.el.find("[id='--phred33']").is(":checked"),
+                    read_type: this.el.find("#read_type :checked").val()
         		},
                 trimming_params: {
                     '-q': this.el.find("[id='-q']").val(),
