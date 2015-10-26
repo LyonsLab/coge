@@ -1,4 +1,4 @@
-package CoGe::Builder::SNP::IdentifySNPs;
+package CoGe::Builder::Expression::MeasureExpression;
 
 use Moose;
 with qw(CoGe::Builder::Buildable);
@@ -9,15 +9,11 @@ use File::Spec::Functions qw(catfile);
 
 use CoGe::Core::Storage qw(get_upload_path get_experiment_files);
 use CoGe::Builder::CommonTasks;
-use CoGe::Builder::SNP::CoGeSNPs qw(build);
-use CoGe::Builder::SNP::Samtools qw(build);
-use CoGe::Builder::SNP::Platypus qw(build);
-use CoGe::Builder::SNP::GATK qw(build);
+use CoGe::Builder::Expression::qTeller qw(build);
 
 sub get_name {
-    my $self = shift;
-    my $method = $self->params->{snp_params}->{method};
-    return 'Identify SNPs' . ( $method ? ' using '.$method.' method' : '' );
+    #my $self = shift;
+    return 'Measure Expression';
 }
 
 sub build {
@@ -26,8 +22,7 @@ sub build {
     # Validate inputs
     my $eid = $self->params->{eid} || $self->params->{experiment_id};
     return unless $eid;
-    return unless $self->params->{snp_params};
-    my $method = $self->params->{snp_params}->{method};
+    return unless $self->params->{expression_params};
     
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
@@ -51,25 +46,17 @@ sub build {
     #
     my @tasks;
     
-    # Add SNP workflow
-    my $snp_params = {
+    # Add expression analysis workflow
+    my $expression_workflow = CoGe::Builder::Expression::qTeller::build(
         user => $self->user,
         wid => $self->workflow->id,
         genome => $genome,
         input_file => $bam_file,
         metadata => $metadata,
-        params => $self->params->{snp_params}
-    };
-    
-    my $snp_workflow;
-    switch ($method) { # TODO move this into subroutine
-        case 'coge'     { $snp_workflow = CoGe::Builder::SNP::CoGeSNPs::build($snp_params); }
-        case 'samtools' { $snp_workflow = CoGe::Builder::SNP::Samtools::build($snp_params); }
-        case 'platypus' { $snp_workflow = CoGe::Builder::SNP::Platypus::build($snp_params); }
-        case 'gatk'     { $snp_workflow = CoGe::Builder::SNP::GATK::build($snp_params); }
-        else            { die "unknown SNP method"; }
-    }
-    push @tasks, @{$snp_workflow->{tasks}};
+        additional_metadata => $self->params->{additional_metadata},
+        params => $self->params->{expression_params}
+    );
+    push @tasks, @{$expression_workflow->{tasks}};
         
     $self->workflow->add_jobs(\@tasks);
     

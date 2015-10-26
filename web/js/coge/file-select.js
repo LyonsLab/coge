@@ -81,7 +81,7 @@ var coge = window.coge = (function(namespace) {
 				var search_term = self.container.find('.fileselect-filter').val();
 				self.container.find('#ids_table tr td:nth-child(1)').each(function() {
 					var obj = $(this);
-					if (obj.text().indexOf(search_term) >= 0)
+					if (obj.text().toLowerCase().indexOf(search_term.toLowerCase()) >= 0)
 						obj.parent().show();
 					else
 						obj.parent().hide();
