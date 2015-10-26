@@ -23,7 +23,7 @@ function edit_experiment_info() {
         success : function(data) {
             var obj = jQuery.parseJSON(data);
             $("#experiment_info_edit_box").html(obj.output).dialog('open');
-        },
+        }
     });
 }
 
@@ -365,6 +365,104 @@ var snpMenu = {
 			parameters: {
 				eid: EXPERIMENT_ID,
 				snp_params: params
+			}
+		};
+		
+		// Submit request
+		coge.services.submit_job(request)
+			.done(function(response) {
+		  		if (!response) {
+		  			coge.progress.failed("Error: empty response from server");
+		  			return;
+		  		}
+		  		else if (!response.success || !response.id) {
+		  			coge.progress.failed("Error: failed to start workflow");
+		  			return;
+		  		}
+		  		
+		        // Start status update
+		  		window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EXPERIMENT_ID + "&wid=" + response.id); // Add workflow id to browser URL
+		  		coge.progress.update(response.id, response.site_url);
+		    })
+		    .fail(function(jqXHR, textStatus, errorThrown) {
+		    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+		    });
+	}
+}
+
+var expressionMenu = {
+    init: function() {
+    	var self = this;
+    	this.dialog = $('<div class="dialog_box small" style="padding:1em;"></div>');
+    	var template = $($("#expression-template").html()).find('#expression-container');
+    	template.removeClass('hidden');
+    	
+    	var render = function() {
+            render_template(template, self.dialog);
+        };
+        
+        render();
+        
+    	this.dialog.dialog({ 
+    		title: "Select Expression Analysis Options",
+    		width: '30em',
+    		autoOpen: false,
+    		buttons: [
+    	        {
+    	            text: " Measure Expression ",
+    	            "class": "coge-button", //FIXME isn't working
+    	            click: function() {
+    	            	self.close();
+    	            	setTimeout($.proxy(self.submit, self), 0);
+    	            }
+    	        }
+    	    ]
+    	});
+    },
+    
+    open: function() {
+    	this.dialog.dialog("open");
+    },
+    
+    close: function() {
+    	this.dialog.dialog("close");
+    },
+
+	is_valid: function () {
+	    return {
+	    	'-Q': this.dialog.find("[id='-Q']").val()
+	    };
+	},
+	
+	submit: function() { 
+		// Prevent concurrent executions
+		//if ( $("#progress_dialog").dialog( "isOpen" ) )
+		//    return;
+	
+		// Make sure user is still logged-in
+		//if (!check_and_report_login())
+		//    return;
+		
+		var params = this.is_valid();
+	
+		coge.progress.begin({ 
+			title: "Measuring Expression ...",
+			width: '60%',
+	    	height: '50%'
+		});
+		newLoad = true;
+	  
+		// Build request
+		var request = {
+			type: 'analyze_expression',
+			requester: {
+				page: PAGE_NAME,
+				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID,
+				user_name: USER_NAME
+			},
+			parameters: {
+				eid: EXPERIMENT_ID,
+				expression_params: params
 			}
 		};
 		

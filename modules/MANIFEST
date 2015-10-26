@@ -153,7 +153,7 @@ Pipelines/lib/CoGe/Builder/SNP/GATK.pm
 Pipelines/lib/CoGe/Builder/SNP/Platypus.pm
 Pipelines/lib/CoGe/Builder/SNP/Samtools.pm
 Pipelines/lib/CoGe/Builder/Expression/qTeller.pm
-Pipelines/lib/CoGe/Builder/Tools/DotplotsDots.pm
+Pipelines/lib/CoGe/Builder/Expression/MeasureExpression.pm
 Pipelines/lib/CoGe/Builder/Tools/SynMap.pm
 Pipelines/lib/CoGe/Request/Request.pm
 Pipelines/lib/CoGe/Request/Genome.pm
