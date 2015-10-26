@@ -13,7 +13,7 @@ var coge = window.coge = (function(namespace) {
 				this.BASE_URL = opts.baseUrl;
 			if (opts.userName)
 				this.userName = opts.userName;
-			this.debug = 1;
+			this.debug = 0; // display console debug messages
 		},
 		
 		search_global: function(search_term) {
@@ -87,11 +87,14 @@ var coge = window.coge = (function(namespace) {
 					opts_str += "&";
 				opts_str += key + "=" + opts[key];
 			}
+			url = url + (opts_str ? "?" + opts_str : '');
 			
 			// Return deferred
+			if (this.debug) 
+				console.log('coge.services._ajax: ' + url + ' ' + (data ? data : ''));
 		    return $.ajax({
 				    	type: type,
-				    	url: url + (opts_str ? "?" + opts_str : ''),
+				    	url: url,
 				    	dataType: "json",
 				        contentType: "application/json",
 				        xhrFields: {

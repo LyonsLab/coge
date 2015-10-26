@@ -7,6 +7,7 @@ use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
 
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_upload_path get_genome_cache_path);
+use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end);
 use CoGe::Builder::CommonTasks;
 
@@ -28,14 +29,13 @@ sub build {
     my $input_files = $opts{input_files}; # array of file paths
     my $genome      = $opts{genome};
     my $metadata    = $opts{metadata};
+    my $additional_metadata = $opts{additional_metadata};
     my $load_id     = $opts{load_id};
     my $alignment_params = $opts{alignment_params};
     my $trimming_params  = $opts{trimming_params};
     
     my @tasks;
     
-    # Setup paths to data files
-    #FIXME this is for LoadExperiment, also need to handle IRODS/FTP/HTTP data from API
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
 
     # Check multiple files (if more than one file then all should be FASTQ)
@@ -68,7 +68,6 @@ sub build {
         
         # Validate
         my $validate_task = create_validate_fastq_job($input_file, $done_file);
-        print STDERR Dumper $validate_task, "\n";
         push @validated, @{$validate_task->{outputs}}[0];
         push @tasks, $validate_task;
     }
@@ -140,7 +139,17 @@ sub build {
     
     # Add aligner workflow
     my ($alignment_tasks, $alignment_results);
-    if ($alignment_params && $alignment_params->{tool} eq 'tophat') {
+    if ($alignment_params && $alignment_params->{tool} eq 'hisat2') {
+        ($alignment_tasks, $alignment_results) = create_hisat2_workflow(
+            fasta => $fasta,
+        	fastq => \@trimmed,
+            gid => $gid,
+            '--phred33' => $alignment_params->{'--phred33'},
+            read_type => $alignment_params->{read_type},
+            staging_dir => $staging_dir
+        );    	
+    }
+    elsif ($alignment_params && $alignment_params->{tool} eq 'tophat') {
         # Generate gff if genome annotated
         my $gff_file;
         if ( $genome->has_gene_features ) {
@@ -197,7 +206,9 @@ sub build {
     );
 
     # Get custom metadata to add to experiment
-    my $additional_md = generate_additional_metadata($trimming_params, $alignment_params);
+    my $annotations = generate_additional_metadata($trimming_params, $alignment_params);
+    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+    push @$annotations, @annotations2;
 
     # Load alignment
     my $load_task = create_load_bam_job(
@@ -205,7 +216,7 @@ sub build {
         metadata => $metadata,
         staging_dir => $staging_dir,
         result_dir => $result_dir,
-        annotations => $additional_md,
+        annotations => $annotations,
         wid => $wid,
         gid => $gid,
         bam_file => $sorted_bam_file
@@ -233,7 +244,18 @@ sub generate_additional_metadata {
     }
 
     if ($alignment_params && $alignment_params->{tool}) {
-        if ($alignment_params->{tool} eq 'tophat') { # tophat
+        if ($alignment_params->{tool} eq 'hisat2') {
+            push @annotations, qq{note|hisat2_build};
+            my $params = join(' ', map { $_.' '.$alignment_params->{$_} } ('-p', '-x', '-S'));
+            if ($alignment_params->{'--phred33'}) {
+            	$params .= ' --phred33';
+            }
+            else {
+            	$params .= ' --phred64';
+            }
+            push @annotations, 'note|hisat2 ' . $params;
+        }
+        elsif ($alignment_params->{tool} eq 'tophat') {
             push @annotations, qq{note|bowtie2_build};
             push @annotations, 'note|tophat ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-g'));
         }

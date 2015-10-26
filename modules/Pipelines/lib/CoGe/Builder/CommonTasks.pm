@@ -9,10 +9,11 @@ use File::Path qw(make_path);
 use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
-use CoGe::Accessory::Utils qw(sanitize_name to_filename);
+use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
 use CoGe::Accessory::Web qw(get_defaults split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
+use CoGe::Core::Metadata qw(tags_to_string);
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -26,12 +27,13 @@ our @EXPORT = qw(
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job create_iget_job
     create_load_annotation_job create_data_retrieval_workflow
-    send_email_job add_items_to_notebook_job
+    send_email_job add_items_to_notebook_job create_hisat2_workflow
+    export_experiment_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
 
-sub link_results {
+sub link_results { #FIXME deprecated, remove soon
    my ($input, $output, $result_dir, $conf) = @_;
 
    return {
@@ -47,7 +49,7 @@ sub link_results {
    };
 }
 
-sub generate_results {
+sub generate_results { #FIXME deprecated, remove soon
    my ($input, $type, $result_dir, $conf, $dependency) = @_;
 
    return {
@@ -168,6 +170,26 @@ sub export_to_irods {
         inputs => [$src],
         outputs => [$done_file]
    };
+}
+
+sub export_experiment_job {
+    my %args = @_;
+    my $eid = $args{eid};
+    my $output = $args{output};
+
+    return {
+        cmd => catdir($CONF->{SCRIPTDIR}, "export_experiment_or_genome.pl"),
+        description => "Generating experiment files",
+        args => [
+            ["-id", $eid, 0],
+            ["-type", '"experiment"', 0],
+            ["-output", $output, 1],
+            ["-conf", $CONF->{_CONFIG_PATH}, 0],
+            ["-dir", ".", ""]
+        ],
+        inputs => [],
+        outputs => [$output]
+    };
 }
 
 sub create_iget_job {
@@ -442,6 +464,10 @@ sub create_load_vcf_job {
     
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+    
+    my @tags = ( 'VCF' ); # add VCF tag
+    push @tags, @{$metadata->{tags}} if $metadata->{tags};
+    my $tags_str = tags_to_string(\@tags);
 
     return {
         cmd => $cmd,
@@ -455,7 +481,7 @@ sub create_load_vcf_job {
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
             ['-source_name', "'".$metadata->{source}."'", 0],
-            ['-types', qq{"SNP"}, 0],
+            ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-staging_dir', "./load_vcf", 0],
             ['-file_type', qq["vcf"], 0],
@@ -498,6 +524,8 @@ sub create_load_experiment_job {
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
 
+    my $tags_str = tags_to_string($metadata->{tags});
+
     return {
         cmd => $cmd,
         script => undef,
@@ -510,10 +538,9 @@ sub create_load_experiment_job {
             ['-version', "'" . $metadata->{version} . "'", 0],
             ['-restricted', "'" . $metadata->{restricted} . "'", 0],
             ['-source_name', "'" . $metadata->{source_name} . "'", 0],
-            #['-types', qq{"BAM"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
+            ['-tags', qq["$tags_str"], 0],
             ['-staging_dir', "./load_experiment", 0],
-            #['-file_type', qq["bam"], 0],
             ['-data_file', $input_file, 0],
             ['-normalize', $normalize, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
@@ -730,6 +757,7 @@ sub create_load_bam_job {
     # Required arguments
     my $user = $opts{user};
     my $metadata = $opts{metadata};
+    my $additional_metadata = $opts{additional_metadata};
     my $staging_dir = $opts{staging_dir};
     my $annotations = $opts{annotations};
     my $wid = $opts{wid};
@@ -745,6 +773,10 @@ sub create_load_bam_job {
     
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+    
+    my @tags = ( 'BAM' ); # add BAM tag
+    push @tags, @{$metadata->{tags}} if $metadata->{tags};
+    my $tags_str = tags_to_string(\@tags);
 
     return {
         cmd => $cmd,
@@ -758,7 +790,7 @@ sub create_load_bam_job {
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
             ['-source_name', "'" . $metadata->{source} . "'", 0],
-            ['-types', qq{"BAM"}, 0],
+            ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-staging_dir', "./load_bam", 0],
             ['-file_type', qq["bam"], 0],
@@ -883,6 +915,106 @@ sub create_gff_generation_job {
         ],
         description => "Generating genome annotations GFF file..."
     };
+}
+
+sub create_hisat2_workflow {
+    my %opts = @_;
+
+    my $fasta       = $opts{fasta};
+    my $fastq       = $opts{fastq};
+    my $gid         = $opts{gid};
+    my $phred33     = $opts{'--phred33'};
+    my $read_type   = $opts{read_type} // 'single';
+    my $staging_dir = $opts{staging_dir};
+
+    my ($index, %build) = create_hisat2_build_job($gid, $fasta);
+    
+    my %hisat2 = create_hisat2_job(
+        fastq => $fastq,
+        gid => $gid,
+        index_files => ($build{outputs}),
+        '--phred33' => $phred33,
+        read_type => $read_type,
+        staging_dir => $staging_dir
+    );
+    
+    my %bam = create_samtools_bam_job($hisat2{outputs}->[0], $staging_dir);
+
+    my @tasks = ( \%build, \%hisat2, \%bam );
+    my %results = (
+        bam_file => $bam{outputs}->[0]
+    );
+    return \@tasks, \%results;
+}
+
+sub create_hisat2_job {
+    my %opts = @_;
+    my $fastq       = $opts{fastq};
+    my $gid         = $opts{gid};
+    my $index_files = $opts{index_files};
+    my $phred33     = $opts{'--phred33'};
+    my $read_type   = $opts{read_type};
+    my $staging_dir = $opts{staging_dir};
+
+	my $args = [
+		['-p', '32', 0],
+		['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
+		['-S', 'hisat2.sam', 0]
+    ];
+    if ($read_type eq 'single') {
+    	push $args, ['-U', join(',', @$fastq), 0];
+    }
+    else {
+		my ($m1, $m2) = detect_paired_end($fastq);
+    	push $args, ['-1', join(',', sort @$m1), 0];
+    	push $args, ['-2', join(',', sort @$m2), 0];
+	}
+	if ($phred33) {
+		push $args, ['', '--phred33', 0];
+	}
+	else {
+		push $args, ['', '--phred64', 0];
+	}
+
+	return (
+        cmd => 'nice ' . $CONF->{HISAT2},
+        script => undef,
+        args => $args,
+        inputs => [ @$fastq, @$index_files ],
+        outputs => [ catfile($staging_dir, 'hisat2.sam') ],
+        description => "Aligning sequences (HISAT2)..."
+    );
+}
+
+sub create_hisat2_build_job {
+    my $gid = shift;
+    my $fasta = shift;
+
+    my $cache_dir = catdir($CONF->{CACHEDIR}, $gid, "hisat2_index");
+	make_path $cache_dir unless (-d $cache_dir);
+    my $name = catfile($cache_dir, 'genome.reheader');
+    
+    return catdir($cache_dir, $name), (
+        cmd => 'nice ' . $CONF->{HISAT2_BUILD},
+        script => undef,
+        args => [
+        	['-p', '32', 0],
+            ['', $fasta, 0],
+            ['', $name, 0],
+        ],
+        inputs => [ $fasta ],
+        outputs => [
+            $name . ".1.ht2",
+            $name . ".2.ht2",
+            $name . ".3.ht2",
+            $name . ".4.ht2",
+            $name . ".5.ht2",
+            $name . ".6.ht2",
+            $name . ".7.ht2",
+            $name . ".8.ht2"
+        ],
+        description => "Indexing genome sequence with hisat2-build..."
+    );
 }
 
 sub create_tophat_workflow {
@@ -1341,7 +1473,7 @@ sub add_metadata_to_results_job {
 
 sub send_email_job {
     my %opts = @_;
-    my $from = $opts{from};
+    my $from = 'CoGe Support <coge.genome@gmail.com>';
     my $to = $opts{to};
     my $subject = $opts{subject};
     my $body = $opts{body};

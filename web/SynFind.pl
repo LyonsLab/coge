@@ -25,7 +25,7 @@ use Sort::Versions;
 
 no warnings 'redefine';
 
-#example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
+#example URL: http://genomevolution.org/coge/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
 use vars qw($config $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS
     $PAGE_TITLE $PAGE_NAME $DIR $LINK $TEMPDIR $TEMPURL $DATADIR $FASTADIR

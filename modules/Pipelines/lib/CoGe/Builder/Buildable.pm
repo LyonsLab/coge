@@ -9,8 +9,17 @@ has 'workflow' => (
     isa  => 'CoGe::Accessory::Workflow'
 );
 
-has 'jex' => (
-    is => 'ro',
+# mdb removed 10/12/15 - no longer needed
+#has 'jex' => (
+#    is => 'ro'
+#);
+
+has 'staging_dir' => (
+    is => 'rw'
+);
+
+has 'result_dir' => (
+    is => 'rw'
 );
 
 has 'params' => (
@@ -20,6 +29,14 @@ has 'params' => (
 
 has 'requester' => (
     is => 'ro'
+);
+
+has 'site_url' => ( # mdb added 10/12/15
+    is => 'rw'
+);
+
+has 'page' => ( # mdb added 10/12/15
+    is => 'rw'
 );
 
 has 'db' => (
@@ -42,9 +59,10 @@ has 'outputs' => (
     default => sub { {} } # initialize to empty hash
 );
 
-sub get {
-    my $self = shift;
-    return $self->workflow;
-}
+# mdb removed 10/12/15 - doesn't make sense
+#sub get {
+#    my $self = shift;
+#    return $self->workflow;
+#}
 
 1;

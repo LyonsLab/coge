@@ -1,15 +1,25 @@
 package CoGe::Builder::Load::BatchExperiment;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use Switch;
 use File::Spec::Functions qw(catfile);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
-use CoGe::Core::Notebook qw(load_notebook);
+use CoGe::Core::Storage qw(get_upload_path);
 use CoGe::Builder::CommonTasks;
+
+sub get_name {
+    my $self = shift;
+    my $metadata = $self->params->{metadata};
+    my $info = '"' . $metadata->{name};
+    $info .= ": " . $metadata->{description} if $metadata->{description};
+    $info .= " (v" . $metadata->{version} . ")";
+    $info .= '"';
+    return "Load batch " . $info;
+}
 
 sub build {
     my $self = shift;
@@ -30,17 +40,6 @@ sub build {
     my $genome = $self->db->resultset('Genome')->find($genome_id);
     return unless $genome;
     
-    # Initialize workflow
-    my $info = '"' . $metadata->{name};
-    $info .= ": " . $metadata->{description} if $metadata->{description};
-    $info .= " (v" . $metadata->{version} . ")";
-    $info .= '"';
-    $self->workflow($self->jex->create_workflow(name => "Load batch " . $info, init => 1));
-    return unless ($self->workflow && $self->workflow->id);
-    
-    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $self->workflow->id);
-    $self->workflow->logfile(catfile($result_dir, "debug.log"));
-
     # Determine file type if not set
     my $file_type = $data->[0]->{file_type}; # type of first data file
     ($file_type) = detect_data_type($file_type, $data->[0]->{path}) unless $file_type;
@@ -59,7 +58,7 @@ sub build {
     # Add load batch task
     my $task = create_load_batch_job(
         user => $self->user,
-        staging_dir => $staging_dir,
+        staging_dir => $self->staging_dir,
         wid => $self->workflow->id,
         gid => $genome->id,
         nid => $self->params->{notebook_id},
@@ -69,30 +68,21 @@ sub build {
     push @tasks, $task;
     push @done_files, $task->{outputs}->[1];
     
-    # Send notification email #TODO merge with Load/Experiment.pm
+    # Send notification email #TODO move into shared module
 	if ( $self->params->{email} ) {
-	    # Get tiny link
-	    my $link;
-	    if ($self->requester && $self->requester->{page}) {
-	        $link = CoGe::Accessory::Web::get_tiny_link( 
-	            url => $self->conf->{SERVER} . $self->requester->{page} . "?wid=" . $self->workflow->id 
-	        );
-	    }
-	    
 	    # Build message body
 	    my $body = 'Genome "' . $metadata->{name} . '" has finished loading.';
-        $body .= "\nLink: $link" if $link;
-        $body .= "\n\nNote: you received this email because you submitted a genome on " .
+        $body .= "\nLink: " . $self->site_url if $self->site_url;
+        $body .= "\n\nNote: you received this email because you submitted a job on " .
             "CoGe (http://genomevolution.org) and selected the option to be emailed " .
             "when finished.";
 	    
 		# Create task
 		push @tasks, send_email_job(
-			from => 'CoGe Support <coge.genome@gmail.com>',
 			to => $self->user->email,
 			subject => 'CoGe Load Genome done',
 			body => $body,
-			staging_dir => $staging_dir,
+			staging_dir => $self->staging_dir,
 			done_files => \@done_files
 		);
 	}
@@ -102,7 +92,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;

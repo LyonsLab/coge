@@ -21,14 +21,14 @@ sub add {
 
     # User authentication is required
     unless (defined $user) {
-        return $self->render(json => {
+        return $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
     }
 
     # Create request and validate the required fields
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex); #FIXME why jex here?
+    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
     my $request_handler = $request_factory->get($payload);
     unless ($request_handler and $request_handler->is_valid) {
         return $self->render(json => {
@@ -45,43 +45,29 @@ sub add {
 
     # Create pipeline to execute job
     my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex, db => $db);
-    my $workflow = $pipeline_factory->get($payload);
-    unless ($workflow) {
+    my $pipeline = $pipeline_factory->get($payload);
+    unless ($pipeline && $pipeline->workflow) {
         return $self->render(json => {
             error => { Error => "Failed to generate pipeline" }
         });
     }
-    my $response = $request_handler->execute($workflow);
+    my $response = $request_handler->execute($pipeline);
     
-    # Get tiny link #FIXME should this be moved client-side?
+    # Pipeline was submitted successfully
     if ($response->{success}) {
-        # Get tiny URL
-        my ($page, $link);
-        if ($payload->{requester}) { # request is from web page - external API requests will not have a 'requester' field
-            $page = $payload->{requester}->{page};
-            my $url = $payload->{requester}->{url};
-            if ($url) {
-                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $url . "&wid=" . $workflow->id );
-            }
-            elsif ($page) { 
-                $link = CoGe::Accessory::Web::get_tiny_link( url => $conf->{SERVER} . $page . "?wid=" . $workflow->id );
-            }
-            $response->{site_url} = $link if $link;
-        }
-        
-        # Log job submission
+        # Log submission
         CoGe::Accessory::Web::log_history(
             db          => $db,
-            parent_id   => $workflow->id,
+            parent_id   => $pipeline->workflow->id,
             parent_type => 7, #FIXME magic number
             user_id     => $user->id,
-            page        => ($page ? $page : "API"),
-            description => $workflow->name,
-            link        => ($link ? $link : '')
+            page        => $pipeline->page,
+            description => $pipeline->workflow->name,
+            link        => ($response->{site_url} ? $response->{site_url} : '')
         );
     }
     
-    # Convert success to boolean
+    # Convert 'success' to boolean
     $response->{success} = ($response->{success} ? Mojo::JSON->true : Mojo::JSON->false);
 
     return $self->render(json => $response);
@@ -96,7 +82,7 @@ sub fetch {
 
     # User authentication is required
     unless (defined $user) {
-        $self->render(json => {
+        $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
         return;
@@ -168,7 +154,7 @@ sub results { # legacy for Genome Export via HTTP
 
     # User authentication is required
     unless (defined $user) {
-        $self->render(json => {
+        $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
         return;

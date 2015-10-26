@@ -15,6 +15,7 @@ use File::Path;
 use File::Basename;
 use File::Temp;
 use File::Spec::Functions;
+use File::Slurp qw(read_file);
 use HTML::Template;
 use LWP::Simple qw(!getprint !getstore !mirror);
 use LWP::UserAgent;
@@ -27,6 +28,9 @@ use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
 use URI;
+use MIME::Base64 qw(decode_base64);
+use Crypt::OpenSSL::RSA;
+use Time::HiRes qw(time);
 use namespace::clean; # needs to be last, http://blog.twoshortplanks.com/2010/07/17/clea/
 
 =head1 NAME
@@ -65,6 +69,7 @@ BEGIN {
     @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
                    send_email get_defaults set_defaults url_for get_job 
                    schedule_job render_template ftp_get_path ftp_get_file split_url
+                   parse_proxy_response jwt_decode_token add_user
                );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
@@ -504,7 +509,7 @@ sub login_cas_proxy {
 sub parse_proxy_response {
 	my $response = shift;
 
-	if ($response && $response =~ /authenticationSuccess/) {
+	if (defined $response && $response =~ /authenticationSuccess/) {
 		my ($user_name) = $response =~ /\<cas\:user\>(.*)\<\/cas\:user\>/;
 		my ($first_name) = $response =~ /\<cas\:firstName\>(.*)\<\/cas\:firstName\>/;
 		my ($last_name) = $response =~ /\<cas\:lastName\>(.*)\<\/cas\:lastName\>/;
@@ -647,6 +652,73 @@ sub parse_saml_response2 {
 		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
         return ( $user_id, $user_fname, $user_lname, $user_email );
     }
+}
+
+# mdb added 9/23/15 - for API authentication with DE
+sub jwt_decode_token {
+    my $token = shift;           # JWT token
+    my $public_key_path = shift; # file path to public RSA key
+    print STDERR "Web::jwt_decode_token token=", ($token ? $token : ''), " public_key_path=", ($public_key_path ? $public_key_path : ''), "\n";
+    return unless ($token and $public_key_path);
+    
+    # Parse and decode token parts
+    my ($header64, $claims64, $signature64) = split(/\./, $token, 3);
+    unless ($header64 and $claims64 and $signature64) {
+        print STDERR "Web::jwt_decode_token ERROR: invalid token format\n";
+        return;
+    }
+    my $header = decode_json(decode_base64($header64));
+    my $claims = decode_json(decode_base64($claims64));
+    
+    # Verify token type
+    unless ($header && 
+            $header->{alg} && uc($header->{alg}) eq 'RS256' &&
+            $header->{typ} && uc($header->{typ}) eq 'JWS')
+    {
+        print STDERR "Web::jwt_decode_token ERROR: unsupported token type, header=", Dumper $header, "\n";
+        return; 
+    }
+    
+    # Verify token timestamp
+    my $current_time = time;
+    unless ($claims && $claims->{exp} && $claims->{iat} && 
+            $current_time > $claims->{iat} &&
+            $current_time < $claims->{exp})
+    {
+        print STDERR "Web::jwt_decode_token ERROR: expired token, current_time=$current_time, claims=", Dumper $claims, "\n";
+        return;
+    }
+    
+    # Format signature (see http://stackoverflow.com/questions/30305759/what-is-the-right-public-key-to-verify-a-gtoken-jwt-from-google-identity-toolkit)
+    $signature64 =~ s/\-/+/g;
+    $signature64 =~ s/\_/\//g;
+    my $m = length($signature64) % 4;
+    $signature64 .= "==" if ($m == 2);
+    $signature64 .= "="  if ($m == 3);
+    my $signature = decode_base64($signature64);
+    #print STDERR "header:\n$header\nclaims:\n$claims\nsignature:\n$signature\n";
+    
+    # Load public key
+    unless (-r $public_key_path) {
+        print STDERR "Web::jwt_decode_token ERROR: cannot read public key file '$public_key_path'\n";
+        return;
+    }    
+    my $key_string = read_file($public_key_path);
+    unless ($key_string) {
+        print STDERR "Web::jwt_decode_token ERROR: empty key\n";
+        return;
+    }
+    
+    # Verify the token signature using the public key
+    eval { # use eval to contain errors
+        my $signed64 = "$header64.$claims64";
+        my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($key_string);
+        $rsa_pub->use_sha256_hash();
+        my $valid = $rsa_pub->verify($signed64, $signature);
+        print STDERR "Web::jwt_decode_token VALID=$valid\n";
+    };
+    
+    return $claims;
 }
 
 # mdb added 3/27/15 for DE cas4 upgrade
