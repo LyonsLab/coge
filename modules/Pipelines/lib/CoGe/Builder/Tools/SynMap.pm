@@ -1615,7 +1615,7 @@ sub go {
 		port => $config->{JOBPORT}
 	);
 	my $workflow = $JEX->create_workflow( name => $workflow_name );
-    my ($staging_dir, $result_dir) = get_workflow_paths(user->name, $workflow->id);
+    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
     $workflow->logfile(catfile($result_dir, "debug.log"));
 
 	$workflow->log_section( "Creating Workflow" );
