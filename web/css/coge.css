@@ -1157,12 +1157,15 @@ header {
     float: left;
 }
 
-/*.dev:after {
+.dev:after {
     content: " *** Development ***";
     font-size: 80%;
     color: red;
     margin-left: 1em;
-}*/
+    position: absolute;
+    top: 5em;
+    left: 0.75em;
+}
 
 /* CoGepedia Wiki Feed */
 
@@ -1883,6 +1886,13 @@ div.dataTables_scrollBody {
 .dropdown {
 	position: relative;
 }
+
+.dropdown-label > img {
+	width: 0.4em;
+	height: 0.4em;
+	padding-bottom: 0.15em;
+}
+
 .dropdown-toggle:focus {
 	outline: 0;
 }
@@ -1915,4 +1925,5 @@ div.dataTables_scrollBody {
 
 .dropdown-menu > li > a {
 	display: block;
+	color: grey;
 }

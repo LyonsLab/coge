@@ -65,12 +65,6 @@ jQuery(document).ready(function(){
     if (document.URL.indexOf('genomevolution.org') == -1 && document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
         $('#brand').addClass("dev");
     }
-    
-    //Setup API
-    coge.services.init({
-    	baseUrl: API_BASE_URL,
-    	userName: USER_NAME
-    });
 });
 
 function browserAlert(){
@@ -122,19 +116,6 @@ function add_button_states (ids) {
     }
 }
 
-//initialize superfish plugin (dropdown menu)
-/*$(document).ready( function() {
-    $('ul.sf-menu').supersubs({
-            minWidth:    8,   // minimum width of sub-menus in em units
-            maxWidth:    27,   // maximum width of sub-menus in em units
-            extraWidth:  1     // extra width can ensure lines don't sometimes turn over
-                               // due to slight rounding differences and font-family
-             }).superfish({
-        delay: 300
-    });
-    $('#menubar').css('visibility', 'visible'); // mdb added 10/21/13 -- hidden on startup to prevent "glitching" in rendering
-});*/
-
 function search() {
 	var token = $('#header_search_token').val();
 	console.log(token);
@@ -161,6 +142,7 @@ function toggleDropdown(element) {
 }
 
 </script>
+<div style="min-height:100%">
 <header class="coge-header">
 		
 	<!--Header contains logo and search bar-->
@@ -190,17 +172,17 @@ function toggleDropdown(element) {
 	<!--Buttons and links-->
 	<ul id="header_menu" class="coge-header-menu">
 		<TMPL_IF NAME="LOGON">
-			<li id="login" class="coge-login-button">
-					<div><TMPL_VAR NAME="USER"></div>
+			<li id="login" class="coge-login-button noselect">
+					<div style="padding-bottom:0.2em"><TMPL_VAR NAME="USER"></div>
 					<input type="image" src="image.pl" style="height:3em;width:3em;margin-left:33%;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
-					<div><a href="#" class="link" style="" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
+					<div style="padding-top:0.5em"><a href="#" class="link" style="" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
 			</li>
 		<TMPL_ELSE>
 			<li id="header_login_button" class="coge-header-button" onclick="login_cas();return true;">
 					<div>Log in</div>
 			</li>
 		</TMPL_IF>
-		<li class="dropdown coge-header-button" onclick="toggleDropdown('#help_drop')">
+		<li class="dropdown coge-header-button noselect" onclick="toggleDropdown('#help_drop')">
 			<div id="help_drop_label" class="dropdown-label">Help <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;padding-bottom:0.15em;"></div>
 			<ul id="help_drop" class="dropdown-menu hidden">
 				<li><a href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
@@ -213,7 +195,7 @@ function toggleDropdown(element) {
 				<li><a href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
 			</ul>
 		</li>
-		<li class="dropdown coge-header-button" onclick="toggleDropdown('#tool_drop')">
+		<li class="dropdown coge-header-button noselect" onclick="toggleDropdown('#tool_drop')">
 			<div id="tool_drop_label" class="dropdown-label">Tools <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;padding-bottom:0.15em;"></div>
 			<ul id="tool_drop" class="dropdown-menu hidden">
 				<li><a href="OrganismView.pl">OrganismView</a></li>
@@ -225,9 +207,9 @@ function toggleDropdown(element) {
 			</ul>
 		</li>
 		<TMPL_IF NAME="ADMIN_ONLY">
-			<li class="coge-header-button" onclick="location.href='Admin.pl';"><div>Admin</div></li>
+			<li class="coge-header-button noselect" onclick="location.href='Admin.pl';"><div>Admin</div></li>
 		</TMPL_IF>
-		<li class="coge-header-button" onclick="location.href='User.pl';"><div>Profile</div></li>
+		<li class="coge-header-button noselect" onclick="location.href='User.pl';"><div>Profile</div></li>
 	</ul>
 </header>
 
