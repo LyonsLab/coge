@@ -53,6 +53,7 @@ sub fetch {
     my $conf = CoGe::Accessory::Web::get_defaults();
     my $db = CoGeX->dbconnect($conf);
 
+    # Get organism from DB
     my $organism = $db->resultset("Organism")->find($id);
     unless (defined $organism) {
         $self->render(json => {
@@ -60,12 +61,19 @@ sub fetch {
         });
         return;
     }
+    
+    # Get list of genome ID's for this organism
+    my @genomes = map { $_->id } $organism->genomes;
 
-    $self->render(json => {
+    # Build response
+    my $response = {
         id => int($id),
         name => $organism->name,
-        description => $organism->description,
-    });
+        description => $organism->description
+    };
+    $response->{genomes} = \@genomes if (@genomes);
+
+    $self->render(json => $response);
 }
 
 sub add {

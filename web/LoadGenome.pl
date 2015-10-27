@@ -9,6 +9,8 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
 use HTML::Template;
+use LWP::Simple qw(get);
+use XML::Simple qw(XMLin);
 use JSON::XS;
 use Sort::Versions;
 use File::Path qw(mkpath);

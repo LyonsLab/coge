@@ -27,6 +27,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Metadata qw(create_annotations);
 no warnings 'redefine';
 
 use vars qw(
@@ -74,6 +75,7 @@ $node_types = CoGeX::node_types();
     activity_viz  		=> 105,
     activity_analyses	=> 106,
     activity_loads      => 107,
+    metadata			=> 108,
     user          		=> $node_types->{user},
     group         		=> $node_types->{group},
     notebook      		=> $node_types->{list},
@@ -103,7 +105,11 @@ $node_types = CoGeX::node_types();
     create_new_notebook             => \&create_new_notebook,
     toggle_star                     => \&toggle_star,
     cancel_job				        => \&cancel_job,
-    comment_job                     => \&comment_job
+    comment_job                     => \&comment_job,
+    upload_metadata					=> \&upload_metadata,
+    get_experiment_metadata_stats	=> \&get_experiment_metadata_stats,
+    get_genome_metadata_stats		=> \&get_genome_metadata_stats,
+    get_notebook_metadata_stats		=> \&get_notebook_metadata_stats    
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1328,13 +1334,22 @@ sub get_contents {
     elsif ( $type eq 'notebook' ) {
         $items = get_lists_for_user($DB->storage->dbh, $USER->id);
     }
+    elsif ( $type eq 'metadata' ) {
+		my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+		$template->param(
+			METADATA => 1,
+			EXPERIMENT_METADATA_STATS => get_stats('experiment', get_experiments_for_user($DB->storage->dbh, $USER->id)),
+			GENOME_METADATA_STATS => get_stats('genome', get_genomes_for_user($DB->storage->dbh, $USER->id)),
+			NOTEBOOK_METADATA_STATS => get_stats('list', get_lists_for_user($DB->storage->dbh, $USER->id))
+		);
+		return $template->output;
+    }
     elsif ( $type eq 'group' ) {
         $items = get_groups_for_user($DB->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'activity' ) {
         my $jobs = get_jobs($last_update);
-        my $summary_html = summarize_jobs($jobs);
-        return $summary_html;
+        return summarize_jobs($jobs);
     }
     elsif ( $type eq 'analyses' ) {
         my $jobs = get_jobs($last_update);
@@ -1379,6 +1394,32 @@ sub get_contents {
 
 #    print STDERR Dumper \@items, "\n";
     return encode_json($items);
+}
+
+sub get_stats {
+	my $type = shift;
+	my $items = shift;
+	return '' if !@$items;
+	my $sql = 'select annotation_type.name,count(*) from ' . $type . '_annotation join annotation_type on annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id where ' . $type . '_id in (' .
+		join( ',', map { $_->{'id'} } @$items ) .
+		') group by annotation_type.name';
+	my $sth = $DB->storage->dbh->prepare($sql);
+    $sth->execute();
+    my ($name, $count);
+    $sth->bind_columns(\$name, \$count);
+	my $html = '<table class="border-top border-bottom">';
+	my $odd_even = 1;
+    while (my $row = $sth->fetch) {
+    	$html .= '<tr class="';
+    	$html .= $odd_even ? 'odd' : 'even';
+    	$odd_even ^= 1;
+    	$html .= '"><td class="title5" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:right;">';
+    	$html .= $name;
+    	$html .= '</td><td class="data5">';
+    	$html .= $count;
+    	$html .= '</td></tr>';
+    }
+    return $html . '</table>';
 }
 
 sub get_jobs {
@@ -1551,6 +1592,34 @@ sub upload_image_file {
     }
 
     return;
+}
+
+sub upload_metadata {
+    my %opts = @_;
+    my $type = $opts{type};
+    open(DATA, '<:crlf', $FORM->tmpFileName($FORM->param('metadata_file')));
+    my $line = <DATA>;
+    chomp $line;
+    my @headers = split(/\t/, $line);
+	while (<DATA>) {
+		chomp $_;
+		next if !$_;
+		my @row = split(/\t/, $_);
+		my $annotations;
+		for my $i (1..$#row) {
+			next if !$row[$i];
+			$annotations .= ';' if $annotations;
+			$annotations .= $headers[$i] . '|' . $row[$i];
+		}
+		if ($annotations) {
+			my @ids = split(/,/, $row[0]);
+			foreach (@ids) {
+				my $target = $DB->resultset($type eq 'Notebook' ? 'List' : $type)->find($_);
+				create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
+			}
+		}
+	}
+	close DATA;
 }
 
 sub search_notebooks
