@@ -135,44 +135,6 @@ sub generate_body {
     return $template->output;
 }
 
-sub ncbi_search {
-    my %opts      = @_;
-    my $accn      = $opts{accn};
-    my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
-    my $result = get($esearch);
-
-    #print STDERR $result;
-
-    my $record = XMLin($result);
-
-    #print STDERR Dumper $record;
-
-    my $id = $record->{IdList}->{Id};
-    print STDERR "id = $id\n";
-
-    my $title;
-    if ($id) {
-        $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
-        my $result = get($esearch);
-        #print STDERR $result;
-        $record = XMLin($result);
-        #print STDERR Dumper $record;
-
-        foreach ( @{ $record->{DocSum}->{Item} } )
-        {    #FIXME use grep here instead
-            if ( $_->{Name} eq 'Title' ) {
-                $title = $_->{content};
-                print STDERR "title=$title\n";
-                last;
-            }
-        }
-    }
-
-    return unless $id and $title;
-    return encode_json(
-        { name => $title, id => $id } );
-}
-
 sub upload_file {
     my %opts      = @_;
     my $filename  = '' . $FORM->param('input_upload_file');
