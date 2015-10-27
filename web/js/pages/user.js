@@ -75,6 +75,12 @@ $(function() {
 			dataTypes: ['notebook'],
 			operations: ['share', 'delete', 'sendto', 'add']
 		},
+		metadata: {
+			title: 'Metadata',
+			displayType: 'html',
+			dataTypes: ['metadata'],
+			search: false
+		},
 		group: {
 			title: 'User Groups',
 			displayType: 'grid',
@@ -287,6 +293,8 @@ function default_info() {
 		case 'shared':
 			return "These are data items that your collaborators shared with you.<br><br>" +
 				"Hover over an item to view additional info. Select one or more items to share with others or add to a notebook.";
+		case 'metadata':
+			return "Here is a summary of the metadata for your experiments, genomes and notebooks.";
 		case 'mine':
 		case 'notebook':
 		case 'genome':
@@ -1701,6 +1709,22 @@ function create_new_notebook() {
         	$('#create_notebook_dialog').dialog('close');
         }
     });
+}
+
+function upload_metadata_dialog(type) {
+	$('#upload_metadata_dialog').dialog({
+		width:'28em'
+	}).dialog('open');
+	$('#metadata_file').fileupload({
+		done: function() {
+			alert('metadata added.');
+			$('#upload_metadata_dialog').dialog('close');
+		},
+		formData: {
+			fname: 'upload_metadata',
+			type: type
+		}
+	});
 }
 
 function send_menu() {
