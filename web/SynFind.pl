@@ -2372,7 +2372,7 @@ sub get_master_syn_sets {
                                   || $a->name cmp $b->name
                               } $coge->resultset('FeatureName')
                               ->search( { feature_id => $fid } );
-                            $name .= $name_hash->name . ",";
+                            $name .=  $name_hash?$name_hash->name . ",":$fid.",";
                             $link .= ";fid$count=$fid";
                         }
                         else {
