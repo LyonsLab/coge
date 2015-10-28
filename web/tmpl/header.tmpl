@@ -63,7 +63,7 @@ jQuery(document).ready(function(){
 
     // Show indicator if not on main site
     if (document.URL.indexOf('genomevolution.org') == -1 && document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
-        $('#brand').addClass("dev");
+        //$('#brand').addClass("dev");
     }
 });
 
@@ -140,16 +140,16 @@ function toggleDropdown(element) {
     	$(element + '_label').find('img').attr("src", "picts/arrow-right-icon.png");
     }
 }
-
 </script>
+
 <div style="min-height:100%">
 <header class="coge-header">
-		
+
 	<!--Header contains logo and search bar-->
-	<ul id="header_main" class="coge-header-main" style="margin-left:1em">
-		<li id="brand" style="margin-right:1em;margin-top:0.25em;">
+	<ul id="header_main" class="coge-header-main">
+		<li id="brand" style="float:left;margin-right:1em;">
 			<a href="<TMPL_VAR NAME=HOME>">
-				<font face="impact" color="#41AD41" size="20">CoGe</font>
+				<span style="font-family:impact;font-size:3em;font-weight:bold;color:#41AD41;">CoGe</span>
 			</a>
 		</li>
 		
@@ -157,31 +157,33 @@ function toggleDropdown(element) {
 			<ul class="coge-header-search">
 				<li>
 					<div class="coge-header-searchbar">
-				    	<input id="header_search_token" type="text" placeholder="Search Database" spellcheck="false" onkeypress="searchKey(event)">
+				    	<input id="header_search_token" type="text" placeholder="Search database" spellcheck="false" onkeypress="searchKey(event)">
 				    </div>
 				</li>
 				<li>
 				    <button id="header_search_button" class="ui-button ui-corner-all coge-button" type="button" onclick="search();">
-				    	<span style="font-size:1.5em;" class="glyphicon glyphicon-search"></span>
+				    	<span style="font-size:1.25em;color:dimgray;" class="glyphicon glyphicon-search"></span>
 				    </button>
 			    </li>
 			</ul>
 	    </li>
 	</ul>
 	
+	<TMPL_IF NAME="LOGON">
+	<div id="login" class="r coge-login-button noselect">
+		<div><TMPL_VAR NAME="USER"></div>
+		<img src="image.pl" class="coge-user-image" style="margin-left:33%" \>
+		<div><a href="#" class="link" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
+	</div>
+	</TMPL_IF>
+	
 	<!--Buttons and links-->
 	<ul id="header_menu" class="coge-header-menu">
-		<TMPL_IF NAME="LOGON">
-			<li id="login" class="coge-login-button noselect">
-					<div style="padding-bottom:0.2em"><TMPL_VAR NAME="USER"></div>
-					<input type="image" src="image.pl" style="height:3em;width:3em;margin-left:33%;" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">
-					<div style="padding-top:0.5em"><a href="#" class="link" style="" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
-			</li>
-		<TMPL_ELSE>
+		<TMPL_UNLESS NAME="LOGON">
 			<li id="header_login_button" class="coge-header-button" onclick="login_cas();return true;">
-					<div>Log in</div>
+				<div>Log in</div>
 			</li>
-		</TMPL_IF>
+		</TMPL_UNLESS>
 		<li class="dropdown coge-header-button noselect" onclick="toggleDropdown('#help_drop')">
 			<div id="help_drop_label" class="dropdown-label">Help <img src="picts/arrow-right-icon.png" class="link"></div>
 			<ul id="help_drop" class="dropdown-menu hidden">
