@@ -1802,7 +1802,7 @@ div.dataTables_scrollBody {
  * Header
  */
 
-@media (min-width: 1054px) {
+@media (min-width: 981px) {
 	.coge-header {
 		height: 3.1em;
 		padding: 2px;
@@ -1811,9 +1811,9 @@ div.dataTables_scrollBody {
 	}
 }
 
-@media (max-width: 1053px) {
+@media (max-width: 980px) {
 	.coge-header {
-		height: 8em;
+		height: 6em;
 		padding: 2px;
 		background-color: #f5f5f5;
 		border-bottom: 1px solid lightgray;
@@ -1878,21 +1878,26 @@ div.dataTables_scrollBody {
 	font-family: helvetica;
 	/*padding-top: 0.25em;*/
 	text-align: center;
-	color: grey;
+	color: #41AD41;
+}
+
+.coge-login-button {
+	max-width: 6em;
 }
 
 .coge-login-button > div {
 	/*font-family: impact;*/
 	font-size: 12;
-	color: grey;
+	color: #41AD41;
 	text-align: center;
+	white-space: nowrap;
 }
 
 .dropdown {
 	position: relative;
 }
 
-.dropdown-label > img {
+.dropdown-arrow {
 	width: 0.4em;
 	height: 0.4em;
 	padding-bottom: 0.15em;
@@ -1915,7 +1920,7 @@ div.dataTables_scrollBody {
 	text-align:	center;
 }
 
-.dropdown-menu > li {
+.dropdown-item {
 	padding: 3px 3px;
 	/*clear: both;*/
 	font-weight: normal;
@@ -1924,11 +1929,11 @@ div.dataTables_scrollBody {
 	white-space: nowrap;
 }
 
-.dropdown-menu > li:hover {
+.dropdown-item:hover {
 	background-color: #E7F5E7;
 }
 
-.dropdown-menu > li > a {
+.dropdown-link {
 	display: block;
-	color: grey;
+	color: #41AD41;
 }
