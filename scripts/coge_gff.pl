@@ -2,6 +2,7 @@
 
 use strict;
 use CoGeX;
+use Data::Dumper;
 use Getopt::Long;
 use File::Copy;
 use File::Path;
@@ -50,6 +51,7 @@ if (not $filename) {
 }
 
 my $file = catfile($staging_dir, $filename);
+warn $file;
 my $file_temp = $file . ".tmp";
 
 # Check if file already exists

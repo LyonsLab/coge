@@ -97,6 +97,25 @@ sub add_jobs {
     return $rc;
 }
 
+sub log {
+	my $self = shift;
+    $| = 1;
+    my $message = shift;
+    $message =~ /(.*)/xs; # why is this done? doesn't seem to remove anything
+    $message = $1;
+    open( OUT, ">>$self->logfile" ) || return;
+    print OUT $message, "\n";
+    close OUT;
+}
+
+sub log_section{
+	my $self = shift;
+	$self->log( "#" x (25) );
+	$self->log( shift );
+	$self->log( "#" x (25) );
+	$self->log( "" );
+}
+
 __PACKAGE__->meta->make_immutable;
 no Moose;
 1;
