@@ -261,13 +261,13 @@ function fill_jobtitle(){
     $('#jobtitle').val(title);
 }
 
-function update_basename(basename){
-    pageObj.basename=basename;
-}
+//function update_basename(basename){
+//    pageObj.basename=basename;
+//}
 
-function reset_basename(){
-    if(pageObj.basename) pageObj.basename=0;
-}
+//function reset_basename(){
+//    if(pageObj.basename) pageObj.basename=0;
+//}
 
 function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb) {
     var url = 'dsg1='+dsgid1+';dsg2='+dsgid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
@@ -1228,6 +1228,11 @@ function checkRequestSize(url) {
             alert('BlastP only works if both genomes have protein coding sequences (CDS) AND CDS is selected for both!');
             return;
         }
+        
+        if ($('#frac_bias')[0].checked && $('#depth_algo').val() == 0) {
+        	alert('You can only run Fractination Bias if you select the Quota Align algorithm for Syntenic Depth.');
+        	return;
+        }
 
         var overlay = $("#overlay").show();
 
@@ -1411,6 +1416,9 @@ function checkRequestSize(url) {
             depth_org_1_ratio: $('#depth_org_1_ratio').val(),
             depth_org_2_ratio: $('#depth_org_2_ratio').val(),
             depth_overlap: $('#depth_overlap').val(),
+            frac_bias: $('#frac_bias')[0].checked,
+            fb_window_size: $('#fb_window_size').val(),
+            fb_target_genes: $('#fb_target_genes')[0].checked,
             fid1: pageObj.fid1,
             fid2: pageObj.fid2,
             show_non_syn_dots: $('#show_non_syn_dots')[0].checked,
