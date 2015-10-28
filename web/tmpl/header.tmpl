@@ -20,8 +20,7 @@
 	
 	.glyphicon {
 		position: relative;
-		top: 1px;
-		right: 4px;
+		right: 0.5em;
 		display: inline-block;
 		font-family: 'Glyphicons Halflings';
 		font-style: normal;
@@ -65,6 +64,29 @@ jQuery(document).ready(function(){
     if (document.URL.indexOf('genomevolution.org') == -1 && document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
         //$('#brand').addClass("dev");
     }
+    
+    $(document)
+    	.mousemove(function(e){
+    		var eClass = $(e.target).attr('class');
+			if(eClass) {
+				eClass = eClass.slice(0,8);
+				if(eClass != "dropdown") {
+					hideDropdowns();
+				}
+			} else {
+				hideDropdowns();
+			}
+    	});
+    
+	$('.dropdown')
+		.click(function(e){
+			element = $(e.target).attr('id');
+			if(element) {
+				element = '#' + element.slice(0,4) + '_drop';
+				toggleDropdown(element);
+			}
+		});
+	
 });
 
 function browserAlert(){
@@ -131,7 +153,6 @@ function searchKey(event) {
 }
 
 function toggleDropdown(element) {
-	console.log(element + '_label');
 	$(element).toggle();
 	
 	if( $(element + '_label').find('img').attr('src') == "picts/arrow-right-icon.png" ) {
@@ -140,6 +161,18 @@ function toggleDropdown(element) {
     	$(element + '_label').find('img').attr("src", "picts/arrow-right-icon.png");
     }
 }
+
+function hideDropdowns() {
+	$('.dropdown-menu').hide();
+	
+	if( $('#help_drop_label').find('img').attr('src') == "picts/arrow-down-icon.png" ) {
+    	$('#help_drop_label').find('img').attr("src", "picts/arrow-right-icon.png");
+    }
+	if( $('#tool_drop_label').find('img').attr('src') == "picts/arrow-down-icon.png" ) {
+    	$('#tool_drop_label').find('img').attr("src", "picts/arrow-right-icon.png");
+    }
+}
+
 </script>
 
 <div style="min-height:100%">
@@ -184,28 +217,28 @@ function toggleDropdown(element) {
 				<div>Log in</div>
 			</li>
 		</TMPL_UNLESS>
-		<li class="dropdown coge-header-button noselect" onclick="toggleDropdown('#help_drop')">
-			<div id="help_drop_label" class="dropdown-label">Help <img src="picts/arrow-right-icon.png" class="link"></div>
+		<li id="help" class="dropdown coge-header-button noselect">
+			<div id="help_drop_label" class="dropdown-label">Help <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link"></div>
 			<ul id="help_drop" class="dropdown-menu hidden">
-				<li><a href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
-				<li><a href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
-				<li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
-				<li><a href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
-				<li><a href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
-				<li><a href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
-				<li><a href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
-				<li><a href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
 			</ul>
 		</li>
-		<li class="dropdown coge-header-button noselect" onclick="toggleDropdown('#tool_drop')">
-			<div id="tool_drop_label" class="dropdown-label">Tools <img src="picts/arrow-right-icon.png" class="link"></div>
+		<li id="tool" class="dropdown coge-header-button noselect">
+			<div id="tool_drop_label" class="dropdown-label">Tools <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link"></div>
 			<ul id="tool_drop" class="dropdown-menu hidden">
-				<li><a href="OrganismView.pl">OrganismView</a></li>
-				<li><a href="CoGeBlast.pl">CoGeBlast</a></li>
-				<li><a href="FeatView.pl">FeatView</a></li>
-				<li><a href="SynFind.pl">SynFind</a></li>
-				<li><a href="SynMap.pl">SynMap</a></li>
-				<li><a href="GEvo.pl">GEvo</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="OrganismView.pl">OrganismView</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="CoGeBlast.pl">CoGeBlast</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="FeatView.pl">FeatView</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="SynFind.pl">SynFind</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="SynMap.pl">SynMap</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="GEvo.pl">GEvo</a></li>
 			</ul>
 		</li>
 		<TMPL_IF NAME="ADMIN_ONLY">
