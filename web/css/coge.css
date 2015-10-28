@@ -1903,9 +1903,6 @@ div.dataTables_scrollBody {
 	padding-bottom: 0.15em;
 }
 
-.dropdown-toggle:focus {
-	outline: 0;
-}
 .dropdown-menu {
 	position: absolute;
 	/*left: -42;*/
