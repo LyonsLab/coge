@@ -1,0 +1,53 @@
+<TMPL_INCLUDE NAME="header.tmpl">
+<link rel="stylesheet" href="css/dataTables.css" type="text/css"/>
+<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
+<script>
+<TMPL_VAR NAME="script">
+function do_export() {
+	var url = '?type=';
+	var s = $('#types')[0];
+	url += s.options[s.selectedIndex].text;
+	url += '&export=';
+	if ($('#name').is(':checked'))
+		url += 'name';
+	if ($('#pi').is(':checked'))
+		url += 'pi';
+	if ($('#theta').is(':checked'))
+		url += 'theta';
+	if ($('#td').is(':checked'))
+		url += 'td';
+	if (url.substring(url.length - 1) == '=')
+		alert('You must select at least one column to export.');
+	else {
+		window.open(url);
+		$('#export').dialog('close');
+	}
+}
+function export_dialog() {
+	$('#export').dialog({
+		autoOpen:true,
+		position: {
+			my: "top",
+			at: "top",
+			of: window
+		}
+	});
+}
+</script>
+<div style="margin-left:14px;margin-top:20px;">View: <TMPL_VAR NAME="select">
+<span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
+</div>
+<table id="main" class="compact display">
+	<thead><tr><th>name</th><th>pi</th><th>theta</th><th>Tajima's D</th></thead>
+	<tbody></tbody>
+</table>
+<div style="height:75px"></div>
+<div class="dialog_box hidden" id="export" title="Export">
+Select columns to export<br>
+<input id="name" type="checkbox" checked> name<br>
+<input id="pi" type="checkbox" checked> pi<br>
+<input id="theta" type="checkbox" checked> theta<br>
+<input id="td" type="checkbox" checked> Tajima's D<br>
+<span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
+</div>
+<TMPL_INCLUDE NAME="footer.tmpl">
