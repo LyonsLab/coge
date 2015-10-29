@@ -417,7 +417,7 @@ sub gen_body {
 	$depth_overlap = $FORM->param('do') if $FORM->param('do');
 	$template->param( DEPTH_OVERLAP => $depth_overlap );
 	
-	$template->param( FRAC_BIAS => "checked" ) if $FORM->param('fb');
+	$template->param( FRAC_BIAS => "checked" ) if defined $FORM->param('fb') && $FORM->param('fb');
 	my $fb_window_size = 100;
 	$fb_window_size = $FORM->param('fb_ws') if $FORM->param('fb_ws');
 	$template->param( FB_WINDOW_SIZE => $fb_window_size );

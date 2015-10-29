@@ -1429,7 +1429,7 @@ sub get_query_link {
 	my $depth_overlap     = $url_options{depth_overlap};
 
 	#options for fractionation bias
-	my $frac_bias       = $url_options{frac_bias};
+	my $frac_bias       = $url_options{frac_bias} =~ /true/i;
 	my $fb_window_size  = $url_options{fb_window_size};
 	my $fb_target_genes = $url_options{fb_target_genes};
 
