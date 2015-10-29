@@ -83,7 +83,14 @@ jQuery(document).ready(function(){
 			element = $(e.target).attr('id');
 			if(element) {
 				element = '#' + element.slice(0,4) + '_drop';
-				toggleDropdown(element);
+				showDropdown(element);
+			}
+		})
+		.mouseover(function(e){
+			element = $(e.target).attr('id');
+			if(element) {
+				element = '#' + element.slice(0,4) + '_drop';
+				showDropdown(element);
 			}
 		});
 	
@@ -152,13 +159,12 @@ function searchKey(event) {
 	}
 }
 
-function toggleDropdown(element) {
-	$(element).toggle();
+function showDropdown(element) {
+	hideDropdowns();
+	$(element).fadeIn('fast');
 	
 	if( $(element + '_label').find('img').attr('src') == "picts/arrow-right-icon.png" ) {
     	$(element + '_label').find('img').attr("src", "picts/arrow-down-icon.png");
-    } else {
-    	$(element + '_label').find('img').attr("src", "picts/arrow-right-icon.png");
     }
 }
 
@@ -205,7 +211,7 @@ function hideDropdowns() {
 	<TMPL_IF NAME="LOGON">
 	<div id="login" class="r coge-login-button noselect">
 		<div><TMPL_VAR NAME="USER"></div>
-		<img src="image.pl" class="coge-user-image" style="margin-left:33%" \>
+		<img src="image.pl" class="coge-user-image" style="margin-left:33%" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';"\>
 		<div><a href="#" class="link" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
 	</div>
 	</TMPL_IF>
