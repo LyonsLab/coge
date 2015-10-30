@@ -99,18 +99,19 @@ sub gen_data {
 
 sub gen_html {
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => 'PopGen',
-		              TITLE      => 'PopGen',
+    $template->param( PAGE_TITLE => $PAGE_TITLE,
+		              TITLE      => $PAGE_TITLE,
     				  PAGE_LINK  => $LINK,
 				      HOME       => $CONF->{SERVER},
-                      HELP       => 'PopGen',
+                      HELP       => $PAGE_TITLE,
                       WIKI_URL   => $CONF->{WIKI_URL} || '',
                       ADJUST_BOX => 1,
     				  ADMIN_ONLY => $USER->is_admin,
-                      CAS_URL    => $CONF->{CAS_URL} || ''
+                      CAS_URL    => $CONF->{CAS_URL} || '',
+                      USER       => $USER->display_name || ''
     );
-    $template->param( LOGON    => 1 ) unless ($USER->user_name eq "public");
-    $template->param( BODY       => gen_body() );
+    $template->param( LOGON => 1 ) unless ($USER->user_name eq "public");
+    $template->param( BODY => gen_body() );
 
     return $template->output;
 }
