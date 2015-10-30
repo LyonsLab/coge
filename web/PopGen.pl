@@ -87,7 +87,7 @@ sub gen_data {
 	$html .= ']};var dt;$(document).ready(function(){dt=$(\'#main\').DataTable({data:data[\'';
 	$html .= $types[1];
 	$html .= '\'],lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});});';
-	my $select = '<select id="types" onclick="var t=this.options[this.selectedIndex].text;dt.clear().rows.add(data[t]).draw();">';
+	my $select = '<select id="types" onchange="var t=this.options[this.selectedIndex].text;dt.clear().rows.add(data[t]).draw();">';
 	for (@types) {
 		$select .= '<option>';
 		$select .= $_;
