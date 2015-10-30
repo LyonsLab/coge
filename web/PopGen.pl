@@ -8,7 +8,7 @@ use JSON::XS;
 use POSIX;
 no warnings 'redefine';
 
-use vars qw($P $USER $FORM $ACCN $FID $db $PAGE_NAME $PAGE_TITLE $LINK);
+use vars qw($CONF $USER $FORM $ACCN $FID $DB $PAGE_NAME $PAGE_TITLE $LINK);
 
 $PAGE_TITLE = 'PopGen';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
@@ -44,7 +44,7 @@ if ($export) {
 	}
 }
 
-( $db, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
@@ -98,22 +98,31 @@ sub gen_data {
 }
 
 sub gen_html {
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'PopGen.tmpl' );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'PopGen',
 		              TITLE      => 'PopGen',
     				  PAGE_LINK  => $LINK,
-    				  HEAD       => qq{},
-				      HOME       => $P->{SERVER},
+				      HOME       => $CONF->{SERVER},
                       HELP       => 'PopGen',
-                      WIKI_URL   => $P->{WIKI_URL} || '',
+                      WIKI_URL   => $CONF->{WIKI_URL} || '',
+                      ADJUST_BOX => 1,
     				  ADMIN_ONLY => $USER->is_admin,
-                      USER       => $USER->display_name || '',
-                      CAS_URL    => $P->{CAS_URL} || ''
+                      CAS_URL    => $CONF->{CAS_URL} || ''
     );
     $template->param( LOGON    => 1 ) unless ($USER->user_name eq "public");
+    $template->param( BODY       => gen_body() );
+
+    return $template->output;
+}
+
+sub gen_body {
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    
     my ($script, $select) = gen_data();
-    $template->param( script => $script );
-    $template->param( select => $select );
+    $template->param(
+        SCRIPT => $script,
+        SELECT => $select
+    );
 
     return $template->output;
 }
