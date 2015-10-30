@@ -402,9 +402,9 @@ const USER_ID = '<TMPL_VAR NAME="USER_ID">';
 				<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>&nbsp;
 				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='ui-button ui-corner-all coge-button'>Add</span>
 				<TMPL_IF NAME="IS_RESTRICTED">
-					<div style="padding-top:1em;">
-						<span class="info">Or make available to everyone:</span>&nbsp;
-						<span onClick="make_items_public();" class='ui-button ui-corner-all coge-button'>Make Public</span>
+					<div style="padding-top:1.25em;">
+						<div class="info">Or make available to everyone:</div>
+						<span onClick="make_items_public();" class='ui-button ui-corner-all coge-button' style='margin-top:5px;'>Make Public</span>
 					</div>
 				</TMPL_IF>
 			<TMPL_ELSE>
