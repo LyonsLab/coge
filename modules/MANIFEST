@@ -36,6 +36,9 @@ Algos/KsCalc/lib/CoGe/Algos/KsCalc.pm
 Algos/KsCalc/t/001_load.t
 Algos/Pairwise/lib/CoGe/Algos/Pairwise.pm
 Algos/Pairwise/t/001_load.t
+Algos/PopGen/lib/CoGe/Algos/PopGen/Diversity.pm
+Algos/PopGen/lib/CoGe/Algos/PopGen/FileFormat.pm
+Algos/PopGen/lib/CoGe/Algos/PopGen/Stats.pm
 Core/lib/CoGe/Core/Experiment.pm
 Core/lib/CoGe/Core/Genome.pm
 Core/lib/CoGe/Core/Feature.pm
