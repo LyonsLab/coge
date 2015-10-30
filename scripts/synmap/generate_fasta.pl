@@ -27,7 +27,7 @@ GetOptions(
     "feature_type|ft=s" => \$feature,
     "fasta|f=s"         => \$fasta,
     "config|cfg=s"      => \$CONFIG,
-    "debug"             => \$debug,
+    "debug"             => \$debug
 );
 
 $P = CoGe::Accessory::Web::get_defaults($CONFIG);
