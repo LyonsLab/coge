@@ -10,7 +10,6 @@ div.deleted { display: none; }
 
 .glyphicon {
 	position: relative;
-	top: 1px;
 	display: inline-block;
 	font-family: 'Glyphicons Halflings';
 	font-style: normal;
@@ -178,6 +177,24 @@ div.deleted { display: none; }
 
                 <label>Overlap distance:</label>
                 <input type="text" size="8" name="depth_overlap" id="depth_overlap" value="<tmpl_var name=depth_overlap>">
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="ui-widget-content ui-corner-all coge-section">
+        <legend style="color:#009900">Fractionation Bias</legend>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <li>
+                <label>Run:</label>
+                <input type="checkbox" id="frac_bias" name="frac_bias" <tmpl_var name=frac_bias> />
+            </li>
+            <li>
+                <label>Window size:</label>
+                <input type="text" id="fb_window_size" name="fb_window_size" value="<tmpl_var name=fb_window_size>" />
+            </li>
+            <li>
+            	<input type="radio" id="fb_all_genes" name="fb_genes" value="all_genes" <tmpl_var name=fb_all_genes> /> Use all genes in target genome for analysis<br />
+            	<input type="radio" id="fb_target_genes" name="fb_genes" value="target_genes" <tmpl_var name=fb_target_genes> /> Use only target genome genes that match to at least one chromosome in query genome
             </li>
         </ul>
     </fieldset>
