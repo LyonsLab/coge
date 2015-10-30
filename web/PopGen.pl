@@ -100,7 +100,7 @@ sub gen_data {
 sub gen_html {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'PopGen.tmpl' );
     $template->param( PAGE_TITLE => 'PopGen',
-		              TITLE      => 'PopGen: View PopGen Results',
+		              TITLE      => 'PopGen',
     				  PAGE_LINK  => $LINK,
     				  HEAD       => qq{},
 				      HOME       => $P->{SERVER},
