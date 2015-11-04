@@ -303,6 +303,7 @@ sub search {
 		if ($type eq 'list_metadata_key') {
 			$join = { join => 'list_annotations' };
 			my $dbh = $db->storage->dbh;
+			warn Dumper \@specialTerms;
 			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($specialTerms[0]{term}));
 			warn Dumper \@row;
 			$search = { 'list_annotations.annotation_type_id' => $row[0] };
