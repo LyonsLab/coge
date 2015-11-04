@@ -249,7 +249,7 @@ sub search {
 			$join = { join => 'experiment_annotation' };
 			my $dbh = $db->storage->dbh;
 			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $db->quote($search_term));
-			$search = { experiment_annotation.annotation_type_id => @row[0] };
+			$search = { 'experiment_annotation.annotation_type_id' => $row[0] };
 		}
 		else {
 			$search = { -and => [ @expArray, @restricted, @deleted, ] };
