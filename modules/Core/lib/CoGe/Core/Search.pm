@@ -177,18 +177,28 @@ sub search {
 	# Perform genome search (corresponding to Organism results)
 	if (   $type eq 'none'
 		|| $type eq 'genome'
+		|| $type eq 'genome_metadata_key'
 		|| $type eq 'restricted'
 		|| $type eq 'deleted' )
 	{
-		my @genomes = $db->resultset("Genome")->search(
-			{
+		my $join;
+		my $search;
+		if ($type eq 'genome_metadata_key') {
+			$join = { join => 'genome_annotations' };
+			my $dbh = $db->storage->dbh;
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
+			$search = { 'genome_annotations.annotation_type_id' => $row[0] };
+		}
+		else {
+			$search = {
 				-and => [
 					organism_id => { -in => \@idList },
 					@restricted,
 					@deleted,
-				],
-			}
-		);
+				]
+			};
+		}
+		my @genomes = $db->resultset("Genome")->search( $search, $join );
 
 		foreach ( sort { $a->id cmp $b->id } @genomes ) {
 			if (!$user || $user->has_access_to_genome($_)) {
