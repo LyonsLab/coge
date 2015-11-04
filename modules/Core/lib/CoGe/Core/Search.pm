@@ -277,7 +277,7 @@ sub search {
 	# Perform notebook search
 	if (   $type eq 'none'
 		|| $type eq 'notebook'
-		|| $type eq 'notebook_metadata_key'
+		|| $type eq 'list_metadata_key'
 		|| $type eq 'restricted'
 		|| $type eq 'deleted' )
 	{
@@ -300,7 +300,7 @@ sub search {
 		}
 		my $join;
 		my $search;
-		if ($type eq 'notebook_metadata_key') {
+		if ($type eq 'list_metadata_key') {
 			$join = { join => 'list_annotations' };
 			my $dbh = $db->storage->dbh;
 			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($specialTerms[0]{term}));
