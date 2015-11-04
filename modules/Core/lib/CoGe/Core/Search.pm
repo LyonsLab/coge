@@ -64,6 +64,9 @@ sub search {
 		if ( $specialTerms[$i]{tag} eq 'type' ) {
 			$type = $specialTerms[$i]{term};
 		}
+		if ( $specialTerms[$i]{tag} eq 'experiment_metadata_key' ) {
+			$type = 'experiment_metadata_key';
+		}
 		if ( $specialTerms[$i]{tag} eq 'restricted' ) {
 			@restricted = [ restricted => $specialTerms[$i]{term} ];
 			if ( $type eq "none" ) {
@@ -248,7 +251,7 @@ sub search {
 		if ($type eq 'experiment_metadata_key') {
 			$join = { join => 'experiment_annotation' };
 			my $dbh = $db->storage->dbh;
-			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $db->quote($search_term));
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $db->quote($specialTerms[0]{term}));
 			$search = { 'experiment_annotation.annotation_type_id' => $row[0] };
 		}
 		else {
