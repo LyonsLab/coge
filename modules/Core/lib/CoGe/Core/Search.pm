@@ -54,6 +54,11 @@ sub search {
 
 	#Set the special conditions
 	my $type = "none";    #Specifies a particular field to show
+	if ( index($search_term, 'metadata_key') != -1 ) {
+		my $index = index($search_term, ':');
+		$type = substr($search_term, 0, $index);
+		$search_term = substr($search_term, $index + 2);
+	}
 	my @restricted =
 	  [ -or => [ restricted => 0, restricted => 1 ] ]; 
 	  #Specifies either restricted(1) OR unrestriced(0) results. Default is all.
@@ -63,9 +68,6 @@ sub search {
 	for ( my $i = 0 ; $i < @specialTerms ; $i++ ) {
 		if ( $specialTerms[$i]{tag} eq 'type' ) {
 			$type = $specialTerms[$i]{term};
-		}
-		if ( index($specialTerms[$i]{tag}, 'metadata_key') != -1 ) {
-			$type = $specialTerms[$i]{tag};
 		}
 		if ( $specialTerms[$i]{tag} eq 'restricted' ) {
 			@restricted = [ restricted => $specialTerms[$i]{term} ];
@@ -251,7 +253,7 @@ sub search {
 		if ($type eq 'experiment_metadata_key') {
 			$join = { join => 'experiment_annotations' };
 			my $dbh = $db->storage->dbh;
-			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($specialTerms[0]{term}));
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
 			$search = { 'experiment_annotations.annotation_type_id' => $row[0] };
 		}
 		else {
@@ -303,9 +305,7 @@ sub search {
 		if ($type eq 'list_metadata_key') {
 			$join = { join => 'list_annotations' };
 			my $dbh = $db->storage->dbh;
-			warn Dumper \@specialTerms;
-			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($specialTerms[0]{term}));
-			warn Dumper \@row;
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
 			$search = { 'list_annotations.annotation_type_id' => $row[0] };
 		}
 		else {
