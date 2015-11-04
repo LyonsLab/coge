@@ -222,6 +222,7 @@ sub search {
 	# Perform experiment search
 	if (   $type eq 'none'
 		|| $type eq 'experiment'
+		|| $type eq 'experiment_metadata_key'
 		|| $type eq 'restricted'
 		|| $type eq 'deleted' )
 	{
@@ -242,9 +243,20 @@ sub search {
 				]
 			  ];
 		}
+		my $join;
+		my $search;
+		if ($type eq 'experiment_metadata_key') {
+			$join = { join => 'experiment_annotation' };
+			my $dbh = $db->storage->dbh;
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $db->quote($search_term));
+			$search = { experiment_annotation.annotation_type_id => @row[0] };
+		}
+		else {
+			$search = { -and => [ @expArray, @restricted, @deleted, ] };
+		}
 		my @experiments =
 		  $db->resultset("Experiment")
-		  ->search( { -and => [ @expArray, @restricted, @deleted, ], } );
+		  ->search( $search, $join );
 
 		foreach ( sort { $a->name cmp $b->name } @experiments ) {
 			if (!$user || $user->has_access_to_experiment($_)) {

@@ -1522,6 +1522,7 @@ sub get_results {
     #query is the first item on this list.
     $query_info = shift @target_info;
 
+       
     foreach my $target (@target_info) {
         my ( $org1, $org2 ) = ( $query_info->{org_name}, $target->{org_name} );
         my ( $dsgid1, $dsgid2 ) = ( $query_info->{dsgid}, $target->{dsgid} );
@@ -1726,7 +1727,11 @@ sub get_results {
         $blastfile_link = $item->{filtered_blastfile};
         $blastfile_link =~ s/$config->{COGEDIR}//;
 
-        $html .= qq{<a href="$blastfile_link" class="small" target=_new>Filtered Blast</a><br>};
+        $html .= qq{<a href="$blastfile_link" class="small" target=_new>Filtered Blast, </a>};
+	my $db = $item->{synteny_score_db};
+        $db =~ s/$config->{COGEDIR}//;
+	$html .= qq{<a href="$db" class="small" target=_new> Synteny_Score SQLite Database</a><br>};
+	
     }
 
     return encode_json({
@@ -2367,7 +2372,7 @@ sub get_master_syn_sets {
                                   || $a->name cmp $b->name
                               } $coge->resultset('FeatureName')
                               ->search( { feature_id => $fid } );
-                            $name .= $name_hash->name . ",";
+                            $name .=  $name_hash?$name_hash->name . ",":$fid.",";
                             $link .= ";fid$count=$fid";
                         }
                         else {
