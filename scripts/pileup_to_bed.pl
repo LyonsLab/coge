@@ -1,7 +1,8 @@
 #!/usr/bin/env perl
 #-------------------------------------------------------------------------------
 # Purpose:  Convert a SAMTools pileup depth to BED format.
-# Usage:    samtools -D file.bam | pileup_to_bed.pl
+# Usage:    samtools depth file.bam | pileup_to_bed.pl
+#           Note: used to accept output from "samtools mpileup"
 # Author:   mdb
 # Created:  2/24/14
 #-------------------------------------------------------------------------------
