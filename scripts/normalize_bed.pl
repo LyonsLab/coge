@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #-------------------------------------------------------------------------------
 # Purpose:  Normalize the score in a BED file to log10 percent (0<=x<=1).
-# Usage:    samtools -D file.bam | pileup_to_bed.pl
+# Usage:    samtools -D file.bam | normalize_bed.pl
 # Author:   mdb
 # Created:  2/24/14 for qTeller integration pipeline
 #-------------------------------------------------------------------------------
