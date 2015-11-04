@@ -1413,7 +1413,7 @@ sub get_stats {
     	$html .= '" style="cursor:pointer;" onclick="document.location=\'SearchResults.pl?s=\'';
     	$html .= $type;
     	$html .= '_metadata_key::';
-    	$html .= name;
+    	$html .= $name;
     	$html .= '"><td class="title5" style="padding-right:10px;white-space:nowrap;text-align:right;">';
     	$html .= $name;
     	$html .= '</td><td class="data5">';
