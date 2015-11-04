@@ -64,8 +64,8 @@ sub search {
 		if ( $specialTerms[$i]{tag} eq 'type' ) {
 			$type = $specialTerms[$i]{term};
 		}
-		if ( $specialTerms[$i]{tag} eq 'experiment_metadata_key' ) {
-			$type = 'experiment_metadata_key';
+		if ( index($specialTerms[$i]{tag}, 'metadata_key') != -1 ) {
+			$type = $specialTerms[$i]{tag};
 		}
 		if ( $specialTerms[$i]{tag} eq 'restricted' ) {
 			@restricted = [ restricted => $specialTerms[$i]{term} ];
@@ -277,6 +277,7 @@ sub search {
 	# Perform notebook search
 	if (   $type eq 'none'
 		|| $type eq 'notebook'
+		|| $type eq 'notebook_metadata_key'
 		|| $type eq 'restricted'
 		|| $type eq 'deleted' )
 	{
@@ -297,9 +298,20 @@ sub search {
 				]
 			  ];
 		}
+		my $join;
+		my $search;
+		if ($type eq 'notebook_metadata_key') {
+			$join = { join => 'list_annotations' };
+			my $dbh = $db->storage->dbh;
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($specialTerms[0]{term}));
+			$search = { 'list_annotations.annotation_type_id' => $row[0] };
+		}
+		else {
+			$search = { -and => [ @noteArray, @restricted, @deleted, ] };
+		}
 		my @notebooks =
 		  $db->resultset("List")
-		  ->search( { -and => [ @noteArray, @restricted, @deleted, ], } );
+		  ->search( $search, $join );
 
 		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
 			if (!$user || $user->has_access_to_list($_)) {
