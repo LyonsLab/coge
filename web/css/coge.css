@@ -1855,8 +1855,8 @@ div.dataTables_scrollBody {
 .coge-user-image {
     background: url('image.pl');
     border-radius: 5px;
-    width: 1.5em;
-    height: 1.5em;
+    width: 2em;
+    height: 2em;
     background-size: 1.5em;
     background-position: right;
 }
@@ -1893,6 +1893,27 @@ div.dataTables_scrollBody {
 	white-space: nowrap;
 }
 
+#image_upload_info {
+	position: absolute;
+	right: 0.25em;
+	top: 3em;
+	border: 1px solid #ccc;
+	display: none;
+	font-size: 10px;
+	margin-top: 10px;
+	padding: 5px;
+	z-index: 1000;
+	background-color: #f5f5f5;
+}
+
+#user_image:hover {
+	cursor: pointer;
+}
+
+#user_image_container:hover #image_upload_info {
+	display: block;
+}
+
 .dropdown {
 	position: relative;
 }
@@ -1906,7 +1927,7 @@ div.dataTables_scrollBody {
 .dropdown-menu {
 	position: absolute;
 	/*left: -42;*/
-	/*z-index: 1000;*/
+	z-index: 1000;
 	min-width: 6em;
 	/*padding: 5px 0;
 	margin: 2px 0 0;*/
