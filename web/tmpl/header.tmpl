@@ -250,13 +250,13 @@ function hideDropdowns() {
 	
 	<TMPL_IF NAME="LOGON">
 	<div id="login" class="r coge-login-button noselect">
-		<div><TMPL_VAR NAME="USER"></div>
+		<div class="coge-inlaid"><TMPL_VAR NAME="USER"></div>
 		<div id="user_image_container">
 			<img src="image.pl" class="coge-user-image" id="user_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';" onclick="select_image_file();"\>
 			<span id="image_upload_info">Upload New Image</span>
 		</div>
 		<input id="input_upload_file" name="input_upload_file" type="file" data-url='User.pl' class="hidden" />
-		<div><a href="#" class="link" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
+		<div><a href="#" class="coge-inlaid" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
 	</div>
 	</TMPL_IF>
 	
