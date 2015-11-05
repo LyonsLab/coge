@@ -94,7 +94,47 @@ jQuery(document).ready(function(){
 			}
 		});
 	
+	// Initialize fileupload plugin
+	$('#input_upload_file').fileupload({
+    	dataType: 'json',
+		type: "GET",
+		url: "User.pl",
+		cache: false,
+    	formData: {
+    		fname: 'upload_image_file',
+    	},
+       	add: function(e, data) {
+			if ( verify_image_file(data.files[0]) ) {
+				$('#user_image').attr('src', 'picts/ajax-loader-large.gif');
+				data.submit();
+			}
+		},
+		done: function(e, data) {
+			if (data.result && data.result.link) {
+				$('#user_image').attr('src', data.result.link);
+			}
+		}
+	});
 });
+
+function select_image_file() {
+	$('#input_upload_file').click();
+}
+
+function verify_image_file(file) {
+	var ext = file.name.split('.').pop();
+	if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
+		alert('Error: specified file is not an image');
+		return 0;
+	}
+
+	if (file.size > 2*1024*1024) {
+		alert('Error: image file is too large (>2MB)');
+		return 0;
+	}
+
+	return 1;
+}
 
 function browserAlert(){
     $('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
@@ -211,7 +251,11 @@ function hideDropdowns() {
 	<TMPL_IF NAME="LOGON">
 	<div id="login" class="r coge-login-button noselect">
 		<div><TMPL_VAR NAME="USER"></div>
-		<img src="image.pl" class="coge-user-image" style="margin-left:33%" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';"\>
+		<div id="user_image_container">
+			<img src="image.pl" class="coge-user-image" id="user_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';" onclick="select_image_file();"\>
+			<span id="image_upload_info">Upload New Image</span>
+		</div>
+		<input id="input_upload_file" name="input_upload_file" type="file" data-url='User.pl' class="hidden" />
 		<div><a href="#" class="link" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
 	</div>
 	</TMPL_IF>
