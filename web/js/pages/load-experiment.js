@@ -536,7 +536,7 @@ $.extend(ExpressionView.prototype, {
     get_options: function() {
         if (this.enabled) {
             this.data.expression_params = {
-                '-Q': this.el.find("[id='-Q']").val()
+                '-q': this.el.find("[id='-q']").val()
             };
         }
 
