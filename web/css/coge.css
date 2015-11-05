@@ -1826,7 +1826,7 @@ div.dataTables_scrollBody {
 
 .coge-header-menu > li {
 	float: right;
-	min-width: 6em;
+	min-width: 7em;
 }
 
 .coge-header-search button {
@@ -1883,6 +1883,7 @@ div.dataTables_scrollBody {
 
 .coge-login-button {
 	max-width: 6em;
+	margin-left: 5%;
 }
 
 .coge-login-button > div {
