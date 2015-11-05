@@ -52,6 +52,10 @@ a:hover {
   color: gray;
 }
 
+.coge-inlaid {
+    text-shadow: 0px 1px 0px lightgray;
+}
+
 .indent {
     padding-left: 20px;
 }
