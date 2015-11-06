@@ -783,7 +783,7 @@ sub create_load_bam_job {
         script => undef,
         args => [
             ['-user_name', $user->name, 0],
-            ['-name', "'" . $metadata->{name} . " (Alignment)" . "'", 0],
+            ['-name', "'" . $metadata->{name} . " (BAM Alignment)" . "'", 0],
             ['-desc', "'" . $metadata->{description} . "'", 0],
             ['-version', "'" . $metadata->{version} . "'", 0],
             ['-restricted', "'" . $metadata->{restricted} . "'", 0],
