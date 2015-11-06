@@ -38,21 +38,22 @@ sub build {
     
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
 
-    # Check multiple files (if more than one file then all should be FASTQ)
-    my $numFastq = 0;
-    foreach (@$input_files) {
-        $numFastq++ if (is_fastq_file($_));
-    }
-    if ($numFastq > 0 and $numFastq != @$input_files) {
-        my $error = 'Unsupported combination of file types';
-        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-        return { error => $error };
-    }
-    if ($numFastq == 0 and @$input_files > 1) {
-        my $error = 'Too many files';
-        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-        return { error => $error };
-    }
+# mdb removed 11/6/15 COGE-673
+#    # Check multiple files (if more than one file then all should be FASTQ)
+#    my $numFastq = 0;
+#    foreach (@$input_files) {
+#        $numFastq++ if (is_fastq_file($_));
+#    }
+#    if ($numFastq > 0 and $numFastq != @$input_files) {
+#        my $error = 'Unsupported combination of file types';
+#        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
+#        return { error => $error };
+#    }
+#    if ($numFastq == 0 and @$input_files > 1) {
+#        my $error = 'Too many files';
+#        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
+#        return { error => $error };
+#    }
     
     # Decompress and validate the fastq input files
     my (@decompressed, @validated);
@@ -74,8 +75,7 @@ sub build {
         
     # Trim the fastq input files
     my @trimmed;
-    my $trim_reads = 1; #TODO add this as an option in LoadExperiment interface
-    if ($trim_reads && $trimming_params) {
+    if ($trimming_params) {
         if ($alignment_params->{read_type} eq 'paired') { # mdb added 5/8/15 COGE-624 - enable paired-end support in cutadapt
             # Separate files based on last occurrence of _R1 or _R2 in filename
             my ($m1, $m2) = detect_paired_end($input_files);
