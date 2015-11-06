@@ -33,6 +33,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         	this.config.showLabels = 1;
         if (typeof(this.config.showBackground) == "undefined")
         	this.config.showBackground = 0;
+        if (typeof(this.config.disableZoomLimit) == "undefined")
+        	this.config.disableZoomLimit = 0;
     },
 
     _defaultConfig: function() {
@@ -625,6 +627,23 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                             });
                         }
                         track.colorDialog.show();
+                    }
+                },
+                { // mdb added 11/6/15 COGE-678
+                    label: 'Disable zoom limit',
+                    type: 'dijit/CheckedMenuItem',
+                    checked: this.config.disableZoomLimit,
+                    onClick: function(event) {
+                    	var config = track.config;
+                        config.disableZoomLimit = this.checked;
+                        if (config.disableZoomLimit) {
+                        	config.savedFeatureScale = config.style.featureScale;
+                        	config.style.featureScale = 0;
+                        }
+                        else {
+                        	config.style.featureScale = config.savedFeatureScale;
+                        }
+                        track.changed();
                     }
                 }
             ]);
