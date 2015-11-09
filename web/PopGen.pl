@@ -6,6 +6,7 @@ use Data::Dumper;
 use HTML::Template;
 use JSON::XS;
 use POSIX;
+use File::Spec::Functions qw(catfile);
 no warnings 'redefine';
 
 use vars qw($CONF $USER $FORM $ACCN $FID $DB $PAGE_NAME $PAGE_TITLE $LINK);
@@ -58,7 +59,8 @@ sub gen_data {
 	my $type = '';
 	my @types;
 	my $set;
-	open my $fh, '<', '/home/sdavey/test.txt';
+	print STDERR catfile($ENV{COGE_HOME}, 'test.txt'), "\n";
+	open my $fh, '<', catfile($ENV{COGE_HOME}, 'test.txt');
 	while (my $row = <$fh>) {
 		chomp $row;
 		my @tokens = split '\t', $row;
