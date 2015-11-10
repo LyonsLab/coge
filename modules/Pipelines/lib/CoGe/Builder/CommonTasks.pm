@@ -1292,6 +1292,7 @@ sub create_gsnap_job {
     my $n = $params->{'-n'} // 5; #/
     my $N = $params->{'-N'} // 1; #/
     my $nofails = $params->{'--nofails'} // 1; #/
+    my $max_mismatches = $params->{'--max-mismatches'};
 
     my $name = basename($gmap);
     
@@ -1307,11 +1308,12 @@ sub create_gsnap_job {
         ["-N", $N, 0],
         ["--format=sam", '', 0],
         ["--gmap-mode=$gapmode", '', 1],
-        ["--batch=5", '', 0],
+        ["--batch=5", '', 0]
     ];
 
     push @$args, ["-Q", "", 0] if $Q;
     push @$args, ["--nofails", "", 1] if $nofails;
+    push @$args, ["--max-mismatches=$max_mismatches", "", 0] if $max_mismatches;
     push @$args, ['--force-single-end', '', 0] if ($read_type eq 'single');
     
     # Sort fastq files in case of paired-end reads, 
