@@ -43,7 +43,7 @@ BEGIN {
         units commify print_fasta get_unique_id get_link_coords 
         format_time_diff sanitize_name execute directory_size
         trim js_escape html_escape to_filename to_pathname
-        is_fastq_file detect_paired_end
+        is_fastq_file add_fastq_ext detect_paired_end
     );
 }
 
@@ -166,12 +166,12 @@ sub format_time_diff {
 }
 
 sub to_filename {
-    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
+    my ($name, undef, undef) = fileparse(shift);#, qr/\.[^.]*/);
     return $name;
 }
 
 sub to_pathname {
-    my (undef, $path, undef) = fileparse(shift, qr/\.[^.]*/);
+    my (undef, $path, undef) = fileparse(shift);#, qr/\.[^.]*/);
     return $path;
 }
 
@@ -197,6 +197,19 @@ sub execute {
 sub is_fastq_file {
     my $filename = shift;
     return ($filename =~ /fastq$/ || $filename =~ /fastq\.gz$/ || $filename =~ /fq$/ || $filename =~ /fq\.gz$/);
+}
+
+sub add_fastq_ext {
+    my $filename = shift;
+    
+    if ($filename =~ /\.gz/) {
+        $filename =~ s/\.gz/\.fastq\.gz/;
+    }
+    else {
+        $filename .= '.fastq';
+    }
+    
+    return $filename;
 }
 
 # Separate files based on last occurrence of _R1 or _R2 in filename

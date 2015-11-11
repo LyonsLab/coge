@@ -1,7 +1,8 @@
 #!/usr/bin/env perl
 #-------------------------------------------------------------------------------
 # Purpose:  Convert a SAMTools pileup depth to BED format.
-# Usage:    samtools -D file.bam | pileup_to_bed.pl
+# Usage:    samtools depth file.bam | pileup_to_bed.pl
+#           Note: used to accept output from "samtools mpileup", see COGE-676
 # Author:   mdb
 # Created:  2/24/14
 #-------------------------------------------------------------------------------
@@ -25,7 +26,8 @@ my ($start, $stop);
 my ($prevChr, $prevDepth);
 while (<>) {
     chomp;
-    my ($chr, $pos, undef, $depth) = split("\t");
+    #my ($chr, $pos, undef, $depth) = split("\t"); # mdb removed 11/4/15 COGE-676
+    my ($chr, $pos, $depth) = split("\t"); # mdb added 11/4/15 COGE-676
 
     if (!defined $start || ($pos-$stop > 1) || $depth != $prevDepth || $chr ne $prevChr) {
         # Print interval

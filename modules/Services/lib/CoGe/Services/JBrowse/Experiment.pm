@@ -180,10 +180,11 @@ sub features {
       . ( $end - $start + 1 ) . ")\n";
     return unless ( ( $eid or $nid or $gid ) and defined $chr and defined $start and defined $end );
 
-    if ( $end - $start + 1 > $MAX_WINDOW_SIZE ) {
-        print STDERR "experiment features maxed\n";
-        return qq{{ "features" : [ ] }};
-    }
+# mdb removed 11/6/15 COGE-678
+#    if ( $end - $start + 1 > $MAX_WINDOW_SIZE ) {
+#        print STDERR "experiment features maxed\n";
+#        return qq{{ "features" : [ ] }};
+#    }
 
     # Connect to the database
     my ( $db, $user ) = CoGe::Accessory::Web->init;
