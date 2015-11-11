@@ -54,41 +54,40 @@
 <script id="description-template" type="text/template">
     <div class="step">
 
-        <div class="form-field">
+        <div class="form-field" title="Enter a unique name for the new experiment">
             <label class="col-md-2">Name:</label>
-            <input id="edit_name" type="textbox" class="col-md-8" title="Enter a unique name for the new experiment" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
+            <input id="edit_name" type="textbox" class="col-md-8" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
 
-        <div class="form-field">
+        <div class="form-field" title="Enter a description for the new experiment">
             <label class="col-md-2">Description:</label>
-            <textarea id="edit_description" class="col-md-8 no-resize" title="Enter a description for the new experiment" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea>
+            <textarea id="edit_description" class="col-md-8 no-resize" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea>
         </div>
 
-        <div class="form-field">
+        <div class="form-field" title="Enter whatever version info you would like for the new experiment. Note: the system will automatically prepend a 'v' to whatever you enter.">
             <label class="col-md-2">Version:</label>
-            <input id="edit_version" type="textbox" class="col-md-2" size="10" title="Enter whatever version info you would like for the new experiment. Note: the system will automatically prepend a 'v' to whatever you enter." value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
+            <input id="edit_version" type="textbox" class="col-md-2" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
 
-        <div class="form-field">
+        <div class="form-field"  title="Enter the source for the data for the new experiment. Start typing to select an exisisting source or click 'New' to add a source.">
             <label class="col-md-2">Source:</label>
-                <input id="edit_source" type="search" class="col-md-6" placeholder="Search" title="Enter the source for the data for the new experiment. Start typing to select an exisisting source or click 'New' to add a source." size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
+                <input id="edit_source" type="search" class="col-md-6" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
                 <div class="col-md-2">
                     <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
                     <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
                 </div>
         </div>
 
-        <div class="form-field">
+        <div class="form-field"  title="Leave unchecked to make the new experiment public, or check the box to make the new experiment private to the current user. Note: restricted experiments can be shared with other users on the Profile page.">
             <label class="col-md-2">Restricted?</label>
-            <input id="restricted" type="checkbox" title="Leave unchecked to make the new experiment public, or check the box to make the new experiment private to the current user. Note: restricted experiments can be shared with other users on the Profile page." checked>
+            <input id="restricted" type="checkbox" checked>
         </div>
 
-        <div class="form-field">
+        <div class="form-field" title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from.">
             <label class="col-md-2">Genome:</label>
-            <input class="col-md-6" id="edit_genome" type="search" placeholder="Search"
-            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            <input class="col-md-6" id="edit_genome" type="search" placeholder="Search" spellcheck="false"
             	size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" 
             	style="float:left;" />
             <img id="edit_genome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
@@ -169,11 +168,10 @@
 						<input name="notebook" type="radio" value="new" checked>
 						<label>Create new notebook</label>
 					</div>
-					<div>
+					<div title="Enter the notebook to add the new experiment(s) to. Start typing to narrow down the list of notebooks to choose from.">
 						<input name="notebook" type="radio" value="existing">
 						<label>Use existing notebook: </label>
 						<input id="edit_notebook" type="search" placeholder="Search" spellcheck="false"
-							title="Enter the notebook to add the new experiment(s) to. Start typing to narrow down the list of notebooks to choose from."
 							onclick="$(this).autocomplete('search')";
 							onkeyup="coge.utils.wait_to_search(search_notebooks, this);" size="20" disabled />
 					</div>
@@ -281,17 +279,17 @@
         <div class="form-field">
             <label class="col-md-2">CutAdapt: (<a href="https://cutadapt.readthedocs.org/en/stable/guide.html" target="_blank" class="small link">docs</a>)</label>
             <div class="form-group">
-                <div class="form-entry">
+                <div class="form-entry"  title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64.">
                     <label>-q:</label>
-                    <input id="-q" type="number" title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64." value="25"/>
+                    <input id="-q" type="number" value="25"/>
                 </div>
-                <div class="form-entry">
+                <div class="form-entry" title="Use this to throw away processed reads shorter than N bases">
                     <label>-m:</label>
-                    <input id="-m" type="number" title="Use this to throw away processed reads shorter than N bases" value="17"/>
+                    <input id="-m" type="number" value="17"/>
                 </div>
-                <div class="form-entry">
+                <div class="form-entry" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)">
                     <label>--quality-base:</label>
-                    <input id="--quality-base" type="number" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)" value="32"/>
+                    <input id="--quality-base" type="number" value="32"/>
                 </div>
             </div>
         </div>
@@ -311,11 +309,11 @@
 
 <script id="tophat-template" type="text/template">
     <div id="tophat">
-        <div class="form-field">
+        <div class="form-field" title="Instructs TopHat to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number.">
             <label class="col-md-2">TopHat: (<a href="http://ccb.jhu.edu/software/tophat/manual.shtml" target="_blank" class="small link">docs</a>)</label>
             <div>
                 <label>-g:</label>
-                <input id="-g" type="number" title="Instructs TopHat to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number." value="1"/>
+                <input id="-g" type="number" value="1"/>
             </div>
         </div>
     </div>
@@ -326,17 +324,17 @@
         <div class="form-field">
             <label class="col-md-2">CutAdapt: (<a href="https://cutadapt.readthedocs.org/en/stable/guide.html" target="_blank" class="small link">docs</a>)</label>
             <div class="form-group">
-                <div class="form-entry">
+                <div class="form-entry" title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64.">
                     <label>-q:</label>
-                    <input id="-q" type="number" title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64." value="25"/>
+                    <input id="-q" type="number" value="25"/>
                 </div>
-                <div class="form-entry">
+                <div class="form-entry" title="Use this to throw away processed reads shorter than N bases">
                     <label>-m:</label>
-                    <input id="-m" type="number" title="Use this to throw away processed reads shorter than N bases" value="17"/>
+                    <input id="-m" type="number" value="17"/>
                 </div>
-                <div class="form-entry">
+                <div class="form-entry" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)">
                     <label>--quality-base:</label>
-                    <input id="--quality-base" type="number" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)" value="32"/>
+                    <input id="--quality-base" type="number" value="32"/>
                 </div>
             </div>
         </div>
@@ -344,23 +342,23 @@
         <div class="form-field">
             <label class="col-md-2">GSNAP: (<a href="http://research-pub.gene.com/gmap/" target="_blank" class="small link">docs</a>)</label>
             <div class="form-group">
-	            <div class="form-entry">
+	            <div class="form-entry" title="Look for novel splicing (0=no (default), 1=yes)">
 		            <label>-N:</label>
-		            <input id="-N" type="number" title="Look for novel splicing (0=no (default), 1=yes)" value="1"/>
+		            <input id="-N" type="number" value="1"/>
 		        </div>
             
-                <div class="form-entry">
+                <div class="form-entry" title="Maximum number of paths to print">
                     <label>-n:</label>
-                    <input id="-n" type="number" title="Maximum number of paths to print" value="5"/>
+                    <input id="-n" type="number" value="5"/>
                 </div>
 
-                <div class="form-entry">
+                <div class="form-entry" title="If more than maximum number of paths are found, then nothing is printed.">
                     <label>-Q:</label>
-                    <input id="-Q" type="checkbox" title="If more than maximum number of paths are found, then nothing is printed." checked/>
+                    <input id="-Q" type="checkbox" checked/>
                 </div>
-                <div class="form-entry">
+                <div class="form-entry" title="Cases to use GMAP for complex alignments containing multiple splices or indels">
                     <label>--gap-mode:</label>
-                    <select id="--gap-mode" title="Cases to use GMAP for complex alignments containing multiple splices or indels">
+                    <select id="--gap-mode">
                         <option>none</option>
                         <option>all</option>
                         <option>pairsearch</option>
@@ -369,10 +367,15 @@
                         <option>improve</option>
                     </select>
                 </div>
-                <div class="form-entry">
+                <div class="form-entry" title="Exclude printing of failed alignments">
                     <label>--nofails:</label>
-                    <input id="--nofails" type="checkbox" title="Exclude printing of failed alignments" checked/>
+                    <input id="--nofails" type="checkbox" checked/>
                 </div>
+                <div class="form-entry" title="Maximum number of mismatches allowed">
+	                <label>--max-mismatches:</label>
+	                <input id="--max-mismatches-chk" type="checkbox"/>
+	                <input id="--max-mismatches" type="number" value="2"/>
+	            </div>
             </div>
         </div>
     </div>
