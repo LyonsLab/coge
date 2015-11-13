@@ -58,7 +58,7 @@ $.extend(ExperimentDescriptionView.prototype, {
         this.el = $($("#genomes-template").html());
         this.edit_xgenome = this.el.find("#edit_xgenome");
 		this.edit_ygenome = this.el.find("#edit_ygenome");
-		this.edit_zgenome = this.el.find("#edit_zgenome")
+		this.edit_zgenome = this.el.find("#edit_zgenome");
         if (this.metadata) {
             //this.el.find('#edit_name').val(this.metadata.name);
             //this.el.find('#edit_description').val(this.metadata.description);
@@ -194,7 +194,7 @@ $.extend(ExperimentDescriptionView.prototype, {
 	    	z_gid: this.z_gid
         });
         return true;
-    },
+    }
 });
 
 function GeneralOptionsView(opts) {
@@ -279,7 +279,7 @@ $.extend(AdminOptionsView.prototype, {
 
     get_options: function() {
         return this.data;
-    },
+    }
 });
 
 function OptionsView(opts) {
@@ -336,7 +336,7 @@ $.extend(OptionsView.prototype, {
     render: function() {
         // Render the views added to the layout view
         this.layout_view.renderLayout();
-    },
+    }
 });
 
 
@@ -399,7 +399,7 @@ function getBgColor(slideValue) {
 
 var visVisible = false;
 function showVisualizer(data) {
-    console.log(data)
+    console.log(data);
 
     if (visVisible) {
         //Refresh function can go here.
@@ -427,13 +427,14 @@ function showVisualizer(data) {
 }
 
 function launch(experiment) {
+    //console.log(experiment);
     var xgid = experiment.x_gid;
     var ygid = experiment.y_gid;
     var zgid = experiment.z_gid;
     var final_experiment = experiment;
     final_experiment.links = {};
-    var fileDir = "/home/asherkhb/repos/coge/web/data/diags/"
-    var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks" 
+    var fileDir = "/home/asherkhb/repos/coge/web/data/diags/";
+    var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks";
     
     var xy_request = {
         type: 'synmap',
@@ -449,6 +450,10 @@ function launch(experiment) {
     };
     var xz_request = {
     	type: 'synmap',
+        requester: {
+		    page:      PAGE_NAME,
+		    user_name: USER_NAME
+	    },
 		parameters: {
 			genome_id1: xgid,
 			genome_id2: zgid,
@@ -457,6 +462,10 @@ function launch(experiment) {
     };
     var yz_request = {
     	type: 'synmap',
+        requester: {
+		    page:      PAGE_NAME,
+		    user_name: USER_NAME
+	    },
 		parameters: {
 			genome_id1: ygid,
 			genome_id2: zgid,
@@ -465,7 +474,7 @@ function launch(experiment) {
     };
   
     function buildLink(id1, id2) {
-        var link = ''
+        var link = '';
         if (id1 <= id2) {
             link = fileDir + id1 + '/' + id2 + '/' + id1 + '_' + id2 + fileTag;
         }
@@ -473,18 +482,21 @@ function launch(experiment) {
             link = fileDir + id2 + '/' + id1 + '/' + id2 + '_' + id1 + fileTag;
         }
         return link;
-    } 
+    }
+
     // Compute XY Comparison
     // onSuccess: Launch XZ Comparison
     function makeXY() {
-        coge.progress.init({title: "Running Analysis 1/3",
+        coge.progress.init({title: "Running SynMap Analysis 1/3",
                             onSuccess: function(results) {
+                                console.log('XY RESULTS:');
+                                console.log(results);
                                 coge.progress.end();
                                 final_experiment.links.xy = buildLink(xgid, ygid);
                                 makeXZ();
                             } 
                            });
-        coge.progress.begin()
+        coge.progress.begin();
         
         coge.services.submit_job(xy_request)
             .done(function(response) {
@@ -510,14 +522,14 @@ function launch(experiment) {
     // Compute XZ Comparison
     // onSuccess: Launch YZ Comparison
     function makeXZ() { 
-        coge.progress.init({title: "Running Analysis 2/3",
+        coge.progress.init({title: "Running SynMap Analysis 2/3",
                             onSuccess: function(results) {
                                 coge.progress.end();
                                 final_experiment.links.xz = buildLink(xgid, zgid);
                                 makeYZ();
                             } 
                            });
-        coge.progress.begin()
+        coge.progress.begin();
         
         coge.services.submit_job(xz_request)
             .done(function(response) {
@@ -543,15 +555,14 @@ function launch(experiment) {
     // Compute YZ Comparison
     // onSuccess: Analyses are complete 
     function makeYZ() {
-        coge.progress.init({title: "Running Analysis 3/3",
+        coge.progress.init({title: "Running SynMap Analysis 3/3",
                             onSuccess: function(results) {
                                 coge.progress.end();
                                 final_experiment.links.yz = buildLink(ygid, zgid);
-                                //showVisualizer(final_experiment);
-                                dotsXY();
+                                runDotplotDots();
                             } 
                            });
-        coge.progress.begin()
+        coge.progress.begin();
         
         coge.services.submit_job(yz_request)
             .done(function(response) {
@@ -574,78 +585,41 @@ function launch(experiment) {
             })
     }
 
-    function dotsXY() {
-        coge.progress.init({title: "Running Analysis 4/3",
+    function runDotplotDots() {
+        coge.progress.init({title: "Finding Syntenic Points",
                             onSuccess: function(results) {
-                                //final_experiment.links.yz = buildLink(ygid, zgid);
+                                console.log("runDotplotDots Complete");
                                 //showVisualizer(final_experiment);
-                            } 
+                            }
                            });
-        coge.progress.begin()
-        
-        $.ajax({ data: {fname: "dotplot_dots",
-                        genome_id1: xgid,
-                        genome_id2: ygid,
-                        ksfile: final_experiment.links.xy
-                        }
-                })
-        .done(function(response) {
-            //coge.progress.update(response.id, response.site_url);
-            console.log(response);  
-        })        
-        //console.log(me)
-    }
+        coge.progress.begin();
 
-    // Compute XY dotplot_dots
-    // onSuccess: Launch dots XZ. 
-    /*function dotsXY() {
-        var xy_dot_req = {
-            type: 'dotplot_dots',
-            requester: {
-		        page:      PAGE_NAME,
-		        user_name: USER_NAME
-	        },
-            parameters: {
-                genome_id1: xgid,
-                genome_id2: ygid,
-                ksfile: final_experiment.links.xy
-            }
-        };
-
-        coge.progress.init({title: "Running Analysis 4/3",
-                            onSuccess: function(results) {
-                                //final_experiment.links.yz = buildLink(ygid, zgid);
-                                //showVisualizer(final_experiment);
-                            } 
-                           });
-        coge.progress.begin()
-        
-        coge.services.submit_job(xy_dot_req)
-            .done(function(response) {
-                if (!response) {
-                    coge.progress.failed("Error: empty response from server");
-                    return;
+        $.ajax({
+                data: {
+                    fname: "dotplot_dots",
+                    genome_idX: xgid,
+                    genome_idY: ygid,
+                    genome_idZ: zgid,
+                    ksfile_xy: final_experiment.links.xy,
+                    ksfile_xz: final_experiment.links.xz,
+                    ksfile_yz: final_experiment.links.yz,
+                    hide: experiment.options.hide,
+                    min_len: experiment.options.min_len
                 }
-                else if (!response.success || !response.id) {
-                    coge.progress.failed("Error: failed to start workflow", response.error);
-                }
-                else if (response.success) {
-                    console.log("SUCCESS!!!");
-                }
-                //Start status update
+            })
+            .done(function (response) {
                 window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to browser URL
                 coge.progress.update(response.id, response.site_url);
             })
-            .fail(function(jqXHR, textStatus, errorThrown) {
+            .fail(function (jqXHR, textStatus, errorThrown) {
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
             })
-    }*/
+
+    }
 
     // Start Comparisons
-    //makeXY(); AKB UNCOMMENT THIS TO RESUME FUNCTIONING!
-    dotsXY();
-    //console.log(experiment);
-};
+    makeXY();
+}
 
 function reset_launch() { //AKB - Renamed from reset_load()
     window.history.pushState({}, "Title", PAGE_NAME);

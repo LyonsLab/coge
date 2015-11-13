@@ -55,7 +55,6 @@ $EMBED = $FORM->param('embed');
 
 %FUNCTION = (
     dotplot_dots        => \&dotplot_dots,
-    merge_three_dots    => \&merge_three_dots,
     send_error_report   => \&send_error_report
 );
 
@@ -185,33 +184,79 @@ sub get_debug_log {
 
 sub dotplot_dots {
     my %opts = @_;
-    my $genome_id1 = $opts{genome_id1};
-    my $genome_id2 = $opts{genome_id2};
-    my $ksfile = $opts{ksfile};
+    my $genome_idX = $opts{genome_idX};
+    my $genome_idY = $opts{genome_idY};
+    my $genome_idZ = $opts{genome_idZ};
+    my $ksfile_xy = $opts{ksfile_xy};
+    my $ksfile_xz = $opts{ksfile_xz};
+    my $ksfile_yz = $opts{ksfile_yz};
+    my $hide = $opts{hide};
+    my $min_len = $opts{min_len};
 
     my $DIAGSDIR = $CONF->{DIAGSDIR};
-    my $SCRIPTDIR   = $CONF->{SCRIPTDIR};
-    my ( $dir1, $dir2 ) = sort ( $genome_id1, $genome_id2 );
+    my $SYN3DIR = $CONF->{SYN3DIR};
+    my $SCRIPTDIR = $CONF->{SCRIPTDIR};
 
-    my $cmd = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile;
-    my %outputs = [catfile($DIAGSDIR, $dir1, $dir2, 'log.json'),
-                  catfile($DIAGSDIR, $dir1, $dir2, 'dots.json')];
-    my $description = "running dotplot_dots...";
+    my $dotlog = 'dotplot_dots_log.json';
+    my $merge_log = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_log.json';
 
-    my $workflow = $JEX->create_workflow( name => "Finding Syntenic Points");
+    my ( $dir1, $dir2 ) = sort ( $genome_idX, $genome_idY );
+    my ( $dir3, $dir4 ) = sort ( $genome_idX, $genome_idZ );
+    my ( $dir5, $dir6 ) = sort ( $genome_idY, $genome_idZ );
+
+    my $workflow = $JEX->create_workflow( name => "Finding Syntenic Points", init => 1 );
+
+    # Build/add dotplot_dots XY job.
+    my $cmd_xy = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile_xy;
+    my $dots_xy = $dir1 . '_' . $dir2 . '_synteny.json';
+    my $outputs_xy = [catfile($DIAGSDIR, $dir1, $dir2, $dotlog), catfile($DIAGSDIR, $dir1, $dir2, $dots_xy)];
     $workflow->add_job({
-        cmd => $cmd,
-        outputs => %outputs,
-        description => $description,
+        cmd => $cmd_xy,
+        outputs => $outputs_xy,
+        description => "running XY dotplot_dots...",
     });
+
+    # Build/add dotplot_dots XZ job.
+    my $cmd_xz = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile_xz;
+    my $dots_xz = $dir3 . '_' . $dir4 . '_synteny.json';
+    my $outputs_xz = [catfile($DIAGSDIR, $dir3, $dir4, $dotlog), catfile($DIAGSDIR, $dir3, $dir4, $dots_xz)];
+    $workflow->add_job({
+        cmd => $cmd_xz,
+        outputs => $outputs_xz,
+        description => "running XZ dotplot_dots...",
+    });
+
+    # Build/add dotplot_dots YZ job.
+    my $cmd_yz = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile_yz;
+    my $dots_yz = $dir5 . '_' . $dir6 . '_synteny.json';
+    my $outputs_yz = [catfile($DIAGSDIR, $dir5, $dir6, $dotlog), catfile($DIAGSDIR, $dir5, $dir6, $dots_yz)];
+    $workflow->add_job({
+        cmd => $cmd_yz,
+        outputs => $outputs_yz,
+        description => "running YZ dotplot_dots...",
+    });
+
+    # Build/add three_dots_merge job.
+    my $merge_ins = ' -i1 ' . @$outputs_xy[1] . ' -i2 ' . @$outputs_xz[1] . ' -i3 ' . @$outputs_yz[1];
+    my $merge_ots = ' -o ' . $SYN3DIR;
+    my $merge_gids = ' -xid ' . $genome_idX . ' -yid ' . $genome_idY . ' -zid ' . $genome_idZ;
+    my $merge_opts = '';
+    if ($hide eq 'true') { $merge_opts .= ' -P' }
+    if ($min_len > 0) { $merge_opts .= ' -M ' . $min_len; }
+
+    my $merge_cmd = catfile($SCRIPTDIR, 'three_dots_merge.py') . $merge_ins . $merge_ots . $merge_gids . $merge_opts;
+    my $dots_xyz = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_dots.json';
+    my $hist_xyz = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_histogram.json';
+    my $merge_out = [catfile($SYN3DIR, $dots_xyz), catfile($SYN3DIR, $merge_log), catfile($SYN3DIR, $hist_xyz)];
+    $workflow->add_job({
+        cmd => $merge_cmd,
+        outputs => $merge_out,
+        description => "merging XYZ dots..."
+    });
+
     my $response = $JEX->submit_workflow($workflow);
-
+    $JEX->wait_for_completion($response->{id});
     return $response;
-}
-
-sub three_dots_merge {
-    my %opts = @_;
-    return;
 }
 
 sub send_error_report {

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import json
 from copy import copy, deepcopy
@@ -6,7 +8,6 @@ from sys import stderr
 import math
 
 __author__ = 'senorrift'
-# TODO: Add Kn/Ks Support
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 #                                                                                                                     #
@@ -469,7 +470,7 @@ file1 = args.i1
 file2 = args.i2
 file3 = args.i3
 ofolder = args.o.rstrip('/')
-synt_out = "%s/%s_%s_%s.json" % (ofolder, x, y, z)
+synt_out = "%s/%s_%s_%s_dots.json" % (ofolder, x, y, z)
 hist_out = "%s/%s_%s_%s_histogram.json" % (ofolder, x, y, z)
 
 parse_file = args.P
