@@ -92,24 +92,24 @@ for line in get_values:
         tmpl["Kn"] = line_contents[1]
 
         # Species 1: Genome ID, Chromosome, Start, Stop
-        id_chr_1 = line_contents[2].lstrip('a').split("_")
+        id_chr_1 = line_contents[2].lstrip('a').partition("_")
         tmpl["sp1_id"] = id_chr_1[0]
         if id_chr_1[0] not in sp1_id:
             sp1_id.append(id_chr_1[0])
-        tmpl["sp1_ch"] = id_chr_1[1]
-        if id_chr_1[1] not in sp1_chromosomes:
-            sp1_chromosomes.append(id_chr_1[1])
+        tmpl["sp1_ch"] = id_chr_1[2]
+        if id_chr_1[2] not in sp1_chromosomes:
+            sp1_chromosomes.append(id_chr_1[2])
         tmpl["sp1_start"] = line_contents[4]
         tmpl["sp1_stop"] = line_contents[5]
 
         # Species 2: Genome ID, Chromosome, Start, Stop
-        id_chr_2 = line_contents[6].lstrip('b').split("_")
+        id_chr_2 = line_contents[6].lstrip('b').partition("_")
         tmpl["sp2_id"] = id_chr_2[0]
         if id_chr_2[0] not in sp2_id:
             sp2_id.append(id_chr_2[0])
-        tmpl["sp2_ch"] = id_chr_2[1]
-        if id_chr_2[1] not in sp2_chromosomes:
-            sp2_chromosomes.append(id_chr_2[1])
+        tmpl["sp2_ch"] = id_chr_2[2]
+        if id_chr_2[2] not in sp2_chromosomes:
+            sp2_chromosomes.append(id_chr_2[2])
         tmpl["sp2_start"] = line_contents[8]
         tmpl["sp2_stop"] = line_contents[9]
 
