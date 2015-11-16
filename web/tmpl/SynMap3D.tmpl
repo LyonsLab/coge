@@ -148,17 +148,17 @@
 
             <div class="form-field">
 		<label class="col-md-2">Hide contigs without synteny:</label>
-		<input id="nosynt" type="checkbox">
+		<input id="nosynt" type="checkbox" disabled>
 	    </div>
 	
 	    <div class="form-field">
 		<label class="col-md-2">Minimum chromosome length:</label>
-		<input id="min_length" type="number" value="0">
+		<input id="min_length" type="number" value="0" disabled>
 	    </div>
 
 	    <div class="form-field">
 		<label class="col-md-2">Sort chromosomes by:</label>
-		<select id="sortby">
+		<select id="sortby" disabled>
 		    <option value="length">Length</option>
 		    <option value="name">Name</option>
 		</select>
@@ -173,7 +173,7 @@
 
 	    <div class="form-field">
 		<label class="col-md-2">Enable VR mode:</label>
-		<input id="vr" type="checkbox">
+		<input id="vr" type="checkbox" disabled>
 	   </div>
 	</div>	
 </script>
@@ -238,7 +238,7 @@ $(function() {
         type: "GET",
         url: PAGE_NAME,
         dataType: "html",
-        cache: false,
+        cache: false
     });
 
     // Configure dialogs
@@ -282,7 +282,7 @@ $(function() {
 
 <script type="text/javascript" src="js/pages/synmap-3d.js"></script>
 
-<script type="text/javascript" src="js/syn3d/syn3d.js"></script>
+<!--<script type="text/javascript" src="js/syn3d/syn3d.js"></script>-->
 <script type="text/javascript" src="js/syn3d/three.min.js"></script>
 <script type="text/javascript" src="js/syn3d/modified_FlatOrbitControls.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>

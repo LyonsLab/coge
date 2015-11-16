@@ -504,7 +504,7 @@ log_ks = histogram['logten']['data']['Ks']['mean']
 log_kn = histogram['logten']['data']['Kn']['mean']
 
 log = {}
-log_out = "%s/log.json" % ofolder
+log_out = "%s/%s_%s_%s_log.json" % (ofolder, x, y, z)
 log["status"] = "complete"
 log["matches"] = str(match_number)
 log["ks"] = {"min": str(min(log_ks)), "max": str(max(log_ks))}

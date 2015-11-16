@@ -124,7 +124,7 @@ function renderPoints(matches, scene) {
 }
 
 /* FUNCTION: Render Comparison */
-function renderComparison() {
+function renderComparison(xid, yid, zid, xyjson, xzjson, yzjson, mergejson, histo) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~SETUP CANVAS & VR ENVIRONMENT~~~~
      --------------------------------------------------------------------------------------------------------*/
@@ -158,7 +158,17 @@ function renderComparison() {
     var axisWidth = 0.05;
 
     /* Assign Files by Selected Visualization */
-    var xID, yID, zID, xy_json, xz_json, yz_json, threeway_json, histogram;
+    var xID = xid;
+    var yID = yid;
+    var zID = zid;
+    var xy_json = xyjson;
+    var xz_json = xzjson;
+    var yz_json = yzjson;
+    var threeway_json = mergejson;
+    var histogram = histo;
+
+    // AKB Removed Switch from Demo, Added Above assignments
+    /*var xID, yID, zID, xy_json, xz_json, yz_json, threeway_json, histogram;
     switch(visSelect) {
         case "chm":
             xID = '22736';
@@ -212,7 +222,7 @@ function renderComparison() {
             break;
         default:
             console.log("No Dataset Selected");
-    }
+    }*/
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~GLOBAL 3D OBJECT VARIABLES~~~~
@@ -396,6 +406,7 @@ function renderComparison() {
     function loadXY() {
         return $.ajax({
                        type: 'GET',
+                       //isLocal: true,
                        url: xy_json,
                        dataType: 'json',
                        success: function(data) {
@@ -639,7 +650,15 @@ $(document).ready( function() {
     });
 
     /* Render Visualization on Page Load */
-    renderComparison();
+    renderComparison(
+        final_experiment.x_gid,
+        final_experiment.y_gid,
+        final_experiment.z_gid,
+        final_experiment.links.xy_json,
+        final_experiment.links.xz_json,
+        final_experiment.links.yz_json,
+        final_experiment.links.merge,
+        final_experiment.links.histo
+    );
 
 }); //END $(document).ready()
-
