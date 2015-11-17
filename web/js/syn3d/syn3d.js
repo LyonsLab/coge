@@ -82,8 +82,8 @@ function renderHistogram(histogramObj) {
     var histPlotLayout = {
         title: 'log10(Kn/Ks) Distribution',
         bargap: 0,
-        xaxis: {title: 'log10 Ks/Kn'},
-        yaxis: {title: 'Counts'}
+        xaxis: {title: 'log10 Ks/Kn', fixedrange: true},
+        yaxis: {title: 'Counts', fixedrange: true}
     };
 
     Plotly.Plots.purge(plot);
