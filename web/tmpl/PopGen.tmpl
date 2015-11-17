@@ -1,12 +1,26 @@
 <link rel="stylesheet" href="css/dataTables.css" type="text/css"/>
 <script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
 <script>
-<TMPL_VAR NAME="script">
 function do_export() {
 	var url = '?type=';
 	var s = $('#types')[0];
 	url += s.options[s.selectedIndex].text;
 	url += '&export=';
+	var i = 0;
+	var first = true;
+	while (true) {
+		var c = $('#col' + i);
+		if (!c.length)
+			break;
+		if (c.is(':checked')) {
+			if (first)
+				first = false;
+			else
+				url += ',';
+			url += 'col' + i;
+		}
+		++i;
+	}
 	if ($('#name').is(':checked'))
 		url += 'name';
 	if ($('#pi').is(':checked'))
@@ -23,6 +37,13 @@ function do_export() {
 	}
 }
 function export_dialog() {
+	var d = $('#export_columns');
+	d.empty();
+	var s=$('#types')[0];
+	var t=s.options[s.selectedIndex].text;
+	var cols = columns[t];
+	for (var i=0; i<cols.length; i++)
+		d.append('<input id="col' + i + '" type="checkbox" checked> ' + cols[i] + '<br>');
 	$('#export').dialog({
 		autoOpen:true,
 		position: {
@@ -32,21 +53,48 @@ function export_dialog() {
 		}
 	});
 }
+function plot_dialog() {
+	$('#plot').dialog({
+		autoOpen:true,
+		position: {
+			my: "top",
+			at: "top",
+			of: window
+		}
+	});
+}
+var columns = <TMPL_VAR NAME="columns">;
+var data = <TMPL_VAR NAME="data">;
+var dt;
+function set_data() {
+	var s=$('#types')[0];
+	var t=s.options[s.selectedIndex].text;
+	var cols = columns[t];
+	var c = [];
+	for (var i=0; i<cols.length; i++)
+		c.push({'title': cols[i]});
+	dt = $('#main').DataTable({columns:c,data:data[t],lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
+}
+$(document).ready(set_data);
 </script>
 <div ></div>
-<div style="margin-left:14px;margin-top:20px;">View: <TMPL_VAR NAME="select">
+<div style="margin-left:14px;margin-top:20px;">View:
+<select id="types" onchange="dt.destroy();set_data();">
+<TMPL_VAR NAME="options">
+</select>
 <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
+<span onclick="plot_dialog()" class="ui-button ui-corner-all coge-button">Plot...</span>
 </div>
+<style>
+th { text-align: left }
+</style>
 <table id="main" class="compact display">
-	<thead><tr><th>name</th><th>pi</th><th>theta</th><th>Tajima's D</th></thead>
 	<tbody></tbody>
 </table>
 <div style="height:75px"></div>
-<div class="dialog_box hidden" id="export" title="Export">
-Select columns to export<br>
-<input id="name" type="checkbox" checked> name<br>
-<input id="pi" type="checkbox" checked> pi<br>
-<input id="theta" type="checkbox" checked> theta<br>
-<input id="td" type="checkbox" checked> Tajima's D<br>
+<div id="export" class="dialog_box hidden" title="Export">
+Select columns to export
+<div id="export_columns">
+</div>
 <span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
 </div>
