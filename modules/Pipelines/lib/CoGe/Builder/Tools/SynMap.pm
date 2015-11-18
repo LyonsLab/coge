@@ -918,7 +918,7 @@ sub add_jobs {
 	my @plotargs   = ();
 	my @plotinputs = ();
 
-	my $basename =
+	my ($basename) =
 	  $final_dagchainer_file =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
 	$width = 1000 unless defined($width);
 
