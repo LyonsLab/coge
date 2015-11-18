@@ -2286,12 +2286,14 @@ sub get_dotplot {
 	my $ua = LWP::UserAgent->new;
 	$ua->timeout(10);
 	my $response = $ua->get($url);
-
 	unless ( $response->is_success ) {
-		return "Unable to get image for dotplot: $url";
+		return "Unable to get image for dotplot (failed): $url";
 	}
 
 	my $content = $response->decoded_content;
+	unless ( $content ) {
+        return "Unable to get image for dotplot (no content): $url";
+    }
 
 	($url) = $content =~ /url=(.*?)"/is;
 	my $png = $url;
@@ -2305,8 +2307,8 @@ sub get_dotplot {
 	if ($loc) {
 		return ( $url, $loc, $w, $h );
 	}
-	my $html =
-qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
+	
+	my $html = qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
 	return $html;
 }
 
