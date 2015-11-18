@@ -1,6 +1,8 @@
-<link rel="stylesheet" href="css/dataTables.css" type="text/css"/>
-<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
-<script>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css"/>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.1.0/css/buttons.dataTables.min.css"/>
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/buttons.colVis.min.js"></script><script>
 function do_export() {
 	var url = '?type=';
 	var s = $('#types')[0];
@@ -66,6 +68,10 @@ function plot_dialog() {
 var columns = <TMPL_VAR NAME="columns">;
 var data = <TMPL_VAR NAME="data">;
 var dt;
+function init() {
+	set_data();
+	dt.buttons().container().appendTo($('#colvis'));
+}
 function set_data() {
 	var s=$('#types')[0];
 	var t=s.options[s.selectedIndex].text;
@@ -73,20 +79,23 @@ function set_data() {
 	var c = [];
 	for (var i=0; i<cols.length; i++)
 		c.push({'title': cols[i]});
-	dt = $('#main').DataTable({columns:c,data:data[t],lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
+	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:data[t],lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
 }
-$(document).ready(set_data);
+$(document).ready(init);
 </script>
 <div ></div>
 <div style="margin-left:14px;margin-top:20px;">View:
 <select id="types" onchange="dt.destroy();set_data();">
 <TMPL_VAR NAME="options">
 </select>
-<span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
-<span onclick="plot_dialog()" class="ui-button ui-corner-all coge-button">Plot...</span>
+<div id="colvis" style="display:inline-block;vertical-align:bottom;"></div>
+    <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
+    <span onclick="plot_dialog()" class="ui-button ui-corner-all coge-button">Plot...</span>
 </div>
 <style>
-th { text-align: left }
+    th { text-align: left; }
+    a.dt-button { padding: 5px 1em !important; }
+    div.dt-button-collection { width: auto !important; }
 </style>
 <table id="main" class="compact display">
 	<tbody></tbody>
