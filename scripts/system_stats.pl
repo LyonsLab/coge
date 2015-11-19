@@ -19,7 +19,7 @@ my @loads = getload();
 print "\t", join("\t", @loads);
 
 # Print used memory (in MB)
-print "\t", `free -m | awk 'FNR == 2 {printf "%s", \$3}'`;
+print "\t", `free -m | awk 'FNR == 3 {printf "%s", \$3}'`; #`free -m | awk 'FNR == 2 {printf "%s", \$3}'`; # mdb changed 11/19/15
 
 # Print disk load average
 print "\t", `iostat -c | awk 'FNR == 4 {print \$4}'`;
