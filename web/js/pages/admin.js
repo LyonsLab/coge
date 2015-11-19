@@ -1521,7 +1521,7 @@ $.extend(Force.prototype, {
 	 		.links(links)
 	 		.start();
 
-		// Update the linksÉ
+		// Update the linksï¿½
 		this.link = this.link.data(links, function(d) { return d.target.id; });
 
 		// Exit any old links.
@@ -1535,7 +1535,7 @@ $.extend(Force.prototype, {
 			.attr("x2", function(d) { return d.target.x; })
 			.attr("y2", function(d) { return d.target.y; });
 
-		// Update the nodesÉ
+		// Update the nodesï¿½
 		this.node = this.node.data(nodes, function(d) { return d.id; })
 			.style("fill", function(d) {
 				return self.color(d, self.filters);
@@ -2155,7 +2155,7 @@ $.extend(Taxon_tree.prototype, {
 			}
 		});
 		
-		// Update the nodesÉ
+		// Update the nodesï¿½
 		self.node = self.svg.selectAll("g.node")
 			.data(nodes, function(d) { return d.id || (d.id = ++self.i); });
 
@@ -2210,7 +2210,7 @@ $.extend(Taxon_tree.prototype, {
 		nodeExit.select("text")
 			.style("fill-opacity", 1e-6);
 
-		// Update the linksÉ
+		// Update the linksï¿½
 		self.link = self.svg.selectAll("path.link")
 			.data(links, function(d) { return d.target.id; });
 
@@ -2535,7 +2535,7 @@ $.extend(System_graph.prototype, {
 	    var yMemLabel = self.svg.append("text")
 			.attr("font-size", "1.25em")
 			.attr("transform", "translate(" + (self.width + self.margin.right/2) + "," + (self.height/2 - 20) + ") rotate(90)")
-			.text("Memory");
+			.text("Memory (GB)");
 	    
 	    // Add a line at 32 load, representing the 32 cores we use.
 	    self.svg.append("svg:line")
