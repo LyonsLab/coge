@@ -1,0 +1,19 @@
+<html>
+<head>
+   <title>PopGen</title>
+   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+<div id="plot" style="width:100%;height:100%;"></div>
+</body>
+<script>
+Plotly.plot( document.getElementById('plot'),
+    [{
+        x: <TMPL_VAR NAME="x">,
+        y: <TMPL_VAR NAME="y">
+    }],
+    { margin: { t: 0 }},
+    { displayModeBar: false }
+);
+</script>
+</html>

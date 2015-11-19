@@ -12,7 +12,7 @@ use File::Spec::Functions qw( catfile );
 use JSON::XS;
 use base 'Exporter';
 
-our @EXPORT = qw( export get_data );
+our @EXPORT = qw( export get_data get_plot_data );
 
 sub export {
 	my $file = shift;
@@ -20,7 +20,6 @@ sub export {
 	my @columns = map {substr $_, 3} split ',', shift;
 
 	print "Content-Disposition: attachment; filename=PopGen.txt\n\n";
-	my $done = 0;
 	my $in_type = 0;
 	open my $fh, '<', $file;
 	while (my $row = <$fh>) {
@@ -89,6 +88,32 @@ sub get_data {
 		$options .= '</option>';
 	}
 	return encode_json($columns), '{' . $data . '}', $options;
+}
+
+sub get_plot_data {
+    my $file = shift;
+    my $type = shift;
+    my $column = shift;
+    my $in_type = 0;
+    my @x;
+    my @y;
+    open my $fh, '<', $file;
+    while (my $row = <$fh>) {
+        chomp $row;
+        if (substr($row, 0, 1) eq '#') {
+            return if $in_type;
+            my @tokens = split '\t', $row;
+            $in_type = 1 if (substr($tokens[0], 1) eq $type);
+            $row = <$fh>;
+            chomp $row;
+        }
+        if ($in_type) {
+            my @tokens = split '\t', $row;
+            push @x, ($tokens[1] + $tokens[2]) / 2;
+            push @y, $tokens[$column];
+        }
+    }
+    return \@x, \@y;
 }
 
 1;

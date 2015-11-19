@@ -4,16 +4,15 @@ use CoGe::Accessory::Web;
 use CoGe::Algos::PopGen::Results qw( export get_data );
 use CGI;
 use Data::Dumper;
+use File::Spec::Functions qw( catfile );
 use HTML::Template;
 use JSON::XS;
 use POSIX;
-use File::Spec::Functions qw( catfile );
 no warnings 'redefine';
 
-use vars qw($CONF $USER $FORM $ACCN $FID $DB $PAGE_NAME $PAGE_TITLE $LINK);
+use vars qw($CONF $USER $FORM $DB $PAGE_TITLE $LINK);
 
 $PAGE_TITLE = 'PopGen';
-$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $| = 1;    # turn off buffering
 
@@ -30,9 +29,7 @@ if ($export) {
     page_title => $PAGE_TITLE
 );
 
-my %FUNCTION = (
-);
-CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
+print $FORM->header, gen_html();
 
 sub gen_html {
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );

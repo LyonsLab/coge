@@ -23,20 +23,39 @@ function do_export() {
 		}
 		++i;
 	}
-	if ($('#name').is(':checked'))
-		url += 'name';
-	if ($('#pi').is(':checked'))
-		url += 'pi';
-	if ($('#theta').is(':checked'))
-		url += 'theta';
-	if ($('#td').is(':checked'))
-		url += 'td';
 	if (url.substring(url.length - 1) == '=')
 		alert('You must select at least one column to export.');
 	else {
 		window.open(url);
 		$('#export').dialog('close');
 	}
+}
+function do_plot() {
+    var url = 'PopGenPlot.pl?type=';
+    var s = $('#types')[0];
+    url += s.options[s.selectedIndex].text;
+    url += '&column=';
+    var i = 0;
+    var first = true;
+    while (true) {
+        var c = $('#col' + i);
+        if (!c.length)
+            break;
+        if (c.is(':checked')) {
+            if (first)
+                first = false;
+            else
+                url += ',';
+            url += i;
+        }
+        ++i;
+    }
+    if (url.substring(url.length - 1) == '=')
+        alert('You must select a column to plot.');
+    else {
+        window.open(url);
+        $('#plot').dialog('close');
+    }
 }
 function export_dialog() {
 	var d = $('#export_columns');
@@ -56,6 +75,14 @@ function export_dialog() {
 	});
 }
 function plot_dialog() {
+    var d = $('#plot_columns');
+    console.log(d);
+    d.empty();
+    var s=$('#types')[0];
+    var t=s.options[s.selectedIndex].text;
+    var cols = columns[t];
+    for (var i=0; i<cols.length; i++)
+        d.append('<input id="col' + i + '" type="radio"> ' + cols[i] + '<br>');
 	$('#plot').dialog({
 		autoOpen:true,
 		position: {
@@ -106,4 +133,10 @@ Select columns to export
 <div id="export_columns">
 </div>
 <span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
+</div>
+<div id="plot" class="dialog_box hidden" title="Plot">
+Select column to plot
+<div id="plot_columns">
+</div>
+<span onclick="do_plot()" class="r ui-button ui-corner-all coge-button">Plot</span>
 </div>
