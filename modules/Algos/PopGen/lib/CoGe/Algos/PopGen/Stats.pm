@@ -10,12 +10,7 @@ use strict;
 use POSIX qw(ceil floor);
 use base 'Exporter';
 
-our @EXPORT = qw(nChoose2 min max mean stats);
-
-sub nChoose2 {
-    my $n = shift;
-    return ($n-1) * $n / 2    
-}
+our @EXPORT = qw(min max mean stats);
 
 sub min {
 	my $x = shift;
