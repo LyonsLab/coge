@@ -106,7 +106,7 @@ function set_data() {
 	var c = [];
 	for (var i=0; i<cols.length; i++)
 		c.push({'title': cols[i]});
-	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:data[t],lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
+	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:data[t],scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
 }
 $(document).ready(init);
 </script>
