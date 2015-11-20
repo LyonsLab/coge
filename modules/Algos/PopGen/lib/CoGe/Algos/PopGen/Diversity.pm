@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Purpose:	Functions for detecting/quantifying diversity and divergence.
+# Purpose:	Functions for quantifying diversity and divergence.
 # Author:	Matt Bomhoff
 # Created:	7/7/11, imported into CoGe 9/21/15
 #-------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ my %codonTable = (
 	'TGG' => 'W' 				# Tryptophan
 );
 
-my %foldTable = ( # mdb updated 8/9/11
+my %foldTable = (
 	0 => {
 		'NCN' => 0, 'NNC' => 0, 'NNT' => 0,
 		'NAC' => 0, 'NAT' => 0,
@@ -135,7 +135,7 @@ my %synTable = ( # Polymorphorama values
     'GGA' => 1, 'GGC' => 1, 'GGG' => 1, 'GGT' => 1, 'GGN' => 1, # Glycine
 );
 
-my %synTableByPos = ( # Reviewed by Matt & Megan 9/29/11
+my %synTableByPos = (
 	0 => {
 	    'GCA' => 0, 'GCC' => 0, 'GCG' => 0, 'GCT' => 0, 'GCN' => 0, # Alanine
 	    'TGC' => 0, 'TGT' => 0, # Cysteine
