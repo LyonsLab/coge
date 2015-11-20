@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #-------------------------------------------------------------------------------
-# Purpose:	Calculate pi and print to file
+# Purpose:	Calculate pi, theta, and Tajima's D and print to STDOUT
 # Author:	Matt Bomhoff
 # Created:	9/21/15
 #-------------------------------------------------------------------------------
@@ -12,7 +12,6 @@ use Data::Dumper;
 use CoGe::Algos::PopGen::Diversity;
 use CoGe::Algos::PopGen::FileFormats;
 use Tabix;
-use Vcf;
 
 my ($VCF_FILE, $GFF_FILE, $FASTA_FILE, $CHR, $GENE_NAME, $FEAT_TYPE, $DEBUG_FILE, $DEBUGFH);
 GetOptions(
@@ -39,7 +38,6 @@ my $pSeq = loadFASTA($FASTA_FILE);
 
 # Load VCF
 print STDERR "Loading VCF\n";
-#my ($pVariants, $pSites) = loadVCF($VCF_FILE);
 my $tabix = Tabix->new(-data => $VCF_FILE);
 
 # Iterate through GFF entities and calculate summary stats
@@ -51,7 +49,11 @@ foreach my $type (sort keys %$pAnnot) {
     foreach my $chr (sort keys %{$pAnnot->{$type}}) {
         next if (defined $CHR and $chr ne $CHR);
     
-        print join("\t", "#$type $chr", 'GENE NAME', 'START', 'END', 'TOTAL SITES', 'SEG. SITES', 'COMPARISONS', 'MISMATCHES', 'PI', 'THETA', "TAJIMA'S D"), "\n";
+        print join("\t", "#$type $chr", 'GENE NAME', 'START', 'END', 
+            'TOTAL SITES', 'TOTAL SEG. SITES', 'TOTAL PI', 'TOTAL THETA', "TOTAL TAJIMA'S D", 
+            '0-FOLD SITES', '0-FOLD SEG. SITES', '0-FOLD PI', '0-FOLD THETA', "0-FOLD TAJIMA'S D", 
+            '4-FOLD SITES', '4-FOLD SEG. SITES', '4-FOLD PI', '4-FOLD THETA', "4-FOLD TAJIMA'S D"), "\n";
+            
         foreach my $id (sort keys %{$pAnnot->{$type}{$chr}}) {
             next if (defined $GENE_NAME and $id ne $GENE_NAME);
             
@@ -96,27 +98,30 @@ foreach my $type (sort keys %$pAnnot) {
                     my $codonStart = $codingPos - $codonOffset;
                     my $codonSeq = substr($codingSeq, $codonStart, 3);
                     my $degeneracy = getDegeneracy($codonSeq, $codonOffset);
-                    debug("degeneracy=$degeneracy codingPos=$codingPos codonSeq=$codonSeq codonOffset=$codonOffset");
+                    debug("degeneracy=", defined $degeneracy ? $degeneracy : '?', " codingPos=$codingPos codonSeq=$codonSeq codonOffset=$codonOffset");
                     
                     my $numAlleles = scalar keys %$alleles;
                     if ($numAlleles < 2) { # invariant
-                        debug('# ', join("\t", $type, $id, $chr, $pos, 'invariant'));
+                        debug(join("\t", "$chr:$pos", 'invariant', $type, $id));
                     }
                     else { # variant
+                        # Ignore sites that are not biallelic
                         if ($numAlleles > 2) {
-                            debug('# ', join("\t", $type, $id, $chr, $pos, 'variant', 'skipped (not biallelic)'));
+                            debug(join("\t", "$chr:$pos", 'variant', $type, $id, 'skipped (not biallelic)'));
                             next;
                         }
                         
                         my ($count1, $count2) = values %$alleles;
-                        foreach my $d ('all', $degeneracy) {
+                        foreach my $d ('total', $degeneracy) {
+                            next unless defined $d;
                             $stats{$d}{mismatch} += (($count1 && $count2) ? ($count1 * $count2) : 0);
                             $stats{$d}{segregating}++;
-                            debug('# ', join("\t", $type, $id, $chr, $pos, 'variant', $count1, $count2));
+                            debug(join("\t", "$chr:$pos", 'variant', $type, $id, $count1, $count2));
                         }
                     }
                     
-                    foreach my $d ('all', $degeneracy) {
+                    foreach my $d ('total', $degeneracy) {
+                        next unless defined $d;
                         $stats{$d}{compared} += nChoose2($NUM_INDIVIDUALS);
                         $stats{$d}{sites}++;
                     }
@@ -126,27 +131,29 @@ foreach my $type (sort keys %$pAnnot) {
             }
             
             # Skip if no coverage
-            next unless $stats{all}{sites};
+            next unless $stats{total}{sites};
             
             # Calculate summary stats
-            foreach my $degeneracy ('all', 0, 4) {
-                next unless $stats{$degeneracy}{sites};
-                $stats{$degeneracy}{pi}    = $stats{$degeneracy}{mismatch} / $stats{$degeneracy}{compared};
-                $stats{$degeneracy}{theta} = Theta($stats{$degeneracy}{segregating}, $stats{$degeneracy}{sites}, $NUM_INDIVIDUALS);
-                $stats{$degeneracy}{tajD}  = TajimasD($stats{$degeneracy}{pi}, $stats{$degeneracy}{segregating}, $NUM_INDIVIDUALS);
+            foreach my $d ('total', 0, 4) {
+                my $sites = $stats{$d}{sites};
+                next unless $sites;
+                my $mismatch = $stats{$d}{mismatch} // 0;
+                my $compared = $stats{$d}{compared}; 
+                my $segregating = $stats{$d}{segregating} // 0;
+                
+                $stats{$d}{pi}    = $mismatch / $compared;
+                $stats{$d}{theta} = Theta($segregating, $sites, $NUM_INDIVIDUALS);
+                $stats{$d}{tajD}  = TajimasD($stats{$d}{pi}, $segregating, $NUM_INDIVIDUALS);
             }
             
             # Print to output
-            #print join("\t", $id, $featStart, $featEnd, $sites, $segregating, $compared, $mismatch, $pi, $theta, $tajD), "\n";
-            print join("\t", $id, $featStart, $featEnd);
-            foreach my $degeneracy ('all', 0, 4) {
-                print join("\t", ($stats{$degeneracy}{sites} // 0, 
-                                 $stats{$degeneracy}{segregating} // 0, 
-                                 $stats{$degeneracy}{compared} // 0,  
-                                 $stats{$degeneracy}{mismatch} // 0, 
-                                 $stats{$degeneracy}{pi} // '', 
-                                 $stats{$degeneracy}{theta} // '', 
-                                 $stats{$degeneracy}{tajD} // '') );
+            print join("\t", $id, $featStart, $featEnd), "\t";
+            foreach my $d ('total', 0, 4) {
+                print join("\t", ( $stats{$d}{sites}       // 0, 
+                                   $stats{$d}{segregating} // 0, 
+                                   $stats{$d}{pi}    ? sprintf("%.4f", $stats{$d}{pi})    : 0, 
+                                   $stats{$d}{theta} ? sprintf("%.4f", $stats{$d}{theta}) : 0, 
+                                   $stats{$d}{tajD}  ? sprintf("%.4f", $stats{$d}{tajD})  : 'NaN' ) ), "\t";
             }
             print "\n";
         }
