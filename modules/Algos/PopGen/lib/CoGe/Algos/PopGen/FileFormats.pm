@@ -11,7 +11,32 @@ use Data::Dumper;
 #use Set::IntSpan::Fast;
 use base 'Exporter';
 
-our @EXPORT = qw( loadGFF loadBED loadCounts loadVCF parseVCF );
+our @EXPORT = qw( loadFASTA loadGFF loadBED loadCounts loadVCF parseVCF parseGenotypes );
+
+sub loadFASTA {
+    my $filename = shift;
+    my %out;
+        
+    open(my $fh, $filename) or 
+        die("Error: cannot open file '$filename'\n");
+    
+    my $name;
+    while (my $line = <$fh>) {
+        chomp $line;
+        if ($line =~ /^\>(\S+)/) { # FASTA header
+            $name = $1;
+            die "Error: sequences with same name in input file\n" if (defined $out{$name});
+        }
+        else { # FASTA data
+            die "loadFASTA: parse error" if (not defined $name);
+            my ($s) = $line =~ /\S+/g; # because of Windows end-of-line
+            $out{$name} .= $s if (defined $s);
+        }
+    }
+    close($fh);
+    
+    return \%out;
+}
 
 sub loadGFF {
 	my %opts = @_;
@@ -29,7 +54,7 @@ sub loadGFF {
 		$type = lc($type);
 		($start, $end) = ($end, $start) if ($end < $start); # fix coordinates if needed
 
-		$chr = _formatChr($chr);
+#		$chr = _formatChr($chr);
 		
 		# Parse attributes field
 		my %attr = $attr =~ /(\w+)=([^;]+);*/g;
@@ -39,7 +64,7 @@ sub loadGFF {
 		$parent = $id unless $parent;
 		
 		#print "Warning: duplicate gene id $id for '$name'\n" if (defined $out{$type}{$id}) if ($type eq 'gene');
-		push @{$out{$type}{$parent}}, { 
+		push @{$out{$type}{$chr}{$parent}}, { 
 		    'chr'    => $chr, 
 		    'start'  => $start, 
 		    'end'    => $end, 
@@ -122,7 +147,7 @@ sub loadVCF {
         next if ($line =~ /^#/);
         chomp $line;
         my ($chr, $pos, undef, $ref, $alt_str, undef, undef, undef, $format_str, $genotype_str) = split(/\t/, $line, 10);
-        $chr = _formatChr($chr);
+#        $chr = _formatChr($chr);
         
         $sites{$chr}{$pos}++;
         next if ($alt_str eq '.');
@@ -145,11 +170,24 @@ sub parseVCF {
     
     chomp $line;
     my ($chr, $pos, undef, $ref, $alt_str, undef, undef, undef, $format_str, $genotype_str) = split(/\t/, $line, 10);
-    $chr = _formatChr($chr);
+    #$chr = _formatChr($chr);
 
+    return {
+        'chr' => $chr,
+        'pos' => $pos,
+        'ref' => $ref,
+        'alt' => $alt_str,
+        'format' => $format_str,
+        'genotypes' => $genotype_str
+    };
+}
+
+sub parseGenotypes {
+    my $vcf = shift; # parsed VCF record
+    
     my @genotypes;
-    my @format = split(':', $format_str);
-    foreach (split(/\t/, $genotype_str)) {
+    my @format = split(':', $vcf->{format});
+    foreach (split(/\t/, $vcf->{genotypes})) {
         my $i = 0;
         my %gt = map { $format[$i++] => $_ } split(':');
         push @genotypes, \%gt;
@@ -157,28 +195,23 @@ sub parseVCF {
     #print STDERR Dumper \@genotypes, "\n";
     
     my %counts;
-    my @alleles = split(',', $alt_str);
-    unshift @alleles, $ref;
+    my @alleles = split(',', $vcf->{alt});
+    unshift @alleles, $vcf->{'ref'};
     foreach my $gt (@genotypes) {
         next unless ($gt->{GT} && $gt->{GT} ne './.');
         my @altIndex = split('/', $gt->{GT});
         map { $counts{ $alleles[$_] }++  } @altIndex;
     }
     #print STDERR $line, "\n", Dumper \%counts, "\n";
-
-    return {
-        'chr' => $chr,
-        'pos' => $pos,
-        'ref' => $ref,
-        'alleles' => \%counts
-    };
+    
+    return \%counts;
 }
 
 sub _formatChr {
     my $chr = shift;
     $chr = lc($chr);
     #$chr =~ s/_//;
-    $chr =~ s/(\d+)/\_$1/;
+    $chr =~ s/(\d+)/\_$1/; # for naming inconsistency between Cgrandiflora_266_v1.1.gene and Cg_scattered.vcf
     return $chr;   
 }
 
