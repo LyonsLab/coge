@@ -84,6 +84,9 @@ sub get {
     elsif ($message->{type} eq "analyze_methylation") {
         $builder = CoGe::Builder::Methylation::MeasureMethylation->new($request);
     }    
+    elsif ($message->{type} eq "analyze_diversity") {
+        $builder = CoGe::Builder::PopGen::SummaryStats->new($request);
+    }
     else {
         print STDERR "PipelineFactory::get unknown type\n";
         return;
