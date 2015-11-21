@@ -73,9 +73,11 @@ foreach my $type (sort keys %$pAnnot) {
                 $featStart = $start unless defined $featStart;
                 $featEnd = $end if ((not defined $featEnd) || $end > $featEnd);
                 my $featLen = $end - $start + 1;
-                my $featSeq = substr($pSeq->{$chr}, $start-1, $featLen);
-                debug("$id $chr:$start-$end $featSeq");
-                $codingSeq .= $featSeq;
+                if ($type eq 'cds') {
+                    my $featSeq = substr($pSeq->{$chr}, $start-1, $featLen);
+                    debug("$id $chr:$start-$end $featSeq");
+                    $codingSeq .= $featSeq;
+                }
                 
                 # Retrieve range of entries from indexed VCF file
                 my $iter = $tabix->query($chr, $start, $end);
@@ -93,12 +95,15 @@ foreach my $type (sort keys %$pAnnot) {
                     my $alleles = $allele_cache{$chr}{$pos};
                     #print STDERR Dumper $alleles, "\n";
                     
-                    my $codingPos = $pos - $start + $codingOffset;
-                    my $codonOffset = $codingPos % 3;
-                    my $codonStart = $codingPos - $codonOffset;
-                    my $codonSeq = substr($codingSeq, $codonStart, 3);
-                    my $degeneracy = getDegeneracy($codonSeq, $codonOffset);
-                    debug("degeneracy=", defined $degeneracy ? $degeneracy : '?', " codingPos=$codingPos codonSeq=$codonSeq codonOffset=$codonOffset");
+                    my $degeneracy;
+                    if ($type eq 'cds') {
+                        my $codingPos = $pos - $start + $codingOffset;
+                        my $codonOffset = $codingPos % 3;
+                        my $codonStart = $codingPos - $codonOffset;
+                        my $codonSeq = substr($codingSeq, $codonStart, 3);
+                        $degeneracy = getDegeneracy($codonSeq, $codonOffset);
+                        debug("degeneracy=", defined $degeneracy ? $degeneracy : '?', " codingPos=$codingPos codonSeq=$codonSeq codonOffset=$codonOffset");
+                    }
                     
                     my $numAlleles = scalar keys %$alleles;
                     if ($numAlleles < 2) { # invariant
