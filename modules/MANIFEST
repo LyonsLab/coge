@@ -162,7 +162,7 @@ Pipelines/lib/CoGe/Builder/Expression/MeasureExpression.pm
 Pipelines/lib/CoGe/Builder/Methylation/Bismark.pm
 Pipelines/lib/CoGe/Builder/Methylation/BWAmeth.pm
 Pipelines/lib/CoGe/Builder/Methylation/MeasureMethylation.pm
-Pipelines/lib/CoGe/Builder/PopGen/SummaryStats.pm
+Pipelines/lib/CoGe/Builder/PopGen/Diversity.pm
 Pipelines/lib/CoGe/Builder/Tools/SynMap.pm
 Pipelines/lib/CoGe/Request/Request.pm
 Pipelines/lib/CoGe/Request/Genome.pm

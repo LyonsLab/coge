@@ -1,4 +1,4 @@
-package CoGe::Builder::PopGen::SummaryStats;
+package CoGe::Builder::PopGen::Diversity;
 
 use Moose;
 with qw(CoGe::Builder::Buildable);
@@ -23,7 +23,8 @@ sub build {
     my $experiment = $self->db->resultset('Experiment')->find($eid);
     return unless $experiment;
     my $genome = $experiment->genome;
-    # TODO add permissions check here -- or will it happen in Request::Genome?
+    
+    
     
     return 1;
 }
