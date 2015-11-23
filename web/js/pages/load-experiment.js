@@ -382,7 +382,12 @@ $.extend(AlignmentView.prototype, {
                     '--quality-base': this.el.find("[id='--quality-base']").val()
                 }
             };
-        } else if (aligner === "tophat") {
+            
+            if (this.el.find("[id='--max-mismatches-chk']").is(":checked")) {
+            	this.data.alignment_params['--max-mismatches'] = this.el.find("[id='--max-mismatches']").val();
+            }
+        } 
+        else if (aligner === "tophat") {
             this.data = {
                 alignment_params: {
                     tool: "tophat",
@@ -390,7 +395,8 @@ $.extend(AlignmentView.prototype, {
                     read_type: this.el.find("#read_type :checked").val()
                 }
             }
-        } else {
+        } 
+        else {
         	this.data = {
         		alignment_params: {
         			tool: "hisat2",
@@ -536,7 +542,7 @@ $.extend(ExpressionView.prototype, {
     get_options: function() {
         if (this.enabled) {
             this.data.expression_params = {
-                '-Q': this.el.find("[id='-Q']").val()
+                '-q': this.el.find("[id='-q']").val()
             };
         }
 
