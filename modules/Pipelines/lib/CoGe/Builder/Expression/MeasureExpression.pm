@@ -28,7 +28,6 @@ sub build {
     my $experiment = $self->db->resultset('Experiment')->find($eid);
     return unless $experiment;
     my $genome = $experiment->genome;
-    # TODO add permissions check here -- or will it happen in Request::Genome?
     
     # Copy metadata from input experiment
     my $metadata = { # could almost use experiment->to_hash here except for source_name
