@@ -1,0 +1,4 @@
+MANIFEST
+Makefile.PL
+Thirdparty/Tabix.pm
+Thirdparty/TabixIterator.pm
