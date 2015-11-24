@@ -20,6 +20,5 @@ web/js/jbrowse/plugins/*
 \#*\#
 modules/perl
 /.externalToolBuilders/
-/.gitignore
 /.ignorepath
 /.includepath
