@@ -15,4 +15,4 @@ exit unless $id;
 my $img = $coge->resultset('Image')->find($id);
 
 $| = 1;    # turn off buffering
-print "Content-type: image/png\n\n", $img->image;
+print "Cache-Control: public\nContent-type: image/png\n\n", $img->image; # mdb added caching 11/24/15
