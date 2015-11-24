@@ -16,6 +16,7 @@ use CoGe::Builder::SNP::IdentifySNPs;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Expression::MeasureExpression;
 use CoGe::Builder::Methylation::MeasureMethylation;
+use CoGe::Builder::PopGen::MeasureDiversity;
 
 has 'db' => (
     is => 'ro',
@@ -85,7 +86,7 @@ sub get {
         $builder = CoGe::Builder::Methylation::MeasureMethylation->new($request);
     }    
     elsif ($message->{type} eq "analyze_diversity") {
-        $builder = CoGe::Builder::PopGen::SummaryStats->new($request);
+        $builder = CoGe::Builder::PopGen::MeasureDiversity->new($request);
     }
     else {
         print STDERR "PipelineFactory::get unknown type\n";

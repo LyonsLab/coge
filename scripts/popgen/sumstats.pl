@@ -13,7 +13,7 @@ use File::Path qw(make_path);
 use File::Spec::Functions qw(catdir catfile);
 use CoGe::Algos::PopGen::Diversity;
 use CoGe::Algos::PopGen::FileFormats;
-use Tabix;
+use Thirdparty::Tabix;
 
 my ($VCF_FILE, $GFF_FILE, $FASTA_FILE, $CHR, $GENE_NAME, $FEAT_TYPE, 
     $OUTPUT_PATH, $DEBUG, $DEBUGFH);

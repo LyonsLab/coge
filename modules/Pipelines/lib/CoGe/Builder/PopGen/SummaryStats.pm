@@ -1,11 +1,13 @@
-package CoGe::Builder::PopGen::Diversity;
+package CoGe::Builder::PopGen::SummaryStats;
 
 use Moose;
 with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
+use File::Spec::Functions qw(catdir);
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
 use CoGe::Builder::CommonTasks;
-use CoGe::Accessory::Utils qw(is_gzipped);
+use CoGe::Accessory::Utils qw(is_gzipped to_filename);
 
 sub get_name {
     #my $self = shift;
@@ -13,22 +15,21 @@ sub get_name {
 }
 
 sub build {
-    my $self = shift;
-    
-    # Required arguments
-    my $genome = $opts->{genome};
-    my $input_file = $opts->{input_file}; # path to vcf file
-    my $user = $opts->{user};
-    my $wid = $opts->{wid};
-    my $metadata = $opts->{metadata};
+    my %opts = @_;
+    my $genome = $opts{genome};
+    my $input_file = $opts{input_file}; # path to vcf file
+    my $user = $opts{user};
+    my $wid = $opts{wid};
+    my $metadata = $opts{metadata};
     
     # Setup paths
     my $gid = $genome->id;
+    my $CONF = CoGe::Accessory::Web::get_defaults();
     my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
     my $fasta_file = get_genome_file($gid);
-    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
+    my $reheader_fasta = to_filename($fasta_file) . ".reheader.faa";
     
     # Build the workflow's tasks
     my ($task, @tasks, @done_files);
@@ -38,7 +39,7 @@ sub build {
         cache_dir => $FASTA_CACHE_DIR
     );
     push @tasks, $task;
-    my $fasta_file = $task->{outputs}->[0];
+    $fasta_file = $task->{outputs}->[0];
     
     # Check if genome has annotations
     my $isAnnotated = $genome->has_gene_features;
@@ -46,37 +47,43 @@ sub build {
     # Generate cached gff if genome is annotated
     my $gff_file;
     if ($isAnnotated) {
-        my $gff = create_gff_generation_job(gid => $gid, organism_name => $genome->organism->name);
-        $gff_file = $gff->{outputs}->[0];
-        push @tasks, $gff;
+        $task = create_gff_generation_job(gid => $gid, organism_name => $genome->organism->name);
+        push @tasks, $task;
+        $gff_file = $task->{outputs}->[0];
     }
     else {
         # TODO fail here, GFF is required by sumstats.pl
     }
     
+    # Decompress file if gzipped (need to recompress with bgzip)
     if (is_gzipped($input_file)) {
-        $task = create_gunzip_job( input_file => $input_file );
+        $task = create_gunzip_job( $input_file );
         push @tasks, $task;
         $input_file = $task->{outputs}->[0];
     }
     
-    $task = create_bgzip_job( input_file => $input_file );
+    # Compress file using bgzip
+    $task = create_bgzip_job( $input_file );
+    push @tasks, $task;
     $input_file = $task->{outputs}->[0];
     
-    $task = create_tabix_index_job(
-        input_file => $input_file,
-        index_type => 'vcf'
-    );
+    # Create a Tabix index
+    $task = create_tabix_index_job( $input_file, 'vcf' );
+    push @tasks, $task;
     
-    my $result_path = '';
+    # Determine output path for result files
+    my $POPGENDIR = $CONF->{POPGENDIR};
+    die "ERROR: POPGENDIR not specified in config" unless $POPGENDIR;
+    my $result_path = catdir($POPGENDIR, $gid);
     
-    my $sumstats_task = create_sumstats_job(
+    # Compute summary stats
+    $task = create_sumstats_job(
         vcf => $input_file,
-        gff => $gff_file
+        gff => $gff_file,
         fasta => $fasta_file,
         output_path => $result_path
     );
-    push @tasks, $sumstats_task;
+    push @tasks, $task;
 
     return {
         tasks => \@tasks,
