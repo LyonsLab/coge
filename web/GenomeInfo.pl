@@ -2050,7 +2050,6 @@ sub generate_html {
 	        HELP       => 'GenomeInfo',
 	        WIKI_URL   => $config->{WIKI_URL} || '',
             USER       => $USER->display_name || '',
-            ADJUST_BOX => 1,
             LOGON      => ( $USER->user_name ne "public" ),
             ADMIN_ONLY => $USER->is_admin,
             CAS_URL    => $config->{CAS_URL} || ''

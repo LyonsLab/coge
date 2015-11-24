@@ -93,7 +93,6 @@ sub gen_html {
                       USER => $USER->display_name || '' );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( BOX_NAME => qq{<DIV id="box_name">Sequences:</DIV>} );
     my @fids;
     push @fids, $form->param('featid') if $form->param('featid');
     push @fids, $form->param('fid')    if $form->param('fid');

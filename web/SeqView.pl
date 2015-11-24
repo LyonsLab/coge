@@ -56,10 +56,7 @@ sub gen_html {
                           HELP       => 'SeqView',
                           WIKI_URL   => $P->{WIKI_URL} || '',
                           USER => $USER->display_name || '' );
-
-        $template->param( BOX_NAME   => qq{<DIV id="box_name">$title</DIV>} );
         $template->param( BODY       => gen_body() );
-        $template->param( ADJUST_BOX => 1 );
         $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
         $template->param( ADMIN_ONLY => $USER->is_admin );
         $template->param( CAS_URL    => $P->{CAS_URL} || '' );

@@ -192,7 +192,6 @@ sub gen_html {
 
 	$template->param( LOGON => 1 ) unless $USER->user_name eq "public";
 
-	#$template->param(ADJUST_BOX=>1);
 	$template->param( BODY => $body );
 	$template->param(
 		HOME       => $config->{SERVER},

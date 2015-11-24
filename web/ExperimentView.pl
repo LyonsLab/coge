@@ -599,7 +599,6 @@ sub gen_html {
             HOME       => $P->{SERVER},
             HELP       => 'ExperimentView',
             WIKI_URL   => $P->{WIKI_URL} || '',
-            ADJUST_BOX => 1,
             CAS_URL    => $P->{CAS_URL} || ''
         );
     	$template->param( USER     => $USER->display_name || '' );
