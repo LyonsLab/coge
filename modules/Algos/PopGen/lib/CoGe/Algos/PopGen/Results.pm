@@ -95,8 +95,7 @@ sub get_plot_data {
     my $type = shift;
     my $column = shift;
     my $in_type = 0;
-    my @x;
-    my @y;
+    my @p;
     open my $fh, '<', $file;
     while (my $row = <$fh>) {
         chomp $row;
@@ -109,9 +108,15 @@ sub get_plot_data {
         }
         if ($in_type) {
             my @tokens = split '\t', $row;
-            push @x, ($tokens[1] + $tokens[2]) / 2;
-            push @y, $tokens[$column];
+            push @p, [($tokens[1] + $tokens[2]) / 2, $tokens[$column]];
         }
+    }
+    @p = sort { $a->[0] <=> $b->[0] } @p;
+    my @x;
+    my @y;
+    for (@p) {
+        push @x, shift @$_;
+        push @y, shift @$_;
     }
     return \@x, \@y;
 }
