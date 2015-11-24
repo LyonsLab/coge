@@ -65,76 +65,22 @@ jQuery(document).ready(function(){
         //$('#brand').addClass("dev");
     }
     
-    $(document)
-    	.mousemove(function(e){
-    		var eClass = $(e.target).attr('class');
-			if(eClass) {
-				eClass = eClass.slice(0,8);
-				if(eClass != "dropdown") {
-					hideDropdowns();
-				}
-			} else {
-				hideDropdowns();
-			}
-    	});
+    $('.dropdown-menu').mouseleave(function(e){
+		hideDropdowns();
+   	});
     
-	$('.dropdown')
-		/*.click(function(e){
-			element = $(e.target).attr('id');
-			if(element) {
-				element = '#' + element.slice(0,4) + '_drop';
-				showDropdown(element);
-			}
-		})*/
-		.mouseover(function(e){
-			element = $(e.target).attr('id');
-			if(element) {
-				element = '#' + element.slice(0,4) + '_drop';
-				showDropdown(element);
-			}
-		});
-	
-	// Initialize fileupload plugin
-	$('#input_upload_file').fileupload({
-    	dataType: 'json',
-		type: "GET",
-		url: "User.pl",
-		cache: false,
-    	formData: {
-    		fname: 'upload_image_file',
-    	},
-       	add: function(e, data) {
-			if ( verify_image_file(data.files[0]) ) {
-				$('#user_image').attr('src', 'picts/ajax-loader-large.gif');
-				data.submit();
-			}
-		},
-		done: function(e, data) {
-			if (data.result && data.result.link) {
-				$('#user_image').attr('src', data.result.link);
-			}
-		}
+	$('.dropdown-label').mouseenter(function(e){
+		var target = $(e.target).closest('.dropdown-label');
+		var id = target.attr('id');
+		if (id)
+			showDropdown('#' + id.slice(0,4) + '_drop');
 	});
+	
+    $('.dropdown-label').mouseleave(function(e){
+       	if (!e.relatedTarget.closest('.dropdown-menu'))
+       	    hideDropdowns();
+    });
 });
-
-function select_image_file() {
-	$('#input_upload_file').click();
-}
-
-function verify_image_file(file) {
-	var ext = file.name.split('.').pop();
-	if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
-		alert('Error: specified file is not an image');
-		return 0;
-	}
-
-	if (file.size > 2*1024*1024) {
-		alert('Error: image file is too large (>2MB)');
-		return 0;
-	}
-
-	return 1;
-}
 
 function browserAlert(){
     $('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
@@ -211,6 +157,9 @@ function showDropdown(element) {
 function hideDropdowns() {
 	$('.dropdown-menu').hide();
 	
+    if( $('#user_drop_label').find('img').attr('src') == "picts/arrow-down-icon.png" ) {
+        $('#user_drop_label').find('img').attr("src", "picts/arrow-right-icon.png");
+    }
 	if( $('#help_drop_label').find('img').attr('src') == "picts/arrow-down-icon.png" ) {
     	$('#help_drop_label').find('img').attr("src", "picts/arrow-right-icon.png");
     }
@@ -247,21 +196,25 @@ function hideDropdowns() {
 			</ul>
 	    </li>
 	</ul>
-	
-	<TMPL_IF NAME="LOGON">
-	<div id="login" class="r coge-login-button noselect">
-		<div class="coge-inlaid"><TMPL_VAR NAME="USER"></div>
-		<div id="user_image_container">
-			<img src="image.pl" class="coge-user-image" id="user_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';" onclick="select_image_file();"\>
-			<span id="image_upload_info">Upload New Image</span>
-		</div>
-		<input id="input_upload_file" name="input_upload_file" type="file" data-url='User.pl' class="hidden" />
-		<div><a href="#" class="coge-inlaid text" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Log Out</a></div>
-	</div>
-	</TMPL_IF>
-	
+		
 	<!--Buttons and links-->
 	<ul id="header_menu" class="coge-header-menu">
+        <TMPL_IF NAME="LOGON">
+        <li class="dropdown coge-header-button noselect">
+            <div id="user_drop_label" class="dropdown-label" style="margin-top:-5px;">
+                <img src="image.pl" class="coge-user-image" style="vertical-align:middle;" id="user_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';"\>
+                <div style="display:inline-block;vertical-align:middle;"><TMPL_VAR NAME="USER"></div>
+                <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link">
+            </div>
+            <ul id="user_drop" class="dropdown-menu hidden">
+                <li class="dropdown-item"><a class="dropdown-link" href="Account.pl">My Account</a></li>
+		        <TMPL_IF NAME="ADMIN_ONLY">
+		            <li class="dropdown-item"><a class="dropdown-link" href="Admin.pl">Admin</a></li>
+		        </TMPL_IF>
+                <li class="dropdown-item"><a class="dropdown-link" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Logout</a></li>
+            </ul>
+        </li>
+        </TMPL_IF>
 		<TMPL_UNLESS NAME="LOGON">
 			<li id="header_login_button" class="coge-header-button" onclick="login_cas();return true;">
 				<div>Log in</div>
@@ -291,10 +244,7 @@ function hideDropdowns() {
 				<li class="dropdown-item"><a class="dropdown-link" href="GEvo.pl">GEvo</a></li>
 			</ul>
 		</li>
-		<TMPL_IF NAME="ADMIN_ONLY">
-			<li class="coge-header-button noselect" onclick="location.href='Admin.pl';"><div>Admin</div></li>
-		</TMPL_IF>
-		<li class="coge-header-button noselect" onclick="location.href='User.pl';"><div>Profile</div></li>
+		<li class="coge-header-button noselect" onclick="location.href='User.pl';"><div>My Data</div></li>
 	</ul>
 	
 <!--
