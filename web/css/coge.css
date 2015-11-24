@@ -1949,6 +1949,7 @@ div.dataTables_scrollBody {
 
 .dropdown-label {
 	display: inline-block;
+    height: 37px;
 }
 
 .dropdown-link {
