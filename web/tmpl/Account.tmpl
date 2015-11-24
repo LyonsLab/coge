@@ -45,7 +45,7 @@ function verify_image_file(file) {
     return 1;
 }
 </script>
-<div style="margin-left:auto;margin-right:auto;margin-top:20px;width:960px;">
+<table align="center" style="margin-top:20px;"><tr><td>
 <div style="display:inline-block;margin-right:20px;vertical-align:top;">
     <img src="image.pl?id=<TMPL_VAR NAME="IMAGE">" class="coge-user-image" style="min-width:230px;min-height:230px;" id="big_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';"\>
 </div>
@@ -83,4 +83,5 @@ function verify_image_file(file) {
 </table>
 </div>
 </div>
+</td></tr></table>
 <TMPL_INCLUDE NAME="footer.tmpl">
