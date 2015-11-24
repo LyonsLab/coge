@@ -114,8 +114,8 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( USER       => $USER->display_name || '',
-                      PAGE_TITLE => 'User Profile',
-				      TITLE      => "My Profile",
+                      PAGE_TITLE => 'My Data',
+				      TITLE      => "My Data",
     				  PAGE_LINK  => $LINK,
     				  HOME       => $CONF->{SERVER},
                       HELP       => 'User',
