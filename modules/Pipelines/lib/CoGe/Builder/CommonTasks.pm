@@ -32,6 +32,7 @@ our @EXPORT = qw(
     create_trimgalore_job create_trimgalore_workflow
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
+    create_bgzip_job create_tabix_index_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -374,6 +375,49 @@ sub create_gunzip_job {
             "$output_file.decompressed"
         ],
         description => "Decompressing " . basename($input_file) . "..."
+    };
+}
+
+sub create_bgzip_job {
+    my $input_file = shift;
+    my $output_file = $input_file . '.bgz';
+
+    my $cmd = $CONF->{BGZIP} || 'bgzip';
+
+    return {
+        cmd => "$cmd -c $input_file > $output_file ;  touch $output_file.bgzipped",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.bgzipped"
+        ],
+        description => "Compressing " . basename($input_file) . " with bgzip..."
+    };
+}
+
+sub create_tabix_index_job {
+    my $input_file = shift;
+    my $index_type = shift; 
+    my $output_file = $input_file . '.tbi';
+
+    my $cmd = $CONF->{TABIX} || 'tabix';
+
+    return {
+        cmd => "$cmd -p $index_type $input_file ;  touch $output_file.tabixed",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.tabixed"
+        ],
+        description => "Indexing " . basename($input_file) . "..."
     };
 }
 
@@ -1767,6 +1811,40 @@ sub create_gsnap_job {
         ],
         description => "Aligning sequences with GSNAP..."
     );
+}
+
+sub create_sumstats_job {
+    my $opts = shift;
+
+    # Required arguments
+    my $vcf = $opts->{vcf};
+    my $gff = $opts->{gff};
+    my $fasta = $opts->{fasta};
+    my $output_path = $opts->{output_path};
+    
+    my $cmd = catfile(($CONF->{SCRIPTDIR}, "popgen/sumstats.pl"));
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+    
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-vcf',    $vcf,         0],
+            ['-gff',    $gff,         0],
+            ['-fasta',  $fasta,       0],
+            ['-output', $output_path, 0],
+            ['-debug',  '',           0]
+        ],
+        inputs => [
+            $vcf,
+            $gff,
+            $fasta
+        ],
+        outputs => [
+            catfile($output_path, "log.done"),
+        ],
+        description => "Calculating summary statistics ..."
+    };
 }
 
 sub create_notebook_job {

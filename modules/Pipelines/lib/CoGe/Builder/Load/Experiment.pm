@@ -115,7 +115,7 @@ sub build {
         # Add expression workflow (if specified)
         my $expression_workflow;
         if ( $self->params->{expression_params} ) {
-            $expression_workflow = CoGe::Builder::Expression::qTeller::build(
+            $expression_workflow = CoGe::Builder::PopGen::SummaryStats::build(
                 user => $self->user,
                 wid => $self->workflow->id,
                 genome => $genome,
@@ -184,6 +184,23 @@ sub build {
     }
     # Else, all other file types
     else {
+        # Add diversity analysis if specified
+        if ( $file_type eq 'vcf' && $self->params->{diversity_params} ) {
+            my $vcf_file = $input_files[0];
+            my $diversity_workflow = CoGe::Builder::PopGen::Diversity::build(
+                user => $self->user,
+                wid => $self->workflow->id,
+                genome => $genome,
+                input_file => $vcf_file,
+                metadata => $metadata,
+                params => $self->params->{diversity_params}
+            );
+            push @tasks, @{$diversity_workflow->{tasks}};
+            push @done_files, @{$diversity_workflow->{done_files}};
+            $result_count++;
+        }
+        
+        # Generate additional metadata for resulting experiments
         my $annotations = CoGe::Core::Metadata::to_annotations($additional_metadata);
         
         # Submit workflow to generate experiment

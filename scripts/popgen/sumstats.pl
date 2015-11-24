@@ -9,24 +9,44 @@ use warnings;
 use strict;
 use Getopt::Long;
 use Data::Dumper;
+use File::Path qw(make_path);
+use File::Spec::Functions qw(catdir catfile);
 use CoGe::Algos::PopGen::Diversity;
 use CoGe::Algos::PopGen::FileFormats;
 use Tabix;
 
-my ($VCF_FILE, $GFF_FILE, $FASTA_FILE, $CHR, $GENE_NAME, $FEAT_TYPE, $DEBUG_FILE, $DEBUGFH);
+my ($VCF_FILE, $GFF_FILE, $FASTA_FILE, $CHR, $GENE_NAME, $FEAT_TYPE, 
+    $OUTPUT_PATH, $DEBUG, $DEBUGFH);
 GetOptions(
-    "vcf=s"   => \$VCF_FILE,    # required VCF input file
-    "gff=s"   => \$GFF_FILE,    # required GFF input file
-    "fasta=s" => \$FASTA_FILE,  # required reference FASTA input file
-    "gene=s"  => \$GENE_NAME,   # optional gene name for testing
-    "type=s"  => \$FEAT_TYPE,   # optional GFF type for testing
-    "chr=s"   => \$CHR,         # optional chromosome name for testing
-    "debug=s" => \$DEBUG_FILE   # optional debug output filename
+    "vcf=s"    => \$VCF_FILE,     # required VCF input file
+    "gff=s"    => \$GFF_FILE,     # required GFF input file
+    "fasta=s"  => \$FASTA_FILE,   # required reference FASTA input file
+    "output=s" => \$OUTPUT_PATH,  # optional output path for results files
+    "gene=s"   => \$GENE_NAME,    # optional gene name for testing
+    "type=s"   => \$FEAT_TYPE,    # optional GFF type for testing
+    "chr=s"    => \$CHR,          # optional chromosome name for testing
+    "debug"    => \$DEBUG         # optional debug output
 );
 
 my $NUM_INDIVIDUALS = 12 * 2;
 
-open($DEBUGFH, ">$DEBUG_FILE") or die "Cannot open debug output file\n" if $DEBUG_FILE;
+# Create output path if specified
+if (defined $OUTPUT_PATH) {
+    make_path($OUTPUT_PATH) unless (-r $OUTPUT_PATH);
+    unless (-r $OUTPUT_PATH) {
+        print STDERR "Error: couldn't create output path '$OUTPUT_PATH'\n";
+        exit(-1);
+    }
+}
+else {
+    $OUTPUT_PATH = './';
+}
+
+# Create debug file
+if ($DEBUG) {
+    my $logfile = catfile($OUTPUT_PATH, 'log.txt');
+    open($DEBUGFH, ">$logfile") or die "Cannot open log output file '$logfile'\n";
+}
 
 # Load GFF
 print STDERR "Loading GFF\n";
@@ -36,9 +56,13 @@ my $pAnnot = loadGFF(file => $GFF_FILE);
 print STDERR "Loading FASTA\n";
 my $pSeq = loadFASTA($FASTA_FILE);
 
-# Load VCF
+# Open Tabix indexed VCF
 print STDERR "Loading VCF\n";
 my $tabix = Tabix->new(-data => $VCF_FILE);
+
+# Create results file
+my $resultsfile = catfile($OUTPUT_PATH, 'results.tsv');
+open(my $fh, ">$resultsfile") or die "Cannot open results output file '$resultsfile'\n";
 
 # Iterate through GFF entities and calculate summary stats
 print STDERR "Calculating pi, theta, and Tajima's D\n";
@@ -49,10 +73,14 @@ foreach my $type (sort keys %$pAnnot) {
     foreach my $chr (sort keys %{$pAnnot->{$type}}) {
         next if (defined $CHR and $chr ne $CHR);
     
-        print join("\t", "#$type $chr", 'GENE NAME', 'START', 'END', 
-            'TOTAL SITES', 'TOTAL SEG. SITES', 'TOTAL PI', 'TOTAL THETA', "TOTAL TAJIMA'S D", 
+        # Print header line
+        print $fh join("\t", "#$type $chr", 'GENE NAME', 'START', 'END', 
+            'TOTAL SITES', 'TOTAL SEG. SITES', 'TOTAL PI', 'TOTAL THETA', "TOTAL TAJIMA'S D");
+        print $fh join("\t", 
             '0-FOLD SITES', '0-FOLD SEG. SITES', '0-FOLD PI', '0-FOLD THETA', "0-FOLD TAJIMA'S D", 
-            '4-FOLD SITES', '4-FOLD SEG. SITES', '4-FOLD PI', '4-FOLD THETA', "4-FOLD TAJIMA'S D"), "\n";
+            '4-FOLD SITES', '4-FOLD SEG. SITES', '4-FOLD PI', '4-FOLD THETA', "4-FOLD TAJIMA'S D")
+            if ($type eq 'cds');
+        print $fh "\n";
             
         foreach my $id (sort keys %{$pAnnot->{$type}{$chr}}) {
             next if (defined $GENE_NAME and $id ne $GENE_NAME);
@@ -151,23 +179,29 @@ foreach my $type (sort keys %$pAnnot) {
                 $stats{$d}{tajD}  = TajimasD($stats{$d}{pi}, $segregating, $NUM_INDIVIDUALS);
             }
             
-            # Print to output
-            print join("\t", $id, $featStart, $featEnd), "\t";
-            foreach my $d ('total', 0, 4) {
-                print join("\t", ( $stats{$d}{sites}       // 0, 
-                                   $stats{$d}{segregating} // 0, 
+            # Print result row
+            print $fh join("\t", $id, $featStart, $featEnd), "\t";
+            my @output = ( $type eq 'cds' ? ('total', 0, 4) : ('total') );
+            foreach my $d (@output) {
+                print $fh join("\t", ( $stats{$d}{sites}       // 0,
+                                   $stats{$d}{segregating} // 0,
                                    $stats{$d}{pi}    ? sprintf("%.4f", $stats{$d}{pi})    : 0, 
                                    $stats{$d}{theta} ? sprintf("%.4f", $stats{$d}{theta}) : 0, 
                                    $stats{$d}{tajD}  ? sprintf("%.4f", $stats{$d}{tajD})  : 'NaN' ) ), "\t";
             }
-            print "\n";
+            print $fh "\n";
         }
     }
 }
 
 close($DEBUGFH) if $DEBUGFH;
 
+# Create "log.done" file to indicate completion to JEX
+my $logdonefile = catfile($OUTPUT_PATH, 'log.done');
+touch($logdonefile);
+
 exit;
+
 #-------------------------------------------------------------------------------
 sub debug {
     print $DEBUGFH @_, "\n" if $DEBUGFH;
