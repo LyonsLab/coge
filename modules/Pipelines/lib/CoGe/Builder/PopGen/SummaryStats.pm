@@ -4,8 +4,8 @@ use Moose;
 with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
-use File::Spec::Functions qw(catdir);
-use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
+use File::Spec::Functions qw(catdir catfile);
+use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_popgen_result_path);
 use CoGe::Builder::CommonTasks;
 use CoGe::Accessory::Utils qw(is_gzipped to_filename);
 
@@ -28,7 +28,6 @@ sub build {
     my $CONF = CoGe::Accessory::Web::get_defaults();
     my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
     my $fasta_file = get_genome_file($gid);
     my $reheader_fasta = to_filename($fasta_file) . ".reheader.faa";
     
@@ -79,7 +78,20 @@ sub build {
         output_path => $result_path
     );
     push @tasks, $task;
-
+    
+    # Add workflow result
+    $task = add_workflow_result(
+        username => $user->name,
+        wid => $wid,
+        result => {
+            type => "popgen",
+            experiment_id => $experiment->id,
+            name => "Diversity analysis results"
+        },
+        dependency => catfile($result_path, 'sumstats.done')
+    );
+    push @tasks, $task;    
+    
     return {
         tasks => \@tasks,
         done_files => \@done_files

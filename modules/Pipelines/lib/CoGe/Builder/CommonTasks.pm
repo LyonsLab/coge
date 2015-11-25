@@ -6,6 +6,7 @@ use warnings;
 use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(basename dirname);
 use File::Path qw(make_path);
+use JSON qw(encode_json);
 use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
@@ -33,6 +34,7 @@ our @EXPORT = qw(
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
+    add_workflow_result
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -67,6 +69,28 @@ sub generate_results { #FIXME deprecated, remove soon
         outputs => [catfile($result_dir, "1")],
         description => "Generating results..."
    };
+}
+
+sub add_workflow_result {
+    my %opts = @_;
+    my $username = $opts{username};
+    my $wid = $opts{wid};
+    my $result = encode_json($opts{result});
+    my $dependency = $opts{dependency};
+    
+    my $result_file = get_workflow_results_file($username, $wid);
+
+    return {
+        cmd  => catfile($CONF->{SCRIPTDIR}, "add_workflow_result.pl"),
+        args => [
+            ['-user_name', $username, 0],
+            ['-wid', $wid, 0],
+            ['-result', "'".$result."'", 0]
+        ],
+        inputs  => [$dependency],
+        outputs => [$result_file],
+        description => "Adding workflow result..."
+    };
 }
 
 sub copy_and_mask {

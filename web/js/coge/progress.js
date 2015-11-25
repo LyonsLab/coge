@@ -331,6 +331,10 @@ var coge = window.coge = (function(namespace) {
 				var url = 'GenomeInfo.pl?gid=' + result.genome_id;
 				return "<div><a href='"+url+"'> Dataset '"+result.info+"'</a></div>";				
 			}
+			else if (result.type === 'popgen') {
+				var url = 'PopGen.pl?eid=' + result.experiment_id;
+				return "<div><a href='"+url+"'>"+result.name+"</a></div>";				
+			}
 		},
 		
 		_default_formatter: function(item) {

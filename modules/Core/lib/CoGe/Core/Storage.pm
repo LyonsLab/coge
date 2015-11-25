@@ -750,7 +750,7 @@ sub get_popgen_result_path {
         return;
     }
     
-    return catdir($POPGENDIR, $experiment->id);
+    return catdir($POPGENDIR, $eid);
 }
 
 sub remove_self { # TODO move to Utils.pm
