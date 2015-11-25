@@ -18,6 +18,7 @@ use Tabix;
 
 my ($VCF_FILE, $GFF_FILE, $FASTA_FILE, $CHR, $GENE_NAME, $FEAT_TYPE, 
     $OUTPUT_PATH, $DEBUG, $DEBUGFH);
+    
 GetOptions(
     "vcf=s"    => \$VCF_FILE,     # required VCF input file
     "gff=s"    => \$GFF_FILE,     # required GFF input file
@@ -71,17 +72,19 @@ my %allele_cache;
 foreach my $type (sort keys %$pAnnot) {
     next if (defined $FEAT_TYPE and $type ne $FEAT_TYPE);
     
+    # Print header line
+    print $fh join("\t", "#$type", 'GENE NAME', 'START', 'END', 
+        'TOTAL SITES', 'TOTAL SEG. SITES', 'TOTAL PI', 'TOTAL THETA', "TOTAL TAJIMA'S D");
+    print $fh "\t", join("\t", 
+        '0-FOLD SITES', '0-FOLD SEG. SITES', '0-FOLD PI', '0-FOLD THETA', "0-FOLD TAJIMA'S D", 
+        '4-FOLD SITES', '4-FOLD SEG. SITES', '4-FOLD PI', '4-FOLD THETA', "4-FOLD TAJIMA'S D")
+        if ($type eq 'cds');
+    print $fh "\n";
+    
     foreach my $chr (sort keys %{$pAnnot->{$type}}) {
         next if (defined $CHR and $chr ne $CHR);
     
-        # Print header line
-        print $fh join("\t", "#$type $chr", 'GENE NAME', 'START', 'END', 
-            'TOTAL SITES', 'TOTAL SEG. SITES', 'TOTAL PI', 'TOTAL THETA', "TOTAL TAJIMA'S D");
-        print $fh "\t", join("\t", 
-            '0-FOLD SITES', '0-FOLD SEG. SITES', '0-FOLD PI', '0-FOLD THETA', "0-FOLD TAJIMA'S D", 
-            '4-FOLD SITES', '4-FOLD SEG. SITES', '4-FOLD PI', '4-FOLD THETA', "4-FOLD TAJIMA'S D")
-            if ($type eq 'cds');
-        print $fh "\n";
+        print $fh "#$chr\n";
             
         foreach my $id (sort keys %{$pAnnot->{$type}{$chr}}) {
             next if (defined $GENE_NAME and $id ne $GENE_NAME);
