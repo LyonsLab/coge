@@ -1154,13 +1154,12 @@ h5 > small {
 }
 
 .dev:after {
-    content: " *** Development ***";
+    content: " Development";
     font-size: 80%;
     color: red;
-    margin-left: 1em;
     position: absolute;
-    top: 5em;
-    left: 0.75em;
+    top: 0;
+    left: 0;
 }
 
 /* CoGepedia Wiki Feed */
