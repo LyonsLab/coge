@@ -57,6 +57,7 @@ $(document).ready(function() {
     // Initialize analysis dialogs
     snpMenu.init();
     expressionMenu.init();
+    diversityMenu.init();
     
     // Open status dialog
     if (WORKFLOW_ID) {
@@ -120,6 +121,16 @@ $(document).ready(function() {
                     	<td>
                     		<span class="data5 link" ondblclick="snpMenu.open();" onclick="snpMenu.open();">SNPs</span> |
                     		<span class="data5 link" ondblclick="expressionMenu.open();" onclick="expressionMenu.open();">Expression</span>
+                    	</td>
+			        </tr>
+			        </TMPL_IF>
+			        <TMPL_IF NAME="POLYMORPHISM_TYPE">
+		            <tr style="padding:3px;">
+                    	<td>
+                    		<span class="title5">Analyze:</span>
+                    	</td>
+                    	<td>
+                    		<span class="data5 link" ondblclick="diversityMenu.open();" onclick="diversityMenu.open();">Diversity</span>
                     	</td>
 			        </tr>
 			        </TMPL_IF>
