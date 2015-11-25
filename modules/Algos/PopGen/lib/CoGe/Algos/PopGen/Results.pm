@@ -14,6 +14,21 @@ use base 'Exporter';
 
 our @EXPORT = qw( export get_data get_plot_data );
 
+sub add_set {
+    my $data = shift;
+    my $type = shift;
+    my $columns = shift;
+    my $set = shift;
+
+    my $space = index $type, ' ';
+    my $chromosome = substr $type, $space;
+    $type = substr $type, 0, $space;
+    if (!$data->{$type}) {
+        $data->{$type} = {};
+    }
+    $data->{$type}->{$chromosome} = { columns: $columns, data: $set };
+}
+
 sub export {
 	my $file = shift;
 	my $type = shift;
@@ -45,49 +60,30 @@ sub export {
 
 sub get_data {
 	my $file = shift;
-	my $columns = {};
-	my $data;
-	my $type = '';
-	my @types;
-	my $set;
+	my $data = {};
+	my $type;
+	my $columns;
+	my @set;
 	open my $fh, '<', $file;
 	while (my $row = <$fh>) {
-		chomp $row;
+	chomp $row;
 		my @tokens = split '\t', $row;
 		if (substr($tokens[0], 0, 1) eq '#') {
 			if ($type) {
-				$data .= ',' if $data;
-				$data .= '\'';
-				$data .= $type;
-				$data .= '\':[';
-				$data .= $set;
-				$data .= ']';
-				$set = '';
+			    add_set $data, $type, $columns, $set;
+			    @set = ();
 			}
 			$type = substr $tokens[0], 1;
-			push @types, $type;
 			shift @tokens;
-			$columns->{$type} = [@tokens];
+			$columns = [@tokens];
 			$row = <$fh>;
 			chomp $row;
 			@tokens = split '\t', $row;
 		}
-		$set .= ',' if $set;
-		$set .= encode_json(\@tokens);
+		push @set, @tokens;
 	}
-	$data .= ',' if $data;
-	$data .= '\'';
-	$data .= $type;
-	$data .= '\':[';
-	$data .= $set;
-	$data .= ']';
-	my $options;
-	for (@types) {
-		$options .= '<option>';
-		$options .= $_;
-		$options .= '</option>';
-	}
-	return encode_json($columns), '{' . $data . '}', $options;
+	add_set $data, $type, $columns, $set;
+	return encode_json($data);
 }
 
 sub get_plot_data {

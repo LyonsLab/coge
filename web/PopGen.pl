@@ -51,14 +51,9 @@ sub gen_html {
 }
 
 sub gen_body {
+    if (!$FORM->Vars->{'id'}) {
+        return 'id url parameter not set';
+    }
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    
-    my ($columns, $data, $options) = get_data(catfile($ENV{COGE_HOME}, 'test.txt'));
-    $template->param(
-    	columns => $columns,
-    	data => $data,
-        options => $options
-    );
-
     return $template->output;
 }

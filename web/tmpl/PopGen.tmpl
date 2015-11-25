@@ -92,29 +92,105 @@ function plot_dialog() {
 		}
 	});
 }
-var columns = <TMPL_VAR NAME="columns">;
-var data = <TMPL_VAR NAME="data">;
+var columns = {};
+var data;
 var dt;
-function init() {
+function build_select(s, obj) {
+	s.empty();
+	var keys = get_keys(obj);
+	for (var i=0; i<keys.length; i++)
+		s.append('<option>' + keys[i] + '</option>');	
+}
+function get_keys(obj) {
+	var keys = [];
+	for (key in obj)
+		keys.push(key);
+	keys.sort();
+	return keys;
+}
+function get_param(name) {
+    var search = decodeURIComponent(window.location.search.substring(1));
+    var nvp = search.split('&');
+    for (var i=0; i<nvp.length; i++)
+    	if (nvp[i].substring(0, name.length) == name)
+    		return nvp[i].substring(name.length + 1);
+};
+function load_data() {
+	var id = get_param('id');
+	$.get('data/popgen/' + id + '/sumstats.tsv', null, parse_data, 'text');
+}
+function parse_data(d) {
+	data = {};
+	var chromosome;
+	var type;
+	var i = d.indexOf('\n');
+	var start = 0;
+	while (i != -1) {
+		var l = d.substring(start, i);
+		var tokens = l.split('\t');
+		if (l.charAt(0) == '#') {
+			if (tokens.length > 1) {
+				type = tokens[0].substring(1);
+				data[type] = {};
+				tokens.shift();
+				columns[type] = tokens;
+			} else {
+				chromosome = tokens[0].substring(1);
+				data[type][chromosome] = [];
+			}
+		} else
+			data[type][chromosome].push(tokens);
+		start = i + 1;
+		i = d.indexOf('\n', start);
+	}
+	data[type][chromosome].push(d.substring(start).split('\t'));
+	build_select($('#types'), data);
+	set_chromosomes();
 	set_data();
 	dt.buttons().container().appendTo($('#colvis'));
 }
+function set_chromosomes() {
+	var s = $('#chromosomes');
+	var type=$('#types option:selected').text();
+	build_select(s, data[type]);
+	if (s.children().length > 1)
+		s.prepend('<option>All chromosomes</option>');
+}
 function set_data() {
-	var s=$('#types')[0];
-	var t=s.options[s.selectedIndex].text;
-	var cols = columns[t];
+	var type = $('#types option:selected').text();
+	var chromosome = $('#chromosomes option:selected').text();
+	var cols;
+	var d;
+	if (chromosome == 'All chromosomes') {
+		var arrays = [];
+		var keys = get_keys(data[type]);
+		for (var i=0; i<keys.length; i++) {
+			d = data[type][keys[i]];
+			if (d) {
+				data[type][keys[i]].slice(0)
+				var a = [];
+				a.splice(1, 0, keys[i]);
+				arrays.push(a);
+			}
+		}
+		d = [].concat.apply([], arrays);
+		cols = columns[type].slice(0);
+		cols.splice(1, 0, 'chromosome');
+	} else {
+		d = data[type][chromosome];
+		cols = columns[type];
+	}
 	var c = [];
 	for (var i=0; i<cols.length; i++)
 		c.push({'title': cols[i]});
-	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:data[t],scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
+	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:d,scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
 }
-$(document).ready(init);
+$(document).ready(load_data);
 </script>
 <div ></div>
 <div style="margin-left:14px;margin-top:20px;">View:
-<select id="types" onchange="dt.destroy();set_data();">
-<TMPL_VAR NAME="options">
-</select>
+<select id="types" onchange="set_chromosomes();dt.destroy();set_data();"></select>
+<select id="chromosomes"></select>
 <div id="colvis" style="display:inline-block;vertical-align:bottom;"></div>
     <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
     <span onclick="plot_dialog()" class="ui-button ui-corner-all coge-button">Plot...</span>
@@ -124,7 +200,7 @@ $(document).ready(init);
     a.dt-button { padding: 5px 1em !important; }
     div.dt-button-collection { width: auto !important; }
 </style>
-<table id="main" class="compact display">
+<table id="main" class="compact display" style="margin:initial;">
 	<tbody></tbody>
 </table>
 <div style="height:75px"></div>
