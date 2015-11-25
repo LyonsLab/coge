@@ -5,7 +5,7 @@ with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
+use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_workflow_paths);
 use CoGe::Builder::CommonTasks;
 use CoGe::Accessory::Utils qw(is_gzipped to_filename);
 
@@ -16,13 +16,14 @@ sub get_name {
 
 sub build {
     my %opts = @_;
-    my $genome = $opts{genome};
+    my $experiment = $opts{experiment};
     my $input_file = $opts{input_file}; # path to vcf file
     my $user = $opts{user};
     my $wid = $opts{wid};
     my $metadata = $opts{metadata};
     
     # Setup paths
+    my $genome = $experiment->genome;
     my $gid = $genome->id;
     my $CONF = CoGe::Accessory::Web::get_defaults();
     my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
@@ -55,30 +56,24 @@ sub build {
         # TODO fail here, GFF is required by sumstats.pl
     }
     
-    # Decompress file if gzipped (need to recompress with bgzip)
-    if (is_gzipped($input_file)) {
-        $task = create_gunzip_job( $input_file );
-        push @tasks, $task;
-        $input_file = $task->{outputs}->[0];
-    }
+    # Get experiment VCF file
+    my $vcf_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     
     # Compress file using bgzip
-    $task = create_bgzip_job( $input_file );
+    $task = create_bgzip_job( $vcf_file );
     push @tasks, $task;
-    $input_file = $task->{outputs}->[0];
+    $vcf_file = $task->{outputs}->[0];
     
     # Create a Tabix index
-    $task = create_tabix_index_job( $input_file, 'vcf' );
+    $task = create_tabix_index_job( $vcf_file, 'vcf' );
     push @tasks, $task;
     
     # Determine output path for result files
-    my $POPGENDIR = $CONF->{POPGENDIR};
-    die "ERROR: POPGENDIR not specified in config" unless $POPGENDIR;
-    my $result_path = catdir($POPGENDIR, $gid);
+    my $result_path = get_popgen_result_path($experiment->id);
     
     # Compute summary stats
     $task = create_sumstats_job(
-        vcf => $input_file,
+        vcf => $vcf_file,
         gff => $gff_file,
         fasta => $fasta_file,
         output_path => $result_path

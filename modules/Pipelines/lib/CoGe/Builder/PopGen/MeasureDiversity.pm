@@ -3,7 +3,6 @@ package CoGe::Builder::PopGen::MeasureDiversity;
 use Moose;
 with qw(CoGe::Builder::Buildable);
 
-use CoGe::Core::Storage qw(get_experiment_files);
 use CoGe::Builder::PopGen::SummaryStats qw(build);
 
 sub get_name {
@@ -22,10 +21,6 @@ sub build {
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
     return unless $experiment;
-    my $genome = $experiment->genome;
-    
-    # Get input file
-    my $vcf_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     
     #
     # Build workflow steps
@@ -36,8 +31,7 @@ sub build {
     my $workflow = CoGe::Builder::PopGen::SummaryStats::build(
         user => $self->user,
         wid => $self->workflow->id,
-        genome => $genome,
-        input_file => $vcf_file,
+        experiment => $experiment,
         params => $self->params->{diversity_params}
     );
     push @tasks, @{$workflow->{tasks}};
