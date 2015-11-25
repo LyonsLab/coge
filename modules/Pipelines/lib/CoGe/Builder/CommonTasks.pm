@@ -1822,7 +1822,7 @@ sub create_sumstats_job {
     my $fasta = $opts{fasta};
     my $output_path = $opts{output_path};
     
-    my $cmd = catfile(($CONF->{SCRIPTDIR}, "popgen/sumstats.pl"));
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "popgen/sumstats.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
     return {
@@ -1841,7 +1841,7 @@ sub create_sumstats_job {
             $fasta
         ],
         outputs => [
-            catfile($output_path, "log.done"),
+            catfile($output_path, "sumstats.done"),
         ],
         description => "Calculating summary statistics ..."
     };
