@@ -11,9 +11,10 @@ use Getopt::Long;
 use Data::Dumper;
 use File::Path qw(make_path);
 use File::Spec::Functions qw(catdir catfile);
+use File::Touch;
 use CoGe::Algos::PopGen::Diversity;
 use CoGe::Algos::PopGen::FileFormats;
-use Thirdparty::Tabix;
+use Tabix;
 
 my ($VCF_FILE, $GFF_FILE, $FASTA_FILE, $CHR, $GENE_NAME, $FEAT_TYPE, 
     $OUTPUT_PATH, $DEBUG, $DEBUGFH);
@@ -44,7 +45,7 @@ else {
 
 # Create debug file
 if ($DEBUG) {
-    my $logfile = catfile($OUTPUT_PATH, 'log.txt');
+    my $logfile = catfile($OUTPUT_PATH, 'sumstats.log');
     open($DEBUGFH, ">$logfile") or die "Cannot open log output file '$logfile'\n";
 }
 
@@ -61,7 +62,7 @@ print STDERR "Loading VCF\n";
 my $tabix = Tabix->new(-data => $VCF_FILE);
 
 # Create results file
-my $resultsfile = catfile($OUTPUT_PATH, 'results.tsv');
+my $resultsfile = catfile($OUTPUT_PATH, 'sumstats.tsv');
 open(my $fh, ">$resultsfile") or die "Cannot open results output file '$resultsfile'\n";
 
 # Iterate through GFF entities and calculate summary stats
@@ -76,7 +77,7 @@ foreach my $type (sort keys %$pAnnot) {
         # Print header line
         print $fh join("\t", "#$type $chr", 'GENE NAME', 'START', 'END', 
             'TOTAL SITES', 'TOTAL SEG. SITES', 'TOTAL PI', 'TOTAL THETA', "TOTAL TAJIMA'S D");
-        print $fh join("\t", 
+        print $fh "\t", join("\t", 
             '0-FOLD SITES', '0-FOLD SEG. SITES', '0-FOLD PI', '0-FOLD THETA', "0-FOLD TAJIMA'S D", 
             '4-FOLD SITES', '4-FOLD SEG. SITES', '4-FOLD PI', '4-FOLD THETA', "4-FOLD TAJIMA'S D")
             if ($type eq 'cds');
@@ -183,7 +184,7 @@ foreach my $type (sort keys %$pAnnot) {
             print $fh join("\t", $id, $featStart, $featEnd), "\t";
             my @output = ( $type eq 'cds' ? ('total', 0, 4) : ('total') );
             foreach my $d (@output) {
-                print $fh join("\t", ( $stats{$d}{sites}       // 0,
+                print $fh join("\t", ( $stats{$d}{sites}   // 0,
                                    $stats{$d}{segregating} // 0,
                                    $stats{$d}{pi}    ? sprintf("%.4f", $stats{$d}{pi})    : 0, 
                                    $stats{$d}{theta} ? sprintf("%.4f", $stats{$d}{theta}) : 0, 
@@ -197,7 +198,7 @@ foreach my $type (sort keys %$pAnnot) {
 close($DEBUGFH) if $DEBUGFH;
 
 # Create "log.done" file to indicate completion to JEX
-my $logdonefile = catfile($OUTPUT_PATH, 'log.done');
+my $logdonefile = catfile($OUTPUT_PATH, 'sumstats.done');
 touch($logdonefile);
 
 exit;
