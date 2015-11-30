@@ -8,7 +8,7 @@ $(function () {
     	userName: USER_NAME
     });
     
-    //See if the current user is an admin
+    // See if the current user is an admin
     $.ajax({
 		data: {
 			fname: 'user_is_admin',
@@ -16,32 +16,30 @@ $(function () {
 		success: function(data) {
 			if (data == 1) {
 				user_is_admin = true;
-			} else {
-				uesr_is_admin = false;
+			}
+			else {
+				user_is_admin = false;
 			}
 		}
 	});
     
     $("#masterTable").hide();
     
-    search_stuff(term);
+    search_stuff(SEARCH_TERM);
 });
 
-function search_stuff (search_term) {
-	if(search_term.length > 2) {
+function search_stuff(search_term) {
+	if (search_term.length > 2) {
 		$("#loading").show();
 		
 		coge.services.search_global(search_term)
 			.done(function(response) {
-				console.log(response);
+				//console.log(response);
 				var obj = response;
 				
-				if (!obj || !obj.results) {
+				if (!obj || !obj.results)
 					return;
-				}
 				
-				console.log
-
 				var userCounter = 0, orgCounter = 0, genCounter = 0, expCounter = 0, noteCounter = 0, usrgroupCounter = 0;
 				var userList = "", orgList = "", genList = "", expList = "", noteList = "", usrgroupList = "";
 
@@ -252,12 +250,10 @@ function search_stuff (search_term) {
 				
 				$("#loading").hide();
 				$("#masterTable").show();
-				if (!user_is_admin) {
+				if (!user_is_admin)
 					$(".access").hide();
-				} else {
+				else
 					$(".access").show();
-				}
-
 			})
 			.fail(function() {
 				//TODO: Find some way to test this without breaking anything.
@@ -270,9 +266,10 @@ function search_stuff (search_term) {
 }
 
 function toggle_arrow(id) {
-	if( $(id).find('img').attr('src') == "picts/arrow-right-icon.png" ) {
-        	$(id).find('img').attr("src", "picts/arrow-down-icon.png");
-        } else {
+	if ( $(id).find('img').attr('src') == "picts/arrow-right-icon.png" ) {
+        $(id).find('img').attr("src", "picts/arrow-down-icon.png");
+    }
+	else {
 		$(id).find('img').attr("src", "picts/arrow-right-icon.png");
 	}
 }

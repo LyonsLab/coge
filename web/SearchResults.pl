@@ -1,59 +1,43 @@
 #! /usr/bin/perl -w
-
 use strict;
+use warnings;
 use CGI;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils qw(format_time_diff);
-use CoGe::Accessory::Jex;
 
-$|=1;
-
-use vars
-  qw($P $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE $JEX);
+use vars qw($CONF $USER $DB %FUNCTION $FORM );
 
 $FORM = new CGI;
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init( cgi => $FORM );
-
-$JEX =
-  CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+( $DB, $USER, $CONF ) = CoGe::Accessory::Web->init( cgi => $FORM );
 
 %FUNCTION = (
-	user_is_admin					=> \&user_is_admin,
+	user_is_admin => \&user_is_admin,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-	#print STDERR "HTML\n";
-	my $html;
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( USER       => $USER->display_name || '',
-	                  PAGE_TITLE => qq{Search Results},
+	                  PAGE_TITLE => "Search Results",
 	                  TITLE      => "Search Results",
-	                  HOME       => $P->{SERVER},
+	                  HOME       => $CONF->{SERVER},
                       HELP       => '',
-                      WIKI_URL   => $P->{WIKI_URL} || '',
-                      CAS_URL    => $P->{CAS_URL} || '',
-                      ADMIN_ONLY => $USER->is_admin );
+                      WIKI_URL   => $CONF->{WIKI_URL} || '',
+                      CAS_URL    => $CONF->{CAS_URL} || '' );
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( BODY       => gen_body() );
-	$html .= $template->output;
+	
+	return $template->output;
 }
 
 sub gen_body {
-	
-	my $term = $FORM->param('s');
-	say STDERR "$term\n";
+	my $search_term = $FORM->param('s');
 
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'SearchResults.tmpl' );
-	$template->param( 	MAIN 			=> 1,
-						API_BASE_URL  	=> 'api/v1/',  
-						USER			=> $USER->user_name,
-						TERM			=> $term,	
-					);
-					
+	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'SearchResults.tmpl' );
+	$template->param( API_BASE_URL => 'api/v1/',
+	                  USER_NAME   => $USER->user_name,
+					  SEARCH_TERM  => $search_term );
+	
 	return $template->output;
 }
 
