@@ -70,7 +70,7 @@ sub get_data {
 		my @tokens = split '\t', $row;
 		if (substr($tokens[0], 0, 1) eq '#') {
 			if ($type) {
-			    add_set $data, $type, $columns, $set;
+			    add_set $data, $type, $columns, \@set;
 			    @set = ();
 			}
 			$type = substr $tokens[0], 1;
@@ -82,7 +82,7 @@ sub get_data {
 		}
 		push @set, @tokens;
 	}
-	add_set $data, $type, $columns, $set;
+	add_set $data, $type, $columns, \@set;
 	return encode_json($data);
 }
 
