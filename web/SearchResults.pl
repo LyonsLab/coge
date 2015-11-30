@@ -7,6 +7,8 @@ use CoGe::Accessory::Web;
 use vars qw($CONF $USER $DB %FUNCTION $FORM );
 
 $FORM = new CGI;
+my $SEARCH_TERM = $FORM->param('s');
+
 ( $DB, $USER, $CONF ) = CoGe::Accessory::Web->init( cgi => $FORM );
 
 %FUNCTION = (
@@ -17,26 +19,25 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
 	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
-	$template->param( USER       => $USER->display_name || '',
-	                  PAGE_TITLE => "Search Results",
-	                  TITLE      => "Search Results",
-	                  HOME       => $CONF->{SERVER},
-                      HELP       => '',
-                      WIKI_URL   => $CONF->{WIKI_URL} || '',
-                      CAS_URL    => $CONF->{CAS_URL} || '' );
-	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-	$template->param( BODY       => gen_body() );
+	$template->param( USER        => $USER->display_name || '',
+	                  PAGE_TITLE  => "Search Results",
+	                  TITLE       => "Search Results",
+	                  HOME        => $CONF->{SERVER},
+                      HELP        => '',
+                      WIKI_URL    => $CONF->{WIKI_URL} || '',
+                      CAS_URL     => $CONF->{CAS_URL} || '',
+                      SEARCH_TERM => $SEARCH_TERM );
+	$template->param( LOGON       => 1 ) unless $USER->user_name eq "public";
+	$template->param( BODY        => gen_body() );
 	
 	return $template->output;
 }
 
 sub gen_body {
-	my $search_term = $FORM->param('s');
-
 	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'SearchResults.tmpl' );
 	$template->param( API_BASE_URL => 'api/v1/',
 	                  USER_NAME   => $USER->user_name,
-					  SEARCH_TERM  => $search_term );
+	                  SEARCH_TERM => $SEARCH_TERM );
 	
 	return $template->output;
 }
