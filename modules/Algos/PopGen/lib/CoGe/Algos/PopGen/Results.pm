@@ -26,7 +26,7 @@ sub add_set {
     if (!$data->{$type}) {
         $data->{$type} = {};
     }
-    $data->{$type}->{$chromosome} = { columns: $columns, data: $set };
+    $data->{$type}->{$chromosome} = { columns => $columns, data => $set };
 }
 
 sub export {
