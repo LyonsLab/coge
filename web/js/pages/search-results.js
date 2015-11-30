@@ -14,16 +14,12 @@ $(function () {
 			fname: 'user_is_admin',
 		},
 		success: function(data) {
-			if (data == 1) {
+			if (data == 1)
 				user_is_admin = true;
-			}
-			else {
+			else
 				user_is_admin = false;
-			}
 		}
 	});
-    
-    $("#masterTable").hide();
     
     search_stuff(SEARCH_TERM);
 });
