@@ -6,7 +6,7 @@ umask(0);
 
 use CoGeX;
 use CoGe::Accessory::Web qw(url_for);
-use CoGe::Accessory::Utils qw( commify sanitize_name );
+use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
 use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
 use CoGeDBI qw(get_feature_counts);
 use CGI;
@@ -1573,12 +1573,12 @@ sub get_results {
 		$results->param( xlabel      => $x_label );
 
 		if ($flip) {
-			$results->param( yorg_name => $org_name1 );
-			$results->param( xorg_name => $org_name2 );
+			$results->param( yorg_name => html_escape($org_name1) );
+			$results->param( xorg_name => html_escape($org_name2) );
 		}
 		else {
-			$results->param( yorg_name => $org_name2 );
-			$results->param( xorg_name => $org_name1 );
+			$results->param( yorg_name => html_escape($org_name2) );
+			$results->param( xorg_name => html_escape($org_name1) );
 		}
 
 		$results->param( dotplot   => $tmp );
@@ -1604,13 +1604,13 @@ sub get_results {
 	    my $chromosomes1 = $genome1->chromosomes_all;
 	    my $feature_counts = get_feature_counts($coge->storage->dbh, $genome1->id);
 	    foreach (@$chromosomes1) {
-	        $_->{gene_count} = int($feature_counts->{$_->{name}}{1}{count});
+	        $_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
 	    }
 	    $results->param( chromosomes1 => encode_json($chromosomes1) );
 	    my $chromosomes2 = $genome2->chromosomes_all;
 		$feature_counts = get_feature_counts($coge->storage->dbh, $genome2->id);
 	    foreach (@$chromosomes2) {
-	        $_->{gene_count} = int($feature_counts->{$_->{name}}{1}{count});
+	        $_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
 	    }
 	    $results->param( chromosomes2 => encode_json($chromosomes2) );
 
