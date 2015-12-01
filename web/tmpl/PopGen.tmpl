@@ -2,7 +2,21 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.1.0/css/buttons.dataTables.min.css"/>
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/buttons.colVis.min.js"></script><script>
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/buttons.colVis.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+var columns = {};
+var data;
+var dt;
+function build_select(s, obj) {
+	s.empty();
+	var keys = [];
+	for (key in obj)
+		keys.push(key);
+	keys.sort(natural_sort);
+	for (var i=0; i<keys.length; i++)
+		s.append('<option>' + keys[i] + '</option>');	
+}
 function do_export() {
 	var url = '?type=';
 	var s = $('#types')[0];
@@ -27,86 +41,59 @@ function do_export() {
 		alert('You must select at least one column to export.');
 	else {
 		window.open(url);
-		$('#export').dialog('close');
+		$('#export_dialog').dialog('close');
 	}
 }
 function do_plot() {
-    var url = 'PopGenPlot.pl?type=';
     var s = $('#types')[0];
-    url += s.options[s.selectedIndex].text;
-    url += '&column=';
-    var i = 0;
-    var first = true;
+    var type = s.options[s.selectedIndex].text;
+    var col;
+    var i = 4;
     while (true) {
         var c = $('#col' + i);
         if (!c.length)
             break;
         if (c.is(':checked')) {
-            if (first)
-                first = false;
-            else
-                url += ',';
-            url += i;
+        	col = i;
+        	break;
         }
         ++i;
     }
-    if (url.substring(url.length - 1) == '=')
+    if (!col)
         alert('You must select a column to plot.');
     else {
-        window.open(url);
-        $('#plot').dialog('close');
+    	$('#plot_dialog').dialog('option', {height:$(window).height()-10,position:{my:'left top',at:'left top',of:window},width:$(window).width()-10});
+        $('#plot').css('display','block');
+        var d = get_plot_data(col);
+        var x = [];
+        var y = [];
+        for (var i=0; i<d.length; i++) {
+        	x.push(d[i][0]);
+        	y.push(d[i][1]);
+        }
+        $('#plot').empty();
+        Plotly.newPlot( $('#plot')[0],
+       	    [{ x: x, y: y }],
+       	    { margin: { t: 0 }},
+       	    { displayModeBar: false }
+       	);
     }
 }
 function export_dialog() {
 	var d = $('#export_columns');
 	d.empty();
-	var s=$('#types')[0];
-	var t=s.options[s.selectedIndex].text;
-	var cols = columns[t];
+	var cols = columns[$('#types option:selected').text()];
 	for (var i=0; i<cols.length; i++)
 		d.append('<input id="col' + i + '" type="checkbox" checked> ' + cols[i] + '<br>');
-	$('#export').dialog({
+	$('#export_dialog').dialog({
 		autoOpen:true,
 		position: {
 			my: "top",
 			at: "top",
 			of: window
-		}
+		},
+		resizable: false
 	});
-}
-function plot_dialog() {
-    var d = $('#plot_columns');
-    console.log(d);
-    d.empty();
-    var s=$('#types')[0];
-    var t=s.options[s.selectedIndex].text;
-    var cols = columns[t];
-    for (var i=0; i<cols.length; i++)
-        d.append('<input id="col' + i + '" type="radio"> ' + cols[i] + '<br>');
-	$('#plot').dialog({
-		autoOpen:true,
-		position: {
-			my: "top",
-			at: "top",
-			of: window
-		}
-	});
-}
-var columns = {};
-var data;
-var dt;
-function build_select(s, obj) {
-	s.empty();
-	var keys = get_keys(obj);
-	keys.sort(natural_sort);
-	for (var i=0; i<keys.length; i++)
-		s.append('<option>' + keys[i] + '</option>');	
-}
-function get_keys(obj) {
-	var keys = [];
-	for (key in obj)
-		keys.push(key);
-	return keys;
 }
 function get_param(name) {
     var search = decodeURIComponent(window.location.search.substring(1));
@@ -115,6 +102,26 @@ function get_param(name) {
     	if (nvp[i].substring(0, name.length) == name)
     		return nvp[i].substring(name.length + 1);
 };
+function get_plot_data(index) {
+	var a = [];
+	var type = $('#types option:selected').text();
+	var chromosome = $('#chromosomes option:selected').text();
+	if (chromosome == 'All chromosomes') {
+		var arrays = [];
+		for (var key in data[type]) {
+			var d = data[type][key];
+			if (d)
+				for (var i=0; i<d.length; i++)
+					a.push([(d[i][2]+d[i][3])/2,d[i][index]]);
+		}
+	} else {
+		var d = data[type][chromosome];
+		for (var i=0; i<d.length; i++)
+			a.push([(d[i][2]+d[i][3])/2,d[i][index]]);
+	}
+	a.sort(function(a,b){return a[0]-b[0];});
+	return a;
+}
 function load_data() {
 	var eid = get_param('eid');
 	$.get('data/popgen/' + eid + '/sumstats.tsv', null, parse_data, 'text');
@@ -194,10 +201,27 @@ function parse_data(d) {
 	set_data();
 	dt.buttons().container().appendTo($('#colvis'));
 }
+function plot_dialog() {
+	$('#plot').css('display','none');
+    var d = $('#plot_columns');
+    d.empty();
+    var cols = columns[$('#types option:selected').text()];
+    for (var i=4; i<cols.length; i++)
+        d.append('<input id="col' + i + '" type="radio"> ' + cols[i] + '<br>');
+    $('#plot_dialog').dialog('destroy');
+	$('#plot_dialog').dialog({
+		autoOpen: true,
+		position: {
+			my: "top",
+			at: "top",
+			of: window
+		},
+		resizable: false
+	});
+}
 function set_chromosomes() {
 	var s = $('#chromosomes');
-	var type=$('#types option:selected').text();
-	build_select(s, data[type]);
+	build_select(s, data[$('#types option:selected').text()]);
 	if (s.children().length > 1)
 		s.prepend('<option>All chromosomes</option>');
 }
@@ -207,9 +231,8 @@ function set_data() {
 	var d;
 	if (chromosome == 'All chromosomes') {
 		var arrays = [];
-		var keys = get_keys(data[type]);
-		for (var i=0; i<keys.length; i++) {
-			d = data[type][keys[i]];
+		for (var key in data[type]) {
+			d = data[type][key];
 			if (d)
 				arrays.push(d);
 		}
@@ -219,7 +242,6 @@ function set_data() {
 	var c = [];
 	for (var i=0; i<columns[type].length; i++)
 		c.push({'title': columns[type][i]});
-	if (d)
 	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:d,scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
 }
 $(document).ready(load_data);
@@ -241,15 +263,16 @@ $(document).ready(load_data);
 	<tbody></tbody>
 </table>
 <div style="height:75px"></div>
-<div id="export" class="dialog_box hidden" title="Export">
+<div id="export_dialog" class="dialog_box hidden" title="Export">
 Select columns to export
 <div id="export_columns">
 </div>
 <span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
 </div>
-<div id="plot" class="dialog_box hidden" title="Plot">
+<div id="plot_dialog" class="dialog_box hidden" style="position:relative;" title="Plot">
 Select column to plot
 <div id="plot_columns">
 </div>
 <span onclick="do_plot()" class="r ui-button ui-corner-all coge-button">Plot</span>
+<div id="plot" style="background:white;display:none;height:100%;left:0;position:absolute;top:0;width:100%"></div>
 </div>
