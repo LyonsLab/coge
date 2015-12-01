@@ -219,14 +219,15 @@ function set_data() {
 	var c = [];
 	for (var i=0; i<columns[type].length; i++)
 		c.push({'title': columns[type][i]});
+	if (d)
 	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:d,scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
 }
 $(document).ready(load_data);
 </script>
 <div ></div>
 <div style="margin-left:14px;margin-top:20px;">View:
-<select id="types" onchange="dt.destroy();set_chromosomes();set_data();"></select>
-<select id="chromosomes" onchange="dt.destroy();set_data();"></select>
+<select id="types" onchange="dt.destroy();$('#main').empty();set_chromosomes();set_data();"></select>
+<select id="chromosomes" onchange="dt.destroy();$('#main').empty();set_data();"></select>
 <div id="colvis" style="display:inline-block;vertical-align:bottom;"></div>
     <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
     <span onclick="plot_dialog()" class="ui-button ui-corner-all coge-button">Plot...</span>
