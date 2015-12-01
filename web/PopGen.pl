@@ -1,7 +1,6 @@
 #! /usr/bin/perl -w
 use strict;
 use CoGe::Accessory::Web;
-use CoGe::Algos::PopGen::Results qw( export get_data );
 use CGI;
 use Data::Dumper;
 use File::Spec::Functions qw( catfile );
@@ -20,7 +19,33 @@ $FORM = new CGI;
 
 my $export = $FORM->Vars->{'export'};
 if ($export) {
-	export catfile($ENV{COGE_HOME}, 'test.txt'), $FORM->Vars->{'type'}, $export;
+	my $file = catfile($ENV{COGE_HOME}, 'data', 'popgen', $FORM->Vars->{'eid'}, 'sumstats.tsv');
+	my $type = $FORM->Vars->{'type'};
+	my $chr = $FORM->Vars->{'chr'};
+	my @columns = map {substr $_, 3} split ',', $export;
+
+	print "Content-Disposition: attachment; filename=PopGen.txt\n\n";
+	my $in_type = 0;
+	open my $fh, '<', $file;
+	while (my $row = <$fh>) {
+		chomp $row;
+		if (substr($row, 0, 1) eq '#') {
+			return if $in_type;
+			my @tokens = split '\t', $row;
+			$in_type = 1 if (substr($tokens[0], 1) eq $type);
+			$row = <$fh>;
+			chomp $row;
+		}
+		if ($in_type) {
+			my @tokens = split '\t', $row;
+			my $line;
+			foreach (@columns) {
+				$line .= "\t" if $line;
+				$line .= $tokens[$_] if ($tokens[$_]);
+			}
+			print $line . "\n";
+		}
+	}
 	return;
 }
 

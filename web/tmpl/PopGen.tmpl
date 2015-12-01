@@ -8,19 +8,24 @@
 var columns = {};
 var data;
 var dt;
-function build_select(s, obj) {
+function build_select(s, obj, first) {
 	s.empty();
 	var keys = [];
 	for (key in obj)
 		keys.push(key);
 	keys.sort(natural_sort);
+	if (first)
+		s.append('<option>' + first + '</option>');
 	for (var i=0; i<keys.length; i++)
 		s.append('<option>' + keys[i] + '</option>');	
 }
 function do_export() {
-	var url = '?type=';
-	var s = $('#types')[0];
-	url += s.options[s.selectedIndex].text;
+	var url = '?eid=';
+	url += get_param('eid');
+	url += '&type=';
+	url += $('#types option:selected').text();
+	url += '&chr=';
+	url += $('#chromosomes option:selected').text();
 	url += '&export=';
 	var i = 0;
 	var first = true;
@@ -220,10 +225,7 @@ function plot_dialog() {
 	});
 }
 function set_chromosomes() {
-	var s = $('#chromosomes');
-	build_select(s, data[$('#types option:selected').text()]);
-	if (s.children().length > 1)
-		s.prepend('<option>All chromosomes</option>');
+	build_select($('#chromosomes'), data[$('#types option:selected').text()], 'All chromosomes');
 }
 function set_data() {
 	var type = $('#types option:selected').text();
@@ -243,13 +245,20 @@ function set_data() {
 	for (var i=0; i<columns[type].length; i++)
 		c.push({'title': columns[type][i]});
 	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:d,scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
+	$('#busy').hide();
+}
+function chromosome_changed() {
+	$('#busy').show();
+	$('#main').empty();
+	dt.destroy();
+	setTimeout(set_data,10);
 }
 $(document).ready(load_data);
 </script>
-<div ></div>
+<div id="busy" class="spinner" style="display:block;text-align:center;"></div>
 <div style="margin-left:14px;margin-top:20px;">View:
-<select id="types" onchange="dt.destroy();$('#main').empty();set_chromosomes();set_data();"></select>
-<select id="chromosomes" onchange="dt.destroy();$('#main').empty();set_data();"></select>
+<select id="types" onchange="set_chromosomes();chromosome_changed();"></select>
+<select id="chromosomes" onchange="chromosome_changed();"></select>
 <div id="colvis" style="display:inline-block;vertical-align:bottom;"></div>
     <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
     <span onclick="plot_dialog()" class="ui-button ui-corner-all coge-button">Plot...</span>
