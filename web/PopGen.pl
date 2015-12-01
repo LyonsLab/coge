@@ -51,8 +51,8 @@ sub gen_html {
 }
 
 sub gen_body {
-    if (!$FORM->Vars->{'id'}) {
-        return 'id url parameter not set';
+    if (!$FORM->Vars->{'eid'}) {
+        return 'eid url parameter not set';
     }
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     return $template->output;

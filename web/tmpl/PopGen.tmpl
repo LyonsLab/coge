@@ -116,8 +116,8 @@ function get_param(name) {
     		return nvp[i].substring(name.length + 1);
 };
 function load_data() {
-	var id = get_param('id');
-	$.get('data/popgen/' + id + '/sumstats.tsv', null, parse_data, 'text');
+	var eid = get_param('eid');
+	$.get('data/popgen/' + eid + '/sumstats.tsv', null, parse_data, 'text');
 }
 function parse_data(d) {
 	data = {};
@@ -166,12 +166,8 @@ function set_data() {
 		var keys = get_keys(data[type]);
 		for (var i=0; i<keys.length; i++) {
 			d = data[type][keys[i]];
-			if (d) {
-				data[type][keys[i]].slice(0)
-				var a = [];
-				a.splice(1, 0, keys[i]);
-				arrays.push(a);
-			}
+			if (d)
+				arrays.push(d);
 		}
 		d = [].concat.apply([], arrays);
 		cols = columns[type].slice(0);
