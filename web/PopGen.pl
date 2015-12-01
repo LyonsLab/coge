@@ -24,26 +24,33 @@ if ($export) {
 	my $chr = $FORM->Vars->{'chr'};
 	my @columns = map {substr $_, 3} split ',', $export;
 
-	print "Content-Disposition: attachment; filename=PopGen.txt\n\n";
+	print "Content-Disposition: attachment; filename=PopGen_" . $type . "_" . $chr . ".tsv\n\n";
 	my $in_type = 0;
+	my $in_chr = 0;
 	open my $fh, '<', $file;
 	while (my $row = <$fh>) {
 		chomp $row;
 		if (substr($row, 0, 1) eq '#') {
-			return if $in_type;
 			my @tokens = split '\t', $row;
-			$in_type = 1 if (substr($tokens[0], 1) eq $type);
-			$row = <$fh>;
-			chomp $row;
+ 			if (scalar @tokens > 1) {
+ 			    return if $in_type;
+                if (substr($tokens[0], 1) eq $type) {
+                    print $tokens[0] . "\t";
+                    shift @tokens;
+                    print_tokens(\@tokens, \@columns);
+                    $in_type = 1 ;
+                }
+ 			}
+ 			elsif ($in_type) {
+ 			    return if $in_chr && $chr ne 'All chromosomes';
+                print $row . "\n";
+ 			    $in_chr = 1 if substr($tokens[0], 1) eq $chr;
+ 			}
+            next;
 		}
-		if ($in_type) {
+		if ($in_chr || $in_type && $chr eq 'All chromosomes') {
 			my @tokens = split '\t', $row;
-			my $line;
-			foreach (@columns) {
-				$line .= "\t" if $line;
-				$line .= $tokens[$_] if ($tokens[$_]);
-			}
-			print $line . "\n";
+			print_tokens(\@tokens, \@columns);
 		}
 	}
 	return;
@@ -81,4 +88,15 @@ sub gen_body {
     }
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     return $template->output;
+}
+
+sub print_tokens {
+    my $tokens = shift;
+    my $columns = shift;
+	my $line;
+	foreach (@$columns) {
+		$line .= "\t" if $line;
+		$line .= $tokens->[$_] if $tokens->[$_];
+	}
+	print $line . "\n";
 }
