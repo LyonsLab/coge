@@ -3,13 +3,9 @@ package CoGe::Core::Search;
 use strict;
 use warnings;
 
-use List::Compare;
 use CoGeX;
-use CoGeX::Result::User;
 use CoGeDBI;
-use Mojo::JSON;
 use Data::Dumper;
-use JSON qw(encode_json);
 
 BEGIN {
     our ( @EXPORT, @ISA, $VERSION );
@@ -120,8 +116,7 @@ sub search {
 				]
 			  ];
 		}
-		my @organisms =
-		  $db->resultset("Organism")->search( { -and => [ @orgArray, ], } );
+		my @organisms = $db->resultset("Organism")->search( { -and => [ @orgArray, ], } );
 
 		if ( $type eq 'none' || $type eq 'organism' ) {
 			foreach ( sort { $a->name cmp $b->name } @organisms ) {
@@ -157,8 +152,7 @@ sub search {
 					]
 				  ];
 			}
-			my @users =
-			  $db->resultset("User")->search( { -and => [ @usrArray, ], } );
+			my @users = $db->resultset("User")->search( { -and => [ @usrArray, ], } );
 	
 			foreach ( sort { $a->user_name cmp $b->user_name } @users ) {
 				push @results, { 
@@ -217,9 +211,7 @@ sub search {
 		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
 			push @genIDArray, [ -or => [ genome_id => $searchArray[$i] ] ];
 		}
-		my @genomeIDs =
-		  $db->resultset("Genome")
-		  ->search( { -and => [ @genIDArray, @restricted, @deleted, ], } );
+		my @genomeIDs = $db->resultset("Genome")->search( { -and => [ @genIDArray, @restricted, @deleted, ], } );
 
 		foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
 			if (!$user || $user->has_access_to_genome($_)) {
@@ -269,9 +261,7 @@ sub search {
 		else {
 			$search = { -and => [ @expArray, @restricted, @deleted, ] };
 		}
-		my @experiments =
-		  $db->resultset("Experiment")
-		  ->search( $search, $join );
+		my @experiments = $db->resultset("Experiment")->search( $search, $join );
 
 		foreach ( sort { $a->name cmp $b->name } @experiments ) {
 			if (!$user || $user->has_access_to_experiment($_)) {
@@ -321,9 +311,7 @@ sub search {
 		else {
 			$search = { -and => [ @noteArray, @restricted, @deleted, ] };
 		}
-		my @notebooks =
-		  $db->resultset("List")
-		  ->search( $search, $join );
+		my @notebooks = $db->resultset("List")->search( $search, $join );
 
 		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
 			if (!$user || $user->has_access_to_list($_)) {
@@ -358,9 +346,7 @@ sub search {
 					]
 				  ];
 			}
-			my @userGroup =
-			  $db->resultset("UserGroup")
-			  ->search( { -and => [ @usrGArray, @deleted, ], } );
+			my @userGroup = $db->resultset("UserGroup")->search( { -and => [ @usrGArray, @deleted, ], } );
 	
 			foreach ( sort { $a->name cmp $b->name } @userGroup ) {
 				push @results, {
