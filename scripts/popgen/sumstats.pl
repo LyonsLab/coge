@@ -84,7 +84,14 @@ foreach my $type (sort keys %$pAnnot) {
     foreach my $chr (sort keys %{$pAnnot->{$type}}) {
         next if (defined $CHR and $chr ne $CHR);
     
-        print $fh "#$chr\n";
+        # Print header line
+        print $fh join("\t", "#$type $chr", 'CHROMOSOME', 'GENE NAME', 'START', 'END', 
+            'TOTAL SITES', 'TOTAL SEG. SITES', 'TOTAL PI', 'TOTAL THETA', "TOTAL TAJIMA'S D");
+        print $fh join("\t", 
+            '0-FOLD SITES', '0-FOLD SEG. SITES', '0-FOLD PI', '0-FOLD THETA', "0-FOLD TAJIMA'S D", 
+            '4-FOLD SITES', '4-FOLD SEG. SITES', '4-FOLD PI', '4-FOLD THETA', "4-FOLD TAJIMA'S D")
+            if ($type eq 'cds');
+        print $fh "\n";
             
         foreach my $id (sort keys %{$pAnnot->{$type}{$chr}}) {
             next if (defined $GENE_NAME and $id ne $GENE_NAME);
@@ -184,7 +191,7 @@ foreach my $type (sort keys %$pAnnot) {
             }
             
             # Print result row
-            print $fh join("\t", $id, $featStart, $featEnd), "\t";
+            print $fh join("\t", $chr, $id, $featStart, $featEnd), "\t";
             my @output = ( $type eq 'cds' ? ('total', 0, 4) : ('total') );
             foreach my $d (@output) {
                 print $fh join("\t", ( $stats{$d}{sites}   // 0,
