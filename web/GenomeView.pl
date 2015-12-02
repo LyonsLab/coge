@@ -42,7 +42,8 @@ sub gen_html {
             HELP       => 'GenomeView',
             WIKI_URL   => $CONF->{WIKI_URL} || '',
             ADMIN_ONLY => $USER->is_admin,
-            CAS_URL    => $CONF->{CAS_URL} || ''
+            CAS_URL    => $CONF->{CAS_URL} || '',
+            NO_DOCTYPE => 1
         );
         $template->param( LOGON => 1 ) unless ($USER->user_name eq 'public');
     }
