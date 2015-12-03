@@ -1,3 +1,4 @@
+# mdb 12/2/15: what is this for?  It's commented out in service.pl.
 package CoGe::Services::Data::Feature;
 use v5.14;
 use base 'CGI::Application';
