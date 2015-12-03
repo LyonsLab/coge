@@ -65,6 +65,11 @@ sub startup {
         ->name("datasets-genomes")
         ->to("dataset#genomes", id => undef);
 
+    # Feature routes
+    $r->get("/features/search/#term")
+        ->name("features-search")
+        ->to("feature2#search", term => undef);
+
     # Experiment routes
     $r->get("/experiments/search/#term")
         ->name("experiments-search")
