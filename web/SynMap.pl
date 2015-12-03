@@ -187,7 +187,8 @@ sub gen_html {
 		PAGE_TITLE => 'SynMap',
 		TITLE      => 'SynMap: Whole Genome Synteny Analysis',
 		HEAD       => qq{},
-		USER       => $USER->display_name || ''
+		USER       => $USER->display_name || '',
+		NO_DOCTYPE => 1
 	);
 
 	$template->param( LOGON => 1 ) unless $USER->user_name eq "public";
