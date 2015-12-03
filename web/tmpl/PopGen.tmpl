@@ -1,9 +1,14 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css"/>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.1.0/css/buttons.dataTables.min.css"/>
+<link rel="stylesheet" type="text/css" href="/js/vendor/chosen/chosen.min.css"/>
+<style>
+	#chromosomes_chosen { white-space: nowrap; }
+</style>
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/buttons.colVis.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="/js/vendor/chosen/chosen.jquery.min.js"></script>
 <script>
 var columns = {};
 var data;
@@ -17,7 +22,9 @@ function build_select(s, obj, first) {
 	if (first)
 		s.append('<option>' + first + '</option>');
 	for (var i=0; i<keys.length; i++)
-		s.append('<option>' + keys[i] + '</option>');	
+		s.append('<option>' + keys[i] + '</option>');
+	s.trigger('chosen:updated');
+	s.next().css('width','auto');
 }
 function do_export() {
 	var url = '?eid=';
@@ -50,35 +57,23 @@ function do_export() {
 	}
 }
 function do_plot() {
-    var s = $('#types')[0];
-    var type = s.options[s.selectedIndex].text;
-    var col;
-    var i = 4;
-    while (true) {
-        var c = $('#col' + i);
-        if (!c.length)
-            break;
-        if (c.is(':checked')) {
-        	col = i;
-        	break;
-        }
-        ++i;
-    }
-    if (!col)
-        alert('You must select a column to plot.');
-    else {
-    	$('#plot_dialog').dialog('option', {height:$(window).height()-10,position:{my:'left top',at:'left top',of:window},width:$(window).width()-10});
+	var cols = $('#plot_columns option:selected');
+    if (cols.length) {
         $('#plot').css('display','block');
-        var d = get_plot_data(col);
-        var x = [];
-        var y = [];
-        for (var i=0; i<d.length; i++) {
-        	x.push(d[i][0]);
-        	y.push(d[i][1]);
+        var series = [];
+        for (var i=0; i<cols.length; i++) {
+	        var d = get_plot_data(cols[i].value);
+	        var x = [];
+	        var y = [];
+	        for (var row=0; row<d.length; row++) {
+	        	x.push(d[row][0]);
+	        	y.push(d[row][1]);
+	        }
+	        series.push({ mode: 'markers', name: cols[i].text, x: x, y: y });
         }
         $('#plot').empty();
         Plotly.newPlot( $('#plot')[0],
-       	    [{ x: x, y: y }],
+        	series,
        	    { margin: { t: 0 }},
        	    { displayModeBar: false }
        	);
@@ -126,10 +121,6 @@ function get_plot_data(index) {
 	}
 	a.sort(function(a,b){return a[0]-b[0];});
 	return a;
-}
-function load_data() {
-	var eid = get_param('eid');
-	$.get('data/popgen/' + eid + '/sumstats.tsv', null, parse_data, 'text');
 }
 function natural_sort(a, b) {
     var re = /(^([+\-]?(?:\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)?$|^0x[\da-fA-F]+$|\d+)/g,
@@ -207,15 +198,18 @@ function parse_data(d) {
 	dt.buttons().container().appendTo($('#colvis'));
 }
 function plot_dialog() {
-	$('#plot').css('display','none');
-    var d = $('#plot_columns');
-    d.empty();
-    var cols = columns[$('#types option:selected').text()];
-    for (var i=4; i<cols.length; i++)
-        d.append('<input id="col' + i + '" type="radio"> ' + cols[i] + '<br>');
     $('#plot_dialog').dialog('destroy');
 	$('#plot_dialog').dialog({
 		autoOpen: true,
+		open: function() {
+			$('#plot_dialog').dialog('option', {height:$(window).height()-10,position:{my:'left top',at:'left top',of:window},width:$(window).width()-10});
+		    var s = $('#plot_columns');
+		    s.empty();
+		    var cols = columns[$('#types option:selected').text()];
+		    for (var i=4; i<cols.length; i++)
+		        s.append('<option value="' + i + '">' + cols[i] + '</option>');
+		    s.chosen({ placeholder_text_multiple: 'Select column(s) to plot' });
+		},
 		position: {
 			my: "top",
 			at: "top",
@@ -223,6 +217,12 @@ function plot_dialog() {
 		},
 		resizable: false
 	});
+}
+function ready() {
+	$('#types').chosen({disable_search_threshold: 10});
+	$('#chromosomes').chosen();
+	var eid = get_param('eid');
+	$.get('data/popgen/' + eid + '/sumstats.tsv', null, parse_data, 'text');
 }
 function set_chromosomes() {
 	build_select($('#chromosomes'), data[$('#types option:selected').text()], 'All chromosomes');
@@ -253,7 +253,7 @@ function chromosome_changed() {
 	dt.destroy();
 	setTimeout(set_data,10);
 }
-$(document).ready(load_data);
+$(document).ready(ready);
 </script>
 <div id="busy" class="spinner" style="display:block;text-align:center;"></div>
 <div style="margin-left:14px;margin-top:20px;">View:
@@ -261,7 +261,7 @@ $(document).ready(load_data);
 <select id="chromosomes" onchange="chromosome_changed();"></select>
 <div id="colvis" style="display:inline-block;vertical-align:bottom;"></div>
     <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
-    <span onclick="plot_dialog()" class="ui-button ui-corner-all coge-button">Plot...</span>
+    <span onclick="plot_dialog();" class="ui-button ui-corner-all coge-button">Plot...</span>
 </div>
 <style>
     th { text-align: left; }
@@ -278,10 +278,11 @@ Select columns to export
 </div>
 <span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
 </div>
-<div id="plot_dialog" class="dialog_box hidden" style="position:relative;" title="Plot">
-Select column to plot
-<div id="plot_columns">
+<div id="plot_dialog" class="dialog_box hidden" title="Plot">
+<div style="height:100%;display:flex;flex-flow:column;">
+	<div style="flex: 0 1 auto;">
+		<select id="plot_columns" multiple onchange="do_plot();" style="width:100%;"></select>
+	</div>
+	<div id="plot" style="flex: 1 1 auto;"></div>
 </div>
-<span onclick="do_plot()" class="r ui-button ui-corner-all coge-button">Plot</span>
-<div id="plot" style="background:white;display:none;height:100%;left:0;position:absolute;top:0;width:100%"></div>
 </div>
