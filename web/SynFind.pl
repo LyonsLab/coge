@@ -66,24 +66,26 @@ mkpath( $BEDDIR, 0, 0777 ) unless -d $BEDDIR;
 
 $MAX_PROC = $config->{MAX_PROC};
 $LASTZ =
-    $config->{PYTHON} . " "
+    'nice '
+  . $config->{PYTHON} . ' '
   . $config->{MULTI_LASTZ}
   . " -A $MAX_PROC --path="
   . $config->{LASTZ};
 $LAST =
-    $config->{PYTHON} . " "
+    'nice '
+  . $config->{PYTHON} . ' '
   . $config->{MULTI_LAST}
   . " -a $MAX_PROC --path="
   . $config->{LAST_PATH};
 
 $SCRIPTDIR        = $config->{SCRIPTDIR} . '/synmap/';
-$GEN_FASTA        = catfile($SCRIPTDIR, 'generate_fasta.pl');
-$CONVERT_BLAST    = $config->{CONVERT_BLAST};
-$BLAST2BED        = catfile($SCRIPTDIR, 'blast2bed.pl');
-$BLAST2RAW        = $config->{BLAST2RAW};
-$SYNTENY_SCORE    = $config->{SYNTENY_SCORE};
+$GEN_FASTA        = 'nice ' . catfile($SCRIPTDIR, 'generate_fasta.pl');
+$CONVERT_BLAST    = 'nice ' . $config->{CONVERT_BLAST};
+$BLAST2BED        = 'nice ' . catfile($SCRIPTDIR, 'blast2bed.pl');
+$BLAST2RAW        = 'nice ' . $config->{BLAST2RAW};
+$SYNTENY_SCORE    = 'nice ' . $config->{SYNTENY_SCORE};
 $PYTHON26         = $config->{PYTHON};
-$DATASETGROUP2BED = $config->{DATASETGROUP2BED};
+$DATASETGROUP2BED = 'nice ' . $config->{DATASETGROUP2BED};
 $COOKIE_NAME      = $config->{COOKIE_NAME};
 
 if ( $FORM->param('get_master') ) {
