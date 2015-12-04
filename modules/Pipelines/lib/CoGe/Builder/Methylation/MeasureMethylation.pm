@@ -21,6 +21,7 @@ sub build {
     my $eid = $self->params->{eid} || $self->params->{experiment_id};
     return unless $eid;
     return unless $self->params->{methylation_params};
+    my $method = $self->params->{methylation_params}->{method};
     
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
@@ -37,6 +38,11 @@ sub build {
     
     # Get input file
     my $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
+
+    #
+    # Build workflow steps
+    #
+    my @tasks;
     
     # Add methylation analysis workflow
     my $methyl_params = {
@@ -50,8 +56,8 @@ sub build {
     
     my $methyl_workflow;
     switch ($method) { # TODO move this into subroutine
-        case 'bismark' { $methyl_workflow = CoGe::Builder::SNP::CoGeSNPs::build($methyl_params); }
-        case 'bwameth' { $methyl_workflow = CoGe::Builder::SNP::Samtools::build($methyl_params); }
+        case 'bismark' { $methyl_workflow = CoGe::Builder::Methylation::Bismark::build($methyl_params); }
+        case 'bwameth' { $methyl_workflow = CoGe::Builder::Methylation::BWAmeth::build($methyl_params); }
         else           { die "unknown methylation method"; }
     }
     push @tasks, @{$methyl_workflow->{tasks}};
