@@ -249,10 +249,10 @@ $.extend(FindSNPView.prototype, {
         this.snp_container = this.el.find("#snp-container");
 
         this.snp_templates = {
-            coge: $($("#coge-snp-template").html()),
+            coge:     $($("#coge-snp-template").html()),
             samtools: $($("#samtools-snp-template").html()),
             platypus: $($("#platypus-snp-template").html()),
-            gatk: $($("#gatk-snp-template").html())
+            gatk:     $($("#gatk-snp-template").html())
         };
     },
 
@@ -334,6 +334,92 @@ $.extend(FindSNPView.prototype, {
     },
 });
 
+function FormatView() {
+    this.initialize();
+    this.data = {};
+}
+
+$.extend(FormatView.prototype, {
+    initialize: function() {
+        this.el = $($("#format-template").html());
+        this.container = this.el.find("#format-container");
+    },
+
+    render: function() {
+    },
+
+    is_valid: function() {
+        return true;
+    },
+
+    get_options: function() {
+        if (this.enabled) {
+            this.data.format_params = {
+            };
+        }
+
+        return this.data;
+    },
+});
+
+function TrimmingView() {
+    this.data = {};
+    this.initialize();
+}
+
+$.extend(TrimmingView.prototype, {
+    initialize:function() {
+        this.el = $($("#trim-template").html());
+        this.container = this.el.find("#trim-container");
+        this.templates = {
+        	none: $($("#none-template").html()),
+            cutadapt: $($("#cutadapt-template").html()),
+            trimgalore: $($("#trimgalore-template").html()),
+        };
+    },
+
+    render: function() {
+        // jQuery events
+        this.el.find("[name=trimmer]").unbind().click(this.update.bind(this));
+        this.update();
+    },
+
+    // Callback to display the selected aligner
+    update: function() {
+        var selected = this.el.find("#trimming :checked").val();
+        render_template(this.templates[selected], this.container);
+    },
+
+    is_valid: function() {
+        var trimmer = this.el.find("#trimming :checked").val();
+        // Pick the aligner and set the options
+        if (trimmer === "cutadapt") {
+            this.data = {
+                trimming_params: {
+                    '-q': this.el.find("[id='-q']").val(),
+                    '-m': this.el.find("[id='-m']").val(),
+                    '--quality-base': this.el.find("[id='--quality-base']").val()
+                }
+            };
+        } 
+        else if (trimmer === "trimgalore") {
+            this.data = {
+                trimming_params: {
+                }
+            }
+        } 
+        else {
+        	
+        }
+
+        return true;
+    },
+
+    get_options: function() {
+        return this.data;
+    }
+});
+
 function AlignmentView() {
     this.data = {};
     this.initialize();
@@ -342,8 +428,8 @@ function AlignmentView() {
 $.extend(AlignmentView.prototype, {
     initialize:function() {
         this.el = $($("#align-template").html());
-        this.align_container = this.el.find("#align-container");
-        this.align_templates = {
+        this.container = this.el.find("#align-container");
+        this.templates = {
             gsnap: $($("#gsnap-template").html()),
             tophat: $($("#tophat-template").html()),
             hisat2: $($("#hisat2-template").html())
@@ -351,15 +437,24 @@ $.extend(AlignmentView.prototype, {
     },
 
     render: function() {
-        // jQuery events
-        this.el.find("[name=aligner]").unbind().click(this.update_aligner.bind(this));
-        this.update_aligner();
+    	var self = this;
+    	
+        var aligner = this.el.find("#alignment");
+        aligner.unbind().change(this.update.bind(this));
+
+        if (this.data.alignment_params) {
+        	aligner.val(this.data.alignment_params.tool);
+        }
+        this.update();
     },
 
-    // Callback to display the selected aligner
-    update_aligner: function() {
-        var selected = this.el.find("#alignment :checked").val();
-        render_template(this.align_templates[selected], this.align_container);
+    update: function() {
+        var selected = this.el.find("#alignment").val();
+        var el = $(document.getElementById(selected));
+        this.data.alignment_params = $.extend({}, this.data.alignment_params, { tool: selected });
+        el.show();
+        this.container.show();
+        render_template(this.templates[selected], this.container);
     },
 
     is_valid: function() {
@@ -374,12 +469,6 @@ $.extend(AlignmentView.prototype, {
                     '-Q': this.el.find("[id='-Q']").is(":checked"),
                     '--gap-mode': this.el.find("[id='--gap-mode']").val(),
                     '--nofails': this.el.find("[id='--nofails']").is(":checked"),
-                    read_type: this.el.find("#read_type :checked").val()
-                },
-                trimming_params: {
-                    '-q': this.el.find("[id='-q']").val(),
-                    '-m': this.el.find("[id='-m']").val(),
-                    '--quality-base': this.el.find("[id='--quality-base']").val()
                 }
             };
             
@@ -392,23 +481,32 @@ $.extend(AlignmentView.prototype, {
                 alignment_params: {
                     tool: "tophat",
                     '-g': this.el.find("[id='-g']").val(),
-                    read_type: this.el.find("#read_type :checked").val()
                 }
             }
         } 
-        else {
+        else if (aligner === "hisat2") {
         	this.data = {
         		alignment_params: {
-        			tool: "hisat2",
-        			'--phred33': this.el.find("[id='--phred33']").is(":checked"),
-                    read_type: this.el.find("#read_type :checked").val()
-        		},
-                trimming_params: {
-                    '-q': this.el.find("[id='-q']").val(),
-                    '-m': this.el.find("[id='-m']").val(),
-                    '--quality-base': this.el.find("[id='--quality-base']").val()
-                }
+        			tool: "hisat2"
+        		}
         	}
+        }
+        else if (aligner === "bismark") {
+        	this.data = {
+        		alignment_params: {
+        			tool: "bismark"
+        		}
+        	}
+        }
+        else if (aligner === "bwameth") {
+        	this.data = {
+        		alignment_params: {
+        			tool: "bwameth"
+        		}
+        	}
+        }
+        else { // should never happen
+        	console.error('Invalid aligner');
         }
 
         return true;
@@ -548,8 +646,7 @@ $.extend(ExpressionView.prototype, {
 
         return this.data;
     },
-
-})
+});
 
 function FastqView() {
     this.initialize();
@@ -557,9 +654,11 @@ function FastqView() {
 
 $.extend(FastqView.prototype, {
     initialize: function() {
+    	this.format_view = new FormatView();
+    	this.trim_view = new TrimmingView();
+    	this.align_view = new AlignmentView();
         this.expression_view = new ExpressionView();
         this.snp_view = new FindSNPView();
-        this.align_view = new AlignmentView();
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
@@ -567,7 +666,9 @@ $.extend(FastqView.prototype, {
             layout: {
                 "#expression-view": this.expression_view,
                 "#snp-view": this.snp_view,
-                "#align-view": this.align_view
+                "#align-view": this.align_view,
+                '#trim-view': this.trim_view,
+                '#format-view': this.format_view
             }
         });
 
@@ -580,10 +681,13 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
-        if (!this.snp_view.is_valid())
+    	if (!this.trim_view.is_valid())
             return false;
-
+    	
         if (!this.align_view.is_valid())
+            return false;
+        
+        if (!this.snp_view.is_valid())
             return false;
 
         if (!this.expression_view.is_valid())
@@ -595,7 +699,8 @@ $.extend(FastqView.prototype, {
     get_options: function() {
         return $.extend(this.expression_view.get_options(),
                         this.snp_view.get_options(),
-                        this.align_view.get_options());
+                        this.align_view.get_options(),
+                        this.trim_view.get_options());
     },
 });
 
@@ -859,10 +964,15 @@ function initialize_wizard(opts) {
     wizard.addStep(new OptionsView({experiment: current_experiment, admin: opts.admin, onError: wizard.error_help }));
     wizard.addStep(new ConfirmationView(current_experiment));
 
+    // mdb debug 12/4/15
+//    current_experiment.data = [ { file_type: 'fastq' } ];
+//    wizard.move(2);
+    
     // Render all the wizard sub views
     wizard.render();
-
+    
     // Add the wizard to the document
     root.html(wizard.el);
+    
     return wizard;
 }
