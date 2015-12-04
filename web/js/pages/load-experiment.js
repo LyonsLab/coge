@@ -353,10 +353,10 @@ $.extend(FormatView.prototype, {
     },
 
     get_options: function() {
-        if (this.enabled) {
-            this.data.format_params = {
-            };
-        }
+        this.data.format_params = {
+        	read_type: this.el.find("#read_type :checked").val(),
+        	encoding: this.el.find("#encoding :checked").val(),
+        };
 
         return this.data;
     },
@@ -372,8 +372,8 @@ $.extend(TrimmingView.prototype, {
         this.el = $($("#trim-template").html());
         this.container = this.el.find("#trim-container");
         this.templates = {
-        	none: $($("#none-template").html()),
-            cutadapt: $($("#cutadapt-template").html()),
+        	none:       $($("#none-template").html()),
+            cutadapt:   $($("#cutadapt-template").html()),
             trimgalore: $($("#trimgalore-template").html()),
         };
     },
@@ -396,6 +396,7 @@ $.extend(TrimmingView.prototype, {
         if (trimmer === "cutadapt") {
             this.data = {
                 trimming_params: {
+                	'trimmer': 'cutadapt',
                     '-q': this.el.find("[id='-q']").val(),
                     '-m': this.el.find("[id='-m']").val(),
                     '--quality-base': this.el.find("[id='--quality-base']").val()
@@ -405,11 +406,17 @@ $.extend(TrimmingView.prototype, {
         else if (trimmer === "trimgalore") {
             this.data = {
                 trimming_params: {
+                	'trimmer': 'trimgalore',
+                	'-q': this.el.find("[id='-q']").val(),
                 }
             }
         } 
         else {
-        	
+        	this.data = {
+    			trimming_params: {
+    				'trimmer': 'none'
+                }
+        	}
         }
 
         return true;
@@ -430,7 +437,7 @@ $.extend(AlignmentView.prototype, {
         this.el = $($("#align-template").html());
         this.container = this.el.find("#align-container");
         this.templates = {
-            gsnap: $($("#gsnap-template").html()),
+            gsnap:  $($("#gsnap-template").html()),
             tophat: $($("#tophat-template").html()),
             hisat2: $($("#hisat2-template").html())
         };
