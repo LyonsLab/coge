@@ -191,11 +191,9 @@ function parse_data(d) {
 		start = i + 1;
 		i = d.indexOf('\n', start);
 	}
-	data[type][chromosome].push(d.substring(start).split('\t'));
 	build_select($('#types'), data);
 	set_chromosomes();
 	set_data();
-	dt.buttons().container().appendTo($('#colvis'));
 }
 function plot_dialog() {
     $('#plot_dialog').dialog('destroy');
@@ -245,6 +243,7 @@ function set_data() {
 	for (var i=0; i<columns[type].length; i++)
 		c.push({'title': columns[type][i]});
 	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:d,scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
+	dt.buttons().container().appendTo($('#colvis'));
 	$('#busy').hide();
 }
 function chromosome_changed() {
