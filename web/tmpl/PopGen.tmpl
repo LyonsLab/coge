@@ -249,8 +249,8 @@ function set_data() {
 }
 function chromosome_changed() {
 	$('#busy').show();
-	$('#main').empty();
 	dt.destroy();
+	$('#main').empty();
 	setTimeout(set_data,10);
 }
 $(document).ready(ready);
