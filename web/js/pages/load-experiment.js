@@ -437,9 +437,11 @@ $.extend(AlignmentView.prototype, {
         this.el = $($("#align-template").html());
         this.container = this.el.find("#align-container");
         this.templates = {
-            gsnap:  $($("#gsnap-template").html()),
-            tophat: $($("#tophat-template").html()),
-            hisat2: $($("#hisat2-template").html())
+            gsnap:   $($("#gsnap-template").html()),
+            tophat:  $($("#tophat-template").html()),
+            hisat2:  $($("#hisat2-template").html()),
+            bismark: $($("#bismark-template").html()),
+            bwameth: $($("#bwameth-template").html())
         };
     },
 

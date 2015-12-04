@@ -287,9 +287,9 @@
 	    <div class="form-field">
 	        <label class="col-md-2">Trimmer:</label>
 	        <div id="trimming">
-		        <input name="trimmer" type="radio" value="none" checked>
+		        <input name="trimmer" type="radio" value="none">
 				<label for="none">None</label>
-	            <input name="trimmer" type="radio" value="cutadapt">
+	            <input name="trimmer" type="radio" value="cutadapt" checked>
 	            <label for="cutadapt">CutAdapt</label>
 	            <input name="trimmer" type="radio" value="trimgalore">
 	            <label for="trimgalore">Trim Galore</label>
@@ -358,33 +358,6 @@
 	</div>
 </script>
 
-<script id="hisat2-template" type="text/template">
-    <div id="hisat2">
-        <div class="form-field">
-            <label class="col-md-2">HISAT2: (<a href="http://ccb.jhu.edu/software/hisat2/manual.shtml#paired-end-example" target="_blank" class="small link">docs</a>)</label>
-            <div>
-                <label>encoding:</label>
-				<input id="--phred33" name="hisat2_encoding" type="radio" value="33" checked>
-				<label>phred33</label>
-				<input name="hisat2_encoding" type="radio" value="64">
-				<label>phred64</label>
-            </div>
-        </div>
-    </div>
-</script>
-
-<script id="tophat-template" type="text/template">
-    <div id="tophat">
-        <div class="form-field" title="Instructs TopHat to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number.">
-            <label class="col-md-2">TopHat: (<a href="http://ccb.jhu.edu/software/tophat/manual.shtml" target="_blank" class="small link">docs</a>)</label>
-            <div>
-                <label>-g:</label>
-                <input id="-g" type="number" value="1"/>
-            </div>
-        </div>
-    </div>
-</script>
-
 <script id="gsnap-template" type="text/template">
     <div id="gsnap">
         <div class="form-field">
@@ -427,6 +400,51 @@
             </div>
         </div>
     </div>
+</script>
+
+<script id="tophat-template" type="text/template">
+<div id="tophat">
+    <div class="form-field" title="Instructs TopHat to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number.">
+        <label class="col-md-2">TopHat: (<a href="http://ccb.jhu.edu/software/tophat/manual.shtml" target="_blank" class="small link">docs</a>)</label>
+        <div>
+            <label>-g:</label>
+            <input id="-g" type="number" value="1"/>
+        </div>
+    </div>
+</div>
+</script>
+
+<script id="hisat2-template" type="text/template">
+	<div id="hisat2">
+	    <div class="form-field">
+	        <label class="col-md-2">HISAT2: (<a href="http://ccb.jhu.edu/software/hisat2/manual.shtml#paired-end-example" target="_blank" class="small link">docs</a>)</label>
+	        <div>
+	        Default options
+	        </div>
+	    </div>
+	</div>
+</script>
+
+<script id="bismark-template" type="text/template">
+	<div id="bismark">
+	    <div class="form-field">
+	        <label class="col-md-2">Bismark: (<a href="http://www.bioinformatics.babraham.ac.uk/projects/bismark/"_blank" class="small link">docs</a>)</label>
+	        <div>
+	        Default options
+	        </div>
+	    </div>
+	</div>
+</script>
+
+<script id="bwameth-template" type="text/template">
+	<div id="bwameth">
+	    <div class="form-field">
+	        <label class="col-md-2">BWAmeth: (<a href="https://github.com/brentp/bwa-meth" target="_blank" class="small link">docs</a>)</label>
+	        <div>
+	        Default options
+	        </div>
+	    </div>
+	</div>
 </script>
 
 <TMPL_INCLUDE NAME="widgets/Splash.tmpl">
