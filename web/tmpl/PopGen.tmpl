@@ -200,7 +200,6 @@ function plot_dialog() {
 	$('#plot_dialog').dialog({
 		autoOpen: true,
 		open: function() {
-			$('#plot_dialog').dialog('option', {height:$(window).height()-10,position:{my:'left top',at:'left top',of:window},width:$(window).width()-10});
 		    var s = $('#plot_columns');
 		    s.empty();
 		    var cols = columns[$('#types option:selected').text()];
@@ -208,12 +207,14 @@ function plot_dialog() {
 		        s.append('<option value="' + i + '">' + cols[i] + '</option>');
 		    s.chosen({ placeholder_text_multiple: 'Select column(s) to plot' });
 		},
+		height: $(window).height(),
 		position: {
-			my: "top",
-			at: "top",
+			my: "center top",
+			at: "center top",
 			of: window
 		},
-		resizable: false
+		resizable: false,
+		width:$(window).width()-30
 	});
 }
 function ready() {
@@ -277,7 +278,7 @@ Select columns to export
 </div>
 <span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
 </div>
-<div id="plot_dialog" class="dialog_box hidden" title="Plot">
+<div id="plot_dialog" class="dialog_box hidden" title="Plot" style="display:none">
 <div style="height:100%;display:flex;flex-flow:column;">
 	<div style="flex: 0 1 auto;">
 		<select id="plot_columns" multiple onchange="do_plot();" style="width:100%;"></select>
