@@ -177,6 +177,14 @@ sub data_type_desc {
     }    
 }
 
+sub owner {
+    my $self = shift;
+
+    foreach ( $self->user_connectors( { role_id => 2 } ) ) {    #FIXME hardcoded
+        return $_->parent;
+    }
+}
+
 ################################################ subroutine header begin ##
 
 =head2 experiment_types
