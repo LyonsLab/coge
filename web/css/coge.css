@@ -1809,6 +1809,7 @@ div.dataTables_scrollBody {
 	.coge-header {
 		height: 3.1em;
 		padding: 2px;
+		margin-bottom: 1em;
 		background-color: #f5f5f5;
 		border-bottom: 1px solid lightgray;
 	}
@@ -1818,6 +1819,7 @@ div.dataTables_scrollBody {
 	.coge-header {
 		height: 6em;
 		padding: 2px;
+		margin-bottom: 1em;
 		background-color: #f5f5f5;
 		border-bottom: 1px solid lightgray;
 	}
