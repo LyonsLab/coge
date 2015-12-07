@@ -1098,12 +1098,26 @@ sub update_owner {
     # Admin-only function
     return unless $USER->is_admin;
 
-    # Make new user owner of genome
+    # Get user to become owner
     my $user = $DB->resultset('User')->find( { user_name => $user_name } );
     unless ($user) {
         return "error finding user '$user_name'\n";
     }
 
+    # Make user owner of genome
+    foreach my $conn ( # should only be one owner but loop just in case
+        $DB->resultset('UserConnector')->search(
+            {
+                parent_type => $node_types->{user},
+                child_id    => $item->id,
+                child_type  => $item->item_type,
+                role_id     => 2                        # FIXME hardcoded
+            }
+        )) 
+    {
+        $conn->delete;
+    }
+    
     my $conn = $DB->resultset('UserConnector')->find_or_create(
         {
             parent_id   => $user->id,
@@ -1115,20 +1129,6 @@ sub update_owner {
     );
     unless ($conn) {
         return "error creating user connector\n";
-    }
-
-    # Remove admin user as owner
-    $conn = $DB->resultset('UserConnector')->find(
-        {
-            parent_id   => $USER->id,
-            parent_type => $node_types->{user},
-            child_id    => $gid,
-            child_type  => $node_types->{genome},
-            role_id     => 2                        # FIXME hardcoded
-        }
-    );
-    if ($conn) {
-        $conn->delete;
     }
 
     return;
