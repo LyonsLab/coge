@@ -1823,6 +1823,13 @@ div.dataTables_scrollBody {
 	}
 }
 
+.cogo-logo {
+    font-family: impact;
+    font-size: 3em;
+    font-weight: bold;
+    color: #41AD41;
+}
+
 .coge-header-main li {
 	float: left;
 }
@@ -1858,8 +1865,8 @@ div.dataTables_scrollBody {
 .coge-user-image {
     background: url('image.pl');
     border-radius: 5px;
-    width: 2em;
-    height: 2em;
+    width: 1.75em;
+    height: 1.75em;
     background-size: 1.5em;
     background-position: right;
 }
