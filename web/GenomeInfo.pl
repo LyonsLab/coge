@@ -1109,8 +1109,8 @@ sub update_owner {
         $DB->resultset('UserConnector')->search(
             {
                 parent_type => $node_types->{user},
-                child_id    => $item->id,
-                child_type  => $item->item_type,
+                child_id    => $gid,
+                child_type  => $node_types->{genome},
                 role_id     => 2                        # FIXME hardcoded
             }
         )) 
