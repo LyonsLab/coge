@@ -19,9 +19,9 @@ $(function () {
 			else
 				user_is_admin = false;
 		}
+	}).done(function() {
+		search_stuff(SEARCH_TERM);
 	});
-    
-    search_stuff(SEARCH_TERM);
 });
 
 function search_stuff(search_term) {
