@@ -25,9 +25,13 @@ $(function () {
 });
 
 function search_stuff(search_term) {
-	if (search_term.length <= 2)
+	if (!search_term || search_term.length <= 2) {
+		$("#noresult").show();
+		$("#loading").hide();
 		return;
-		
+	}
+	
+	$("#noresult").hide();
 	$("#loading").show();
 	
 	coge.services.search_global(search_term)
