@@ -140,6 +140,10 @@ __PACKAGE__->has_many(    # parent groups
     }
 );
 
+sub item_type {
+    return $node_types->{experiment};   
+}
+
 sub desc {
     return shift->description(@_);
 }

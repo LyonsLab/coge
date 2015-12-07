@@ -133,6 +133,10 @@ __PACKAGE__->has_many(    # child lists
     { where               => { child_type => $node_types->{list} } }
 );
 
+sub item_type {
+    return $node_types->{list};   
+}
+
 sub lists                 # return child lists within this list
 {
     my $self       = shift;
