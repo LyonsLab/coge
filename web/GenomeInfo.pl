@@ -937,7 +937,7 @@ sub get_genome_info {
         SOURCE         => get_genome_sources($genome),
         LINK           => $genome->link,
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
-        USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', map { $_->display_name } $USER->users_with_access($genome)) : 'Everyone' ),
+        USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', sort map { $_->display_name } $USER->users_with_access($genome)) : 'Everyone' ),
         NAME           => $genome->name,
         DESCRIPTION    => $genome->description,
         DELETED        => $genome->deleted
@@ -946,7 +946,7 @@ sub get_genome_info {
     my $owner = $genome->owner;
     my $creator = $genome->creator;
     my $creation = ($genome->creator_id ? $genome->creator->display_name  . ' ' : '') . $genome->get_date();
-    my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome)) : undef);
+    my $groups = ($genome->restricted ? join(', ', sort map { $_->name } $USER->groups_with_access($genome)) : undef);
     $template->param( groups_with_access => $groups) if $groups;
     $template->param( OWNER => $owner->display_name ) if $owner;
     $template->param( CREATOR => $creation ) if $creation;

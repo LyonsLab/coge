@@ -586,13 +586,13 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
           . "</span>" );
     $anno_type->Type_delimit(": <td class='data5'>");
     my $users = ( $self->restricted ? 
-        join( ', ', map { $_->display_name } $self->users ) :
+        join( ', ', sort map { $_->display_name } $self->users ) :
         'Everyone' );
     $anno_type->add_Annot( $users . "</td>" );
     $anno_obj->add_Annot($anno_type);
     
     my $groups = ( $self->restricted ? 
-        join( ', ', map { $_->display_name } $self->groups ) :
+        join( ', ', sort map { $_->display_name } $self->groups ) :
         undef );
     if ($groups) {
         $anno_type =

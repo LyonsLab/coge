@@ -690,10 +690,10 @@ sub _get_experiment_info {
     my $owner = $exp->owner;
     push @$fields, { title => "Owner", value => $owner->display_name } if $owner;
     
-    my $users = ( $exp->restricted ? join(', ', map { $_->display_name } $USER->users_with_access($exp)) : 'Everyone' );
+    my $users = ( $exp->restricted ? join(', ', sort map { $_->display_name } $USER->users_with_access($exp)) : 'Everyone' );
     push @$fields, { title => "Users with access", value => $users } if $users;
     
-    my $groups = ($exp->restricted ? join(', ', map { $_->name } $USER->groups_with_access($exp)) : undef);
+    my $groups = ($exp->restricted ? join(', ', sort map { $_->name } $USER->groups_with_access($exp)) : undef);
     push @$fields, { title => "Groups with access", value => $groups } if $groups;
     
     push @$fields, { title => "Note", value => "This experiment has been deleted" } if $exp->deleted;
