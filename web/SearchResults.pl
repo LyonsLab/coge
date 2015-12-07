@@ -4,10 +4,10 @@ use warnings;
 use CGI;
 use CoGe::Accessory::Web;
 
-use vars qw($CONF $USER $DB %FUNCTION $FORM );
+use vars qw($CONF $USER $DB %FUNCTION $FORM $SEARCH_TERM );
 
 $FORM = new CGI;
-my $SEARCH_TERM = $FORM->param('s');
+$SEARCH_TERM = $FORM->param('s');
 
 ( $DB, $USER, $CONF ) = CoGe::Accessory::Web->init( cgi => $FORM );
 
