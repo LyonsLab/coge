@@ -1601,7 +1601,22 @@ sub update_owner {
                     child_type  => $item->item_type,
                     role_id     => 2                        # FIXME hardcoded
                 }
-            )) 
+            ))
+        {
+            $conn->delete;
+        }
+        
+        # Remove existing user connection (should only be one, but loop just in case)
+        foreach my $conn (
+            $DB->resultset('UserConnector')->search(
+                {
+                    parent_id   => $user->id,
+                    parent_type => $node_types->{user},
+                    child_id    => $item->id,
+                    child_type  => $item->item_type,
+                    role_id     => {'!=' => 2}           # FIXME hardcoded
+                }
+            ))
         {
             $conn->delete;
         }

@@ -1104,7 +1104,7 @@ sub update_owner {
         return "error finding user '$user_name'\n";
     }
 
-    # Make user owner of genome
+    # Remove existing owner
     foreach my $conn ( # should only be one owner but loop just in case
         $DB->resultset('UserConnector')->search(
             {
@@ -1118,6 +1118,22 @@ sub update_owner {
         $conn->delete;
     }
     
+    # Remove existing user connection (should only be one, but loop just in case)
+    foreach my $conn (
+        $DB->resultset('UserConnector')->search(
+            {
+                parent_id   => $user->id,
+                parent_type => $node_types->{user},
+                child_id    => $gid,
+                child_type  => $node_types->{genome},
+                role_id     => {'!=' => 2}           # FIXME hardcoded
+            }
+        ))
+    {
+        $conn->delete;
+    }
+    
+    # Make user owner of genome
     my $conn = $DB->resultset('UserConnector')->find_or_create(
         {
             parent_id   => $user->id,
