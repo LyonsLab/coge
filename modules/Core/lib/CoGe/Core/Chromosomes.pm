@@ -52,7 +52,7 @@ sub new {
 	my $genome_file = get_genome_file($gid);
 	if ($genome_file) {
 	    my $fh;
-	    if (!open($fh, $genome_file . '.fai')) {
+	    if (!open($fh, $genome_file . '.fai')) { # sd added 12/8/2015 COGE-687
 	        warn 'error opening index file in Chromosomes::new()';
 	        sleep 1;
 	        open($fh, $genome_file . '.fai');
