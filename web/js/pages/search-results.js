@@ -26,7 +26,7 @@ $(function () {
 
 function search_stuff(search_term) {
 	if (!search_term || search_term.length <= 2) {
-		$("#noresult").show();
+		$("#noresult").html('Please specify a search term longer than 2 characters').show();
 		$("#loading").hide();
 		return;
 	}
@@ -156,6 +156,9 @@ function search_stuff(search_term) {
 			$("#loading").show();
 			$(".result").fadeIn( 'fast');
 			
+			if (userCounter + orgCounter + genCounter + expCounter + noteCounter + usrgroupCounter == 0)
+				$('#noresult').html('No matching results found').show();
+			
 			//user
 			if(userCounter > 0) {
 				$('#user').show();
@@ -246,7 +249,7 @@ function search_stuff(search_term) {
 				$('#user_group').show();
 				$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
 				$('#usrgroupList').html(usrgroupList);
-				if(usrgroupCounter <= 10) {
+				if (usrgroupCounter <= 10) {
 					$( "#usrgroupList" ).show();
 					//$( "#usrGArrow" ).find('img').toggle();
 					$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
@@ -266,7 +269,6 @@ function search_stuff(search_term) {
 				$(".access").show();
 		})
 		.fail(function() {
-			//TODO: Find some way to test this without breaking anything.
 			$("#loading").hide();
 			$("#masterTable").html("An error occured. Please reload the page and try again.");
 		});
