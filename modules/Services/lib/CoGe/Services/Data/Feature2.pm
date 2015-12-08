@@ -22,22 +22,6 @@ sub search {
     # Search features
     my @results = search_features($db, $search_term);
     
-    # Filter response
-#    my @filtered = sort genomecmp grep {
-#        !$_->restricted || (defined $user && $user->has_access_to_genome($_))
-#    } values %unique;
-
-    # Format response
-#    my @results2 = map {
-#        {
-#            id => int($_->id),
-#            start => $_->start,
-#            stop => $_->stop,
-#            strand => $_->strand,
-#            chromosome => $_->chromosome,
-#        }
-#    } @results;
-    
     $self->render(json => { features => \@results });
 }
 
@@ -48,61 +32,42 @@ sub fetch {
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
-    my $genome = $db->resultset("Genome")->find($id);
-    unless (defined $genome) {
+    # Get feature from DB
+    my $feature = $db->resultset("Feature")->find($id);
+    unless (defined $feature) {
         $self->render(json => {
             error => { Error => "Item not found"}
         });
         return;
     }
 
-    unless ( !$genome->restricted || (defined $user && $user->has_access_to_genome($genome)) ) {
-        $self->render(json => {
-            error => { Auth => "Access denied"}
-        }, status => 401);
-        return;
-    }
-
-    # Format metadata
-    my @metadata = map {
-        {
-            text => $_->annotation,
-            link => $_->link,
-            type => $_->type->name,
-            type_group => $_->type->group
+    # Verify that user has access to all genomes associated with this feature
+    my $first_genome;
+    foreach my $genome ($feature->genomes) {
+        unless ( !$genome->restricted || (defined $user && $user->has_access_to_genome($genome)) ) {
+            $self->render(json => {
+                error => { Auth => "Access denied"}
+            }, status => 401);
+            return;
         }
-    } $genome->annotations;
-    
-    # Build chromosome list
-    my $chromosomes = $genome->chromosomes_all;
-    my $feature_counts = get_feature_counts($db->storage->dbh, $genome->id);
-    foreach (@$chromosomes) {
-        my $name = $_->{name};
-        $_->{gene_count} = int($feature_counts->{$name}{1}{count});
-        $_->{CDS_count} = int($feature_counts->{$name}{3}{count});
+        $first_genome = $genome unless $first_genome;
     }
     
     # Generate response
     $self->render(json => {
-        id => int($genome->id),
-        name => $genome->name,
-        description => $genome->description,
-        link => $genome->link,
-        version => $genome->version,
-        restricted => $genome->restricted ? Mojo::JSON->true : Mojo::JSON->false,
-        organism => {
-            id => int($genome->organism->id),
-            name => $genome->organism->name,
-            description => $genome->organism->description
+        id => int($feature->id),
+        type => $feature->type->name,
+        start => $feature->start,
+        stop => $feature->stop,
+        strand => $feature->strand,
+        chromosome => $feature->chromosome,
+        genome => {
+            id => $first_genome->id,
+            version => $first_genome->version,
+            summary => $first_genome->info
         },
-        sequence_type => {
-            name => $genome->type->name,
-            description => $genome->type->description,
-        },
-        chromosome_count => int($genome->chromosome_count),
-        chromosomes => $chromosomes,
-        experiments => [ map { int($_->id) } $genome->experiments ],
-        additional_metadata => \@metadata
+        sequence => $feature->genomic_sequence,
+        site_url => 
     });
 }
 
