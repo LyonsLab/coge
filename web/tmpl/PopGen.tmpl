@@ -58,6 +58,7 @@ function do_export() {
 }
 function do_plot() {
 	var cols = $('#plot_columns option:selected');
+    $('#plot').empty();
     if (cols.length) {
         $('#plot').css('display','block');
         var series = [];
@@ -65,18 +66,15 @@ function do_plot() {
 	        var d = get_plot_data(cols[i].value);
 	        var x = [];
 	        var y = [];
+	        var text = [];
 	        for (var row=0; row<d.length; row++) {
 	        	x.push(d[row][0]);
 	        	y.push(d[row][1]);
+	        	text.push(d[row][2]);
 	        }
-	        series.push({ mode: 'markers', name: cols[i].text, x: x, y: y });
+	        series.push({ mode: 'markers', name: cols[i].text, text: text, x: x, y: y });
         }
-        $('#plot').empty();
-        Plotly.newPlot( $('#plot')[0],
-        	series,
-       	    { margin: { t: 0 }},
-       	    { displayModeBar: false }
-       	);
+        Plotly.newPlot( $('#plot')[0], series, { margin: { t: 0 }}, { displayModeBar: false });
     }
 }
 function export_dialog() {
@@ -112,12 +110,12 @@ function get_plot_data(index) {
 			var d = data[type][key];
 			if (d)
 				for (var i=0; i<d.length; i++)
-					a.push([(d[i][2]+d[i][3])/2,d[i][index]]);
+					a.push([(d[i][2]+d[i][3])/2,d[i][index],d[i][1]]);
 		}
 	} else {
 		var d = data[type][chromosome];
 		for (var i=0; i<d.length; i++)
-			a.push([(d[i][2]+d[i][3])/2,d[i][index]]);
+			a.push([(d[i][2]+d[i][3])/2,d[i][index],d[i][1]]);
 	}
 	a.sort(function(a,b){return a[0]-b[0];});
 	return a;
@@ -200,21 +198,25 @@ function plot_dialog() {
 	$('#plot_dialog').dialog({
 		autoOpen: true,
 		open: function() {
+		    $('#plot').empty();
 		    var s = $('#plot_columns');
 		    s.empty();
 		    var cols = columns[$('#types option:selected').text()];
 		    for (var i=4; i<cols.length; i++)
 		        s.append('<option value="' + i + '">' + cols[i] + '</option>');
-		    s.chosen({ placeholder_text_multiple: 'Select column(s) to plot' });
+		    if ($('#plot_columns_chosen').length)
+		    	s.trigger('chosen:updated');
+		    else
+			    s.chosen({ placeholder_text_multiple: 'Select column(s) to plot' });
 		},
-		height: $(window).height(),
+		height: $(window).height() - 20,
 		position: {
 			my: "center top",
 			at: "center top",
 			of: window
 		},
 		resizable: false,
-		width:$(window).width()-30
+		width:$(window).width() - 30
 	});
 }
 function ready() {
