@@ -74,7 +74,7 @@ function do_plot() {
 	        }
 	        series.push({ mode: 'markers', name: cols[i].text, text: text, x: x, y: y });
         }
-        Plotly.newPlot( $('#plot')[0], series, { margin: { t: 0 }}, { displayModeBar: false });
+        Plotly.newPlot( $('#plot')[0], series, { hovermode: 'closest', margin: { t: 0 }}, { displayModeBar: false });
     }
 }
 function export_dialog() {
