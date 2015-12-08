@@ -110,12 +110,12 @@ function get_plot_data(index) {
 			var d = data[type][key];
 			if (d)
 				for (var i=0; i<d.length; i++)
-					a.push([(d[i][2]+d[i][3])/2,d[i][index],d[i][1]]);
+					a.push([(parseInt(d[i][2]) + parseInt(d[i][3])) / 2, d[i][index], d[i][1]]);
 		}
 	} else {
 		var d = data[type][chromosome];
 		for (var i=0; i<d.length; i++)
-			a.push([(d[i][2]+d[i][3])/2,d[i][index],d[i][1]]);
+			a.push([(parseInt(d[i][2]) + parseInt(d[i][3])) / 2, d[i][index], d[i][1]]);
 	}
 	a.sort(function(a,b){return a[0]-b[0];});
 	return a;
