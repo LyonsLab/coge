@@ -36,7 +36,8 @@ sub search_features {
     my %features;
     foreach my $fn (@results) {
         my $fid = $fn->feature_id;
-        $features{$fid} = get_feature( feature => $fn->feature, fast => 1 );
+        my $f = get_feature( feature => $fn->feature, fast => 1 );
+        $features{$fid} = $f unless $f->{error};
     }
 
     return wantarray ? values %features : [ values %features ];
@@ -54,7 +55,7 @@ sub get_feature {
         return unless (defined $feature);
     }
     
-    my $genome = $feature->dataset->first_genome;
+    my $genome = $feature->dataset->first_genome(skip_deleted => 1);
     unless ($genome) {
         return { error => { Error => "No genome for this feature" } };
     }
@@ -73,18 +74,18 @@ sub get_feature {
         }
     );
     
-    my @names = $feature->names;
-    my $num_names = scalar @names;
-    if ($num_names > 10) {
-        push @{$data{warning}}, "Names truncated, too many names to list ($num_names)";
-        #@names = splice(@names, 0, 10);
-    }
-    else {
-        $data{names} = \@names;
-    }
-    $data{primary_name} = $feature->primary_name->name if $feature->primary_name;
-    
     if (!$fast) {
+        my @names = $feature->names;
+        my $num_names = scalar @names;
+        if ($num_names > 10) {
+            push @{$data{warning}}, "Names truncated, too many names to list ($num_names)";
+            #@names = splice(@names, 0, 10);
+        }
+        else {
+            $data{names} = \@names;
+            #$data{primary_name} = $feature->primary_name->name if $feature->primary_name;
+        }
+        
         $data{sequence} = $feature->genomic_sequence;
         my @annos;
         foreach ($feature->annos) {
