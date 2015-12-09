@@ -139,9 +139,11 @@ sub genomes {
 
 sub first_genome {
     my $self = shift;
-
-    #my %opts = @_;
+    my %opts = @_;
+    my $skip_deleted = $opts{skip_deleted};
+    
     foreach my $dsc ( $self->dataset_connectors() ) {
+        next if ($skip_deleted && $dsc->genome->deleted);
         return $dsc->genome;
     }
 }
