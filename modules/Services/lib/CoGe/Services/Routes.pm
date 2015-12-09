@@ -73,6 +73,10 @@ sub startup {
     $r->get("/features/:id" => [id => qr/\d+/])
         ->name("features-fetch")
         ->to("feature2#fetch", id => undef);
+        
+    $r->get("/features/sequence/:id" => [id => qr/\d+/])
+        ->name("features-sequence")
+        ->to("feature2#sequence", id => undef);
 
     # Experiment routes
     $r->get("/experiments/search/#term")
