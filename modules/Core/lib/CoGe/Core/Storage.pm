@@ -620,7 +620,7 @@ sub get_log {
 sub get_workflow_paths {
     my ( $user_name, $workflow_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
     unless ($workflow_id) {
-        print STDERR "Storage::get_workflow_paths ERROR: missing required param\n";
+        warn 'Storage::get_workflow_paths ERROR: missing required workflow id param';
         return;
     }
     
