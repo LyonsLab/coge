@@ -4,6 +4,7 @@ use v5.10;
 use strict;
 use warnings;
 
+use Data::Dumper;
 use Moose;
 use JSON::XS;
 use ZMQ::LibZMQ3;

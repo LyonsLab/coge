@@ -1564,7 +1564,6 @@ sub go {
 	}
 	my $dsgid1 = $opts{dsgid1};
 	my $dsgid2 = $opts{dsgid2};
-
 	return encode_json(
 		{
 			success => JSON::false,
@@ -1606,7 +1605,7 @@ sub go {
 	) unless -r $genome2->file_path;
 
 	my $tiny_link = get_query_link( $config, $db, @_ );
-	say STDERR "tiny_link is required for logging." unless defined($tiny_link);
+	warn "tiny_link is required for logging." unless defined($tiny_link);
 	my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
 	my $workflow_name = "synmap-$tiny_id";
 
@@ -1614,9 +1613,9 @@ sub go {
 		host => $config->{JOBSERVER},
 		port => $config->{JOBPORT}
 	);
-	my $workflow = $JEX->create_workflow( name => $workflow_name );
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile(catfile($result_dir, "debug.log"));
+	my $workflow = $JEX->create_workflow( init => 1, name => $workflow_name );
+	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
+    $workflow->logfile(catfile($config->{DIAGSDIR}, $dir1, $dir2, 'analysis.log'));
 
 	$workflow->log_section( "Creating Workflow" );
 	$workflow->log( "Link to Regenerate Analysis" );
@@ -1678,6 +1677,119 @@ sub go {
 		return encode_json( { success => JSON::false } );
 	}
 }
+
+# FIXME: Currently this feature is disabled.
+# @by Evan Briones
+# @on 3/1/2013
+#sub run_tandem_finder {
+#	my %opts    = @_;
+#	my $infile  = $opts{infile};    #dag file produced by dat_tools.py
+#	my $outfile = $opts{outfile};
+#	while ( -e "$outfile.running" ) {
+#		print STDERR "detecting $outfile.running.  Waiting. . .\n";
+#		sleep 60;
+#	}
+#	unless ( -r $infile && -s $infile ) {
+#		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+#		CoGe::Accessory::Web::write_log(
+#"WARNING:   Cannot run tandem finder! DAGChainer input file ($infile) contains no data!",
+#			$cogeweb->logfile
+#		);
+#		return 0;
+#	}
+#	if ( -r $outfile ) {
+#		CoGe::Accessory::Web::write_log(
+#			"run_tandem_filter: file $outfile already exists",
+#			$cogeweb->logfile );
+#		return 1;
+#	}
+#	my $cmd = "$PYTHON $TANDEM_FINDER -i '$infile' > '$outfile'";
+#	system "/usr/bin/touch '$outfile.running'"
+#	  ;    #track that a blast anlaysis is running for this
+#	CoGe::Accessory::Web::write_log( "run_tandem_filter: running\n\t$cmd",
+#		$cogeweb->logfile );
+#	`$cmd`;
+#	system "/bin/rm '$outfile.running'"
+#	  if -r "$outfile.running";    #remove track file
+#	return 1 if -r $outfile;
+#}
+
+#FIXME: Currently this feature is disabled
+# @by Evan Briones
+# @on 3/1/2013
+#sub run_adjust_dagchainer_evals {
+#	my %opts    = @_;
+#	my $infile  = $opts{infile};
+#	my $outfile = $opts{outfile};
+#	my $cvalue  = $opts{cvalue};
+#	$cvalue = 4 unless defined $cvalue;
+#	while ( -e "$outfile.running" ) {
+#		print STDERR "detecting $outfile.running.  Waiting. . .\n";
+#		sleep 60;
+#	}
+#	if ( -r $outfile || -r $outfile . ".gz" ) {
+#		CoGe::Accessory::Web::write_log(
+#			"run_adjust_dagchainer_evals: file $outfile already exists",
+#			$cogeweb->logfile );
+#		return 1;
+#	}
+#	CoGe::Accessory::Web::gunzip( $infile . ".gz" ) if -r $infile . ".gz";
+#	unless ( -r $infile && -s $infile ) {
+#		CoGe::Accessory::Web::write_log(
+#"WARNING:   Cannot adjust dagchainer evals! DAGChainer input file ($infile) contains no data!",
+#			$cogeweb->logfile
+#		);
+#		return 0;
+#	}
+#	my $cmd = "$PYTHON $EVAL_ADJUST -c $cvalue '$infile' > '$outfile'";
+#
+##There is a parameter that can be passed into this to filter repetitive sequences more or less stringently:
+## -c   2 gets rid of more stuff; 10 gets rid of less stuff; default is 4
+##consider making this a parameter than can be adjusted from SynMap -- will need to actually play with this value to see how it works
+##if implemented, this will require re-naming all the files to account for this parameter
+##and updating the auto-SynMap link generator for redoing an analysis
+#
+#	system "/usr/bin/touch '$outfile.running'"
+#	  ;    #track that a blast anlaysis is running for this
+#	CoGe::Accessory::Web::write_log(
+#		"run_adjust_dagchainer_evals: running\n\t$cmd",
+#		$cogeweb->logfile );
+#	`$cmd`;
+#	system "/bin/rm '$outfile.running'" if -r "$outfile.running";
+#	;      #remove track file
+#	return 1 if -r $outfile;
+#
+#}
+
+#FIXME: Currently this feature is disabled
+# @by Evan Briones
+# @on 6/18/2013
+#sub run_find_nearby {
+#	my %opts         = @_;
+#	my $infile       = $opts{infile};
+#	my $dag_all_file = $opts{dag_all_file};
+#	my $outfile      = $opts{outfile};
+#	while ( -e "$outfile.running" ) {
+#		print STDERR "detecting $outfile.running.  Waiting. . .\n";
+#		sleep 60;
+#	}
+#	if ( -r $outfile ) {
+#		CoGe::Accessory::Web::write_log(
+#			"run find_nearby: file $outfile already exists",
+#			$cogeweb->logfile );
+#		return 1;
+#	}
+#	my $cmd =
+#"$PYTHON $FIND_NEARBY --diags='$infile' --all='$dag_all_file' > '$outfile'";
+#	system "/usr/bin/touch '$outfile.running'"
+#	  ;    #track that a blast anlaysis is running for this
+#	CoGe::Accessory::Web::write_log( "run find_nearby: running\n\t$cmd",
+#		$cogeweb->logfile );
+#	`$cmd`;
+#	system "/bin/rm '$outfile.running'" if -r "$outfile.running";
+#	;      #remove track file
+#	return 1 if -r $outfile;
+#}
 
 with qw(CoGe::Builder::Buildable);
 
