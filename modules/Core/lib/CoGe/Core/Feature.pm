@@ -130,7 +130,8 @@ sub get_genome_for_feature { # can be used to test whether user has access to th
     my $user = $opts{user};
     
     my $genome;
-    foreach ($feature->genomes(deleted => 0)) {
+    foreach ($feature->genomes) {
+        next if ($_->deleted);
         next unless ( !$_->restricted || (defined $user && $user->has_access_to_genome($_)) );
         $genome = $_;
         last;
