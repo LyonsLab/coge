@@ -128,6 +128,7 @@ sub get_genome_for_feature { # can be used to test whether user has access to th
     my %opts = @_;
     my $feature = $opts{feature};
     my $user = $opts{user};
+    return unless $feature;
     
     my $genome;
     foreach ($feature->genomes) {
