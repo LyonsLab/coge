@@ -7,7 +7,7 @@ umask(0);
 use CoGeX;
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
-use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
+use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_logfile get_query_link go );
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -1113,7 +1113,7 @@ sub get_results {
 		basename => $basename,
 		tempdir  => $TEMPDIR
 	);
-	$cogeweb->logfile(catfile($DIAGSDIR, $dir1, $dir2, 'analysis.log'));
+	$cogeweb->logfile(get_logfile($coge, $config, %opts));
 
 	############################################################################
 	# Parameters
