@@ -238,6 +238,102 @@ $.extend(ExperimentDescriptionView.prototype, {
     },
 });
 
+// Methylation analysis options
+
+function MethylationView() {
+    this.data = {};
+    this.initialize();
+};
+
+$.extend(MethylationView.prototype, {
+    initialize: function () {
+        this.el = $($("#methyl-template").html());
+        this.enabled = false;
+        this.methyl_container = this.el.find("#methyl-container");
+        this.methyl_templates = {
+            bismark: $($("#bismark-methyl-template").html()),
+            bwameth: $($("#bwameth-methyl-template").html())
+        };
+    },
+
+    render: function () {
+        var self = this;
+
+        var method = this.el.find("#methyl-method");
+        this.el.find("#methyl").unbind().change(this.update_methyl.bind(this));
+
+        method.unbind().change(function () {
+            var selected = $(this).val();
+            render_template(self.methyl_templates[selected], self.methyl_container);
+        });
+
+        if (this.data.methyl_params) {
+            method.val(this.data.methyl_params.method);
+        }
+    },
+
+    update_methyl: function(ev) {
+        var enabled = $(ev.target).is(":checked"),
+            method = this.el.find("#alignment");
+
+        var el = $(document.getElementById(method.val()));
+
+        if (enabled) {
+            this.data.methyl_params = $.extend({}, this.data.methyl_params, {method: method.val()});
+            el.show();
+            method.removeAttr("disabled");
+            this.methyl_container.slideDown();
+            var selected = $("#alignment").val();
+            render_template(this.methyl_templates[selected], this.methyl_container);
+        } else {
+            this.data.methyl_params = undefined;
+            method.attr("disabled", 1);
+            this.methyl_container.slideUp();
+        }
+    },
+
+    is_valid: function() {
+        var enabled = this.el.find("#methyl :checked");
+        var method = this.el.find("#alignment").val();
+        var single = true;  // Placeholders for passing in single or paired end status
+        var paired = true;
+
+        if (enabled) {
+            if (method === "bismark") {
+                this.data.methyl_params = {
+                    method: method,
+                    'bismark-deduplicate': this.el.find('#bismark-deduplicate').is(":checked"),
+                    'bismark-min_converage': this.el.find('#bismark-min_coverage').val(),
+                };
+                if (single) {
+                    this.data.methyl_params['--ignore'] = this.el.find('#--ignore').val();
+                    this.data.methyl_params['--ignore_3prime'] = this.el.find('#--ignore3prime').val();
+                }
+                else if (paired) {
+                    this.data.methyl_params['--ignore'] = this.el.find('#--ignore').val();
+                    this.data.methyl_params['--ignore_3prime'] = this.el.find('#--ignore_3prime').val();
+                    this.data.methyl_params['--ignore_r2'] = this.el.find('#--ignore_r2').val();
+                    this.data.methyl_params['--ignore_3prime_r2'] = this.el.find('#--ignore_3prime_r2').val();
+                }
+            }
+            else if (method === "bwameth") {
+                this.data.methyl_params = {
+                    method: method,
+                    'picard-deduplicate': this.el.find('#picard-deduplicate').is(":checked"),
+                    'pileometh-min_converage': this.el.find('#pileometh-min_coverage').val(),
+                    '--OT': this.el.find('#--OT').val(),
+                    '--OB': this.el.find('#--OB').val(),
+                };
+            }
+        }
+        return true;
+    },
+
+    get_options: function() {
+    return this.data;
+    },
+});
+
 function FindSNPView() {
     this.data = {};
     this.initialize();
@@ -552,13 +648,15 @@ $.extend(AlignmentOptionView.prototype, {
     initialize: function() {
         this.snp_view = new FindSNPView();
         this.expression_view = new ExpressionView();
+        this.methylation_view = new MethylationView();
 
         this.layout_view = new LayoutView({
             template: "#align-option-template",
 
             layout: {
                 "#expression-view": this.expression_view,
-                "#snp-view": this.snp_view
+                "#snp-view": this.snp_view,
+                "methylation_view": this.methylation_view
             }
         });
 
@@ -571,11 +669,13 @@ $.extend(AlignmentOptionView.prototype, {
 
     is_valid: function() {
         return this.snp_view.is_valid();
+        return this.methylation_view.is_valid();
     },
 
     get_options: function() {
         return $.extend(this.snp_view.get_options(),
-                        this.expression_view.get_options());
+                        this.expression_view.get_options(),
+                        this.methylation_view.get_options());
     },
 });
 
@@ -668,11 +768,13 @@ $.extend(FastqView.prototype, {
     	this.align_view = new AlignmentView();
         this.expression_view = new ExpressionView();
         this.snp_view = new FindSNPView();
+        this.methylation_view = new MethylationView();
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
 
             layout: {
+                "#methylation-view": this.methylation_view,
                 "#expression-view": this.expression_view,
                 "#snp-view": this.snp_view,
                 "#align-view": this.align_view,
@@ -702,11 +804,15 @@ $.extend(FastqView.prototype, {
         if (!this.expression_view.is_valid())
             return false;
 
+        if (!this.methylation_view.is_valid())
+            return false;
+
         return true;
     },
 
     get_options: function() {
-        return $.extend(this.expression_view.get_options(),
+        return $.extend(this.methylation_view.get_options(),
+                        this.expression_view.get_options(),
                         this.snp_view.get_options(),
                         this.align_view.get_options(),
                         this.trim_view.get_options());
@@ -911,6 +1017,7 @@ function load(experiment) {
 			trimming_params:   experiment.options.trimming_params,
 			expression_params: experiment.options.expression_params,
 			snp_params:        experiment.options.snp_params,
+            methyl_params:     experiment.options.methyl_params,
 			normalize:         experiment.options.normalize,
 			normalize_method:  experiment.options.normalize_method,
 			email:             experiment.options.email,
