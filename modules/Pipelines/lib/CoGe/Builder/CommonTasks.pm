@@ -881,6 +881,51 @@ sub create_cutadapt_job {
     };
 }
 
+sub create_cutadapt_workflow {
+    my %opts = @_;
+    my $fastq1 = $opts{fastq1}; # array ref of left reads (or all reads if single-ended)
+    my $fastq2 = $opts{fastq2}; # array ref of right reads (or undef if single-ended)
+    my $validated = $opts{validated};
+    my $staging_dir = $opts{staging_dir};
+    my $params = $opts{params};
+    
+    my (@tasks, @outputs);
+
+    if (not defined $fastq2) { # single-ended
+        # Create cutadapt task for each file
+        foreach my $file (@$fastq1) {
+            my $trim_task = create_cutadapt_job(
+                fastq => $file,
+                validated => $validated,
+                staging_dir => $staging_dir,
+                params => $params
+            );
+            push @outputs, $trim_task->{outputs}->[0];
+            push @tasks, $trim_task;
+        }
+    }
+    else {
+        # Create cutadapt task for each file pair
+        for (my $i = 0;  $i < @$fastq1;  $i++) { 
+            my $file1 = shift @$fastq1;
+            my $file2 = shift @$fastq2;
+            my $trim_task = create_cutadapt_job(
+                fastq => [ $file1, $file2 ],
+                validated => $validated,
+                staging_dir => $staging_dir,
+                params => $params
+            );
+            push @outputs, @{$trim_task->{outputs}};
+            push @tasks, $trim_task;
+        }
+    }
+    
+    return {
+        tasks => \@tasks,
+        outputs => \@outputs
+    };
+}
+
 sub create_gff_generation_job {
     my %opts = @_;
 
