@@ -31,8 +31,9 @@ sub build {
     my $metadata    = $opts{metadata};
     my $additional_metadata = $opts{additional_metadata};
     my $load_id     = $opts{load_id};
-    my $alignment_params = $opts{alignment_params};
+    my $read_params      = $opts{read_params};
     my $trimming_params  = $opts{trimming_params};
+    my $alignment_params = $opts{alignment_params};
     
     my @tasks;
     
@@ -76,42 +77,36 @@ sub build {
     # Trim the fastq input files
     my @trimmed;
     if ($trimming_params) {
-        if ($alignment_params->{read_type} eq 'paired') { # mdb added 5/8/15 COGE-624 - enable paired-end support in cutadapt
+        my ($fastq1, $fastq2);
+        if ($read_params->{read_type} eq 'paired') {
             # Separate files based on last occurrence of _R1 or _R2 in filename
-            my ($m1, $m2) = detect_paired_end($input_files);
+            my ($m1, $m2) = detect_paired_end(\@decompressed);
             unless (@$m1 and @$m2 and @$m1 == @$m2) {
                 my $error = 'Mispaired FASTQ files, m1=' . @$m1 . ' m2=' . @$m2;
                 print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
                 print STDERR 'm1: ', join(' ', @$m1), "\n", 'm2: ', join(' ', @$m2), "\n";
                 return { error => $error };
             }
-            
-            # Create cutadapt task for each file pair
-            for (my $i = 0;  $i < @$m1;  $i++) { 
-                my $file1 = shift @$m1;
-                my $file2 = shift @$m2;
-                my $trim_task = create_cutadapt_job(
-                    fastq => [ $file1, $file2 ],
-                    validated => [ "$file1.validated", "$file2.validated" ],
-                    staging_dir => $staging_dir,
-                    params => $trimming_params
-                );
-                push @trimmed, @{$trim_task->{outputs}};
-                push @tasks, $trim_task;
-            }
+            $fastq1 = @$m1;
+            $fastq2 = @$m2;
         }
-        else { # single-ended
-            # Create cutadapt task for each file
-            foreach my $file (@decompressed) {
-                my $trim_task = create_cutadapt_job(
-                    fastq => $file,
-                    validated => "$file.validated",
-                    staging_dir => $staging_dir,
-                    params => $trimming_params
-                );
-                push @trimmed, $trim_task->{outputs}->[0];
-                push @tasks, $trim_task;
-            }
+        else { # default to single-ended
+            $fastq1 = \@decompressed;
+        }
+        
+        if ($trimming_params->{trimmer} eq 'cutadapt') {
+            my ($tasks, $outputs) = create_cutadapt_workflow(
+                fastq1 => $fastq1,
+                fastq2 => $fastq2,
+                validated => \@validated,
+                staging_dir => $staging_dir,
+                params => $trimming_params
+            );
+            push @trimmed, @$outputs;
+            push @tasks, @$tasks;
+        }
+        elsif ($trimming_params->{trimmer} eq 'trimgalore') {
+            
         }
     }
     else { # no trimming
