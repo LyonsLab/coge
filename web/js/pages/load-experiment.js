@@ -250,8 +250,8 @@ $.extend(MethylationView.prototype, {
     initialize: function () {
         this.el = $($("#methyl-template").html());
         this.enabled = false;
-        this.methyl_container = this.el.find("#methyl-container");
-        this.methyl_templates = {
+        this.container = this.el.find("#methyl-container");
+        this.templates = {
             bismark: $($("#bismark-methyl-template").html()),
             bwameth: $($("#bwameth-methyl-template").html())
         };
@@ -261,35 +261,35 @@ $.extend(MethylationView.prototype, {
         var self = this;
 
         var method = this.el.find("#methyl-method");
-        this.el.find("#methyl").unbind().change(this.update_methyl.bind(this));
+        this.el.find("#methyl").unbind().change(this.update.bind(this));
 
         method.unbind().change(function () {
             var selected = $(this).val();
-            render_template(self.methyl_templates[selected], self.methyl_container);
+            render_template(self.templates[selected], self.container);
         });
 
-        if (this.data.methyl_params) {
-            method.val(this.data.methyl_params.method);
+        if (this.data.methylation_params) {
+            method.val(this.data.methylation_params.method);
         }
     },
 
-    update_methyl: function(ev) {
+    update: function(ev) {
         var enabled = $(ev.target).is(":checked"),
             method = this.el.find("#alignment");
 
         var el = $(document.getElementById(method.val()));
 
         if (enabled) {
-            this.data.methyl_params = $.extend({}, this.data.methyl_params, {method: method.val()});
+            this.data.methylation_params = $.extend({}, this.data.methylation_params, {method: method.val()});
             el.show();
             method.removeAttr("disabled");
-            this.methyl_container.slideDown();
+            this.container.slideDown();
             var selected = $("#alignment").val();
-            render_template(this.methyl_templates[selected], this.methyl_container);
+            render_template(this.templates[selected], this.container);
         } else {
-            this.data.methyl_params = undefined;
+            this.data.methylation_params = undefined;
             method.attr("disabled", 1);
-            this.methyl_container.slideUp();
+            this.container.slideUp();
         }
     },
 
@@ -300,24 +300,24 @@ $.extend(MethylationView.prototype, {
 
         if (enabled) {
             if (method === "bismark") {
-                this.data.methyl_params = {
+                this.data.methylation_params = {
                     method: method,
                     'bismark-deduplicate': this.el.find('#bismark-deduplicate').is(":checked"),
                     'bismark-min_converage': this.el.find('#bismark-min_coverage').val(),
                 };
                 if (paired) {
-                    this.data.methyl_params['--ignore'] = this.el.find('#--ignore').val();
-                    this.data.methyl_params['--ignore_3prime'] = this.el.find('#--ignore_3prime').val();
-                    this.data.methyl_params['--ignore_r2'] = this.el.find('#--ignore_r2').val();
-                    this.data.methyl_params['--ignore_3prime_r2'] = this.el.find('#--ignore_3prime_r2').val();
+                    this.data.methylation_params['--ignore'] = this.el.find('#--ignore').val();
+                    this.data.methylation_params['--ignore_3prime'] = this.el.find('#--ignore_3prime').val();
+                    this.data.methylation_params['--ignore_r2'] = this.el.find('#--ignore_r2').val();
+                    this.data.methylation_params['--ignore_3prime_r2'] = this.el.find('#--ignore_3prime_r2').val();
                 }
                 else { // single-ended
-                    this.data.methyl_params['--ignore'] = this.el.find('#--ignore').val();
-                    this.data.methyl_params['--ignore_3prime'] = this.el.find('#--ignore3prime').val();
+                    this.data.methylation_params['--ignore'] = this.el.find('#--ignore').val();
+                    this.data.methylation_params['--ignore_3prime'] = this.el.find('#--ignore3prime').val();
                 }
             }
             else if (method === "bwameth") {
-                this.data.methyl_params = {
+                this.data.methylation_params = {
                     method: method,
                     'picard-deduplicate': this.el.find('#picard-deduplicate').is(":checked"),
                     'pileometh-min_converage': this.el.find('#pileometh-min_coverage').val(),
