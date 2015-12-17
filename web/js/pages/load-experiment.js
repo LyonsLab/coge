@@ -240,7 +240,8 @@ $.extend(ExperimentDescriptionView.prototype, {
 
 // Methylation analysis options
 
-function MethylationView() {
+function MethylationView(opts) {
+	this.format = opts.format;
     this.data = {};
     this.initialize();
 };
@@ -295,8 +296,7 @@ $.extend(MethylationView.prototype, {
     is_valid: function() {
         var enabled = this.el.find("#methyl :checked");
         var method = this.el.find("#alignment").val();
-        var single = true;  // Placeholders for passing in single or paired end status
-        var paired = true;
+        var paired = this.format.is_paired();
 
         if (enabled) {
             if (method === "bismark") {
@@ -305,15 +305,15 @@ $.extend(MethylationView.prototype, {
                     'bismark-deduplicate': this.el.find('#bismark-deduplicate').is(":checked"),
                     'bismark-min_converage': this.el.find('#bismark-min_coverage').val(),
                 };
-                if (single) {
-                    this.data.methyl_params['--ignore'] = this.el.find('#--ignore').val();
-                    this.data.methyl_params['--ignore_3prime'] = this.el.find('#--ignore3prime').val();
-                }
-                else if (paired) {
+                if (paired) {
                     this.data.methyl_params['--ignore'] = this.el.find('#--ignore').val();
                     this.data.methyl_params['--ignore_3prime'] = this.el.find('#--ignore_3prime').val();
                     this.data.methyl_params['--ignore_r2'] = this.el.find('#--ignore_r2').val();
                     this.data.methyl_params['--ignore_3prime_r2'] = this.el.find('#--ignore_3prime_r2').val();
+                }
+                else { // single-ended
+                    this.data.methyl_params['--ignore'] = this.el.find('#--ignore').val();
+                    this.data.methyl_params['--ignore_3prime'] = this.el.find('#--ignore3prime').val();
                 }
             }
             else if (method === "bwameth") {
@@ -330,7 +330,7 @@ $.extend(MethylationView.prototype, {
     },
 
     get_options: function() {
-    return this.data;
+    	return this.data;
     },
 });
 
@@ -430,12 +430,12 @@ $.extend(FindSNPView.prototype, {
     },
 });
 
-function FormatView() {
+function ReadFormatView() {
     this.initialize();
     this.data = {};
 }
 
-$.extend(FormatView.prototype, {
+$.extend(ReadFormatView.prototype, {
     initialize: function() {
         this.el = $($("#format-template").html());
         this.container = this.el.find("#format-container");
@@ -456,6 +456,10 @@ $.extend(FormatView.prototype, {
 
         return this.data;
     },
+    
+    is_paired: function() {
+    	return this.get_options().read_type;
+    }
 });
 
 function TrimmingView() {
@@ -763,12 +767,12 @@ function FastqView() {
 
 $.extend(FastqView.prototype, {
     initialize: function() {
-    	this.format_view = new FormatView();
+    	this.format_view = new ReadFormatView();
     	this.trim_view = new TrimmingView();
     	this.align_view = new AlignmentView();
         this.expression_view = new ExpressionView();
         this.snp_view = new FindSNPView();
-        this.methylation_view = new MethylationView();
+        this.methylation_view = new MethylationView({ format: this.format_view });
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
