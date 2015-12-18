@@ -274,22 +274,24 @@ $.extend(MethylationView.prototype, {
     },
 
     update: function(ev) {
-        var enabled = $(ev.target).is(":checked"),
-            method = this.el.find("#alignment");
+        var checkbox = $(ev.target);
+        var enabled = checkbox.is(":checked"); 
+        var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
+        var template = this.templates[selected];
+        var el = $(document.getElementById(selected));
 
-        var el = $(document.getElementById(method.val()));
-
-        if (enabled) {
-            this.data.methylation_params = $.extend({}, this.data.methylation_params, {method: method.val()});
-            el.show();
-            method.removeAttr("disabled");
+        if (enabled && template) {
+            this.data.methylation_params = $.extend({}, this.data.methylation_params, {method: selected});
+        	el.show();
             this.container.slideDown();
-            var selected = $("#alignment").val();
-            render_template(this.templates[selected], this.container);
-        } else {
+        	render_template(template, this.container);
+        } 
+        else {
             this.data.methylation_params = undefined;
-            method.attr("disabled", 1);
-            this.container.slideUp();
+            checkbox.attr('checked', false); // uncheck it
+            this.container.hide();
+            if (!template)
+            	this.container.html('<span class="alert indent">Please select one of these two aligners above:  Bismark or BWAmeth</span>').show();
         }
     },
 
