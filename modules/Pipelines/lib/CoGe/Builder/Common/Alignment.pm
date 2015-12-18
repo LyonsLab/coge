@@ -100,7 +100,8 @@ sub build {
                 fastq2 => $fastq2,
                 validated => \@validated,
                 staging_dir => $staging_dir,
-                params => $trimming_params
+                read_params => $read_params,
+                trimming_params => $trimming_params
             );
             push @trimmed, @$outputs;
             push @tasks, @$tasks;

@@ -197,7 +197,7 @@
 
 <script id="fastq-template" type="text/template">
     <div class="step">
-    	<div id="format-view"></div>
+    	<div id="read-view"></div>
     	<div id="trim-view"></div>
         <div id="align-view"></div>
         <div id="expression-view"></div>
@@ -269,7 +269,7 @@
 	    <div class="form-field">
 	        <label class="col-md-2 coge-padded-top">Encoding:</label>
 	        <div id="encoding" class="coge-padded-top">
-			    <input name="encoding" type="radio" value="32" checked>
+			    <input name="encoding" type="radio" value="33" checked>
 			    <label for="phred33">phred33</label>
 			    <input name="encoding" type="radio" value="64">
 			    <label for="phred64">phred64</label>
@@ -314,10 +314,12 @@
 		        <label>-m:</label>
 		        <input id="-m" type="number" value="17"/>
 		    </div>
+		    <!--
 		    <div class="form-entry" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)">
 		        <label>--quality-base:</label>
 		        <input id="--quality-base" type="number" value="32"/>
 		    </div>
+		    -->
 		</div>
 	</div>
 </script>
