@@ -326,10 +326,19 @@
 	<div class="form-field">
 		<label class="col-md-2">Trim Galore: (<a href="http://www.bioinformatics.babraham.ac.uk/projects/trim_galore/" target="_blank" class="small link">docs</a>)</label>
 		<div class="form-group">
-			<div class="form-entry" title="Trim low-quality ends from reads in addition to adapter removal">
+			<div class="form-entry" title="Used to trim low-quality ends from reads before adapter removal.">
 		        <label>-q:</label>
 		        <input id="-q" type="number" value="20"/>
 		    </div>
+			<div class="form-entry" title="Discard reads with a length shorter than indicated.">
+				<label>--length</label>
+				<input id="--length" type="number" value="20"/>
+			</div>
+			<div class="form-entry" title="Override automatic adapter detection with a nucleotide string of your choosing.">
+				<label>-a</label>
+				<input id="-a-chk" type="checkbox"/>
+				<input id="-a" type="text"/>
+			</div>
 		</div>
 	</div>
 </script>
@@ -351,7 +360,7 @@
 	            <option value="gsnap" selected>GSNAP</option>
 	            <option value="tophat">TopHat/Bowtie2</option>
 	            <option value="hisat2">HISAT2</option>
-	            <option value="bismark">Bismark (methylation)</option>
+	            <option value="bismark">Bismark/Bowtie2 (methylation)</option>
 	            <option value="bwameth">BWAmeth (methylation)</option>
 	        </select>
 	    </div>
@@ -430,9 +439,16 @@
 <script id="bismark-template" type="text/template">
 	<div id="bismark">
 	    <div class="form-field">
-	        <label class="col-md-2">Bismark: (<a href="http://www.bioinformatics.babraham.ac.uk/projects/bismark/"_blank" class="small link">docs</a>)</label>
-	        <div>
-	        Default options
+			<label class="col-md-2">Bismark: (<a href="http://www.bioinformatics.babraham.ac.uk/projects/bismark/"_blank" class="small link">docs</a>)</label>
+			<div class="form-group">
+				<div class="form-entry" title="Number of mismatches allowed in the bowtie2 alignment seed region (only 0 or 1 allowed).">
+					<label>-N</label>
+					<input id="-N" type="number" value="0"/>
+				</div>
+				<div class="form-entry" title="Seed length for bowtie2 alignment.">
+					<label>-L</label>
+					<input id="-L" type="number" value="20"/>
+				</div>
 	        </div>
 	    </div>
 	</div>
