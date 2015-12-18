@@ -80,6 +80,7 @@ sub build {
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 load_id => $load_id,
+                read_params => $self->params->{read_params},
                 trimming_params => $self->params->{trimming_params},
                 alignment_params => $self->params->{alignment_params}
             );

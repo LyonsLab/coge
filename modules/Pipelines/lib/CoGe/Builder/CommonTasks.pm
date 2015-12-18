@@ -28,7 +28,7 @@ our @EXPORT = qw(
     create_notebook_job create_bam_sort_job create_iget_job
     create_load_annotation_job create_data_retrieval_workflow
     send_email_job add_items_to_notebook_job create_hisat2_workflow
-    export_experiment_job
+    export_experiment_job create_cutadapt_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -843,11 +843,12 @@ sub create_cutadapt_job {
     my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
-    my $params = $opts{params} // {}; #/
-    my $q = $params->{'-q'} // 25; #/
-    my $quality = $params->{'--quality-base'} // 32; #/
-    my $m = $params->{'-m'} // 17; #/
-    my $read_type = $params->{read_type} // 'single'; #/
+    my $trimming_params = $opts{trimming_params} // {}; #/
+    my $q = $trimming_params->{'-q'} // 25; #/
+    my $m = $trimming_params->{'-m'} // 17; #/
+    my $read_params = $opts{read_params} // {}; #/
+    my $quality = $read_params->{encoding} // 33; #/
+    my $read_type = $read_params->{read_type} // 'single'; #/
 
     $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
     $validated = [ $validated ] unless (ref($validated) eq 'ARRAY');
@@ -887,21 +888,23 @@ sub create_cutadapt_workflow {
     my $fastq2 = $opts{fastq2}; # array ref of right reads (or undef if single-ended)
     my $validated = $opts{validated};
     my $staging_dir = $opts{staging_dir};
-    my $params = $opts{params};
+    my $read_params = $opts{read_params};
+    my $trimming_params = $opts{trimming_params};
     
     my (@tasks, @outputs);
 
     if (not defined $fastq2) { # single-ended
         # Create cutadapt task for each file
         foreach my $file (@$fastq1) {
-            my $trim_task = create_cutadapt_job(
+            my $task = create_cutadapt_job(
                 fastq => $file,
                 validated => $validated,
                 staging_dir => $staging_dir,
-                params => $params
+                read_params => $read_params,
+                trimming_params => $trimming_params
             );
-            push @outputs, $trim_task->{outputs}->[0];
-            push @tasks, $trim_task;
+            push @outputs, $task->{outputs}->[0];
+            push @tasks, $task;
         }
     }
     else {
@@ -909,21 +912,19 @@ sub create_cutadapt_workflow {
         for (my $i = 0;  $i < @$fastq1;  $i++) { 
             my $file1 = shift @$fastq1;
             my $file2 = shift @$fastq2;
-            my $trim_task = create_cutadapt_job(
+            my $task = create_cutadapt_job(
                 fastq => [ $file1, $file2 ],
                 validated => $validated,
                 staging_dir => $staging_dir,
-                params => $params
+                read_params => $read_params,
+                trimming_params => $trimming_params
             );
-            push @outputs, @{$trim_task->{outputs}};
-            push @tasks, $trim_task;
+            push @outputs, @{$task->{outputs}};
+            push @tasks, $task;
         }
     }
     
-    return {
-        tasks => \@tasks,
-        outputs => \@outputs
-    };
+    return ( \@tasks, \@outputs );
 }
 
 sub create_gff_generation_job {

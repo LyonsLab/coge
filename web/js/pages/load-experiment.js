@@ -451,7 +451,7 @@ $.extend(ReadFormatView.prototype, {
     },
 
     get_options: function() {
-        this.data.format_params = {
+        this.data.read_params = {
         	read_type: this.el.find("#read_type :checked").val(),
         	encoding: this.el.find("#encoding :checked").val(),
         };
@@ -460,7 +460,7 @@ $.extend(ReadFormatView.prototype, {
     },
     
     is_paired: function() {
-    	return this.get_options().read_type;
+    	return (this.get_options().read_type === 'paired');
     }
 });
 
@@ -500,8 +500,8 @@ $.extend(TrimmingView.prototype, {
                 trimming_params: {
                 	'trimmer': 'cutadapt',
                     '-q': this.el.find("[id='-q']").val(),
-                    '-m': this.el.find("[id='-m']").val(),
-                    '--quality-base': this.el.find("[id='--quality-base']").val()
+                    '-m': this.el.find("[id='-m']").val()
+                    //'--quality-base': this.el.find("[id='--quality-base']").val()
                 }
             };
         } 
@@ -769,12 +769,12 @@ function FastqView() {
 
 $.extend(FastqView.prototype, {
     initialize: function() {
-    	this.format_view = new ReadFormatView();
+    	this.read_view = new ReadFormatView();
     	this.trim_view = new TrimmingView();
     	this.align_view = new AlignmentView();
         this.expression_view = new ExpressionView();
         this.snp_view = new FindSNPView();
-        this.methylation_view = new MethylationView({ format: this.format_view });
+        this.methylation_view = new MethylationView({ format: this.read_view });
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
@@ -785,7 +785,7 @@ $.extend(FastqView.prototype, {
                 "#snp-view": this.snp_view,
                 "#align-view": this.align_view,
                 '#trim-view': this.trim_view,
-                '#format-view': this.format_view
+                '#read-view': this.read_view
             }
         });
 
@@ -798,6 +798,9 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
+    	if (!this.read_view.is_valid())
+            return false;
+    	
     	if (!this.trim_view.is_valid())
             return false;
     	
@@ -821,7 +824,8 @@ $.extend(FastqView.prototype, {
                         this.expression_view.get_options(),
                         this.snp_view.get_options(),
                         this.align_view.get_options(),
-                        this.trim_view.get_options());
+                        this.trim_view.get_options(),
+                        this.read_view.get_options());
     },
 });
 
@@ -1017,21 +1021,22 @@ function load(experiment) {
 			user_name: USER_NAME
 		},
 		parameters: {
-			genome_id:         experiment.gid,
-			metadata:          experiment.metadata,
-			alignment_params:  experiment.options.alignment_params,
-			trimming_params:   experiment.options.trimming_params,
-			expression_params: experiment.options.expression_params,
-			snp_params:        experiment.options.snp_params,
-            methyl_params:     experiment.options.methyl_params,
-			normalize:         experiment.options.normalize,
-			normalize_method:  experiment.options.normalize_method,
-			email:             experiment.options.email,
-			notebook:          experiment.options.notebook,
-			notebook_name:     experiment.options.notebook_name,
-			notebook_id:       experiment.options.notebook_id,
-			source_data:       experiment.data,
-			load_id:           load_id
+			genome_id:          experiment.gid,
+			metadata:           experiment.metadata,
+			read_params:    	experiment.options.read_params,
+			trimming_params:    experiment.options.trimming_params,
+			alignment_params:   experiment.options.alignment_params,
+			expression_params:  experiment.options.expression_params,
+			snp_params:         experiment.options.snp_params,
+            methylation_params: experiment.options.methylation_params,
+			normalize:          experiment.options.normalize,
+			normalize_method:   experiment.options.normalize_method,
+			email:              experiment.options.email,
+			notebook:           experiment.options.notebook,
+			notebook_name:      experiment.options.notebook_name,
+			notebook_id:        experiment.options.notebook_id,
+			source_data:        experiment.data,
+			load_id:            load_id
 		}
 	};
 	
