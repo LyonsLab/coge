@@ -29,6 +29,7 @@ our @EXPORT = qw(
     create_load_annotation_job create_data_retrieval_workflow
     send_email_job add_items_to_notebook_job create_hisat2_workflow
     export_experiment_job create_cutadapt_workflow
+    create_trimgalore_job create_trimgalore_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -913,6 +914,113 @@ sub create_cutadapt_workflow {
             my $file1 = shift @$fastq1;
             my $file2 = shift @$fastq2;
             my $task = create_cutadapt_job(
+                fastq => [ $file1, $file2 ],
+                validated => $validated,
+                staging_dir => $staging_dir,
+                read_params => $read_params,
+                trimming_params => $trimming_params
+            );
+            push @outputs, @{$task->{outputs}};
+            push @tasks, $task;
+        }
+    }
+    
+    return ( \@tasks, \@outputs );
+}
+
+sub create_trimgalore_job {
+    my %opts = @_;
+
+    # Required params
+    my $fastq = $opts{fastq};            # for single fastq file (backwards compatibility) or two paired-end fastq files (new functionality)
+    my $validated = $opts{validated};    # input dependency from previous task, one or two files based on fastq arg
+    my $staging_dir = $opts{staging_dir};
+
+    # Optional arguments
+    my $trimming_params = $opts{trimming_params} // {}; #/
+    my $q = $trimming_params->{'-q'} // 20; #/
+    my $length = $trimming_params->{'-length'} // 20; #/
+    my $a = $trimming_params->{'-a'};
+    my $read_params = $opts{read_params} // {}; #/
+    my $encoding = $read_params->{encoding} // 33; #/
+    my $read_type = $read_params->{read_type} // 'single'; #/
+
+    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
+    $validated = [ $validated ] unless (ref($validated) eq 'ARRAY');
+    
+    my $name = join(', ', map { basename($_) } @$fastq);
+    my @inputs = ( @$fastq, @$validated);
+    my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
+
+    # Build up command/arguments string
+    my $cmd = $CONF->{TRIMGALORE};
+    die "ERROR: TRIMGALORE is not in the config." unless $cmd;
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
+    # Create staging dir
+    $cmd = "mkdir $staging_dir ; " . $cmd;
+
+    my $args = [
+        ['--output_dir', $staging_dir, 0],
+        ['-q', $q, 0],
+        ['--length', $length, 0],
+    ];
+    
+    my $phred = ($encoding == 64 ? '--phred64' : '--phred33');
+    push @$args, [$phred, '', 0];
+    
+    if (defined $a) {
+        push @$args, ['-a', '"'.$a.'"', 0];
+    }
+    
+    if ($read_type eq 'paired') {
+        push @$args, ['--paired', join(' ', @$fastq), 0];
+    }
+    else {
+        push @$args, ['', join(' ', @$fastq), 0];
+    }
+
+    return {
+        cmd => catfile($cmd),
+        script => undef,
+        args => $args,
+        inputs => \@inputs,
+        outputs => \@outputs,
+        description => "Trimming (trimgalore) $name..."
+    };
+}
+
+sub create_trimgalore_workflow {
+    my %opts = @_;
+    my $fastq1 = $opts{fastq1}; # array ref of left reads (or all reads if single-ended)
+    my $fastq2 = $opts{fastq2}; # array ref of right reads (or undef if single-ended)
+    my $validated = $opts{validated};
+    my $staging_dir = $opts{staging_dir};
+    my $read_params = $opts{read_params};
+    my $trimming_params = $opts{trimming_params};
+    
+    my (@tasks, @outputs);
+
+    if (not defined $fastq2) { # single-ended
+        # Create trimgalore task for each file
+        foreach my $file (@$fastq1) {
+            my $task = create_trimgalore_job(
+                fastq => $file,
+                validated => $validated,
+                staging_dir => $staging_dir,
+                read_params => $read_params,
+                trimming_params => $trimming_params
+            );
+            push @outputs, $task->{outputs}->[0];
+            push @tasks, $task;
+        }
+    }
+    else {
+        # Create trimgalore task for each file pair
+        for (my $i = 0;  $i < @$fastq1;  $i++) { 
+            my $file1 = shift @$fastq1;
+            my $file2 = shift @$fastq2;
+            my $task = create_trimgalore_job(
                 fastq => [ $file1, $file2 ],
                 validated => $validated,
                 staging_dir => $staging_dir,
