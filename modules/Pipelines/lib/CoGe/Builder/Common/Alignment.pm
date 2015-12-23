@@ -179,9 +179,20 @@ sub build {
         );
     }
     elsif ($alignment_params && $alignment_params->{tool} eq 'bismark') {
+        ($alignment_tasks, $alignment_results) = create_bismark_workflow(
+            gid => $gid,
+            fasta => catfile($fasta_cache_dir, $reheader_fasta),
+            fastq => \@trimmed,
+            validated => \@validated,
+            read_type => $read_params->{read_type},
+            staging_dir => $staging_dir,
+            params => $alignment_params,
+        );
+    }
+    elsif ($alignment_params && $alignment_params->{tool} eq 'bwameth') {
         #TODO
     }
-    else { # ($alignment_params->{tool} eq 'gsnap') {
+    else { # ($alignment_params->{tool} eq 'gsnap') { # default
         ($alignment_tasks, $alignment_results) = create_gsnap_workflow(
             gid => $gid,
             fasta => catfile($fasta_cache_dir, $reheader_fasta),

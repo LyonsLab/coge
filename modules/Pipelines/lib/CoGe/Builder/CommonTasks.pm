@@ -30,6 +30,7 @@ our @EXPORT = qw(
     send_email_job add_items_to_notebook_job create_hisat2_workflow
     export_experiment_job create_cutadapt_workflow
     create_trimgalore_job create_trimgalore_workflow
+    create_bismark_job create_bismark_index_job create_bismark_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -950,7 +951,7 @@ sub create_trimgalore_job {
     
     my $name = join(', ', map { basename($_) } @$fastq);
     my @inputs = ( @$fastq, @$validated);
-    my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
+    my @outputs = map { catfile($staging_dir, to_filename($_) . '_trimmed.fq') } @$fastq;
 
     # Build up command/arguments string
     my $cmd = $CONF->{TRIMGALORE};
@@ -1284,6 +1285,129 @@ sub create_tophat_job {
             catfile($staging_dir, "accepted_hits.bam")
         ],
         description => "Aligning sequences (tophat)..."
+    );
+}
+
+sub create_bismark_workflow {
+    my %opts = @_;
+
+    # Required arguments
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $validated = $opts{validated};
+    my $staging_dir = $opts{staging_dir};
+    my $read_type = $opts{read_type};
+    my $params = $opts{params};
+
+    my ($index, %bowtie) = create_bismark_index_job($gid, $fasta);
+    
+    my %tophat = create_bismark_job(
+        staging_dir => $staging_dir,
+        fasta => $fasta,
+        fastq => $fastq,
+        validated => $validated,
+        index_name => $index,
+        index_files => ($bowtie{outputs}),
+        read_type => $read_type,
+        params => $params
+    );
+
+    # Return the bam output name and jobs required
+    my @tasks = ( \%bowtie, \%tophat );
+    my %results = (
+        bam_file => $tophat{outputs}->[0]
+    );
+    return \@tasks, \%results;
+}
+
+sub create_bismark_index_job {
+    my $gid = shift;
+    my $fasta = shift;
+    my $name = to_filename($fasta);
+    
+    my $cmd = $CONF->{BISMARK_BUILD};
+    my $BISMARK_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bismark_index");
+    die "ERROR: BISMARK_BUILD is not in the config." unless ($cmd);
+    
+    $cmd = "mkdir -p $BISMARK_CACHE_DIR ; " .
+           "cp $fasta $BISMARK_CACHE_DIR/$name.fa ; " . # requires fasta file to end in .fa or .fasta, not .faa
+           $cmd;
+
+    return catdir($BISMARK_CACHE_DIR, $name), (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            [$BISMARK_CACHE_DIR, '', 0],
+        ],
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            catfile($BISMARK_CACHE_DIR, $name . ".1.bt2"),
+            catfile($BISMARK_CACHE_DIR, $name . ".2.bt2"),
+            catfile($BISMARK_CACHE_DIR, $name . ".3.bt2"),
+            catfile($BISMARK_CACHE_DIR, $name . ".4.bt2"),
+            catfile($BISMARK_CACHE_DIR, $name . ".rev.1.bt2"),
+            catfile($BISMARK_CACHE_DIR, $name . ".rev.2.bt2")
+        ],
+        description => "Indexing genome sequence with Bismark..."
+    );
+}
+
+sub create_bismark_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $staging_dir = $opts{staging_dir};
+    my $fasta       = $opts{fasta};
+    my $fastq       = $opts{fastq};
+    my $validated   = $opts{validated};
+    my $index_name  = basename($opts{index_name});
+    my $index_files = $opts{index_files};
+    my $read_type   = $opts{read_type} // 'single'; #/
+    my $params      = $opts{params};
+
+    # Optional arguments
+    my $N = $params->{'-N'} // 0; #/
+    my $L = $params->{'-L'} // 20; #/
+
+    # Setup input dependencies
+    my $inputs = [
+        $fasta,
+        @$fastq,
+        @$validated,
+        @$index_files
+    ];
+
+    # Build up command/arguments string
+    my $cmd = $CONF->{BISMARK};
+    die "ERROR: BISMARK is not in the config." unless $cmd;
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
+    my $args = [
+        ['-N', $N, 0],
+        ['-L', $L, 0],
+        [$index_name, '', 0]
+    ];
+    
+    if ($read_type eq 'paired') {
+        push @$args, ['-1', shift @$fastq, 0];
+        push @$args, ['-2', shift @$fastq, 0];
+    }
+    else {
+        push @$args, ['', join(' ', @$fastq), 0];
+    }
+    
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => $inputs,
+        outputs => [
+            catfile($staging_dir, "accepted_hits.bam")
+        ],
+        description => "Aligning sequences (bismark)..."
     );
 }
 
