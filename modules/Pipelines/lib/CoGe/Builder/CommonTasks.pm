@@ -844,7 +844,7 @@ sub create_cutadapt_job {
 
     # Optional arguments
     my $params = $opts{params} // {}; #/
-    my $q = $params->{'-q'} // 25; #/
+    my $q = $params->{'-q'} // 20; #/
     my $quality = $params->{'--quality-base'} // 33; #/
     my $m = $params->{'-m'} // 17; #/
     my $read_type = $params->{read_type} // 'single'; #/
