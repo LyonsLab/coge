@@ -25,9 +25,9 @@ def parse_bismark(bismark_summary, input_dict, strandedness):  # Parse bismark_s
         chrm = row[2]  # Chromosome number saved to "chrm"
         pos = row[3]  # Position saved to "pos"
         met = row[1]  # Methylation status saved to "met"
-        if chrm not in input_dict:  # Add chromosome number as key if not in dict
-            input_dict[chrm] = {}  # Make its value an empty dict
-        if pos not in input_dict[chrm]:  # Add position as key in second level if not already in dict
+        if chrm not in input_dict:
+            input_dict[chrm] = {}
+        if pos not in input_dict[chrm]:
             input_dict[chrm][pos] = {'metc': 0, 'total': 0}  # Make its value the running counts of methyl status
         if met == '+':
             input_dict[chrm][pos]['metc'] += 1
@@ -103,7 +103,7 @@ if top_path:
 if bottom_path:
     file_validity(parser, bottom_path)
 if not comprehensive_path and not top_path and not bottom_path:
-    exit('You must specify at least one input file!')  # Output error to stderr and exit if no file specified
+    exit('You must specify at least one input file!')
 
 # Let the user know it's working
 
@@ -164,9 +164,9 @@ if unfiltered == 't':
 # Iterate over the dictionary for file-outputs
 
 for chrm in bismark_data:
-    for pos in bismark_data[chrm]:  # Nested loop
-        chrm_key = fix_chromosome_id(chrm)  # Save chromosome number key, position key, and methylation fraction
-        pos_key = pos
+    for pos in bismark_data[chrm]:
+        chrm_key = fix_chromosome_id(chrm)
+        pos_key = int(pos) - 1  # Subtract 1 from position to fix alignment with sequence in CoGe
         dec_met = bismark_data[chrm][pos]['dec_met']
         total = bismark_data[chrm][pos]['total']
         strand = bismark_data[chrm][pos]['strand']
@@ -176,7 +176,5 @@ for chrm in bismark_data:
         if unfiltered == 't':
             coge_formatted_unfiltered.writerow(
                 [chrm_key, pos_key, pos_key, strand, dec_met, total])  # Output as unfiltered .csv file
-
-# Ultimate victory
 
 print('\nDone!')
