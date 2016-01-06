@@ -107,7 +107,16 @@ sub build {
             push @tasks, @$tasks;
         }
         elsif ($trimming_params->{trimmer} eq 'trimgalore') {
-            
+            my ($tasks, $outputs) = create_trimgalore_workflow(
+                fastq1 => $fastq1,
+                fastq2 => $fastq2,
+                validated => \@validated,
+                staging_dir => $staging_dir,
+                read_params => $read_params,
+                trimming_params => $trimming_params
+            );
+            push @trimmed, @$outputs;
+            push @tasks, @$tasks;
         }
     }
     else { # no trimming
@@ -169,7 +178,21 @@ sub build {
             params => $alignment_params,
         );
     }
-    else { # ($alignment_params->{tool} eq 'gsnap') {
+    elsif ($alignment_params && $alignment_params->{tool} eq 'bismark') {
+        ($alignment_tasks, $alignment_results) = create_bismark_workflow(
+            gid => $gid,
+            fasta => catfile($fasta_cache_dir, $reheader_fasta),
+            fastq => \@trimmed,
+            validated => \@validated,
+            read_type => $read_params->{read_type},
+            staging_dir => $staging_dir,
+            params => $alignment_params,
+        );
+    }
+    elsif ($alignment_params && $alignment_params->{tool} eq 'bwameth') {
+        #TODO
+    }
+    else { # ($alignment_params->{tool} eq 'gsnap') { # default
         ($alignment_tasks, $alignment_results) = create_gsnap_workflow(
             gid => $gid,
             fasta => catfile($fasta_cache_dir, $reheader_fasta),

@@ -166,7 +166,7 @@ sub format_time_diff {
 }
 
 sub to_filename {
-    my ($name, undef, undef) = fileparse(shift);#, qr/\.[^.]*/);
+    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
     return $name;
 }
 
