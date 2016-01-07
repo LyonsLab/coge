@@ -58,23 +58,28 @@ function do_export() {
 }
 function do_plot() {
 	var cols = $('#plot_columns option:selected');
-    $('#plot').empty();
+	var p = $('#plot');
+    p.empty();
     if (cols.length) {
-        $('#plot').css('display','block');
-        var series = [];
-        for (var i=0; i<cols.length; i++) {
-	        var d = get_plot_data(cols[i].value);
-	        var x = [];
-	        var y = [];
-	        var text = [];
-	        for (var row=0; row<d.length; row++) {
-	        	x.push(d[row][0]);
-	        	y.push(d[row][1]);
-	        	text.push(d[row][2]);
-	        }
-	        series.push({ mode: 'markers', name: cols[i].text, text: text, x: x, y: y });
-        }
-        Plotly.newPlot( $('#plot')[0], series, { hovermode: 'closest', margin: { t: 0 }}, { displayModeBar: false });
+        p.css('display','block');
+    	var chromosome = $('#chromosomes option:selected').text();
+    	if (chromosome == 'All chromosomes') {
+    		var chromosomes = get_chromosomes();
+    		var num_cols = 1;
+    		while (num_cols * num_cols < chromosomes.length)
+    			num_cols++;
+    		var w = p.width() / num_cols;
+    		var num_rows = Math.floor(chromosomes.length / num_cols);
+    		if (chromosomes.length % num_cols)
+    			num_rows++;
+    		var h = p.height() / num_rows;
+    		for (var i=0; i<chromosomes.length; i++) {
+    			var e = $('<div style="display:inline"></div>').width(w).height(h);
+	    		p.append(e);
+	    		plot(chromosomes[i], cols, e);
+    		}
+    	} else
+		   	plot($('#chromosomes option:selected').text(), cols, p[0]);
     }
 }
 function export_dialog() {
@@ -93,6 +98,14 @@ function export_dialog() {
 		resizable: false
 	});
 }
+function get_chromosomes() {
+	var obj = data[$('#types option:selected').text()];
+	var keys = [];
+	for (key in obj)
+		keys.push(key);
+	keys.sort(natural_sort);
+	return keys;
+}
 function get_param(name) {
     var search = decodeURIComponent(window.location.search.substring(1));
     var nvp = search.split('&');
@@ -100,11 +113,11 @@ function get_param(name) {
     	if (nvp[i].substring(0, name.length) == name)
     		return nvp[i].substring(name.length + 1);
 };
-function get_plot_data(index) {
+function get_plot_data(chromosome, index) {
 	var a = [];
 	var type = $('#types option:selected').text();
-	var chromosome = $('#chromosomes option:selected').text();
-	if (chromosome == 'All chromosomes') {
+//	var chromosome = $('#chromosomes option:selected').text();
+/* 	if (chromosome == 'All chromosomes') {
 		var arrays = [];
 		for (var key in data[type]) {
 			var d = data[type][key];
@@ -113,10 +126,10 @@ function get_plot_data(index) {
 					a.push([(parseInt(d[i][2]) + parseInt(d[i][3])) / 2, d[i][index], d[i][0] + '<br>' + d[i][1]]);
 		}
 	} else {
-		var d = data[type][chromosome];
+ */		var d = data[type][chromosome];
 		for (var i=0; i<d.length; i++)
 			a.push([(parseInt(d[i][2]) + parseInt(d[i][3])) / 2, d[i][index], d[i][1]]);
-	}
+//	}
 	a.sort(function(a,b){return a[0]-b[0];});
 	return a;
 }
@@ -193,6 +206,22 @@ function parse_data(d) {
 	set_chromosomes();
 	set_data();
 }
+function plot(chromosome, cols, e) {
+    var series = [];
+    for (var i=0; i<cols.length; i++) {
+        var d = get_plot_data(chromosome, cols[i].value);
+        var x = [];
+        var y = [];
+        var text = [];
+        for (var row=0; row<d.length; row++) {
+        	x.push(d[row][0]);
+        	y.push(d[row][1]);
+        	text.push(d[row][2]);
+        }
+        series.push({ mode: 'markers', name: cols[i].text, text: text, x: x, y: y });
+    }
+    Plotly.newPlot(e, series, { hovermode: 'closest', margin: { t: 0 }}, { displayModeBar: false });
+}
 function plot_dialog() {
     $('#plot_dialog').dialog('destroy');
 	$('#plot_dialog').dialog({
@@ -251,6 +280,7 @@ function set_data() {
 }
 function chromosome_changed() {
 	$('#busy').show();
+	dt.clear();
 	dt.destroy();
 	$('#main').empty();
 	setTimeout(set_data,10);
