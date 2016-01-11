@@ -1137,7 +1137,7 @@ sub create_hisat2_job {
         args => $args,
         inputs => [ @$fastq, @$index_files ],
         outputs => [ catfile($staging_dir, 'hisat2.sam') ],
-        description => "Aligning sequences (HISAT2)..."
+        description => "Aligning sequences with HISAT2..."
     );
 }
 
@@ -1284,7 +1284,7 @@ sub create_tophat_job {
         outputs => [
             catfile($staging_dir, "accepted_hits.bam")
         ],
-        description => "Aligning sequences (tophat)..."
+        description => "Aligning sequences with TopHat..."
     );
 }
 
@@ -1344,12 +1344,18 @@ sub create_bismark_index_job {
             $fasta
         ],
         outputs => [
-            catfile($BISMARK_CACHE_DIR, $name . ".1.bt2"),
-            catfile($BISMARK_CACHE_DIR, $name . ".2.bt2"),
-            catfile($BISMARK_CACHE_DIR, $name . ".3.bt2"),
-            catfile($BISMARK_CACHE_DIR, $name . ".4.bt2"),
-            catfile($BISMARK_CACHE_DIR, $name . ".rev.1.bt2"),
-            catfile($BISMARK_CACHE_DIR, $name . ".rev.2.bt2")
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.1.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.2.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.3.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.4.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.rev.1.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.rev.2.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.1.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.2.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.3.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.4.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.rev.1.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.rev.2.bt2'),
         ],
         description => "Indexing genome sequence with Bismark..."
     );
@@ -1407,7 +1413,7 @@ sub create_bismark_job {
         outputs => [
             catfile($staging_dir, "accepted_hits.bam")
         ],
-        description => "Aligning sequences (bismark)..."
+        description => "Aligning sequences with Bismark..."
     );
 }
 
@@ -1618,7 +1624,7 @@ sub create_gsnap_job {
         outputs => [
             catfile($staging_dir, $name . ".sam")
         ],
-        description => "Aligning sequences (gsnap)..."
+        description => "Aligning sequences with GSNAP..."
     );
 }
 
