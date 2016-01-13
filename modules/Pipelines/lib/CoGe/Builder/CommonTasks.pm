@@ -1390,6 +1390,7 @@ sub create_bismark_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
+        ['-p', 4, 0],
         ['-N', $N, 0],
         ['-L', $L, 0],
         [$index_path, '', 0]
