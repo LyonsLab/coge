@@ -909,7 +909,7 @@ sub create_cutadapt_workflow {
             push @tasks, $task;
         }
     }
-    else {
+    else { # paired-end
         # Create cutadapt task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) { 
             my $file1 = shift @$fastq1;
@@ -1300,23 +1300,23 @@ sub create_bismark_workflow {
     my $read_type = $opts{read_type};
     my $params = $opts{params};
 
-    my ($index, %bowtie) = create_bismark_index_job($gid, $fasta);
+    my ($index_path, %index_task) = create_bismark_index_job($gid, $fasta);
     
-    my %tophat = create_bismark_job(
+    my %align_task = create_bismark_job(
         staging_dir => $staging_dir,
         fasta => $fasta,
         fastq => $fastq,
         validated => $validated,
-        index_name => $index,
-        index_files => ($bowtie{outputs}),
+        index_path => $index_path,
+        index_files => ($index_task{outputs}),
         read_type => $read_type,
         params => $params
     );
 
     # Return the bam output name and jobs required
-    my @tasks = ( \%bowtie, \%tophat );
+    my @tasks = ( \%index_task, \%align_task );
     my %results = (
-        bam_file => $tophat{outputs}->[0]
+        bam_file => $align_task{outputs}->[0]
     );
     return \@tasks, \%results;
 }
@@ -1334,7 +1334,7 @@ sub create_bismark_index_job {
            "cp $fasta $BISMARK_CACHE_DIR/$name.fa ; " . # requires fasta file to end in .fa or .fasta, not .faa
            $cmd;
 
-    return catdir($BISMARK_CACHE_DIR, $name), (
+    return $BISMARK_CACHE_DIR, (
         cmd => $cmd,
         script => undef,
         args => [
@@ -1366,10 +1366,9 @@ sub create_bismark_job {
 
     # Required arguments
     my $staging_dir = $opts{staging_dir};
-    my $fasta       = $opts{fasta};
     my $fastq       = $opts{fastq};
     my $validated   = $opts{validated};
-    my $index_name  = basename($opts{index_name});
+    my $index_path  = $opts{index_path};#basename($opts{index_path});
     my $index_files = $opts{index_files};
     my $read_type   = $opts{read_type} // 'single'; #/
     my $params      = $opts{params};
@@ -1380,7 +1379,6 @@ sub create_bismark_job {
 
     # Setup input dependencies
     my $inputs = [
-        $fasta,
         @$fastq,
         @$validated,
         @$index_files
@@ -1394,14 +1392,17 @@ sub create_bismark_job {
     my $args = [
         ['-N', $N, 0],
         ['-L', $L, 0],
-        [$index_name, '', 0]
+        [$index_path, '', 0]
     ];
     
+    my $output_bam;
     if ($read_type eq 'paired') {
         push @$args, ['-1', shift @$fastq, 0];
         push @$args, ['-2', shift @$fastq, 0];
     }
-    else {
+    else { # single-ended
+        ($output_bam) = @$fastq;
+        $output_bam .= '_bismark_bt2.bam';
         push @$args, ['', join(' ', @$fastq), 0];
     }
     
@@ -1411,7 +1412,7 @@ sub create_bismark_job {
         args => $args,
         inputs => $inputs,
         outputs => [
-            catfile($staging_dir, "accepted_hits.bam")
+            catfile($staging_dir, $output_bam)
         ],
         description => "Aligning sequences with Bismark..."
     );
