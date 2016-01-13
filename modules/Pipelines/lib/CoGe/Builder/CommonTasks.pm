@@ -1396,13 +1396,13 @@ sub create_bismark_job {
         [$index_path, '', 0]
     ];
     
-    my $output_bam;
+    my ($output_bam) = @$fastq;
     if ($read_type eq 'paired') {
+        $output_bam .= '_bismark_bt2_pe.bam';
         push @$args, ['-1', shift @$fastq, 0];
         push @$args, ['-2', shift @$fastq, 0];
     }
     else { # single-ended
-        ($output_bam) = @$fastq;
         $output_bam .= '_bismark_bt2.bam';
         push @$args, ['', join(' ', @$fastq), 0];
     }
