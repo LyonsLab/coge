@@ -87,12 +87,14 @@ sub build {
                 print STDERR 'm1: ', join(' ', @$m1), "\n", 'm2: ', join(' ', @$m2), "\n";
                 return { error => $error };
             }
-            $fastq1 = @$m1;
-            $fastq2 = @$m2;
+            $fastq1 = $m1;
+            $fastq2 = $m2;
         }
         else { # default to single-ended
             $fastq1 = \@decompressed;
         }
+        print STDERR 'matt1: ', Dumper $fastq1, "\n";
+        print STDERR 'matt2: ', Dumper $fastq2, "\n";
         
         if ($trimming_params->{trimmer} eq 'cutadapt') {
             my ($tasks, $outputs) = create_cutadapt_workflow(
