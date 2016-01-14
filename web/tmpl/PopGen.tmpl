@@ -24,6 +24,7 @@
 var columns = {};
 var data;
 var dt;
+var lengths;
 var max_chromosomes;
 var num_chromosomes;
 var offset = 0;
@@ -219,6 +220,7 @@ function natural_sort(a, b) {
 }
 function parse_data(d) {
 	data = {};
+	lengths = {};
 	var chromosome;
 	var type;
 	var i = d.indexOf('\n');
@@ -227,7 +229,7 @@ function parse_data(d) {
 		var l = d.substring(start, i);
 		var tokens = l.split('\t');
 		if (l.charAt(0) == '#') {
-			if (tokens.length > 1) {
+			if (tokens.length > 2) {
 				type = tokens[0].substring(1);
 				data[type] = {};
 				tokens.shift();
@@ -235,6 +237,7 @@ function parse_data(d) {
 			} else {
 				chromosome = tokens[0].substring(1);
 				data[type][chromosome] = [];
+				lengths[chromosome] = tokens[1];
 			}
 		} else
 			data[type][chromosome].push(tokens);
@@ -324,8 +327,7 @@ function set_data() {
 	$('#busy').hide();
 }
 function size_sort(a, b) {
-	var type = $('#types option:selected').text();
-//	return data[type][a][];
+	return lengths[a] - lengths[b];
 }
 $(document).ready(ready);
 </script>
