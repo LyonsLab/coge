@@ -360,9 +360,9 @@
 	        <label class="col-md-2">Aligner:</label>
 	        <select id="alignment">
 	            <option value="gsnap" selected>GSNAP</option>
-	            <option value="tophat">TopHat/Bowtie2</option>
+	            <option value="tophat">TopHat2</option>
 	            <option value="hisat2">HISAT2</option>
-	            <option value="bismark">Bismark/Bowtie2 (methylation)</option>
+	            <option value="bismark">Bismark (methylation)</option>
 	            <option value="bwameth">bwameth (methylation)</option>
 	        </select>
 	    </div>
@@ -417,8 +417,8 @@
 
 <script id="tophat-template" type="text/template">
 <div id="tophat">
-    <div class="form-field" title="Instructs TopHat to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number.">
-        <label class="col-md-2">TopHat: (<a href="http://ccb.jhu.edu/software/tophat/manual.shtml" target="_blank" class="small link">docs</a>)</label>
+    <div class="form-field" title="Instructs TopHat2 to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number.">
+        <label class="col-md-2">TopHat2: (<a href="http://ccb.jhu.edu/software/tophat/manual.shtml" target="_blank" class="small link">docs</a>)</label>
         <div>
             <label>-g:</label>
             <input id="-g" type="number" value="1"/>
