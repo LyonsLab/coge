@@ -31,6 +31,7 @@ our @EXPORT = qw(
     export_experiment_job create_cutadapt_workflow
     create_trimgalore_job create_trimgalore_workflow
     create_bismark_job create_bismark_index_job create_bismark_workflow
+    create_bwameth_job create_bwameth_index_job create_bwameth_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -1390,7 +1391,7 @@ sub create_bismark_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
-        ['-p', 4, 0],
+        ['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
         ['-N', $N, 0],
         ['-L', $L, 0],
         [$index_path, '', 0]
@@ -1418,6 +1419,115 @@ sub create_bismark_job {
         description => "Aligning sequences with Bismark..."
     );
 }
+
+sub create_bwameth_workflow {
+    my %opts = @_;
+
+    # Required arguments
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $validated = $opts{validated};
+    my $staging_dir = $opts{staging_dir};
+    my $read_type = $opts{read_type};
+    my $params = $opts{params};
+
+    my ($index_path, %index_task) = create_bwameth_index_job($gid, $fasta);
+    
+    my %align_task = create_bwameth_job(
+        staging_dir => $staging_dir,
+        fasta => $fasta,
+        fastq => $fastq,
+        validated => $validated,
+        index_path => $index_path,
+        index_files => ($index_task{outputs}),
+        read_type => $read_type,
+        params => $params
+    );
+
+    # Return the bam output name and jobs required
+    my @tasks = ( \%index_task, \%align_task );
+    my %results = (
+        bam_file => $align_task{outputs}->[0]
+    );
+    return \@tasks, \%results;
+}
+
+sub create_bwameth_index_job {
+    my $gid = shift;
+    my $fasta = shift;
+    my $name = basename($fasta);
+    
+    my $cmd = $CONF->{BWAMETH} . ' index';
+    my $BWAMETH_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bwameth_index");
+    die "ERROR: BWAMETH is not in the config." unless ($cmd);
+    
+    $cmd = "mkdir -p $BWAMETH_CACHE_DIR ; cd $BWAMETH_CACHE_DIR ; cp $fasta . ; " . $cmd;
+
+    return $BWAMETH_CACHE_DIR, (
+        cmd => $cmd,
+        script => undef,
+        args => [
+            [$name, '', 0],
+        ],
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.amb"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.ann"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.bwt"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.pac"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.sa")
+        ],
+        description => "Indexing genome sequence with bwameth..."
+    );
+}
+
+sub create_bwameth_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $staging_dir = $opts{staging_dir};
+    my $fastq       = $opts{fastq};
+    my $validated   = $opts{validated};
+    my $index_path  = $opts{index_path};#basename($opts{index_path});
+    my $index_files = $opts{index_files};
+    my $read_type   = $opts{read_type} // 'single'; #/
+    my $params      = $opts{params};
+
+    # Setup input dependencies
+    my $inputs = [
+        @$fastq,
+        @$validated,
+        @$index_files
+    ];
+
+    # Build command and arguments
+    my $cmd = $CONF->{BWAMETH};
+    die "ERROR: BWAMETH is not in the config." unless $cmd;
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
+    my $args = [
+        ['--reference', catfile($index_path, 'genome.reheader.faa'), 0],
+        ['', join(' ', @$fastq), 0],
+        ['-t', 8, 0],
+        ['-p', 'alignment', 0]
+    ];
+    
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => $inputs,
+        outputs => [
+            catfile($staging_dir, 'alignment.bam')
+        ],
+        description => "Aligning sequences with bwameth..."
+    );
+}
+
 
 sub create_gsnap_workflow {
     my %opts = @_;
