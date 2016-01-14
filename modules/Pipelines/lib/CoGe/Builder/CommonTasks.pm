@@ -1327,9 +1327,9 @@ sub create_bismark_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     
-    my $cmd = $CONF->{BISMARK_BUILD};
+    my $cmd = catfile($CONF->{BISMARK_DIR}, 'bismark_genome_preparation');
     my $BISMARK_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bismark_index");
-    die "ERROR: BISMARK_BUILD is not in the config." unless ($cmd);
+    die "ERROR: BISMARK_DIR is not in the config." unless ($cmd);
     
     $cmd = "mkdir -p $BISMARK_CACHE_DIR ; " .
            "cp $fasta $BISMARK_CACHE_DIR/$name.fa ; " . # requires fasta file to end in .fa or .fasta, not .faa
@@ -1386,8 +1386,8 @@ sub create_bismark_job {
     ];
 
     # Build up command/arguments string
-    my $cmd = $CONF->{BISMARK};
-    die "ERROR: BISMARK is not in the config." unless $cmd;
+    my $cmd = catfile($CONF->{BISMARK_DIR}, 'bismark');
+    die "ERROR: BISMARK_DIR is not in the config." unless $cmd;
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
