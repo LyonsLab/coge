@@ -32,7 +32,8 @@ sub build {
     my $metadata = $opts->{metadata};
     my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
-    my $params = $opts->{params};
+    my $read_params = $opts->{read_params};
+    my $methylation_params = $opts->{methylation_params};
 
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
@@ -50,20 +51,20 @@ sub build {
     #
     my @tasks;
 
-    # Reheader the fasta file
-    my $fasta = get_genome_file($gid);
-    my $reheader_fasta = to_filename($fasta) . ".reheader.faa";
-    push @tasks, create_fasta_reheader_job( 
-        fasta => $fasta, 
-        reheader_fasta => $reheader_fasta, 
-        cache_dir => $FASTA_CACHE_DIR
+    push @tasks, create_deduplicate_job( 
+        bam_file => $input_file,
+        read_type => ,
+        staging_dir =>
     );
     
-    # Trim the reads
-    push @tasks, create_trim_galore_job( 
-        fasta => $fasta, 
-        reheader_fasta => $reheader_fasta, 
-        cache_dir => $FASTA_CACHE_DIR
+    push @tasks, create_extract_methylation_job( 
+        bam_file => $input_file,
+        read_type => $read_params->{read_type},
+        staging_dir => $staging_dir,
+        '--ignore' => $methylation_params->{'--ignore'},
+        '--ignore_r2' => $methylation_params->{'--ignore_r2'},
+        '--ignore_3prime' => $methylation_params->{'--ignore_3prime'},
+        '--ignore_3prime_r2' => $methylation_params->{'--ignore_3prime_r2'}
     );
 
     # Save outputs for retrieval by downstream tasks
@@ -89,41 +90,80 @@ sub generate_additional_metadata {
     return \@annotations;
 }
 
-sub create_trim_galore_job {
+sub create_deduplicate_job {
     my %opts = @_;
-    my $fastq       = $opts{fastq};     # single fastq file (string) or two paired-end fastq files (array ref)
-    my $validated   = $opts{validated}; # input dependency from previous task, one or two files based on fastq arg
+    my $bam_file = $opts{bam_file};
+    my $read_type = $opts{read_type} // 'single';
     my $staging_dir = $opts{staging_dir};
-    my $params      = $opts{params} // {}; #/
-    my $read_type   = $params->{read_type} // 'single'; #/ 'single' or 'paired'
-
-    my $cmd = $CONF->{TRIMGALORE} || 'trim_galore';
-    $cmd = 'nice ' . $cmd; # run at lower priority
-
-    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
-    $validated = [ $validated ] unless (ref($validated) eq 'ARRAY');
     
-    my $name = join(', ', map { basename($_) } @$fastq);
-    my @inputs = ( @$fastq, @$validated);
-    my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
-
-    # Build up command/arguments string
-    my @args;
+    my $cmd = catfile($CONF->{BISMARK_DIR}, 'deduplicate_bismark');
+    die "ERROR: BISMARK_DIR is not in the config." unless $cmd;
+    
+    my $args;
     if ($read_type eq 'paired') {
-        push @args, ['--paired', '', 0];
-        push @args, ['--trim1', join(' ', @$fastq), 0];
+        push @$args, ['-p', '', 0];
     }
-    else { # single
-        push @args, ['', join(' ', @$fastq), 0];
+    else { # single-ended
+        push @$args, ['-s', '', 0];
     }
-
+    
+    push @$args, ['--bam', $bam_file, 0];
+    
     return {
         cmd => $cmd,
         script => undef,
-        args => \@args,
-        inputs => \@inputs,
-        outputs => \@outputs,
-        description => "Trimming (TrimGalore) $name...",
+        args => $args,
+        inputs => [
+            $bam_file
+        ],
+        outputs => [
+            catfile($staging_dir, "$name.bwameth.c2t"),
+        ],
+        description => "Deduplicating PCR artifacts..."
+    };
+}
+
+sub create_extract_methylation_job {
+    my %opts = @_;
+    my $bam_file = $opts{bam_file};
+    my $read_type = $opts{read_type} // 'single';
+    my $ignore = $opts{'--ignore'} // 0;
+    my $ignore_r2 = $opts{'--ignore_r2'} // 0;
+    my $ignore_3prime = $opts{'--ignore_3prime'} // 0;
+    my $ignore_3prime_r2 = $opts{'--ignore_3prime_r2'} // 0;
+    
+    my $cmd = catfile($CONF->{BISMARK_DIR}, 'bismark_methylation_extractor');
+    die "ERROR: BISMARK_DIR is not in the config." unless $cmd;
+    
+    my $args = [
+        ['--ignore', $ignore, 0],
+        ['--ignore_3prime', $ignore_3prime, 0]
+    ];
+    
+    if ($read_type eq 'paired') {
+        push @$args, ['-p', '', 0];
+        push @$args, ['--ignore_r2', $ignore_r2, 0];
+        push @$args, ['--ignore_3prime_r2', $ignore_3prime_r2, 0];
+    }
+    
+    push @$args, [$bam_file, '', 0];
+    
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => [
+            $bam_file
+        ],
+        outputs => [
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.amb"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.ann"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.bwt"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.pac"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.sa")
+        ],
+        description => "Extracting methylation status..."
     };
 }
 

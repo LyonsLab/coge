@@ -155,6 +155,32 @@ sub build {
             push @done_files, @{$snp_workflow->{done_files}};
             $result_count++;
         }
+        
+        # Add methylation workflow (if specified)
+        my $methylation_workflow;
+        if ( $self->params->{methylation_params} ) {
+            my $method = $self->params->{methylation_params}->{method};
+            my $methylation_params = {
+                user => $self->user,
+                wid => $self->workflow->id,
+                genome => $genome,
+                input_file => $bam_file,
+                metadata => $metadata,
+                additional_metadata => $additional_metadata,
+                read_params => $self->params->{read_params},
+                methylation_params => $self->params->{methylation_params},
+                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
+            };
+            
+            switch ($method) { #FIXME pass into MeasureMethylation instead
+                case 'bismark' { $snp_workflow = CoGe::Builder::Methylation::Bismark::build($methylation_params); }
+                case 'bwameth' { $snp_workflow = CoGe::Builder::Methylation::Bwameth::build($methylation_params); }
+                else           { die "unknown methylation method"; }
+            }
+            push @tasks, @{$methylation_workflow->{tasks}};
+            push @done_files, @{$methylation_workflow->{done_files}};
+            $result_count++;
+        }
     }
     # Else, all other file types
     else {
