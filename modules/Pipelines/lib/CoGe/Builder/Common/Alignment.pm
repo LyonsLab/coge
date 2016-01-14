@@ -93,8 +93,6 @@ sub build {
         else { # default to single-ended
             $fastq1 = \@decompressed;
         }
-        print STDERR 'matt1: ', Dumper $fastq1, "\n";
-        print STDERR 'matt2: ', Dumper $fastq2, "\n";
         
         if ($trimming_params->{trimmer} eq 'cutadapt') {
             my ($tasks, $outputs) = create_cutadapt_workflow(
@@ -192,7 +190,15 @@ sub build {
         );
     }
     elsif ($alignment_params && $alignment_params->{tool} eq 'bwameth') {
-        #TODO
+        ($alignment_tasks, $alignment_results) = create_bwameth_workflow(
+            gid => $gid,
+            fasta => catfile($fasta_cache_dir, $reheader_fasta),
+            fastq => \@trimmed,
+            validated => \@validated,
+            read_type => $read_params->{read_type},
+            staging_dir => $staging_dir,
+            params => $alignment_params,
+        );
     }
     else { # ($alignment_params->{tool} eq 'gsnap') { # default
         ($alignment_tasks, $alignment_results) = create_gsnap_workflow(
