@@ -2,7 +2,18 @@
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.1.0/css/buttons.dataTables.min.css"/>
 <link rel="stylesheet" type="text/css" href="/js/vendor/chosen/chosen.min.css"/>
 <style>
-	#chromosomes_chosen { white-space: nowrap; }
+#chromosomes_chosen {
+	white-space: nowrap;
+}
+.glyphicon {
+	font-size: 1.8em;
+}
+.glyphicons-circle-arrow-top:before {
+	content: "\e133";
+}
+.glyphicons-circle-arrow-down:before {
+	content: "\e134";
+}
 </style>
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script>
@@ -13,6 +24,9 @@
 var columns = {};
 var data;
 var dt;
+var max_chromosomes;
+var num_chromosomes;
+var offset = 0;
 function build_select(s, obj, first) {
 	s.empty();
 	var keys = [];
@@ -25,6 +39,13 @@ function build_select(s, obj, first) {
 		s.append('<option>' + keys[i] + '</option>');
 	s.trigger('chosen:updated');
 	s.next().css('width','auto');
+}
+function chromosome_changed() {
+	$('#busy').show();
+	dt.clear();
+	dt.destroy();
+	$('#main').empty();
+	setTimeout(set_data,10);
 }
 function do_export() {
 	var url = '?eid=';
@@ -65,18 +86,36 @@ function do_plot() {
     	var chromosome = $('#chromosomes option:selected').text();
     	if (chromosome == 'All chromosomes') {
     		var chromosomes = get_chromosomes();
-    		var num_cols = 1;
-    		while (num_cols * num_cols < chromosomes.length)
-    			num_cols++;
-    		var w = p.width() / num_cols;
-    		var num_rows = Math.floor(chromosomes.length / num_cols);
-    		if (chromosomes.length % num_cols)
-    			num_rows++;
-    		var h = p.height() / num_rows;
-    		for (var i=0; i<chromosomes.length; i++) {
-    			var e = $('<div style="display:inline"></div>').width(w).height(h);
-	    		p.append(e);
-	    		plot(chromosomes[i], cols, e);
+			chromosomes.sort(size_sort);
+			num_chromosomes = chromosomes.length;
+			max_chromosomes = Math.min(num_chromosomes, 16);
+	   		var num_cols = 1;
+	   		while (num_cols * num_cols < max_chromosomes)
+	   			num_cols++;
+	   		var w = p.width() / num_cols - 5;
+	   		var num_rows = Math.floor(max_chromosomes / num_cols);
+	   		if (max_chromosomes % num_cols)
+	   			num_rows++;
+	   		var h = p.height() / num_rows - 5;
+			if (max_chromosomes < num_chromosomes) {
+				$('#arrows').css('display', 'block');
+				$('#up').css('color', offset == 0 ? 'grey' : 'black');
+				$('#down').css('color', num_chromosomes - offset <= max_chromosomes ? 'grey' : 'black');
+			}
+			var t = $('<table></table>');
+			p.append(t);
+			var tr = $('<tr></tr>');
+			t.append(tr);
+    		for (var i=0; i<max_chromosomes; i++) {
+			if (i > 0 && i % num_cols == 0) {
+				tr = $('<tr></tr>');
+				t.append(tr);
+			}
+			var td = $('<td></td>');
+			tr.append(td);
+    			var e = $('<div></div>').width(w).height(h);
+	    		td.append(e);
+	    		plot(chromosomes[offset + i], cols, e[0], w, h);
     		}
     	} else
 		   	plot($('#chromosomes option:selected').text(), cols, p[0]);
@@ -206,7 +245,7 @@ function parse_data(d) {
 	set_chromosomes();
 	set_data();
 }
-function plot(chromosome, cols, e) {
+function plot(chromosome, cols, e, w, h) {
     var series = [];
     for (var i=0; i<cols.length; i++) {
         var d = get_plot_data(chromosome, cols[i].value);
@@ -220,9 +259,15 @@ function plot(chromosome, cols, e) {
         }
         series.push({ mode: 'markers', name: cols[i].text, text: text, x: x, y: y });
     }
-    Plotly.newPlot(e, series, { hovermode: 'closest', margin: { t: 0 }}, { displayModeBar: false });
+	var layout = { hovermode: 'closest', title: chromosome};
+	if (w)
+		layout.width = w;
+	if (h)
+		layout.height = h;
+    Plotly.newPlot(e, series, layout, { displayModeBar: false });
 }
 function plot_dialog() {
+	$('#arrows').css('display', 'none');
     $('#plot_dialog').dialog('destroy');
 	$('#plot_dialog').dialog({
 		autoOpen: true,
@@ -278,12 +323,9 @@ function set_data() {
 	dt.buttons().container().appendTo($('#colvis'));
 	$('#busy').hide();
 }
-function chromosome_changed() {
-	$('#busy').show();
-	dt.clear();
-	dt.destroy();
-	$('#main').empty();
-	setTimeout(set_data,10);
+function size_sort(a, b) {
+	var type = $('#types option:selected').text();
+//	return data[type][a][];
 }
 $(document).ready(ready);
 </script>
@@ -312,9 +354,13 @@ Select columns to export
 </div>
 <div id="plot_dialog" class="dialog_box hidden" title="Plot" style="display:none">
 <div style="height:100%;display:flex;flex-flow:column;">
-	<div style="flex: 0 1 auto; margin-bottom: 20px;">
+	<div style="flex: 0 1 auto;">
 		<select id="plot_columns" multiple onchange="do_plot();" style="width:100%;"></select>
 	</div>
 	<div id="plot" style="flex: 1 1 auto;"></div>
+	<div id="arrows" style="flex: 0 1 auto;">
+		<span id="up" class="glyphicon glyphicons-circle-arrow-top" onclick="if(offset!=0){offset-=max_chromosomes;do_plot();}"></span>
+		<span id="down" class="glyphicon glyphicons-circle-arrow-down" onclick="if(num_chromosomes-offset>max_chromosomes){offset+=max_chromosomes;do_plot();}"></span>
+	</div>
 </div>
 </div>
