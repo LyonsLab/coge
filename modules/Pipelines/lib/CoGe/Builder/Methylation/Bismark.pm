@@ -167,4 +167,35 @@ sub create_extract_methylation_job {
     };
 }
 
+sub create_coge_import_job {
+    my %opts = @_;
+    my $ot_input_file = $opts{ot_input_file};
+    my $ob_input_file = $opts{ob_input_file};
+    my $min_coverage = $opts{min_coverage};
+    my $staging_dir = $opts{staging_dir};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, 'coge-import_bismark.py');
+    die "ERROR: SCRIPTDIR is not in the config." unless $cmd;
+    
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-u', 'f', 0],
+            ['-c', $min_coverage, 0],
+            ['--OT', $ot_input_file, 0],
+            ['--OB', $ob_input_file, 0],
+            ['-o', $output_file, 0]
+        ],
+        inputs => [
+            $ot_input_file,
+            $ob_input_file
+        ],
+        outputs => [
+            catfile($staging_dir, $output_file),
+        ],
+        description => "Converting data..."
+    };
+}
+
 1;
