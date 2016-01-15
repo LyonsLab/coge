@@ -79,4 +79,27 @@ sub generate_additional_metadata {
     return \@annotations;
 }
 
+sub create_deduplication_job {
+    my %opts = @_;
+    my $bam_file = $opts{bam_file};
+    
+    my $cmd = $CONF->{PICARD};
+    die "ERROR: PICARD is not in the config." unless $cmd;
+    
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['', $bam_file, 0],
+        ],
+        inputs => [
+            $bam_file,
+        ],
+        outputs => [
+            catfile($staging_dir, $output_file),
+        ],
+        description => "Deduplicating PCR artifacts using Picard..."
+    };
+}
+
 1;
