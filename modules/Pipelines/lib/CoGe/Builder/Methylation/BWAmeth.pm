@@ -82,9 +82,12 @@ sub generate_additional_metadata {
 sub create_deduplication_job {
     my %opts = @_;
     my $bam_file = $opts{bam_file};
+    my $staging_dir = $opts{staging_dir};
     
     my $cmd = $CONF->{PICARD};
     die "ERROR: PICARD is not in the config." unless $cmd;
+    
+    my $output_file = 'xxx';
     
     return {
         cmd => $cmd,

@@ -30,8 +30,8 @@ our @EXPORT = qw(
     send_email_job add_items_to_notebook_job create_hisat2_workflow
     export_experiment_job create_cutadapt_workflow
     create_trimgalore_job create_trimgalore_workflow
-    create_bismark_job create_bismark_index_job create_bismark_workflow
-    create_bwameth_job create_bwameth_index_job create_bwameth_workflow
+    create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
+    create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -516,11 +516,13 @@ sub create_load_experiment_job {
     my $gid = $opts{gid};
     my $input_file = $opts{input_file};
     my $normalize = $opts{normalize} || 0;
+    my $name = $opts{name}; # optional name for this load
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
-    my $output_path = catdir($staging_dir, "load_experiment");
+    my $output_name = "load_experiment" . ($name ? "_$name" : '');
+    my $output_path = catdir($staging_dir, $output_name);
     
     my $result_file = get_workflow_results_file($user->name, $wid);
     
@@ -543,21 +545,21 @@ sub create_load_experiment_job {
             ['-source_name', "'" . $metadata->{source_name} . "'", 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-tags', qq["$tags_str"], 0],
-            ['-staging_dir', "./load_experiment", 0],
+            ['-staging_dir', $output_name, 0],
             ['-data_file', $input_file, 0],
             ['-normalize', $normalize, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
         ],
         inputs => [
             $CONF->{_CONFIG_PATH},
-            $input_file,
+            $input_file
         ],
         outputs => [
             [$output_path, '1'],
             catfile($output_path, "log.done"),
             $result_file
         ],
-        description => "Loading experiment ..."
+        description => "Loading" . ($name ? " $name" : '') . " experiment..."
     };
 }
 
@@ -1303,7 +1305,7 @@ sub create_bismark_workflow {
 
     my ($index_path, %index_task) = create_bismark_index_job($gid, $fasta);
     
-    my %align_task = create_bismark_job(
+    my %align_task = create_bismark_alignment_job(
         staging_dir => $staging_dir,
         fasta => $fasta,
         fastq => $fastq,
@@ -1362,7 +1364,7 @@ sub create_bismark_index_job {
     );
 }
 
-sub create_bismark_job {
+sub create_bismark_alignment_job {
     my %opts = @_;
 
     # Required arguments
@@ -1414,7 +1416,7 @@ sub create_bismark_job {
         args => $args,
         inputs => $inputs,
         outputs => [
-            catfile($staging_dir, $output_bam)
+            $output_bam
         ],
         description => "Aligning sequences with Bismark..."
     );
@@ -1434,7 +1436,7 @@ sub create_bwameth_workflow {
 
     my ($index_path, %index_task) = create_bwameth_index_job($gid, $fasta);
     
-    my %align_task = create_bwameth_job(
+    my %align_task = create_bwameth_alignment_job(
         staging_dir => $staging_dir,
         fasta => $fasta,
         fastq => $fastq,
@@ -1485,7 +1487,7 @@ sub create_bwameth_index_job {
     );
 }
 
-sub create_bwameth_job {
+sub create_bwameth_alignment_job {
     my %opts = @_;
 
     # Required arguments
