@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Data::Dumper qw(Dumper);
+use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web qw(get_defaults);
@@ -42,22 +43,22 @@ sub build {
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
 
     # Set metadata for the pipeline being used
-    my $annotations = generate_additional_metadata($params);
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
-    push @$annotations, @annotations2;
+#    my $annotations = generate_additional_metadata($params);
+#    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+#    push @$annotations, @annotations2;
 
     #
     # Build the workflow
     #
-    my @tasks;
+    my (@tasks, @done_files);
 
-    push @tasks, create_deduplicate_job( 
-        bam_file => $input_file,
-        read_type => ,
-        staging_dir =>
-    );
+#    push @tasks, create_deduplicate_job( 
+#        bam_file => $input_file,
+#        read_type => ,
+#        staging_dir =>
+#    );
     
-    push @tasks, create_extract_methylation_job( 
+     my $extract_methylation_task = create_extract_methylation_job( 
         bam_file => $input_file,
         read_type => $read_params->{read_type},
         staging_dir => $staging_dir,
@@ -66,6 +67,36 @@ sub build {
         '--ignore_3prime' => $methylation_params->{'--ignore_3prime'},
         '--ignore_3prime_r2' => $methylation_params->{'--ignore_3prime_r2'}
     );
+    push @tasks, $extract_methylation_task;
+    
+    my @outputs = @{$extract_methylation_task->{outputs}};
+    while (@outputs) {
+        my $file1 = shift @outputs;
+        my $file2 = shift @outputs;
+        
+        my $name = substr(to_filename($file1), 0, 3);
+        
+        my $import_task = create_bismark_import_job(
+            ob_input_file => $file1,
+            ot_input_file => $file2,
+            min_coverage => $methylation_params->{'bismark-min_converage'},
+            staging_dir => $staging_dir,
+            name => $name
+        );
+        push @tasks, $import_task;
+        
+        $metadata->{name} .= " ( $name methylation)";
+        
+        push @tasks, create_load_experiment_job(
+            user => $user,
+            metadata => $metadata,
+            staging_dir => $staging_dir,
+            wid => $wid,
+            gid => $genome->id,
+            input_file => $import_task->{outputs}[0],
+            name => $name
+        );
+    }
 
     # Save outputs for retrieval by downstream tasks
 #    my @done_files; = (
@@ -75,7 +106,7 @@ sub build {
     
     return {
         tasks => \@tasks,
-#        done_files => \@done_files
+        done_files => \@done_files
     };
 }
 
@@ -95,6 +126,7 @@ sub create_deduplicate_job {
     my $bam_file = $opts{bam_file};
     my $read_type = $opts{read_type} // 'single';
     my $staging_dir = $opts{staging_dir};
+    my $name = basename($bam_file);
     
     my $cmd = catfile($CONF->{BISMARK_DIR}, 'deduplicate_bismark');
     die "ERROR: BISMARK_DIR is not in the config." unless $cmd;
@@ -131,6 +163,8 @@ sub create_extract_methylation_job {
     my $ignore_r2 = $opts{'--ignore_r2'} // 0;
     my $ignore_3prime = $opts{'--ignore_3prime'} // 0;
     my $ignore_3prime_r2 = $opts{'--ignore_3prime_r2'} // 0;
+    my $staging_dir = $opts{staging_dir};
+    my $name = to_filename($bam_file);
     
     my $cmd = catfile($CONF->{BISMARK_DIR}, 'bismark_methylation_extractor');
     die "ERROR: BISMARK_DIR is not in the config." unless $cmd;
@@ -156,26 +190,29 @@ sub create_extract_methylation_job {
             $bam_file
         ],
         outputs => [
-            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t"),
-            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.amb"),
-            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.ann"),
-            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.bwt"),
-            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.pac"),
-            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.sa")
+            catfile($staging_dir, 'CHG_OB_' . $name . '.txt'),
+            catfile($staging_dir, 'CHG_OT_' . $name . '.txt'),
+            catfile($staging_dir, 'CHH_OB_' . $name . '.txt'),
+            catfile($staging_dir, 'CHH_OT_' . $name . '.txt'),
+            catfile($staging_dir, 'CpG_OB_' . $name . '.txt'),
+            catfile($staging_dir, 'CpG_OT_' . $name . '.txt'),
         ],
         description => "Extracting methylation status..."
     };
 }
 
-sub create_coge_import_job {
+sub create_bismark_import_job {
     my %opts = @_;
     my $ot_input_file = $opts{ot_input_file};
     my $ob_input_file = $opts{ob_input_file};
-    my $min_coverage = $opts{min_coverage};
+    my $min_coverage = $opts{min_coverage} // 5;
     my $staging_dir = $opts{staging_dir};
+    my $name = $opts{name};
     
-    my $cmd = catfile($CONF->{SCRIPTDIR}, 'coge-import_bismark.py');
+    my $cmd = catfile($CONF->{SCRIPTDIR}, 'methylation', 'coge-import_bismark.py');
     die "ERROR: SCRIPTDIR is not in the config." unless $cmd;
+    
+    my $output_file = $name . '.filtered.coge.csv';
     
     return {
         cmd => $cmd,
@@ -185,7 +222,7 @@ sub create_coge_import_job {
             ['-c', $min_coverage, 0],
             ['--OT', $ot_input_file, 0],
             ['--OB', $ob_input_file, 0],
-            ['-o', $output_file, 0]
+            ['-o', $name, 0]
         ],
         inputs => [
             $ot_input_file,
@@ -194,7 +231,7 @@ sub create_coge_import_job {
         outputs => [
             catfile($staging_dir, $output_file),
         ],
-        description => "Converting data..."
+        description => "Converting $name..."
     };
 }
 
