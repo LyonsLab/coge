@@ -174,7 +174,7 @@ sub build {
             
             switch ($method) { #FIXME pass into MeasureMethylation instead
                 case 'bismark' { $methylation_workflow = CoGe::Builder::Methylation::Bismark::build($methylation_params); }
-                case 'bwameth' { $methylation_workflow = CoGe::Builder::Methylation::Bwameth::build($methylation_params); }
+                case 'bwameth' { $methylation_workflow = CoGe::Builder::Methylation::BWAmeth::build($methylation_params); }
                 else           { die "unknown methylation method"; }
             }
             push @tasks, @{$methylation_workflow->{tasks}};
