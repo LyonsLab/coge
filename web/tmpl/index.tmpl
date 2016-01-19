@@ -285,13 +285,13 @@ function get_latest_genomes(limit) {
 </SCRIPT>
 
 <TMPL_IF NAME="INTRO">
-<div id="stats" class="coge-shaded" style="border-bottom:1px solid lightgray">
-    <ul class="horizontal small bold">
-            <li>Organisms: <span style="color:darkgreen"><TMPL_VAR NAME="ORG_COUNT"></span></li>
-            <li>Genomes: <span style="color:darkgreen"><TMPL_VAR NAME="GEN_COUNT"></span></li>
-            <li>Features: <span style="color:darkgreen"><TMPL_VAR NAME="FEAT_COUNT"></span></li>
-            <li>Annotations: <span style="color:darkgreen"><TMPL_VAR NAME="ANNOT_COUNT"></span></li>
-            <li>Experiments: <span style="color:darkgreen"><TMPL_VAR NAME="EXP_COUNT"> (<TMPL_VAR NAME="QUANT_COUNT"> values)</span></li>
+<div id="stats">
+    <ul class="horizontal small bold center info" style="font-size:1em;">
+        <li>Organisms: <span style="color:green"><TMPL_VAR NAME="ORG_COUNT"></span></li>
+        <li>Genomes: <span style="color:green"><TMPL_VAR NAME="GEN_COUNT"></span></li>
+        <li>Features: <span style="color:green"><TMPL_VAR NAME="FEAT_COUNT"></span></li>
+        <li>Annotations: <span style="color:green"><TMPL_VAR NAME="ANNOT_COUNT"></span></li>
+        <li>Experiments: <span style="color:green"><TMPL_VAR NAME="EXP_COUNT"> (<TMPL_VAR NAME="QUANT_COUNT"> values)</span></li>
     </ul>
 </div>
 

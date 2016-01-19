@@ -11,6 +11,30 @@
 
 <TMPL_INCLUDE NAME="header_includes.tmpl">
 
+<style type="text/css">
+	@font-face {
+		font-family: 'Glyphicons Halflings';
+		src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+		src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+	}
+	
+	.glyphicon {
+		position: relative;
+		right: 0.5em;
+		display: inline-block;
+		font-family: 'Glyphicons Halflings';
+		font-style: normal;
+		font-weight: normal;
+		line-height: 1;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+	
+	.glyphicon-search:before {
+		content: "\e003";
+	}
+</style>
+
 <TMPL_VAR NAME="HEAD">
 
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
@@ -18,6 +42,11 @@
 </HEAD>
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
+
+<noscript>
+We have detected that your browser currently has JavaScript disabled. 
+In order for CoGe to function properly JavaScript must be enabled in your browser.
+</noscript>
 
 <div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
     <div style="text-align:center;padding:30px;">
@@ -29,6 +58,7 @@
 </div>
 
 <TMPL_VAR NAME="JAVASCRIPT">
+
 <script>
 jQuery(document).ready(function(){
     pageObj = new Object();
@@ -39,6 +69,22 @@ jQuery(document).ready(function(){
     if (document.URL.indexOf('genomevolution.org') == -1 && document.URL.indexOf('coge.iplantcollaborative.org') == -1) {
         $('#brand').addClass("dev");
     }
+    
+    $('.dropdown-menu').mouseleave(function(e){
+		hideDropdowns();
+   	});
+    
+	$('.dropdown-label').mouseenter(function(e){
+		var target = $(e.target).closest('.dropdown-label');
+		var id = target.attr('id');
+		if (id)
+			showDropdown('#' + id.slice(0,4) + '_drop');
+	});
+	
+    $('.dropdown-label').mouseleave(function(e){
+       	if (!e.relatedTarget.closest('.dropdown-menu'))
+       	    hideDropdowns();
+    });
 });
 
 function browserAlert(){
@@ -50,32 +96,31 @@ function browserAlert(){
 function setup_button_states (id) {
 //$(function() {
          //button effects on events
-           var item;
+	var item;
 
-           if (id) { item='#'+id; }
-           else { item = '.ui-button'; }
-         $(item+':not(.ui-state-disabled)')
-            .hover( function(){
-                $(this).addClass("ui-state-hover");
-            },
-                function(){
-                $(this).removeClass("ui-state-hover");
-            });
-         $(item+':not(.ui-button-toggle)') //buttons that aren't toggle-able
-                        .mousedown(function(){
-                            $(this).addClass("ui-state-active");
-                        })
-            .mouseup(function(){
-                    $(this).removeClass("ui-state-active");
-                        });
-             $(item+'.ui-button-toggle') // buttons that are toggle-able
-                       .click(function(){
-                if( $(this).hasClass('ui-state-active') ){
-                    $(this).removeClass("ui-state-active");
-                    }
-                else { $(this).addClass("ui-state-active");
-                }
-                        });
+	if (id) { item='#'+id; }
+	else { item = '.ui-button'; }
+	$(item+':not(.ui-state-disabled)')
+		.hover( function(){
+			$(this).addClass("ui-state-hover");
+		},
+		function(){
+			$(this).removeClass("ui-state-hover");
+		});
+	$(item+':not(.ui-button-toggle)') //buttons that aren't toggle-able
+		.mousedown(function(){
+			$(this).addClass("ui-state-active");
+		})
+		.mouseup(function(){
+			$(this).removeClass("ui-state-active");
+		});
+	$(item+'.ui-button-toggle') // buttons that are toggle-able
+		.click(function(){
+			if( $(this).hasClass('ui-state-active') ){
+				$(this).removeClass("ui-state-active");
+			}
+			else { $(this).addClass("ui-state-active"); }
+		});
 
 }
 
@@ -91,91 +136,127 @@ function add_button_states (ids) {
     }
 }
 
-//initialize superfish plugin (dropdown menu)
-$(document).ready( function() {
-    $('ul.sf-menu').supersubs({
-            minWidth:    8,   // minimum width of sub-menus in em units
-            maxWidth:    27,   // maximum width of sub-menus in em units
-            extraWidth:  1     // extra width can ensure lines don't sometimes turn over
-                               // due to slight rounding differences and font-family
-             }).superfish({
-        delay: 300
-    });
-    $('#menubar').css('visibility', 'visible'); // mdb added 10/21/13 -- hidden on startup to prevent "glitching" in rendering
-});
+function search() {
+	var token = $('#header_search_token').val();
+	console.log(token);
+	//window.location.href = "api/v1/global/search/" + token;
+	window.location.href = "SearchResults.pl?s=" + token;
+}
+
+function searchKey(event) {
+	if (event.which == 13) {
+		event.preventDefault(); //Without this, the page just reloads
+		search();
+	}
+}
+
+function showDropdown(element) {
+	hideDropdowns();
+	$(element).fadeIn('fast');
+	
+	if( $(element + '_label').find('img').attr('src') == "picts/arrow-right-icon.png" ) {
+    	$(element + '_label').find('img').attr("src", "picts/arrow-down-icon.png");
+    }
+}
+
+function hideDropdowns() {
+	$('.dropdown-menu').hide();
+	
+    if( $('#user_drop_label').find('img').attr('src') == "picts/arrow-down-icon.png" ) {
+        $('#user_drop_label').find('img').attr("src", "picts/arrow-right-icon.png");
+    }
+	if( $('#help_drop_label').find('img').attr('src') == "picts/arrow-down-icon.png" ) {
+    	$('#help_drop_label').find('img').attr("src", "picts/arrow-right-icon.png");
+    }
+	if( $('#tool_drop_label').find('img').attr('src') == "picts/arrow-down-icon.png" ) {
+    	$('#tool_drop_label').find('img').attr("src", "picts/arrow-right-icon.png");
+    }
+}
 
 </script>
 
+<!--
+<div class="error-box">
+Please note:  the iPlant Data Store will be unavailable Tuesday, December 16th for scheduled maintenance, preventing data import into CoGe.
+</div>
+-->
+
 <div style="min-height:100%">
+<header class="coge-header">
 
-<!--
-    <div class="error-box">
-    Please note:  the iPlant Data Store will be unavailable Tuesday, December 16th for scheduled maintenance, preventing data import into CoGe.
-    </div>
--->
-
-<header class="clearfix">
-    <div id="brand">
-        <a href="<TMPL_VAR NAME=HOME>">
-            <img style="vertical-align:bottom;height:3.4em" class="l" src='picts/CoGe.svg'>
-        </a>
-    </div>
-<!--
-    <div id="logo">
-        <a href="<TMPL_VAR NAME=HOME>">
-            <img style="vertical-align:bottom;height:3.5em" class="l" src='picts/CoGeCircuitLeaf1.svg'>
-        </a>
-    </div>
--->
-
-    <TMPL_UNLESS NAME="MENU">
-        <div id="menubar" class="coge-menubar r" style="visibility:hidden;">
-            <span style="float:right; margin-right: 20px;">
-                <ul class="sf-menu">
-                    <li><a href="User.pl" target="_self">My Profile</a></li>
-                    <li><a href='User.pl?p=analyses' target="_self">My History</a></li>
-                    <tmpl_if name="ADMIN_ONLY">
-                        <li><a href='Admin.pl'>Admin</a></li>
-                    </tmpl_if>
-                    <li><a href='javascript:void(0)'>Tools</a>
-                        <ul>
-                            <li><a href="OrganismView.pl">OrganismView</a></li>
-                            <li><a href="CoGeBlast.pl">CoGeBlast</a></li>
-                            <li><a href="FeatView.pl">FeatView</a></li>
-                            <!--<li><a href="PopGen.pl">PopGen</a></li>-->
-                            <li><a href="SynFind.pl">SynFind</a></li>
-                            <li><a href="SynMap.pl">SynMap</a></li>
-                            <li><a href="GEvo.pl">GEvo</a></li>
-                        </ul>
-                    </li>
-                    <li><a href='javascript:void(0)'>Help</a>
-                        <ul>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
-                            <li><a href="http://iplant.co/AskCoGe" target="_blank">Forums</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
-                            <li><a href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
-                        </ul>
-                    </li>
-                    <li><a href="./" target="_self">Home</a></li>
-                </ul>
-            </span>
-            <span class="login">
-                <TMPL_IF NAME="LOGON">
-                    <span class="small">You are logged-in as <b><TMPL_VAR NAME="USER"></b> - <span onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');" class="small bold link">Sign-out</span></span>
-                <TMPL_ELSE>
-                    <span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a> <a href="<TMPL_VAR NAME=WIKI_URL>/How_to_get_a_CoGe_account" target=_login_info><br>New here? Get a CoGe account.</a></span>
-            </TMPL_IF>
-            </span>
-        </div>
-    </TMPL_UNLESS>
-    <noscript>
-    Welcome to CoGe -- a new system for a new kind of comparative genomics.  CoGe is designed for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes.
-
-    Unfortunately, we have detected that your browser currently has JavaScript disabled. In order for CoGe to function properly, JavaScript must be enabled in your browser. For instruction on how to do so in Mozilla Firefox, please click <a href="http://www.mozilla.org/support/firefox/options#content" target="_blank">here</a>. After enabling JavaScript, simply refresh the page, or click <a href="javascript:location.reload(true);" target="_self">here</a>.
-    </noscript>
+	<!--Header contains logo and search bar-->
+	<ul id="header_main" class="coge-header-main">
+		<li id="brand"  style="float:left;margin-left:3px;margin-right:1em;line-height:1;">
+			<a href="<TMPL_VAR NAME=HOME>">
+				<span class="coge-logo">CoGe</span>
+			</a>
+		</li>
+		
+		<li>
+			<ul class="coge-header-search">
+				<li>
+					<div class="coge-header-searchbar">
+				    	<input id="header_search_token" type="text" class="text" placeholder="Search database" value="<TMPL_VAR NAME='SEARCH_TERM'>" spellcheck="false" onkeypress="searchKey(event)">
+				    </div>
+				</li>
+				<li>
+				    <button id="header_search_button" class="ui-button ui-corner-all coge-button" type="button" onclick="search();">
+				    	<span style="font-size:1.25em;color:dimgray;" class="glyphicon glyphicon-search"></span>
+				    </button>
+			    </li>
+			</ul>
+	    </li>
+	</ul>
+		
+	<!--Buttons and links-->
+	<ul id="header_menu" class="coge-header-menu">
+        <TMPL_IF NAME="LOGON">
+        <li class="dropdown coge-header-button noselect">
+            <div id="user_drop_label" class="dropdown-label" style="margin-right:3.5em;">
+                <img src="image.pl" class="coge-user-image" style="margin-top:-5px;vertical-align:middle;" id="user_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';"\>
+                <!--<div style="display:inline-block;vertical-align:middle;"><TMPL_VAR NAME="USER"></div>-->
+                <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link">
+            </div>
+            <ul id="user_drop" class="dropdown-menu hidden">
+                <li class="dropdown-item"><a class="dropdown-link" href="Account.pl">My Account</a></li>
+		        <TMPL_IF NAME="ADMIN_ONLY">
+		            <li class="dropdown-item"><a class="dropdown-link" href="Admin.pl">Admin</a></li>
+		        </TMPL_IF>
+                <li class="dropdown-item"><a class="dropdown-link" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Logout</a></li>
+            </ul>
+        </li>
+        </TMPL_IF>
+		<TMPL_UNLESS NAME="LOGON">
+			<li id="header_login_button" class="coge-header-button" style="margin-right:3.5em;" onclick="login_cas();return true;">
+				<div>Log in</div>
+			</li>
+		</TMPL_UNLESS>
+		<li id="help" class="dropdown coge-header-button noselect">
+			<div id="help_drop_label" class="dropdown-label">Help <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link"></div>
+			<ul id="help_drop" class="dropdown-menu hidden">
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="http://ask.iplantcollaborative.org/questions/scope%3Aall/sort%3Aactivity-desc/tags%3ACoGe/" target="_blank">Forums</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
+			</ul>
+		</li>
+		<li id="tool" class="dropdown coge-header-button noselect">
+			<div id="tool_drop_label" class="dropdown-label">Tools <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link"></div>
+			<ul id="tool_drop" class="dropdown-menu hidden">
+				<li class="dropdown-item"><a class="dropdown-link" href="OrganismView.pl">OrganismView</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="CoGeBlast.pl">CoGeBlast</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="FeatView.pl">FeatView</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="SynFind.pl">SynFind</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="SynMap.pl">SynMap</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="GEvo.pl">GEvo</a></li>
+			</ul>
+		</li>
+		<li class="coge-header-button noselect" onclick="location.href='User.pl';"><div>My Data</div></li>
+	</ul>
 </header>
-<div class="tagline"><TMPL_VAR NAME="TITLE"></div>
+
+<!--<div class="tagline"><TMPL_VAR NAME="TITLE"></div>-->

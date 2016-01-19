@@ -17,7 +17,6 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		search_global: function(search_term) {
-			console.log(search_term);
 			return this._ajax("GET", BASE_URL + "global/search/" + search_term + "/");
 		},
 		

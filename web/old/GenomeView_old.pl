@@ -58,7 +58,6 @@ sub gen_html {
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     my ( $body, $org_name ) = gen_body();
     $template->param( BODY     => $body );
-    $template->param( BOX_NAME => $org_name );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $html .= $template->output;
     return $html;

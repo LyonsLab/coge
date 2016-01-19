@@ -84,7 +84,6 @@ sub gen_html {
                       HELP       => '',
                       WIKI_URL   => $P->{WIKI_URL} || '',
                       CAS_URL    => $P->{CAS_URL} || '',
-                      ADJUST_BOX => 1,
                       ADMIN_ONLY => $USER->is_admin );
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( BODY       => gen_body() );

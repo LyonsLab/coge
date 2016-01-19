@@ -123,9 +123,6 @@ sub gen_html {
     $template->param( USER => $name );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-
-    #	$template->param( BOX_NAME   => 'CoGeBlast Settings' );
-    #	$template->param( ADJUST_BOX => 1 );
     $template->param( BODY => $body );
     my $prebox =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
@@ -1084,7 +1081,6 @@ qq{<table class="small ui-widget-content ui-corner-all"><tr><th>Query Seq<th>}
 
     my $box_template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'box.tmpl' );
-    $box_template->param( BOX_NAME => 'CoGeBlast Results ' . $temp );
     $box_template->param( BODY     => $html );
     my $outhtml = $box_template->output;
     my $t2      = new Benchmark;

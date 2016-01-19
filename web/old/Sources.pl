@@ -173,9 +173,6 @@ sub gen_html {
     $template->param( BODY       => gen_body() );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $P->{CAS_URL} || '' );
-
-    #$template->param( BOX_NAME   => " Data Sources:" );
-    #$template->param( ADJUST_BOX => 1 );
     $html .= $template->output;
 }
 

@@ -24,7 +24,12 @@ sub search {
 		$show_users = 1;
     }
 
-    my @results = CoGe::Core::Search::search(db=>$db, user=>$user, search_term=>$search_term, show_users=>$show_users);
+    my @results = CoGe::Core::Search::search(
+        db => $db, 
+        user => $user, 
+        search_term => $search_term, 
+        show_users => $show_users
+    );
 
     $self->render(json => { results => \@results });
 }

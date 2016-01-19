@@ -54,6 +54,8 @@ var coge = window.coge = (function(namespace) {
 			self.container.tabs({selected: self.defaultTab});
 			
 			self.container.resizable({
+				handles: 's',
+				ghost: true,
 				stop: self.resize.bind(self)
 			});
 			

@@ -111,11 +111,7 @@ sub gen_html {
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE     => $DATE );
     my $list_name = $FORM->param('list_name') || $FORM->param('ln');
-    my $box_name = "Genome Align:";
-    $box_name .= " $list_name" if $list_name;
-    $template->param( BOX_NAME   => $box_name );
     $template->param( BODY       => $body );
-    $template->param( ADJUST_BOX => 1 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     $html .= $template->output;

@@ -478,6 +478,7 @@ sub create_load_vcf_job {
             ['-desc', qq{"$desc"}, 0],
             ['-version', "'".$metadata->{version}."'", 0],
             ['-restricted', "'".$metadata->{restricted}."'", 0],
+            ['-exit_without_error_for_empty_input', 1, 0],
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
             ['-source_name', "'".$metadata->{source}."'", 0],
@@ -495,7 +496,7 @@ sub create_load_vcf_job {
         outputs => [
             [$output_path, '1'],
             catfile($output_path, "log.done"),
-            $result_file
+            #$result_file
         ],
         description => "Loading SNPs as new experiment ..."
     };
@@ -844,8 +845,8 @@ sub create_cutadapt_job {
 
     # Optional arguments
     my $params = $opts{params} // {}; #/
-    my $q = $params->{'-q'} // 25; #/
-    my $quality = $params->{'--quality-base'} // 32; #/
+    my $q = $params->{'-q'} // 20; #/
+    my $quality = $params->{'--quality-base'} // 33; #/
     my $m = $params->{'-m'} // 17; #/
     my $read_type = $params->{read_type} // 'single'; #/
 

@@ -393,7 +393,6 @@ function show_table(id) {
 }
 
 function toggle_arrow(id) {
-	//$(id).find('img').toggle();
 	if( $(id).find('img').attr('src') == "picts/arrow-right-icon.png" ) {
         	$(id).find('img').attr("src", "picts/arrow-down-icon.png");
         } else {

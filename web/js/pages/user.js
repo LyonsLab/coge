@@ -556,9 +556,9 @@ $.extend(ContentPanel.prototype, {
     
     fetch: function(sync, typeId) {
     	var self = this;
+    	console.log('ContentPanel.fetch ' + typeId + ' ' + self.selectedTypeId);
     	if (!typeId)
-    		typeId = this.selectedType;
-    	console.log('ContentPanel.fetch ' + typeId);
+    		typeId = self.selectedTypeId;
     	
     	var lastUpdate = (sync ? timestamps['lastUpdate'] : 0);
 
@@ -1117,7 +1117,7 @@ $.extend(TocPanel.prototype, {
     	var itemType = $(item).data('type');
     	console.log('TocPanel.selectItem ' + itemType);
     	
-    	if (this.selectedTypeId && itemType == this.selectedTypeId) // already selected
+    	if (this.selectedTypeId && itemType === this.selectedTypeId) // already selected
     		return;
     	this.selectedTypeId = itemType;
     	

@@ -162,6 +162,10 @@ __PACKAGE__->has_many(
 
 __PACKAGE__->mk_accessors('_chromosomes');
 
+sub item_type {
+    return $node_types->{genome};   
+}
+
 sub desc {
     return shift->description(@_);
 }

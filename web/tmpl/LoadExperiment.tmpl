@@ -256,7 +256,7 @@
 	            <input name="aligner" type="radio" value="gsnap" checked>
 	            <label for="gsnap">GSNAP</label>
 	            <input name="aligner" type="radio" value="tophat">
-	            <label for="gsnap">TopHat/Bowtie2</label>
+	            <label for="gsnap">TopHat2</label>
 	            <input name="aligner" type="radio" value="hisat2">
 				<label>HISAT2</label>
 	        </div>
@@ -281,7 +281,7 @@
             <div class="form-group">
                 <div class="form-entry"  title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64.">
                     <label>-q:</label>
-                    <input id="-q" type="number" value="25"/>
+                    <input id="-q" type="number" value="20"/>
                 </div>
                 <div class="form-entry" title="Use this to throw away processed reads shorter than N bases">
                     <label>-m:</label>
@@ -289,7 +289,7 @@
                 </div>
                 <div class="form-entry" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)">
                     <label>--quality-base:</label>
-                    <input id="--quality-base" type="number" value="32"/>
+                    <input id="--quality-base" type="number" value="33"/>
                 </div>
             </div>
         </div>
@@ -326,7 +326,7 @@
             <div class="form-group">
                 <div class="form-entry" title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64.">
                     <label>-q:</label>
-                    <input id="-q" type="number" value="25"/>
+                    <input id="-q" type="number" value="20"/>
                 </div>
                 <div class="form-entry" title="Use this to throw away processed reads shorter than N bases">
                     <label>-m:</label>
@@ -334,7 +334,7 @@
                 </div>
                 <div class="form-entry" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)">
                     <label>--quality-base:</label>
-                    <input id="--quality-base" type="number" value="32"/>
+                    <input id="--quality-base" type="number" value="33"/>
                 </div>
             </div>
         </div>

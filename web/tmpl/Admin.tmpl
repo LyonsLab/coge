@@ -3,6 +3,11 @@
 </tmpl_if>
 
 <TMPL_IF NAME='MAIN'>
+<script type="text/javascript">
+	//Page constants
+	const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+	const USER_NAME     = '<TMPL_VAR NAME="USER">';
+</script>
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <script type="text/javascript" src="js/coge/services.js"></script>
 <!--<script src="js/coge/colors.js"</script>-->
@@ -11,11 +16,7 @@
 <SCRIPT type="text/javascript" src="./js/jstree/jquery.jstree.js"></SCRIPT>
 <script src="js/vendor/d3/d3.min.js"></script>
 <script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
-<script type="text/javascript">
-	//Page constants
-	const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
-	const USER_NAME     = '<TMPL_VAR NAME="USER">';
-</script>
+
 
 <link rel="stylesheet" href="css/dataTables.css" type="text/css"/>
 <style type="text/css">
@@ -149,7 +150,7 @@ table#jobs_table tbody tr td {
 		    <div id="masterTable" style="position:relative;left:20px;padding-top:10px;padding-bottom:10px;" class="hidden result">
 		
 				<div id="organism" class= "hidden" style="padding-top:10px;">
-				<span id='orgCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#orgArrow');show_table('#orgList')"></span>
+					<span id='orgCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#orgArrow');show_table('#orgList')"></span>
 					<div id="orgArrow" onclick="toggle_arrow('#orgArrow');show_table('#orgList')" style='display:inline;'>
 						<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
 					</div>
@@ -157,42 +158,42 @@ table#jobs_table tbody tr td {
 				</div>
 			
 				<div id="genome" class= "hidden" style="padding-top:10px;">
-				<span id='genCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#genArrow');show_table('#genList')"></span>
+					<span id='genCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#genArrow');show_table('#genList')"></span>
 					<div id="genArrow" onclick="toggle_arrow('#genArrow');show_table('#genList')" style='display:inline;'>
-			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-			            	</div>
+			        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+			        </div>
 				<table cellspacing="5" class="hidden" id='genList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 				</div>
 			
 				<div id="user" class= "hidden" style="padding-top:10px;">
-				<span id='userCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#userArrow');show_table('#userList')"></span>
+					<span id='userCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#userArrow');show_table('#userList')"></span>
 					<div id="userArrow" onclick="toggle_arrow('#userArrow');show_table('#userList')" style='display:inline;'>
-			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-			            	</div>
+			    		<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+			    	</div>
 				<table cellspacing="5" class="hidden" id='userList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 				</div>
 			
 				<div id="user_group" class= "hidden" style="padding-top:10px;">
-				<span id='usrgroupCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')"></span>
+					<span id='usrgroupCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')"></span>
 					<div id="usrGArrow" onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')" style='display:inline;'>
-			    	                <img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-			   		        </div>
+			    		<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+			   		</div>
 				<table cellspacing="5" class="hidden" id='usrgroupList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 				</div>
 			
 				<div id="notebook" class= "hidden" style="padding-top:10px;">
-				<span id='noteCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#noteArrow');show_table('#noteList')"></span>
+					<span id='noteCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#noteArrow');show_table('#noteList')"></span>
 					<div id="noteArrow" onclick="toggle_arrow('#noteArrow');show_table('#noteList')" style='display:inline;'>
-			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-			            	</div>
+			        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+			    	</div>
 				<table cellspacing="5" class="hidden" id='noteList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 				</div>
 			
 				<div id="experiment" class= "hidden" style="padding-top:10px;">
-				<span id='expCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#expArrow');show_table('#expList')"></span>
+					<span id='expCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#expArrow');show_table('#expList')"></span>
 					<div id="expArrow" onclick="toggle_arrow('#expArrow');show_table('#expList')" style='display:inline;'>
-			                    	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-			            	</div>
+			        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+			        </div>
 				<table cellspacing="5" class="hidden" id='expList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 			</div>
 			</div>

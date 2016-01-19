@@ -306,6 +306,24 @@ function search_features () { //TODO migrate to web services
 	});
 }
 
+function search_users (search_term) {
+    $.ajax({
+        data: {
+            jquery_ajax: 1,
+            fname: 'search_users',
+            search_term: search_term,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            var obj = jQuery.parseJSON(data);
+            if (obj && obj.items) {
+                $("#edit_user").autocomplete({source: obj.items});
+                $("#edit_user").autocomplete("search");
+            }
+        },
+    });
+}
+
 function search_lists () { //TODO migrate to web services
 	var search_term = $('#edit_list_search').attr('value');
 

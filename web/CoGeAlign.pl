@@ -89,10 +89,8 @@ sub gen_html {
                       HELP       => 'CoGeAlign',
                       WIKI_URL   => $P->{WIKI_URL} || '',
                       USER       => $USER->display_name || '' );
-    $template->param( ADJUST_BOX => 0 );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
-    $template->param( BOX_NAME   => 'CoGe: ClustalW 2.0.10' );
     $template->param( BODY       => $body );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $P->{CAS_URL} || '' );
@@ -326,7 +324,6 @@ sub run {
       );
     my $box_template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'box.tmpl' );
-    $box_template->param( BOX_NAME => "ClustalW Alignment Results" );
 
     #print STDERR $html,"\n";
     my $html;
@@ -437,7 +434,6 @@ qq{<div id=fasta_alignment_box align=left class=resultborder style="display:none
 </div>
 };
 
-    $box_template->param( ADJUST_BOX => 0 );
     $box_template->param( BODY       => $html );
     my $outhtml = $box_template->output;
     return $outhtml;

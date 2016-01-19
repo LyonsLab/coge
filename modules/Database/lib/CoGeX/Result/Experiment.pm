@@ -140,6 +140,10 @@ __PACKAGE__->has_many(    # parent groups
     }
 );
 
+sub item_type {
+    return $node_types->{experiment};   
+}
+
 sub desc {
     return shift->description(@_);
 }
@@ -171,6 +175,14 @@ sub data_type_desc {
         case 4 { return 'marker';       } # Markers
         else   { return 'unknown';      }
     }    
+}
+
+sub owner {
+    my $self = shift;
+
+    foreach ( $self->user_connectors( { role_id => 2 } ) ) {    #FIXME hardcoded
+        return $_->parent;
+    }
 }
 
 ################################################ subroutine header begin ##
