@@ -74,7 +74,7 @@ sub build {
         my $file1 = shift @outputs;
         my $file2 = shift @outputs;
         
-        my $name = substr(to_filename($file1), 0, 3);
+        my ($name) = $file1 =~ /(CHG|CHH|CpG)/;
         
         my $import_task = create_bismark_import_job(
             ob_input_file => $file1,
@@ -85,7 +85,7 @@ sub build {
         );
         push @tasks, $import_task;
         
-        $metadata->{name} .= " ( $name methylation)";
+        $metadata->{name} .= " ($name methylation)";
         
         push @tasks, create_load_experiment_job(
             user => $user,
@@ -98,12 +98,6 @@ sub build {
         );
     }
 
-    # Save outputs for retrieval by downstream tasks
-#    my @done_files; = (
-#        $load_bed_task->{outputs}->[0]
-#    );
-#    push @done_files, $load_csv_task->{outputs}->[0] if ($include_csv);
-    
     return {
         tasks => \@tasks,
         done_files => \@done_files
