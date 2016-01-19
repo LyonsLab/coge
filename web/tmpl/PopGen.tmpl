@@ -108,19 +108,20 @@ function do_plot() {
 			var tr = $('<tr></tr>');
 			t.append(tr);
     		for (var i=0; i<max_chromosomes; i++) {
-			if (i > 0 && i % num_cols == 0) {
-				tr = $('<tr></tr>');
-				t.append(tr);
-			}
-			var td = $('<td></td>');
-			tr.append(td);
-    			var e = $('<div></div>').width(w).height(h);
+				if (i > 0 && i % num_cols == 0) {
+					tr = $('<tr></tr>');
+					t.append(tr);
+				}
+				var td = $('<td></td>');
+				tr.append(td);
+	    		var e = $('<div></div>').width(w).height(h);
 	    		td.append(e);
 	    		plot(chromosomes[offset + i], cols, e[0], w, h);
     		}
     	} else
 		   	plot($('#chromosomes option:selected').text(), cols, p[0]);
     }
+	$('#plot_busy').hide();
 }
 function export_dialog() {
 	var d = $('#export_columns');
@@ -270,6 +271,7 @@ function plot(chromosome, cols, e, w, h) {
     Plotly.newPlot(e, series, layout, { displayModeBar: false });
 }
 function plot_dialog() {
+	offset = 0;
 	$('#arrows').css('display', 'none');
     $('#plot_dialog').dialog('destroy');
 	$('#plot_dialog').dialog({
@@ -357,12 +359,13 @@ Select columns to export
 <div id="plot_dialog" class="dialog_box hidden" title="Plot" style="display:none">
 <div style="height:100%;display:flex;flex-flow:column;">
 	<div style="flex: 0 1 auto;">
-		<select id="plot_columns" multiple onchange="do_plot();" style="width:100%;"></select>
+		<select id="plot_columns" multiple onchange="$('#plot_busy').show();setTimeout(do_plot, 10)" style="width:100%;"></select>
+		<div id="plot_busy" class="spinner" style="display:none;text-align:center;"></div>
 	</div>
 	<div id="plot" style="flex: 1 1 auto;"></div>
 	<div id="arrows" style="flex: 0 1 auto;">
-		<span id="up" class="glyphicon glyphicons-circle-arrow-top" onclick="if(offset!=0){offset-=max_chromosomes;do_plot();}"></span>
-		<span id="down" class="glyphicon glyphicons-circle-arrow-down" onclick="if(num_chromosomes-offset>max_chromosomes){offset+=max_chromosomes;do_plot();}"></span>
+		<span id="up" class="glyphicon glyphicons-circle-arrow-top" onclick="if(offset!=0){$('#plot_busy').show();offset-=max_chromosomes;setTimeout(do_plot, 10);}"></span>
+		<span id="down" class="glyphicon glyphicons-circle-arrow-down" onclick="if(num_chromosomes-offset>max_chromosomes){$('#plot_busy').show();offset+=max_chromosomes;setTimeout(do_plot, 10);}"></span>
 	</div>
 </div>
 </div>
