@@ -137,7 +137,7 @@ sub create_bismark_deduplicate_job {
         push @$args, ['-s', '', 0];
     }
     
-    push @$args, ['--bam', $bam_file, 0];
+    push @$args, ['--bam', $bam_file, 1];
     
     my $output_file = to_filename_without_extension($bam_file) . '.deduplicated.bam';
     
@@ -164,12 +164,16 @@ sub create_extract_methylation_job {
     my $ignore_3prime = $opts{'--ignore_3prime'} // 0;
     my $ignore_3prime_r2 = $opts{'--ignore_3prime_r2'} // 0;
     my $staging_dir = $opts{staging_dir};
-    my $name = to_filename($bam_file);
     
     my $cmd = catfile($CONF->{BISMARK_DIR}, 'bismark_methylation_extractor');
     die "ERROR: BISMARK_DIR is not in the config." unless $cmd;
+    $cmd = 'nice ' . $cmd;
+    
+    my $name = to_filename_without_extension($bam_file);
     
     my $args = [
+        ['--multicore', 4, 0],
+        ['--output', $staging_dir, 0],
         ['--ignore', $ignore, 0],
         ['--ignore_3prime', $ignore_3prime, 0]
     ];
