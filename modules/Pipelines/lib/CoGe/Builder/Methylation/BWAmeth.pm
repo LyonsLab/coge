@@ -119,12 +119,12 @@ sub generate_additional_metadata {
     return \@annotations;
 }
 
-sub create_picard_deduplication_job {
+sub create_picard_deduplicate_job {
     my %opts = @_;
     my $bam_file = $opts{bam_file};
     my $staging_dir = $opts{staging_dir};
     
-    my $cmd = $CONF->{PICARD};
+    my $cmd = 'java -jar ' . $CONF->{PICARD};
     die "ERROR: PICARD is not in the config." unless $cmd;
     
     my $output_file = $bam_file . '.dedup';
