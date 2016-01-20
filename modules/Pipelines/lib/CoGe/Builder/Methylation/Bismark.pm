@@ -52,11 +52,15 @@ sub build {
     #
     my (@tasks, @done_files);
 
-#    push @tasks, create_deduplicate_job( 
-#        bam_file => $input_file,
-#        read_type => ,
-#        staging_dir =>
-#    );
+    if ($methylation_params->{'bismark-deduplicate'}) {
+        my $deduplicate_task = create_bismark_deduplicate_job( 
+            bam_file => $input_file,
+            read_type => $read_params->{read_type},
+            staging_dir => $staging_dir
+        );
+        push @tasks, $deduplicate_task;
+        $input_file = $deduplicate_task->{outputs}[0];
+    }
     
      my $extract_methylation_task = create_extract_methylation_job( 
         bam_file => $input_file,
@@ -115,7 +119,7 @@ sub generate_additional_metadata {
     return \@annotations;
 }
 
-sub create_deduplicate_job {
+sub create_bismark_deduplicate_job {
     my %opts = @_;
     my $bam_file = $opts{bam_file};
     my $read_type = $opts{read_type} // 'single';
@@ -174,7 +178,7 @@ sub create_extract_methylation_job {
         push @$args, ['--ignore_3prime_r2', $ignore_3prime_r2, 0];
     }
     
-    push @$args, [$bam_file, '', 0];
+    push @$args, [$bam_file, '', 1];
     
     return {
         cmd => $cmd,
@@ -214,8 +218,8 @@ sub create_bismark_import_job {
         args => [
             ['-u', 'f', 0],
             ['-c', $min_coverage, 0],
-            ['--OT', $ot_input_file, 0],
-            ['--OB', $ob_input_file, 0],
+            ['--OT', $ot_input_file, 1],
+            ['--OB', $ob_input_file, 1],
             ['-o', $name, 0]
         ],
         inputs => [
