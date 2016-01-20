@@ -4,6 +4,7 @@ use v5.14;
 use strict;
 use warnings;
 
+use Clone qw(clone);
 use Data::Dumper qw(Dumper);
 use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
@@ -89,11 +90,12 @@ sub build {
         );
         push @tasks, $import_task;
         
-        $metadata->{name} .= " ($name methylation)";
+        my $md = clone($metadata);
+        $md->{name} .= " ($name methylation)";
         
         push @tasks, create_load_experiment_job(
             user => $user,
-            metadata => $metadata,
+            metadata => $md,
             staging_dir => $staging_dir,
             wid => $wid,
             gid => $genome->id,
