@@ -315,7 +315,7 @@ $.extend(MethylationView.prototype, {
                 }
                 else { // single-ended
                     this.data.methylation_params['--ignore'] = this.el.find('#--ignore').val();
-                    this.data.methylation_params['--ignore_3prime'] = this.el.find('#--ignore3prime').val();
+                    this.data.methylation_params['--ignore_3prime'] = this.el.find('#--ignore_3prime').val();
                 }
             }
             else if (method === "bwameth") {
@@ -605,7 +605,9 @@ $.extend(AlignmentView.prototype, {
         else if (aligner === "bismark") {
         	this.data = {
         		alignment_params: {
-        			tool: "bismark"
+        			tool: "bismark",
+        			'-N': this.el.find("[id='-N']").val(),
+        			'-L': this.el.find("[id='-L']").val(),
         		}
         	}
         }
