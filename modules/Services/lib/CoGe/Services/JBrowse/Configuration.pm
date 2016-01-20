@@ -530,7 +530,7 @@ sub track_config {
             dataset_id    => 'coge',
             plugins       => ['CoGe'],
             trackSelector => {
-                type => 'CoGe/View/TrackList/CoGe',
+                type => 'Faceted', #'CoGe/View/TrackList/CoGe',
             },
             tracks => \@tracks,
         }
