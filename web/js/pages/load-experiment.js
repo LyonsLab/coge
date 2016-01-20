@@ -296,10 +296,10 @@ $.extend(MethylationView.prototype, {
     },
 
     is_valid: function() {
-        var enabled = this.el.find("#methyl :checked");
-        var method = this.el.find("#alignment").val();
+        var enabled = this.el.find("#methyl").is(":checked");
+        var method = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
         var paired = this.format.is_paired();
-
+        
         if (enabled) {
             if (method === "bismark") {
                 this.data.methylation_params = {
@@ -1012,7 +1012,7 @@ $.extend(OptionsView.prototype, {
 function load(experiment) {
 	coge.progress.begin();
     newLoad = true;
-
+    
 	// Convert request into format for job service
 	var request = {
 		type: 'load_experiment',
