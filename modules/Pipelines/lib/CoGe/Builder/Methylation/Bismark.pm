@@ -186,7 +186,10 @@ sub create_extract_methylation_job {
         push @$args, ['--ignore_3prime_r2', $ignore_3prime_r2, 0];
     }
     
-    push @$args, [$bam_file, '', 1];
+    push @$args, ['', $bam_file, 0];
+    
+    my $done_file = catfile($staging_dir, 'extract_methylation.done');
+    push @$args, ['', '&& touch ' . $done_file, 0]; # kludge to ensure proper sequence since --output dir must be absolute
     
     return {
         cmd => $cmd,
@@ -201,7 +204,7 @@ sub create_extract_methylation_job {
             catfile($staging_dir, 'CHH_OB_' . $name . '.txt'),
             catfile($staging_dir, 'CHH_OT_' . $name . '.txt'),
             catfile($staging_dir, 'CpG_OB_' . $name . '.txt'),
-            catfile($staging_dir, 'CpG_OT_' . $name . '.txt'),
+            catfile($staging_dir, 'CpG_OT_' . $name . '.txt')
         ],
         description => "Extracting methylation status..."
     };
@@ -232,7 +235,8 @@ sub create_bismark_import_job {
         ],
         inputs => [
             $ot_input_file,
-            $ob_input_file
+            $ob_input_file,
+            catfile($staging_dir, 'extract_methylation.done')
         ],
         outputs => [
             catfile($staging_dir, $output_file),
