@@ -7,7 +7,7 @@ use warnings;
 use Data::Dumper qw(Dumper);
 use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
-use CoGe::Accessory::Utils qw(to_filename);
+use CoGe::Accessory::Utils qw(to_filename to_filename_without_extension);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Workflow;
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
@@ -139,6 +139,8 @@ sub create_bismark_deduplicate_job {
     
     push @$args, ['--bam', $bam_file, 0];
     
+    my $output_file = to_filename_without_extension($bam_file) . '.deduplicated.bam';
+    
     return {
         cmd => $cmd,
         script => undef,
@@ -147,9 +149,9 @@ sub create_bismark_deduplicate_job {
             $bam_file
         ],
         outputs => [
-            catfile($staging_dir, "$name.bwameth.c2t"),
+            catfile($staging_dir, $output_file),
         ],
-        description => "Deduplicating PCR artifacts..."
+        description => "Deduplicating PCR artifacts using Bismark..."
     };
 }
 
