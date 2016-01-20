@@ -7,7 +7,7 @@ use warnings;
 use Clone qw(clone);
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
-use CoGe::Accessory::Utils qw(to_filename);
+use CoGe::Accessory::Utils qw(to_filename to_filename_without_extension);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Accessory::Workflow;
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
@@ -33,7 +33,8 @@ sub build {
     my $metadata = $opts->{metadata};
     my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
-    my $params = $opts->{params};
+    my $read_params = $opts->{read_params};
+    my $methylation_params = $opts->{methylation_params};
 
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
@@ -51,23 +52,27 @@ sub build {
     #
     my (@tasks, @done_files);
     
-#    push @tasks, create_deduplicate_job( 
-#        bam_file => $input_file,
-#        read_type => ,
-#        staging_dir =>
-#    );
+    if ($methylation_params->{'picard-deduplicate'}) {
+        my $deduplicate_task = create_picard_deduplicate_job(
+            bam_file => $input_file,
+            read_type => $read_params->{read_type},
+            staging_dir => $staging_dir
+        );
+        push @tasks, $deduplicate_task;
+        $input_file = $deduplicate_task->{outputs}[0];
+    }
 
-    push @tasks, create_pileometh_plot_job( 
+    push @tasks, create_pileometh_plot_job(
         bam_file => $input_file,
         gid => $genome->id,
         staging_dir => $staging_dir
     );
     
-    my $extract_methylation_task = create_pileometh_extraction_job( 
+    my $extract_methylation_task = create_pileometh_extraction_job(
         bam_file => $input_file,
         gid => $genome->id,
         staging_dir => $staging_dir,
-        params => $params
+        params => $methylation_params
     );
     push @tasks, $extract_methylation_task;
     
@@ -77,7 +82,7 @@ sub build {
         
         my $import_task = create_pileometh_import_job(
             input_file => $file,
-            params => $params,
+            params => $methylation_params,
             staging_dir => $staging_dir,
             name => $name
         );
@@ -114,7 +119,7 @@ sub generate_additional_metadata {
     return \@annotations;
 }
 
-sub create_deduplication_job {
+sub create_picard_deduplication_job {
     my %opts = @_;
     my $bam_file = $opts{bam_file};
     my $staging_dir = $opts{staging_dir};
@@ -122,19 +127,23 @@ sub create_deduplication_job {
     my $cmd = $CONF->{PICARD};
     die "ERROR: PICARD is not in the config." unless $cmd;
     
-    my $output_file = 'xxx';
+    my $output_file = $bam_file . '.dedup';
     
     return {
         cmd => $cmd,
         script => undef,
         args => [
-            ['', $bam_file, 0],
+            ['MarkDuplicates', '', 0],
+            ['REMOVE_DUPLICATES=true', '', 0],
+            ["INPUT=$bam_file", '', 0],
+            ["METRICS_FILE=$bam_file.metrics", '', 0],
+            ["OUTPUT=$output_file", '', 0],
         ],
         inputs => [
             $bam_file,
         ],
         outputs => [
-            catfile($staging_dir, $output_file),
+            $output_file,
         ],
         description => "Deduplicating PCR artifacts using Picard..."
     };
@@ -186,7 +195,7 @@ sub create_pileometh_extraction_job {
     my $cmd = $CONF->{PILEOMETH} || 'PileOMeth';
     my $BWAMETH_CACHE_FILE = catfile($CONF->{CACHEDIR}, $gid, 'bwameth_index', 'genome.reheader.faa');
     
-    my $output_prefix = to_filename($bam_file);
+    my $output_prefix = to_filename_without_extension($bam_file);
     
     return {
         cmd => $cmd,
@@ -199,7 +208,7 @@ sub create_pileometh_extraction_job {
             ['--OT', $ot, 0],
             ['--OB', $ob, 0],
             ['', $BWAMETH_CACHE_FILE, 0],
-            ['', $bam_file, 0]
+            ['', $bam_file, 1]
         ],
         inputs => [
             $bam_file
@@ -222,6 +231,7 @@ sub create_pileometh_import_job {
     my $c = $params->{'pileometh-min_converage'} // 10;
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, 'methylation', 'coge-import_pileometh.py');
+    my $output_file = $input_file . '.filtered.coge.csv';
     
     return {
         cmd => $cmd,
@@ -229,13 +239,13 @@ sub create_pileometh_import_job {
         args => [
             ['-u', 'f', 0],
             ['-c', $c, 0],
-            ['', $input_file, 0]
+            ['', $input_file, 1]
         ],
         inputs => [
             $input_file
         ],
         outputs => [
-            $input_file . '.filtered.coge.csv'
+            $output_file
         ],
         description => "Converting $name..."
     };
