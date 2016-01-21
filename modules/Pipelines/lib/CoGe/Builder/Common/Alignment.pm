@@ -236,7 +236,7 @@ sub build {
     );
 
     # Get custom metadata to add to experiment
-    my $annotations = generate_additional_metadata($trimming_params, $alignment_params);
+    my $annotations = generate_additional_metadata($read_params, $trimming_params, $alignment_params);
     my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
     push @$annotations, @annotations2;
 
