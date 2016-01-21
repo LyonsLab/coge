@@ -15,6 +15,7 @@ use CoGeDBI qw(get_table get_user_access_table get_experiments get_distinct_feat
 use CoGe::Accessory::Web;
 use CoGe::Core::Chromosomes;
 use CoGe::Core::Experiment qw(experimentcmp);
+use CoGe::Core::Storage qw(data_type);
 
 my %expTypeToName = (
     1 => 'quant',
@@ -124,7 +125,10 @@ sub track_config {
     push @tracks, {
         chunkSize     => 20000,
         baseUrl       => "$JBROWSE_API/sequence/$gid/", #"https://$SERVER_NAME/services/JBrowse/service.pl/sequence/$gid/",
-        type          => "SequenceTrack",
+        metadata => {
+                t          => "SequenceTrack"
+        },
+        type => "SequenceTrack",
         storeClass    => "JBrowse/Store/SeqFeature/REST",
         label         => "sequence",
         key           => "Sequence",
@@ -142,7 +146,10 @@ sub track_config {
     #
     push @tracks, {
         baseUrl    => "$JBROWSE_API/track/gc/$gid/", #"$SERVER_NAME/coge/services/JBrowse/track/gc/$gid/",
-        type       => "CoGe/View/Track/GC_Content",
+        metadata => {
+                t       => "GC_Content"
+        },
+        type => "CoGe/View/Track/GC_Content",
         storeClass => "JBrowse/Store/SeqFeature/REST",
         track      => "gc_content",
         label      => "gc_content",
@@ -175,7 +182,10 @@ sub track_config {
             track        => "features",
             label        => "features",
             key          => "Features: all",
-            type         => "CoGe/View/Track/CoGeFeatures",
+            metadata => {
+                t         => "Features"
+            },
+            type => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             onClick      => "$SERVER_NAME/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
@@ -211,7 +221,10 @@ sub track_config {
                 track        => "features$type_name",
                 label        => "features$type_name",
                 key          => $type_name,
-                type         => "JBrowse/View/Track/HTMLFeatures",
+                metadata => {
+                    t         => "Features"
+                },
+                type => "JBrowse/View/Track/HTMLFeatures",
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
                 region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
                 onClick      => "$SERVER_NAME/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
@@ -260,7 +273,10 @@ sub track_config {
                     track        => "features_ds".$dsid,
                     label        => "features_ds".$dsid,
                     key          => "Features: ".$dsname,
-                    type         => "CoGe/View/Track/CoGeFeatures",
+                    metadata => {
+                        t         => "Features"
+                    },
+                    type => "CoGe/View/Track/CoGeFeatures",
                     description  => "note, description",
                     storeClass   => "JBrowse/Store/SeqFeature/REST",
                     onClick      => "$SERVER_NAME/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end}",
@@ -294,6 +310,9 @@ sub track_config {
                         track        => 'features_ds'.$dsid.'_'.$type_name,
                         label        => 'features_ds'.$dsid.'_'.$type_name,
                         key          => $type_name,
+                        metadata => {
+                            t         => "Features"
+                        },
                         type         => "JBrowse/View/Track/HTMLFeatures",
                         storeClass   => "JBrowse/Store/SeqFeature/REST",
                         region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
@@ -348,11 +367,13 @@ sub track_config {
 
         # Build a list of notebook id's
         my @notebooks;
+        my @notebook_names;
         foreach my $conn (values %{$allNotebookConn->{$eid}}) {
             my $nid = $conn->{parent_id};
             my $n = $allNotebooks->{$nid};
             next if $n->{deleted};
             next if ($n->{restricted} && !$user->admin && !$connectors->{1}{$nid});
+            push @notebook_names, $n->{name};
             push @notebooks, $nid;
             $notebooks{$nid} = $n;
             push @{ $expByNotebook{$nid} },
@@ -407,7 +428,11 @@ sub track_config {
             track        => "experiment$eid",
             label        => "experiment$eid",
             key          => ( $e->{restricted} ? '&reg; ' : '' ) . $e->{name},
-            type         => $type,
+            metadata => {
+                notebook => @notebook_names ? \@notebook_names : undef,
+                t         => data_type($e->{data_type})
+            },
+            type => $type,
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
             style => {
@@ -461,7 +486,10 @@ sub track_config {
             autocomplete => "all",
             track        => "notebook0",
             label        => "notebook0",
-            type         => "CoGe/View/Track/Wiggle/MultiXYPlot",
+            metadata => {
+                t         => "MultiXYPlot"
+            },
+            type => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
 
@@ -490,7 +518,10 @@ sub track_config {
             autocomplete => "all",
             track        => "notebook$nid",
             label        => "notebook$nid",
-            type         => "CoGe/View/Track/Wiggle/MultiXYPlot",
+            metadata => {
+                t         => "MultiXYPlot"
+            },
+            type => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
 
@@ -531,6 +562,16 @@ sub track_config {
             plugins       => ['CoGe'],
             trackSelector => {
                 type => 'Faceted', #'CoGe/View/TrackList/CoGe',
+                displayColumns => [
+                    'key',
+                    't',
+                    'notebook'
+                ],
+                renameFacets => { t => 'Track Type' },
+                selectableFacets => [
+                    't',
+                    'notebook'
+                ]
             },
             tracks => \@tracks,
         }
