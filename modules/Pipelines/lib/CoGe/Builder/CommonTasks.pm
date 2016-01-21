@@ -954,7 +954,6 @@ sub create_trimgalore_job {
     
     my $name = join(', ', map { basename($_) } @$fastq);
     my @inputs = ( @$fastq, @$validated);
-    my @outputs = map { catfile($staging_dir, to_filename_without_extension($_) . '_trimmed.fq') } @$fastq;
 
     # Build up command/arguments string
     my $cmd = $CONF->{TRIMGALORE};
@@ -977,11 +976,18 @@ sub create_trimgalore_job {
         push @$args, ['-a', '"'.$a.'"', 0];
     }
     
+    my @outputs;
     if ($read_type eq 'paired') {
         push @$args, ['--paired', join(' ', @$fastq), 0];
+        
+        my ($r1, $r2) = @$fastq;
+        @outputs = ( catfile($staging_dir, to_filename_without_extension($r1) . '_val_1.fq'), 
+                     catfile($staging_dir, to_filename_without_extension($r2) . '_val_2.fq') );
     }
-    else {
-        push @$args, ['', join(' ', @$fastq), 0];
+    else { # single
+        my ($file) = @$fastq;
+        push @$args, ['', $file, 0];
+        @outputs = ( catfile($staging_dir, to_filename_without_extension($file) . '_trimmed.fq') );
     }
 
     return {
@@ -996,8 +1002,8 @@ sub create_trimgalore_job {
 
 sub create_trimgalore_workflow {
     my %opts = @_;
-    my $fastq1 = $opts{fastq1}; # array ref of left reads (or all reads if single-ended)
-    my $fastq2 = $opts{fastq2}; # array ref of right reads (or undef if single-ended)
+    my $fastq1 = $opts{fastq1} // []; # array ref of left reads (or all reads if single-ended)
+    my $fastq2 = $opts{fastq2} // []; # array ref of right reads (or undef if single-ended)
     my $validated = $opts{validated};
     my $staging_dir = $opts{staging_dir};
     my $read_params = $opts{read_params};
@@ -1005,9 +1011,9 @@ sub create_trimgalore_workflow {
     
     my (@tasks, @outputs);
 
-    if (not defined $fastq2) { # single-ended
+    if ($read_params->{read_type} eq 'single') { # single-ended
         # Create trimgalore task for each file
-        foreach my $file (@$fastq1) {
+        foreach my $file (@$fastq1, @$fastq2) {
             my $task = create_trimgalore_job(
                 fastq => $file,
                 validated => $validated,
@@ -1019,7 +1025,7 @@ sub create_trimgalore_workflow {
             push @tasks, $task;
         }
     }
-    else {
+    else { # paired-end
         # Create trimgalore task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) { 
             my $file1 = shift @$fastq1;
