@@ -1800,7 +1800,7 @@ sub go {
 		host => $config->{JOBSERVER},
 		port => $config->{JOBPORT}
 	);
-	my $workflow = $JEX->create_workflow( init => 1, name => $workflow_name );
+	my $workflow = $JEX->create_workflow( name => $workflow_name );
 	$workflow->log_section( "Creating Workflow" );
 	$workflow->log( "Link to Regenerate Analysis" );
 	$workflow->log( "$tiny_link" );
