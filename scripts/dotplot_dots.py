@@ -15,23 +15,27 @@ api_base = "https://genomevolution.org/coge/api/v1/genomes/"
 # Define Input/Outputs
 # - 1st command line argument.
 # - Synmap Output - must include ks values [this file will end with '.aligncoords.gcoords.ks').
+# Define "option_name"
+# - 2nd command line argument.
+# - Will be based on options that affect outputs.
 # ---------------------------------------------------------------------------------------------------------------------
 
 log = {}
 
-# Assign input to variable "synmap_output", raise error and exit if not specified.
+# Assign first arg to input_ksfile, raise error and exit if not specified.
 try:
     input_ksfile = argv[1]
     output_dir = path.dirname(input_ksfile).rstrip("/")
-    #output_dir = argv[2].rstrip("/")
 except IndexError:
-    log["status"] = "failed"
-    log["message"] = "Error: input/output specification"
-    # TODO: Add Log Dump!
-    stderr.write("dotplot_dots.py failed\n")
-    stderr.write("Error: input/output specification")
+    stderr.write("dotplot_dots.py failed (Error: input/output specification)\n")
+    print "dotplot_dots.py failed (Error: input/output specification)"
     exit()
 
+# Assign second arg to option_name, set as blank string if not specified.
+try:
+    option_name = argv[2]
+except IndexError:
+    option_name = ''
 # Load input into variable "get_values"
 get_values = open(input_ksfile, 'r')
 
@@ -49,7 +53,28 @@ data = {}  # holds final data structure
 #                                                                                          sp1_stop,
 #                                                                                          sp2_start,
 #                                                                                          sp2_stop,
-#                                                                                          ["Kn", "Ks"]
+#                                                                                          {"Kn": *,
+#                                                                                           "Ks": *,
+#                                                                                           "Sp1": {"name": *,
+#                                                                                                   "chr" : *,
+#                                                                                                   "start" : *,
+#                                                                                                   "stop" : *,
+#                                                                                                   "strand" : *,
+#                                                                                                   "type" : *
+#                                                                                                   "gene_count" : *,
+#                                                                                                   "db_feature_id" : *,
+#                                                                                                   "percent_id" : *
+#                                                                                                  },
+#                                                                                           "Sp2": {"name": *,
+#                                                                                                   "chr" : *,
+#                                                                                                   "start" : *,
+#                                                                                                   "stop" : *,
+#                                                                                                   "strand" : *,
+#                                                                                                   "type" : *
+#                                                                                                   "gene_count" : *,
+#                                                                                                   "db_feature_id" : *,
+#                                                                                                   "percent_id" : *
+#                                                                                                  }
 #                                                                                         ],
 #                                                                                         ...
 #                                                                             },
@@ -90,6 +115,8 @@ for line in get_values:
         # Kn/Ks
         tmpl["Ks"] = line_contents[0]
         tmpl["Kn"] = line_contents[1]
+        sp1_info = line_contents[3].split('||')
+        sp2_info = line_contents[7].split('||')
 
         # Species 1: Genome ID, Chromosome, Start, Stop
         id_chr_1 = line_contents[2].lstrip('a').partition("_")
@@ -101,6 +128,15 @@ for line in get_values:
             sp1_chromosomes.append(id_chr_1[2])
         tmpl["sp1_start"] = line_contents[4]
         tmpl["sp1_stop"] = line_contents[5]
+        tmpl["sp1_info"] = {"chr": sp1_info[0],
+                            "start": sp1_info[1],
+                            "stop": sp1_info[2],
+                            "name": sp1_info[3],
+                            "strand": sp1_info[4],
+                            "type": sp1_info[5],
+                            "db_feature_id": sp1_info[6],
+                            "gene_count": sp1_info[7],
+                            "percent_id": sp1_info[8]}
 
         # Species 2: Genome ID, Chromosome, Start, Stop
         id_chr_2 = line_contents[6].lstrip('b').partition("_")
@@ -112,6 +148,15 @@ for line in get_values:
             sp2_chromosomes.append(id_chr_2[2])
         tmpl["sp2_start"] = line_contents[8]
         tmpl["sp2_stop"] = line_contents[9]
+        tmpl["sp2_info"] = {"chr": sp2_info[0],
+                            "start": sp2_info[1],
+                            "stop": sp2_info[2],
+                            "name": sp2_info[3],
+                            "strand": sp2_info[4],
+                            "type": sp2_info[5],
+                            "db_feature_id": sp2_info[6],
+                            "gene_count": sp2_info[7],
+                            "percent_id": sp2_info[8]}
 
         # Append hit (template) to "hits" list
         hits.append(tmpl)
@@ -120,16 +165,18 @@ for line in get_values:
 if len(sp1_id) > 1 or len(sp2_id) > 1:
     log["status"] = "failed"
     log["message"] = "Error: Too many genome IDs"
-    # TODO: Add Log Dump!
-    stderr.write("dotplot_dots.py failed\n")
-    stderr.write("Error: too many genome IDs")
+    log_out = "%s/%s_%s_%slog.json" % (output_dir, sp1_id, sp2_id, option_name)
+    dump(log, open(log_out, "wb"))
+    stderr.write("dotplot_dots.py failed (Error: too many genome IDs)\n")
+    print "dotplot_dots.py failed (Error: too many genome IDs)"
     exit()
 elif len(sp1_id) < 1 or len(sp2_id) < 1:
     log["status"] = "failed"
     log["message"] = "Error: Too few genome IDs"
-    # TODO: Add Log Dump!
-    stderr.write("dotplot_dots.py failed\n")
-    stderr.write("Error: too few genome IDs")
+    log_out = "%s/%s_%s_%slog.json" % (output_dir, sp1_id, sp2_id, option_name)
+    dump(log, open(log_out, "wb"))
+    stderr.write("dotplot_dots.py failed (Error: too few genome IDs)\n")
+    print "dotplot_dots.py failed (Error: too few genome IDs)"
     exit()
 else:
     sp1_id = sp1_id[0]
@@ -151,7 +198,16 @@ data["genomes"] = {}
 # Populate data["syntenic_points"] with hits.
 for hit in hits:
     # Entry Structure: [ch1_start, ch1_stop, ch2_start, ch2_stop, [kn, ks]]
-    entry = [hit["sp1_start"], hit["sp1_stop"], hit["sp2_start"], hit["sp2_stop"], {"Kn": hit["Kn"], "Ks": hit["Ks"]}]
+    entry = [hit["sp1_start"],
+             hit["sp1_stop"],
+             hit["sp2_start"],
+             hit["sp2_stop"],
+             {"Kn": hit["Kn"],
+              "Ks": hit["Ks"],
+              str(sp1_id): hit["sp1_info"],
+              str(sp2_id): hit["sp2_info"]
+              }
+             ]
     data["syntenic_points"][hit["sp1_id"]][hit["sp2_id"]][hit["sp1_ch"]][hit["sp2_ch"]].append(entry)
 
 # Remove any empty sets.
@@ -171,13 +227,11 @@ data["genomes"][sp2_id] = sp2_genome_info
 
 
 # Dump "data" to JSON.
-output_filename = "%s/%s_%s_synteny.json" % (output_dir, sp1_id, sp2_id)
+output_filename = "%s/%s_%s_%ssynteny.json" % (output_dir, sp1_id, sp2_id, option_name)
 dump(data, open(output_filename, 'wb'))
 
 # Print concluding message.
 log["status"] = "complete"
 log["message"] = "%s syntenic pairs identified" % str(len(hits))
-log_out = "%s/dotplot_dots_log.json" % output_dir
+log_out = "%s/%s_%s_%slog.json" % (output_dir, sp1_id, sp2_id, option_name)
 dump(log, open(log_out, "wb"))
-
-# print "%s syntenic pairs identified!\ndotplot_dots.py Complete" % str(len(hits))

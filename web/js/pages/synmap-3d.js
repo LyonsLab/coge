@@ -4,6 +4,7 @@ var concat = Array.prototype.concat;
 
 // Global experiment data
 var current_experiment = {};
+var options_name;
 var final_experiment;
 var edit_focus = undefined;
 
@@ -388,6 +389,15 @@ function launch(experiment) {
     var zgid = experiment.z_gid;
     final_experiment = experiment;
     final_experiment.links = {};
+    console.log(final_experiment);
+    function buildOptionsName(exp) {
+        var name = '';
+        if (final_experiment.options.hide) { name += 'parsed_'; }
+        if (final_experiment.options.nim_len > 0) { name += 'min' + final_experiment.options.min_len + '_'; }
+        return name;
+    }
+    options_name = buildOptionsName(final_experiment);
+
     var fileDir = "/home/asherkhb/repos/coge/web/data/diags/";
     var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks";
     
@@ -555,6 +565,7 @@ function launch(experiment) {
                     ksfile_xy: final_experiment.links.xy,
                     ksfile_xz: final_experiment.links.xz,
                     ksfile_yz: final_experiment.links.yz,
+                    option_name: options_name,
                     hide: experiment.options.hide,
                     min_len: experiment.options.min_len
                 }

@@ -190,6 +190,7 @@ sub dotplot_dots {
     my $ksfile_xy = $opts{ksfile_xy};
     my $ksfile_xz = $opts{ksfile_xz};
     my $ksfile_yz = $opts{ksfile_yz};
+    my $option_name = $opts{option_name};
     my $hide = $opts{hide};
     my $min_len = $opts{min_len};
 
@@ -199,8 +200,8 @@ sub dotplot_dots {
     my $DIAGSURL = '/asherkhb/coge/data/diags';
     my $SYN3DURL = '/asherkhb/coge/data/syn3d';
 
-    my $dotlog = 'dotplot_dots_log.json';
-    my $merge_log = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_log.json';
+    my $dotlog = $option_name . 'log.json';
+    my $merge_log = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_' . $option_name . 'log.json';
 
     my ( $dir1, $dir2 ) = sort ( $genome_idX, $genome_idY );
     my ( $dir3, $dir4 ) = sort ( $genome_idX, $genome_idZ );
@@ -209,11 +210,12 @@ sub dotplot_dots {
     my $workflow = $JEX->create_workflow( name => "Finding Syntenic Points", init => 1 );
 
     # Build/add dotplot_dots XY job.
-    my $cmd_xy = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile_xy;
-    my $dots_xy = $dir1 . '_' . $dir2 . '_synteny.json';
+    my $cmd_xy = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile_xy . ' ' . $option_name;
+    my $dots_xy = $dir1 . '_' . $dir2 . '_' . $option_name . 'synteny.json';
+    my $dots_xy_log = catfile($DIAGSDIR, $dir1, $dir2, $dir1 . '_' . $dir2 . '_' . $dotlog);
     my $dots_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $dots_xy);
     my $dots_xy_url = catfile($DIAGSURL, $dir1, $dir2, $dots_xy);
-    my $outputs_xy = [catfile($DIAGSDIR, $dir1, $dir2, $dotlog), $dots_xy_path];
+    my $outputs_xy = [$dots_xy_log, $dots_xy_path];
     $workflow->add_job({
         cmd => $cmd_xy,
         outputs => $outputs_xy,
@@ -221,11 +223,12 @@ sub dotplot_dots {
     });
 
     # Build/add dotplot_dots XZ job.
-    my $cmd_xz = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile_xz;
-    my $dots_xz = $dir3 . '_' . $dir4 . '_synteny.json';
+    my $cmd_xz = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile_xz . ' ' . $option_name;
+    my $dots_xz = $dir3 . '_' . $dir4  . '_' . $option_name . 'synteny.json';
+    my $dots_xz_log = catfile($DIAGSDIR, $dir3, $dir4, $dir3 . '_' . $dir4 . '_' . $dotlog);
     my $dots_xz_path = catfile($DIAGSDIR, $dir3, $dir4, $dots_xz);
     my $dots_xz_url = catfile($DIAGSURL, $dir3, $dir4, $dots_xz);
-    my $outputs_xz = [catfile($DIAGSDIR, $dir3, $dir4, $dotlog), $dots_xz_path];
+    my $outputs_xz = [$dots_xz_log, $dots_xz_path];
     $workflow->add_job({
         cmd => $cmd_xz,
         outputs => $outputs_xz,
@@ -233,11 +236,12 @@ sub dotplot_dots {
     });
 
     # Build/add dotplot_dots YZ job.
-    my $cmd_yz = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile_yz;
-    my $dots_yz = $dir5 . '_' . $dir6 . '_synteny.json';
+    my $cmd_yz = catfile($SCRIPTDIR, 'dotplot_dots.py') . ' ' . $ksfile_yz . ' ' . $option_name;
+    my $dots_yz = $dir5 . '_' . $dir6 . '_' . $option_name . 'synteny.json';
+    my $dots_yz_log = catfile($DIAGSDIR, $dir5, $dir6, $dir5 . '_' . $dir6 . '_' . $dotlog);
     my $dots_yz_path = catfile($DIAGSDIR, $dir5, $dir6, $dots_yz);
     my $dots_yz_url = catfile($DIAGSURL, $dir5, $dir6, $dots_yz);
-    my $outputs_yz = [catfile($DIAGSDIR, $dir5, $dir6, $dotlog), $dots_yz_path];
+    my $outputs_yz = [$dots_yz_log, $dots_yz_path];
     $workflow->add_job({
         cmd => $cmd_yz,
         outputs => $outputs_yz,
@@ -245,8 +249,9 @@ sub dotplot_dots {
     });
 
     # Build/add three_dots_merge job.
-    my $merge_ins = ' -i1 ' . @$outputs_xy[1] . ' -i2 ' . @$outputs_xz[1] . ' -i3 ' . @$outputs_yz[1];
-    my $merge_ots = ' -o ' . $SYN3DIR;
+    # my $merge_ins = ' -i1 ' . @$outputs_xy[1] . ' -i2 ' . @$outputs_xz[1] . ' -i3 ' . @$outputs_yz[1];
+    my $merge_ins = ' -i1 ' . $dots_xy_path . ' -i2 ' . $dots_xz_path . ' -i3 ' . $dots_yz_path;
+    my $merge_ots = ' -o ' . $SYN3DIR . ' -n ' . $option_name;
     my $merge_gids = ' -xid ' . $genome_idX . ' -yid ' . $genome_idY . ' -zid ' . $genome_idZ;
     my $merge_opts = '';
     if ($hide eq 'true') { $merge_opts .= ' -P' }
@@ -254,10 +259,10 @@ sub dotplot_dots {
 
     my $merge_cmd = catfile($SCRIPTDIR, 'three_dots_merge.py') . $merge_ins . $merge_ots . $merge_gids . $merge_opts;
     my $merge_in = [$dots_xy_path, $dots_xz_path, $dots_yz_path];
-    my $dots_xyz = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_dots.json';
+    my $dots_xyz = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_' . $option_name . 'dots.json';
     my $dots_xyz_path = catfile($SYN3DIR, $dots_xyz);
     my $dots_xyz_url = catfile($SYN3DURL, $dots_xyz);
-    my $hist_xyz = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_histogram.json';
+    my $hist_xyz = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_' . $option_name . 'histogram.json';
     my $hist_xyz_path = catfile($SYN3DIR, $hist_xyz);
     my $hist_xyz_url = catfile($SYN3DURL, $hist_xyz);
     my $merge_out = [$dots_xyz_path, catfile($SYN3DIR, $merge_log), $hist_xyz_path];
