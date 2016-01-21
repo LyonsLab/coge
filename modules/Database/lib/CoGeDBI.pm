@@ -125,10 +125,12 @@ sub get_user_access_table {
     }
     
     Hash::Merge::set_behavior('LEFT_PRECEDENT');
-    my $combined = Hash::Merge::merge($results1, $results2, $results3); # order is important here, user connections should override group and list connections
-    #print STDERR Dumper \%combined, "\n";
+    #my $combined = Hash::Merge::merge($results1, $results2, $results3); # mdb removed 12/11/15
+    my $combined = Hash::Merge::merge($results1, $results2); # order is important here, user connections should override group and list connections
+    my $combined2 = Hash::Merge::merge($combined, $results3); # mdb added 12/11/15
+    #print STDERR Dumper $combined2, "\n";
     
-    return $combined;
+    return $combined2;
 }
 
 sub get_group_access_table {

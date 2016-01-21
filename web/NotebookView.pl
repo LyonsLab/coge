@@ -175,8 +175,8 @@ sub get_list_info {
             map  { $_->genome_id } $list->experiments
           )
         {    # Pick a genome, any genome # TODO show user a list of genomes to choose from
-            my $link = qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid');};
-            $html .= qq{<span class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' style="margin-right:5px;" onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
+            my $link = qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid', '_self');};
+            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="$link">Browse</span>};
             last;
         }
     }

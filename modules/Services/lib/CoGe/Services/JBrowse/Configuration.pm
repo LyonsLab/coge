@@ -88,6 +88,16 @@ sub track_config {
     
     # Connect to the database
     my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+    
+    # Admins have ability to simulate other users using the "user_id" query parameter
+#    my $user_id = $self->query->param('user_id');
+#    if (defined $user_id && $user->is_admin && $user_id != $user->id) {
+#        my $simulated_user = $db->resultset('User')->find($user_id);
+#        if (defined $simulated_user) {
+#            print STDERR "Switching to user '", $simulated_user->name, "'\n";
+#            $user = $simulated_user;
+#        }
+#    }
 
     # Get server name for constructing URLs
     my $SERVER_NAME = $conf->{SERVER};#$ENV{SERVER_NAME}; # mdb added 12/11/14 for COGE-568

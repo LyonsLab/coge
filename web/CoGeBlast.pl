@@ -97,7 +97,7 @@ $BLAST_PROGS   = {
     export_hsp_query_fasta   => \&export_hsp_query_fasta,
     export_hsp_subject_fasta => \&export_hsp_subject_fasta,
     export_alignment_file    => \&export_alignment_file,
-#    generate_basefile        => \&generate_basefile,
+    generate_basefile        => \&generate_basefile,
     get_dsg_for_menu         => \&get_dsg_for_menu,
     get_genome_info          => \&get_genome_info,
     search_lists             => \&search_lists,
@@ -660,10 +660,10 @@ sub get_dsg_for_menu {
     return $html;
 }
 
-#sub generate_basefile {
-#    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
-#    return $cogeweb->basefilename;
-#}
+sub generate_basefile {
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+    return $cogeweb->basefilename;
+}
 
 sub alert {
     my $msg = shift;

@@ -592,7 +592,7 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
     $anno_obj->add_Annot($anno_type);
     
     my $groups = ( $self->restricted ? 
-        join( ', ', sort map { $_->display_name } $self->groups ) :
+        join( ', ', sort map { $_->name } $self->groups ) :
         undef );
     if ($groups) {
         $anno_type =
