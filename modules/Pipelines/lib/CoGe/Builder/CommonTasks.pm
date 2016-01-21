@@ -848,12 +848,12 @@ sub create_cutadapt_job {
     my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
-    my $trimming_params = $opts{trimming_params} // {}; #/
-    my $q = $trimming_params->{'-q'} // 25; #/
-    my $m = $trimming_params->{'-m'} // 17; #/
-    my $read_params = $opts{read_params} // {}; #/
-    my $quality = $read_params->{encoding} // 33; #/
-    my $read_type = $read_params->{read_type} // 'single'; #/
+    my $trimming_params = $opts{trimming_params} // {};
+    my $q = $trimming_params->{'-q'} // 25;
+    my $m = $trimming_params->{'-m'} // 17;
+    my $read_params = $opts{read_params} // {};
+    my $encoding = $read_params->{encoding} // 33;
+    my $read_type = $read_params->{read_type} // 'single';
 
     $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
     $validated = [ $validated ] unless (ref($validated) eq 'ARRAY');
@@ -869,7 +869,7 @@ sub create_cutadapt_job {
 
     my $arg_str;
     $arg_str .= $cmd . ' ';
-    $arg_str .= "-q $q --quality-base=$quality -m $m -o $outputs[0] ";
+    $arg_str .= "-q $q --quality-base=$encoding -m $m -o $outputs[0] ";
     $arg_str .= "-p $outputs[1] " if (@$fastq > 1); # paired-end
     
     return {
@@ -1081,7 +1081,7 @@ sub create_hisat2_workflow {
     my $fasta       = $opts{fasta};
     my $fastq       = $opts{fastq};
     my $gid         = $opts{gid};
-    my $phred33     = $opts{'--phred33'};
+    my $encoding    = $opts{encoding};
     my $read_type   = $opts{read_type} // 'single';
     my $staging_dir = $opts{staging_dir};
 
@@ -1091,7 +1091,7 @@ sub create_hisat2_workflow {
         fastq => $fastq,
         gid => $gid,
         index_files => ($build{outputs}),
-        '--phred33' => $phred33,
+        encoding => $encoding,
         read_type => $read_type,
         staging_dir => $staging_dir
     );
@@ -1110,7 +1110,7 @@ sub create_hisat2_job {
     my $fastq       = $opts{fastq};
     my $gid         = $opts{gid};
     my $index_files = $opts{index_files};
-    my $phred33     = $opts{'--phred33'};
+    my $encoding    = $opts{encoding};
     my $read_type   = $opts{read_type};
     my $staging_dir = $opts{staging_dir};
 
@@ -1119,6 +1119,14 @@ sub create_hisat2_job {
 		['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
 		['-S', 'hisat2.sam', 0]
     ];
+    
+    if ($encoding eq '64') {
+        push $args, ['--phred64', '', 0];
+    }
+    else {
+        push $args, ['--phred33', '', 0];
+    }
+    
     if ($read_type eq 'single') {
     	push $args, ['-U', join(',', @$fastq), 0];
     }
@@ -1126,12 +1134,6 @@ sub create_hisat2_job {
 		my ($m1, $m2) = detect_paired_end($fastq);
     	push $args, ['-1', join(',', sort @$m1), 0];
     	push $args, ['-2', join(',', sort @$m2), 0];
-	}
-	if ($phred33) {
-		push $args, ['', '--phred33', 0];
-	}
-	else {
-		push $args, ['', '--phred64', 0];
 	}
 
 	return (
@@ -1185,6 +1187,8 @@ sub create_tophat_workflow {
     my $validated = $opts{validated};
     my $gff = $opts{gff};
     my $staging_dir = $opts{staging_dir};
+    my $read_type = $opts{read_type};
+    my $encoding = $opts{encoding};
     my $params = $opts{params};
 
     my ($index, %bowtie) = create_bowtie_index_job($gid, $fasta);
@@ -1197,6 +1201,8 @@ sub create_tophat_workflow {
         gff => $gff,
         index_name => $index,
         index_files => ($bowtie{outputs}),
+        read_type => $read_type,
+        encoding => $encoding,
         params => $params,
     );
 
@@ -1250,11 +1256,12 @@ sub create_tophat_job {
     my $gff         = $opts{gff};
     my $index_name  = basename($opts{index_name});
     my $index_files = $opts{index_files};
+    my $read_type   = $opts{read_type} // 'single';
+    my $encoding    = $opts{encoding};
     my $params      = $opts{params};
 
     # Optional arguments
     my $g = $params->{'-g'} // 1; #/
-    my $read_type = $params->{read_type} // 'single'; #/
 
     # Setup input dependencies
     my $inputs = [
@@ -1273,6 +1280,7 @@ sub create_tophat_job {
     my $arg_str;
     $arg_str .= $cmd . ' ';
     $arg_str .= "-G $gff " if ($gff);
+    $arg_str .= "--phred64_quals " if ($encoding eq '64');
     $arg_str .= "-o . -g $g -p 32 $index_name ";
 
     return (
@@ -1300,6 +1308,7 @@ sub create_bismark_workflow {
     my $fastq = $opts{fastq};
     my $validated = $opts{validated};
     my $staging_dir = $opts{staging_dir};
+    my $encoding = $opts{encoding};
     my $read_type = $opts{read_type};
     my $params = $opts{params};
 
@@ -1312,6 +1321,7 @@ sub create_bismark_workflow {
         validated => $validated,
         index_path => $index_path,
         index_files => ($index_task{outputs}),
+        encoding => $encoding,
         read_type => $read_type,
         params => $params
     );
@@ -1373,6 +1383,7 @@ sub create_bismark_alignment_job {
     my $validated   = $opts{validated};
     my $index_path  = $opts{index_path};#basename($opts{index_path});
     my $index_files = $opts{index_files};
+    my $encoding    = $opts{encoding};
     my $read_type   = $opts{read_type} // 'single'; #/
     my $params      = $opts{params};
 
@@ -1394,6 +1405,7 @@ sub create_bismark_alignment_job {
     
     my $args = [
         ['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
+        [($encoding eq '64' ? '--phred64-quals' : '--phred33-quals'), '', 0],
         ['-N', $N, 0],
         ['-L', $L, 0],
         [$index_path, '', 0]
@@ -1684,7 +1696,7 @@ sub create_gsnap_job {
 
     # Optional arguments
     my $params = $opts->{params};
-    my $read_type = $params->{'read_type'} // "single"; #/
+    my $read_type = $params->{read_type} // "single"; #/
     my $gapmode = $params->{'--gap-mode'} // "none"; #/
     my $Q = $params->{'-Q'} // 1; #/
     my $n = $params->{'-n'} // 5; #/
