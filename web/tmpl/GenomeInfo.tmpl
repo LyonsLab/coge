@@ -42,7 +42,7 @@ var job_id = "<TMPL_VAR NAME=JOB_ID>",
 // EXPORT DIALOG GLOBALS
 var irods_home = $("<p>Sending to: " + irods_home_path + "</p>");
 var export_error = $("<p></p>")
-    .text("Failed to export to the iPlant Data Store.")
+    .text("Failed to export to the CyVerse Data Store.")
     .addClass("alert");
 var download_error = $("<p></p>")
     .text("The file could not be fetched")
@@ -1303,7 +1303,7 @@ function get_experiments(e) {
 			<thead><tr><th>Chromosome</th><th>Length</th><th style="text-align:right;">Files</th><th></th></thead>
 			<tbody></tbody>
 		</table>
-		<span onclick="export_chr_file()" class="r ui-button ui-corner-all coge-button" style="margin-left:10px;margin-top:10px;">Send to iPlant</span>
+		<span onclick="export_chr_file()" class="r ui-button ui-corner-all coge-button" style="margin-left:10px;margin-top:10px;">Send to CyVerse</span>
 		<span onclick="download_chr_file()" class="r ui-button ui-corner-all coge-button" style="margin-top:10px;">Download</span>
 	</div>
 </div>
@@ -1375,7 +1375,7 @@ function get_experiments(e) {
                 </tr>
                 <TMPL_IF NAME="LOGON">
                 <tr>
-                    <td class='title5'>Export to iPlant Data Store:</td>
+                    <td class='title5'>Export to CyVerse Data Store:</td>
                     <td class='data5'>
                         <span class='link' ondblclick="export_fasta()" onclick="export_fasta()">FASTA</span>
                         &nbsp|
