@@ -676,13 +676,14 @@ $.extend(AlignmentOptionView.prototype, {
     },
 
     is_valid: function() {
-        return this.snp_view.is_valid();
-        return this.methylation_view.is_valid();
+        return this.snp_view.is_valid()
+        	   && this.expression_view.is_valid()
+        	   && this.methylation_view.is_valid();
     },
 
     get_options: function() {
-        return $.extend(this.snp_view.get_options(),
-                        this.expression_view.get_options(),
+        return $.extend(this.expression_view.get_options(),
+        				this.snp_view.get_options(),
                         this.methylation_view.get_options());
     },
 });
@@ -782,12 +783,12 @@ $.extend(FastqView.prototype, {
             template: "#fastq-template",
 
             layout: {
-                "#methylation-view": this.methylation_view,
+                '#read-view': this.read_view,
+                '#trim-view': this.trim_view,
+                "#align-view": this.align_view,
                 "#expression-view": this.expression_view,
                 "#snp-view": this.snp_view,
-                "#align-view": this.align_view,
-                '#trim-view': this.trim_view,
-                '#read-view': this.read_view
+                "#methylation-view": this.methylation_view
             }
         });
 
@@ -800,34 +801,21 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
-    	if (!this.read_view.is_valid())
-            return false;
-    	
-    	if (!this.trim_view.is_valid())
-            return false;
-    	
-        if (!this.align_view.is_valid())
-            return false;
-        
-        if (!this.snp_view.is_valid())
-            return false;
-
-        if (!this.expression_view.is_valid())
-            return false;
-
-        if (!this.methylation_view.is_valid())
-            return false;
-
-        return true;
+    	return (   this.read_view.is_valid()
+    			&& this.trim_view.is_valid()
+    			&& this.align_view.is_valid()
+    			&& this.snp_view.is_valid()
+    			&& this.expression_view.is_valid()
+    			&& this.methylation_view.is_valid());
     },
 
     get_options: function() {
-        return $.extend(this.methylation_view.get_options(),
+        return $.extend(this.read_view.get_options(),
+		        		this.trim_view.get_options(),
+		        		this.align_view.get_options(),
                         this.expression_view.get_options(),
                         this.snp_view.get_options(),
-                        this.align_view.get_options(),
-                        this.trim_view.get_options(),
-                        this.read_view.get_options());
+                        this.methylation_view.get_options());
     },
 });
 
