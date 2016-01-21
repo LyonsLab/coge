@@ -9,7 +9,7 @@ use File::Path qw(make_path);
 use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
-use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename);
+use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
 use CoGe::Accessory::Web qw(get_defaults split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
@@ -954,7 +954,7 @@ sub create_trimgalore_job {
     
     my $name = join(', ', map { basename($_) } @$fastq);
     my @inputs = ( @$fastq, @$validated);
-    my @outputs = map { catfile($staging_dir, to_filename($_) . '_trimmed.fq') } @$fastq;
+    my @outputs = map { catfile($staging_dir, to_filename_without_extension($_) . '_trimmed.fq') } @$fastq;
 
     # Build up command/arguments string
     my $cmd = $CONF->{TRIMGALORE};
@@ -962,7 +962,7 @@ sub create_trimgalore_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     # Create staging dir
-    $cmd = "mkdir $staging_dir ; " . $cmd;
+    $cmd = "mkdir -p $staging_dir ; " . $cmd;
 
     my $args = [
         ['--output_dir', $staging_dir, 0],
