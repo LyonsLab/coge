@@ -2,105 +2,103 @@
  ~~~~SELECTABLE OPTIONS~~~~
  -----------------------------------------------------------------------------------------------------------------*/
 
-var knKsSelect; // = "Ks"; // Can be "Ks" or "Kn"
-var comparisonSelect; // = "mean"; // Can be "mean", "xy", "xz", or "yz"
+var knKsSelect; // "Ks" or "Kn"
+var comparisonSelect; // "mean", "xy", "xz", or "yz"
+//var colorSelect; // "Jet", "Bluered", "Portland", or "Viridis"
 
 /*-----------------------------------------------------------------------------------------------------------------
- ~~~~FUNCTION DEFINITIONS~~~~
+ ~~~~CORE FUNCTION DEFINITIONS~~~~
+ + loadData(xID, yID, zID, xyjson, xzjson, mergejson, histo)
+ + renderHistogram(documentElement, histogramTitle, histogramData, binCount)
+ + renderSynMap(xChr, yChr, zChr, matches, histogram_data)
  -----------------------------------------------------------------------------------------------------------------*/
 
-/* FUNCTION: Render Histogram DEPRICATED (see new version below)*/
-function renderHistogram(histogramObj) {
-    function subBin(val, min, max) {
-        var diff = Math.abs(max - min) / 5;
-        var bins = [min + diff, min+(diff*2), min+(diff*3), min+(diff*4), max];
-        if (val <= bins[0]) {
-            return 0;
-        } else if (val <= bins[1]) {
-            return 1;
-        } else if (val <= bins[2]) {
-            return 2;
-        } else if (val <= bins[3]) {
-            return 3;
-        } else if (val <= bins[4]) {
-            return 4;
-        } else {
-            console.log("value: " + val);
-            console.log("bins: " + min + '-' + max);
-            console.log("Subbinning Error");
-        }
+/* CORE FUNCTION: Load Data */
+function loadData(xID, yID, zID, xyjson, xzjson, mergejson, histo) {
+    // TODO: Combine XY and XZ genome/chromosome info into one file (faster loading) - generate w/ three_dots_merge.py
+    var xChr,
+        yChr,
+        zChr,
+        matches,
+        histogram_data;
+
+    function loadXY() {
+        return $.ajax({
+                       type: 'GET',
+                       url: xyjson,
+                       dataType: 'json',
+                       success: function(data) {
+                           xChr = data["genomes"][xID]["chromosomes"];
+                           yChr = data["genomes"][yID]["chromosomes"];
+                       },
+                       error: function(xhr, status, error) {
+                           console.warn("XY JSON Error: " + error);
+                       }
+                     })
     }
 
-    function buildXaxisLabels(histogramInfo) {
-        var d = Math.abs(histogramInfo['max'] - histogramInfo['min']) / 25;
-        var ax = [];
-        for (i = 0; i < 25; i++) {
-            ax[i] = histogramInfo['min'] + 0.5*d + i*d
-        }
-        return ax
+    function loadXZ() {
+        return $.ajax({
+                       type: 'GET',
+                       url: xzjson,
+                       dataType: 'json',
+                       success: function(data) {
+                           zChr = data["genomes"][zID]["chromosomes"];
+                       },
+                       error: function(xhr, status, error) {
+                           console.warn("XZ JSON Error: " + error);
+                       }
+                     })
     }
 
-    var plot = document.getElementById("histogram");
-    var histogramInfo = histogramObj.logten.info[knKsSelect][comparisonSelect];
-    var histogramData = histogramObj.logten.data[knKsSelect][comparisonSelect];
-    var binCounts = [[0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0]];
-    histogramData.forEach( function(value) {
-        if (value <= histogramInfo.bin1[1]) {
-            binCounts[0][subBin(value, histogramInfo.bin1[0], histogramInfo.bin1[1])] += 1;
-        } else if (value <= histogramInfo.bin2[1]) {
-            binCounts[1][subBin(value, histogramInfo.bin2[0], histogramInfo.bin2[1])] += 1;
-        } else if (value <= histogramInfo.bin3[1]) {
-            binCounts[2][subBin(value, histogramInfo.bin3[0], histogramInfo.bin3[1])] += 1;
-        } else if (value <= histogramInfo.bin4[1]) {
-            binCounts[3][subBin(value, histogramInfo.bin4[0], histogramInfo.bin4[1])] += 1;
-        } else if (value <= histogramInfo.bin5[1]) {
-            binCounts[4][subBin(value, histogramInfo.bin5[0], histogramInfo.bin5[1])] += 1;
-        }
-    });
+    function loadThree() {
+        return $.ajax({
+                       type: 'GET',
+                       url: mergejson,
+                       dataType: 'json',
+                       success: function(data) {
+                           matches = data;
+                       },
+                       error: function(xhr, status, error) {
+                           console.warn("Threeway JSON Error: " + error);
+                       }
+                     })
+    }
 
-    var xax = buildXaxisLabels(histogramInfo);
-    var yax = binCounts.reduce( function(a, b) {
-        return a.concat(b);
-    });
+    function loadHistogram() {
+        return $.ajax({
+                       type: 'GET',
+                       url: histo,
+                       dataType: 'json',
+                       success: function(data) {
+                           histogram_data = data;
+                       },
+                       error: function(xhr, status, error) {
+                           console.log("Histogram JSON Error: " + error);
+                       }
+                     })
+    }
 
-    var histPlotData = [{
-        x: xax,
-        y: yax,
-        // TODO: Make this a list comprehension so its not so repetitive.
-        marker: {color: ['#2ECC71', '#2ECC71', '#2ECC71', '#2ECC71', '#2ECC71',
-            '#3498DB', '#3498DB', '#3498DB', '#3498DB', '#3498DB',
-            '#9B59B6', '#9B59B6', '#9B59B6', '#9B59B6', '#9B59B6',
-            '#E67E22', '#E67E22', '#E67E22', '#E67E22', '#E67E22',
-            '#E74C3C', '#E74C3C', '#E74C3C', '#E74C3C', '#E74C3C']},
-        type: "bar"
-    }];
-    var histPlotLayout = {
-        title: 'log10(Kn/Ks) Distribution',
-        bargap: 0,
-        xaxis: {title: 'log10 Ks/Kn', fixedrange: true},
-        yaxis: {title: 'Counts', fixedrange: true}
-    };
-
-    Plotly.Plots.purge(plot);
-    Plotly.plot(plot, histPlotData, histPlotLayout, {showLink: false, displayModeBar: false});
+    return $.when( loadXY(), loadXZ(), loadThree(), loadHistogram())
+        .then( function() {
+            return { "xChr": xChr, "yChr": yChr, "zChr": zChr, "matches": matches, "histogram_data": histogram_data };
+        });
 }
 
-/* FUNCTION: Render Histogram NEW */
-function renderHistogram2(documentElement, histogramTitle, histogramData, binCount) {
+/* CORE FUNCTION: Render Histogram */
+function renderHistogram(documentElement, histogramTitle, histogramData, binCount) {
+    //TODO: Alternate between visualizations using arrows
+    //i.e. http://jsfiddle.net/jtbowden/ykbgT/2/
     // Assign array to store number of bins requested
     var colorArray = [];
     for (var i = 0; i < binCount; i++) {
         colorArray.push(i);
     }
+    // Store maximum and minimum values
+    var minVal = Math.min.apply(null, histogramData);
+    var maxVal = Math.max.apply(null, histogramData);
 
     // Plotly data object
-    // Uses "Jet" color scale: 'Jet': [0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
-    //                                [0.625,'rgb(255,255,0)'],[0.875,'rgb(250,0,0)'],[1,'rgb(128,0,0)']
-    // https://github.com/plotly/plotly.js/blob/dca7314b7ea9da62efcef212d402662bd033afa2/src/components/colorscale/scales.js
     var data = [
         {
             x: histogramData,
@@ -108,13 +106,13 @@ function renderHistogram2(documentElement, histogramTitle, histogramData, binCou
                 cmax: binCount,
                 cmin: 0,
                 color: colorArray,
-                colorscale: 'Jet' //'Portland' //'Bluered'
+                colorscale: 'Jet' //'Bluered' //'Portland' //'Viridis' TODO: Make this selectable
             },
             type: 'histogram',
             xbins: {
-                start: Math.min.apply(null, histogramData),
-                end: Math.max.apply(null, histogramData),
-                size: (Math.max.apply(null, histogramData) - Math.min.apply(null, histogramData)) / binCount
+                start: minVal,
+                end: maxVal,
+                size: (maxVal - minVal) / binCount
             }
         }
     ];
@@ -130,42 +128,11 @@ function renderHistogram2(documentElement, histogramTitle, histogramData, binCou
     Plotly.newPlot(documentElement, data, layout, {showLink: false, displayModeBar: false});
 }
 
-/* FUNCTION: Render Points */
-//TODO: Split renderPoints into this here badboy
-//function renderPoints(matches, scene) {
-//      var calcPtColor = getPtColorFunc(histogram_data.logten.data["Ks"][comparisonSelect], JetColorScheme);
-//      var dotGeo = new THREE.SphereGeometry(0.05);
-//            for (x_ch in matches) {
-//                for (y_ch in matches[x_ch]) {
-//                    for (z_ch in matches[x_ch][y_ch]) {
-//                        for (index in matches[x_ch][y_ch][z_ch]) {
-//                            var coordinate = matches[x_ch][y_ch][z_ch][index];
-//                            var xPos = coordinate[0];
-//                            var yPos = coordinate[1];
-//                            var zPos = coordinate[2];
-//                            var knks = coordinate[3][comparisonSelect][knKsSelect];
-//                            var logKnKs = knks != 0 ? Math.log10(knks) : 'NA';
-//                            var dotMat = new THREE.MeshBasicMaterial(
-//                                    {color: calcPtColor(logKnKs)}
-//                            );
-//                            var dot = new THREE.Mesh (dotGeo, dotMat);
-//                            dot.position.x = xChrIndexed[x_ch]['start'] + (xPos * scaleFactor);
-//                            dot.position.y = yChrIndexed[y_ch]['start'] + (yPos * scaleFactor);
-//                            dot.position.z = zChrIndexed[z_ch]['start'] + (zPos * scaleFactor);
-//                            matchDots.add(dot)
-//                        }
-//                    }
-//                }
-//            }
-//
-//            matchDots.translateX(-startPositions.x / 2);
-//            matchDots.translateY(-startPositions.y / 2);
-//            matchDots.translateZ(-startPositions.z / 2);
-//            scene.add(matchDots);
-//}
-
-/* FUNCTION: Render Comparison */
-function renderComparison(xid, yid, zid, xyjson, xzjson, yzjson, mergejson, histo) {
+/* CORE FUNCTION: Render SynMap */
+function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
+    //TODO: Add gridToggle
+    //TODO: Scale dynamically & position camera based on size
+    //TODO: Render points independently of axes so that refreshes in coloring don't reset camera (or, save cam. state & reapply)
     /*---------------------------------------------------------------------------------------------------------
      ~~~~SETUP CANVAS & VR ENVIRONMENT~~~~
      --------------------------------------------------------------------------------------------------------*/
@@ -190,45 +157,23 @@ function renderComparison(xid, yid, zid, xyjson, xzjson, yzjson, mergejson, hist
     var controls = new THREE.FlatOrbitControls( camera );
 
     /*---------------------------------------------------------------------------------------------------------
-     ~~~~ASSIGN VARIABLES FROM OPTIONS~~~~
+     ~~~~SCALING~~~~
      --------------------------------------------------------------------------------------------------------*/
 
     /* Scaling Options */
-    //TODO: Scale dynamically based on size
     var scaleFactor = 0.00000001;
     var axisWidth = 0.05;
-
-    /* Assign Files by Selected Visualization */
-    var xID = xid;
-    var yID = yid;
-    var zID = zid;
-    var xy_json = xyjson;
-    var xz_json = xzjson;
-    var yz_json = yzjson;
-    var threeway_json = mergejson;
-    var histogram = histo;
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~GLOBAL 3D OBJECT VARIABLES~~~~
      --------------------------------------------------------------------------------------------------------*/
 
     /* Global Object Variables */
-    var xChr = new Array();
-    var xAxis = new THREE.Object3D();
-
-    var yChr = new Array();
-    var yAxis = new THREE.Object3D();
-
-    var zChr = new Array();
-    var zAxis = new THREE.Object3D();
-
-    var grid = new THREE.Object3D();
-    //var gridToggle = true; TODO: Reinstate gridToggle
-
-    var matches = new Array();
-    var matchDots = new THREE.Object3D();
-
-    var histogram_data = new Array();
+    //var xAxis = new THREE.Object3D();
+    //var yAxis = new THREE.Object3D();
+    //var zAxis = new THREE.Object3D();
+    //var grid = new THREE.Object3D();
+    //var matchDots = new THREE.Object3D();
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~FUNCTIONS~~~~
@@ -344,11 +289,30 @@ function renderComparison(xid, yid, zid, xyjson, xzjson, yzjson, mergejson, hist
         return axis;
     }
 
+    /* Color Schemes */
+    // https://github.com/plotly/plotly.js/blob/master/src/components/colorscale/scales.js
+    // TODO: Pull these straight from Plotly
+    var JetColorScheme = [
+        [0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'], [0.625,'rgb(255,255,0)'],
+        [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']
+    ];
+    var BlueredColorScheme = [
+        [0,'rgb(0,0,255)'],[1,'rgb(255,0,0)']
+    ];
+    var PortlandColorScheme = [
+        [0,'rgb(12,51,131)'],[0.25,'rgb(10,136,186)'], [0.5,'rgb(242,211,56)'], [0.75,'rgb(242,143,56)'],
+        [1,'rgb(217,30,30)']
+    ];
+    var ViridisColorScheme = [
+        [0,'#440154'],[0.06274509803921569,'#48186a'], [0.12549019607843137,'#472d7b'], [0.18823529411764706,'#424086'],
+        [0.25098039215686274,'#3b528b'],[0.3137254901960784,'#33638d'], [0.3764705882352941,'#2c728e'],
+        [0.4392156862745098,'#26828e'], [0.5019607843137255,'#21918c'],[0.5647058823529412,'#1fa088'],
+        [0.6274509803921569,'#28ae80'],[0.6901960784313725,'#3fbc73'], [0.7529411764705882,'#5ec962'],
+        [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],[0.9411764705882353,'#d8e219'], [1,'#fde725']
+    ];
+
     /* FUNCTION: Create Point Coloring Function */
-    var JetColorScheme = [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
-                         [0.625,'rgb(255,255,0)'],[0.875,'rgb(250,0,0)'],[1,'rgb(128,0,0)']];
     function getPtColorFunc(histogramData, colorScheme) {
-        //var Jet = [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'], [0.625,'rgb(255,255,0)'],[0.875,'rgb(250,0,0)'],[1,'rgb(128,0,0)']];
         var minVal = Math.min.apply(null, histogramData);
         var maxVal = Math.max.apply(null, histogramData);
         var N = colorScheme.length,
@@ -370,213 +334,140 @@ function renderComparison(xid, yid, zid, xyjson, xzjson, yzjson, mergejson, hist
         return calcColor
     }
 
-    /*---------------------------------------------------------------------------------------------------------
-     ~~~~GET DATA & CREATE 3D OBJECTS~~~~
-     --------------------------------------------------------------------------------------------------------*/
-    function loadXY() {
-        return $.ajax({
-                       type: 'GET',
-                       //isLocal: true,
-                       url: xy_json,
-                       dataType: 'json',
-                       success: function(data) {
-                           xChr = data["genomes"][xID]["chromosomes"];
-                           yChr = data["genomes"][yID]["chromosomes"];
-                       },
-                       error: function(xhr, status, error) {
-                           console.warn("XY JSON Error: " + error);
-                       }
-                     })
-    }
-
-    function loadXZ() {
-        return $.ajax({
-                       type: 'GET',
-                       url: xz_json,
-                       dataType: 'json',
-                       success: function(data) {
-                           zChr = data["genomes"][zID]["chromosomes"];
-                       },
-                       error: function(xhr, status, error) {
-                           console.warn("XZ JSON Error: " + error);
-                       }
-                     })
-    }
-    //TODO: Combine XY and XZ genome/chromosome info into one file (faster loading) - generate w/ three_dots_merge.py
-
-    function loadThree() {
-        return $.ajax({
-                       type: 'GET',
-                       url: threeway_json,
-                       dataType: 'json',
-                       success: function(data) {
-                           matches = data;
-                       },
-                       error: function(xhr, status, error) {
-                           console.warn("Threeway JSON Error: " + error);
-                       }
-                     })
-    }
-
-    function loadHistogram() {
-        return $.ajax({
-                       type: 'GET',
-                       url: histogram,
-                       dataType: 'json',
-                       success: function(data) {
-                           histogram_data = data;
-                       },
-                       error: function(xhr, status, error) {
-                           console.log("Histogram JSON Error: " + error);
-                       }
-                     })
-    }
-
-    $.when( loadXZ(), loadXY(), loadThree(), loadHistogram()).done( function() {
-        /* Sort and Index Chromosomes */
-        xChr.sort(sortChr);
-        yChr.sort(sortChr);
-        zChr.sort(sortChr);
-        var xChrIndexed = indexChr(xChr);
-        var yChrIndexed = indexChr(yChr);
-        var zChrIndexed = indexChr(zChr);
-
-        /* Establish Color Bin Cutoffs */
-        //var logKnKsBins = getHistogramBins(knKsSelect, true, comparisonSelect, histogram_data);
-
-        /* 3d Object: Axes */
-        xAxis = buildAxisFromChr(xChr, 'x');
-        yAxis = buildAxisFromChr(yChr, 'y');
-        zAxis = buildAxisFromChr(zChr, 'z');
-
-        xAxis.translateX(-startPositions.x / 2);
-        xAxis.translateY(-startPositions.y / 2);
-        xAxis.translateZ(-startPositions.z / 2);
-
-        yAxis.translateX(-startPositions.x / 2);
-        yAxis.translateY(-startPositions.y / 2);
-        yAxis.translateZ(-startPositions.z / 2);
-
-        zAxis.translateX(-startPositions.x / 2);
-        zAxis.translateY(-startPositions.y / 2);
-        zAxis.translateZ(-startPositions.z / 2);
-
-        scene.add(xAxis);
-        scene.add(yAxis);
-        scene.add(zAxis);
-
-        /* 3d Object: Grid */
-        var gridWidth = 0.025;
-        var gridMat = new THREE.MeshBasicMaterial({color: 'grey'});
-
-        yChr.forEach( function(e) {
-            var yxGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
-            var yxGrid = new THREE.Mesh( yxGridGeo, gridMat );
-            yxGrid.position.x = (startPositions.x / 2);
-            yxGrid.position.y = e.end;
-            yxGrid.position.z = 0;
-            grid.add(yxGrid);
-
-            var yzGridGeo = new THREE.BoxGeometry (gridWidth, gridWidth, startPositions.z);
-            var yzGrid = new THREE.Mesh( yzGridGeo, gridMat);
-            yzGrid.position.x = 0;
-            yzGrid.position.y = e.end; //(yStartPos / 2);
-            yzGrid.position.z = (startPositions.z / 2);
-            grid.add(yzGrid)
-        });
-
-        xChr.forEach( function(e) {
-            var hGridGeo = new THREE.BoxGeometry( gridWidth, gridWidth, startPositions.z );
-            var hGrid = new THREE.Mesh( hGridGeo, gridMat );
-            hGrid.position.x = e.end;
-            hGrid.position.y = 0;
-            hGrid.position.z = (startPositions.z / 2);
-            grid.add(hGrid);
-
-            var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
-            var vGrid = new THREE.Mesh( vGridGeo, gridMat);
-            vGrid.position.x = e.end;
-            vGrid.position.y = (startPositions.y /2);
-            vGrid.position.z = 0;
-            grid.add(vGrid)
-        });
-
-        zChr.forEach( function(e) {
-            var hGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
-            var hGrid = new THREE.Mesh( hGridGeo, gridMat );
-            hGrid.position.x = (startPositions.x / 2);
-            hGrid.position.y = 0;
-            hGrid.position.z = e.end;
-            grid.add(hGrid);
-
-            var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
-            var vGrid = new THREE.Mesh( vGridGeo, gridMat);
-            vGrid.position.x = 0;
-            vGrid.position.y = (startPositions.y / 2);
-            vGrid.position.z = e.end;
-            grid.add(vGrid)
-        });
-
-        grid.translateX(-startPositions.x / 2);
-        grid.translateY(-startPositions.y / 2);
-        grid.translateZ(-startPositions.z / 2);
-        scene.add(grid);
-
-        /* 3d Object: 3-Way Comparison */
-        function drawPoints() {
-            var calcPtColor = getPtColorFunc(histogram_data.logten.data["Ks"][comparisonSelect], JetColorScheme);
-            var dotGeo = new THREE.SphereGeometry(0.05);
-            for (x_ch in matches) {
-                for (y_ch in matches[x_ch]) {
-                    for (z_ch in matches[x_ch][y_ch]) {
-                        for (index in matches[x_ch][y_ch][z_ch]) {
-                            var coordinate = matches[x_ch][y_ch][z_ch][index];
-                            var xPos = coordinate[0];
-                            var yPos = coordinate[1];
-                            var zPos = coordinate[2];
-                            var knks = coordinate[3][comparisonSelect][knKsSelect];
-                            var logKnKs = knks != 0 ? Math.log10(knks) : 'NA';
-                            //OLD dotMat
-                            //var dotMat = new THREE.MeshBasicMaterial(
-                            //        {color: getColorFromHist(logKnKs, logKnKsBins)}
-                            //);
-                            // NEW dotMat
-                            var dotMat = new THREE.MeshBasicMaterial(
-                                {color: calcPtColor(logKnKs)}
-                            );
-                            var dot = new THREE.Mesh (dotGeo, dotMat);
-                            dot.position.x = xChrIndexed[x_ch]['start'] + (xPos * scaleFactor);
-                            dot.position.y = yChrIndexed[y_ch]['start'] + (yPos * scaleFactor);
-                            dot.position.z = zChrIndexed[z_ch]['start'] + (zPos * scaleFactor);
-                            //dot.on('click', function() { console.log(coordinate[4]); } );
-                            matchDots.add(dot)
-                        }
+    /* 3d Object: 3-Way Comparison */
+    function drawPoints() {
+        var calcPtColor = getPtColorFunc(histogram_data.logten.data["Ks"][comparisonSelect], JetColorScheme);
+        var dotGeo = new THREE.SphereGeometry(0.05);
+        for (x_ch in matches) {
+            for (y_ch in matches[x_ch]) {
+                for (z_ch in matches[x_ch][y_ch]) {
+                    for (index in matches[x_ch][y_ch][z_ch]) {
+                        var coordinate = matches[x_ch][y_ch][z_ch][index];
+                        var xPos = coordinate[0];
+                        var yPos = coordinate[1];
+                        var zPos = coordinate[2];
+                        var knks = coordinate[3][comparisonSelect][knKsSelect];
+                        var logKnKs = knks != 0 ? Math.log10(knks) : 'NA';
+                        //OLD dotMat
+                        //var dotMat = new THREE.MeshBasicMaterial(
+                        //        {color: getColorFromHist(logKnKs, logKnKsBins)}
+                        //);
+                        // NEW dotMat
+                        var dotMat = new THREE.MeshBasicMaterial(
+                            {color: calcPtColor(logKnKs)}
+                        );
+                        var dot = new THREE.Mesh (dotGeo, dotMat);
+                        dot.position.x = xChrIndexed[x_ch]['start'] + (xPos * scaleFactor);
+                        dot.position.y = yChrIndexed[y_ch]['start'] + (yPos * scaleFactor);
+                        dot.position.z = zChrIndexed[z_ch]['start'] + (zPos * scaleFactor);
+                        //dot.on('click', function() { console.log(coordinate[4]); } );
+                        matchDots.add(dot)
                     }
                 }
             }
-
-            matchDots.translateX(-startPositions.x / 2);
-            matchDots.translateY(-startPositions.y / 2);
-            matchDots.translateZ(-startPositions.z / 2);
-            //matchDots.on('click', function() { console.log("Point Clicked!"); } );
-            scene.add(matchDots);
         }
-        drawPoints();
 
-        /* Histogram */
-        //renderHistogram2(histogram_data);
-        //renderHistogram(histogram_data);
-        // TODO: HISTOGRAM COMMENTED OUT!
-        renderHistogram2(document.getElementById("histogram"), "log(Ks)", histogram_data.logten.data["Ks"][comparisonSelect], 100);
-        renderHistogram2(document.getElementById("histogram2"), "log(Kn)", histogram_data.logten.data["Kn"][comparisonSelect], 100);
+        matchDots.translateX(-startPositions.x / 2);
+        matchDots.translateY(-startPositions.y / 2);
+        matchDots.translateZ(-startPositions.z / 2);
+        //matchDots.on('click', function() { console.log("Point Clicked!"); } );
+        scene.add(matchDots);
+    }
 
-        //renderHistogram2(document.getElementById("histogram2"),
-        //    "log(" + knKsSelect + ")",
-        //    histogram_data.logten.data[knKsSelect][comparisonSelect],
-        //    100);
+    /*---------------------------------------------------------------------------------------------------------
+     ~~~~CREATE 3D OBJECTS~~~~
+     --------------------------------------------------------------------------------------------------------*/
 
-        //updateHistogram()
+    /* Sort and Index Chromosomes */
+    xChr.sort(sortChr);
+    yChr.sort(sortChr);
+    zChr.sort(sortChr);
+    var xChrIndexed = indexChr(xChr);
+    var yChrIndexed = indexChr(yChr);
+    var zChrIndexed = indexChr(zChr);
+
+    /* 3d Object: Axes */
+    xAxis = buildAxisFromChr(xChr, 'x');
+    yAxis = buildAxisFromChr(yChr, 'y');
+    zAxis = buildAxisFromChr(zChr, 'z');
+
+    xAxis.translateX(-startPositions.x / 2);
+    xAxis.translateY(-startPositions.y / 2);
+    xAxis.translateZ(-startPositions.z / 2);
+
+    yAxis.translateX(-startPositions.x / 2);
+    yAxis.translateY(-startPositions.y / 2);
+    yAxis.translateZ(-startPositions.z / 2);
+
+    zAxis.translateX(-startPositions.x / 2);
+    zAxis.translateY(-startPositions.y / 2);
+    zAxis.translateZ(-startPositions.z / 2);
+
+    scene.add(xAxis);
+    scene.add(yAxis);
+    scene.add(zAxis);
+
+    /* 3d Object: Grid */
+    var grid = new THREE.Object3D();
+    var gridWidth = 0.025;
+    var gridMat = new THREE.MeshBasicMaterial({color: 'grey'});
+
+    yChr.forEach( function(e) {
+        var yxGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
+        var yxGrid = new THREE.Mesh( yxGridGeo, gridMat );
+        yxGrid.position.x = (startPositions.x / 2);
+        yxGrid.position.y = e.end;
+        yxGrid.position.z = 0;
+        grid.add(yxGrid);
+
+        var yzGridGeo = new THREE.BoxGeometry (gridWidth, gridWidth, startPositions.z);
+        var yzGrid = new THREE.Mesh( yzGridGeo, gridMat);
+        yzGrid.position.x = 0;
+        yzGrid.position.y = e.end; //(yStartPos / 2);
+        yzGrid.position.z = (startPositions.z / 2);
+        grid.add(yzGrid)
     });
+
+    xChr.forEach( function(e) {
+        var hGridGeo = new THREE.BoxGeometry( gridWidth, gridWidth, startPositions.z );
+        var hGrid = new THREE.Mesh( hGridGeo, gridMat );
+        hGrid.position.x = e.end;
+        hGrid.position.y = 0;
+        hGrid.position.z = (startPositions.z / 2);
+        grid.add(hGrid);
+
+        var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
+        var vGrid = new THREE.Mesh( vGridGeo, gridMat);
+        vGrid.position.x = e.end;
+        vGrid.position.y = (startPositions.y /2);
+        vGrid.position.z = 0;
+        grid.add(vGrid)
+    });
+
+    zChr.forEach( function(e) {
+        var hGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
+        var hGrid = new THREE.Mesh( hGridGeo, gridMat );
+        hGrid.position.x = (startPositions.x / 2);
+        hGrid.position.y = 0;
+        hGrid.position.z = e.end;
+        grid.add(hGrid);
+
+        var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
+        var vGrid = new THREE.Mesh( vGridGeo, gridMat);
+        vGrid.position.x = 0;
+        vGrid.position.y = (startPositions.y / 2);
+        vGrid.position.z = e.end;
+        grid.add(vGrid)
+    });
+
+    grid.translateX(-startPositions.x / 2);
+    grid.translateY(-startPositions.y / 2);
+    grid.translateZ(-startPositions.z / 2);
+    scene.add(grid);
+
+    /* Draw Points */
+    var matchDots = new THREE.Object3D();
+    drawPoints();
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~ANIMATE LOOP~~~~
@@ -604,22 +495,35 @@ function renderComparison(xid, yid, zid, xyjson, xzjson, yzjson, mergejson, hist
         renderer.setSize( width, height);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
-        //renderHistogram(histogram_data); TODO: Re-render histogram on page resize, but without blanking out
+        renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
+            histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
     }
     window.addEventListener( 'resize', onWindowResize, false );
-} //END renderIt()
+} //END renderSynMap()
 
 /*-----------------------------------------------------------------------------------------------------------------
  ~~~~ POPULATE PAGE ~~~~
  -----------------------------------------------------------------------------------------------------------------*/
+// TODO: Add spinny waiting queue
 $(document).ready( function() {
+    var load;
+
+    //function updateVis(da) {
+    //    // Render SynMap
+    //    renderSynMap(da.xChr, da.yChr, da.zChr, da.matches, da.histogram_data);
+    //    // Render Histogram
+    //    renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
+    //        da.histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
+    //}
 
     /* Monitor KnKsSelect */
     var KnKsSelector = $("#knks_select");
     knKsSelect = KnKsSelector.val();
     KnKsSelector.change( function() {
         knKsSelect = KnKsSelector.val();
-        renderComparison();
+        renderSynMap(load.xChr, load.yChr, load.zChr, load.matches, load.histogram_data);
+        renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
+            load.histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
     });
 
     /* Monitor Comparison Select */
@@ -627,19 +531,29 @@ $(document).ready( function() {
     comparisonSelect = ComparisonSelector.val();
     ComparisonSelector.change( function() {
         comparisonSelect = ComparisonSelector.val();
-        renderComparison();
+        renderSynMap(load.xChr, load.yChr, load.zChr, load.matches, load.histogram_data);
+        renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
+            load.histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
     });
 
-    /* Render Visualization on Page Load */
-    renderComparison(
-        final_experiment.x_gid,
-        final_experiment.y_gid,
-        final_experiment.z_gid,
-        final_experiment.links.xy_json,
-        final_experiment.links.xz_json,
-        final_experiment.links.yz_json,
+    var visOpts = [KnKsSelector, ComparisonSelector];
+
+    /* Load Data & Render Visualization on Page Load */
+    $.when(loadData(
+        final_experiment.x_gid, final_experiment.y_gid, final_experiment.z_gid,
+        final_experiment.links.xy_json, final_experiment.links.xz_json,
         final_experiment.links.merge,
-        final_experiment.links.histo
-    );
+        final_experiment.links.histo))
+    .done(function(data) {
+        // Save data into upper scope
+        load = data;
+        // Render SynMap
+        renderSynMap(data.xChr, data.yChr, data.zChr, data.matches, data.histogram_data);
+        //Render Histogram
+        renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
+            data.histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
+        // Enable Visualization Options
+        for (var i= 0; i < visOpts.length; i++) { visOpts[i].prop('disabled', false) }
+    }); //END $.when(loadData())
 
 }); //END $(document).ready()
