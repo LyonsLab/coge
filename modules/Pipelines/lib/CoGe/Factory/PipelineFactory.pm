@@ -15,6 +15,7 @@ use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Expression::MeasureExpression;
+use CoGe::Builder::Methylation::MeasureMethylation;
 
 has 'db' => (
     is => 'ro',
@@ -80,6 +81,9 @@ sub get {
     elsif ($message->{type} eq "analyze_expression") {
         $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
     }
+    elsif ($message->{type} eq "analyze_methylation") {
+        $builder = CoGe::Builder::Methylation::MeasureMethylation->new($request);
+    }    
     else {
         print STDERR "PipelineFactory::get unknown type\n";
         return;
@@ -120,6 +124,7 @@ sub get {
     # Construct the workflow
     my $rc = $builder->build;
     unless ($rc) {
+        $rc = 'undef' unless defined $rc;
         print STDERR "PipelineFactory::get build failed, rc=$rc\n";
         return;
     }

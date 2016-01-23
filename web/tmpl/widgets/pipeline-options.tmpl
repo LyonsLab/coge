@@ -1,3 +1,78 @@
+<!-- Methylation Analysis -->
+<script id="methyl-template" type="text/template">
+    <div class="form-section">
+	    <h4>Methylation Analysis</h4>
+
+	    <div class="form-field">
+            <label class="col-md-2">Enable:</label>
+            <input id="methyl" type="checkbox">
+        </div>
+
+        <div id="methyl-container" class="hidden"></div>
+    </div>
+</script>
+
+<!-- Methylation Pipeline Templates -->
+<script id="bismark-methyl-template" type="text/template">
+        <div class="form-field">
+            <label class="col-md-2">Bismark:</label>
+            <div class="form-group">
+                <div class="form-entry" title="Remove PCR duplicates with bismark_deduplicate.">
+                    <label>Deduplicate</label>
+                    <input id="bismark-deduplicate" type="checkbox"/>
+                </div>
+                <div class="form-entry" title="Filter output methylation summary for this minimum coverage level.">
+                    <label>Minimum Coverage</label>
+                    <input id="bismark-min_coverage" type="number" value="5"/>
+                </div>
+                <div class="form-entry" title="Ignore bisulfite mismatches within this many nucleotides of the 5' end.">
+                    <label>--ignore</label>
+                    <input id="--ignore" type="number" value="0"/>
+                </div>
+                <div class="form-entry" title="Ignore bisulfite mismatches within this many nucleotides of the 3' end.">
+                    <label>--ignore_3prime</label>
+                    <input id="--ignore_3prime" type="number" value="0"/>
+                </div>
+                <div class="form-entry" title="Ignore bisulfite mismatches within this many nucleotides of the 5' end of read two of paired end data (only active if paired end data is specified).">
+                    <label>--ignore_r2</label>
+                    <input id="--ignore_r2" type="number" value="0"/>
+                </div>
+                <div class="form-entry" title="Ignore bisulfite mismatches within this many nucleotides of the 3' end of read two of paired end data (only active if paired end data is specified).">
+                    <label>--ignore_3prime_r2</label>
+                    <input id="--ignore_3prime_r2" type="number" value="0"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="bwameth-methyl-template" type="text/template">
+    <div id="bwameth">
+        <div class="form-field">
+            <label class="col-md-2">BWA-meth/PileOMeth:</label>
+            <div class="form-group">
+                <div class="form entry" title="Remove PCR duplicates with picard tools.">
+                    <label>Deduplicate</label>
+                    <input id="picard-deduplicate" type="checkbox"/>
+                </div>
+                <div class="form-entry" title="Filter output methylation summary for this minimum coverage level.">
+                    <label>Minimum Coverage</label>
+                    <input id="pileometh-min_coverage" type="number" value="5"/>
+                </div>
+                <div class="form-entry" title="Inclusion regions for methylation calls from original top strand (default: entire read '0,0,0,0') (see documentation).">
+                    <label>--OT</label>
+                    <input id="--OT" type="text" value="0,0,0,0"/>
+                </div>
+                <div class="form-entry" title="Inclusion regions for methylation calls from original top bottom (default: entire read '0,0,0,0') (see documentation).">
+                    <label>--OB</label>
+                    <input id="--OB" type="text" value="0,0,0,0"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<!-- SNP Analysis -->
 <script id="snp-template" type="text/template">
     <div class="form-section">
         <h4>SNP Identification</h4>
@@ -37,7 +112,7 @@
 </div>
 </script>
 
-<!-- SNP Finder Templates -->
+<!-- SNP Finder Method Templates -->
 <script id="coge-snp-template" type="text/template">
     <div id="coge">
         <div class="form-field">

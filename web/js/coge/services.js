@@ -13,7 +13,9 @@ var coge = window.coge = (function(namespace) {
 				this.BASE_URL = opts.baseUrl;
 			if (opts.userName)
 				this.userName = opts.userName;
-			this.debug = 0; // display console debug messages
+			this.debug = opts.debug; // display console debug messages
+			
+			this._debug('init completed');
 		},
 		
 		search_global: function(search_term) {
@@ -26,7 +28,7 @@ var coge = window.coge = (function(namespace) {
 		},
 
 		add_organism: function(request) {
-			return this._ajax("PUT", BASE_URL + "organisms/", JSON.stringify(request));
+			return this._ajax("PUT", BASE_URL + "organisms/", request);
 		},
 		
 		search_genomes: function(search_term, opts) {
@@ -45,7 +47,7 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		submit_job: function(request) {
-			return this._ajax("PUT", BASE_URL + "jobs/", JSON.stringify(request));
+			return this._ajax("PUT", BASE_URL + "jobs/", request);
 		},
 		
 		fetch_job: function(id) {
@@ -89,8 +91,11 @@ var coge = window.coge = (function(namespace) {
 			url = url + (opts_str ? "?" + opts_str : '');
 			
 			// Return deferred
-			if (this.debug) 
-				console.log('coge.services._ajax: ' + url + ' ' + (data ? data : ''));
+			if (this.debug) {
+				this._debug('coge.services._ajax: ' + url);
+				if (data)
+					console.log(data);
+			}
 		    return $.ajax({
 				    	type: type,
 				    	url: url,
@@ -99,7 +104,7 @@ var coge = window.coge = (function(namespace) {
 				        xhrFields: {
 			                withCredentials: true
 			            },
-				        data: data,
+				        data: JSON.stringify(data),
 				    })
 				    .fail(function(jqXHR, textStatus, errorThrown) { 
 				    	self._error('ajax:error: ' + jqXHR.status + ' ' + jqXHR.statusText); 
