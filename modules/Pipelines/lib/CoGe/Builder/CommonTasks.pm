@@ -957,8 +957,7 @@ sub create_trimgalore_job {
     my @inputs = ( @$fastq, @$validated);
 
     # Build up command/arguments string
-    my $cmd = $CONF->{TRIMGALORE};
-    die "ERROR: TRIMGALORE is not in the config." unless $cmd;
+    my $cmd = $CONF->{TRIMGALORE} || 'trim_galore';
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     # Create staging dir
@@ -1346,13 +1345,11 @@ sub create_bismark_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     
-    my $cmd = catfile($CONF->{BISMARK_DIR}, 'bismark_genome_preparation');
+    my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark_genome_preparation') : 'bismark_genome_preparation';
     my $BISMARK_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bismark_index");
-    die "ERROR: BISMARK_DIR is not in the config." unless ($cmd);
-    
     $cmd = "mkdir -p $BISMARK_CACHE_DIR ; " .
-           "cp $fasta $BISMARK_CACHE_DIR/$name.fa ; " . # requires fasta file to end in .fa or .fasta, not .faa
-           $cmd;
+           "cp $fasta $BISMARK_CACHE_DIR/$name.fa ; " . # bismark requires fasta file to end in .fa or .fasta, not .faa
+           "nice $cmd";
 
     return $BISMARK_CACHE_DIR, (
         cmd => $cmd,
@@ -1406,8 +1403,7 @@ sub create_bismark_alignment_job {
     ];
 
     # Build up command/arguments string
-    my $cmd = catfile($CONF->{BISMARK_DIR}, 'bismark');
-    die "ERROR: BISMARK_DIR is not in the config." unless $cmd;
+    my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark') : 'bismark';
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
@@ -1479,9 +1475,8 @@ sub create_bwameth_index_job {
     my $fasta = shift;
     my $name = basename($fasta);
     
-    my $cmd = $CONF->{BWAMETH} . ' index';
+    my $cmd = ($CONF->{BWAMETH} ? $CONF->{BWAMETH} : 'bwameth') . ' index';
     my $BWAMETH_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bwameth_index");
-    die "ERROR: BWAMETH is not in the config." unless ($cmd);
     
     $cmd = "mkdir -p $BWAMETH_CACHE_DIR ; cd $BWAMETH_CACHE_DIR ; cp $fasta . ; " . $cmd;
 
@@ -1526,8 +1521,7 @@ sub create_bwameth_alignment_job {
     ];
 
     # Build command and arguments
-    my $cmd = $CONF->{BWAMETH};
-    die "ERROR: BWAMETH is not in the config." unless $cmd;
+    my $cmd = $CONF->{BWAMETH} || 'bwameth';
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [

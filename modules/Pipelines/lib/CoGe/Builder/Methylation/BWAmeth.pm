@@ -121,8 +121,8 @@ sub create_picard_deduplicate_job {
     my $bam_file = $opts{bam_file};
     my $staging_dir = $opts{staging_dir};
     
+    die "ERROR: PICARD is not in the config." unless $CONF->{PICARD};
     my $cmd = 'java -jar ' . $CONF->{PICARD};
-    die "ERROR: PICARD is not in the config." unless $cmd;
     
     my $output_file = $bam_file . '.dedup';
     
