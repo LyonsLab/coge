@@ -39,9 +39,6 @@ sub build {
 
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
-    my $gid = $genome->id;
-    my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
-    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
 
     # Set metadata for the pipeline being used
     my $annotations = generate_additional_metadata($read_params, $methylation_params);
