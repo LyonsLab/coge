@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Getopt::Long qw(GetOptions);
-use File::Touch;
 use CoGe::Accessory::Web qw(ftp_get_file);
 
 our ($url, $username, $password, $dest_path);
@@ -35,8 +34,5 @@ if ( !$result || $result->{error} ) {
     print STDERR "Failed: ", $result->{error}, "\n";
     exit(-1);
 }
-
-# Create .done file to signal completion to JEX
-touch("$dest_path.done");
 
 exit;

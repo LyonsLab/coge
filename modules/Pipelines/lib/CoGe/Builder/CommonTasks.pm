@@ -229,7 +229,6 @@ sub create_ftp_get_job {
     
     my ($filename, $path) = split_url($url);
     my $output_file = catfile($dest_path, $path, $filename);
-    my $done_file = $output_file . '.done';
     
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, "ftp.pl"),
@@ -242,8 +241,7 @@ sub create_ftp_get_job {
         ],
         inputs => [],
         outputs => [ 
-            $output_file,
-            $done_file
+            $output_file
         ],
         description => "Fetching $url..."
     };
