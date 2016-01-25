@@ -544,7 +544,7 @@ sub get_download_url {
     my $filename = basename($args{file});
     my $username = $USER->user_name;
 
-    return $P->{SERVER} . join('/', 
+    return join('/', $P->{SERVER}, 
         'api/v1/legacy/download', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
         "?username=$username&eid=$id&filename=$filename");
 }
@@ -599,7 +599,6 @@ sub gen_html {
             HOME       => $P->{SERVER},
             HELP       => 'ExperimentView',
             WIKI_URL   => $P->{WIKI_URL} || '',
-            ADJUST_BOX => 1,
             CAS_URL    => $P->{CAS_URL} || ''
         );
     	$template->param( USER     => $USER->display_name || '' );
@@ -688,6 +687,15 @@ sub _get_experiment_info {
         { title => "Creation", value => $creation}
     ];
 
+    my $owner = $exp->owner;
+    push @$fields, { title => "Owner", value => $owner->display_name } if $owner;
+    
+    my $users = ( $exp->restricted ? join(', ', sort map { $_->display_name } $USER->users_with_access($exp)) : 'Everyone' );
+    push @$fields, { title => "Users with access", value => $users } if $users;
+    
+    my $groups = ($exp->restricted ? join(', ', sort map { $_->name } $USER->groups_with_access($exp)) : undef);
+    push @$fields, { title => "Groups with access", value => $groups } if $groups;
+    
     push @$fields, { title => "Note", value => "This experiment has been deleted" } if $exp->deleted;
 
     return {

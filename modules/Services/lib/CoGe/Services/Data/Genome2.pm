@@ -8,7 +8,7 @@ use CoGe::Core::Genome qw(genomecmp);
 use CoGeDBI qw(get_feature_counts);
 use Data::Dumper;
 
-sub search {
+sub search { #TODO move search code into reusable function in CoGe::Core::Genome
     my $self = shift;
     my $search_term = $self->stash('term');
     my $fast = $self->param('fast');

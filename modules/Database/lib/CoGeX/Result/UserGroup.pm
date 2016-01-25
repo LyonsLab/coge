@@ -148,6 +148,10 @@ __PACKAGE__->has_many(    # child lists
     }
 );
 
+sub item_type {
+    return $node_types->{group};   
+}
+
 ################################################ subroutine header begin ##
 
 =head2 users

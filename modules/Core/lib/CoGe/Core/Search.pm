@@ -3,13 +3,9 @@ package CoGe::Core::Search;
 use strict;
 use warnings;
 
-use List::Compare;
 use CoGeX;
-use CoGeX::Result::User;
 use CoGeDBI;
-use Mojo::JSON;
 use Data::Dumper;
-use JSON qw(encode_json);
 
 BEGIN {
     our ( @EXPORT, @ISA, $VERSION );
@@ -54,6 +50,11 @@ sub search {
 
 	#Set the special conditions
 	my $type = "none";    #Specifies a particular field to show
+	if ( index($search_term, 'metadata_key') != -1 ) {
+		my $index = index($search_term, ':');
+		$type = substr($search_term, 0, $index);
+		$search_term = substr($search_term, $index + 2);
+	}
 	my @restricted =
 	  [ -or => [ restricted => 0, restricted => 1 ] ]; 
 	  #Specifies either restricted(1) OR unrestriced(0) results. Default is all.
@@ -115,8 +116,7 @@ sub search {
 				]
 			  ];
 		}
-		my @organisms =
-		  $db->resultset("Organism")->search( { -and => [ @orgArray, ], } );
+		my @organisms = $db->resultset("Organism")->search( { -and => [ @orgArray, ], } );
 
 		if ( $type eq 'none' || $type eq 'organism' ) {
 			foreach ( sort { $a->name cmp $b->name } @organisms ) {
@@ -152,8 +152,7 @@ sub search {
 					]
 				  ];
 			}
-			my @users =
-			  $db->resultset("User")->search( { -and => [ @usrArray, ], } );
+			my @users = $db->resultset("User")->search( { -and => [ @usrArray, ], } );
 	
 			foreach ( sort { $a->user_name cmp $b->user_name } @users ) {
 				push @results, { 
@@ -172,18 +171,28 @@ sub search {
 	# Perform genome search (corresponding to Organism results)
 	if (   $type eq 'none'
 		|| $type eq 'genome'
+		|| $type eq 'genome_metadata_key'
 		|| $type eq 'restricted'
 		|| $type eq 'deleted' )
 	{
-		my @genomes = $db->resultset("Genome")->search(
-			{
+		my $join;
+		my $search;
+		if ($type eq 'genome_metadata_key') {
+			$join = { join => 'genome_annotations' };
+			my $dbh = $db->storage->dbh;
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
+			$search = { 'genome_annotations.annotation_type_id' => $row[0] };
+		}
+		else {
+			$search = {
 				-and => [
 					organism_id => { -in => \@idList },
 					@restricted,
 					@deleted,
-				],
-			}
-		);
+				]
+			};
+		}
+		my @genomes = $db->resultset("Genome")->search( $search, $join );
 
 		foreach ( sort { $a->id cmp $b->id } @genomes ) {
 			if (!$user || $user->has_access_to_genome($_)) {
@@ -202,9 +211,7 @@ sub search {
 		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
 			push @genIDArray, [ -or => [ genome_id => $searchArray[$i] ] ];
 		}
-		my @genomeIDs =
-		  $db->resultset("Genome")
-		  ->search( { -and => [ @genIDArray, @restricted, @deleted, ], } );
+		my @genomeIDs = $db->resultset("Genome")->search( { -and => [ @genIDArray, @restricted, @deleted, ], } );
 
 		foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
 			if (!$user || $user->has_access_to_genome($_)) {
@@ -222,6 +229,7 @@ sub search {
 	# Perform experiment search
 	if (   $type eq 'none'
 		|| $type eq 'experiment'
+		|| $type eq 'experiment_metadata_key'
 		|| $type eq 'restricted'
 		|| $type eq 'deleted' )
 	{
@@ -242,9 +250,18 @@ sub search {
 				]
 			  ];
 		}
-		my @experiments =
-		  $db->resultset("Experiment")
-		  ->search( { -and => [ @expArray, @restricted, @deleted, ], } );
+		my $join;
+		my $search;
+		if ($type eq 'experiment_metadata_key') {
+			$join = { join => 'experiment_annotations' };
+			my $dbh = $db->storage->dbh;
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
+			$search = { 'experiment_annotations.annotation_type_id' => $row[0] };
+		}
+		else {
+			$search = { -and => [ @expArray, @restricted, @deleted, ] };
+		}
+		my @experiments = $db->resultset("Experiment")->search( $search, $join );
 
 		foreach ( sort { $a->name cmp $b->name } @experiments ) {
 			if (!$user || $user->has_access_to_experiment($_)) {
@@ -262,6 +279,7 @@ sub search {
 	# Perform notebook search
 	if (   $type eq 'none'
 		|| $type eq 'notebook'
+		|| $type eq 'list_metadata_key'
 		|| $type eq 'restricted'
 		|| $type eq 'deleted' )
 	{
@@ -282,9 +300,18 @@ sub search {
 				]
 			  ];
 		}
-		my @notebooks =
-		  $db->resultset("List")
-		  ->search( { -and => [ @noteArray, @restricted, @deleted, ], } );
+		my $join;
+		my $search;
+		if ($type eq 'list_metadata_key') {
+			$join = { join => 'list_annotations' };
+			my $dbh = $db->storage->dbh;
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
+			$search = { 'list_annotations.annotation_type_id' => $row[0] };
+		}
+		else {
+			$search = { -and => [ @noteArray, @restricted, @deleted, ] };
+		}
+		my @notebooks = $db->resultset("List")->search( $search, $join );
 
 		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
 			if (!$user || $user->has_access_to_list($_)) {
@@ -319,9 +346,7 @@ sub search {
 					]
 				  ];
 			}
-			my @userGroup =
-			  $db->resultset("UserGroup")
-			  ->search( { -and => [ @usrGArray, @deleted, ], } );
+			my @userGroup = $db->resultset("UserGroup")->search( { -and => [ @usrGArray, @deleted, ], } );
 	
 			foreach ( sort { $a->name cmp $b->name } @userGroup ) {
 				push @results, {

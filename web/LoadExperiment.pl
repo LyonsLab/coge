@@ -79,7 +79,6 @@ sub generate_html {
 			              HOME       => $CONF->{SERVER},
                           HELP       => 'LoadExperiment',
                           WIKI_URL   => $CONF->{WIKI_URL} || '',
-			              ADJUST_BOX => 1,
                           ADMIN_ONLY => $USER->is_admin,
                           USER       => $USER->display_name || '',
                           CAS_URL    => $CONF->{CAS_URL} || ''

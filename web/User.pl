@@ -106,10 +106,7 @@ $node_types = CoGeX::node_types();
     toggle_star                     => \&toggle_star,
     cancel_job				        => \&cancel_job,
     comment_job                     => \&comment_job,
-    upload_metadata					=> \&upload_metadata,
-    get_experiment_metadata_stats	=> \&get_experiment_metadata_stats,
-    get_genome_metadata_stats		=> \&get_genome_metadata_stats,
-    get_notebook_metadata_stats		=> \&get_notebook_metadata_stats    
+    upload_metadata					=> \&upload_metadata
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -117,13 +114,12 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( USER       => $USER->display_name || '',
-                      PAGE_TITLE => 'User Profile',
-				      TITLE      => "My Profile",
+                      PAGE_TITLE => 'My Data',
+				      TITLE      => "My Data",
     				  PAGE_LINK  => $LINK,
     				  HOME       => $CONF->{SERVER},
                       HELP       => 'User',
                       WIKI_URL   => $CONF->{WIKI_URL} || '',
-    				  ADJUST_BOX => 1,
                       ADMIN_ONLY => $USER->is_admin,
                       CAS_URL    => $CONF->{CAS_URL} || '' );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
@@ -1413,7 +1409,11 @@ sub get_stats {
     	$html .= '<tr class="';
     	$html .= $odd_even ? 'odd' : 'even';
     	$odd_even ^= 1;
-    	$html .= '"><td class="title5" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:right;">';
+    	$html .= '" style="cursor:pointer;" onclick="document.location=\'SearchResults.pl?s=';
+    	$html .= $type;
+    	$html .= '_metadata_key::';
+    	$html .= $name;
+    	$html .= '\'"><td class="title5" style="padding-right:10px;white-space:nowrap;text-align:right;">';
     	$html .= $name;
     	$html .= '</td><td class="data5">';
     	$html .= $count;

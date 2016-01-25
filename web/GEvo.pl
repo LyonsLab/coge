@@ -1389,7 +1389,6 @@ qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV
     $results_name .=
       qq{ <span class="small">(spike sequence filter length: $spike_len)</span>}
       if $spike_len;
-    $template->param( BOX_NAME => $results_name );
     $template->param( BODY     => $html );
     my $outhtml     = $template->output;
     my $t5          = new Benchmark;

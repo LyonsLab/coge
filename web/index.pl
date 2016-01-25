@@ -55,7 +55,6 @@ sub generate_html {
         HELP       => '',
         WIKI_URL   => $P->{WIKI_URL} || '',
         USER       => $USER->display_name || undef,
-        ADJUST_BOX => 1,
         BODY       => generate_body(),
         ADMIN_ONLY => $USER->is_admin,
         CAS_URL    => $P->{CAS_URL} || ''

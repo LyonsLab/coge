@@ -90,8 +90,6 @@ sub gen_html {
                       USER       => $USER->display_name || '' );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE => $DATE );
-    $template->param( BOX_NAME   => 'Aragorn Search Settings' );
-    $template->param( ADJUST_BOX => 1 );
     $template->param( BODY       => $body );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $P->{CAS_URL} || '' );

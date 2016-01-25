@@ -296,10 +296,10 @@ $.extend(MethylationView.prototype, {
     },
 
     is_valid: function() {
-        var enabled = this.el.find("#methyl :checked");
-        var method = this.el.find("#alignment").val();
+        var enabled = this.el.find("#methyl").is(":checked");
+        var method = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
         var paired = this.format.is_paired();
-
+        
         if (enabled) {
             if (method === "bismark") {
                 this.data.methylation_params = {
@@ -315,7 +315,7 @@ $.extend(MethylationView.prototype, {
                 }
                 else { // single-ended
                     this.data.methylation_params['--ignore'] = this.el.find('#--ignore').val();
-                    this.data.methylation_params['--ignore_3prime'] = this.el.find('#--ignore3prime').val();
+                    this.data.methylation_params['--ignore_3prime'] = this.el.find('#--ignore_3prime').val();
                 }
             }
             else if (method === "bwameth") {
@@ -605,7 +605,9 @@ $.extend(AlignmentView.prototype, {
         else if (aligner === "bismark") {
         	this.data = {
         		alignment_params: {
-        			tool: "bismark"
+        			tool: "bismark",
+        			'-N': this.el.find("[id='-N']").val(),
+        			'-L': this.el.find("[id='-L']").val(),
         		}
         	}
         }
@@ -674,13 +676,14 @@ $.extend(AlignmentOptionView.prototype, {
     },
 
     is_valid: function() {
-        return this.snp_view.is_valid();
-        return this.methylation_view.is_valid();
+        return this.snp_view.is_valid()
+        	   && this.expression_view.is_valid()
+        	   && this.methylation_view.is_valid();
     },
 
     get_options: function() {
-        return $.extend(this.snp_view.get_options(),
-                        this.expression_view.get_options(),
+        return $.extend(this.expression_view.get_options(),
+        				this.snp_view.get_options(),
                         this.methylation_view.get_options());
     },
 });
@@ -780,12 +783,12 @@ $.extend(FastqView.prototype, {
             template: "#fastq-template",
 
             layout: {
-                "#methylation-view": this.methylation_view,
+                '#read-view': this.read_view,
+                '#trim-view': this.trim_view,
+                "#align-view": this.align_view,
                 "#expression-view": this.expression_view,
                 "#snp-view": this.snp_view,
-                "#align-view": this.align_view,
-                '#trim-view': this.trim_view,
-                '#read-view': this.read_view
+                "#methylation-view": this.methylation_view
             }
         });
 
@@ -798,34 +801,21 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
-    	if (!this.read_view.is_valid())
-            return false;
-    	
-    	if (!this.trim_view.is_valid())
-            return false;
-    	
-        if (!this.align_view.is_valid())
-            return false;
-        
-        if (!this.snp_view.is_valid())
-            return false;
-
-        if (!this.expression_view.is_valid())
-            return false;
-
-        if (!this.methylation_view.is_valid())
-            return false;
-
-        return true;
+    	return (   this.read_view.is_valid()
+    			&& this.trim_view.is_valid()
+    			&& this.align_view.is_valid()
+    			&& this.snp_view.is_valid()
+    			&& this.expression_view.is_valid()
+    			&& this.methylation_view.is_valid());
     },
 
     get_options: function() {
-        return $.extend(this.methylation_view.get_options(),
+        return $.extend(this.read_view.get_options(),
+		        		this.trim_view.get_options(),
+		        		this.align_view.get_options(),
                         this.expression_view.get_options(),
                         this.snp_view.get_options(),
-                        this.align_view.get_options(),
-                        this.trim_view.get_options(),
-                        this.read_view.get_options());
+                        this.methylation_view.get_options());
     },
 });
 
@@ -1012,7 +1002,7 @@ $.extend(OptionsView.prototype, {
 function load(experiment) {
 	coge.progress.begin();
     newLoad = true;
-
+    
 	// Convert request into format for job service
 	var request = {
 		type: 'load_experiment',

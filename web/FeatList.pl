@@ -70,8 +70,7 @@ sub gen_html {
                       USER     => $USER->display_name || '' );
     $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => $body );
-    $template->param( ADJUST_BOX => 1,
-                      ADMIN_ONLY => $USER->is_admin,
+    $template->param( ADMIN_ONLY => $USER->is_admin,
                       CAS_URL    => $P->{CAS_URL} || '' );
     return $template->output;
 }

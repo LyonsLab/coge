@@ -133,6 +133,18 @@ __PACKAGE__->has_many(    # child lists
     { where               => { child_type => $node_types->{list} } }
 );
 
+sub item_type {
+    return $node_types->{list};   
+}
+
+sub owner {
+    my $self = shift;
+
+    foreach ( $self->user_connectors( { role_id => 2 } ) ) {    #FIXME hardcoded
+        return $_->parent;
+    }
+}
+
 sub lists                 # return child lists within this list
 {
     my $self       = shift;
@@ -551,8 +563,19 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
               . "Creation"
               . "</span>" );
         $anno_type->Type_delimit(": <td class='data5'>");
-        my $restricted = $self->restricted ? "Yes" : "No";
         $anno_type->add_Annot( $creation . "</td>" );
+        $anno_obj->add_Annot($anno_type);
+    }
+    
+    my $owner = $self->owner;
+    if ($owner) {
+        $anno_type =
+          new CoGe::Accessory::Annotation(
+                Type => "<tr><td nowrap='true'><span class='title5'>"
+              . "Owner"
+              . "</span>" );
+        $anno_type->Type_delimit(": <td class='data5'>");
+        $anno_type->add_Annot( $owner->display_name . "</td>" );
         $anno_obj->add_Annot($anno_type);
     }
 
@@ -563,10 +586,24 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
           . "</span>" );
     $anno_type->Type_delimit(": <td class='data5'>");
     my $users = ( $self->restricted ? 
-        join( ', ', map { $_->display_name } $self->users ) :
+        join( ', ', sort map { $_->display_name } $self->users ) :
         'Everyone' );
     $anno_type->add_Annot( $users . "</td>" );
     $anno_obj->add_Annot($anno_type);
+    
+    my $groups = ( $self->restricted ? 
+        join( ', ', sort map { $_->name } $self->groups ) :
+        undef );
+    if ($groups) {
+        $anno_type =
+          new CoGe::Accessory::Annotation(
+                Type => "<tr><td valign='top' nowrap='true'><span class='title5'>"
+              . "Groups with access"
+              . "</span>" );
+        $anno_type->Type_delimit(": <td class='data5'>");
+        $anno_type->add_Annot( $groups . "</td>" );
+        $anno_obj->add_Annot($anno_type);
+    }
 
     if ( $self->deleted ) {
         $anno_type =

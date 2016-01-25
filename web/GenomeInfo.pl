@@ -937,7 +937,7 @@ sub get_genome_info {
         SOURCE         => get_genome_sources($genome),
         LINK           => $genome->link,
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
-        USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', map { $_->display_name } $USER->users_with_access($genome)) : 'Everyone' ),
+        USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', sort map { $_->display_name } $USER->users_with_access($genome)) : 'Everyone' ),
         NAME           => $genome->name,
         DESCRIPTION    => $genome->description,
         DELETED        => $genome->deleted
@@ -946,7 +946,7 @@ sub get_genome_info {
     my $owner = $genome->owner;
     my $creator = $genome->creator;
     my $creation = ($genome->creator_id ? $genome->creator->display_name  . ' ' : '') . $genome->get_date();
-    my $groups = ($genome->restricted ? join(', ', map { $_->name } $USER->groups_with_access($genome)) : undef);
+    my $groups = ($genome->restricted ? join(', ', sort map { $_->name } $USER->groups_with_access($genome)) : undef);
     $template->param( groups_with_access => $groups) if $groups;
     $template->param( OWNER => $owner->display_name ) if $owner;
     $template->param( CREATOR => $creation ) if $creation;
@@ -1098,12 +1098,42 @@ sub update_owner {
     # Admin-only function
     return unless $USER->is_admin;
 
-    # Make new user owner of genome
+    # Get user to become owner
     my $user = $DB->resultset('User')->find( { user_name => $user_name } );
     unless ($user) {
         return "error finding user '$user_name'\n";
     }
 
+    # Remove existing owner
+    foreach my $conn ( # should only be one owner but loop just in case
+        $DB->resultset('UserConnector')->search(
+            {
+                parent_type => $node_types->{user},
+                child_id    => $gid,
+                child_type  => $node_types->{genome},
+                role_id     => 2                        # FIXME hardcoded
+            }
+        )) 
+    {
+        $conn->delete;
+    }
+    
+    # Remove existing user connection (should only be one, but loop just in case)
+    foreach my $conn (
+        $DB->resultset('UserConnector')->search(
+            {
+                parent_id   => $user->id,
+                parent_type => $node_types->{user},
+                child_id    => $gid,
+                child_type  => $node_types->{genome},
+                role_id     => {'!=' => 2}           # FIXME hardcoded
+            }
+        ))
+    {
+        $conn->delete;
+    }
+    
+    # Make user owner of genome
     my $conn = $DB->resultset('UserConnector')->find_or_create(
         {
             parent_id   => $user->id,
@@ -1115,20 +1145,6 @@ sub update_owner {
     );
     unless ($conn) {
         return "error creating user connector\n";
-    }
-
-    # Remove admin user as owner
-    $conn = $DB->resultset('UserConnector')->find(
-        {
-            parent_id   => $USER->id,
-            parent_type => $node_types->{user},
-            child_id    => $gid,
-            child_type  => $node_types->{genome},
-            role_id     => 2                        # FIXME hardcoded
-        }
-    );
-    if ($conn) {
-        $conn->delete;
     }
 
     return;
@@ -2050,7 +2066,6 @@ sub generate_html {
 	        HELP       => 'GenomeInfo',
 	        WIKI_URL   => $config->{WIKI_URL} || '',
             USER       => $USER->display_name || '',
-            ADJUST_BOX => 1,
             LOGON      => ( $USER->user_name ne "public" ),
             ADMIN_ONLY => $USER->is_admin,
             CAS_URL    => $config->{CAS_URL} || ''

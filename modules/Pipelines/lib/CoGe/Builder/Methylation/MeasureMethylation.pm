@@ -51,7 +51,8 @@ sub build {
         genome => $genome,
         input_file => $bam_file,
         metadata => $metadata,
-        params => $self->params->{methylation_params}
+        read_params => $self->params->{read_params},
+        methylation_params => $self->params->{methylation_params}
     };
     
     my $methyl_workflow;

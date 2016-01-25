@@ -281,13 +281,44 @@ $(document).ready(function() {
 </TMPL_IF> <!-- ADD_LIST_ITEMS -->
 
 <TMPL_IF NAME='ADMIN_AREA'>
+<script>
+$(document).ready(function() {
+    $("#edit_user").autocomplete({
+        source:[],
+        focus: function() { return false; },
+    });
+});
+function update_owner () {
+    var user_name = $('#edit_user').val();
+    if (!user_name) {
+        alert('Please specify a user.');
+        return;
+    }
+
+    $.ajax({
+        data: {
+            fname: 'update_owner',
+            nid: "<TMPL_VAR NAME='NOTEBOOK_ID'>",
+            user_name: user_name,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            if (data) {
+                alert(data);
+            }
+        }
+    });
+}
+</script>
+
 <br>
 <hr>
-Admin Functions:<br>
-<div id="admin_stuff">
-<pre>
-To do:
-   - If only one item in add item list, auto-select it
-   - Disable add button if no items left to add
+<div class="bold text">Admin Functions</div>
+<div class="small padded">
+	<div>
+        Assign notebook (including contents) to user:
+        <input id="edit_user" type="search" placeholder="Search" onkeyup="wait_to_search(search_users, this.value);" size="10" />
+        <span onClick="update_owner();" class='ui-button ui-corner-all coge-button'>Go</span>
+    </div>
 </div>
 </TMPL_IF> <!-- ADMIN_AREA -->

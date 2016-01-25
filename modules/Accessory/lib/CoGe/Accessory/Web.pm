@@ -922,7 +922,10 @@ sub write_log {
     $message = $1;
     my $file = shift;
     return unless $file;
-    open( OUT, ">>$file" ) || return;
+    if (!open( OUT, ">>$file" )) {
+        warn 'error opening ' . $file;
+        return;
+    }
     print OUT $message, "\n";
     close OUT;
 }
