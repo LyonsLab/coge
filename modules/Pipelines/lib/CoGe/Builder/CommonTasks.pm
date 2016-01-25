@@ -1345,18 +1345,19 @@ sub create_bismark_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     
+    my $done_file = 'bismark_genome_preparation.done';
+    
     my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark_genome_preparation') : 'bismark_genome_preparation';
     my $BISMARK_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bismark_index");
     $cmd = "mkdir -p $BISMARK_CACHE_DIR ; " .
            "cp $fasta $BISMARK_CACHE_DIR/$name.fa ; " . # bismark requires fasta file to end in .fa or .fasta, not .faa
-           "nice $cmd";
+           "nice $cmd $BISMARK_CACHE_DIR ; " .
+           "touch $done_file";
 
     return $BISMARK_CACHE_DIR, (
         cmd => $cmd,
         script => undef,
-        args => [
-            [$BISMARK_CACHE_DIR, '', 0],
-        ],
+        args => [],
         inputs => [
             $fasta
         ],
@@ -1373,6 +1374,7 @@ sub create_bismark_index_job {
             catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.4.bt2'),
             catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.rev.1.bt2'),
             catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.rev.2.bt2'),
+            catfile($BISMARK_CACHE_DIR, $done_file)
         ],
         description => "Indexing genome sequence with Bismark..."
     );
@@ -1475,17 +1477,21 @@ sub create_bwameth_index_job {
     my $fasta = shift;
     my $name = basename($fasta);
     
+    my $done_file = 'bwameth_index.done';
+    
     my $cmd = ($CONF->{BWAMETH} ? $CONF->{BWAMETH} : 'bwameth') . ' index';
     my $BWAMETH_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bwameth_index");
     
-    $cmd = "mkdir -p $BWAMETH_CACHE_DIR ; cd $BWAMETH_CACHE_DIR ; cp $fasta . ; " . $cmd;
+    $cmd = "mkdir -p $BWAMETH_CACHE_DIR ; " .
+           "cd $BWAMETH_CACHE_DIR ; " .
+           "cp $fasta . ; " . 
+           "$cmd $name ; " .
+           "touch $done_file";
 
     return $BWAMETH_CACHE_DIR, (
         cmd => $cmd,
         script => undef,
-        args => [
-            [$name, '', 0],
-        ],
+        args => [],
         inputs => [
             $fasta
         ],
@@ -1495,7 +1501,8 @@ sub create_bwameth_index_job {
             catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.ann"),
             catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.bwt"),
             catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.pac"),
-            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.sa")
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.sa"),
+            catfile($BWAMETH_CACHE_DIR, $done_file)
         ],
         description => "Indexing genome sequence with bwameth..."
     );
