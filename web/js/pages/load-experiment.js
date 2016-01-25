@@ -540,6 +540,7 @@ $.extend(AlignmentView.prototype, {
         this.container = this.el.find("#align-container");
         this.templates = {
             gsnap:   $($("#gsnap-template").html()),
+            bowtie2: $($("#bowtie2-template").html()),
             tophat:  $($("#tophat-template").html()),
             hisat2:  $($("#hisat2-template").html()),
             bismark: $($("#bismark-template").html()),
@@ -586,7 +587,14 @@ $.extend(AlignmentView.prototype, {
             if (this.el.find("[id='--max-mismatches-chk']").is(":checked")) {
             	this.data.alignment_params['--max-mismatches'] = this.el.find("[id='--max-mismatches']").val();
             }
-        } 
+        }
+        else if (aligner === "bowtie2") {
+        	this.data = {
+        		alignment_params: {
+        			tool: "bowtie2"
+        		}
+        	}
+        }
         else if (aligner === "tophat") {
             this.data = {
                 alignment_params: {
