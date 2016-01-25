@@ -32,6 +32,7 @@ our @EXPORT = qw(
     create_trimgalore_job create_trimgalore_workflow
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
+    create_bowtie2_alignment_job create_bowtie2_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -1183,6 +1184,37 @@ sub create_hisat2_build_job {
     );
 }
 
+sub create_bowtie2_workflow {
+    my %opts = @_;
+
+    # Required arguments
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $validated = $opts{validated};
+    my $staging_dir = $opts{staging_dir};
+    my $read_type = $opts{read_type};
+    my $encoding = $opts{encoding};
+
+    my ($index_path, %index_task) = create_bowtie_index_job($gid, $fasta);
+    
+    my %align_task = create_bowtie2_alignment_job(
+        staging_dir => $staging_dir,
+        fasta => $fasta,
+        fastq => $fastq,
+        validated => $validated,
+        index_name => $index_path,
+        index_files => ($index_task{outputs}),
+        read_type => $read_type,
+        encoding => $encoding
+    );
+
+    # Return the bam output name and tasks
+    my @tasks = ( \%index_task, \%align_task );
+    my %results = ( bam_file => $align_task{outputs}->[0] );
+    return \@tasks, \%results;
+}
+
 sub create_tophat_workflow {
     my %opts = @_;
 
@@ -1250,6 +1282,53 @@ sub create_bowtie_index_job {
         description => "Indexing genome sequence with Bowtie..."
     );
 }
+
+sub create_bowtie2_alignment_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $staging_dir = $opts{staging_dir};
+    my $fasta       = $opts{fasta};
+    my $fastq       = $opts{fastq};
+    my $validated   = $opts{validated};
+    my $index_name  = basename($opts{index_name});
+    my $index_files = $opts{index_files};
+    my $read_type   = $opts{read_type} // 'single';
+    my $encoding    = $opts{encoding};
+
+    # Setup input dependencies
+    my $inputs = [
+        $fasta,
+        @$fastq,
+        @$validated,
+        @$index_files
+    ];
+
+    # Build up command/arguments string
+    my $cmd = $CONF->{BOWTIE2} || 'bowtie2';
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
+    my $arg_str;
+    $arg_str .= $cmd . ' ';
+    $arg_str .= "--phred64_quals " if ($encoding eq '64');
+    $arg_str .= "-o . -p 32 $index_name ";
+
+    return (
+        cmd => catfile($CONF->{SCRIPTDIR}, 'tophat.pl'), # this script was created because JEX can't handle Bowtie's paired-end argument syntax
+        script => undef,
+        args => [
+            [$read_type, '', 0],
+            ['"'.$arg_str.'"', '', 0],
+            ['', join(' ', @$fastq), 0]
+        ],
+        inputs => $inputs,
+        outputs => [
+            catfile($staging_dir, "accepted_hits.bam")
+        ],
+        description => "Aligning sequences with Bowtie..."
+    );
+}
+
 
 sub create_tophat_job {
     my %opts = @_;

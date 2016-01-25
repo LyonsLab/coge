@@ -154,6 +154,17 @@ sub build {
             staging_dir => $staging_dir
         );    	
     }
+    if ($alignment_params && $alignment_params->{tool} eq 'bowtie2') {
+        ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(
+            fasta => $fasta,
+            fastq => \@trimmed,
+            validated => \@validated,
+            gid => $gid,
+            encoding => $read_params->{encoding},
+            read_type => $read_params->{read_type},
+            staging_dir => $staging_dir
+        );      
+    }    
     elsif ($alignment_params && $alignment_params->{tool} eq 'tophat') {
         # Generate gff if genome annotated
         my $gff_file;

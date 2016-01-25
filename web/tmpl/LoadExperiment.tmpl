@@ -359,6 +359,7 @@
 	        <label class="col-md-2">Aligner:</label>
 	        <select id="alignment">
 	            <option value="gsnap" selected>GSNAP</option>
+	            <option value="bowtie2">Bowtie2</option>
 	            <option value="tophat">TopHat2</option>
 	            <option value="hisat2">HISAT2</option>
 	            <option value="bismark">Bismark (methylation)</option>
@@ -412,6 +413,17 @@
             </div>
         </div>
     </div>
+</script>
+
+<script id="bowtie2-template" type="text/template">
+	<div id="bowtie2">
+		<div class="form-field">
+			<label class="col-md-2">Bowtie2: (<a href="http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml" target="_blank" class="small link">docs</a>)</label>
+			<div>
+			Default options
+			</div>
+		</div>
+	</div>
 </script>
 
 <script id="tophat-template" type="text/template">
