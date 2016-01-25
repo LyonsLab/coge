@@ -153,7 +153,7 @@ sub create_pileometh_plot_job {
     my $staging_dir = $opts{staging_dir};
     
     my $cmd = $CONF->{PILEOMETH} || 'PileOMeth';
-    my $BWAMETH_CACHE_FILE = catfile($CONF->{CACHEDIR}, $gid, 'bwameth_index', 'genome.reheader.faa');
+    my $BWAMETH_CACHE_FILE = catfile($CONF->{CACHEDIR}, $gid, 'bwameth_index', 'genome.faa.reheader.faa');
     
     my $output_prefix = 'pileometh';
     
@@ -190,7 +190,7 @@ sub create_pileometh_extraction_job {
     my $ob = $params->{'--OB'} // '0,0,0,0';
     
     my $cmd = $CONF->{PILEOMETH} || 'PileOMeth';
-    my $BWAMETH_CACHE_FILE = catfile($CONF->{CACHEDIR}, $gid, 'bwameth_index', 'genome.reheader.faa');
+    my $BWAMETH_CACHE_FILE = catfile($CONF->{CACHEDIR}, $gid, 'bwameth_index', 'genome.faa.reheader.faa');
     
     my $output_prefix = to_filename_without_extension($bam_file);
     

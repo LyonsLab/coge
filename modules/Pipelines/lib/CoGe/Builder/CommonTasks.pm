@@ -1475,7 +1475,7 @@ sub create_bwameth_workflow {
 sub create_bwameth_index_job {
     my $gid = shift;
     my $fasta = shift;
-    my $name = basename($fasta);
+    my $name = to_filename($fasta);
     
     my $done_file = 'bwameth_index.done';
     
@@ -1532,7 +1532,7 @@ sub create_bwameth_alignment_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
-        ['--reference', catfile($index_path, 'genome.reheader.faa'), 0],
+        ['--reference', catfile($index_path, 'genome.faa.reheader.faa'), 0],
         ['', join(' ', @$fastq), 0],
         ['-t', 8, 0],
         ['-p', 'alignment', 0]
