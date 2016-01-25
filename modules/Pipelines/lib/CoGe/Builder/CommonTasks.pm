@@ -201,16 +201,21 @@ sub create_iget_job {
     my $local_path = $args{local_path}; # destination path
 
     my $dest_file = catdir($local_path, 'irods', $irods_path);
+    my $done_file = $dest_file . '.done';
     my $dest_path = dirname($dest_file);
     make_path($dest_path) unless (-r $dest_path);
     my $cmd = irods_iget( $irods_path, $dest_path, { no_execute => 1 } );
+    $cmd .= " ; touch $done_file";
 
     return {
         cmd => $cmd,
         script => undef,
         args => [],
         inputs => [],
-        outputs => [ $dest_file ],
+        outputs => [ 
+            $dest_file,
+            $done_file
+        ],
         description => "Fetching $irods_path..."
     };
 }
@@ -223,7 +228,8 @@ sub create_ftp_get_job {
     my $dest_path = $opts{dest_path};
     
     my ($filename, $path) = split_url($url);
-    my $output_file = catdir($dest_path, $path, $filename);
+    my $output_file = catfile($dest_path, $path, $filename);
+    my $done_file = $output_file . '.done';
     
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, "ftp.pl"),
@@ -235,7 +241,10 @@ sub create_ftp_get_job {
             ["-dest_path", $dest_path,         0]
         ],
         inputs => [],
-        outputs => [ $output_file ],
+        outputs => [ 
+            $output_file,
+            $done_file
+        ],
         description => "Fetching $url..."
     };
 }
@@ -245,7 +254,7 @@ sub create_data_retrieval_workflow {
     my $upload_dir = $opts{upload_dir};
     my $data = $opts{data};
     
-    my (@tasks, @files, @ncbi);
+    my (@tasks, @outputs, @ncbi);
     foreach my $item (@$data) {
         my $type = lc($item->{type});
         
@@ -254,7 +263,7 @@ sub create_data_retrieval_workflow {
         if ($item->{path}) {
             my $filepath = catfile($upload_dir, $item->{path});
             if (-r $filepath) {
-                push @files, $filepath;
+                push @outputs, $filepath;
                 next;
             }
         }
@@ -282,13 +291,13 @@ sub create_data_retrieval_workflow {
         # Add task to workflow
         if ($task) {
             push @tasks, $task;
-            push @files, $task->{outputs}[0];
+            push @outputs, $task->{outputs}[0];
         }
     }
     
     return {
         tasks => \@tasks,
-        files => \@files,
+        outputs => \@outputs,
         ncbi  => \@ncbi
     };
 }

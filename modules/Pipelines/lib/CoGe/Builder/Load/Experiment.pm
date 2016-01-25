@@ -62,7 +62,7 @@ sub build {
     my $upload_dir = get_upload_path($self->user->name, $load_id);
     my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data);
     push @tasks, @{$data_workflow->{tasks}} if ($data_workflow->{tasks});
-    push @input_files, @{$data_workflow->{files}} if ($data_workflow->{files});
+    push @input_files, @{$data_workflow->{outputs}} if ($data_workflow->{outputs});
     
     # Build analytical tasks based on file type
     if ( $file_type eq 'fastq' || $file_type eq 'bam' ) {
