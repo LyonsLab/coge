@@ -44,14 +44,15 @@ sub validate_fastq_data_file {
 
             $count++;
 
-            if (length $seq != length $qual) {
-                print STDOUT "log: error: invalid record \#$count: sequence line length differs from quality line length\n",
-                             "$line",
-                             "$seq\n",
-                             "$line3",
-                             "$qual\n";
-                exit(-1);
-            }
+# mdb removed 1/25/16 COGE-700
+#            if (length $seq != length $qual) {
+#                print STDOUT "log: error: invalid record \#$count: sequence line length differs from quality line length\n",
+#                             "$line",
+#                             "$seq\n",
+#                             "$line3",
+#                             "$qual\n";
+#                exit(-1);
+#            }
         }
     }
     close($in);
