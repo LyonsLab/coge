@@ -125,9 +125,6 @@ sub track_config {
     push @tracks, {
         chunkSize     => 20000,
         baseUrl       => "$JBROWSE_API/sequence/$gid/", #"https://$SERVER_NAME/services/JBrowse/service.pl/sequence/$gid/",
-        metadata => {
-                t          => "SequenceTrack"
-        },
         type => "SequenceTrack",
         storeClass    => "JBrowse/Store/SeqFeature/REST",
         label         => "sequence",
@@ -146,9 +143,6 @@ sub track_config {
     #
     push @tracks, {
         baseUrl    => "$JBROWSE_API/track/gc/$gid/", #"$SERVER_NAME/coge/services/JBrowse/track/gc/$gid/",
-        metadata => {
-                t       => "GC_Content"
-        },
         type => "CoGe/View/Track/GC_Content",
         storeClass => "JBrowse/Store/SeqFeature/REST",
         track      => "gc_content",
@@ -182,9 +176,6 @@ sub track_config {
             track        => "features",
             label        => "features",
             key          => "Features: all",
-            metadata => {
-                t         => "Features"
-            },
             type => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
@@ -221,9 +212,6 @@ sub track_config {
                 track        => "features$type_name",
                 label        => "features$type_name",
                 key          => $type_name,
-                metadata => {
-                    t         => "Features"
-                },
                 type => "JBrowse/View/Track/HTMLFeatures",
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
                 region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
@@ -273,9 +261,6 @@ sub track_config {
                     track        => "features_ds".$dsid,
                     label        => "features_ds".$dsid,
                     key          => "Features: ".$dsname,
-                    metadata => {
-                        t         => "Features"
-                    },
                     type => "CoGe/View/Track/CoGeFeatures",
                     description  => "note, description",
                     storeClass   => "JBrowse/Store/SeqFeature/REST",
@@ -310,9 +295,6 @@ sub track_config {
                         track        => 'features_ds'.$dsid.'_'.$type_name,
                         label        => 'features_ds'.$dsid.'_'.$type_name,
                         key          => $type_name,
-                        metadata => {
-                            t         => "Features"
-                        },
                         type         => "JBrowse/View/Track/HTMLFeatures",
                         storeClass   => "JBrowse/Store/SeqFeature/REST",
                         region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
@@ -428,10 +410,6 @@ sub track_config {
             track        => "experiment$eid",
             label        => "experiment$eid",
             key          => ( $e->{restricted} ? '&reg; ' : '' ) . $e->{name},
-            metadata => {
-                notebook => @notebook_names ? \@notebook_names : undef,
-                t         => data_type($e->{data_type})
-            },
             type => $type,
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
@@ -486,9 +464,6 @@ sub track_config {
             autocomplete => "all",
             track        => "notebook0",
             label        => "notebook0",
-            metadata => {
-                t         => "MultiXYPlot"
-            },
             type => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
@@ -518,9 +493,6 @@ sub track_config {
             autocomplete => "all",
             track        => "notebook$nid",
             label        => "notebook$nid",
-            metadata => {
-                t         => "MultiXYPlot"
-            },
             type => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
@@ -561,17 +533,7 @@ sub track_config {
             dataset_id    => 'coge',
             plugins       => ['CoGe'],
             trackSelector => {
-                type => 'Faceted', #'CoGe/View/TrackList/CoGe',
-                displayColumns => [
-                    'key',
-                    't',
-                    'notebook'
-                ],
-                renameFacets => { t => 'Track Type' },
-                selectableFacets => [
-                    't',
-                    'notebook'
-                ]
+                type => 'CoGe/View/TrackList/CoGe'
             },
             tracks => \@tracks,
         }
