@@ -1177,7 +1177,7 @@ sub create_hisat2_workflow {
         staging_dir => $staging_dir
     );
     
-    my %bam = create_samtools_bam_job($hisat2{outputs}->[0], $staging_dir);
+    my %bam = create_sam_to_bam_job($hisat2{outputs}->[0], $staging_dir);
 
     my @tasks = ( \%build, \%hisat2, \%bam );
     my %results = (
@@ -1282,10 +1282,12 @@ sub create_bowtie2_workflow {
         read_type => $read_type,
         encoding => $encoding
     );
+    
+    my %bam_task = create_sam_to_bam_job($align_task{outputs}->[0], $staging_dir);
 
     # Return the bam output name and tasks
-    my @tasks = ( \%index_task, \%align_task );
-    my %results = ( bam_file => $align_task{outputs}->[0] );
+    my @tasks = ( \%index_task, \%align_task, \%bam_task );
+    my %results = ( bam_file => $bam_task{outputs}->[0] );
     return \@tasks, \%results;
 }
 
@@ -1382,25 +1384,30 @@ sub create_bowtie2_alignment_job {
     my $cmd = $CONF->{BOWTIE2} || 'bowtie2';
     $cmd = 'nice ' . $cmd; # run at lower priority
     
-    my $arg_str;
-    $arg_str .= $cmd . ' ';
-    $arg_str .= "--phred64_quals " if ($encoding eq '64');
-    $arg_str .= "-o . -p 32 $index_name ";
-
+    $cmd .= " -x $index_name ";
+    
+    if ($read_type eq 'paired') {
+        my ($m1, $m2) = detect_paired_end(\@$fastq);
+        die "error: invalid paired-end files: m1: @$m1 -- m2: @$m2" unless (@$m1 and @$m2);
+        $cmd .= '-1 ' . join(',', sort @$m1) . ' -2 ' . join(',', sort @$m2);     
+    }
+    else { # single-ended
+        $cmd .= '-U ' . join(',', sort @$fastq);
+    }
+    
+    my $output_file = 'alignments.sam';
+    $cmd .= " -S $output_file";
+    
     return (
-        cmd => catfile($CONF->{SCRIPTDIR}, 'tophat.pl'), # this script was created because JEX can't handle Bowtie's paired-end argument syntax
+        cmd => $cmd,
         script => undef,
-        args => [
-            [$read_type, '', 0],
-            ['"'.$arg_str.'"', '', 0],
-            ['', join(' ', @$fastq), 0]
-        ],
+        args => [],
         inputs => $inputs,
         outputs => [
-            catfile($staging_dir, "accepted_hits.bam")
+            catfile($staging_dir, $output_file)
         ],
-        description => "Aligning sequences with Bowtie..."
-    );
+        description => "Aligning sequences with Bowtie2..."
+    );    
 }
 
 
@@ -1731,7 +1738,7 @@ sub create_gsnap_workflow {
     my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
 
     # Convert sam file to bam
-    my %bam = create_samtools_bam_job($filter{outputs}->[0], $staging_dir);
+    my %bam = create_sam_to_bam_job($filter{outputs}->[0], $staging_dir);
 
     # Return the bam output name and jobs required
     my @tasks = (
@@ -1771,7 +1778,7 @@ sub create_gmap_index_job {
     );
 }
 
-sub create_samtools_bam_job {
+sub create_sam_to_bam_job {
     my $samfile = shift;
     my $staging_dir = shift;
     
