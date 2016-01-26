@@ -238,8 +238,6 @@ $.extend(ExperimentDescriptionView.prototype, {
     },
 });
 
-// Methylation analysis options
-
 function MethylationView(opts) {
 	this.format = opts.format;
     this.data = {};
@@ -382,12 +380,15 @@ $.extend(FindSNPView.prototype, {
             this.data.snp_params = $.extend({}, this.data.snp_params, { method: method.val() });
             el.show();
             method.removeAttr("disabled");
+            method.parent('div').slideDown();
             this.snp_container.slideDown();
             var selected = $("#snp-method").val();
             render_template(this.snp_templates[selected], this.snp_container);
-        } else {
+        } 
+        else {
             this.data.snp_params = undefined;
             method.attr("disabled", 1);
+            method.parent('div').slideUp();
             this.snp_container.slideUp();
         }
     },
@@ -774,6 +775,54 @@ $.extend(ExpressionView.prototype, {
     },
 });
 
+function ChIPSeqView() {
+    this.initialize();
+    this.data = {};
+}
+
+$.extend(ChIPSeqView.prototype, {
+    initialize: function() {
+        this.el = $($("#chipseq-template").html());
+        this.enabled = false;
+        this.container = this.el.find("#chipseq-container");
+    },
+
+    render: function() {
+        this.el.find("#chipseq").unbind().change(this.update.bind(this));
+    },
+
+    update: function() {
+        var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
+        if (selected !== 'bowtie2') 
+        	this.container.html('<span class="alert indent">Please select the Bowtie2 aligner above</span>').show();
+    	
+    	this.enabled = this.el.find("#chipseq").is(":checked");
+
+        if (this.enabled) 
+            this.container.slideDown();
+        else 
+            this.container.slideUp();
+    },
+
+    is_valid: function() {
+        return true;
+    },
+
+    get_options: function() {
+        if (this.enabled) {
+            this.data.chipseq_params = {
+                '-size':  this.el.find("[id='-size']").val(),
+                '-gsize': this.el.find("[id='-gsize']").val(),
+                '-norm':  this.el.find("[id='-norm']").val(),
+                '-fdr':   this.el.find("[id='-fdr']").val(),
+                '-F':     this.el.find("[id='-F']").val(),
+            };
+        }
+
+        return this.data;
+    },
+});
+
 function FastqView() {
     this.initialize();
 }
@@ -786,6 +835,7 @@ $.extend(FastqView.prototype, {
         this.expression_view = new ExpressionView();
         this.snp_view = new FindSNPView();
         this.methylation_view = new MethylationView({ format: this.read_view });
+        this.chipseq_view = new ChIPSeqView();
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
@@ -796,7 +846,8 @@ $.extend(FastqView.prototype, {
                 "#align-view": this.align_view,
                 "#expression-view": this.expression_view,
                 "#snp-view": this.snp_view,
-                "#methylation-view": this.methylation_view
+                "#methylation-view": this.methylation_view,
+                "#chipseq-view": this.chipseq_view
             }
         });
 
@@ -814,7 +865,8 @@ $.extend(FastqView.prototype, {
     			&& this.align_view.is_valid()
     			&& this.snp_view.is_valid()
     			&& this.expression_view.is_valid()
-    			&& this.methylation_view.is_valid());
+    			&& this.methylation_view.is_valid()
+    			&& this.chipseq_view.is_valid());
     },
 
     get_options: function() {
@@ -823,7 +875,8 @@ $.extend(FastqView.prototype, {
 		        		this.align_view.get_options(),
                         this.expression_view.get_options(),
                         this.snp_view.get_options(),
-                        this.methylation_view.get_options());
+                        this.methylation_view.get_options(),
+                        this.chipseq_view.get_options());
     },
 });
 
@@ -1027,6 +1080,7 @@ function load(experiment) {
 			expression_params:  experiment.options.expression_params,
 			snp_params:         experiment.options.snp_params,
             methylation_params: experiment.options.methylation_params,
+            chipseq_params:     experiment.options.chipseq_params,
 			normalize:          experiment.options.normalize,
 			normalize_method:   experiment.options.normalize_method,
 			email:              experiment.options.email,
