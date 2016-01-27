@@ -1177,11 +1177,11 @@ sub create_hisat2_workflow {
         staging_dir => $staging_dir
     );
     
-    my %bam = create_sam_to_bam_job($hisat2{outputs}->[0], $staging_dir);
+    my $bam_task = create_sam_to_bam_job($hisat2{outputs}->[0], $staging_dir);
 
-    my @tasks = ( \%build, \%hisat2, \%bam );
+    my @tasks = ( \%build, \%hisat2, $bam_task );
     my %results = (
-        bam_file => $bam{outputs}->[0]
+        bam_file => $bam_task->{outputs}->[0]
     );
     return \@tasks, \%results;
 }
@@ -1270,9 +1270,9 @@ sub create_bowtie2_workflow {
     my $read_type = $opts{read_type};
     my $encoding = $opts{encoding};
 
-    my ($index_path, %index_task) = create_bowtie_index_job($gid, $fasta);
+    my ($index_path, $index_task) = create_bowtie_index_job($gid, $fasta);
     
-    my %align_task = create_bowtie2_alignment_job(
+    my $align_task = create_bowtie2_alignment_job(
         staging_dir => $staging_dir,
         fasta => $fasta,
         fastq => $fastq,
@@ -1283,11 +1283,49 @@ sub create_bowtie2_workflow {
         encoding => $encoding
     );
     
-    my %bam_task = create_sam_to_bam_job($align_task{outputs}->[0], $staging_dir);
+    my $bam_task = create_sam_to_bam_job($align_task{outputs}->[0], $staging_dir);
 
     # Return the bam output name and tasks
-    my @tasks = ( \%index_task, \%align_task, \%bam_task );
-    my %results = ( bam_file => $bam_task{outputs}->[0] );
+    my @tasks = ( $index_task, $align_task, $bam_task );
+    my %results = ( bam_file => $bam_task->{outputs}[0] );
+    return \@tasks, \%results;
+}
+
+sub create_bowtie2_chipseq_workflow {
+    my %opts = @_;
+
+    # Required arguments
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $validated = $opts{validated};
+    my $staging_dir = $opts{staging_dir};
+    my $read_type = $opts{read_type};
+    my $encoding = $opts{encoding};
+
+    my (@tasks, %results);
+
+    my ($index_path, $index_task) = create_bowtie_index_job($gid, $fasta);
+    push @tasks, $index_task;
+    
+    foreach my $file (@$fastq) {
+        my $align_task = create_bowtie2_alignment_job(
+            staging_dir => $staging_dir,
+            fasta => $fasta,
+            fastq => $file,
+            validated => $validated,
+            index_name => $index_path,
+            index_files => ($index_task->{outputs}),
+            read_type => $read_type,
+            encoding => $encoding
+        );
+        push @tasks, $align_task;
+        
+        my $bam_task = create_sam_to_bam_job($align_task{outputs}->[0], $staging_dir);
+        push @tasks, $bam_task;
+        push @{$results{bam_file}}, $bam_task->{outputs}[0];
+    }
+
     return \@tasks, \%results;
 }
 
@@ -1305,7 +1343,7 @@ sub create_tophat_workflow {
     my $encoding = $opts{encoding};
     my $params = $opts{params};
 
-    my ($index, %bowtie) = create_bowtie_index_job($gid, $fasta);
+    my ($index, $bowtie) = create_bowtie_index_job($gid, $fasta);
     
     my %tophat = create_tophat_job(
         staging_dir => $staging_dir,
@@ -1321,7 +1359,7 @@ sub create_tophat_workflow {
     );
 
     # Return the bam output name and jobs required
-    my @tasks = ( \%bowtie, \%tophat );
+    my @tasks = ( $bowtie, \%tophat );
     my %results = (
         bam_file => $tophat{outputs}->[0]
     );
@@ -1337,7 +1375,7 @@ sub create_bowtie_index_job {
     my $BOWTIE_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bowtie_index");
     die "ERROR: BOWTIE_BUILD is not in the config." unless ($cmd);
 
-    return catdir($BOWTIE_CACHE_DIR, $name), (
+    return catdir($BOWTIE_CACHE_DIR, $name), {
         cmd => $cmd,
         script => undef,
         args => [
@@ -1356,7 +1394,7 @@ sub create_bowtie_index_job {
             catfile($BOWTIE_CACHE_DIR, $name . ".rev.2.bt2")
         ],
         description => "Indexing genome sequence with Bowtie..."
-    );
+    };
 }
 
 sub create_bowtie2_alignment_job {
@@ -1398,7 +1436,7 @@ sub create_bowtie2_alignment_job {
     my $output_file = 'alignments.sam';
     $cmd .= " -S $output_file";
     
-    return (
+    return {
         cmd => $cmd,
         script => undef,
         args => [],
@@ -1407,7 +1445,7 @@ sub create_bowtie2_alignment_job {
             catfile($staging_dir, $output_file)
         ],
         description => "Aligning sequences with Bowtie2..."
-    );    
+    };    
 }
 
 
@@ -1738,17 +1776,17 @@ sub create_gsnap_workflow {
     my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
 
     # Convert sam file to bam
-    my %bam = create_sam_to_bam_job($filter{outputs}->[0], $staging_dir);
+    my $bam_task = create_sam_to_bam_job($filter{outputs}->[0], $staging_dir);
 
     # Return the bam output name and jobs required
     my @tasks = (
         \%gmap,
         \%gsnap,
         \%filter,
-        \%bam
+        $bam_task
     );
     my %results = (
-        bam_file => $bam{outputs}->[0]
+        bam_file => $bam_task->{outputs}[0]
     );
     return \@tasks, \%results;
 }
@@ -1785,7 +1823,7 @@ sub create_sam_to_bam_job {
     my $filename = to_filename($samfile);
     my $cmd = $CONF->{SAMTOOLS} || 'samtools';
 
-    return (
+    return {
         cmd => $cmd,
         script => undef,
         args => [
@@ -1800,7 +1838,7 @@ sub create_sam_to_bam_job {
             catfile($staging_dir, $filename . ".bam")
         ],
         description => "Generating BAM file..."
-    );
+    };
 }
 
 sub create_sam_filter_job {
