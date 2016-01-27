@@ -19,6 +19,8 @@ use CoGe::Builder::SNP::CoGeSNPs qw(build);
 use CoGe::Builder::SNP::Samtools qw(build);
 use CoGe::Builder::SNP::Platypus qw(build);
 #use CoGe::Builder::SNP::GATK qw(build);
+use CoGe::Builder::Methylation::Bismark qw(build);
+use CoGe::Builder::Protein::ChIPseq qw(build);
 
 sub get_name {
     my $self = shift;
@@ -87,7 +89,7 @@ sub build {
             return if ($alignment_workflow->{error}); #TODO need to propagate this error up to client
             
             push @tasks, @{$alignment_workflow->{tasks}};
-            $bam_file = $alignment_workflow->{bam_file};
+            $bam_file  = $alignment_workflow->{bam_file};
             push @done_files, @{$alignment_workflow->{done_files}};
         }
         elsif ( $file_type && $file_type eq 'bam' ) {
@@ -128,7 +130,6 @@ sub build {
         }
         
         # Add SNP workflow (if specified)
-        my $snp_workflow;
         if ( $self->params->{snp_params} ) {
             my $method = $self->params->{snp_params}->{method};
             my $snp_params = {
@@ -142,6 +143,7 @@ sub build {
                 skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
+            my $snp_workflow;
             switch ($method) { #FIXME pass into IdentifySNPs instead
                 case 'coge'     { $snp_workflow = CoGe::Builder::SNP::CoGeSNPs::build($snp_params); }
                 case 'samtools' { $snp_workflow = CoGe::Builder::SNP::Samtools::build($snp_params); }
@@ -154,7 +156,6 @@ sub build {
         }
         
         # Add methylation workflow (if specified)
-        my $methylation_workflow;
         if ( $self->params->{methylation_params} ) {
             my $method = $self->params->{methylation_params}->{method};
             my $methylation_params = {
@@ -162,13 +163,15 @@ sub build {
                 wid => $self->workflow->id,
                 genome => $genome,
                 input_file => $bam_file,
+                replicate_file1 => ,
+                replicate_file2 => ,
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
-                read_params => $self->params->{read_params},
                 methylation_params => $self->params->{methylation_params},
                 skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
+            my $methylation_workflow;
             switch ($method) { #FIXME pass into MeasureMethylation instead
                 case 'bismark' { $methylation_workflow = CoGe::Builder::Methylation::Bismark::build($methylation_params); }
                 case 'bwameth' { $methylation_workflow = CoGe::Builder::Methylation::BWAmeth::build($methylation_params); }
@@ -176,6 +179,26 @@ sub build {
             }
             push @tasks, @{$methylation_workflow->{tasks}};
             push @done_files, @{$methylation_workflow->{done_files}};
+        }
+        
+        # Add ChIP-seq workflow (if specified)
+        if ( $self->params->{chipseq_params} ) {
+            my $chipseq_params = {
+                user => $self->user,
+                wid => $self->workflow->id,
+                genome => $genome,
+                input_file => $bam_file,
+                metadata => $metadata,
+                additional_metadata => $additional_metadata,
+                read_params => $self->params->{read_params},
+                chipseq_params => $self->params->{chipseq_params},
+                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
+            };
+            
+            my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
+            push @tasks, @{$chipseq_workflow->{tasks}};
+            push @done_files, @{$chipseq_workflow->{done_files}};
+            $result_count++;
         }
     }
     # Else, all other file types
