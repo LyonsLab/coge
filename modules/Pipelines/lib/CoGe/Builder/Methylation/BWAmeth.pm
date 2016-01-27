@@ -59,11 +59,12 @@ sub build {
         $input_file = $deduplicate_task->{outputs}[0];
     }
 
-    push @tasks, create_pileometh_plot_job(
-        bam_file => $input_file,
-        gid => $genome->id,
-        staging_dir => $staging_dir
-    );
+# mdb removed 1/27/15 -- resulting .svg files are not used, reinstate when there is a way to show/download them
+#    push @tasks, create_pileometh_plot_job(
+#        bam_file => $input_file,
+#        gid => $genome->id,
+#        staging_dir => $staging_dir
+#    );
     
     my $extract_methylation_task = create_pileometh_extraction_job(
         bam_file => $input_file,
@@ -196,6 +197,7 @@ sub create_pileometh_extraction_job {
         script => undef,
         args => [
             ['extract', '', 0],
+            ['--methylKit', '', 0],
             ['--CHG', '', 0],
             ['--CHH', '', 0],
             ['-q', $q, 0],
@@ -208,9 +210,9 @@ sub create_pileometh_extraction_job {
             $bam_file
         ],
         outputs => [
-            catfile($staging_dir, $output_prefix . '_CpG.bedGraph'),
-            catfile($staging_dir, $output_prefix . '_CHH.bedGraph'),
-            catfile($staging_dir, $output_prefix . '_CHG.bedGraph')
+            catfile($staging_dir, $output_prefix . '_CpG.methylKit'),
+            catfile($staging_dir, $output_prefix . '_CHH.methylKit'),
+            catfile($staging_dir, $output_prefix . '_CHG.methylKit')
         ],
         description => "Extracting methylation calls with PileOMeth..."
     };
