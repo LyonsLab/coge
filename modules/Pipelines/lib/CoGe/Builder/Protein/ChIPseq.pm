@@ -35,7 +35,6 @@ sub build {
     my $metadata = $opts->{metadata};
     my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
-    my $read_params = $opts->{read_params};
     my $chipseq_params = $opts->{methylation_params};
 
     # Setup paths
