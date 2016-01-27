@@ -94,30 +94,24 @@ sub build {
             $fastq1 = \@decompressed;
         }
         
+        my %params = (
+            fastq1 => $fastq1,
+            fastq2 => $fastq2,
+            validated => \@validated,
+            staging_dir => $staging_dir,
+            read_params => $read_params,
+            trimming_params => $trimming_params        
+        )
+        
+        my ($tasks, $outputs)
         if ($trimming_params->{trimmer} eq 'cutadapt') {
-            my ($tasks, $outputs) = create_cutadapt_workflow(
-                fastq1 => $fastq1,
-                fastq2 => $fastq2,
-                validated => \@validated,
-                staging_dir => $staging_dir,
-                read_params => $read_params,
-                trimming_params => $trimming_params
-            );
-            push @trimmed, @$outputs;
-            push @tasks, @$tasks;
+            ($tasks, $outputs) = create_cutadapt_workflow(%params);
         }
         elsif ($trimming_params->{trimmer} eq 'trimgalore') {
-            my ($tasks, $outputs) = create_trimgalore_workflow(
-                fastq1 => $fastq1,
-                fastq2 => $fastq2,
-                validated => \@validated,
-                staging_dir => $staging_dir,
-                read_params => $read_params,
-                trimming_params => $trimming_params
-            );
-            push @trimmed, @$outputs;
-            push @tasks, @$tasks;
+            ($tasks, $outputs) = create_trimgalore_workflow(%params);
         }
+        push @trimmed, @$outputs;
+        push @tasks, @$tasks;
     }
     else { # no trimming
         push @trimmed, @decompressed;
@@ -142,30 +136,31 @@ sub build {
         cache_dir => $fasta_cache_dir
     );
     
+    my %params = ( 
+        fasta => catfile($fasta_cache_dir, $reheader_fasta),
+        fastq => \@trimmed,
+        validated => \@validated,
+        gid => $gid,
+        encoding => $read_params->{encoding},
+        read_type => $read_params->{read_type},
+        staging_dir => $staging_dir,
+        params => $alignment_params,
+    );
+    
     # Add aligner workflow
     my ($alignment_tasks, $alignment_results);
-    if ($alignment_params && $alignment_params->{tool} eq 'hisat2') {
-        ($alignment_tasks, $alignment_results) = create_hisat2_workflow(
-            fasta => $fasta,
-        	fastq => \@trimmed,
-            gid => $gid,
-            encoding => $read_params->{encoding},
-            read_type => $read_params->{read_type},
-            staging_dir => $staging_dir
-        );    	
+    $alignment_params = {} unless $alignment_params;
+    
+    if ($alignment_params->{tool} eq 'hisat2') {
+        ($alignment_tasks, $alignment_results) = create_hisat2_workflow(%params);
     }
-    if ($alignment_params && $alignment_params->{tool} eq 'bowtie2') {
-        ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(
-            fasta => $fasta,
-            fastq => \@trimmed,
-            validated => \@validated,
-            gid => $gid,
-            encoding => $read_params->{encoding},
-            read_type => $read_params->{read_type},
-            staging_dir => $staging_dir
-        );      
-    }    
-    elsif ($alignment_params && $alignment_params->{tool} eq 'tophat') {
+    elsif ($alignment_params->{tool} eq 'bowtie2') {
+        ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params);
+    }
+    elsif ($alignment_params->{tool} eq 'bowtie2_chipseq') {
+        ($alignment_tasks, $alignment_results) = create_chipseq_bowtie2_workflow(%params);
+    }
+    elsif ($alignment_params->{tool} eq 'tophat') {
         # Generate gff if genome annotated
         my $gff_file;
         if ( $genome->has_gene_features ) {
@@ -178,52 +173,17 @@ sub build {
             push @tasks, $gff_task;
         }
         
-        ($alignment_tasks, $alignment_results) = create_tophat_workflow(
-            gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
-            fastq => \@trimmed,
-            validated => \@validated,
-            encoding => $read_params->{encoding},
-            read_type => $read_params->{read_type},
-            gff => $gff_file,
-            staging_dir => $staging_dir,
-            params => $alignment_params,
-        );
+        $params{gff} = $gff_file;
+        ($alignment_tasks, $alignment_results) = create_tophat_workflow(%params);
     }
-    elsif ($alignment_params && $alignment_params->{tool} eq 'bismark') {
-        ($alignment_tasks, $alignment_results) = create_bismark_workflow(
-            gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
-            fastq => \@trimmed,
-            validated => \@validated,
-            encoding => $read_params->{encoding},
-            read_type => $read_params->{read_type},
-            staging_dir => $staging_dir,
-            params => $alignment_params,
-        );
+    elsif ($alignment_params->{tool} eq 'bismark') {
+        ($alignment_tasks, $alignment_results) = create_bismark_workflow(%params);
     }
-    elsif ($alignment_params && $alignment_params->{tool} eq 'bwameth') {
-        ($alignment_tasks, $alignment_results) = create_bwameth_workflow(
-            gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
-            fastq => \@trimmed,
-            validated => \@validated,
-            #encoding => $read_params->{encoding}, # bwameth doesn't have encoding option, must auto-detect?
-            read_type => $read_params->{read_type},
-            staging_dir => $staging_dir,
-            params => $alignment_params,
-        );
+    elsif ($alignment_params->{tool} eq 'bwameth') {
+        ($alignment_tasks, $alignment_results) = create_bwameth_workflow(%params);
     }
     else { # ($alignment_params->{tool} eq 'gsnap') { # default
-        ($alignment_tasks, $alignment_results) = create_gsnap_workflow(
-            gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
-            fastq => \@trimmed,
-            validated => \@validated,
-            read_type => $read_params->{read_type},
-            staging_dir => $staging_dir,
-            params => $alignment_params,
-        );
+        ($alignment_tasks, $alignment_results) = create_gsnap_workflow(%params);
     }
 # mdb removed 9/15/15 -- make GSNAP the default aligner
 #    else {
