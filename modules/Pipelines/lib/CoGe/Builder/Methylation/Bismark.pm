@@ -39,9 +39,6 @@ sub build {
 
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
-    my $gid = $genome->id;
-    my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
-    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
 
     # Set metadata for the pipeline being used
     my $annotations = generate_additional_metadata($read_params, $methylation_params);
@@ -146,8 +143,8 @@ sub create_bismark_deduplicate_job {
     my $staging_dir = $opts{staging_dir};
     my $name = basename($bam_file);
     
-    my $cmd = catfile($CONF->{BISMARK_DIR}, 'deduplicate_bismark');
-    die "ERROR: BISMARK_DIR is not in the config." unless $cmd;
+    my $cmd = ($CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'deduplicate_bismark') : 'deduplicate_bismark');
+    $cmd = 'nice ' . $cmd;
     
     my $args;
     if ($read_type eq 'paired') {
@@ -185,8 +182,7 @@ sub create_extract_methylation_job {
     my $ignore_3prime_r2 = $opts{'--ignore_3prime_r2'} // 0;
     my $staging_dir = $opts{staging_dir};
     
-    my $cmd = catfile($CONF->{BISMARK_DIR}, 'bismark_methylation_extractor');
-    die "ERROR: BISMARK_DIR is not in the config." unless $cmd;
+    my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark_methylation_extractor') : 'bismark_methylation_extractor';
     $cmd = 'nice ' . $cmd;
     
     my $name = to_filename_without_extension($bam_file);

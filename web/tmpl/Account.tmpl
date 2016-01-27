@@ -47,7 +47,7 @@ function verify_image_file(file) {
 </script>
 <table align="center" style="margin-top:20px;"><tr><td>
 <div style="display:inline-block;margin-right:20px;vertical-align:top;">
-    <img src="image.pl?id=<TMPL_VAR NAME="IMAGE">" class="coge-user-image" style="min-width:230px;min-height:230px;" id="big_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';"\>
+    <img src="image.pl?id=<TMPL_VAR NAME="IMAGE">" class="coge-user-image" style="min-width:200px;min-height:200px;" id="big_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';"\>
 </div>
 <div style="display:inline-block;vertical-align:top;">
 <div class="bold text">Account Info</div>
@@ -76,10 +76,12 @@ function verify_image_file(file) {
         <td class="title5">date added</td>
         <td class="data5"><TMPL_VAR NAME="DATE"></td>
     </tr>
+    <!--
     <tr>
         <td class="title5">description</td>
         <td class="data5"><TMPL_VAR NAME="DESCRIPTION"></td>
     </tr>
+    -->
 </table>
 </div>
 </div>

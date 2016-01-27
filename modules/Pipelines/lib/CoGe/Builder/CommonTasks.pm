@@ -201,16 +201,21 @@ sub create_iget_job {
     my $local_path = $args{local_path}; # destination path
 
     my $dest_file = catdir($local_path, 'irods', $irods_path);
+    my $done_file = $dest_file . '.done';
     my $dest_path = dirname($dest_file);
     make_path($dest_path) unless (-r $dest_path);
     my $cmd = irods_iget( $irods_path, $dest_path, { no_execute => 1 } );
+    $cmd .= " ; touch $done_file";
 
     return {
         cmd => $cmd,
         script => undef,
         args => [],
         inputs => [],
-        outputs => [ $dest_file ],
+        outputs => [ 
+            $dest_file,
+            $done_file
+        ],
         description => "Fetching $irods_path..."
     };
 }
@@ -223,7 +228,7 @@ sub create_ftp_get_job {
     my $dest_path = $opts{dest_path};
     
     my ($filename, $path) = split_url($url);
-    my $output_file = catdir($dest_path, $path, $filename);
+    my $output_file = catfile($dest_path, $path, $filename);
     
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, "ftp.pl"),
@@ -235,7 +240,9 @@ sub create_ftp_get_job {
             ["-dest_path", $dest_path,         0]
         ],
         inputs => [],
-        outputs => [ $output_file ],
+        outputs => [ 
+            $output_file
+        ],
         description => "Fetching $url..."
     };
 }
@@ -245,7 +252,7 @@ sub create_data_retrieval_workflow {
     my $upload_dir = $opts{upload_dir};
     my $data = $opts{data};
     
-    my (@tasks, @files, @ncbi);
+    my (@tasks, @outputs, @ncbi);
     foreach my $item (@$data) {
         my $type = lc($item->{type});
         
@@ -254,7 +261,7 @@ sub create_data_retrieval_workflow {
         if ($item->{path}) {
             my $filepath = catfile($upload_dir, $item->{path});
             if (-r $filepath) {
-                push @files, $filepath;
+                push @outputs, $filepath;
                 next;
             }
         }
@@ -282,13 +289,13 @@ sub create_data_retrieval_workflow {
         # Add task to workflow
         if ($task) {
             push @tasks, $task;
-            push @files, $task->{outputs}[0];
+            push @outputs, $task->{outputs}[0];
         }
     }
     
     return {
         tasks => \@tasks,
-        files => \@files,
+        outputs => \@outputs,
         ncbi  => \@ncbi
     };
 }
@@ -1345,18 +1352,19 @@ sub create_bismark_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     
+    my $done_file = 'bismark_genome_preparation.done';
+    
     my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark_genome_preparation') : 'bismark_genome_preparation';
     my $BISMARK_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bismark_index");
     $cmd = "mkdir -p $BISMARK_CACHE_DIR ; " .
            "cp $fasta $BISMARK_CACHE_DIR/$name.fa ; " . # bismark requires fasta file to end in .fa or .fasta, not .faa
-           "nice $cmd";
+           "nice $cmd $BISMARK_CACHE_DIR ; " .
+           "touch $done_file";
 
     return $BISMARK_CACHE_DIR, (
         cmd => $cmd,
         script => undef,
-        args => [
-            [$BISMARK_CACHE_DIR, '', 0],
-        ],
+        args => [],
         inputs => [
             $fasta
         ],
@@ -1373,6 +1381,7 @@ sub create_bismark_index_job {
             catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.4.bt2'),
             catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.rev.1.bt2'),
             catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.rev.2.bt2'),
+            catfile($BISMARK_CACHE_DIR, $done_file)
         ],
         description => "Indexing genome sequence with Bismark..."
     );
@@ -1473,19 +1482,23 @@ sub create_bwameth_workflow {
 sub create_bwameth_index_job {
     my $gid = shift;
     my $fasta = shift;
-    my $name = basename($fasta);
+    my $name = to_filename($fasta);
+    
+    my $done_file = 'bwameth_index.done';
     
     my $cmd = ($CONF->{BWAMETH} ? $CONF->{BWAMETH} : 'bwameth') . ' index';
     my $BWAMETH_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bwameth_index");
     
-    $cmd = "mkdir -p $BWAMETH_CACHE_DIR ; cd $BWAMETH_CACHE_DIR ; cp $fasta . ; " . $cmd;
+    $cmd = "mkdir -p $BWAMETH_CACHE_DIR ; " .
+           "cd $BWAMETH_CACHE_DIR ; " .
+           "cp $fasta . ; " . 
+           "$cmd $name ; " .
+           "touch $done_file";
 
     return $BWAMETH_CACHE_DIR, (
         cmd => $cmd,
         script => undef,
-        args => [
-            [$name, '', 0],
-        ],
+        args => [],
         inputs => [
             $fasta
         ],
@@ -1495,7 +1508,8 @@ sub create_bwameth_index_job {
             catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.ann"),
             catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.bwt"),
             catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.pac"),
-            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.sa")
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.sa"),
+            catfile($BWAMETH_CACHE_DIR, $done_file)
         ],
         description => "Indexing genome sequence with bwameth..."
     );
@@ -1525,7 +1539,7 @@ sub create_bwameth_alignment_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
-        ['--reference', catfile($index_path, 'genome.reheader.faa'), 0],
+        ['--reference', catfile($index_path, 'genome.faa.reheader.faa'), 0],
         ['', join(' ', @$fastq), 0],
         ['-t', 8, 0],
         ['-p', 'alignment', 0]

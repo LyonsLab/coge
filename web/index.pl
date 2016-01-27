@@ -21,7 +21,7 @@ $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM );
 
 # Logout is only called through this program!  All logouts from other pages are redirected to this page.
-# mdb changed 2/24/14, issue 329 - added confirmation for CoGe-only or iPlant-all logout
+# mdb changed 2/24/14, issue 329 - added confirmation for CoGe-only or CyVerse-all logout
 if ($FORM->param('logout_coge')) {
     CoGe::Accessory::Web->logout_coge(
         cookie_name => $P->{COOKIE_NAME},
