@@ -674,20 +674,17 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     _createLabelNode: function( trackConfig ) {
     	var coge = trackConfig.coge;
+    	var title = capitalize(coge.type) + " id" + coge.id;
+    	if (coge.name)
+    		title += "\nName: " + coge.name;
+    	if (coge.description)
+    		title += "\nDescription: " + coge.description;
+    	if (coge.annotations)
+    		title += coge.annotations;
     	return dojo.create(
     				'div',
 	                { className: 'coge-tracklist-label coge-' + coge.type,
-	                  title: capitalize(coge.type) + " id" + coge.id +
-	                  		 (coge.name ? "\nName: " + coge.name : '') +
-	                  		 (coge.description ? "\nDescription: " + coge.description : '') +
-	                  		 (coge.annotations ?
-	                  				"\n" +
-	                  				 coge.annotations
-		                  				.map(function(a) {
-	                  						return a.type + ': ' + a.text
-	                  					})
-	                  					.join("\n")
-	                  				: '')
+	                  title:  title
 	                }
 	        	);
     },

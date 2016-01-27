@@ -42,21 +42,10 @@ sub genes {
     my $dbh = $db->storage->dbh;
 
     my $hits = [];
-    foreach my $dsid (get_datasets($self->param('gid'), $dbh)) {
+    foreach my $dsid (@$dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'))) {
         add_genes $name, $dsid, $hits, $dbh;
     }
     return encode_json($hits);
-}
-
-sub get_datasets {
-    my ($gid, $dbh) = @_;
-    my $sth = $dbh->prepare('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $gid);
-    $sth->execute();
-    my @dsids;
-    while (my $row = $sth->fetch) {
-        push @dsids, $row->[0];
-    }
-    return @dsids;
 }
 
 1;

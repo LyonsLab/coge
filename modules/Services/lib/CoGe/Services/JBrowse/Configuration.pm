@@ -33,6 +33,17 @@ sub setup {
     $self->mode_param('rm');
 }
 
+sub _annotations {
+    my ($type, $eid, $db) = @_;
+    my $sth = $db->storage->dbh->prepare('SELECT name,annotation FROM ' . $type . '_annotation JOIN annotation_type ON annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id WHERE ' . $type . '_id=' . $eid . ' ORDER BY name');
+    $sth->execute();
+    my $annotations;
+    while (my $row = $sth->fetch) {
+        $annotations .= "\n" . $row->[0] . ': ' . $row->[1];
+    }
+    return $annotations;
+}
+
 sub refseq_config {
     my $self           = shift;
     my $gid            = $self->query->param('gid');
@@ -134,7 +145,8 @@ sub track_config {
         # CoGe-specific stuff
         coge => {
             id   => $gid,
-            type => 'sequence'
+            type => 'sequence',
+            annotations => _annotations('genome', $gid, $db)
         }
     };
 
@@ -447,7 +459,8 @@ sub track_config {
                         label => 'ExperimentView',
                         action => "function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
                     }
-                ]
+                ],
+                annotations => _annotations('experiment', $eid, $db)
             }
         };
     }
@@ -520,7 +533,8 @@ sub track_config {
                         label => 'NotebookView',
                         action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
                     }
-                ]
+                ],
+                annotations => _annotations('list', $nid, $db)
             }
         };
     }
