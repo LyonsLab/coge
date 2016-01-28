@@ -62,7 +62,7 @@ sub build {
     my $upload_dir = get_upload_path($self->user->name, $load_id);
     my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data);
     push @tasks, @{$data_workflow->{tasks}} if ($data_workflow->{tasks});
-    push @input_files, @{$data_workflow->{files}} if ($data_workflow->{files});
+    push @input_files, @{$data_workflow->{outputs}} if ($data_workflow->{outputs});
     
     # Build analytical tasks based on file type
     if ( $file_type eq 'fastq' || $file_type eq 'bam' ) {
@@ -80,6 +80,7 @@ sub build {
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 load_id => $load_id,
+                read_params => $self->params->{read_params},
                 trimming_params => $self->params->{trimming_params},
                 alignment_params => $self->params->{alignment_params}
             );
@@ -152,6 +153,32 @@ sub build {
             }
             push @tasks, @{$snp_workflow->{tasks}};
             push @done_files, @{$snp_workflow->{done_files}};
+            $result_count++;
+        }
+        
+        # Add methylation workflow (if specified)
+        my $methylation_workflow;
+        if ( $self->params->{methylation_params} ) {
+            my $method = $self->params->{methylation_params}->{method};
+            my $methylation_params = {
+                user => $self->user,
+                wid => $self->workflow->id,
+                genome => $genome,
+                input_file => $bam_file,
+                metadata => $metadata,
+                additional_metadata => $additional_metadata,
+                read_params => $self->params->{read_params},
+                methylation_params => $self->params->{methylation_params},
+                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
+            };
+            
+            switch ($method) { #FIXME pass into MeasureMethylation instead
+                case 'bismark' { $methylation_workflow = CoGe::Builder::Methylation::Bismark::build($methylation_params); }
+                case 'bwameth' { $methylation_workflow = CoGe::Builder::Methylation::BWAmeth::build($methylation_params); }
+                else           { die "unknown methylation method"; }
+            }
+            push @tasks, @{$methylation_workflow->{tasks}};
+            push @done_files, @{$methylation_workflow->{done_files}};
             $result_count++;
         }
     }

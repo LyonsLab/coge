@@ -43,7 +43,7 @@ sub gen_html {
     $template->param( email => $USER->email );
     $template->param( image => $USER->image_id );
     $template->param( date => $USER->date );
-    $template->param( description => $USER->description );
+    #$template->param( description => $USER->description );
     $template->param( username => $USER->user_name );
     return $template->output;
 }

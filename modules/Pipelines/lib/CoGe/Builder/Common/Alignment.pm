@@ -31,8 +31,9 @@ sub build {
     my $metadata    = $opts{metadata};
     my $additional_metadata = $opts{additional_metadata};
     my $load_id     = $opts{load_id};
-    my $alignment_params = $opts{alignment_params};
+    my $read_params      = $opts{read_params};
     my $trimming_params  = $opts{trimming_params};
+    my $alignment_params = $opts{alignment_params};
     
     my @tasks;
     
@@ -76,42 +77,46 @@ sub build {
     # Trim the fastq input files
     my @trimmed;
     if ($trimming_params) {
-        if ($alignment_params->{read_type} eq 'paired') { # mdb added 5/8/15 COGE-624 - enable paired-end support in cutadapt
+        my ($fastq1, $fastq2);
+        if ($read_params->{read_type} eq 'paired') {
             # Separate files based on last occurrence of _R1 or _R2 in filename
-            my ($m1, $m2) = detect_paired_end($input_files);
+            my ($m1, $m2) = detect_paired_end(\@decompressed);
             unless (@$m1 and @$m2 and @$m1 == @$m2) {
                 my $error = 'Mispaired FASTQ files, m1=' . @$m1 . ' m2=' . @$m2;
                 print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
                 print STDERR 'm1: ', join(' ', @$m1), "\n", 'm2: ', join(' ', @$m2), "\n";
                 return { error => $error };
             }
-            
-            # Create cutadapt task for each file pair
-            for (my $i = 0;  $i < @$m1;  $i++) { 
-                my $file1 = shift @$m1;
-                my $file2 = shift @$m2;
-                my $trim_task = create_cutadapt_job(
-                    fastq => [ $file1, $file2 ],
-                    validated => [ "$file1.validated", "$file2.validated" ],
-                    staging_dir => $staging_dir,
-                    params => $trimming_params
-                );
-                push @trimmed, @{$trim_task->{outputs}};
-                push @tasks, $trim_task;
-            }
+            $fastq1 = $m1;
+            $fastq2 = $m2;
         }
-        else { # single-ended
-            # Create cutadapt task for each file
-            foreach my $file (@decompressed) {
-                my $trim_task = create_cutadapt_job(
-                    fastq => $file,
-                    validated => "$file.validated",
-                    staging_dir => $staging_dir,
-                    params => $trimming_params
-                );
-                push @trimmed, $trim_task->{outputs}->[0];
-                push @tasks, $trim_task;
-            }
+        else { # default to single-ended
+            $fastq1 = \@decompressed;
+        }
+        
+        if ($trimming_params->{trimmer} eq 'cutadapt') {
+            my ($tasks, $outputs) = create_cutadapt_workflow(
+                fastq1 => $fastq1,
+                fastq2 => $fastq2,
+                validated => \@validated,
+                staging_dir => $staging_dir,
+                read_params => $read_params,
+                trimming_params => $trimming_params
+            );
+            push @trimmed, @$outputs;
+            push @tasks, @$tasks;
+        }
+        elsif ($trimming_params->{trimmer} eq 'trimgalore') {
+            my ($tasks, $outputs) = create_trimgalore_workflow(
+                fastq1 => $fastq1,
+                fastq2 => $fastq2,
+                validated => \@validated,
+                staging_dir => $staging_dir,
+                read_params => $read_params,
+                trimming_params => $trimming_params
+            );
+            push @trimmed, @$outputs;
+            push @tasks, @$tasks;
         }
     }
     else { # no trimming
@@ -144,8 +149,8 @@ sub build {
             fasta => $fasta,
         	fastq => \@trimmed,
             gid => $gid,
-            '--phred33' => $alignment_params->{'--phred33'},
-            read_type => $alignment_params->{read_type},
+            encoding => $read_params->{encoding},
+            read_type => $read_params->{read_type},
             staging_dir => $staging_dir
         );    	
     }
@@ -167,19 +172,44 @@ sub build {
             fasta => catfile($fasta_cache_dir, $reheader_fasta),
             fastq => \@trimmed,
             validated => \@validated,
-            read_type => $alignment_params->{read_type},
+            encoding => $read_params->{encoding},
+            read_type => $read_params->{read_type},
             gff => $gff_file,
             staging_dir => $staging_dir,
             params => $alignment_params,
         );
     }
-    else { # ($alignment_params->{tool} eq 'gsnap') {
+    elsif ($alignment_params && $alignment_params->{tool} eq 'bismark') {
+        ($alignment_tasks, $alignment_results) = create_bismark_workflow(
+            gid => $gid,
+            fasta => catfile($fasta_cache_dir, $reheader_fasta),
+            fastq => \@trimmed,
+            validated => \@validated,
+            encoding => $read_params->{encoding},
+            read_type => $read_params->{read_type},
+            staging_dir => $staging_dir,
+            params => $alignment_params,
+        );
+    }
+    elsif ($alignment_params && $alignment_params->{tool} eq 'bwameth') {
+        ($alignment_tasks, $alignment_results) = create_bwameth_workflow(
+            gid => $gid,
+            fasta => catfile($fasta_cache_dir, $reheader_fasta),
+            fastq => \@trimmed,
+            validated => \@validated,
+            #encoding => $read_params->{encoding}, # bwameth doesn't have encoding option, must auto-detect?
+            read_type => $read_params->{read_type},
+            staging_dir => $staging_dir,
+            params => $alignment_params,
+        );
+    }
+    else { # ($alignment_params->{tool} eq 'gsnap') { # default
         ($alignment_tasks, $alignment_results) = create_gsnap_workflow(
             gid => $gid,
             fasta => catfile($fasta_cache_dir, $reheader_fasta),
             fastq => \@trimmed,
             validated => \@validated,
-            read_type => $alignment_params->{read_type},
+            read_type => $read_params->{read_type},
             staging_dir => $staging_dir,
             params => $alignment_params,
         );
@@ -206,7 +236,7 @@ sub build {
     );
 
     # Get custom metadata to add to experiment
-    my $annotations = generate_additional_metadata($trimming_params, $alignment_params);
+    my $annotations = generate_additional_metadata($read_params, $trimming_params, $alignment_params);
     my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
     push @$annotations, @annotations2;
 
@@ -234,30 +264,43 @@ sub build {
 }
 
 sub generate_additional_metadata {
-    my ($trimming_params, $alignment_params) = @_;
+    my ($read_params, $trimming_params, $alignment_params) = @_;
     my @annotations;
     
     push @annotations, qq{https://genomevolution.org/wiki/index.php/Expression_Analysis_Pipeline||note|Generated by CoGe's RNAseq Analysis Pipeline};
     
-    if ($trimming_params) {
-        push @annotations, 'note|cutadapt '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '--quality-base', '-m'));
+    if ($trimming_params && $trimming_params->{trimmer}) {
+        if ($trimming_params->{trimmer} eq 'cutadapt') {
+            push @annotations, 'note|cutadapt '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '--quality-base', '-m'));
+        }
+        elsif ($trimming_params->{trimmer} eq 'trimgalore') {
+            push @annotations, 'note|trimgalore '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '--length', '-a'));
+        }
     }
 
     if ($alignment_params && $alignment_params->{tool}) {
         if ($alignment_params->{tool} eq 'hisat2') {
             push @annotations, qq{note|hisat2_build};
             my $params = join(' ', map { $_.' '.$alignment_params->{$_} } ('-p', '-x', '-S'));
-            if ($alignment_params->{'--phred33'}) {
-            	$params .= ' --phred33';
+            if ($read_params->{encoding} eq '64') {
+            	$params .= ' --phred64';
             }
             else {
-            	$params .= ' --phred64';
+            	$params .= ' --phred33';
             }
             push @annotations, 'note|hisat2 ' . $params;
         }
         elsif ($alignment_params->{tool} eq 'tophat') {
             push @annotations, qq{note|bowtie2_build};
             push @annotations, 'note|tophat ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-g'));
+        }
+        elsif ($alignment_params->{tool} eq 'bismark') {
+            push @annotations, qq{note|bismark_genome_preparation};
+            push @annotations, 'note|bismark ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-N', '-L'));
+        }
+        elsif ($alignment_params->{tool} eq 'bwameth') {
+            push @annotations, qq{note|bwameth index};
+            push @annotations, 'note|bwameth';
         }
         else { # gsnap
             push @annotations, qq{note|gmap_build};

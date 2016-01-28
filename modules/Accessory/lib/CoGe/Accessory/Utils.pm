@@ -44,6 +44,7 @@ BEGIN {
         format_time_diff sanitize_name execute directory_size
         trim js_escape html_escape to_filename to_pathname
         is_fastq_file add_fastq_ext detect_paired_end
+        to_filename_without_extension
     );
 }
 
@@ -165,8 +166,13 @@ sub format_time_diff {
     return $elapsed;
 }
 
+sub to_filename_without_extension {
+    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $name;
+}
+
 sub to_filename {
-    my ($name, undef, undef) = fileparse(shift);#, qr/\.[^.]*/);
+    my ($name, undef, undef) = fileparse(shift);
     return $name;
 }
 

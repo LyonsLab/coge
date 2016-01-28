@@ -4,7 +4,7 @@ coge.GenomeInfo = {};
 // EXPORT DIALOG GLOBALS
 var irods_home = $("<p>Sending to: " + irods_home_path + "</p>");
 var export_error = $("<p></p>")
-    .text("Failed to export to the iPlant Data Store.")
+    .text("Failed to export to the CyVerse Data Store.")
     .addClass("alert");
 var download_error = $("<p></p>")
     .text("The file could not be fetched")

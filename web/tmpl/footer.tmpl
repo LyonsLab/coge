@@ -28,14 +28,12 @@
         <span>Questions, problems, suggestions?
         <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>?subject=CoGe <TMPL_VAR NAME=PAGE_TITLE>&body=Link%20to%20page:%20%20<TMPL_VAR NAME=PAGE_LINK>">Contact us</a>
         or
-        <a href="http://ask.iplantcollaborative.org/questions/scope:all/sort:activity-desc/tags:CoGe/" target="_blank">Ask iPlant</a></span>
+        <a href="http://ask.iplantcollaborative.org/questions/scope:all/sort:activity-desc/tags:CoGe/" target="_blank">Ask CyVerse</a></span>
     </div>
 </div>
 
 <script type="text/javascript">
 	function login_cas() {
-		//var redirect_url = 'https://auth.iplantcollaborative.org/cas/loginPost?service='+document.location.href; // mdb removed 3/25/15
-		//var redirect_url = 'https://gucumatz.iplantcollaborative.org/cas/loginPost?service='+document.location.href; // mdb added 12/5/13 - for Hackathon1
 		var redirect_url = '<TMPL_VAR NAME=CAS_URL>' + '/login?service=' + document.location.href; // mdb added 3/25/15 for cas update
 		document.location.href = redirect_url; 
 		return true;

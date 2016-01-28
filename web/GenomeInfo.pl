@@ -177,7 +177,7 @@ sub get_genome_info_details {
 
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
-#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
+#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To CyVerse Data Store</span>};
     $html .= "</td></tr>";
 #    if ( my $exp_count = $dsg->experiments->count( { deleted => 0 } ) ) {
 #        $html .= qq{<tr><td class="title5">Experiment count:</td>};
@@ -1540,7 +1540,7 @@ sub export_fasta {
         return;
     }
 
-    # Send to iPlant Data Store using iput
+    # Send to CyVerse Data Store using iput
     CoGe::Accessory::IRODS::irods_iput($src, $dest);
     #TODO need to check rc of iput and abort if failure occurred
 

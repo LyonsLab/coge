@@ -38,13 +38,15 @@
         <tr>
             <td>Name:</td>
             <td><input id="edit_source_name" type="textbox" size="53" onkeyup="activate_on_input('edit_source_name', 'create_source_button');" /></td>
-        </tr><tr>
+        </tr>
+        <tr>
             <td>Description:</td>
             <td><textarea id="edit_source_desc" rows="5" cols="50" ></textarea></td>
-        </tr><tr>
+        </tr>
+        <tr>
             <td>Link:</td>
             <td><input id="edit_source_link" type="textbox" size="53" /></td>
-            </tr>
+        </tr>
     </table>
     <br>
     <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
@@ -76,11 +78,11 @@
                 <input id="edit_source" type="search" class="col-md-6" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
                 <div class="col-md-2">
                     <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
-                    <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+                    &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
                 </div>
         </div>
 
-        <div class="form-field"  title="Leave unchecked to make the new experiment public, or check the box to make the new experiment private to the current user. Note: restricted experiments can be shared with other users on the Profile page.">
+        <div class="form-field" title="Leave unchecked to make the new experiment public, or check the box to make the new experiment private to the current user. Note: restricted experiments can be shared with other users on the Profile page.">
             <label class="col-md-2">Restricted?</label>
             <input id="restricted" type="checkbox" checked>
         </div>
@@ -195,9 +197,12 @@
 
 <script id="fastq-template" type="text/template">
     <div class="step">
+    	<div id="read-view"></div>
+    	<div id="trim-view"></div>
         <div id="align-view"></div>
         <div id="expression-view"></div>
         <div id="snp-view"></div>
+        <div id="methylation-view"></div>
     </div>
 </script>
 
@@ -205,6 +210,7 @@
 <div>
     <div id="expression-view"></div>
     <div id="snp-view"></div>
+    <div id="methylation-view"></div>
 </div>
 </script>
 
@@ -244,23 +250,13 @@
     </div>
 </script>
 
-<!-- Alignment Templates -->
+<!-- FASTQ Format Templates -->
 
-<script id="align-template" type="text/template">
+<script id="format-template" type="text/template">
 	<div class="form-section">
-	    <h4>Alignment</h4>
+	    <h4>FASTQ Format</h4>
 	
 	    <div class="form-field">
-	        <label class="col-md-2">Aligner:</label>
-	        <div id="alignment">
-	            <input name="aligner" type="radio" value="gsnap" checked>
-	            <label for="gsnap">GSNAP</label>
-	            <input name="aligner" type="radio" value="tophat">
-	            <label for="gsnap">TopHat2</label>
-	            <input name="aligner" type="radio" value="hisat2">
-				<label>HISAT2</label>
-	        </div>
-	        
 	        <label class="col-md-2 coge-padded-top">Read Type:</label>
 	        <div id="read_type" class="coge-padded-top">
 			    <input name="read_type" type="radio" value="single" checked>
@@ -269,76 +265,113 @@
 			    <label for="paired">Paired-end</label>
 		    </div>
 	    </div>
+	    
+	    <div class="form-field">
+	        <label class="col-md-2 coge-padded-top">Encoding:</label>
+	        <div id="encoding" class="coge-padded-top">
+			    <input name="encoding" type="radio" value="33" checked>
+			    <label for="phred33">phred33</label>
+			    <input name="encoding" type="radio" value="64">
+			    <label for="phred64">phred64</label>
+		    </div>
+	    </div>
+	
+	    <div id="format-container" class="hidden"></div>
+	</div>
+</script>
+
+<!-- Trimming Templates -->
+<script id="trim-template" type="text/template">
+	<div class="form-section">
+	    <h4>Trimming</h4>
+	
+	    <div class="form-field">
+	        <label class="col-md-2">Trimmer:</label>
+	        <div id="trimming">
+		        <input name="trimmer" type="radio" value="none">
+				<label for="none">None</label>
+	            <input name="trimmer" type="radio" value="cutadapt" checked>
+	            <label for="cutadapt">CutAdapt</label>
+	            <input name="trimmer" type="radio" value="trimgalore">
+	            <label for="trimgalore">Trim Galore</label>
+	        </div>
+	    </div>
+	
+	    <div id="trim-container" class="hidden"></div>
+	</div>
+</script>
+
+<script id="cutadapt-template" type="text/template">
+	<div class="form-field">
+		<label class="col-md-2">CutAdapt: (<a href="https://cutadapt.readthedocs.org/en/stable/guide.html" target="_blank" class="small link">docs</a>)</label>
+		<div class="form-group">
+		    <div class="form-entry" title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64.">
+		        <label>-q:</label>
+		        <input id="-q" type="number" value="25"/>
+		    </div>
+		    <div class="form-entry" title="Use this to throw away processed reads shorter than N bases">
+		        <label>-m:</label>
+		        <input id="-m" type="number" value="17"/>
+		    </div>
+		    <!--
+		    <div class="form-entry" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)">
+		        <label>--quality-base:</label>
+		        <input id="--quality-base" type="number" value="32"/>
+		    </div>
+		    -->
+		</div>
+	</div>
+</script>
+
+<script id="trimgalore-template" type="text/template">
+	<div class="form-field">
+		<label class="col-md-2">Trim Galore: (<a href="http://www.bioinformatics.babraham.ac.uk/projects/trim_galore/" target="_blank" class="small link">docs</a>)</label>
+		<div class="form-group">
+			<div class="form-entry" title="Used to trim low-quality ends from reads before adapter removal.">
+		        <label>-q:</label>
+		        <input id="-q" type="number" value="20"/>
+		    </div>
+			<div class="form-entry" title="Discard reads with a length shorter than indicated.">
+				<label>--length</label>
+				<input id="--length" type="number" value="20"/>
+			</div>
+			<div class="form-entry" title="Override automatic adapter detection with a nucleotide string of your choosing.">
+				<label>-a</label>
+				<input id="-a-chk" type="checkbox"/>
+				<input id="-a" type="text"/>
+			</div>
+		</div>
+	</div>
+</script>
+
+<script id="none-template" type="text/template">
+	<div class="form-field">
+	</div>
+</script>
+
+<!-- Alignment Templates -->
+
+<script id="align-template" type="text/template">
+	<div class="form-section">
+	    <h4>Alignment</h4>
+	
+        <div class="form-field">
+	        <label class="col-md-2">Aligner:</label>
+	        <select id="alignment">
+	            <option value="gsnap" selected>GSNAP</option>
+	            <option value="tophat">TopHat2</option>
+	            <option value="hisat2">HISAT2</option>
+	            <option value="bismark">Bismark (methylation)</option>
+	            <option value="bwameth">bwameth (methylation)</option>
+	        </select>
+	    </div>
 	
 	    <div id="align-container" class="hidden"></div>
 	</div>
 </script>
 
-<script id="hisat2-template" type="text/template">
-    <div id="hisat2">
-        <div class="form-field">
-            <label class="col-md-2">CutAdapt: (<a href="https://cutadapt.readthedocs.org/en/stable/guide.html" target="_blank" class="small link">docs</a>)</label>
-            <div class="form-group">
-                <div class="form-entry"  title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64.">
-                    <label>-q:</label>
-                    <input id="-q" type="number" value="20"/>
-                </div>
-                <div class="form-entry" title="Use this to throw away processed reads shorter than N bases">
-                    <label>-m:</label>
-                    <input id="-m" type="number" value="17"/>
-                </div>
-                <div class="form-entry" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)">
-                    <label>--quality-base:</label>
-                    <input id="--quality-base" type="number" value="33"/>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-field">
-            <label class="col-md-2">HISAT2: (<a href="http://ccb.jhu.edu/software/hisat2/manual.shtml#paired-end-example" target="_blank" class="small link">docs</a>)</label>
-            <div>
-                <label>encoding:</label>
-				<input id="--phred33" name="hisat2_encoding" type="radio" value="33" checked>
-				<label>phred33</label>
-				<input name="hisat2_encoding" type="radio" value="64">
-				<label>phred64</label>
-            </div>
-        </div>
-    </div>
-</script>
-
-<script id="tophat-template" type="text/template">
-    <div id="tophat">
-        <div class="form-field" title="Instructs TopHat to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number.">
-            <label class="col-md-2">TopHat: (<a href="http://ccb.jhu.edu/software/tophat/manual.shtml" target="_blank" class="small link">docs</a>)</label>
-            <div>
-                <label>-g:</label>
-                <input id="-g" type="number" value="1"/>
-            </div>
-        </div>
-    </div>
-</script>
-
 <script id="gsnap-template" type="text/template">
     <div id="gsnap">
-        <div class="form-field">
-            <label class="col-md-2">CutAdapt: (<a href="https://cutadapt.readthedocs.org/en/stable/guide.html" target="_blank" class="small link">docs</a>)</label>
-            <div class="form-group">
-                <div class="form-entry" title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64.">
-                    <label>-q:</label>
-                    <input id="-q" type="number" value="20"/>
-                </div>
-                <div class="form-entry" title="Use this to throw away processed reads shorter than N bases">
-                    <label>-m:</label>
-                    <input id="-m" type="number" value="17"/>
-                </div>
-                <div class="form-entry" title="set to 64 for quality values that are encoded as ascii(phred quality + 64)">
-                    <label>--quality-base:</label>
-                    <input id="--quality-base" type="number" value="33"/>
-                </div>
-            </div>
-        </div>
-
         <div class="form-field">
             <label class="col-md-2">GSNAP: (<a href="http://research-pub.gene.com/gmap/" target="_blank" class="small link">docs</a>)</label>
             <div class="form-group">
@@ -379,6 +412,58 @@
             </div>
         </div>
     </div>
+</script>
+
+<script id="tophat-template" type="text/template">
+<div id="tophat">
+    <div class="form-field" title="Instructs TopHat2 to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number.">
+        <label class="col-md-2">TopHat2: (<a href="http://ccb.jhu.edu/software/tophat/manual.shtml" target="_blank" class="small link">docs</a>)</label>
+        <div>
+            <label>-g:</label>
+            <input id="-g" type="number" value="1"/>
+        </div>
+    </div>
+</div>
+</script>
+
+<script id="hisat2-template" type="text/template">
+	<div id="hisat2">
+	    <div class="form-field">
+	        <label class="col-md-2">HISAT2: (<a href="http://ccb.jhu.edu/software/hisat2/manual.shtml#paired-end-example" target="_blank" class="small link">docs</a>)</label>
+	        <div>
+	        Default options
+	        </div>
+	    </div>
+	</div>
+</script>
+
+<script id="bismark-template" type="text/template">
+	<div id="bismark">
+	    <div class="form-field">
+			<label class="col-md-2">Bismark: (<a href="http://www.bioinformatics.babraham.ac.uk/projects/bismark/"_blank" class="small link">docs</a>)</label>
+			<div class="form-group">
+				<div class="form-entry" title="Number of mismatches allowed in the bowtie2 alignment seed region (only 0 or 1 allowed).">
+					<label>-N</label>
+					<input id="-N" type="number" value="0"/>
+				</div>
+				<div class="form-entry" title="Seed length for bowtie2 alignment.">
+					<label>-L</label>
+					<input id="-L" type="number" value="20"/>
+				</div>
+	        </div>
+	    </div>
+	</div>
+</script>
+
+<script id="bwameth-template" type="text/template">
+	<div id="bwameth">
+	    <div class="form-field">
+	        <label class="col-md-2">bwameth: (<a href="https://github.com/brentp/bwa-meth" target="_blank" class="small link">docs</a>)</label>
+	        <div>
+	        Default options
+	        </div>
+	    </div>
+	</div>
 </script>
 
 <TMPL_INCLUDE NAME="widgets/Splash.tmpl">
@@ -431,13 +516,15 @@ $(function() {
     wizard = initialize_wizard({ 
     	admin: IS_ADMIN,
     	helpUrl: HELP_URL,
-    	gid: GENOME_ID
+    	gid: GENOME_ID,
+    	debug: true
     });
     
     // Initialize CoGe web services
     coge.services.init({
     	baseUrl: API_BASE_URL,
-    	userName: USER_NAME
+    	userName: USER_NAME,
+    	//debug: true
     });
     
     // Intialize progress window
