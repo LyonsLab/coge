@@ -28,6 +28,7 @@ var lengths;
 var max_chromosomes;
 var num_chromosomes;
 var offset = 0;
+var page_size = 0;
 function build_select(s, obj, first) {
 	s.empty();
 	var keys = [];
@@ -89,7 +90,10 @@ function do_plot() {
     		var chromosomes = get_chromosomes();
 			chromosomes.sort(size_sort);
 			num_chromosomes = chromosomes.length;
-			max_chromosomes = Math.min(num_chromosomes, 16);
+			if (page_size == 0)
+				page_size = Math.min(Math.pow(Math.floor(p.height() / 350), 2), 16);
+			$('#page_size')[0].selectedIndex = Math.sqrt(page_size) - 1;
+			max_chromosomes = Math.min(num_chromosomes - offset, page_size);
 	   		var num_cols = 1;
 	   		while (num_cols * num_cols < max_chromosomes)
 	   			num_cols++;
@@ -301,8 +305,14 @@ function plot_dialog() {
 function ready() {
 	$('#types').chosen({disable_search_threshold: 10});
 	$('#chromosomes').chosen();
-	var eid = get_param('eid');
-	$.get('data/popgen/' + eid + '/sumstats.tsv', null, parse_data, 'text');
+	$.ajax('data/popgen/' + get_param('eid') + '/sumstats.tsv', {
+		dataType: 'text',
+		error: function() {
+			alert('error loading data');
+			$('#busy').hide();
+		},
+		success: parse_data
+	});
 }
 function set_chromosomes() {
 	build_select($('#chromosomes'), data[$('#types option:selected').text()], 'All chromosomes');
@@ -364,8 +374,9 @@ Select columns to export
 	</div>
 	<div id="plot" style="flex: 1 1 auto;"></div>
 	<div id="arrows" style="flex: 0 1 auto;">
-		<span id="up" class="glyphicon glyphicons-circle-arrow-top" onclick="if(offset!=0){$('#plot_busy').show();offset-=max_chromosomes;setTimeout(do_plot, 10);}"></span>
-		<span id="down" class="glyphicon glyphicons-circle-arrow-down" onclick="if(num_chromosomes-offset>max_chromosomes){$('#plot_busy').show();offset+=max_chromosomes;setTimeout(do_plot, 10);}"></span>
+		<span id="up" class="glyphicon glyphicons-circle-arrow-top" onclick="if(offset!=0){$('#plot_busy').show();offset-=page_size;setTimeout(do_plot, 10);}"></span>
+		<span id="down" class="glyphicon glyphicons-circle-arrow-down" onclick="if(num_chromosomes-offset>max_chromosomes){$('#plot_busy').show();offset+=page_size;setTimeout(do_plot, 10);}"></span>
+		view <select id="page_size" onchange="page_size=parseInt(this.options[this.selectedIndex].text);offset=0;$('#plot_busy').show();setTimeout(do_plot, 10);"><option>1</option><option>4</option><option>9</option><option>16</option></select> chromosomes at a time
 	</div>
 </div>
 </div>
