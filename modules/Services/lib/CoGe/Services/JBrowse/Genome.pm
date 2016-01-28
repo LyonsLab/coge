@@ -42,7 +42,8 @@ sub genes {
     my $dbh = $db->storage->dbh;
 
     my $hits = [];
-    foreach my $dsid (@$dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'))) {
+    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'));
+    foreach my $dsid (@$ids) {
         add_genes $name, $dsid, $hits, $dbh;
     }
     return encode_json($hits);
