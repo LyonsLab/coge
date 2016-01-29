@@ -34,7 +34,7 @@ our @EXPORT = qw(
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
-    add_workflow_result create_bowtie2_alignment_job create_bowtie2_workflow
+    add_workflow_result create_bowtie2_workflow create_bowtie2_chipseq_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -1278,12 +1278,12 @@ sub create_bowtie2_workflow {
         fastq => $fastq,
         validated => $validated,
         index_name => $index_path,
-        index_files => ($index_task{outputs}),
+        index_files => $index_task->{outputs},
         read_type => $read_type,
         encoding => $encoding
     );
     
-    my $bam_task = create_sam_to_bam_job($align_task{outputs}->[0], $staging_dir);
+    my $bam_task = create_sam_to_bam_job($align_task->{outputs}->[0], $staging_dir);
 
     # Return the bam output name and tasks
     my @tasks = ( $index_task, $align_task, $bam_task );
@@ -1312,18 +1312,18 @@ sub create_bowtie2_chipseq_workflow {
         my $align_task = create_bowtie2_alignment_job(
             staging_dir => $staging_dir,
             fasta => $fasta,
-            fastq => $file,
+            fastq => [ $file ],
             validated => $validated,
             index_name => $index_path,
-            index_files => ($index_task->{outputs}),
+            index_files => $index_task->{outputs},
             read_type => $read_type,
             encoding => $encoding
         );
         push @tasks, $align_task;
         
-        my $bam_task = create_sam_to_bam_job($align_task{outputs}->[0], $staging_dir);
+        my $bam_task = create_sam_to_bam_job($align_task->{outputs}->[0], $staging_dir);
         push @tasks, $bam_task;
-        push @{$results{bam_file}}, $bam_task->{outputs}[0];
+        push @{$results{bam_files}}, $bam_task->{outputs}[0];
     }
 
     return \@tasks, \%results;
@@ -1352,7 +1352,7 @@ sub create_tophat_workflow {
         validated => $validated,
         gff => $gff,
         index_name => $index,
-        index_files => ($bowtie{outputs}),
+        index_files => ($bowtie->{outputs}),
         read_type => $read_type,
         encoding => $encoding,
         params => $params,
@@ -1402,9 +1402,9 @@ sub create_bowtie2_alignment_job {
 
     # Required arguments
     my $staging_dir = $opts{staging_dir};
-    my $fasta       = $opts{fasta};
-    my $fastq       = $opts{fastq};
-    my $validated   = $opts{validated};
+    my $fasta       = $opts{fasta};     # reheadered fasta file
+    my $fastq       = $opts{fastq};     # array ref to fastq files
+    my $validated   = $opts{validated}; # array ref to validation files
     my $index_name  = basename($opts{index_name});
     my $index_files = $opts{index_files};
     my $read_type   = $opts{read_type} // 'single';
@@ -1433,7 +1433,8 @@ sub create_bowtie2_alignment_job {
         $cmd .= '-U ' . join(',', sort @$fastq);
     }
     
-    my $output_file = 'alignments.sam';
+    my ($first_fastq) = @$fastq;
+    my $output_file = to_filename_without_extension($first_fastq) . '.sam';
     $cmd .= " -S $output_file";
     
     return {
@@ -1444,7 +1445,7 @@ sub create_bowtie2_alignment_job {
         outputs => [
             catfile($staging_dir, $output_file)
         ],
-        description => "Aligning sequences with Bowtie2..."
+        description => "Aligning " . join(', ', map { to_filename($_) } @$fastq) . " using Bowtie2..."
     };    
 }
 

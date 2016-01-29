@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Data::Dumper qw(Dumper);
-use File::Basename qw(basename);
+use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
 use CoGe::Accessory::Utils qw(to_filename to_filename_without_extension);
 use CoGe::Accessory::Web qw(get_defaults);
@@ -29,13 +29,11 @@ sub build {
     my $opts = shift;
     my $genome = $opts->{genome};
     my $user = $opts->{user};
-    my $input_file = $opts->{input_file}; # path to input bam file
-    my $replicate_file1 = $opts->{replicate_file1}; # path to replicate bam file
-    my $replicate_file2 = $opts->{replicate_file2}; # path to replicate bam file
+    my $input_files = $opts->{input_files}; # path to input bam files
     my $metadata = $opts->{metadata};
     my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
-    my $chipseq_params = $opts->{methylation_params};
+    my $chipseq_params = $opts->{chipseq_params};
 
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
@@ -45,35 +43,70 @@ sub build {
 #    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
 #    push @$annotations, @annotations2;
 
+    # Determine which bam file corresponds to the input vs. the replicates
+    my $input_base = fileparse($chipseq_params->{input}, '\..*');
+    my ($input_file, @replicates);
+    foreach my $file (@$input_files) {
+        my ($basename) = fileparse($file, '\..*');
+        if ($basename eq $input_base) {
+            $input_file = $file;
+        }
+        else {
+            push @replicates, $file;
+        }
+    }
+
     #
     # Build the workflow
     #
     my (@tasks, @done_files);
 
-    foreach my $bam_file ($input_file, $replicate_file1, $replicate_file2) {
+    foreach my $bam_file (@$input_files) {
         my $bamToBed_task = create_bamToBed_job( 
             bam_file => $bam_file,
             staging_dir => $staging_dir
         );
         push @tasks, $bamToBed_task;
         
-#        my $makeTagDir_task = create_homer_makeTagDirectory_job(
-#            bed_file => $bamToBed_task->{outputs}[0],
-#            staging_dir => $staging_dir,
-#            params => $chipseq_params
-#        );
-#        push @tasks, $makeTagDir_task;
+        my $makeTagDir_task = create_homer_makeTagDirectory_job(
+            bed_file => $bamToBed_task->{outputs}[0],
+            gid => $genome->id,
+            staging_dir => $staging_dir,
+            params => $chipseq_params
+        );
+        push @tasks, $makeTagDir_task;
     }
     
-#    foreach my $replicate ($replicate_file1, $replicate_file2) {
-#        my $findPeaks_task = create_homer_findPeaks_job(
-#            input_dir => to_filename_without_extension($input_file),
-#            replicate_dir => to_filename_without_extension($replicate),
-#            staging_dir => $staging_dir,
-#            params => $chipseq_params
-#        );
-#        push @tasks, $findPeaks_task;
-#    }
+    foreach my $replicate (@replicates) {
+        my ($input_tag) = fileparse($input_file, '\..*');
+        my ($replicate_tag) = fileparse($replicate, '\..*');
+        
+        my $findPeaks_task = create_homer_findPeaks_job(
+            input_dir => catdir($staging_dir, $input_tag),
+            replicate_dir => catdir($staging_dir, $replicate_tag),
+            staging_dir => $staging_dir,
+            params => $chipseq_params
+        );
+        push @tasks, $findPeaks_task;
+        
+        my $convert_task = create_convert_homer_to_csv_job(
+            input_file => $findPeaks_task->{outputs}[0],
+            staging_dir => $staging_dir
+        );
+        push @tasks, $convert_task;
+        
+        push @tasks, create_load_experiment_job(
+            user => $user,
+            metadata => $metadata,
+            staging_dir => $staging_dir,
+            wid => $wid,
+            gid => $genome->id,
+            input_file => $convert_task->{outputs}[0],
+            name => $replicate_tag,
+            normalize => 'percentage',
+            #annotations => $annotations
+        );
+    }
 
     return {
         tasks => \@tasks,
@@ -118,10 +151,10 @@ sub create_bamToBed_job {
     
     my $name = to_filename_without_extension($bam_file);
     my $bed_file = catfile($staging_dir, $name . '.bed');
-    my $done_file = catfile($staging_dir, $name . '.done');
+    my $done_file = $bed_file . '.done';
     
     return {
-        cmd => "$cmd $bam_file > $bed_file ; touch $done_file",
+        cmd => "$cmd -i $bam_file > $bed_file ; touch $done_file",
         script => undef,
         args => [],
         inputs => [
@@ -137,16 +170,18 @@ sub create_bamToBed_job {
 
 sub create_homer_makeTagDirectory_job {
     my %opts = @_;
-    my $bed_file     = $opts{bed_file};
-    my $bowtie_index = $opts{bowtie_index};
-    my $staging_dir  = $opts{staging_dir};
+    my $bed_file    = $opts{bed_file};
+    my $gid         = $opts{gid};
+    my $staging_dir = $opts{staging_dir};
     my $params = $opts{params} // {};
     my $size   = $params->{'-size'} // 250;
     
     die "ERROR: HOMER_DIR is not in the config." unless $CONF->{HOMER_DIR};
     my $cmd = catfile($CONF->{HOMER_DIR}, 'makeTagDirectory');
     
-    my $tag_name = to_filename_without_extension($bed_file);
+    my ($tag_name) = fileparse($bed_file, '\..*');
+    
+    my $fasta = catfile($CONF->{CACHEDIR}, $gid, 'fasta', 'genome.faa.reheader.faa'); #TODO move into function in Storage.pm
     
     return {
         cmd => $cmd,
@@ -156,15 +191,16 @@ sub create_homer_makeTagDirectory_job {
             ['', $bed_file, 0],
             ['-fragLength', $size, 0],
             ['-format', 'bed', 0],
-            ['-genome', $bowtie_index, 0],
+            ['-genome', $fasta, 0],
             ['-checkGC', '', 0]
         ],
         inputs => [
             $bed_file,
-            $bowtie_index
+            $bed_file . '.done',
+            $fasta
         ],
         outputs => [
-            [catdir($staging_dir, $tag_name), '1'],
+            [catfile($staging_dir, $tag_name), 1]
         ],
         description => "Creating tag directory '$tag_name' using Homer..."
     };
@@ -185,7 +221,9 @@ sub create_homer_findPeaks_job {
     die "ERROR: HOMER_DIR is not in the config." unless $CONF->{HOMER_DIR};
     my $cmd = catfile($CONF->{HOMER_DIR}, 'findPeaks');
     
-    my $output_file = 'homer_peaks.txt';
+    my ($replicate_tag) = fileparse($replicate_dir, '\..*');
+    
+    my $output_file = "homer_peaks_$replicate_tag.txt";
     
     return {
         cmd => $cmd,
@@ -202,13 +240,40 @@ sub create_homer_findPeaks_job {
             ['-F', $F, 0]
         ],
         inputs => [
-            $replicate_dir,
-            $input_dir
+            [$replicate_dir, 1],
+            [$input_dir, 1]
         ],
         outputs => [
             catfile($staging_dir, $output_file),
         ],
-        description => "Performing ChIP-seq analysis using Homer..."
+        description => "Performing ChIP-seq analysis on $replicate_tag using Homer..."
+    };
+}
+
+sub create_convert_homer_to_csv_job {
+    my %opts = @_;
+    my $input_file = $opts{input_file};
+    my $staging_dir = $opts{staging_dir};
+    
+    die "ERROR: SCRIPTDIR not specified in config" unless $CONF->{SCRIPTDIR};
+    my $cmd = catfile($CONF->{SCRIPTDIR}, 'chipseq', 'homer_peaks_to_csv.pl');
+    
+    my $name = to_filename_without_extension($input_file);
+    my $output_file = catfile($staging_dir, $name . '.csv');
+    my $done_file = $output_file . '.done';
+    
+    return {
+        cmd => "$cmd $input_file > $output_file ; touch $done_file",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            $done_file
+        ],
+        description => "Converting $name to CSV format..."
     };
 }
 

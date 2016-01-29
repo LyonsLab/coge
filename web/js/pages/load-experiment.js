@@ -772,7 +772,8 @@ $.extend(ExpressionView.prototype, {
     },
 });
 
-function ChIPSeqView() {
+function ChIPSeqView(opts) {
+	this.experiment = opts.experiment;
     this.initialize();
     this.data = {};
 }
@@ -786,6 +787,13 @@ $.extend(ChIPSeqView.prototype, {
 
     render: function() {
         this.el.find("#chipseq").unbind().change(this.update.bind(this));
+        
+        var select = this.el.find("#chipseq-input");
+        var data =this.experiment.data;
+        for(i = 0; i < data.length; i++) {
+        	var file = data[i];
+        	select.append("<option>" + file.name + "</option>");
+        }
     },
 
     update: function() {
@@ -807,7 +815,13 @@ $.extend(ChIPSeqView.prototype, {
 
     get_options: function() {
         if (this.enabled) {
+        	var notSelected = $('#chipseq-input option:not(:selected)').map(function(index, element) {
+        		return $(element).val()
+        	}).get().join(', ');
+        	
             this.data.chipseq_params = {
+            	'input':  this.el.find("#chipseq-input").val(),
+            	'replicates': notSelected,
                 '-size':  this.el.find("[id='-size']").val(),
                 '-gsize': this.el.find("[id='-gsize']").val(),
                 '-norm':  this.el.find("[id='-norm']").val(),
@@ -820,7 +834,8 @@ $.extend(ChIPSeqView.prototype, {
     },
 });
 
-function FastqView() {
+function FastqView(opts) {
+	this.experiment = opts.experiment
     this.initialize();
 }
 
@@ -832,7 +847,7 @@ $.extend(FastqView.prototype, {
         this.expression_view = new ExpressionView();
         this.snp_view = new FindSNPView();
         this.methylation_view = new MethylationView({ format: this.read_view });
-        this.chipseq_view = new ChIPSeqView();
+        this.chipseq_view = new ChIPSeqView({ experiment: this.experiment });
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
@@ -1003,7 +1018,8 @@ $.extend(OptionsView.prototype, {
             template: "#options-layout-template",
             layout: {
                 "#general-options": this.general_view
-            }
+            },
+            experiment: this.experiment
         });
 
         if (this.admin)
@@ -1042,7 +1058,7 @@ $.extend(OptionsView.prototype, {
         if ($.inArray(file_type, POLY_FILES) > -1)
             this.analysis_view = new PolymorphismView();
         else if ($.inArray(file_type, SEQ_FILES) > -1)
-            this.analysis_view = new FastqView();
+            this.analysis_view = new FastqView({experiment: this.experiment});
         else if ($.inArray(file_type, QUANT_FILES) > -1)
             this.analysis_view = new QuantativeView();
         else if ($.inArray(file_type, ALIGN_FILES) > -1)

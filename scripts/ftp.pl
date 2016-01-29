@@ -35,4 +35,6 @@ if ( !$result || $result->{error} ) {
     exit(-1);
 }
 
+#touch $dest_path . '.done';
+
 exit;
