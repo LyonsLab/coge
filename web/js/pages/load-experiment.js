@@ -15,7 +15,7 @@ var ALIGN_FILES = [
 ];
 
 var SEQ_FILES = [
-    "fastq", "fq"
+    "fastq", "fq", "sra"
 ];
 
 var QUANT_FILES = [
