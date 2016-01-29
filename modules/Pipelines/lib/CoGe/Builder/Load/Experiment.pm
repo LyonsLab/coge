@@ -68,7 +68,7 @@ sub build {
     
     # Build analytical tasks based on file type
     if ( $file_type eq 'fastq' || $file_type eq 'bam' ) {
-        my $bam_file;
+        my ($bam_file, $bam_files); #TODO reconcile these
         my $result_count = 0;
          
         # Align fastq file or take existing bam
@@ -82,19 +82,19 @@ sub build {
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 load_id => $load_id,
-                read_params => $self->params->{read_params},
-                trimming_params => $self->params->{trimming_params},
-                alignment_params => $self->params->{alignment_params}
+                params => $self->params
             );
             return if ($alignment_workflow->{error}); #TODO need to propagate this error up to client
             
             push @tasks, @{$alignment_workflow->{tasks}};
-            $bam_file  = $alignment_workflow->{bam_file};
+            $bam_files = $alignment_workflow->{bam_files};
+            $bam_file = $bam_files->[0];
             push @done_files, @{$alignment_workflow->{done_files}};
             $result_count++;
         }
         elsif ( $file_type && $file_type eq 'bam' ) {
             $bam_file = $input_files[0];
+            $bam_files = \@input_files;
             
             my $annotations = CoGe::Core::Metadata::to_annotations($additional_metadata);
             
@@ -115,9 +115,8 @@ sub build {
         }
         
         # Add expression workflow (if specified)
-        my $expression_workflow;
         if ( $self->params->{expression_params} ) {
-            $expression_workflow = CoGe::Builder::Expression::qTeller::build(
+            my $expression_workflow = CoGe::Builder::Expression::qTeller::build(
                 user => $self->user,
                 wid => $self->workflow->id,
                 genome => $genome,
@@ -166,8 +165,6 @@ sub build {
                 wid => $self->workflow->id,
                 genome => $genome,
                 input_file => $bam_file,
-                replicate_file1 => ,
-                replicate_file2 => ,
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 methylation_params => $self->params->{methylation_params},
@@ -191,7 +188,7 @@ sub build {
                 user => $self->user,
                 wid => $self->workflow->id,
                 genome => $genome,
-                input_file => $bam_file,
+                input_files => $bam_files,
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 read_params => $self->params->{read_params},
@@ -270,7 +267,7 @@ sub build {
 		);
 	}
 
-    #print STDERR Dumper \@tasks, "\n";
+#    print STDERR Dumper \@tasks, "\n";
     $self->workflow->add_jobs(\@tasks);
     
     return 1;

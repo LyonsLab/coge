@@ -31,9 +31,11 @@ sub build {
     my $metadata    = $opts{metadata};
     my $additional_metadata = $opts{additional_metadata};
     my $load_id     = $opts{load_id};
-    my $read_params      = $opts{read_params};
-    my $trimming_params  = $opts{trimming_params};
-    my $alignment_params = $opts{alignment_params};
+    my $params      = $opts{params};
+    my $read_params      = $params->{read_params};
+    my $trimming_params  = $params->{trimming_params};
+    my $alignment_params = $params->{alignment_params};
+    my $chipseq_params   = $params->{chipseq_params};
     
     my @tasks;
     
@@ -60,7 +62,7 @@ sub build {
     my (@decompressed, @validated);
     foreach my $input_file (@$input_files) {
         # Decompress
-        my $done_file;
+        my $done_file = "$input_file.done";
         if ( $input_file =~ /\.gz$/ ) {
             push @tasks, create_gunzip_job($input_file);
             $input_file =~ s/\.gz$//;
@@ -101,9 +103,9 @@ sub build {
             staging_dir => $staging_dir,
             read_params => $read_params,
             trimming_params => $trimming_params        
-        )
+        );
         
-        my ($tasks, $outputs)
+        my ($tasks, $outputs);
         if ($trimming_params->{trimmer} eq 'cutadapt') {
             ($tasks, $outputs) = create_cutadapt_workflow(%params);
         }
@@ -155,10 +157,12 @@ sub build {
         ($alignment_tasks, $alignment_results) = create_hisat2_workflow(%params);
     }
     elsif ($alignment_params->{tool} eq 'bowtie2') {
-        ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params);
-    }
-    elsif ($alignment_params->{tool} eq 'bowtie2_chipseq') {
-        ($alignment_tasks, $alignment_results) = create_chipseq_bowtie2_workflow(%params);
+        if ($chipseq_params) {
+            ($alignment_tasks, $alignment_results) = create_bowtie2_chipseq_workflow(%params);
+        }
+        else {
+            ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params);
+        }
     }
     elsif ($alignment_params->{tool} eq 'tophat') {
         # Generate gff if genome annotated
@@ -191,45 +195,58 @@ sub build {
 #        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
 #        return { error => $error };
 #    }
+    
+    unless (@$alignment_tasks && $alignment_results) {
+        print STDERR "CoGe::Builder::Common::Alignment ERROR: Invalid alignment workflow\n";
+        return { error => 'Invalid alignment workflow' };
+    }
     push @tasks, @$alignment_tasks;
 
-    # Sort and index the bam output file
-    my $bam_file = $alignment_results->{bam_file};
-    my $sort_bam_task = create_bam_sort_job(
-        input_file => $bam_file, 
-        staging_dir => $staging_dir
-    );
-    push @tasks, $sort_bam_task;
-    my $sorted_bam_file = $sort_bam_task->{outputs}->[0];
+    my @bam_files;
+    push @bam_files, $alignment_results->{bam_file} if ($alignment_results->{bam_file});
+    push @bam_files, @{$alignment_results->{bam_files}} if ($alignment_results->{bam_files});
     
-    push @tasks, create_bam_index_job(
-        input_file => $sorted_bam_file
-    );
-
-    # Get custom metadata to add to experiment
-    my $annotations = generate_additional_metadata($read_params, $trimming_params, $alignment_params);
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
-    push @$annotations, @annotations2;
-
-    # Load alignment
-    my $load_task = create_load_bam_job(
-        user => $user,
-        metadata => $metadata,
-        staging_dir => $staging_dir,
-        result_dir => $result_dir,
-        annotations => $annotations,
-        wid => $wid,
-        gid => $gid,
-        bam_file => $sorted_bam_file
-    );
-    push @tasks, $load_task;
+    my (@sorted_bam_files, @load_task_outputs);
+    foreach my $bam_file (@bam_files) {
+        # Sort and index the bam output file(s)
+        my $sort_bam_task = create_bam_sort_job(
+            input_file => $bam_file, 
+            staging_dir => $staging_dir
+        );
+        push @tasks, $sort_bam_task;
+        my $sorted_bam_file = $sort_bam_task->{outputs}->[0];
+        push @sorted_bam_files, $sorted_bam_file;
+        
+        push @tasks, create_bam_index_job(
+            input_file => $sorted_bam_file
+        );
+    
+        # Get custom metadata to add to experiment
+        my $annotations = generate_additional_metadata($read_params, $trimming_params, $alignment_params);
+        my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+        push @$annotations, @annotations2;
+    
+        # Load alignment
+        my $load_task = create_load_bam_job(
+            user => $user,
+            metadata => $metadata,
+            staging_dir => $staging_dir,
+            result_dir => $result_dir,
+            annotations => $annotations,
+            wid => $wid,
+            gid => $gid,
+            bam_file => $sorted_bam_file
+        );
+        push @tasks, $load_task;
+        push @load_task_outputs, $load_task->{outputs}->[1];
+    }
     
     return {
         tasks => \@tasks,
-        bam_file => $sorted_bam_file,
+        bam_files => \@sorted_bam_files,
         done_files => [
-            $sorted_bam_file,
-            $load_task->{outputs}->[1]
+            @sorted_bam_files,
+            @load_task_outputs
         ]
     }
 }
