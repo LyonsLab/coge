@@ -6,8 +6,49 @@
 	padding: 1px !important;
 }
 
+#coge-add-all-experiments-btn {
+	cursor: pointer;
+	height: 14px;
+	position: absolute;
+	right: 28px;
+	top: 4px;
+	width: 14px;
+}
+
+#coge-clear-all-experiments-btn {
+	cursor: pointer;
+	height: 14px;
+	position: absolute;
+	right: 8px;
+	top: 4px;
+	width: 14px;
+}
+
+.coge-textfilter {
+	border-bottom: 1px solid lightgray;
+	overflow: hidden;
+	position: relative;
+	width: 95%;
+}
+
+.coge-tracklist-delete-btn {
+	float: right;
+	height: 14px;
+	padding: 3px;
+	visibility: hidden;
+	width: 14px;
+}
+
+.coge-tracklist-expandIcon,
+.coge-tracklist-collapseIcon {
+	float: right;
+	padding: 5px;
+}
+
 .coge-tracklist-container {
 	border: 1px solid transparent;
+	overflow-x: hidden;
+	white-space: nowrap;
 }
 
 .coge-tracklist-container.collapsed {
@@ -22,6 +63,41 @@
 	padding-left: 25px;
 }
 
+.coge-tracklist-info-btn {
+	float: right;
+	height: 14px;
+	padding: 3px;
+	visibility: hidden;
+	width: 14px;
+}
+
+#textFilterCancel {
+	cursor: pointer;
+	display: none;
+	position: absolute;
+	right: 1px;
+	top: 1px;
+}
+
+#textFilterInput {
+	cursor: text;
+	height: 20px;
+	paddingRight: 18px;
+	width: 75%;
+}
+
+#textFilterLabel {
+	color: gray;
+	margin-bottom: -4px;
+	margin-top: 4px;
+	text-align: center;
+}
+
+#trackPane {
+ 	background-color: rgb(242, 242, 242);
+	width: 215px;
+}
+
 #trackPane div.coge-textfilter {
     margin: 0.5em 0 0 0.3em;
     padding-bottom: 5px;
@@ -31,26 +107,8 @@
     padding: 2px 0;
 }
 
-/* .notebookExpandIcon {
-	background-image: url('/../../../picts/arrow-right-icon.png');
-    width: 16px;
-    height: 16px;
+#tracksAvail {
+	overflowX: hidden;
+	overflowY: auto;
+	width: 100%;
 }
-
-.notebookCollapseIcon {
-	background-image: url('/../../../picts/arrow-down-icon.png');
-    width: 16px;
-    height: 16px;
-} 
-
-.cogeIconPlus {
-    background-image: url('js/jbrowse/plugins/CoGe/img/plus.png');
-    width: 16px;
-    height: 16px;
-}
-
-.cogeIconTest {
-    background-image: url('img/spinner.gif');
-    width: 16px;
-    height: 16px;
-} */
