@@ -26,7 +26,7 @@ sub build {
     my %opts = @_;
     my $user        = $opts{user};
     my $wid         = $opts{wid};
-    my $input_files = $opts{input_files}; # array of file paths
+    my $input_files = $opts{input_files}; # array of paths of FASTQ files
     my $genome      = $opts{genome};
     my $metadata    = $opts{metadata};
     my $additional_metadata = $opts{additional_metadata};

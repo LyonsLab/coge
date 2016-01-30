@@ -310,6 +310,13 @@ sub create_data_retrieval_workflow {
             #TODO move file retrieval from genbank_genome_loader.pl to here
             push @ncbi, $item->{path};
         }
+        elsif ($type eq 'sra') {
+            # prerequisite: make sure "vdb-config -i" was run once to set the sra cache to /storage2/coge/data/sra
+            $task = create_sra_prefetch_job(
+                url => $item->{url} || $item->{path},
+                dest_path => $upload_dir
+            );
+        }
         
         # Add task to workflow
         if ($task) {
