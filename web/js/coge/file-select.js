@@ -640,7 +640,7 @@ var coge = window.coge = (function(namespace) {
 
 			$('#sra_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI SRA...');
 			
-		    var entrez = new Entrez({ database: 'sra', debug: true });
+		    var entrez = new Entrez({ database: 'sra' });
 		    entrez.search(accn).then(function(id) {
 		    	if (id) {
 		    		entrez.fetch(id).then(function(result) {
