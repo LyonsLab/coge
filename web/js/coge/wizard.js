@@ -191,7 +191,7 @@ $.extend(DataView.prototype, {
         	    if (files[0].type === 'ncbi' || files[0].type === 'sra') {
         	    	self.el.find("#select_file_type").hide();
         	    	if (files[0].type === 'sra') // this is a kludge, why does it work for ncbi?
-        	    		self.el.find("#file_type_selector").val('fastq');
+        	    		self.el.find("#file_type_selector").val('sra');
         	    }
         	    else {
 	        	    var file_type = self.autodetect_file_type(files[0].name);
