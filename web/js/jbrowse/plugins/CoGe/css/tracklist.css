@@ -31,16 +31,15 @@
 	width: 95%;
 }
 
-.coge-tracklist-delete-btn {
-	float: right;
-	height: 14px;
+#coge_track_list_btn {
+    margin-left: -10px;
 	padding: 3px;
-	visibility: hidden;
-	width: 14px;
+    width: 20px;
 }
 
-.coge-tracklist-expandIcon,
-.coge-tracklist-collapseIcon {
+.coge-tracklist-collapseIcon,
+.coge-tracklist-expandIcon
+ {
 	float: right;
 	padding: 5px;
 }
@@ -59,8 +58,16 @@
 	border: 1px solid gray;
 }
 
+.coge-tracklist-delete-btn {
+	float: right;
+	height: 14px;
+	padding: 3px;
+	visibility: hidden;
+	width: 14px;
+}
+
 .coge-tracklist-indented {
-	padding-left: 25px;
+	padding-left: 25px !important;
 }
 
 .coge-tracklist-info-btn {
@@ -69,6 +76,12 @@
 	padding: 3px;
 	visibility: hidden;
 	width: 14px;
+}
+
+.coge-tracklist-label {
+	min-height: 16px;
+	padding-left: 2px;
+	padding-top: 6px;
 }
 
 #textFilterCancel {
@@ -83,7 +96,7 @@
 	cursor: text;
 	height: 20px;
 	paddingRight: 18px;
-	width: 75%;
+	width: 85%;
 }
 
 #textFilterLabel {
@@ -91,6 +104,11 @@
 	margin-bottom: -4px;
 	margin-top: 4px;
 	text-align: center;
+}
+
+.track-menu-button {
+	position: absolute;
+	right: 40px;
 }
 
 #trackPane {

@@ -8,13 +8,15 @@ define(['dojo/_base/declare',
 //        'dojo/fx/easing',
         'dijit/form/TextBox',
         'dojo/mouse',
+        'dijit/Dialog',
         "dijit/form/DropDownButton",
-        "dijit/DropDownMenu",
+//        "dijit/DropDownMenu",
+        "dijit/Menu",
         "dijit/MenuItem",
         'JBrowse/View/ConfirmDialog',
         'JBrowse/View/InfoDialog'
        ],
-       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, animationEasing, dijitTextBox, mouse, DropDownButton, DropDownMenu, MenuItem, ConfirmDialog, InfoDialog ) {
+       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, /*animationEasing,*/ dijitTextBox, mouse, Dialog, DropDownButton, /*DropDownMenu,*/ Menu, MenuItem, ConfirmDialog, InfoDialog ) {
 return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -575,13 +577,45 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 			})
 		}, d );
 
-//		this._createDropDownMenu();
-
-		dom.create('img', { // FIXME: style with css icon instead of img
-			id: 'coge-add-all-experiments-btn',
-			title: 'Add all experiments',
-			src: 'js/jbrowse/plugins/CoGe/img/plus-icon.png',
-			onclick: dojo.hitch( this, function() {
+//		dom.create('img', { // FIXME: style with css icon instead of img
+//			id: 'coge-add-all-experiments-btn',
+//			title: 'Add all experiments',
+//			src: 'js/jbrowse/plugins/CoGe/img/plus-icon.png',
+//			onclick: dojo.hitch( this, function() {
+//				var configs = getVisibleConfigs(this.div, trackConfigs);
+//				if (configs.length) {
+//					if (configs.length > this.maxTracksToAdd) {
+//					    var myDialog = new dijit.Dialog({
+//					        title: "Warning",
+//					        content: "There are too many tracks to add (>" + this.maxTracksToAdd + "), please filter them further.",
+//					        style: "width: 300px"
+//					    });
+//					    myDialog.show();
+//					}
+//					else {
+//						this.browser.publish( '/jbrowse/v1/v/tracks/show', configs );
+//					}
+//				}
+//			})
+//		}, this.textFilterDiv );
+//
+//		dom.create('img', { // FIXME: style with css icon instead of img
+//			id: 'coge-clear-all-experiments-btn',
+//			title: 'Clear all experiments',
+//			src: 'js/jbrowse/plugins/CoGe/img/clear-icon.png',
+//			onclick: dojo.hitch( this, function() {
+//				var configs = getVisibleConfigs(this.div, trackConfigs);
+//				if (configs.length) {
+//					this.browser.publish( '/jbrowse/v1/v/tracks/hide', configs );
+//				}
+//			})
+//		}, this.textFilterDiv );
+		
+		var b = dom.create('div', {id: 'coge_track_list_btn'}, this.textFilterDiv);
+        var menu = new Menu();
+        menu.addChild(new MenuItem({
+            label: "Add All Tracks",
+            onClick: dojo.hitch( this, function() {
 				var configs = getVisibleConfigs(this.div, trackConfigs);
 				if (configs.length) {
 					if (configs.length > this.maxTracksToAdd) {
@@ -597,19 +631,32 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 					}
 				}
 			})
-		}, this.textFilterDiv );
-
-		dom.create('img', { // FIXME: style with css icon instead of img
-			id: 'coge-clear-all-experiments-btn',
-			title: 'Clear all experiments',
-			src: 'js/jbrowse/plugins/CoGe/img/clear-icon.png',
-			onclick: dojo.hitch( this, function() {
+        }));
+        menu.addChild(new MenuItem({
+            label: "Clear All Tracks",
+            onClick: dojo.hitch( this, function() {
 				var configs = getVisibleConfigs(this.div, trackConfigs);
 				if (configs.length) {
 					this.browser.publish( '/jbrowse/v1/v/tracks/hide', configs );
 				}
 			})
-		}, this.textFilterDiv );
+        }));
+        menu.addChild(new MenuItem({
+            label: "Create New Notebook",
+            onClick: dojo.hitch( this, function() {
+            	create_notebook_dialog = new Dialog({
+                    title: "Create New Notebook",
+                    content: '<table><tr><td><label>Name:</label></td><td><input id="notebook_name"></td></tr><tr><td><label>Description:</label></td><td><input id="notebook_description"></td></tr><tr><td><label>Restricted:</label></td><td><input type="checkbox" id="notebook_restricted"></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="create_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="create_notebook_dialog.hide()">Cancel</button></div>',
+                    style: "width: 300px"
+                });
+            	create_notebook_dialog.show();
+            })
+        }));
+        var btn = new DropDownButton({
+            dropDown: menu
+        }, "coge_track_list_btn");
+        menu.startup();
+        btn.startup();
 
 		dom.create('div', {
 			style: { clear: 'both' }
@@ -837,6 +884,28 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 
 });
 });
+
+var create_notebook_dialog;
+
+function create_notebook() {
+	$.ajax('/sdavey/coge/api/v1/notebooks', {
+		data: {
+			metadata: {
+				name: $('notebook_name').val(),
+				description: $('notebook_description').val(),
+				restricted: $('notebook_restricted').is(':checked'),
+				type: 'experiment'
+			}
+		},
+		dataType: 'json',
+		processData: false,
+		success: function(data) {
+			debugger;
+			create_notebook_dialog.hide();
+		},
+		type: 'PUT'
+	});
+}
 
 function hasLabelNode(div, nodes) {
 	var container;

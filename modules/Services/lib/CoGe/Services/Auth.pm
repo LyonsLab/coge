@@ -12,6 +12,8 @@ sub init {
     return unless $self;
     #print STDERR Dumper $self, "\n";
     my $username  = $self->param('username');
+    warn 'username';
+    warn $username;
     my $token     = $self->param('token');
     my $token2    = $self->req->headers->header('x-iplant-de-jwt'); # mdb added 9/23/15 for DE
     my $remote_ip = $ENV{REMOTE_ADDR}; #$self->req->env->{HTTP_X_FORWARDED_FOR};
@@ -43,11 +45,13 @@ sub init {
     if ($username) {
         $user = $db->resultset('User')->find( { user_name => $username } );
     }
+    warn 'user';
+    warn $user;
 
     # Check for existing user session (cookie enabled browser only)
     my $session_id = unescape($self->cookie($conf->{COOKIE_NAME}));
     if ($session_id) {
-        #print STDERR "session_id: ", $session_id, "\n";
+#        print STDERR "session_id: ", $session_id, "\n";
         $session_id =~ s/session&//;
         my $session = $db->resultset('UserSession')->find( { session => $session_id } );
         if ($session && $user && $session->user_id == $user->id) {
