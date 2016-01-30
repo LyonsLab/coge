@@ -67,12 +67,12 @@ sub build {
     push @input_files, @{$data_workflow->{outputs}} if ($data_workflow->{outputs});
     
     # Build analytical tasks based on file type
-    if ( $file_type eq 'fastq' || $file_type eq 'bam' ) {
+    if ( $file_type eq 'fastq' || $file_type eq 'bam' || $file_type eq 'sra' ) {
         my ($bam_file, $bam_files); #TODO reconcile these
         my $result_count = 0;
          
         # Align fastq file or take existing bam
-        if ( $file_type && $file_type eq 'fastq' ) {
+        if ( $file_type && ( $file_type eq 'fastq' || $file_type eq 'sra' ) ) {
             # Add alignment workflow
             my $alignment_workflow = CoGe::Builder::Common::Alignment::build(
                 user => $self->user,
