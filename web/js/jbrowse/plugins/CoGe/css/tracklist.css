@@ -24,6 +24,14 @@
 	width: 14px;
 }
 
+#coge_menu_button,
+#coge_track_menu_button {
+    margin-left: -10px;
+    outline: none;
+	padding: 2px;
+    width: 20px;
+}
+
 .coge-textfilter {
 	border-bottom: 1px solid lightgray;
 	overflow: hidden;
@@ -31,21 +39,17 @@
 	width: 95%;
 }
 
-#coge_track_list_btn {
-    margin-left: -10px;
-	padding: 3px;
-    width: 20px;
-}
-
 .coge-tracklist-collapseIcon,
 .coge-tracklist-expandIcon
  {
-	float: right;
+ 	height: 10px;
 	padding: 5px;
+	width: 10px;
 }
 
 .coge-tracklist-container {
 	border: 1px solid transparent;
+	display: flex;
 	overflow-x: hidden;
 	white-space: nowrap;
 }
@@ -59,9 +63,9 @@
 }
 
 .coge-tracklist-delete-btn {
-	float: right;
 	height: 14px;
 	padding: 3px;
+	position: absolute;
 	visibility: hidden;
 	width: 14px;
 }
@@ -71,14 +75,15 @@
 }
 
 .coge-tracklist-info-btn {
-	float: right;
 	height: 14px;
 	padding: 3px;
+	position: absolute;
 	visibility: hidden;
 	width: 14px;
 }
 
 .coge-tracklist-label {
+	flex: 2;
 	min-height: 16px;
 	padding-left: 2px;
 	padding-top: 6px;
@@ -113,6 +118,9 @@
 
 #trackPane {
  	background-color: rgb(242, 242, 242);
+ 	display: flex;
+ 	flex-direction: column;
+ 	overflow: hidden;
 	width: 215px;
 }
 
@@ -120,13 +128,15 @@
     margin: 0.5em 0 0 0.3em;
     padding-bottom: 5px;
 }
+
 #trackPane div.coge-textfilter input {
     line-height: 16px;
     padding: 2px 0;
 }
 
 #tracksAvail {
-	overflowX: hidden;
-	overflowY: auto;
+	flex: 2 2;
+	overflow-x: hidden;
+	overflow-y: auto;
 	width: 100%;
 }

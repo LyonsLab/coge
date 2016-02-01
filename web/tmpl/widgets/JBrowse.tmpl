@@ -8,7 +8,9 @@
     }
 
     var JBrowse;
+    var api_base_url;
     function init_JBrowse(id, apiBaseUrl, callback) { // mdb added apiBaseUrl, 2/3/15 COGE-289
+    	api_base_url = apiBaseUrl;
 	    require( { baseUrl: 'js/jbrowse/src',
 	    		   packages: [ 'dojo', 'dijit', 'dojox', 'jszlib',
 	    		               { name: 'lazyload', main: 'lazyload' },
