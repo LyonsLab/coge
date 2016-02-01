@@ -92,7 +92,7 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    print STDERR "CoGe::Services::Data::Notebook::adds\n", Dumper $data, "\n";
+#    print STDERR "CoGe::Services::Data::Notebook::add\n", Dumper $data, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);

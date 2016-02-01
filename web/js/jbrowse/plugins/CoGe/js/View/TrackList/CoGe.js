@@ -888,19 +888,20 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 var create_notebook_dialog;
 
 function create_notebook() {
-	$.ajax('/sdavey/coge/api/v1/notebooks', {
+	$.ajax('/sdavey/coge/api/v1/notebooks?username='+un, {
 		data: {
 			metadata: {
-				name: $('notebook_name').val(),
-				description: $('notebook_description').val(),
-				restricted: $('notebook_restricted').is(':checked'),
+				name: $('#notebook_name').val(),
+				description: $('#notebook_description').val(),
+				restricted: $('#notebook_restricted').is(':checked'),
 				type: 'experiment'
 			}
 		},
 		dataType: 'json',
-		processData: false,
 		success: function(data) {
 			debugger;
+			if (data.error)
+				alert(JSON.stringify(data.error));
 			create_notebook_dialog.hide();
 		},
 		type: 'PUT'
