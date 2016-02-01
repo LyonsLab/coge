@@ -435,7 +435,8 @@ sub create_tabix_index_job {
         script => undef,
         args => [],
         inputs => [
-            $input_file
+            $input_file,
+            $input_file . '.done'
         ],
         outputs => [
             $output_file,
@@ -477,7 +478,6 @@ sub create_fasta_index_job {
     
     # Required params
     my $fasta = $opts{fasta};
-    my $cache_dir = $opts{cache_dir};
 
     return {
         cmd => $CONF->{SAMTOOLS} || "samtools",
@@ -939,14 +939,13 @@ sub create_cutadapt_job {
     my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
 
     # Build up command/arguments string
-    my $cmd = $CONF->{CUTADAPT};
-    die "ERROR: CUTADAPT is not in the config." unless $cmd;
+    my $cmd = $CONF->{CUTADAPT} || 'cutadapt';
     $cmd = 'nice ' . $cmd; # run at lower priority
 
     my $arg_str;
     $arg_str .= $cmd . ' ';
     $arg_str .= "-q $q --quality-base=$encoding -m $m -o $outputs[0] ";
-    $arg_str .= "-p $outputs[1] " if (@$fastq > 1); # paired-end
+    $arg_str .= "-p $outputs[1] " if ($read_type eq 'paired'); # paired-end
     
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, 'cutadapt.pl'), # this script was created because JEX can't handle Cutadapt's paired-end argument syntax
@@ -970,11 +969,12 @@ sub create_cutadapt_workflow {
     my $validated = $opts{validated};
     my $staging_dir = $opts{staging_dir};
     my $read_params = $opts{read_params};
+    my $read_type = $read_params->{read_type} // 'single'; #/
     my $trimming_params = $opts{trimming_params};
     
     my (@tasks, @outputs);
 
-    if (not defined $fastq2) { # single-ended
+    if ($read_type eq 'single') { # single-ended
         # Create cutadapt task for each file
         foreach my $file (@$fastq1) {
             my $task = create_cutadapt_job(
@@ -1086,7 +1086,7 @@ sub create_trimgalore_workflow {
     
     my (@tasks, @outputs);
 
-    if ($read_params->{read_type} eq 'single') { # single-ended
+    if (!$read_params->{read_type} || $read_params->{read_type} eq 'single') { # single-ended
         # Create trimgalore task for each file
         foreach my $file (@$fastq1, @$fastq2) {
             my $task = create_trimgalore_job(
