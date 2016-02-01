@@ -1,53 +1,382 @@
-<TMPL_INCLUDE NAME="header.tmpl">
-<link rel="stylesheet" href="css/dataTables.css" type="text/css"/>
-<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css"/>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.1.0/css/buttons.dataTables.min.css"/>
+<link rel="stylesheet" type="text/css" href="/js/vendor/chosen/chosen.min.css"/>
+<style>
+#chromosomes_chosen {
+	white-space: nowrap;
+}
+.glyphicon {
+	font-size: 1.8em;
+}
+.glyphicons-circle-arrow-top:before {
+	content: "\e133";
+}
+.glyphicons-circle-arrow-down:before {
+	content: "\e134";
+}
+</style>
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/buttons.colVis.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="/js/vendor/chosen/chosen.jquery.min.js"></script>
 <script>
-<TMPL_VAR NAME="script">
+var columns = {};
+var data;
+var dt;
+var lengths;
+var max_chromosomes;
+var num_chromosomes;
+var offset = 0;
+var page_size = 0;
+function build_select(s, obj, first) {
+	s.empty();
+	var keys = [];
+	for (key in obj)
+		keys.push(key);
+	keys.sort(natural_sort);
+	if (first)
+		s.append('<option>' + first + '</option>');
+	for (var i=0; i<keys.length; i++)
+		s.append('<option>' + keys[i] + '</option>');
+	s.trigger('chosen:updated');
+	s.next().css('width','auto');
+}
+function chromosome_changed() {
+	$('#busy').show();
+	dt.clear();
+	dt.destroy();
+	$('#main').empty();
+	setTimeout(set_data,10);
+}
 function do_export() {
-	var url = '?type=';
-	var s = $('#types')[0];
-	url += s.options[s.selectedIndex].text;
+	var url = '?eid=';
+	url += get_param('eid');
+	url += '&type=';
+	url += $('#types option:selected').text();
+	url += '&chr=';
+	url += $('#chromosomes option:selected').text();
 	url += '&export=';
-	if ($('#name').is(':checked'))
-		url += 'name';
-	if ($('#pi').is(':checked'))
-		url += 'pi';
-	if ($('#theta').is(':checked'))
-		url += 'theta';
-	if ($('#td').is(':checked'))
-		url += 'td';
+	var i = 0;
+	var first = true;
+	while (true) {
+		var c = $('#col' + i);
+		if (!c.length)
+			break;
+		if (c.is(':checked')) {
+			if (first)
+				first = false;
+			else
+				url += ',';
+			url += 'col' + i;
+		}
+		++i;
+	}
 	if (url.substring(url.length - 1) == '=')
 		alert('You must select at least one column to export.');
 	else {
 		window.open(url);
-		$('#export').dialog('close');
+		$('#export_dialog').dialog('close');
 	}
 }
+function do_plot() {
+	var cols = $('#plot_columns option:selected');
+	var p = $('#plot');
+    p.empty();
+    if (cols.length) {
+        p.css('display','block');
+    	var chromosome = $('#chromosomes option:selected').text();
+    	if (chromosome == 'All chromosomes') {
+    		var chromosomes = get_chromosomes();
+			chromosomes.sort(size_sort);
+			num_chromosomes = chromosomes.length;
+			if (page_size == 0)
+				page_size = Math.min(Math.pow(Math.floor(p.height() / 350), 2), 16);
+			$('#page_size')[0].selectedIndex = Math.sqrt(page_size) - 1;
+			max_chromosomes = Math.min(num_chromosomes - offset, page_size);
+	   		var num_cols = 1;
+	   		while (num_cols * num_cols < max_chromosomes)
+	   			num_cols++;
+	   		var w = p.width() / num_cols - 5;
+	   		var num_rows = Math.floor(max_chromosomes / num_cols);
+	   		if (max_chromosomes % num_cols)
+	   			num_rows++;
+	   		var h = p.height() / num_rows - 5;
+			if (max_chromosomes < num_chromosomes) {
+				$('#arrows').css('display', 'block');
+				$('#up').css('color', offset == 0 ? 'grey' : 'black');
+				$('#down').css('color', num_chromosomes - offset <= max_chromosomes ? 'grey' : 'black');
+			}
+			var t = $('<table></table>');
+			p.append(t);
+			var tr = $('<tr></tr>');
+			t.append(tr);
+    		for (var i=0; i<max_chromosomes; i++) {
+				if (i > 0 && i % num_cols == 0) {
+					tr = $('<tr></tr>');
+					t.append(tr);
+				}
+				var td = $('<td></td>');
+				tr.append(td);
+	    		var e = $('<div></div>').width(w).height(h);
+	    		td.append(e);
+	    		plot(chromosomes[offset + i], cols, e[0], w, h);
+    		}
+    	} else
+		   	plot($('#chromosomes option:selected').text(), cols, p[0]);
+    }
+	$('#plot_busy').hide();
+}
 function export_dialog() {
-	$('#export').dialog({
+	var d = $('#export_columns');
+	d.empty();
+	var cols = columns[$('#types option:selected').text()];
+	for (var i=0; i<cols.length; i++)
+		d.append('<input id="col' + i + '" type="checkbox" checked> ' + cols[i] + '<br>');
+	$('#export_dialog').dialog({
 		autoOpen:true,
 		position: {
 			my: "top",
 			at: "top",
 			of: window
-		}
+		},
+		resizable: false
 	});
 }
+function get_chromosomes() {
+	var obj = data[$('#types option:selected').text()];
+	var keys = [];
+	for (key in obj)
+		keys.push(key);
+	keys.sort(natural_sort);
+	return keys;
+}
+function get_param(name) {
+    var search = decodeURIComponent(window.location.search.substring(1));
+    var nvp = search.split('&');
+    for (var i=0; i<nvp.length; i++)
+    	if (nvp[i].substring(0, name.length) == name)
+    		return nvp[i].substring(name.length + 1);
+};
+function get_plot_data(chromosome, index) {
+	var a = [];
+	var type = $('#types option:selected').text();
+//	var chromosome = $('#chromosomes option:selected').text();
+/* 	if (chromosome == 'All chromosomes') {
+		var arrays = [];
+		for (var key in data[type]) {
+			var d = data[type][key];
+			if (d)
+				for (var i=0; i<d.length; i++)
+					a.push([(parseInt(d[i][2]) + parseInt(d[i][3])) / 2, d[i][index], d[i][0] + '<br>' + d[i][1]]);
+		}
+	} else {
+ */		var d = data[type][chromosome];
+		for (var i=0; i<d.length; i++)
+			a.push([(parseInt(d[i][2]) + parseInt(d[i][3])) / 2, d[i][index], d[i][1]]);
+//	}
+	a.sort(function(a,b){return a[0]-b[0];});
+	return a;
+}
+function natural_sort(a, b) {
+    var re = /(^([+\-]?(?:\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)?$|^0x[\da-fA-F]+$|\d+)/g,
+        sre = /^\s+|\s+$/g,   // trim pre-post whitespace
+        snre = /\s+/g,        // normalize all whitespace to single ' ' character
+        dre = /(^([\w ]+,?[\w ]+)?[\w ]+,?[\w ]+\d+:\d+(:\d+)?[\w ]?|^\d{1,4}[\/\-]\d{1,4}[\/\-]\d{1,4}|^\w+, \w+ \d+, \d{4})/,
+        hre = /^0x[0-9a-f]+$/i,
+        ore = /^0/,
+        i = function(s) {
+            return (natural_sort.insensitive && ('' + s).toLowerCase() || '' + s).replace(sre, '');
+        },
+        // convert all to strings strip whitespace
+        x = i(a) || '',
+        y = i(b) || '',
+        // chunk/tokenize
+        xN = x.replace(re, '\0$1\0').replace(/\0$/,'').replace(/^\0/,'').split('\0'),
+        yN = y.replace(re, '\0$1\0').replace(/\0$/,'').replace(/^\0/,'').split('\0'),
+        // numeric, hex or date detection
+        xD = parseInt(x.match(hre), 16) || (xN.length !== 1 && Date.parse(x)),
+        yD = parseInt(y.match(hre), 16) || xD && y.match(dre) && Date.parse(y) || null,
+        normChunk = function(s, l) {
+            // normalize spaces; find floats not starting with '0', string or 0 if not defined (Clint Priest)
+            return (!s.match(ore) || l == 1) && parseFloat(s) || s.replace(snre, ' ').replace(sre, '') || 0;
+        },
+        oFxNcL, oFyNcL;
+    // first try and sort Hex codes or Dates
+    if (yD) {
+        if ( xD < yD ) { return -1; }
+        else if ( xD > yD ) { return 1; }
+    }
+    // natural sorting through split numeric strings and default strings
+    for(var cLoc=0, xNl = xN.length, yNl = yN.length, numS=Math.max(xNl, yNl); cLoc < numS; cLoc++) {
+        oFxNcL = normChunk(xN[cLoc] || '', xNl);
+        oFyNcL = normChunk(yN[cLoc] || '', yNl);
+        // handle numeric vs string comparison - number < string - (Kyle Adams)
+        if (isNaN(oFxNcL) !== isNaN(oFyNcL)) { return (isNaN(oFxNcL)) ? 1 : -1; }
+        // rely on string comparison if different types - i.e. '02' < 2 != '02' < '2'
+        else if (typeof oFxNcL !== typeof oFyNcL) {
+            oFxNcL += '';
+            oFyNcL += '';
+        }
+        if (oFxNcL < oFyNcL) { return -1; }
+        if (oFxNcL > oFyNcL) { return 1; }
+    }
+    return 0;
+}
+function parse_data(d) {
+	data = {};
+	lengths = {};
+	var chromosome;
+	var type;
+	var i = d.indexOf('\n');
+	var start = 0;
+	while (i != -1) {
+		var l = d.substring(start, i);
+		var tokens = l.split('\t');
+		if (l.charAt(0) == '#') {
+			if (tokens.length > 2) {
+				type = tokens[0].substring(1);
+				data[type] = {};
+				tokens.shift();
+				columns[type] = tokens;
+			} else {
+				chromosome = tokens[0].substring(1);
+				data[type][chromosome] = [];
+				lengths[chromosome] = tokens[1];
+			}
+		} else
+			data[type][chromosome].push(tokens);
+		start = i + 1;
+		i = d.indexOf('\n', start);
+	}
+	build_select($('#types'), data);
+	set_chromosomes();
+	set_data();
+}
+function plot(chromosome, cols, e, w, h) {
+    var series = [];
+    for (var i=0; i<cols.length; i++) {
+        var d = get_plot_data(chromosome, cols[i].value);
+        var x = [];
+        var y = [];
+        var text = [];
+        for (var row=0; row<d.length; row++) {
+        	x.push(d[row][0]);
+        	y.push(d[row][1]);
+        	text.push(d[row][2]);
+        }
+        series.push({ mode: 'markers', name: cols[i].text, text: text, x: x, y: y });
+    }
+	var layout = { hovermode: 'closest', title: chromosome};
+	if (w)
+		layout.width = w;
+	if (h)
+		layout.height = h;
+    Plotly.newPlot(e, series, layout, { displayModeBar: false });
+}
+function plot_dialog() {
+	offset = 0;
+	$('#arrows').css('display', 'none');
+    $('#plot_dialog').dialog('destroy');
+	$('#plot_dialog').dialog({
+		autoOpen: true,
+		open: function() {
+		    $('#plot').empty();
+		    var s = $('#plot_columns');
+		    s.empty();
+		    var cols = columns[$('#types option:selected').text()];
+		    for (var i=4; i<cols.length; i++)
+		        s.append('<option value="' + i + '">' + cols[i] + '</option>');
+		    if ($('#plot_columns_chosen').length)
+		    	s.trigger('chosen:updated');
+		    else
+			    s.chosen({ placeholder_text_multiple: 'Select column(s) to plot' });
+		},
+		height: $(window).height() - 20,
+		position: {
+			my: "center top",
+			at: "center top",
+			of: window
+		},
+		resizable: false,
+		width:$(window).width() - 30
+	});
+}
+function ready() {
+	$('#types').chosen({disable_search_threshold: 10});
+	$('#chromosomes').chosen();
+	$.ajax('data/popgen/' + get_param('eid') + '/sumstats.tsv', {
+		dataType: 'text',
+		error: function() {
+			alert('error loading data');
+			$('#busy').hide();
+		},
+		success: parse_data
+	});
+}
+function set_chromosomes() {
+	build_select($('#chromosomes'), data[$('#types option:selected').text()], 'All chromosomes');
+}
+function set_data() {
+	var type = $('#types option:selected').text();
+	var chromosome = $('#chromosomes option:selected').text();
+	var d;
+	if (chromosome == 'All chromosomes') {
+		var arrays = [];
+		for (var key in data[type]) {
+			d = data[type][key];
+			if (d)
+				arrays.push(d);
+		}
+		d = [].concat.apply([], arrays);
+	} else
+		d = data[type][chromosome];
+	var c = [];
+	for (var i=0; i<columns[type].length; i++)
+		c.push({'title': columns[type][i]});
+	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:d,scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
+	dt.buttons().container().appendTo($('#colvis'));
+	$('#busy').hide();
+}
+function size_sort(a, b) {
+	return lengths[b] - lengths[a];
+}
+$(document).ready(ready);
 </script>
-<div style="margin-left:14px;margin-top:20px;">View: <TMPL_VAR NAME="select">
-<span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
+<div id="busy" class="spinner" style="display:block;text-align:center;"></div>
+<div style="margin-left:14px;margin-top:20px;">View:
+<select id="types" onchange="set_chromosomes();chromosome_changed();"></select>
+<select id="chromosomes" onchange="chromosome_changed();"></select>
+<div id="colvis" style="display:inline-block;vertical-align:middle;"></div>
+    <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
+    <span onclick="plot_dialog();" class="ui-button ui-corner-all coge-button">Plot...</span>
 </div>
-<table id="main" class="compact display">
-	<thead><tr><th>name</th><th>pi</th><th>theta</th><th>Tajima's D</th></thead>
+<style>
+    th { text-align: left; }
+    a.dt-button { padding: 5px 1em !important; }
+    div.dt-button-collection { width: auto !important; }
+</style>
+<table id="main" class="compact display" style="margin:initial;">
 	<tbody></tbody>
 </table>
 <div style="height:75px"></div>
-<div class="dialog_box hidden" id="export" title="Export">
-Select columns to export<br>
-<input id="name" type="checkbox" checked> name<br>
-<input id="pi" type="checkbox" checked> pi<br>
-<input id="theta" type="checkbox" checked> theta<br>
-<input id="td" type="checkbox" checked> Tajima's D<br>
+<div id="export_dialog" class="dialog_box hidden" title="Export">
+Select columns to export
+<div id="export_columns">
+</div>
 <span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
 </div>
-<TMPL_INCLUDE NAME="footer.tmpl">
+<div id="plot_dialog" class="dialog_box hidden" title="Plot" style="display:none">
+<div style="height:100%;display:flex;flex-flow:column;">
+	<div style="flex: 0 1 auto;">
+		<select id="plot_columns" multiple onchange="$('#plot_busy').show();setTimeout(do_plot, 10)" style="width:100%;"></select>
+		<div id="plot_busy" class="spinner" style="display:none;text-align:center;"></div>
+	</div>
+	<div id="plot" style="flex: 1 1 auto;"></div>
+	<div id="arrows" style="flex: 0 1 auto;">
+		<span id="up" class="glyphicon glyphicons-circle-arrow-top" onclick="if(offset!=0){$('#plot_busy').show();offset-=page_size;setTimeout(do_plot, 10);}"></span>
+		<span id="down" class="glyphicon glyphicons-circle-arrow-down" onclick="if(num_chromosomes-offset>max_chromosomes){$('#plot_busy').show();offset+=page_size;setTimeout(do_plot, 10);}"></span>
+		view <select id="page_size" onchange="page_size=parseInt(this.options[this.selectedIndex].text);offset=0;$('#plot_busy').show();setTimeout(do_plot, 10);"><option>1</option><option>4</option><option>9</option><option>16</option></select> chromosomes at a time
+	</div>
+</div>
+</div>

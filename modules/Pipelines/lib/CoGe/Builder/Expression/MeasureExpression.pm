@@ -3,12 +3,7 @@ package CoGe::Builder::Expression::MeasureExpression;
 use Moose;
 with qw(CoGe::Builder::Buildable);
 
-use Data::Dumper qw(Dumper);
-use Switch;
-use File::Spec::Functions qw(catfile);
-
-use CoGe::Core::Storage qw(get_upload_path get_experiment_files);
-use CoGe::Builder::CommonTasks;
+use CoGe::Core::Storage qw(get_experiment_files);
 use CoGe::Builder::Expression::qTeller qw(build);
 
 sub get_name {
@@ -28,7 +23,6 @@ sub build {
     my $experiment = $self->db->resultset('Experiment')->find($eid);
     return unless $experiment;
     my $genome = $experiment->genome;
-    # TODO add permissions check here -- or will it happen in Request::Genome?
     
     # Copy metadata from input experiment
     my $metadata = { # could almost use experiment->to_hash here except for source_name
