@@ -129,17 +129,15 @@ sub build {
 
     # Reheader the fasta file
     my $fasta = get_genome_file($gid);
-    my $reheader_fasta = to_filename($fasta) . ".reheader.faa";
     push @tasks, create_fasta_reheader_job(
         fasta => $fasta,
-        reheader_fasta => $reheader_fasta,
         cache_dir => $fasta_cache_dir
     );
+    my $reheader_fasta = $tasks[-1]->{outputs}[0];
 
     # Index the fasta file
     push @tasks, create_fasta_index_job(
-        fasta => catfile($fasta_cache_dir, $reheader_fasta),
-        cache_dir => $fasta_cache_dir
+        fasta => $reheader_fasta
     );
     
     # Add aligner workflow
@@ -169,7 +167,7 @@ sub build {
         
         ($alignment_tasks, $alignment_results) = create_tophat_workflow(
             gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
+            fasta => $reheader_fasta,
             fastq => \@trimmed,
             validated => \@validated,
             encoding => $read_params->{encoding},
@@ -182,7 +180,7 @@ sub build {
     elsif ($alignment_params && $alignment_params->{tool} eq 'bismark') {
         ($alignment_tasks, $alignment_results) = create_bismark_workflow(
             gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
+            fasta => $reheader_fasta,
             fastq => \@trimmed,
             validated => \@validated,
             encoding => $read_params->{encoding},
@@ -194,7 +192,7 @@ sub build {
     elsif ($alignment_params && $alignment_params->{tool} eq 'bwameth') {
         ($alignment_tasks, $alignment_results) = create_bwameth_workflow(
             gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
+            fasta => $reheader_fasta,
             fastq => \@trimmed,
             validated => \@validated,
             #encoding => $read_params->{encoding}, # bwameth doesn't have encoding option, must auto-detect?
@@ -206,7 +204,7 @@ sub build {
     else { # ($alignment_params->{tool} eq 'gsnap') { # default
         ($alignment_tasks, $alignment_results) = create_gsnap_workflow(
             gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
+            fasta => $reheader_fasta,
             fastq => \@trimmed,
             validated => \@validated,
             read_type => $read_params->{read_type},
