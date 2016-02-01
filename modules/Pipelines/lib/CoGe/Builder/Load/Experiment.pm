@@ -114,7 +114,7 @@ sub build {
         # Add expression workflow (if specified)
         my $expression_workflow;
         if ( $self->params->{expression_params} ) {
-            $expression_workflow = CoGe::Builder::PopGen::SummaryStats::build(
+            $expression_workflow = CoGe::Builder::Expression::qTeller::build(
                 user => $self->user,
                 wid => $self->workflow->id,
                 genome => $genome,
