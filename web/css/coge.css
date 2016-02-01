@@ -12,13 +12,17 @@
     padding-top: 1em;
 }
 
-BODY {
+body {
   font-family: "Helvetica Neue", Helvetica, Arial, fixed;
   line-height: 1.125; /* 18/16 = 1.125 */
   font-size: 16px;
   background: #FFFFFF;
   margin: 0;
   height: 100%;
+}
+
+html {
+    height: 100%;
 }
 
 a {
@@ -98,8 +102,9 @@ div.box {
 
 div.footer {
 	position: relative;
-	margin-top: -55px;
-	height: 55px;
+	margin-top: -50px;
+	padding-right: 7px;
+	height: 50px;
 	clear: both;
 	border-top: 1px solid lightgray;
 }
