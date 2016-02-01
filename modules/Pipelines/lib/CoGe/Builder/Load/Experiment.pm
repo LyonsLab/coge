@@ -176,7 +176,6 @@ sub build {
             }
             push @tasks, @{$methylation_workflow->{tasks}};
             push @done_files, @{$methylation_workflow->{done_files}};
-            $result_count++;
         }
     }
     # Else, all other file types
