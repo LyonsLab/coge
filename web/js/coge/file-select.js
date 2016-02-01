@@ -645,8 +645,8 @@ var coge = window.coge = (function(namespace) {
 		    	if (id) {
 		    		entrez.fetch(id).then(function(result) {
 		    			if (result) {
-		    				if (self._add_file_to_list(result.accn, 'sra://'+result.id)) {
-								self._finish_file_in_list('sra', 'sra://'+result.id, result.id, result.size);
+		    				if (self._add_file_to_list(result.accn, 'sra://'+result.accn)) {
+								self._finish_file_in_list('sra', 'sra://'+result.accn, result.accn, result.size);
 							}
 							$('#sra_status').html('');
 		    			}
