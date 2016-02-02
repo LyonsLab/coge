@@ -62,6 +62,13 @@ var coge = window.coge = (function(namespace) {
 			// Initialize irods view
 			self._irods_get_path();
 			
+			// Setup file list event handlers
+			self.selectedFiles.forEach(function(file) {
+				file.tr.find(".ui-icon-closethick")
+					.unbind()
+					.click(self._cancel_callback.bind(self, file));
+			});
+			
 			// Setup menu event handlers
 			self.container.find('.fileselect-home').click(function() {
 				self._irods_get_path();
@@ -221,7 +228,7 @@ var coge = window.coge = (function(namespace) {
 			
 			// Update view of file
 			var td1 = $('<td><span style="margin-right:15px;">' + (error ? error : 'failed') + '</span></td>').fadeIn();
-			var closeIcon = $('<span class="link ui-icon ui-icon-closethick"></span>');
+			var closeIcon = $('<span class="link ui-icon ui-icon-closethick" title="Remove file"></span>');
 			closeIcon.click(self._cancel_callback.bind(self, file));
 			var td2 = $('<td></td>').append(closeIcon).fadeIn();
 
@@ -251,7 +258,7 @@ var coge = window.coge = (function(namespace) {
 			if (size)
 				td1.html('<span style="margin-right:15px;"><span class="text">Size:</span> ' + self._units(size) + '</span>');
 			td1.fadeIn();
-			var closeIcon = $('<span class="link ui-icon ui-icon-closethick"></span>');
+			var closeIcon = $('<span class="link ui-icon ui-icon-closethick" title="Remove file"></span>');
 			closeIcon.click(self._cancel_callback.bind(self, file));
 			var td2 = $('<td></td>').append(closeIcon).fadeIn();
 			
