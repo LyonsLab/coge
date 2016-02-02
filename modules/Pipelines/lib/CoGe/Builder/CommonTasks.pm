@@ -13,7 +13,7 @@ use Data::Dumper;
 use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
 use CoGe::Accessory::Web qw(get_defaults split_url);
-use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
+use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path);
 use CoGe::Core::Metadata qw(tags_to_string);
 
 require Exporter;
@@ -275,7 +275,7 @@ sub create_ftp_get_job {
 sub create_data_retrieval_workflow {
     my %opts = @_;
     my $upload_dir = $opts{upload_dir};
-    my $data = $opts{data};
+    my $data       = $opts{data};
     
     my (@tasks, @outputs, @ncbi);
     foreach my $item (@$data) {
@@ -311,10 +311,10 @@ sub create_data_retrieval_workflow {
             push @ncbi, $item->{path};
         }
         elsif ($type eq 'sra') {
-            # prerequisite: make sure "vdb-config -i" was run once to set the sra cache to /storage2/coge/data/sra
-            $task = create_sra_prefetch_job(
-                url => $item->{url} || $item->{path},
-                dest_path => $upload_dir
+            my $cache_path = get_sra_cache_path();
+            $task = create_fastq_dump_job(
+                accn => $item->{path},
+                dest_path => $cache_path
             );
         }
         
@@ -329,6 +329,30 @@ sub create_data_retrieval_workflow {
         tasks => \@tasks,
         outputs => \@outputs,
         ncbi  => \@ncbi
+    };
+}
+
+sub create_fastq_dump_job {
+    my %opts = @_;
+    my $accn = $opts{accn};
+    my $dest_path = $opts{dest_path};
+    die unless $accn;
+    
+    my $output_file = catfile($dest_path, $accn . '.fastq');
+    my $done_file = "$output_file.done";
+
+    my $cmd = $CONF->{FASTQ_DUMP} || 'fastq-dump';
+
+    return {
+        cmd => "$cmd $accn --outdir $dest_path ; touch $done_file",
+        script => undef,
+        args => [],
+        inputs => [],
+        outputs => [
+            $output_file,
+            $done_file
+        ],
+        description => "Fetching $accn from NCBI-SRA..."
     };
 }
 

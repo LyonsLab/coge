@@ -57,7 +57,7 @@ sub build {
 #        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
 #        return { error => $error };
 #    }
-    
+
     # Decompress and validate the fastq input files
     my (@decompressed, @validated);
     foreach my $input_file (@$input_files) {
