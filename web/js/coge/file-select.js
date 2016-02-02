@@ -193,7 +193,8 @@ var coge = window.coge = (function(namespace) {
 			var file = { 
 				name: filename, 
 				url: url, 
-				tr: tr
+				tr: tr,
+				isTransferring: true
 			};
 			if (username) file.username = username;
 			if (password) file.password = password;
