@@ -396,7 +396,7 @@ define(['dojo/_base/declare',
 
     //----------------------------------------------------------------
 
-    _delete: function(trackConfig, type, id, div) {
+    _delete: function(trackConfig, type, id, container, div) {
 		// Determine if node is inside a notebook
 		if (type == 'experiment') {
 			var notebookName;
@@ -647,7 +647,7 @@ define(['dojo/_base/declare',
                 menu.addChild(new MenuItem({
                     label: 'Delete ' + Type,
                     onClick: dojo.hitch( this, function() {
-                    	this._delete(trackConfig, type, id, div);
+                    	this._delete(trackConfig, type, id, container, div);
         			})
                 }));
             }
