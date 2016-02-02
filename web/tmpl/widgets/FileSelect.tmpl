@@ -13,7 +13,7 @@
 	    <li class="small"><a href="#fileselect-tab-2">FTP/HTTP</a></li>
 	    <li class="small"><a href="#fileselect-tab-3">Upload</a></li>
 	    <TMPL_IF NAME='ENABLE_NCBI'>
-	    <li class="small"><a href="#fileselect-tab-4">NCBI</a></li>
+	    <li class="small"><a href="#fileselect-tab-4">GenBank</a></li>
 	    </TMPL_IF>
 	    <TMPL_IF NAME='ENABLE_SRA'>
 	    <li class="small"><a href="#fileselect-tab-4">SRA</a></li>
@@ -61,7 +61,7 @@
 	
 	  <TMPL_IF NAME='ENABLE_NCBI'>
 	  <div id="fileselect-tab-4" class="small" style="height:200px;">
-	    Enter the NCBI accession number of the item to add.<br><br>
+	    Enter the NCBI GenBank accession number of the item to add.<br><br>
 	    <div>
 	      <span>Accession: <input id="input_accn" size="15" spellcheck="false"/></span>
 	      <span id="ncbi_get_button" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span>
@@ -76,7 +76,7 @@
 
 	  <TMPL_IF NAME='ENABLE_SRA'>
 	  <div id="fileselect-tab-4" class="small" style="height:200px;">
-	    Enter the Short Read Archive (SRA) accession number of the item to add.<br><br>
+	    Enter the NCBI Short Read Archive (SRA) accession number of the item to add.<br><br>
 	    <div>
 	      <span>Accession: <input id="input_accn" size="15" spellcheck="false"/></span>
 	      <span id="sra_get_button" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span>
