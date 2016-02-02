@@ -239,8 +239,6 @@ $.extend(DataView.prototype, {
             return false;
         }
         
-        console.log(items);
-        
         items[0].file_type = this.el.find("#select_file_type option:selected").val();
         if (!items[0].file_type) {
         	if (this.onError)
