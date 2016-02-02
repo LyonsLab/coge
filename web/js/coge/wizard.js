@@ -235,7 +235,7 @@ $.extend(DataView.prototype, {
         var items = coge.fileSelect.get_selected_files();
         if (!items || items.length === 0) {
             if (this.onError)
-            	this.onError('Please select a valid data file of type: ' + this.supportedFileTypes.join(', '));
+            	this.onError('Please select a valid data file of type: ' + this.supportedFileTypes.join(', ') + '.  Allow uploaded files to finish transferring.');
             return false;
         }
         
