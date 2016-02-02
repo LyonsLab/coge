@@ -122,23 +122,23 @@ sub create_picard_deduplicate_job {
     die "ERROR: PICARD is not in the config." unless $CONF->{PICARD};
     my $cmd = 'java -jar ' . $CONF->{PICARD};
     
-    my $output_file = $bam_file . '.dedup';
+    my $output_file = $bam_file . '-deduplicated.bam';
     
     return {
-        cmd => $cmd,
+        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp ; mv $output_file.tmp $output_file",
         script => undef,
         args => [
-            ['MarkDuplicates', '', 0],
-            ['REMOVE_DUPLICATES=true', '', 0],
-            ["INPUT=$bam_file", '', 0],
-            ["METRICS_FILE=$bam_file.metrics", '', 0],
-            ["OUTPUT=$output_file", '', 0],
+#            ['MarkDuplicates', '', 0],
+#            ['REMOVE_DUPLICATES=true', '', 0],
+#            ["INPUT=$bam_file", '', 0],
+#            ["METRICS_FILE=$bam_file.metrics", '', 0],
+#            ["OUTPUT=$output_file", '', 0],
         ],
         inputs => [
-            $bam_file,
+            $bam_file
         ],
         outputs => [
-            $output_file,
+            $output_file
         ],
         description => "Deduplicating PCR artifacts using Picard..."
     };
