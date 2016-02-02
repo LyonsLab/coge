@@ -241,7 +241,8 @@ $.extend(ExperimentDescriptionView.prototype, {
 // Methylation analysis options
 
 function MethylationView(opts) {
-	this.format = opts.format;
+	if (opts)
+		this.format = opts.format;
     this.data = {};
     this.initialize();
 };
@@ -298,7 +299,7 @@ $.extend(MethylationView.prototype, {
     is_valid: function() {
         var enabled = this.el.find("#methyl").is(":checked");
         var method = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
-        var paired = this.format.is_paired();
+        var paired = ( this.format && this.format.is_paired() );
         
         if (enabled) {
             if (method === "bismark") {
