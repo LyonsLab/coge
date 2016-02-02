@@ -34,6 +34,12 @@ sub build {
     my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
     my $chipseq_params = $opts->{chipseq_params};
+    
+    # Require 3 data files (input and two replicates)
+    if (@$input_files != 3) {
+        print STDERR "CoGe::Builder::Protein::ChIPseq ERROR: 3 input files required\n";
+        return;
+    }
 
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
