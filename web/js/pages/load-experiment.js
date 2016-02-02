@@ -789,7 +789,7 @@ $.extend(ChIPSeqView.prototype, {
         this.el.find("#chipseq").unbind().change(this.update.bind(this));
         
         var select = this.el.find("#chipseq-input");
-        var data =this.experiment.data;
+        var data = this.experiment.data;
         for(i = 0; i < data.length; i++) {
         	var file = data[i];
         	select.append("<option>" + file.name + "</option>");
@@ -797,12 +797,23 @@ $.extend(ChIPSeqView.prototype, {
     },
 
     update: function() {
-        var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
-        if (selected !== 'bowtie2') 
-        	this.container.html('<span class="alert indent">Please select the Bowtie2 aligner above</span>').show();
+    	var checkbox = this.el.find("#chipseq");
     	
-    	this.enabled = this.el.find("#chipseq").is(":checked");
+        var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
+        if (selected != 'bowtie2') {
+        	this.container.html('<span class="alert indent">Please select the Bowtie2 aligner above</span>').show();
+        	checkbox.attr('checked', false); // uncheck it
+        	return;
+        }
+        
+        var data = this.experiment.data;
+        if (!data || data.length < 3) {
+        	this.container.html('<span class="alert indent">The ChIP-seq analysis requires 3 input files (the input and two replicates).</span>').show();
+        	checkbox.attr('checked', false); // uncheck it
+        	return;
+        }
 
+        this.enabled = checkbox.is(":checked");
         if (this.enabled) 
             this.container.slideDown();
         else 
