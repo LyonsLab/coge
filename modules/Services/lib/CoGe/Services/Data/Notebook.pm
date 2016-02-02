@@ -181,4 +181,35 @@ sub remove {
     });    
 }
 
+sub update {
+	my $self = shift;
+    my $id = int($self->stash('id'));
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get notebook
+    my $notebook = $db->resultset("List")->find($id);
+    unless (defined $notebook) {
+        $self->render(json => {
+            error => { Error => "Notebook not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_owner_editor(list => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+    my $data = $self->req->json;
+	$notebook->update($data->{metadata});
+	$self->render(json => {
+		success => Mojo::JSON->true
+	});
+}
+
 1;

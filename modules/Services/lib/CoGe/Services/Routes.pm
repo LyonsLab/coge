@@ -91,6 +91,10 @@ sub startup {
         ->name("experiments-add")
         ->to("experiment#add");
 
+    $r->post("/experiments/:id" => [id => qr/\d+/])
+        ->name("experiments-update")
+        ->to("experiment#update", id => undef);
+
     # Notebook routes
     $r->get("/notebooks/search/#term")
         ->name("notebooks-search")
@@ -104,6 +108,10 @@ sub startup {
         ->name("notebooks-add")
         ->to("notebook#add");
         
+    $r->post("/notebooks/:id" => [id => qr/\d+/])
+        ->name("notebooks-update")
+        ->to("notebook#update", id => undef);
+
     $r->delete("/notebooks/:id" => [id => qr/\d+/])
         ->name("notebooks-remove")
         ->to("notebook#remove");
