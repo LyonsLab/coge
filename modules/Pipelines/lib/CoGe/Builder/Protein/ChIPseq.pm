@@ -104,6 +104,7 @@ sub build {
         
         my $md = clone($metadata);
         $md->{name} .= " ($input_tag vs. $replicate_tag ChIP-seq)";
+        push @{$md->{tags}}, 'ChIP-seq';
         
         push @tasks, create_load_experiment_job(
             user => $user,
