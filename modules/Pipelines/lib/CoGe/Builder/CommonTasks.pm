@@ -10,7 +10,7 @@ use JSON qw(encode_json);
 use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
-use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension);
+use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension to_filename_base);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
 use CoGe::Accessory::Web qw(get_defaults split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path);
@@ -1476,7 +1476,7 @@ sub create_bowtie2_alignment_job {
         outputs => [
             catfile($staging_dir, $output_file)
         ],
-        description => "Aligning " . join(', ', map { to_filename($_) } @$fastq) . " using Bowtie2..."
+        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using Bowtie2..."
     };    
 }
 
