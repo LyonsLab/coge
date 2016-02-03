@@ -44,7 +44,7 @@ BEGIN {
         format_time_diff sanitize_name execute directory_size
         trim js_escape html_escape to_filename to_pathname
         is_fastq_file add_fastq_ext detect_paired_end
-        to_filename_without_extension
+        to_filename_without_extension to_filename_base
     );
 }
 
@@ -166,16 +166,25 @@ sub format_time_diff {
     return $elapsed;
 }
 
-sub to_filename_without_extension {
-    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
-    return $name;
-}
-
+# Return filename without path, e.g. /home/user/test/abc.xyz ==> abc.xyz
 sub to_filename {
     my ($name, undef, undef) = fileparse(shift);
     return $name;
 }
 
+# Return filename without path and last extension, e.g. /home/user/test/abc.xyz.123 ==> abc.xyz
+sub to_filename_without_extension {
+    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $name;
+}
+
+# Return filename without path and everything before first period, e.g. /home/user/test/abc.xyz.123 ==> abc
+sub to_filename_base {
+    my ($base) = fileparse(shift, '\..*');
+    return $base;
+}
+
+# Return path, e.g. /home/user/test/abc.xyz ==> /home/user/test
 sub to_pathname {
     my (undef, $path, undef) = fileparse(shift);#, qr/\.[^.]*/);
     return $path;
