@@ -812,7 +812,8 @@ sub create_load_bam_job {
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
-    my $output_path = catdir($staging_dir, "load_bam");
+    my $output_name = "load_bam_" . to_filename_base($bam_file);
+    my $output_path = catdir($staging_dir, $output_name);
     
     my $result_file = get_workflow_results_file($user->name, $wid);
     
@@ -837,7 +838,7 @@ sub create_load_bam_job {
             ['-source_name', "'" . $metadata->{source} . "'", 0],
             ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
-            ['-staging_dir', "./load_bam", 0],
+            ['-staging_dir', $output_name, 0],
             ['-file_type', qq["bam"], 0],
             ['-data_file', $bam_file, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 1]
