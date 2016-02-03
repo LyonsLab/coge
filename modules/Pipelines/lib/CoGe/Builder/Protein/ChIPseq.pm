@@ -144,7 +144,7 @@ sub create_bamToBed_job {
     
     my $cmd = $CONF->{BAMTOBED} || 'bamToBed';
     
-    my $name = to_filename_without_extension($bam_file);
+    my $name = to_filename_base($bam_file);
     my $bed_file = catfile($staging_dir, $name . '.bed');
     my $done_file = $bed_file . '.done';
     
@@ -159,7 +159,7 @@ sub create_bamToBed_job {
             $bed_file,
             $done_file
         ],
-        description => "Converting $name to BED format..."
+        description => "Converting $name BAM file to BED format..."
     };
 }
 
@@ -174,7 +174,7 @@ sub create_homer_makeTagDirectory_job {
     die "ERROR: HOMER_DIR is not in the config." unless $CONF->{HOMER_DIR};
     my $cmd = catfile($CONF->{HOMER_DIR}, 'makeTagDirectory');
     
-    my ($tag_name) = to_filename_base($bed_file);
+    my $tag_name = to_filename_base($bed_file);
     
     my $fasta = catfile($CONF->{CACHEDIR}, $gid, 'fasta', 'genome.faa.reheader.faa'); #TODO move into function in Storage.pm
     
