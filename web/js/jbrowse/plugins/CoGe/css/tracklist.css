@@ -24,6 +24,10 @@
 	width: 14px;
 }
 
+.coge-experiment {
+	background-color: #fbfbfb;
+}
+
 #coge_menu_button,
 #coge_track_menu_button {
     margin-left: -10px;
@@ -85,6 +89,7 @@
 .coge-tracklist-label {
 	flex: 2;
 	min-height: 16px;
+	overflow: hidden;
 	padding-left: 2px;
 	padding-top: 6px;
 }

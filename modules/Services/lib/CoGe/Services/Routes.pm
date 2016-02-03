@@ -116,6 +116,10 @@ sub startup {
         ->name("notebooks-remove")
         ->to("notebook#remove");
 
+    $r->post("/notebooks/:id/items/remove" => [id => qr/\d+/])
+        ->name("notebooks-items-remove")
+        ->to("notebook#remove_item", id => undef);
+
     # User routes -- not documented, only for internal use
     $r->get("/users/search/#term")
         ->name("users-search")

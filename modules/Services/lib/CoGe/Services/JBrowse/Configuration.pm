@@ -445,7 +445,7 @@ sub track_config {
                 type    => 'experiment',
                 classes => [
                     'coge-tracklist-indented',
-                    'coge-tracklist-deletable',
+                    'coge-tracklist-editable',
                     'coge-tracklist-info'
                 ],
                 collapsed   => 1, #FIXME move into CSS
@@ -517,7 +517,7 @@ sub track_config {
                 type    => 'notebook',
                 classes => [
                     'coge-tracklist-collapsible',
-                    'coge-tracklist-deletable',
+                    'coge-tracklist-editable',
                     'coge-tracklist-info'
                 ],
                 collapsed   => 1, #FIXME move into CSS

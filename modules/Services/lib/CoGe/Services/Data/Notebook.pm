@@ -95,7 +95,7 @@ sub add {
 #    print STDERR "CoGe::Services::Data::Notebook::add\n", Dumper $data, "\n";
 
     # Authenticate user and connect to the database
-    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # User authentication is required to add notebook
     unless (defined $user) {
@@ -179,6 +179,46 @@ sub remove {
         success => Mojo::JSON->true,
         id => $notebook->id
     });    
+}
+
+sub remove_item {
+	my $self = shift;
+    my $id = int($self->stash('id'));
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get notebook
+    my $notebook = $db->resultset("List")->find($id);
+    unless (defined $notebook) {
+        $self->render(json => {
+            error => { Error => "Notebook not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_owner_editor(list => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+    my $data = $self->req->json;
+    my @items;
+    foreach my $item (@{$data->{items}}) {
+    	push @items, [ $item->{id}, $item->{type} ];
+    }
+    remove_items_from_notebook(
+    	db => $db,
+    	user => $user,
+    	notebook => $notebook,
+    	item_list => \@items
+    );
+	$self->render(json => {
+		success => Mojo::JSON->true
+	});	
 }
 
 sub update {

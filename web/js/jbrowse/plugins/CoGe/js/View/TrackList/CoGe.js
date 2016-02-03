@@ -13,17 +13,15 @@ define(['dojo/_base/declare',
         'dijit/layout/ContentPane',
         'dojo/dnd/Source',
 //        'dojo/fx/easing',
-        'dijit/form/TextBox',
         'dojo/mouse',
-        'dijit/Dialog',
         "dijit/form/DropDownButton",
-//        "dijit/DropDownMenu",
         "dijit/Menu",
         "dijit/MenuItem",
+        'dijit/Dialog',
         'JBrowse/View/ConfirmDialog',
         'JBrowse/View/InfoDialog'
        ],
-       function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, /*animationEasing,*/ dijitTextBox, mouse, Dialog, DropDownButton, /*DropDownMenu,*/ Menu, MenuItem, ConfirmDialog, InfoDialog ) {
+       function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, /*animationEasing,*/ mouse, DropDownButton, Menu, MenuItem, Dialog, ConfirmDialog, InfoDialog ) {
 	return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -35,6 +33,7 @@ define(['dojo/_base/declare',
     constructor: function( args ) {
     	coge_track_list = this;
         this.browser = args.browser;
+        this._track_configs = args.trackConfigs;
 
         // make the track list DOM nodes and widgets
         this.createTrackList( args.browser.container, args.trackConfigs );
@@ -89,6 +88,23 @@ define(['dojo/_base/declare',
             	}
             }
         }));
+    },
+
+    //----------------------------------------------------------------
+
+    _add_to_notebook: function(type, id, name) {
+    	var content = '<table><tr><td><label>Notebook:</label></td><td><select id="notebook">';
+    	var notebooks = this._track_configs.filter( function(e) {
+    		return (e.coge.type && e.coge.type == 'notebook');
+    	});
+    	for (var i=1; i<notebooks.length; i++) // skip All Experiments "notebook"
+    		content += '<option value="' + notebooks[i].coge.id + '">' + notebooks[i].coge.name + '</option>';
+    	content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="add_to_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="add_dialog.hide()">Cancel</button></div>';
+    	add_dialog = new Dialog({
+            title: 'Add to Notebook',
+            content: content
+        });
+    	add_dialog.show();
     },
 
     //----------------------------------------------------------------
@@ -172,46 +188,16 @@ define(['dojo/_base/declare',
                 accept: ["track"], // accepts only tracks
                 withHandles: false,
                 copyOnly: true,
-                checkAcceptance: dojo.hitch(this, function( source, nodes ) {
+                checkAcceptance: function( source, nodes ) {
                 	if (isStatic)
                 		return false;
                 	var target = this;
                 	var nbNode = target.getAllNodes().shift();
                 	var nbConfig = target.map[nbNode.id].data.coge;
-                	return ( nbConfig.editable && !this._hasLabelNode(div, nodes) );
-                }),
-                creator: dojo.hitch( this, function( trackConfig, hint ) {
-                	var coge = trackConfig.coge;
-                	var node = dojo.create('div', {
-            			className: 'coge-tracklist-label coge-' + coge.type,
-            			id: coge.type + coge.id,
-            			title: this._build_title(trackConfig)
-                    });
-                    if (coge.classes)
-                    	dojo.addClass(node, coge.classes.join(' '));
-
-                    this._set_track_title(trackConfig, node);
-
-                    dojo.connect(node, "click", dojo.hitch(this, function(e) {
-                    	if (dojo.hasClass(node, 'selected'))
-                    		this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
-                    	else
-                    		this.browser.publish( '/jbrowse/v1/v/tracks/show', [trackConfig] );
-                    }));
-
-                    // in the list, wrap the list item in a container for border drag-insertion-point monkeying
-                    var container = dojo.create( 'div', { className: 'coge-tracklist-container' });
-                    dojo.connect(container, "onmouseenter", dojo.hitch(this, function(){this._mouse_enter(trackConfig, coge.type, coge.id, node, container, div, dom)}));
-                    dojo.connect(container, "onmouseleave", dojo.hitch(this, this._mouse_leave));
-
-                    if (dojo.hasClass(node, 'coge-tracklist-collapsible'))
-                    	this._add_expander(container, coge.collapsed);
-                    else if (coge.collapsed)
-                    	dojo.addClass(container, 'collapsed');
-
-                    container.appendChild(node);
-                    container.id = node.id;//dojo.dnd.getUniqueId();
-                    return {node: container, data: trackConfig, type: ["track", coge.type]};
+                	return ( nbConfig.editable && !has_label_node(div, nodes) );
+                },
+                creator: dojo.hitch( this, function( track_config, hint ) {
+                    return {node: this._new_track(track_config, div), data: track_config, type: ["track", track_config.coge.type]};
                 })
             }
         );
@@ -221,8 +207,8 @@ define(['dojo/_base/declare',
 
     _createTextFilter: function( trackConfigs, parent ) {
         this.textFilterDiv = dom.create( 'div', {
-            className: 'coge-textfilter' //className: 'textfilter', // replace jbrowse styling
-        }, parent); //this.div );
+            className: 'coge-textfilter'
+        }, parent);
 
         var d = dom.create('div',{ style: 'display:inline;overflow:show;position:relative' }, this.textFilterDiv );
 		this.textFilterInput = dom.create(
@@ -253,7 +239,7 @@ define(['dojo/_base/declare',
 			id: 'textFilterCancel',
 			onclick: dojo.hitch( this, function() {
 				this._clearTextFilterControl();
-				this._textFilter( this.textFilterInput.value );
+				this._textFilter();
 			})
 		}, d );
 
@@ -388,7 +374,7 @@ define(['dojo/_base/declare',
             );
     	});
 
-        // Initialize text filter label
+        // show all tracks
         this._textFilter();
 
         return this.div;
@@ -544,24 +530,6 @@ define(['dojo/_base/declare',
 
     //----------------------------------------------------------------
 
-    _hasLabelNode: function (div, nodes) {
-    	var container;
-
-    	nodes.forEach( function(node) {
-    		dojo.query( '#'+node.id+' > .coge-tracklist-label', div )
-    		 	.forEach( function( labelNode ) {
-    		 		if (labelNode.id == node.id) {
-    		 			container = labelNode.parentNode;
-    		 			return;
-    		 		}
-    		 	});
-    	});
-
-    	return container;
-    },
-
-    //----------------------------------------------------------------
-
     /**
      * Make the track selector invisible.
      * This does nothing for the Simple track selector, since it is always visible.
@@ -571,7 +539,7 @@ define(['dojo/_base/declare',
 
     //----------------------------------------------------------------
 
-    _info: function (trackConfig, type) {
+    _info: function (track_config, type) {
         var dialog = new dijit.Dialog( { title: this._capitalize(type) + ' View' } );
 
         var iframe = dojo.create(
@@ -580,7 +548,7 @@ define(['dojo/_base/declare',
                 width: $(window).width() * 0.8,
                 height: $(window).height() * 0.8,
                 style: { border: 'none' },
-                src: trackConfig.coge.onClick
+                src: track_config.coge.onClick
             });
 
         dialog.set( 'content', iframe );
@@ -616,47 +584,66 @@ define(['dojo/_base/declare',
 
     //----------------------------------------------------------------
 
-    _mouse_enter: function(trackConfig, type, id, node, container, div, dom) {
+    _mouse_enter: function(track_config, node, container, div) {
     	if (this._menu_popped_up())
     		return;
     	var b = dijit.byId('coge_track_menu_button');
     	if (b)
     		b.destroy();
-    	var deletable = dojo.hasClass(node, 'coge-tracklist-deletable');
-    	var info = dojo.hasClass(node, 'coge-tracklist-info');
-    	if (deletable || info) {
-    		this._menu_node = node;
-    		this._menu_track_config = trackConfig;
-    		var menu_button = dom.create('div', {id: 'coge_track_menu_button'}, container);
-            var menu = new Menu();
-            var Type = this._capitalize(type);
-            if (info)
+ 		this._menu_node = node;
+		this._menu_track_config = track_config;
+		var id = track_config.coge.id;
+		var type = track_config.coge.type;
+		var Type = this._capitalize(type);
+		var menu_button = dom.create('div', {id: 'coge_track_menu_button'}, container);
+        var menu = new Menu();
+        if (dojo.hasClass(node, 'coge-tracklist-info'))
+            menu.addChild(new MenuItem({
+                label: 'Info',
+                onClick: dojo.hitch( this, function() {
+                	this._info(track_config, type);
+    			})
+            }));
+        if (dojo.hasClass(node, 'coge-tracklist-editable')) {
+            menu.addChild(new MenuItem({
+                label: 'Rename',
+                onClick: dojo.hitch( this, function() {
+                	this._rename(type, id, track_config.coge.name);
+    			})
+            }));
+            if (type == 'experiment') {
                 menu.addChild(new MenuItem({
-                    label: Type + ' Info',
+                    label: 'Add to Notebook',
                     onClick: dojo.hitch( this, function() {
-                    	this._info(trackConfig, type);
-        			})
-                }));
-            if (deletable) {
-                menu.addChild(new MenuItem({
-                    label: 'Rename ' + Type,
-                    onClick: dojo.hitch( this, function() {
-                    	this._rename(type, id, trackConfig.coge.name);
-        			})
-                }));
-                menu.addChild(new MenuItem({
-                    label: 'Delete ' + Type,
-                    onClick: dojo.hitch( this, function() {
-                    	this._delete(trackConfig, type, id, container, div);
+                    	this._add_to_notebook(type, id, track_config.coge.name);
         			})
                 }));
             }
-            var btn = new DropDownButton({
-                dropDown: menu
-            }, menu_button);
-            menu.startup();
-            btn.startup();
-    	}
+            if (track_config.coge.notebooks) {
+            	var notebook_node = container.parentNode.firstChild;                	
+            	var notebook_name = notebook_node.lastChild.innerHTML;
+            	if (notebook_name != 'All Experiments')
+                    menu.addChild(new MenuItem({
+                        label: 'Remove from Notebook',
+                        onClick: dojo.hitch( this, function() {
+                        	if (notebook_name.substring(0, 2) == '® ')
+                        		notebook_name = notebook_name.substring(2);
+                        	this._remove(type, id, track_config.coge.name, notebook_node.id.substring(8), notebook_name);
+            			})
+                    }));
+            }
+            menu.addChild(new MenuItem({
+                label: 'Delete',
+                onClick: dojo.hitch( this, function() {
+                	this._delete(track_config, type, id, container, div);
+    			})
+            }));
+        }
+        var btn = new DropDownButton({
+            dropDown: menu
+        }, menu_button);
+        menu.startup();
+        btn.startup();
     },
 
     //----------------------------------------------------------------
@@ -761,6 +748,55 @@ define(['dojo/_base/declare',
 
     //----------------------------------------------------------------
 
+    _new_track: function(track_config, div) {
+    	var coge = track_config.coge;
+        var container = dojo.create( 'div', { className: 'coge-tracklist-container' });
+    	var node = dojo.create('div', {
+			className: 'coge-tracklist-label coge-' + coge.type,
+			id: coge.type + coge.id,
+			title: this._build_title(track_config)
+        });
+        if (coge.classes)
+        	dojo.addClass(node, coge.classes.join(' '));
+
+        this._set_track_title(track_config, node);
+
+        dojo.connect(node, "click", dojo.hitch(this, function(e) {
+        	if (dojo.hasClass(node, 'selected'))
+        		this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
+        	else
+        		this.browser.publish( '/jbrowse/v1/v/tracks/show', [track_config] );
+        }));
+
+        if (dojo.hasClass(node, 'coge-tracklist-editable') || dojo.hasClass(node, 'coge-tracklist-info')) {
+        	dojo.connect(container, "onmouseenter", dojo.hitch(this, function(){this._mouse_enter(track_config, node, container, div)}));
+        	dojo.connect(container, "onmouseleave", dojo.hitch(this, this._mouse_leave));
+        }
+
+        if (dojo.hasClass(node, 'coge-tracklist-collapsible'))
+        	this._add_expander(container, coge.collapsed);
+        else if (coge.collapsed)
+        	dojo.addClass(container, 'collapsed');
+
+        container.appendChild(node);
+        container.id = node.id;//dojo.dnd.getUniqueId();
+        return container;
+    },
+
+    //----------------------------------------------------------------
+
+    _remove: function(type, id, name, notebook_id, notebook_name) {
+		new ConfirmDialog({
+			title: 'Remove ' + this._capitalize(type),
+			message: 'Remove ' + type + ' "' + name + '" from notebook "' + notebook_name + '"?'
+		}).show(dojo.hitch(this, function(confirmed) {
+             if (confirmed)
+            	 remove(type, id, notebook_id);
+         }));
+    },
+
+    //----------------------------------------------------------------
+
     _rename: function(type, id, name) {
     	rename_dialog = new Dialog({
             title: 'Rename ' + type,
@@ -768,6 +804,8 @@ define(['dojo/_base/declare',
             style: "width: 300px"
         });
     	rename_dialog.show();
+    	var i = dojo.byId("name");
+    	i.setSelectionRange(0, i.value.length);
     },
 
     //----------------------------------------------------------------
@@ -883,9 +921,9 @@ define(['dojo/_base/declare',
     },
 
     //----------------------------------------------------------------
+	// Filter tracks
 
     _textFilter: function( text ) {
-    	// Filter tracks
         if( text && /\S/.test(text) ) { // filter on text
             text = text.toLowerCase();
         	var n = dojo.byId('tracksAvail').firstChild;
@@ -1008,6 +1046,24 @@ function create_notebook() {
 
 //----------------------------------------------------------------
 
+function has_label_node(div, nodes) {
+	var container;
+
+	nodes.forEach( function(node) {
+		dojo.query( '#'+node.id+' > .coge-tracklist-label', div )
+		 	.forEach( function( labelNode ) {
+		 		if (labelNode.id == node.id) {
+		 			container = labelNode.parentNode;
+		 			return;
+		 		}
+		 	});
+	});
+
+	return container;
+}
+
+//----------------------------------------------------------------
+
 function new_notebook(id, name, description, restricted) {
 	return {
         key: (restricted ? '&reg; ' : '') + name,
@@ -1024,7 +1080,7 @@ function new_notebook(id, name, description, restricted) {
             type: 'notebook',
             classes: [
                 'coge-tracklist-collapsible',
-                'coge-tracklist-deletable',
+                'coge-tracklist-editable',
                 'coge-tracklist-info'
             ],
             collapsed: false,
@@ -1042,6 +1098,29 @@ function new_notebook(id, name, description, restricted) {
             ]
         }
     };
+}
+
+//----------------------------------------------------------------
+
+function remove(type, id, notebook_id) {
+	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+	dojo.xhrPost({
+		url: coge_api + '/notebooks/' + notebook_id + '/items/remove?username='+un,
+		postData: JSON.stringify({
+			items: [{
+				type: type,
+				id, id
+			}]
+		}),
+		handleAs: 'json',
+		load: function(data) {
+			if (data.error)
+				alert(JSON.stringify(data.error));
+			else {
+				dojo.destroy(coge_track_list._menu_node.parentNode);
+			}
+		}
+	});
 }
 
 //----------------------------------------------------------------
