@@ -783,17 +783,11 @@ $.extend(ChIPSeqView.prototype, {
         this.el = $($("#chipseq-template").html());
         this.enabled = false;
         this.container = this.el.find("#chipseq-container");
+        this.template = $(this.container.html());
     },
 
     render: function() {
         this.el.find("#chipseq").unbind().change(this.update.bind(this));
-        
-        var select = this.el.find("#chipseq-input");
-        var data = this.experiment.data;
-        for(i = 0; i < data.length; i++) {
-        	var file = data[i];
-        	select.append("<option>" + file.name + "</option>");
-        }
     },
 
     update: function() {
@@ -808,14 +802,25 @@ $.extend(ChIPSeqView.prototype, {
         
         var data = this.experiment.data;
         if (!data || data.length < 3) {
-        	this.container.html('<span class="alert indent">The ChIP-seq analysis requires 3 input files (the input and two replicates).</span>').show();
+        	this.container.html('<span class="alert indent">This analysis requires 3 input files (the input and two replicates).</span>').show();
         	checkbox.attr('checked', false); // uncheck it
         	return;
         }
 
         this.enabled = checkbox.is(":checked");
-        if (this.enabled) 
+        if (this.enabled) {
+        	render_template(this.template, this.container);
+        	
+        	// Add input files to dropdown
+            var select = this.el.find("#chipseq-input");
+            var data = this.experiment.data;
+            for(i = 0; i < data.length; i++) {
+            	var file = data[i];
+            	select.append("<option>" + file.name + "</option>");
+            }
+            
             this.container.slideDown();
+        }
         else 
             this.container.slideUp();
     },
