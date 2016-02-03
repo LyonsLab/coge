@@ -5,10 +5,11 @@ use warnings;
 
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
+use Clone qw(clone);
 
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_upload_path get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations);
-use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end);
+use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end to_filename_base);
 use CoGe::Builder::CommonTasks;
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -225,11 +226,17 @@ sub build {
         my $annotations = generate_additional_metadata($read_params, $trimming_params, $alignment_params);
         my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
         push @$annotations, @annotations2;
+        
+        # Add bam filename to experiment name for ChIP-seq pipeline
+        my $md = clone($metadata);
+        if (@bam_files > 1) {
+            $md->{name} .= ' (' . to_filename_base($sorted_bam_file) . ')';
+        }
     
         # Load alignment
         my $load_task = create_load_bam_job(
             user => $user,
-            metadata => $metadata,
+            metadata => $md,
             staging_dir => $staging_dir,
             result_dir => $result_dir,
             annotations => $annotations,
