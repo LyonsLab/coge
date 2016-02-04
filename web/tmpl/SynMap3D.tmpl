@@ -65,6 +65,16 @@
     </div>
     <div id="right">
         <div id="opts" class="contentBox">
+            <div class="option_tag"><label for="color_select">Color Scheme:</label></div>
+            <div class="option_select">
+                <select id="color_select" disabled>
+                    <option value="Jet" selected>Rainbow</option>
+                    <option value="Bluered">Blue-Red</option>
+                    <option value="Portland">Portland</option>
+                    <option value="Viridis">Viridis</option>
+                </select>
+            </div>
+
             <div class="option_tag"><label for="knks_select">Color Points By:</label></div>
             <div class="option_select">
                 <select id="knks_select" disabled>
@@ -78,7 +88,12 @@
                     <option value="mean" selected="selected">Mean</option>
                 </select>
             </div><br>
-            
+
+            <div class="option_tag"><label for="grid_toggle">Toggle Grid:</label></div>
+            <div class="option_select">
+                <input type="checkbox" id="grid_toggle" checked>
+            </div><br>
+
             <div class="option_tag"><label for="bgslider">Adjust Background Color:</label></div>
             <input class="option_select" id=bgslider type="range" min="1" value="1" max="10" step="1" autocomplete="on">
         </div>

@@ -383,17 +383,16 @@ function showVisualizer(data) {
 }
 
 function launch(experiment) {
-    //console.log(experiment);
     var xgid = experiment.x_gid;
     var ygid = experiment.y_gid;
     var zgid = experiment.z_gid;
     final_experiment = experiment;
     final_experiment.links = {};
-    console.log(final_experiment);
+
     function buildOptionsName(exp) {
         var name = '';
-        if (final_experiment.options.hide) { name += 'parsed_'; }
-        if (final_experiment.options.nim_len > 0) { name += 'min' + final_experiment.options.min_len + '_'; }
+        if (exp.options.hide) { name += 'parsed_'; }
+        if (exp.options.nim_len > 0) { name += 'min' + exp.options.min_len + '_'; }
         return name;
     }
     options_name = buildOptionsName(final_experiment);

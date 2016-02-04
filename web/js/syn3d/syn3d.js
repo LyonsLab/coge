@@ -4,7 +4,7 @@
 
 var knKsSelect; // "Ks" or "Kn"
 var comparisonSelect; // "mean", "xy", "xz", or "yz"
-//var colorSelect; // "Jet", "Bluered", "Portland", or "Viridis"
+var colorSelect; // "Jet", "Bluered", "Portland", or "Viridis"
 
 /*-----------------------------------------------------------------------------------------------------------------
  ~~~~CORE FUNCTION DEFINITIONS~~~~
@@ -106,7 +106,7 @@ function renderHistogram(documentElement, histogramTitle, histogramData, binCoun
                 cmax: binCount,
                 cmin: 0,
                 color: colorArray,
-                colorscale: 'Jet' //'Bluered' //'Portland' //'Viridis' TODO: Make this selectable
+                colorscale: colorSelect //'Jet' //'Bluered' //'Portland' //'Viridis'
             },
             type: 'histogram',
             xbins: {
@@ -130,7 +130,6 @@ function renderHistogram(documentElement, histogramTitle, histogramData, binCoun
 
 /* CORE FUNCTION: Render SynMap */
 function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
-    //TODO: Add gridToggle
     //TODO: Scale dynamically & position camera based on size
     //TODO: Render points independently of axes so that refreshes in coloring don't reset camera (or, save cam. state & reapply)
     /*---------------------------------------------------------------------------------------------------------
@@ -148,7 +147,7 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     var scene = new THREE.Scene();
 
     /* Create a three.js camera */
-    var camera = new THREE.PerspectiveCamera( 75, width / height, 1, 100 );
+    var camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 );
     camera.position.x = 0;
     camera.position.y = 0;
     camera.position.z = 30;
@@ -292,24 +291,23 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     /* Color Schemes */
     // https://github.com/plotly/plotly.js/blob/master/src/components/colorscale/scales.js
     // TODO: Pull these straight from Plotly
-    var JetColorScheme = [
-        [0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'], [0.625,'rgb(255,255,0)'],
-        [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']
-    ];
-    var BlueredColorScheme = [
-        [0,'rgb(0,0,255)'],[1,'rgb(255,0,0)']
-    ];
-    var PortlandColorScheme = [
-        [0,'rgb(12,51,131)'],[0.25,'rgb(10,136,186)'], [0.5,'rgb(242,211,56)'], [0.75,'rgb(242,143,56)'],
-        [1,'rgb(217,30,30)']
-    ];
-    var ViridisColorScheme = [
-        [0,'#440154'],[0.06274509803921569,'#48186a'], [0.12549019607843137,'#472d7b'], [0.18823529411764706,'#424086'],
-        [0.25098039215686274,'#3b528b'],[0.3137254901960784,'#33638d'], [0.3764705882352941,'#2c728e'],
-        [0.4392156862745098,'#26828e'], [0.5019607843137255,'#21918c'],[0.5647058823529412,'#1fa088'],
-        [0.6274509803921569,'#28ae80'],[0.6901960784313725,'#3fbc73'], [0.7529411764705882,'#5ec962'],
-        [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],[0.9411764705882353,'#d8e219'], [1,'#fde725']
-    ];
+
+    var schemes = {
+        "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
+            [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
+
+        "Bluered": [[0,'rgb(0,0,255)'],[1,'rgb(255,0,0)']],
+
+        "Portland": [[0,'rgb(12,51,131)'],[0.25,'rgb(10,136,186)'], [0.5,'rgb(242,211,56)'],
+            [0.75,'rgb(242,143,56)'], [1,'rgb(217,30,30)']],
+
+        "Viridis": [[0,'#440154'],[0.06274509803921569,'#48186a'], [0.12549019607843137,'#472d7b'],
+            [0.18823529411764706,'#424086'], [0.25098039215686274,'#3b528b'],[0.3137254901960784,'#33638d'],
+            [0.3764705882352941,'#2c728e'], [0.4392156862745098,'#26828e'], [0.5019607843137255,'#21918c'],
+            [0.5647058823529412,'#1fa088'], [0.6274509803921569,'#28ae80'],[0.6901960784313725,'#3fbc73'],
+            [0.7529411764705882,'#5ec962'], [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],
+            [0.9411764705882353,'#d8e219'], [1,'#fde725']]
+    };
 
     /* FUNCTION: Create Point Coloring Function */
     function getPtColorFunc(histogramData, colorScheme) {
@@ -334,10 +332,22 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
         return calcColor
     }
 
-    /* 3d Object: 3-Way Comparison */
     function drawPoints() {
-        var calcPtColor = getPtColorFunc(histogram_data.logten.data["Ks"][comparisonSelect], JetColorScheme);
-        var dotGeo = new THREE.SphereGeometry(0.05);
+        // Generate function to calculate point colors by colorscheme.
+        var calcPtColor = getPtColorFunc(histogram_data.logten.data[knKsSelect][comparisonSelect], schemes[colorSelect]);
+        // Load point image.
+        //var sprite = THREE.ImageUtils.loadTexture("picts/ball.png");
+        var loader = new THREE.TextureLoader();
+        var sprite = loader.load("picts/ball.png");
+        // Define plot geometry & material & color array.
+        var plotGeo = new THREE.Geometry();
+        var plotMat = new THREE.PointsMaterial( {size: 11, sizeAttenuation: false, map: sprite, vertexColors: THREE.VertexColors, alphaTest: 0.5, transparent: true });
+        var colors = [];
+
+        //Set up point counter.
+        var ptCount = 0;
+
+        // Build points.
         for (x_ch in matches) {
             for (y_ch in matches[x_ch]) {
                 for (z_ch in matches[x_ch][y_ch]) {
@@ -347,31 +357,43 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
                         var yPos = coordinate[1];
                         var zPos = coordinate[2];
                         var knks = coordinate[3][comparisonSelect][knKsSelect];
+
+                        // Assign position.
+                        var vertex = new THREE.Vector3();
+                        vertex.x = xChrIndexed[x_ch]['start'] + (xPos * scaleFactor);
+                        vertex.y = yChrIndexed[y_ch]['start'] + (yPos * scaleFactor);
+                        vertex.z = zChrIndexed[z_ch]['start'] + (zPos * scaleFactor);
+                        plotGeo.vertices.push(vertex);
+
+                        // Assign color.
                         var logKnKs = knks != 0 ? Math.log10(knks) : 'NA';
-                        //OLD dotMat
-                        //var dotMat = new THREE.MeshBasicMaterial(
-                        //        {color: getColorFromHist(logKnKs, logKnKsBins)}
-                        //);
-                        // NEW dotMat
-                        var dotMat = new THREE.MeshBasicMaterial(
-                            {color: calcPtColor(logKnKs)}
-                        );
-                        var dot = new THREE.Mesh (dotGeo, dotMat);
-                        dot.position.x = xChrIndexed[x_ch]['start'] + (xPos * scaleFactor);
-                        dot.position.y = yChrIndexed[y_ch]['start'] + (yPos * scaleFactor);
-                        dot.position.z = zChrIndexed[z_ch]['start'] + (zPos * scaleFactor);
-                        //dot.on('click', function() { console.log(coordinate[4]); } );
-                        matchDots.add(dot)
+                        if (isNaN(logKnKs)) {
+                            colors[ptCount] = new THREE.Color("#fff");
+                        } else {
+                            colors[ptCount] = new THREE.Color(calcPtColor(logKnKs));
+                        }
+
+                        ptCount += 1;
                     }
                 }
             }
         }
+        // Apply colors to geometry.
+        plotGeo.colors = colors;
 
-        matchDots.translateX(-startPositions.x / 2);
-        matchDots.translateY(-startPositions.y / 2);
-        matchDots.translateZ(-startPositions.z / 2);
-        //matchDots.on('click', function() { console.log("Point Clicked!"); } );
-        scene.add(matchDots);
+        // Create points object.
+        points = new THREE.Points(plotGeo, plotMat);
+
+        // Shift points object to rotation offset.
+        points.translateX(-startPositions.x / 2);
+        points.translateY(-startPositions.y / 2);
+        points.translateZ(-startPositions.z / 2);
+
+        // Add points object to scene.
+        scene.add(points);
+
+        // Report point count.
+        console.log("POINTS RENDERED: " + ptCount);
     }
 
     /*---------------------------------------------------------------------------------------------------------
@@ -466,7 +488,7 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     scene.add(grid);
 
     /* Draw Points */
-    var matchDots = new THREE.Object3D();
+    //var matchDots = new THREE.Object3D();
     drawPoints();
 
     /*---------------------------------------------------------------------------------------------------------
@@ -499,12 +521,33 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
             histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
     }
     window.addEventListener( 'resize', onWindowResize, false );
+
+    /*---------------------------------------------------------------------------------------------------------
+     ~~~~GRID TOGGLE HANDLER~~~~
+     --------------------------------------------------------------------------------------------------------*/
+
+    var grid_state = 1;
+    function onGridToggle() {
+        if (grid_state == 1) {
+            grid_state = 0;
+            scene.remove(grid);
+        } else {
+            grid_state = 1;
+            scene.add(grid);
+        }
+    }
+    var GridToggle = document.getElementById("grid_toggle");
+    GridToggle.addEventListener("click", onGridToggle)
+
 } //END renderSynMap()
 
 /*-----------------------------------------------------------------------------------------------------------------
  ~~~~ POPULATE PAGE ~~~~
  -----------------------------------------------------------------------------------------------------------------*/
 // TODO: Add spinny waiting queue
+// TODO: IS RE-LOADING AFTER NEW OPTIONS SELECTED CLEARING THE OBJECTS AND REDOING THEM OR JUST WRITING OVER!?!?!
+
+// On Document Ready
 $(document).ready( function() {
     var load;
 
@@ -514,7 +557,16 @@ $(document).ready( function() {
     //    // Render Histogram
     //    renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
     //        da.histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
-    //}
+
+    /* Monitor Color Scheme */
+    var ColorSelector = $("#color_select");
+    colorSelect = ColorSelector.val();
+    ColorSelector.change( function () {
+        colorSelect = ColorSelector.val();
+        renderSynMap(load.xChr, load.yChr, load.zChr, load.matches, load.histogram_data);
+        renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
+            load.histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
+    });
 
     /* Monitor KnKsSelect */
     var KnKsSelector = $("#knks_select");
@@ -536,7 +588,7 @@ $(document).ready( function() {
             load.histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
     });
 
-    var visOpts = [KnKsSelector, ComparisonSelector];
+    var visOpts = [ColorSelector, KnKsSelector, ComparisonSelector];
 
     /* Load Data & Render Visualization on Page Load */
     $.when(loadData(
