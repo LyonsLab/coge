@@ -279,13 +279,7 @@ sub generate_additional_metadata {
     if ($alignment_params && $alignment_params->{tool}) {
         if ($alignment_params->{tool} eq 'hisat2') {
             push @annotations, qq{note|hisat2_build};
-            my $params = join(' ', map { $_.' '.$alignment_params->{$_} } ('-p', '-x', '-S'));
-            if ($read_params->{encoding} eq '64') {
-            	$params .= ' --phred64';
-            }
-            else {
-            	$params .= ' --phred33';
-            }
+            my $params = ($read_params->{encoding} eq '64' ? '--phred64' : '--phred33');
             push @annotations, 'note|hisat2 ' . $params;
         }
         elsif ($alignment_params->{tool} eq 'tophat') {
