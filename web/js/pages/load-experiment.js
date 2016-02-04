@@ -512,14 +512,10 @@ $.extend(TrimmingView.prototype, {
                 	'trimmer': 'trimgalore',
                 	'-q': this.el.find("[id='-q']").val(),
                 }
-            }
+            };
         } 
         else {
-        	this.data = {
-    			trimming_params: {
-    				'trimmer': 'none'
-                }
-        	}
+        	this.data = {}; // Skip trimming
         }
 
         return true;
