@@ -53,6 +53,7 @@
 
 .coge-tracklist-container {
 	border: 1px solid transparent;
+	cursor: pointer;
 	display: flex;
 	overflow-x: hidden;
 	white-space: nowrap;
