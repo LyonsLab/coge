@@ -797,7 +797,7 @@ $.extend(ChIPSeqView.prototype, {
     	var checkbox = this.el.find("#chipseq");
     	
         var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
-        if (selected != 'bowtie2') {
+        if (selected != 'bowtie2' && selected != 'hisat2') {
         	this.container.html('<span class="alert indent">Please select the Bowtie2 aligner above</span>').show();
         	checkbox.attr('checked', false); // uncheck it
         	return;

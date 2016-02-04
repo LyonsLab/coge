@@ -808,6 +808,7 @@ sub create_load_bam_job {
     my $wid = $opts{wid};
     my $gid = $opts{gid};
     my $bam_file = $opts{bam_file};
+    die unless ($user && $staging_dir && $wid && $gid && $bam_file);
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
@@ -1123,47 +1124,80 @@ sub create_gff_generation_job {
 
 sub create_hisat2_workflow {
     my %opts = @_;
+    my $fasta        = $opts{fasta};
+    my $fastq        = $opts{fastq};
+    my $validated    = $opts{validated};
+    my $gid          = $opts{gid};
+    my $encoding     = $opts{encoding};
+    my $read_type    = $opts{read_type} // 'single';
+    my $staging_dir  = $opts{staging_dir};
+    my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
 
-    my $fasta       = $opts{fasta};
-    my $fastq       = $opts{fastq};
-    my $gid         = $opts{gid};
-    my $encoding    = $opts{encoding};
-    my $read_type   = $opts{read_type} // 'single';
-    my $staging_dir = $opts{staging_dir};
+    my @tasks;
 
-    my ($index, %build) = create_hisat2_build_job($gid, $fasta);
+    # Add index task
+    my $index_task = create_hisat2_index_job($gid, $fasta);
+    push @tasks, $index_task;
     
-    my %hisat2 = create_hisat2_job(
-        fastq => $fastq,
-        gid => $gid,
-        index_files => ($build{outputs}),
-        encoding => $encoding,
-        read_type => $read_type,
-        staging_dir => $staging_dir
-    );
+    # Add one or more alignment tasks
+    my @sam_files;
+    if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
+        foreach my $file (@$fastq) {
+            my $task = create_hisat2_alignment_job(
+                fastq => [ $file ],
+                validated => $validated,
+                gid => $gid,
+                index_files => $index_task->{outputs},
+                encoding => $encoding,
+                read_type => $read_type,
+                staging_dir => $staging_dir
+            );
+            push @tasks, $task;
+            push @sam_files, $task->{outputs}->[0];
+        }
+    }
+    else { # standard Bowtie run (all fastq's at once)
+        my $task = create_hisat2_alignment_job(
+            fastq => $fastq,
+            validated => $validated,
+            gid => $gid,
+            index_files => $index_task->{outputs},
+            encoding => $encoding,
+            read_type => $read_type,
+            staging_dir => $staging_dir
+        );
+        push @tasks, $task;
+        push @sam_files, $task->{outputs}->[0];
+    }
     
-    my $bam_task = create_sam_to_bam_job($hisat2{outputs}->[0], $staging_dir);
-
-    my @tasks = ( \%build, \%hisat2, $bam_task );
-    my %results = (
-        bam_file => $bam_task->{outputs}->[0]
-    );
-    return \@tasks, \%results;
+    # Add one or more sam-to-bam tasks
+    my %results;
+    foreach my $file (@sam_files) {
+        my $task = create_sam_to_bam_job($file, $staging_dir);
+        push @tasks, $task;
+        push @{$results{bam_files}}, $task->{outputs}->[0];
+    }    
+    
+    return (\@tasks, \%results);
 }
 
-sub create_hisat2_job {
+sub create_hisat2_alignment_job {
     my %opts = @_;
     my $fastq       = $opts{fastq};
+    my $validated   = $opts{validated};
     my $gid         = $opts{gid};
     my $index_files = $opts{index_files};
     my $encoding    = $opts{encoding};
     my $read_type   = $opts{read_type};
     my $staging_dir = $opts{staging_dir};
 
+    my ($first_fastq) = @$fastq;
+    my $output_file = to_filename_without_extension($first_fastq) . '.sam';
+
 	my $args = [
 		['-p', '32', 0],
 		['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
-		['-S', 'hisat2.sam', 0]
+		['-S', $output_file, 0]
     ];
     
     if ($encoding eq '64') {
@@ -1181,18 +1215,18 @@ sub create_hisat2_job {
     	push $args, ['-1', join(',', sort @$m1), 0];
     	push $args, ['-2', join(',', sort @$m2), 0];
 	}
-
-	return (
+	
+	return {
         cmd => 'nice ' . $CONF->{HISAT2},
         script => undef,
         args => $args,
-        inputs => [ @$fastq, @$index_files ],
-        outputs => [ catfile($staging_dir, 'hisat2.sam') ],
-        description => "Aligning sequences with HISAT2..."
-    );
+        inputs => [ @$fastq, @$validated, @$index_files ],
+        outputs => [ catfile($staging_dir, $output_file) ],
+        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using HISAT2..."
+	};
 }
 
-sub create_hisat2_build_job {
+sub create_hisat2_index_job {
     my $gid = shift;
     my $fasta = shift;
 
@@ -1200,7 +1234,7 @@ sub create_hisat2_build_job {
 	make_path $cache_dir unless (-d $cache_dir);
     my $name = catfile($cache_dir, 'genome.reheader');
     
-    return catdir($cache_dir, $name), (
+    return {
         cmd => 'nice ' . $CONF->{HISAT2_BUILD},
         script => undef,
         args => [
@@ -1220,8 +1254,41 @@ sub create_hisat2_build_job {
             $name . ".8.ht2"
         ],
         description => "Indexing genome sequence with hisat2-build..."
-    );
+    };
 }
+
+#sub create_bowtie2_workflow {
+#    my %opts = @_;
+#
+#    # Required arguments
+#    my $gid = $opts{gid};
+#    my $fasta = $opts{fasta};
+#    my $fastq = $opts{fastq};
+#    my $validated = $opts{validated};
+#    my $staging_dir = $opts{staging_dir};
+#    my $read_type = $opts{read_type};
+#    my $encoding = $opts{encoding};
+#
+#    my ($index_path, $index_task) = create_bowtie_index_job($gid, $fasta);
+#    
+#    my $align_task = create_bowtie2_alignment_job(
+#        staging_dir => $staging_dir,
+#        fasta => $fasta,
+#        fastq => $fastq,
+#        validated => $validated,
+#        index_name => $index_path,
+#        index_files => $index_task->{outputs},
+#        read_type => $read_type,
+#        encoding => $encoding
+#    );
+#    
+#    my $bam_task = create_sam_to_bam_job($align_task->{outputs}->[0], $staging_dir);
+#
+#    # Return the bam output name and tasks
+#    my @tasks = ( $index_task, $align_task, $bam_task );
+#    my %results = ( bam_file => $bam_task->{outputs}[0] );
+#    return \@tasks, \%results;
+#}
 
 sub create_bowtie2_workflow {
     my %opts = @_;
@@ -1234,64 +1301,56 @@ sub create_bowtie2_workflow {
     my $staging_dir = $opts{staging_dir};
     my $read_type = $opts{read_type};
     my $encoding = $opts{encoding};
+    my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
 
-    my ($index_path, $index_task) = create_bowtie_index_job($gid, $fasta);
-    
-    my $align_task = create_bowtie2_alignment_job(
-        staging_dir => $staging_dir,
-        fasta => $fasta,
-        fastq => $fastq,
-        validated => $validated,
-        index_name => $index_path,
-        index_files => $index_task->{outputs},
-        read_type => $read_type,
-        encoding => $encoding
-    );
-    
-    my $bam_task = create_sam_to_bam_job($align_task->{outputs}->[0], $staging_dir);
+    my @tasks;
 
-    # Return the bam output name and tasks
-    my @tasks = ( $index_task, $align_task, $bam_task );
-    my %results = ( bam_file => $bam_task->{outputs}[0] );
-    return \@tasks, \%results;
-}
-
-sub create_bowtie2_chipseq_workflow {
-    my %opts = @_;
-
-    # Required arguments
-    my $gid = $opts{gid};
-    my $fasta = $opts{fasta};
-    my $fastq = $opts{fastq};
-    my $validated = $opts{validated};
-    my $staging_dir = $opts{staging_dir};
-    my $read_type = $opts{read_type};
-    my $encoding = $opts{encoding};
-
-    my (@tasks, %results);
-
+    # Add index task
     my ($index_path, $index_task) = create_bowtie_index_job($gid, $fasta);
     push @tasks, $index_task;
     
-    foreach my $file (@$fastq) {
-        my $align_task = create_bowtie2_alignment_job(
+    # Add one or more alignment tasks
+    my @sam_files;
+    if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
+        foreach my $file (@$fastq) {
+            my $task = create_bowtie2_alignment_job(
+                staging_dir => $staging_dir,
+                fasta => $fasta,
+                fastq => [ $file ],
+                validated => $validated,
+                index_name => $index_path,
+                index_files => $index_task->{outputs},
+                read_type => $read_type,
+                encoding => $encoding
+            );
+            push @tasks, $task;
+            push @sam_files, $task->{outputs}[0];
+        }
+    }
+    else { # standard Bowtie run (all fastq's at once)
+        my $task = create_bowtie2_alignment_job(
             staging_dir => $staging_dir,
             fasta => $fasta,
-            fastq => [ $file ],
+            fastq => $fastq,
             validated => $validated,
             index_name => $index_path,
             index_files => $index_task->{outputs},
             read_type => $read_type,
             encoding => $encoding
         );
-        push @tasks, $align_task;
-        
-        my $bam_task = create_sam_to_bam_job($align_task->{outputs}->[0], $staging_dir);
-        push @tasks, $bam_task;
-        push @{$results{bam_files}}, $bam_task->{outputs}[0];
+        push @tasks, $task;
+        push @sam_files, $task->{outputs}[0];
+    }
+    
+    # Add one or more sam-to-bam tasks
+    my %results;
+    foreach my $file (@sam_files) {
+        my $task = create_sam_to_bam_job($file, $staging_dir);
+        push @tasks, $task;
+        push @{$results{bam_files}}, $task->{outputs}[0];
     }
 
-    return \@tasks, \%results;
+    return (\@tasks, \%results);
 }
 
 sub create_tophat_workflow {
@@ -1835,6 +1894,7 @@ sub create_bam_sort_job {
     # Required arguments
     my $input_file = $opts{input_file}; # bam file
     my $staging_dir = $opts{staging_dir};
+    die unless ($input_file && $staging_dir);
     
     my $filename = to_filename($input_file);
     my $cmd = $CONF->{SAMTOOLS} || 'samtools';

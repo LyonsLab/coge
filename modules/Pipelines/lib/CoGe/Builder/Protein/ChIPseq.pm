@@ -35,6 +35,7 @@ sub build {
     my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
     my $chipseq_params = $opts->{chipseq_params};
+    die unless ($genome && $user && $input_files && @$input_files && $wid);
     
     # Require 3 data files (input and two replicates)
     if (@$input_files != 3) {
@@ -51,6 +52,7 @@ sub build {
     push @$annotations, @annotations2;
 
     # Determine which bam file corresponds to the input vs. the replicates
+    die unless ($chipseq_params->{input});
     my $input_base = to_filename_base($chipseq_params->{input});
     my ($input_file, @replicates);
     foreach my $file (@$input_files) {
@@ -62,6 +64,7 @@ sub build {
             push @replicates, $file;
         }
     }
+    die unless $input_file;
 
     #
     # Build the workflow
@@ -141,6 +144,7 @@ sub create_bamToBed_job {
     my %opts = @_;
     my $bam_file    = $opts{bam_file};
     my $staging_dir = $opts{staging_dir};
+    die unless ($bam_file && $staging_dir);
     
     my $cmd = $CONF->{BAMTOBED} || 'bamToBed';
     
@@ -170,6 +174,7 @@ sub create_homer_makeTagDirectory_job {
     my $staging_dir = $opts{staging_dir};
     my $params = $opts{params} // {};
     my $size   = $params->{'-size'} // 250;
+    die unless ($bed_file && $gid && $staging_dir);
     
     die "ERROR: HOMER_DIR is not in the config." unless $CONF->{HOMER_DIR};
     my $cmd = catfile($CONF->{HOMER_DIR}, 'makeTagDirectory');
@@ -212,6 +217,7 @@ sub create_homer_findPeaks_job {
     my $norm   = $params->{'-norm'} // 1e8;
     my $fdr    = $params->{'-fdr'} // 0.01;
     my $F      = $params->{'-F'} // 3;
+    die unless ($replicate_dir && $input_dir && $staging_dir);
     
     die "ERROR: HOMER_DIR is not in the config." unless $CONF->{HOMER_DIR};
     my $cmd = catfile($CONF->{HOMER_DIR}, 'findPeaks');
