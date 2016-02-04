@@ -147,6 +147,7 @@ sub build {
         staging_dir => $staging_dir,
         params => $alignment_params,
     );
+    $params{doSeparately} = 1 if $chipseq_params;
     
     # Add aligner workflow
     my ($alignment_tasks, $alignment_results);
@@ -156,12 +157,7 @@ sub build {
         ($alignment_tasks, $alignment_results) = create_hisat2_workflow(%params);
     }
     elsif ($alignment_params->{tool} eq 'bowtie2') {
-        if ($chipseq_params) {
-            ($alignment_tasks, $alignment_results) = create_bowtie2_chipseq_workflow(%params);
-        }
-        else {
-            ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params);
-        }
+        ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params);
     }
     elsif ($alignment_params->{tool} eq 'tophat') {
         # Generate gff if genome annotated
