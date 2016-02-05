@@ -7,7 +7,7 @@ use CoGe::Builder::PopGen::SummaryStats qw(build);
 
 sub get_name {
     #my $self = shift;
-    return 'Measure Expression';
+    return 'Measure Diversity';
 }
 
 sub build {

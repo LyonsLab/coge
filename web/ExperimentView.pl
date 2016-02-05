@@ -17,7 +17,7 @@ use Data::Dumper;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_experiment_path get_log data_type get_download_path $DATA_TYPE_ALIGN $DATA_TYPE_POLY);
+use CoGe::Core::Storage;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
@@ -618,6 +618,11 @@ sub gen_body {
     return "Access denied" unless $USER->has_access_to_experiment($exp);
 
     my $gid = $exp->genome_id;
+    
+    my $popgenUrl;
+    if ($exp->data_type == $DATA_TYPE_POLY && is_popgen_finished($eid)) {
+        $popgenUrl = "PopGen.pl?eid=$eid";
+    }
 
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
@@ -633,6 +638,7 @@ sub gen_body {
         STATUS_URL        => 'jex/status/',
         ALIGNMENT_TYPE    => ($exp->data_type == $DATA_TYPE_ALIGN),
         POLYMORPHISM_TYPE => ($exp->data_type == $DATA_TYPE_POLY),
+        POPGEN_RESULT_URL => $popgenUrl,
         PUBLIC            => $USER->user_name eq "public" ? 1 : 0,
         ADMIN_AREA        => $USER->is_admin,
         API_BASE_URL      => 'api/v1/', #TODO move into config file or module
