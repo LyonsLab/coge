@@ -89,6 +89,7 @@ function loadData(xID, yID, zID, xyjson, xzjson, mergejson, histo) {
 function renderHistogram(documentElement, histogramTitle, histogramData, binCount) {
     //TODO: Alternate between visualizations using arrows
     //i.e. http://jsfiddle.net/jtbowden/ykbgT/2/
+
     // Assign array to store number of bins requested
     var colorArray = [];
     for (var i = 0; i < binCount; i++) {
@@ -129,53 +130,59 @@ function renderHistogram(documentElement, histogramTitle, histogramData, binCoun
 }
 
 /* CORE FUNCTION: Render SynMap */
+//TODO: Scale dynamically & position camera based on size
+//TODO: Render points independently of axes so that refreshes in coloring don't reset camera (or, save cam. state & reapply)
 function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
-    //TODO: Scale dynamically & position camera based on size
-    //TODO: Render points independently of axes so that refreshes in coloring don't reset camera (or, save cam. state & reapply)
     /*---------------------------------------------------------------------------------------------------------
-     ~~~~SETUP CANVAS & VR ENVIRONMENT~~~~
-     --------------------------------------------------------------------------------------------------------*/
-    var width = window.innerWidth * 0.689;
-    var height = window.innerHeight * 0.9;
-
-    /* Setup three.js WebGL renderer */
-    var renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true,
-                                              canvas: document.getElementById('canvas')} );
-    renderer.setSize( width, height);
-
-    /* Create a three.js scene */
-    var scene = new THREE.Scene();
-
-    /* Create a three.js camera */
-    var camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 );
-    camera.position.x = 0;
-    camera.position.y = 0;
-    camera.position.z = 30;
-
-    /* Apply FlatOrbitControls. */
-    var controls = new THREE.FlatOrbitControls( camera );
-
-    /*---------------------------------------------------------------------------------------------------------
-     ~~~~SCALING~~~~
+     ~~~~VARIABLE DECLARATIONS~~~~
      --------------------------------------------------------------------------------------------------------*/
 
-    /* Scaling Options */
+    var renderer, scene, camera, controls;
+    var container = document.getElementById("canvas");
+    var width, height;
+
+    var points;
+    var POINT_SIZE = 10;
+
+    var startPositions = {"x": 0, "y": 0, "z": 0};
+    var xAxis, yAxis, zAxis;
+    var xChrIndexed, yChrIndexed, zChrIndexed;
+    var grid;
+
     var scaleFactor = 0.00000001;
     var axisWidth = 0.05;
 
+    var raycaster, intersects;
+    var mouse, INTERSECTED;
+
+    // TODO: Pull these straight from Plotly
+    // https://github.com/plotly/plotly.js/blob/master/src/components/colorscale/scales.js
+    var schemes = {
+        "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
+            [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
+
+        "Bluered": [[0,'rgb(0,0,255)'],[1,'rgb(255,0,0)']],
+
+        "Portland": [[0,'rgb(12,51,131)'],[0.25,'rgb(10,136,186)'], [0.5,'rgb(242,211,56)'],
+            [0.75,'rgb(242,143,56)'], [1,'rgb(217,30,30)']],
+
+        "Viridis": [[0,'#440154'],[0.06274509803921569,'#48186a'], [0.12549019607843137,'#472d7b'],
+            [0.18823529411764706,'#424086'], [0.25098039215686274,'#3b528b'],[0.3137254901960784,'#33638d'],
+            [0.3764705882352941,'#2c728e'], [0.4392156862745098,'#26828e'], [0.5019607843137255,'#21918c'],
+            [0.5647058823529412,'#1fa088'], [0.6274509803921569,'#28ae80'],[0.6901960784313725,'#3fbc73'],
+            [0.7529411764705882,'#5ec962'], [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],
+            [0.9411764705882353,'#d8e219'], [1,'#fde725']]
+    };
+
     /*---------------------------------------------------------------------------------------------------------
-     ~~~~GLOBAL 3D OBJECT VARIABLES~~~~
+     ~~~~INITIALIZE & ANIMATE SYNMAP~~~~
      --------------------------------------------------------------------------------------------------------*/
 
-    /* Global Object Variables */
-    //var xAxis = new THREE.Object3D();
-    //var yAxis = new THREE.Object3D();
-    //var zAxis = new THREE.Object3D();
-    //var grid = new THREE.Object3D();
-    //var matchDots = new THREE.Object3D();
+    initialize();
+    animate();
 
     /*---------------------------------------------------------------------------------------------------------
-     ~~~~FUNCTIONS~~~~
+     ~~~~MINOR FUNCTIONS~~~~
      --------------------------------------------------------------------------------------------------------*/
 
     /* FUNCTION: Index Chromosome Info by Name */
@@ -222,7 +229,6 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     }
 
     /* FUNCTION: Build Axis from Chromosome List */
-    var startPositions = {"x": 0, "y": 0, "z": 0};
     function buildAxisFromChr(chr, focusAxis) {
         var axis = new THREE.Object3D();
         var colorToggle = true;
@@ -288,27 +294,6 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
         return axis;
     }
 
-    /* Color Schemes */
-    // https://github.com/plotly/plotly.js/blob/master/src/components/colorscale/scales.js
-    // TODO: Pull these straight from Plotly
-
-    var schemes = {
-        "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
-            [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
-
-        "Bluered": [[0,'rgb(0,0,255)'],[1,'rgb(255,0,0)']],
-
-        "Portland": [[0,'rgb(12,51,131)'],[0.25,'rgb(10,136,186)'], [0.5,'rgb(242,211,56)'],
-            [0.75,'rgb(242,143,56)'], [1,'rgb(217,30,30)']],
-
-        "Viridis": [[0,'#440154'],[0.06274509803921569,'#48186a'], [0.12549019607843137,'#472d7b'],
-            [0.18823529411764706,'#424086'], [0.25098039215686274,'#3b528b'],[0.3137254901960784,'#33638d'],
-            [0.3764705882352941,'#2c728e'], [0.4392156862745098,'#26828e'], [0.5019607843137255,'#21918c'],
-            [0.5647058823529412,'#1fa088'], [0.6274509803921569,'#28ae80'],[0.6901960784313725,'#3fbc73'],
-            [0.7529411764705882,'#5ec962'], [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],
-            [0.9411764705882353,'#d8e219'], [1,'#fde725']]
-    };
-
     /* FUNCTION: Create Point Coloring Function */
     function getPtColorFunc(histogramData, colorScheme) {
         var minVal = Math.min.apply(null, histogramData);
@@ -332,16 +317,22 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
         return calcColor
     }
 
+    /*---------------------------------------------------------------------------------------------------------
+     ~~~~MAJOR FUNCTIONS: CREATE 3D OBJECTS~~~~
+     --------------------------------------------------------------------------------------------------------*/
+
+    /* FUNCTION: Draw Points */
     function drawPoints() {
         // Generate function to calculate point colors by colorscheme.
         var calcPtColor = getPtColorFunc(histogram_data.logten.data[knKsSelect][comparisonSelect], schemes[colorSelect]);
         // Load point image.
-        //var sprite = THREE.ImageUtils.loadTexture("picts/ball.png");
         var loader = new THREE.TextureLoader();
         var sprite = loader.load("picts/ball.png");
         // Define plot geometry & material & color array.
         var plotGeo = new THREE.Geometry();
-        var plotMat = new THREE.PointsMaterial( {size: 11, sizeAttenuation: false, map: sprite, vertexColors: THREE.VertexColors, alphaTest: 0.5, transparent: true });
+        //plotGeo.addAttribute(size, new THREE.BufferAttribute( size, 1 ));
+        var plotMat = new THREE.PointsMaterial( {size: POINT_SIZE, sizeAttenuation: false, map: sprite,
+            vertexColors: THREE.VertexColors, alphaTest: 0.5, transparent: true });
         var colors = [];
 
         //Set up point counter.
@@ -382,117 +373,208 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
         plotGeo.colors = colors;
 
         // Create points object.
-        points = new THREE.Points(plotGeo, plotMat);
+        var pts = new THREE.Points(plotGeo, plotMat);
 
         // Shift points object to rotation offset.
-        points.translateX(-startPositions.x / 2);
-        points.translateY(-startPositions.y / 2);
-        points.translateZ(-startPositions.z / 2);
+        pts.translateX(-startPositions.x / 2);
+        pts.translateY(-startPositions.y / 2);
+        pts.translateZ(-startPositions.z / 2);
 
         // Add points object to scene.
-        scene.add(points);
+        //scene.add(points);
 
         // Report point count.
         console.log("POINTS RENDERED: " + ptCount);
+        return pts;
+    }
+
+    /* FUNCTION: Draw Chromosomes */
+    function drawChromosomes() {
+        /* Sort and Index Chromosomes */
+        xChr.sort(sortChr);
+        yChr.sort(sortChr);
+        zChr.sort(sortChr);
+        xChrIndexed = indexChr(xChr);
+        yChrIndexed = indexChr(yChr);
+        zChrIndexed = indexChr(zChr);
+
+        /* 3d Object: Axes */
+        xAxis = buildAxisFromChr(xChr, 'x');
+        yAxis = buildAxisFromChr(yChr, 'y');
+        zAxis = buildAxisFromChr(zChr, 'z');
+
+        xAxis.translateX(-startPositions.x / 2);
+        xAxis.translateY(-startPositions.y / 2);
+        xAxis.translateZ(-startPositions.z / 2);
+
+        yAxis.translateX(-startPositions.x / 2);
+        yAxis.translateY(-startPositions.y / 2);
+        yAxis.translateZ(-startPositions.z / 2);
+
+        zAxis.translateX(-startPositions.x / 2);
+        zAxis.translateY(-startPositions.y / 2);
+        zAxis.translateZ(-startPositions.z / 2);
+
+        //scene.add(xAxis);
+        //scene.add(yAxis);
+        //scene.add(zAxis);
+        return [xAxis, yAxis, zAxis];
+    }
+
+    /* FUNCTION: Draw Grid */
+    function drawGrid() {
+        var g = new THREE.Object3D();
+        var gridWidth = 0.025;
+        var gridMat = new THREE.MeshBasicMaterial({color: 'grey'});
+
+        yChr.forEach( function(e) {
+            var yxGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
+            var yxGrid = new THREE.Mesh( yxGridGeo, gridMat );
+            yxGrid.position.x = (startPositions.x / 2);
+            yxGrid.position.y = e.end;
+            yxGrid.position.z = 0;
+            g.add(yxGrid);
+
+            var yzGridGeo = new THREE.BoxGeometry (gridWidth, gridWidth, startPositions.z);
+            var yzGrid = new THREE.Mesh( yzGridGeo, gridMat);
+            yzGrid.position.x = 0;
+            yzGrid.position.y = e.end; //(yStartPos / 2);
+            yzGrid.position.z = (startPositions.z / 2);
+            g.add(yzGrid)
+        });
+
+        xChr.forEach( function(e) {
+            var hGridGeo = new THREE.BoxGeometry( gridWidth, gridWidth, startPositions.z );
+            var hGrid = new THREE.Mesh( hGridGeo, gridMat );
+            hGrid.position.x = e.end;
+            hGrid.position.y = 0;
+            hGrid.position.z = (startPositions.z / 2);
+            g.add(hGrid);
+
+            var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
+            var vGrid = new THREE.Mesh( vGridGeo, gridMat);
+            vGrid.position.x = e.end;
+            vGrid.position.y = (startPositions.y /2);
+            vGrid.position.z = 0;
+            g.add(vGrid)
+        });
+
+        zChr.forEach( function(e) {
+            var hGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
+            var hGrid = new THREE.Mesh( hGridGeo, gridMat );
+            hGrid.position.x = (startPositions.x / 2);
+            hGrid.position.y = 0;
+            hGrid.position.z = e.end;
+            g.add(hGrid);
+
+            var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
+            var vGrid = new THREE.Mesh( vGridGeo, gridMat);
+            vGrid.position.x = 0;
+            vGrid.position.y = (startPositions.y / 2);
+            vGrid.position.z = e.end;
+            g.add(vGrid)
+        });
+
+        g.translateX(-startPositions.x / 2);
+        g.translateY(-startPositions.y / 2);
+        g.translateZ(-startPositions.z / 2);
+        //scene.add(grid);
+        return g;
     }
 
     /*---------------------------------------------------------------------------------------------------------
-     ~~~~CREATE 3D OBJECTS~~~~
+     ~~~~INITIALIZE~~~~
      --------------------------------------------------------------------------------------------------------*/
 
-    /* Sort and Index Chromosomes */
-    xChr.sort(sortChr);
-    yChr.sort(sortChr);
-    zChr.sort(sortChr);
-    var xChrIndexed = indexChr(xChr);
-    var yChrIndexed = indexChr(yChr);
-    var zChrIndexed = indexChr(zChr);
+    function initialize() {
+        width = window.innerWidth * 0.689;
+        height = window.innerHeight * 0.9;
 
-    /* 3d Object: Axes */
-    xAxis = buildAxisFromChr(xChr, 'x');
-    yAxis = buildAxisFromChr(yChr, 'y');
-    zAxis = buildAxisFromChr(zChr, 'z');
+        /* Create a three.js scene */
+        scene = new THREE.Scene();
 
-    xAxis.translateX(-startPositions.x / 2);
-    xAxis.translateY(-startPositions.y / 2);
-    xAxis.translateZ(-startPositions.z / 2);
+        /* Setup three.js WebGL renderer */
+        renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true, canvas: container} );
+        renderer.setSize( width, height );
 
-    yAxis.translateX(-startPositions.x / 2);
-    yAxis.translateY(-startPositions.y / 2);
-    yAxis.translateZ(-startPositions.z / 2);
+        /* Create a three.js camera */
+        camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 );
+        camera.position.x = 0;
+        camera.position.y = 0;
+        camera.position.z = 30;
 
-    zAxis.translateX(-startPositions.x / 2);
-    zAxis.translateY(-startPositions.y / 2);
-    zAxis.translateZ(-startPositions.z / 2);
+        /* Apply FlatOrbitControls to camera. */
+        controls = new THREE.FlatOrbitControls( camera );
 
-    scene.add(xAxis);
-    scene.add(yAxis);
-    scene.add(zAxis);
+        /* Add raycaster */
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
 
-    /* 3d Object: Grid */
-    var grid = new THREE.Object3D();
-    var gridWidth = 0.025;
-    var gridMat = new THREE.MeshBasicMaterial({color: 'grey'});
+        /* Create chromosome axes */
+        var axes = drawChromosomes();
+        for (var i = 0; i < axes.length; i++) {
+            scene.add(axes[i])
+        }
 
-    yChr.forEach( function(e) {
-        var yxGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
-        var yxGrid = new THREE.Mesh( yxGridGeo, gridMat );
-        yxGrid.position.x = (startPositions.x / 2);
-        yxGrid.position.y = e.end;
-        yxGrid.position.z = 0;
-        grid.add(yxGrid);
+        /* Create grid */
+        grid = drawGrid();
+        scene.add(grid);
 
-        var yzGridGeo = new THREE.BoxGeometry (gridWidth, gridWidth, startPositions.z);
-        var yzGrid = new THREE.Mesh( yzGridGeo, gridMat);
-        yzGrid.position.x = 0;
-        yzGrid.position.y = e.end; //(yStartPos / 2);
-        yzGrid.position.z = (startPositions.z / 2);
-        grid.add(yzGrid)
-    });
+        /* Create points geometry */
+        points = drawPoints();
+        scene.add(points);
 
-    xChr.forEach( function(e) {
-        var hGridGeo = new THREE.BoxGeometry( gridWidth, gridWidth, startPositions.z );
-        var hGrid = new THREE.Mesh( hGridGeo, gridMat );
-        hGrid.position.x = e.end;
-        hGrid.position.y = 0;
-        hGrid.position.z = (startPositions.z / 2);
-        grid.add(hGrid);
-
-        var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
-        var vGrid = new THREE.Mesh( vGridGeo, gridMat);
-        vGrid.position.x = e.end;
-        vGrid.position.y = (startPositions.y /2);
-        vGrid.position.z = 0;
-        grid.add(vGrid)
-    });
-
-    zChr.forEach( function(e) {
-        var hGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
-        var hGrid = new THREE.Mesh( hGridGeo, gridMat );
-        hGrid.position.x = (startPositions.x / 2);
-        hGrid.position.y = 0;
-        hGrid.position.z = e.end;
-        grid.add(hGrid);
-
-        var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
-        var vGrid = new THREE.Mesh( vGridGeo, gridMat);
-        vGrid.position.x = 0;
-        vGrid.position.y = (startPositions.y / 2);
-        vGrid.position.z = e.end;
-        grid.add(vGrid)
-    });
-
-    grid.translateX(-startPositions.x / 2);
-    grid.translateY(-startPositions.y / 2);
-    grid.translateZ(-startPositions.z / 2);
-    scene.add(grid);
-
-    /* Draw Points */
-    //var matchDots = new THREE.Object3D();
-    drawPoints();
+    }
 
     /*---------------------------------------------------------------------------------------------------------
-     ~~~~ANIMATE LOOP~~~~
+     ~~~~RENDER~~~~
+     --------------------------------------------------------------------------------------------------------*/
+    var end = 0;
+    var black = new THREE.Color("#000");
+    function render() {
+        var geometry = points.geometry;
+        //var attributes = geometry.attributes;
+
+        raycaster.setFromCamera( mouse, camera );
+        intersects = raycaster.intersectObject( points );
+
+        if ( intersects.length > 0) {
+            if ( INTERSECTED != intersects[ 0 ].index ) {
+
+                INTERSECTED = intersects[ 0 ].index;
+
+                if (end < 1 ) {
+                    console.log(geometry);
+                    console.log( intersects[0] );
+                    end++;
+                }
+
+                geometry.colors[ INTERSECTED ] = black;
+                geometry.colorsNeedUpdate = true;
+
+
+                //attributes.size.array[ INTERSECTED ] = POINT_SIZE;
+                //
+                //INTERSECTED = intersects[ 0 ].index;
+                //
+                //attributes.size.array[ INTERSECTED ] = POINT_SIZE * 1.25;
+                //attributes.size.needsUpdate = true;
+
+            }
+
+        } else if ( INTERSECTED !== null ) {
+
+            //attributes.size.array[ INTERSECTED ] = POINT_SIZE;
+            //attributes.size.needsUpdate = true;
+            INTERSECTED = null;
+
+        }
+
+        renderer.render( scene, camera );
+    }
+
+    /*---------------------------------------------------------------------------------------------------------
+     ~~~~ANIMATE~~~~
      --------------------------------------------------------------------------------------------------------*/
 
     function animate() {
@@ -500,17 +582,17 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
         controls.update();
 
         /* Render the scene. */
-        renderer.render( scene, camera );
-
+        //renderer.render( scene, camera );
+        render();
         /* Create continuous animation. */
         requestAnimationFrame( animate );
     }
-    animate();
 
     /*---------------------------------------------------------------------------------------------------------
-     ~~~~WINDOW RESIZE HANDLER~~~~
+     ~~~~HANDLERS~~~~
      --------------------------------------------------------------------------------------------------------*/
 
+    /* Window Resize */
     function onWindowResize() {
         width = window.innerWidth * 0.689;
         height = window.innerHeight * 0.9;
@@ -522,10 +604,17 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     }
     window.addEventListener( 'resize', onWindowResize, false );
 
-    /*---------------------------------------------------------------------------------------------------------
-     ~~~~GRID TOGGLE HANDLER~~~~
-     --------------------------------------------------------------------------------------------------------*/
+    /* Mouse Move */
+    function onDocumentMouseMove( event ) {
+        event.preventDefault();
+        mouse.x = 2 * ( event.clientX / container.clientWidth ) - 1;
+        mouse.y = 1 - 2 * ( event.clientY / container.clientHeight );
+        //mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        //mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    }
+    window.addEventListener('mousemove', onDocumentMouseMove, false);
 
+    /* Grid Toggle */
     var grid_state = 1;
     function onGridToggle() {
         if (grid_state == 1) {
@@ -550,13 +639,6 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
 // On Document Ready
 $(document).ready( function() {
     var load;
-
-    //function updateVis(da) {
-    //    // Render SynMap
-    //    renderSynMap(da.xChr, da.yChr, da.zChr, da.matches, da.histogram_data);
-    //    // Render Histogram
-    //    renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
-    //        da.histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
 
     /* Monitor Color Scheme */
     var ColorSelector = $("#color_select");
