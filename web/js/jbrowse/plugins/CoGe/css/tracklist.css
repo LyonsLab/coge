@@ -28,6 +28,13 @@
 	background-color: #fbfbfb;
 }
 
+.coge-filter-input {
+	cursor: text;
+	height: 20px;
+	paddingRight: 18px;
+	width: 85%;
+}
+
 #coge_menu_button,
 #coge_track_menu_button {
     margin-left: -10px;
@@ -95,26 +102,19 @@
 	padding-top: 6px;
 }
 
+.coge-tracks-shown {
+	color: gray;
+	margin-bottom: -4px;
+	margin-top: 4px;
+	text-align: center;
+}
+
 #textFilterCancel {
 	cursor: pointer;
 	display: none;
 	position: absolute;
 	right: 1px;
 	top: 1px;
-}
-
-#textFilterInput {
-	cursor: text;
-	height: 20px;
-	paddingRight: 18px;
-	width: 85%;
-}
-
-#textFilterLabel {
-	color: gray;
-	margin-bottom: -4px;
-	margin-top: 4px;
-	text-align: center;
 }
 
 .track-menu-button {

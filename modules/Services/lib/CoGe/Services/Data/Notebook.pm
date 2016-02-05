@@ -198,7 +198,7 @@ sub remove_item {
     }
 
     # Check permissions
-    unless ($user->is_owner_editor(list => $id)) {
+    unless ($user->is_admin || $user->is_owner_editor(list => $id)) {
         $self->render(json => {
             error => { Auth => "Access denied" }
         }, status => 401);
@@ -238,7 +238,7 @@ sub update {
     }
 
     # Check permissions
-    unless ($user->is_owner_editor(list => $id)) {
+    unless ($user->is_admin || $user->is_owner_editor(list => $id)) {
         $self->render(json => {
             error => { Auth => "Access denied" }
         }, status => 401);
