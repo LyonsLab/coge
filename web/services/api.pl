@@ -1,9 +1,18 @@
 use Mojolicious::Lite;
 use Mojo::Log;
 
-app->config(hypnotoad => {listen => ['http://localhost:3303'], proxy => 1});
-#app->log( Mojo::Log->new( path => "/home/mbomhoff/tmp/mojolicious/mojo.log", level => 'debug' ) );
-    
+# Set the module include path -- this is necessary to allow multiple sandboxes on dev
+use lib './modules/perl';
+
+# Set port -- each sandbox should be set to a unique port in Apache config and coge.conf
+use CoGe::Accessory::Web qw(get_defaults);
+my $port = get_defaults->{MOJOLICIOUS_PORT} || 3303;
+print STDERR "CoGe API (port $port)\n";
+
+# Setup Hypnotoad
+app->config(hypnotoad => {listen => ["http://localhost:$port/"], proxy => 1});
+app->log( Mojo::Log->new( path => "mojo.log", level => 'debug' ) ); # log in sandbox top-level directory
+
 # mdb added 8/27/15 -- prevent "Your secret passphrase needs to be changed" message
 #$self->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies
 

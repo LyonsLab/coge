@@ -62,7 +62,7 @@ our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR,
 BEGIN {
     require Exporter;
 
-    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : '/opt/apache/coge/web/' );
+    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : './web/');#'/opt/apache/coge/web/' ); # mdb changed 2/5/16 for Hypnotoad setup
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( qw (Exporter Class::Accessor) );
