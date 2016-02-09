@@ -12,6 +12,7 @@ print STDERR "CoGe API (port $port)\n";
 # Setup Hypnotoad
 app->config(hypnotoad => {listen => ["http://localhost:$port/"], proxy => 1});
 app->log( Mojo::Log->new( path => "mojo.log", level => 'debug' ) ); # log in sandbox top-level directory
+#app->log( Mojo::Log->new( ) ); # log to STDERR
 
 # mdb added 8/27/15 -- prevent "Your secret passphrase needs to be changed" message
 #$self->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies
