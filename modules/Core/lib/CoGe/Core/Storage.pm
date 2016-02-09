@@ -832,7 +832,7 @@ sub reverse_complement { #TODO move into Util.pm
     return $rcseq;
 }
 
-sub data_type {
+sub data_type { #FIXME redundant with DBI-X Experiment.pm
     my $data_type = shift;
 
     # Experiment Data Types
