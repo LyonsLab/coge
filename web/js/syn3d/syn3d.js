@@ -6,6 +6,8 @@ var knKsSelect; // "Ks" or "Kn"
 var comparisonSelect; // "mean", "xy", "xz", or "yz"
 var colorSelect; // "Jet", "Bluered", "Portland", or "Viridis"
 
+var camView = { "x": 0, "y": 0, "z": 30 };
+var pointData = [];
 /*-----------------------------------------------------------------------------------------------------------------
  ~~~~CORE FUNCTION DEFINITIONS~~~~
  + loadData(xID, yID, zID, xyjson, xzjson, mergejson, histo)
@@ -131,29 +133,33 @@ function renderHistogram(documentElement, histogramTitle, histogramData, binCoun
 
 /* CORE FUNCTION: Render SynMap */
 //TODO: Scale dynamically & position camera based on size
-//TODO: Render points independently of axes so that refreshes in coloring don't reset camera (or, save cam. state & reapply)
 function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~VARIABLE DECLARATIONS~~~~
      --------------------------------------------------------------------------------------------------------*/
 
+    // Rendering Variables
     var renderer, scene, camera, controls;
     var container = document.getElementById("canvas");
-    var width, height;
+    var width, height, containerWidth, containerHeight;
 
-    var points;
-    var POINT_SIZE = 10;
-
+    // Visualization & Data variables.
     var startPositions = {"x": 0, "y": 0, "z": 0};
+    var points;
     var xAxis, yAxis, zAxis;
     var xChrIndexed, yChrIndexed, zChrIndexed;
     var grid;
 
+    // Scaling variables.
     var scaleFactor = 0.00000001;
     var axisWidth = 0.05;
+    var POINT_SIZE = 10;
 
+    // Raycasting variables.
     var raycaster, intersects;
     var mouse, INTERSECTED;
+    var ptHistory = ["NULL", "NULL"];
+    var black = new THREE.Color("#000");
 
     // TODO: Pull these straight from Plotly
     // https://github.com/plotly/plotly.js/blob/master/src/components/colorscale/scales.js
@@ -348,6 +354,7 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
                         var yPos = coordinate[1];
                         var zPos = coordinate[2];
                         var knks = coordinate[3][comparisonSelect][knKsSelect];
+                        var ptdata = coordinate[4];
 
                         // Assign position.
                         var vertex = new THREE.Vector3();
@@ -363,6 +370,9 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
                         } else {
                             colors[ptCount] = new THREE.Color(calcPtColor(logKnKs));
                         }
+
+                        // Push point data
+                        pointData.push(ptdata);
 
                         ptCount += 1;
                     }
@@ -489,6 +499,8 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     function initialize() {
         width = window.innerWidth * 0.689;
         height = window.innerHeight * 0.9;
+        containerWidth = container.clientWidth;
+        containerHeight = container.clientHeight;
 
         /* Create a three.js scene */
         scene = new THREE.Scene();
@@ -499,9 +511,9 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
 
         /* Create a three.js camera */
         camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 );
-        camera.position.x = 0;
-        camera.position.y = 0;
-        camera.position.z = 30;
+        camera.position.x = camView.x;
+        camera.position.y = camView.y;
+        camera.position.z = camView.z;
 
         /* Apply FlatOrbitControls to camera. */
         controls = new THREE.FlatOrbitControls( camera );
@@ -509,6 +521,9 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
         /* Add raycaster */
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
+
+        // Clear point data.
+        //pointData = [];
 
         /* Create chromosome axes */
         var axes = drawChromosomes();
@@ -529,47 +544,26 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~RENDER~~~~
      --------------------------------------------------------------------------------------------------------*/
-    var end = 0;
-    var black = new THREE.Color("#000");
+
     function render() {
+        // Set raycaster.
+        //raycaster.setFromCamera( mouse, camera );
+        //intersects = raycaster.intersectObject( points );
+
+        /* START mouseMove action block (see also onDocumentMouseMove()
         var geometry = points.geometry;
-        //var attributes = geometry.attributes;
-
-        raycaster.setFromCamera( mouse, camera );
-        intersects = raycaster.intersectObject( points );
-
         if ( intersects.length > 0) {
             if ( INTERSECTED != intersects[ 0 ].index ) {
-
                 INTERSECTED = intersects[ 0 ].index;
-
-                if (end < 1 ) {
-                    console.log(geometry);
-                    console.log( intersects[0] );
-                    end++;
-                }
-
                 geometry.colors[ INTERSECTED ] = black;
                 geometry.colorsNeedUpdate = true;
-
-
-                //attributes.size.array[ INTERSECTED ] = POINT_SIZE;
-                //
-                //INTERSECTED = intersects[ 0 ].index;
-                //
-                //attributes.size.array[ INTERSECTED ] = POINT_SIZE * 1.25;
-                //attributes.size.needsUpdate = true;
-
             }
-
         } else if ( INTERSECTED !== null ) {
-
-            //attributes.size.array[ INTERSECTED ] = POINT_SIZE;
-            //attributes.size.needsUpdate = true;
             INTERSECTED = null;
-
         }
+        END mouseMove action block */
 
+        // Render scene.
         renderer.render( scene, camera );
     }
 
@@ -580,6 +574,9 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     function animate() {
         /* Update controls. */
         controls.update();
+
+        /* Update camera position. */
+        camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
 
         /* Render the scene. */
         //renderer.render( scene, camera );
@@ -599,6 +596,10 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
         renderer.setSize( width, height);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+
+        containerWidth = container.clientWidth;
+        containerHeight = container.clientHeight;
+
         renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
             histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
     }
@@ -606,13 +607,56 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
 
     /* Mouse Move */
     function onDocumentMouseMove( event ) {
+        /* START mouseMove action block (see also render()
         event.preventDefault();
-        mouse.x = 2 * ( event.clientX / container.clientWidth ) - 1;
-        mouse.y = 1 - 2 * ( event.clientY / container.clientHeight );
-        //mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-        //mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        //http://barkofthebyte.azurewebsites.net/post/2014/05/05/three-js-projecting-mouse-clicks-to-a-3d-scene-how-to-do-it-and-how-it-works
+        //http://soledadpenades.com/articles/three-js-tutorials/object-picking/
+        var offset = $("canvas").offset();
+        mouse.x = ( (event.clientX - offset.left) / container.clientWidth ) * 2 - 1;
+        mouse.y = -( (event.clientY - offset.top) / container.clientHeight ) * 2 + 1;
+        END mouseMove action block */
     }
     window.addEventListener('mousemove', onDocumentMouseMove, false);
+
+    /* Mouse Click */
+    function onDocumentMouseDown( event ) {
+        // Specify object of interest (points).
+        var geometry = points.geometry;
+
+        // Calculate mouse location on canvas.
+        var offset = $("canvas").offset();
+        mouse.x = ( (event.clientX - offset.left) / container.clientWidth ) * 2 - 1;
+        mouse.y = -( (event.clientY - offset.top) / container.clientHeight ) * 2 + 1;
+
+        // Cast ray & find intersects.
+        raycaster.setFromCamera( mouse, camera );
+        intersects = raycaster.intersectObject( points );
+
+        // Actions when intersects are found
+        if (intersects.length > 0) {
+            // Set INTERSECTED to closest intersected point.
+            INTERSECTED = intersects[ 0 ].index;
+
+            // Print intersected point index & associated data to console.
+            // TODO: Write to info panel.
+            console.log("You selected point: " + INTERSECTED);
+            console.log(JSON.stringify(pointData[ INTERSECTED ], null, 4));
+
+            // Revert previously selected point color.
+            if (ptHistory[0] != "NULL") { geometry.colors[ ptHistory[0] ] = ptHistory[1]; }
+            // Record new point index & color.
+            ptHistory = [INTERSECTED, geometry.colors[INTERSECTED]];
+            // Change intersected point color to black.
+            geometry.colors[ INTERSECTED ] = black;
+            // Trigger color update.
+            geometry.colorsNeedUpdate = true;
+
+        } else if ( INTERSECTED !== null ) {
+            // Clear INTERSECTED variable if no intersections on click.
+            INTERSECTED = null;
+        }
+    }
+    window.addEventListener('mousedown', onDocumentMouseDown, false);
 
     /* Grid Toggle */
     var grid_state = 1;

@@ -251,7 +251,7 @@ sub dotplot_dots {
     # Build/add three_dots_merge job.
     # my $merge_ins = ' -i1 ' . @$outputs_xy[1] . ' -i2 ' . @$outputs_xz[1] . ' -i3 ' . @$outputs_yz[1];
     my $merge_ins = ' -i1 ' . $dots_xy_path . ' -i2 ' . $dots_xz_path . ' -i3 ' . $dots_yz_path;
-    my $merge_ots = ' -o ' . $SYN3DIR . ' -n ' . $option_name;
+    my $merge_ots = ' -o ' . $SYN3DIR . ' -n ' . '"' . $option_name . '"';
     my $merge_gids = ' -xid ' . $genome_idX . ' -yid ' . $genome_idY . ' -zid ' . $genome_idZ;
     my $merge_opts = '';
     if ($hide eq 'true') { $merge_opts .= ' -P' }

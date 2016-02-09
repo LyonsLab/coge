@@ -228,7 +228,7 @@ def get_data(first_sp_id, second_sp_id, json_file):
                 sp2_end = int(match[3])
                 sp2_cord = (sp2_start + sp2_end) / 2
 
-                kn_ks = match[4]
+                hit_info = match[4]
 
                 # Assign correct genome/value by JSON format
                 if species[0] == first_sp_id:
@@ -246,7 +246,7 @@ def get_data(first_sp_id, second_sp_id, json_file):
                     exit()
 
                 # Populate data sets
-                coordinate = [a_cord, b_cord, kn_ks]
+                coordinate = [a_cord, b_cord, hit_info]
                 ab_a[a_chr][b_chr].append(a_cord)
                 ab_b[b_chr][a_chr].append(b_cord)
                 ab_cords[a_chr][b_chr].append(coordinate)
@@ -367,9 +367,9 @@ def find_matches(species_coordinate, link1, link2, link3):
                                             coordinate[3]['mean'] = {'Ks': meanKs, 'Kn': meanKn}
 
                                             # Populate gene info field (coordinate[4]).
-                                            coordinate[4][x] = xy_match[2][x]
-                                            coordinate[4][y] = xy_match[2][y]
-                                            coordinate[4][z] = xz_match[2][z]
+                                            coordinate[4][x_species_id] = xy_match[2][x_species_id]
+                                            coordinate[4][y_species_id] = xy_match[2][y_species_id]
+                                            coordinate[4][z_species_id] = xz_match[2][z_species_id]
 
                                             # Add coordinate to matches, ignoring duplicates.
                                             if coordinate not in matches[x_ch][y_ch][z_ch]:
