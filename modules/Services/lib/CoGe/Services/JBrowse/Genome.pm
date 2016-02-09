@@ -9,19 +9,51 @@ use Data::Dumper;
 sub setup {
     my $self = shift;
     $self->run_modes(
+        'features' => 'features',
         'genes' => 'genes',
     );
     $self->mode_param('rm');
 }
 
-sub add_genes {
-    my ($name, $dsid, $hits, $dbh) = @_;
-    my $query = 'SELECT name,chromosome,start,stop FROM feature JOIN feature_name on feature.feature_id=feature_name.feature_id WHERE dataset_id=' . $dsid . " AND feature_type_id=1 AND lower(name) LIKE lower('" . $name . "')";
+sub add_features {
+    my ($name, $type_ids, $dsid, $hits, $dbh) = @_;
+    my $query = 'SELECT name,chromosome,start,stop FROM feature JOIN feature_name on feature.feature_id=feature_name.feature_id WHERE dataset_id=' . $dsid;
+    if ($type_ids) {
+    	if (index($type_ids, ',') != -1) {
+		    $query .= ' AND feature_type_id IN(' . $type_ids . ')';
+    	}
+    	else {
+    		$query .= ' AND feature_type_id=' . $type_ids;
+    	}
+    }
+    $query .= ' AND lower(name) ' . (index($name, '%') != -1 ? 'LIKE' : '=') . " '" . $name . "'";
+    warn $query;
     my $sth = $dbh->prepare($query);
     $sth->execute();
     while (my $row = $sth->fetch) {
         push @$hits, { name => $row->[0], location => { ref => $row->[1], start => $row->[2], end => $row->[3] } };
     }
+}
+
+sub features {
+    my $self = shift;
+    my $name = scalar $self->query->param('name');
+    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    my $dbh = $db->storage->dbh;
+
+	my $types = $self->query->param('features');
+	my $type_ids;
+	if ($types ne 'all') {
+		$type_ids = join(',', @{$dbh->selectcol_arrayref('SELECT feature_type_id FROM feature_type WHERE name IN(' . $types . ')')});
+	}
+	
+    my $hits = [];
+    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'));
+    foreach my $dsid (@$ids) {
+        add_features '%' . lc($name) . '%', $type_ids, $dsid, $hits, $dbh;
+    }
+    warn encode_json($hits);
+    return encode_json($hits);
 }
 
 sub genes {
@@ -44,7 +76,7 @@ sub genes {
     my $hits = [];
     my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'));
     foreach my $dsid (@$ids) {
-        add_genes $name, $dsid, $hits, $dbh;
+        add_features lc($name), '1', $dsid, $hits, $dbh;
     }
     return encode_json($hits);
 }

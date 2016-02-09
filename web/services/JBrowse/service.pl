@@ -133,5 +133,10 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Genome',
             rm     => 'genes'
         },
+        'genome/:gid/features' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Genome',
+            rm     => 'features'
+        },
     ],
 );
