@@ -62,7 +62,6 @@ BEGIN {
       is_popgen_finished data_type
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
-    @EXPORT_OK = qw(data_type);
 
     # Experiment Data Types -- move to CoGe::Core::Experiment?
     $DATA_TYPE_QUANT  = 1; # Quantitative data
