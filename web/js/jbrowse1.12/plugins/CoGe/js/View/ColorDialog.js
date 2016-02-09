@@ -6,11 +6,11 @@ define([
            'dojo/store/Memory',
            'dijit/form/ComboBox',
            'dijit/form/Button',
-//           'dijit/ColorPalette',
+           'dijit/ColorPalette',
            'dijit/form/CheckBox',
            'dijit/registry'
        ],
-       function( declare, focus, ActionBarDialog, on, Memory, ComboBox, dijitButton, /*ColorPalette,*/ CheckBox, registry ) {
+       function( declare, focus, ActionBarDialog, on, Memory, ComboBox, dijitButton, ColorPalette, CheckBox, registry ) {
 
 return declare( ActionBarDialog,
 
@@ -55,18 +55,18 @@ return declare( ActionBarDialog,
             }
         }).placeAt(actionBar);
 
-//        this.palette = new ColorPalette({
-//            palette: "7x10",
-//            value: firstItem.featureColor,
-//            onChange: function(val) {
-//            	//console.log('palette change: '+val);
-//            	if (val) {
-//            		registry.byNode(thisB.defaultCB.domNode).set('value', false);
-//            		thisB.callback(thisB.itemBox.item.id, val);
-//                	//thisB.hide();
-//            	}
-//            }
-//        }).placeAt(actionBar);
+        this.palette = new ColorPalette({
+            palette: "7x10",
+            value: firstItem.featureColor,
+            onChange: function(val) {
+            	//console.log('palette change: '+val);
+            	if (val) {
+            		registry.byNode(thisB.defaultCB.domNode).set('value', false);
+            		thisB.callback(thisB.itemBox.item.id, val);
+                	//thisB.hide();
+            	}
+            }
+        }).placeAt(actionBar);
 
 		this.defaultCB = new CheckBox({
 			//id: "defaultCB",
