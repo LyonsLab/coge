@@ -6,19 +6,26 @@ use lib './modules/perl';
 
 # Set port -- each sandbox should be set to a unique port in Apache config and coge.conf
 use CoGe::Accessory::Web qw(get_defaults);
+print STDERR "CoGe API ======================================================\n";
+print STDERR "config file: ", get_defaults->{_CONFIG_PATH}, "\n";
 my $port = get_defaults->{MOJOLICIOUS_PORT} || 3303;
-print STDERR "CoGe API (port $port)\n";
+print STDERR "port: ", $port, "\n";
 
 # Setup Hypnotoad
-app->config(hypnotoad => {listen => ["http://localhost:$port/"], proxy => 1});
+app->config(
+    hypnotoad => {
+        listen => ["http://localhost:$port/"], 
+        proxy => 1
+    }
+);
 app->log( Mojo::Log->new( path => "mojo.log", level => 'debug' ) ); # log in sandbox top-level directory
 #app->log( Mojo::Log->new( ) ); # log to STDERR
 
 # mdb added 8/27/15 -- prevent "Your secret passphrase needs to be changed" message
-#$self->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies
+app->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies
 
 # Instantiate router
-my $r = app->routes->namespaces(["CoGe::Services::Data"]);
+my $r = app->routes->namespaces(["CoGe::Services::Data::JBrowse", "CoGe::Services::Data"]);
 
 # TODO: Authenticate user here instead of redundantly in each submodule
 #    my $app = $self;
@@ -182,7 +189,61 @@ $r->get("/irods/list/(*path)")
 $r->get("/ftp/list/")
     ->name("ftp-list")
     ->to("FTP#list");
-        
+
+# JBrowse routes
+$r->get("/jbrowse/config/refseq")
+    ->name("jbrowse-configuration-refseq")
+    ->to("configuration#refseq_config");
+    
+$r->get("/jbrowse/config/tracks")
+    ->name("jbrowse-configuration-tracks")
+    ->to("configuration#track_config");    
+    
+$r->get("/jbrowse/sequence/:id/features/:chr" => { id => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-sequence")
+    ->to("sequence#features", id => undef, chr => undef);
+
+$r->get("/jbrowse/track/annotation/:gid/stats/global/" => [gid => qr/\d+/])
+    ->name("jbrowse-annotation-stats-global")
+    ->to("annotation#stats_global", gid => undef); 
+
+$r->get("/jbrowse/track/annotation/:gid/features/:chr" => { gid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-annotation-features")
+    ->to("annotation#features", gid => undef, chr => undef);  
+
+$r->get("/jbrowse/track/gc/:gid/stats/global/" => [gid => qr/\d+/])
+    ->name("jbrowse-gccontent-stats-global")
+    ->to("GCcontent#stats_global", gid => undef); 
+
+$r->get("/jbrowse/track/gc/:id/features/:chr" => { id => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-gccontent-features")
+    ->to("GCcontent#features", id => undef, chr => undef);  
+
+$r->get("/jbrowse/experiment/:eid/stats/global/" => [eid => qr/\d+/])
+    ->name("jbrowse-experiment-stats-global")
+    ->to("experiment#stats_global", eid => undef);
+    
+$r->get("/jbrowse/experiment/:eid/stats/regionFeatureDensities/:chr" => { eid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-regionFeatureDensitites")
+    ->to("experiment#stats_regionFeatureDensities", eid => undef, chr => undef);
+
+$r->get("/jbrowse/experiment/:eid/features/:chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-features")
+    ->to("experiment#features", eid => undef, chr => undef);
+
+# Is there a way to combine these 3 notebook routes with the 3 experiment routes above using regex?
+$r->get("/jbrowse/experiment/notebook/:nid/stats/global/" => [nid => qr/\d+/])
+    ->name("jbrowse-experiment-stats-global")
+    ->to("experiment#stats_global", nid => undef);
+    
+$r->get("/jbrowse/experiment/notebook/:nid/stats/regionFeatureDensities/:chr" => { nid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-regionFeatureDensitites")
+    ->to("experiment#stats_regionFeatureDensities", nid => undef, chr => undef);
+
+$r->get("/jbrowse/experiment/notebook/:nid/features/:chr"  => { nid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-features")
+    ->to("experiment#features", nid => undef, chr => undef);    
+
 # Not found
 $r->any("*" => sub {
     my $c = shift;
