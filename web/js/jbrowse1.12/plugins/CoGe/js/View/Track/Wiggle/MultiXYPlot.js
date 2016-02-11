@@ -565,6 +565,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         		url: api_base_url + '/experiment/' + dojo.byId('eid').value + '/query?col=max(value1)',
         		handleAs: 'json',
     	  		load: dojo.hitch(this, function(data) {
+    	  			console.log(data);
     	  			if (data.error) {
     	  				this._error('Search', data);
     	  				return;

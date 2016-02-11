@@ -456,6 +456,14 @@ sub parse_fastbit_line {
     return \%result;
 }
 
+sub debug {
+	my $OUTFILE;
+	open $OUTFILE, ">>/tmp/sean";
+	print {$OUTFILE} Dumper shift;
+	print {$OUTFILE} "\n";
+	close $OUTFILE;
+}
+
 sub query_fastbit {
 	my $query = shift;
 	my $eid = shift;

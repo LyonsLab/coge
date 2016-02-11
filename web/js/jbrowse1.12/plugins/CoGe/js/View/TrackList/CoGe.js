@@ -30,11 +30,12 @@ define(['dojo/_base/declare',
         'dijit/form/DropDownButton',
         'dijit/Menu',
         'dijit/MenuItem',
+        'dijit/MenuSeparator',
         'dijit/Dialog',
         'JBrowse/View/ConfirmDialog',
         'JBrowse/View/InfoDialog'
        ],
-       function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, /*animationEasing,*/ mouse, Button, DropDownButton, Menu, MenuItem, Dialog, ConfirmDialog, InfoDialog ) {
+       function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, /*animationEasing,*/ mouse, Button, DropDownButton, Menu, MenuItem, MenuSeparator, Dialog, ConfirmDialog, InfoDialog ) {
 	return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -314,16 +315,17 @@ define(['dojo/_base/declare',
         }));
         menu.addChild(new MenuItem({
             label: "Clear All Tracks",
-            onClick: dojo.hitch( this, function() {
+            onClick: dojo.hitch(this, function() {
 				var configs = this._getVisibleConfigs();
 				if (configs.length) {
 					this.browser.publish( '/jbrowse/v1/v/tracks/hide', configs );
 				}
 			})
         }));
+        menu.addChild(new MenuSeparator());
         menu.addChild(new MenuItem({
             label: "Create New Notebook",
-            onClick: dojo.hitch( this, function() {
+            onClick: dojo.hitch(this, function() {
             	create_notebook_dialog = new Dialog({
                     title: 'Create New Notebook',
                     content: '<table><tr><td><label>Name:</label></td><td><input id="notebook_name"></td></tr><tr><td><label>Description:</label></td><td><input id="notebook_description"></td></tr><tr><td><label>Restricted:</label></td><td><input type="checkbox" checked="checked" id="notebook_restricted"></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="create_notebook_dialog.hide()">Cancel</button></div>',
@@ -332,6 +334,21 @@ define(['dojo/_base/declare',
                 });
             	create_notebook_dialog.show();
             })
+        }));
+        menu.addChild(new MenuSeparator());
+        menu.addChild(new MenuItem({
+            label: 'Move Track Selector to ' + (dijit.byId('trackPane').get('region') == 'right' ? 'Left' : 'Right') + ' Side',
+            onClick: function() {
+            	var bc = dijit.byId('jbrowse');
+            	var pane = dijit.byId('trackPane');
+            	bc.removeChild(pane);
+            	var region = pane.get('region');
+            	this.set('label', 'Move Track Selector to ' + (region == 'right' ? 'Right' : 'Left') + ' Side');
+            	localStorage.setItem("track-selector-side", region == 'right' ? 'left' : 'right');
+            	pane.set('region', region == 'right' ? 'left' : 'right');
+            	bc.addChild(pane);
+            	
+            }
         }));
         var btn = new DropDownButton({ dropDown: menu }, menu_button);
         menu.startup();
@@ -344,7 +361,13 @@ define(['dojo/_base/declare',
 
     _create_track_list: function(parent) {
         this.pane = dojo.create('div', { id: 'trackPane' }, parent);
-        new ContentPane({region: "right", splitter: true}, this.pane);
+        var side = 'right';
+        if (localStorage) {
+        	var s = localStorage.getItem('track-selector-side');
+        	if (s)
+        		side = s;
+        }
+        new ContentPane({region: side, splitter: true}, this.pane);
         this._create_text_filter(this.pane);
         this._update_text_filter_control();
         this.div = dojo.create('div', { id: 'tracksAvail' }, this.pane);

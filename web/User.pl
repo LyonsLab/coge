@@ -1597,11 +1597,18 @@ sub upload_image_file {
 sub upload_metadata {
     my %opts = @_;
     my $type = $opts{type};
-    open(DATA, '<:crlf', $FORM->tmpFileName($FORM->param('metadata_file')));
-    my $line = <DATA>;
+    my $file = $FORM->param('metadata_file');
+
+    open my $fh, $FORM->tmpFileName($file);
+    local $/ = undef;
+	my $content = <$fh>;
+	close $fh;
+
+	my @lines = split /\r\n|\n|\r/, $content;
+    my $line = shift @lines;
     chomp $line;
     my @headers = split(/\t/, $line);
-	while (<DATA>) {
+    foreach (@lines) {
 		chomp $_;
 		next if !$_;
 		my @row = split(/\t/, $_);
@@ -1619,7 +1626,6 @@ sub upload_metadata {
 			}
 		}
 	}
-	close DATA;
 }
 
 sub search_notebooks

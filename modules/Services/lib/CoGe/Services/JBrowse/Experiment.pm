@@ -181,6 +181,9 @@ sub query_data {
 	);
 	
 	$result = pop(@{$result});
+	if (!$result) {
+		return encode_json({error => 'Query returned zero hits'});
+	}
 	$result = decode_json('[' . $result . ']');
 	return encode_json({ result => {
 		ref => ${$result}[0],
