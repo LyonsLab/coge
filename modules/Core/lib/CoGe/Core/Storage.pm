@@ -481,7 +481,7 @@ sub get_experiment_data {
     {
         my $pFormat = get_fastbit_format($eid, $data_type);
         my $columns = join(',', map { $_->{name} } @{$pFormat->{columns}});
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
+        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY} || 'ibis';
         $cmd = "$cmdpath -v 1 -d $storage_path -q \"select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
 
         #print STDERR "\n$cmd\n";
