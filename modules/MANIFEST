@@ -182,8 +182,8 @@ Services/lib/CoGe/Services/Data/Log.pm
 Services/lib/CoGe/Services/Data/Search.pm
 Services/lib/CoGe/Services/Data/IRODS.pm
 Services/lib/CoGe/Services/Data/FTP.pm
-Services/lib/CoGe/Services/JBrowse/Annotation.pm
-Services/lib/CoGe/Services/JBrowse/Configuration.pm
-Services/lib/CoGe/Services/JBrowse/Experiment.pm
-Services/lib/CoGe/Services/JBrowse/Sequence.pm
-Services/lib/CoGe/Services/JBrowse/Feature.pm
+Services/lib/CoGe/Services/Data/JBrowse/Annotation.pm
+Services/lib/CoGe/Services/Data/JBrowse/Configuration.pm
+Services/lib/CoGe/Services/Data/JBrowse/Experiment.pm
+Services/lib/CoGe/Services/Data/JBrowse/Sequence.pm
+Services/lib/CoGe/Services/Data/JBrowse/GCcontent.pm
