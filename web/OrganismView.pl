@@ -598,7 +598,7 @@ sub get_genome_info {
 
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
-#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$gid'],['irods']);">Send To iPlant Data Store</span>};
+#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$gid'],['irods']);">Send To CyVerse Data Store</span>};
 
     return $html if ($output eq 'html');
     return encode_json({ genome => $html });

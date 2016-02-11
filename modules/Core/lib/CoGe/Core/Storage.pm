@@ -58,10 +58,10 @@ BEGIN {
       get_genome_cache_path get_workflow_results add_workflow_result
       get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_data
-      reverse_complement get_irods_file get_irods_path
+      reverse_complement get_irods_file get_irods_path get_popgen_result_path
+      is_popgen_finished data_type
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
-    @EXPORT_OK = qw(data_type);
 
     # Experiment Data Types -- move to CoGe::Core::Experiment?
     $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -725,7 +725,7 @@ sub get_workflow_log_file {
 sub get_upload_path {
     my ( $user_name, $load_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
     unless ($user_name && $load_id) {
-         print STDERR "Storage::get_upload_path ERROR: missing required param\n";
+        print STDERR "Storage::get_upload_path ERROR: missing required param\n";
         return;
     }
     
@@ -738,6 +738,30 @@ sub get_download_path {
     $uuid = '' unless $uuid; # optional uuid
     my $conf = CoGe::Accessory::Web::get_defaults();
     return catfile($conf->{SECTEMPDIR}, 'downloads', $type, $id, $uuid);
+}
+
+sub get_popgen_result_path {
+    my $eid = shift;
+    
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    my $POPGENDIR = $conf->{POPGENDIR};
+    unless ($POPGENDIR) {
+        print STDERR "Storage::get_popgen_result_path ERROR: POPGENDIR not specified in config";
+        return;
+    }
+    
+    return catdir($POPGENDIR, $eid);
+}
+
+sub is_popgen_finished {
+    my $eid = shift;
+    
+    my $result_path = get_popgen_result_path($eid);
+    if (-e catfile($result_path, 'sumstats.done')) {
+        return 1;
+    }
+    
+    return 0;
 }
 
 sub remove_self { # TODO move to Utils.pm
@@ -807,7 +831,7 @@ sub reverse_complement { #TODO move into Util.pm
     return $rcseq;
 }
 
-sub data_type {
+sub data_type { #FIXME redundant with DBI-X Experiment.pm
     my $data_type = shift;
 
     # Experiment Data Types

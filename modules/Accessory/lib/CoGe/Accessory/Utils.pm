@@ -44,6 +44,7 @@ BEGIN {
         format_time_diff sanitize_name execute directory_size
         trim js_escape html_escape to_filename to_pathname
         is_fastq_file add_fastq_ext detect_paired_end
+        to_filename_without_extension is_gzipped 
     );
 }
 
@@ -165,8 +166,13 @@ sub format_time_diff {
     return $elapsed;
 }
 
+sub to_filename_without_extension {
+    my ($name, undef, undef) = fileparse(shift, qr/\.[^.]*/);
+    return $name;
+}
+
 sub to_filename {
-    my ($name, undef, undef) = fileparse(shift);#, qr/\.[^.]*/);
+    my ($name, undef, undef) = fileparse(shift);
     return $name;
 }
 
@@ -210,6 +216,11 @@ sub add_fastq_ext {
     }
     
     return $filename;
+}
+
+sub is_gzipped {
+    my $filename = shift;
+    return ( $filename =~ /\.gz$/ );
 }
 
 # Separate files based on last occurrence of _R1 or _R2 in filename

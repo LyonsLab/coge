@@ -662,6 +662,12 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
             return;
         }
 
+	# mdb added 2/10/16
+	if ($start =~ /[^\d]/ || $stop =~ /[^\d]/) {
+		log_line('start/stop not integer values', $line_num, $line);
+		return;
+	}
+
         # mdb added 2/19/14 for bulk loading based on user request
         if ($allow_negative and $val1 < 0) {
 	       $val1 = abs($val1);

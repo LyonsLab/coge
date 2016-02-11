@@ -9,7 +9,7 @@
 <script id="fileselect-template" type="text/template">
 	<div id='fileselect-tabs'>
 	  <ul>
-	    <li class="small"><a href="#fileselect-tab-1">iPlant Data Store</a></li>
+	    <li class="small"><a href="#fileselect-tab-1">CyVerse Data Store</a></li>
 	    <li class="small"><a href="#fileselect-tab-2">FTP/HTTP</a></li>
 	    <li class="small"><a href="#fileselect-tab-3">Upload</a></li>
 	    <TMPL_IF NAME='ENABLE_NCBI'>
@@ -52,7 +52,7 @@
 	
 	  <div id="fileselect-tab-3" class="small" style="height:200px;">
 		Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum).
-		For larger files use the iPlant Data Store. <br><br><br>
+		For larger files use the CyVerse Data Store. <br><br><br>
 	    File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
 	  </div>
 	

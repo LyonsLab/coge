@@ -17,7 +17,7 @@ use Data::Dumper;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_experiment_path get_log data_type get_download_path);
+use CoGe::Core::Storage;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
@@ -618,23 +618,30 @@ sub gen_body {
     return "Access denied" unless $USER->has_access_to_experiment($exp);
 
     my $gid = $exp->genome_id;
+    
+    my $popgenUrl;
+    if ($exp->data_type == $DATA_TYPE_POLY && is_popgen_finished($eid)) {
+        $popgenUrl = "PopGen.pl?eid=$eid";
+    }
 
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
-        MAIN            => 1,
-        PAGE_NAME       => $PAGE_TITLE . '.pl',
-        USER_NAME       => $USER->name,
-        EXPERIMENT_ID   => $eid,
-        DEFAULT_TYPE    => 'note',
-        ITEMS            => commify($exp->row_count),
-        FILE_SIZE       => commify(directory_size(get_experiment_path($exp->id))),
-        IRODS_HOME      => get_irods_path(),
-        WORKFLOW_ID     => $WORKFLOW_ID,
-        STATUS_URL      => 'jex/status/',
-        ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
-        PUBLIC          => $USER->user_name eq "public" ? 1 : 0,
-        ADMIN_AREA      => $USER->is_admin,
-        API_BASE_URL    => 'api/v1/', #TODO move into config file or module
+        MAIN              => 1,
+        PAGE_NAME         => $PAGE_TITLE . '.pl',
+        USER_NAME         => $USER->name,
+        EXPERIMENT_ID     => $eid,
+        DEFAULT_TYPE      => 'note',
+        ITEMS             => commify($exp->row_count),
+        FILE_SIZE         => commify(directory_size(get_experiment_path($exp->id))),
+        IRODS_HOME        => get_irods_path(),
+        WORKFLOW_ID       => $WORKFLOW_ID,
+        STATUS_URL        => 'jex/status/',
+        ALIGNMENT_TYPE    => ($exp->data_type == $DATA_TYPE_ALIGN),
+        POLYMORPHISM_TYPE => ($exp->data_type == $DATA_TYPE_POLY),
+        POPGEN_RESULT_URL => $popgenUrl,
+        PUBLIC            => $USER->user_name eq "public" ? 1 : 0,
+        ADMIN_AREA        => $USER->is_admin,
+        API_BASE_URL      => 'api/v1/', #TODO move into config file or module
     );
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
@@ -677,7 +684,7 @@ sub _get_experiment_info {
         { title => "ID", value => $exp->id },
         { title => "Name", value => $exp->name},
         { title => "Description", value => $exp->description},
-        { title => "Data Type", value => data_type($exp->data_type) },
+        { title => "Data Type", value => ucfirst($exp->data_type_desc) },
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
         { title => "Version", value => $exp->version },

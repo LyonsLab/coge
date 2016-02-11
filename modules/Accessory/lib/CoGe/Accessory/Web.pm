@@ -449,7 +449,7 @@ sub logout_cas {
 sub login_cas_proxy {
     my ( $self, %opts ) = self_or_default(@_);
     my $cookie_name = $opts{cookie_name};
-    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $ticket      = $opts{ticket};        # CAS ticket from CyVerse
     my $this_url    = $opts{this_url};      # URL to tell CAS to redirect to
     my $coge        = $opts{coge};          # db object
 	print STDERR "Web::login_cas_proxy ticket=$ticket this_url=$this_url\n";
@@ -524,7 +524,7 @@ sub parse_proxy_response {
 sub login_cas_saml {
     my ( $self, %opts ) = self_or_default(@_);
     my $cookie_name = $opts{cookie_name};
-    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $ticket      = $opts{ticket};        # CAS ticket from CyVerse
     my $this_url    = $opts{this_url};      # URL to tell CAS to redirect to
     my $coge        = $opts{coge};          # db object
 	print STDERR "Web::login_cas_saml ticket=$ticket this_url=$this_url\n";
@@ -544,9 +544,7 @@ sub login_cas_saml {
       . '</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
 
     my $request_ua =
-      HTTP::Request->new(
-        #POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon1
-        POST => $cas_url . '/samlValidate?TARGET=' . $this_url );
+      HTTP::Request->new( POST => $cas_url . '/samlValidate?TARGET=' . $this_url );
     $request_ua->content($request);
     $request_ua->content_type("text/xml; charset=utf-8");
     my $response = $ua->request($request_ua);
@@ -726,7 +724,7 @@ sub jwt_decode_token {
 sub login_cas4 {
     my ( $self, %opts ) = self_or_default(@_);
     my $cookie_name = $opts{cookie_name};
-    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $ticket      = $opts{ticket};        # CAS ticket from CyVerse
     my $this_url    = $opts{this_url};      # URL that CAS redirected to
     my $db          = $opts{db};            # db object
     my $server      = $opts{server};        # server -- this was added to get apache proxying to work with cas
@@ -773,7 +771,7 @@ sub add_user {
                 first_name  => $fname,
                 last_name   => $lname,
                 email       => $email,
-                description => "Validated by iPlant"
+                description => "Validated by CyVerse"
             }
         );
         $user->insert; # mdb: what is this for?

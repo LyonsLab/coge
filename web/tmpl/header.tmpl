@@ -1,3 +1,4 @@
+<TMPL_UNLESS NAME="NO_DOCTYPE"><!DOCTYPE HTML></TMPL_UNLESS>
 <HTML>
 <HEAD>
 <meta http-equiv="Pragma" content="no-cache" />
@@ -50,10 +51,10 @@ In order for CoGe to function properly JavaScript must be enabled in your browse
 
 <div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
     <div style="text-align:center;padding:30px;">
-        <div class="info">Would you like to log out of all iPlant applications?</div>
+        <div class="info">Would you like to log out of all CyVerse applications?</div>
         <br><br>
         <span onClick="location.href='index.pl?logout_coge=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of CoGe only</span>
-        <span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all iPlant services</span>
+        <span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all CyVerse services</span>
     </div>
 </div>
 
@@ -177,7 +178,7 @@ function hideDropdowns() {
 
 <!--
 <div class="error-box">
-Please note:  the iPlant Data Store will be unavailable Tuesday, December 16th for scheduled maintenance, preventing data import into CoGe.
+Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th for scheduled maintenance, preventing data import into CoGe.
 </div>
 -->
 
