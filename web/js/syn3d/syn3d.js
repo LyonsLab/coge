@@ -133,6 +133,8 @@ function renderHistogram(documentElement, histogramTitle, histogramData, binCoun
 
 /* CORE FUNCTION: Render SynMap */
 //TODO: Scale dynamically & position camera based on size
+//TODO: Render selected point into a new info pane
+//TODO: Launch GEvo from info pane
 function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~VARIABLE DECLARATIONS~~~~
@@ -323,6 +325,30 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
         return calcColor
     }
 
+    /* FUNCTION: Generate Gene Pair Info HTML */
+    function displayGenePair(ptdata, gid) {
+        return "<p><span style='font-weight:bolder'>Name: </span>" + ptdata[gid].name + " </p> \
+                <p><span style='font-weight:bolder'>Chromosome: </span>" + ptdata[gid].chr + "</p> \
+                <p><span style='font-weight:bolder'>Strand: </span>" + ptdata[gid].strand + "</p> \
+                <p><span style='font-weight:bolder'>Start: </span>" + ptdata[gid].start + "</p> \
+                <p><span style='font-weight:bolder'>Stop: </span>" + ptdata[gid].stop + "</p> \
+                <p><span style='font-weight:bolder'>Gene Count: </span>" + ptdata[gid].gene_count + "</p> \
+                <p><span style='font-weight:bolder'>Percent ID: </span>" + ptdata[gid].percent_id + "</p> \
+                <p><span style='font-weight:bolder'>Type: </span>" + ptdata[gid].type + "</p> \
+                <p><span style='font-weight:bolder'>DB Feature ID: </span>" + ptdata[gid].db_feature_id + "</p>"
+    }
+
+    /* FUNCTION: Generate GEvo Link */
+    function genGevoLink(xDbId, yDbId, zDbId) {
+        // https://genomevolution.org/wiki/index.php/Linking_to_GEvo
+        var linkbase = "http://genomevolution.org/coge/GEvo.pl?";
+        var seqX = 'fid1=' + xDbId + ';';
+        var seqY = 'fid2=' + yDbId + ';';
+        var seqZ = 'fid3=' + zDbId + ';';
+        var range = 'apply_all=50000;';
+        var numSeq = 'num_seqs=3';
+        return linkbase + seqX + seqY + seqZ + range + numSeq;
+    }
     /*---------------------------------------------------------------------------------------------------------
      ~~~~MAJOR FUNCTIONS: CREATE 3D OBJECTS~~~~
      --------------------------------------------------------------------------------------------------------*/
@@ -546,23 +572,6 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
      --------------------------------------------------------------------------------------------------------*/
 
     function render() {
-        // Set raycaster.
-        //raycaster.setFromCamera( mouse, camera );
-        //intersects = raycaster.intersectObject( points );
-
-        /* START mouseMove action block (see also onDocumentMouseMove()
-        var geometry = points.geometry;
-        if ( intersects.length > 0) {
-            if ( INTERSECTED != intersects[ 0 ].index ) {
-                INTERSECTED = intersects[ 0 ].index;
-                geometry.colors[ INTERSECTED ] = black;
-                geometry.colorsNeedUpdate = true;
-            }
-        } else if ( INTERSECTED !== null ) {
-            INTERSECTED = null;
-        }
-        END mouseMove action block */
-
         // Render scene.
         renderer.render( scene, camera );
     }
@@ -575,12 +584,12 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
         /* Update controls. */
         controls.update();
 
-        /* Update camera position. */
+        /* Update camera position record. */
         camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
 
         /* Render the scene. */
-        //renderer.render( scene, camera );
         render();
+
         /* Create continuous animation. */
         requestAnimationFrame( animate );
     }
@@ -605,42 +614,50 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
     }
     window.addEventListener( 'resize', onWindowResize, false );
 
-    /* Mouse Move */
-    function onDocumentMouseMove( event ) {
-        /* START mouseMove action block (see also render()
-        event.preventDefault();
-        //http://barkofthebyte.azurewebsites.net/post/2014/05/05/three-js-projecting-mouse-clicks-to-a-3d-scene-how-to-do-it-and-how-it-works
-        //http://soledadpenades.com/articles/three-js-tutorials/object-picking/
-        var offset = $("canvas").offset();
-        mouse.x = ( (event.clientX - offset.left) / container.clientWidth ) * 2 - 1;
-        mouse.y = -( (event.clientY - offset.top) / container.clientHeight ) * 2 + 1;
-        END mouseMove action block */
-    }
-    window.addEventListener('mousemove', onDocumentMouseMove, false);
-
     /* Mouse Click */
     function onDocumentMouseDown( event ) {
         // Specify object of interest (points).
         var geometry = points.geometry;
 
         // Calculate mouse location on canvas.
-        var offset = $("canvas").offset();
-        mouse.x = ( (event.clientX - offset.left) / container.clientWidth ) * 2 - 1;
-        mouse.y = -( (event.clientY - offset.top) / container.clientHeight ) * 2 + 1;
+        var offset_l = $("canvas").offset().left - $(window).scrollLeft();
+        var offset_t = $("canvas").offset().top - $(window).scrollTop();
+        mouse.x = ( (event.clientX - offset_l) / container.clientWidth ) * 2 - 1;
+        mouse.y = -( (event.clientY - offset_t) / container.clientHeight ) * 2 + 1;
 
         // Cast ray & find intersects.
         raycaster.setFromCamera( mouse, camera );
         intersects = raycaster.intersectObject( points );
 
-        // Actions when intersects are found
+        // Actions when intersects are found.
         if (intersects.length > 0) {
             // Set INTERSECTED to closest intersected point.
             INTERSECTED = intersects[ 0 ].index;
+            // Assign INTERSECTED point data to pt_select.
+            var pt_select = pointData[ INTERSECTED ];
+            // Show point info panels & GEvo button.
+            $(".gene-info-display").css("display", "");
+            $("#gevo_div").css("display", "");
+            // Select info panels.
+            var xdisplay = $("#x-gene-display");
+            var ydisplay = $("#y-gene-display");
+            var zdisplay = $("#z-gene-display");
+            // Empty old content from info panels.
+            xdisplay.empty();
+            ydisplay.empty();
+            zdisplay.empty();
+            // Print intersected point data to respective info panels.
+            xdisplay.append(displayGenePair(pt_select, final_experiment.x_gid));
+            ydisplay.append(displayGenePair(pt_select, final_experiment.y_gid));
+            zdisplay.append(displayGenePair(pt_select, final_experiment.z_gid));
 
-            // Print intersected point index & associated data to console.
-            // TODO: Write to info panel.
-            console.log("You selected point: " + INTERSECTED);
-            console.log(JSON.stringify(pointData[ INTERSECTED ], null, 4));
+            // Build GEvo link.
+            var gevoLink = genGevoLink(
+                pt_select[final_experiment.x_gid].db_feature_id,
+                pt_select[final_experiment.y_gid].db_feature_id,
+                pt_select[final_experiment.z_gid].db_feature_id);
+            // Assign link to click event.
+            document.getElementById("gevo_button").onclick = function() { window.open(gevoLink) };
 
             // Revert previously selected point color.
             if (ptHistory[0] != "NULL") { geometry.colors[ ptHistory[0] ] = ptHistory[1]; }

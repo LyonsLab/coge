@@ -36,8 +36,14 @@
     border-radius: 0px;
     margin: 0px;
     box-sizing: border-box;
-    padding: 0px;
+    padding: .1em;
     position: relative;
+}
+
+.contentBox h3 {
+    margin: 0;
+    margin-top: .1em;
+    margin-bottom: .2em;
 }
 
 #rendering {
@@ -56,6 +62,17 @@
     width: 29.5%;
 }
 
+#gene_info h5 {
+    margin-top: .2em;
+    margin-bottom: .05em;
+}
+
+.gene-info-display p {
+    margin: 0em;
+    margin-left: .6em;
+    font-size: 0.875em;
+}
+
 </style>
 
 <div id="analysis" style="display:none">
@@ -65,6 +82,7 @@
     </div>
     <div id="right">
         <div id="opts" class="contentBox">
+            <h3>Visualization Options</h3>
             <div class="option_tag"><label for="color_select">Color Scheme:</label></div>
             <div class="option_select">
                 <select id="color_select" disabled>
@@ -99,7 +117,30 @@
         </div>
         
         <div id="histogram"></div>
-        <div id="histogram2"></div>
+
+        <div id="gene_info" class="contentBox">
+            <h3>Information</h3>
+
+            <h5 style="color:red">X Axis:
+                <span style="font-weight:lighter"><TMPL_VAR NAME='X_GENOME_NAME'></span>
+            </h5>
+            <div id="x-gene-display" class="gene-info-display" style="display:none"></div>
+
+            <h5 style="color:blue">Y Axis:
+                <span style="font-weight:lighter"><TMPL_VAR NAME='Y_GENOME_NAME'></span>
+            </h5>
+            <div id="y-gene-display" class="gene-info-display" style="display:none"></div>
+
+            <h5 style="color:green">Z Axis:
+                <span style="font-weight:lighter"><TMPL_VAR NAME='Z_GENOME_NAME'></span>
+            </h5>
+            <div id="z-gene-display" class="gene-info-display" style="display:none"></div>
+
+            <div id="gevo_div" style="text-align:center; display:none">
+                <input type="button" id="gevo_button" class="ui-button ui-corner-all" value="Compare in GEvo">
+            </div>
+        </div>
+
     </div><br>
     <div style="clear:both"></div>
 </div><br>
@@ -313,10 +354,5 @@ $(function() {
 <script type="text/javascript" src="js/coge/wizard.js"></script>
 <script type="text/javascript" src="js/coge/file-select.js"></script>
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
-
-<!-- Retired Scripts -->
-<!--<script type="text/javascript" src="js/syn3d/syn3d.js"></script>-->
-<!--<script type="text/javascript" src="js/syn3d/jquery-2.1.4.min.js"></script>-->
-<!--<script type="text/javascript" src="https://d14fo0winaifog.cloudfront.net/plotly-basic.js"></script>-->
 
 </TMPL_IF> <!-- MAIN -->

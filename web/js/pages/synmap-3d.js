@@ -8,6 +8,8 @@ var options_name;
 var final_experiment;
 var edit_focus = undefined;
 
+var pt_select;
+
 //AKB - Modified search_genomes to work on multiple genomes.
 function search_genomes (search_term) {
 	coge.services.search_genomes(search_term, { fast: true })
