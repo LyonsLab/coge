@@ -325,10 +325,10 @@ define(['dojo/_base/declare',
             label: "Create New Notebook",
             onClick: dojo.hitch( this, function() {
             	create_notebook_dialog = new Dialog({
-                    title: "Create New Notebook",
+                    title: 'Create New Notebook',
                     content: '<table><tr><td><label>Name:</label></td><td><input id="notebook_name"></td></tr><tr><td><label>Description:</label></td><td><input id="notebook_description"></td></tr><tr><td><label>Restricted:</label></td><td><input type="checkbox" checked="checked" id="notebook_restricted"></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="create_notebook_dialog.hide()">Cancel</button></div>',
                     onHide: function(){this.destroyRecursive()},
-                    style: "width: 300px"
+                    style: 'width: 300px'
                 });
             	create_notebook_dialog.show();
             })
@@ -474,8 +474,8 @@ define(['dojo/_base/declare',
     		content = JSON.stringify(content.error);
     	new InfoDialog({
     		title: title,
-            onHide: function(){this.destroyRecursive()},
-    		content: content
+    		content: content,
+            onHide: function(){this.destroyRecursive()}
     	}).show();	
     },
 
@@ -966,24 +966,28 @@ define(['dojo/_base/declare',
     		url: api_base_url + '/genome/' + gid + '/features?name=' + encodeURIComponent(dojo.byId('coge_search_text').value) + '&features=' + (types.length == features.length ? 'all' : types.join()),
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
-	  			if (data.error)
-	  				this._error('Create Notebook', data);
-	  			else {
-	  				var div = dojo.byId('coge-search-dialog');
-	  				div.style.maxHeight = '500px';
-	  				div.style.overflow = 'auto';
-	    			dojo.empty(div);
-	    			data.forEach(function(hit){
-	    				dojo.create('a', {
-	    					innerHTML: hit.name,
-	    					onclick: dojo.hitch(hit, function() {
-		    					coge_track_list.browser.navigateToLocation(this.location);
-		    					return false;
-		    				})
-	    				}, div);
-	    				dojo.create('br', null, div);
-	    			});
+	  			if (data.error) {
+	  				this._error('Search', data);
+	  				return;
 	  			}
+	  			if (data.length == 0) {
+	  				this._error('Search', 'no features found');
+	  				return;
+	  			}
+  				var div = dojo.byId('coge-search-dialog');
+  				div.style.maxHeight = '500px';
+  				div.style.overflow = 'auto';
+    			dojo.empty(div);
+    			data.forEach(function(hit){
+    				dojo.create('a', {
+    					innerHTML: hit.name,
+    					onclick: dojo.hitch(hit, function() {
+	    					coge_track_list.browser.navigateToLocation(this.location);
+	    					return false;
+	    				})
+    				}, div);
+    				dojo.create('br', null, div);
+    			});
     		}),
     		error: dojo.hitch(this, function(data) {
     			this._error('Search', data);

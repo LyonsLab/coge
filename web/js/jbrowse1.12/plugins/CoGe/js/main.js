@@ -1,4 +1,3 @@
-var search_dialog;
 define([
            'dojo/_base/declare',
            'JBrowse/Plugin'

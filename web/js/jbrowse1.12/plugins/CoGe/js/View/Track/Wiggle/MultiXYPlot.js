@@ -1,16 +1,18 @@
+var coge_xyplot;
 define( [
             'dojo/_base/declare',
             'dojo/_base/array',
             'dojo/_base/Color',
             'dojo/dom-construct',
-            'dojo/on',
+            'dijit/Dialog',
+            'JBrowse/View/InfoDialog',
             'JBrowse/View/Track/WiggleBase',
             'JBrowse/View/Track/_YScaleMixin',
             'JBrowse/Util',
             './_Scale',
             'CoGe/View/ColorDialog'
         ],
-        function( declare, array, Color, domConstruct, on, WiggleBase, YScaleMixin, Util, Scale, ColorDialog ) {
+        function( declare, array, Color, domConstruct, Dialog, InfoDialog, WiggleBase, YScaleMixin, Util, Scale, ColorDialog ) {
 
 var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of XYPlot, extend that class instead?
 
@@ -24,6 +26,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     // Load cookie params - mdb added 1/13/14, issue 279
     constructor: function() {
         this.inherited(arguments); // call superclass constructor
+        coge_xyplot = this;
 
         if (!this.config.style.featureColor)
             this.config.style.featureColor = {};
@@ -536,6 +539,45 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         return pixelValues;
     },
 
+    _error: function(title, content) {
+    	if (content.responseText)
+    		content = content.responseText;
+    	else if (content.error)
+    		content = JSON.stringify(content.error);
+    	new InfoDialog({
+    		title: title,
+    		content: content,
+            onHide: function(){this.destroyRecursive()}
+    	}).show();	
+    },
+
+    _search_track: function() {
+    	if (dojo.byId('above').checked || dojo.byId('below').checked) {
+    		var i = dojo.byId(dojo.byId('above').checked ? 'above_value' : 'below_value');
+    		if (!i.value) {
+    			this._error('Value Required', 'Please enter a value.');
+    			i.focus();
+    			return;
+    		}
+    	}
+    	if (dojo.byId('highest').checked)
+        	dojo.xhrGet({
+        		url: api_base_url + '/experiment/' + dojo.byId('eid').value + '/query?col=max(value1)',
+        		handleAs: 'json',
+    	  		load: dojo.hitch(this, function(data) {
+    	  			if (data.error) {
+    	  				this._error('Search', data);
+    	  				return;
+    	  			}
+     				this._track.browser.navigateToLocation(data.result);
+     				this._track_search_dialog.hide();
+        		}),
+        		error: dojo.hitch(this, function(data) {
+        			this._error('Search', data);
+        		})
+        	});
+    },
+
     _showPixelValue: function( scoreDisplay, score ) {
         var scoreType = typeof score;
         if( scoreType == 'number' ) {
@@ -647,6 +689,26 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     }
                 }
             ]);
+
+        options.push.apply(options, [{
+	        label: 'Search',
+	        onClick: function(event) {
+	        	coge_xyplot._track = track;
+	        	var content = '<input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center">' + 
+	        		'<tr><td><input id="highest" type="radio" name="type" checked="checked"> highest</td></tr>' +
+	        		'<tr><td><input id="lowest" type="radio" name="type"> lowest</td></tr>' +
+	        		'<tr><td><input id="above" type="radio" name="type"> above <input id="above_value"></td></tr>' +
+	        		'<tr><td><input id="below" type="radio" name="type"> below <input id="below_value"></td></tr>' +
+	        		'</table><div class="dijitDialogPaneActionBar"><button id="search_ok" data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div>';
+	        	coge_xyplot._track_search_dialog = new Dialog({
+                    title: 'Search Track',
+                    content: content,
+                    onHide: function(){this.destroyRecursive()},
+                    style: "width: 300px"
+                });
+	        	coge_xyplot._track_search_dialog.show();
+	        }
+	    }]);
 
         if (config.coge.type == 'notebook') {
             options.push.apply(

@@ -59,7 +59,7 @@ BEGIN {
       get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_data
       reverse_complement get_irods_file get_irods_path get_popgen_result_path
-      is_popgen_finished data_type
+      is_popgen_finished data_type query_experiment_data
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
     @EXPORT_OK = qw(data_type);
@@ -457,10 +457,69 @@ sub parse_fastbit_line {
     return \%result;
 }
 
+sub query_fastbit {
+	my $query = shift;
+	my $eid = shift;
+    my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
+    my $storage_path = get_experiment_path($eid);
+    my $cmd = "$cmdpath -v 1 -d $storage_path -q \"$query\" 2>&1";
+
+    my @cmdOut = qx{$cmd};
+    my $cmdStatus = $?;
+    if ( $? != 0 ) {
+        print STDERR "Storage::query_fastbit: error $? executing command: $cmd\n";
+    }
+    my @lines;
+    foreach (@cmdOut) {
+	    chomp;
+	    if (/^\"/) {
+            push @lines, $_;
+        }
+    }
+    return \@lines;
+}
+
+sub query_experiment_data {
+    my %opts = @_;
+    my $eid  = $opts{eid};    # required
+    unless ($eid) {
+        print STDERR "Storage::query_experiment_data: experiment id not specified!\n";
+        return;
+    }
+    my $data_type = $opts{data_type};
+    my $col = $opts{col};
+    my $chr = $opts{chr};
+    my $where = $opts{where};
+    my $order_by = $opts{order_by};
+    my $limit = $opts{limit};
+    if (!$data_type ||
+        $data_type == $DATA_TYPE_QUANT ||
+        $data_type == $DATA_TYPE_POLY ||
+        $data_type == $DATA_TYPE_MARKER)
+    {
+    	my $w = '0.0=0.0';
+    	if ($chr) {
+    		$w .= " and chr='$chr'";
+    	} 
+    	if ($where) {
+    		$w .= " and $where";
+    	}
+    	my $query = "select $col where $w";
+    	if ($order_by) {
+    		$query .= " order by $order_by";
+    	}
+    	if ($limit) {
+    		$query .= " limit $limit";
+    	}
+        my $lines = query_fastbit($query, $eid);
+        return $lines;
+    }
+}
+
 sub get_experiment_data {
     my %opts = @_;
     my $eid  = $opts{eid};    # required
-    my $data_type = $opts{data_type};   # required
+    my $data_type = $opts{data_type};
     unless ($eid) {
         print STDERR "Storage::get_experiment_data: experiment id not specified!\n";
         return;
@@ -472,9 +531,6 @@ sub get_experiment_data {
     $start = 0 if ($start < 0);
     $stop = 0 if ($stop < 0);
 
-    my $storage_path = get_experiment_path($eid);
-    my $cmd;
-
     if (!$data_type ||
         $data_type == $DATA_TYPE_QUANT ||
         $data_type == $DATA_TYPE_POLY ||
@@ -482,33 +538,15 @@ sub get_experiment_data {
     {
         my $pFormat = get_fastbit_format($eid, $data_type);
         my $columns = join(',', map { $_->{name} } @{$pFormat->{columns}});
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
-        $cmd = "$cmdpath -v 1 -d $storage_path -q \"select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
+        my $lines = query_fastbit("select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999", $eid);
 
-        #print STDERR "\n$cmd\n";
-        my @cmdOut = qx{$cmd};
-        #print STDERR @cmdOut;
-        my $cmdStatus = $?;
-        if ( $? != 0 ) {
-            print STDERR "Storage::get_experiment_data: error $? executing command: $cmd\n";
-            return;
-        }
-
-        # Parse output into a hash result
-        my @results;
-        foreach (@cmdOut) {
-            chomp;
-            if (/^\"/) { #if (/^\"$chr\"/) { # potential result line
-                my $pResult = parse_fastbit_line($pFormat, $_, $chr);
-                push @results, $pResult if ($pResult);
-            }
-        }
-
-        return \@results;
+	    my @results = map {parse_fastbit_line($pFormat, $_, $chr)} @{$lines};
+	    return \@results;
     }
     elsif ( $data_type == $DATA_TYPE_ALIGN ) { # FIXME move output parsing from Storage.pm to here
         my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
-        $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
+    	my $storage_path = get_experiment_path($eid);
+        my $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
         #print STDERR "$cmd\n";
         my @cmdOut = qx{$cmd};
         #print STDERR @cmdOut;

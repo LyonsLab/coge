@@ -246,6 +246,9 @@ sub update {
     }
 
     my $data = $self->req->json;
+    if (exists($data->{metadata}->{id})) {
+	    delete $data->{metadata}->{id};
+    }
 	$notebook->update($data->{metadata});
 	$self->render(json => {
 		success => Mojo::JSON->true

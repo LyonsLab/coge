@@ -436,7 +436,7 @@ sub track_config {
             },
 
             histograms => {
-            	store => "JBrowse/Store/SeqFeature/REST"
+            	storeClass => "JBrowse/Store/SeqFeature/REST" # was "store" which caused a warning in the browser for every experiment track on page load
             },
 
             # CoGe-specific stuff

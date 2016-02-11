@@ -3,7 +3,7 @@ use base 'CGI::Application';
 
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw( get_experiment_data );
+use CoGe::Core::Storage qw( get_experiment_data query_experiment_data );
 use JSON::XS;
 use Data::Dumper;
 
@@ -27,6 +27,7 @@ sub setup {
         'stats_global' => 'stats_global',
         'stats_regionFeatureDensities' => 'stats_regionFeatureDensities',
         'features'     => 'features',
+        'query_data'   => 'query_data',
     );
     $self->mode_param('rm');
 }
@@ -98,7 +99,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 			next;
 		}
         elsif ( $data_type == $DATA_TYPE_POLY || $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -116,7 +117,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = CoGe::Core::Storage::get_experiment_data(
+	        my $cmdOut = get_experiment_data(
 	            eid   => $eid,
 	            data_type  => $exp->data_type,
 	            chr   => $chr,
@@ -162,6 +163,30 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
             stats => { basesPerBin => $bpPerBin, max => $max, mean => $mean }
         }
     );
+}
+
+sub query_data {
+    my $self = shift;
+    my $eid = $self->param('eid');
+    my $chr = $self->query->param('chr');
+    my $where = $self->query->param('where');
+    my $order_by = 'value1 desc';
+	my $result = query_experiment_data(
+		eid => $eid,
+		col => 'chr,start,stop,value1',
+		chr => $chr,
+		where => $where,
+		order_by => $order_by,
+		limit => 1,
+	);
+	
+	$result = pop(@{$result});
+	$result = decode_json('[' . $result . ']');
+	return encode_json({ result => {
+		ref => ${$result}[0],
+		start => ${$result}[1],
+		end => ${$result}[2]
+	}});
 }
 
 sub features {
@@ -229,7 +254,7 @@ sub features {
         my $data_type = $exp->data_type;
 
         if ( !$data_type || $data_type == $DATA_TYPE_QUANT ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -254,7 +279,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -285,7 +310,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -313,7 +338,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = CoGe::Core::Storage::get_experiment_data(
+	        my $cmdOut = get_experiment_data(
 	            eid   => $eid,
 	            data_type => $exp->data_type,
 	            chr   => $chr,
