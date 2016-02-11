@@ -62,7 +62,6 @@ BEGIN {
       is_popgen_finished data_type query_experiment_data
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
-    @EXPORT_OK = qw(data_type);
 
     # Experiment Data Types -- move to CoGe::Core::Experiment?
     $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -870,7 +869,7 @@ sub reverse_complement { #TODO move into Util.pm
     return $rcseq;
 }
 
-sub data_type {
+sub data_type { #FIXME redundant with DBI-X Experiment.pm
     my $data_type = shift;
 
     # Experiment Data Types

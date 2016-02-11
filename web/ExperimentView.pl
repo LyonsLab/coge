@@ -684,7 +684,7 @@ sub _get_experiment_info {
         { title => "ID", value => $exp->id },
         { title => "Name", value => $exp->name},
         { title => "Description", value => $exp->description},
-        { title => "Data Type", value => data_type($exp->data_type) },
+        { title => "Data Type", value => ucfirst($exp->data_type_desc) },
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
         { title => "Version", value => $exp->version },

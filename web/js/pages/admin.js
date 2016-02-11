@@ -53,7 +53,8 @@ $(function () {
 			}
 			if (current_tab == 7) {
 				if (!tab7_init) {
-					$("#tabs-8").html('<iframe src="https://genomevolution.org/greentea/" height="100%" width="100%"></iframe>');
+					var height = Math.max(400, $(window).height() - 250);
+					$("#tabs-8").html('<iframe src="https://genomevolution.org/greentea/" height="'+height+'" width="100%"></iframe>');
 					tab7_init = true;
 				}
 			}
@@ -927,9 +928,10 @@ function JobGrid(params) {
 	this.data;
 	this.table;
 	
-	this.width = $('#' + this.elementId).outerWidth();
-	this.height = $('#' + this.elementId).outerHeight() - 100;
-	console.log(this.height);
+	var element = $('#' + this.elementId);
+	this.width = element.outerWidth();
+	this.height = Math.max(400, $(window).height() - 450); //element.outerWidth(); // mdb changed 2/8/16
+	console.log("grid height = " + this.height);
 	
 	this.initialize();
 }
