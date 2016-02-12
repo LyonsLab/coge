@@ -9,13 +9,13 @@ use CoGe::Accessory::Web qw(get_defaults);
 print STDERR "CoGe API ======================================================\n";
 print STDERR "config file: ", get_defaults->{_CONFIG_PATH}, "\n";
 my $port = get_defaults->{MOJOLICIOUS_PORT} || 3303;
-print STDERR "port: ", $port, "\n";
 
 # Setup Hypnotoad
 app->config(
     hypnotoad => {
         listen => ["http://localhost:$port/"], 
-        proxy => 1
+        proxy => 1,
+        heartbeat_timeout => 15, # number of seconds before restarting "stalled" worker (needed for large JBrowse requests)
     }
 );
 app->log( Mojo::Log->new( path => "mojo.log", level => 'debug' ) ); # log in sandbox top-level directory
