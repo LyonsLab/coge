@@ -23,9 +23,9 @@ sub features {
     my $gid  = $self->stash('gid');
     my $chr  = $self->stash('chr');
     $chr = uri_unescape($chr) if (defined $chr);
+    my $feat_type    = $self->stash('type');
     my $start        = $self->param('start');
     my $end          = $self->param('end');
-    my $feat_type    = $self->param('feat_type');
     my $show_wobble  = $self->param('showWobble');
     my $scale        = $self->param('scale');
     my $basesPerSpan = $self->param('basesPerSpan');
