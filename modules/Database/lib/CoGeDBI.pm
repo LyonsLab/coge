@@ -47,6 +47,7 @@ BEGIN {
         get_feature_counts get_features get_feature_types
         get_feature_names get_feature_annotations get_locations 
         get_chromosomes get_chromosomes_from_features get_total_queries
+        get_features_by_range
     );
 }
 
@@ -425,6 +426,50 @@ sub get_features {
     return $results;
 }
 
+sub get_features_by_range { # for JBrowse::Annotation
+    my %opts = @_;
+    my $dbh       = $opts{dbh}; # database connection handle
+    my $gid       = $opts{gid} || $opts{genome_id};
+    my $chr       = $opts{chr};
+    my $start     = $opts{start};
+    my $stop      = $opts{stop} || $opts{end};
+    my $feat_type = $opts{feat_type};
+    my $dsid      = $opts{dsid} || $opts{dataset_id};
+    die unless ($gid && defined $chr && defined $start && defined $stop);
+    
+    # mdb 4/24/14 - added fn.primary_name=1 constraint to keep from returning arbitrary name
+    my $query = qq{
+        SELECT l.start as locstart, l.stop as locstop, l.strand as locstrand, 
+            ft.name as type, fn.name, l.location_id, f.start, f.stop, 
+            f.feature_id, fn.primary_name, l.chromosome, f.chromosome, f.strand
+            FROM genome g
+            JOIN dataset_connector dc ON dc.genome_id = g.genome_id
+            JOIN dataset d on dc.dataset_id = d.dataset_id
+            JOIN feature f ON d.dataset_id = f.dataset_id
+            JOIN location l ON f.feature_id = l.feature_id
+            JOIN feature_name fn ON f.feature_id = fn.feature_id
+            JOIN feature_type ft ON f.feature_type_id = ft.feature_type_id
+            WHERE g.genome_id = $gid
+                AND f.chromosome = '$chr'
+                AND f.stop > $start AND f.start <= $stop
+                AND ft.feature_type_id != 4
+    };
+    
+    if ($feat_type) {
+        $query .=  " AND ft.name = '$feat_type'";
+    }
+    # mdb added 4/21/14 issue 363
+    if ($dsid) {
+        $query .= " AND dc.dataset_id = $dsid";
+    }
+    
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_arrayref({});
+    #print STDERR Dumper $results, "\n";
+    
+    return $results;
+}
 
 sub get_feature_types {
     my $dbh = shift; # database connection handle
