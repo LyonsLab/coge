@@ -577,7 +577,7 @@ sub get_genome_info {
     #    my $cogedir  = $P->{COGEDIR};
     #    my $cogeurl  = $P->{URL};
     #    $seq_file =~ s/$cogedir/$cogeurl/i;
-    my $seq_url = "api/v1/legacy/sequence/$gid"; #"services/service.pl/sequence/$gid"; # mdb changed 2/5/15, COGE-289
+    #my $seq_url = api_url_for("genomes/$gid/sequence"); #"api/v1/legacy/sequence/$gid"; # mdb changed 2/12/16 for hypnotoad
 
     $html .= "<tr><td>Tools:</td>"
      . qq{<td>}
@@ -594,7 +594,6 @@ sub get_genome_info {
      #. qq{</table></td>}
      #. qq{<td id="dsg_features"></td>}
      . qq{</table>};
-
 
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
