@@ -2125,7 +2125,7 @@ sub generate_body {
         DELETED         => $genome->deleted,
         IRODS_HOME      => get_irods_path(),
         USER            => $USER->user_name,
-        DOWNLOAD_URL    => $config->{SERVER}."api/v1/legacy/sequence/$gid"
+        DOWNLOAD_URL    => url_for(api_url_for("genomes/$gid/sequence")) #$config->{SERVER}."api/v1/legacy/sequence/$gid" # mdb changed 2/12/16 for hypnotoad
     );
 
     if ( $USER->is_admin ) {
