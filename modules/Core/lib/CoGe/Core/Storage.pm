@@ -515,9 +515,7 @@ sub query_experiment_data {
     	if ($order_by) {
     		$query .= " order by $order_by";
     	}
-    	if ($limit) {
-    		$query .= " limit $limit";
-    	}
+		$query .= ($limit ? " limit $limit" : " limit 999999999");
         my $lines = query_fastbit($query, $eid);
         return $lines;
     }

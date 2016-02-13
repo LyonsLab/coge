@@ -560,9 +560,10 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     			return;
     		}
     	}
-    	if (dojo.byId('highest').checked)
+    	if (dojo.byId('highest').checked) {
+    		var eid = dojo.byId('eid').value;
         	dojo.xhrGet({
-        		url: api_base_url + '/experiment/' + dojo.byId('eid').value + '/query?col=max(value1)',
+        		url: api_base_url + '/experiment/' + eid + '/query?col=max(value1)',
         		handleAs: 'json',
     	  		load: dojo.hitch(this, function(data) {
     	  			console.log(data);
@@ -570,13 +571,28 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	  				this._error('Search', data);
     	  				return;
     	  			}
-     				this._track.browser.navigateToLocation(data.result);
+    	  			var first = JSON.parse('[' + data[0] + ']');
+     				this._track.browser.navigateToLocation({
+     					ref: first[0],
+     					start: first[1],
+     					end: first[2]
+     				});
+     				var nav = dojo.byId('nav_' + eid);
+     				if (nav)
+     					dojo.destroy(nav);
+     				nav = dojo.create('div', { id: 'nav_' + eid, style: { position: 'absolute' } }, dojo.byId('label_experiment' + eid));
+     				dojo.create('span', { innerHTML: data.length + ' hit' + (data.length != 1 ? 's' : '') }, nav);
+     				dojo.create('span', { className: 'glyphicon glyphicon-step-backward', style: { marginLeft: 20 } }, nav);
+     				dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', style: { marginLeft: 20 } }, nav);
+     				dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', style: { marginLeft: 20 } }, nav);
+     				dojo.create('span', { className: 'glyphicon glyphicon-step-foreward', style: { marginLeft: 20 } }, nav);
      				this._track_search_dialog.hide();
         		}),
         		error: dojo.hitch(this, function(data) {
         			this._error('Search', data);
         		})
         	});
+    	}
     },
 
     _showPixelValue: function( scoreDisplay, score ) {

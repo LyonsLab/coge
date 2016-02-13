@@ -1597,6 +1597,10 @@ sub upload_image_file {
 sub upload_metadata {
     my %opts = @_;
     my $type = $opts{type};
+<<<<<<< HEAD
+=======
+    my @error_ids;
+>>>>>>> master
     my $file = $FORM->param('metadata_file');
 
     open my $fh, $FORM->tmpFileName($file);
@@ -1621,11 +1625,33 @@ sub upload_metadata {
 		if ($annotations) {
 			my @ids = split(/,/, $row[0]);
 			foreach (@ids) {
-				my $target = $DB->resultset($type eq 'Notebook' ? 'List' : $type)->find($_);
-				create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
+			    my can_annotate = 0;
+			    if ($type eq 'Experiment') {
+			        can_annotate = $USER->is_owner_editor(experiment => $_);
+			    }
+			    elsif ($type eq 'Notebook') {
+			        can_annotate = $USER->is_owner_editor(list => $_);
+			    }
+			    else {
+			        can_annotate = $USER->is_owner_editor(dsg => $_);
+			    }
+			    if (can_annotate) {
+				    my $target = $DB->resultset($type eq 'Notebook' ? 'List' : $type)->find($_);
+				    create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
+			    }
+			    else {
+			        push @error_ids, $_;
+			    }
 			}
 		}
 	}
+<<<<<<< HEAD
+=======
+	if (@error_ids) {
+	    return 'Permission denied for the following ' . $type . 's: ' . join(',', @error_ids);
+	}
+	return 'Metadata added';
+>>>>>>> master
 }
 
 sub search_notebooks

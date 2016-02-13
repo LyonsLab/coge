@@ -5,7 +5,7 @@
 
 define( [
              'dojo/_base/declare',
-             'JBrowse/View/Track/HTMLVariants'
+             'JBrowse/View/Track/HTMLFeatures'
          ],
 
          function(

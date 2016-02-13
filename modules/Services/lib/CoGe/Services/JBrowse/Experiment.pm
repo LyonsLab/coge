@@ -149,7 +149,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 
     my ( $sum, $count );
     foreach my $x (@bins) {
-        $sum += x;
+        $sum += $x;
          #$max = $x if ( not defined $max or $x > $max ); # mdb removed 1/14/14 for BAM histograms
         $count++;
     }
@@ -165,6 +165,16 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     );
 }
 
+sub debug {
+	my $data = shift;
+	my $new_file = shift;
+	my $OUTFILE;
+	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
+	print {$OUTFILE} Dumper $data;
+	print {$OUTFILE} "\n";
+	close $OUTFILE;
+}
+
 sub query_data {
     my $self = shift;
     my $eid = $self->param('eid');
@@ -175,21 +185,27 @@ sub query_data {
 		eid => $eid,
 		col => 'chr,start,stop,value1',
 		chr => $chr,
-		where => $where,
-		order_by => $order_by,
-		limit => 1,
+		where => $where
 	);
-	
-	$result = pop(@{$result});
-	if (!$result) {
+	if (!scalar @{$result}) {
 		return encode_json({error => 'Query returned zero hits'});
 	}
-	$result = decode_json('[' . $result . ']');
-	return encode_json({ result => {
-		ref => ${$result}[0],
-		start => ${$result}[1],
-		end => ${$result}[2]
-	}});
+
+	my @max;
+	my $max_value = 0.0;
+	foreach (@{$result}) {
+		my $index = rindex($_, ',');
+		my $value = substr($_, $index + 1) + 0.0;
+		if ($max_value < $value) {
+			@max = ($_);
+			$max_value = $value;
+		}
+		elsif ($max_value == $value) {
+			push @max, $_;
+		}
+	}
+
+	return encode_json(\@max);
 }
 
 sub features {
@@ -391,7 +407,7 @@ sub features {
     	        	my $end = $pos + $len;
     	        	my $strand = ($flag & 0x10 ? '-1' : '1');
     	        	#TODO reverse complement sequence if neg strand?
-    	        	my $qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
+    	        	$qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
 
     	        	$results .= ( $results ? ',' : '' )
                       . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
