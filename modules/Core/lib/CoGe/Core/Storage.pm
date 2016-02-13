@@ -261,9 +261,8 @@ sub get_genome_seq {
         else                   { $chr = 'gi|' . $chr; }
 
         # Extract requested piece of sequence file
-        my $region =
-          $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
-        my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'};
+        my $region = $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
+        my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'} || 'samtools';
         unless ($samtools) {
             print STDERR "Storage::get_genome_seq: WARNING, conf file parameter SAMTOOLS is blank!\n";
         }
