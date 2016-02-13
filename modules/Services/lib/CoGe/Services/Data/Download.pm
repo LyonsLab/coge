@@ -1,5 +1,7 @@
-package CoGe::Services::Data::Downloader;
-use base 'CGI::Application';
+package CoGe::Services::Data::Download;
+
+use Mojo::Base 'Mojolicious::Controller';
+use Mojo::JSON;
 
 use CoGeX;
 use CoGe::Accessory::Web;
@@ -7,25 +9,19 @@ use CoGe::Core::Storage qw(get_download_path get_workflow_log_file);
 use File::Spec;
 use File::Slurp;
 
-sub setup {
-    my $self = shift;
-    $self->run_modes( 'get' => 'get' );
-    $self->mode_param('rm');
-}
-
 sub get {
     my $self = shift;
-    my $filename = $self->query->param('filename');
-    my $gid = $self->query->param('gid');
-    my $eid = $self->query->param('eid');
-    my $wid = $self->query->param('wid');
-    my $username = $self->query->param('username');
-    my $uuid = $self->query->param('uuid') || ''; # optional
-    my $attachment = $self->query->param('attachment') || 1;
+    my $filename = $self->param('filename');
+    my $gid = $self->param('gid');
+    my $eid = $self->param('eid');
+    my $wid = $self->param('wid');
+    my $username = $self->param('username');
+    my $uuid = $self->param('uuid') || ''; # optional
+    my $attachment = $self->param('attachment') || 1;
     
     # Validate inputs
     unless ($gid || $eid || ($wid && $username)) {
-        print STDERR "CoGe::Services::Data::Downloader invalid request\n";
+        print STDERR "CoGe::Services::Data::Download invalid request\n";
         return;
     }
     
@@ -39,7 +35,7 @@ sub get {
         if ( $genome->restricted
             and ( not defined $user or not $user->has_access_to_genome($genome) ) )
         {
-            print STDERR "CoGe::Services::Data::Downloader access denied to genome $gid\n";
+            print STDERR "CoGe::Services::Data::Download access denied to genome $gid\n";
             return;
         }
 
@@ -50,7 +46,7 @@ sub get {
         my $exp = $db->resultset('Experiment')->find($eid);
         if ($exp->restricted and
             (not defined $user or not $user->has_access_to_experiment($exp))) {
-            print STDERR "CoGe::Services::Data::Downloader access denied to experiment $eid\n";
+            print STDERR "CoGe::Services::Data::Download access denied to experiment $eid\n";
             return;
         }
 
@@ -61,7 +57,7 @@ sub get {
         $file_path = get_workflow_log_file($username, $wid);
     }
     
-    say STDERR "CoGe::Services::Data::Downloader file=$file_path";
+    say STDERR "CoGe::Services::Data::Download file=$file_path";
     return unless ($file_path);
 
     # Send file

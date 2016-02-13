@@ -16,7 +16,7 @@ CGI::Application::Dispatch->dispatch(
         },
         'download' => {
             prefix => 'CoGe::Services::Data',
-            app    => 'Downloader',
+            app    => 'Download',
             rm     => 'get'
         },
         'genome/load' => {
