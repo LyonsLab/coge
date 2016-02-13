@@ -7,15 +7,15 @@ use lib './modules/perl';
 # Set port -- each sandbox should be set to a unique port in Apache config and coge.conf
 use CoGe::Accessory::Web qw(get_defaults);
 print STDERR "CoGe API ======================================================\n";
-print STDERR "config file: ", get_defaults->{_CONFIG_PATH}, "\n";
+print STDERR "Config file: ", get_defaults->{_CONFIG_PATH}, "\n";
 my $port = get_defaults->{MOJOLICIOUS_PORT} || 3303;
 
 # Setup Hypnotoad
 app->config(
     hypnotoad => {
-        listen => ["http://localhost:$port/"], 
+        listen => ["http://localhost:$port/"],
         proxy => 1,
-        heartbeat_timeout => 15, # number of seconds before restarting "stalled" worker (needed for large JBrowse requests)
+        heartbeat_timeout => 15, # number of seconds before restarting unresponsive worker (needed for large JBrowse requests)
     }
 );
 app->log( Mojo::Log->new( path => "mojo.log", level => 'debug' ) ); # log in sandbox top-level directory
@@ -62,6 +62,14 @@ $r->get("/genomes/search/#term")
 $r->get("/genomes/:id" => [id => qr/\d+/])
     ->name("genomes-fetch")
     ->to("genome2#fetch", id => undef);
+    
+$r->get("/genomes/:id/sequence" => [id => qr/\d+/])
+    ->name("genomes-sequence")
+    ->to("genome2#sequence", id => undef);
+    
+$r->get("/genomes/:id/sequence/:chr" => { id => qr/\d+/, chr => qr/\w+/ }) # can this be merged with above using regex?
+    ->name("genomes-sequence-chr")
+    ->to("genome2#sequence", id => undef, chr => undef);   
     
 $r->put("/genomes")
     ->name("genomes-add")

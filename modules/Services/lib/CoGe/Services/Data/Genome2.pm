@@ -5,6 +5,7 @@ use Mojo::JSON;
 use CoGe::Services::Auth qw(init);
 use CoGe::Services::Data::Job;
 use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Storage qw(get_genome_seq);
 use CoGeDBI qw(get_feature_counts);
 use Data::Dumper;
 
@@ -157,6 +158,51 @@ sub fetch {
         experiments => [ map { int($_->id) } $genome->experiments ],
         additional_metadata => \@metadata
     });
+}
+
+sub sequence {
+    my $self   = shift;
+    my $gid    = $self->stash('id');
+    return unless $gid;
+    my $chr    = $self->stash('chr');
+    my $start  = $self->param('start');
+    my $stop   = $self->param('stop') || $self->param('end');
+    my $strand = $self->param('strand');
+    print STDERR "Data::Genome::fetch_sequence gid=$gid chr=$chr start=$start stop=$stop\n";
+
+    # Connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    # Retrieve genome
+    my $genome = $db->resultset('Genome')->find($gid);
+    unless ($genome) {
+        print STDERR "Data::Sequence::get genome $gid not found in db\n";
+        return;
+    }
+
+    # Check permissions
+    if ( $genome->restricted
+        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
+    {
+        print STDERR "Data::Sequence::get access denied to genome $gid\n";
+        return;
+    }
+
+    # Force browser to download whole genome as attachment
+    if ( (!defined($chr) || $chr eq '') ) {
+        my $genome_name = sanitize_name($genome->organism->name);
+        $genome_name = 'genome_'.$gid unless $genome_name;
+        $self->header_add( -attachment => "$genome_name.faa" );
+    }
+
+    # Get sequence from file
+    $self->render(text => get_genome_seq(
+        gid   => $gid,
+        chr   => $chr,
+        start => $start,
+        stop  => $stop,
+        strand => $strand
+    ));
 }
 
 sub add {
