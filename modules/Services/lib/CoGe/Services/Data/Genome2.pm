@@ -6,6 +6,7 @@ use CoGe::Services::Auth qw(init);
 use CoGe::Services::Data::Job;
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Storage qw(get_genome_seq);
+use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGeDBI qw(get_feature_counts);
 use Data::Dumper;
 
@@ -192,7 +193,7 @@ sub sequence {
     if ( (!defined($chr) || $chr eq '') ) {
         my $genome_name = sanitize_name($genome->organism->name);
         $genome_name = 'genome_'.$gid unless $genome_name;
-        $self->header_add( -attachment => "$genome_name.faa" );
+        $self->res->headers->content_disposition("attachment; filename=$genome_name.faa;");
     }
 
     # Get sequence from file
