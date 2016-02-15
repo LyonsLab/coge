@@ -21,3 +21,6 @@ cat modules.txt | xargs sudo cpanm
 For detailed installation instructions please visit:
 *http://genomevolution.org/wiki/index.php/Install_coge*
 
+
+Testing
+<iframe src="https://genomevolution.org/coge/GenomeView.pl?gid=16911&embed=1" style="width:100%;height:100%"></iframe>
