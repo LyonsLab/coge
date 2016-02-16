@@ -34,7 +34,7 @@ our @EXPORT = qw(
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
-    add_workflow_result create_bowtie2_workflow create_bowtie2_chipseq_workflow
+    add_workflow_result create_bowtie2_workflow 
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -1506,7 +1506,6 @@ sub create_bowtie2_alignment_job {
         description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using Bowtie2..."
     };    
 }
-
 
 sub create_tophat_job {
     my %opts = @_;
