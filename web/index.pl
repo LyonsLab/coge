@@ -176,7 +176,7 @@ sub actions {
 	    ACTION     => qq{<a href="./FeatView.pl">FeatView</a>},
 	    LINK       => qq{./FeatView.pl},
 	    SCREENSHOT => "picts/preview/FeatView.png",
-	    DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=488137061&gstid=1">Example</a>},
+	    DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
 	},
 #       {
 # 		   {
