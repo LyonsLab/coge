@@ -59,7 +59,7 @@ BEGIN {
       get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_data
       reverse_complement get_irods_file get_irods_path get_popgen_result_path
-      is_popgen_finished data_type
+      is_popgen_finished data_type get_sra_cache_path
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
 
@@ -762,6 +762,16 @@ sub is_popgen_finished {
     }
     
     return 0;
+}
+
+sub get_sra_cache_path {
+    my $data_dir = CoGe::Accessory::Web::get_defaults()->{'DATADIR'};
+    unless ($data_dir) {
+        print STDERR "Storage::get_sra_cache_path missing DATADIR\n";
+        return;
+    }
+    
+    return catdir($data_dir, 'sra');
 }
 
 sub remove_self { # TODO move to Utils.pm
