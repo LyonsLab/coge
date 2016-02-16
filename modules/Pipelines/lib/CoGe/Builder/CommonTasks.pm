@@ -1257,39 +1257,6 @@ sub create_hisat2_index_job {
     };
 }
 
-#sub create_bowtie2_workflow {
-#    my %opts = @_;
-#
-#    # Required arguments
-#    my $gid = $opts{gid};
-#    my $fasta = $opts{fasta};
-#    my $fastq = $opts{fastq};
-#    my $validated = $opts{validated};
-#    my $staging_dir = $opts{staging_dir};
-#    my $read_type = $opts{read_type};
-#    my $encoding = $opts{encoding};
-#
-#    my ($index_path, $index_task) = create_bowtie_index_job($gid, $fasta);
-#    
-#    my $align_task = create_bowtie2_alignment_job(
-#        staging_dir => $staging_dir,
-#        fasta => $fasta,
-#        fastq => $fastq,
-#        validated => $validated,
-#        index_name => $index_path,
-#        index_files => $index_task->{outputs},
-#        read_type => $read_type,
-#        encoding => $encoding
-#    );
-#    
-#    my $bam_task = create_sam_to_bam_job($align_task->{outputs}->[0], $staging_dir);
-#
-#    # Return the bam output name and tasks
-#    my @tasks = ( $index_task, $align_task, $bam_task );
-#    my %results = ( bam_file => $bam_task->{outputs}[0] );
-#    return \@tasks, \%results;
-#}
-
 sub create_bowtie2_workflow {
     my %opts = @_;
 
@@ -1783,47 +1750,66 @@ sub create_gsnap_workflow {
     my $fasta = $opts{fasta};
     my $fastq = $opts{fastq};
     my $validated = $opts{validated};
-    my $params = $opts{params} // {}; #/
+    my $params = $opts{params} // {};
+    my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
+
+    my @tasks;
 
     # Generate index
-    my %gmap = create_gmap_index_job($gid, $fasta);
+    my $gmap_task = create_gmap_index_job($gid, $fasta);
+    push @tasks, $gmap_task;
 
     # Generate sam file
-    my %gsnap = create_gsnap_job({
-        fastq => $fastq,
-        validated => $validated,
-        gmap => $gmap{outputs}->[0]->[0],
-        staging_dir => $staging_dir,
-        params => $params,
-    });
+    my @sam_files;
+    if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
+        foreach my $file (@$fastq) {
+            my $gsnap_task = create_gsnap_alignment_job(
+                fastq => [ $file ],
+                validated => $validated,
+                gmap => $gmap_task->{outputs}->[0]->[0],
+                staging_dir => $staging_dir,
+                params => $params,
+            );
+            push @tasks, $gsnap_task;
+            push @sam_files, $gsnap_task->{outputs}->[0];
+        }
+    }
+    else { # standard GSNAP run (all fastq's at once)
+        my $gsnap_task = create_gsnap_alignment_job(
+            fastq => $fastq,
+            validated => $validated,
+            gmap => $gmap_task->{outputs}->[0]->[0],
+            staging_dir => $staging_dir,
+            params => $params,
+        );
+        push @tasks, $gsnap_task;
+        push @sam_files, $gsnap_task->{outputs}->[0];
+    }
     
-    # Filter sam file
-    my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
-
-    # Convert sam file to bam
-    my $bam_task = create_sam_to_bam_job($filter{outputs}->[0], $staging_dir);
-
-    # Return the bam output name and jobs required
-    my @tasks = (
-        \%gmap,
-        \%gsnap,
-        \%filter,
-        $bam_task
-    );
-    my %results = (
-        bam_file => $bam_task->{outputs}[0]
-    );
-    return \@tasks, \%results;
+    # Add one or more sam-to-bam tasks
+    my %results;
+    foreach my $file (@sam_files) {
+        # Filter sam file
+        my $filter_task = create_sam_filter_job($file, $staging_dir);
+        push @tasks, $filter_task;
+        
+        # Convert sam file to bam
+        my $bam_task = create_sam_to_bam_job($filter_task->{outputs}->[0], $staging_dir);
+        push @tasks, $bam_task;
+        push @{$results{bam_files}}, $bam_task->{outputs}->[0];
+    }
+    
+    return (\@tasks, \%results);
 }
 
 sub create_gmap_index_job {
     my $gid = shift;
     my $fasta = shift;
     my $name = to_filename($fasta);
-    my $cmd = $CONF->{GMAP_BUILD};
+    my $cmd = $CONF->{GMAP_BUILD} || 'gmap_build';
     my $GMAP_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "gmap_index");
 
-    return (
+    return {
         cmd => $cmd,
         script => undef,
         args => [
@@ -1838,7 +1824,7 @@ sub create_gmap_index_job {
             [catdir($GMAP_CACHE_DIR, $name . "-index"), 1]
         ],
         description => "Indexing genome sequence with GMAP..."
-    );
+    };
 }
 
 sub create_sam_to_bam_job {
@@ -1874,7 +1860,7 @@ sub create_sam_filter_job {
     my $cmd = catfile($CONF->{SCRIPTDIR}, "filter_sam.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
-    return (
+    return {
         cmd => "$cmd $filename $filename.processed",
         script => undef,
         args => [],
@@ -1885,7 +1871,7 @@ sub create_sam_filter_job {
             catfile($staging_dir, $filename . ".processed")
         ],
         description => "Filtering SAM file..."
-    );
+    };
 }
 
 sub create_bam_sort_job {
@@ -1917,17 +1903,17 @@ sub create_bam_sort_job {
     };
 }
 
-sub create_gsnap_job {
-    my $opts = shift;
+sub create_gsnap_alignment_job {
+    my %opts = @_;
 
     # Required arguments
-    my $fastq = $opts->{fastq};
-    my $validated = $opts->{validated};
-    my $gmap = $opts->{gmap};
-    my $staging_dir = $opts->{staging_dir};
+    my $fastq = $opts{fastq};
+    my $validated = $opts{validated};
+    my $gmap = $opts{gmap};
+    my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
-    my $params = $opts->{params};
+    my $params = $opts{params};
     my $read_type = $params->{read_type} // "single"; #/
     my $gapmode = $params->{'--gap-mode'} // "none"; #/
     my $Q = $params->{'-Q'} // 1; #/
@@ -1936,15 +1922,18 @@ sub create_gsnap_job {
     my $nofails = $params->{'--nofails'} // 1; #/
     my $max_mismatches = $params->{'--max-mismatches'};
 
-    my $name = basename($gmap);
+    my ($first_fastq) = @$fastq;
+    my $output_file = basename($first_fastq) . '.sam';
     
-    my $cmd = $CONF->{GSNAP};
+    my $index_name = basename($gmap);
+    
+    my $cmd = $CONF->{GSNAP} || 'gsnap';
     die "ERROR: GSNAP is not in the config." unless ($cmd);
     $cmd = 'nice ' . $cmd; # run at lower priority
 
     my $args = [
         ["-D", ".", 0],
-        ["-d", $name, 0],
+        ["-d", $index_name, 0],
         ["--nthreads=32", '', 0],
         ["-n", $n, 0],
         ["-N", $N, 0],
@@ -1964,9 +1953,9 @@ sub create_gsnap_job {
         push @$args, ["", $_, 1];
     }
     
-    push @$args, [">", $name . ".sam", 1];
+    push @$args, [">", $output_file, 1];
 
-    return (
+    return {
         cmd => $cmd,
         script => undef,
 # mdb removed 2/2/15 -- fails on zero-length validation input
@@ -1980,10 +1969,10 @@ sub create_gsnap_job {
             [$gmap, 1]
         ],
         outputs => [
-            catfile($staging_dir, $name . ".sam")
+            catfile($staging_dir, $output_file)
         ],
-        description => "Aligning sequences with GSNAP..."
-    );
+        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq)  . " with GSNAP..."
+    };
 }
 
 sub create_notebook_job {
