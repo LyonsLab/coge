@@ -1031,7 +1031,7 @@ sub create_trimgalore_job {
     }
 
     return {
-        cmd => catfile($cmd),
+        cmd => $cmd,
         script => undef,
         args => $args,
         inputs => \@inputs,
