@@ -197,7 +197,7 @@ sub query_data {
 		my $max = undef;
 		foreach (@{$result}) {
 			my $index = rindex($_, ',');
-			my $value = substr($_, $index + 1) + 0.0;
+			my 0 + $value = substr($_, $index + 1);
 			if (!defined $max || $max < $value) {
 				@hits = ($_);
 				$max = $value;
@@ -211,7 +211,7 @@ sub query_data {
 		my $min = undef;
 		foreach (@{$result}) {
 			my $index = rindex($_, ',');
-			my $value = substr($_, $index + 1) + 0.0;
+			my $value = 0 + substr($_, $index + 1);
 			if (!defined $min || $min > $value) {
 				@hits = ($_);
 				$min = $value;
@@ -238,9 +238,13 @@ sub histogram {
 			chr => $chr
 		);
 	    my $bins = CoGe::Accessory::histogram::_histogram_bins($result, 20);
-	    my $hist = CoGe::Accessory::histogram::_histogram_frequency($result, $bins);
+	    my $counts = CoGe::Accessory::histogram::_histogram_frequency($result, $bins);
 	    open my $fh, ">", $hist_file;
-	    print {$fh} encode_json($hist);
+	    print {$fh} encode_json({
+	    	first => 0 + $bins->[0][0],
+	    	gap => $bins->[0][1] - $bins->[0][0],
+	    	counts => $counts
+	    });
 	    close $fh; 
     }
     open my $fh, $hist_file;
