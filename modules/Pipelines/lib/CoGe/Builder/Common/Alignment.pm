@@ -145,19 +145,7 @@ sub build {
         encoding => $read_params->{encoding},
         read_type => $read_params->{read_type},
         staging_dir => $staging_dir,
-        params => $alignment_params,
-    );
-    $params{doSeparately} = 1 if $chipseq_params;
-    
-    my %params = ( 
-        fasta => catfile($fasta_cache_dir, $reheader_fasta),
-        fastq => \@trimmed,
-        validated => \@validated,
-        gid => $gid,
-        encoding => $read_params->{encoding},
-        read_type => $read_params->{read_type},
-        staging_dir => $staging_dir,
-        params => $alignment_params,
+        params => $alignment_params
     );
     $params{doSeparately} = 1 if $chipseq_params;
     
