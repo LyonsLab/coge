@@ -905,8 +905,7 @@ sub create_cutadapt_job {
     my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
 
     # Build up command/arguments string
-    my $cmd = $CONF->{CUTADAPT};
-    die "ERROR: CUTADAPT is not in the config." unless $cmd;
+    my $cmd = $CONF->{CUTADAPT} || 'cutadapt';
     $cmd = 'nice ' . $cmd; # run at lower priority
 
     my $arg_str;
