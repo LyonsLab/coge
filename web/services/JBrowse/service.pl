@@ -93,6 +93,11 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Experiment',
             rm     => 'stats_regionFeatureDensities'
         },
+        'experiment/:eid/histogram' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'histogram'
+        },
         'experiment/:eid/query' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',

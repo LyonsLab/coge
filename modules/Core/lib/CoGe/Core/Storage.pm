@@ -467,11 +467,13 @@ sub debug {
 sub query_fastbit {
 	my $query = shift;
 	my $eid = shift;
+
     my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
     my $storage_path = get_experiment_path($eid);
     my $cmd = "$cmdpath -v 1 -d $storage_path -q \"$query\" 2>&1";
 
     my @cmdOut = qx{$cmd};
+
     my $cmdStatus = $?;
     if ( $? != 0 ) {
         print STDERR "Storage::query_fastbit: error $? executing command: $cmd\n";
@@ -479,7 +481,7 @@ sub query_fastbit {
     my @lines;
     foreach (@cmdOut) {
 	    chomp;
-	    if (/^\"/) {
+	    if (/^(\"|\d)/) {
             push @lines, $_;
         }
     }
@@ -516,8 +518,7 @@ sub query_experiment_data {
     		$query .= " order by $order_by";
     	}
 		$query .= ($limit ? " limit $limit" : " limit 999999999");
-        my $lines = query_fastbit($query, $eid);
-        return $lines;
+        return query_fastbit($query, $eid);
     }
 }
 

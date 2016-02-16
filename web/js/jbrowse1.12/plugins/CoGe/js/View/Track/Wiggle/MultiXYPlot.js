@@ -560,39 +560,78 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     			return;
     		}
     	}
+		var eid = dojo.byId('eid').value;
+		var div = dojo.byId('coge-track-search');
     	if (dojo.byId('highest').checked) {
-    		var eid = dojo.byId('eid').value;
+    		dojo.empty(div);
+    		div.innerHTML = '<img src="picts/ajax-loader.gif">';
         	dojo.xhrGet({
-        		url: api_base_url + '/experiment/' + eid + '/query?col=max(value1)',
+        		url: api_base_url + '/experiment/' + eid + '/query?type=max',
         		handleAs: 'json',
     	  		load: dojo.hitch(this, function(data) {
-    	  			console.log(data);
     	  			if (data.error) {
     	  				this._error('Search', data);
+         				this._track_search_dialog.hide();
     	  				return;
     	  			}
-    	  			var first = JSON.parse('[' + data[0] + ']');
-     				this._track.browser.navigateToLocation({
-     					ref: first[0],
-     					start: first[1],
-     					end: first[2]
-     				});
-     				var nav = dojo.byId('nav_' + eid);
-     				if (nav)
-     					dojo.destroy(nav);
-     				nav = dojo.create('div', { id: 'nav_' + eid, style: { position: 'absolute' } }, dojo.byId('label_experiment' + eid));
-     				dojo.create('span', { innerHTML: data.length + ' hit' + (data.length != 1 ? 's' : '') }, nav);
-     				dojo.create('span', { className: 'glyphicon glyphicon-step-backward', style: { marginLeft: 20 } }, nav);
-     				dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', style: { marginLeft: 20 } }, nav);
-     				dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', style: { marginLeft: 20 } }, nav);
-     				dojo.create('span', { className: 'glyphicon glyphicon-step-foreward', style: { marginLeft: 20 } }, nav);
+    	  			this._new_nav(eid, data);
      				this._track_search_dialog.hide();
         		}),
         		error: dojo.hitch(this, function(data) {
         			this._error('Search', data);
+     				this._track_search_dialog.hide();
+       		})
+        	});
+    	} else if (dojo.byId('lowest').checked) {
+    		dojo.empty(div);
+    		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+        	dojo.xhrGet({
+        		url: api_base_url + '/experiment/' + eid + '/query?type=min',
+        		handleAs: 'json',
+    	  		load: dojo.hitch(this, function(data) {
+    	  			if (data.error) {
+    	  				this._error('Search', data);
+         				this._track_search_dialog.hide();
+    	  				return;
+    	  			}
+    	  			this._new_nav(eid, data);
+     				this._track_search_dialog.hide();
+        		}),
+        		error: dojo.hitch(this, function(data) {
+        			this._error('Search', data);
+     				this._track_search_dialog.hide();
         		})
         	});
     	}
+    },
+    
+    _new_nav: function(eid, data) {
+		var first = JSON.parse('[' + data[0] + ']');
+		this._track.browser.navigateToLocation({
+			ref: first[0],
+			start: first[1],
+			end: first[2]
+		});
+		var nav = dojo.byId('nav_' + eid);
+		if (nav)
+			dojo.destroy(nav);
+		nav = dojo.create('div', { id: 'nav_' + eid, style: { background: 'white', opacity: 0.7, position: 'absolute' } }, dojo.byId('container'));
+		_adjust_nav(eid);
+		nav.hits = data;
+		nav.hit = 0;
+		nav.browser = this._track.browser;
+		dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: function() { _go_to_hit(nav, 0) }, style: { cursor: 'pointer' } }, nav);
+		dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', onclick: function() { if (nav.hit > 0) _go_to_hit(nav, nav.hit - 1) }, style: { cursor: 'pointer' } }, nav);
+		nav.num_span = dojo.create('span', { innerHTML: '1', style: { cursor: 'default' } }, nav);
+		dojo.create('span', { innerHTML: ' of ' + data.length + ' hit' + (data.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, nav);
+		dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: function() { if (nav.hit < nav.hits.length - 1) _go_to_hit(nav, nav.hit + 1) }, style: { cursor: 'pointer' } }, nav);
+		dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: function() { _go_to_hit(nav, nav.hits.length - 1) }, style: { cursor: 'pointer' } }, nav);
+        this.browser.subscribe('/jbrowse/v1/v/tracks/updateStaticElements', function(coords){_adjust_nav(eid)});
+        this.browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
+        	for (var i=0; i<configs.length; i++)
+        		if (configs[i].coge.id == eid)
+        			dojo.destroy(dojo.byId('nav_' + eid));
+        });
     },
 
     _showPixelValue: function( scoreDisplay, score ) {
@@ -711,12 +750,12 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        label: 'Search',
 	        onClick: function(event) {
 	        	coge_xyplot._track = track;
-	        	var content = '<input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center">' + 
+	        	var content = '<div id="coge-track-search"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center">' + 
 	        		'<tr><td><input id="highest" type="radio" name="type" checked="checked"> highest</td></tr>' +
 	        		'<tr><td><input id="lowest" type="radio" name="type"> lowest</td></tr>' +
 	        		'<tr><td><input id="above" type="radio" name="type"> above <input id="above_value"></td></tr>' +
 	        		'<tr><td><input id="below" type="radio" name="type"> below <input id="below_value"></td></tr>' +
-	        		'</table><div class="dijitDialogPaneActionBar"><button id="search_ok" data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div>';
+	        		'</table><div class="dijitDialogPaneActionBar"><button id="search_ok" data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
 	        	coge_xyplot._track_search_dialog = new Dialog({
                     title: 'Search Track',
                     content: content,
@@ -883,4 +922,25 @@ function nbspPad(s, padLength) {
 
 function sortByScore(a,b) { // sort features by score
     return Math.abs( b.feature.get('score') ) - Math.abs( a.feature.get('score') );
+}
+
+function _adjust_nav(eid) {
+ 	var l = dojo.byId('label_experiment' + eid);
+ 	if (l) {
+ 		var nav = dojo.byId('nav_' + eid);
+ 		var track = dojo.byId('track_experiment' + eid);
+     	dojo.style(nav, 'left', dojo.style(l, 'left') + 10);
+     	dojo.style(nav, 'top', dojo.style(track, 'top') + 32);
+ 	}
+}
+
+function _go_to_hit(nav, hit) {
+	nav.hit = hit % nav.hits.length;
+	nav.num_span.innerHTML = nav.hit + 1;
+	var loc = JSON.parse('[' + nav.hits[nav.hit] + ']');
+	nav.browser.navigateToLocation({
+		ref: loc[0],
+		start: loc[1],
+		end: loc[2]
+	});	
 }

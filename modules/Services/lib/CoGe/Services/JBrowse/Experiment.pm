@@ -2,8 +2,9 @@ package CoGe::Services::JBrowse::Experiment;
 use base 'CGI::Application';
 
 use CoGeX;
+use CoGe::Accessory::histogram;
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw( get_experiment_data query_experiment_data );
+use CoGe::Core::Storage qw( get_experiment_data get_experiment_path query_experiment_data );
 use JSON::XS;
 use Data::Dumper;
 
@@ -28,6 +29,7 @@ sub setup {
         'stats_regionFeatureDensities' => 'stats_regionFeatureDensities',
         'features'     => 'features',
         'query_data'   => 'query_data',
+        'histogram'     => 'histogram',
     );
     $self->mode_param('rm');
 }
@@ -179,33 +181,72 @@ sub query_data {
     my $self = shift;
     my $eid = $self->param('eid');
     my $chr = $self->query->param('chr');
-    my $where = $self->query->param('where');
+    my $type = $self->query->param('type');
     my $order_by = 'value1 desc';
 	my $result = query_experiment_data(
 		eid => $eid,
 		col => 'chr,start,stop,value1',
-		chr => $chr,
-		where => $where
+		chr => $chr
 	);
 	if (!scalar @{$result}) {
 		return encode_json({error => 'Query returned zero hits'});
 	}
 
-	my @max;
-	my $max_value = 0.0;
-	foreach (@{$result}) {
-		my $index = rindex($_, ',');
-		my $value = substr($_, $index + 1) + 0.0;
-		if ($max_value < $value) {
-			@max = ($_);
-			$max_value = $value;
+	my @hits;
+	if ($type eq 'max') {
+		my $max = undef;
+		foreach (@{$result}) {
+			my $index = rindex($_, ',');
+			my $value = substr($_, $index + 1) + 0.0;
+			if (!defined $max || $max < $value) {
+				@hits = ($_);
+				$max = $value;
+			}
+			elsif ($max == $value) {
+				push @hits, $_;
+			}
 		}
-		elsif ($max_value == $value) {
-			push @max, $_;
+	}
+	elsif ($type eq 'min') {
+		my $min = undef;
+		foreach (@{$result}) {
+			my $index = rindex($_, ',');
+			my $value = substr($_, $index + 1) + 0.0;
+			if (!defined $min || $min > $value) {
+				@hits = ($_);
+				$min = $value;
+			}
+			elsif ($min == $value) {
+				push @hits, $_;
+			}
 		}
 	}
 
-	return encode_json(\@max);
+	return encode_json(\@hits);
+}
+
+sub histogram {
+    my $self  = shift;
+    my $eid   = $self->param('eid');
+
+    my $storage_path = get_experiment_path($eid);
+    my $hist_file = "$storage_path/value1.hist";
+    if (!-e $hist_file) {
+		my $result = query_experiment_data(
+			eid => $eid,
+			col => 'value1',
+			chr => $chr
+		);
+	    my $bins = CoGe::Accessory::histogram::_histogram_bins($result, 20);
+	    my $hist = CoGe::Accessory::histogram::_histogram_frequency($result, $bins);
+	    open my $fh, ">", $hist_file;
+	    print {$fh} encode_json($hist);
+	    close $fh; 
+    }
+    open my $fh, $hist_file;
+    my $hist = <$fh>;
+    close $fh;
+    return $hist;
 }
 
 sub features {
