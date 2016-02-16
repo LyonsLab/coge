@@ -169,15 +169,15 @@ sub actions {
             SCREENSHOT => "picts/preview/SynMap.png",
             DESC       => qq{Search CoGe's annotation database for homologs.<br><a href="SynFind.pl?dsgid=3068;fid=40603528;run=1">Example</a>},
         },
-	{
-	    NAME       => "FeatView",
-	    ID         => 6,
-	    LOGO       => "picts/FeatView.svg",
-	    ACTION     => qq{<a href="./FeatView.pl">FeatView</a>},
-	    LINK       => qq{./FeatView.pl},
-	    SCREENSHOT => "picts/preview/FeatView.png",
-	    DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
-	},
+    	{
+    	    NAME       => "FeatView",
+    	    ID         => 6,
+    	    LOGO       => "picts/FeatView.svg",
+    	    ACTION     => qq{<a href="./FeatView.pl">FeatView</a>},
+    	    LINK       => qq{./FeatView.pl},
+    	    SCREENSHOT => "picts/preview/FeatView.png",
+    	    DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
+    	},
 #       {
 # 		   {
 # 		    ID => 7,
