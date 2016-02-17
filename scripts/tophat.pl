@@ -1,7 +1,8 @@
 #!/usr/bin/env perl
 #-------------------------------------------------------------------------------
-# Purpose:  Wrapper script for Tophat for use with JEX.  TopHat's command-line
-#     usage with paired-end reads will not work with JEX's workflow interface.
+# Purpose:  Wrapper script for Bowtie/Tophat for use with JEX.  
+#     Bowtie & TopHat's command-line usage with paired-end reads will not work 
+#     with JEX's workflow interface.
 # Author:   mdb
 # Created:  1/30/15
 #------------------------------------------------------------------------------
