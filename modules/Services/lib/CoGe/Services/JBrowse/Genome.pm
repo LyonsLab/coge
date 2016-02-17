@@ -16,8 +16,11 @@ sub setup {
 }
 
 sub add_features {
-    my ($name, $type_ids, $dsid, $hits, $dbh) = @_;
+    my ($name, $chr, $type_ids, $dsid, $hits, $dbh) = @_;
     my $query = 'SELECT name,chromosome,start,stop FROM feature JOIN feature_name on feature.feature_id=feature_name.feature_id WHERE dataset_id=' . $dsid;
+    if ($chr) {
+    	$query .= " AND chromosome='" . $chr . "'";
+    }
     if ($type_ids) {
     	if (index($type_ids, ',') != -1) {
 		    $query .= ' AND feature_type_id IN(' . $type_ids . ')';
@@ -27,7 +30,6 @@ sub add_features {
     	}
     }
     $query .= ' AND lower(name) ' . (index($name, '%') != -1 ? 'LIKE' : '=') . " '" . $name . "'";
-    warn $query;
     my $sth = $dbh->prepare($query);
     $sth->execute();
     while (my $row = $sth->fetch) {
@@ -38,6 +40,8 @@ sub add_features {
 sub features {
     my $self = shift;
     my $name = scalar $self->query->param('name');
+    my $chr = $self->query->param('chr');
+
     my ( $db, $user ) = CoGe::Accessory::Web->init;
     my $dbh = $db->storage->dbh;
 
@@ -50,10 +54,10 @@ sub features {
     my $hits = [];
     my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'));
     foreach my $dsid (@$ids) {
-        add_features '%' . lc($name) . '%', $type_ids, $dsid, $hits, $dbh;
+        add_features '%' . lc($name) . '%', $chr, $type_ids, $dsid, $hits, $dbh;
     }
-    warn encode_json($hits);
-    return encode_json($hits);
+    my @sorted = sort { $a->{name} cmp $b->{name} } @{$hits};
+    return encode_json(\@sorted);
 }
 
 sub genes {
@@ -76,7 +80,7 @@ sub genes {
     my $hits = [];
     my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'));
     foreach my $dsid (@$ids) {
-        add_features lc($name), '1', $dsid, $hits, $dbh;
+        add_features lc($name), undef, '1', $dsid, $hits, $dbh;
     }
     return encode_json($hits);
 }

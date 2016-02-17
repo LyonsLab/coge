@@ -90,6 +90,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         //console.log('updateStaticElements');
         this.inherited( arguments );
         this.updateYScaleFromViewDimensions( coords );
+        _adjust_nav(this.config.coge.id)
     },
 
     fillTooManyFeaturesMessage: function( blockIndex, block, scale ) {
@@ -552,57 +553,50 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },
 
     _search_track: function() {
-    	if (dojo.byId('above').checked || dojo.byId('below').checked) {
-    		var i = dojo.byId(dojo.byId('above').checked ? 'above_value' : 'below_value');
-    		if (!i.value) {
-    			this._error('Value Required', 'Please enter a value.');
-    			i.focus();
-    			return;
-    		}
-    	}
 		var eid = dojo.byId('eid').value;
 		var div = dojo.byId('coge-track-search');
-    	if (dojo.byId('highest').checked) {
-    		dojo.empty(div);
-    		div.innerHTML = '<img src="picts/ajax-loader.gif">';
-        	dojo.xhrGet({
-        		url: api_base_url + '/experiment/' + eid + '/query?type=max',
-        		handleAs: 'json',
-    	  		load: dojo.hitch(this, function(data) {
-    	  			if (data.error) {
-    	  				this._error('Search', data);
-         				this._track_search_dialog.hide();
-    	  				return;
-    	  			}
-    	  			this._new_nav(eid, data);
-     				this._track_search_dialog.hide();
-        		}),
-        		error: dojo.hitch(this, function(data) {
-        			this._error('Search', data);
-     				this._track_search_dialog.hide();
-       		})
-        	});
-    	} else if (dojo.byId('lowest').checked) {
-    		dojo.empty(div);
-    		div.innerHTML = '<img src="picts/ajax-loader.gif">';
-        	dojo.xhrGet({
-        		url: api_base_url + '/experiment/' + eid + '/query?type=min',
-        		handleAs: 'json',
-    	  		load: dojo.hitch(this, function(data) {
-    	  			if (data.error) {
-    	  				this._error('Search', data);
-         				this._track_search_dialog.hide();
-    	  				return;
-    	  			}
-    	  			this._new_nav(eid, data);
-     				this._track_search_dialog.hide();
-        		}),
-        		error: dojo.hitch(this, function(data) {
-        			this._error('Search', data);
-     				this._track_search_dialog.hide();
-        		})
-        	});
+		var params;
+
+    	if (dojo.byId('highest').checked)
+    		params = 'type=max';
+    	else if (dojo.byId('lowest').checked)
+    		params = 'type=min';
+    	else {
+    		if (this._brush.empty()) {
+    			this._error('Unspecified Range', 'Please drag on the histogram to select the range of values you wish to search for');
+    			return;
+    		}
+    		var params = 'type=range';
+    		var extent = this._brush.extent();
+    		var domain = this._brush.x().domain();
+    		if (extent[0] != domain[0])
+    			params += '&gte=' + extent[0];
+    		if (extent[1] != domain[1])
+    			params += '&lte=' + extent[1];
     	}
+    	var ref_seq = dojo.byId('coge_ref_seq');
+    	if (ref_seq.selectedIndex > 0)
+    		params += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
+
+		dojo.empty(div);
+		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+     	dojo.xhrGet({
+    		url: api_base_url + '/experiment/' + eid + '/query?' + params,
+    		handleAs: 'json',
+	  		load: dojo.hitch(this, function(data) {
+	  			if (data.length == 0) {
+	  				this._error('Search', 'Search returned zero hits');
+	  				this._track_search_dialog.hide();
+	  				return;
+	  			}
+	  			this._new_nav(eid, data);
+ 				this._track_search_dialog.hide();
+    		}),
+    		error: dojo.hitch(this, function(data) {
+    			this._error('Search', data);
+ 				this._track_search_dialog.hide();
+    		})
+    	});
     },
     
     _new_nav: function(eid, data) {
@@ -626,7 +620,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		dojo.create('span', { innerHTML: ' of ' + data.length + ' hit' + (data.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, nav);
 		dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: function() { if (nav.hit < nav.hits.length - 1) _go_to_hit(nav, nav.hit + 1) }, style: { cursor: 'pointer' } }, nav);
 		dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: function() { _go_to_hit(nav, nav.hits.length - 1) }, style: { cursor: 'pointer' } }, nav);
-        this.browser.subscribe('/jbrowse/v1/v/tracks/updateStaticElements', function(coords){_adjust_nav(eid)});
         this.browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
         	for (var i=0; i<configs.length; i++)
         		if (configs[i].coge.id == eid)
@@ -750,11 +743,18 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        label: 'Search',
 	        onClick: function(event) {
 	        	coge_xyplot._track = track;
-	        	var content = '<div id="coge-track-search"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center">' + 
-	        		'<tr><td style="white-space:nowrap"><input id="highest" type="radio" name="type" checked="checked"> highest</td></tr>' +
-	        		'<tr><td style="white-space:nowrap"><input id="lowest" type="radio" name="type"> lowest</td></tr>' +
-	        		'<tr><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range</td><td><div class="coge-hist"></div></td></tr>' +
-	        		'</table><div class="dijitDialogPaneActionBar"><button id="search_ok" data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
+	        	var content = '<div id="coge-track-search"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>RefSeq:</td><td><select id="coge_ref_seq"><option>Any</option>';
+	        	coge_xyplot.browser.refSeqOrder.forEach(function(rs){
+	        		content += '<option';
+	        		if (rs == coge_xyplot.browser.refSeq.name)
+	        			content += ' selected';
+	        		content += '>' + rs + '</option>';
+	        	})
+	        	content += '</select></td></tr>' +
+	        		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="highest" type="radio" name="type" checked="checked"> highest</td></tr>' +
+	        		'<tr><td></td><td style="white-space:nowrap"><input id="lowest" type="radio" name="type"> lowest</td></tr>' +
+	        		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: <span id="selected_range">&nbsp;</span></td></tr>' +
+	        		'<tr><td></td><td><div id="coge-hist"><img src="picts/ajax-loader.gif"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
 	        	coge_xyplot._track_search_dialog = new Dialog({
                     title: 'Search Track',
                     content: content,
@@ -770,12 +770,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	    	  				coge_xyplot._track_search_dialog.hide();
 	    	  				return;
 	    	  			}
-//	    	  			var _chart = _bar_chart(data.counts)
-//                        .dimension(hour)
-//                        .group(hours)
-                      
-//                      );
-	    	        	chart(d3.select(".coge-hist"), data.first, data.gap, data.counts);
+	    	  			dojo.destroy(dojo.byId('coge-hist').firstChild);
+	    	  			coge_xyplot._brush = chart(d3.select('#coge-hist'), data.first, data.gap, data.counts);
 	        		},
 	        		error: function(data) {
 	        			coge_xyplot._error('Search', data);
@@ -948,9 +944,11 @@ function _adjust_nav(eid) {
  	var l = dojo.byId('label_experiment' + eid);
  	if (l) {
  		var nav = dojo.byId('nav_' + eid);
- 		var track = dojo.byId('track_experiment' + eid);
-     	dojo.style(nav, 'left', dojo.style(l, 'left') + 10);
-     	dojo.style(nav, 'top', dojo.style(track, 'top') + 32);
+ 		if (nav) {
+	 		var track = dojo.byId('track_experiment' + eid);
+	     	dojo.style(nav, 'left', dojo.style(l, 'left') + 10);
+	     	dojo.style(nav, 'top', dojo.style(track, 'top') + 32);
+ 		}
  	}
 }
 
@@ -965,93 +963,62 @@ function _go_to_hit(nav, hit) {
 	});	
 }
 
-var margin = {top: 10, right: 10, bottom: 20, left: 10},
-	x = d3.scale.linear().range([0, 200]),
-	y = d3.scale.linear().range([100, 0]),
-	id = 0,
-	brush = d3.svg.brush().x(x).clear(),
-	brushDirty = true,
-    axis = d3.svg.axis().orient("bottom").scale(x);
-
 function chart(div, first, gap, counts) {
-      var width = x.range()[1],
-          height = y.range()[0];
-      
-      x.domain([first, first + gap * counts.length]);
-      y.domain([0, d3.max(counts)]);
+	var margin = {top: 10, right: 10, bottom: 20, left: 10},
+		x = d3.scale.linear().range([0, 200]).domain([first, first + gap * counts.length]),
+		y = d3.scale.linear().range([100, 0]).domain([0, d3.max(counts)]),
+		brush = d3.svg.brush(),
+	    axis = d3.svg.axis().orient("bottom").scale(x),
+	    width = x.range()[1],
+      	height = y.range()[0];
+  
+	var g = div.append("svg")
+      	.attr("width", width + margin.left + margin.right)
+      	.attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-      div.each(function() {
-        var div = d3.select(this),
-            g = div.select("g");
+	g.append("clipPath")
+      	.attr("id", "clip")
+      .append("rect")
+      	.attr("width", width)
+      	.attr("height", height);
 
-        // Create the skeletal chart.
-        if (g.empty()) {
-          g = div.append("svg")
-              .attr("width", width + margin.left + margin.right)
-              .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-              .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	g.selectAll(".bar")
+      	.data(["background", "foreground"])
+      .enter().append("path")
+      	.attr("class", function(d) { return d + " bar"; })
+      	.datum(function(d,i){return counts[i]});//group.all());
 
-          g.append("clipPath")
-              .attr("id", "clip-" + id)
-            .append("rect")
-              .attr("width", width)
-              .attr("height", height);
+	g.selectAll(".foreground.bar")
+      	.attr("clip-path", "url(#clip)");
 
-          g.selectAll(".bar")
-              .data(["background", "foreground"])
-            .enter().append("path")
-              .attr("class", function(d) { return d + " bar"; })
-              .datum(function(d,i){return counts[i]});//group.all());
+	g.append("g")
+      	.attr("class", "axis")
+      	.attr("transform", "translate(0," + height + ")")
+      	.call(axis);
 
-          g.selectAll(".foreground.bar")
-              .attr("clip-path", "url(#clip-" + id + ")");
+	// Initialize the brush component with pretty resize handles.
+	brush.x(x);
+	var gBrush = g.append("g").attr("class", "brush").call(brush);
+	gBrush.selectAll("rect").attr("height", height);
+	gBrush.selectAll(".resize").append("path").attr("d", resizePath);
 
-          g.append("g")
-              .attr("class", "axis")
-              .attr("transform", "translate(0," + height + ")")
-              .call(axis);
+    g.selectAll(".bar").attr("d", barPath);
 
-          // Initialize the brush component with pretty resize handles.
-          var gBrush = g.append("g").attr("class", "brush").call(brush);
-          gBrush.selectAll("rect").attr("height", height);
-          gBrush.selectAll(".resize").append("path").attr("d", resizePath);
-          gBrush.style("display", "none");
-        }
-
-        // Only redraw the brush if set externally.
-        if (brushDirty) {
-          brushDirty = false;
-          g.selectAll(".brush").call(brush);
-          div.select(".title a").style("display", brush.empty() ? "none" : null);
-          if (brush.empty()) {
-            g.selectAll("#clip-" + id + " rect")
-                .attr("x", 0)
-                .attr("width", width);
-          } else {
-            var extent = brush.extent();
-            g.selectAll("#clip-" + id + " rect")
-                .attr("x", x(extent[0]))
-                .attr("width", x(extent[1]) - x(extent[0]));
-          }
-        }
-
-        g.selectAll(".bar").attr("d", barPath);
-      });
-
-      function barPath() {
-        var path = [],
+	function barPath() {
+    	var path = [],
             i = -1,
             n = counts.length,
             X = first;
         while (++i < n) {
-          path.push("M", x(X), ",", height, "V", y(counts[i]), "h9V", height);
-          X += gap;
+        	path.push("M", x(X), ",", height, "V", y(counts[i]), "h9V", height);
+        	X += gap;
         }
         return path.join("");
-      }
+	}
 
-      function resizePath(d) {
+	function resizePath(d) {
         var e = +(d == "e"),
             x = e ? 1 : -1,
             y = height / 3;
@@ -1064,86 +1031,35 @@ function chart(div, first, gap, counts) {
             + "V" + (2 * y - 8)
             + "M" + (4.5 * x) + "," + (y + 8)
             + "V" + (2 * y - 8);
-      }
-    }
+	}
 
     brush.on("brushstart.chart", function() {
-      var div = d3.select(this.parentNode.parentNode.parentNode);
-      div.select(".title a").style("display", null);
+    	var div = d3.select(this.parentNode.parentNode.parentNode);
+    	div.select(".title a").style("display", null);
+    	dojo.byId('range').checked = true;
     });
 
     brush.on("brush.chart", function() {
-      var g = d3.select(this.parentNode),
-          extent = brush.extent();
+    	var g = d3.select(this.parentNode),
+          	extent = brush.extent();
 //      if (round) g.select(".brush")
 //          .call(brush.extent(extent = extent.map(round)))
 //        .selectAll(".resize")
 //          .style("display", null);
-      g.select("#clip-" + id + " rect")
-          .attr("x", x(extent[0]))
-          .attr("width", x(extent[1]) - x(extent[0]));
-//      dimension.filterRange(extent);
+    	g.select("#clip rect")
+          	.attr("x", x(extent[0]))
+          	.attr("width", x(extent[1]) - x(extent[0]));
+    	dojo.byId('selected_range').innerHTML = parseFloat(Math.round(extent[0] * 100) / 100).toFixed(2) + ' .. ' + parseFloat(Math.round(extent[1] * 100) / 100).toFixed(2);
     });
 
     brush.on("brushend.chart", function() {
-      if (brush.empty()) {
-        var div = d3.select(this.parentNode.parentNode.parentNode);
-        div.select(".title a").style("display", "none");
-        div.select("#clip-" + id + " rect").attr("x", null).attr("width", "100%");
-//        dimension.filterAll();
-      }
+    	if (brush.empty()) {
+    		var div = d3.select(this.parentNode.parentNode.parentNode);
+    		div.select(".title a").style("display", "none");
+    		div.select("#clip rect").attr("x", null).attr("width", "100%");
+    		dojo.byId('selected_range').innerHTML = '&nbsp;';
+    	}
     });
-
-//    chart.margin = function(_) {
-//      if (!arguments.length) return margin;
-//      margin = _;
-//      return chart;
-//    };
-
-//    chart.x = function(_) {
-//      if (!arguments.length) return x;
-//      x = _;
-//      axis.scale(x);
-//      brush.x(x);
-//      return chart;
-//    };
-//
-//    chart.y = function(_) {
-//      if (!arguments.length) return y;
-//      y = _;
-//      return chart;
-//    };
-
-//    chart.dimension = function(_) {
-//      if (!arguments.length) return dimension;
-//      dimension = _;
-//      return chart;
-//    };
-
-//    chart.filter = function(_) {
-//      if (_) {
-//        brush.extent(_);
-////        dimension.filterRange(_);
-//      } else {
-//        brush.clear();
-////        dimension.filterAll();
-//      }
-//      brushDirty = true;
-//      return chart;
-//    };
-
-//    chart.group = function(_) {
-//      if (!arguments.length) return group;
-//      group = _;
-//      return chart;
-//    };
-
-//    chart.round = function(_) {
-//      if (!arguments.length) return round;
-//      round = _;
-//      return chart;
-//    };
-
-    /*return*/ chart = d3.rebind(chart, brush, "on");
-//}
-
+    d3.rebind(chart, brush, "on");
+    return brush;
+}

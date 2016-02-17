@@ -233,7 +233,12 @@ define(['dojo/_base/declare',
     //----------------------------------------------------------------
 
     _create_search_button: function() {
-    	var content = '<div id="coge-search-dialog"><table><tr><td>name:</td><td><input id="coge_search_text"></td></tr><tr><td style="vertical-align:top;">in:</td><td id="coge_search_features">';
+    	var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>RefSeq:</td><td><select id="coge_ref_seq"><option>Any</option>';
+    	var browser = this.browser;
+    	browser.refSeqOrder.forEach(function(rs){
+    		content += '<option>' + rs + '</option>';
+    	})
+    	content += '</select></td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
     	var features = this._track_configs.filter(function(f) {
     		return (f.coge.type && f.coge.type == 'features');
     	});
@@ -242,21 +247,25 @@ define(['dojo/_base/declare',
     	});
     	content += '</td></tr><tr><td></td><td><button onClick="_check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="_check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></td></tr></table>';
     	content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._search_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="search_dialog.hide()">Cancel</button></div></div>';
-        new Button(
-        	    {
-        	        label: 'Search',
-        	        onClick: function(event) {
-        	        	search_dialog = new Dialog({
-                            title: "Search",
-                            content: content,
-                            onHide: function(){this.destroyRecursive()},
-                            style: "width: 300px"
-                        });
-        	        	search_dialog.show();
-        	        	dojo.stopEvent(event);
-        	        },
-        	        id: 'coge-search-btn'
-        	    }, dojo.create('button',{},this.browser.navbox));
+        new Button({
+	        label: 'Search',
+	        onClick: function(event) {
+	        	search_dialog = new Dialog({
+                    title: "Search",
+                    content: content,
+                    onHide: function(){this.destroyRecursive()},
+                    style: "width: 300px"
+                });
+	        	for (var i=0; i<browser.refSeqOrder.length; i++)
+	        		if (browser.refSeqOrder[i] == browser.refSeq.name) {
+	        			dojo.byId('coge_ref_seq').selectedIndex = i + 1;
+	        			break;
+	        		}
+	        	search_dialog.show();
+	        	dojo.stopEvent(event);
+	        },
+	        id: 'coge-search-btn'
+	    }, dojo.create('button', {}, this.browser.navbox));
     },
 
     //----------------------------------------------------------------
@@ -985,8 +994,12 @@ define(['dojo/_base/declare',
     		this._error('Search', 'Please select one or more feature types to search.');
     		return;
     	}
+    	var url = api_base_url + '/genome/' + gid + '/features?name=' + encodeURIComponent(dojo.byId('coge_search_text').value) + '&features=' + (types.length == features.length ? 'all' : types.join());
+    	var ref_seq = dojo.byId('coge_ref_seq');
+    	if (ref_seq.selectedIndex > 0)
+    		url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
     	dojo.xhrGet({
-    		url: api_base_url + '/genome/' + gid + '/features?name=' + encodeURIComponent(dojo.byId('coge_search_text').value) + '&features=' + (types.length == features.length ? 'all' : types.join()),
+    		url: url,
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
 	  			if (data.error) {
@@ -997,6 +1010,7 @@ define(['dojo/_base/declare',
 	  				this._error('Search', 'no features found');
 	  				return;
 	  			}
+	  			dojo.query('.dijitDialogUnderlay').style('opacity', 0);
   				var div = dojo.byId('coge-search-dialog');
   				div.style.maxHeight = '500px';
   				div.style.overflow = 'auto';

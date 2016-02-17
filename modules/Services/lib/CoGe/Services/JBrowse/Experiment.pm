@@ -183,46 +183,43 @@ sub query_data {
     my $chr = $self->query->param('chr');
     my $type = $self->query->param('type');
     my $order_by = 'value1 desc';
+    my $where;
+
+    if ($type eq 'max') {
+    	my $max = query_experiment_data(
+    		eid => $eid,
+    		col => 'max(value1)'
+    	);
+    	$where = 'value1=' . $max->[0];
+    }
+    elsif ($type eq 'min') {
+    	my $min = query_experiment_data(
+    		eid => $eid,
+    		col => 'min(value1)'
+    	);
+    	$where = 'value1=' . $max->[0];
+    }
+    else {
+    	my $gte = $self->query->param('gte');
+    	my $lte = $self->query->param('lte');
+    	if ($gte) {
+    		$where = 'value1>=' . $gte;
+    	}
+    	if ($lte) {
+    		if ($gte) {
+    			$where .= ' and ';
+    		}
+    		$where .= 'value1<=' . $lte;
+    	}
+    }
+
 	my $result = query_experiment_data(
 		eid => $eid,
 		col => 'chr,start,stop,value1',
-		chr => $chr
+		chr => $chr,
+		where => $where
 	);
-	if (!scalar @{$result}) {
-		return encode_json({error => 'Query returned zero hits'});
-	}
-
-	my @hits;
-	if ($type eq 'max') {
-		my $max = undef;
-		foreach (@{$result}) {
-			my $index = rindex($_, ',');
-			my 0 + $value = substr($_, $index + 1);
-			if (!defined $max || $max < $value) {
-				@hits = ($_);
-				$max = $value;
-			}
-			elsif ($max == $value) {
-				push @hits, $_;
-			}
-		}
-	}
-	elsif ($type eq 'min') {
-		my $min = undef;
-		foreach (@{$result}) {
-			my $index = rindex($_, ',');
-			my $value = 0 + substr($_, $index + 1);
-			if (!defined $min || $min > $value) {
-				@hits = ($_);
-				$min = $value;
-			}
-			elsif ($min == $value) {
-				push @hits, $_;
-			}
-		}
-	}
-
-	return encode_json(\@hits);
+	return encode_json($result);
 }
 
 sub histogram {
