@@ -62,12 +62,12 @@ our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR,
 BEGIN {
     require Exporter;
 
-    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : './web/');#'/opt/apache/coge/web/' ); # mdb changed 2/5/16 for Hypnotoad setup
+    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : catdir($ENV{PWD}, 'web') );#'/opt/apache/coge/web/' ); # mdb changed 2/5/16 for Hypnotoad setup
     $VERSION = 0.1;
     $TEMPDIR = $BASEDIR . "tmp";
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
-                   send_email get_defaults set_defaults url_for get_job 
+                   send_email get_defaults set_defaults url_for api_url_for get_job 
                    schedule_job render_template ftp_get_path ftp_get_file split_url
                    parse_proxy_response jwt_decode_token add_user write_log
                );
@@ -184,7 +184,7 @@ sub get_defaults {
     return $CONF if ($CONF);
 
     my ( $self, $conf_file ) = self_or_default(@_);
-    $conf_file = $BASEDIR . "/coge.conf" unless defined $conf_file;
+    $conf_file = catfile($BASEDIR, 'coge.conf') unless defined $conf_file;
     #print STDERR "Web::get_defaults $conf_file\n";
     unless ( -r $conf_file ) {
         print STDERR
@@ -1161,6 +1161,16 @@ sub send_email {
 
     print $mailer $body;
     $mailer->close();
+}
+
+sub api_url_for {
+    my $path = shift;
+    
+    my $API_URL = $CONF->{API_URL};
+    croak "API_URL was not found in the config file" unless $API_URL;
+    
+    return $API_URL unless $path;
+    return catdir($API_URL, $path);
 }
 
 sub url_for {
