@@ -122,6 +122,7 @@ sub generate_body {
         HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadExperiment',
         SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         DEFAULT_TAB              => 0,
+        ENABLE_SRA               => 1,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,

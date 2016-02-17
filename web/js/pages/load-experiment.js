@@ -15,7 +15,7 @@ var ALIGN_FILES = [
 ];
 
 var SEQ_FILES = [
-    "fastq", "fq"
+    "fastq", "fq", "sra"
 ];
 
 var QUANT_FILES = [
@@ -238,8 +238,6 @@ $.extend(ExperimentDescriptionView.prototype, {
     },
 });
 
-// Methylation analysis options
-
 function MethylationView(opts) {
 	if (opts)
 		this.format = opts.format;
@@ -383,12 +381,15 @@ $.extend(FindSNPView.prototype, {
             this.data.snp_params = $.extend({}, this.data.snp_params, { method: method.val() });
             el.show();
             method.removeAttr("disabled");
+            method.parent('div').slideDown();
             this.snp_container.slideDown();
             var selected = $("#snp-method").val();
             render_template(this.snp_templates[selected], this.snp_container);
-        } else {
+        } 
+        else {
             this.data.snp_params = undefined;
             method.attr("disabled", 1);
+            method.parent('div').slideUp();
             this.snp_container.slideUp();
         }
     },
@@ -537,6 +538,7 @@ $.extend(AlignmentView.prototype, {
         this.container = this.el.find("#align-container");
         this.templates = {
             gsnap:   $($("#gsnap-template").html()),
+            bowtie2: $($("#bowtie2-template").html()),
             tophat:  $($("#tophat-template").html()),
             hisat2:  $($("#hisat2-template").html()),
             bismark: $($("#bismark-template").html()),
@@ -583,7 +585,14 @@ $.extend(AlignmentView.prototype, {
             if (this.el.find("[id='--max-mismatches-chk']").is(":checked")) {
             	this.data.alignment_params['--max-mismatches'] = this.el.find("[id='--max-mismatches']").val();
             }
-        } 
+        }
+        else if (aligner === "bowtie2") {
+        	this.data = {
+        		alignment_params: {
+        			tool: "bowtie2"
+        		}
+        	}
+        }
         else if (aligner === "tophat") {
             this.data = {
                 alignment_params: {
@@ -763,7 +772,86 @@ $.extend(ExpressionView.prototype, {
     },
 });
 
-function FastqView() {
+function ChIPSeqView(opts) {
+	this.experiment = opts.experiment;
+    this.initialize();
+    this.data = {};
+}
+
+$.extend(ChIPSeqView.prototype, {
+    initialize: function() {
+        this.el = $($("#chipseq-template").html());
+        this.enabled = false;
+        this.container = this.el.find("#chipseq-container");
+        this.template = $(this.container.html());
+    },
+
+    render: function() {
+        this.el.find("#chipseq").unbind().change(this.update.bind(this));
+    },
+
+    update: function() {
+    	var checkbox = this.el.find("#chipseq");
+    	
+        var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
+        if (selected != 'gsnap' && selected != 'bowtie2' && selected != 'hisat2') {
+        	this.container.html('<span class="alert indent">Please select one of these aligners above: GSNAP, Bowtie2, or HISAT2</span>').show();
+        	checkbox.attr('checked', false); // uncheck it
+        	return;
+        }
+        
+        var data = this.experiment.data;
+        if (!data || data.length < 3) {
+        	this.container.html('<span class="alert indent">This analysis requires 3 input files (the input and two replicates).</span>').show();
+        	checkbox.attr('checked', false); // uncheck it
+        	return;
+        }
+
+        this.enabled = checkbox.is(":checked");
+        if (this.enabled) {
+        	render_template(this.template, this.container);
+        	
+        	// Add input files to dropdown
+            var select = this.el.find("#chipseq-input");
+            var data = this.experiment.data;
+            for(i = 0; i < data.length; i++) {
+            	var file = data[i];
+            	select.append("<option>" + file.name + "</option>");
+            }
+            
+            this.container.slideDown();
+        }
+        else 
+            this.container.slideUp();
+    },
+
+    is_valid: function() {
+        return true;
+    },
+
+    get_options: function() {
+        if (this.enabled) {
+        	var notSelected = $('#chipseq-input option:not(:selected)').map(function(index, element) {
+        		return $(element).val()
+        	}).get().join(', ');
+        	
+            this.data.chipseq_params = {
+            	'input':  this.el.find("#chipseq-input").val(),
+            	'replicates': notSelected,
+                '-size':  this.el.find("[id='-size']").val(),
+                '-gsize': this.el.find("[id='-gsize']").val(),
+                '-norm':  this.el.find("[id='-norm']").val(),
+                '-fdr':   this.el.find("[id='-fdr']").val(),
+                '-F':     this.el.find("[id='-F']").val(),
+            };
+        }
+
+        return this.data;
+    },
+});
+
+function FastqView(opts) {
+	this.experiment = opts.experiment
     this.initialize();
 }
 
@@ -775,6 +863,7 @@ $.extend(FastqView.prototype, {
         this.expression_view = new ExpressionView();
         this.snp_view = new FindSNPView();
         this.methylation_view = new MethylationView({ format: this.read_view });
+        this.chipseq_view = new ChIPSeqView({ experiment: this.experiment });
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
@@ -785,7 +874,8 @@ $.extend(FastqView.prototype, {
                 "#align-view": this.align_view,
                 "#expression-view": this.expression_view,
                 "#snp-view": this.snp_view,
-                "#methylation-view": this.methylation_view
+                "#methylation-view": this.methylation_view,
+                "#chipseq-view": this.chipseq_view
             }
         });
 
@@ -803,7 +893,8 @@ $.extend(FastqView.prototype, {
     			&& this.align_view.is_valid()
     			&& this.snp_view.is_valid()
     			&& this.expression_view.is_valid()
-    			&& this.methylation_view.is_valid());
+    			&& this.methylation_view.is_valid()
+    			&& this.chipseq_view.is_valid());
     },
 
     get_options: function() {
@@ -812,7 +903,8 @@ $.extend(FastqView.prototype, {
 		        		this.align_view.get_options(),
                         this.expression_view.get_options(),
                         this.snp_view.get_options(),
-                        this.methylation_view.get_options());
+                        this.methylation_view.get_options(),
+                        this.chipseq_view.get_options());
     },
 });
 
@@ -942,7 +1034,8 @@ $.extend(OptionsView.prototype, {
             template: "#options-layout-template",
             layout: {
                 "#general-options": this.general_view
-            }
+            },
+            experiment: this.experiment
         });
 
         if (this.admin)
@@ -981,7 +1074,7 @@ $.extend(OptionsView.prototype, {
         if ($.inArray(file_type, POLY_FILES) > -1)
             this.analysis_view = new PolymorphismView();
         else if ($.inArray(file_type, SEQ_FILES) > -1)
-            this.analysis_view = new FastqView();
+            this.analysis_view = new FastqView({experiment: this.experiment});
         else if ($.inArray(file_type, QUANT_FILES) > -1)
             this.analysis_view = new QuantativeView();
         else if ($.inArray(file_type, ALIGN_FILES) > -1)
@@ -1016,6 +1109,7 @@ function load(experiment) {
 			expression_params:  experiment.options.expression_params,
 			snp_params:         experiment.options.snp_params,
             methylation_params: experiment.options.methylation_params,
+            chipseq_params:     experiment.options.chipseq_params,
 			normalize:          experiment.options.normalize,
 			normalize_method:   experiment.options.normalize_method,
 			email:              experiment.options.email,

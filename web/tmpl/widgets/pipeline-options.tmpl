@@ -1,3 +1,45 @@
+<!-- ChIP-seq Analysis -->
+<script id="chipseq-template" type="text/template">
+	<div class="form-section">
+	    <h4>ChIP-seq Analysis</h4>
+	    <div class="form-field">
+	        <label class="col-md-2">Enable:</label>
+	        <input id="chipseq" type="checkbox">
+	    </div>
+	
+	    <div id="chipseq-container" class="form-field hidden">
+	        <label class="col-md-2">Options:</label>
+	        <div class="form-group">
+		        <div class="form-entry" title="Select the file to be the input, the others will be treated as replicates">
+		            <label>input file:</label>
+		            <select id="chipseq-input">
+	                </select>
+		        </div>
+	        	<div class="form-entry" title="Peak size">
+		            <label>-size:</label>
+		            <input id="-size" type="number" value="250"/>
+		        </div>
+	            <div class="form-entry" title="Effective mappable genome size">
+		            <label>-gsize:</label>
+		            <input id="-gsize" type="number" value="3000000000"/>
+		        </div>
+	            <div class="form-entry" title="Tag count to normalize to">
+		            <label>-norm:</label>
+		            <input id="-norm" type="number" value="10000000"/>
+		        </div>
+	            <div class="form-entry" title="False discovery rate">
+		            <label>-fdr:</label>
+		            <input id="-fdr" type="number" value="0.01"/>
+		        </div>
+	            <div class="form-entry" title="Fold enrichment over input tag count">
+		            <label>-F:</label>
+		            <input id="-F" type="number" value="3"/>
+		        </div>
+	        </div>
+	    </div>
+	</div>
+</script>
+
 <!-- Methylation Analysis -->
 <script id="methyl-template" type="text/template">
     <div class="form-section">
@@ -82,7 +124,7 @@
             <input id="snps" type="checkbox">
         </div>
 
-        <div class="form-field">
+        <div id="snp-method-container" class="form-field hidden">
             <label class="col-md-2">Method:</label>
             <select id="snp-method" disabled>
                 <option value="coge">CoGe Basic</option>
@@ -186,6 +228,7 @@
     </div>
 </script>
 
+<!-- Expression Analysis -->
 <script id="expression-template" type="text/template">
 	<div class="form-section">
 	    <h4>Expression Analysis</h4>

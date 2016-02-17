@@ -188,8 +188,10 @@ $.extend(DataView.prototype, {
         	    	return;
         	    
         	    // Detect file type and show in view
-        	    if (files[0].type == 'ncbi') {
+        	    if (files[0].type === 'ncbi' || files[0].type === 'sra') {
         	    	self.el.find("#select_file_type").hide();
+        	    	if (files[0].type === 'sra') // this is a kludge, why does it work for ncbi?
+        	    		self.el.find("#file_type_selector").val('sra');
         	    }
         	    else {
 	        	    var file_type = self.autodetect_file_type(files[0].name);
@@ -201,7 +203,7 @@ $.extend(DataView.prototype, {
         	fileCancelledCallback: function() {
         		var files = coge.fileSelect.get_selected_files();
         		if (files) {
-        	    	if (files[0].type == 'ncbi')
+        	    	if (files[0].type == 'ncbi' || files[0].type == 'sra')
         	    		self.el.find("#select_file_type").hide();
         	    	self.el.find("#select_file_type option:first").attr("selected", "selected");
         	    }
@@ -209,7 +211,6 @@ $.extend(DataView.prototype, {
         	    	self.el.find('#files').hide();
         	    	self.el.find("#select_file_type").hide();
         	    }
-        	    
         	}
         });
     },
@@ -234,10 +235,10 @@ $.extend(DataView.prototype, {
         var items = coge.fileSelect.get_selected_files();
         if (!items || items.length === 0) {
             if (this.onError)
-            	this.onError('Please select a valid data file of type: ' + this.supportedFileTypes.join(', '));
+            	this.onError('Please select a valid data file of type: ' + this.supportedFileTypes.join(', ') + '.  Allow uploaded files to finish transferring.');
             return false;
         }
-
+        
         items[0].file_type = this.el.find("#select_file_type option:selected").val();
         if (!items[0].file_type) {
         	if (this.onError)
@@ -249,8 +250,13 @@ $.extend(DataView.prototype, {
 		var types = {};
 		items.forEach(function(item) { types[item.type] = 1; });
 		var isNCBI = 'ncbi' in types;
+		var isSRA = 'sra' in types;
 		if (Object.keys(types).length > 1 && isNCBI) {
-			this.onError('Cannot mix NCBI data with file data, please choose one or the other.');
+			this.onError('Cannot mix NCBI data with other types of data.');
+			return false;
+		}
+		if (Object.keys(types).length > 1 && isSRA) {
+			this.onError('Cannot mix SRA data with other types of data.');
 			return false;
 		}
 

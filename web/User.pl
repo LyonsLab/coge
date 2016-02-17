@@ -1625,17 +1625,17 @@ sub upload_metadata {
 		if ($annotations) {
 			my @ids = split(/,/, $row[0]);
 			foreach (@ids) {
-			    my can_annotate = 0;
+			    my $can_annotate = 0;
 			    if ($type eq 'Experiment') {
-			        can_annotate = $USER->is_owner_editor(experiment => $_);
+			        $can_annotate = $USER->is_owner_editor(experiment => $_);
 			    }
 			    elsif ($type eq 'Notebook') {
-			        can_annotate = $USER->is_owner_editor(list => $_);
+			        $can_annotate = $USER->is_owner_editor(list => $_);
 			    }
 			    else {
-			        can_annotate = $USER->is_owner_editor(dsg => $_);
+			        $can_annotate = $USER->is_owner_editor(dsg => $_);
 			    }
-			    if (can_annotate) {
+			    if ($can_annotate) {
 				    my $target = $DB->resultset($type eq 'Notebook' ? 'List' : $type)->find($_);
 				    create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
 			    }
