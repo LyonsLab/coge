@@ -253,7 +253,7 @@ sub search {
 		my $join;
 		my $search;
 		if ($type eq 'experiment_metadata_key') {
-			$join = { join => 'experiment_annotations' };
+			$join = { join => [ 'experiment_annotations', { 'genomes' => 'organisms' } ] };
 			my $dbh = $db->storage->dbh;
 			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
 			$search = { 'experiment_annotations.annotation_type_id' => $row[0] };
