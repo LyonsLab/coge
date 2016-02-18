@@ -233,7 +233,7 @@ define(['dojo/_base/declare',
     //----------------------------------------------------------------
 
     _create_search_button: function() {
-    	var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>RefSeq:</td><td><select id="coge_ref_seq"><option>Any</option>';
+    	var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
     	var browser = this.browser;
     	browser.refSeqOrder.forEach(function(rs){
     		content += '<option>' + rs + '</option>';
@@ -256,11 +256,11 @@ define(['dojo/_base/declare',
                     onHide: function(){this.destroyRecursive()},
                     style: "width: 300px"
                 });
-	        	for (var i=0; i<browser.refSeqOrder.length; i++)
-	        		if (browser.refSeqOrder[i] == browser.refSeq.name) {
-	        			dojo.byId('coge_ref_seq').selectedIndex = i + 1;
-	        			break;
-	        		}
+//	        	for (var i=0; i<browser.refSeqOrder.length; i++)
+//	        		if (browser.refSeqOrder[i] == browser.refSeq.name) {
+//	        			dojo.byId('coge_ref_seq').selectedIndex = i + 1;
+//	        			break;
+//	        		}
 	        	search_dialog.show();
 	        	dojo.stopEvent(event);
 	        },

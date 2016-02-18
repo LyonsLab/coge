@@ -743,13 +743,10 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        label: 'Search',
 	        onClick: function(event) {
 	        	coge_xyplot._track = track;
-	        	var content = '<div id="coge-track-search"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>RefSeq:</td><td><select id="coge_ref_seq"><option>Any</option>';
+	        	var content = '<div id="coge-track-search"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
 	        	coge_xyplot.browser.refSeqOrder.forEach(function(rs){
-	        		content += '<option';
-	        		if (rs == coge_xyplot.browser.refSeq.name)
-	        			content += ' selected';
-	        		content += '>' + rs + '</option>';
-	        	})
+	        		content += '<option>' + rs + '</option>';
+	        	});
 	        	content += '</select></td></tr>' +
 	        		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="highest" type="radio" name="type" checked="checked"> highest</td></tr>' +
 	        		'<tr><td></td><td style="white-space:nowrap"><input id="lowest" type="radio" name="type"> lowest</td></tr>' +
@@ -759,7 +756,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     title: 'Search Track',
                     content: content,
                     onHide: function(){this.destroyRecursive()},
-                    style: "width: 300px"
+                    style: "width: 350px"
                 });
 	        	dojo.xhrGet({
 	        		url: api_base_url + '/experiment/' + track.config.coge.id + '/histogram',
