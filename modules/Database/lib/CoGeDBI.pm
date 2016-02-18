@@ -6,8 +6,8 @@ CoGeDBI
 
 =head1 SYNOPSIS
 
-  This object is a low-level API to the CoGe database.  It was written for
-  high-performance cases where the CoGeX ORM is too slow.
+  This module provides a low-level API to the CoGe database.  It was written for
+  high-performance cases where the CoGeX-DBIX ORM is too slow.
 
 =head1 DESCRIPTION
 
@@ -38,7 +38,7 @@ BEGIN {
     require Exporter;
 
     $VERSION = 0.1;
-    $MAX_FETCH_ROWS = 10*1000;
+    $MAX_FETCH_ROWS = 10_000;
     @ISA     = qw (Exporter);
     @EXPORT = qw( 
         get_table get_user_access_table get_experiments get_distinct_feat_types
@@ -46,7 +46,8 @@ BEGIN {
         get_groups_for_user get_group_access_table get_datasets
         get_feature_counts get_features get_feature_types
         get_feature_names get_feature_annotations get_locations 
-        get_chromosomes get_chromosomes_from_features get_total_queries
+        get_chromosomes get_chromosomes_from_features get_table_count
+        get_total_queries
     );
 }
 
@@ -604,6 +605,23 @@ sub get_chromosomes_from_features {
     #print STDERR Dumper $results, "\n";
     
     return wantarray ? keys %$results : [ keys %$results ];
+}
+
+# Estimate table count (for large InnoDB tables)
+sub get_table_count {
+    my $dbh = shift;   # database connection handle
+    my $table = shift; # table name
+    my $where = shift; # optional where clause
+    return unless ($dbh and $table);
+    my $id = $table . '_id';
+    
+    my $query = "SELECT $id FROM $table " . ($where ? "WHERE $where" : '') . " ORDER BY $id DESC LIMIT 1";
+    print STDERR $query, "\n";
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my ($count) = $sth->fetchrow_array();
+    
+    return $count;
 }
 
 sub get_total_queries {

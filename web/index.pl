@@ -11,6 +11,7 @@ use CGI::Log;
 use CoGeX;
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( units commify sanitize_name );
+use CoGeDBI qw(get_table_count);
 use JSON qw(encode_json);
 use POSIX 'ceil';
 
@@ -85,8 +86,8 @@ sub generate_body {
         INTRO => 1,
         ORG_COUNT => commify( $DB->resultset('Organism')->count() ),
         GEN_COUNT => commify( $DB->resultset('Genome')->search( { deleted => 0 } )->count() ),
-        FEAT_COUNT => commify( $DB->resultset('Feature')->count() ),
-        ANNOT_COUNT => commify( $DB->resultset('FeatureAnnotation')->count() ),
+        FEAT_COUNT => commify( get_table_count($DB->storage->dbh, 'feature') ),
+        ANNOT_COUNT => commify( get_table_count($DB->storage->dbh, 'feature_annotation') ),
         EXP_COUNT => commify( $DB->resultset('Experiment')->search( { deleted => 0 } )->count() ),
         QUANT_COUNT => commify(
             units(
