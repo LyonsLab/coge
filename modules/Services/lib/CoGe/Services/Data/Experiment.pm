@@ -111,7 +111,6 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    #print STDERR "CoGe::Services::Data::Experiment::add\n", Dumper $data, "\n";
 
 # mdb removed 9/17/15 -- auth is handled by Job::add below, redundant token validation breaks CAS proxyValidate
 #    # Authenticate user and connect to the database
@@ -142,6 +141,40 @@ sub add {
     };
     
     return CoGe::Services::Data::Job::add($self, $request);
+}
+
+sub update {
+	my $self = shift;
+    my $id = int($self->stash('id'));
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get experiment
+    my $experiment = $db->resultset("Experiment")->find($id);
+    unless (defined $experiment) {
+        $self->render(json => {
+            error => { Error => "Experiment not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_owner_editor(experiment => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+    my $data = $self->req->json;
+    if (exists($data->{metadata}->{id})) {
+	    delete $data->{metadata}->{id};
+    }
+	$experiment->update($data->{metadata});
+	$self->render(json => {
+		success => Mojo::JSON->true
+	});
 }
 
 1;

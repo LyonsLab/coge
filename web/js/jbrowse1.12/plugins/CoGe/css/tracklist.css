@@ -1,0 +1,149 @@
+.dojoDndItemAnchor { /* override Dojo's definition in dndDefault.css */
+	background-color: transparent !important;
+}
+
+.dojoDndItem { /* override Dojo's definition in dndDefault.css */
+	padding: 1px !important;
+}
+
+#coge-add-all-experiments-btn {
+	cursor: pointer;
+	height: 14px;
+	position: absolute;
+	right: 28px;
+	top: 4px;
+	width: 14px;
+}
+
+#coge-clear-all-experiments-btn {
+	cursor: pointer;
+	height: 14px;
+	position: absolute;
+	right: 8px;
+	top: 4px;
+	width: 14px;
+}
+
+.coge-experiment,
+.coge-features {
+	background-color: #fbfbfb;
+}
+
+.coge-filter-input {
+	cursor: text;
+	height: 20px;
+	paddingRight: 18px;
+	width: 85%;
+}
+
+#coge_menu_button,
+#coge_track_menu_button {
+    margin-left: -10px;
+    outline: none;
+	padding: 2px;
+    width: 20px;
+}
+
+.coge-textfilter {
+	border-bottom: 1px solid lightgray;
+	overflow: hidden;
+	position: relative;
+	width: 95%;
+}
+
+.coge-tracklist-collapseIcon,
+.coge-tracklist-expandIcon
+ {
+ 	height: 10px;
+	padding: 5px;
+	width: 10px;
+}
+
+.coge-tracklist-container {
+	border: 1px solid transparent;
+	cursor: pointer;
+	display: flex;
+	overflow-x: hidden;
+	white-space: nowrap;
+}
+
+.coge-tracklist-container.collapsed {
+	display: none;
+}
+
+.coge-tracklist-container:hover {
+	border: 1px solid gray;
+}
+
+.coge-tracklist-delete-btn {
+	height: 14px;
+	padding: 3px;
+	position: absolute;
+	visibility: hidden;
+	width: 14px;
+}
+
+.coge-tracklist-indented {
+	padding-left: 25px !important;
+}
+
+.coge-tracklist-info-btn {
+	height: 14px;
+	padding: 3px;
+	position: absolute;
+	visibility: hidden;
+	width: 14px;
+}
+
+.coge-tracklist-label {
+	flex: 2;
+	min-height: 16px;
+	overflow: hidden;
+	padding-left: 2px;
+	padding-top: 6px;
+}
+
+.coge-tracks-shown {
+	color: gray;
+	margin-bottom: -4px;
+	margin-top: 4px;
+	text-align: center;
+}
+
+#textFilterCancel {
+	cursor: pointer;
+	display: none;
+	position: absolute;
+	right: 1px;
+	top: 1px;
+}
+
+.track-menu-button {
+	position: absolute;
+	right: 40px;
+}
+
+#trackPane {
+ 	background-color: rgb(242, 242, 242);
+ 	display: flex;
+ 	flex-direction: column;
+ 	overflow: hidden;
+	width: 215px;
+}
+
+#trackPane div.coge-textfilter {
+    margin: 0.5em 0 0 0.3em;
+    padding-bottom: 5px;
+}
+
+#trackPane div.coge-textfilter input {
+    line-height: 16px;
+    padding: 2px 0;
+}
+
+#tracksAvail {
+	flex: 2 2;
+	overflow-x: hidden;
+	overflow-y: auto;
+	width: 100%;
+}

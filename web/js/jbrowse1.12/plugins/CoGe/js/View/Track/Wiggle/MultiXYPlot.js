@@ -1,16 +1,18 @@
+var coge_xyplot;
 define( [
             'dojo/_base/declare',
             'dojo/_base/array',
             'dojo/_base/Color',
             'dojo/dom-construct',
-            'dojo/on',
+            'dijit/Dialog',
+            'JBrowse/View/InfoDialog',
             'JBrowse/View/Track/WiggleBase',
             'JBrowse/View/Track/_YScaleMixin',
             'JBrowse/Util',
             './_Scale',
             'CoGe/View/ColorDialog'
         ],
-        function( declare, array, Color, domConstruct, on, WiggleBase, YScaleMixin, Util, Scale, ColorDialog ) {
+        function( declare, array, Color, domConstruct, Dialog, InfoDialog, WiggleBase, YScaleMixin, Util, Scale, ColorDialog ) {
 
 var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of XYPlot, extend that class instead?
 
@@ -24,6 +26,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     // Load cookie params - mdb added 1/13/14, issue 279
     constructor: function() {
         this.inherited(arguments); // call superclass constructor
+        coge_xyplot = this;
 
         if (!this.config.style.featureColor)
             this.config.style.featureColor = {};
@@ -87,6 +90,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         //console.log('updateStaticElements');
         this.inherited( arguments );
         this.updateYScaleFromViewDimensions( coords );
+        _adjust_nav(this.config.coge.id)
     },
 
     fillTooManyFeaturesMessage: function( blockIndex, block, scale ) {
@@ -536,6 +540,93 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         return pixelValues;
     },
 
+    _error: function(title, content) {
+    	if (content.responseText)
+    		content = content.responseText;
+    	else if (content.error)
+    		content = JSON.stringify(content.error);
+    	new InfoDialog({
+    		title: title,
+    		content: content,
+            onHide: function(){this.destroyRecursive()}
+    	}).show();	
+    },
+
+    _search_track: function() {
+		var eid = dojo.byId('eid').value;
+		var div = dojo.byId('coge-track-search');
+		var params;
+
+    	if (dojo.byId('highest').checked)
+    		params = 'type=max';
+    	else if (dojo.byId('lowest').checked)
+    		params = 'type=min';
+    	else {
+    		if (this._brush.empty()) {
+    			this._error('Unspecified Range', 'Please drag on the histogram to select the range of values you wish to search for');
+    			return;
+    		}
+    		var params = 'type=range';
+    		var extent = this._brush.extent();
+    		var domain = this._brush.x().domain();
+    		if (extent[0] != domain[0])
+    			params += '&gte=' + extent[0];
+    		if (extent[1] != domain[1])
+    			params += '&lte=' + extent[1];
+    	}
+    	var ref_seq = dojo.byId('coge_ref_seq');
+    	if (ref_seq.selectedIndex > 0)
+    		params += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
+
+		dojo.empty(div);
+		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+     	dojo.xhrGet({
+    		url: api_base_url + '/experiment/' + eid + '/query?' + params,
+    		handleAs: 'json',
+	  		load: dojo.hitch(this, function(data) {
+	  			if (data.length == 0) {
+	  				this._error('Search', 'Search returned zero hits');
+	  				this._track_search_dialog.hide();
+	  				return;
+	  			}
+	  			this._new_nav(eid, data);
+ 				this._track_search_dialog.hide();
+    		}),
+    		error: dojo.hitch(this, function(data) {
+    			this._error('Search', data);
+ 				this._track_search_dialog.hide();
+    		})
+    	});
+    },
+    
+    _new_nav: function(eid, data) {
+		var first = JSON.parse('[' + data[0] + ']');
+		this._track.browser.navigateToLocation({
+			ref: first[0],
+			start: first[1],
+			end: first[2]
+		});
+		var nav = dojo.byId('nav_' + eid);
+		if (nav)
+			dojo.destroy(nav);
+		nav = dojo.create('div', { id: 'nav_' + eid, style: { background: 'white', opacity: 0.7, position: 'absolute' } }, dojo.byId('container'));
+		_adjust_nav(eid);
+		nav.hits = data;
+		nav.hit = 0;
+		nav.browser = this._track.browser;
+		dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: function() { _go_to_hit(nav, 0) }, style: { cursor: 'pointer' } }, nav);
+		dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', onclick: function() { if (nav.hit > 0) _go_to_hit(nav, nav.hit - 1) }, style: { cursor: 'pointer' } }, nav);
+		nav.num_span = dojo.create('span', { innerHTML: '1', style: { cursor: 'default' } }, nav);
+		dojo.create('span', { innerHTML: ' of ' + data.length + ' hit' + (data.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, nav);
+		dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: function() { if (nav.hit < nav.hits.length - 1) _go_to_hit(nav, nav.hit + 1) }, style: { cursor: 'pointer' } }, nav);
+		dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: function() { _go_to_hit(nav, nav.hits.length - 1) }, style: { cursor: 'pointer' } }, nav);
+        this.browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
+        	for (var i=0; i<configs.length; i++)
+        		if (configs[i].coge.id == eid)
+        			dojo.destroy(dojo.byId('nav_' + eid));
+        });
+    },
+
     _showPixelValue: function( scoreDisplay, score ) {
         var scoreType = typeof score;
         if( scoreType == 'number' ) {
@@ -647,6 +738,46 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     }
                 }
             ]);
+
+        options.push.apply(options, [{
+	        label: 'Search',
+	        onClick: function(event) {
+	        	coge_xyplot._track = track;
+	        	var content = '<div id="coge-track-search"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
+	        	coge_xyplot.browser.refSeqOrder.forEach(function(rs){
+	        		content += '<option>' + rs + '</option>';
+	        	});
+	        	content += '</select></td></tr>' +
+	        		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="highest" type="radio" name="type" checked="checked"> highest</td></tr>' +
+	        		'<tr><td></td><td style="white-space:nowrap"><input id="lowest" type="radio" name="type"> lowest</td></tr>' +
+	        		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: <span id="selected_range">&nbsp;</span></td></tr>' +
+	        		'<tr><td></td><td><div id="coge-hist"><img src="picts/ajax-loader.gif"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
+	        	coge_xyplot._track_search_dialog = new Dialog({
+                    title: 'Search Track',
+                    content: content,
+                    onHide: function(){this.destroyRecursive()},
+                    style: "width: 350px"
+                });
+	        	dojo.xhrGet({
+	        		url: api_base_url + '/experiment/' + track.config.coge.id + '/histogram',
+	        		handleAs: 'json',
+	    	  		load: function(data) {
+	    	  			if (data.error) {
+	    	  				coge_xyplot._error('Search', data);
+	    	  				coge_xyplot._track_search_dialog.hide();
+	    	  				return;
+	    	  			}
+	    	  			dojo.destroy(dojo.byId('coge-hist').firstChild);
+	    	  			coge_xyplot._brush = chart(d3.select('#coge-hist'), data.first, data.gap, data.counts);
+	        		},
+	        		error: function(data) {
+	        			coge_xyplot._error('Search', data);
+	        			coge_xyplot._track_search_dialog.hide();
+	        		}
+	        	});
+	        	coge_xyplot._track_search_dialog.show();
+	        }
+	    }]);
 
         if (config.coge.type == 'notebook') {
             options.push.apply(
@@ -804,4 +935,128 @@ function nbspPad(s, padLength) {
 
 function sortByScore(a,b) { // sort features by score
     return Math.abs( b.feature.get('score') ) - Math.abs( a.feature.get('score') );
+}
+
+function _adjust_nav(eid) {
+ 	var l = dojo.byId('label_experiment' + eid);
+ 	if (l) {
+ 		var nav = dojo.byId('nav_' + eid);
+ 		if (nav) {
+	 		var track = dojo.byId('track_experiment' + eid);
+	     	dojo.style(nav, 'left', dojo.style(l, 'left') + 10);
+	     	dojo.style(nav, 'top', dojo.style(track, 'top') + 32);
+ 		}
+ 	}
+}
+
+function _go_to_hit(nav, hit) {
+	nav.hit = hit % nav.hits.length;
+	nav.num_span.innerHTML = nav.hit + 1;
+	var loc = JSON.parse('[' + nav.hits[nav.hit] + ']');
+	nav.browser.navigateToLocation({
+		ref: loc[0],
+		start: loc[1],
+		end: loc[2]
+	});	
+}
+
+function chart(div, first, gap, counts) {
+	var margin = {top: 10, right: 10, bottom: 20, left: 10},
+		x = d3.scale.linear().range([0, 200]).domain([first, first + gap * counts.length]),
+		y = d3.scale.linear().range([100, 0]).domain([0, d3.max(counts)]),
+		brush = d3.svg.brush(),
+	    axis = d3.svg.axis().orient("bottom").scale(x),
+	    width = x.range()[1],
+      	height = y.range()[0];
+  
+	var g = div.append("svg")
+      	.attr("width", width + margin.left + margin.right)
+      	.attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	g.append("clipPath")
+      	.attr("id", "clip")
+      .append("rect")
+      	.attr("width", width)
+      	.attr("height", height);
+
+	g.selectAll(".bar")
+      	.data(["background", "foreground"])
+      .enter().append("path")
+      	.attr("class", function(d) { return d + " bar"; })
+      	.datum(function(d,i){return counts[i]});//group.all());
+
+	g.selectAll(".foreground.bar")
+      	.attr("clip-path", "url(#clip)");
+
+	g.append("g")
+      	.attr("class", "axis")
+      	.attr("transform", "translate(0," + height + ")")
+      	.call(axis);
+
+	// Initialize the brush component with pretty resize handles.
+	brush.x(x);
+	var gBrush = g.append("g").attr("class", "brush").call(brush);
+	gBrush.selectAll("rect").attr("height", height);
+	gBrush.selectAll(".resize").append("path").attr("d", resizePath);
+
+    g.selectAll(".bar").attr("d", barPath);
+
+	function barPath() {
+    	var path = [],
+            i = -1,
+            n = counts.length,
+            X = first;
+        while (++i < n) {
+        	path.push("M", x(X), ",", height, "V", y(counts[i]), "h9V", height);
+        	X += gap;
+        }
+        return path.join("");
+	}
+
+	function resizePath(d) {
+        var e = +(d == "e"),
+            x = e ? 1 : -1,
+            y = height / 3;
+        return "M" + (.5 * x) + "," + y
+            + "A6,6 0 0 " + e + " " + (6.5 * x) + "," + (y + 6)
+            + "V" + (2 * y - 6)
+            + "A6,6 0 0 " + e + " " + (.5 * x) + "," + (2 * y)
+            + "Z"
+            + "M" + (2.5 * x) + "," + (y + 8)
+            + "V" + (2 * y - 8)
+            + "M" + (4.5 * x) + "," + (y + 8)
+            + "V" + (2 * y - 8);
+	}
+
+    brush.on("brushstart.chart", function() {
+    	var div = d3.select(this.parentNode.parentNode.parentNode);
+    	div.select(".title a").style("display", null);
+    	dojo.byId('range').checked = true;
+    });
+
+    brush.on("brush.chart", function() {
+    	var g = d3.select(this.parentNode),
+          	extent = brush.extent();
+//      if (round) g.select(".brush")
+//          .call(brush.extent(extent = extent.map(round)))
+//        .selectAll(".resize")
+//          .style("display", null);
+    	g.select("#clip rect")
+          	.attr("x", x(extent[0]))
+          	.attr("width", x(extent[1]) - x(extent[0]));
+    	dojo.byId('selected_range').innerHTML = parseFloat(Math.round(extent[0] * 100) / 100).toFixed(2) + ' .. ' + parseFloat(Math.round(extent[1] * 100) / 100).toFixed(2);
+    });
+
+    brush.on("brushend.chart", function() {
+    	if (brush.empty()) {
+    		var div = d3.select(this.parentNode.parentNode.parentNode);
+    		div.select(".title a").style("display", "none");
+    		div.select("#clip rect").attr("x", null).attr("width", "100%");
+    		dojo.byId('selected_range').innerHTML = '&nbsp;';
+    	}
+    });
+    d3.rebind(chart, brush, "on");
+    return brush;
 }

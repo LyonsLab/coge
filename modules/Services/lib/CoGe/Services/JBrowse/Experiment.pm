@@ -2,8 +2,9 @@ package CoGe::Services::JBrowse::Experiment;
 use base 'CGI::Application';
 
 use CoGeX;
+use CoGe::Accessory::histogram;
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw( get_experiment_data );
+use CoGe::Core::Storage qw( get_experiment_data get_experiment_path query_experiment_data );
 use JSON::XS;
 use Data::Dumper;
 
@@ -27,6 +28,8 @@ sub setup {
         'stats_global' => 'stats_global',
         'stats_regionFeatureDensities' => 'stats_regionFeatureDensities',
         'features'     => 'features',
+        'query_data'   => 'query_data',
+        'histogram'     => 'histogram',
     );
     $self->mode_param('rm');
 }
@@ -98,7 +101,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 			next;
 		}
         elsif ( $data_type == $DATA_TYPE_POLY || $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -116,7 +119,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = CoGe::Core::Storage::get_experiment_data(
+	        my $cmdOut = get_experiment_data(
 	            eid   => $eid,
 	            data_type  => $exp->data_type,
 	            chr   => $chr,
@@ -148,7 +151,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 
     my ( $sum, $count );
     foreach my $x (@bins) {
-        $sum += x;
+        $sum += $x;
          #$max = $x if ( not defined $max or $x > $max ); # mdb removed 1/14/14 for BAM histograms
         $count++;
     }
@@ -162,6 +165,89 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
             stats => { basesPerBin => $bpPerBin, max => $max, mean => $mean }
         }
     );
+}
+
+sub debug {
+	my $data = shift;
+	my $new_file = shift;
+	my $OUTFILE;
+	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
+	print {$OUTFILE} Dumper $data;
+	print {$OUTFILE} "\n";
+	close $OUTFILE;
+}
+
+sub query_data {
+    my $self = shift;
+    my $eid = $self->param('eid');
+    my $chr = $self->query->param('chr');
+    my $type = $self->query->param('type');
+    my $order_by = 'value1 desc';
+    my $where;
+
+    if ($type eq 'max') {
+    	my $max = query_experiment_data(
+    		eid => $eid,
+    		col => 'max(value1)'
+    	);
+    	$where = 'value1=' . $max->[0];
+    }
+    elsif ($type eq 'min') {
+    	my $min = query_experiment_data(
+    		eid => $eid,
+    		col => 'min(value1)'
+    	);
+    	$where = 'value1=' . $max->[0];
+    }
+    else {
+    	my $gte = $self->query->param('gte');
+    	my $lte = $self->query->param('lte');
+    	if ($gte) {
+    		$where = 'value1>=' . $gte;
+    	}
+    	if ($lte) {
+    		if ($gte) {
+    			$where .= ' and ';
+    		}
+    		$where .= 'value1<=' . $lte;
+    	}
+    }
+
+	my $result = query_experiment_data(
+		eid => $eid,
+		col => 'chr,start,stop,value1',
+		chr => $chr,
+		where => $where
+	);
+	return encode_json($result);
+}
+
+sub histogram {
+    my $self  = shift;
+    my $eid   = $self->param('eid');
+
+    my $storage_path = get_experiment_path($eid);
+    my $hist_file = "$storage_path/value1.hist";
+    if (!-e $hist_file) {
+		my $result = query_experiment_data(
+			eid => $eid,
+			col => 'value1',
+			chr => $chr
+		);
+	    my $bins = CoGe::Accessory::histogram::_histogram_bins($result, 20);
+	    my $counts = CoGe::Accessory::histogram::_histogram_frequency($result, $bins);
+	    open my $fh, ">", $hist_file;
+	    print {$fh} encode_json({
+	    	first => 0 + $bins->[0][0],
+	    	gap => $bins->[0][1] - $bins->[0][0],
+	    	counts => $counts
+	    });
+	    close $fh; 
+    }
+    open my $fh, $hist_file;
+    my $hist = <$fh>;
+    close $fh;
+    return $hist;
 }
 
 sub features {
@@ -229,7 +315,7 @@ sub features {
         my $data_type = $exp->data_type;
 
         if ( !$data_type || $data_type == $DATA_TYPE_QUANT ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -254,7 +340,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -285,7 +371,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_experiment_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -313,7 +399,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = CoGe::Core::Storage::get_experiment_data(
+	        my $cmdOut = get_experiment_data(
 	            eid   => $eid,
 	            data_type => $exp->data_type,
 	            chr   => $chr,
@@ -363,7 +449,7 @@ sub features {
     	        	my $end = $pos + $len;
     	        	my $strand = ($flag & 0x10 ? '-1' : '1');
     	        	#TODO reverse complement sequence if neg strand?
-    	        	my $qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
+    	        	$qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
 
     	        	$results .= ( $results ? ',' : '' )
                       . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};

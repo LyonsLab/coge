@@ -1597,7 +1597,10 @@ sub upload_image_file {
 sub upload_metadata {
     my %opts = @_;
     my $type = $opts{type};
+<<<<<<< HEAD
+=======
     my @error_ids;
+>>>>>>> master
     my $file = $FORM->param('metadata_file');
 
     open my $fh, $FORM->tmpFileName($file);
@@ -1642,10 +1645,13 @@ sub upload_metadata {
 			}
 		}
 	}
+<<<<<<< HEAD
+=======
 	if (@error_ids) {
 	    return 'Permission denied for the following ' . $type . 's: ' . join(',', @error_ids);
 	}
 	return 'Metadata added';
+>>>>>>> master
 }
 
 sub search_notebooks

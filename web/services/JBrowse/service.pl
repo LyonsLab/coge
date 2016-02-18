@@ -93,6 +93,16 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Experiment',
             rm     => 'stats_regionFeatureDensities'
         },
+        'experiment/:eid/histogram' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'histogram'
+        },
+        'experiment/:eid/query' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'query_data'
+        },
         'experiment/:eid/features/:chr' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',
@@ -126,6 +136,16 @@ CGI::Application::Dispatch->dispatch(
         'experiment/genome/:gid/features/:chr' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',
+            rm     => 'features'
+        },
+        'genome/:gid/genes' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Genome',
+            rm     => 'genes'
+        },
+        'genome/:gid/features' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Genome',
             rm     => 'features'
         },
     ],
