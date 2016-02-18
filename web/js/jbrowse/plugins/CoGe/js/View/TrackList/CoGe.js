@@ -304,11 +304,21 @@ define(['dojo/_base/declare',
 		var menu_button = dom.create('div', {id: 'coge_menu_button'}, div);
         var menu = new Menu();
         menu.addChild(new MenuItem({
-            label: "Add All Tracks",
-            onClick: dojo.hitch( this, function() {
-				var configs = this._getVisibleConfigs();
-				if (configs.length) {
-					if (configs.length > this.maxTracksToAdd) {
+            label: "Add All Tracks Shown",
+            onClick: dojo.hitch(this, function() {
+            	var visible_configs = [];
+            	dojo.query('.coge-tracklist-container', this.div).forEach(function(container) {
+           	    	if (!dojo.hasClass(container, 'collapsed'))
+        	        	for (var i=0;  i<coge_track_list._track_configs.length; i++) {
+        	        		var conf = coge_track_list._track_configs[i];
+        	        		if (container.id == conf.coge.type + conf.coge.id) {
+        	        			visible_configs.push(conf);
+        	    				break;
+        	        		}
+        	        	}
+            	});
+				if (visible_configs.length) {
+					if (visible_configs.length > this.maxTracksToAdd) {
 					    var myDialog = new dijit.Dialog({
 					        title: "Warning",
 					        content: "There are too many tracks to add (>" + this.maxTracksToAdd + "), please filter them further.",
@@ -317,7 +327,7 @@ define(['dojo/_base/declare',
 					    myDialog.show();
 					}
 					else {
-						this.browser.publish( '/jbrowse/v1/v/tracks/show', configs );
+						this.browser.publish('/jbrowse/v1/v/tracks/show', visible_configs);
 					}
 				}
 			})
@@ -325,10 +335,12 @@ define(['dojo/_base/declare',
         menu.addChild(new MenuItem({
             label: "Clear All Tracks",
             onClick: dojo.hitch(this, function() {
-				var configs = this._getVisibleConfigs();
-				if (configs.length) {
-					this.browser.publish( '/jbrowse/v1/v/tracks/hide', configs );
-				}
+            	var visible_configs = [];
+	        	for (var i=0;  i<this._track_configs.length; i++)
+	        		if (this._track_configs[i].label)
+	        			visible_configs.push(this._track_configs[i]);
+	        	if (visible_configs.length)
+        			this.browser.publish('/jbrowse/v1/v/tracks/hide', visible_configs);
 			})
         }));
         menu.addChild(new MenuSeparator());
@@ -559,26 +571,6 @@ define(['dojo/_base/declare',
             });
         }
         this._update_tracks_shown();
-    },
-
-    //----------------------------------------------------------------
-
-    _getVisibleConfigs: function () {
-    	var visibleConfigs = [];
-    	dojo.query( '.coge-experiment, .coge-notebook', this.div ) // TODO: optimize this
-    	    .forEach( function( labelNode ) {
-    	    	if (!dojo.hasClass(labelNode.parentNode, 'collapsed')) {
-    	        	for (var i = 0;  i < this._track_configs.length;  i++) {
-    	        		var conf = this._track_configs[i];
-    	        		var trackId = conf.coge.type + conf.coge.id;
-    	        		if (labelNode.id == trackId) {
-    	        			visibleConfigs.push(conf);
-    	    				return;
-    	        		}
-    	        	}
-    	    	}
-    	    });
-    	return visibleConfigs;
     },
 
     //----------------------------------------------------------------
