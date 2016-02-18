@@ -15,17 +15,17 @@ use JSON qw(encode_json);
 use POSIX 'ceil';
 
 no warnings 'redefine';
-use vars qw($P $USER $FORM $coge $LINK);
+use vars qw($CONF $USER $FORM $DB $LINK);
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM );
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM );
 
 # Logout is only called through this program!  All logouts from other pages are redirected to this page.
 # mdb changed 2/24/14, issue 329 - added confirmation for CoGe-only or CyVerse-all logout
 if ($FORM->param('logout_coge')) {
     CoGe::Accessory::Web->logout_coge(
-        cookie_name => $P->{COOKIE_NAME},
-        coge        => $coge,
+        cookie_name => $CONF->{COOKIE_NAME},
+        coge        => $DB,
         user        => $USER,
         form        => $FORM,
         url         => url_for('index.pl')
@@ -33,8 +33,8 @@ if ($FORM->param('logout_coge')) {
 }
 elsif ($FORM->param('logout_all')) {
     CoGe::Accessory::Web->logout_cas(
-        cookie_name => $P->{COOKIE_NAME},
-        coge        => $coge,
+        cookie_name => $CONF->{COOKIE_NAME},
+        coge        => $DB,
         user        => $USER,
         form        => $FORM,
         url         => url_for('index.pl')
@@ -46,18 +46,18 @@ my %FUNCTION = ( get_latest_genomes => \&get_latest_genomes );
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param(
         TITLE      => 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
         PAGE_TITLE => 'Comparative Genomics',
         PAGE_LINK  => $LINK,
-        HOME       => $P->{SERVER},
+        HOME       => $CONF->{SERVER},
         HELP       => '',
-        WIKI_URL   => $P->{WIKI_URL} || '',
+        WIKI_URL   => $CONF->{WIKI_URL} || '',
         USER       => $USER->display_name || undef,
         BODY       => generate_body(),
         ADMIN_ONLY => $USER->is_admin,
-        CAS_URL    => $P->{CAS_URL} || ''
+        CAS_URL    => $CONF->{CAS_URL} || ''
     );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -67,7 +67,7 @@ sub generate_html {
 }
 
 sub generate_body {
-    my $tmpl = HTML::Template->new( filename => $P->{TMPLDIR} . 'index.tmpl' );
+    my $tmpl = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'index.tmpl' );
 
     $tmpl->param(
         ACTIONS => [
@@ -78,24 +78,24 @@ sub generate_body {
                     LINK   => $_->{LINK},
                     LOGO   => $_->{LOGO}
                 }
-              } sort { $a->{ID} <=> $b->{ID} } @{ actions() }
+            } sort { $a->{ID} <=> $b->{ID} } @{ actions() }
         ]
     );
     $tmpl->param(
         INTRO => 1,
-        ORG_COUNT => commify( $coge->resultset('Organism')->count() ),
-        GEN_COUNT => commify( $coge->resultset('Genome')->search( { deleted => 0 } )->count() ),
-        FEAT_COUNT => commify( $coge->resultset('Feature')->count() ),
-        ANNOT_COUNT => commify( $coge->resultset('FeatureAnnotation')->count() ),
-        EXP_COUNT => commify( $coge->resultset('Experiment')->search( { deleted => 0 } )->count() ),
+        ORG_COUNT => commify( $DB->resultset('Organism')->count() ),
+        GEN_COUNT => commify( $DB->resultset('Genome')->search( { deleted => 0 } )->count() ),
+        FEAT_COUNT => commify( $DB->resultset('Feature')->count() ),
+        ANNOT_COUNT => commify( $DB->resultset('FeatureAnnotation')->count() ),
+        EXP_COUNT => commify( $DB->resultset('Experiment')->search( { deleted => 0 } )->count() ),
         QUANT_COUNT => commify(
             units(
-                $coge->resultset('Experiment')->search( { deleted => 0 } )->get_column('row_count')->sum
+                $DB->resultset('Experiment')->search( { deleted => 0 } )->get_column('row_count')->sum
             )
         )
     );
 
-    $tmpl->param( wikifeed => $P->{WIKI_URL}."/CoGepedia:Current_events" ) if $P->{WIKI_URL};
+    $tmpl->param( wikifeed => $CONF->{WIKI_URL}."/CoGepedia:Current_events" ) if $CONF->{WIKI_URL};
 
     return $tmpl->output;
 }
@@ -162,7 +162,7 @@ sub actions {
 
 sub get_latest_genomes {
     my %opts = @_;
-    my @latest = $coge->resultset("Genome")->get_recent_public($opts{limit});
+    my @latest = $DB->resultset("Genome")->get_recent_public($opts{limit});
     my @genomes;
 
     foreach my $dsg (@latest) {
@@ -181,7 +181,7 @@ sub get_latest_old {
     my %opts = @_;
     my $limit = $opts{limit} || 20;
 
-    my @db = $coge->resultset("Genome")->search(
+    my @db = $DB->resultset("Genome")->search(
         {},
         {
             distinct => "organism.name",
