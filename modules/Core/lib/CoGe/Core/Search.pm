@@ -118,7 +118,7 @@ sub search {
 		}
 		my @organisms = $db->resultset("Organism")->search( { -and => [ @orgArray, ], } );
 
-		if ( $type eq 'none' || $type eq 'organism' ) {
+		#if ( $type eq 'none' || $type eq 'organism' ) { # mdb removed 2/18/16 -- wasn't showing organism results unless logged in
 			foreach ( sort { $a->name cmp $b->name } @organisms ) {
 				push @results, { 
 					'type' => "organism", 
@@ -127,7 +127,7 @@ sub search {
 				  	'description' => $_->description 
 				};
 			}
-		}
+		#}
 		@idList = map { $_->id } @organisms;
 	}
 
