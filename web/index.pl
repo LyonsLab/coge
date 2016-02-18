@@ -69,8 +69,6 @@ sub generate_html {
 sub generate_body {
     my $tmpl = HTML::Template->new( filename => $P->{TMPLDIR} . 'index.tmpl' );
 
-    #    elsif ($USER && !$FORM->param('logout') && !$FORM->param('login'))
-    #      {
     $tmpl->param(
         ACTIONS => [
             map {
@@ -89,13 +87,6 @@ sub generate_body {
         GEN_COUNT => commify(
             $coge->resultset('Genome')->search( { deleted => 0 } )->count()
         ),
-#        NUCL_COUNT => .'('.commify(
-#            units(
-#                $coge->resultset('GenomicSequence')
-#                  ->get_column('sequence_length')->sum
-#              )
-#              . 'bp)'
-#        ),
         FEAT_COUNT => commify( $coge->resultset('Feature')->count() ),
         ANNOT_COUNT =>
           commify( $coge->resultset('FeatureAnnotation')->count() ),
@@ -112,13 +103,6 @@ sub generate_body {
 
     $tmpl->param( wikifeed => $P->{WIKI_URL}."/CoGepedia:Current_events" ) if $P->{WIKI_URL};
 
-    #      }
-    #    my $url = $FORM->param('url') if $FORM->param('url');
-    #    if ($url)
-    #     {
-    #        $url =~ s/:::/;/g if $url;
-    #        $tmpl->param(URL=>$url);
-    #     }
     return $tmpl->output;
 }
 
@@ -178,41 +162,6 @@ sub actions {
     	    SCREENSHOT => "picts/preview/FeatView.png",
     	    DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
     	},
-#       {
-# 		   {
-# 		    ID => 7,
-# 		    LOGO => qq{<a href="./docs/help/CoGe"><img src="picts/carousel/FAQ-logo.png" width="227" height="75" border="0"></a>},
-# 		    ACTION => qq{<a href="./docs/help/CoGe/">CoGe Faq</a>},
-# 		    DESC   => qq{What is CoGe?  This document covers some of the basics about what CoGe is, how it has been designed, and other information about the system.},
-# 		    SCREENSHOT => qq{<a href="./docs/help/CoGe"><img src="picts/preview/app_schema.png" border="0"></a>},
-# 		   }
-#        {
-#            ID => 3,
-#            LOGO => "picts/carousel/FeatView-logo.png",
-#            ACTION => qq{<a href="./FeatView.pl">FeatView</a>},
-#            LINK   => qq{./FeatView.pl},
-#            DESC =>
-#qq{Find and display information about a genomic feature (e.g. gene).<br><a href = "FeatView.pl?accn=at1g07300" target=_new>Example</a>},
-#            SCREENSHOT =>
-#qq{<a href="./FeatView.pl"><img src="picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
-#            NAME =>
-#qq{<span style="display:inline-block;width:100px;">FeatView</span>},
-#        },
-
-# 		   {
-# 		    ID=>3,
-# 		    LOGO=>qq{<a href="./MSAView.pl"><img src="picts/carousel/MSAView-logo.png" width="227" height="75" border="0"></a>},
-# 		    ACTION => qq{<a href="./MSAView.pl">MSAView: Multiple Sequence Alignment Viewer</a>},
-# 		    DESC   => qq{Allows users to submit a multiple sequence alignment in FASTA format (if people would like additional formats, please request via e-mail) in order to quickly check the alignment, find conserved regions, etc.  This program also generates a consensus sequence from the alignment and displays some basic statistics about the alignment.},
-# 		    SCREENSHOT=>qq{<a href="./MSAView.pl"><img src="picts/preview/MSAView.png"border="0"></a>},
-# 		   },
-# 		   {
-# 		    ID=>4,
-# 		    LOGO=>qq{<a href="./TreeView.pl"><img src="picts/carousel/TreeView-logo.png" width="227" height="75" border="0"></a>},
-# 		    ACTION => qq{<a href="./TreeView.pl">TreeView: Phylogenetic Tree Viewer</a>},
-# 		    DESC   => qq{Allows users to submit a tree file and get a graphical view of their tree.  There is support for drawing rooted and unrooted trees, zooming and unzooming functions, and coloring and shaping nodes based on user specifications.},
-# 		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="picts/preview/TreeView.png"border="0"></a>},
-# 		   },
     );
     return \@actions;
 }
@@ -249,7 +198,6 @@ sub get_latest_old {
         }
     );
 
-    #($USER) = CoGe::Accessory::LogUser->get_user();
     my $html = "<table class='small'>";
     $html .= "<tr><th>"
       . join( "<th>", qw( Organism &nbsp Length&nbsp(nt) &nbsp Related Link ) );
@@ -263,16 +211,11 @@ sub get_latest_old {
         $org_names{ $dsg->organism->name } = 1;
         my $orgview_link = "OrganismView.pl?oid=" . $dsg->organism->id;
         my $entry        = qq{<tr>};
-
-#$entry .= qq{<td><span class='ui-button ui-corner-all' onClick="window.open('$orgview_link')"><span class="ui-icon ui-icon-link"></span>&nbsp&nbsp</span>};
-        $entry .=
-          qq{<td><span class="link" onclick=window.open('$orgview_link')>};
+        $entry .= qq{<td><span class="link" onclick=window.open('$orgview_link')>};
         my $name = $dsg->organism->name;
         $name = substr( $name, 0, 40 ) . "..." if length($name) > 40;
         $entry .= $name;
         $entry .= qq{</span>};
-
-        #$entry .= ": ".$dsg->name if $dsg->name;
         $entry .= "<td>(v" . $dsg->version . ")&nbsp";
         $entry .= "<td align=right>" . commify( $dsg->length ) . "<td>";
         my @desc = split( /;/, $dsg->organism->description );
