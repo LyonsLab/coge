@@ -118,16 +118,20 @@ var coge = window.coge = (function(namespace) {
 			});
 
 			self.container.find('#input_accn').bind('keyup focus click', function() {
-				if ( self.container.find('#input_accn').val() ) {
-					self.container.find('#ncbi_get_button').removeClass('ui-state-disabled');
+				if ( self.container.find('#input_accn').val() && self.container.find('#input_accn').val().length >= 6 ) {
+					self.container.find('#ncbi_get_button,#sra_get_button').removeClass('ui-state-disabled');
 				}
 				else {
-					self.container.find('#ncbi_get_button').addClass('ui-state-disabled');
+					self.container.find('#ncbi_get_button,#sra_get_button').addClass('ui-state-disabled');
 				}
 			});
 			
 			self.container.find('#ncbi_get_button').bind('click', function() {
 				self._load_from_ncbi();
+			});
+			
+			self.container.find('#sra_get_button').bind('click', function() {
+				self._load_from_sra();
 			});
 
 			self.container.find('#input_upload_file').fileupload({
@@ -597,7 +601,7 @@ var coge = window.coge = (function(namespace) {
 			var accn = $('#input_accn').val();
 
 			$('#ncbi_get_button').addClass('ui-state-disabled');
-			$('#ncbi_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI...');
+			$('#ncbi_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI Nucleotide DB...');
 
 			$.ajax({
 				data: {
@@ -623,6 +627,38 @@ var coge = window.coge = (function(namespace) {
 					$('#ncbi_status').html('');
 				},
 			});
+		},
+		
+		_load_from_sra: function() {
+			var self = this;
+			
+			var accn = $('#input_accn').val();
+			if (!(accn && accn.toLowerCase().startsWith('srr'))) {
+				$('#sra_status').html('Please enter an SRR accession (starts with "SRR")');
+				return;
+			}
+
+			$('#sra_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI SRA...');
+			
+		    var entrez = new Entrez({ database: 'sra' });
+		    entrez.search(accn).then(function(id) {
+		    	if (id) {
+		    		entrez.fetch(id).then(function(result) {
+		    			if (result) {
+		    				if (self._add_file_to_list(result.accn, 'sra://'+result.accn)) {
+								self._finish_file_in_list('sra', 'sra://'+result.accn, result.accn, result.size);
+							}
+							$('#sra_status').html('');
+		    			}
+		    			else {
+		    				$('#sra_status').html('Item not found');
+		    			}
+		    		});
+		    	}
+		    	else {
+		    		$('#sra_status').html('Item not found');
+		    	}
+		    });
 		}
     };
 

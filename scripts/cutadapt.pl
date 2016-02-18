@@ -11,7 +11,9 @@ use warnings;
 
 use File::Path qw(make_path);
 use File::Copy qw(move);
-use CoGe::Accessory::Utils qw(execute is_fastq_file add_fastq_ext);
+use File::Touch;
+use File::Spec::Functions qw(catfile);
+use CoGe::Accessory::Utils qw(execute is_fastq_file add_fastq_ext to_filename);
 
 my $read_type = shift;   # 'single' or 'paired'
 my $output_path = shift; # path for output files
@@ -54,6 +56,7 @@ foreach my $new_file (keys %verified_files) {
     if ($orig_file ne $new_file) {
         move($new_file, $orig_file);
     }
+    touch(catfile($output_path, to_filename($orig_file) . '.trimmed.fastq.done')); # kludge for JEX
 }
 
 exit($rc);
