@@ -78,7 +78,7 @@ sub build {
     }
         
     # Trim the fastq input files
-    my @trimmed;
+    my (@trimmed, @trimming_done_files);
     if ($trimming_params) {
         my ($fastq1, $fastq2);
         if ($read_params->{read_type} eq 'paired') {
@@ -100,21 +100,22 @@ sub build {
         my %params = (
             fastq1 => $fastq1,
             fastq2 => $fastq2,
-            validated => \@validated,
+            done_files => \@validated,
             staging_dir => $staging_dir,
             read_params => $read_params,
-            trimming_params => $trimming_params        
+            trimming_params => $trimming_params
         );
         
-        my ($tasks, $outputs);
+        my ($tasks, $outputs, $done_files);
         if ($trimming_params->{trimmer} eq 'cutadapt') {
-            ($tasks, $outputs) = create_cutadapt_workflow(%params);
+            ($tasks, $outputs, $done_files) = create_cutadapt_workflow(%params);
         }
         elsif ($trimming_params->{trimmer} eq 'trimgalore') {
-            ($tasks, $outputs) = create_trimgalore_workflow(%params);
+            ($tasks, $outputs, $done_files) = create_trimgalore_workflow(%params);
         }
         push @trimmed, @$outputs;
         push @tasks, @$tasks;
+        push @trimming_done_files, @$done_files if $done_files; # kludge for JEX
     }
     else { # no trimming
         push @trimmed, @decompressed;
@@ -137,10 +138,11 @@ sub build {
         fasta => $reheader_fasta
     );
     
+    # Add aligner workflow
     my %params = ( 
-        fasta => catfile($fasta_cache_dir, $reheader_fasta),
+        done_files => [ @validated, @trimming_done_files ],
+        fasta => $reheader_fasta,
         fastq => \@trimmed,
-        validated => \@validated,
         gid => $gid,
         encoding => $read_params->{encoding},
         read_type => $read_params->{read_type},
@@ -149,7 +151,6 @@ sub build {
     );
     $params{doSeparately} = 1 if $chipseq_params;
     
-    # Add aligner workflow
     my ($alignment_tasks, $alignment_results);
     $alignment_params = {} unless $alignment_params;
     
@@ -181,15 +182,9 @@ sub build {
     elsif ($alignment_params->{tool} eq 'bwameth') {
         ($alignment_tasks, $alignment_results) = create_bwameth_workflow(%params);
     }
-    else { # ($alignment_params->{tool} eq 'gsnap') { # default
+    else { # GSNAP is the default
         ($alignment_tasks, $alignment_results) = create_gsnap_workflow(%params);
     }
-# mdb removed 9/15/15 -- make GSNAP the default aligner
-#    else {
-#        my $error = "Unrecognized alignment tool '" . $alignment_params->{tool};
-#        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-#        return { error => $error };
-#    }
     
     unless (@$alignment_tasks && $alignment_results) {
         print STDERR "CoGe::Builder::Common::Alignment ERROR: Invalid alignment workflow\n";

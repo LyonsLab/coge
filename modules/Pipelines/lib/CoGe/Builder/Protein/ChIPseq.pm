@@ -57,14 +57,14 @@ sub build {
     my ($input_file, @replicates);
     foreach my $file (@$input_files) {
         my ($basename) = to_filename_base($file);
-        if ($basename eq $input_base) {
+        if (index($basename, $input_base) != -1) {
             $input_file = $file;
         }
         else {
             push @replicates, $file;
         }
     }
-    die "CoGe::Builder::Protein::ChIPseq: ERROR, unable to detect input" unless $input_file;
+    die "CoGe::Builder::Protein::ChIPseq: ERROR, unable to detect input, base=$input_base, files: ", Dumper @$input_files unless $input_file;
 
     #
     # Build the workflow
