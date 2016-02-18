@@ -877,7 +877,7 @@ sub get_chromosomes {
 			$html .= ",";
 		}
 #		$html .= '["' . $c->chromosome . '","' . $c->sequence_length . "\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"f" . $c->chromosome . "\\\" /> FASTA\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"g" . $c->chromosome . "\\\" /> GFF\"]";
-		$html .= '["' . $c->name . '","' . $c->length . "\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"f" . $c->name . "\\\" /> FASTA\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"g" . $c->name . "\\\" /> GFF\"]";
+		$html .= '["' . $c->name . " <a href=\\\"GenomeView.pl?gid=" . $gid . '&loc=' . $c->name . '%3A1..' . ($c->length - 1) . "\\\" target=\\\"_blank\\\"><span class=\\\"glyphicon glyphicon-eye-open\\\" style=\\\"color:black;padding-left:20px;\\\" title=\\\"Browse\\\"></span></a>\",\"" . $c->length . "\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"f" . $c->name . "\\\" /> FASTA\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"g" . $c->name . "\\\" /> GFF\"]";
   	}
 	$html .= ']';
 	return $html;	
