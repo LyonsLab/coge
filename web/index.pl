@@ -82,21 +82,15 @@ sub generate_body {
         ]
     );
     $tmpl->param(
-        'INTRO'   => 1,
+        INTRO => 1,
         ORG_COUNT => commify( $coge->resultset('Organism')->count() ),
-        GEN_COUNT => commify(
-            $coge->resultset('Genome')->search( { deleted => 0 } )->count()
-        ),
+        GEN_COUNT => commify( $coge->resultset('Genome')->search( { deleted => 0 } )->count() ),
         FEAT_COUNT => commify( $coge->resultset('Feature')->count() ),
-        ANNOT_COUNT =>
-          commify( $coge->resultset('FeatureAnnotation')->count() ),
-        EXP_COUNT => commify(
-            $coge->resultset('Experiment')->search( { deleted => 0 } )->count()
-        ),
+        ANNOT_COUNT => commify( $coge->resultset('FeatureAnnotation')->count() ),
+        EXP_COUNT => commify( $coge->resultset('Experiment')->search( { deleted => 0 } )->count() ),
         QUANT_COUNT => commify(
             units(
-                $coge->resultset('Experiment')->search( { deleted => 0 } )
-                  ->get_column('row_count')->sum
+                $coge->resultset('Experiment')->search( { deleted => 0 } )->get_column('row_count')->sum
             )
         )
     );
