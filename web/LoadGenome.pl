@@ -17,6 +17,7 @@ use File::Path qw(mkpath);
 use File::Copy qw(copy);
 use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
+use File::Touch;
 use File::Listing qw(parse_dir);
 use File::Slurp;
 use URI::Escape::JavaScript qw(escape unescape);
@@ -192,6 +193,7 @@ sub upload_file {
 
         #print STDERR "temp files: $tmpfilename $targetpath\n";
         copy( $tmpfilename, $targetpath );
+        touch($targetpath . '.done'); # for JEX
         $size = -s $fh;
     }
 
