@@ -57,6 +57,10 @@
 	border: 1px solid gray;
 }
 
+.coge-tracklist-indented {
+	padding-left: 25px !important;
+}
+
 .coge-tracklist-label {
 	flex: 2;
 	min-height: 16px;

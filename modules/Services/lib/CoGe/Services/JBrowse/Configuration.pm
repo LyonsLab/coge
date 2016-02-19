@@ -451,8 +451,9 @@ sub track_config {
                 collapsed   => 1, #FIXME move into CSS
                 name        => $e->{name},
                 description => $e->{description},
+                moveable    => 1,
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
-                annotations => ( @annotations ? \@annotations : undef ),
+#                annotations => ( @annotations ? \@annotations : undef ),
                 onClick     => "ExperimentView.pl?embed=1&eid=$eid",
                 menuOptions => [
                     {

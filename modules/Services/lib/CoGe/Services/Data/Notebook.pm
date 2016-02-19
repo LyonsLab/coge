@@ -1,9 +1,10 @@
 package CoGe::Services::Data::Notebook;
 use Mojo::Base 'Mojolicious::Controller';
-use Mojo::JSON;
+use Mojo::JSON qw(encode_json);
 use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Core::Notebook;
+use CoGe::Accessory::Web qw(log_history);
 use Data::Dumper;
 
 sub search {
@@ -136,6 +137,16 @@ sub add {
     });
 }
 
+sub debug {
+	my $data = shift;
+	my $new_file = shift;
+	my $OUTFILE;
+	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
+	print {$OUTFILE} Dumper $data;
+	print {$OUTFILE} "\n";
+	close $OUTFILE;
+}
+
 sub add_items {
     my $self = shift;
     my $id = int($self->stash('id'));
@@ -158,12 +169,27 @@ sub add_items {
     	push @items, [ $item->{id}, $item->{type} ];
     }
 
-	add_items_to_notebook(
+	if (!add_items_to_notebook(
 		db => $db,
 		user => $user,
 		notebook => $notebook,
-		items => \@items
-	);
+		item_list => \@items
+	)) {
+        $self->render(json => {
+            error => { Error => "Error adding items to notebook"}
+        });
+        return;
+	}
+
+    log_history(
+        db          => $db,
+        user_id     => $user->id,
+        page        => 'API',
+    	description => 'added items ' . encode_json($data) . ' to notebook ' . $notebook->info_html,
+        link        => 'NotebookView.pl?nid=' . $notebook->list_id,
+        parent_id   => $notebook->list_id,
+        parent_type => 1 #FIXME magic number
+    );
 
 	$self->render(json => {
 		success => Mojo::JSON->true
