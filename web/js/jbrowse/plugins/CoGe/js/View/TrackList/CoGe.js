@@ -1,16 +1,4 @@
 var coge_track_list;
-var create_notebook_dialog;
-var rename_dialog;
-
-function _check_all(element, value) {
-	var cb = element.getElementsByTagName('INPUT');
-	for (var i=0; i<cb.length; i++)
-		cb[i].checked = value;
-}
-
-function _get_feature_color(id) { //FIXME: dup'ed in MultiXYPlot.js
-	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16);
-}
 
 //----------------------------------------------------------------
 
@@ -24,7 +12,6 @@ define(['dojo/_base/declare',
         'dojo/aspect',
         'dijit/layout/ContentPane',
         'dojo/dnd/Source',
-//        'dojo/fx/easing',
         'dojo/mouse',
         'dijit/form/Button',
         'dijit/form/DropDownButton',
@@ -35,7 +22,7 @@ define(['dojo/_base/declare',
         'JBrowse/View/ConfirmDialog',
         'JBrowse/View/InfoDialog'
        ],
-       function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, /*animationEasing,*/ mouse, Button, DropDownButton, Menu, MenuItem, MenuSeparator, Dialog, ConfirmDialog, InfoDialog ) {
+       function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, mouse, Button, DropDownButton, Menu, MenuItem, MenuSeparator, Dialog, ConfirmDialog, InfoDialog ) {
 	return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -78,14 +65,14 @@ define(['dojo/_base/declare',
 
     _add_expander: function (container, collapsed) {
     	var button = dom.create('img', {
-    			className: (collapsed ? 'coge-tracklist-expandIcon' : 'coge-tracklist-collapseIcon'),
+    			className: (collapsed ? 'coge-tracklist-expand' : 'coge-tracklist-collapse'),
     			src: (collapsed ? 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png' : 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png')
         	},
         	container
         );
     	dojo.connect(button, 'click', dojo.hitch(this, function() {
-    		dojo.toggleClass(button, 'coge-tracklist-expandIcon coge-tracklist-collapseIcon');
-            if (dojo.hasClass(button, 'coge-tracklist-expandIcon'))
+    		dojo.toggleClass(button, 'coge-tracklist-expand coge-tracklist-collapse');
+            if (dojo.hasClass(button, 'coge-tracklist-expand'))
             	this._collapse(container);
             else
             	this._expand(container);
@@ -95,21 +82,48 @@ define(['dojo/_base/declare',
 
     //----------------------------------------------------------------
 
+    _add_to_notebook: function(type, id) {
+	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+	  	dojo.xhrPost({
+	  		url: coge_api + '/notebooks/' + this._notebook_id + '/items/add?username='+un,
+	  		postData: JSON.stringify({
+	  			items: [{
+	  				type: type,
+	  				id, id
+	  			}]
+	  		}),
+	  		handleAs: 'json',
+	  		load: dojo.hitch(this, function(data) {
+	  			if (data.error)
+	  				this._error('Add Notebook Item', data);
+	  			else {
+	  				dojo.byId('notebook' + this._notebook_id);
+	  			}
+	  		}),
+	  		error: dojo.hitch(this, function(data) {
+	  			this._error('Add Notebook Item', data);
+	  		})
+	  	});
+    	this._add_dialog.hide();
+    },
+
+    //----------------------------------------------------------------
+
     _add_to_notebook_dialog: function(type, id, name) {
-    	var content = '<table><tr><td><label>Notebook:</label></td><td><select id="notebook">';
+    	var content = '<table><tr><td><label>Notebook:</label></td><td><select id="notebook" onChange="coge_track_list._notebook_id=this.options[this.selectedOption].value">';
     	var notebooks = this._track_configs.filter(function(e) {
     		return (e.coge.type && e.coge.type == 'notebook');
     	});
     	notebooks.sort();
     	for (var i=1; i<notebooks.length; i++) // skip All Experiments "notebook"
     		content += '<option value="' + notebooks[i].coge.id + '">' + notebooks[i].coge.name + '</option>';
-    	content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="add_to_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="add_dialog.hide()">Cancel</button></div>';
-    	add_dialog = new Dialog({
+    	content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_to_notebook(\'' + type + '\',' + id + ')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.hide()">Cancel</button></div>';
+    	this._add_dialog = new Dialog({
             title: 'Add to Notebook',
             onHide: function(){this.destroyRecursive()},
             content: content
         });
-    	add_dialog.show();
+    	this._add_dialog.show();
     },
 
     //----------------------------------------------------------------
@@ -120,36 +134,7 @@ define(['dojo/_base/declare',
 //            false,
 //            track_configs
 //        );
-//
-//        this._blinkTracks( track_configs );
     },
-
-    //----------------------------------------------------------------
-
-//    _blinkTracks: function( track_configs ) {
-//    	console.log('_blinkTracks');
-
-        // scroll the tracklist all the way to the bottom so we can see the blinking nodes
-//        this.trackListWidget.node.scrollTop = this.trackListWidget.node.scrollHeight;
-//
-//        array.forEach( track_configs, function(c) {
-//            var label = this.inactiveTrackNodes[c.label].firstChild;
-//            if( label ) {
-//                dojo.animateProperty({
-//                                         node: label,
-//                                         duration: 400,
-//                                         properties: {
-//                                             backgroundColor: { start: '#DEDEDE', end:  '#FFDE2B' }
-//                                         },
-//                                         easing: animationEasing.sine,
-//                                         repeat: 2,
-//                                         onEnd: function() {
-//                                             label.style.backgroundColor = null;
-//                                         }
-//                                     }).play();
-//            }
-//        },this);
-//    },
 
     //----------------------------------------------------------------
 
@@ -173,13 +158,10 @@ define(['dojo/_base/declare',
 
     //----------------------------------------------------------------
 
-   /**
-    * Clear the text filter control input.
-    * @private
-    */
-    _clearTextFilterControl: function() {
-        this.text_filter_input.value = '';
-        this._update_text_filter_control();
+    _check_all: function(element, value) {
+    	var cb = element.getElementsByTagName('INPUT');
+    	for (var i=0; i<cb.length; i++)
+    		cb[i].checked = value;
     },
 
     //----------------------------------------------------------------
@@ -215,13 +197,12 @@ define(['dojo/_base/declare',
 	  			if (data.error)
 	  				this._error('Create Notebook', data);
 	  			else {
-	  				var config = _new_notebook_config(data.id, name, description, restricted);
+	  				var config = this._new_notebook_config(data.id, name, description, restricted);
 	  				this._track_configs.push(config);
 	  	        	this._tracks.push(this._new_notebook().insertNodes(false, [config]));
 	  				this._filter_tracks();
-	  				//dojo.animateProperty({node: 'tracksAvail', properties: {scrollTop: {end: dojo.byId('tracksAvail').scrollHeight}}}).play();
 	  				this.div.scrollTop = this.div.scrollHeight;
-	  				create_notebook_dialog.hide();
+	  				this._create_notebook_dialog.hide();
 	  			}
 	  		}),
 	  		error: dojo.hitch(this, function(data) {
@@ -245,7 +226,7 @@ define(['dojo/_base/declare',
     	features.forEach(function(t) {
     		content += '<div><input type="checkbox"> <label>' + t.coge.id + '</label></div>';
     	});
-    	content += '</td></tr><tr><td></td><td><button onClick="_check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="_check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></td></tr></table>';
+    	content += '</td></tr><tr><td></td><td><button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></td></tr></table>';
     	content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._search_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="search_dialog.hide()">Cancel</button></div></div>';
         new Button({
 	        label: 'Search',
@@ -264,14 +245,13 @@ define(['dojo/_base/declare',
 	        	search_dialog.show();
 	        	dojo.stopEvent(event);
 	        },
-	        id: 'coge-search-btn'
-	    }, dojo.create('button', {}, this.browser.navbox));
+	    }, dojo.create('button', null, this.browser.navbox));
     },
 
     //----------------------------------------------------------------
 
-    _create_text_filter: function(parent) {
-        var div = dom.create( 'div', { className: 'coge-textfilter' }, parent);
+    _create_text_filter: function() {
+        var div = dom.create( 'div', { className: 'coge-textfilter' }, this.pane);
 
         var d = dom.create('div',{ style: 'display:inline;overflow:show;position:relative' }, div );
 		this.text_filter_input = dom.create('input', {
@@ -294,9 +274,10 @@ define(['dojo/_base/declare',
 		}, d);
 		this.text_filter_cancel = dom.create('div', {
 			className: 'jbrowseIconCancel',
-			id: 'textFilterCancel',
+			id: 'text_filter_cancel',
 			onclick: dojo.hitch( this, function() {
-				this._clearTextFilterControl();
+		        this.text_filter_input.value = '';
+		        this._update_text_filter_control();
 				this._filter_tracks();
 			})
 		}, d );
@@ -347,21 +328,21 @@ define(['dojo/_base/declare',
         menu.addChild(new MenuItem({
             label: "Create New Notebook",
             onClick: dojo.hitch(this, function() {
-            	create_notebook_dialog = new Dialog({
+            	this._create_notebook_dialog = new Dialog({
                     title: 'Create New Notebook',
-                    content: '<table><tr><td><label>Name:</label></td><td><input id="notebook_name"></td></tr><tr><td><label>Description:</label></td><td><input id="notebook_description"></td></tr><tr><td><label>Restricted:</label></td><td><input type="checkbox" checked="checked" id="notebook_restricted"></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="create_notebook_dialog.hide()">Cancel</button></div>',
+                    content: '<table><tr><td><label>Name:</label></td><td><input id="notebook_name"></td></tr><tr><td><label>Description:</label></td><td><input id="notebook_description"></td></tr><tr><td><label>Restricted:</label></td><td><input type="checkbox" checked="checked" id="notebook_restricted"></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook_dialog.hide()">Cancel</button></div>',
                     onHide: function(){this.destroyRecursive()},
                     style: 'width: 300px'
                 });
-            	create_notebook_dialog.show();
+            	this._create_notebook_dialog.show();
             })
         }));
         menu.addChild(new MenuSeparator());
         menu.addChild(new MenuItem({
-            label: 'Move Track Selector to ' + (dijit.byId('trackPane').get('region') == 'right' ? 'Left' : 'Right') + ' Side',
+            label: 'Move Track Selector to ' + (dijit.byId('track_pane').get('region') == 'right' ? 'Left' : 'Right') + ' Side',
             onClick: function() {
             	var bc = dijit.byId('jbrowse');
-            	var pane = dijit.byId('trackPane');
+            	var pane = dijit.byId('track_pane');
             	bc.removeChild(pane);
             	var region = pane.get('region');
             	this.set('label', 'Move Track Selector to ' + (region == 'right' ? 'Right' : 'Left') + ' Side');
@@ -381,7 +362,7 @@ define(['dojo/_base/declare',
     //----------------------------------------------------------------
 
     _create_track_list: function(parent) {
-        this.pane = dojo.create('div', { id: 'trackPane' }, parent);
+        this.pane = dojo.create('div', { id: 'track_pane' }, parent);
         var side = 'right';
         if (localStorage) {
         	var s = localStorage.getItem('track-selector-side');
@@ -391,7 +372,7 @@ define(['dojo/_base/declare',
         new ContentPane({region: side, splitter: true}, this.pane);
         this._create_text_filter(this.pane);
         this._update_text_filter_control();
-        this.div = dojo.create('div', { id: 'tracksAvail' }, this.pane);
+        this.div = dojo.create('div', { id: 'coge-tracks' }, this.pane);
 
         this._tracks = [];
         this._track_configs.filter(function(tc) {
@@ -537,23 +518,31 @@ define(['dojo/_base/declare',
     //----------------------------------------------------------------
 
     _filter_tracks: function( text ) {
-        if( text && /\S/.test(text) ) { // filter on text
+        if (text && /\S/.test(text)) { // filter on text
             text = text.toLowerCase();
-        	var n = dojo.byId('tracksAvail').firstChild;
+        	var n = this.div.firstChild;
         	while (n && dojo.hasClass(n, 'coge-tracklist-container')) {
         		dojo.addClass(n, 'collapsed');
         		n = n.nextSibling;
         	}
+        	var matching_tracks = [];
             this._traverse_tracks(function(container) {
             	var t = container.lastChild.title ? container.lastChild.title : container.lastChild.innerHTML;
-             	if (t.toLowerCase().indexOf(text) != -1)
-            		dojo.removeClass(container, 'collapsed');
-            	else
+             	if (t.toLowerCase().indexOf(text) != -1) {
+             		var i = 0;
+             		for (; i<matching_tracks.length; i++)
+             			if (container.id === matching_tracks[i].id)
+             				break;
+             		if (i === matching_tracks.length) {
+             			dojo.removeClass(container, 'collapsed');
+             			matching_tracks.push(container);
+             		} else
+                		dojo.addClass(container, 'collapsed');
+             	} else
             		dojo.addClass(container, 'collapsed');
             });
-        }
-        else { // empty string, show all
-        	var n = dojo.byId('tracksAvail').firstChild;
+        } else { // empty string, show all
+        	var n = this.div.firstChild;
         	while (n && dojo.hasClass(n, 'coge-tracklist-container') && !dojo.hasClass(n.lastChild, 'coge-tracklist-collapsible')) {
         		dojo.removeClass(n, 'collapsed');
         		n = n.nextSibling;
@@ -571,6 +560,12 @@ define(['dojo/_base/declare',
             });
         }
         this._update_tracks_shown();
+    },
+
+    //----------------------------------------------------------------
+
+    _get_feature_color: function(id) { //FIXME: dup'ed in MultiXYPlot.js
+    	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16);
     },
 
     //----------------------------------------------------------------
@@ -684,7 +679,7 @@ define(['dojo/_base/declare',
                     onClick: dojo.hitch( this, function() {
                     	if (notebook_name.substring(0, 2) == '® ')
                     		notebook_name = notebook_name.substring(2);
-                    	this._remove_dialog(type, id, track_config.coge.name, notebook_node.id.substring(8), notebook_name);
+                    	this._remove_from_notebook_dialog(type, id, track_config.coge.name, notebook_node.id.substring(8), notebook_name);
         			})
                 }));
         	}
@@ -768,7 +763,7 @@ define(['dojo/_base/declare',
             		nodes.forEach( dojo.hitch(this, function(node) {
             			var nodeId;
             			dojo.query('.coge-experiment', node).forEach( function(n) {
-                			nodeId = n.id;
+                			nodeId = n.parentNode.id;
                 		});
             			var conf = this.browser.trackConfigsByName[nodeId];
             			if (conf) {
@@ -799,7 +794,7 @@ define(['dojo/_base/declare',
     //----------------------------------------------------------------
 
     _new_notebook: function() {
-        var div = dojo.create( 'div', {}, this.div );
+        var div = dojo.create( 'div', null, this.div );
     	return new dndSource(div, {
             accept: ["track"],
             checkAcceptance: function(source, nodes) {
@@ -828,12 +823,46 @@ define(['dojo/_base/declare',
 
     //----------------------------------------------------------------
 
+    _new_notebook_config: function(id, name, description, restricted) {
+    	return {
+    		key: (restricted ? '&reg; ' : '') + name,
+    		baseUrl: api_base_url + '/experiment/notebook/' + id + '/',
+    		autocomplete: 'all',
+    		track: 'notebook' + id,
+    		label: 'notebook' + id,
+    		type: 'CoGe/View/Track/Wiggle/MultiXYPlot',
+    		storeClass: 'JBrowse/Store/SeqFeature/REST',
+    		style: { featureScale: 0.001 },
+    		showHoverScores: 1,
+    		coge: {
+    			id: id,
+    			type: 'notebook',
+    			classes: [ 'coge-tracklist-collapsible', 'coge-tracklist-editable', 'coge-tracklist-info' ],
+    			collapsed: false,
+    			name: name,
+    			description: description,
+    			editable: true,
+    			experiments: null,
+    			count: 0,
+    			onClick: 'NotebookView.pl?embed=1&lid=' + id,
+    			menuOptions: [{
+                    label: 'NotebookView',
+                    action: "function() { window.open( 'NotebookView.pl?lid=" + id + "' ); }"
+                }]
+    		}
+    	};
+    },
+
+    //----------------------------------------------------------------
+
     _new_track: function(track_config) {
     	var coge = track_config.coge;
-        var container = dojo.create( 'div', { className: 'coge-tracklist-container' });
+        var container = dojo.create( 'div', {
+        	className: 'coge-tracklist-container',
+    		id: coge.type + coge.id,
+        });
     	var label = dojo.create('div', {
 			className: 'coge-tracklist-label coge-' + coge.type,
-			id: coge.type + coge.id,
 			title: this._build_title(track_config)
         });
         if (coge.classes)
@@ -859,13 +888,12 @@ define(['dojo/_base/declare',
         	dojo.addClass(container, 'collapsed');
 
         container.appendChild(label);
-        container.id = label.id; // ? why is this done? would be better to have unique ids
         return container;
     },
 
     //----------------------------------------------------------------
 
-    _remove: function(type, id, notebook_id) {
+    _remove_from_notebook: function(type, id, notebook_id) {
 	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
 	  	dojo.xhrPost({
 	  		url: coge_api + '/notebooks/' + notebook_id + '/items/remove?username='+un,
@@ -890,14 +918,14 @@ define(['dojo/_base/declare',
 
     //----------------------------------------------------------------
 
-    _remove_dialog: function(type, id, name, notebook_id, notebook_name) {
+    _remove_from_notebook_dialog: function(type, id, name, notebook_id, notebook_name) {
 		new ConfirmDialog({
 			title: 'Remove ' + this._capitalize(type),
 			message: 'Remove ' + type + ' "' + name + '" from notebook "' + notebook_name + '"?',
             onHide: function(){this.destroyRecursive()}
 		}).show(dojo.hitch(this, function(confirmed) {
              if (confirmed)
-            	 this._remove(type, id, notebook_id);
+            	 this._remove_from_notebook(type, id, notebook_id);
          }));
     },
 
@@ -930,7 +958,7 @@ define(['dojo/_base/declare',
 	  				this._menu_track_config.key = key;
 	  				this._set_track_title(this._menu_track_config, this._menu_node);
 	  				this._track_changed(old_name, key);
-	  				rename_dialog.hide();
+	  				this._rename_dialog.hide();
 	  			}
 	  		}),
 	  		error: dojo.hitch(this, function(data) {
@@ -942,13 +970,13 @@ define(['dojo/_base/declare',
     //----------------------------------------------------------------
 
     _rename_dialog: function(type, id, name) {
-    	rename_dialog = new Dialog({
+    	this._rename_dialog = new Dialog({
             title: 'Rename ' + type,
-            content: '<table><tr><td><label>Name:</label></td><td><input id="name" value=' + JSON.stringify(name) + '></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._rename(\'' + type + '\',' + id + ',\'' + name.replace(/'/g, "\\'") + '\')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="rename_dialog.hide()">Cancel</button></div>',
+            content: '<table><tr><td><label>Name:</label></td><td><input id="name" value=' + JSON.stringify(name) + '></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._rename(\'' + type + '\',' + id + ',\'' + name.replace(/'/g, "\\'") + '\')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._rename_dialog.hide()">Cancel</button></div>',
             onHide: function(){this.destroyRecursive()},
             style: "width: 300px"
         });
-    	rename_dialog.show();
+    	this._rename_dialog.show();
     	var i = dojo.byId("name");
     	i.setSelectionRange(0, i.value.length);
     },
@@ -1037,21 +1065,19 @@ define(['dojo/_base/declare',
 	        .forEach( function( labelNode, i ) {
 	        	track_configs.forEach( function (trackConfig) {
 	        		var trackId = trackConfig.coge.type + trackConfig.coge.id;
-	        		if (labelNode.id == trackId) {
+	        		if (labelNode.parentNode.id == trackId) {
 	    				dojo.addClass(labelNode, 'selected');
 	        			if (dojo.hasClass(labelNode, 'coge-experiment')) {
 	        				var id = trackConfig.coge.id;
                             var color;
                             var style = trackConfig.style;
                             var cookie = browser.cookie('track-' + trackConfig.track);
-
                             if (cookie)
                                 style = dojo.fromJson(cookie);
-
                             if (style.featureColor && style.featureColor[id])
 	        				    color = style.featureColor[id];
                             else
-	        				    color = _get_feature_color(id);
+	        				    color = coge_track_list._get_feature_color(id);
 	        				dojo.style(labelNode, 'background', color);
 	        			} else
 	        				dojo.style(labelNode, 'background', 'lightgray');
@@ -1071,7 +1097,7 @@ define(['dojo/_base/declare',
 	        .forEach( function( labelNode, i ) {
 	        	track_configs.forEach(function (trackConfig) {
 	        		var trackId = trackConfig.coge.type + trackConfig.coge.id;
-	        		if (labelNode.id == trackId) {
+	        		if (labelNode.parentNode.id == trackId) {
 	    				dojo.style(labelNode, 'background', '');
 	        			dojo.removeClass(labelNode, 'selected');
 	        		}
@@ -1141,7 +1167,7 @@ define(['dojo/_base/declare',
     //----------------------------------------------------------------
 
     _traverse_tracks: function(f) {
-    	var n = dojo.byId('tracksAvail').firstChild;
+    	var n = this.div.firstChild;
     	while (n && dojo.hasClass(n, 'coge-tracklist-container'))
     		n = n.nextSibling;
     	while (n) {
@@ -1158,10 +1184,10 @@ define(['dojo/_base/declare',
     // show cancel button only when text filter has text
 
     _update_text_filter_control: function() {
-        if( this.text_filter_input.value.length )
-            dojo.setStyle( this.text_filter_cancel, 'display', 'block' );
+        if (this.text_filter_input.value.length)
+            dojo.setStyle(this.text_filter_cancel, 'display', 'block');
         else
-            dojo.setStyle( this.text_filter_cancel, 'display', 'none' );
+            dojo.setStyle(this.text_filter_cancel, 'display', 'none');
     },
 
     //----------------------------------------------------------------
@@ -1172,42 +1198,3 @@ define(['dojo/_base/declare',
     }
 });
 });
-
-//----------------------------------------------------------------
-
-function _new_notebook_config(id, name, description, restricted) {
-	return {
-        key: (restricted ? '&reg; ' : '') + name,
-        baseUrl: api_base_url + '/experiment/notebook/' + id + '/',
-        autocomplete: 'all',
-        track: 'notebook' + id,
-        label: 'notebook' + id,
-        type: 'CoGe/View/Track/Wiggle/MultiXYPlot',
-        storeClass: 'JBrowse/Store/SeqFeature/REST',
-        style: { featureScale: 0.001 },
-        showHoverScores: 1,
-        coge: {
-            id: id,
-            type: 'notebook',
-            classes: [
-                'coge-tracklist-collapsible',
-                'coge-tracklist-editable',
-                'coge-tracklist-info'
-            ],
-            collapsed: false,
-            name: name,
-            description: description,
-            editable: true,
-            experiments: null,
-            count: 0,
-            onClick: 'NotebookView.pl?embed=1&lid=' + id,
-            menuOptions: [
-                {
-                    label: 'NotebookView',
-                    action: "function() { window.open( 'NotebookView.pl?lid=" + id + "' ); }"
-                }
-            ]
-        }
-    };
-}
-

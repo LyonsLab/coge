@@ -136,6 +136,40 @@ sub add {
     });
 }
 
+sub add_items {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get notebook from DB
+    my $notebook = $db->resultset("List")->find($id);
+    unless (defined $notebook) {
+        $self->render(json => {
+            error => { Error => "Item not found"}
+        });
+        return;
+    }
+
+    my $data = $self->req->json;
+    my @items;
+    foreach my $item (@{$data->{items}}) {
+    	push @items, [ $item->{id}, $item->{type} ];
+    }
+
+	add_items_to_notebook(
+		db => $db,
+		user => $user,
+		notebook => $notebook,
+		items => \@items
+	);
+
+	$self->render(json => {
+		success => Mojo::JSON->true
+	});
+}
+
 sub remove {
     my $self = shift;
     my $id = int($self->stash('id'));

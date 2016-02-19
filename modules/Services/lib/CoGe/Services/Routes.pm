@@ -114,6 +114,10 @@ sub startup {
         ->name("notebooks-remove")
         ->to("notebook#remove");
 
+    $r->post("/notebooks/:id/items/add" => [id => qr/\d+/])
+        ->name("notebooks-items-add")
+        ->to("notebook#add_items", id => undef);
+
     $r->post("/notebooks/:id/items/remove" => [id => qr/\d+/])
         ->name("notebooks-items-remove")
         ->to("notebook#remove_item", id => undef);

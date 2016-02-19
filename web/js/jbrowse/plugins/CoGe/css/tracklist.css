@@ -6,24 +6,6 @@
 	padding: 1px !important;
 }
 
-#coge-add-all-experiments-btn {
-	cursor: pointer;
-	height: 14px;
-	position: absolute;
-	right: 28px;
-	top: 4px;
-	width: 14px;
-}
-
-#coge-clear-all-experiments-btn {
-	cursor: pointer;
-	height: 14px;
-	position: absolute;
-	right: 8px;
-	top: 4px;
-	width: 14px;
-}
-
 .coge-experiment,
 .coge-features {
 	background-color: #fbfbfb;
@@ -51,8 +33,8 @@
 	width: 95%;
 }
 
-.coge-tracklist-collapseIcon,
-.coge-tracklist-expandIcon
+.coge-tracklist-collapse,
+.coge-tracklist-expand
  {
  	height: 10px;
 	padding: 5px;
@@ -75,32 +57,19 @@
 	border: 1px solid gray;
 }
 
-.coge-tracklist-delete-btn {
-	height: 14px;
-	padding: 3px;
-	position: absolute;
-	visibility: hidden;
-	width: 14px;
-}
-
-.coge-tracklist-indented {
-	padding-left: 25px !important;
-}
-
-.coge-tracklist-info-btn {
-	height: 14px;
-	padding: 3px;
-	position: absolute;
-	visibility: hidden;
-	width: 14px;
-}
-
 .coge-tracklist-label {
 	flex: 2;
 	min-height: 16px;
 	overflow: hidden;
 	padding-left: 2px;
 	padding-top: 6px;
+}
+
+#coge-tracks {
+	flex: 2 2;
+	overflow-x: hidden;
+	overflow-y: auto;
+	width: 100%;
 }
 
 .coge-tracks-shown {
@@ -110,7 +79,7 @@
 	text-align: center;
 }
 
-#textFilterCancel {
+#text_filter_cancel {
 	cursor: pointer;
 	display: none;
 	position: absolute;
@@ -123,7 +92,7 @@
 	right: 40px;
 }
 
-#trackPane {
+#track_pane {
  	background-color: rgb(242, 242, 242);
  	display: flex;
  	flex-direction: column;
@@ -131,19 +100,12 @@
 	width: 215px;
 }
 
-#trackPane div.coge-textfilter {
+#track_pane div.coge-textfilter {
     margin: 0.5em 0 0 0.3em;
     padding-bottom: 5px;
 }
 
-#trackPane div.coge-textfilter input {
+#track_pane div.coge-textfilter input {
     line-height: 16px;
     padding: 2px 0;
-}
-
-#tracksAvail {
-	flex: 2 2;
-	overflow-x: hidden;
-	overflow-y: auto;
-	width: 100%;
 }
