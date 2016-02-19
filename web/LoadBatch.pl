@@ -17,6 +17,7 @@ use File::Copy;
 use File::Basename;
 use File::Slurp;
 use File::Spec::Functions qw( catdir catfile );
+use File::Touch;
 use File::Listing qw(parse_dir);
 use Sort::Versions;
 use Data::Dumper;
@@ -153,6 +154,7 @@ sub upload_file {
 
         #print STDERR "temp files: $tmpfilename $targetpath\n";
         copy( $tmpfilename, $targetpath );
+        touch($targetpath . '.done'); # for JEX
         $size = -s $fh;
     }
 
