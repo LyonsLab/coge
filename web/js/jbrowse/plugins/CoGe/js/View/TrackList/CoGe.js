@@ -779,6 +779,7 @@ define(['dojo/_base/declare',
             creator: dojo.hitch(this, function(track_config, hint) {
                 return {node: this._new_track(track_config), data: track_config, type: ["track", track_config.coge.type]};
             }),
+            delay: 2,
             selfAccept: false
         });
     },
