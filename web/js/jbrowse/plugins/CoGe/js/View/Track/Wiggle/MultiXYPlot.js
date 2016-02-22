@@ -962,7 +962,7 @@ function _go_to_hit(nav, hit) {
 
 function chart(div, first, gap, counts) {
 	var margin = {top: 10, right: 10, bottom: 20, left: 10},
-		x = d3.scale.linear().range([0, 200]).domain([first, first + gap * counts.length]),
+		x = d3.scale.linear().range([0, 200]).domain([0, first + gap * counts.length]),
 		y = d3.scale.linear().range([100, 0]).domain([0, d3.max(counts)]),
 		brush = d3.svg.brush(),
 	    axis = d3.svg.axis().orient("bottom").scale(x),
