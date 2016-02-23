@@ -4,7 +4,8 @@
 #------------------------------------------------------------------------------
 
 start() {
-    export PERL5LIB=$(pwd)/modules/perl
+    export COGE_HOME=$(pwd)
+    export PERL5LIB=$COGE_HOME/modules/perl
 #    hypnotoad -f ./web/services/api.pl >> ./api.log 2>&1 &
 #    ./web/services/api.pl daemon -l http://localhost:3304 >> ./api.log 2>&1 &
     port=$(grep MOJOLICIOUS_PORT ./coge.conf | cut -d ' ' -f 2)
@@ -14,10 +15,13 @@ start() {
 
 stop() {
 #    hypnotoad ./web/services/api.pl --stop
-    pid=$(pgrep 'morbo')
-    if [ $pid ]; then 
+    me=$(whoami)
+    pid=$(pgrep -u $me 'morbo')
+    if [ "$pid" != "" ]; then 
         kill -9 $pid
         echo "Stopped API (pid $pid)"     
+    else
+        echo "Not running"
     fi
 }
 
