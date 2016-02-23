@@ -1025,35 +1025,47 @@ define(['dojo/_base/declare',
 
     // ----------------------------------------------------------------
 
+    _set_track_active: function(container) {
+		var label_node = container.firstChild;
+		while (!dojo.hasClass(label_node, 'coge-tracklist-label'))
+			label_node = label_node.nextSibling;
+		dojo.addClass(label_node, 'selected');
+		if (container.config.coge.type == 'experiment') {
+			var id = container.config.coge.id;
+	        var color;
+	        var style = container.config.style;
+	        var cookie = this.browser.cookie('track-' + container.config.track);
+	        if (cookie)
+	            style = dojo.fromJson(cookie);
+	        if (style.featureColor && style.featureColor[id])
+			    color = style.featureColor[id];
+	        else
+			    color = this._get_feature_color(id);
+			dojo.style(label_node, 'background', color);    	
+		} else if (container.config.coge.type == 'notebook') {
+			dojo.style(label_node, 'background', 'lightgray');
+			var experiment = container.nextSibling;
+			while (experiment) {
+				this._set_track_active(experiment);
+				experiment = experiment.nextSibling;
+			}
+		} else
+			dojo.style(label_node, 'background', 'lightgray');
+    },
+
+    // ----------------------------------------------------------------
+
     /**
 	 * Given an array of track configs, update the track list to show that they
 	 * are turned on.
 	 */
     setTracksActive: function( /** Array[Object] */ track_configs ) {
-        var browser = this.browser;
-        dojo.query( '.coge-tracklist-label', this.div )
-	        .forEach( function( labelNode, i ) {
-	        	track_configs.forEach( function (trackConfig) {
-	        		var trackId = trackConfig.coge.type + trackConfig.coge.id;
-	        		if (labelNode.parentNode.id == trackId) {
-	    				dojo.addClass(labelNode, 'selected');
-	        			if (dojo.hasClass(labelNode, 'coge-experiment')) {
-	        				var id = trackConfig.coge.id;
-                            var color;
-                            var style = trackConfig.style;
-                            var cookie = browser.cookie('track-' + trackConfig.track);
-                            if (cookie)
-                                style = dojo.fromJson(cookie);
-                            if (style.featureColor && style.featureColor[id])
-	        				    color = style.featureColor[id];
-                            else
-	        				    color = coge_track_list._get_feature_color(id);
-	        				dojo.style(labelNode, 'background', color);
-	        			} else
-	        				dojo.style(labelNode, 'background', 'lightgray');
-	        		}
-	        	});
-	        });
+    	this._track_configs.forEach(function(track_config){
+    		track_configs.forEach(function(track_config){
+    			var container = dojo.byId(track_config.coge.type + track_config.coge.id);
+    			coge_track_list._set_track_active(container);
+    		});
+    	});
     },
 
     // ----------------------------------------------------------------
@@ -1125,6 +1137,7 @@ define(['dojo/_base/declare',
     },
 
     // ----------------------------------------------------------------
+    // skips Sequence, GC Content and Feature tracks
 
     _traverse_tracks: function(f) {
     	var n = this.div.firstChild;
