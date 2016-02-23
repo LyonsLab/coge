@@ -614,6 +614,7 @@ sub gen_body {
     return "Need a valid experiment id\n" unless $eid;
 
     my $exp = $coge->resultset('Experiment')->find($eid);
+    return "Experiment not found" unless $exp;
     return "Access denied" unless $USER->has_access_to_experiment($exp);
 
     my $gid = $exp->genome_id;
