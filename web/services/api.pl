@@ -1,25 +1,33 @@
+#!/usr/bin/env perl
+
 use Mojolicious::Lite;
 use Mojo::Log;
 
+use File::Spec::Functions qw(catdir);
+
 # Set the module include path -- this is necessary to allow multiple sandboxes on dev
-use lib './modules/perl';
+#use lib './modules/perl';
+
+use CoGe::Accessory::Web qw(get_defaults);
+print STDERR '=' x 80, "\n== CoGe API\n", '=' x 80, "\n";
+print STDERR "Home path: ", get_defaults->{_HOME_PATH}, "\n";
+print STDERR "Config file: ", get_defaults->{_CONFIG_PATH}, "\n";
+print STDERR "Include paths: ", qq(@INC), "\n";
 
 # Set port -- each sandbox should be set to a unique port in Apache config and coge.conf
-use CoGe::Accessory::Web qw(get_defaults);
-print STDERR "CoGe API ======================================================\n";
-print STDERR "Config file: ", get_defaults->{_CONFIG_PATH}, "\n";
 my $port = get_defaults->{MOJOLICIOUS_PORT} || 3303;
 
 # Setup Hypnotoad
 app->config(
     hypnotoad => {
         listen => ["http://localhost:$port/"],
+        pid_file => get_defaults->{_HOME_PATH},
         proxy => 1,
         heartbeat_timeout => 15, # number of seconds before restarting unresponsive worker (needed for large JBrowse requests)
     }
 );
-app->log( Mojo::Log->new( path => "mojo.log", level => 'debug' ) ); # log in sandbox top-level directory
-#app->log( Mojo::Log->new( ) ); # log to STDERR
+#app->log( Mojo::Log->new( path => catdir(get_defaults->{_HOME_PATH}, 'mojo.log'), level => 'debug' ) ); # log in sandbox top-level directory
+app->log( Mojo::Log->new( ) ); # log to STDERR
 
 # mdb added 8/27/15 -- prevent "Your secret passphrase needs to be changed" message
 app->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies

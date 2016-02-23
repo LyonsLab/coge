@@ -62,9 +62,9 @@ our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR,
 BEGIN {
     require Exporter;
 
-    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : catdir($ENV{PWD}, 'web') );#'/opt/apache/coge/web/' ); # mdb changed 2/5/16 for Hypnotoad setup
+    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : $ENV{PWD} );#'/opt/apache/coge/web/' ); # mdb changed 2/5/16 for Hypnotoad setup
     $VERSION = 0.1;
-    $TEMPDIR = $BASEDIR . "tmp";
+    $TEMPDIR = catdir($BASEDIR, 'web', 'tmp'); #FIXME move out of web
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
                    send_email get_defaults set_defaults url_for api_url_for get_job 
@@ -206,6 +206,9 @@ A valid configuration file must be specified or very little will work!};
 
     # mdb added 4/10/14 - add path to the file that was loaded
     $items{_CONFIG_PATH} = $conf_file;
+    
+    # mdb added 2/23/16 - add path to top-level directory (for hypnotoad)
+    $items{_HOME_PATH} = $BASEDIR;
 
     $CONF = \%items;
     return $CONF;
