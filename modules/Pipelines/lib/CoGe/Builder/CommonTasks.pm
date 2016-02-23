@@ -10,7 +10,7 @@ use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
 use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension to_filename_base);
-use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
+use CoGe::Accessory::IRODS qw(irods_iget irods_iput irods_set_env);
 use CoGe::Accessory::Web qw(get_defaults split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path);
 use CoGe::Core::Metadata qw(tags_to_string);
@@ -163,6 +163,7 @@ sub export_to_irods {
 
     $overwrite = 0 unless defined $overwrite;
 
+    irods_set_env(catfile($CONF->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
     my $cmd = irods_iput($src, $dest, { no_execute => 1, overwrite => $overwrite });
 
     my $filename = basename($done_file);
@@ -207,7 +208,8 @@ sub create_iget_job {
     #make_path($dest_path) unless (-r $dest_path); # mdb removed 2/9/16 -- for hypnotoad
     my $cmd;
     $cmd .= "mkdir -p $dest_path ; "; # mdb added 2/9/16 -- for hypnotoad
-    $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1 } ) . ' ; ';
+    irods_set_env(catfile($CONF->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
+    $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1, user => 'www-data' } ) . ' ; ';
     $cmd .= "touch $done_file";
 
     return {

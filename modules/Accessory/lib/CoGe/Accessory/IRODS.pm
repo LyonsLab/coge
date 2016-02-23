@@ -41,7 +41,7 @@ BEGIN {
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
     @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_iput $IRODS_METADATA_PREFIX );
-    @EXPORT_OK = qw( irods_get_base_path );
+    @EXPORT_OK = qw( irods_get_base_path irods_set_env );
 
     $IRODS_METADATA_PREFIX = 'ipc-coge-';
 }
@@ -229,9 +229,18 @@ sub irods_set_env {
 }
 
 sub _irods_get_env_file {
-    my $env_file = $IRODS_ENV;
-    $env_file //= CoGe::Accessory::Web::get_defaults()->{IRODSENV};
-    $env_file //= catfile(CoGe::Accessory::Web::get_defaults()->{_HOME_PATH}, 'irodsEnv');
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    
+    # There are multiple ways to specify the irodsEnvFile.  For main
+    # installations runf rom Upstart the default can be used.  For sandbox 
+    # installations run locally there must be two irodsEnv files: one for 
+    # the local user and one for the www-data user.  The user's version
+    # is "irodsEnv_local" as set in api.sh.  The www-data version is "irodsEnv".
+    my $env_file = $IRODS_ENV;       # 1: set with irods_set_env()
+    $env_file //= $conf->{IRODSENV}; # 2: config file
+    $env_file //= $ENV{IRODSENV};    # 3: environment variable
+    $env_file //= catfile($conf->{_HOME_PATH}, 'irodsEnv'); # 4: default
+    #print STDERR "env_file=$env_file\n";
     
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "CoGe::Accessory::IRODS: fatal error: iRODS env file missing! env_file=", ($env_file ? $env_file : ''), "\n";

@@ -6,6 +6,7 @@
 start() {
     export COGE_HOME=$(pwd)
     export PERL5LIB=$COGE_HOME/modules/perl
+    export IRODSENV=$COGE_HOME/irodsEnv_local
 #    hypnotoad -f ./web/services/api.pl >> ./api.log 2>&1 &
 #    ./web/services/api.pl daemon -l http://localhost:3304 >> ./api.log 2>&1 &
     port=$(grep MOJOLICIOUS_PORT ./coge.conf | cut -d ' ' -f 2)
