@@ -648,6 +648,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         var options = this.inherited(arguments);
         var track = this;
         var config = this.config;
+
+        options.push({ type: 'dijit/MenuSeparator' });
+
         if (config.coge.menuOptions) {
             config.coge.menuOptions.forEach( function(e) {
                 options.push(e);
@@ -657,7 +660,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         options.push.apply(
             options,
             [
-                { type: 'dijit/MenuSeparator' },
                 {
                     label: 'Show scores on hover',
                     type: 'dijit/CheckedMenuItem',

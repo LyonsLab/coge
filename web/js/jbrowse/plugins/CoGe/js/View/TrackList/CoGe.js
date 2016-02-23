@@ -470,23 +470,10 @@ define(['dojo/_base/declare',
     },
 
     // ----------------------------------------------------------------
+    // are we supposed to delete the experiment(s) from the database? for now just acknowledge their removal from the view
 
-    deleteTracks: function( /** Array[Object] */ track_configs ) { // mdb:
-																	// unused
-																	// now ...?
-// console.log('deleteTracks');
-// // remove any tracks in our track list that are being set as visible
-// array.forEach( track_configs || [], function( conf ) {
-// var oldNode = this.inactiveTrackNodes[ conf.label ];
-// if( ! oldNode )
-// return;
-// delete this.inactiveTrackNodes[ conf.label ];
-//
-// if( oldNode.parentNode )
-// oldNode.parentNode.removeChild( oldNode );
-//
-// this.trackListWidget.delItem( oldNode.id );
-// },this);
+    deleteTracks: function( /** Array[Object] */ track_configs ) {
+    	this.setTracksInactive(track_configs);
     },
 
     // ----------------------------------------------------------------

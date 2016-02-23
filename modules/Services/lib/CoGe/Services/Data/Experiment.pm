@@ -226,29 +226,19 @@ sub data {
 
 	$self->res->headers->content_disposition('attachment; filename=experiment.csv;');
 	$self->write('# experiment: ' . $experiment->name . "\n");
-	if ($chr) {
-		$self->write("# chromosome: $chr\n");
-	}
+	$self->write("# chromosome: $chr\n") if $chr;
 	if ($type) {
-		$self->write("# search: type=$type");
-		if ($gte) {
-			$self->write("&gte=$gte");
-		}
-		if ($lte) {
-			$self->write("&lte=$lte");
-		}
+		$self->write("# search: type = $type");
+		$self->write(", gte = $gte") if $gte;
+		$self->write(", lte = $lte") if $lte;
 		$self->write("\n");
 	}
-	if ($transform) {
-		$self->write("# transform: $transform\n");
-	}
+	$self->write("# transform: $transform\n") if $transform;
 	my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
 	my @columns = map { $_->{name} } @{$cols};
 	$self->write('# columns: ');
 	for (my $i=0; $i<scalar @columns; $i++) {
-		if ($i) {
-			$self->write(',');
-		}
+		$self->write(',') if $i;
 		$self->write($columns[$i]);
 	}
 	$self->write("\n");
