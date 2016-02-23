@@ -16,6 +16,7 @@ print STDERR "Include paths: ", qq(@INC), "\n";
 
 # Set port -- each sandbox should be set to a unique port in Apache config and coge.conf
 my $port = get_defaults->{MOJOLICIOUS_PORT} || 3303;
+print STDERR "Port: $port\n";
 
 # Setup Hypnotoad
 app->config(
