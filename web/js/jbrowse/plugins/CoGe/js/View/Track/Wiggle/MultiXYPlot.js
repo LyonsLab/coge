@@ -861,57 +861,48 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         }
 
         options.push({
-	        label: 'Export Track Data',
+	        label: 'Download Track Data',
 	        onClick: function(event) {
 	        	coge_xyplot._track = track;
-	        	var content = '<div id="coge-track-export"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
+	        	var content = '<div id="coge-track-download"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
 	        	coge_xyplot.browser.refSeqOrder.forEach(function(rs){
 	        		content += '<option>' + rs + '</option>';
 	        	});
 	        	content += '</select></td></tr>';
 	        	if (config.coge.transform)
-	        		content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input id="transform_none" type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
+	        		content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
 	        	if (config.coge.search) {
 	        		var search = track.config.coge.search.split('&');
 	        		if (search.length > 1)
 	        			search = search[0] + ': ' + search[1].substring(search[1].indexOf('=') + 1) + ' .. ' + search[2].substring(search[2].indexOf('=') + 1);
-	        		content += '<tr><td>Search:</td><td style="white-space:nowrap"><input id="search_none" type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + search + '</td></tr>';
+	        		content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + search + '</td></tr>';
 	        	}
-	        	content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._export_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_export_dialog.hide()">Cancel</button></div></div>';
-	        	coge_xyplot._track_export_dialog = new Dialog({
-                    title: 'Export Track',
+	        	content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._download_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_download_dialog.hide()">Cancel</button></div></div>';
+	        	coge_xyplot._track_download_dialog = new Dialog({
+                    title: 'Download Track',
                     content: content,
                     onHide: function(){this.destroyRecursive()},
                     style: "width: 350px"
                 });
-	        	coge_xyplot._track_export_dialog.show();
+	        	coge_xyplot._track_download_dialog.show();
 	        }
         });
 
         return options;
     },
     
-    _export_track: function() {
-    	var url = api_base_url + '/experiment/' + track.config.coge.id + '/data';
-    	if (this._track.config.coge.search)
-    		url += '?' + this._track.config.coge.search;
-    	dojo.xhrGet({
-    		url: url,
-    		handleAs: 'json',
-	  		load: function(data) {
-	  			if (data.error) {
-	  				coge_xyplot._error('Export', data);
-	  				coge_xyplot._track_export_dialog.hide();
-	  				return;
-	  			}
-	  			
-  				coge_xyplot._track_export_dialog.hide();
-    		},
-    		error: function(data) {
-    			coge_xyplot._error('Export', data);
-    			coge_xyplot._track_export_dialog.hide();
-    		}
-    	});    	
+    _download_track: function() {
+	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+    	var url = coge_api + '/experiments/' + this._track.config.coge.id + '/data?username='+un;
+    	var ref_seq = dojo.byId('coge_ref_seq');
+    	if (ref_seq.selectedIndex > 0)
+    		url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
+    	if (dojo.byId('search') && dojo.byId('search').checked)
+    		url += '&' + this._track.config.coge.search;
+    	if (dojo.byId('transform') && dojo.byId('transform').checked)
+    		url += '&transform=' + this._track.config.coge.transform;
+    	document.location = url;
+		coge_xyplot._track_download_dialog.hide();
     },
 
     _getFeatureName: function(f) {

@@ -5,6 +5,7 @@ use Data::Dumper;
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Accessory::Utils;
+use CoGe::Core::Experiment;
 use CoGe::Services::Auth;
 use CoGe::Services::Data::Job;
 
@@ -175,6 +176,112 @@ sub update {
 	$self->render(json => {
 		success => Mojo::JSON->true
 	});
+}
+
+sub debug {
+	my $data = shift;
+	my $new_file = shift;
+	my $OUTFILE;
+	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
+	print {$OUTFILE} Dumper $data;
+	print {$OUTFILE} "\n";
+	close $OUTFILE;
+}
+
+sub data {
+	my $self = shift;
+    my $id = int($self->stash('id'));
+    my $chr = $self->param('chr');
+    my $data_type = $self->param('data_type');
+    my $type = $self->param('type');
+    my $gte = $self->param('gte');
+    my $lte = $self->param('lte');
+    my $transform = $self->param('transform');
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    unless ($user) {
+        $self->render(json => {
+            error => { Error => "User not logged in" }
+        });
+        return;
+    }    	
+
+    # Get experiment
+    my $experiment = $db->resultset("Experiment")->find($id);
+    unless (defined $experiment) {
+        $self->render(json => {
+            error => { Error => "Experiment not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_admin() || $user->is_owner_editor(experiment => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+	$self->res->headers->content_disposition('attachment; filename=experiment.csv;');
+	$self->write('# experiment: ' . $experiment->name . "\n");
+	if ($chr) {
+		$self->write("# chromosome: $chr\n");
+	}
+	if ($type) {
+		$self->write("# search: type=$type");
+		if ($gte) {
+			$self->write("&gte=$gte");
+		}
+		if ($lte) {
+			$self->write("&lte=$lte");
+		}
+		$self->write("\n");
+	}
+	if ($transform) {
+		$self->write("# transform: $transform\n");
+	}
+	my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
+	my @columns = map { $_->{name} } @{$cols};
+	$self->write('# columns: ');
+	for (my $i=0; $i<scalar @columns; $i++) {
+		if ($i) {
+			$self->write(',');
+		}
+		$self->write($columns[$i]);
+	}
+	$self->write("\n");
+
+	my $lines = CoGe::Core::Experiment::query_data(
+		eid => $id,
+		data_type => $data_type,
+		col => join(',', @columns),
+		chr => $chr,
+		type => $type,
+		gte => $gte,
+		lte => $lte,
+	);
+	my $score_column = CoGe::Core::Experiment::get_fastbit_score_column($data_type);
+	my $log10 = log(10);
+	foreach my $line (@{$lines}) {
+		if ($transform) {
+			my @tokens = split ',', $line;
+			if ($transform eq 'Inflate') {
+				$tokens[$score_column] = 1;
+			}
+			elsif ($transform eq 'Log2') {
+				$tokens[$score_column] = log(1 + $tokens[$score_column]);
+			}
+			elsif ($transform eq 'Log10') {
+				$tokens[$score_column] = log(1 + $tokens[$score_column]) / $log10;
+			}
+			$line = join ',', @tokens;
+		}
+		$self->write($line);
+		$self->write("\n");
+	}
+	$self->finish();
 }
 
 1;

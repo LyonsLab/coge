@@ -196,57 +196,21 @@ sub histogram {
     return $hist;
 }
 
-sub debug {
-	my $data = shift;
-	my $new_file = shift;
-	my $OUTFILE;
-	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
-	print {$OUTFILE} Dumper $data;
-	print {$OUTFILE} "\n";
-	close $OUTFILE;
-}
-
 sub query_data {
     my $self = shift;
     my $eid = $self->param('eid');
     my $chr = $self->query->param('chr');
     my $type = $self->query->param('type');
-    my $order_by = 'value1 desc';
-    my $where;
-
-    if ($type eq 'max') {
-    	my $max = CoGe::Core::Experiment::query_data(
-    		eid => $eid,
-    		col => 'max(value1)'
-    	);
-    	$where = 'value1=' . $max->[0];
-    }
-    elsif ($type eq 'min') {
-    	my $min = CoGe::Core::Experiment::query_data(
-    		eid => $eid,
-    		col => 'min(value1)'
-    	);
-    	$where = 'value1=' . $max->[0];
-    }
-    else {
-    	my $gte = $self->query->param('gte');
-    	my $lte = $self->query->param('lte');
-    	if ($gte) {
-    		$where = 'value1>=' . $gte;
-    	}
-    	if ($lte) {
-    		if ($gte) {
-    			$where .= ' and ';
-    		}
-    		$where .= 'value1<=' . $lte;
-    	}
-    }
+    my $gte = $self->query->param('gte');
+    my $lte = $self->query->param('lte');
 
 	my $result = CoGe::Core::Experiment::query_data(
 		eid => $eid,
 		col => 'chr,start,stop,value1',
 		chr => $chr,
-		where => $where
+		type => $type,
+		gte => $gte,
+		lte => $lte,
 	);
 	return encode_json($result);
 }

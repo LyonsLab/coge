@@ -1,6 +1,7 @@
 package CoGe::Core::Experiment;
 use strict;
 
+use Data::Dumper;
 use Sort::Versions;
 use CoGe::Accessory::FastBit;
 use CoGe::Core::Storage qw( $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER get_experiment_path );
@@ -13,7 +14,7 @@ BEGIN {
     $VERSION = 0.1;
     @ISA = qw( Exporter );
     @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @OTHER_TYPES @SUPPORTED_TYPES);
-    @EXPORT_OK = qw(experimentcmp detect_data_type get_data query_data);
+    @EXPORT_OK = qw( detect_data_type download_data experimentcmp get_data get_fastbit_format get_fastbit_score_column query_data );
     
     # Setup supported experiment file types
     @QUANT_TYPES = qw(csv tsv bed wig);
@@ -72,7 +73,6 @@ sub detect_data_type {
     }
 }
 
-
 sub get_data {
     my %opts = @_;
     my $eid  = $opts{eid};    # required
@@ -93,7 +93,7 @@ sub get_data {
         $data_type == $DATA_TYPE_POLY ||
         $data_type == $DATA_TYPE_MARKER)
     {
-        my $pFormat = _get_fastbit_format($eid, $data_type);
+        my $pFormat = get_fastbit_format($eid, $data_type);
         my $columns = join(',', map { $_->{name} } @{$pFormat->{columns}});
         my $lines = CoGe::Accessory::FastBit::query("select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999", $eid);
 
@@ -125,7 +125,7 @@ sub get_data {
 }
 
 # FIXME: move to FastBit.pm?
-sub _get_fastbit_format {
+sub get_fastbit_format {
     my $eid = shift;
     my $data_type = shift;
 
@@ -183,6 +183,20 @@ sub _get_fastbit_format {
 }
 
 # FIXME: move to FastBit.pm?
+sub get_fastbit_score_column {
+    my $data_type = shift;
+	if (!$data_type || $data_type == $DATA_TYPE_QUANT) {
+		return 4;
+	}
+	if ($data_type == $DATA_TYPE_POLY) {
+		return 7;
+	}
+	if ( $data_type == $DATA_TYPE_MARKER ) {
+		return 5;
+	}
+}
+
+# FIXME: move to FastBit.pm?
 sub _parse_fastbit_line {
     my $format = shift;
     my $line = shift;
@@ -203,6 +217,16 @@ sub _parse_fastbit_line {
     return \%result;
 }
 
+sub debug {
+	my $data = shift;
+	my $new_file = shift;
+	my $OUTFILE;
+	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
+	print {$OUTFILE} Dumper $data;
+	print {$OUTFILE} "\n";
+	close $OUTFILE;
+}
+
 sub query_data {
     my %opts = @_;
     my $eid  = $opts{eid};    # required
@@ -213,7 +237,9 @@ sub query_data {
     my $data_type = $opts{data_type};
     my $col = $opts{col};
     my $chr = $opts{chr};
-    my $where = $opts{where};
+    my $type = $opts{type};
+    my $gte = $opts{gte};
+    my $lte = $opts{lte};
     my $order_by = $opts{order_by};
     my $limit = $opts{limit};
     if (!$data_type ||
@@ -221,18 +247,33 @@ sub query_data {
         $data_type == $DATA_TYPE_POLY ||
         $data_type == $DATA_TYPE_MARKER)
     {
-    	my $w = '0.0=0.0';
+    	my $where = '0.0=0.0';
     	if ($chr) {
-    		$w .= " and chr='$chr'";
+    		$where .= " and chr='$chr'";
     	} 
-    	if ($where) {
-    		$w .= " and $where";
-    	}
-    	my $query = "select $col where $w";
+	    if ($type eq 'max') {
+	    	my $max = CoGe::Accessory::FastBit::query('select max(value1) where 0.0=0.0', $eid);
+	    	debug $max;
+	    	$where .= ' and value1=' . $max->[0];
+	    }
+	    elsif ($type eq 'min') {
+	    	my $min = CoGe::Accessory::FastBit::query('select min(value1) where 0.0=0.0', $eid);
+	    	$where .= ' and value1=' . $min->[0];
+	    }
+	    elsif ($type eq 'range') {
+	    	if ($gte) {
+	    		$where .= ' and value1>=' . $gte;
+	    	}
+	    	if ($lte) {
+	    		$where .= ' and value1<=' . $lte;
+	    	}
+	    }
+    	my $query = "select $col where $where";
     	if ($order_by) {
     		$query .= " order by $order_by";
     	}
 		$query .= ($limit ? " limit $limit" : " limit 999999999");
+		debug $query;
         return CoGe::Accessory::FastBit::query($query, $eid);
     }
 }
