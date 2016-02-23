@@ -57,23 +57,23 @@ sub irods_ils {
 
     $path = uri_unescape($path); # mdb added 8/15/14 issue 441
 
-    my $cmd = "export irodsEnvFile='$env_file'; ils -l '$path' 2>&1";
+    $ENV{irodsEnvFile} = $env_file;  # mdb added 2/17/16 for hypnotoad
+    my $cmd = "ils -l '$path' 2>&1"; #"export irodsEnvFile='$env_file'; ils -l '$path' 2>&1"; # mdb changed 2/17/16 for hypnotoad
 
 #	print STDERR "cmd: $cmd\n";
-#	my @ils = `$cmd`; # old way of executing command, replaced by better error checking below
     my @ils = capture( EXIT_ANY, $cmd );
+#    print STDERR 'results: ', Dumper \@ils, "\n";
     if ($EXITVAL) {
         return { error => "Error: ils rc=$EXITVAL" };
     }
-#    print STDERR Dumper \@ils, "\n";
 
     #$path = shift @ils; # mdb removed 8/15/14 issue 441
     shift @ils; # skip first line showing path # mdb added 8/15/14 issue 441
 
-    #	if ($path =~ /^ERROR/) { # iRODS error message
-    #		my $result = { type => 'error', name => $path };
-    #		return wantarray ? ($result) : [$result];
-    #	}
+#	if ($path =~ /^ERROR/) { # iRODS error message
+#		my $result = { type => 'error', name => $path };
+#		return wantarray ? ($result) : [$result];
+#	}
     
     # mdb removed 8/15/14 issue 441
     #chomp($path);
