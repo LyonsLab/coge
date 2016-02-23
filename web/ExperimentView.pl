@@ -21,12 +21,11 @@ use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_experimen
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
-    $WORKFLOW_ID $LOAD_ID $TEMPDIR $CONFIGFILE
+    $WORKFLOW_ID $LOAD_ID $TEMPDIR
 );
 
 $PAGE_TITLE = "ExperimentView";
 $ERROR = encode_json( { error => 1 } );
-$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
