@@ -85,6 +85,10 @@ sub startup {
         ->name("experiments-fetch")
         ->to("experiment#fetch", id => undef);
 
+    $r->get("/experiments/:id/data" => [id => qr/\d+/])
+        ->name("experiments-data")
+        ->to("experiment#data", id => undef);
+
     $r->put("/experiments")
         ->name("experiments-add")
         ->to("experiment#add");

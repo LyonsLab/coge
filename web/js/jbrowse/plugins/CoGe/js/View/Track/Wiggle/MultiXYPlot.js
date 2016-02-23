@@ -166,7 +166,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         }
 
         // Note: transform cases below can be consolidated/optimized
-        if (config.transformAverage) {
+        if (config.coge.transform == 'Average') {
             var sum_f = [];
             var sum_r = [];
             var count_f = [];
@@ -203,7 +203,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 }
             });
         }
-        else if (config.transformDifference) {
+        else if (config.coge.transform == 'Difference') {
             var width   = [];
             var max_f   = []; // forward strand
             var max_r   = []; // reverse strand
@@ -258,7 +258,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 }
             });
         }
-        else if (config.transformInflate) {
+        else if (config.coge.transform == 'Inflate') {
             // sort features by score
             var sorted = [];
             dojo.forEach( features, function(f,i) {
@@ -295,13 +295,13 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 var fRect = pair.featureRect;
                 var score = f.get('score');
 
-                if (config.transformLog10) {
+                if (config.coge.transform == 'Log10') {
                     if (score >= 0)
                         score = log10(Math.abs(score)+1);
                     else
                         score = -1*log10(Math.abs(score)+1);
                 }
-                else if (config.transformLog2) {
+                else if (config.coge.transform == 'Log2') {
                     if (score >= 0)
                         score = log2(Math.abs(score)+1);
                     else
@@ -446,7 +446,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             },this);
 
             // compute transform scores - FIXME dup'ed in _drawFeatures
-            if (this.config.transformAverage) {
+            if (this.config.coge.transform == 'Average') {
                 var sum_f = [];
                 var sum_r = [];
                 var count_f = [];
@@ -486,7 +486,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                     }
                 });
             }
-            else if (this.config.transformDifference) {
+            else if (this.config.coge.transform == 'Difference') {
                 var max_f = [];
                 var max_r = [];
                 var min_f = [];
@@ -557,16 +557,16 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		var div = dojo.byId('coge-track-search');
 		var params;
 
-    	if (dojo.byId('highest').checked)
+    	if (dojo.byId('max').checked)
     		params = 'type=max';
-    	else if (dojo.byId('lowest').checked)
+    	else if (dojo.byId('min').checked)
     		params = 'type=min';
     	else {
     		if (this._brush.empty()) {
     			this._error('Unspecified Range', 'Please drag on the histogram to select the range of values you wish to search for');
     			return;
     		}
-    		var params = 'type=range';
+    		params = 'type=range';
     		var extent = this._brush.extent();
     		var domain = this._brush.x().domain();
     		if (extent[0] != domain[0])
@@ -580,6 +580,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
 		dojo.empty(div);
 		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		this._track.config.coge.search = params;
      	dojo.xhrGet({
     		url: api_base_url + '/experiment/' + eid + '/query?' + params,
     		handleAs: 'json',
@@ -600,12 +601,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },
     
     _new_nav: function(eid, data) {
-		var first = JSON.parse('[' + data[0] + ']');
-		this._track.browser.navigateToLocation({
-			ref: first[0],
-			start: first[1],
-			end: first[2]
-		});
 		var nav = dojo.byId('nav_' + eid);
 		if (nav)
 			dojo.destroy(nav);
@@ -625,6 +620,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         		if (configs[i].coge.id == eid)
         			dojo.destroy(dojo.byId('nav_' + eid));
         });
+        _go_to_hit(nav, 0);
     },
 
     _showPixelValue: function( scoreDisplay, score ) {
@@ -739,7 +735,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 }
             ]);
 
-        options.push.apply(options, [{
+        options.push({
 	        label: 'Search',
 	        onClick: function(event) {
 	        	coge_xyplot._track = track;
@@ -748,8 +744,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        		content += '<option>' + rs + '</option>';
 	        	});
 	        	content += '</select></td></tr>' +
-	        		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="highest" type="radio" name="type" checked="checked"> highest</td></tr>' +
-	        		'<tr><td></td><td style="white-space:nowrap"><input id="lowest" type="radio" name="type"> lowest</td></tr>' +
+	        		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
+	        		'<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
 	        		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: <span id="selected_range">&nbsp;</span></td></tr>' +
 	        		'<tr><td></td><td><div id="coge-hist"><img src="picts/ajax-loader.gif"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
 	        	coge_xyplot._track_search_dialog = new Dialog({
@@ -777,7 +773,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	        	});
 	        	coge_xyplot._track_search_dialog.show();
 	        }
-	    }]);
+        });
 
         if (config.coge.type == 'notebook') {
             options.push.apply(
@@ -791,35 +787,31 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                             children: [
                                 {   label: 'None',
                                     onClick: function(event) {
-                                        clearTransforms(config);
+                                    	config.coge.transform = null;
                                         track.changed();
                                     }
                                 },
                                 {   label: 'Average',
                                     onClick: function(event) {
-                                        clearTransforms(config);
-                                        track.config.transformAverage = true;
+                                    	config.coge.transform = 'Average';
                                         track.changed();
                                     }
                                 },
                                 {   label: 'Difference',
                                     onClick: function(event) {
-                                        clearTransforms(config);
-                                        track.config.transformDifference = true;
+                                    	config.coge.transform = 'Difference';
                                         track.changed();
                                     }
                                 },
                                 {   label: 'Log10',
                                     onClick: function(event) {
-                                        clearTransforms(config);
-                                        track.config.transformLog10 = true;
+                                    	config.coge.transform = 'Log10';
                                         track.changed();
                                     }
                                 },
                                 {   label: 'Log2',
                                     onClick: function(event) {
-                                        clearTransforms(config);
-                                        track.config.transformLog2 = true;
+                                    	config.coge.transform = 'Log2';
                                         track.changed();
                                     }
                                 }
@@ -840,28 +832,25 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                             children: [
                                 {   label: 'None',
                                     onClick: function(event) {
-                                        clearTransforms(config);
+                                    	config.coge.transform = null;
                                         track.changed();
                                     }
                                 },
                                 {   label: 'Log10',
                                     onClick: function(event) {
-                                        clearTransforms(config);
-                                        track.config.transformLog10 = true;
+                                    	config.coge.transform = 'Log10';
                                         track.changed();
                                     }
                                 },
                                 {   label: 'Log2',
                                     onClick: function(event) {
-                                        clearTransforms(config);
-                                        track.config.transformLog2 = true;
+                                    	config.coge.transform = 'Log2';
                                         track.changed();
                                     }
                                 },
                                 {   label: 'Inflate',
                                     onClick: function(event) {
-                                        clearTransforms(config);
-                                        track.config.transformInflate = true;
+                                    	config.coge.transform = 'Inflate';
                                         track.changed();
                                     }
                                 }
@@ -871,7 +860,58 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 );
         }
 
+        options.push({
+	        label: 'Export Track Data',
+	        onClick: function(event) {
+	        	coge_xyplot._track = track;
+	        	var content = '<div id="coge-track-export"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
+	        	coge_xyplot.browser.refSeqOrder.forEach(function(rs){
+	        		content += '<option>' + rs + '</option>';
+	        	});
+	        	content += '</select></td></tr>';
+	        	if (config.coge.transform)
+	        		content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input id="transform_none" type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
+	        	if (config.coge.search) {
+	        		var search = track.config.coge.search.split('&');
+	        		if (search.length > 1)
+	        			search = search[0] + ': ' + search[1].substring(search[1].indexOf('=') + 1) + ' .. ' + search[2].substring(search[2].indexOf('=') + 1);
+	        		content += '<tr><td>Search:</td><td style="white-space:nowrap"><input id="search_none" type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + search + '</td></tr>';
+	        	}
+	        	content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._export_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_export_dialog.hide()">Cancel</button></div></div>';
+	        	coge_xyplot._track_export_dialog = new Dialog({
+                    title: 'Export Track',
+                    content: content,
+                    onHide: function(){this.destroyRecursive()},
+                    style: "width: 350px"
+                });
+	        	coge_xyplot._track_export_dialog.show();
+	        }
+        });
+
         return options;
+    },
+    
+    _export_track: function() {
+    	var url = api_base_url + '/experiment/' + track.config.coge.id + '/data';
+    	if (this._track.config.coge.search)
+    		url += '?' + this._track.config.coge.search;
+    	dojo.xhrGet({
+    		url: url,
+    		handleAs: 'json',
+	  		load: function(data) {
+	  			if (data.error) {
+	  				coge_xyplot._error('Export', data);
+	  				coge_xyplot._track_export_dialog.hide();
+	  				return;
+	  			}
+	  			
+  				coge_xyplot._track_export_dialog.hide();
+    		},
+    		error: function(data) {
+    			coge_xyplot._error('Export', data);
+    			coge_xyplot._track_export_dialog.hide();
+    		}
+    	});    	
     },
 
     _getFeatureName: function(f) {
@@ -917,15 +957,6 @@ function log2(x) {
     return Math.log(x) / Math.log(2);
 }
 
-function clearTransforms(config) {
-	// FIXME change to config.transforms.average, etc...
-    config.transformAverage = false;
-    config.transformDifference = false;
-    config.transformLog10 = false;
-    config.transformLog2 = false;
-    config.transformInflate = false;
-}
-
 function nbspPad(s, padLength) {
     for (var i = s.length;  i < padLength;  i++) {
         s += '&nbsp;';
@@ -952,12 +983,16 @@ function _adjust_nav(eid) {
 function _go_to_hit(nav, hit) {
 	nav.hit = hit % nav.hits.length;
 	nav.num_span.innerHTML = nav.hit + 1;
+	nav.num_span.title = nav.hits[nav.hit];
 	var loc = JSON.parse('[' + nav.hits[nav.hit] + ']');
-	nav.browser.navigateToLocation({
-		ref: loc[0],
-		start: loc[1],
-		end: loc[2]
-	});	
+	if (loc[0] != nav.browser.refSeq.name)
+		nav.browser.navigateToLocation({
+			ref: loc[0],
+			start: loc[1],
+			end: loc[2]
+		});
+	else
+		nav.browser.view.centerAtBase((loc[1] + loc[2]) / 2, true);
 }
 
 function chart(div, first, gap, counts) {

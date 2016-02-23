@@ -57,9 +57,9 @@ BEGIN {
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_genome_cache_path get_workflow_results add_workflow_result
       get_workflow_results_file get_workflow_log_file get_download_path
-      get_experiment_path get_experiment_files get_experiment_data
+      get_experiment_path get_experiment_files
       reverse_complement get_irods_file get_irods_path get_popgen_result_path
-      is_popgen_finished data_type query_experiment_data get_sra_cache_path
+      is_popgen_finished data_type get_sra_cache_path
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
 
@@ -337,6 +337,7 @@ sub get_genome_seq {
     return $seq;
 }
 
+# FIXME: move to Core::Experiment?
 sub get_experiment_path {
     my $eid = shift;
     return unless $eid;
@@ -377,200 +378,6 @@ sub get_experiment_files {
     }
 
     return \@files;
-}
-
-sub get_fastbit_format {
-    my $eid = shift;
-    my $data_type = shift;
-
-    my $storage_path = get_experiment_path($eid);
-    my $format_file = $storage_path . '/format.json';
-
-    # Backward compatibility, see issue 352
-    # FIXME: remove someday by adding format.json files to old experiments
-    if (not -r $format_file) {
-        if (!$data_type || $data_type == $DATA_TYPE_QUANT) {
-            return {
-                columns => [
-                    { name => 'chr',    type => 'key' },
-                    { name => 'start',  type => 'unsigned long' },
-                    { name => 'stop',   type => 'unsigned long' },
-                    { name => 'strand', type => 'byte' },
-                    { name => 'value1', type => 'double' },
-                    { name => 'value2', type => 'double' }
-                ]
-            };
-        }
-        elsif ($data_type == $DATA_TYPE_POLY) {
-            return {
-                columns => [
-                    { name => 'chr',   type => 'key' },
-                    { name => 'start', type => 'unsigned long' },
-                    { name => 'stop',  type => 'unsigned long' },
-                    { name => 'type',  type => 'key' },
-                    { name => 'id',    type => 'text' },
-                    { name => 'ref',   type => 'key' },
-                    { name => 'alt',   type => 'key' },
-                    { name => 'qual',  type => 'double' },
-                    { name => 'info',  type => 'text' }
-                ]
-            };
-        }
-        elsif ( $data_type == $DATA_TYPE_MARKER ) {
-            return {
-                columns => [
-                    { name => 'chr',    type => 'key' },
-                    { name => 'start',  type => 'unsigned long' },
-                    { name => 'stop',   type => 'unsigned long' },
-                    { name => 'strand', type => 'key' },
-                    { name => 'type',   type => 'key' },
-                    { name => 'score',  type => 'double' },
-                    { name => 'attr',   type => 'text' }
-                ]
-            };
-        }
-        return; # should never happen!
-    }
-
-    # Otherwise read format json file
-    return CoGe::Accessory::TDS::read($format_file);
-}
-
-sub parse_fastbit_line {
-    my $format = shift;
-    my $line = shift;
-    my $chr = shift;
-
-    $line =~ s/"//g;
-    my @items = split(/,\s*/, $line);
-    return if ( $items[0] !~ /^\"?$chr/); # make sure it's a row output line
-
-    my %result;
-    foreach (@{$format->{columns}}) {
-        my $item = shift @items;
-        my $name = $_->{name};
-        my $type = $_->{type};
-        if ($type =~ /long|byte|double/) { $result{$name} = 0 + $item } # convert to numeric
-        else { $result{$name} = '' . $item; }
-    }
-    return \%result;
-}
-
-sub debug {
-	my $OUTFILE;
-	open $OUTFILE, ">>/tmp/sean";
-	print {$OUTFILE} Dumper shift;
-	print {$OUTFILE} "\n";
-	close $OUTFILE;
-}
-
-sub query_fastbit {
-	my $query = shift;
-	my $eid = shift;
-
-    my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY};
-    my $storage_path = get_experiment_path($eid);
-    my $cmd = "$cmdpath -v 1 -d $storage_path -q \"$query\" 2>&1";
-
-    my @cmdOut = qx{$cmd};
-
-    my $cmdStatus = $?;
-    if ( $? != 0 ) {
-        print STDERR "Storage::query_fastbit: error $? executing command: $cmd\n";
-    }
-    my @lines;
-    foreach (@cmdOut) {
-	    chomp;
-	    if (/^(\"|\d)/) {
-            push @lines, $_;
-        }
-    }
-    return \@lines;
-}
-
-sub query_experiment_data {
-    my %opts = @_;
-    my $eid  = $opts{eid};    # required
-    unless ($eid) {
-        print STDERR "Storage::query_experiment_data: experiment id not specified!\n";
-        return;
-    }
-    my $data_type = $opts{data_type};
-    my $col = $opts{col};
-    my $chr = $opts{chr};
-    my $where = $opts{where};
-    my $order_by = $opts{order_by};
-    my $limit = $opts{limit};
-    if (!$data_type ||
-        $data_type == $DATA_TYPE_QUANT ||
-        $data_type == $DATA_TYPE_POLY ||
-        $data_type == $DATA_TYPE_MARKER)
-    {
-    	my $w = '0.0=0.0';
-    	if ($chr) {
-    		$w .= " and chr='$chr'";
-    	} 
-    	if ($where) {
-    		$w .= " and $where";
-    	}
-    	my $query = "select $col where $w";
-    	if ($order_by) {
-    		$query .= " order by $order_by";
-    	}
-		$query .= ($limit ? " limit $limit" : " limit 999999999");
-        return query_fastbit($query, $eid);
-    }
-}
-
-sub get_experiment_data {
-    my %opts = @_;
-    my $eid  = $opts{eid};    # required
-    my $data_type = $opts{data_type};
-    unless ($eid) {
-        print STDERR "Storage::get_experiment_data: experiment id not specified!\n";
-        return;
-    }
-    my $chr   = $opts{chr};
-    my $start = $opts{start};
-    my $stop  = $opts{stop};
-    $stop = $opts{end} if ( not defined $stop );
-    $start = 0 if ($start < 0);
-    $stop = 0 if ($stop < 0);
-
-    if (!$data_type ||
-        $data_type == $DATA_TYPE_QUANT ||
-        $data_type == $DATA_TYPE_POLY ||
-        $data_type == $DATA_TYPE_MARKER)
-    {
-        my $pFormat = get_fastbit_format($eid, $data_type);
-        my $columns = join(',', map { $_->{name} } @{$pFormat->{columns}});
-        my $lines = query_fastbit("select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999", $eid);
-
-	    my @results = map {parse_fastbit_line($pFormat, $_, $chr)} @{$lines};
-	    return \@results;
-    }
-    elsif ( $data_type == $DATA_TYPE_ALIGN ) { # FIXME move output parsing from Storage.pm to here
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
-    	my $storage_path = get_experiment_path($eid);
-        my $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
-        #print STDERR "$cmd\n";
-        my @cmdOut = qx{$cmd};
-        #print STDERR @cmdOut;
-        my $cmdStatus = $?;
-        if ( $? != 0 ) {
-            print STDERR "Storage::get_experiment_data: error $? executing command: $cmd\n";
-            return;
-        }
-        
-        # Return if error message detected (starts with '[')
-        map { return if (/^\[/) } @cmdOut; # mdb added 5/6/15 COGE-594
-        
-        return \@cmdOut;
-    }
-    else {
-        print STDERR "Storage::get_experiment_data: unknown data type\n";
-        return;
-    }
 }
 
 sub get_log {

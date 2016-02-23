@@ -207,7 +207,6 @@ define(['dojo/_base/declare',
 	  			else {
 	  				var config = this._new_notebook_config(data.id, name, description, restricted);
 	  				this._track_configs.push(config);
-	  	        	this._tracks.push(this._new_notebook().insertNodes(false, [config]));
 	  				this._filter_tracks();
 	  				this.div.scrollTop = this.div.scrollHeight;
 	  				this._create_notebook_dialog.hide();
@@ -376,12 +375,10 @@ define(['dojo/_base/declare',
         this._update_text_filter_control();
         this.div = dojo.create('div', { id: 'coge-tracks' }, this.pane);
 
-        this._tracks = [];
         this._track_configs.filter(function(tc) {
     		var type = tc.coge.type;
     		return (!type || type == 'sequence' || type == 'gc_content');
     	}).forEach(function(t){
-// this._tracks.push(t);
     		this.div.appendChild(this._new_track(t));
     	}, this);
 
@@ -395,7 +392,6 @@ define(['dojo/_base/declare',
         	[fg].concat(features.filter(function(f) {
         		return f.coge.dataset_id == fg.coge.id;
         	})).forEach(function(t){
-// this._tracks.push(t);
         		this.div.appendChild(this._new_track(t));
         	}, this);
     	}, this);
@@ -408,12 +404,12 @@ define(['dojo/_base/declare',
     		return (e.coge.type && e.coge.type == 'experiment');
     	});
         notebooks.forEach(function(n) {
-        	this._tracks.push(this._new_notebook().insertNodes(
+        	this._new_notebook().insertNodes(
             	false,
             	[n].concat(experiments.filter(function(e) {
             		return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, n.coge.id) != -1;
             	}))
-            ));
+            );
     	}, this);
 
         // show all tracks
@@ -1018,7 +1014,7 @@ define(['dojo/_base/declare',
 	  				this._error('Search', 'no features found');
 	  				return;
 	  			}
-	  			dojo.query('.dijitDialogUnderlay').style('opacity', 0);
+	  			dojo.query('.dijitDialogUnderlayWrapper')[0].style.display = 'none';
   				var div = dojo.byId('coge-search-dialog');
   				div.style.maxHeight = '500px';
   				div.style.overflow = 'auto';
@@ -1038,7 +1034,6 @@ define(['dojo/_base/declare',
     			this._error('Search', data);
     		})
     	})
-// search_dialog.hide();
     },
 
     // ----------------------------------------------------------------

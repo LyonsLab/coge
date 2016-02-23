@@ -5,7 +5,7 @@ use base 'CGI::Application';
 
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw( get_experiment_data );
+use CoGe::Core::Experiment qw( get_data );
 use File::Spec;
 use File::Slurp;
 use Data::Dumper;
@@ -89,7 +89,7 @@ sub parse_data {
 }
 
 sub fetch_data {
-    return $_, get_experiment_data(
+    return $_, get_data(
         chr => $FEATURE->chr,
         start => $FEATURE->start,
         stop => $FEATURE->stop,

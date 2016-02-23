@@ -4,7 +4,8 @@ use base 'CGI::Application';
 use CoGeX;
 use CoGe::Accessory::histogram;
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw( get_experiment_data get_experiment_path query_experiment_data );
+use CoGe::Core::Experiment;
+use CoGe::Core::Storage qw( get_experiment_path );
 use JSON::XS;
 use Data::Dumper;
 
@@ -101,7 +102,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 			next;
 		}
         elsif ( $data_type == $DATA_TYPE_POLY || $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = get_experiment_data(
+            my $pData = CoGe::Core::Experiment::get_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -119,7 +120,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = get_experiment_data(
+	        my $cmdOut = CoGe::Core::Experiment::get_data(
 	            eid   => $eid,
 	            data_type  => $exp->data_type,
 	            chr   => $chr,
@@ -167,6 +168,34 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     );
 }
 
+sub histogram {
+    my $self  = shift;
+    my $eid   = $self->param('eid');
+
+    my $storage_path = get_experiment_path($eid);
+    my $hist_file = "$storage_path/value1.hist";
+    if (!-e $hist_file) {
+		my $result = CoGe::Core::Experiment::query_data(
+			eid => $eid,
+			col => 'value1',
+			chr => $chr
+		);
+	    my $bins = CoGe::Accessory::histogram::_histogram_bins($result, 20);
+	    my $counts = CoGe::Accessory::histogram::_histogram_frequency($result, $bins);
+	    open my $fh, ">", $hist_file;
+	    print {$fh} encode_json({
+	    	first => 0 + $bins->[0][0],
+	    	gap => $bins->[0][1] - $bins->[0][0],
+	    	counts => $counts
+	    });
+	    close $fh; 
+    }
+    open my $fh, $hist_file;
+    my $hist = <$fh>;
+    close $fh;
+    return $hist;
+}
+
 sub debug {
 	my $data = shift;
 	my $new_file = shift;
@@ -186,14 +215,14 @@ sub query_data {
     my $where;
 
     if ($type eq 'max') {
-    	my $max = query_experiment_data(
+    	my $max = CoGe::Core::Experiment::query_data(
     		eid => $eid,
     		col => 'max(value1)'
     	);
     	$where = 'value1=' . $max->[0];
     }
     elsif ($type eq 'min') {
-    	my $min = query_experiment_data(
+    	my $min = CoGe::Core::Experiment::query_data(
     		eid => $eid,
     		col => 'min(value1)'
     	);
@@ -213,41 +242,13 @@ sub query_data {
     	}
     }
 
-	my $result = query_experiment_data(
+	my $result = CoGe::Core::Experiment::query_data(
 		eid => $eid,
 		col => 'chr,start,stop,value1',
 		chr => $chr,
 		where => $where
 	);
 	return encode_json($result);
-}
-
-sub histogram {
-    my $self  = shift;
-    my $eid   = $self->param('eid');
-
-    my $storage_path = get_experiment_path($eid);
-    my $hist_file = "$storage_path/value1.hist";
-    if (!-e $hist_file) {
-		my $result = query_experiment_data(
-			eid => $eid,
-			col => 'value1',
-			chr => $chr
-		);
-	    my $bins = CoGe::Accessory::histogram::_histogram_bins($result, 20);
-	    my $counts = CoGe::Accessory::histogram::_histogram_frequency($result, $bins);
-	    open my $fh, ">", $hist_file;
-	    print {$fh} encode_json({
-	    	first => 0 + $bins->[0][0],
-	    	gap => $bins->[0][1] - $bins->[0][0],
-	    	counts => $counts
-	    });
-	    close $fh; 
-    }
-    open my $fh, $hist_file;
-    my $hist = <$fh>;
-    close $fh;
-    return $hist;
 }
 
 sub features {
@@ -315,7 +316,7 @@ sub features {
         my $data_type = $exp->data_type;
 
         if ( !$data_type || $data_type == $DATA_TYPE_QUANT ) {
-            my $pData = get_experiment_data(
+            my $pData = CoGe::Core::Experiment::get_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -340,7 +341,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
-            my $pData = get_experiment_data(
+            my $pData = CoGe::Core::Experiment::get_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -371,7 +372,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = get_experiment_data(
+            my $pData = CoGe::Core::Experiment::get_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -399,7 +400,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = get_experiment_data(
+	        my $cmdOut = CoGe::Core::Experiment::get_data(
 	            eid   => $eid,
 	            data_type => $exp->data_type,
 	            chr   => $chr,
