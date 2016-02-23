@@ -4,18 +4,21 @@
 #------------------------------------------------------------------------------
 
 start() {
-    export PERL5LIB=./modules/perl
+    export PERL5LIB=$(pwd)/modules/perl
 #    hypnotoad -f ./web/services/api.pl >> ./api.log 2>&1 &
 #    ./web/services/api.pl daemon -l http://localhost:3304 >> ./api.log 2>&1 &
-    morbo -l http://localhost:3304 ./web/services/api.pl >> ./api.log 2>&1 &
-    echo "Started API"
+    port=$(grep MOJOLICIOUS_PORT ./coge.conf | cut -d ' ' -f 2)
+    morbo -w $PERL5LIB -l http://localhost:$port ./web/services/api.pl >> ./api.log 2>&1 &
+    echo "Started API (port $port)"
 }
 
 stop() {
 #    hypnotoad ./web/services/api.pl --stop
     pid=$(pgrep 'morbo')
-    kill -9 $pid
-    echo "Stopped API (pid " $pid ")"     
+    if [ $pid ]; then 
+        kill -9 $pid
+        echo "Stopped API (pid $pid)"     
+    fi
 }
 
 case "$1" in
