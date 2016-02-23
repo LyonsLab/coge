@@ -233,7 +233,7 @@ sub _irods_get_env_file {
     $env_file //= CoGe::Accessory::Web::get_defaults()->{IRODSENV};
 
     if ( not defined $env_file or not -e $env_file ) {
-        print STDERR "CoGe::Accessory::IRODS: fatal error: iRODS env file missing!\n";
+        print STDERR "CoGe::Accessory::IRODS: fatal error: iRODS env file missing! env_file=", ($env_file ? $env_file : ''), "\n";
         return;
     }
     return $env_file;
