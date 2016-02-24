@@ -31,14 +31,14 @@ sub add {
     my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
     my $request_handler = $request_factory->get($payload);
     unless ($request_handler and $request_handler->is_valid) {
-        return $self->render(json => {
+        return $self->render(status => 400, json => {
             error => { Invalid => "Invalid request" }
         });
     }
 
     # Check users permissions to execute the request
     unless ($request_handler->has_access) {
-        return $self->render(json => {
+        return $self->render(status => 401, json => {
             error => { Auth => "Request denied" }
         });
     }
@@ -70,7 +70,7 @@ sub add {
     # Convert 'success' to boolean
     $response->{success} = ($response->{success} ? Mojo::JSON->true : Mojo::JSON->false);
 
-    return $self->render(json => $response);
+    return $self->render(status => 201, json => $response);
 }
 
 sub fetch {

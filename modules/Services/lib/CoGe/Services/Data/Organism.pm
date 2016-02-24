@@ -12,7 +12,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
@@ -47,6 +47,14 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Connect to the database
     # Note: don't need to authenticate this service
@@ -56,8 +64,8 @@ sub fetch {
     # Get organism from DB
     my $organism = $db->resultset("Organism")->find($id);
     unless (defined $organism) {
-        $self->render(json => {
-            error => { Error => "Item not found"}
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found"}
         });
         return;
     }
@@ -94,7 +102,7 @@ sub add {
     my $name = $payload->{name};
     my $desc = $payload->{description};
     unless ($name && $desc) {
-        return $self->render(json => {
+        return $self->render(status => 400, json => {
             error => { Invalid => "Invalid parameters" }
         });
     }

@@ -22,7 +22,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
@@ -56,6 +56,14 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -71,8 +79,8 @@ sub fetch {
     # Get group
     my $group = $db->resultset("UserGroup")->find($id);
     unless (defined $group) {
-        $self->render(json => {
-            error => { Error => "Item not found" }
+        $self->render(status => 400, json => {
+            error => { Error => "Resource not found" }
         });
         return;
     }
@@ -92,6 +100,14 @@ sub fetch {
 sub items {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -107,8 +123,8 @@ sub items {
     # Get group
     my $group = $db->resultset("UserGroup")->find($id);
     unless (defined $group) {
-        $self->render(json => {
-            error => { Error => "Item not found" }
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
         });
         return;
     }
