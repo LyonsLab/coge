@@ -116,7 +116,7 @@ sub add {
         return;
     }
 
-    $self->render(json => {
+    $self->render(status => 201, json => {
         id => int($organism->id),
         name => $organism->name,
         description => $organism->description,

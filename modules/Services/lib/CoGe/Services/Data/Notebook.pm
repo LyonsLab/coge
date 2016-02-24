@@ -139,7 +139,7 @@ sub add {
         return;
     }    
 
-    $self->render(json => { 
+    $self->render(status => 201, json => { 
         success => Mojo::JSON->true,
         id => $notebook->id
     });
@@ -164,7 +164,7 @@ sub add_items {
     my $notebook = $db->resultset("List")->find($id);
     unless (defined $notebook) {
         $self->render(status => 404, json => {
-            error => { Error => "Item not found"}
+            error => { Error => "Resource not found"}
         });
         return;
     }
@@ -205,6 +205,14 @@ sub add_items {
 sub remove {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
     
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -250,6 +258,14 @@ sub remove {
 sub remove_item {
 	my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -282,6 +298,7 @@ sub remove_item {
     	notebook => $notebook,
     	item_list => \@items
     );
+    
 	$self->render(json => {
 		success => Mojo::JSON->true
 	});	
@@ -290,6 +307,14 @@ sub remove_item {
 sub update {
 	my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);

@@ -79,7 +79,7 @@ sub fetch {
     # Get group
     my $group = $db->resultset("UserGroup")->find($id);
     unless (defined $group) {
-        $self->render(status => 400, json => {
+        $self->render(status => 404, json => {
             error => { Error => "Resource not found" }
         });
         return;

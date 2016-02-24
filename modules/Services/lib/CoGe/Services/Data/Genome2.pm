@@ -112,8 +112,8 @@ sub fetch {
     # Get genome
     my $genome = $db->resultset("Genome")->find($id);
     unless (defined $genome) {
-        $self->render(status => 400, json => {
-            error => { Error => "Item not found"}
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found"}
         });
         return;
     }

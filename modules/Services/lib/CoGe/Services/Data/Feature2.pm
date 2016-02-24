@@ -63,8 +63,8 @@ sub sequence {
     # Get feature from DB
     my $feature = $db->resultset('Feature')->find($id);
     unless (defined $feature) {
-        $self->render(status => 400, json => {
-            error => { Error => 'Item not found' }
+        $self->render(status => 404, json => {
+            error => { Error => 'Resource not found' }
         });
         return;
     }

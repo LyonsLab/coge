@@ -92,8 +92,8 @@ sub fetch {
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $job_status = $jex->get_job($id);
     unless ($job_status) {
-        $self->render(json => {
-            error => { Error => "Item not found" }
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
         });
         return;
     }
@@ -164,8 +164,8 @@ sub results { # legacy for Genome Export via HTTP
     my $result_file = catfile($result_dir, $name);
 
     unless (-r $result_file) {
-        $self->render(json => {
-            error => { Error => "Item not found" }
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
         });
         return;
     }
