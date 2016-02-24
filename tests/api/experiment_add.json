@@ -1,0 +1,23 @@
+{
+    "genome_id": 16911,
+    "metadata" : {
+        "restricted": true,
+        "version": 1,
+        "name": "test",
+        "description": "test",
+        "source_name": "Matt Bomhoff",
+        "tags": [
+            "test1", 
+            "test2"
+        ]
+    },
+    "additional_metadata" : [
+        {
+            "type": "note",
+            "text": "test"
+        }
+    ],
+    "source_data": [
+        { "type": "http", "path": "http://de.iplantcollaborative.org/dl/d/2F807292-34CC-4C8E-96E3-3E668A304D23/test_rna_seq_data_0.17M_reads.fastq" }
+    ]
+}
