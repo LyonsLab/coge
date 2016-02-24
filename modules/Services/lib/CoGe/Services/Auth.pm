@@ -8,7 +8,6 @@ use CoGe::Accessory::Web qw(get_defaults add_user parse_proxy_response jwt_decod
 use File::Spec::Functions qw(catfile);
 
 sub init {
-	warn 'Auth::init';
     my $self = shift;
     return unless $self;
     #print STDERR Dumper $self, "\n";
