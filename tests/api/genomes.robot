@@ -1,3 +1,4 @@
+# -*- coding: robot -*-
 *** Settings ***
 Documentation	blah blah blah
 ...		blah blah blah
@@ -31,7 +32,6 @@ Genome Add
         ${content}=	Evaluate        json.load(open('genome_add.json', 'r'))       json
 	${headers}=	Create Dictionary	Content-Type=application/json
 	${resp}=	Put Request	coge	${GENOMES}	data=${content}	headers=${headers}
-	Set Test Message	${resp}
 	Should Be Equal As Strings	${resp.status_code}	201
 	Dictionary Should Contain Key	${resp.json()}	id
 
