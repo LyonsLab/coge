@@ -7,13 +7,13 @@ Resource	resource.robot
 *** Test Cases ***
 Experiment Search
 	Create Session	coge	${API_URL}	
-	${resp}=        Get Request	    coge	 ${EXPERIMENTS}/search/16911
+	${resp}=        Get Request	    coge	 ${EXPERIMENTS}/search/1234
 	Should Be Equal As Strings	${resp.status_code}	200
 	Dictionary Should Contain Key	${resp.json()}		experiments
 
 Experiment Fetch
 	Create Session  coge    ${API_URL}   
-	${resp}=	Get Request	coge	${EXPERIMENTS}/16911  
+	${resp}=	Get Request	coge	${EXPERIMENTS}/31
 	Should Be Equal As Strings	${resp.status_code}	200
 	${expected}=	Evaluate	json.load(open('experiment_fetch.json', 'r'))	json
 	Dictionaries Should Be Equal	${resp.json()}	${expected}
