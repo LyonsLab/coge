@@ -122,7 +122,7 @@ sub startup {
         ->name("notebooks-items-add")
         ->to("notebook#add_items", id => undef);
 
-    $r->post("/notebooks/:id/items/remove" => [id => qr/\d+/])
+    $r->post("/notebooks/:id/items/remove" => [id => qr/\d+/]) #FIXME should be DELETE instead of POST?
         ->name("notebooks-items-remove")
         ->to("notebook#remove_item", id => undef);
 

@@ -13,7 +13,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 

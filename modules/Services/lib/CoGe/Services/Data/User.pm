@@ -51,6 +51,14 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
@@ -67,8 +75,8 @@ sub fetch {
     # Get requested user
     my $fetched_user = $db->resultset("User")->find($id);
     unless (defined $fetched_user) {
-        $self->render(json => {
-            error => { Error => "Item not found" }
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
         });
         return;
     }
@@ -94,6 +102,14 @@ sub fetch {
 sub items {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     #my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $key);
@@ -109,8 +125,8 @@ sub items {
 
     my $fetched_user = $db->resultset("User")->find($id);
     unless (defined $fetched_user) {
-        $self->render(json => {
-            error => { Error => "Item not found" }
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
         });
         return;
     }
