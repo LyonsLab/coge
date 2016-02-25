@@ -1870,7 +1870,7 @@ div.dataTables_scrollBody {
 }
 
 .coge-user-image {
-    background: url('image.pl');
+    /*background: url('image.pl');*/
     border-radius: 5px;
     width: 1.75em;
     height: 1.75em;
