@@ -234,48 +234,38 @@ sub query_data {
         warn 'CoGe::Core::Experiment::query_data: experiment id not specified!';
         return;
     }
-    my $data_type = $opts{data_type};
-    my $col = $opts{col};
     my $chr = $opts{chr};
-    my $type = $opts{type};
+    my $col = $opts{col};
+    my $data_type = $opts{data_type};
     my $gte = $opts{gte};
+    my $limit = $opts{limit};
     my $lte = $opts{lte};
     my $order_by = $opts{order_by};
-    my $limit = $opts{limit};
-    if (!$data_type ||
-        $data_type == $DATA_TYPE_QUANT ||
-        $data_type == $DATA_TYPE_POLY ||
-        $data_type == $DATA_TYPE_MARKER)
-    {
-    	my $where = '0.0=0.0';
-    	if ($chr) {
-    		$where .= " and chr='$chr'";
-    	} 
-	    if ($type eq 'max') {
-	    	my $max = CoGe::Accessory::FastBit::query('select max(value1) where 0.0=0.0', $eid);
-	    	debug $max;
-	    	$where .= ' and value1=' . $max->[0];
-	    }
-	    elsif ($type eq 'min') {
-	    	my $min = CoGe::Accessory::FastBit::query('select min(value1) where 0.0=0.0', $eid);
-	    	$where .= ' and value1=' . $min->[0];
-	    }
-	    elsif ($type eq 'range') {
-	    	if ($gte) {
-	    		$where .= ' and value1>=' . $gte;
-	    	}
-	    	if ($lte) {
-	    		$where .= ' and value1<=' . $lte;
-	    	}
-	    }
-    	my $query = "select $col where $where";
-    	if ($order_by) {
-    		$query .= " order by $order_by";
-    	}
-		$query .= ($limit ? " limit $limit" : " limit 999999999");
-		debug $query;
-        return CoGe::Accessory::FastBit::query($query, $eid);
+    my $type = $opts{type};
+
+	my $where = '0.0=0.0';
+	$where .= " and chr='$chr'" if $chr;
+	my $value1;
+    if ($type eq 'max') {
+    	$value1 = CoGe::Accessory::FastBit::max($eid);
     }
+    elsif ($type eq 'min') {
+    	$value1 = CoGe::Accessory::FastBit::min($eid);
+    }
+    elsif ($type eq 'range') {
+		$where .= ' and value1>=' . $gte if $gte;
+		$where .= ' and value1<=' . $lte if $lte;
+    }
+	my $query = "select $col where $where";
+	$query .= " order by $order_by" if $order_by;
+	$query .= ($limit ? " limit $limit" : " limit 999999999");
+    my $results = CoGe::Accessory::FastBit::query($query, $eid);
+    if ($type eq 'max' || $type eq 'min') {
+    	my $value_col = scalar $col - 1; # should we pass in $value_col instead of assuming it's the last column?
+        my @lines = grep { (split(',', $_))[$value_col] == $value1 } @{$results};
+        return \@lines;
+    }
+    return $results;
 }
 
 1;

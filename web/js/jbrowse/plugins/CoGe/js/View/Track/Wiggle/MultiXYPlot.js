@@ -5,14 +5,13 @@ define( [
             'dojo/_base/Color',
             'dojo/dom-construct',
             'dijit/Dialog',
-            'JBrowse/View/InfoDialog',
             'JBrowse/View/Track/WiggleBase',
             'JBrowse/View/Track/_YScaleMixin',
             'JBrowse/Util',
             './_Scale',
             'CoGe/View/ColorDialog'
         ],
-        function( declare, array, Color, domConstruct, Dialog, InfoDialog, WiggleBase, YScaleMixin, Util, Scale, ColorDialog ) {
+        function( declare, array, Color, domConstruct, Dialog, WiggleBase, YScaleMixin, Util, Scale, ColorDialog ) {
 
 var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of XYPlot, extend that class instead?
 
@@ -40,6 +39,208 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         	this.config.disableZoomLimit = 0;
     },
 
+    // ----------------------------------------------------------------
+
+    _calculatePixelScores: function( canvasWidth, features, featureRects ) {
+        var pixelValues = new Array( canvasWidth );
+
+        if (this.config.showHoverScores) {
+            // sort features by score
+            var sorted = [];
+            dojo.forEach( features, function(f,i) {
+                sorted.push({ feature: f, featureRect: featureRects[i] });
+            });
+            sorted.sort( sortByScore );
+
+            // make an array of the max score at each pixel on the canvas
+            dojo.forEach( sorted, function( f, i ) {
+                var fRect = f.featureRect;
+                var jEnd = fRect.r;
+                var score = f.feature.get('score');
+                var score2 = f.feature.get('score2');
+                var id = f.feature.get('id');
+                var fLabel = f.feature.get('label');
+                if (!fLabel || fLabel == '.') fLabel = '';
+                var name = this._getFeatureName(f.feature);
+                var color = this._getFeatureColor(id);
+                for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
+                    var label = '<div style="background-color:'+color+';">' +
+                        nbspPad(score.toPrecision(6).toString(), 11) +
+                        (score2 ? nbspPad(score2.toPrecision(6).toString(), 11) : '') +
+                        fLabel+ ' ' + name + '</div>';
+                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                }
+            },this);
+
+            // compute transform scores - FIXME dup'ed in _drawFeatures
+            if (this.config.coge.transform == 'Average') {
+                var sum_f = [];
+                var sum_r = [];
+                var count_f = [];
+                var count_r = [];
+                var width = [];
+                dojo.forEach( features, function(f,i) {
+                    var score = f.get('score');
+                    var l = featureRects[i].l;
+                    var w = featureRects[i].w;
+                    if (score >= 0) {
+                        sum_f[l] = l in sum_f ? sum_f[l] + score : score;
+                        count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+                    }
+                    else {
+                        sum_r[l] = l in sum_r ? sum_r[l] + score : score;
+                        count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+                    }
+                    width[l] = l in width ? Math.max(width[l], w) : w;
+                });
+
+                sum_f.forEach( function(x,l) {
+                    var avg = sum_f[l]/count_f[l];
+                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
+                        var label = '<div style="background-color:gray;">' +
+                            nbspPad(avg.toPrecision(6).toString(), 11)
+                            + 'Average (+)' + '</div>';
+                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                    }
+                });
+                sum_r.forEach( function(x,l) {
+                    var avg = sum_r[l]/count_r[l];
+                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
+                        var label = '<div style="background-color:gray;">' +
+                            nbspPad(avg.toPrecision(6).toString(), 11)
+                            + 'Average (-)' + '</div>';
+                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                    }
+                });
+            }
+            else if (this.config.coge.transform == 'Difference') {
+                var max_f = [];
+                var max_r = [];
+                var min_f = [];
+                var min_r = [];
+                var count_f = [];
+                var count_r = [];
+                var width = [];
+                dojo.forEach( features, function(f,i) {
+                    var score = f.get('score');
+                    var l = featureRects[i].l;
+                    var w = featureRects[i].w;
+                    width[l] = l in width ? Math.max(width[l], w) : w;
+                    if (score >= 0) {
+                        count_f[l] = l in count_f ? count_f[l] + 1 : 1;
+                        max_f[l] = l in max_f ? Math.max(max_f[l], score) : score;
+                        min_f[l] = l in min_f ? Math.min(min_f[l], score) : score;
+                    }
+                    else {
+                        score = Math.abs(score);
+                        count_r[l] = l in count_r ? count_r[l] + 1 : 1;
+                        max_r[l] = l in max_r ? Math.max(max_r[l], score) : score;
+                        min_r[l] = l in min_r ? Math.min(min_r[l], score) : score;
+                    }
+                });
+
+                max_f.forEach( function(x,l) {
+                    var diff = max_f[l] - min_f[l];
+                    if (count_f[l] == 1)
+                        diff = max_f[l];
+                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
+                        var label = '<div style="background-color:gray;">' +
+                            nbspPad(diff.toPrecision(6).toString(), 11)
+                            + 'Difference (+)' + '</div>';
+                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                    }
+                });
+                max_r.forEach( function(x,l) {
+                    var diff = max_r[l] - min_r[l];
+                    if (count_r[l] == 1)
+                        diff = max_r[l];
+                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
+                        var label = '<div style="background-color:gray;">' +
+                            nbspPad(diff.toPrecision(6).toString(), 11)
+                            + 'Difference (-)' + '</div>';
+                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
+                    }
+                });
+            }
+        }
+
+        return pixelValues;
+    },
+
+    // ----------------------------------------------------------------
+
+    _create_download_dialog: function(track) {
+    	this._track = track;
+    	var content = '<div id="coge-track-download"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
+    	this.browser.refSeqOrder.forEach(function(rs){
+    		content += '<option>' + rs + '</option>';
+    	});
+    	content += '</select></td></tr>';
+    	if (track.config.coge.transform)
+    		content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
+    	if (track.config.coge.search) {
+    		var search = track.config.coge.search.split('&');
+    		if (search.length > 1)
+    			search = search[0] + ': ' + search[1].substring(search[1].indexOf('=') + 1) + ' .. ' + search[2].substring(search[2].indexOf('=') + 1);
+    		content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + search + '</td></tr>';
+    	}
+    	content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._download_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_download_dialog.hide()">Cancel</button></div></div>';
+    	this._track_download_dialog = new Dialog({
+            title: 'Download Track',
+            content: content,
+            onHide: function(){
+            	this.destroyRecursive();
+            	coge_xyplot._track_download_dialog = null;
+            },
+            style: "width: 350px"
+        });
+    	this._track_download_dialog.show();
+    },
+
+    // ----------------------------------------------------------------
+
+    _create_search_dialog: function(track) {
+    	this._track = track;
+    	var content = '<div id="coge-track-search"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
+    	this.browser.refSeqOrder.forEach(function(rs){
+    		content += '<option>' + rs + '</option>';
+    	});
+    	content += '</select></td></tr>' +
+    		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
+    		'<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
+    		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: <span id="selected_range">&nbsp;</span></td></tr>' +
+    		'<tr><td></td><td><div id="coge-hist"><img src="picts/ajax-loader.gif"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
+    	this._track_search_dialog = new Dialog({
+            title: 'Search Track',
+            content: content,
+            onHide: function(){
+            	this.destroyRecursive();
+            	coge_xyplot._track_search_dialog = null;
+            },
+            style: "width: 350px"
+        });
+    	dojo.xhrGet({
+    		url: api_base_url + '/experiment/' + track.config.coge.id + '/histogram',
+    		handleAs: 'json',
+	  		load: function(data) {
+	  			if (data.error) {
+	  				coge.error('Search', data);
+	  				coge_xyplot._track_search_dialog.hide();
+	  				return;
+	  			}
+	  			dojo.destroy(dojo.byId('coge-hist').firstChild);
+	  			coge_xyplot._brush = chart(d3.select('#coge-hist'), data.first, data.gap, data.counts);
+    		},
+    		error: function(data) {
+    			coge.error('Search', data);
+    			coge_xyplot._track_search_dialog.hide();
+    		}
+    	});
+    	this._track_search_dialog.show();
+    },
+
+    // ----------------------------------------------------------------
+
     _defaultConfig: function() {
         return Util.deepUpdate(
             dojo.clone( this.inherited(arguments) ),
@@ -54,86 +255,33 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         );
     },
 
-    _getScaling: function( viewArgs, successCallback, errorCallback ) {
+    // ----------------------------------------------------------------
 
-        this._getScalingStats( viewArgs, dojo.hitch(this, function( stats ) {
-
-            //calculate the scaling if necessary
-            if( ! this.lastScaling || ! this.lastScaling.sameStats( stats ) ) {
-
-                var scaling = new Scale( this.config, stats );
-
-                // bump minDisplayed to 0 if it is within 0.5% of it
-                if( Math.abs( scaling.min / scaling.max ) < 0.005 )
-                    scaling.min = 0;
-
-                // update our track y-scale to reflect it
-                this.makeYScale({
-                    fixBounds: true,
-                    min: scaling.min,
-                    max: scaling.max
-                });
-
-                // and finally adjust the scaling to match the ruler's scale rounding
-                scaling.min = this.ruler.scaler.bounds.lower;
-                scaling.max = this.ruler.scaler.bounds.upper;
-                scaling.range = scaling.max - scaling.min;
-
-                this.lastScaling = scaling;
-            }
-
-            successCallback( this.lastScaling );
-        }), errorCallback );
+    _download_track: function() {
+	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+    	var url = coge_api + '/experiments/' + this._track.config.coge.id + '/data?username='+un;
+    	var ref_seq = dojo.byId('coge_ref_seq');
+    	if (ref_seq.selectedIndex > 0)
+    		url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
+    	if (dojo.byId('search') && dojo.byId('search').checked)
+    		url += '&' + this._track.config.coge.search;
+    	if (dojo.byId('transform') && dojo.byId('transform').checked)
+    		url += '&transform=' + this._track.config.coge.transform;
+    	document.location = url;
+		coge_xyplot._track_download_dialog.hide();
     },
 
-    updateStaticElements: function( coords ) {
-        //console.log('updateStaticElements');
-        this.inherited( arguments );
-        this.updateYScaleFromViewDimensions( coords );
-        _adjust_nav(this.config.coge.id)
-    },
-
-    fillTooManyFeaturesMessage: function( blockIndex, block, scale ) {
-        this.fillMessage(
-            blockIndex,
-            block,
-            'Too much data to show'
-                + (scale >= this.browser.view.maxPxPerBp ? '': '; zoom in to see detail')
-                + '.'
-        );
-    },
-
-    fillMessage: function( blockIndex, block, message, class_ ) {
-        domConstruct.empty( block.domNode );
-        var msgDiv = dojo.create(
-            'div', {
-                className: class_ || 'message',
-                innerHTML: message
-            }, block.domNode );
-        this.heightUpdate( dojo.position(msgDiv).h, blockIndex );
-    },
-
-    renderBlock: function( args ) {
-        var featureScale = this.config.style.featureScale;
-        var scale = args.block.scale;
-        if (scale <= featureScale) { // don't draw, too zoomed-out, modeled after HTMLFeatures
-            this.fillTooManyFeaturesMessage(args.blockIndex, args.block, scale);
-        }
-        else { // render features
-            this.inherited( arguments );
-        }
-    },
+    // ----------------------------------------------------------------
 
     _draw: function(scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale, pixels, spans) {
-        this._preDraw(      scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale );
-
-        this._drawFeatures( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale );
-
-        if ( spans ) {
-            this._maskBySpans( scale, leftBase, rightBase, block, canvas, pixels, dataScale, spans );
-        }
-        this._postDraw(     scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale );
+        this._preDraw(scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale);
+        this._drawFeatures(scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale);
+        if (spans)
+            this._maskBySpans(scale, leftBase, rightBase, block, canvas, pixels, dataScale, spans);
+        this._postDraw(scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale);
     },
+
+    // ----------------------------------------------------------------
     /**
      * Draw a set of features on the canvas.
      * @private
@@ -353,11 +501,128 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         }
     },
 
+    // ----------------------------------------------------------------
+
+    fillMessage: function( blockIndex, block, message, class_ ) {
+        domConstruct.empty( block.domNode );
+        var msgDiv = dojo.create(
+            'div', {
+                className: class_ || 'message',
+                innerHTML: message
+            }, block.domNode );
+        this.heightUpdate( dojo.position(msgDiv).h, blockIndex );
+    },
+
+    // ----------------------------------------------------------------
+
+    fillTooManyFeaturesMessage: function( blockIndex, block, scale ) {
+        this.fillMessage(
+            blockIndex,
+            block,
+            'Too much data to show'
+                + (scale >= this.browser.view.maxPxPerBp ? '': '; zoom in to see detail')
+                + '.'
+        );
+    },
+
+    // ----------------------------------------------------------------
+
+    _getFeatureColor: function(id) {
+        if (this.config.style.featureColor && this.config.style.featureColor[id])
+            return this.config.style.featureColor[id];
+         return coge.calc_color(id);
+    },
+
+    // ----------------------------------------------------------------
+
+    _getFeatureName: function(f) {
+        var id = f.get('id');
+        var coge = this.config.coge;
+
+        if (coge.type == 'experiment') {
+            return coge.name;
+        }
+        else if (coge.type == 'notebook') {
+            var experiments = coge.experiments || [];
+            var name = '';
+            experiments.every( function(e) {
+                if (e.id == id) {
+                    name = e.name;
+                    if (e.type == 'snp')
+                        name += ' ' + f.get('name');
+                    return false;
+                }
+                return true;
+            });
+            return name;
+        }
+    },
+
+    // ----------------------------------------------------------------
+
+    _getScaling: function( viewArgs, successCallback, errorCallback ) {
+
+        this._getScalingStats( viewArgs, dojo.hitch(this, function( stats ) {
+
+            //calculate the scaling if necessary
+            if( ! this.lastScaling || ! this.lastScaling.sameStats( stats ) ) {
+
+                var scaling = new Scale( this.config, stats );
+
+                // bump minDisplayed to 0 if it is within 0.5% of it
+                if( Math.abs( scaling.min / scaling.max ) < 0.005 )
+                    scaling.min = 0;
+
+                // update our track y-scale to reflect it
+                this.makeYScale({
+                    fixBounds: true,
+                    min: scaling.min,
+                    max: scaling.max
+                });
+
+                // and finally adjust the scaling to match the ruler's scale rounding
+                scaling.min = this.ruler.scaler.bounds.lower;
+                scaling.max = this.ruler.scaler.bounds.upper;
+                scaling.range = scaling.max - scaling.min;
+
+                this.lastScaling = scaling;
+            }
+
+            successCallback( this.lastScaling );
+        }), errorCallback );
+    },
+
+    // ----------------------------------------------------------------
+
+    _new_nav: function(eid, data) {
+		var nav = dojo.byId('nav_' + eid);
+		if (nav)
+			dojo.destroy(nav);
+		nav = dojo.create('div', { id: 'nav_' + eid, style: { background: 'white', opacity: 0.7, position: 'absolute' } }, dojo.byId('container'));
+		_adjust_nav(eid);
+		nav.hits = data;
+		nav.hit = 0;
+		nav.browser = this._track.browser;
+		dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: function() { _go_to_hit(nav, 0) }, style: { cursor: 'pointer' } }, nav);
+		dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', onclick: function() { if (nav.hit > 0) _go_to_hit(nav, nav.hit - 1) }, style: { cursor: 'pointer' } }, nav);
+		nav.num_span = dojo.create('span', { innerHTML: '1', style: { cursor: 'default' } }, nav);
+		dojo.create('span', { innerHTML: ' of ' + data.length + ' hit' + (data.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, nav);
+		dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: function() { if (nav.hit < nav.hits.length - 1) _go_to_hit(nav, nav.hit + 1) }, style: { cursor: 'pointer' } }, nav);
+		dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: function() { _go_to_hit(nav, nav.hits.length - 1) }, style: { cursor: 'pointer' } }, nav);
+        this.browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
+        	for (var i=0; i<configs.length; i++)
+        		if (configs[i].coge.id == eid)
+        			dojo.destroy(dojo.byId('nav_' + eid));
+        });
+        _go_to_hit(nav, 0);
+    },
+
+    // ----------------------------------------------------------------
     /**
      * Draw anything needed after the features are drawn.
      */
+
     _postDraw: function( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale ) {
-//      console.log('_postDraw');
         var context = canvas.getContext('2d');
         var canvasHeight = canvas.height;
         var toY = dojo.hitch( this, function( val ) {
@@ -414,143 +679,20 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         }
     },
 
-    _calculatePixelScores: function( canvasWidth, features, featureRects ) {
-        var pixelValues = new Array( canvasWidth );
+    // ----------------------------------------------------------------
 
-        if (this.config.showHoverScores) {
-            // sort features by score
-            var sorted = [];
-            dojo.forEach( features, function(f,i) {
-                sorted.push({ feature: f, featureRect: featureRects[i] });
-            });
-            sorted.sort( sortByScore );
-
-            // make an array of the max score at each pixel on the canvas
-            dojo.forEach( sorted, function( f, i ) {
-                var fRect = f.featureRect;
-                var jEnd = fRect.r;
-                var score = f.feature.get('score');
-                var score2 = f.feature.get('score2');
-                var id = f.feature.get('id');
-                var fLabel = f.feature.get('label');
-                if (!fLabel || fLabel == '.') fLabel = '';
-                var name = this._getFeatureName(f.feature);
-                var color = this._getFeatureColor(id);
-                for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
-                    var label = '<div style="background-color:'+color+';">' +
-                        nbspPad(score.toPrecision(6).toString(), 11) +
-                        (score2 ? nbspPad(score2.toPrecision(6).toString(), 11) : '') +
-                        fLabel+ ' ' + name + '</div>';
-                    pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-                }
-            },this);
-
-            // compute transform scores - FIXME dup'ed in _drawFeatures
-            if (this.config.coge.transform == 'Average') {
-                var sum_f = [];
-                var sum_r = [];
-                var count_f = [];
-                var count_r = [];
-                var width = [];
-                dojo.forEach( features, function(f,i) {
-                    var score = f.get('score');
-                    var l = featureRects[i].l;
-                    var w = featureRects[i].w;
-                    if (score >= 0) {
-                        sum_f[l] = l in sum_f ? sum_f[l] + score : score;
-                        count_f[l] = l in count_f ? count_f[l] + 1 : 1;
-                    }
-                    else {
-                        sum_r[l] = l in sum_r ? sum_r[l] + score : score;
-                        count_r[l] = l in count_r ? count_r[l] + 1 : 1;
-                    }
-                    width[l] = l in width ? Math.max(width[l], w) : w;
-                });
-
-                sum_f.forEach( function(x,l) {
-                    var avg = sum_f[l]/count_f[l];
-                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
-                        var label = '<div style="background-color:gray;">' +
-                            nbspPad(avg.toPrecision(6).toString(), 11)
-                            + 'Average (+)' + '</div>';
-                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-                    }
-                });
-                sum_r.forEach( function(x,l) {
-                    var avg = sum_r[l]/count_r[l];
-                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
-                        var label = '<div style="background-color:gray;">' +
-                            nbspPad(avg.toPrecision(6).toString(), 11)
-                            + 'Average (-)' + '</div>';
-                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-                    }
-                });
-            }
-            else if (this.config.coge.transform == 'Difference') {
-                var max_f = [];
-                var max_r = [];
-                var min_f = [];
-                var min_r = [];
-                var count_f = [];
-                var count_r = [];
-                var width = [];
-                dojo.forEach( features, function(f,i) {
-                    var score = f.get('score');
-                    var l = featureRects[i].l;
-                    var w = featureRects[i].w;
-                    width[l] = l in width ? Math.max(width[l], w) : w;
-                    if (score >= 0) {
-                        count_f[l] = l in count_f ? count_f[l] + 1 : 1;
-                        max_f[l] = l in max_f ? Math.max(max_f[l], score) : score;
-                        min_f[l] = l in min_f ? Math.min(min_f[l], score) : score;
-                    }
-                    else {
-                        score = Math.abs(score);
-                        count_r[l] = l in count_r ? count_r[l] + 1 : 1;
-                        max_r[l] = l in max_r ? Math.max(max_r[l], score) : score;
-                        min_r[l] = l in min_r ? Math.min(min_r[l], score) : score;
-                    }
-                });
-
-                max_f.forEach( function(x,l) {
-                    var diff = max_f[l] - min_f[l];
-                    if (count_f[l] == 1)
-                        diff = max_f[l];
-                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
-                        var label = '<div style="background-color:gray;">' +
-                            nbspPad(diff.toPrecision(6).toString(), 11)
-                            + 'Difference (+)' + '</div>';
-                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-                    }
-                });
-                max_r.forEach( function(x,l) {
-                    var diff = max_r[l] - min_r[l];
-                    if (count_r[l] == 1)
-                        diff = max_r[l];
-                    for( var j = Math.round(l); j < l+width[l]; j++ ) {
-                        var label = '<div style="background-color:gray;">' +
-                            nbspPad(diff.toPrecision(6).toString(), 11)
-                            + 'Difference (-)' + '</div>';
-                        pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
-                    }
-                });
-            }
+    renderBlock: function( args ) {
+        var featureScale = this.config.style.featureScale;
+        var scale = args.block.scale;
+        if (scale <= featureScale) { // don't draw, too zoomed-out, modeled after HTMLFeatures
+            this.fillTooManyFeaturesMessage(args.blockIndex, args.block, scale);
         }
-
-        return pixelValues;
+        else { // render features
+            this.inherited( arguments );
+        }
     },
 
-    _error: function(title, content) {
-    	if (content.responseText)
-    		content = content.responseText;
-    	else if (content.error)
-    		content = JSON.stringify(content.error);
-    	new InfoDialog({
-    		title: title,
-    		content: content,
-            onHide: function(){this.destroyRecursive()}
-    	}).show();	
-    },
+    // ----------------------------------------------------------------
 
     _search_track: function() {
 		var eid = dojo.byId('eid').value;
@@ -563,7 +705,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     		params = 'type=min';
     	else {
     		if (this._brush.empty()) {
-    			this._error('Unspecified Range', 'Please drag on the histogram to select the range of values you wish to search for');
+    			coge.error('Unspecified Range', 'Please drag on the histogram to select the range of values you wish to search for');
     			return;
     		}
     		params = 'type=range';
@@ -586,7 +728,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
 	  			if (data.length == 0) {
-	  				this._error('Search', 'Search returned zero hits');
+	  				coge.error('Search', 'Search returned zero hits');
 	  				this._track_search_dialog.hide();
 	  				return;
 	  			}
@@ -594,34 +736,13 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
  				this._track_search_dialog.hide();
     		}),
     		error: dojo.hitch(this, function(data) {
-    			this._error('Search', data);
+    			coge.error('Search', data);
  				this._track_search_dialog.hide();
     		})
     	});
     },
-    
-    _new_nav: function(eid, data) {
-		var nav = dojo.byId('nav_' + eid);
-		if (nav)
-			dojo.destroy(nav);
-		nav = dojo.create('div', { id: 'nav_' + eid, style: { background: 'white', opacity: 0.7, position: 'absolute' } }, dojo.byId('container'));
-		_adjust_nav(eid);
-		nav.hits = data;
-		nav.hit = 0;
-		nav.browser = this._track.browser;
-		dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: function() { _go_to_hit(nav, 0) }, style: { cursor: 'pointer' } }, nav);
-		dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', onclick: function() { if (nav.hit > 0) _go_to_hit(nav, nav.hit - 1) }, style: { cursor: 'pointer' } }, nav);
-		nav.num_span = dojo.create('span', { innerHTML: '1', style: { cursor: 'default' } }, nav);
-		dojo.create('span', { innerHTML: ' of ' + data.length + ' hit' + (data.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, nav);
-		dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: function() { if (nav.hit < nav.hits.length - 1) _go_to_hit(nav, nav.hit + 1) }, style: { cursor: 'pointer' } }, nav);
-		dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: function() { _go_to_hit(nav, nav.hits.length - 1) }, style: { cursor: 'pointer' } }, nav);
-        this.browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
-        	for (var i=0; i<configs.length; i++)
-        		if (configs[i].coge.id == eid)
-        			dojo.destroy(dojo.byId('nav_' + eid));
-        });
-        _go_to_hit(nav, 0);
-    },
+
+    // ----------------------------------------------------------------
 
     _showPixelValue: function( scoreDisplay, score ) {
         var scoreType = typeof score;
@@ -643,6 +764,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             return false;
         }
     },
+
+    // ----------------------------------------------------------------
 
     _trackMenuOptions: function() {
         var options = this.inherited(arguments);
@@ -703,12 +826,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                                 if (!curColor || curColor != color) {
                                     // Save color choice
                                     track.config.style.featureColor[id] = color;
-
                                     track.updateUserStyles({ featureColor : track.config.style.featureColor });
-
                                     // Repaint track
                                     track.changed();
-
                                     //FIXME TrackList should update itself
                                     track.browser.publish('/jbrowse/v1/c/tracks/show', [track.config]);
                                     }
@@ -739,42 +859,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
         options.push({
 	        label: 'Search',
-	        onClick: function(event) {
-	        	coge_xyplot._track = track;
-	        	var content = '<div id="coge-track-search"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
-	        	coge_xyplot.browser.refSeqOrder.forEach(function(rs){
-	        		content += '<option>' + rs + '</option>';
-	        	});
-	        	content += '</select></td></tr>' +
-	        		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
-	        		'<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
-	        		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: <span id="selected_range">&nbsp;</span></td></tr>' +
-	        		'<tr><td></td><td><div id="coge-hist"><img src="picts/ajax-loader.gif"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
-	        	coge_xyplot._track_search_dialog = new Dialog({
-                    title: 'Search Track',
-                    content: content,
-                    onHide: function(){this.destroyRecursive()},
-                    style: "width: 350px"
-                });
-	        	dojo.xhrGet({
-	        		url: api_base_url + '/experiment/' + track.config.coge.id + '/histogram',
-	        		handleAs: 'json',
-	    	  		load: function(data) {
-	    	  			if (data.error) {
-	    	  				coge_xyplot._error('Search', data);
-	    	  				coge_xyplot._track_search_dialog.hide();
-	    	  				return;
-	    	  			}
-	    	  			dojo.destroy(dojo.byId('coge-hist').firstChild);
-	    	  			coge_xyplot._brush = chart(d3.select('#coge-hist'), data.first, data.gap, data.counts);
-	        		},
-	        		error: function(data) {
-	        			coge_xyplot._error('Search', data);
-	        			coge_xyplot._track_search_dialog.hide();
-	        		}
-	        	});
-	        	coge_xyplot._track_search_dialog.show();
-	        }
+	        onClick: function(){coge_xyplot._create_search_dialog(track);}
         });
 
         if (config.coge.type == 'notebook') {
@@ -864,79 +949,19 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
         options.push({
 	        label: 'Download Track Data',
-	        onClick: function(event) {
-	        	coge_xyplot._track = track;
-	        	var content = '<div id="coge-track-download"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
-	        	coge_xyplot.browser.refSeqOrder.forEach(function(rs){
-	        		content += '<option>' + rs + '</option>';
-	        	});
-	        	content += '</select></td></tr>';
-	        	if (config.coge.transform)
-	        		content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
-	        	if (config.coge.search) {
-	        		var search = track.config.coge.search.split('&');
-	        		if (search.length > 1)
-	        			search = search[0] + ': ' + search[1].substring(search[1].indexOf('=') + 1) + ' .. ' + search[2].substring(search[2].indexOf('=') + 1);
-	        		content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + search + '</td></tr>';
-	        	}
-	        	content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._download_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_download_dialog.hide()">Cancel</button></div></div>';
-	        	coge_xyplot._track_download_dialog = new Dialog({
-                    title: 'Download Track',
-                    content: content,
-                    onHide: function(){this.destroyRecursive()},
-                    style: "width: 350px"
-                });
-	        	coge_xyplot._track_download_dialog.show();
-	        }
+	        onClick: function(){coge_xyplot._create_download_dialog(track);}
         });
 
         return options;
     },
-    
-    _download_track: function() {
-	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
-    	var url = coge_api + '/experiments/' + this._track.config.coge.id + '/data?username='+un;
-    	var ref_seq = dojo.byId('coge_ref_seq');
-    	if (ref_seq.selectedIndex > 0)
-    		url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
-    	if (dojo.byId('search') && dojo.byId('search').checked)
-    		url += '&' + this._track.config.coge.search;
-    	if (dojo.byId('transform') && dojo.byId('transform').checked)
-    		url += '&transform=' + this._track.config.coge.transform;
-    	document.location = url;
-		coge_xyplot._track_download_dialog.hide();
-    },
 
-    _getFeatureName: function(f) {
-        var id = f.get('id');
-        var coge = this.config.coge;
+    // ----------------------------------------------------------------
 
-        if (coge.type == 'experiment') {
-            return coge.name;
-        }
-        else if (coge.type == 'notebook') {
-            var experiments = coge.experiments || [];
-            var name = '';
-            experiments.every( function(e) {
-                if (e.id == id) {
-                    name = e.name;
-                    if (e.type == 'snp')
-                        name += ' ' + f.get('name');
-                    return false;
-                }
-                return true;
-            });
-            return name;
-        }
-    },
-
-    _getFeatureColor: function(id) {
-        if (this.config.style.featureColor && this.config.style.featureColor[id]) {
-            return this.config.style.featureColor[id];
-        }
-        return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16); //FIXME: dup'ed in CoGe.js
+    updateStaticElements: function( coords ) {
+        this.inherited( arguments );
+        this.updateYScaleFromViewDimensions( coords );
+        _adjust_nav(this.config.coge.id)
     }
-
 });
 
 return XYPlot;

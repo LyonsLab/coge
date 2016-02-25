@@ -18,11 +18,9 @@ define(['dojo/_base/declare',
         'dijit/Menu',
         'dijit/MenuItem',
         'dijit/MenuSeparator',
-        'dijit/Dialog',
-        'JBrowse/View/ConfirmDialog',
-        'JBrowse/View/InfoDialog'
+        'dijit/Dialog'
        ],
-       function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, mouse, Button, DropDownButton, Menu, MenuItem, MenuSeparator, Dialog, ConfirmDialog, InfoDialog ) {
+       function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, mouse, Button, DropDownButton, Menu, MenuItem, MenuSeparator, Dialog ) {
 	return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -93,7 +91,7 @@ define(['dojo/_base/declare',
 	  		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
 	  			if (data.error)
-	  				this._error('Add Notebook Item', data);
+	  				coge.error('Add Notebook Item', data);
 	  			else {
 	  				var n = dojo.byId('notebook' + notebook_id);
 	  				if (create)
@@ -104,14 +102,12 @@ define(['dojo/_base/declare',
 	  				this._expand(n);
 	  			}
 	  		}),
-	  		error: dojo.hitch(this, function(data) {
-	  			this._error('Add Notebook Item', data);
-	  		})
+	  		error: function(data) {
+	  			coge.error('Add Notebook Item', data);
+	  		}
 	  	});
-	  	if (this._add_dialog) {
+	  	if (this._add_dialog)
 	  		this._add_dialog.hide();
-	  		this.add_dialog = null;
-	  	}
     },
 
     // ----------------------------------------------------------------
@@ -127,7 +123,10 @@ define(['dojo/_base/declare',
     	content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="var s=dojo.byId(\'coge_notebook\');coge_track_list._add_to_notebook([{type:\'' + type + '\',id:' + id + '}],s.options[s.selectedIndex].value,true);">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.hide()">Cancel</button></div>';
     	this._add_dialog = new Dialog({
             title: 'Add to Notebook ' + name,
-            onHide: function(){this.destroyRecursive()},
+            onHide: function(){
+            	this.destroyRecursive();
+            	coge_track_list._add_dialog = null;
+            },
             content: content
         });
     	this._add_dialog.show();
@@ -203,7 +202,7 @@ define(['dojo/_base/declare',
 	  		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
 	  			if (data.error)
-	  				this._error('Create Notebook', data);
+	  				coge.error('Create Notebook', data);
 	  			else {
 	  				var config = this._new_notebook_config(data.id, name, description, restricted);
 	  				this._track_configs.push(config);
@@ -212,9 +211,9 @@ define(['dojo/_base/declare',
 	  				this._create_notebook_dialog.hide();
 	  			}
 	  		}),
-	  		error: dojo.hitch(this, function(data) {
-	  			this._error('Create Notebook', data);
-	  		})
+	  		error: function(data) {
+	  			coge.error('Create Notebook', data);
+	  		}
 	  	});
     },
 
@@ -222,8 +221,7 @@ define(['dojo/_base/declare',
 
     _create_search_button: function() {
     	var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
-    	var browser = this.browser;
-    	browser.refSeqOrder.forEach(function(rs){
+    	this.browser.refSeqOrder.forEach(function(rs){
     		content += '<option>' + rs + '</option>';
     	})
     	content += '</select></td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
@@ -234,22 +232,20 @@ define(['dojo/_base/declare',
     		content += '<div><input type="checkbox"> <label>' + t.coge.id + '</label></div>';
     	});
     	content += '</td></tr><tr><td></td><td><button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></td></tr></table>';
-    	content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._search_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="search_dialog.hide()">Cancel</button></div></div>';
+    	content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._search_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._search_dialog.hide()">Cancel</button></div></div>';
         new Button({
 	        label: 'Search',
 	        onClick: function(event) {
-	        	search_dialog = new Dialog({
+	        	coge_track_list._search_dialog = new Dialog({
                     title: "Search",
                     content: content,
-                    onHide: function(){this.destroyRecursive()},
+                    onHide: function(){
+                    	this.destroyRecursive();
+                    	coge_track_list._search_dialog = null;
+                    },
                     style: "width: 300px"
                 });
-// for (var i=0; i<browser.refSeqOrder.length; i++)
-// if (browser.refSeqOrder[i] == browser.refSeq.name) {
-// dojo.byId('coge_ref_seq').selectedIndex = i + 1;
-// break;
-// }
-	        	search_dialog.show();
+	        	coge_track_list._search_dialog.show();
 	        	dojo.stopEvent(event);
 	        },
 	    }, dojo.create('button', null, this.browser.navbox));
@@ -332,7 +328,10 @@ define(['dojo/_base/declare',
             	this._create_notebook_dialog = new Dialog({
                     title: 'Create New Notebook',
                     content: '<table><tr><td><label>Name:</label></td><td><input id="notebook_name"></td></tr><tr><td><label>Description:</label></td><td><input id="notebook_description"></td></tr><tr><td><label>Restricted:</label></td><td><input type="checkbox" checked="checked" id="notebook_restricted"></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook_dialog.hide()">Cancel</button></div>',
-                    onHide: function(){this.destroyRecursive()},
+                    onHide: function(){
+                    	this.destroyRecursive();
+                    	coge_track_list._create_notebook_dialog = null;
+                    },
                     style: 'width: 300px'
                 });
             	this._create_notebook_dialog.show();
@@ -423,71 +422,50 @@ define(['dojo/_base/declare',
     	var message = 'Delete this ' + Type + '?  Deleting it will move it to the trash.';
     	if (type == 'notebook')
     		message += '<br>Note: Experiments in this notebook will NOT be deleted.'
-		new ConfirmDialog({
-				title: 'Delete ' + Type,
-				message: message,
-                onHide: function(){this.destroyRecursive()}
-			})
-            .show( dojo.hitch(this, function( confirmed ) {
-                 if ( confirmed ) {
-			    	if (type == 'experiment') {
-             			dojo.xhrPut({ // FIXME: make webservice for this
-      					    url: "Experiments.pl",
-    					    putData: {
-    					    	fname: 'delete_experiment',
-    					    	eid: id
-    					    },
-    					    handleAs: "json",
-    					    load: dojo.hitch(this, function(data) {
-    					    	if (!data) {
-    					    		this._error('Permission denied', "You don't have permission to do that.");
-    					    		return;
-    					    	}
-    					    	dojo.destroy(container);
-    					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
-    					   })
-					    });
-			    	} else if (type == 'notebook') {
-			    		dojo.xhrPut({ // FIXME: make webservice for this
-      					    url: "NotebookView.pl",
-    					    putData: {
-    					    	fname: 'delete_list',
-    					    	lid: id
-    					    },
-    					    handleAs: "json",
-    					    load: dojo.hitch(this, function(data) {
-    					    	if (!data) {
-    					    		this._error('Permission denied', "You don't have permission to do that.");
-    					    		return;
-    					    	}
-    					    	dojo.destroy(container.parentNode);
-    					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
-    					   })
-					    });
-			    	}
-                 }
-             }));
-    },
+    	coge.confirm('Delete ' + Type, message, dojo.hitch(this, function() {
+	    	if (type == 'experiment') {
+     			dojo.xhrPut({ // FIXME: make webservice for this
+				    url: "Experiments.pl",
+				    putData: {
+				    	fname: 'delete_experiment',
+				    	eid: id
+				    },
+				    handleAs: "json",
+				    load: dojo.hitch(this, function(data) {
+				    	if (!data) {
+				    		coge.error('Permission denied', "You don't have permission to do that.");
+				    		return;
+				    	}
+				    	dojo.destroy(container);
+				    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
+				   })
+			    });
+	    	} else if (type == 'notebook') {
+	    		dojo.xhrPut({ // FIXME: make webservice for this
+				    url: "NotebookView.pl",
+				    putData: {
+				    	fname: 'delete_list',
+				    	lid: id
+				    },
+				    handleAs: "json",
+				    load: dojo.hitch(this, function(data) {
+				    	if (!data) {
+				    		coge.error('Permission denied', "You don't have permission to do that.");
+				    		return;
+				    	}
+				    	dojo.destroy(container.parentNode);
+				    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
+				   })
+			    });
+	    	}
+    	}));
+	},
 
     // ----------------------------------------------------------------
     // are we supposed to delete the experiment(s) from the database? for now just acknowledge their removal from the view
 
     deleteTracks: function( /** Array[Object] */ track_configs ) {
     	this.setTracksInactive(track_configs);
-    },
-
-    // ----------------------------------------------------------------
-
-    _error: function(title, content) {
-    	if (content.responseText)
-    		content = content.responseText;
-    	else if (content.error)
-    		content = JSON.stringify(content.error);
-    	new InfoDialog({
-    		title: title,
-    		content: content,
-            onHide: function(){this.destroyRecursive()}
-    	}).show();	
     },
 
     // ----------------------------------------------------------------
@@ -526,7 +504,7 @@ define(['dojo/_base/declare',
                 		dojo.addClass(container, 'collapsed');
              	} else
             		dojo.addClass(container, 'collapsed');
-            });
+            }, true);
         } else { // empty string, show all
         	var n = this.div.firstChild;
         	while (n && dojo.hasClass(n, 'coge-tracklist-container') && !dojo.hasClass(n.lastChild, 'coge-tracklist-collapsible')) {
@@ -543,29 +521,35 @@ define(['dojo/_base/declare',
                 	dojo.removeClass(container, 'collapsed');
             	else
                     dojo.addClass(container, 'collapsed');
-            });
+            }, true);
         }
         this._update_tracks_shown();
     },
 
     // ----------------------------------------------------------------
 
-    _get_feature_color: function(id) { // FIXME: dup'ed in MultiXYPlot.js
-    	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16);
+    _get_track_color: function(container) {
+		var id = container.config.coge.id;
+        var style = container.config.style;
+        var cookie = this.browser.cookie('track-' + container.config.track);
+        if (cookie)
+            style = dojo.fromJson(cookie);
+        if (style.featureColor && style.featureColor[id])
+		    return style.featureColor[id];
+    	return coge.calc_color(id);
     },
 
     // ----------------------------------------------------------------
-
     /**
-	 * Make the track selector invisible. This does nothing for the Simple track
-	 * selector, since it is always visible.
+	 * Make the track selector invisible
 	 */
+
     hide: function() {
     },
 
     // ----------------------------------------------------------------
 
-    _info: function (track_config, type) {
+    _info: function(track_config, type) {
         var dialog = new dijit.Dialog( { title: this._capitalize(type) + ' View' } );
 
         var iframe = dojo.create(
@@ -760,9 +744,7 @@ define(['dojo/_base/declare',
             accept: ["track"],
             checkAcceptance: function(source, nodes) {
             	for (var i=0; i<nodes.length; i++)
-            		if (!nodes[i].config) // only accept experiments from the
-											// track selector (not from
-											// jbrowse's track container)
+            		if (!nodes[i].config) // only accept experiments from the track selector (not from jbrowse's track container)
             			return false;
             	if (nodes[0].id.substring(0, 8) == 'notebook') {
             		dojo.publish("/dnd/cancel");
@@ -771,13 +753,10 @@ define(['dojo/_base/declare',
             	}
             	if (this.node.firstChild.id == 'notebook0') // "All Experiments"
             		return false;
-            	if (this.node.firstChild.id == source.node.firstChild.id) // same
-																			// notebook
+            	if (this.node.firstChild.id == source.node.firstChild.id) // same notebook
             		return false;
             	for (var i=0; i<this.node.children.length; i++)
-            		if (this.node.children[i].id == nodes[0].id) // already
-																	// has
-																	// experiment
+            		if (this.node.children[i].id == nodes[0].id) // already has experiment
             			return false;
             	return true;
             },
@@ -876,27 +855,26 @@ define(['dojo/_base/declare',
 	  		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
 	  			if (data.error)
-	  				this._error('Remove Notebook Item', data);
+	  				coge.error('Remove Notebook Item', data);
 	  			else
 	  				dojo.destroy(this._menu_node.parentNode);
 	  		}),
-	  		error: dojo.hitch(this, function(data) {
-	  			this._error('Remove Notebook Item', data);
-	  		})
+	  		error: function(data) {
+	  			coge.error('Remove Notebook Item', data);
+	  		}
 	  	});
     },
 
     // ----------------------------------------------------------------
 
     _remove_from_notebook_dialog: function(type, id, name, notebook_id, notebook_name) {
-		new ConfirmDialog({
-			title: 'Remove ' + this._capitalize(type),
-			message: 'Remove ' + type + ' "' + name + '" from notebook "' + notebook_name + '"?',
-            onHide: function(){this.destroyRecursive()}
-		}).show(dojo.hitch(this, function(confirmed) {
-             if (confirmed)
-            	 this._remove_from_notebook(type, id, notebook_id);
-         }));
+		coge.confirm(
+			'Remove ' + this._capitalize(type),
+			'Remove ' + type + ' "' + name + '" from notebook "' + notebook_name + '"?',
+			dojo.hitch(this, function(confirmed) {
+           		this._remove_from_notebook(type, id, notebook_id);
+			})
+		);
     },
 
     // ----------------------------------------------------------------
@@ -916,7 +894,7 @@ define(['dojo/_base/declare',
 	  		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
 	  			if (data.error)
-	  				this._error('Rename ' + type, data);
+	  				coge.error('Rename ' + type, data);
 	  			else {
 	  				this._menu_track_config.coge.name = name;
 	  				var key = this._menu_track_config.key;
@@ -931,9 +909,9 @@ define(['dojo/_base/declare',
 	  				this._rename_dialog.hide();
 	  			}
 	  		}),
-	  		error: dojo.hitch(this, function(data) {
-	  			this._error('Rename ' + type, data);
-	  		})
+	  		error: function(data) {
+	  			coge.error('Rename ' + type, data);
+	  		}
 	  	});
     },
 
@@ -943,7 +921,10 @@ define(['dojo/_base/declare',
     	this._rename_dialog = new Dialog({
             title: 'Rename ' + type,
             content: '<table><tr><td><label>Name:</label></td><td><input id="name" value=' + JSON.stringify(name) + '></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._rename(\'' + type + '\',' + id + ',\'' + name.replace(/'/g, "\\'") + '\')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._rename_dialog.hide()">Cancel</button></div>',
-            onHide: function(){this.destroyRecursive()},
+            onHide: function(){
+            	this.destroyRecursive();
+            	coge_track_list._rename_dialog = null;
+            },
             style: "width: 300px"
         });
     	this._rename_dialog.show();
@@ -955,22 +936,6 @@ define(['dojo/_base/declare',
 
     replaceTracks: function( track_configs ) { // mdb: unused now
     	console.log('replaceTracks');
-// // for each one
-// array.forEach( track_configs, function( conf ) {
-// // figure out its position in the genome view and delete it
-// var oldNode = this.inactiveTrackNodes[ conf.label ];
-// if( ! oldNode )
-// return;
-// delete this.inactiveTrackNodes[ conf.label ];
-//
-// this.trackListWidget.delItem( oldNode.id );
-// if( oldNode.parentNode )
-// oldNode.parentNode.removeChild( oldNode );
-//
-// // insert the new track config into the trackListWidget after the 'before'
-// this.trackListWidget.insertNodes( false, [conf], false,
-// oldNode.previousSibling );
-// },this);
     },
 
     // ----------------------------------------------------------------
@@ -982,7 +947,7 @@ define(['dojo/_base/declare',
     		if (features[i].checked)
     			types.push("'" + features[i].nextElementSibling.innerText + "'");
     	if (!types.length) {
-    		this._error('Search', 'Please select one or more feature types to search.');
+    		coge.error('Search', 'Please select one or more feature types to search.');
     		return;
     	}
     	var url = api_base_url + '/genome/' + gid + '/features?name=' + encodeURIComponent(dojo.byId('coge_search_text').value) + '&features=' + (types.length == features.length ? 'all' : types.join());
@@ -992,13 +957,13 @@ define(['dojo/_base/declare',
     	dojo.xhrGet({
     		url: url,
     		handleAs: 'json',
-	  		load: dojo.hitch(this, function(data) {
+	  		load: function(data) {
 	  			if (data.error) {
-	  				this._error('Search', data);
+	  				coge.error('Search', data);
 	  				return;
 	  			}
 	  			if (data.length == 0) {
-	  				this._error('Search', 'no features found');
+	  				coge.error('Search', 'no features found');
 	  				return;
 	  			}
 	  			dojo.query('.dijitDialogUnderlayWrapper')[0].style.display = 'none';
@@ -1016,37 +981,31 @@ define(['dojo/_base/declare',
     				}, div);
     				dojo.create('br', null, div);
     			});
-    		}),
-    		error: dojo.hitch(this, function(data) {
-    			this._error('Search', data);
-    		})
+    		},
+    		error: function(data) {
+    			coge.error('Search', data);
+    		}
     	})
     },
 
     // ----------------------------------------------------------------
 
-    _set_track_active: function(container) {
+    _set_track_active: function(container, combined) {
 		var label_node = container.firstChild;
 		while (!dojo.hasClass(label_node, 'coge-tracklist-label'))
 			label_node = label_node.nextSibling;
-		dojo.addClass(label_node, 'selected');
+    	if (!combined)
+    		dojo.addClass(label_node, 'selected');
 		if (container.config.coge.type == 'experiment') {
-			var id = container.config.coge.id;
-	        var color;
-	        var style = container.config.style;
-	        var cookie = this.browser.cookie('track-' + container.config.track);
-	        if (cookie)
-	            style = dojo.fromJson(cookie);
-	        if (style.featureColor && style.featureColor[id])
-			    color = style.featureColor[id];
-	        else
-			    color = this._get_feature_color(id);
-			dojo.style(label_node, 'background', color);    	
+			if (combined)
+				dojo.create('div', { className: 'coge-circle', style: { backgroundColor: coge_track_list._get_track_color(container) } }, container, 'first');
+			else
+				dojo.style(label_node, 'background', coge_track_list._get_track_color(container));    	
 		} else if (container.config.coge.type == 'notebook') {
 			dojo.style(label_node, 'background', 'lightgray');
 			var experiment = container.nextSibling;
 			while (experiment) {
-				this._set_track_active(experiment);
+				this.setTracksActive([experiment.config], true);
 				experiment = experiment.nextSibling;
 			}
 		} else
@@ -1055,36 +1014,53 @@ define(['dojo/_base/declare',
 
     // ----------------------------------------------------------------
 
+    _set_track_inactive: function(container, combined) {
+    	if (combined) {
+    		dojo.destroy(container.firstChild);
+    		return;
+    	}
+		var label_node = container.firstChild;
+		while (!dojo.hasClass(label_node, 'coge-tracklist-label'))
+			label_node = label_node.nextSibling;
+		dojo.removeClass(label_node, 'selected');
+		dojo.style(label_node, 'background', '');
+		if (container.config.coge.type == 'notebook') {
+			var experiment = container.nextSibling;
+			while (experiment) {
+				this.setTracksInactive([experiment.config], true);
+				experiment = experiment.nextSibling;
+			}
+		}
+    },
+
+    // ----------------------------------------------------------------
     /**
 	 * Given an array of track configs, update the track list to show that they
 	 * are turned on.
 	 */
-    setTracksActive: function( /** Array[Object] */ track_configs ) {
-    	this._track_configs.forEach(function(track_config){
-    		track_configs.forEach(function(track_config){
-    			var container = dojo.byId(track_config.coge.type + track_config.coge.id);
-    			coge_track_list._set_track_active(container);
+
+    setTracksActive: function(track_configs, combined) {
+    	track_configs.forEach(function(track_config){
+    		coge_track_list._traverse_tracks(function(container){
+    			if (container.id == track_config.coge.type + track_config.coge.id)
+    				coge_track_list._set_track_active(container, combined);
     		});
     	});
     },
 
     // ----------------------------------------------------------------
-
     /**
 	 * Given an array of track configs, update the track list to show that they
 	 * are turned off.
 	 */
-    setTracksInactive: function( /** Array[Object] */ track_configs ) {
-        dojo.query( '.coge-tracklist-label', this.div )
-	        .forEach( function( labelNode, i ) {
-	        	track_configs.forEach(function (trackConfig) {
-	        		var trackId = trackConfig.coge.type + trackConfig.coge.id;
-	        		if (labelNode.parentNode.id == trackId) {
-	    				dojo.style(labelNode, 'background', '');
-	        			dojo.removeClass(labelNode, 'selected');
-	        		}
-	        	});
-	        });
+
+    setTracksInactive: function(track_configs, combined) {
+    	track_configs.forEach(function(track_config){
+    		coge_track_list._traverse_tracks(function(container){
+    			if (container.id == track_config.coge.type + track_config.coge.id)
+    				coge_track_list._set_track_inactive(container, combined);
+    		});
+    	});
     },
 
     // ----------------------------------------------------------------
@@ -1137,12 +1113,15 @@ define(['dojo/_base/declare',
     },
 
     // ----------------------------------------------------------------
-    // skips Sequence, GC Content and Feature tracks
+    // optionally skips Sequence, GC Content and Feature tracks
 
-    _traverse_tracks: function(f) {
+    _traverse_tracks: function(f, skip) {
     	var n = this.div.firstChild;
-    	while (n && dojo.hasClass(n, 'coge-tracklist-container'))
+    	while (n && dojo.hasClass(n, 'coge-tracklist-container')) {
+    		if (!skip)
+    			f(n);
     		n = n.nextSibling;
+    	}
     	while (n) {
     		var c = n.firstChild; // container
     		while (c) {

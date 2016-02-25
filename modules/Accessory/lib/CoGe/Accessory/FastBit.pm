@@ -33,7 +33,17 @@ use Data::Dumper;
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT_OK =
-	  qw( query );
+	  qw( max min query );
+}
+
+sub max {
+   	my $max = query('select max(value1) where 0.0=0.0', shift);
+   	return 0 + $max->[0];
+}
+
+sub min {
+   	my $min = query('select min(value1) where 0.0=0.0', shift);
+   	return 0 + $min->[0];
 }
 
 sub debug {

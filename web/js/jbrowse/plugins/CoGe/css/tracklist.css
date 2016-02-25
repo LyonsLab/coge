@@ -6,6 +6,16 @@
 	padding: 1px !important;
 }
 
+.coge-circle {
+	border: solid white 1px;
+    border-radius: 50%;
+    height: 15px;
+    left: 5;
+	position: absolute;
+    top: 4;
+    width: 15px;
+}
+
 .coge-experiment,
 .coge-features {
 	background-color: #fbfbfb;
@@ -46,6 +56,7 @@
 	cursor: pointer;
 	display: flex;
 	overflow-x: hidden;
+	position: relative;
 	white-space: nowrap;
 }
 
