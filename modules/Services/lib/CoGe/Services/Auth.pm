@@ -171,8 +171,8 @@ sub validate_agave {
     }
     
     # Extract user information and verify that the given username owns the given token
-    my $authResponse = decode_json('{"' . $res->{content}->{post_buffer}); #FIXME this is a hack because the response is malformed for some unknown reason
-    #print STDERR Dumper $authResponse, "\n";
+    #print STDERR Dumper $res->body, "\n";
+    my $authResponse = decode_json($res->body);
     unless ($authResponse && $authResponse->{status} =~ /success/i &&
             $authResponse->{result} && $authResponse->{result}->{username} eq $username)
     {
