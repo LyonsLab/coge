@@ -189,12 +189,13 @@ div.deleted { display: none; }
                 <input type="checkbox" id="frac_bias" name="frac_bias" <tmpl_var name=frac_bias> />
             </li>
             <li>
-                <label>Window size:</label>
+                <label>Window size (genes):</label>
                 <input type="text" id="fb_window_size" name="fb_window_size" value="<tmpl_var name=fb_window_size>" />
             </li>
+            Fractionation bias calculation:
             <li>
-            	<input type="radio" id="fb_all_genes" name="fb_genes" value="all_genes" <tmpl_var name=fb_all_genes> /> Use all genes in target genome for analysis<br />
-            	<input type="radio" id="fb_target_genes" name="fb_genes" value="target_genes" <tmpl_var name=fb_target_genes> /> Use only target genome genes that match to at least one chromosome in query genome
+            	&nbsp<input type="radio" id="fb_all_genes" name="fb_genes" value="all_genes" <tmpl_var name=fb_all_genes> /> Use all genes in target genome<br />
+            	&nbsp<input type="radio" id="fb_target_genes" name="fb_genes" value="target_genes" <tmpl_var name=fb_target_genes> /> Use only syntenic genes in target genome (inceases fractionation signal)
             </li>
         </ul>
     </fieldset>
