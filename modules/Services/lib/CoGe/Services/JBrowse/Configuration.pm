@@ -405,7 +405,7 @@ sub track_config {
 			$labelScale = 0.5;
 		}
 		elsif ($e->{data_type} == 3) { #FIXME hardcoded data_type 'alignment'
-			$type = 'CoGe/View/Track/CoGeAlignment';#"JBrowse/View/Track/Alignments2";
+			$type = 'CoGe/View/Track/CoGeAlignment';
 			$featureScale = 0.005;
 			$histScale = 0.01;
 			$labelScale = 0.5;

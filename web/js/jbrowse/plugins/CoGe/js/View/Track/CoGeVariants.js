@@ -94,7 +94,7 @@ return declare( [ HTMLFeatures ], {
 	  				coge.error('Search', 'no SNPs found');
 	  				return;
 	  			}
-	  			coge.new_nav(eid, data);
+	  			coge.new_search_track(eid, data);
     		}),
     		error: function(data) {
     			coge.error('Search', data);

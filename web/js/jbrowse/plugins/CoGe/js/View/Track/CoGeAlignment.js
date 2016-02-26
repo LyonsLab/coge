@@ -40,10 +40,9 @@ define( [
         },
 
         _getFeatureColor: function(id) {
-            if (this.config.style.featureColor && this.config.style.featureColor[id]) {
+            if (this.config.style.featureColor && this.config.style.featureColor[id])
                 return this.config.style.featureColor[id];
-            }
-            return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16); //FIXME: dup'ed in CoGe.js
+            return coge.calc_color(id);
         },
 
         _trackMenuOptions: function() {

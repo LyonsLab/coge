@@ -171,7 +171,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
     _create_download_dialog: function(track) {
     	this._track = track;
-    	var content = '<div id="coge-track-download"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
+    	var content = '<div id="coge-track-download"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
     	this.browser.refSeqOrder.forEach(function(rs){
     		content += '<option>' + rs + '</option>';
     	});
@@ -201,7 +201,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
     _create_search_dialog: function(track) {
     	this._track = track;
-    	var content = '<div id="coge-track-search"><input type="hidden" id="eid" value="' + track.config.coge.id + '"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
+    	var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
     	this.browser.refSeqOrder.forEach(function(rs){
     		content += '<option>' + rs + '</option>';
     	});
@@ -670,7 +670,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     // ----------------------------------------------------------------
 
     _search_track: function() {
-		var eid = dojo.byId('eid').value;
 		var div = dojo.byId('coge-track-search');
 		var params;
 
@@ -699,14 +698,14 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		div.innerHTML = '<img src="picts/ajax-loader.gif">';
 		this._track.config.coge.search = params;
      	dojo.xhrGet({
-    		url: api_base_url + '/experiment/' + eid + '/query?' + params,
+    		url: api_base_url + '/experiment/' + this._track.config.coge.id + '/query?' + params,
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
  				this._track_search_dialog.hide();
 	  			if (data.length == 0)
 	  				coge.error('Search', 'Search returned zero hits');
 	  			else
-	  				coge.new_nav(eid, data);
+	  				coge.new_search_track(this._track, data);
     		}),
     		error: dojo.hitch(this, function(data) {
     			coge.error('Search', data);
