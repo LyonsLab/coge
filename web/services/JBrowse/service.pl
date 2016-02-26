@@ -108,6 +108,11 @@ CGI::Application::Dispatch->dispatch(
             app    => 'Experiment',
             rm     => 'features'
         },
+        'experiment/:eid/snps/:chr' => {
+            prefix => 'CoGe::Services::JBrowse',
+            app    => 'Experiment',
+            rm     => 'snps'
+        },
         'experiment/notebook/:nid/stats/global' => {
             prefix => 'CoGe::Services::JBrowse',
             app    => 'Experiment',

@@ -209,7 +209,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
     		'<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
     		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: <span id="selected_range">&nbsp;</span></td></tr>' +
-    		'<tr><td></td><td><div id="coge-hist"><img src="picts/ajax-loader.gif"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
+    		'<tr><td></td><td><div id="coge-hist">loading histogram <img src="picts/ajax-loader.gif"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
     	this._track_search_dialog = new Dialog({
             title: 'Search Track',
             content: content,
@@ -228,7 +228,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	  				coge_xyplot._track_search_dialog.hide();
 	  				return;
 	  			}
-	  			dojo.destroy(dojo.byId('coge-hist').firstChild);
+	  			dojo.empty(dojo.byId('coge-hist'));
 	  			coge_xyplot._brush = chart(d3.select('#coge-hist'), data.first, data.gap, data.counts);
     		},
     		error: function(data) {
@@ -593,31 +593,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },
 
     // ----------------------------------------------------------------
-
-    _new_nav: function(eid, data) {
-		var nav = dojo.byId('nav_' + eid);
-		if (nav)
-			dojo.destroy(nav);
-		nav = dojo.create('div', { id: 'nav_' + eid, style: { background: 'white', opacity: 0.7, position: 'absolute' } }, dojo.byId('container'));
-		_adjust_nav(eid);
-		nav.hits = data;
-		nav.hit = 0;
-		nav.browser = this._track.browser;
-		dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: function() { _go_to_hit(nav, 0) }, style: { cursor: 'pointer' } }, nav);
-		dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', onclick: function() { if (nav.hit > 0) _go_to_hit(nav, nav.hit - 1) }, style: { cursor: 'pointer' } }, nav);
-		nav.num_span = dojo.create('span', { innerHTML: '1', style: { cursor: 'default' } }, nav);
-		dojo.create('span', { innerHTML: ' of ' + data.length + ' hit' + (data.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, nav);
-		dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: function() { if (nav.hit < nav.hits.length - 1) _go_to_hit(nav, nav.hit + 1) }, style: { cursor: 'pointer' } }, nav);
-		dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: function() { _go_to_hit(nav, nav.hits.length - 1) }, style: { cursor: 'pointer' } }, nav);
-        this.browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
-        	for (var i=0; i<configs.length; i++)
-        		if (configs[i].coge.id == eid)
-        			dojo.destroy(dojo.byId('nav_' + eid));
-        });
-        _go_to_hit(nav, 0);
-    },
-
-    // ----------------------------------------------------------------
     /**
      * Draw anything needed after the features are drawn.
      */
@@ -727,13 +702,11 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     		url: api_base_url + '/experiment/' + eid + '/query?' + params,
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
-	  			if (data.length == 0) {
-	  				coge.error('Search', 'Search returned zero hits');
-	  				this._track_search_dialog.hide();
-	  				return;
-	  			}
-	  			this._new_nav(eid, data);
  				this._track_search_dialog.hide();
+	  			if (data.length == 0)
+	  				coge.error('Search', 'Search returned zero hits');
+	  			else
+	  				coge.new_nav(eid, data);
     		}),
     		error: dojo.hitch(this, function(data) {
     			coge.error('Search', data);
@@ -960,7 +933,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     updateStaticElements: function( coords ) {
         this.inherited( arguments );
         this.updateYScaleFromViewDimensions( coords );
-        _adjust_nav(this.config.coge.id)
+        coge.adjust_nav(this.config.coge.id)
     }
 });
 
@@ -984,33 +957,6 @@ function nbspPad(s, padLength) {
 
 function sortByScore(a,b) { // sort features by score
     return Math.abs( b.feature.get('score') ) - Math.abs( a.feature.get('score') );
-}
-
-function _adjust_nav(eid) {
- 	var l = dojo.byId('label_experiment' + eid);
- 	if (l) {
- 		var nav = dojo.byId('nav_' + eid);
- 		if (nav) {
-	 		var track = dojo.byId('track_experiment' + eid);
-	     	dojo.style(nav, 'left', dojo.style(l, 'left') + 10);
-	     	dojo.style(nav, 'top', dojo.style(track, 'top') + 32);
- 		}
- 	}
-}
-
-function _go_to_hit(nav, hit) {
-	nav.hit = hit % nav.hits.length;
-	nav.num_span.innerHTML = nav.hit + 1;
-	nav.num_span.title = nav.hits[nav.hit];
-	var loc = JSON.parse('[' + nav.hits[nav.hit] + ']');
-	if (loc[0] != nav.browser.refSeq.name)
-		nav.browser.navigateToLocation({
-			ref: loc[0],
-			start: loc[1],
-			end: loc[2]
-		});
-	else
-		nav.browser.view.centerAtBase((loc[1] + loc[2]) / 2, true);
 }
 
 function chart(div, first, gap, counts) {

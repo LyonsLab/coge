@@ -24,8 +24,9 @@ return declare( [ HTMLFeatures ], {
 
     // ----------------------------------------------------------------
 
-    _create_search_dialog: function() {
-    	var content = '<div><table><tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
+    _create_search_dialog: function(track) {
+    	this._track = track;
+    	var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
     	this.browser.refSeqOrder.forEach(function(rs){
     		content += '<option>' + rs + '</option>';
     	})
@@ -73,10 +74,13 @@ return declare( [ HTMLFeatures ], {
     		coge.error('Search', 'Please select one or more feature types to search.');
     		return;
     	}
-    	var url = api_base_url + '/genome/' + gid + '/snps?features=' + (types.length == features.length ? 'all' : types.join());
-    	var ref_seq = dojo.byId('coge_ref_seq');
-    	if (ref_seq.selectedIndex > 0)
-    		url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
+		var ref_seq = dojo.byId('coge_ref_seq');
+		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
+		var div = dojo.byId('coge-track-search-dialog');
+		dojo.empty(div);
+		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		var eid = this._track.config.coge.id;
+    	var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?features=' + (types.length == features.length ? 'all' : types.join());
     	dojo.xhrGet({
     		url: url,
     		handleAs: 'json',
@@ -85,10 +89,12 @@ return declare( [ HTMLFeatures ], {
 	  				coge.error('Search', data);
 	  				return;
 	  			}
+ 				this._search_dialog.hide();
 	  			if (data.length == 0) {
 	  				coge.error('Search', 'no SNPs found');
 	  				return;
 	  			}
+	  			coge.new_nav(eid, data);
     		}),
     		error: function(data) {
     			coge.error('Search', data);
@@ -108,6 +114,13 @@ return declare( [ HTMLFeatures ], {
         });
 
         return options;
+    },
+
+    // ----------------------------------------------------------------
+
+    updateStaticElements: function( coords ) {
+        this.inherited( arguments );
+        coge.adjust_nav(this.config.coge.id)
     }
 });
 });

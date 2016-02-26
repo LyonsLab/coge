@@ -15,7 +15,7 @@ sub setup {
     $self->mode_param('rm');
 }
 
-sub add_features {
+sub _add_features {
     my ($name, $chr, $type_ids, $dsid, $hits, $dbh) = @_;
     my $query = 'SELECT name,chromosome,start,stop FROM feature JOIN feature_name on feature.feature_id=feature_name.feature_id WHERE dataset_id=' . $dsid;
     if ($chr) {
@@ -54,7 +54,7 @@ sub features {
     my $hits = [];
     my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'));
     foreach my $dsid (@$ids) {
-        add_features '%' . lc($name) . '%', $chr, $type_ids, $dsid, $hits, $dbh;
+        _add_features '%' . lc($name) . '%', $chr, $type_ids, $dsid, $hits, $dbh;
     }
     my @sorted = sort { $a->{name} cmp $b->{name} } @{$hits};
     return encode_json(\@sorted);
@@ -80,7 +80,7 @@ sub genes {
     my $hits = [];
     my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'));
     foreach my $dsid (@$ids) {
-        add_features lc($name), undef, '1', $dsid, $hits, $dbh;
+        _add_features lc($name), undef, '1', $dsid, $hits, $dbh;
     }
     return encode_json($hits);
 }

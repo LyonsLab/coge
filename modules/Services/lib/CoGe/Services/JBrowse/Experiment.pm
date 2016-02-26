@@ -1,13 +1,13 @@
 package CoGe::Services::JBrowse::Experiment;
 use base 'CGI::Application';
 
-use CoGeX;
 use CoGe::Accessory::histogram;
 use CoGe::Accessory::Web;
 use CoGe::Core::Experiment;
 use CoGe::Core::Storage qw( get_experiment_path );
-use JSON::XS;
+use CoGeX;
 use Data::Dumper;
+use JSON::XS;
 
 #TODO: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -28,9 +28,10 @@ sub setup {
     $self->run_modes(
         'stats_global' => 'stats_global',
         'stats_regionFeatureDensities' => 'stats_regionFeatureDensities',
-        'features'     => 'features',
-        'query_data'   => 'query_data',
-        'histogram'     => 'histogram',
+        'features' => 'features',
+        'query_data' => 'query_data',
+        'histogram' => 'histogram',
+        'snps'  => 'snps',
     );
     $self->mode_param('rm');
 }
@@ -204,6 +205,7 @@ sub query_data {
     my $gte = $self->query->param('gte');
     my $lte = $self->query->param('lte');
 
+    $chr = undef if $chr eq 'All';
 	my $result = CoGe::Core::Experiment::query_data(
 		eid => $eid,
 		col => 'chr,start,stop,value1',
@@ -213,6 +215,91 @@ sub query_data {
 		lte => $lte,
 	);
 	return encode_json($result);
+}
+
+sub snp_overlaps_feature {
+	my $loc = shift;
+	my $features = shift;
+	foreach my $feature (@$features) {
+		if ($loc >= $feature->[1] && $loc <= $feature->[2]) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+sub debug {
+	my $data = shift;
+	my $new_file = shift;
+	my $OUTFILE;
+	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
+	print {$OUTFILE} Dumper $data;
+	print {$OUTFILE} "\n";
+	close $OUTFILE;
+}
+
+sub _add_features {
+    my ($chr, $type_ids, $dsid, $hits, $dbh) = @_;
+    my $query = 'SELECT chromosome,start,stop FROM feature WHERE dataset_id=' . $dsid;
+    if ($chr) {
+    	$query .= " AND chromosome='" . $chr . "'";
+    }
+    if ($type_ids) {
+    	if (index($type_ids, ',') != -1) {
+		    $query .= ' AND feature_type_id IN(' . $type_ids . ')';
+    	}
+    	else {
+    		$query .= ' AND feature_type_id=' . $type_ids;
+    	}
+    }
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    while (my @row = $sth->fetchrow_array) {
+    	my $chromosome = $hits->{$row[0]};
+    	if (!$chromosome) {
+    		$hits->{$row[0]} = [\@row];
+    	}
+    	else {
+	    	push @$chromosome, \@row;
+    	}
+    }
+}
+
+sub snps {
+    my $self = shift;
+    my $eid = $self->param('eid');
+    my $chr = $self->param('chr');
+
+    $chr = undef if $chr eq 'Any';
+	my $snps = CoGe::Core::Experiment::query_data(
+		eid => $eid,
+		col => 'chr,start',
+		chr => $chr,
+	);
+
+    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    my $dbh = $db->storage->dbh;
+
+	my $types = $self->query->param('features');
+	my $type_ids;
+	if ($types ne 'all') {
+		$type_ids = join(',', @{$dbh->selectcol_arrayref('SELECT feature_type_id FROM feature_type WHERE name IN(' . $types . ')')});
+	}
+
+    my $features = {};
+    my $experiment = $db->resultset('Experiment')->find($eid);
+    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $experiment->genome_id);
+    foreach my $dsid (@$ids) {
+        _add_features $chr, $type_ids, $dsid, $features, $dbh;
+    }
+	my $hits = [];
+    foreach my $snp (@$snps) {
+    	my @tokens = split ',', $snp;
+    	if (snp_overlaps_feature 0 + $tokens[1], $features->{substr $tokens[0], 1, -1}) {
+    		push @$hits, $snp;
+    	}
+    }
+    return encode_json($hits);
 }
 
 sub features {

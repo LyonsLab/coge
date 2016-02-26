@@ -950,6 +950,9 @@ define(['dojo/_base/declare',
     		coge.error('Search', 'Please select one or more feature types to search.');
     		return;
     	}
+		var div = dojo.byId('coge-search-dialog');
+		dojo.empty(div);
+		div.innerHTML = '<img src="picts/ajax-loader.gif">';
     	var url = api_base_url + '/genome/' + gid + '/features?name=' + encodeURIComponent(dojo.byId('coge_search_text').value) + '&features=' + (types.length == features.length ? 'all' : types.join());
     	var ref_seq = dojo.byId('coge_ref_seq');
     	if (ref_seq.selectedIndex > 0)
