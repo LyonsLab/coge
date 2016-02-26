@@ -4,7 +4,11 @@ Library		RequestsLibrary
 Library		Collections
 
 *** Variables ***
-${API_URL}	http://geco.iplantcollaborative.org/coge/api/v1/
+${AUTH_USERNAME}	mbomhoff
+${AUTH_TOKEN}	10f4578e8327edc4ce4bb49215147e85
+${AUTH_PARAMS}	?username=${AUTH_USERNAME}&token=${AUTH_TOKEN}
+${DATA_PATH}	./data
+${API_URL}	https://geco.iplantcollaborative.org/coge/api/v1
 ${ORGANISMS}	/organisms
 ${GENOMES}      /genomes
 ${FEATURES}	/features

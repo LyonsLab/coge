@@ -1,0 +1,8 @@
+{
+    "metadata" : {
+        "restricted": true,
+        "name": "test",
+        "description": "description",
+        "type": "Mixed"
+    }
+}
