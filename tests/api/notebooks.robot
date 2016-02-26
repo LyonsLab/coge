@@ -19,12 +19,12 @@ Notebook Fetch
 	${resp}=	Get Request	coge	${NOTEBOOKS}/${EXPERIMENT_ID}
 	Log Dictionary  ${resp.json()}	level=DEBUG
 	Should Be Equal As Strings	${resp.status_code}	200
-	${expected}=	Evaluate	json.load(open('notebook_fetch.json', 'r'))	json
+	${expected}=	Evaluate	json.load(open('${DATA_PATH}/notebook_fetch.json', 'r'))	json
 	Dictionaries Should Be Equal	${resp.json()}	${expected}
 
 Notebook Add
         Create Session  coge    ${API_URL}	debug=1
-        ${content}=	Evaluate        json.load(open('notebook_add.json', 'r'))       json
+        ${content}=	Evaluate        json.load(open('${DATA_PATH}/notebook_add.json', 'r'))       json
 	${headers}=	Create Dictionary	Content-Type=application/json
 	${resp}=	Put Request	coge	${NOTEBOOKS}/${AUTH_PARAMS}	data=${content}	headers=${headers}
 	Should Be Equal As Strings	${resp.status_code}	201
@@ -38,7 +38,7 @@ Notebook Fetch Added
 	${resp}=        Get Request     coge    ${NOTEBOOKS}/${id}/${AUTH_PARAMS}
 #	Log Dictionary	${resp.json()} level=DEBUG
 	Should Be Equal As Strings      ${resp.status_code}     200
-	${content}=     Evaluate        json.load(open('notebook_add.json', 'r'))       json
+	${content}=     Evaluate        json.load(open('${DATA_PATH}/notebook_add.json', 'r'))       json
 	Dictionary Should Contain Sub Dictionary	${resp.json()}	${content["metadata"]}
 	
 Notebook Search Added

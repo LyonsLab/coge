@@ -9,16 +9,18 @@ ${GENOME_ID}	16911
 
 *** Test Cases ***
 Genome Search
+	[Tags]	public
 	Create Session	coge	${API_URL}	
 	${resp}=        Get Request	    coge	 ${GENOMES}/search/${GENOME_ID}
 	Should Be Equal As Strings	${resp.status_code}	200
 	Dictionary Should Contain Key	${resp.json()}		genomes
 
 Genome Fetch
+	[Tags]  public
 	Create Session  coge    ${API_URL}   
 	${resp}=	Get Request	coge	${GENOMES}/${GENOME_ID}
 	Should Be Equal As Strings	${resp.status_code}	200
-	${expected}=	Evaluate	json.load(open('genome_fetch.json', 'r'))	json
+	${expected}=	Evaluate	json.load(open('${DATA_PATH}/genome_fetch.json', 'r'))	json
 	Dictionaries Should Be Equal	${resp.json()}	${expected}
 
 #Genome Fetch Sequence
@@ -30,8 +32,9 @@ Genome Fetch
 #        Dictionaries Should Be Equal    ${resp}  ${expected}
 
 Genome Add
+	[Tags]	auth-required 
         Create Session  coge    ${API_URL}
-        ${content}=	Evaluate        json.load(open('genome_add.json', 'r'))       json
+        ${content}=	Evaluate        json.load(open('${DATA_PATH}/genome_add.json', 'r'))       json
 	${headers}=	Create Dictionary	Content-Type=application/json
 	${resp}=	Put Request	coge	${GENOMES}/${AUTH_PARAMS}	data=${content}	headers=${headers}
 	Should Be Equal As Strings	${resp.status_code}	201
