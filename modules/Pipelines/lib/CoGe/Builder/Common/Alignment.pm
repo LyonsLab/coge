@@ -192,12 +192,12 @@ sub build {
     }
     push @tasks, @$alignment_tasks;
 
-    my @bam_files;
-    push @bam_files, $alignment_results->{bam_file} if ($alignment_results->{bam_file});
-    push @bam_files, @{$alignment_results->{bam_files}} if ($alignment_results->{bam_files});
+    my @raw_bam_files;
+    push @raw_bam_files, $alignment_results->{bam_file} if ($alignment_results->{bam_file});
+    push @raw_bam_files, @{$alignment_results->{bam_files}} if ($alignment_results->{bam_files});
     
     my (@sorted_bam_files, @load_task_outputs);
-    foreach my $bam_file (@bam_files) {
+    foreach my $bam_file (@raw_bam_files) {
         # Sort and index the bam output file(s)
         my $sort_bam_task = create_bam_sort_job(
             input_file => $bam_file, 
@@ -218,7 +218,7 @@ sub build {
         
         # Add bam filename to experiment name for ChIP-seq pipeline
         my $md = clone($metadata);
-        if (@bam_files > 1) {
+        if (@raw_bam_files > 1) {
             $md->{name} .= ' (' . to_filename_base($sorted_bam_file) . ')';
         }
     
@@ -240,6 +240,7 @@ sub build {
     return {
         tasks => \@tasks,
         bam_files => \@sorted_bam_files,
+        raw_bam_files => \@raw_bam_files, # mdb added 2/29/16 for Bismark, COGE-706
         done_files => [
             @sorted_bam_files,
             @load_task_outputs

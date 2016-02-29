@@ -70,6 +70,7 @@ sub build {
     # Build analytical tasks based on file type
     if ( $file_type eq 'fastq' || $file_type eq 'bam' || $file_type eq 'sra' ) {
         my ($bam_file, $bam_files); #TODO reconcile these
+        my @raw_bam_files; # mdb added 2/29/16 for Bismark, COGE-706
          
         # Align fastq file or take existing bam
         if ( $file_type && ( $file_type eq 'fastq' || $file_type eq 'sra' ) ) {
@@ -89,11 +90,13 @@ sub build {
             push @tasks, @{$alignment_workflow->{tasks}};
             $bam_files = $alignment_workflow->{bam_files};
             $bam_file = $bam_files->[0];
+            @raw_bam_files = @{$alignment_workflow->{raw_bam_files}};
             push @done_files, @{$alignment_workflow->{done_files}};
         }
         elsif ( $file_type && $file_type eq 'bam' ) {
             $bam_file = $input_files[0];
             $bam_files = \@input_files;
+            @raw_bam_files = @$bam_files;
             
             my $annotations = CoGe::Core::Metadata::to_annotations($additional_metadata);
             
@@ -161,7 +164,8 @@ sub build {
                 user => $self->user,
                 wid => $self->workflow->id,
                 genome => $genome,
-                input_file => $bam_file,
+                bam_file => $bam_file,
+                raw_bam_file => $raw_bam_files[0], # mdb added 2/29/16 for Bismark, COGE-706
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 methylation_params => $self->params->{methylation_params},
