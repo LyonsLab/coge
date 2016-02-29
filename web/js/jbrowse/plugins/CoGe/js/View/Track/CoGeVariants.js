@@ -79,8 +79,9 @@ return declare( [ HTMLFeatures ], {
 		var div = dojo.byId('coge-track-search-dialog');
 		dojo.empty(div);
 		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		var search = {type: 'SNPs', chr: chr, features: types.length == features.length ? 'all' : types.join()};
 		var eid = this._track.config.coge.id;
-    	var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?features=' + (types.length == features.length ? 'all' : types.join());
+    	var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?features=' + search.features;
     	dojo.xhrGet({
     		url: url,
     		handleAs: 'json',
@@ -94,7 +95,7 @@ return declare( [ HTMLFeatures ], {
 	  				coge.error('Search', 'no SNPs found');
 	  				return;
 	  			}
-	  			coge.new_search_track(eid, data);
+	  			coge.new_search_track(this._track, data, search);
     		}),
     		error: function(data) {
     			coge.error('Search', data);

@@ -208,7 +208,7 @@ sub query_data {
     $chr = undef if $chr eq 'All';
 	my $result = CoGe::Core::Experiment::query_data(
 		eid => $eid,
-		col => 'chr,start,stop,value1',
+		col => 'chr,start,stop,strand,value1',
 		chr => $chr,
 		type => $type,
 		gte => $gte,

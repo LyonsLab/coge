@@ -178,12 +178,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	content += '</select></td></tr>';
     	if (track.config.coge.transform)
     		content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
-    	if (track.config.coge.search) {
-    		var search = track.config.coge.search.split('&');
-    		if (search.length > 1)
-    			search = search[0] + ': ' + search[1].substring(search[1].indexOf('=') + 1) + ' .. ' + search[2].substring(search[2].indexOf('=') + 1);
-    		content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + search + '</td></tr>';
-    	}
+    	if (track.config.coge.search)
+    		content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge.search_to_string(track.config.coge.search) + '</td></tr>';
     	content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._download_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_download_dialog.hide()">Cancel</button></div></div>';
     	this._track_download_dialog = new Dialog({
             title: 'Download Track',
@@ -264,7 +260,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	if (ref_seq.selectedIndex > 0)
     		url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
     	if (dojo.byId('search') && dojo.byId('search').checked)
-    		url += '&' + this._track.config.coge.search;
+    		url += '&' + coge.search_to_params(this._track.config.coge.search);
     	if (dojo.byId('transform') && dojo.byId('transform').checked)
     		url += '&transform=' + this._track.config.coge.transform;
     	document.location = url;
@@ -671,41 +667,41 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
     _search_track: function() {
 		var div = dojo.byId('coge-track-search');
-		var params;
+		var search = {};
 
     	if (dojo.byId('max').checked)
-    		params = 'type=max';
+    		search.type = 'max';
     	else if (dojo.byId('min').checked)
-    		params = 'type=min';
+    		search.type = 'min';
     	else {
     		if (this._brush.empty()) {
     			coge.error('Unspecified Range', 'Please drag on the histogram to select the range of values you wish to search for');
     			return;
     		}
-    		params = 'type=range';
+    		search.type = 'range';
     		var extent = this._brush.extent();
     		var domain = this._brush.x().domain();
     		if (extent[0] != domain[0])
-    			params += '&gte=' + extent[0];
+    			search.gte = extent[0];
     		if (extent[1] != domain[1])
-    			params += '&lte=' + extent[1];
+    			search.lte = extent[1];
     	}
     	var ref_seq = dojo.byId('coge_ref_seq');
     	if (ref_seq.selectedIndex > 0)
-    		params += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
+    		search.chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
 
 		dojo.empty(div);
 		div.innerHTML = '<img src="picts/ajax-loader.gif">';
-		this._track.config.coge.search = params;
+		this._track.config.coge.search = search;
      	dojo.xhrGet({
-    		url: api_base_url + '/experiment/' + this._track.config.coge.id + '/query?' + params,
+    		url: api_base_url + '/experiment/' + this._track.config.coge.id + '/query?' + coge.search_to_params(search),
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
  				this._track_search_dialog.hide();
 	  			if (data.length == 0)
 	  				coge.error('Search', 'Search returned zero hits');
 	  			else
-	  				coge.new_search_track(this._track, data);
+	  				coge.new_search_track(this._track, data, search);
     		}),
     		error: dojo.hitch(this, function(data) {
     			coge.error('Search', data);
@@ -829,10 +825,11 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 }
             ]);
 
-        options.push({
-	        label: 'Search',
-	        onClick: function(){coge_xyplot._create_search_dialog(track);}
-        });
+        if (!config.coge.search_track)
+	        options.push({
+		        label: 'Search',
+		        onClick: function(){coge_xyplot._create_search_dialog(track);}
+	        });
 
         if (config.coge.type == 'notebook') {
             options.push.apply(

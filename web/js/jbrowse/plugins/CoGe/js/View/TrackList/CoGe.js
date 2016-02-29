@@ -130,14 +130,13 @@ define(['dojo/_base/declare',
     },
 
     // ----------------------------------------------------------------
+    // currently just for adding search tracks
 
     addTracks: function( track_configs ) {
-// // note that new tracks are, by default, hidden, so we just put them in the
-// list
-// this.trackListWidget.insertNodes(
-// false,
-// track_configs
-// );
+    	var before = this.div.firstChild; // going to insert before Sequence
+    	track_configs.forEach(dojo.hitch(this, function(track_config){
+    		this.div.insertBefore(this._new_track(track_config), before);
+    	}));
     },
 
     // ----------------------------------------------------------------
@@ -419,7 +418,7 @@ define(['dojo/_base/declare',
     // ----------------------------------------------------------------
     // are we supposed to delete the experiment(s) from the database? for now just acknowledge their removal from the view
 
-    deleteTracks: function( /** Array[Object] */ track_configs ) {
+    deleteTracks: function(track_configs) {
     	this.setTracksInactive(track_configs);
     },
 
@@ -960,11 +959,18 @@ define(['dojo/_base/declare',
 	 */
 
     setTracksInactive: function(track_configs, combined) {
+    	var search_tracks = [];
     	track_configs.forEach(function(track_config){
     		coge_track_list._traverse_tracks(function(container){
     			if (container.id == track_config.coge.type + track_config.coge.id)
-    				coge_track_list._set_track_inactive(container, combined);
+    				if (track_config.coge.search_track)
+    					search_tracks.push(container);
+    				else
+    					coge_track_list._set_track_inactive(container, combined);
     		});
+    	});
+    	search_tracks.forEach(function(container){
+    		dojo.destroy(container);
     	});
     },
 

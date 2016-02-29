@@ -1,6 +1,7 @@
 var coge;
 define([
            'dojo/_base/declare',
+           'dojo/Deferred',
            'dijit/Dialog',
            'dijit/form/Button',
            'JBrowse/View/ConfirmDialog',
@@ -9,6 +10,7 @@ define([
        ],
        function(
            declare,
+           Deferred,
            Dialog,
            Button,
            ConfirmDialog,
@@ -28,13 +30,13 @@ return declare( JBrowsePlugin,
     // ----------------------------------------------------------------
 
     adjust_nav: function(eid) {
-     	var l = dojo.byId('label_experiment' + eid);
+     	var l = dojo.byId('label_search_' + eid);
      	if (l) {
      		var nav = dojo.byId('nav_' + eid);
      		if (nav) {
-    	 		var track = dojo.byId('track_experiment' + eid);
+    	 		var track = dojo.byId('track_search_' + eid);
     	     	dojo.style(nav, 'left', dojo.style(l, 'left') + 10);
-    	     	dojo.style(nav, 'top', dojo.style(track, 'top') + 32);
+    	     	dojo.style(nav, 'top', dojo.style(track, 'top') + 26);
      		}
      	}
     },
@@ -139,22 +141,34 @@ return declare( JBrowsePlugin,
 
     // ----------------------------------------------------------------
 
-    new_search_track: function(eid, data) {
-    	this.browser.addTracks([{
-    		key: 'search_' + eid,
-    		baseUrl: api_base_url + '/experiment/notebook/' + id + '/',
-    		autocomplete: 'all',
-    		track: 'search_' + eid,
-    		label: 'search_' + eid,
-    		type: 'CoGe/View/Track/Wiggle/MultiXYPlot',
-    		storeClass: 'CoGe/Store/Search',
-    		style: { featureScale: 0.001 },
-    		showHoverScores: 1,
-    		coge: {
-    			id: eid,
-    			type: 'search'
-    		}
-    	}]);
+    new_search_track: function(track, data, search) {
+        var browser = this.browser;
+    	var eid = track.config.coge.id;
+        var d = new Deferred();
+        var store_config = {
+            browser: browser,
+            data: data,
+            eid: eid,
+            refSeq: browser.refSeq,
+            type: 'CoGe/Store/SeqFeature/Search'
+        };
+        var store_name = browser.addStoreConfig(undefined, store_config);
+        store_config.name = store_name;
+        browser.getStore(store_name, function(store) {
+            d.resolve(true);
+        });
+        d.promise.then(function(){
+        	var config = dojo.clone(track.config);
+        	config.key = 'Search: ' + track.config.key + ' (' + coge.search_to_string(search) + ')';
+        	config.track = 'search_' + eid;
+        	config.label = 'search_' + eid;
+            config.metadata = {Description: 'Track to show results of searching a track.'};
+            config.store = store_name;
+            config.coge.collapsed = false;
+            config.coge.search_track = true;
+            browser.publish( '/jbrowse/v1/v/tracks/new', [config] );
+            browser.publish( '/jbrowse/v1/v/tracks/show', [config] );
+        });
 		var nav = dojo.byId('nav_' + eid);
 		if (nav)
 			dojo.destroy(nav);
@@ -168,10 +182,12 @@ return declare( JBrowsePlugin,
 		dojo.create('span', { innerHTML: ' of ' + data.length + ' hit' + (data.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, nav);
 		dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: function() { if (nav.hit < nav.hits.length - 1) coge.go_to_hit(nav, nav.hit + 1) }, style: { cursor: 'pointer' } }, nav);
 		dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: function() { coge.go_to_hit(nav, nav.hits.length - 1) }, style: { cursor: 'pointer' } }, nav);
-        this.browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
+        browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
         	for (var i=0; i<configs.length; i++)
-        		if (configs[i].coge.id == eid)
+        		if (configs[i].coge.id == eid) {
         			dojo.destroy(dojo.byId('nav_' + eid));
+        			return;
+        		}
         });
         coge.go_to_hit(nav, 0);
     },
@@ -231,6 +247,36 @@ return declare( JBrowsePlugin,
     			coge.error('Search', data);
     		}
     	})
-    }
+    },
+
+    // ----------------------------------------------------------------
+
+	search_to_params: function(search) {
+		var params;
+		if (search.type == 'range')
+			params = 'type=range&' + search.gte + '&' + search.lte;
+		else
+			params = 'type=' + search.type;
+		if (search.chr && search.chr != 'Any')
+			params += '&chr=' + search.chr;
+		return params;		
+	},
+
+    // ----------------------------------------------------------------
+
+	search_to_string: function(search) {
+		var string;
+		if (search.type == 'range')
+			string = 'range: ' + search.gte + ' .. ' + search.lte;
+		else if (search.type == 'SNPs') {
+			string = search.type;
+			if (search.features != 'all')
+				string += ' in ' + search.features;
+		} else
+			string = search.type;
+		if (search.chr && search.chr != 'Any')
+			string += ', chr=' + search.chr;
+		return string;
+	}
 });
 });
