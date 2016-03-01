@@ -662,15 +662,13 @@ $.extend(AlignmentOptionView.prototype, {
     initialize: function() {
         this.snp_view = new FindSNPView();
         this.expression_view = new ExpressionView();
-        this.methylation_view = new MethylationView();
 
         this.layout_view = new LayoutView({
             template: "#align-option-template",
 
             layout: {
                 "#expression-view": this.expression_view,
-                "#snp-view": this.snp_view,
-                "methylation_view": this.methylation_view
+                "#snp-view": this.snp_view
             }
         });
 
@@ -683,14 +681,12 @@ $.extend(AlignmentOptionView.prototype, {
 
     is_valid: function() {
         return this.snp_view.is_valid()
-        	   && this.expression_view.is_valid()
-        	   && this.methylation_view.is_valid();
+        	   && this.expression_view.is_valid();
     },
 
     get_options: function() {
         return $.extend(this.expression_view.get_options(),
-        				this.snp_view.get_options(),
-                        this.methylation_view.get_options());
+        				this.snp_view.get_options());
     },
 });
 

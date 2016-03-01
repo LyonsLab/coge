@@ -421,11 +421,11 @@ sub gen_body {
 	my $fb_window_size = 100;
 	$fb_window_size = $FORM->param('fb_ws') if $FORM->param('fb_ws');
 	$template->param( FB_WINDOW_SIZE => $fb_window_size );
-	if (!$FORM->param('fb_tg')) {
-		$template->param( FB_ALL_GENES => "checked" );
+	if ($FORM->param('fb_tg')) {
+		$template->param( FB_TARGET_GENES => "checked" );
 	}
 	else {
-		$template->param ( FB_TARGET_GENES => "checked" );
+		$template->param ( FB_ALL_GENES => "checked" );
 	}
 
 	$template->param( 'BOX_DIAGS' => "checked" ) if $FORM->param('bd');
