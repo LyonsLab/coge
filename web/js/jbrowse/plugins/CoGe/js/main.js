@@ -20,13 +20,10 @@ define([
            SimpleFeature
        ) {
 	var SearchNav = declare(null, {
-		div: null,
-		hit: 0,
-		num_span: null,
-		results: null,
 		constructor: function(eid, results, browser) {
 			this.results = results;
 			this.browser = browser;
+			this.hit = 0;
 			this.div = dojo.create('div', { id: 'nav_' + eid, style: { background: 'white', opacity: 0.7, position: 'absolute' } }, dojo.byId('container'));
 			coge.adjust_nav(eid);
 			dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: dojo.hitch(this, function() { this.go_to(0) }), style: { cursor: 'pointer' } }, this.div);
@@ -63,14 +60,11 @@ define([
 	// ----------------------------------------------------------------
 
 	var SearchResults = declare(null, {
-		chr: [],
-		eid: null,
-		hits: null,
-		stranded: false,
 		constructor: function(eid, data, stranded) {
 			this.eid = eid;
 			this.hits = data;
 			this.stranded = stranded;
+			this.chr = [];
 	    	var current_chr;
 	    	for (var i=0; i<data.length; i++) {
 	    		var index = data[i].indexOf('"', 1);
@@ -328,7 +322,7 @@ return declare( JBrowsePlugin,
 	search_to_params: function(search) {
 		var params;
 		if (search.type == 'range')
-			params = 'type=range&get=' + search.gte + '&lte=' + search.lte;
+			params = 'type=range&gte=' + search.gte + '&lte=' + search.lte;
 		else
 			params = 'type=' + search.type;
 		if (search.chr && search.chr != 'Any')

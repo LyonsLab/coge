@@ -1057,7 +1057,9 @@ define(['dojo/_base/declare',
 
     _update_tracks_shown: function() {
         var count = dojo.query('.coge-tracklist-container:not(.collapsed)').length;
-        this._tracks_shown.innerHTML = count + ' track' + (count == 1 ? '' : 's') + ' shown';
+        var experiments = dojo.byId('notebook0').parentNode.children.length - 1;
+        var total = dojo.query('.coge-tracklist-container').length - experiments;
+        this._tracks_shown.innerHTML = count + ' of ' + total + ' track' + (total == 1 ? '' : 's') + ' shown';
     }
 });
 });

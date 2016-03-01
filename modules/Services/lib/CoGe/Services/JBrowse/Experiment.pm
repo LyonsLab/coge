@@ -273,7 +273,7 @@ sub snps {
     $chr = undef if $chr eq 'Any';
 	my $snps = CoGe::Core::Experiment::query_data(
 		eid => $eid,
-		col => 'chr,start',
+		col => 'chr,start,stop',
 		chr => $chr,
 	);
 
@@ -369,7 +369,7 @@ sub features {
         if ( !$data_type || $data_type == $DATA_TYPE_QUANT ) {
             my $pData = CoGe::Core::Experiment::get_data(
                 eid   => $eid,
-                data_type  => $exp->data_type,
+                data_type  => $data_type,
                 chr   => $chr,
                 start => $start,
                 end   => $end
@@ -394,7 +394,7 @@ sub features {
         elsif ( $data_type == $DATA_TYPE_POLY ) {
             my $pData = CoGe::Core::Experiment::get_data(
                 eid   => $eid,
-                data_type  => $exp->data_type,
+                data_type  => $data_type,
                 chr   => $chr,
                 start => $start,
                 end   => $end
@@ -425,7 +425,7 @@ sub features {
         elsif ( $data_type == $DATA_TYPE_MARKER ) {
             my $pData = CoGe::Core::Experiment::get_data(
                 eid   => $eid,
-                data_type  => $exp->data_type,
+                data_type  => $data_type,
                 chr   => $chr,
                 start => $start,
                 end   => $end
@@ -453,7 +453,7 @@ sub features {
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
 	        my $cmdOut = CoGe::Core::Experiment::get_data(
 	            eid   => $eid,
-	            data_type => $exp->data_type,
+	            data_type => $data_type,
 	            chr   => $chr,
 	            start => $start,
 	            end   => $end

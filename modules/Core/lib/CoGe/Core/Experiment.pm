@@ -240,7 +240,7 @@ sub query_data {
     my $gte = $opts{gte};
     my $limit = $opts{limit};
     my $lte = $opts{lte};
-    my $order_by = $opts{order_by};
+    my $order_by = $opts{order_by} || 'chr,start';
     my $type = $opts{type};
 
 	my $where = '0.0=0.0';
@@ -259,6 +259,7 @@ sub query_data {
 	my $query = "select $col where $where";
 	$query .= " order by $order_by" if $order_by;
 	$query .= ($limit ? " limit $limit" : " limit 999999999");
+	debug $query, 1;
     my $results = CoGe::Accessory::FastBit::query($query, $eid);
     if ($type eq 'max' || $type eq 'min') {
     	my $value_col = scalar $col - 1; # should we pass in $value_col instead of assuming it's the last column?
