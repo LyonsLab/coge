@@ -6,7 +6,8 @@ define([
            'dijit/form/Button',
            'JBrowse/View/ConfirmDialog',
            'JBrowse/View/InfoDialog',
-           'JBrowse/Plugin'
+           'JBrowse/Plugin',
+           'JBrowse/Model/SimpleFeature'
        ],
        function(
            declare,
@@ -15,8 +16,115 @@ define([
            Button,
            ConfirmDialog,
            InfoDialog,
-           JBrowsePlugin
+           JBrowsePlugin,
+           SimpleFeature
        ) {
+	var SearchNav = declare(null, {
+		div: null,
+		hit: 0,
+		num_span: null,
+		results: null,
+		constructor: function(eid, results, browser) {
+			this.results = results;
+			this.browser = browser;
+			this.div = dojo.create('div', { id: 'nav_' + eid, style: { background: 'white', opacity: 0.7, position: 'absolute' } }, dojo.byId('container'));
+			coge.adjust_nav(eid);
+			dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: dojo.hitch(this, function() { this.go_to(0) }), style: { cursor: 'pointer' } }, this.div);
+			dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', onclick: dojo.hitch(this, function() { if (this.hit > 0) this.go_to(this.hit - 1) }), style: { cursor: 'pointer' } }, this.div);
+			this.num_span = dojo.create('span', { innerHTML: '1', style: { cursor: 'default' } }, this.div);
+			dojo.create('span', { innerHTML: ' of ' + results.hits.length + ' hit' + (results.hits.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, this.div);
+			dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: dojo.hitch(this, function() { if (this.hit < this.results.hits.length - 1) this.go_to(this.hit + 1) }), style: { cursor: 'pointer' } }, this.div);
+			dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: dojo.hitch(this, function() { this.go_to(this.results.hits.length - 1) }), style: { cursor: 'pointer' } }, this.div);
+	        browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
+	        	for (var i=0; i<configs.length; i++)
+	        		if (configs[i].coge.search_track && configs[i].coge.id == eid) {
+	        			dojo.destroy(dojo.byId('nav_' + eid));
+	        			return;
+	        		}
+	        });
+		},
+	    go_to: function(index) {
+	    	this.hit = index % this.results.hits.length;
+	    	var hit = this.results.hits[this.hit];
+	    	this.num_span.innerHTML = this.hit + 1;
+	    	this.num_span.title = JSON.stringify(hit);
+	    	var chr = this.results.chr_at(this.hit);
+	    	if (chr != this.browser.refSeq.name)
+	    		this.browser.navigateToLocation({
+	    			ref: chr,
+	    			start: hit[0],
+	    			end: hit[1]
+	    		});
+	    	else
+	    		this.browser.view.centerAtBase((hit[0] + hit[1]) / 2, true);
+	    }
+	});
+
+	// ----------------------------------------------------------------
+
+	var SearchResults = declare(null, {
+		chr: [],
+		eid: null,
+		hits: null,
+		stranded: false,
+		constructor: function(eid, data, stranded) {
+			this.eid = eid;
+			this.hits = data;
+			this.stranded = stranded;
+	    	var current_chr;
+	    	for (var i=0; i<data.length; i++) {
+	    		var index = data[i].indexOf('"', 1);
+	    		var chr = data[i].substring(1, index);
+	    		if (chr != current_chr) {
+	    			if (this.chr.length > 0)
+	    				this.chr[this.chr.length - 1][1] = i;
+	    			this.chr.push([chr, 0]);
+	    			current_chr = chr;
+	    		}
+	    		this.hits[i] = JSON.parse('[' + data[i].substring(index + 2) + ']');
+	    	}
+			this.chr[this.chr.length - 1][1] = data.length;
+		},
+	    boundaries: function(chr) {
+	    	var l = 0;
+	    	for (var i=0; i<this.chr.length; i++) {
+	    		if (chr == this.chr[i][0])
+	    			return [l, l + this.chr[i][1]];
+	    		l += this.chr[i][1];
+	    	}
+	    },
+	    chr_at: function(index) {
+	    	var l = 0;
+	    	for (var i=0; i<this.chr.length; i++) {
+	    		l += this.chr[i][1];
+	    		if (l > index)
+	    			return this.chr[i][0];
+	    	}
+	    },
+	    get_features: function(chr, start, end) {
+	    	var b = this.boundaries(chr);
+	    	var i = b[0];
+	    	var j = b[1];
+	    	var features = [];
+	    	while (i < j && this.hits[i][0] < start)
+	    		++i;
+	    	while (i < j && this.hits[i][1] <= end) {
+	    		var s = this.hits[i][0];
+	    		var e = this.hits[i][1];
+	   			if (s == e)
+	   				e++;
+	   			var score = this.hits[i][3];
+	   			if (this.hits[i][2] != 1)
+	   				score *= -1;
+	    		features.push(new SimpleFeature({ data: { id: this.eid, start: s, end: e, score: score } }));
+	    		++i;
+	    	}
+	    	return features;
+	    }
+	});
+
+	// ----------------------------------------------------------------
+
 return declare( JBrowsePlugin,
 {
     constructor: function( args ) {
@@ -114,23 +222,6 @@ return declare( JBrowsePlugin,
 
     // ----------------------------------------------------------------
 
-    go_to_hit: function(nav, hit) {
-    	nav.hit = hit % nav.hits.length;
-    	nav.num_span.innerHTML = nav.hit + 1;
-    	nav.num_span.title = nav.hits[nav.hit];
-    	var loc = JSON.parse('[' + nav.hits[nav.hit] + ']');
-    	if (loc[0] != this.browser.refSeq.name)
-    		this.browser.navigateToLocation({
-    			ref: loc[0],
-    			start: loc[1],
-    			end: loc[loc.length > 2 ? 2 : 1]
-    		});
-    	else
-    		this.browser.view.centerAtBase(loc.length > 2 ? (loc[1] + loc[2]) / 2 : loc[1], true);
-    },
-
-    // ----------------------------------------------------------------
-
     info: function(title, content) {
     	new InfoDialog({
     		title: title,
@@ -144,12 +235,12 @@ return declare( JBrowsePlugin,
     new_search_track: function(track, data, search) {
         var browser = this.browser;
     	var eid = track.config.coge.id;
+    	var results = new SearchResults(eid, data);
         var d = new Deferred();
         var store_config = {
             browser: browser,
-            data: data,
-            eid: eid,
             refSeq: browser.refSeq,
+            results: results,
             type: 'CoGe/Store/SeqFeature/Search'
         };
         var store_name = browser.addStoreConfig(undefined, store_config);
@@ -168,28 +259,11 @@ return declare( JBrowsePlugin,
             config.coge.search_track = true;
             browser.publish( '/jbrowse/v1/v/tracks/new', [config] );
             browser.publish( '/jbrowse/v1/v/tracks/show', [config] );
+    		var nav = dojo.byId('nav_' + eid);
+    		if (nav)
+    			dojo.destroy(nav);
+    		new SearchNav(eid, results, browser).go_to(0);
         });
-		var nav = dojo.byId('nav_' + eid);
-		if (nav)
-			dojo.destroy(nav);
-		nav = dojo.create('div', { id: 'nav_' + eid, style: { background: 'white', opacity: 0.7, position: 'absolute' } }, dojo.byId('container'));
-		coge.adjust_nav(eid);
-		nav.hits = data;
-		nav.hit = 0;
-		dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: function() { coge.go_to_hit(nav, 0) }, style: { cursor: 'pointer' } }, nav);
-		dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', onclick: function() { if (nav.hit > 0) coge.go_to_hit(nav, nav.hit - 1) }, style: { cursor: 'pointer' } }, nav);
-		nav.num_span = dojo.create('span', { innerHTML: '1', style: { cursor: 'default' } }, nav);
-		dojo.create('span', { innerHTML: ' of ' + data.length + ' hit' + (data.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, nav);
-		dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: function() { if (nav.hit < nav.hits.length - 1) coge.go_to_hit(nav, nav.hit + 1) }, style: { cursor: 'pointer' } }, nav);
-		dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: function() { coge.go_to_hit(nav, nav.hits.length - 1) }, style: { cursor: 'pointer' } }, nav);
-        browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
-        	for (var i=0; i<configs.length; i++)
-        		if (configs[i].coge.id == eid) {
-        			dojo.destroy(dojo.byId('nav_' + eid));
-        			return;
-        		}
-        });
-        coge.go_to_hit(nav, 0);
     },
 
     // ----------------------------------------------------------------
@@ -254,7 +328,7 @@ return declare( JBrowsePlugin,
 	search_to_params: function(search) {
 		var params;
 		if (search.type == 'range')
-			params = 'type=range&' + search.gte + '&' + search.lte;
+			params = 'type=range&get=' + search.gte + '&lte=' + search.lte;
 		else
 			params = 'type=' + search.type;
 		if (search.chr && search.chr != 'Any')

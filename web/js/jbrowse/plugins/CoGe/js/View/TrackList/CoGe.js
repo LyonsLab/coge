@@ -958,7 +958,7 @@ define(['dojo/_base/declare',
 	 * are turned off.
 	 */
 
-    setTracksInactive: function(track_configs, combined) {
+    setTracksInactive: function(track_configs, combined){
     	var search_tracks = [];
     	track_configs.forEach(function(track_config){
     		coge_track_list._traverse_tracks(function(container){
