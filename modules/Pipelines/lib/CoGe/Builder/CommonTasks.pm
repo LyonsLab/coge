@@ -939,7 +939,7 @@ sub create_validate_fastq_job {
         cmd => $cmd,
         script => undef,
         args => [
-            ["", $fastq, 1]
+            ["", $fastq, 0] # mdb changed 3/1/16 from 1 to 0, COGE-707
         ],
         inputs => $inputs,
         outputs => [
