@@ -910,7 +910,7 @@ sub create_load_bam_job {
             ['-staging_dir', $output_name, 0],
             ['-file_type', qq["bam"], 0],
             ['-data_file', $bam_file, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
             $CONF->{_CONFIG_PATH},
