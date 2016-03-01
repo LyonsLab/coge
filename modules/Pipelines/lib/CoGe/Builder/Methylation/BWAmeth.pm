@@ -89,7 +89,7 @@ sub build {
         my $md = clone($metadata);
         $md->{name} .= " ($name methylation)";
         
-        push @tasks, create_load_experiment_job(
+        my $load_task = create_load_experiment_job(
             user => $user,
             metadata => $md,
             staging_dir => $staging_dir,
@@ -99,6 +99,8 @@ sub build {
             name => $name,
             annotations => $annotations
         );
+        push @tasks, $load_task;
+        push @done_files, $load_task->{outputs}[1];
     }
 
     return {
