@@ -423,7 +423,8 @@ sub create_gunzip_job {
         script => undef,
         args => [],
         inputs => [
-            $input_file
+            $input_file,
+            $input_file . '.done' # ensure file is done transferring
         ],
         outputs => [
             $output_file,

@@ -1,0 +1,150 @@
+{
+"description": "",
+"restricted": false,
+"type": "Experiment",
+"additional_metadata": [],
+"items": [
+{
+"type": "experiment",
+"id": "159"
+},
+{
+"type": "experiment",
+"id": "224"
+},
+{
+"type": "experiment",
+"id": "235"
+},
+{
+"type": "experiment",
+"id": "244"
+},
+{
+"id": "280",
+"type": "experiment"
+},
+{
+"id": "285",
+"type": "experiment"
+},
+{
+"id": "348",
+"type": "experiment"
+},
+{
+"type": "experiment",
+"id": "368"
+},
+{
+"id": "376",
+"type": "experiment"
+},
+{
+"type": "experiment",
+"id": "854"
+},
+{
+"id": "877",
+"type": "experiment"
+},
+{
+"type": "experiment",
+"id": "902"
+},
+{
+"id": "909",
+"type": "experiment"
+},
+{
+"id": "922",
+"type": "experiment"
+},
+{
+"id": "932",
+"type": "experiment"
+},
+{
+"id": "938",
+"type": "experiment"
+},
+{
+"type": "experiment",
+"id": "943"
+},
+{
+"id": "958",
+"type": "experiment"
+},
+{
+"id": "959",
+"type": "experiment"
+},
+{
+"type": "experiment",
+"id": "964"
+},
+{
+"type": "experiment",
+"id": "979"
+},
+{
+"id": "988",
+"type": "experiment"
+},
+{
+"type": "experiment",
+"id": "1005"
+},
+{
+"id": "1012",
+"type": "experiment"
+},
+{
+"id": "1093",
+"type": "experiment"
+},
+{
+"id": "1145",
+"type": "experiment"
+},
+{
+"type": "experiment",
+"id": "1162"
+},
+{
+"type": "experiment",
+"id": "1176"
+},
+{
+"type": "experiment",
+"id": "1178"
+},
+{
+"type": "experiment",
+"id": "1189"
+},
+{
+"type": "experiment",
+"id": "1193"
+},
+{
+"type": "experiment",
+"id": "1246"
+},
+{
+"type": "experiment",
+"id": "1250"
+},
+{
+"id": "1275",
+"type": "experiment"
+},
+{
+"type": "experiment",
+"id": "1276"
+}
+],
+"id": 758,
+"name": "Col-0 Methylation"
+}

@@ -11,21 +11,22 @@ use CGI::Log;
 use CoGeX;
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils qw( units commify sanitize_name );
+use CoGeDBI qw(get_table_count);
 use JSON qw(encode_json);
 use POSIX 'ceil';
 
 no warnings 'redefine';
-use vars qw($P $USER $FORM $coge $LINK);
+use vars qw($CONF $USER $FORM $DB $LINK);
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM );
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM );
 
 # Logout is only called through this program!  All logouts from other pages are redirected to this page.
 # mdb changed 2/24/14, issue 329 - added confirmation for CoGe-only or CyVerse-all logout
 if ($FORM->param('logout_coge')) {
     CoGe::Accessory::Web->logout_coge(
-        cookie_name => $P->{COOKIE_NAME},
-        coge        => $coge,
+        cookie_name => $CONF->{COOKIE_NAME},
+        coge        => $DB,
         user        => $USER,
         form        => $FORM,
         url         => url_for('index.pl')
@@ -33,8 +34,8 @@ if ($FORM->param('logout_coge')) {
 }
 elsif ($FORM->param('logout_all')) {
     CoGe::Accessory::Web->logout_cas(
-        cookie_name => $P->{COOKIE_NAME},
-        coge        => $coge,
+        cookie_name => $CONF->{COOKIE_NAME},
+        coge        => $DB,
         user        => $USER,
         form        => $FORM,
         url         => url_for('index.pl')
@@ -46,18 +47,18 @@ my %FUNCTION = ( get_latest_genomes => \&get_latest_genomes );
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
 
 sub generate_html {
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param(
         TITLE      => 'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics',
         PAGE_TITLE => 'Comparative Genomics',
         PAGE_LINK  => $LINK,
-        HOME       => $P->{SERVER},
+        HOME       => $CONF->{SERVER},
         HELP       => '',
-        WIKI_URL   => $P->{WIKI_URL} || '',
+        WIKI_URL   => $CONF->{WIKI_URL} || '',
         USER       => $USER->display_name || undef,
         BODY       => generate_body(),
         ADMIN_ONLY => $USER->is_admin,
-        CAS_URL    => $P->{CAS_URL} || ''
+        CAS_URL    => $CONF->{CAS_URL} || ''
     );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -67,10 +68,8 @@ sub generate_html {
 }
 
 sub generate_body {
-    my $tmpl = HTML::Template->new( filename => $P->{TMPLDIR} . 'index.tmpl' );
+    my $tmpl = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'index.tmpl' );
 
-    #    elsif ($USER && !$FORM->param('logout') && !$FORM->param('login'))
-    #      {
     $tmpl->param(
         ACTIONS => [
             map {
@@ -80,45 +79,25 @@ sub generate_body {
                     LINK   => $_->{LINK},
                     LOGO   => $_->{LOGO}
                 }
-              } sort { $a->{ID} <=> $b->{ID} } @{ actions() }
+            } sort { $a->{ID} <=> $b->{ID} } @{ actions() }
         ]
     );
     $tmpl->param(
-        'INTRO'   => 1,
-        ORG_COUNT => commify( $coge->resultset('Organism')->count() ),
-        GEN_COUNT => commify(
-            $coge->resultset('Genome')->search( { deleted => 0 } )->count()
-        ),
-#        NUCL_COUNT => .'('.commify(
-#            units(
-#                $coge->resultset('GenomicSequence')
-#                  ->get_column('sequence_length')->sum
-#              )
-#              . 'bp)'
-#        ),
-        FEAT_COUNT => commify( $coge->resultset('Feature')->count() ),
-        ANNOT_COUNT =>
-          commify( $coge->resultset('FeatureAnnotation')->count() ),
-        EXP_COUNT => commify(
-            $coge->resultset('Experiment')->search( { deleted => 0 } )->count()
-        ),
+        INTRO => 1,
+        ORG_COUNT => commify( $DB->resultset('Organism')->count() ),
+        GEN_COUNT => commify( $DB->resultset('Genome')->search( { deleted => 0 } )->count() ),
+        FEAT_COUNT => commify( get_table_count($DB->storage->dbh, 'feature') ),
+        ANNOT_COUNT => commify( get_table_count($DB->storage->dbh, 'feature_annotation') ),
+        EXP_COUNT => commify( $DB->resultset('Experiment')->search( { deleted => 0 } )->count() ),
         QUANT_COUNT => commify(
             units(
-                $coge->resultset('Experiment')->search( { deleted => 0 } )
-                  ->get_column('row_count')->sum
+                $DB->resultset('Experiment')->search( { deleted => 0 } )->get_column('row_count')->sum
             )
         )
     );
 
-    $tmpl->param( wikifeed => $P->{WIKI_URL}."/CoGepedia:Current_events" ) if $P->{WIKI_URL};
+    $tmpl->param( wikifeed => $CONF->{WIKI_URL}."/CoGepedia:Current_events" ) if $CONF->{WIKI_URL};
 
-    #      }
-    #    my $url = $FORM->param('url') if $FORM->param('url');
-    #    if ($url)
-    #     {
-    #        $url =~ s/:::/;/g if $url;
-    #        $tmpl->param(URL=>$url);
-    #     }
     return $tmpl->output;
 }
 
@@ -178,48 +157,13 @@ sub actions {
     	    SCREENSHOT => "picts/preview/FeatView.png",
     	    DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
     	},
-#       {
-# 		   {
-# 		    ID => 7,
-# 		    LOGO => qq{<a href="./docs/help/CoGe"><img src="picts/carousel/FAQ-logo.png" width="227" height="75" border="0"></a>},
-# 		    ACTION => qq{<a href="./docs/help/CoGe/">CoGe Faq</a>},
-# 		    DESC   => qq{What is CoGe?  This document covers some of the basics about what CoGe is, how it has been designed, and other information about the system.},
-# 		    SCREENSHOT => qq{<a href="./docs/help/CoGe"><img src="picts/preview/app_schema.png" border="0"></a>},
-# 		   }
-#        {
-#            ID => 3,
-#            LOGO => "picts/carousel/FeatView-logo.png",
-#            ACTION => qq{<a href="./FeatView.pl">FeatView</a>},
-#            LINK   => qq{./FeatView.pl},
-#            DESC =>
-#qq{Find and display information about a genomic feature (e.g. gene).<br><a href = "FeatView.pl?accn=at1g07300" target=_new>Example</a>},
-#            SCREENSHOT =>
-#qq{<a href="./FeatView.pl"><img src="picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
-#            NAME =>
-#qq{<span style="display:inline-block;width:100px;">FeatView</span>},
-#        },
-
-# 		   {
-# 		    ID=>3,
-# 		    LOGO=>qq{<a href="./MSAView.pl"><img src="picts/carousel/MSAView-logo.png" width="227" height="75" border="0"></a>},
-# 		    ACTION => qq{<a href="./MSAView.pl">MSAView: Multiple Sequence Alignment Viewer</a>},
-# 		    DESC   => qq{Allows users to submit a multiple sequence alignment in FASTA format (if people would like additional formats, please request via e-mail) in order to quickly check the alignment, find conserved regions, etc.  This program also generates a consensus sequence from the alignment and displays some basic statistics about the alignment.},
-# 		    SCREENSHOT=>qq{<a href="./MSAView.pl"><img src="picts/preview/MSAView.png"border="0"></a>},
-# 		   },
-# 		   {
-# 		    ID=>4,
-# 		    LOGO=>qq{<a href="./TreeView.pl"><img src="picts/carousel/TreeView-logo.png" width="227" height="75" border="0"></a>},
-# 		    ACTION => qq{<a href="./TreeView.pl">TreeView: Phylogenetic Tree Viewer</a>},
-# 		    DESC   => qq{Allows users to submit a tree file and get a graphical view of their tree.  There is support for drawing rooted and unrooted trees, zooming and unzooming functions, and coloring and shaping nodes based on user specifications.},
-# 		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="picts/preview/TreeView.png"border="0"></a>},
-# 		   },
     );
     return \@actions;
 }
 
 sub get_latest_genomes {
     my %opts = @_;
-    my @latest = $coge->resultset("Genome")->get_recent_public($opts{limit});
+    my @latest = $DB->resultset("Genome")->get_recent_public($opts{limit});
     my @genomes;
 
     foreach my $dsg (@latest) {
@@ -238,7 +182,7 @@ sub get_latest_old {
     my %opts = @_;
     my $limit = $opts{limit} || 20;
 
-    my @db = $coge->resultset("Genome")->search(
+    my @db = $DB->resultset("Genome")->search(
         {},
         {
             distinct => "organism.name",
@@ -249,7 +193,6 @@ sub get_latest_old {
         }
     );
 
-    #($USER) = CoGe::Accessory::LogUser->get_user();
     my $html = "<table class='small'>";
     $html .= "<tr><th>"
       . join( "<th>", qw( Organism &nbsp Length&nbsp(nt) &nbsp Related Link ) );
@@ -263,16 +206,11 @@ sub get_latest_old {
         $org_names{ $dsg->organism->name } = 1;
         my $orgview_link = "OrganismView.pl?oid=" . $dsg->organism->id;
         my $entry        = qq{<tr>};
-
-#$entry .= qq{<td><span class='ui-button ui-corner-all' onClick="window.open('$orgview_link')"><span class="ui-icon ui-icon-link"></span>&nbsp&nbsp</span>};
-        $entry .=
-          qq{<td><span class="link" onclick=window.open('$orgview_link')>};
+        $entry .= qq{<td><span class="link" onclick=window.open('$orgview_link')>};
         my $name = $dsg->organism->name;
         $name = substr( $name, 0, 40 ) . "..." if length($name) > 40;
         $entry .= $name;
         $entry .= qq{</span>};
-
-        #$entry .= ": ".$dsg->name if $dsg->name;
         $entry .= "<td>(v" . $dsg->version . ")&nbsp";
         $entry .= "<td align=right>" . commify( $dsg->length ) . "<td>";
         my @desc = split( /;/, $dsg->organism->description );

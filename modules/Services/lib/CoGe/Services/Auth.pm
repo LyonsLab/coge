@@ -15,10 +15,11 @@ sub init {
     my $token     = $self->param('token');
     my $token2    = $self->req->headers->header('x-iplant-de-jwt'); # mdb added 9/23/15 for DE
     my $remote_ip = $ENV{REMOTE_ADDR}; #$self->req->env->{HTTP_X_FORWARDED_FOR};
-    print STDERR "CoGe::Services::Auth::init: username=", ($username ? $username : ''), 
-                 " token=", ($token ? $token : ''), 
-                 " token2=", ($token2 ? $token2 : ''), 
-                 " remote_ip=", ($remote_ip ? $remote_ip : ''), "\n";
+#    warn "CoGe::Services::Auth::init";
+#    warn "username=" . ($username ? $username : '');
+#    warn "token=" . ($token ? $token : '');
+#    warn "token2=" . ($token2 ? $token2 : '');
+#    warn "remote_ip=" . ($remote_ip ? $remote_ip : '');
 
     # Get config
     my $conf = get_defaults();
@@ -47,7 +48,7 @@ sub init {
     # Check for existing user session (cookie enabled browser only)
     my $session_id = unescape($self->cookie($conf->{COOKIE_NAME}));
     if ($session_id) {
-        #print STDERR "session_id: ", $session_id, "\n";
+#        print STDERR "session_id: ", $session_id, "\n";
         $session_id =~ s/session&//;
         my $session = $db->resultset('UserSession')->find( { session => $session_id } );
         if ($session && $user && $session->user_id == $user->id) {
@@ -170,8 +171,8 @@ sub validate_agave {
     }
     
     # Extract user information and verify that the given username owns the given token
-    my $authResponse = decode_json('{"' . $res->{content}->{post_buffer}); #FIXME this is a hack because the response is malformed for some unknown reason
-    #print STDERR Dumper $authResponse, "\n";
+    #print STDERR Dumper $res->body, "\n";
+    my $authResponse = decode_json($res->body);
     unless ($authResponse && $authResponse->{status} =~ /success/i &&
             $authResponse->{result} && $authResponse->{result}->{username} eq $username)
     {

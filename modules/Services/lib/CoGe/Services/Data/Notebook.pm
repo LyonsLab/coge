@@ -1,9 +1,10 @@
 package CoGe::Services::Data::Notebook;
 use Mojo::Base 'Mojolicious::Controller';
-use Mojo::JSON;
+use Mojo::JSON qw(encode_json);
 use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Core::Notebook;
+use CoGe::Accessory::Web qw(log_history);
 use Data::Dumper;
 
 sub search {
@@ -12,7 +13,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
@@ -37,6 +38,14 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -44,8 +53,8 @@ sub fetch {
     # Get notebook from DB
     my $notebook = $db->resultset("List")->find($id);
     unless (defined $notebook) {
-        $self->render(json => {
-            error => { Error => "Item not found"}
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found"}
         });
         return;
     }
@@ -92,14 +101,14 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    print STDERR "CoGe::Services::Data::Notebook::add\n", Dumper $data, "\n";
+#    print STDERR "CoGe::Services::Data::Notebook::add\n", Dumper $data, "\n";
 
     # Authenticate user and connect to the database
-    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # User authentication is required to add notebook
     unless (defined $user) {
-        $self->render(json => {
+        $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
         return;
@@ -108,7 +117,7 @@ sub add {
     # Validate parameters
     my $metadata = $data->{metadata};
     unless ($metadata->{name}) {
-        $self->render(json => {
+        $self->render(status => 400, json => {
             error => { Invalid => "Notebook name not specified" }
         });
         return;
@@ -130,15 +139,23 @@ sub add {
         return;
     }    
 
-    $self->render(json => { 
+    $self->render(status => 201, json => { 
         success => Mojo::JSON->true,
         id => $notebook->id
     });
 }
 
-sub remove {
+sub add_items {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
     
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -146,8 +163,65 @@ sub remove {
     # Get notebook from DB
     my $notebook = $db->resultset("List")->find($id);
     unless (defined $notebook) {
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found"}
+        });
+        return;
+    }
+
+    my $data = $self->req->json;
+    my @items;
+    foreach my $item (@{$data->{items}}) {
+    	push @items, [ $item->{id}, $item->{type} ];
+    }
+
+	if (!add_items_to_notebook(
+		db => $db,
+		user => $user,
+		notebook => $notebook,
+		item_list => \@items
+	)) {
         $self->render(json => {
-            error => { Error => "Item not found"}
+            error => { Error => "Error adding items to notebook"}
+        });
+        return;
+	}
+
+    log_history(
+        db          => $db,
+        user_id     => $user->id,
+        page        => 'API',
+    	description => 'added items ' . encode_json($data) . ' to notebook ' . $notebook->info_html,
+        link        => 'NotebookView.pl?nid=' . $notebook->list_id,
+        parent_id   => $notebook->list_id,
+        parent_type => 1 #FIXME magic number
+    );
+
+	$self->render(json => {
+		success => Mojo::JSON->true
+	});
+}
+
+sub remove {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
+    
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get notebook from DB
+    my $notebook = $db->resultset("List")->find($id);
+    unless (defined $notebook) {
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found"}
         });
         return;
     }
@@ -169,7 +243,7 @@ sub remove {
         );
     }
     unless ($success) {
-        $self->render(json => {
+        $self->render(status => 401, json => {
             error => { Error => "Access denied"}
         });
         return;
@@ -179,6 +253,97 @@ sub remove {
         success => Mojo::JSON->true,
         id => $notebook->id
     });    
+}
+
+sub remove_item {
+	my $self = shift;
+    my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get notebook
+    my $notebook = $db->resultset("List")->find($id);
+    unless (defined $notebook) {
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_admin || $user->is_owner_editor(list => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+    my $data = $self->req->json;
+    my @items;
+    foreach my $item (@{$data->{items}}) {
+    	push @items, [ $item->{id}, $item->{type} ];
+    }
+    remove_items_from_notebook(
+    	db => $db,
+    	user => $user,
+    	notebook => $notebook,
+    	item_list => \@items
+    );
+    
+	$self->render(json => {
+		success => Mojo::JSON->true
+	});	
+}
+
+sub update {
+	my $self = shift;
+    my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get notebook
+    my $notebook = $db->resultset("List")->find($id);
+    unless (defined $notebook) {
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_admin || $user->is_owner_editor(list => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+    my $data = $self->req->json;
+    if (exists($data->{metadata}->{id})) {
+	    delete $data->{metadata}->{id};
+    }
+	$notebook->update($data->{metadata});
+	$self->render(json => {
+		success => Mojo::JSON->true
+	});
 }
 
 1;

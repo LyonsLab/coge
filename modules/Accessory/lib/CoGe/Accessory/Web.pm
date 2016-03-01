@@ -69,7 +69,7 @@ BEGIN {
     @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
                    send_email get_defaults set_defaults url_for get_job 
                    schedule_job render_template ftp_get_path ftp_get_file split_url
-                   parse_proxy_response jwt_decode_token add_user write_log
+                   parse_proxy_response jwt_decode_token add_user write_log log_history
                );
 
     $PAYLOAD_ERROR = "The request could not be decoded";

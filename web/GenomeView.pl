@@ -66,7 +66,8 @@ sub gen_body {
 	$template->param( GENOME_ID => $gid,
 	                  HEIGHT => ($EMBED ? '99%' : '80%'),
 	                  WIDTH => ($EMBED ? '99%' : '100%'),
-	                  API_BASE_URL => $CONF->{SERVER} . 'api/v1/jbrowse' # mdb added base URL, 2/3/15 COGE-289
+	                  API_BASE_URL => $CONF->{SERVER} . 'api/v1/jbrowse', # mdb added base URL, 2/3/15 COGE-289
+	                  USER_NAME => $USER->user_name
 	);
 
     return $template->output;
