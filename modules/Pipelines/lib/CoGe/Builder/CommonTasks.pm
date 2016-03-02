@@ -910,7 +910,7 @@ sub create_load_bam_job {
             ['-staging_dir', $output_name, 0],
             ['-file_type', qq["bam"], 0],
             ['-data_file', $bam_file, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
             $CONF->{_CONFIG_PATH},
@@ -939,7 +939,7 @@ sub create_validate_fastq_job {
         cmd => $cmd,
         script => undef,
         args => [
-            ["", $fastq, 1]
+            ["", $fastq, 0] # mdb changed 3/1/16 from 1 to 0, COGE-707
         ],
         inputs => $inputs,
         outputs => [

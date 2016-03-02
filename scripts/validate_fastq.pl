@@ -11,7 +11,7 @@ if (!validate_fastq_data_file($data_file)) {
 }
 #print STDOUT "log: file has been verified successfully\n";
 
-system("touch $data_file.validated");
+system("touch $data_file.validated"); # signal completion to JEX
 exit;
 
 #-------------------------------------------------------------------------------
