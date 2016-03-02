@@ -248,6 +248,7 @@ function MethylationView(opts) {
 $.extend(MethylationView.prototype, {
     initialize: function () {
         this.el = $($("#methyl-template").html());
+        this.checkbox = this.el.find("#methyl");
         this.enabled = false;
         this.container = this.el.find("#methyl-container");
         this.templates = {
@@ -257,28 +258,16 @@ $.extend(MethylationView.prototype, {
     },
 
     render: function () {
-        var self = this;
-
-        var method = this.el.find("#methyl-method");
-        this.el.find("#methyl").unbind().change(this.update.bind(this));
-
-        method.unbind().change(function () {
-            var selected = $(this).val();
-            render_template(self.templates[selected], self.container);
-        });
-
-        if (this.data.methylation_params) {
-            method.val(this.data.methylation_params.method);
-        }
+        this.checkbox.unbind().change(this.update.bind(this));
     },
 
-    update: function(ev) {
-        var checkbox = $(ev.target);
+    update: function() {
+        var checkbox = this.checkbox;//$(ev.target);
         var enabled = checkbox.is(":checked"); 
         var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
         var template = this.templates[selected];
         var el = $(document.getElementById(selected));
-
+        
         if (enabled && template) {
             this.data.methylation_params = $.extend({}, this.data.methylation_params, {method: selected});
         	el.show();
@@ -289,13 +278,13 @@ $.extend(MethylationView.prototype, {
             this.data.methylation_params = undefined;
             checkbox.attr('checked', false); // uncheck it
             this.container.hide();
-            if (!template)
+            if (enabled && !template)
             	this.container.html('<span class="alert indent">Please select one of these two aligners above:  Bismark or BWAmeth</span>').show();
         }
     },
 
     is_valid: function() {
-        var enabled = this.el.find("#methyl").is(":checked");
+        var enabled = this.checkbox.is(":checked");
         var method = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
         var paired = ( this.format && this.format.is_paired() );
         
@@ -527,7 +516,10 @@ $.extend(TrimmingView.prototype, {
     }
 });
 
-function AlignmentView() {
+function AlignmentView(opts) {
+	if (opts) {
+		this.onChange = opts.onChange;
+	}
     this.data = {};
     this.initialize();
 }
@@ -565,6 +557,9 @@ $.extend(AlignmentView.prototype, {
         el.show();
         this.container.show();
         render_template(this.templates[selected], this.container);
+        
+        if (this.onChange)
+        	this.onChange();
     },
 
     is_valid: function() {
@@ -855,11 +850,11 @@ $.extend(FastqView.prototype, {
     initialize: function() {
     	this.read_view = new ReadFormatView();
     	this.trim_view = new TrimmingView();
-    	this.align_view = new AlignmentView();
         this.expression_view = new ExpressionView();
         this.snp_view = new FindSNPView();
         this.methylation_view = new MethylationView({ format: this.read_view });
         this.chipseq_view = new ChIPSeqView({ experiment: this.experiment });
+        this.align_view = new AlignmentView({ onChange: this.methylation_view.update.bind(this.methylation_view) });
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
