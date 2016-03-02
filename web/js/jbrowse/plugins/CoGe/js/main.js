@@ -201,10 +201,20 @@ return declare( JBrowsePlugin,
     // ----------------------------------------------------------------
 
     error: function(title, content) {
-    	if (content.responseText)
-    		content = content.responseText;
-    	else if (content.error)
-    		content = JSON.stringify(content.error);
+    	if (content.responseText) {
+    		var error = JSON.parse(content.responseText);
+    		if (error.error)
+        		if (error.error.Error)
+        			content = error.error.Error;
+        		else
+        			content = JSON.stringify(error.error);
+    		else
+    			content = content.responseText;
+    	} else if (content.error)
+    		if (content.error.Error)
+    			content = content.error.Error;
+    		else
+    			content = JSON.stringify(content.error);
     	this.info(title, content);
     },
 
@@ -253,6 +263,8 @@ return declare( JBrowsePlugin,
             config.coge.search_track = true;
             browser.publish( '/jbrowse/v1/v/tracks/new', [config] );
             browser.publish( '/jbrowse/v1/v/tracks/show', [config] );
+   			dojo.place(dojo.byId('track_search_' + eid), dojo.byId('track_experiment' + eid), 'after');
+   			browser.view.updateTrackList();
     		var nav = dojo.byId('nav_' + eid);
     		if (nav)
     			dojo.destroy(nav);

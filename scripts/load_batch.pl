@@ -309,9 +309,9 @@ sub process_dir {
     # Use specified notebook
     if ($notebook) {
         my @item_list = map { [ $_->{item_id}, $_->{item_type} ] } @loaded;
-        unless ( add_items_to_notebook(db => $coge, user => $user, notebook => $notebook, item_list => \@item_list) ) # FIXME change item_list to hash param
-        {
-            print "log: error: failed to add experiments to existing notebook\n";
+        my $error = add_items_to_notebook(db => $coge, user => $user, notebook => $notebook, item_list => \@item_list); # FIXME change item_list to hash param
+        if ($error) {
+            print "log: error: $error\n";
             exit(-1);
         }
         print "log: Added items to existing notebook '", $notebook->name, "' id", $notebook->id, "\n";

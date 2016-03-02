@@ -252,6 +252,7 @@ sub _add_features {
     		$query .= ' AND feature_type_id=' . $type_ids;
     	}
     }
+    $query .= ' ORDER BY chromosome,start';
     my $sth = $dbh->prepare($query);
     $sth->execute();
     while (my @row = $sth->fetchrow_array) {
