@@ -1020,7 +1020,7 @@ $.extend(JobGrid.prototype, {
 				        }
 				    } );
 			    	
-			    	self.schedule_update(5000);
+			    	self.schedule_update(10*1000);
 			    }
 			});
 		}
@@ -1045,11 +1045,7 @@ $.extend(JobGrid.prototype, {
 	},
 	toggle_running: function() {
 		var self = this;
-		if(self.running_only == 0) {
-			self.running_only = 1;
-		} else {
-			self.running_only = 0;
-		}
+		self.running_only = (self.running_only ? 0 : 1);
 		self.get_data();
 	},
 	cancel_job: function() {
