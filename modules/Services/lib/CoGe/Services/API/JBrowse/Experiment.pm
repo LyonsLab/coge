@@ -5,7 +5,7 @@ use Mojo::JSON;
 
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw( get_experiment_data );
+use CoGe::Core::Experiment qw( get_data );
 use JSON::XS;
 use Data::Dumper;
 
@@ -92,7 +92,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 			next;
 		}
         elsif ( $data_type == $DATA_TYPE_POLY || $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -110,7 +110,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = CoGe::Core::Storage::get_experiment_data(
+	        my $cmdOut = get_data(
 	            eid   => $eid,
 	            data_type  => $exp->data_type,
 	            chr   => $chr,
@@ -223,7 +223,7 @@ sub features {
         my $data_type = $exp->data_type;
 
         if ( !$data_type || $data_type == $DATA_TYPE_QUANT ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -249,7 +249,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -281,7 +281,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = CoGe::Core::Storage::get_experiment_data(
+            my $pData = get_data(
                 eid   => $eid,
                 data_type  => $exp->data_type,
                 chr   => $chr,
@@ -310,7 +310,7 @@ sub features {
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = CoGe::Core::Storage::get_experiment_data(
+	        my $cmdOut = get_data(
 	            eid   => $eid,
 	            data_type => $exp->data_type,
 	            chr   => $chr,
