@@ -8,7 +8,7 @@ sub startup {
     $self->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies
 
     # Instantiate router
-    my $r = $self->routes->namespaces(["CoGe::Services::Data"]);
+    my $r = $self->routes->namespaces(["CoGe::Services::API"]);
     
     # TODO: Authenticate user here instead of redundantly in each submodule
 #    my $app = $self;

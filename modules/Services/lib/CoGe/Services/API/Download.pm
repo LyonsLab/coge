@@ -1,4 +1,4 @@
-package CoGe::Services::Data::Download;
+package CoGe::Services::API::Download;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;

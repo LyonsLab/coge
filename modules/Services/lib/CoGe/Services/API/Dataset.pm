@@ -1,4 +1,4 @@
-package CoGe::Services::Data::Dataset;
+package CoGe::Services::API::Dataset;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;

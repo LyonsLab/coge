@@ -1,4 +1,4 @@
-package CoGe::Services::Data::Sequence;
+package CoGe::Services::API::Sequence;
 use base 'CGI::Application';
 
 use CoGeX;

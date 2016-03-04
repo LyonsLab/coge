@@ -1,4 +1,4 @@
-package CoGe::Services::Data::Genome2;
+package CoGe::Services::API::Genome2;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
