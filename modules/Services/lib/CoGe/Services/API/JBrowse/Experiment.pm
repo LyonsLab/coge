@@ -203,7 +203,7 @@ sub features {
     my @experiments;
     foreach my $e (@all_experiments) {
         unless ( $user->has_access_to_experiment($e) ) {
-        	print STDERR "JBrowse::Experiment::features access denied to experiment $eid for user '", $user->name, "'\n";
+        	print STDERR "JBrowse::Experiment::features access denied to experiment id", $e->id, " for user '", $user->name, "'\n";
         	next;
     	}
         push @experiments, $e;
