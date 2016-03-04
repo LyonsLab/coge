@@ -3,7 +3,7 @@
 use Mojolicious::Lite;
 use Mojo::Log;
 
-use File::Spec::Functions qw(catdir);
+#use File::Spec::Functions qw(catdir);
 
 # Set the module include path -- this is necessary to allow multiple sandboxes on dev
 #use lib './modules/perl';
@@ -34,7 +34,7 @@ app->log( Mojo::Log->new( ) ); # log to STDERR
 app->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies
 
 # Instantiate router
-my $r = app->routes->namespaces(["CoGe::Services::Data::JBrowse", "CoGe::Services::Data"]);
+my $r = app->routes->namespaces(["CoGe::Services::API::JBrowse", "CoGe::Services::API"]);
 
 # TODO: Authenticate user here instead of redundantly in each submodule
 #    my $app = $self;
