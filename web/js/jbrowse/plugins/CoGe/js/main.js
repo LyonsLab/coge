@@ -97,6 +97,8 @@ define([
 	    },
 	    get_features: function(chr, start, end) {
 	    	var b = this.boundaries(chr);
+	    	if (!b)
+	    		return null;
 	    	var i = b[0];
 	    	var j = b[1];
 	    	var features = [];
@@ -243,7 +245,7 @@ return declare( JBrowsePlugin,
     	if (dojo.byId('nav_' + eid))
     		browser.publish('/jbrowse/v1/v/tracks/hide', [coge_track_list.get_search_config(eid)]);
     	var results = new SearchResults(eid, data);
-        var d = new Deferred();
+//        var d = new Deferred();
         var store_config = {
             browser: browser,
             refSeq: browser.refSeq,
@@ -253,9 +255,9 @@ return declare( JBrowsePlugin,
         var store_name = browser.addStoreConfig(undefined, store_config);
         store_config.name = store_name;
         browser.getStore(store_name, function(store) {
-            d.resolve(true);
-        });
-        d.promise.then(function() {
+//            d.resolve(true);
+//        });
+//        d.promise.then(function() {
         	config = dojo.clone(config);
         	config.key = 'Search: ' + config.key + ' (' + coge.search_to_string(search) + ')';
         	config.track = 'search_' + eid;
