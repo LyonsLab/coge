@@ -1,4 +1,4 @@
-package CoGe::Services::Data::JBrowse::GCcontent;
+package CoGe::Services::API::JBrowse::GCcontent;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;

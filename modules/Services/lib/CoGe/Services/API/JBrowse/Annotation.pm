@@ -1,4 +1,4 @@
-package CoGe::Services::Data::JBrowse::Annotation;
+package CoGe::Services::API::JBrowse::Annotation;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
