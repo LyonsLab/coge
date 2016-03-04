@@ -297,7 +297,7 @@ var coge = window.coge = (function(namespace) {
 		        results.push(workflow_status);
 		        log_content.append(results);
 		        
-		        if (json.results && json.results.length > 1) { // Ignore first result (debug.log)
+		        if (json.results && json.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
 		        	log_content.append("<div class='bold'>Here are the results (click to open):</div>");
 		    	    json.results.forEach(function(result) {
 		    	    	var html = self._format_result(result);
@@ -330,6 +330,10 @@ var coge = window.coge = (function(namespace) {
 			else if (result.type === 'dataset') {
 				var url = 'GenomeInfo.pl?gid=' + result.genome_id;
 				return "<div><a href='"+url+"'> Dataset '"+result.info+"'</a></div>";				
+			}
+			else if (result.type === 'popgen') {
+				var url = 'PopGen.pl?eid=' + result.experiment_id;
+				return "<div><a href='"+url+"'>"+result.name+"</a></div>";				
 			}
 		},
 		

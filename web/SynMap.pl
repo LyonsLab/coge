@@ -187,7 +187,8 @@ sub gen_html {
 		PAGE_TITLE => 'SynMap',
 		TITLE      => 'SynMap: Whole Genome Synteny Analysis',
 		HEAD       => qq{},
-		USER       => $USER->display_name || ''
+		USER       => $USER->display_name || '',
+		NO_DOCTYPE => 1
 	);
 
 	$template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -420,11 +421,11 @@ sub gen_body {
 	my $fb_window_size = 100;
 	$fb_window_size = $FORM->param('fb_ws') if $FORM->param('fb_ws');
 	$template->param( FB_WINDOW_SIZE => $fb_window_size );
-	if (!$FORM->param('fb_tg')) {
-		$template->param( FB_ALL_GENES => "checked" );
+	if ($FORM->param('fb_tg')) {
+		$template->param( FB_TARGET_GENES => "checked" );
 	}
 	else {
-		$template->param ( FB_TARGET_GENES => "checked" );
+		$template->param ( FB_ALL_GENES => "checked" );
 	}
 
 	$template->param( 'BOX_DIAGS' => "checked" ) if $FORM->param('bd');

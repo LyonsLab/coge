@@ -78,7 +78,7 @@ sub build {
     }
         
     # Trim the fastq input files
-    my @trimmed;
+    my (@trimmed, @trimming_done_files);
     if ($trimming_params) {
         my ($fastq1, $fastq2);
         if ($read_params->{read_type} eq 'paired') {
@@ -100,21 +100,22 @@ sub build {
         my %params = (
             fastq1 => $fastq1,
             fastq2 => $fastq2,
-            validated => \@validated,
+            done_files => \@validated,
             staging_dir => $staging_dir,
             read_params => $read_params,
-            trimming_params => $trimming_params        
+            trimming_params => $trimming_params
         );
         
-        my ($tasks, $outputs);
+        my ($tasks, $outputs, $done_files);
         if ($trimming_params->{trimmer} eq 'cutadapt') {
-            ($tasks, $outputs) = create_cutadapt_workflow(%params);
+            ($tasks, $outputs, $done_files) = create_cutadapt_workflow(%params);
         }
         elsif ($trimming_params->{trimmer} eq 'trimgalore') {
-            ($tasks, $outputs) = create_trimgalore_workflow(%params);
+            ($tasks, $outputs, $done_files) = create_trimgalore_workflow(%params);
         }
         push @trimmed, @$outputs;
         push @tasks, @$tasks;
+        push @trimming_done_files, @$done_files if $done_files; # kludge for JEX
     }
     else { # no trimming
         push @trimmed, @decompressed;
@@ -126,32 +127,30 @@ sub build {
 
     # Reheader the fasta file
     my $fasta = get_genome_file($gid);
-    my $reheader_fasta = to_filename($fasta) . ".reheader.faa";
     push @tasks, create_fasta_reheader_job(
         fasta => $fasta,
-        reheader_fasta => $reheader_fasta,
         cache_dir => $fasta_cache_dir
     );
+    my $reheader_fasta = $tasks[-1]->{outputs}[0];
 
     # Index the fasta file
     push @tasks, create_fasta_index_job(
-        fasta => catfile($fasta_cache_dir, $reheader_fasta),
-        cache_dir => $fasta_cache_dir
+        fasta => $reheader_fasta
     );
     
+    # Add aligner workflow
     my %params = ( 
-        fasta => catfile($fasta_cache_dir, $reheader_fasta),
+        done_files => [ @validated, @trimming_done_files ],
+        fasta => $reheader_fasta,
         fastq => \@trimmed,
-        validated => \@validated,
         gid => $gid,
         encoding => $read_params->{encoding},
         read_type => $read_params->{read_type},
         staging_dir => $staging_dir,
-        params => $alignment_params,
+        params => $alignment_params
     );
     $params{doSeparately} = 1 if $chipseq_params;
     
-    # Add aligner workflow
     my ($alignment_tasks, $alignment_results);
     $alignment_params = {} unless $alignment_params;
     
@@ -183,15 +182,9 @@ sub build {
     elsif ($alignment_params->{tool} eq 'bwameth') {
         ($alignment_tasks, $alignment_results) = create_bwameth_workflow(%params);
     }
-    else { # ($alignment_params->{tool} eq 'gsnap') { # default
+    else { # GSNAP is the default
         ($alignment_tasks, $alignment_results) = create_gsnap_workflow(%params);
     }
-# mdb removed 9/15/15 -- make GSNAP the default aligner
-#    else {
-#        my $error = "Unrecognized alignment tool '" . $alignment_params->{tool};
-#        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-#        return { error => $error };
-#    }
     
     unless (@$alignment_tasks && $alignment_results) {
         print STDERR "CoGe::Builder::Common::Alignment ERROR: Invalid alignment workflow\n";
@@ -199,12 +192,12 @@ sub build {
     }
     push @tasks, @$alignment_tasks;
 
-    my @bam_files;
-    push @bam_files, $alignment_results->{bam_file} if ($alignment_results->{bam_file});
-    push @bam_files, @{$alignment_results->{bam_files}} if ($alignment_results->{bam_files});
+    my @raw_bam_files;
+    push @raw_bam_files, $alignment_results->{bam_file} if ($alignment_results->{bam_file});
+    push @raw_bam_files, @{$alignment_results->{bam_files}} if ($alignment_results->{bam_files});
     
     my (@sorted_bam_files, @load_task_outputs);
-    foreach my $bam_file (@bam_files) {
+    foreach my $bam_file (@raw_bam_files) {
         # Sort and index the bam output file(s)
         my $sort_bam_task = create_bam_sort_job(
             input_file => $bam_file, 
@@ -225,7 +218,7 @@ sub build {
         
         # Add bam filename to experiment name for ChIP-seq pipeline
         my $md = clone($metadata);
-        if (@bam_files > 1) {
+        if (@raw_bam_files > 1) {
             $md->{name} .= ' (' . to_filename_base($sorted_bam_file) . ')';
         }
     
@@ -247,6 +240,7 @@ sub build {
     return {
         tasks => \@tasks,
         bam_files => \@sorted_bam_files,
+        raw_bam_files => \@raw_bam_files, # mdb added 2/29/16 for Bismark, COGE-706
         done_files => [
             @sorted_bam_files,
             @load_task_outputs
@@ -272,13 +266,7 @@ sub generate_additional_metadata {
     if ($alignment_params && $alignment_params->{tool}) {
         if ($alignment_params->{tool} eq 'hisat2') {
             push @annotations, qq{note|hisat2_build};
-            my $params = join(' ', map { $_.' '.$alignment_params->{$_} } ('-p', '-x', '-S'));
-            if ($read_params->{encoding} eq '64') {
-            	$params .= ' --phred64';
-            }
-            else {
-            	$params .= ' --phred33';
-            }
+            my $params = ($read_params->{encoding} eq '64' ? '--phred64' : '--phred33');
             push @annotations, 'note|hisat2 ' . $params;
         }
         elsif ($alignment_params->{tool} eq 'tophat') {

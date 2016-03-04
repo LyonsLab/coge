@@ -56,17 +56,17 @@ sub search {
 		$search_term = substr($search_term, $index + 2);
 	}
 	my @restricted =
-	  [ -or => [ restricted => 0, restricted => 1 ] ]; 
+	  [ -or => [ 'me.restricted' => 0, 'me.restricted' => 1 ] ]; 
 	  #Specifies either restricted(1) OR unrestriced(0) results. Default is all.
 	my @deleted =
-	  [ -or => [ deleted => 0, deleted => 1 ] ]; 
+	  [ -or => [ 'me.deleted' => 0, 'me.deleted' => 1 ] ]; 
 	  #Specifies either deleted(1) OR non-deleted(0) results. Default is all.
 	for ( my $i = 0 ; $i < @specialTerms ; $i++ ) {
 		if ( $specialTerms[$i]{tag} eq 'type' ) {
 			$type = $specialTerms[$i]{term};
 		}
 		if ( $specialTerms[$i]{tag} eq 'restricted' ) {
-			@restricted = [ restricted => $specialTerms[$i]{term} ];
+			@restricted = [ 'me.restricted' => $specialTerms[$i]{term} ];
 			if ( $type eq "none" ) {
 				$type = 'restricted'; 
 				#Sets the "type" so that only fields relevant to restriction are shown. (i.e. there are no restricted users.)
@@ -89,7 +89,7 @@ sub search {
 	#only show public data if $user is undefined
 	if (!$user) {
 		$type = "restricted";
-		@restricted = [ restricted => 0 ];
+		@restricted = [ 'me.restricted' => 0 ];
 	}
 
     # Perform organism search
@@ -118,7 +118,7 @@ sub search {
 		}
 		my @organisms = $db->resultset("Organism")->search( { -and => [ @orgArray, ], } );
 
-		if ( $type eq 'none' || $type eq 'organism' ) {
+		#if ( $type eq 'none' || $type eq 'organism' ) { # mdb removed 2/18/16 -- wasn't showing organism results unless logged in
 			foreach ( sort { $a->name cmp $b->name } @organisms ) {
 				push @results, { 
 					'type' => "organism", 
@@ -127,7 +127,7 @@ sub search {
 				  	'description' => $_->description 
 				};
 			}
-		}
+		#}
 		@idList = map { $_->id } @organisms;
 	}
 
@@ -244,22 +244,27 @@ sub search {
 			push @expArray,
 			  [
 				$and_or => [
-					name          => $searchArray[$i],
-					description   => $searchArray[$i],
-					experiment_id => $searchArray[$i]
+					'me.name'        => $searchArray[$i],
+					'me.description' => $searchArray[$i],
+					'experiment_id'  => $searchArray[$i],
+					'genome.name'  => $searchArray[$i],
+                    'genome.description' => $searchArray[$i],
+					'organism.name'  => $searchArray[$i],
+					'organism.description' => $searchArray[$i]
 				]
 			  ];
 		}
 		my $join;
 		my $search;
 		if ($type eq 'experiment_metadata_key') {
-			$join = { join => 'experiment_annotations' };
+			$join = { join => [ { 'genome' => 'organism' }, 'experiment_annotations' ] };
 			my $dbh = $db->storage->dbh;
 			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
 			$search = { 'experiment_annotations.annotation_type_id' => $row[0] };
 		}
 		else {
-			$search = { -and => [ @expArray, @restricted, @deleted, ] };
+		    $join = { join => { 'genome' => 'organism' } };
+			$search = { -and => [ @expArray, @restricted, @deleted] };
 		}
 		my @experiments = $db->resultset("Experiment")->search( $search, $join );
 

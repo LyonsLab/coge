@@ -15,7 +15,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook 
+    @EXPORT = qw( create_notebook search_notebooks add_items_to_notebook remove_items_from_notebook
                   get_notebook notebookcmp %ITEM_TYPE 
                   delete_notebook undelete_notebook 
               );
@@ -154,6 +154,16 @@ sub create_notebook {
     return $notebook;
 }
 
+sub debug {
+	my $data = shift;
+	my $new_file = shift;
+	my $OUTFILE;
+	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
+	print {$OUTFILE} Dumper $data;
+	print {$OUTFILE} "\n";
+	close $OUTFILE;
+}
+
 sub add_items_to_notebook {
     my %opts = @_;
     my $db       = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
@@ -162,7 +172,7 @@ sub add_items_to_notebook {
     my $items    = $opts{item_list}; # array ref to array refs of item_id, item_type
     return unless ($db and $notebook and $user and $items);
     #print STDERR "add_items_to_notebook\n";
-    
+
     # Check permissions
     return unless $user->has_access_to_list($notebook);
 
@@ -176,7 +186,6 @@ sub add_items_to_notebook {
         #TODO check access permission on each item
 
         #print STDERR "add_items_to_notebook $item_id $item_type\n";
-
         my $conn = $db->resultset('ListConnector')->find_or_create(
             {
                 parent_id   => $notebook->id,
@@ -188,6 +197,37 @@ sub add_items_to_notebook {
     }
 
     return 1;
+}
+
+sub remove_items_from_notebook {
+    my %opts = @_;
+    my $db       = $opts{db};
+    my $user     = $opts{user};     # user object
+    my $notebook = $opts{notebook}; # notebook object
+    my $items    = $opts{item_list}; # array ref to array refs of item_id, item_type
+    return unless ($db and $notebook and $user and $items);
+    
+    # Check permissions
+    return unless $user->has_access_to_list($notebook);
+
+    # Create connections for each item
+    foreach (@$items) {
+        my ( $item_id, $item_type ) = @$_;
+        return unless ( $item_id and $item_type );
+        $item_type = $ITEM_TYPE{$item_type} if ($item_type eq 'genome' or $item_type eq 'experiment');
+
+        #TODO check access permission on each item
+
+        #print STDERR "add_items_to_notebook $item_id $item_type\n";
+
+        $db->resultset('ListConnector')->search(
+            {
+                parent_id   => $notebook->id,
+                child_id    => $item_id,
+                child_type  => $item_type
+            }
+        )->delete;
+    }
 }
 
 sub delete_notebook {

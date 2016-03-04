@@ -14,6 +14,7 @@ use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::CommonTasks;
 use CoGe::Builder::Common::Alignment qw(build);
 use CoGe::Builder::Expression::qTeller qw(build);
+use CoGe::Builder::PopGen::SummaryStats qw(build);
 use CoGe::Builder::SNP::CoGeSNPs qw(build);
 use CoGe::Builder::SNP::Samtools qw(build);
 use CoGe::Builder::SNP::Platypus qw(build);
@@ -69,7 +70,7 @@ sub build {
     # Build analytical tasks based on file type
     if ( $file_type eq 'fastq' || $file_type eq 'bam' || $file_type eq 'sra' ) {
         my ($bam_file, $bam_files); #TODO reconcile these
-        my $result_count = 0;
+        my @raw_bam_files; # mdb added 2/29/16 for Bismark, COGE-706
          
         # Align fastq file or take existing bam
         if ( $file_type && ( $file_type eq 'fastq' || $file_type eq 'sra' ) ) {
@@ -89,12 +90,13 @@ sub build {
             push @tasks, @{$alignment_workflow->{tasks}};
             $bam_files = $alignment_workflow->{bam_files};
             $bam_file = $bam_files->[0];
+            @raw_bam_files = @{$alignment_workflow->{raw_bam_files}};
             push @done_files, @{$alignment_workflow->{done_files}};
-            $result_count++;
         }
         elsif ( $file_type && $file_type eq 'bam' ) {
             $bam_file = $input_files[0];
             $bam_files = \@input_files;
+            @raw_bam_files = @$bam_files;
             
             my $annotations = CoGe::Core::Metadata::to_annotations($additional_metadata);
             
@@ -127,7 +129,6 @@ sub build {
             );
             push @tasks, @{$expression_workflow->{tasks}};
             push @done_files, @{$expression_workflow->{done_files}};
-            $result_count++;
         }
         
         # Add SNP workflow (if specified)
@@ -154,7 +155,6 @@ sub build {
             }
             push @tasks, @{$snp_workflow->{tasks}};
             push @done_files, @{$snp_workflow->{done_files}};
-            $result_count++;
         }
         
         # Add methylation workflow (if specified)
@@ -164,7 +164,8 @@ sub build {
                 user => $self->user,
                 wid => $self->workflow->id,
                 genome => $genome,
-                input_file => $bam_file,
+                bam_file => $bam_file,
+                raw_bam_file => $raw_bam_files[0], # mdb added 2/29/16 for Bismark, COGE-706
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 methylation_params => $self->params->{methylation_params},
@@ -179,7 +180,6 @@ sub build {
             }
             push @tasks, @{$methylation_workflow->{tasks}};
             push @done_files, @{$methylation_workflow->{done_files}};
-            $result_count++;
         }
         
         # Add ChIP-seq workflow (if specified)
@@ -199,11 +199,30 @@ sub build {
             my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
             push @tasks, @{$chipseq_workflow->{tasks}};
             push @done_files, @{$chipseq_workflow->{done_files}};
-            $result_count++;
+        }
+        
+        # Add ChIP-seq workflow (if specified)
+        if ( $self->params->{chipseq_params} ) {
+            my $chipseq_params = {
+                user => $self->user,
+                wid => $self->workflow->id,
+                genome => $genome,
+                input_files => $bam_files,
+                metadata => $metadata,
+                additional_metadata => $additional_metadata,
+                read_params => $self->params->{read_params},
+                chipseq_params => $self->params->{chipseq_params},
+                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
+            };
+            
+            my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
+            push @tasks, @{$chipseq_workflow->{tasks}};
+            push @done_files, @{$chipseq_workflow->{done_files}};
         }
     }
     # Else, all other file types
     else {
+        # Generate additional metadata for resulting experiments
         my $annotations = CoGe::Core::Metadata::to_annotations($additional_metadata);
         
         # Submit workflow to generate experiment

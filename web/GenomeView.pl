@@ -42,7 +42,8 @@ sub gen_html {
             HELP       => 'GenomeView',
             WIKI_URL   => $CONF->{WIKI_URL} || '',
             ADMIN_ONLY => $USER->is_admin,
-            CAS_URL    => $CONF->{CAS_URL} || ''
+            CAS_URL    => $CONF->{CAS_URL} || '',
+            NO_DOCTYPE => 1
         );
         $template->param( LOGON => 1 ) unless ($USER->user_name eq 'public');
     }
@@ -65,7 +66,8 @@ sub gen_body {
 	$template->param( GENOME_ID => $gid,
 	                  HEIGHT => ($EMBED ? '99%' : '80%'),
 	                  WIDTH => ($EMBED ? '99%' : '100%'),
-	                  API_BASE_URL => $CONF->{SERVER} . 'api/v1/jbrowse' # mdb added base URL, 2/3/15 COGE-289
+	                  API_BASE_URL => $CONF->{SERVER} . 'api/v1/jbrowse', # mdb added base URL, 2/3/15 COGE-289
+	                  USER_NAME => $USER->user_name
 	);
 
     return $template->output;

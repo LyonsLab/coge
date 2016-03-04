@@ -78,7 +78,7 @@
                 <input id="edit_source" type="search" class="col-md-6" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
                 <div class="col-md-2">
                     <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
-                    <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+                    &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
                 </div>
         </div>
 
@@ -103,7 +103,7 @@
         <div id="selector_container"></div><br>
         <div id="files" class="hidden coge-padded">
             Selected file(s):<br>
-            <table id="file_table" class="small" style="background-color:white;display:inline;"></table>
+            <table id="file_table" class="small" style="background-color:white;display:inline-table;"></table>
             <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
                 File type:
                 <select id="file_type_selector">
@@ -273,9 +273,9 @@
 	        <label class="col-md-2 coge-padded-top">Encoding:</label>
 	        <div id="encoding" class="coge-padded-top">
 			    <input name="encoding" type="radio" value="33" checked>
-			    <label for="phred33">phred33</label>
+			    <label for="phred33" title="Also known as Sanger encoding">phred33</label>
 			    <input name="encoding" type="radio" value="64">
-			    <label for="phred64">phred64</label>
+			    <label for="phred64">phred64 &nbsp;&nbsp;&nbsp;<span class="note">(if unsure select phred33)</span></label>
 		    </div>
 	    </div>
 	

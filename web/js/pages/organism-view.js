@@ -9,6 +9,7 @@ var SPINNER = '<img class="padded" src="picts/ajax-loader.gif"/>';
 
 function init(params) {
 	page = params;
+	console.log(page);
 	
 	// Setup jQuery AJAX
 	$.ajaxSetup({

@@ -57,11 +57,11 @@ BEGIN {
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_genome_cache_path get_workflow_results add_workflow_result
       get_workflow_results_file get_workflow_log_file get_download_path
-      get_experiment_path get_experiment_files get_experiment_data
-      reverse_complement get_irods_file get_irods_path get_sra_cache_path
+      get_experiment_path get_experiment_files
+      reverse_complement get_irods_file get_irods_path get_popgen_result_path
+      is_popgen_finished data_type get_sra_cache_path
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
-    @EXPORT_OK = qw(data_type);
 
     # Experiment Data Types -- move to CoGe::Core::Experiment?
     $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -336,6 +336,7 @@ sub get_genome_seq {
     return $seq;
 }
 
+# FIXME: move to Core::Experiment?
 sub get_experiment_path {
     my $eid = shift;
     return unless $eid;
@@ -376,83 +377,6 @@ sub get_experiment_files {
     }
 
     return \@files;
-}
-
-sub get_fastbit_format {
-    my $eid = shift;
-    my $data_type = shift;
-
-    my $storage_path = get_experiment_path($eid);
-    my $format_file = $storage_path . '/format.json';
-
-    # Backward compatibility, see issue 352
-    # FIXME: remove someday by adding format.json files to old experiments
-    if (not -r $format_file) {
-        if (!$data_type || $data_type == $DATA_TYPE_QUANT) {
-            return {
-                columns => [
-                    { name => 'chr',    type => 'key' },
-                    { name => 'start',  type => 'unsigned long' },
-                    { name => 'stop',   type => 'unsigned long' },
-                    { name => 'strand', type => 'byte' },
-                    { name => 'value1', type => 'double' },
-                    { name => 'value2', type => 'double' }
-                ]
-            };
-        }
-        elsif ($data_type == $DATA_TYPE_POLY) {
-            return {
-                columns => [
-                    { name => 'chr',   type => 'key' },
-                    { name => 'start', type => 'unsigned long' },
-                    { name => 'stop',  type => 'unsigned long' },
-                    { name => 'type',  type => 'key' },
-                    { name => 'id',    type => 'text' },
-                    { name => 'ref',   type => 'key' },
-                    { name => 'alt',   type => 'key' },
-                    { name => 'qual',  type => 'double' },
-                    { name => 'info',  type => 'text' }
-                ]
-            };
-        }
-        elsif ( $data_type == $DATA_TYPE_MARKER ) {
-            return {
-                columns => [
-                    { name => 'chr',    type => 'key' },
-                    { name => 'start',  type => 'unsigned long' },
-                    { name => 'stop',   type => 'unsigned long' },
-                    { name => 'strand', type => 'key' },
-                    { name => 'type',   type => 'key' },
-                    { name => 'score',  type => 'double' },
-                    { name => 'attr',   type => 'text' }
-                ]
-            };
-        }
-        return; # should never happen!
-    }
-
-    # Otherwise read format json file
-    return CoGe::Accessory::TDS::read($format_file);
-}
-
-sub parse_fastbit_line {
-    my $format = shift;
-    my $line = shift;
-    my $chr = shift;
-
-    $line =~ s/"//g;
-    my @items = split(/,\s*/, $line);
-    return if ( $items[0] !~ /^\"?$chr/); # make sure it's a row output line
-
-    my %result;
-    foreach (@{$format->{columns}}) {
-        my $item = shift @items;
-        my $name = $_->{name};
-        my $type = $_->{type};
-        if ($type =~ /long|byte|double/) { $result{$name} = 0 + $item } # convert to numeric
-        else { $result{$name} = '' . $item; }
-    }
-    return \%result;
 }
 
 sub get_experiment_data {
@@ -724,7 +648,7 @@ sub get_workflow_log_file {
 sub get_upload_path {
     my ( $user_name, $load_id ) = remove_self(@_); # required because this routine is called internally and externally, is there a better way?
     unless ($user_name && $load_id) {
-         print STDERR "Storage::get_upload_path ERROR: missing required param\n";
+        print STDERR "Storage::get_upload_path ERROR: missing required param\n";
         return;
     }
     
@@ -737,6 +661,30 @@ sub get_download_path {
     $uuid = '' unless $uuid; # optional uuid
     my $conf = CoGe::Accessory::Web::get_defaults();
     return catfile($conf->{SECTEMPDIR}, 'downloads', $type, $id, $uuid);
+}
+
+sub get_popgen_result_path {
+    my $eid = shift;
+    
+    my $conf = CoGe::Accessory::Web::get_defaults();
+    my $POPGENDIR = $conf->{POPGENDIR};
+    unless ($POPGENDIR) {
+        print STDERR "Storage::get_popgen_result_path ERROR: POPGENDIR not specified in config";
+        return;
+    }
+    
+    return catdir($POPGENDIR, $eid);
+}
+
+sub is_popgen_finished {
+    my $eid = shift;
+    
+    my $result_path = get_popgen_result_path($eid);
+    if (-e catfile($result_path, 'sumstats.done')) {
+        return 1;
+    }
+    
+    return 0;
 }
 
 sub get_sra_cache_path {
@@ -816,7 +764,7 @@ sub reverse_complement { #TODO move into Util.pm
     return $rcseq;
 }
 
-sub data_type {
+sub data_type { #FIXME redundant with DBI-X Experiment.pm
     my $data_type = shift;
 
     # Experiment Data Types

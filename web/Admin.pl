@@ -946,7 +946,7 @@ sub get_jobs_for_user {
     
     #my $workflows = $JEX->find_workflows(\@workflows, 'running');
     my $workflows;
-    if($running_only == 1) {
+    if ($running_only) {
     	$workflows = $JEX->find_workflows(undef, 'running');
     } else {
     	$workflows = $JEX->find_workflows(\@workflows);

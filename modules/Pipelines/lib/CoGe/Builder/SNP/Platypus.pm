@@ -74,6 +74,10 @@ sub build {
         cache_dir => $FASTA_CACHE_DIR,
     );
     
+    push @tasks, create_bam_index_job(
+        input_file => $input_file
+    );
+    
     push @tasks, create_platypus_job($conf);
     
     my $load_vcf_task = create_load_vcf_job($conf);

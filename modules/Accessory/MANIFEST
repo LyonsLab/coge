@@ -33,4 +33,5 @@ lib/Coge/Accessory/GenBank.pm
 lib/Coge/Accessory/GenBank/Feature.pm
 lib/Coge/Accessory/genetic_code.pm
 lib/Coge/Accessory/histogram.pm
+lib/Coge/Accessory/FastBit.pm
 t/001_load.t

@@ -18,7 +18,7 @@ sub search { #TODO move search code into reusable function in CoGe::Core::Genome
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
@@ -99,18 +99,28 @@ sub search { #TODO move search code into reusable function in CoGe::Core::Genome
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-
-    # Authenticate user and connect to the database
-    my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    my $genome = $db->resultset("Genome")->find($id);
-    unless (defined $genome) {
-        $self->render(json => {
-            error => { Error => "Item not found"}
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
         });
         return;
     }
 
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get genome
+    my $genome = $db->resultset("Genome")->find($id);
+    unless (defined $genome) {
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found"}
+        });
+        return;
+    }
+
+    # Verify permission
     unless ( !$genome->restricted || (defined $user && $user->has_access_to_genome($genome)) ) {
         $self->render(json => {
             error => { Auth => "Access denied"}
@@ -225,7 +235,7 @@ sub add {
 
     # Valid data items # TODO move into request validation
     unless ($data->{source_data} && @{$data->{source_data}}) {
-        $self->render(json => {
+        $self->render(status => 400, json => {
             error => { Error => "No data items specified" }
         });
         return;

@@ -13,7 +13,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
@@ -29,6 +29,14 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -40,6 +48,14 @@ sub fetch {
 sub sequence {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -47,15 +63,15 @@ sub sequence {
     # Get feature from DB
     my $feature = $db->resultset('Feature')->find($id);
     unless (defined $feature) {
-        $self->render(json => {
-            error => { Error => 'Item not found' }
+        $self->render(status => 404, json => {
+            error => { Error => 'Resource not found' }
         });
         return;
     }
 
     # Verify that user has access to a genome associated with this feature
     unless (get_genome_for_feature(feature => $feature)) {
-        $self->render(json => {
+        $self->render(status => 401, json => {
             error => { Error => 'Access denied' }
         });
         return;

@@ -1,0 +1,4 @@
+lib/CoGe/Algos/PopGen/Diversity.pm
+lib/CoGe/Algos/PopGen/FileFormats.pm
+lib/CoGe/Algos/PopGen/Results.pm
+lib/CoGe/Algos/PopGen/Stats.pm

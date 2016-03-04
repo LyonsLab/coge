@@ -5,6 +5,7 @@ use Data::Dumper;
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Accessory::Utils;
+use CoGe::Core::Experiment;
 use CoGe::Services::Auth;
 use CoGe::Services::Data::Job;
 
@@ -14,7 +15,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
         return;
     }
 
@@ -52,6 +53,14 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -59,8 +68,8 @@ sub fetch {
     # Get experiment
     my $experiment = $db->resultset("Experiment")->find($id);
     unless (defined $experiment) {
-        $self->render(json => {
-            error => { Error => "Item not found" }
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
         });
         return;
     }
@@ -111,7 +120,6 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    #print STDERR "CoGe::Services::Data::Experiment::add\n", Dumper $data, "\n";
 
 # mdb removed 9/17/15 -- auth is handled by Job::add below, redundant token validation breaks CAS proxyValidate
 #    # Authenticate user and connect to the database
@@ -127,7 +135,7 @@ sub add {
 
     # Valid data items
     unless ($data->{source_data} && @{$data->{source_data}}) {
-        $self->render(json => {
+        $self->render(status => 400, json => {
             error => { Error => "No data items specified" }
         });
         return;
@@ -142,6 +150,134 @@ sub add {
     };
     
     return CoGe::Services::Data::Job::add($self, $request);
+}
+
+sub update {
+	my $self = shift;
+    my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get experiment
+    my $experiment = $db->resultset("Experiment")->find($id);
+    unless (defined $experiment) {
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_owner_editor(experiment => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+    my $data = $self->req->json;
+    if (exists($data->{metadata}->{id})) {
+	    delete $data->{metadata}->{id};
+    }
+	$experiment->update($data->{metadata});
+	$self->render(json => {
+		success => Mojo::JSON->true
+	});
+}
+
+sub data {
+	my $self = shift;
+    my $id = int($self->stash('id'));
+    my $chr = $self->param('chr');
+    my $data_type = $self->param('data_type');
+    my $type = $self->param('type');
+    my $gte = $self->param('gte');
+    my $lte = $self->param('lte');
+    my $transform = $self->param('transform');
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    unless ($user) {
+        $self->render(json => {
+            error => { Error => "User not logged in" }
+        });
+        return;
+    }    	
+
+    # Get experiment
+    my $experiment = $db->resultset("Experiment")->find($id);
+    unless (defined $experiment) {
+        $self->render(json => {
+            error => { Error => "Experiment not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_admin() || $user->is_owner_editor(experiment => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+	$self->res->headers->content_disposition('attachment; filename=experiment.csv;');
+	$self->write('# experiment: ' . $experiment->name . "\n");
+	$self->write("# chromosome: $chr\n") if $chr;
+	if ($type) {
+		$self->write("# search: type = $type");
+		$self->write(", gte = $gte") if $gte;
+		$self->write(", lte = $lte") if $lte;
+		$self->write("\n");
+	}
+	$self->write("# transform: $transform\n") if $transform;
+	my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
+	my @columns = map { $_->{name} } @{$cols};
+	$self->write('# columns: ');
+	for (my $i=0; $i<scalar @columns; $i++) {
+		$self->write(',') if $i;
+		$self->write($columns[$i]);
+	}
+	$self->write("\n");
+
+	my $lines = CoGe::Core::Experiment::query_data(
+		eid => $id,
+		data_type => $data_type,
+		col => join(',', @columns),
+		chr => $chr,
+		type => $type,
+		gte => $gte,
+		lte => $lte,
+	);
+	my $score_column = CoGe::Core::Experiment::get_fastbit_score_column($data_type);
+	my $log10 = log(10);
+	foreach my $line (@{$lines}) {
+		if ($transform) {
+			my @tokens = split ',', $line;
+			if ($transform eq 'Inflate') {
+				$tokens[$score_column] = 1;
+			}
+			elsif ($transform eq 'Log2') {
+				$tokens[$score_column] = log(1 + $tokens[$score_column]);
+			}
+			elsif ($transform eq 'Log10') {
+				$tokens[$score_column] = log(1 + $tokens[$score_column]) / $log10;
+			}
+			$line = join ',', @tokens;
+		}
+		$self->write($line);
+		$self->write("\n");
+	}
+	$self->finish();
 }
 
 1;

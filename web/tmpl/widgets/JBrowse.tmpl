@@ -1,4 +1,51 @@
-<link rel="stylesheet" type="text/css" href="js/jbrowse/genome.css">
+<link rel="stylesheet" type="text/css" href="js/jbrowse/css/genome.css">
+<style>
+.glyphicon-step-backward:before {
+  content: "\e069";
+}
+.glyphicon-step-forward:before {
+  content: "\e077";
+}
+.glyphicon-chevron-left:before {
+  content: "\e079";
+}
+.glyphicon-chevron-right:before {
+  content: "\e080";
+}
+.coge-hist {
+  display: inline-block;
+  height: 151px;
+  margin-bottom: 20px;
+}
+.background.bar {
+  fill: #ccc;
+}
+
+.foreground.bar {
+  fill: steelblue;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.brush rect.extent {
+  fill: steelblue;
+  fill-opacity: .125;
+}
+
+.brush .resize path {
+  fill: #eee;
+  stroke: #666;
+}
+</style>
+<script src="//d3js.org/d3.v3.js" charset="utf-8"></script>
 <script type="text/javascript" src="js/jbrowse/src/dojo/dojo.js" data-dojo-config="async: 1"></script>
 <script type="text/javascript" src="js/jbrowse/src/JBrowse/init.js"></script>
 <script type="text/javascript">
@@ -8,7 +55,10 @@
     }
 
     var JBrowse;
+    var api_base_url;
+    var gid;
     function init_JBrowse(id, apiBaseUrl, callback) { // mdb added apiBaseUrl, 2/3/15 COGE-289
+    	api_base_url = apiBaseUrl;
 	    require( { baseUrl: 'js/jbrowse/src',
 	    		   packages: [ 'dojo', 'dijit', 'dojox', 'jszlib',
 	    		               { name: 'lazyload', main: 'lazyload' },
@@ -20,7 +70,7 @@
 	      	['JBrowse/Browser', 'dojo/io-query', 'dojo/json' ],
 	        function (Browser,ioQuery,JSON) {
 	      		var queryParams = ioQuery.queryToObject( window.location.search.slice(1) );
-	            var gid = queryParams.gid || queryParams.dsgid;
+	            gid = queryParams.gid || queryParams.dsgid;
 	            //var dataRoot = queryParams.data || 'data';
 	            if (!apiBaseUrl) apiBaseUrl = '';
 	            var config = {
@@ -49,7 +99,8 @@
 	                },
 	                updateBrowserURL: true,
 	                refSeqDropdown: true,		// mdb added 12/11/14, issue COGE-567
-	                refSeqSelectorMaxSize: 1000	// mdb added 12/11/14, issue COGE-567
+	                refSeqSelectorMaxSize: 1000,	// mdb added 12/11/14, issue COGE-567
+	                names: { type: 'REST', url: apiBaseUrl + '/genome/' + gid + '/genes' },
 	            };
 
 	            JBrowse = new Browser( config );

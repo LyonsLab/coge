@@ -57,14 +57,14 @@ sub build {
     my ($input_file, @replicates);
     foreach my $file (@$input_files) {
         my ($basename) = to_filename_base($file);
-        if ($basename eq $input_base) {
+        if (index($basename, $input_base) != -1) {
             $input_file = $file;
         }
         else {
             push @replicates, $file;
         }
     }
-    die unless $input_file;
+    die "CoGe::Builder::Protein::ChIPseq: ERROR, unable to detect input, base=$input_base, files: ", Dumper @$input_files unless $input_file;
 
     #
     # Build the workflow
@@ -72,7 +72,7 @@ sub build {
     my (@tasks, @done_files);
 
     foreach my $bam_file (@$input_files) {
-        my $bamToBed_task = create_bamToBed_job( 
+        my $bamToBed_task = create_bamToBed_job(
             bam_file => $bam_file,
             staging_dir => $staging_dir
         );

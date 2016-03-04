@@ -1,0 +1,76 @@
+{
+"restricted": false,
+"genome_id": 16911,
+"id": 31,
+"description": "",
+"name": "H3K27me3_Roudier_2011",
+"types": [],
+"additional_metadata": [
+{
+"link": "",
+"type": "Mark",
+"type_group": null,
+"text": "H3K27me3"
+},
+{
+"type": "Protocol",
+"type_group": null,
+"text": "ChIP-chip",
+"link": ""
+},
+{
+"link": "",
+"type": "Platform ID",
+"text": "GPL10920",
+"type_group": null
+},
+{
+"link": "",
+"type": "Platform",
+"type_group": null,
+"text": "Custom NimbleGen A. thaliana ChIP-chip tiling design AT7v1.2"
+},
+{
+"link": "http://www.ncbi.nlm.nih.gov/pubmed/21487388",
+"type_group": null,
+"text": "Roudier F, Ahmed I, Berard C, Sarazin A et al. Integrative epigenomic mapping defines four main chromatin states in Arabidopsis. EMBO J 2011 May 18;30(10):1928-38. PMID: 21487388",
+"type": "Citation"
+},
+{
+"type": "Processing",
+"text": "ChIPmix, then intersection of two replicates",
+"type_group": null,
+"link": ""
+},
+{
+"text": "GSM607791_H3K27me3_WT_IP_vs_WT_INPUT.tbl, GSM607795_H3K27me3_WT_IP_vs_WT_INPUT.tbl",
+"type_group": null,
+"type": "Raw files",
+"link": ""
+},
+{
+"type": "Processed files",
+"type_group": null,
+"text": "GSE24657_col0_H3K27me3_chip_enriched.csv",
+"link": ""
+},
+{
+"type_group": null,
+"text": "GSE24657",
+"type": "Series",
+"link": ""
+},
+{
+"link": "",
+"type": "Samples",
+"text": "GSM607791, GSM607795",
+"type_group": null
+}
+],
+"version": "1",
+"source": {
+"link": null,
+"description": "Loaded into CoGe via LoadExperiment",
+"name": "Eric Lyons"
+}
+}
