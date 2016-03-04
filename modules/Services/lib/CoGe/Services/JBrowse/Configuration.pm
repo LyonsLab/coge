@@ -141,8 +141,6 @@ sub track_config {
         label         => "sequence",
         key           => "Sequence",
         formatVersion => 1,
-
-        # CoGe-specific stuff
         coge => {
             id   => $gid,
             type => 'sequence',
@@ -166,8 +164,6 @@ sub track_config {
             neg_color => '#f00',
             bg_color  => 'rgba(232, 255, 220, 0.4)'
         },
-
-        # CoGe-specific stuff
         coge => {
             id   => $gid,
             type => 'gc_content'
@@ -204,13 +200,10 @@ sub track_config {
                 centerChildrenVertically => JSON::true,
                 subfeatureClasses        => { match_part => "match_part7" }
             },
-
-            # CoGe-specific stuff
             coge => {
                 id        => 0,
                 type      => 'feature_group',
-                classes   => ['coge-tracklist-collapsible'],
-                collapsed => 1 #FIXME move into CSS
+                collapsible => 1
             }
         };
         
@@ -241,13 +234,9 @@ sub track_config {
                     centerChildrenVertically => JSON::true,
                     subfeatureClasses        => { match_part => "match_part7" }
                 },
-
-                # CoGe-specific stuff
                 coge => {
                     id      => "$type_name",
                     type    => 'features',
-                    classes => ['coge-tracklist-indented'],
-                    collapsed => 1, #FIXME move into CSS
                     dataset_id => 0
                 }
             };
@@ -289,13 +278,10 @@ sub track_config {
                         centerChildrenVertically => JSON::true,
                         subfeatureClasses        => { match_part => "match_part7" }
                     },
-
-                    # CoGe-specific stuff
                     coge => {
                         id         => $dsid,
                         type       => 'feature_group',
-                        classes    => ['coge-tracklist-collapsible'],
-                        collapsed  => 1, #FIXME move into CSS
+                        collapsible => 1
                     }
                 };
 
@@ -324,13 +310,9 @@ sub track_config {
                             centerChildrenVertically => JSON::true,
                             subfeatureClasses        => { match_part => "match_part7" }
                         },
-
-                        # CoGe-specific stuff
                         coge => {
                             id         => $dsid.'_'.$type_name,
                             type       => 'features',
-                            classes    => ['coge-tracklist-indented'],
-                            collapsed  => 1, #FIXME move into CSS
                             dataset_id => $dsid
                         }
                     };
@@ -356,7 +338,9 @@ sub track_config {
     foreach $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
         next if ( $e->{deleted} );
         my $eid = $e->{experiment_id};
-        next if ($e->{restricted} && !$user->admin && defined $connectors && !$connectors->{3}{$eid}); #next unless $user->has_access_to_experiment($e); #TODO move into an API
+        my $role = $connectors->{3}{$eid};
+        $role = $role->{role_id} if $role;
+        next if ($e->{restricted} && !$user->admin && !$role); #next unless $user->has_access_to_experiment($e); #TODO move into an API
         $experiments{$eid} = $e;
 
         # Build a list of notebook id's
@@ -438,29 +422,20 @@ sub track_config {
             histograms => {
             	storeClass => "JBrowse/Store/SeqFeature/REST" # was "store" which caused a warning in the browser for every experiment track on page load
             },
-
-            # CoGe-specific stuff
             coge => {
                 id      => $eid,
                 type    => 'experiment',
-                classes => [
-                    'coge-tracklist-indented',
-                    'coge-tracklist-editable',
-                    'coge-tracklist-info'
-                ],
-                collapsed   => 1, #FIXME move into CSS
+                editable    => ($user->is_admin || $role == 2 || $role == 3) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 name        => $e->{name},
                 description => $e->{description},
                 moveable    => 1,
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
 #                annotations => ( @annotations ? \@annotations : undef ),
                 onClick     => "ExperimentView.pl?embed=1&eid=$eid",
-                menuOptions => [
-                    {
-                        label => 'ExperimentView',
-                        action => "function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
-                    }
-                ],
+                menuOptions => [{
+                    label => 'ExperimentView',
+                    action => "function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
+                }],
                 annotations => _annotations('experiment', $eid, $db)
             }
         };
@@ -481,17 +456,12 @@ sub track_config {
             type => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
-
-            # CoGe-specific stuff
             coge => {
                 id          => 0, # use id of 0 to represent all experiments
                 type        => 'notebook',
-                classes     => ['coge-tracklist-collapsible'],
-                collapsed   => 1, #FIXME move into CSS
+                collapsible => 1,
                 name        => 'All Experiments',
                 description => '',
-                count       => keys %experiments,
-                #experiments => [ values %experiments ],
             }
         };
     }
@@ -501,6 +471,8 @@ sub track_config {
     #
     foreach my $n ( sort { $a->{name} cmp $b->{name} } values %notebooks ) {
         my $nid = $n->{list_id};
+        my $role = $connectors->{1}{$nid};
+        $role = $role->{role_id} if $role;
         push @tracks, {
             key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
             baseUrl => "$JBROWSE_API/experiment/notebook/$nid/",
@@ -510,31 +482,20 @@ sub track_config {
             type => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
-
-            # CoGe-specific stuff
             showHoverScores => 1,
             coge            => {
                 id      => $nid,
                 type    => 'notebook',
-                classes => [
-                    'coge-tracklist-collapsible',
-                    'coge-tracklist-editable',
-                    'coge-tracklist-info'
-                ],
-                collapsed   => 1, #FIXME move into CSS
+                collapsible => 1,
                 name        => $n->{name},
                 description => $n->{description},
-                #editable    => $user->is_admin || $user->is_owner_editor( list => $n ) || undef, # mdb removed 2/6/15
-                editable    => $user->is_admin || (defined $connectors && ($connectors->{1}{$nid} == 2 || $connectors->{1}{$nid} == 3)) || undef, # mdb added 2/6/15 #TODO move this obscure code into an API
+                editable    => ($user->is_admin || $role == 2 || $role == 3) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
-                count       => scalar @{ $expByNotebook{$nid} },
                 onClick     => "NotebookView.pl?embed=1&lid=$nid",
-                menuOptions => [
-                    {
-                        label => 'NotebookView',
-                        action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
-                    }
-                ],
+                menuOptions => [{
+                    label => 'NotebookView',
+                    action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
+                }],
                 annotations => _annotations('list', $nid, $db)
             }
         };
@@ -542,17 +503,15 @@ sub track_config {
 
     print STDERR 'time4: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
-    return encode_json(
-        {
-            formatVersion => 1,
-            dataset_id    => 'coge',
-            plugins       => ['CoGe'],
-            trackSelector => {
-                type => 'CoGe/View/TrackList/CoGe'
-            },
-            tracks => \@tracks,
-        }
-    );
+    return encode_json({
+        formatVersion => 1,
+        dataset_id    => 'coge',
+        plugins       => ['CoGe'],
+        trackSelector => {
+            type => 'CoGe/View/TrackList/CoGe'
+        },
+        tracks => \@tracks,
+    });
 }
 
 # FIXME this is duplicated in JBrowse MultiXYPlot.js, need to either make totally client side or totally server side

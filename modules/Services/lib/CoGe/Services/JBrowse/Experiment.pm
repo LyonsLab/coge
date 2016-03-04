@@ -270,8 +270,8 @@ sub snps {
     my $self = shift;
     my $eid = $self->param('eid');
     my $chr = $self->param('chr');
-
     $chr = undef if $chr eq 'Any';
+
 	my $snps = CoGe::Core::Experiment::query_data(
 		eid => $eid,
 		col => 'chr,start,stop',

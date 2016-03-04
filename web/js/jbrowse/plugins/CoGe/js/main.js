@@ -168,7 +168,7 @@ return declare( JBrowsePlugin,
 
     create_search_button: function() {
     	var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
-    	this.browser.refSeqOrder.forEach(function(rs){
+    	this.browser.refSeqOrder.forEach(function(rs) {
     		content += '<option>' + rs + '</option>';
     	})
     	content += '</select></td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
@@ -186,7 +186,7 @@ return declare( JBrowsePlugin,
 	        	coge.search_dialog = new Dialog({
                     title: "Search",
                     content: content,
-                    onHide: function(){
+                    onHide: function() {
                     	this.destroyRecursive();
                     	coge.search_dialog = null;
                     },
@@ -237,8 +237,11 @@ return declare( JBrowsePlugin,
     // ----------------------------------------------------------------
 
     new_search_track: function(track, data, search) {
-        var browser = this.browser;
-    	var eid = track.config.coge.id;
+    	var browser = this.browser;
+    	var config = track.config;
+    	var eid = config.coge.id;
+    	if (dojo.byId('nav_' + eid))
+    		browser.publish('/jbrowse/v1/v/tracks/hide', [coge_track_list.get_search_config(eid)]);
     	var results = new SearchResults(eid, data);
         var d = new Deferred();
         var store_config = {
@@ -252,17 +255,17 @@ return declare( JBrowsePlugin,
         browser.getStore(store_name, function(store) {
             d.resolve(true);
         });
-        d.promise.then(function(){
-        	var config = dojo.clone(track.config);
-        	config.key = 'Search: ' + track.config.key + ' (' + coge.search_to_string(search) + ')';
+        d.promise.then(function() {
+        	config = dojo.clone(config);
+        	config.key = 'Search: ' + config.key + ' (' + coge.search_to_string(search) + ')';
         	config.track = 'search_' + eid;
         	config.label = 'search_' + eid;
             config.metadata = {Description: 'Track to show results of searching a track.'};
             config.store = store_name;
             config.coge.collapsed = false;
             config.coge.search_track = true;
-            browser.publish( '/jbrowse/v1/v/tracks/new', [config] );
-            browser.publish( '/jbrowse/v1/v/tracks/show', [config] );
+            browser.publish('/jbrowse/v1/v/tracks/new', [config]);
+            browser.publish('/jbrowse/v1/v/tracks/show', [config]);
    			dojo.place(dojo.byId('track_search_' + eid), dojo.byId('track_experiment' + eid), 'after');
    			browser.view.updateTrackList();
     		var nav = dojo.byId('nav_' + eid);
@@ -312,7 +315,7 @@ return declare( JBrowsePlugin,
   				div.style.maxHeight = '500px';
   				div.style.overflow = 'auto';
     			dojo.empty(div);
-    			data.forEach(function(hit){
+    			data.forEach(function(hit) {
     				dojo.create('a', {
     					innerHTML: hit.name,
     					onclick: dojo.hitch(hit, function() {

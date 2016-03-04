@@ -19,9 +19,7 @@ return declare(SeqFeatureStore, {
 
     getFeatures: function(query, featureCallback, finishCallback, errorCallback) {
     	var features = this.config.results.get_features(query.ref, query.start, query.end);
-    	features.forEach(function(feature){
-    		featureCallback(feature);
-    	});
+    	features.forEach(function(feature){ featureCallback(feature); });
     	finishCallback();
     }
 });

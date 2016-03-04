@@ -27,7 +27,7 @@ return declare( [ HTMLFeatures ], {
     _create_search_dialog: function(track) {
     	this._track = track;
     	var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
-    	this.browser.refSeqOrder.forEach(function(rs){
+    	this.browser.refSeqOrder.forEach(function(rs) {
     		content += '<option>' + rs + '</option>';
     	})
     	content += '</select></td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
@@ -42,7 +42,7 @@ return declare( [ HTMLFeatures ], {
         this._search_dialog = new Dialog({
             title: "Find SNPs in Features",
             content: content,
-            onHide: function(){
+            onHide: function() {
             	this.destroyRecursive();
             	coge_variants._search_dialog = null;
             },
@@ -109,10 +109,11 @@ return declare( [ HTMLFeatures ], {
         var options = this.inherited(arguments);
         var track = this;
 
-        options.push({
-	        label: 'Search',
-	        onClick: function(){coge_variants._create_search_dialog(track);}
-        });
+        if (!track.config.coge.search_track && track.config.coge.type != 'notebook')
+	        options.push({
+		        label: 'Search',
+		        onClick: function(){coge_variants._create_search_dialog(track);}
+	        });
 
         return options;
     },

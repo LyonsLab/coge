@@ -172,7 +172,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     _create_download_dialog: function(track) {
     	this._track = track;
     	var content = '<div id="coge-track-download"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
-    	this.browser.refSeqOrder.forEach(function(rs){
+    	this.browser.refSeqOrder.forEach(function(rs) {
     		content += '<option>' + rs + '</option>';
     	});
     	content += '</select></td></tr>';
@@ -184,7 +184,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	this._track_download_dialog = new Dialog({
             title: 'Download Track',
             content: content,
-            onHide: function(){
+            onHide: function() {
             	this.destroyRecursive();
             	coge_xyplot._track_download_dialog = null;
             },
@@ -198,7 +198,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     _create_search_dialog: function(track) {
     	this._track = track;
     	var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
-    	this.browser.refSeqOrder.forEach(function(rs){
+    	this.browser.refSeqOrder.forEach(function(rs) {
     		content += '<option>' + rs + '</option>';
     	});
     	content += '</select></td></tr>' +
@@ -209,7 +209,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	this._track_search_dialog = new Dialog({
             title: 'Search Track',
             content: content,
-            onHide: function(){
+            onHide: function() {
             	this.destroyRecursive();
             	coge_xyplot._track_search_dialog = null;
             },
@@ -825,7 +825,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 }
             ]);
 
-        if (!config.coge.search_track)
+        if (!config.coge.search_track && config.coge.type != 'notebook')
 	        options.push({
 		        label: 'Search',
 		        onClick: function(){coge_xyplot._create_search_dialog(track);}
@@ -916,10 +916,11 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 );
         }
 
-        options.push({
-	        label: 'Download Track Data',
-	        onClick: function(){coge_xyplot._create_download_dialog(track);}
-        });
+        if (config.coge.type != 'notebook')
+	        options.push({
+		        label: 'Download Track Data',
+		        onClick: function(){coge_xyplot._create_download_dialog(track);}
+	        });
 
         return options;
     },
