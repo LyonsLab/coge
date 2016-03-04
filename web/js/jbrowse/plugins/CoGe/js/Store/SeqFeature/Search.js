@@ -1,8 +1,9 @@
 define([
            'dojo/_base/declare',
-           'JBrowse/Store/SeqFeature'
+           'JBrowse/Store/SeqFeature',
+           'JBrowse/Model/SimpleFeature'
        ],
-       function( declare, SeqFeatureStore ) {
+       function( declare, SeqFeatureStore, SimpleFeature ) {
 
 return declare(SeqFeatureStore, {
 
@@ -18,9 +19,38 @@ return declare(SeqFeatureStore, {
     },
 
     getFeatures: function(query, featureCallback, finishCallback, errorCallback) {
-    	var features = this.config.results.get_features(query.ref, query.start, query.end);
-    	if (features)
-    		features.forEach(function(feature){ featureCallback(feature); });
+    	var hits = this.config.results.get_hits(query.ref, query.start, query.end);
+    	if (hits) {
+   			var coge = this.config.config.coge;
+    		var from = hits[1];
+    		var to = hits[2];
+    		hits = hits[0];
+    		for (var i=from; i<=to; i++) {
+    			var hit = hits[i];
+	   	        if (!coge.data_type || coge.data_type == 1) {
+	   	        	var strand = hit[2] == 1 ? 1 : -1;
+	   	        	featureCallback(new SimpleFeature({ data: {
+	   	                id: coge.id,
+	   	                start: hit[0],
+	   	                end: hit[1] == hit[0] ? hit[1] + 1 : hit[1],
+	   	                strand: strand,
+	   	                score: hit[3] * strand,
+	   	                score2: hit[4]
+	   	            }}));
+	   	        } else if (coge.data_type == 2)
+	   	        	featureCallback(new SimpleFeature({ data: {
+	   	                id: coge.id,
+	   	                start: hit[0],
+	   	                end: hit[1],
+	   	                type: hit[2].toLowerCase() == 'snp' ? hit[2] + hit[4] + 'to' + hit[5] : hit[2],
+	   	                ref: hit[4],
+	   	                alt: hit[5],
+	   	                score: hit[6],
+	   	                info: hit[7],
+	   	                name: hit[2] + ' ' + hit[4] + ' > ' + hit[5] // snps only
+	   	            }}));
+    		}
+    	}
     	finishCallback();
     }
 });

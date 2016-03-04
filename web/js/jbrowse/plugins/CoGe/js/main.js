@@ -6,8 +6,7 @@ define([
            'dijit/form/Button',
            'JBrowse/View/ConfirmDialog',
            'JBrowse/View/InfoDialog',
-           'JBrowse/Plugin',
-           'JBrowse/Model/SimpleFeature'
+           'JBrowse/Plugin'
        ],
        function(
            declare,
@@ -16,8 +15,7 @@ define([
            Button,
            ConfirmDialog,
            InfoDialog,
-           JBrowsePlugin,
-           SimpleFeature
+           JBrowsePlugin
        ) {
 	var SearchNav = declare(null, {
 		constructor: function(eid, results, browser) {
@@ -60,8 +58,7 @@ define([
 	// ----------------------------------------------------------------
 
 	var SearchResults = declare(null, {
-		constructor: function(eid, data, stranded) {
-			this.eid = eid;
+		constructor: function(data, stranded) {
 			this.hits = data;
 			this.stranded = stranded;
 			this.chr = [];
@@ -95,27 +92,20 @@ define([
 	    			return this.chr[i][0];
 	    	}
 	    },
-	    get_features: function(chr, start, end) {
+	    get_hits: function(chr, start, end) {
 	    	var b = this.boundaries(chr);
 	    	if (!b)
 	    		return null;
 	    	var i = b[0];
 	    	var j = b[1];
-	    	var features = [];
-	    	while (i < j && this.hits[i][0] < start)
+	    	if (this.hits[i][0] > end)
+	    		return null;
+	    	while (i < j && this.hits[i][1] < start)
 	    		++i;
-	    	while (i < j && this.hits[i][1] <= end) {
-	    		var s = this.hits[i][0];
-	    		var e = this.hits[i][1];
-	   			if (s == e)
-	   				e++;
-	   			var score = this.hits[i][3];
-	   			if (this.hits[i][2] != 1)
-	   				score *= -1;
-	    		features.push(new SimpleFeature({ data: { id: this.eid, start: s, end: e, score: score } }));
-	    		++i;
-	    	}
-	    	return features;
+	    	--j;
+	    	while (j >= i && this.hits[j][0] > end)
+	    		--j;
+	    	return [this.hits, i, j];
 	    }
 	});
 
@@ -244,10 +234,11 @@ return declare( JBrowsePlugin,
     	var eid = config.coge.id;
     	if (dojo.byId('nav_' + eid))
     		browser.publish('/jbrowse/v1/v/tracks/hide', [coge_track_list.get_search_config(eid)]);
-    	var results = new SearchResults(eid, data);
+    	var results = new SearchResults(data);
 //        var d = new Deferred();
         var store_config = {
             browser: browser,
+            config: config,
             refSeq: browser.refSeq,
             results: results,
             type: 'CoGe/Store/SeqFeature/Search'

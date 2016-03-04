@@ -66,18 +66,6 @@ sub refseq_config {
     }
 
     my @chromosomes;
-#    foreach my $chr ( sort { $b->sequence_length <=> $a->sequence_length }
-#        $genome->genomic_sequences )
-#    {
-#        push @chromosomes,
-#          {
-#            name         => uri_escape($chr->chromosome), # mdb changed 12/17/13 issue 266
-#            length       => $chr->sequence_length,
-#            seqChunkSize => $SEQ_CHUNK_SIZE,
-#            start        => 0,
-#            end          => $chr->sequence_length - 1
-#          };
-#    }
 	my $c = CoGe::Core::Chromosomes->new($genome->id);
 	while ($c->next) {
 		push @chromosomes, {
@@ -363,18 +351,6 @@ sub track_config {
         }
         push @notebooks, 0;    # add fake "all experiments" notebook
 
-        # Make a list of annotations
-        #		my @annotations;
-        #		foreach my $a ($e->experiment_annotations) {
-        #			push @annotations,
-        #			{
-        #				type  => $a->annotation_type->name,
-        #				text  => $a->annotation,
-        #				image => ($a->image_id ? 'image.pl?id='.$a->image_id : undef),
-        #				link  => $a->link
-        #			}
-        #		}
-
         my ($type, $featureScale, $histScale, $labelScale);
         if (!$e->{data_type} or $e->{data_type} == 1) { #FIXME hardcoded data_type 'quantitative'
 			$type = 'CoGe/View/Track/Wiggle/MultiXYPlot';
@@ -425,12 +401,12 @@ sub track_config {
             coge => {
                 id      => $eid,
                 type    => 'experiment',
+                data_type => $e->{data_type},
                 editable    => ($user->is_admin || $role == 2 || $role == 3) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 name        => $e->{name},
                 description => $e->{description},
                 moveable    => 1,
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
-#                annotations => ( @annotations ? \@annotations : undef ),
                 onClick     => "ExperimentView.pl?embed=1&eid=$eid",
                 menuOptions => [{
                     label => 'ExperimentView',
