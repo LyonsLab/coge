@@ -52,7 +52,7 @@ sub init {
         $session_id =~ s/session&//;
         my $session = $db->resultset('UserSession')->find( { session => $session_id } );
         if ($session && $user && $session->user_id == $user->id) {
-            print STDERR "CoGe::Services::Auth::init using existing session\n";
+            print STDERR "CoGe::Services::Auth::init using existing session for user '", $user->name, "'\n";
             return ( $db, $user, $conf );
         }
     }
