@@ -5,15 +5,6 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use Data::Dumper;
 
-sub setup {
-    my $self = shift;
-    $self->run_modes(
-        'features' => 'features',
-        'genes' => 'genes',
-    );
-    $self->mode_param('rm');
-}
-
 sub _add_features {
     my ($name, $chr, $type_ids, $dsid, $hits, $dbh) = @_;
     my $query = 'SELECT name,chromosome,start,stop FROM feature JOIN feature_name on feature.feature_id=feature_name.feature_id WHERE dataset_id=' . $dsid;

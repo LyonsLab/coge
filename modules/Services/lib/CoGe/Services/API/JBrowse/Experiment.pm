@@ -287,6 +287,19 @@ sub snps {
 	    }
 	}
 
+	my $dir = catdir $conf->{CACHEDIR}, $experiment->genome_id, 'features';
+	my @chromosomes = keys %$features;
+	while (@chromosomes) {
+		open my $fh, ">$dir/" . $_ . '_' . $type_ids[0] . '.loc';
+		bindmode $fh;
+		my $locs = $features->{$_};
+		print $fh pack('L', scalar @$locs);
+		foreach my $loc (@$locs) {
+			print $fh pack('LL', $loc[1], $loc[2]);
+		}
+		close $fh;
+	}
+
 	my $hits = [];
     foreach my $snp (@$snps) {
     	my @tokens = split ',', $snp;
