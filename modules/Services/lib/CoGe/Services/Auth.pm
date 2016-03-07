@@ -46,10 +46,9 @@ sub init {
     }
 
     # Check for existing user session (cookie enabled browser only)
-    print STDERR Dumper $self->cookie($conf->{COOKIE_NAME});
     my $session_id = unescape($self->cookie($conf->{COOKIE_NAME}));
     if ($session_id) {
-        print STDERR "session_id: ", $session_id, "\n";
+        #print STDERR "session_id: ", $session_id, "\n";
         $session_id =~ s/session&//;
         my $session = $db->resultset('UserSession')->find( { session => $session_id } );
         if ($session) {# && $user && $session->user_id == $user->id) { # mdb changed 3/7/16 for hypnotoad
