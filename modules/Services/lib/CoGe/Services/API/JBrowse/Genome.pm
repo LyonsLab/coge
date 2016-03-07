@@ -2,11 +2,12 @@ package CoGe::Services::API::JBrowse::Genome;
 
 use Mojo::Base 'Mojolicious::Controller';
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Services::Auth qw(init);
 use Data::Dumper;
 
 sub _add_features {
     my ($name, $chr, $type_ids, $dsid, $hits, $dbh) = @_;
+    #TODO move this query to CoGeDBI.pm
     my $query = 'SELECT name,chromosome,start,stop FROM feature JOIN feature_name on feature.feature_id=feature_name.feature_id WHERE dataset_id=' . $dsid;
     if ($chr) {
     	$query .= " AND chromosome='" . $chr . "'";
@@ -42,6 +43,7 @@ sub features {
 	}
 	
     my $hits = [];
+    #TODO move this query to CoGeDBI.pm
     my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->stash('gid'));
     foreach my $dsid (@$ids) {
         _add_features '%' . lc($name) . '%', $chr, $type_ids, $dsid, $hits, $dbh;
@@ -69,6 +71,7 @@ sub genes {
     my $dbh = $db->storage->dbh;
 
     my $hits = [];
+    #TODO move this query to CoGeDBI.pm
     my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->stash('gid'));
     foreach my $dsid (@$ids) {
         _add_features lc($name), undef, '1', $dsid, $hits, $dbh;
