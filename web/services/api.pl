@@ -267,7 +267,15 @@ $r->get("/jbrowse/experiment/notebook/:nid/stats/regionFeatureDensities/:chr" =>
 
 $r->get("/jbrowse/experiment/notebook/:nid/features/:chr"  => { nid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-features")
-    ->to("experiment#features", nid => undef, chr => undef);    
+    ->to("experiment#features", nid => undef, chr => undef);
+
+$r->get("/jbrowse/genome/:gid/genes/"  => [gid => qr/\d+/])
+    ->name("jbrowse-genome-genes")
+    ->to("genome#genes", gid => undef);
+
+$r->get("/jbrowse/genome/:gid/features/"  => [gid => qr/\d+/])
+    ->name("jbrowse-genome-features")
+    ->to("genome#features", gid => undef);
 
 # Not found
 $r->any("*" => sub {

@@ -2,14 +2,10 @@ package CoGe::Services::API::JBrowse::Configuration;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
-use Switch;
-use JSON;
 use URI::Escape qw(uri_escape);
 use Data::Dumper;
 use Sort::Versions;
-use Cwd qw(abs_path);
 use Time::HiRes qw(time);
-use File::Spec::Functions qw(catdir);
 
 use CoGe::Services::Auth qw(init);
 use CoGeX;
@@ -58,7 +54,6 @@ sub refseq_config {
 		};
 	}
 
-#    return encode_json( \@chromosomes );
     $self->render(json => \@chromosomes);
 }
 
@@ -76,7 +71,7 @@ sub _annotations {
 sub track_config {
     my $self = shift;
     my $gid  = $self->param('gid');
-    warn "JBrowse::Configuration::track_config gid=$gid";
+#    warn "JBrowse::Configuration::track_config gid=$gid";
     my $start_time = time; # for performance testing
     
     # Connect to the database
@@ -100,7 +95,7 @@ sub track_config {
     # Get genome
     my $genome = $db->resultset('Genome')->find($gid);
     return unless $genome;
-warn 'got genome';
+
     # Check permissions
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
@@ -151,7 +146,7 @@ warn 'got genome';
     };
 
     print STDERR 'time1: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
-warn 'time1';
+
     #
     # Add overall feature group for all datasets
     #
@@ -300,7 +295,7 @@ warn 'time1';
             }
         }
     }
-warn 'time2';
+
     print STDERR 'time2: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
     #
@@ -309,18 +304,18 @@ warn 'time2';
     my %experiments;    # all experiments hashed by id -- used later for creating "All Experiments" section
     my %notebooks;      # all notebokos hashed by id -- used later for creating individual notebooks
     my %expByNotebook;  # all experiments hashed by notebook id -- used later for creating individual notebooks
-   
+
     # mdb added 2/9/15 for performance improvement, COGE-166
     my $connectors = get_user_access_table($db->storage->dbh, $user->id);
     my $allNotebooks = get_table($db->storage->dbh, 'list');
     my $allNotebookConn = get_table($db->storage->dbh, 'list_connector', ['child_id', 'list_connector_id'], {child_type => 3});
-
     foreach my $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
         next if ( $e->{deleted} );
         my $eid = $e->{experiment_id};
         my $role = $connectors->{3}{$eid};
         $role = $role->{role_id} if $role;
-        next if (($e->{restricted} || !$role) && !$user->admin); #next unless $user->has_access_to_experiment($e); #TODO move into an API
+
+        next if ($e->{restricted} && !($user->admin || $role)); #next unless $user->has_access_to_experiment($e); #TODO move into an API
         $experiments{$eid} = $e;
 
         # Build a list of notebook id's
@@ -386,13 +381,13 @@ warn 'time2';
             },
 
             histograms => {
-            	store => "JBrowse/Store/SeqFeature/REST"
+            	storeClass => "JBrowse/Store/SeqFeature/REST"
             },
             coge => {
                 id      => $eid,
                 type    => 'experiment',
                 data_type => $e->{data_type},
-                editable    => ($user->is_admin || $role == 2 || $role == 3) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
+                editable    => ($user->is_admin || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 name        => $e->{name},
                 description => $e->{description},
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
@@ -405,7 +400,7 @@ warn 'time2';
             }
         };
     }
-warn 'time3';
+
     print STDERR 'time3: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
     #
@@ -454,7 +449,7 @@ warn 'time3';
                 collapsible => 1,
                 name        => $n->{name},
                 description => $n->{description},
-                editable    => ($user->is_admin || $role == 2 || $role == 3) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
+                editable    => ($user->is_admin || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
                 onClick     => "NotebookView.pl?embed=1&lid=$nid",
                 menuOptions => [{
@@ -465,10 +460,10 @@ warn 'time3';
             }
         };
     }
-warn 'time4';
+
     print STDERR 'time4: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
-    return encode_json({
+    $self->render(json => {
         formatVersion => 1,
         dataset_id    => 'coge',
         plugins       => ['CoGe'],

@@ -111,12 +111,10 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     $mean = $sum / $count if ($count);
     my $max = $bpPerBin; # mdb added 1/14/14 for BAM histograms
 
-    return encode_json(
-        {
-            bins => \@bins,
-            stats => { basesPerBin => $bpPerBin, max => $max, mean => $mean }
-        }
-    );
+    $self->render(json => {
+        bins => \@bins,
+        stats => { basesPerBin => $bpPerBin, max => $max, mean => $mean }
+    });
 }
 
 sub _get_experiments {
@@ -204,7 +202,7 @@ sub query_data {
 			lte => $lte,
 		);
 	}
-	return encode_json($result);
+    $self->render(json => $result);
 }
 
 sub snp_overlaps_feature {
@@ -296,7 +294,7 @@ sub snps {
     		push @$hits, $snp;
     	}
     }
-    return encode_json($hits);
+    $self->render(json => $hits);
 }
 
 sub features {
@@ -357,7 +355,6 @@ sub features {
                 $result{score} = $d->{strand} * $d->{value1};
                 $result{score2} = $d->{value2} if (defined $d->{value2});
                 $result{label} = $d->{label} if (defined $d->{label});
-                #$results .= ( $results ? ',' : '') . encode_json(\%result);
                 push @results, \%result;
             }
         }
@@ -380,7 +377,6 @@ sub features {
                     . $d->{type} . ' ' . $d->{ref} . " > " . $d->{alt};
                 $result{type} = $d->{type} . $d->{ref} . 'to' . $d->{alt}
                     if ( lc($d->{type}) eq 'snp' );
-                #$results .= ( $results ? ',' : '') . encode_json(\%result);
                 push @results, \%result;
             }
         }
@@ -400,7 +396,6 @@ sub features {
                 $result{'strand'} = -1 if ($result{'strand'} == 0);
                 $result{'stop'} = $result{'start'} + 1 if ( $result{'stop'} == $result{'start'} ); #FIXME revisit this
                 $result{'value1'} = $result{'strand'} * $result{'value1'};
-                #$results .= ( $results ? ',' : '') . encode_json(\%result);
                 push @results, \%result;
             }
         }
