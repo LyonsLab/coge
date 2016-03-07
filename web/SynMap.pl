@@ -1712,12 +1712,12 @@ sub get_results {
 		#            msg  => qq{Fasta file for $org_name2: $feat_type2}
 		#        );
 
-		my $sequence_url = "api/v1/legacy/sequence"
-		  ; #"services/JBrowse/service.pl/sequence"; # mdb changed 2/5/15, COGE-289
+		my $sequence_url1 = api_url_for("genomes/$dsgid1/sequence"); #"api/v1/legacy/sequence; # mdb changed 2/12/16 for hypnotoad
+        my $sequence_url2 = api_url_for("genomes/$dsgid2/sequence");
 
 		my $fasta1_url = _filename_to_link(
 			url =>
-			  ( $feat_type1 eq "genomic" ? "$sequence_url/$dsgid1" : undef ),
+			  ( $feat_type1 eq "genomic" ? $sequence_url1 : undef ),
 			file => (
 				$feat_type1 eq "genomic"
 				? undef
@@ -1727,7 +1727,7 @@ sub get_results {
 		);
 		my $fasta2_url = _filename_to_link(
 			url =>
-			  ( $feat_type2 eq "genomic" ? "$sequence_url/$dsgid2" : undef ),
+			  ( $feat_type2 eq "genomic" ? $sequence_url2 : undef ),
 			file => (
 				$feat_type2 eq "genomic"
 				? undef

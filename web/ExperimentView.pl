@@ -21,12 +21,11 @@ use CoGe::Core::Storage;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
-    $WORKFLOW_ID $LOAD_ID $TEMPDIR $CONFIGFILE
+    $WORKFLOW_ID $LOAD_ID $TEMPDIR
 );
 
 $PAGE_TITLE = "ExperimentView";
 $ERROR = encode_json( { error => 1 } );
-$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
@@ -615,6 +614,7 @@ sub gen_body {
     return "Need a valid experiment id\n" unless $eid;
 
     my $exp = $coge->resultset('Experiment')->find($eid);
+    return "Experiment not found" unless $exp;
     return "Access denied" unless $USER->has_access_to_experiment($exp);
 
     my $gid = $exp->genome_id;

@@ -1,4 +1,4 @@
-package CoGe::Services::Data::FTP;
+package CoGe::Services::API::FTP;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;

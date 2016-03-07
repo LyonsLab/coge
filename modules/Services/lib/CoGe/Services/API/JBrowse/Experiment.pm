@@ -1,13 +1,13 @@
-package CoGe::Services::JBrowse::Experiment;
-use base 'CGI::Application';
+package CoGe::Services::API::JBrowse::Experiment;
 
-use CoGe::Accessory::histogram;
-use CoGe::Accessory::Web;
-use CoGe::Core::Experiment;
-use CoGe::Core::Storage qw( get_experiment_path );
+use Mojo::Base 'Mojolicious::Controller';
+use Mojo::JSON;
+
 use CoGeX;
-use Data::Dumper;
+use CoGe::Accessory::Web;
+use CoGe::Core::Experiment qw( get_data );
 use JSON::XS;
+use Data::Dumper;
 
 #TODO: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -23,36 +23,24 @@ my $MAX_WINDOW_SIZE = 1000000;#500000;
 
 my $QUAL_ENCODING_OFFSET = 33;
 
-sub setup {
-    my $self = shift;
-    $self->run_modes(
-        'stats_global' => 'stats_global',
-        'stats_regionFeatureDensities' => 'stats_regionFeatureDensities',
-        'features' => 'features',
-        'query_data' => 'query_data',
-        'histogram' => 'histogram',
-        'snps'  => 'snps',
-    );
-    $self->mode_param('rm');
-}
-
 sub stats_global {
+    my $self = shift;
 	print STDERR "JBrowse::Experiment::stats_global\n";
-    return qq{{
-		"scoreMin" : -1,
-		"scoreMax" : 1
-	}};
+    $self->render(json => {
+		"scoreMin" => -1,
+		"scoreMax" => 1
+	});
 }
 
 sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     my $self     = shift;
-    my $eid      = $self->param('eid');
-    my $nid      = $self->param('nid');
-    my $gid      = $self->param('gid');
-    my $chr      = $self->param('chr');
-    my $start    = $self->query->param('start');
-    my $end      = $self->query->param('end');
-    my $bpPerBin = $self->query->param('basesPerBin');
+    my $eid      = $self->stash('eid');
+    my $nid      = $self->stash('nid');
+    my $gid      = $self->stash('gid');
+    my $chr      = $self->stash('chr');
+    my $start    = $self->param('start');
+    my $end      = $self->param('end');
+    my $bpPerBin = $self->param('basesPerBin');
 
 #	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities eid="
 #      . ( $eid ? $eid : '' ) . " nid="
@@ -67,7 +55,6 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 	my $experiments = _get_experiments $db, $user, $eid, $gid, $nid;
 
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
-    my $results = '';
     my @bins;
     foreach my $exp (@$experiments) {
         my $data_type = $exp->data_type;
@@ -314,12 +301,12 @@ sub snps {
 
 sub features {
     my $self  = shift;
-    my $eid   = $self->param('eid');
-    my $nid   = $self->param('nid');
-    my $gid   = $self->param('gid');
-    my $chr   = $self->param('chr');
-    my $start = $self->query->param('start');
-    my $end   = $self->query->param('end');
+    my $eid   = $self->stash('eid');
+    my $nid   = $self->stash('nid');
+    my $gid   = $self->stash('gid');
+    my $chr   = $self->stash('chr');
+    my $start = $self->param('start');
+    my $end   = $self->param('end');
     print STDERR "JBrowse::Experiment::features eid="
       . ( $eid ? $eid : '' ) . " nid="
       . ( $nid ? $nid : '' ) . " gid="
@@ -335,7 +322,7 @@ sub features {
 #    }
 
     # Connect to the database
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    my ( $db, $user ) = CoGe::Accessory::Web->init; #TODO switch to CoGe::Services::Auth
 
 	my $experiments = _get_experiments $db, $user, $eid, $gid, $nid;
 
@@ -370,7 +357,8 @@ sub features {
                 $result{score} = $d->{strand} * $d->{value1};
                 $result{score2} = $d->{value2} if (defined $d->{value2});
                 $result{label} = $d->{label} if (defined $d->{label});
-                $results .= ( $results ? ',' : '') . encode_json(\%result);
+                #$results .= ( $results ? ',' : '') . encode_json(\%result);
+                push @results, \%result;
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
@@ -392,7 +380,8 @@ sub features {
                     . $d->{type} . ' ' . $d->{ref} . " > " . $d->{alt};
                 $result{type} = $d->{type} . $d->{ref} . 'to' . $d->{alt}
                     if ( lc($d->{type}) eq 'snp' );
-                $results .= ( $results ? ',' : '') . encode_json(\%result);
+                #$results .= ( $results ? ',' : '') . encode_json(\%result);
+                push @results, \%result;
             }
         }
         elsif ( $data_type == $DATA_TYPE_MARKER ) {
@@ -411,7 +400,8 @@ sub features {
                 $result{'strand'} = -1 if ($result{'strand'} == 0);
                 $result{'stop'} = $result{'start'} + 1 if ( $result{'stop'} == $result{'start'} ); #FIXME revisit this
                 $result{'value1'} = $result{'strand'} * $result{'value1'};
-                $results .= ( $results ? ',' : '') . encode_json(\%result);
+                #$results .= ( $results ? ',' : '') . encode_json(\%result);
+                push @results, \%result;
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
@@ -433,8 +423,13 @@ sub features {
                     if (!defined $start || ($pos-$stop > 1) || $lastCount != $count) {
                         if (defined $start) {
                             $stop++;
-                            $results .= ( $results ? ',' : '' )
-                                . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
+                            #$results .= ( $results ? ',' : '' ) . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
+                            push @results, { 
+                                "id"    => $eid, 
+                                "start" => $start, 
+                                "end"   => $stop, 
+                                "score" => $lastCount 
+                            };
                         }
                         $start = $pos;
                     }
@@ -443,8 +438,13 @@ sub features {
                }
                if (defined $start and $start != $stop) { # do last interval
                     $stop++;
-                    $results .= ( $results ? ',' : '' )
-                        . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
+                    #$results .= ( $results ? ',' : '' ) . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
+                    push @results, { 
+                        "id"    => $eid, 
+                        "start" => $start, 
+                        "end"   => $stop, 
+                        "score" => $lastCount 
+                    };    
                 }
 	        }
 	        else { # else return list reads with qual and seq
@@ -459,8 +459,19 @@ sub features {
     	        	#TODO reverse complement sequence if neg strand?
     	        	$qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
 
-    	        	$results .= ( $results ? ',' : '' )
-                      . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
+    	        	#$results .= ( $results ? ',' : '' ) . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
+                    push @results, { 
+                        "uniqueID" => "$qname", 
+                        "name"     => "$qname", 
+                        "start"    => $start, 
+                        "end"      => $end, 
+                        "strand"   => $strand, 
+                        "score"    => $mapq, 
+                        "seq"      => "$seq", 
+                        "qual"     => "$qual", 
+                        "Seq length" => $len, 
+                        "CIGAR"    => "$cigar" 
+                    };      	        	
     	        }
 	        }
         }
@@ -471,7 +482,7 @@ sub features {
     }
 
     #print STDERR "{ 'features' : [ $results ] }\n";
-    return qq{{ "features" : [ $results ] }};
+    $self->render(json => { "features" => \@results });
 }
 
 1;

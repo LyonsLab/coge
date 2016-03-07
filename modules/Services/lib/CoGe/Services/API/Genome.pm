@@ -1,4 +1,4 @@
-package CoGe::Services::Data::Genome;
+package CoGe::Services::API::Genome;
 use base 'CGI::Application';
 
 ################################################################################

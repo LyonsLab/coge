@@ -1,4 +1,4 @@
-package CoGe::Services::Data::Notebook;
+package CoGe::Services::API::Notebook;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON qw(encode_json);
 use CoGeX;

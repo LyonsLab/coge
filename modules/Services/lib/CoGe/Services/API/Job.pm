@@ -1,4 +1,4 @@
-package CoGe::Services::Data::Job;
+package CoGe::Services::API::Job;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::Asset::File;

@@ -1,6 +1,7 @@
-package CoGe::Services::JBrowse::Configuration;
-use base 'CGI::Application';
+package CoGe::Services::API::JBrowse::Configuration;
 
+use Mojo::Base 'Mojolicious::Controller';
+use Mojo::JSON;
 use Switch;
 use JSON;
 use URI::Escape qw(uri_escape);
@@ -10,12 +11,12 @@ use Cwd qw(abs_path);
 use Time::HiRes qw(time);
 use File::Spec::Functions qw(catdir);
 
+use CoGe::Services::Auth qw(init);
 use CoGeX;
 use CoGeDBI qw(get_table get_user_access_table get_experiments get_distinct_feat_types);
 use CoGe::Accessory::Web;
 use CoGe::Core::Chromosomes;
 use CoGe::Core::Experiment qw(experimentcmp);
-use CoGe::Core::Storage qw(data_type);
 
 my %expTypeToName = (
     1 => 'quant',
@@ -24,29 +25,9 @@ my %expTypeToName = (
 
 my $DEBUG_PERFORMANCE = 0;
 
-sub setup {
-    my $self = shift;
-    $self->run_modes(
-        'refseq_config' => 'refseq_config',
-        'track_config'  => 'track_config',
-    );
-    $self->mode_param('rm');
-}
-
-sub _annotations {
-    my ($type, $eid, $db) = @_;
-    my $sth = $db->storage->dbh->prepare('SELECT name,annotation FROM ' . $type . '_annotation JOIN annotation_type ON annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id WHERE ' . $type . '_id=' . $eid . ' ORDER BY name');
-    $sth->execute();
-    my $annotations;
-    while (my $row = $sth->fetch) {
-        $annotations .= "\n" . $row->[0] . ': ' . $row->[1];
-    }
-    return $annotations;
-}
-
 sub refseq_config {
     my $self           = shift;
-    my $gid            = $self->query->param('gid');
+    my $gid            = $self->param('gid');
     my $SEQ_CHUNK_SIZE = 20000;
     print STDERR "JBrowse::Configuration::refseq_config gid=$gid\n";
 
@@ -77,12 +58,13 @@ sub refseq_config {
 		};
 	}
 
-    return encode_json( \@chromosomes );
+#    return encode_json( \@chromosomes );
+    $self->render(json => \@chromosomes);
 }
 
 sub track_config {
     my $self = shift;
-    my $gid  = $self->query->param('gid');
+    my $gid  = $self->param('gid');
     print STDERR "JBrowse::Configuration::track_config gid=$gid\n";
     my $start_time = time; # for performance testing
     
@@ -124,15 +106,14 @@ sub track_config {
     push @tracks, {
         chunkSize     => 20000,
         baseUrl       => "$JBROWSE_API/sequence/$gid/", #"https://$SERVER_NAME/services/JBrowse/service.pl/sequence/$gid/",
-        type => "SequenceTrack",
+        type          => "SequenceTrack",
         storeClass    => "JBrowse/Store/SeqFeature/REST",
         label         => "sequence",
         key           => "Sequence",
         formatVersion => 1,
         coge => {
             id   => $gid,
-            type => 'sequence',
-            annotations => _annotations('genome', $gid, $db)
+            type => 'sequence'
         }
     };
 
@@ -141,7 +122,7 @@ sub track_config {
     #
     push @tracks, {
         baseUrl    => "$JBROWSE_API/track/gc/$gid/", #"$SERVER_NAME/coge/services/JBrowse/track/gc/$gid/",
-        type => "CoGe/View/Track/GC_Content",
+        type       => "CoGe/View/Track/GC_Content",
         storeClass => "JBrowse/Store/SeqFeature/REST",
         track      => "gc_content",
         label      => "gc_content",
@@ -172,7 +153,7 @@ sub track_config {
             track        => "features",
             label        => "features",
             key          => "Features: all",
-            type => "CoGe/View/Track/CoGeFeatures",
+            type         => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             onClick      => "$SERVER_NAME/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
@@ -205,7 +186,7 @@ sub track_config {
                 track        => "features$type_name",
                 label        => "features$type_name",
                 key          => $type_name,
-                type => "JBrowse/View/Track/HTMLFeatures",
+                type         => "JBrowse/View/Track/HTMLFeatures",
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
                 region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
                 onClick      => "$SERVER_NAME/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
@@ -250,7 +231,7 @@ sub track_config {
                     track        => "features_ds".$dsid,
                     label        => "features_ds".$dsid,
                     key          => "Features: ".$dsname,
-                    type => "CoGe/View/Track/CoGeFeatures",
+                    type         => "CoGe/View/Track/CoGeFeatures",
                     description  => "note, description",
                     storeClass   => "JBrowse/Store/SeqFeature/REST",
                     onClick      => "$SERVER_NAME/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end}",
@@ -323,7 +304,7 @@ sub track_config {
     my $allNotebooks = get_table($db->storage->dbh, 'list');
     my $allNotebookConn = get_table($db->storage->dbh, 'list_connector', ['child_id', 'list_connector_id'], {child_type => 3});
 
-    foreach $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
+    foreach my $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
         next if ( $e->{deleted} );
         my $eid = $e->{experiment_id};
         my $role = $connectors->{3}{$eid};
@@ -333,13 +314,11 @@ sub track_config {
 
         # Build a list of notebook id's
         my @notebooks;
-        my @notebook_names;
         foreach my $conn (values %{$allNotebookConn->{$eid}}) {
             my $nid = $conn->{parent_id};
             my $n = $allNotebooks->{$nid};
             next if $n->{deleted};
             next if ($n->{restricted} && !$user->admin && !$connectors->{1}{$nid});
-            push @notebook_names, $n->{name};
             push @notebooks, $nid;
             $notebooks{$nid} = $n;
             push @{ $expByNotebook{$nid} },
@@ -382,7 +361,7 @@ sub track_config {
             track        => "experiment$eid",
             label        => "experiment$eid",
             key          => ( $e->{restricted} ? '&reg; ' : '' ) . $e->{name},
-            type => $type,
+            type         => $type,
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
             style => {
@@ -391,12 +370,12 @@ sub track_config {
                 labelScale   => $labelScale,
                 showLabels   => JSON::true,
                 className    => '{type}',
-                histCss      => 'background-color:' . getFeatureColor($eid),
-                featureCss   => 'background-color:' . getFeatureColor($eid)
+                histCss      => 'background-color:' . _getFeatureColor($eid),
+                featureCss   => 'background-color:' . _getFeatureColor($eid)
             },
 
             histograms => {
-            	storeClass => "JBrowse/Store/SeqFeature/REST" # was "store" which caused a warning in the browser for every experiment track on page load
+            	store => "JBrowse/Store/SeqFeature/REST"
             },
             coge => {
                 id      => $eid,
@@ -405,7 +384,6 @@ sub track_config {
                 editable    => ($user->is_admin || $role == 2 || $role == 3) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 name        => $e->{name},
                 description => $e->{description},
-                moveable    => 1,
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
                 onClick     => "ExperimentView.pl?embed=1&eid=$eid",
                 menuOptions => [{
@@ -429,7 +407,7 @@ sub track_config {
             autocomplete => "all",
             track        => "notebook0",
             label        => "notebook0",
-            type => "CoGe/View/Track/Wiggle/MultiXYPlot",
+            type         => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
             coge => {
@@ -455,7 +433,7 @@ sub track_config {
             autocomplete => "all",
             track        => "notebook$nid",
             label        => "notebook$nid",
-            type => "CoGe/View/Track/Wiggle/MultiXYPlot",
+            type         => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
             showHoverScores => 1,
@@ -491,7 +469,7 @@ sub track_config {
 }
 
 # FIXME this is duplicated in JBrowse MultiXYPlot.js, need to either make totally client side or totally server side
-sub getFeatureColor {
+sub _getFeatureColor {
     my $id = shift;
     return '#'
       . sprintf( "%06X",

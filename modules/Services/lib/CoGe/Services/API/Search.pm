@@ -1,4 +1,4 @@
-package CoGe::Services::Data::Search;
+package CoGe::Services::API::Search;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
