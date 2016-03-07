@@ -72,7 +72,6 @@ sub features {
     $basesPerSpan = 1 if $basesPerSpan < 0;
     my $numBins = min(100, int($len / $basesPerSpan));
     my $binSz = max(1, int($len / $numBins));
-    print STDERR "matt: numBins=$numBins binSz=$binSz\n";
     my @bins;
     my $offset = 0;
     while ($offset < $len) {
