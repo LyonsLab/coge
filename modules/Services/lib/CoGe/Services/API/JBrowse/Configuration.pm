@@ -75,7 +75,7 @@ sub track_config {
     
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-    
+    warn Dumper $user;
     # Admins have ability to simulate other users using the "user_id" query parameter
 #    my $user_id = $self->query->param('user_id');
 #    if (defined $user_id && $user->is_admin && $user_id != $user->id) {
@@ -96,11 +96,9 @@ sub track_config {
     return unless $genome;
 
     # Check permissions
-    if ( $genome->restricted
-        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
-    {
-      	warn "JBrowse::Configuration::track_config access denied to genome $gid";
-       	return '{}';
+    if ($genome->restricted and (not defined $user or not $user->has_access_to_genome($genome))) {
+      	$self->render({error => "JBrowse::Configuration::track_config access denied to genome $gid"});
+       	return;
     }
 
     my @tracks;
@@ -305,7 +303,7 @@ sub track_config {
     my %expByNotebook;  # all experiments hashed by notebook id -- used later for creating individual notebooks
 
     # mdb added 2/9/15 for performance improvement, COGE-166
-    my $connectors = get_user_access_table($db->storage->dbh, $user->id);
+    my $connectors = get_user_access_table($db->storage->dbh, $user->id) if $user;
     my $allNotebooks = get_table($db->storage->dbh, 'list');
     my $allNotebookConn = get_table($db->storage->dbh, 'list_connector', ['child_id', 'list_connector_id'], {child_type => 3});
     foreach my $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
@@ -314,7 +312,7 @@ sub track_config {
         my $role = $connectors->{3}{$eid};
         $role = $role->{role_id} if $role;
 
-        next if ($e->{restricted} && !($user->admin || $role)); #next unless $user->has_access_to_experiment($e); #TODO move into an API
+        next if ($e->{restricted} && !(($user && $user->admin) || $role)); #next unless $user->has_access_to_experiment($e); #TODO move into an API
         $experiments{$eid} = $e;
 
         # Build a list of notebook id's
@@ -323,7 +321,7 @@ sub track_config {
             my $nid = $conn->{parent_id};
             my $n = $allNotebooks->{$nid};
             next if $n->{deleted};
-            next if ($n->{restricted} && !$user->admin && !$connectors->{1}{$nid});
+            next if ($n->{restricted} && !($user && $user->admin) && !$connectors->{1}{$nid});
             push @notebooks, $nid;
             $notebooks{$nid} = $n;
             push @{ $expByNotebook{$nid} },
@@ -386,7 +384,7 @@ sub track_config {
                 id      => $eid,
                 type    => 'experiment',
                 data_type => $e->{data_type},
-                editable    => ($user->is_admin || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
+                editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 name        => $e->{name},
                 description => $e->{description},
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
@@ -448,7 +446,7 @@ sub track_config {
                 collapsible => 1,
                 name        => $n->{name},
                 description => $n->{description},
-                editable    => ($user->is_admin || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
+                editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
                 onClick     => "NotebookView.pl?embed=1&lid=$nid",
                 menuOptions => [{
