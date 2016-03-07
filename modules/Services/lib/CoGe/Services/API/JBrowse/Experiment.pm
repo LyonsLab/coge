@@ -347,7 +347,7 @@ sub features {
 	my $experiments = _get_experiments $db, $user, $eid, $gid, $nid;
 
     if (!@$experiments) {
-        return qq{{ "features" : [ ] }};
+        return $self->render(json => { "features" : [] });
     }
 
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
