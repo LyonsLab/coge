@@ -62,10 +62,21 @@ sub refseq_config {
     $self->render(json => \@chromosomes);
 }
 
+sub _annotations {
+    my ($type, $eid, $db) = @_;
+    my $sth = $db->storage->dbh->prepare('SELECT name,annotation FROM ' . $type . '_annotation JOIN annotation_type ON annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id WHERE ' . $type . '_id=' . $eid . ' ORDER BY name');
+    $sth->execute();
+    my $annotations;
+    while (my $row = $sth->fetch) {
+        $annotations .= "\n" . $row->[0] . ': ' . $row->[1];
+    }
+    return $annotations;
+}
+
 sub track_config {
     my $self = shift;
     my $gid  = $self->param('gid');
-    print STDERR "JBrowse::Configuration::track_config gid=$gid\n";
+    warn "JBrowse::Configuration::track_config gid=$gid";
     my $start_time = time; # for performance testing
     
     # Connect to the database
@@ -84,17 +95,17 @@ sub track_config {
     # Get server name for constructing URLs
     my $SERVER_NAME = $conf->{SERVER};#$ENV{SERVER_NAME}; # mdb added 12/11/14 for COGE-568
     my $JBROWSE_API = $SERVER_NAME . 'api/v1/jbrowse'; #TODO move to config file
-    #print STDERR "SERVER_NAME = $SERVER_NAME\n", "JBROWSE_API = $JBROWSE_API\n";
+    print STDERR "SERVER_NAME = $SERVER_NAME\n", "JBROWSE_API = $JBROWSE_API\n";
 
     # Get genome
     my $genome = $db->resultset('Genome')->find($gid);
     return unless $genome;
-
+warn 'got genome';
     # Check permissions
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
-      	print STDERR "JBrowse::Configuration::track_config access denied to genome $gid\n";
+      	warn "JBrowse::Configuration::track_config access denied to genome $gid";
        	return '{}';
     }
 
@@ -140,7 +151,7 @@ sub track_config {
     };
 
     print STDERR 'time1: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
-
+warn 'time1';
     #
     # Add overall feature group for all datasets
     #
@@ -289,7 +300,7 @@ sub track_config {
             }
         }
     }
-
+warn 'time2';
     print STDERR 'time2: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
     #
@@ -309,7 +320,7 @@ sub track_config {
         my $eid = $e->{experiment_id};
         my $role = $connectors->{3}{$eid};
         $role = $role->{role_id} if $role;
-        next if ($e->{restricted} && !$user->admin && !$role); #next unless $user->has_access_to_experiment($e); #TODO move into an API
+        next if (($e->{restricted} || !$role) && !$user->admin); #next unless $user->has_access_to_experiment($e); #TODO move into an API
         $experiments{$eid} = $e;
 
         # Build a list of notebook id's
@@ -394,7 +405,7 @@ sub track_config {
             }
         };
     }
-
+warn 'time3';
     print STDERR 'time3: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
     #
@@ -454,7 +465,7 @@ sub track_config {
             }
         };
     }
-
+warn 'time4';
     print STDERR 'time4: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
     return encode_json({
