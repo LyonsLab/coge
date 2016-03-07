@@ -142,19 +142,21 @@ sub _get_experiments {
     # Filter experiments based on permissions
     my @experiments;
     foreach my $e (@all_experiments) {
-        unless ( $user->has_access_to_experiment($e) ) {
-        	warn "JBrowse::Experiment::_get_experiments access denied to experiment $eid for user ", $user->name;
-        	next;
+        if (!$e->restricted() || ($user && $user->has_access_to_experiment($e))) {
+        	push @experiments, $e;
         }
-        push @experiments, $e;
+        else {
+        	warn "JBrowse::Experiment::_get_experiments access denied to experiment $eid for user ", $user->name;
+        }
     }
     splice(@experiments, $MAX_EXPERIMENTS, @experiments);
     return \@experiments;
 }
 
 sub histogram {
-    my $self  = shift;
-    my $eid   = $self->param('eid');
+    my $self = shift;
+    my $eid = $self->stash('eid');
+    my $chr = $self->param('chr');
 
     my $storage_path = get_experiment_path($eid);
     my $hist_file = "$storage_path/value1.hist";
@@ -182,12 +184,12 @@ sub histogram {
 
 sub query_data {
     my $self = shift;
-    my $eid = $self->param('eid');
-    my $chr = $self->query->param('chr');
+    my $eid = $self->stash('eid');
+    my $chr = $self->param('chr');
     $chr = undef if $chr eq 'All';
-    my $type = $self->query->param('type');
-    my $gte = $self->query->param('gte');
-    my $lte = $self->query->param('lte');
+    my $type = $self->param('type');
+    my $gte = $self->param('gte');
+    my $lte = $self->param('lte');
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -259,12 +261,12 @@ sub _add_features {
 
 sub snps {
     my $self = shift;
-    my $eid = $self->param('eid');
-    my $chr = $self->param('chr');
+    my $eid = $self->stash('eid');
+    my $chr = $self->stash('chr');
     $chr = undef if $chr eq 'Any';
     
     # Authenticate user and connect to the database
-    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
 	my $experiments = _get_experiments $db, $user, $eid;
 	my $snps;
@@ -278,7 +280,7 @@ sub snps {
 
     my $dbh = $db->storage->dbh;
 
-	my $types = $self->query->param('features');
+	my $types = $self->param('features');
 	my $type_ids;
 	if ($types ne 'all') {
 	    #TODO move this query to CoGeDBI.pm
@@ -294,18 +296,18 @@ sub snps {
 	    }
 	}
 
-	my $dir = catdir $conf->{CACHEDIR}, $experiment->genome_id, 'features';
-	my @chromosomes = keys %$features;
-	while (@chromosomes) {
-		open my $fh, ">$dir/" . $_ . '_' . $type_ids[0] . '.loc';
-		bindmode $fh;
-		my $locs = $features->{$_};
-		print $fh pack('L', scalar @$locs);
-		foreach my $loc (@$locs) {
-			print $fh pack('LL', $loc[1], $loc[2]);
-		}
-		close $fh;
-	}
+#	my $dir = catdir($conf->{CACHEDIR}, $experiments->[0]->genome_id, 'features');
+#	my @chromosomes = keys %$features;
+#	while (@chromosomes) {
+#		open(my $fh, ">$dir/" . $_ . '_' . $type_ids->[0] . '.loc');
+#		bindmode $fh;
+#		my $locs = $features->{$_};
+#		print $fh pack('L', scalar @$locs);
+#		foreach my $loc (@$locs) {
+#			print $fh pack('LL', $loc->[1], $loc->[2]);
+#		}
+#		close($fh);
+#	}
 
 	my $hits = [];
     foreach my $snp (@$snps) {
@@ -349,7 +351,7 @@ sub features {
     }
 
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
-    my $results = '';
+    my @results;
     foreach my $exp (@$experiments) {
         my $eid       = $exp->id;
         my $data_type = $exp->data_type;
@@ -375,7 +377,7 @@ sub features {
                 $result{score} = $d->{strand} * $d->{value1};
                 $result{score2} = $d->{value2} if (defined $d->{value2});
                 $result{label} = $d->{label} if (defined $d->{label});
-                push @results, \%result;
+                push(@results, \%result);
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
@@ -397,7 +399,7 @@ sub features {
                     . $d->{type} . ' ' . $d->{ref} . " > " . $d->{alt};
                 $result{type} = $d->{type} . $d->{ref} . 'to' . $d->{alt}
                     if ( lc($d->{type}) eq 'snp' );
-                push @results, \%result;
+                push(@results, \%result);
             }
         }
         elsif ( $data_type == $DATA_TYPE_MARKER ) {
@@ -416,7 +418,7 @@ sub features {
                 $result{'strand'} = -1 if ($result{'strand'} == 0);
                 $result{'stop'} = $result{'start'} + 1 if ( $result{'stop'} == $result{'start'} ); #FIXME revisit this
                 $result{'value1'} = $result{'strand'} * $result{'value1'};
-                push @results, \%result;
+                push(@results, \%result);
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
@@ -438,13 +440,12 @@ sub features {
                     if (!defined $start || ($pos-$stop > 1) || $lastCount != $count) {
                         if (defined $start) {
                             $stop++;
-                            #$results .= ( $results ? ',' : '' ) . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
-                            push @results, { 
+                            push(@results, { 
                                 "id"    => $eid, 
                                 "start" => $start, 
                                 "end"   => $stop, 
                                 "score" => $lastCount 
-                            };
+                            });
                         }
                         $start = $pos;
                     }
@@ -453,13 +454,12 @@ sub features {
                }
                if (defined $start and $start != $stop) { # do last interval
                     $stop++;
-                    #$results .= ( $results ? ',' : '' ) . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
-                    push @results, { 
+                    push(@results, { 
                         "id"    => $eid, 
                         "start" => $start, 
                         "end"   => $stop, 
                         "score" => $lastCount 
-                    };    
+                    });    
                 }
 	        }
 	        else { # else return list reads with qual and seq
@@ -474,8 +474,7 @@ sub features {
     	        	#TODO reverse complement sequence if neg strand?
     	        	$qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
 
-    	        	#$results .= ( $results ? ',' : '' ) . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
-                    push @results, { 
+                    push(@results, { 
                         "uniqueID" => "$qname", 
                         "name"     => "$qname", 
                         "start"    => $start, 
@@ -486,7 +485,7 @@ sub features {
                         "qual"     => "$qual", 
                         "Seq length" => $len, 
                         "CIGAR"    => "$cigar" 
-                    };      	        	
+                    });      	        	
     	        }
 	        }
         }
@@ -496,7 +495,6 @@ sub features {
         }
     }
 
-    #print STDERR "{ 'features' : [ $results ] }\n";
     $self->render(json => { "features" => \@results });
 }
 
