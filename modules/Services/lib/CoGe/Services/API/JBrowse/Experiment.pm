@@ -4,7 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 
 use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Services::Auth qw(init);
 use CoGe::Core::Experiment qw( get_data );
 use JSON::XS;
 use Data::Dumper;
@@ -50,7 +50,8 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 #      . ( $end - $start + 1 )
 #      . ") bpPerBin=$bpPerBin\n";
 
-    my ($db, $user) = CoGe::Accessory::Web->init;
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
 	my $experiments = _get_experiments $db, $user, $eid, $gid, $nid;
 
@@ -188,7 +189,8 @@ sub query_data {
     my $gte = $self->query->param('gte');
     my $lte = $self->query->param('lte');
 
-    my ($db, $user) = CoGe::Accessory::Web->init;
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
 	my $experiments = _get_experiments $db, $user, $eid;
 	my $result = [];
@@ -228,6 +230,7 @@ sub debug {
 
 sub _add_features {
     my ($chr, $type_ids, $dsid, $hits, $dbh) = @_;
+    #TODO move this query to CoGeDBI.pm
     my $query = 'SELECT chromosome,start,stop FROM feature WHERE dataset_id=' . $dsid;
     if ($chr) {
     	$query .= " AND chromosome='" . $chr . "'";
@@ -259,7 +262,9 @@ sub snps {
     my $eid = $self->param('eid');
     my $chr = $self->param('chr');
     $chr = undef if $chr eq 'Any';
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
 	my $experiments = _get_experiments $db, $user, $eid;
 	my $snps;
@@ -276,11 +281,13 @@ sub snps {
 	my $types = $self->query->param('features');
 	my $type_ids;
 	if ($types ne 'all') {
+	    #TODO move this query to CoGeDBI.pm
 		$type_ids = join(',', @{$dbh->selectcol_arrayref('SELECT feature_type_id FROM feature_type WHERE name IN(' . $types . ')')});
 	}
 
     my $features = {};
 	foreach my $experiment (@$experiments) {
+	    #TODO move this query to CoGeDBI.pm
 	    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $experiment->genome_id);
 	    foreach my $dsid (@$ids) {
 	        _add_features $chr, $type_ids, $dsid, $features, $dbh;
@@ -319,8 +326,8 @@ sub features {
 #        return qq{{ "features" : [ ] }};
 #    }
 
-    # Connect to the database
-    my ( $db, $user ) = CoGe::Accessory::Web->init; #TODO switch to CoGe::Services::Auth
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
 	my $experiments = _get_experiments $db, $user, $eid, $gid, $nid;
 

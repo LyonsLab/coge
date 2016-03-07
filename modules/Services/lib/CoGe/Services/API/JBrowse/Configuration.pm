@@ -10,7 +10,6 @@ use Time::HiRes qw(time);
 use CoGe::Services::Auth qw(init);
 use CoGeX;
 use CoGeDBI qw(get_table get_user_access_table get_experiments get_distinct_feat_types);
-use CoGe::Accessory::Web;
 use CoGe::Core::Chromosomes;
 use CoGe::Core::Experiment qw(experimentcmp);
 
@@ -27,8 +26,8 @@ sub refseq_config {
     my $SEQ_CHUNK_SIZE = 20000;
     print STDERR "JBrowse::Configuration::refseq_config gid=$gid\n";
 
-    # Connect to the database
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Get genome
     my $genome = $db->resultset('Genome')->find($gid);
@@ -74,8 +73,8 @@ sub track_config {
 #    warn "JBrowse::Configuration::track_config gid=$gid";
     my $start_time = time; # for performance testing
     
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     
     # Admins have ability to simulate other users using the "user_id" query parameter
 #    my $user_id = $self->query->param('user_id');
