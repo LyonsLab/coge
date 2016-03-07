@@ -10,7 +10,7 @@ irodsEnv
 irodsA
 web/tmp
 web/data
-web/coge.conf
+coge.conf
 web/js/vendor
 web/js/jbrowse/*
 web/js/jbrowse/plugins/*
