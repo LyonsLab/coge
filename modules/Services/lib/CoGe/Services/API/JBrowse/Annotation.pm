@@ -3,6 +3,7 @@ package CoGe::Services::API::JBrowse::Annotation;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGe::Core::Storage qw( get_genome_seq reverse_complement );
+use CoGe::Services::Auth;
 use CoGeDBI qw(get_features_by_range);
 use URI::Escape qw(uri_unescape);
 use List::Util qw( min max );
@@ -30,7 +31,7 @@ sub features {
     my $scale        = $self->param('scale');
     my $basesPerSpan = $self->param('basesPerSpan');
     my $len = $end - $start;
-    #print STDERR "JBrowse::Annotation::features gid=$gid chr=$chr start=$start end=$end\n";
+    #print STDERR "JBrowse::Annotation::features gid=$gid ", ($feat_type ? "type=$feat_type " : ''), "chr=$chr start=$start end=$end\n";
 
     # Check params
     my $null_response = $self->render(json => { "features" => [] });
@@ -38,8 +39,8 @@ sub features {
         return $null_response;
     }
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init; #TODO switch to CoGe::Services::Auth
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Retrieve genome
     my $genome = $db->resultset('Genome')->find($gid);
@@ -62,7 +63,14 @@ sub features {
     }
 
     # Get features
-    my $features = get_features_by_range(dbh => $db->storage->dbh, gid => $gid, chr => $chr, start => $start, end => $end);
+    my $features = get_features_by_range(
+        dbh => $db->storage->dbh, 
+        gid => $gid, 
+        chr => $chr, 
+        start => $start, 
+        end => $end,
+        feat_type => $feat_type
+    );
 
     my @results;
     if ($feat_type) { # feature type was specified

@@ -3,6 +3,7 @@ package CoGe::Services::API::JBrowse::GCcontent;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGe::Core::Storage qw( get_genome_seq );
+use CoGe::Services::Auth qw(init);
 use URI::Escape qw(uri_unescape);
 use List::Util qw( min max );
 
@@ -35,8 +36,8 @@ sub features {
         return $null_response;
     }
 
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init; #TODO switch to CoGe::Services::Auth
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Retrieve genome
     my $genome = $db->resultset('Genome')->find($gid);
@@ -71,7 +72,6 @@ sub features {
     $basesPerSpan = 1 if $basesPerSpan < 0;
     my $numBins = min(100, int($len / $basesPerSpan));
     my $binSz = max(1, int($len / $numBins));
-    print STDERR "matt: numBins=$numBins binSz=$binSz\n";
     my @bins;
     my $offset = 0;
     while ($offset < $len) {

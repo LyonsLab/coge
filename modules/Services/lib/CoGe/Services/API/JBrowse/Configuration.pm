@@ -2,19 +2,14 @@ package CoGe::Services::API::JBrowse::Configuration;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
-use Switch;
-use JSON;
 use URI::Escape qw(uri_escape);
 use Data::Dumper;
 use Sort::Versions;
-use Cwd qw(abs_path);
 use Time::HiRes qw(time);
-use File::Spec::Functions qw(catdir);
 
 use CoGe::Services::Auth qw(init);
 use CoGeX;
 use CoGeDBI qw(get_table get_user_access_table get_experiments get_distinct_feat_types);
-use CoGe::Accessory::Web;
 use CoGe::Core::Chromosomes;
 use CoGe::Core::Experiment qw(experimentcmp);
 
@@ -31,8 +26,8 @@ sub refseq_config {
     my $SEQ_CHUNK_SIZE = 20000;
     print STDERR "JBrowse::Configuration::refseq_config gid=$gid\n";
 
-    # Connect to the database
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Get genome
     my $genome = $db->resultset('Genome')->find($gid);
@@ -47,18 +42,6 @@ sub refseq_config {
     }
 
     my @chromosomes;
-#    foreach my $chr ( sort { $b->sequence_length <=> $a->sequence_length }
-#        $genome->genomic_sequences )
-#    {
-#        push @chromosomes,
-#          {
-#            name         => uri_escape($chr->chromosome), # mdb changed 12/17/13 issue 266
-#            length       => $chr->sequence_length,
-#            seqChunkSize => $SEQ_CHUNK_SIZE,
-#            start        => 0,
-#            end          => $chr->sequence_length - 1
-#          };
-#    }
 	my $c = CoGe::Core::Chromosomes->new($genome->id);
 	while ($c->next) {
 		push @chromosomes, {
@@ -70,19 +53,29 @@ sub refseq_config {
 		};
 	}
 
-#    return encode_json( \@chromosomes );
     $self->render(json => \@chromosomes);
+}
+
+sub _annotations {
+    my ($type, $eid, $db) = @_;
+    my $sth = $db->storage->dbh->prepare('SELECT name,annotation FROM ' . $type . '_annotation JOIN annotation_type ON annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id WHERE ' . $type . '_id=' . $eid . ' ORDER BY name');
+    $sth->execute();
+    my $annotations;
+    while (my $row = $sth->fetch) {
+        $annotations .= "\n" . $row->[0] . ': ' . $row->[1];
+    }
+    return $annotations;
 }
 
 sub track_config {
     my $self = shift;
     my $gid  = $self->param('gid');
-    print STDERR "JBrowse::Configuration::track_config gid=$gid\n";
+#    warn "JBrowse::Configuration::track_config gid=$gid";
     my $start_time = time; # for performance testing
     
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
-    
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+    warn Dumper $user;
     # Admins have ability to simulate other users using the "user_id" query parameter
 #    my $user_id = $self->query->param('user_id');
 #    if (defined $user_id && $user->is_admin && $user_id != $user->id) {
@@ -96,18 +89,16 @@ sub track_config {
     # Get server name for constructing URLs
     my $SERVER_NAME = $conf->{SERVER};#$ENV{SERVER_NAME}; # mdb added 12/11/14 for COGE-568
     my $JBROWSE_API = $SERVER_NAME . 'api/v1/jbrowse'; #TODO move to config file
-    #print STDERR "SERVER_NAME = $SERVER_NAME\n", "JBROWSE_API = $JBROWSE_API\n";
+    print STDERR "SERVER_NAME = $SERVER_NAME\n", "JBROWSE_API = $JBROWSE_API\n";
 
     # Get genome
     my $genome = $db->resultset('Genome')->find($gid);
     return unless $genome;
 
     # Check permissions
-    if ( $genome->restricted
-        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
-    {
-      	print STDERR "JBrowse::Configuration::track_config access denied to genome $gid\n";
-       	return '{}';
+    if ($genome->restricted and (not defined $user or not $user->has_access_to_genome($genome))) {
+      	$self->render({error => "JBrowse::Configuration::track_config access denied to genome $gid"});
+       	return;
     }
 
     my @tracks;
@@ -123,8 +114,6 @@ sub track_config {
         label         => "sequence",
         key           => "Sequence",
         formatVersion => 1,
-
-        # CoGe-specific stuff
         coge => {
             id   => $gid,
             type => 'sequence'
@@ -147,8 +136,6 @@ sub track_config {
             neg_color => '#f00',
             bg_color  => 'rgba(232, 255, 220, 0.4)'
         },
-
-        # CoGe-specific stuff
         coge => {
             id   => $gid,
             type => 'gc_content'
@@ -185,13 +172,10 @@ sub track_config {
                 centerChildrenVertically => JSON::true,
                 subfeatureClasses        => { match_part => "match_part7" }
             },
-
-            # CoGe-specific stuff
             coge => {
                 id        => 0,
                 type      => 'feature_group',
-                classes   => ['coge-tracklist-collapsible'],
-                collapsed => 1 #FIXME move into CSS
+                collapsible => 1
             }
         };
         
@@ -222,13 +206,9 @@ sub track_config {
                     centerChildrenVertically => JSON::true,
                     subfeatureClasses        => { match_part => "match_part7" }
                 },
-
-                # CoGe-specific stuff
                 coge => {
                     id      => "$type_name",
                     type    => 'features',
-                    classes => ['coge-tracklist-indented'],
-                    collapsed => 1, #FIXME move into CSS
                     dataset_id => 0
                 }
             };
@@ -270,13 +250,10 @@ sub track_config {
                         centerChildrenVertically => JSON::true,
                         subfeatureClasses        => { match_part => "match_part7" }
                     },
-
-                    # CoGe-specific stuff
                     coge => {
                         id         => $dsid,
                         type       => 'feature_group',
-                        classes    => ['coge-tracklist-collapsible'],
-                        collapsed  => 1, #FIXME move into CSS
+                        collapsible => 1
                     }
                 };
 
@@ -305,13 +282,9 @@ sub track_config {
                             centerChildrenVertically => JSON::true,
                             subfeatureClasses        => { match_part => "match_part7" }
                         },
-
-                        # CoGe-specific stuff
                         coge => {
                             id         => $dsid.'_'.$type_name,
                             type       => 'features',
-                            classes    => ['coge-tracklist-indented'],
-                            collapsed  => 1, #FIXME move into CSS
                             dataset_id => $dsid
                         }
                     };
@@ -328,16 +301,18 @@ sub track_config {
     my %experiments;    # all experiments hashed by id -- used later for creating "All Experiments" section
     my %notebooks;      # all notebokos hashed by id -- used later for creating individual notebooks
     my %expByNotebook;  # all experiments hashed by notebook id -- used later for creating individual notebooks
-   
+
     # mdb added 2/9/15 for performance improvement, COGE-166
-    my $connectors = get_user_access_table($db->storage->dbh, $user->id);
+    my $connectors = get_user_access_table($db->storage->dbh, $user->id) if $user;
     my $allNotebooks = get_table($db->storage->dbh, 'list');
     my $allNotebookConn = get_table($db->storage->dbh, 'list_connector', ['child_id', 'list_connector_id'], {child_type => 3});
-
     foreach my $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
         next if ( $e->{deleted} );
         my $eid = $e->{experiment_id};
-        next if ($e->{restricted} && !$user->admin && defined $connectors && !$connectors->{3}{$eid}); #next unless $user->has_access_to_experiment($e); #TODO move into an API
+        my $role = $connectors->{3}{$eid};
+        $role = $role->{role_id} if $role;
+
+        next if ($e->{restricted} && !(($user && $user->admin) || $role)); #next unless $user->has_access_to_experiment($e); #TODO move into an API
         $experiments{$eid} = $e;
 
         # Build a list of notebook id's
@@ -346,7 +321,7 @@ sub track_config {
             my $nid = $conn->{parent_id};
             my $n = $allNotebooks->{$nid};
             next if $n->{deleted};
-            next if ($n->{restricted} && !$user->admin && !$connectors->{1}{$nid});
+            next if ($n->{restricted} && !($user && $user->admin) && !$connectors->{1}{$nid});
             push @notebooks, $nid;
             $notebooks{$nid} = $n;
             push @{ $expByNotebook{$nid} },
@@ -357,18 +332,6 @@ sub track_config {
               };
         }
         push @notebooks, 0;    # add fake "all experiments" notebook
-
-        my @annotations;
-        # Make a list of annotations
-        #		foreach my $a ($e->experiment_annotations) {
-        #			push @annotations,
-        #			{
-        #				type  => $a->annotation_type->name,
-        #				text  => $a->annotation,
-        #				image => ($a->image_id ? 'image.pl?id='.$a->image_id : undef),
-        #				link  => $a->link
-        #			}
-        #		}
 
         my ($type, $featureScale, $histScale, $labelScale);
         if (!$e->{data_type} or $e->{data_type} == 1) { #FIXME hardcoded data_type 'quantitative'
@@ -384,7 +347,7 @@ sub track_config {
 			$labelScale = 0.5;
 		}
 		elsif ($e->{data_type} == 3) { #FIXME hardcoded data_type 'alignment'
-			$type = 'CoGe/View/Track/CoGeAlignment';#"JBrowse/View/Track/Alignments2";
+			$type = 'CoGe/View/Track/CoGeAlignment';
 			$featureScale = 0.005;
 			$histScale = 0.01;
 			$labelScale = 0.5;
@@ -415,30 +378,22 @@ sub track_config {
             },
 
             histograms => {
-            	store => "JBrowse/Store/SeqFeature/REST"
+            	storeClass => "JBrowse/Store/SeqFeature/REST"
             },
-
-            # CoGe-specific stuff
             coge => {
                 id      => $eid,
                 type    => 'experiment',
-                classes => [
-                    'coge-tracklist-indented',
-                    'coge-tracklist-deletable',
-                    'coge-tracklist-info'
-                ],
-                collapsed   => 1, #FIXME move into CSS
+                data_type => $e->{data_type},
+                editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 name        => $e->{name},
                 description => $e->{description},
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
-                #annotations => ( @annotations ? \@annotations : undef ),
                 onClick     => "ExperimentView.pl?embed=1&eid=$eid",
-                menuOptions => [
-                    {
-                        label => 'ExperimentView',
-                        action => "function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
-                    }
-                ]
+                menuOptions => [{
+                    label => 'ExperimentView',
+                    action => "function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
+                }],
+                annotations => _annotations('experiment', $eid, $db)
             }
         };
     }
@@ -458,17 +413,12 @@ sub track_config {
             type         => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
-
-            # CoGe-specific stuff
             coge => {
                 id          => 0, # use id of 0 to represent all experiments
                 type        => 'notebook',
-                classes     => ['coge-tracklist-collapsible'],
-                collapsed   => 1, #FIXME move into CSS
+                collapsible => 1,
                 name        => 'All Experiments',
                 description => '',
-                count       => keys %experiments,
-                #experiments => [ values %experiments ],
             }
         };
     }
@@ -478,6 +428,8 @@ sub track_config {
     #
     foreach my $n ( sort { $a->{name} cmp $b->{name} } values %notebooks ) {
         my $nid = $n->{list_id};
+        my $role = $connectors->{1}{$nid};
+        $role = $role->{role_id} if $role;
         push @tracks, {
             key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
             baseUrl => "$JBROWSE_API/experiment/notebook/$nid/",
@@ -487,31 +439,21 @@ sub track_config {
             type         => "CoGe/View/Track/Wiggle/MultiXYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
-
-            # CoGe-specific stuff
             showHoverScores => 1,
             coge            => {
                 id      => $nid,
                 type    => 'notebook',
-                classes => [
-                    'coge-tracklist-collapsible',
-                    'coge-tracklist-deletable',
-                    'coge-tracklist-info'
-                ],
-                collapsed   => 1, #FIXME move into CSS
+                collapsible => 1,
                 name        => $n->{name},
                 description => $n->{description},
-                #editable    => $user->is_admin || $user->is_owner_editor( list => $n ) || undef, # mdb removed 2/6/15
-                editable    => $user->is_admin || (defined $connectors && ($connectors->{1}{$nid} == 2 || $connectors->{1}{$nid} == 3)) || undef, # mdb added 2/6/15 #TODO move this obscure code into an API
+                editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
-                count       => scalar @{ $expByNotebook{$nid} },
                 onClick     => "NotebookView.pl?embed=1&lid=$nid",
-                menuOptions => [
-                    {
-                        label => 'NotebookView',
-                        action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
-                    }
-                ]
+                menuOptions => [{
+                    label => 'NotebookView',
+                    action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
+                }],
+                annotations => _annotations('list', $nid, $db)
             }
         };
     }
@@ -523,7 +465,7 @@ sub track_config {
         dataset_id    => 'coge',
         plugins       => ['CoGe'],
         trackSelector => {
-            type => 'CoGe/View/TrackList/CoGe',
+            type => 'CoGe/View/TrackList/CoGe'
         },
         tracks => \@tracks,
     });

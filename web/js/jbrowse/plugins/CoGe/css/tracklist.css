@@ -43,15 +43,7 @@
 	width: 95%;
 }
 
-.coge-tracklist-collapse,
-.coge-tracklist-expand
- {
- 	height: 10px;
-	padding: 5px;
-	width: 10px;
-}
-
-.coge-tracklist-container {
+.coge-track {
 	border: 1px solid transparent;
 	cursor: pointer;
 	display: flex;
@@ -60,24 +52,32 @@
 	white-space: nowrap;
 }
 
-.coge-tracklist-container.collapsed {
+.coge-track.collapsed {
 	display: none;
 }
 
-.coge-tracklist-container:hover {
+.coge-track:hover {
 	border: 1px solid gray;
 }
 
-.coge-tracklist-indented {
+.coge-track-indented {
 	padding-left: 25px !important;
 }
 
-.coge-tracklist-label {
+.coge-track-label {
 	flex: 2;
 	min-height: 16px;
 	overflow: hidden;
 	padding-left: 2px;
 	padding-top: 6px;
+}
+
+.coge-tracklist-collapse,
+.coge-tracklist-expand
+ {
+ 	height: 10px;
+	padding: 5px;
+	width: 10px;
 }
 
 #coge-tracks {
