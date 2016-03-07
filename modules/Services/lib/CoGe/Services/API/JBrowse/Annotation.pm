@@ -31,7 +31,7 @@ sub features {
     my $scale        = $self->param('scale');
     my $basesPerSpan = $self->param('basesPerSpan');
     my $len = $end - $start;
-    #print STDERR "JBrowse::Annotation::features gid=$gid chr=$chr start=$start end=$end\n";
+    #print STDERR "JBrowse::Annotation::features gid=$gid ", ($feat_type ? "type=$feat_type " : ''), "chr=$chr start=$start end=$end\n";
 
     # Check params
     my $null_response = $self->render(json => { "features" => [] });
@@ -63,7 +63,14 @@ sub features {
     }
 
     # Get features
-    my $features = get_features_by_range(dbh => $db->storage->dbh, gid => $gid, chr => $chr, start => $start, end => $end);
+    my $features = get_features_by_range(
+        dbh => $db->storage->dbh, 
+        gid => $gid, 
+        chr => $chr, 
+        start => $start, 
+        end => $end,
+        feat_type => $feat_type
+    );
 
     my @results;
     if ($feat_type) { # feature type was specified
