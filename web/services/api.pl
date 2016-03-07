@@ -100,15 +100,15 @@ $r->get("/datasets/:id/genomes" => [id => qr/\d+/])
 # Feature routes
 $r->get("/features/search/#term")
     ->name("features-search")
-    ->to("feature2#search", term => undef);
+    ->to("feature#search", term => undef);
     
 $r->get("/features/:id" => [id => qr/\d+/])
     ->name("features-fetch")
-    ->to("feature2#fetch", id => undef);
+    ->to("feature#fetch", id => undef);
     
 $r->get("/features/sequence/:id" => [id => qr/\d+/])
     ->name("features-sequence")
-    ->to("feature2#sequence", id => undef);
+    ->to("feature#sequence", id => undef);
 
 # Experiment routes
 $r->get("/experiments/search/#term")
