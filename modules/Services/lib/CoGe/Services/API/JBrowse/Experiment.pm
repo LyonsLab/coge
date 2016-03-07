@@ -53,7 +53,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
-	my $experiments = _get_experiments $db, $user, $eid, $gid, $nid;
+	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
 
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
     my @bins;
@@ -174,9 +174,9 @@ sub histogram {
 	    });
 	    close $fh; 
     }
-    open my $fh, $hist_file;
+    open(my $fh, $hist_file);
     my $hist = <$fh>;
-    close $fh;
+    close($fh);
     return $hist;
 }
 
@@ -310,7 +310,7 @@ sub snps {
 	my $hits = [];
     foreach my $snp (@$snps) {
     	my @tokens = split ',', $snp;
-    	if (snp_overlaps_feature 0 + $tokens[1], $features->{substr $tokens[0], 1, -1}) {
+    	if (snp_overlaps_feature(0 + $tokens[1], $features->{substr $tokens[0], 1, -1})) {
     		push @$hits, $snp;
     	}
     }
