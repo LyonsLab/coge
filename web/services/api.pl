@@ -63,28 +63,28 @@ $r->put("/organisms")
 # Genome routes
 $r->get("/genomes/search/#term")
     ->name("genomes-search")
-    ->to("genome2#search", term => undef);
+    ->to("genome#search", term => undef);
 
 $r->get("/genomes/:id" => [id => qr/\d+/])
     ->name("genomes-fetch")
-    ->to("genome2#fetch", id => undef);
+    ->to("genome#fetch", id => undef);
     
 $r->get("/genomes/:id/sequence" => [id => qr/\d+/])
     ->name("genomes-sequence")
-    ->to("genome2#sequence", id => undef);
+    ->to("genome#sequence", id => undef);
     
 $r->get("/genomes/:id/sequence/:chr" => { id => qr/\d+/, chr => qr/\w+/ }) # can this be merged with above using regex?
     ->name("genomes-sequence-chr")
-    ->to("genome2#sequence", id => undef, chr => undef);   
+    ->to("genome#sequence", id => undef, chr => undef);   
     
 $r->put("/genomes")
     ->name("genomes-add")
-    ->to("genome2#add");
+    ->to("genome#add");
 
 # Dataset routes
 #$r->get("/genomes/search/#term")
 #    ->name("genomes-search")
-#    ->to("genome2#search", term => undef);
+#    ->to("genome#search", term => undef);
 
 $r->get("/datasets/:id" => [id => qr/\d+/])
     ->name("datasets-fetch")
