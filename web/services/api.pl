@@ -207,7 +207,7 @@ $r->get("/ftp/list/")
     ->name("ftp-list")
     ->to("FTP#list");
 
-# JBrowse routes
+# JBrowse configuration routes
 $r->get("/jbrowse/config/refseq")
     ->name("jbrowse-configuration-refseq")
     ->to("configuration#refseq_config");
@@ -215,11 +215,13 @@ $r->get("/jbrowse/config/refseq")
 $r->get("/jbrowse/config/tracks")
     ->name("jbrowse-configuration-tracks")
     ->to("configuration#track_config");    
-    
+
+# JBrowse sequence route
 $r->get("/jbrowse/sequence/:id/features/:chr" => { id => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-sequence")
     ->to("sequence#features", id => undef, chr => undef);
 
+# JBrowse annotation routes
 $r->get("/jbrowse/track/annotation/:gid/stats/global/" => [gid => qr/\d+/])
     ->name("jbrowse-annotation-stats-global")
     ->to("annotation#stats_global", gid => undef); 
@@ -244,6 +246,7 @@ $r->get("/jbrowse/track/gc/:id/features/:chr" => { id => qr/\d+/, chr => qr/\w+/
     ->name("jbrowse-gccontent-features")
     ->to("GCcontent#features", id => undef, chr => undef);  
 
+# JBrowse experiment routes
 $r->get("/jbrowse/experiment/:eid/stats/global/" => [eid => qr/\d+/])
     ->name("jbrowse-experiment-stats-global")
     ->to("experiment#stats_global", eid => undef);
@@ -269,6 +272,7 @@ $r->get("/jbrowse/experiment/notebook/:nid/features/:chr"  => { nid => qr/\d+/, 
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", nid => undef, chr => undef);
 
+# JBrowse genome routes
 $r->get("/jbrowse/genome/:gid/genes/"  => [gid => qr/\d+/])
     ->name("jbrowse-genome-genes")
     ->to("genome#genes", gid => undef);
