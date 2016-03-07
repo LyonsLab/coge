@@ -5,9 +5,6 @@ use Mojo::Log;
 
 #use File::Spec::Functions qw(catdir);
 
-# Set the module include path -- this is necessary to allow multiple sandboxes on dev
-#use lib './modules/perl';
-
 use CoGe::Accessory::Web qw(get_defaults);
 print STDERR '=' x 80, "\n== CoGe API\n", '=' x 80, "\n";
 print STDERR "Home path: ", get_defaults->{_HOME_PATH}, "\n";
