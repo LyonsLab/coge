@@ -1,202 +1,255 @@
-package CoGe::Services::API::Genome;
-use base 'CGI::Application';
+package CoGe::Services::API::Genome2;
 
-################################################################################
-# This is a legacy endpoint in support of genome loads from the DE.  Need to 
-# migrate the DE to the new API and deprecate this at some point.
-################################################################################
-
-use CoGeX;
-use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Accessory::IRODS;
-use CoGe::Core::Storage;
-use CoGe::Builder::CommonTasks;
+use Mojo::Base 'Mojolicious::Controller';
+use Mojo::JSON;
+use CoGe::Services::Auth qw(init);
+use CoGe::Services::Data::Job;
+use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Storage qw(get_genome_seq);
+use CoGe::Accessory::Utils qw(sanitize_name);
+use CoGeDBI qw(get_feature_counts);
 use Data::Dumper;
-use JSON qw(decode_json encode_json);
-use URI::Escape::JavaScript qw(escape);
-use File::Path qw(mkpath);
-use File::Spec::Functions qw(catfile);
 
-sub setup {
+sub search { #TODO move search code into reusable function in CoGe::Core::Genome
     my $self = shift;
-    $self->run_modes( 'load' => 'load' );
-    $self->mode_param('rm');
+    my $search_term = $self->stash('term');
+    my $fast = $self->param('fast');
+    $fast = (defined $fast && ($fast eq '1' || $fast eq 'true'));
+
+    # Validate input
+    if (!$search_term or length($search_term) < 3) {
+        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        return;
+    }
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Search genomes
+    my $search_term2 = '%' . $search_term . '%';
+    my @genomes = $db->resultset("Genome")->search(
+        \[
+            'genome_id = ? OR name LIKE ? OR description LIKE ?',
+            [ 'genome_id', $search_term  ],
+            [ 'name',        $search_term2 ],
+            [ 'description', $search_term2 ]
+        ]
+    );
+    
+    # Search organisms
+    my @organisms = $db->resultset("Organism")->search(
+        \[
+            'name LIKE ? OR description LIKE ?',
+            [ 'name',        $search_term2 ],
+            [ 'description', $search_term2 ]
+        ]
+    );
+    
+    # Combine matching genomes and organisms, preventing duplicates
+    my %unique;
+    map { $unique{ $_->id } = $_ } @genomes;
+    foreach my $organism (@organisms) {
+        map { $unique{ $_->id } = $_ } $organism->genomes;
+    }
+
+    # Filter response
+    my @filtered = sort genomecmp grep {
+        !$_->restricted || (defined $user && $user->has_access_to_genome($_))
+    } values %unique;
+
+    # Format response
+    my @result;
+    if ($fast) {
+        @result = map {
+          {
+            id => int($_->id),
+            info => $_->info
+          }
+        } @filtered;
+    }
+    else {
+        @result = map {
+          {
+            id => int($_->id),
+            name => $_->name,
+            description => $_->description,
+            link => $_->link,
+            version => $_->version,
+            info => $_->info,
+            organism_id  => int($_->organism->id),
+            sequence_type => {
+                id => $_->type->id,
+                name => $_->type->name,
+                description => $_->type->description,
+            },
+            restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+            chromosome_count => int($_->chromosome_count),
+            organism => {
+                id => int($_->organism->id),
+                name => $_->organism->name,
+                description => $_->organism->description
+            }
+          }
+        } @filtered;
+    }
+    
+    $self->render(json => { genomes => \@result });
 }
 
-sub load {
+sub fetch {
     my $self = shift;
-    my $q = $self->query();
-	#my $ticket = $q->param('ticket'); # ugh: when POSTDATA is present, it doesn't have the ticket from URL
-	my $post = $q->param('POSTDATA');
-    print STDERR "Data::Genome::load ticket=$ticket\n",
-        Dumper $q, "\n",
-	    "POSTDATA: $post", "\n",
-	    Dumper \%ENV, "\n";
-
-	# Problem: when status is anything but 200 it adds on an html doc
-	# to the reponse even if type is 'application/json'
-	# Need to migrate to Apache::REST
-
-	# Validate POST data
-	if (!$post) {
-		#$self->header_props( -status => 500, -type => 'application/json' );
-		return encode_json({
-			success => JSON::false,
-			error => 'Missing data'
-		});
-	}
-	my $data = decode_json($post);
-	if (!$data) {
-		#$self->header_props( -status => 500, -type => 'application/json' );
-		return encode_json({
-			success => JSON::false,
-			error => 'Invalid request format'
-		});
-	}
-	if (!$data->{items} or !@{$data->{items}}) {
-		#$self->header_props( -status => 500, -type => 'application/json' );
-		return encode_json({
-			success => JSON::false,
-			error => 'No data items'
-		});
-	}
-
- 	# Connect to the database
- 	my $ticket = $data->{ticket};
- 	my $url = 'https://genomevolution.org'.$ENV{REQUEST_URI}; #FIXME hardcoded !!!! # mdb changed 6/26/14 from http://coge.iplantcollaborative.org per request from DE
- 	$url =~ s/\/$//;
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init(ticket => $ticket, ticket_type => 'proxy', url => $url);
-	print STDERR "Data::Genome::load user=", $user->name, "\n";
-
-	# Must be authenticated to load a genome
-	if (not $user or $user->is_public) {
-		$self->header_props(-status => '401 Unauthorized');
-		return;
-	}
-
-	# Set defaults #TODO review these values
-	$data->{name} = '' unless (defined $data->{name});
-	$data->{description} = '' unless (defined $data->{description});
-	$data->{link} = '' unless (defined $data->{link});
-	$data->{version} = '1' unless (defined $data->{version});
-	$data->{restricted} = (defined $data->{restricted} && ($data->{restricted} eq 'true' || $data->{restricted} eq '1') ? 1 : 0 );
-	my $type_id = 1; # hardcode to "unmasked sequence"
-	my $source_name = $user->name; #FIXME change to user's display_name
-	my $organism_id = 38378; # FIXME hardcoded to "test" organism, need to change to "unknown" or something
-
-    my ($workflow, $error_msg) = create_genome_from_file(
-        user => $user,
-        metadata => {
-            name => escape($data->{name}),
-            description => escape($data->{description}),
-            version => escape($data->{version}),
-            source_name => escape($source_name),
-            restricted => $data->{restricted},
-            type_id => $type_id
-        },
-        organism_id => $organism_id,
-        irods => $data->{items}
-    );
-    unless ($workflow->id) {
-        return encode_json({
-            success => JSON::false,
-            error => "Workflow submission failed: " . $error_msg
+    my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
         });
+        return;
     }
 
-    # Get tiny link
-    my $tiny_link = CoGe::Accessory::Web::get_tiny_link(
-        url => $conf->{SERVER} . "LoadGenome.pl?job_id=" . $workflow->id
-    );
-    unless ($tiny_link) {
-    	#$self->header_props( -status => 500 );
-		return encode_json({
-			success => JSON::false,
-			error => 'Link generation failed'
-		});
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get genome
+    my $genome = $db->resultset("Genome")->find($id);
+    unless (defined $genome) {
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found"}
+        });
+        return;
+    }
+
+    # Verify permission
+    unless ( !$genome->restricted || (defined $user && $user->has_access_to_genome($genome)) ) {
+        $self->render(json => {
+            error => { Auth => "Access denied"}
+        }, status => 401);
+        return;
+    }
+
+    # Format metadata
+    my @metadata = map {
+        {
+            text => $_->annotation,
+            link => $_->link,
+            type => $_->type->name,
+            type_group => $_->type->group
+        }
+    } $genome->annotations;
+    
+    # Build chromosome list
+    my $chromosomes = $genome->chromosomes_all;
+    my $feature_counts = get_feature_counts($db->storage->dbh, $genome->id);
+    foreach (@$chromosomes) {
+        my $name = $_->{name};
+        $_->{gene_count} = int($feature_counts->{$name}{1}{count});
+        $_->{CDS_count} = int($feature_counts->{$name}{3}{count});
     }
     
-    CoGe::Accessory::Web::log_history(
-        db          => $db,
-        parent_id   => $workflow->id,
-        parent_type => 7, #FIXME magic number
-        user_id     => $user->id,
-        page        => "API (legacy DE)",
-        description => $workflow->name,
-        link        => ($tiny_link ? $tiny_link : '')
-    );
-
-	return encode_json({
-		success => JSON::true,
-		link => $tiny_link
-	});
+    # Generate response
+    $self->render(json => {
+        id => int($genome->id),
+        name => $genome->name,
+        description => $genome->description,
+        link => $genome->link,
+        version => $genome->version,
+        restricted => $genome->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        organism => {
+            id => int($genome->organism->id),
+            name => $genome->organism->name,
+            description => $genome->organism->description
+        },
+        sequence_type => {
+            name => $genome->type->name,
+            description => $genome->type->description,
+        },
+        chromosome_count => int($genome->chromosome_count),
+        chromosomes => $chromosomes,
+        experiments => [ map { int($_->id) } $genome->experiments ],
+        additional_metadata => \@metadata
+    });
 }
 
-sub create_genome_from_file { #TODO use CoGe::Builder::Load::Genome pipeline instead
-    my %opts = @_;
-    my $user = $opts{user};
-    my $irods = $opts{irods};
-    my $metadata = $opts{metadata};
-    my $organism_id = $opts{organism_id};
-    #print STDERR "Storage::create_genome_from_file ", Dumper $metadata, " ", Dumper $files, "\n";
+sub sequence {
+    my $self   = shift;
+    my $gid    = $self->stash('id');
+    return unless $gid;
+    my $chr    = $self->stash('chr');
+    my $start  = $self->param('start');
+    my $stop   = $self->param('stop') || $self->param('end');
+    my $strand = $self->param('strand');
+    print STDERR "Data::Genome::fetch_sequence gid=$gid chr=$chr start=$start stop=$stop\n";
 
-    # Connect to workflow engine
-    my $conf = CoGe::Accessory::Web::get_defaults();
-    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    unless (defined $jex) {
-        return (undef, "Could not connect to JEX");
+    # Connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    # Retrieve genome
+    my $genome = $db->resultset('Genome')->find($gid);
+    unless ($genome) {
+        print STDERR "Data::Sequence::get genome $gid not found in db\n";
+        return;
     }
 
-    # Create the workflow
-    my $info;
-    $info .= $metadata->{organism} if $metadata->{organism};
-    $info .= " (" . $metadata->{name} . ")"  if $metadata->{name};
-    $info .= ": " . $metadata->{description} if $metadata->{description};
-    $info .= " (v" . $metadata->{version} . ")";
-    my $workflow = $jex->create_workflow( name => "Load Genome \"$info\"", init => 1 );
-    unless ($workflow and $workflow->id) {
-        return (undef, 'Could not create workflow');
+    # Check permissions
+    if ( $genome->restricted
+        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
+    {
+        print STDERR "Data::Sequence::get access denied to genome $gid\n";
+        return;
     }
 
-    # Setup log file, staging, and results paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $workflow->id);
-    $workflow->logfile( catfile($result_dir, 'debug.log') );
-
-    # Create jobs to retrieve irods files
-    my @staged_files;
-    foreach my $item (@$irods) {
-        next unless ($item->{type} eq 'irods');
-        my $iget_task = create_iget_job(irods_path => $item->{path}, local_path => $staging_dir);
-        unless ( $iget_task ) {
-            return (undef, "Could not create iget task");
-        }
-        $workflow->add_job($iget_task);
-        push @staged_files, $iget_task->{outputs}[0];
+    # Force browser to download whole genome as attachment
+    if ( (!defined($chr) || $chr eq '') ) {
+        my $genome_name = sanitize_name($genome->organism->name);
+        $genome_name = 'genome_'.$gid unless $genome_name;
+        $self->res->headers->content_disposition("attachment; filename=$genome_name.faa;");
     }
 
-    # Create load job
-    my $load_task = create_load_genome_job(
-        user => $user,
-        staging_dir => $staging_dir,
-        wid => $workflow->id,
-        organism_id => $organism_id,
-        input_files => \@staged_files,
-        irods_files => $irods, # for metadata markup
-        metadata => $metadata,
-    );
-    unless ( $load_task ) {
-        return (undef, "Could not create load task");
-    }
-    $workflow->add_job($load_task);
+    # Get sequence from file
+    $self->render(text => get_genome_seq(
+        gid   => $gid,
+        chr   => $chr,
+        start => $start,
+        stop  => $stop,
+        strand => $strand
+    ));
+}
 
-    # Submit the workflow
-    my $result = $jex->submit_workflow($workflow);
-    if ($result->{status} =~ /error/i) {
-        return (undef, "Could not submit workflow");
+sub add {
+    my $self = shift;
+    my $data = $self->req->json;
+    print STDERR "CoGe::Services::Data::Genome2::add\n", Dumper $data, "\n";
+
+# mdb removed 9/17/15 -- auth is handled by Job::add below, redundant token validation breaks CAS proxyValidate
+#    # Authenticate user and connect to the database
+#    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+#
+#    # User authentication is required to add experiment
+#    unless (defined $user) {
+#        $self->render(json => {
+#            error => { Auth => "Access denied" }
+#        });
+#        return;
+#    }
+
+    # Valid data items # TODO move into request validation
+    unless ($data->{source_data} && @{$data->{source_data}}) {
+        $self->render(status => 400, json => {
+            error => { Error => "No data items specified" }
+        });
+        return;
     }
     
-    return ($workflow, undef);
+    # Marshall incoming payload into format expected by Job Submit.
+    # Note: This is kind of a kludge -- is there a better way to do this using
+    # Mojolicious routing?
+    my $request = {
+        type => 'load_genome',
+        parameters => $data
+    };
+    
+    return CoGe::Services::Data::Job::add($self, $request);
 }
 
 1;
