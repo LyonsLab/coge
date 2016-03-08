@@ -63,23 +63,23 @@ $r->put("/organisms")
 # Genome routes
 $r->get("/genomes/search/#term")
     ->name("genomes-search")
-    ->to("genome#search", term => undef);
+    ->to("genome#search", namespace => 'CoGe::Services::API', term => undef);
 
 $r->get("/genomes/:id" => [id => qr/\d+/])
     ->name("genomes-fetch")
-    ->to("genome#fetch", id => undef);
+    ->to("genome#fetch", namespace => 'CoGe::Services::API', id => undef);
     
 $r->get("/genomes/:id/sequence" => [id => qr/\d+/])
     ->name("genomes-sequence")
-    ->to("genome#sequence", id => undef);
+    ->to("genome#sequence", namespace => 'CoGe::Services::API', id => undef);
     
 $r->get("/genomes/:id/sequence/:chr" => { id => qr/\d+/, chr => qr/\w+/ }) # can this be merged with above using regex?
     ->name("genomes-sequence-chr")
-    ->to("genome#sequence", id => undef, chr => undef);   
+    ->to("genome#sequence", namespace => 'CoGe::Services::API', id => undef, chr => undef);   
     
 $r->put("/genomes")
     ->name("genomes-add")
-    ->to("genome#add");
+    ->to("genome#add", namespace => 'CoGe::Services::API');
 
 # Dataset routes
 #$r->get("/genomes/search/#term")
@@ -110,15 +110,15 @@ $r->get("/features/sequence/:id" => [id => qr/\d+/])
 # Experiment routes
 $r->get("/experiments/search/#term")
     ->name("experiments-search")
-    ->to("experiment#search", term => undef);
+    ->to("experiment#search", namespace => 'CoGe::Services::API', term => undef);
 
 $r->get("/experiments/:id" => [id => qr/\d+/])
     ->name("experiments-fetch")
-    ->to("experiment#fetch", id => undef);
+    ->to("experiment#fetch", namespace => 'CoGe::Services::API', id => undef);
 
 $r->put("/experiments")
     ->name("experiments-add")
-    ->to("experiment#add");
+    ->to("experiment#add", namespace => 'CoGe::Services::API');
 
 # Notebook routes
 $r->get("/notebooks/search/#term")
