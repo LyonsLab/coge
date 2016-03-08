@@ -86,20 +86,21 @@ return declare( [ HTMLFeatures ], {
     		url: url,
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
+	  			this._search_dialog.hide();
 	  			if (data.error) {
 	  				coge.error('Search', data);
 	  				return;
 	  			}
- 				this._search_dialog.hide();
 	  			if (data.length == 0) {
 	  				coge.error('Search', 'no SNPs found');
 	  				return;
 	  			}
 	  			coge.new_search_track(this._track, data, search);
     		}),
-    		error: function(data) {
-    			coge.error('Search', data);
-    		}
+    		error: dojo.hitch(this, function(data) {
+    			this._search_dialog.hide();
+	  			coge.error('Search', data);
+    		})
     	})
     },
 

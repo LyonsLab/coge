@@ -704,8 +704,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	  				coge.new_search_track(this._track, data, search);
     		}),
     		error: dojo.hitch(this, function(data) {
+    			this._track_search_dialog.hide();
     			coge.error('Search', data);
- 				this._track_search_dialog.hide();
     		})
     	});
     },

@@ -46,16 +46,6 @@ sub min {
    	return 0 + $min->[0];
 }
 
-sub debug {
-	my $data = shift;
-	my $new_file = shift;
-	my $OUTFILE;
-	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
-	print {$OUTFILE} Dumper $data;
-	print {$OUTFILE} "\n";
-	close $OUTFILE;
-}
-
 sub query {
 	my $query = shift;
 	my $eid = shift;
@@ -63,7 +53,7 @@ sub query {
     my $cmdpath = get_defaults()->{FASTBIT_QUERY};
     my $storage_path = get_experiment_path($eid);
     my $cmd = "$cmdpath -v 1 -d $storage_path -q \"$query\" 2>&1";
-debug $cmd;
+	warn $cmd;
     my @cmdOut = qx{$cmd};
 
     my $cmdStatus = $?;

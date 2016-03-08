@@ -261,9 +261,6 @@ return declare( JBrowsePlugin,
             browser.publish('/jbrowse/v1/v/tracks/show', [config]);
    			dojo.place(dojo.byId('track_search_' + eid), dojo.byId('track_experiment' + eid), 'after');
    			browser.view.updateTrackList();
-    		var nav = dojo.byId('nav_' + eid);
-    		if (nav)
-    			dojo.destroy(nav);
     		new SearchNav(eid, results, browser).go_to(0);
         });
     },
@@ -301,6 +298,7 @@ return declare( JBrowsePlugin,
 	  			}
 	  			if (data.length == 0) {
 	  				coge.error('Search', 'no features found');
+	  				dojo.destroy(coge.search_dialog);
 	  				return;
 	  			}
 	  			dojo.query('.dijitDialogUnderlayWrapper')[0].style.display = 'none';

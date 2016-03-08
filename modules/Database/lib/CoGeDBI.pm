@@ -46,9 +46,17 @@ BEGIN {
         get_groups_for_user get_group_access_table get_datasets
         get_feature_counts get_features get_feature_types
         get_feature_names get_feature_annotations get_locations 
-        get_chromosomes get_chromosomes_from_features get_total_queries
+        get_total_queries get_dataset_ids feature_type_names_to_id
         get_features_by_range get_table_count
     );
+}
+
+# takes: string of comma delimeted, singled quoted feature type names
+# returns: string of comma delimited corresponding feature type ids
+sub feature_type_names_to_id {
+	my $type_names = shift;
+	my $dbh = shift;
+	return join(',', @{$dbh->selectcol_arrayref('SELECT feature_type_id FROM feature_type WHERE name IN(' . $type_names . ')')});
 }
 
 sub get_table {
@@ -597,59 +605,67 @@ sub get_datasets {
     return wantarray ? values %$results : $results;
 }
 
-sub get_chromosomes {
-    my $dbh = shift;         # database connection handle
-    my $genome_id = shift;   # genome id
-    my $dataset_id = shift;  # dataset id
-    return unless ($dbh and ($genome_id or $dataset_id));
-    
-    # Execute query
-    my $query = qq{
-        SELECT f.feature_id AS fid, f.start AS start, f.stop AS stop, 
-            f.chromosome AS chr
-        FROM dataset_connector AS dc 
-        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
-        WHERE feature_type_id=4
-    };
-    if ($genome_id) {
-        $query .= " AND dc.genome_id=$genome_id";
-    }
-    else { # dataset_id
-        $query .= " AND dc.dataset_id=$dataset_id";
-    }
-    my $sth = $dbh->prepare($query);
-    $sth->execute();
-    my $results = $sth->fetchall_arrayref({});
-    #print STDERR Dumper $results, "\n";
-    
-    return wantarray ? @$results : $results;
+sub get_dataset_ids {
+	my $gid = shift;
+	my $dbh = shift;
+	$dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $gid);
 }
 
-sub get_chromosomes_from_features {
-    my $dbh = shift;         # database connection handle
-    my $genome_id = shift;   # genome id
-    my $dataset_id = shift;  # dataset id
-    return unless ($dbh and ($genome_id or $dataset_id));
-    
-    # Execute query
-    my $query = qq{
-        SELECT f.chromosome AS chr
-        FROM dataset_connector AS dc 
-        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
-    };
-    if ($genome_id) {
-        $query .= " WHERE dc.genome_id=$genome_id";
-    }
-    else { # dataset_id
-        $query .= " WHERE dc.dataset_id=$dataset_id";
-    }
-    my $sth = $dbh->prepare($query);
-    $sth->execute();
-    my $results = $sth->fetchall_hashref(['chr']);
-    #print STDERR Dumper $results, "\n";
-    
-    return wantarray ? keys %$results : [ keys %$results ];
-}
+# doesn't seem to be used anywhere
+#sub get_chromosomes {
+#    my $dbh = shift;         # database connection handle
+#    my $genome_id = shift;   # genome id
+#    my $dataset_id = shift;  # dataset id
+#    return unless ($dbh and ($genome_id or $dataset_id));
+#    
+#    # Execute query
+#    my $query = qq{
+#        SELECT f.feature_id AS fid, f.start AS start, f.stop AS stop, 
+#            f.chromosome AS chr
+#        FROM dataset_connector AS dc 
+#        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
+#        WHERE feature_type_id=4
+#    };
+#    if ($genome_id) {
+#        $query .= " AND dc.genome_id=$genome_id";
+#    }
+#    else { # dataset_id
+#        $query .= " AND dc.dataset_id=$dataset_id";
+#    }
+#    my $sth = $dbh->prepare($query);
+#    $sth->execute();
+#    my $results = $sth->fetchall_arrayref({});
+#    #print STDERR Dumper $results, "\n";
+#    
+#    return wantarray ? @$results : $results;
+#}
+
+# doesn't seem to be used anywhere
+#sub get_chromosomes_from_features {
+#    my $dbh = shift;         # database connection handle
+#    my $genome_id = shift;   # genome id
+#    my $dataset_id = shift;  # dataset id
+#    return unless ($dbh and ($genome_id or $dataset_id));
+#    
+#    # Execute query
+#    my $query = qq{
+#        SELECT f.chromosome AS chr
+#        FROM dataset_connector AS dc 
+#        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
+#    };
+#    if ($genome_id) {
+#        $query .= " WHERE dc.genome_id=$genome_id";
+#    }
+#    else { # dataset_id
+#        $query .= " WHERE dc.dataset_id=$dataset_id";
+#    }
+#    my $sth = $dbh->prepare($query);
+#    $sth->execute();
+#    my $results = $sth->fetchall_hashref(['chr']);
+#    #print STDERR Dumper $results, "\n";
+#    
+#    return wantarray ? keys %$results : [ keys %$results ];
+#}
 
 # Estimate table count (for large InnoDB tables)
 sub get_table_count {
