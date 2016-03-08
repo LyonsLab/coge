@@ -4,11 +4,11 @@ use strict;
 use CGI;
 use CoGe::Accessory::Web;
 
-my $FORM = new CGI;
-my $id   = $FORM->param('id');
-my ( $coge, $USER, $P ) = CoGe::Accessory::Web->init;
+my $form = new CGI;
+my $id = $form->param('id');
+my ( $coge, $user ) = CoGe::Accessory::Web->init;
 if (!$id) {
-	$id	 = $USER->image_id;
+	$id	 = $user->image_id;
 }
 exit unless $id;
 
