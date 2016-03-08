@@ -16,7 +16,7 @@ use POSIX;
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT_OK =
-	  qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_logfile get_query_link go );
+	  qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
 }
 
 sub add_jobs {
@@ -24,11 +24,15 @@ sub add_jobs {
 	my $workflow = $opts{workflow};
 	my $db       = $opts{db};
 	my $config   = $opts{config};
-	$workflow->logfile(get_logfile($db, $config, %opts));
 
 	my $dsgid1 = $opts{dsgid1} || $opts{genome_id1};
 	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
 	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
+
+	my $tiny_link = get_query_link( $config, $db, @_ );
+	my $path = catdir($config->{DIAGSDIR}, $dir1, $dir2, 'html');
+	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
+	$workflow->logfile($path);
 
 	my $SEQUENCE_SIZE_LIMIT =
 	  50_000_000;    # Limit the maximum genome size for genomic-genomic
@@ -1818,7 +1822,6 @@ sub go {
 	$workflow->log_section( "Running Workflow" );
 
 	my $response = $JEX->submit_workflow($workflow);
-
 	if ( $response and $response->{id} ) {
 		my $feat_type1 = $opts{feat_type1};
 		my $feat_type2 = $opts{feat_type2};
@@ -1836,7 +1839,7 @@ sub go {
 		  ; #"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
 		$log_msg .= " Ks" if $opts{ks_type};
 
-		my $log = CoGe::Accessory::Web::log_history(
+		CoGe::Accessory::Web::log_history(
 			db          => $db,
 			user_id     => $user->id,
 			description => $log_msg,
@@ -1846,9 +1849,14 @@ sub go {
 			parent_type => 7                  #FIXME magic number
 		);
 
+		my $DIR = $config->{COGEDIR};
+		my $URL = $config->{URL};
+		my $log = $workflow->logfile;
+		$log =~ s/$DIR/$URL/;
 		return encode_json(
 			{
 				link    => $tiny_link,
+				log     => $log,
 				request => "jex/synmap/status/" . $response->{id},
 				status  => $response->{status},
 				success => $JEX->is_successful($response)
