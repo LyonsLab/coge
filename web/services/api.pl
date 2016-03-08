@@ -204,6 +204,11 @@ $r->get("/ftp/list/")
     ->name("ftp-list")
     ->to("FTP#list");
 
+# Downloads route
+$r->get("/downloads/")
+    ->name("downloads")
+    ->to("download#get");
+
 # JBrowse configuration routes
 $r->get("/jbrowse/config/refseq")
     ->name("jbrowse-configuration-refseq")

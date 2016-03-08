@@ -46,16 +46,16 @@ sub get {
     if ( not defined $chr or $chr eq '' ) {
         my $genome_name = sanitize_name($genome->organism->name);
         $genome_name = 'genome_'.$gid unless $genome_name;
-        $self->header_add( -attachment => "$genome_name.faa" );
+        $self->res->headers->content_disposition("attachment; filename=$genome_name.faa;");
     }
 
     # Get sequence from file
-    return get_genome_seq(
+    $self->render( text => get_genome_seq(
         gid   => $gid,
         chr   => $chr,
         start => $start,
         stop  => $stop
-    );
+    ) );
 }
 
 1;

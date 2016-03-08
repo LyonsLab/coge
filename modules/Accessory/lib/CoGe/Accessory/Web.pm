@@ -70,6 +70,7 @@ BEGIN {
                    send_email get_defaults set_defaults url_for api_url_for get_job 
                    schedule_job render_template ftp_get_path ftp_get_file split_url
                    parse_proxy_response jwt_decode_token add_user write_log log_history
+                   download_url_for
                );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
@@ -185,7 +186,7 @@ sub get_defaults {
 
     my ( $self, $conf_file ) = self_or_default(@_);
     $conf_file = catfile($BASEDIR, 'coge.conf') unless defined $conf_file;
-    #print STDERR "Web::get_defaults $conf_file\n";
+    print STDERR "Web::get_defaults $conf_file\n";
     unless ( -r $conf_file ) {
         print STDERR
 qq{Either no configuration file was specified or unable to read file ($conf_file).
@@ -1164,6 +1165,37 @@ sub send_email {
 
     print $mailer $body;
     $mailer->close();
+}
+
+sub download_url_for { # mdb added 3/8/16 for hypnotoad
+    my %args = @_;
+    my $gid = $args{gid};
+    my $eid = $args{eid};
+    my $wid = $args{wid};
+    my $filename = ($args{file} ? basename($args{file}) : '');
+#    my $username = $args{username};
+    
+    my $params = '';
+    if ($gid) {
+        $params .= "gid=$gid";
+    }
+    elsif ($eid) {
+        $params .= "eid=$eid";
+    }
+    elsif ($wid) {
+        $params .= "wid=$wid";
+    }
+    
+#    my $user_str = '';
+#    if ($username) {
+#        $params .= "&username=$username";
+#    }
+
+    if ($filename) {
+        $params .= "&filename=$filename";
+    }
+    
+    return url_for(api_url_for("downloads/?$params"));
 }
 
 sub api_url_for {
