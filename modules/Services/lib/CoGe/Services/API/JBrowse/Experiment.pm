@@ -4,10 +4,13 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 
 use CoGeX;
-use CoGe::Services::Auth qw(init);
+use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
-use JSON::XS;
+use CoGeDBI qw( feature_type_names_to_id get_dataset_ids );
 use Data::Dumper;
+use File::Path;
+use JSON::XS;
+use Path::Class;
 
 #TODO: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -149,7 +152,7 @@ sub _get_experiments {
         	warn "JBrowse::Experiment::_get_experiments access denied to experiment $eid for user ", $user->name;
         }
     }
-    splice(@experiments, $MAX_EXPERIMENTS, @experiments);
+    splice(@experiments, $MAX_EXPERIMENTS);
     return \@experiments;
 }
 
@@ -194,7 +197,7 @@ sub query_data {
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
-	my $experiments = _get_experiments $db, $user, $eid;
+	my $experiments = _get_experiments($db, $user, $eid);
 	my $result = [];
 	foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
 		$result = CoGe::Core::Experiment::query_data(
@@ -220,19 +223,8 @@ sub snp_overlaps_feature {
 	return 0;
 }
 
-sub debug {
-	my $data = shift;
-	my $new_file = shift;
-	my $OUTFILE;
-	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
-	print {$OUTFILE} Dumper $data;
-	print {$OUTFILE} "\n";
-	close $OUTFILE;
-}
-
 sub _add_features {
     my ($chr, $type_ids, $dsid, $hits, $dbh) = @_;
-    #TODO move this query to CoGeDBI.pm
     my $query = 'SELECT chromosome,start,stop FROM feature WHERE dataset_id=' . $dsid;
     if ($chr) {
     	$query .= " AND chromosome='" . $chr . "'";
@@ -268,7 +260,7 @@ sub snps {
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
-	my $experiments = _get_experiments $db, $user, $eid;
+	my $experiments = _get_experiments($db, $user, $eid);
 	my $snps;
 	foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
 		$snps = CoGe::Core::Experiment::query_data(
@@ -280,38 +272,40 @@ sub snps {
 
     my $dbh = $db->storage->dbh;
 
-	my $types = $self->param('features');
+	my $type_names = $self->param('features');
 	my $type_ids;
-	if ($types ne 'all') {
-	    #TODO move this query to CoGeDBI.pm
-		$type_ids = join(',', @{$dbh->selectcol_arrayref('SELECT feature_type_id FROM feature_type WHERE name IN(' . $types . ')')});
+	if ($type_names ne 'all') {
+		$type_ids = feature_type_names_to_id($type_names, $dbh);
 	}
 
     my $features = {};
 	foreach my $experiment (@$experiments) {
-	    #TODO move this query to CoGeDBI.pm
-	    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $experiment->genome_id);
+	    my $ids = get_dataset_ids($experiment->genome_id, $dbh);
 	    foreach my $dsid (@$ids) {
 	        _add_features $chr, $type_ids, $dsid, $features, $dbh;
 	    }
 	}
 
-#	my $dir = catdir($conf->{CACHEDIR}, $experiments->[0]->genome_id, 'features');
-#	my @chromosomes = keys %$features;
-#	while (@chromosomes) {
-#		open(my $fh, ">$dir/" . $_ . '_' . $type_ids->[0] . '.loc');
-#		bindmode $fh;
-#		my $locs = $features->{$_};
-#		print $fh pack('L', scalar @$locs);
-#		foreach my $loc (@$locs) {
-#			print $fh pack('LL', $loc->[1], $loc->[2]);
-#		}
-#		close($fh);
-#	}
+	my $dir = dir($conf->{CACHEDIR}, $experiments->[0]->genome_id, 'features');
+	make_path($dir, { mode => 0700}) unless -d $dir;
+	my $type = (split ',', $type_names)[0];
+	$type = substr($type, 1, -1);
+	my @chromosomes = keys %$features;
+	foreach my $chromosome (@chromosomes) {
+		warn ">$dir/" . $chromosome . "_$type.loc";
+		open(my $fh, ">$dir/" . $chromosome . "_$type.loc");
+		binmode($fh);
+		my $locs = $features->{$chromosome};
+		print $fh pack('L', scalar @$locs);
+		foreach my $loc (@$locs) {
+			print $fh pack('LL', $loc->[1], $loc->[2]);
+		}
+		close($fh);
+	}
 
 	my $hits = [];
     foreach my $snp (@$snps) {
-    	my @tokens = split ',', $snp;
+    	my @tokens = split(',', $snp);
     	if (snp_overlaps_feature(0 + $tokens[1], $features->{substr $tokens[0], 1, -1})) {
     		push @$hits, $snp;
     	}
@@ -327,13 +321,7 @@ sub features {
     my $chr   = $self->stash('chr');
     my $start = $self->param('start');
     my $end   = $self->param('end');
-    print STDERR "JBrowse::Experiment::features eid="
-      . ( $eid ? $eid : '' ) . " nid="
-      . ( $nid ? $nid : '' ) . " gid="
-      . ( $gid ? $gid : '' )
-      . " $chr:$start:$end ("
-      . ( $end - $start + 1 ) . ")\n";
-    return unless ( ( $eid or $nid or $gid ) and defined $chr and defined $start and defined $end );
+    return unless (($eid or $nid or $gid) and defined $chr and defined $start and defined $end);
 
 # mdb removed 11/6/15 COGE-678
 #    if ( $end - $start + 1 > $MAX_WINDOW_SIZE ) {
@@ -344,10 +332,10 @@ sub features {
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
-	my $experiments = _get_experiments $db, $user, $eid, $gid, $nid;
+	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
 
     if (!@$experiments) {
-        return $self->render(json => { "features" : [] });
+        return $self->render(json => { features => [] });
     }
 
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
