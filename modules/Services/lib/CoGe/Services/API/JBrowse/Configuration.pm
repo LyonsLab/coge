@@ -8,7 +8,6 @@ use Sort::Versions;
 use Time::HiRes qw(time);
 
 use CoGe::Services::Auth qw(init);
-use CoGeX;
 use CoGeDBI qw(get_table get_user_access_table get_experiments get_distinct_feat_types);
 use CoGe::Core::Chromosomes;
 use CoGe::Core::Experiment qw(experimentcmp);
@@ -75,7 +74,7 @@ sub track_config {
     
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-    warn Dumper $user;
+
     # Admins have ability to simulate other users using the "user_id" query parameter
 #    my $user_id = $self->query->param('user_id');
 #    if (defined $user_id && $user->is_admin && $user_id != $user->id) {

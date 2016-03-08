@@ -256,6 +256,10 @@ $r->get("/jbrowse/experiment/:eid/features/:chr"  => { eid => qr/\d+/, chr => qr
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", eid => undef, chr => undef);
 
+$r->get("/jbrowse/experiment/:eid/snps/:chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-snps")
+    ->to("experiment#snps", eid => undef, chr => undef);
+
 # Is there a way to combine these 3 notebook routes with the 3 experiment routes above using regex?
 $r->get("/jbrowse/experiment/notebook/:nid/stats/global/" => [nid => qr/\d+/])
     ->name("jbrowse-experiment-stats-global")
