@@ -7,7 +7,6 @@ use CoGe::Accessory::Web;
 my $form = new CGI;
 my $id = $form->param('id');
 my ( $coge, $user ) = CoGe::Accessory::Web->init;
-print STDERR "image.pl: ", $user->name, "\n";
 if (!$id) {
 	$id	 = $user->image_id;
 }
