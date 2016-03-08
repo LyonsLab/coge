@@ -186,7 +186,7 @@ sub get_defaults {
 
     my ( $self, $conf_file ) = self_or_default(@_);
     $conf_file = catfile($BASEDIR, 'coge.conf') unless defined $conf_file;
-    print STDERR "Web::get_defaults $conf_file\n";
+    #print STDERR "Web::get_defaults $conf_file\n";
     unless ( -r $conf_file ) {
         print STDERR
 qq{Either no configuration file was specified or unable to read file ($conf_file).
