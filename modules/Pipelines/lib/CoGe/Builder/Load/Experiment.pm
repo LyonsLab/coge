@@ -139,6 +139,7 @@ sub build {
                 wid => $self->workflow->id,
                 genome => $genome,
                 input_file => $bam_file,
+                sorted => ($file_type ne 'bam'),
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 params => $self->params->{snp_params},
