@@ -202,6 +202,7 @@ define(['dojo/_base/declare',
 	  			else {
 	  				var config = this._new_notebook_config(data.id, name, description, restricted);
 	  				this._track_configs.push(config);
+					this._new_notebook_source().insertNodes(false, [config]);
 	  				this._filter_tracks();
 	  				this.div.scrollTop = this.div.scrollHeight;
 	  				this._create_notebook_dialog.hide();

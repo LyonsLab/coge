@@ -4,8 +4,10 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 
 use CoGeX;
+use CoGe::Services::API::JBrowse::FeatureIndex;
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
+use CoGe::Core::Storage qw( get_experiment_path );
 use CoGeDBI qw( feature_type_names_to_id get_dataset_ids );
 use Data::Dumper;
 use File::Path;
@@ -159,7 +161,6 @@ sub histogram {
     my $self = shift;
     my $eid = $self->stash('eid');
     my $chr = $self->param('chr');
-
     my $storage_path = get_experiment_path($eid);
     my $hist_file = "$storage_path/value1.hist";
     if (!-e $hist_file) {
@@ -181,7 +182,7 @@ sub histogram {
     open(my $fh, $hist_file);
     my $hist = <$fh>;
     close($fh);
-    return $hist;
+	$self->render(json => decode_json($hist));
 }
 
 sub query_data {
@@ -251,11 +252,12 @@ sub snps {
 
 	my $type = (split ',', $type_names)[0];
 	$type = substr($type, 1, -1);
-	my $fi = FeatureIndex->new($experiment->genome_id, $type, $chr, $conf);
-	my $hits = $fi->get_features($dbh);
+	my $fi = FeatureIndex->new($experiments->[0]->genome_id, $type, $chr, $conf);
+	my $features = $fi->get_features($dbh);
+	my $hits = [];
     foreach my $snp (@$snps) {
     	my @tokens = split(',', $snp);
-    	if (snp_overlaps_feature(0 + $tokens[1], $features->{substr $tokens[0], 1, -1})) {
+    	if (snp_overlaps_feature(0 + $tokens[1], $features)) {
     		push @$hits, $snp;
     	}
     }

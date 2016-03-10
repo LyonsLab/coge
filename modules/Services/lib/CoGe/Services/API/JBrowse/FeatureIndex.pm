@@ -41,7 +41,7 @@ sub get_features {
 	my $self = shift;
 	my $dbh = shift;
 	my $dir = dir($self->{conf}{CACHEDIR}, $self->{gid}, 'features');
-	my $file = file($dir, $chromosome . '_' . $self->{type} . '.loc');
+	my $file = file($dir, $self->{chromosome} . '_' . $self->{type} . '.loc');
 	if (-e $file) {
 		return _read_index($file);
 	}
