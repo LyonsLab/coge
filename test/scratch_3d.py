@@ -9,6 +9,8 @@ from plotly.graph_objs import Scatter3d, Layout, Figure, Scene
 from sklearn.cluster import DBSCAN
 from sys import argv
 
+from pprint import pprint
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                          ____        __  _                                                          #
 #                                         / __ \____  / /_(_)___  ____  _____                                         #
@@ -23,11 +25,14 @@ from sys import argv
 sort_method = "name"  # "name" or "length"
 
 ## ----- Clustering ----- ##
+remove_unclustered = True
 eps = 0.5
 min_samples = 10
 
 ## ----- Parsing ----- ##
-# TODO
+min_length = 100000000
+# no_synteny = False
+
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -39,7 +44,40 @@ min_samples = 10
 #                                                                                                                     #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def scale_sort_genomes(genomes_object):
+def minimizeGenomes(genomes_object, cutoff):
+    for genome in genomes_object:
+        print("Parsing %s genome (gid %s)" % (genomes_object[genome]["organism"]["name"], genome))
+        print("--> Initial chromosome count: %d" % len(genomes_object[genome]["chromosomes"]))
+        genomes_object[genome]["chromosomes"] = [genomes_object[genome]["chromosomes"][i] \
+                                                 for i in range(len(genomes_object[genome]["chromosomes"])) \
+                                                 if genomes_object[genome]['chromosomes'][i]["length"] >= cutoff]
+        parsed_count = len(genomes_object[genome]["chromosomes"])
+        genomes_object[genome]["chromosome_count"] = parsed_count
+        print("--> Parsed chromosome count: %d" % parsed_count)
+
+    return genomes_object
+
+def minimizeSyntenicPoints(sp_object, genomes_object):
+    gid1 = sp_object.keys()[0]
+    gid2 = sp_object[gid1].keys()[0]
+
+    sp1_chlist = [ch["name"] for ch in genomes_object[gid1]["chromosomes"]]
+    sp2_chlist = [ch["name"] for ch in genomes_object[gid2]["chromosomes"]]
+
+    sp_object[gid1][gid2] = {sp1ch: sp_object[gid1][gid2][sp1ch] for sp1ch in sp_object[gid1][gid2] if sp1ch in sp1_chlist}
+    for sp1ch in sp_object[gid1][gid2]:
+        sp_object[gid1][gid2][sp1ch] = {sp2ch: sp_object[gid1][gid2][sp1ch][sp2ch] for sp2ch in sp_object[gid1][gid2][sp1ch] if sp2ch in sp2_chlist}
+
+    #print sp_object[gid1][gid2].keys()
+
+    #exit()
+    #for sp1_ch in sp_object[gid1][gid2]:
+
+    #exit()
+    return sp_object
+
+
+def scaleSortGenomes(genomes_object):
     """
     Scale & Sort Genomes
 
@@ -324,14 +362,26 @@ genomes = file1["genomes"].copy()
 genomes.update(file2["genomes"])
 genomes.update(file3["genomes"])
 
+## ----- Save syntenic points. ----- ##
+file1_sp = file1["syntenic_points"]
+file2_sp = file2["syntenic_points"]
+file3_sp = file3["syntenic_points"]
+
+## ----- Process parsing options. ----- ##
+# Minimum length.
+if min_length > 0:
+    genomes = minimizeGenomes(genomes, min_length)
+    file1_sp = minimizeSyntenicPoints(file1_sp, genomes)
+    file2_sp = minimizeSyntenicPoints(file2_sp, genomes)
+    file3_sp = minimizeSyntenicPoints(file3_sp, genomes)
 
 ## ----- Calculate total genome sizes, relative chromosome sizes, and sort. ----- ##
-g_size_abs, g_size_rel, c_sort, c_rel, c_abs = scale_sort_genomes(genomes)
+g_size_abs, g_size_rel, c_sort, c_rel, c_abs = scaleSortGenomes(genomes)
 
 ## ----- Get point coordinates from each file. ----- ##
-gids1, coordinates1 = getPointCoords(file1["syntenic_points"], c_rel, c_abs, g_size_rel, c_sort)
-gids2, coordinates2 = getPointCoords(file2["syntenic_points"], c_rel, c_abs, g_size_rel, c_sort)
-gids3, coordinates3 = getPointCoords(file3["syntenic_points"], c_rel, c_abs, g_size_rel, c_sort)
+gids1, coordinates1 = getPointCoords(file1_sp, c_rel, c_abs, g_size_rel, c_sort)
+gids2, coordinates2 = getPointCoords(file2_sp, c_rel, c_abs, g_size_rel, c_sort)
+gids3, coordinates3 = getPointCoords(file3_sp, c_rel, c_abs, g_size_rel, c_sort)
 
 ## ----- Determine order of arrays & restructure to represent correct XYZ ordering. ----- ##
 # XY order.
@@ -373,27 +423,33 @@ else:
 coordinates = mergePoints(coordinatesXY, coordinatesXZ, coordinatesYZ)
 
 ## ----- Clustering: DBSCAN ----- ##
-cluster_start = datetime.now()
+# If remove_unclustered = True
+if remove_unclustered:
+    cluster_start = datetime.now()
 
-# Build vectors of only coordinate space.
-pts = coordinates[:,0:3]
+    # Build vectors of only coordinate space.
+    pts = coordinates[:,0:3]
 
-# Cluster with DBSCAN.
-db = DBSCAN(eps=eps, min_samples=min_samples).fit(pts)
-labels = db.labels_
+    # Cluster with DBSCAN.
+    db = DBSCAN(eps=eps, min_samples=min_samples).fit(pts)
+    labels = db.labels_
 
-# Build vectors of clustered points including all coordinate information.
-clusters = coordinates[labels != -1]
-sparse = coordinates[labels == -1]
+    # Build vectors of clustered points including all coordinate information.
+    clusters = coordinates[labels != -1]
+    sparse = coordinates[labels == -1]
 
-# Print concluding message.
-cluster_end = datetime.now()
-print("Clustering Complete (%s)" % str(cluster_end-cluster_start))
-cluster_count = len(set(labels)) - (1 if -1 in labels else 0)
-print('--> Estimated number of clusters: %d' % cluster_count)
-print('--> Total Point Count: %s') % str(coordinates.shape[0])
-print('--> Clustered Point Count: %s') % str(clusters.shape[0])
-print('--> Removed Point Count: %s') % str(sparse.shape[0])
+    # Print concluding message.
+    cluster_end = datetime.now()
+    print("Clustering Complete (%s)" % str(cluster_end-cluster_start))
+    cluster_count = len(set(labels)) - (1 if -1 in labels else 0)
+    print('--> Estimated number of clusters: %d' % cluster_count)
+    print('--> Total Point Count: %s') % str(coordinates.shape[0])
+    print('--> Clustered Point Count: %s') % str(clusters.shape[0])
+    print('--> Removed Point Count: %s') % str(sparse.shape[0])
+# If remove_unclustered = False
+else:
+    clusters = coordinates
+    sparse = np.array([[-1, -1, -1]])
 
 ## ----- Plotting: For Confirmation ----- ##
 # Build axis ticks.
