@@ -523,7 +523,9 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
      --------------------------------------------------------------------------------------------------------*/
 
     function initialize() {
-        width = window.innerWidth * 0.689;
+        //width = window.innerWidth * 0.689;
+        //height = window.innerHeight * 0.9;
+        width = document.getElementById("rendering").clientWidth;
         height = window.innerHeight * 0.9;
         containerWidth = container.clientWidth;
         containerHeight = container.clientHeight;
@@ -600,7 +602,7 @@ function renderSynMap(xChr, yChr, zChr, matches, histogram_data) {
 
     /* Window Resize */
     function onWindowResize() {
-        width = window.innerWidth * 0.689;
+        width = document.getElementById("rendering").clientWidth;
         height = window.innerHeight * 0.9;
         renderer.setSize( width, height);
         camera.aspect = width / height;

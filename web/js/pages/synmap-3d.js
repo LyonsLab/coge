@@ -441,7 +441,9 @@ function launch(experiment) {
   
     function buildLink(id1, id2) {
         var link = '';
-        if (id1 <= id2) {
+        id1 = id1.toString();
+        id2 = id2.toString();
+        if ( parseInt(id1.charAt(0)) <= parseInt(id2.charAt(0)) ) {
             link = fileDir + id1 + '/' + id2 + '/' + id1 + '_' + id2 + fileTag;
         }
         else {

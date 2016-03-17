@@ -70,7 +70,7 @@ sub generate_html {
     }
     else {
         $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
-        $template->param( 
+        $template->param(
             PAGE_TITLE   => $PAGE_TITLE,
             TITLE        => "SynMap 3D",
             PAGE_LINK    => $LINK,
@@ -203,9 +203,9 @@ sub dotplot_dots {
     my $dotlog = $option_name . 'log.json';
     my $merge_log = $genome_idX . '_' . $genome_idY . '_' . $genome_idZ . '_' . $option_name . 'log.json';
 
-    my ( $dir1, $dir2 ) = sort ( $genome_idX, $genome_idY );
-    my ( $dir3, $dir4 ) = sort ( $genome_idX, $genome_idZ );
-    my ( $dir5, $dir6 ) = sort ( $genome_idY, $genome_idZ );
+    my ( $dir1, $dir2 ) = sort ( "$genome_idX", "$genome_idY" );
+    my ( $dir3, $dir4 ) = sort ( "$genome_idX", "$genome_idZ" );
+    my ( $dir5, $dir6 ) = sort ( "$genome_idY", "$genome_idZ" );
 
     my $workflow = $JEX->create_workflow( name => "Finding Syntenic Points", init => 1 );
 
