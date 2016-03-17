@@ -3,6 +3,3 @@
 #order allow,deny
 deny from all
 </Files> 
-<Files coge.conf>
-deny from all
-</Files> 

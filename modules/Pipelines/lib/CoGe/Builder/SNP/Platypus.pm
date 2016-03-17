@@ -27,6 +27,7 @@ sub build {
     # Required arguments
     my $genome = $opts->{genome};
     my $input_file = $opts->{input_file}; # path to bam file
+    my $sorted = $opts->{sorted}; # input bam file is already sorted (for passing sorted bam file from Experiment.pm)
     my $user = $opts->{user};
     my $wid = $opts->{wid};
     my $metadata = $opts->{metadata};
@@ -44,23 +45,6 @@ sub build {
     my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
     push @$annotations, @annotations2;
 
-    my $conf = {
-        staging_dir => $staging_dir,
-        result_dir  => $result_dir,
-
-        bam         => $input_file,
-        fasta       => catfile($FASTA_CACHE_DIR, $reheader_fasta),
-        vcf         => catfile($staging_dir, qq[snps.vcf]),
-
-        annotations => $annotations,
-        username    => $user->name,
-        metadata    => $metadata,
-        wid         => $wid,
-        gid         => $gid,
-        
-        method      => 'Platypus'
-    };
-
     # Build the workflow's tasks
     my @tasks;
     push @tasks, create_fasta_reheader_job(
@@ -73,14 +57,37 @@ sub build {
         fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta),
         cache_dir => $FASTA_CACHE_DIR,
     );
+
+    my $sorted_bam_file = $input_file;
+    unless ($sorted) {
+        my $sort_bam_task = create_bam_sort_job(
+            input_file => $input_file, 
+            staging_dir => $staging_dir
+        );
+        push @tasks, $sort_bam_task;
+        $sorted_bam_file = $sort_bam_task->{outputs}->[0];
+        
+        push @tasks, create_bam_index_job(
+            input_file => $sort_bam_task->{outputs}->[0]
+        );
+    }
     
-    push @tasks, create_bam_index_job(
-        input_file => $input_file
+    push @tasks, create_platypus_job(
+        bam   => $sorted_bam_file,
+        fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta),
+        vcf   => catfile($staging_dir, 'snps.vcf')
     );
     
-    push @tasks, create_platypus_job($conf);
-    
-    my $load_vcf_task = create_load_vcf_job($conf);
+    my $load_vcf_task = create_load_vcf_job({
+        staging_dir => $staging_dir,
+        vcf         => catfile($staging_dir, 'snps.vcf'),
+        annotations => $annotations,
+        username    => $user->name,
+        metadata    => $metadata,
+        wid         => $wid,
+        gid         => $gid,
+        method      => 'Platypus'
+    });
     push @tasks, $load_vcf_task;
 
     return {
@@ -91,13 +98,13 @@ sub build {
 }
 
 sub create_platypus_job {
-    my $opts = shift;
-#    print STDERR "create_platypus_job ", Dumper $opts, "\n";
+    my %opts = @_;
+#    print STDERR "create_platypus_job ", Dumper \%opts, "\n";
 
     # Required arguments
-    my $fasta = $opts->{fasta};
-    my $bam = $opts->{bam};
-    my $vcf = $opts->{vcf};
+    my $fasta = $opts{fasta};
+    my $bam = $opts{bam};
+    my $vcf = $opts{vcf};
     my $nCPU = 8; # number of processors to use
 
     my $fasta_index = qq[$fasta.fai];
@@ -116,10 +123,10 @@ sub create_platypus_job {
             $bam,
             $bam . '.bai',
             $fasta,
-            $fasta_index,
+            $fasta_index
         ],
         outputs => [
-            $vcf,
+            $vcf
         ],
         description => "Identifying SNPs using Platypus method ..."
     };

@@ -1,13 +1,16 @@
-package CoGe::Services::JBrowse::Experiment;
-use base 'CGI::Application';
+package CoGe::Services::API::JBrowse::Experiment;
 
-use CoGe::Accessory::histogram;
-use CoGe::Accessory::Web;
-use CoGe::Core::Experiment;
-use CoGe::Core::Storage qw( get_experiment_path );
+use Mojo::Base 'Mojolicious::Controller';
+use Mojo::JSON;
+
 use CoGeX;
+use CoGe::Services::Auth qw( init );
+use CoGe::Core::Experiment qw( get_data );
+use CoGeDBI qw( feature_type_names_to_id get_dataset_ids );
 use Data::Dumper;
+use File::Path;
 use JSON::XS;
+use Path::Class;
 
 #TODO: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -23,36 +26,24 @@ my $MAX_WINDOW_SIZE = 1000000;#500000;
 
 my $QUAL_ENCODING_OFFSET = 33;
 
-sub setup {
-    my $self = shift;
-    $self->run_modes(
-        'stats_global' => 'stats_global',
-        'stats_regionFeatureDensities' => 'stats_regionFeatureDensities',
-        'features' => 'features',
-        'query_data' => 'query_data',
-        'histogram' => 'histogram',
-        'snps'  => 'snps',
-    );
-    $self->mode_param('rm');
-}
-
 sub stats_global {
+    my $self = shift;
 	print STDERR "JBrowse::Experiment::stats_global\n";
-    return qq{{
-		"scoreMin" : -1,
-		"scoreMax" : 1
-	}};
+    $self->render(json => {
+		"scoreMin" => -1,
+		"scoreMax" => 1
+	});
 }
 
 sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     my $self     = shift;
-    my $eid      = $self->param('eid');
-    my $nid      = $self->param('nid');
-    my $gid      = $self->param('gid');
-    my $chr      = $self->param('chr');
-    my $start    = $self->query->param('start');
-    my $end      = $self->query->param('end');
-    my $bpPerBin = $self->query->param('basesPerBin');
+    my $eid      = $self->stash('eid');
+    my $nid      = $self->stash('nid');
+    my $gid      = $self->stash('gid');
+    my $chr      = $self->stash('chr');
+    my $start    = $self->param('start');
+    my $end      = $self->param('end');
+    my $bpPerBin = $self->param('basesPerBin');
 
 #	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities eid="
 #      . ( $eid ? $eid : '' ) . " nid="
@@ -62,55 +53,26 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 #      . ( $end - $start + 1 )
 #      . ") bpPerBin=$bpPerBin\n";
 
-    # Connect to the database
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
-    # Retrieve experiments
-    my @all_experiments;
-    if ($eid) {
-        my $experiment = $db->resultset('Experiment')->find($eid);
-        return unless $experiment;
-        push @all_experiments, $experiment;
-    }
-    elsif ($nid) {
-        my $notebook = $db->resultset('List')->find($nid);
-        return unless $notebook;
-        push @all_experiments, $notebook->experiments;
-    }
-    elsif ($gid) {
-        my $genome = $db->resultset('Genome')->find($gid);
-        return unless $genome;
-        push @all_experiments, $genome->experiments;
-    }
-
-    # Filter experiments based on permissions
-    my @experiments;
-    foreach my $e (@all_experiments) {
-        unless ( $user->has_access_to_experiment($e) ) {
-        	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities access denied to experiment $eid for user '", $user->name, "'\n";
-        	next;
-        }
-        push @experiments, $e;
-    }
-    splice( @experiments, $MAX_EXPERIMENTS, @experiments );
+	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
 
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
-    my $results = '';
     my @bins;
-    foreach my $exp (@experiments) {
+    foreach my $exp (@$experiments) {
         my $data_type = $exp->data_type;
 		if ( !$data_type or $data_type == $DATA_TYPE_QUANT ) {
 			next;
 		}
-        elsif ( $data_type == $DATA_TYPE_POLY || $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = CoGe::Core::Experiment::get_data(
-                eid   => $eid,
-                data_type  => $exp->data_type,
-                chr   => $chr,
-                start => $start,
-                end   => $end
-            );
-
+        my $pData = CoGe::Core::Experiment::get_data(
+            eid   => $eid,
+            data_type  => $exp->data_type,
+            chr   => $chr,
+            start => $start,
+            end   => $end
+        );
+        if ( $data_type == $DATA_TYPE_POLY || $data_type == $DATA_TYPE_MARKER ) {
             # Bin and convert to JSON
             foreach my $d (@$pData) {
                 my ($s, $e) = ($d->{start}, $d->{stop});
@@ -121,16 +83,8 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = CoGe::Core::Experiment::get_data(
-	            eid   => $eid,
-	            data_type  => $exp->data_type,
-	            chr   => $chr,
-	            start => $start,
-	            end   => $end
-	        );
-
 	        # Convert SAMTools output into JSON
-	        foreach (@$cmdOut) {
+	        foreach (@$pData) {
 	        	chomp;
 	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
 
@@ -161,17 +115,51 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     $mean = $sum / $count if ($count);
     my $max = $bpPerBin; # mdb added 1/14/14 for BAM histograms
 
-    return encode_json(
-        {
-            bins => \@bins,
-            stats => { basesPerBin => $bpPerBin, max => $max, mean => $mean }
+    $self->render(json => {
+        bins => \@bins,
+        stats => { basesPerBin => $bpPerBin, max => $max, mean => $mean }
+    });
+}
+
+sub _get_experiments {
+	my $db = shift;
+	my $user = shift;
+	my $eid = shift;
+	my $gid = shift;
+	my $nid = shift;
+
+    my @all_experiments;
+    if ($eid) {
+        my $experiment = $db->resultset('Experiment')->find($eid);
+        push @all_experiments, $experiment if $experiment;
+    }
+    elsif ($nid) {
+        my $notebook = $db->resultset('List')->find($nid);
+        push @all_experiments, $notebook->experiments if $notebook;
+    }
+    elsif ($gid) {
+        my $genome = $db->resultset('Genome')->find($gid);
+        push @all_experiments, $genome->experiments if $genome;
+    }
+
+    # Filter experiments based on permissions
+    my @experiments;
+    foreach my $e (@all_experiments) {
+        if (!$e->restricted() || ($user && $user->has_access_to_experiment($e))) {
+        	push @experiments, $e;
         }
-    );
+        else {
+        	warn "JBrowse::Experiment::_get_experiments access denied to experiment $eid for user ", $user->name;
+        }
+    }
+    splice(@experiments, $MAX_EXPERIMENTS);
+    return \@experiments;
 }
 
 sub histogram {
-    my $self  = shift;
-    my $eid   = $self->param('eid');
+    my $self = shift;
+    my $eid = $self->stash('eid');
+    my $chr = $self->param('chr');
 
     my $storage_path = get_experiment_path($eid);
     my $hist_file = "$storage_path/value1.hist";
@@ -191,30 +179,37 @@ sub histogram {
 	    });
 	    close $fh; 
     }
-    open my $fh, $hist_file;
+    open(my $fh, $hist_file);
     my $hist = <$fh>;
-    close $fh;
+    close($fh);
     return $hist;
 }
 
 sub query_data {
     my $self = shift;
-    my $eid = $self->param('eid');
-    my $chr = $self->query->param('chr');
-    my $type = $self->query->param('type');
-    my $gte = $self->query->param('gte');
-    my $lte = $self->query->param('lte');
-
+    my $eid = $self->stash('eid');
+    my $chr = $self->param('chr');
     $chr = undef if $chr eq 'All';
-	my $result = CoGe::Core::Experiment::query_data(
-		eid => $eid,
-		col => 'chr,start,stop,value1',
-		chr => $chr,
-		type => $type,
-		gte => $gte,
-		lte => $lte,
-	);
-	return encode_json($result);
+    my $type = $self->param('type');
+    my $gte = $self->param('gte');
+    my $lte = $self->param('lte');
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+	my $experiments = _get_experiments($db, $user, $eid);
+	my $result = [];
+	foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
+		$result = CoGe::Core::Experiment::query_data(
+			eid => $eid,
+			data_type => $experiment->data_type,
+			chr => $chr,
+			type => $type,
+			gte => $gte,
+			lte => $lte,
+		);
+	}
+    $self->render(json => $result);
 }
 
 sub snp_overlaps_feature {
@@ -226,16 +221,6 @@ sub snp_overlaps_feature {
 		}
 	}
 	return 0;
-}
-
-sub debug {
-	my $data = shift;
-	my $new_file = shift;
-	my $OUTFILE;
-	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
-	print {$OUTFILE} Dumper $data;
-	print {$OUTFILE} "\n";
-	close $OUTFILE;
 }
 
 sub _add_features {
@@ -252,6 +237,7 @@ sub _add_features {
     		$query .= ' AND feature_type_id=' . $type_ids;
     	}
     }
+    $query .= ' ORDER BY chromosome,start';
     my $sth = $dbh->prepare($query);
     $sth->execute();
     while (my @row = $sth->fetchrow_array) {
@@ -267,56 +253,75 @@ sub _add_features {
 
 sub snps {
     my $self = shift;
-    my $eid = $self->param('eid');
-    my $chr = $self->param('chr');
-
+    my $eid = $self->stash('eid');
+    my $chr = $self->stash('chr');
     $chr = undef if $chr eq 'Any';
-	my $snps = CoGe::Core::Experiment::query_data(
-		eid => $eid,
-		col => 'chr,start',
-		chr => $chr,
-	);
+    
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
+	my $experiments = _get_experiments($db, $user, $eid);
+	my $snps;
+	foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
+		$snps = CoGe::Core::Experiment::query_data(
+			eid => $eid,
+			data_type => $experiment->data_type,
+			chr => $chr,
+		);
+	}
+
     my $dbh = $db->storage->dbh;
 
-	my $types = $self->query->param('features');
+	my $type_names = $self->param('features');
 	my $type_ids;
-	if ($types ne 'all') {
-		$type_ids = join(',', @{$dbh->selectcol_arrayref('SELECT feature_type_id FROM feature_type WHERE name IN(' . $types . ')')});
+	if ($type_names ne 'all') {
+		$type_ids = feature_type_names_to_id($type_names, $dbh);
 	}
 
     my $features = {};
-    my $experiment = $db->resultset('Experiment')->find($eid);
-    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $experiment->genome_id);
-    foreach my $dsid (@$ids) {
-        _add_features $chr, $type_ids, $dsid, $features, $dbh;
-    }
+	foreach my $experiment (@$experiments) {
+	    my $ids = get_dataset_ids($experiment->genome_id, $dbh);
+	    foreach my $dsid (@$ids) {
+	        _add_features $chr, $type_ids, $dsid, $features, $dbh;
+	    }
+	}
+
+	my $dir = dir($conf->{CACHEDIR}, $experiments->[0]->genome_id, 'features');
+	make_path($dir, { mode => 0700}) unless -d $dir;
+	my $type = (split ',', $type_names)[0];
+	$type = substr($type, 1, -1);
+	my @chromosomes = keys %$features;
+	foreach my $chromosome (@chromosomes) {
+		warn ">$dir/" . $chromosome . "_$type.loc";
+		open(my $fh, ">$dir/" . $chromosome . "_$type.loc");
+		binmode($fh);
+		my $locs = $features->{$chromosome};
+		print $fh pack('L', scalar @$locs);
+		foreach my $loc (@$locs) {
+			print $fh pack('LL', $loc->[1], $loc->[2]);
+		}
+		close($fh);
+	}
+
 	my $hits = [];
     foreach my $snp (@$snps) {
-    	my @tokens = split ',', $snp;
-    	if (snp_overlaps_feature 0 + $tokens[1], $features->{substr $tokens[0], 1, -1}) {
+    	my @tokens = split(',', $snp);
+    	if (snp_overlaps_feature(0 + $tokens[1], $features->{substr $tokens[0], 1, -1})) {
     		push @$hits, $snp;
     	}
     }
-    return encode_json($hits);
+    $self->render(json => $hits);
 }
 
 sub features {
     my $self  = shift;
-    my $eid   = $self->param('eid');
-    my $nid   = $self->param('nid');
-    my $gid   = $self->param('gid');
-    my $chr   = $self->param('chr');
-    my $start = $self->query->param('start');
-    my $end   = $self->query->param('end');
-    print STDERR "JBrowse::Experiment::features eid="
-      . ( $eid ? $eid : '' ) . " nid="
-      . ( $nid ? $nid : '' ) . " gid="
-      . ( $gid ? $gid : '' )
-      . " $chr:$start:$end ("
-      . ( $end - $start + 1 ) . ")\n";
-    return unless ( ( $eid or $nid or $gid ) and defined $chr and defined $start and defined $end );
+    my $eid   = $self->stash('eid');
+    my $nid   = $self->stash('nid');
+    my $gid   = $self->stash('gid');
+    my $chr   = $self->stash('chr');
+    my $start = $self->param('start');
+    my $end   = $self->param('end');
+    return unless (($eid or $nid or $gid) and defined $chr and defined $start and defined $end);
 
 # mdb removed 11/6/15 COGE-678
 #    if ( $end - $start + 1 > $MAX_WINDOW_SIZE ) {
@@ -324,58 +329,30 @@ sub features {
 #        return qq{{ "features" : [ ] }};
 #    }
 
-    # Connect to the database
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
-    # Retrieve experiments
-    my @all_experiments;
-    if ($eid) {
-        my $experiment = $db->resultset('Experiment')->find($eid);
-        return unless $experiment;
-        push @all_experiments, $experiment;
-    }
-    elsif ($nid) {
-        my $notebook = $db->resultset('List')->find($nid);
-        return unless $notebook;
-        push @all_experiments, $notebook->experiments;
-    }
-    elsif ($gid) {
-        my $genome = $db->resultset('Genome')->find($gid);
-        return unless $genome;
-        push @all_experiments, $genome->experiments;
-    }
+	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
 
-    # Filter experiments based on permissions
-    my @experiments;
-    foreach my $e (@all_experiments) {
-        unless ( $user->has_access_to_experiment($e) ) {
-        	print STDERR "JBrowse::Experiment::features access denied to experiment $eid for user '", $user->name, "'\n";
-        	next;
-    	}
-        push @experiments, $e;
-    }
-    splice( @experiments, $MAX_EXPERIMENTS, @experiments );
-
-    if (!@experiments) {
-        return qq{{ "features" : [ ] }};
+    if (!@$experiments) {
+        return $self->render(json => { features => [] });
     }
 
 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
-    my $results = '';
-    foreach my $exp (@experiments) {
+    my @results;
+    foreach my $exp (@$experiments) {
         my $eid       = $exp->id;
         my $data_type = $exp->data_type;
 
-        if ( !$data_type || $data_type == $DATA_TYPE_QUANT ) {
-            my $pData = CoGe::Core::Experiment::get_data(
-                eid   => $eid,
-                data_type  => $exp->data_type,
-                chr   => $chr,
-                start => $start,
-                end   => $end
-            );
+        my $pData = CoGe::Core::Experiment::get_data(
+            eid   => $eid,
+            data_type  => $data_type,
+            chr   => $chr,
+            start => $start,
+            end   => $end
+        );
 
-            # Convert to JSON
+        if ( !$data_type || $data_type == $DATA_TYPE_QUANT ) {
             foreach my $d (@$pData) {
                 #next if ($d->{value1} == 0 and $d->{value2} == 0); # mdb removed 1/15/15 for user Un-Sa - send zero values (for when "Show background" is enabled in JBrowse)
                 my %result = (
@@ -388,19 +365,10 @@ sub features {
                 $result{score} = $d->{strand} * $d->{value1};
                 $result{score2} = $d->{value2} if (defined $d->{value2});
                 $result{label} = $d->{label} if (defined $d->{label});
-                $results .= ( $results ? ',' : '') . encode_json(\%result);
+                push(@results, \%result);
             }
         }
         elsif ( $data_type == $DATA_TYPE_POLY ) {
-            my $pData = CoGe::Core::Experiment::get_data(
-                eid   => $eid,
-                data_type  => $exp->data_type,
-                chr   => $chr,
-                start => $start,
-                end   => $end
-            );
-
-            # Convert to JSON
             foreach my $d (@$pData) {
                 my %result = (
                     id    => $eid,
@@ -419,19 +387,10 @@ sub features {
                     . $d->{type} . ' ' . $d->{ref} . " > " . $d->{alt};
                 $result{type} = $d->{type} . $d->{ref} . 'to' . $d->{alt}
                     if ( lc($d->{type}) eq 'snp' );
-                $results .= ( $results ? ',' : '') . encode_json(\%result);
+                push(@results, \%result);
             }
         }
         elsif ( $data_type == $DATA_TYPE_MARKER ) {
-            my $pData = CoGe::Core::Experiment::get_data(
-                eid   => $eid,
-                data_type  => $exp->data_type,
-                chr   => $chr,
-                start => $start,
-                end   => $end
-            );
-
-            # Convert to JSON
             foreach my $d (@$pData) {
                 my ($name) = $d->{attr} =~ /ID\=([\w\.\-]+)\;/; # mdb added 4/24/14 for Amanda
                 my %result = (
@@ -447,23 +406,15 @@ sub features {
                 $result{'strand'} = -1 if ($result{'strand'} == 0);
                 $result{'stop'} = $result{'start'} + 1 if ( $result{'stop'} == $result{'start'} ); #FIXME revisit this
                 $result{'value1'} = $result{'strand'} * $result{'value1'};
-                $results .= ( $results ? ',' : '') . encode_json(\%result);
+                push(@results, \%result);
             }
         }
         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-	        my $cmdOut = CoGe::Core::Experiment::get_data(
-	            eid   => $eid,
-	            data_type => $exp->data_type,
-	            chr   => $chr,
-	            start => $start,
-	            end   => $end
-	        );
-
 	        # Convert SAMTools output into JSON
 	        if ($nid) { # return read count if being displayed in a notebook
 	           # Bin the read counts by position
                 my %bins;
-                foreach (@$cmdOut) {
+                foreach (@$pData) {
                     chomp;
                     my (undef, undef, undef, $pos, $mapq, undef, undef, undef, undef, $seq) = split(/\t/);
                     for (my $i = $pos; $i < $pos+length($seq); $i++) {
@@ -477,8 +428,12 @@ sub features {
                     if (!defined $start || ($pos-$stop > 1) || $lastCount != $count) {
                         if (defined $start) {
                             $stop++;
-                            $results .= ( $results ? ',' : '' )
-                                . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
+                            push(@results, { 
+                                "id"    => $eid, 
+                                "start" => $start, 
+                                "end"   => $stop, 
+                                "score" => $lastCount 
+                            });
                         }
                         $start = $pos;
                     }
@@ -487,12 +442,16 @@ sub features {
                }
                if (defined $start and $start != $stop) { # do last interval
                     $stop++;
-                    $results .= ( $results ? ',' : '' )
-                        . qq{{ "id": $eid, "start": $start, "end": $stop, "score": $lastCount }};
+                    push(@results, { 
+                        "id"    => $eid, 
+                        "start" => $start, 
+                        "end"   => $stop, 
+                        "score" => $lastCount 
+                    });    
                 }
 	        }
 	        else { # else return list reads with qual and seq
-    	        foreach (@$cmdOut) {
+    	        foreach (@$pData) {
     	        	chomp;
     	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
 
@@ -503,8 +462,18 @@ sub features {
     	        	#TODO reverse complement sequence if neg strand?
     	        	$qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
 
-    	        	$results .= ( $results ? ',' : '' )
-                      . qq{{ "uniqueID": "$qname", "name": "$qname", "start": $start, "end": $end, "strand": $strand, "score": $mapq, "seq": "$seq", "qual": "$qual", "Seq length": $len, "CIGAR": "$cigar" }};
+                    push(@results, { 
+                        "uniqueID" => "$qname", 
+                        "name"     => "$qname", 
+                        "start"    => $start, 
+                        "end"      => $end, 
+                        "strand"   => $strand, 
+                        "score"    => $mapq, 
+                        "seq"      => "$seq", 
+                        "qual"     => "$qual", 
+                        "Seq length" => $len, 
+                        "CIGAR"    => "$cigar" 
+                    });      	        	
     	        }
 	        }
         }
@@ -514,8 +483,7 @@ sub features {
         }
     }
 
-    #print STDERR "{ 'features' : [ $results ] }\n";
-    return qq{{ "features" : [ $results ] }};
+    $self->render(json => { "features" => \@results });
 }
 
 1;

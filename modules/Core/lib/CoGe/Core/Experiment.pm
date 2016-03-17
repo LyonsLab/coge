@@ -93,11 +93,10 @@ sub get_data {
         $data_type == $DATA_TYPE_POLY ||
         $data_type == $DATA_TYPE_MARKER)
     {
-        my $pFormat = get_fastbit_format($eid, $data_type);
-        my $columns = join(',', map { $_->{name} } @{$pFormat->{columns}});
+        my $format = get_fastbit_format($eid, $data_type);
+        my $columns = join(',', map { $_->{name} } @{$format->{columns}});
         my $lines = CoGe::Accessory::FastBit::query("select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999", $eid);
-
-	    my @results = map {_parse_fastbit_line($pFormat, $_, $chr)} @{$lines};
+	    my @results = map {_parse_fastbit_line($format, $_, $chr)} @{$lines};
 	    return \@results;
     }
     elsif ( $data_type == $DATA_TYPE_ALIGN ) { # FIXME move output parsing from Storage.pm to here
@@ -124,7 +123,6 @@ sub get_data {
     }
 }
 
-# FIXME: move to FastBit.pm?
 sub get_fastbit_format {
     my $eid = shift;
     my $data_type = shift;
@@ -182,7 +180,6 @@ sub get_fastbit_format {
     return CoGe::Accessory::TDS::read($format_file);
 }
 
-# FIXME: move to FastBit.pm?
 sub get_fastbit_score_column {
     my $data_type = shift;
 	if (!$data_type || $data_type == $DATA_TYPE_QUANT) {
@@ -196,7 +193,6 @@ sub get_fastbit_score_column {
 	}
 }
 
-# FIXME: move to FastBit.pm?
 sub _parse_fastbit_line {
     my $format = shift;
     my $line = shift;
@@ -235,12 +231,11 @@ sub query_data {
         return;
     }
     my $chr = $opts{chr};
-    my $col = $opts{col};
     my $data_type = $opts{data_type};
     my $gte = $opts{gte};
     my $limit = $opts{limit};
     my $lte = $opts{lte};
-    my $order_by = $opts{order_by};
+    my $order_by = $opts{order_by} || 'chr,start';
     my $type = $opts{type};
 
 	my $where = '0.0=0.0';
@@ -256,13 +251,12 @@ sub query_data {
 		$where .= ' and value1>=' . $gte if $gte;
 		$where .= ' and value1<=' . $lte if $lte;
     }
-	my $query = "select $col where $where";
-	$query .= " order by $order_by" if $order_by;
-	$query .= ($limit ? " limit $limit" : " limit 999999999");
-    my $results = CoGe::Accessory::FastBit::query($query, $eid);
+    my $format = get_fastbit_format($eid, $data_type);
+    my $columns = join(',', map { $_->{name} } @{$format->{columns}});
+    my $results = CoGe::Accessory::FastBit::query("select $columns where 0.0=0.0 and $where order by $order_by limit 999999999", $eid);
     if ($type eq 'max' || $type eq 'min') {
-    	my $value_col = scalar $col - 1; # should we pass in $value_col instead of assuming it's the last column?
-        my @lines = grep { (split(',', $_))[$value_col] == $value1 } @{$results};
+    	my $value_col = get_fastbit_score_column $data_type;
+        my @lines = grep { $value1 == (split(',', $_))[$value_col] } @{$results};
         return \@lines;
     }
     return $results;

@@ -11,7 +11,7 @@ use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
 use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension to_filename_base);
-use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
+use CoGe::Accessory::IRODS qw(irods_iget irods_iput irods_set_env);
 use CoGe::Accessory::Web qw(get_defaults split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path);
 use CoGe::Core::Metadata qw(tags_to_string);
@@ -187,6 +187,7 @@ sub export_to_irods {
 
     $overwrite = 0 unless defined $overwrite;
 
+    irods_set_env(catfile($CONF->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
     my $cmd = irods_iput($src, $dest, { no_execute => 1, overwrite => $overwrite });
 
     my $filename = basename($done_file);
@@ -228,9 +229,12 @@ sub create_iget_job {
     my $dest_file = catdir($local_path, 'irods', $irods_path);
     my $done_file = $dest_file . '.done';
     my $dest_path = dirname($dest_file);
-    make_path($dest_path) unless (-r $dest_path);
-    my $cmd = irods_iget( $irods_path, $dest_path, { no_execute => 1 } );
-    $cmd .= " ; touch $done_file";
+    #make_path($dest_path) unless (-r $dest_path); # mdb removed 2/9/16 -- for hypnotoad
+    my $cmd;
+    $cmd .= "mkdir -p $dest_path ; "; # mdb added 2/9/16 -- for hypnotoad
+    irods_set_env(catfile($CONF->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
+    $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1 } ) . ' ; ';
+    $cmd .= "touch $done_file";
 
     return {
         cmd => $cmd,
@@ -597,10 +601,9 @@ sub create_load_vcf_job {
             ['-staging_dir', "./load_vcf", 0],
             ['-file_type', qq["vcf"], 0],
             ['-data_file', $vcf, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH},
             $opts->{vcf},
         ],
         outputs => [
@@ -656,10 +659,9 @@ sub create_load_experiment_job {
             ['-staging_dir', $output_name, 0],
             ['-data_file', $input_file, 0],
             ['-normalize', $normalize, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH},
             $input_file
         ],
         outputs => [
@@ -683,7 +685,7 @@ sub create_load_genome_job {
     my $input_files = $opts{input_files};
     my $irods_files = $opts{irods_files};
     
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_genome.pl");
+    my $cmd = 'perl ' . catfile($CONF->{SCRIPTDIR}, "load_genome.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
     my $output_path = catdir($staging_dir, "load_genome");
@@ -691,7 +693,8 @@ sub create_load_genome_job {
     my $result_file = get_workflow_results_file($user->name, $wid);
 
     my $file_str = '';
-    $file_str = join(',', map { basename($_) } @$input_files) if ($input_files && @$input_files);
+    #$file_str = join(',', map { basename($_) } @$input_files) if ($input_files && @$input_files);
+    $file_str = join(',', @$input_files) if ($input_files && @$input_files);
     my $irods_str = '';
     $irods_str = join(',', map { basename($_) } @$irods_files) if ($irods_files && @$irods_files);
 
@@ -712,10 +715,9 @@ sub create_load_genome_job {
             ['-staging_dir', "./load_genome", 0],
             ['-fasta_files', "'".$file_str."'", 0],
             ['-irods_files', "'".$irods_str."'", 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH}, 
             @$input_files
         ],
         outputs => [
@@ -748,7 +750,7 @@ sub create_load_genome_from_NCBI_job {
         ['-user_name', $user->name, 0],
         ['-wid', $wid, 0],
         ['-staging_dir', "./load_genome_from_ncbi", 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-GO', 1, 0]
     ];
     foreach (@$ncbi_accns) {
@@ -759,9 +761,7 @@ sub create_load_genome_from_NCBI_job {
         cmd => $cmd,
         script => undef,
         args => $args,
-        inputs => [
-            $CONF->{_CONFIG_PATH}
-        ],
+        inputs => [],
         outputs => [
             [$output_path, '1'],
             catfile($output_path, "log.done"),
@@ -803,10 +803,9 @@ sub create_load_annotation_job {
             ['-gid', $gid, 0],
             ['-staging_dir', "./load_annotation", 0],
             ['-data_file', "'".$input_file."'", 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH}, 
             $input_file
         ],
         outputs => [
@@ -843,7 +842,7 @@ sub create_load_batch_job {
         ['-wid', $wid, 0],
         ['-staging_dir', "'".$staging_dir."'", 0],
         ['-files', "'".$file_str."'", 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1]    
+        ['-config', $CONF->{_CONFIG_PATH}, 0]    
     ];
     push $args, ['-nid', $nid, 0] if ($nid);
 
@@ -852,7 +851,6 @@ sub create_load_batch_job {
         script => undef,
         args => $args,
         inputs => [
-            $CONF->{_CONFIG_PATH}, 
             @$files
         ],
         outputs => [
@@ -878,7 +876,7 @@ sub create_load_bam_job {
     my $bam_file = $opts{bam_file};
     die unless ($user && $staging_dir && $wid && $gid && $bam_file);
     
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
+    my $cmd = 'perl ' . catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
     my $output_name = "load_bam_" . to_filename_base($bam_file);
@@ -913,7 +911,6 @@ sub create_load_bam_job {
             ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH},
             $bam_file
         ],
         outputs => [
@@ -1181,7 +1178,7 @@ sub create_gff_generation_job {
     my $cmd = catfile($CONF->{SCRIPTDIR}, "coge_gff.pl");
     my $name = sanitize_name($organism_name) . "-1-name-0-0-id-" . $gid . "-1.gff";
 
-    my $inputs = [ $CONF->{_CONFIG_PATH} ];
+    my $inputs = [];
     #push @{$inputs}, $validated if $validated;
 
     return {
@@ -1196,7 +1193,7 @@ sub create_gff_generation_job {
             ['-cds', 0, 0],
             ['-annos', 0, 0],
             ['-nu', 1, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1],
+            ['-config', $CONF->{_CONFIG_PATH}, 0],
         ],
         inputs => $inputs,
         outputs => [
@@ -2121,7 +2118,7 @@ sub create_notebook_job {
         ['-type', 2, 0],
         ['-restricted', $metadata->{restricted}, 0],
         ['-annotations', qq{"$annotations_str"}, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-log', $log_file, 0]
     ];
 
@@ -2130,7 +2127,6 @@ sub create_notebook_job {
         script => undef,
         args => $args,
         inputs => [ 
-            $CONF->{_CONFIG_PATH},
             @$done_files
         ],
         outputs => [ 
@@ -2161,7 +2157,7 @@ sub add_items_to_notebook_job {
         ['-uid', $user->id, 0],
         ['-wid', $wid, 0],
         ['-notebook_id', $notebook_id, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-log', $log_file, 0]
     ];
 
@@ -2170,7 +2166,6 @@ sub add_items_to_notebook_job {
         script => undef,
         args => $args,
         inputs => [ 
-            $CONF->{_CONFIG_PATH},
             @$done_files
         ],
         outputs => [ 
@@ -2203,7 +2198,7 @@ sub add_metadata_to_results_job {
         ['-uid', $user->id, 0],
         ['-wid', $wid, 0],
         ['-annotations', qq{"$annotations_str"}, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-log', $log_file, 0]
     ];
 
@@ -2212,7 +2207,6 @@ sub add_metadata_to_results_job {
         script => undef,
         args => $args,
         inputs => [ 
-            $CONF->{_CONFIG_PATH},
             @$done_files
         ],
         outputs => [ 
@@ -2250,7 +2244,6 @@ sub send_email_job {
         script => undef,
         args => $args,
         inputs => [ 
-            $CONF->{_CONFIG_PATH},
             @$done_files
         ],
         outputs => [ 

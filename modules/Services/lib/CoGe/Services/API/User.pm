@@ -1,4 +1,4 @@
-package CoGe::Services::Data::User;
+package CoGe::Services::API::User;
 
 use Mojo::Base 'Mojolicious::Controller';
 #use IO::Compress::Gzip 'gzip';
