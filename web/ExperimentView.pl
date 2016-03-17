@@ -17,16 +17,15 @@ use Data::Dumper;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_experiment_files get_experiment_path get_log data_type get_download_path);
+use CoGe::Core::Storage;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
-    $WORKFLOW_ID $LOAD_ID $TEMPDIR $CONFIGFILE
+    $WORKFLOW_ID $LOAD_ID $TEMPDIR
 );
 
 $PAGE_TITLE = "ExperimentView";
 $ERROR = encode_json( { error => 1 } );
-$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
@@ -527,31 +526,20 @@ sub generate_export { #TODO replace with ExperimentBuilder.pm
 
     my $filename = "experiment_$exp_name.tar.gz";
 
-    my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
+    my $conf = $P->{_CONFIG_PATH};
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment_or_genome.pl");
     my $workdir = get_download_path('experiment', $eid);
     my $resdir = $P->{RESOURCEDIR};
 
     my $cmd = "$script -id $eid -type 'experiment' -config $conf -dir $workdir -output $filename";
 
-    return (execute($cmd), File::Spec->catdir(($workdir, $filename)));
-}
-
-sub get_download_url {
-    my %args = @_;
-    my $id = $args{id};
-    my $dir = $args{dir};
-    my $filename = basename($args{file});
-    my $username = $USER->user_name;
-
-    return join('/', $P->{SERVER}, 
-        'api/v1/legacy/download', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
-        "?username=$username&eid=$id&filename=$filename");
+    return (execute($cmd), File::Spec->catdir($workdir, $filename));
 }
 
 sub get_file_urls {
     my %opts = @_;
     my $eid = $opts{eid};
+    return 0 unless $eid;
 
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return 0 unless $USER->has_access_to_experiment($experiment);
@@ -559,8 +547,8 @@ sub get_file_urls {
     my ($statusCode, $file) = generate_export($experiment);
 
     unless($statusCode) {
-        #my $dir = basename(dirname($file));
-        my $url = get_download_url(id => $eid, file => $file);
+        my $url = download_url_for(eid => $eid, file => $file);
+        print STDERR "matt: $url\n";
         return encode_json({ filename => basename($file), url => $url });
     };
 
@@ -599,7 +587,6 @@ sub gen_html {
             HOME       => $P->{SERVER},
             HELP       => 'ExperimentView',
             WIKI_URL   => $P->{WIKI_URL} || '',
-            ADJUST_BOX => 1,
             CAS_URL    => $P->{CAS_URL} || ''
         );
     	$template->param( USER     => $USER->display_name || '' );
@@ -616,26 +603,34 @@ sub gen_body {
     return "Need a valid experiment id\n" unless $eid;
 
     my $exp = $coge->resultset('Experiment')->find($eid);
+    return "Experiment not found" unless $exp;
     return "Access denied" unless $USER->has_access_to_experiment($exp);
 
     my $gid = $exp->genome_id;
+    
+    my $popgenUrl;
+    if ($exp->data_type == $DATA_TYPE_POLY && is_popgen_finished($eid)) {
+        $popgenUrl = "PopGen.pl?eid=$eid";
+    }
 
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
-        MAIN            => 1,
-        PAGE_NAME       => $PAGE_TITLE . '.pl',
-        USER_NAME       => $USER->name,
-        EXPERIMENT_ID   => $eid,
-        DEFAULT_TYPE    => 'note',
-        ITEMS            => commify($exp->row_count),
-        FILE_SIZE       => commify(directory_size(get_experiment_path($exp->id))),
-        IRODS_HOME      => get_irods_path(),
-        WORKFLOW_ID     => $WORKFLOW_ID,
-        STATUS_URL      => 'jex/status/',
-        ALIGNMENT_TYPE  => ($exp->data_type == 3), # FIXME: hardcoded type value
-        PUBLIC          => $USER->user_name eq "public" ? 1 : 0,
-        ADMIN_AREA      => $USER->is_admin,
-        API_BASE_URL    => 'api/v1/', #TODO move into config file or module
+        MAIN              => 1,
+        PAGE_NAME         => $PAGE_TITLE . '.pl',
+        USER_NAME         => $USER->name,
+        EXPERIMENT_ID     => $eid,
+        DEFAULT_TYPE      => 'note',
+        ITEMS             => commify($exp->row_count),
+        FILE_SIZE         => commify(directory_size(get_experiment_path($exp->id))),
+        IRODS_HOME        => get_irods_path(),
+        WORKFLOW_ID       => $WORKFLOW_ID,
+        STATUS_URL        => 'jex/status/',
+        ALIGNMENT_TYPE    => ($exp->data_type == $DATA_TYPE_ALIGN),
+        POLYMORPHISM_TYPE => ($exp->data_type == $DATA_TYPE_POLY),
+        POPGEN_RESULT_URL => $popgenUrl,
+        PUBLIC            => $USER->user_name eq "public" ? 1 : 0,
+        ADMIN_AREA        => $USER->is_admin,
+        API_BASE_URL      => 'api/v1/', #TODO move into config file or module
     );
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
@@ -678,7 +673,7 @@ sub _get_experiment_info {
         { title => "ID", value => $exp->id },
         { title => "Name", value => $exp->name},
         { title => "Description", value => $exp->description},
-        { title => "Data Type", value => data_type($exp->data_type) },
+        { title => "Data Type", value => ucfirst($exp->data_type_desc) },
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
         { title => "Version", value => $exp->version },
@@ -688,6 +683,15 @@ sub _get_experiment_info {
         { title => "Creation", value => $creation}
     ];
 
+    my $owner = $exp->owner;
+    push @$fields, { title => "Owner", value => $owner->display_name } if $owner;
+    
+    my $users = ( $exp->restricted ? join(', ', sort map { $_->display_name } $USER->users_with_access($exp)) : 'Everyone' );
+    push @$fields, { title => "Users with access", value => $users } if $users;
+    
+    my $groups = ($exp->restricted ? join(', ', sort map { $_->name } $USER->groups_with_access($exp)) : undef);
+    push @$fields, { title => "Groups with access", value => $groups } if $groups;
+    
     push @$fields, { title => "Note", value => "This experiment has been deleted" } if $exp->deleted;
 
     return {

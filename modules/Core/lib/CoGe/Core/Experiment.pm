@@ -1,8 +1,10 @@
 package CoGe::Core::Experiment;
 use strict;
 
+use Data::Dumper;
 use Sort::Versions;
-use CoGe::Core::Storage qw($DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER);
+use CoGe::Accessory::FastBit;
+use CoGe::Core::Storage qw( $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER get_experiment_path );
 
 our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION, @QUANT_TYPES, @MARKER_TYPES, 
       @OTHER_TYPES, @SUPPORTED_TYPES );
@@ -12,7 +14,7 @@ BEGIN {
     $VERSION = 0.1;
     @ISA = qw( Exporter );
     @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @OTHER_TYPES @SUPPORTED_TYPES);
-    @EXPORT_OK = qw(experimentcmp detect_data_type);
+    @EXPORT_OK = qw( detect_data_type download_data experimentcmp get_data get_fastbit_format get_fastbit_score_column query_data );
     
     # Setup supported experiment file types
     @QUANT_TYPES = qw(csv tsv bed wig);
@@ -69,6 +71,195 @@ sub detect_data_type {
         print STDOUT "detect_data_type: unknown file ext '$filetype'\n";
         return ($filetype);
     }
+}
+
+sub get_data {
+    my %opts = @_;
+    my $eid  = $opts{eid};    # required
+    my $data_type = $opts{data_type};
+    unless ($eid) {
+        print STDERR "CoGe::Core::Experiment::get_data: experiment id not specified!\n";
+        return;
+    }
+    my $chr   = $opts{chr};
+    my $start = $opts{start};
+    my $stop  = $opts{stop};
+    $stop = $opts{end} if ( not defined $stop );
+    $start = 0 if ($start < 0);
+    $stop = 0 if ($stop < 0);
+
+    if (!$data_type ||
+        $data_type == $DATA_TYPE_QUANT ||
+        $data_type == $DATA_TYPE_POLY ||
+        $data_type == $DATA_TYPE_MARKER)
+    {
+        my $format = get_fastbit_format($eid, $data_type);
+        my $columns = join(',', map { $_->{name} } @{$format->{columns}});
+        my $lines = CoGe::Accessory::FastBit::query("select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999", $eid);
+	    my @results = map {_parse_fastbit_line($format, $_, $chr)} @{$lines};
+	    return \@results;
+    }
+    elsif ( $data_type == $DATA_TYPE_ALIGN ) { # FIXME move output parsing from Storage.pm to here
+        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
+    	my $storage_path = get_experiment_path($eid);
+        my $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
+        #print STDERR "$cmd\n";
+        my @cmdOut = qx{$cmd};
+        #print STDERR @cmdOut;
+        my $cmdStatus = $?;
+        if ( $? != 0 ) {
+            print STDERR "CoGe::Core::Experiment::get_data: error $? executing command: $cmd\n";
+            return;
+        }
+        
+        # Return if error message detected (starts with '[')
+        map { return if (/^\[/) } @cmdOut; # mdb added 5/6/15 COGE-594
+        
+        return \@cmdOut;
+    }
+    else {
+        print STDERR "CoGe::Core::Experiment::get_data: unknown data type\n";
+        return;
+    }
+}
+
+sub get_fastbit_format {
+    my $eid = shift;
+    my $data_type = shift;
+
+    my $storage_path = get_experiment_path($eid);
+    my $format_file = $storage_path . '/format.json';
+
+    # Backward compatibility, see issue 352
+    # FIXME: remove someday by adding format.json files to old experiments
+    if (not -r $format_file) {
+        if (!$data_type || $data_type == $DATA_TYPE_QUANT) {
+            return {
+                columns => [
+                    { name => 'chr',    type => 'key' },
+                    { name => 'start',  type => 'unsigned long' },
+                    { name => 'stop',   type => 'unsigned long' },
+                    { name => 'strand', type => 'byte' },
+                    { name => 'value1', type => 'double' },
+                    { name => 'value2', type => 'double' }
+                ]
+            };
+        }
+        elsif ($data_type == $DATA_TYPE_POLY) {
+            return {
+                columns => [
+                    { name => 'chr',   type => 'key' },
+                    { name => 'start', type => 'unsigned long' },
+                    { name => 'stop',  type => 'unsigned long' },
+                    { name => 'type',  type => 'key' },
+                    { name => 'id',    type => 'text' },
+                    { name => 'ref',   type => 'key' },
+                    { name => 'alt',   type => 'key' },
+                    { name => 'qual',  type => 'double' },
+                    { name => 'info',  type => 'text' }
+                ]
+            };
+        }
+        elsif ( $data_type == $DATA_TYPE_MARKER ) {
+            return {
+                columns => [
+                    { name => 'chr',    type => 'key' },
+                    { name => 'start',  type => 'unsigned long' },
+                    { name => 'stop',   type => 'unsigned long' },
+                    { name => 'strand', type => 'key' },
+                    { name => 'type',   type => 'key' },
+                    { name => 'score',  type => 'double' },
+                    { name => 'attr',   type => 'text' }
+                ]
+            };
+        }
+        return; # should never happen!
+    }
+
+    # Otherwise read format json file
+    return CoGe::Accessory::TDS::read($format_file);
+}
+
+sub get_fastbit_score_column {
+    my $data_type = shift;
+	if (!$data_type || $data_type == $DATA_TYPE_QUANT) {
+		return 4;
+	}
+	if ($data_type == $DATA_TYPE_POLY) {
+		return 7;
+	}
+	if ( $data_type == $DATA_TYPE_MARKER ) {
+		return 5;
+	}
+}
+
+sub _parse_fastbit_line {
+    my $format = shift;
+    my $line = shift;
+    my $chr = shift;
+
+    $line =~ s/"//g;
+    my @items = split(/,\s*/, $line);
+    return if ( $items[0] !~ /^\"?$chr/); # make sure it's a row output line
+
+    my %result;
+    foreach (@{$format->{columns}}) {
+        my $item = shift @items;
+        my $name = $_->{name};
+        my $type = $_->{type};
+        if ($type =~ /long|byte|double/) { $result{$name} = 0 + $item } # convert to numeric
+        else { $result{$name} = '' . $item; }
+    }
+    return \%result;
+}
+
+sub debug {
+	my $data = shift;
+	my $new_file = shift;
+	my $OUTFILE;
+	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
+	print {$OUTFILE} Dumper $data;
+	print {$OUTFILE} "\n";
+	close $OUTFILE;
+}
+
+sub query_data {
+    my %opts = @_;
+    my $eid  = $opts{eid};    # required
+    unless ($eid) {
+        warn 'CoGe::Core::Experiment::query_data: experiment id not specified!';
+        return;
+    }
+    my $chr = $opts{chr};
+    my $data_type = $opts{data_type};
+    my $gte = $opts{gte};
+    my $limit = $opts{limit};
+    my $lte = $opts{lte};
+    my $order_by = $opts{order_by} || 'chr,start';
+    my $type = $opts{type};
+
+	my $where = '0.0=0.0';
+	$where .= " and chr='$chr'" if $chr;
+	my $value1;
+    if ($type eq 'max') {
+    	$value1 = CoGe::Accessory::FastBit::max($eid);
+    }
+    elsif ($type eq 'min') {
+    	$value1 = CoGe::Accessory::FastBit::min($eid);
+    }
+    elsif ($type eq 'range') {
+		$where .= ' and value1>=' . $gte if $gte;
+		$where .= ' and value1<=' . $lte if $lte;
+    }
+    my $format = get_fastbit_format($eid, $data_type);
+    my $columns = join(',', map { $_->{name} } @{$format->{columns}});
+    my $results = CoGe::Accessory::FastBit::query("select $columns where 0.0=0.0 and $where order by $order_by limit 999999999", $eid);
+    if ($type eq 'max' || $type eq 'min') {
+    	my $value_col = get_fastbit_score_column $data_type;
+        my @lines = grep { $value1 == (split(',', $_))[$value_col] } @{$results};
+        return \@lines;
+    }
+    return $results;
 }
 
 1;

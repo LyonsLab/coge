@@ -3,8 +3,10 @@ package CoGe::Factory::PipelineFactory;
 use Moose;
 
 use File::Spec::Functions qw(catfile);
-use CoGe::Core::Storage qw(get_workflow_paths);
+use File::Path qw(make_path);
+use Data::Dumper;
 
+use CoGe::Core::Storage qw(get_workflow_paths);
 use CoGe::Builder::Export::Fasta;
 use CoGe::Builder::Export::Gff;
 use CoGe::Builder::Export::Experiment;
@@ -13,8 +15,10 @@ use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
-use CoGe::Builder::Tools::DotplotDots;
 use CoGe::Builder::Tools::SynMap;
+use CoGe::Builder::Expression::MeasureExpression;
+use CoGe::Builder::Methylation::MeasureMethylation;
+use CoGe::Builder::PopGen::MeasureDiversity;
 
 has 'db' => (
     is => 'ro',
@@ -77,8 +81,14 @@ sub get {
     elsif ($message->{type} eq "synmap") {
         $builder = CoGe::Builder::Tools::SynMap->new($request);
     }
-    elsif ($message->{type} eq "dotplot_dots") {
-        $builder = CoGe::Builder::Tools::DotplotDots->new($request);
+    elsif ($message->{type} eq "analyze_expression") {
+        $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
+    }
+    elsif ($message->{type} eq "analyze_methylation") {
+        $builder = CoGe::Builder::Methylation::MeasureMethylation->new($request);
+    }    
+    elsif ($message->{type} eq "analyze_diversity") {
+        $builder = CoGe::Builder::PopGen::MeasureDiversity->new($request);
     }
     else {
         print STDERR "PipelineFactory::get unknown type\n";
@@ -93,7 +103,7 @@ sub get {
     $builder->result_dir($result_dir);
     $builder->workflow->logfile(catfile($result_dir, "debug.log"));
     
-    # Get a tiny URL to a status page
+    # Get a tiny URL to a status page #TODO simplyify this
     my ($page, $link);
     if ($message->{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
         $page = $message->{requester}->{page};
@@ -120,11 +130,17 @@ sub get {
     # Construct the workflow
     my $rc = $builder->build;
     unless ($rc) {
-        print STDERR "PipelineFactory::get build failed\n";
+        $rc = 'undef' unless defined $rc;
+        print STDERR "PipelineFactory::get build failed, rc=$rc\n";
         return;
     }
     
-    # Fetch the workflow constructed
+    # Dump raw workflow to file for debugging -- mdb added 2/17/16
+    make_path($result_dir);
+    open(my $fh, '>', catfile($result_dir, 'workflow.log'));
+    print $fh Dumper $builder->workflow, "\n";
+    close($fh);
+    
     return $builder;
 }
 

@@ -57,7 +57,6 @@ sub gen_html {
                           HELP       => 'GroupView',
                           WIKI_URL   => $P->{WIKI_URL} || '' );
         $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-        $template->param( ADJUST_BOX => 1 );
     }
     
     $template->param( BODY => gen_body() );

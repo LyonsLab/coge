@@ -6,8 +6,8 @@ CoGeDBI
 
 =head1 SYNOPSIS
 
-  This object is a low-level API to the CoGe database.  It was written for
-  high-performance cases where the CoGeX ORM is too slow.
+  This module provides a low-level API to the CoGe database.  It was written for
+  high-performance cases where the CoGeX-DBIX ORM is too slow.
 
 =head1 DESCRIPTION
 
@@ -38,7 +38,7 @@ BEGIN {
     require Exporter;
 
     $VERSION = 0.1;
-    $MAX_FETCH_ROWS = 10*1000;
+    $MAX_FETCH_ROWS = 10_000;
     @ISA     = qw (Exporter);
     @EXPORT = qw( 
         get_table get_user_access_table get_experiments get_distinct_feat_types
@@ -46,8 +46,17 @@ BEGIN {
         get_groups_for_user get_group_access_table get_datasets
         get_feature_counts get_features get_feature_types
         get_feature_names get_feature_annotations get_locations 
-        get_chromosomes get_chromosomes_from_features get_total_queries
+        get_total_queries get_dataset_ids feature_type_names_to_id
+        get_features_by_range get_table_count
     );
+}
+
+# takes: string of comma delimeted, singled quoted feature type names
+# returns: string of comma delimited corresponding feature type ids
+sub feature_type_names_to_id {
+	my $type_names = shift;
+	my $dbh = shift;
+	return join(',', @{$dbh->selectcol_arrayref('SELECT feature_type_id FROM feature_type WHERE name IN(' . $type_names . ')')});
 }
 
 sub get_table {
@@ -124,10 +133,13 @@ sub get_user_access_table {
         #print STDERR Dumper $results3, "\n"; 
     }
     
-    my $combined = merge($results1, $results2, $results3);
-    #print STDERR Dumper \%combined, "\n";
+    Hash::Merge::set_behavior('LEFT_PRECEDENT');
+    #my $combined = Hash::Merge::merge($results1, $results2, $results3); # mdb removed 12/11/15
+    my $combined = Hash::Merge::merge($results1, $results2); # order is important here, user connections should override group and list connections
+    my $combined2 = Hash::Merge::merge($combined, $results3); # mdb added 12/11/15
+    #print STDERR Dumper $combined2, "\n";
     
-    return $combined;
+    return $combined2;
 }
 
 sub get_group_access_table {
@@ -158,7 +170,8 @@ sub get_group_access_table {
         #print STDERR Dumper $results3, "\n"; 
     }
     
-    my $combined = merge($results1, $results2);
+    Hash::Merge::set_behavior('LEFT_PRECEDENT');
+    my $combined = Hash::Merge::merge($results1, $results2);
     #print STDERR Dumper \%combined, "\n";
     
     return $combined;
@@ -257,7 +270,8 @@ sub get_genomes_for_user {
     my $results2 = $sth->fetchall_hashref(['id']);
     #print STDERR Dumper $results2, "\n";
     
-    my $combined = merge($results1, $results2);
+    Hash::Merge::set_behavior('LEFT_PRECEDENT');
+    my $combined = Hash::Merge::merge($results1, $results2); # order is important here, results1 should overwrite results2
     return [ values $combined ];
 }
 
@@ -306,8 +320,9 @@ sub get_experiments_for_user {
     $sth->execute();
     my $results2 = $sth->fetchall_hashref(['id']);
     #print STDERR Dumper $results2, "\n";
-        
-    my $combined = merge($results1, $results2);
+    
+    Hash::Merge::set_behavior('LEFT_PRECEDENT');
+    my $combined = Hash::Merge::merge($results1, $results2); # order is important here, results1 should overwrite results2
     return [ values $combined ];
 }
 
@@ -419,6 +434,50 @@ sub get_features {
     return $results;
 }
 
+sub get_features_by_range { # for JBrowse::Annotation
+    my %opts = @_;
+    my $dbh       = $opts{dbh}; # database connection handle
+    my $gid       = $opts{gid} || $opts{genome_id};
+    my $chr       = $opts{chr};
+    my $start     = $opts{start};
+    my $stop      = $opts{stop} || $opts{end};
+    my $feat_type = $opts{feat_type};
+    my $dsid      = $opts{dsid} || $opts{dataset_id};
+    die unless ($gid && defined $chr && defined $start && defined $stop);
+    
+    # mdb 4/24/14 - added fn.primary_name=1 constraint to keep from returning arbitrary name
+    my $query = qq{
+        SELECT l.start as locstart, l.stop as locstop, l.strand as locstrand, 
+            ft.name as type, fn.name, l.location_id, f.start, f.stop, 
+            f.feature_id, fn.primary_name, l.chromosome, f.chromosome, f.strand
+            FROM genome g
+            JOIN dataset_connector dc ON dc.genome_id = g.genome_id
+            JOIN dataset d on dc.dataset_id = d.dataset_id
+            JOIN feature f ON d.dataset_id = f.dataset_id
+            JOIN location l ON f.feature_id = l.feature_id
+            JOIN feature_name fn ON f.feature_id = fn.feature_id
+            JOIN feature_type ft ON f.feature_type_id = ft.feature_type_id
+            WHERE g.genome_id = $gid
+                AND f.chromosome = '$chr'
+                AND f.stop > $start AND f.start <= $stop
+                AND ft.feature_type_id != 4
+    };
+    
+    if ($feat_type) {
+        $query .=  " AND ft.name = '$feat_type'";
+    }
+    # mdb added 4/21/14 issue 363
+    if ($dsid) {
+        $query .= " AND dc.dataset_id = $dsid";
+    }
+    
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_arrayref({});
+    #print STDERR Dumper $results, "\n";
+    
+    return $results;
+}
 
 sub get_feature_types {
     my $dbh = shift; # database connection handle
@@ -546,58 +605,83 @@ sub get_datasets {
     return wantarray ? values %$results : $results;
 }
 
-sub get_chromosomes {
-    my $dbh = shift;         # database connection handle
-    my $genome_id = shift;   # genome id
-    my $dataset_id = shift;  # dataset id
-    return unless ($dbh and ($genome_id or $dataset_id));
-    
-    # Execute query
-    my $query = qq{
-        SELECT f.feature_id AS fid, f.start AS start, f.stop AS stop, 
-            f.chromosome AS chr
-        FROM dataset_connector AS dc 
-        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
-        WHERE feature_type_id=4
-    };
-    if ($genome_id) {
-        $query .= " AND dc.genome_id=$genome_id";
-    }
-    else { # dataset_id
-        $query .= " AND dc.dataset_id=$dataset_id";
-    }
-    my $sth = $dbh->prepare($query);
-    $sth->execute();
-    my $results = $sth->fetchall_arrayref({});
-    #print STDERR Dumper $results, "\n";
-    
-    return wantarray ? @$results : $results;
+sub get_dataset_ids {
+	my $gid = shift;
+	my $dbh = shift;
+	$dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $gid);
 }
 
-sub get_chromosomes_from_features {
-    my $dbh = shift;         # database connection handle
-    my $genome_id = shift;   # genome id
-    my $dataset_id = shift;  # dataset id
-    return unless ($dbh and ($genome_id or $dataset_id));
+# doesn't seem to be used anywhere
+#sub get_chromosomes {
+#    my $dbh = shift;         # database connection handle
+#    my $genome_id = shift;   # genome id
+#    my $dataset_id = shift;  # dataset id
+#    return unless ($dbh and ($genome_id or $dataset_id));
+#    
+#    # Execute query
+#    my $query = qq{
+#        SELECT f.feature_id AS fid, f.start AS start, f.stop AS stop, 
+#            f.chromosome AS chr
+#        FROM dataset_connector AS dc 
+#        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
+#        WHERE feature_type_id=4
+#    };
+#    if ($genome_id) {
+#        $query .= " AND dc.genome_id=$genome_id";
+#    }
+#    else { # dataset_id
+#        $query .= " AND dc.dataset_id=$dataset_id";
+#    }
+#    my $sth = $dbh->prepare($query);
+#    $sth->execute();
+#    my $results = $sth->fetchall_arrayref({});
+#    #print STDERR Dumper $results, "\n";
+#    
+#    return wantarray ? @$results : $results;
+#}
+
+# doesn't seem to be used anywhere
+#sub get_chromosomes_from_features {
+#    my $dbh = shift;         # database connection handle
+#    my $genome_id = shift;   # genome id
+#    my $dataset_id = shift;  # dataset id
+#    return unless ($dbh and ($genome_id or $dataset_id));
+#    
+#    # Execute query
+#    my $query = qq{
+#        SELECT f.chromosome AS chr
+#        FROM dataset_connector AS dc 
+#        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
+#    };
+#    if ($genome_id) {
+#        $query .= " WHERE dc.genome_id=$genome_id";
+#    }
+#    else { # dataset_id
+#        $query .= " WHERE dc.dataset_id=$dataset_id";
+#    }
+#    my $sth = $dbh->prepare($query);
+#    $sth->execute();
+#    my $results = $sth->fetchall_hashref(['chr']);
+#    #print STDERR Dumper $results, "\n";
+#    
+#    return wantarray ? keys %$results : [ keys %$results ];
+#}
+
+# Estimate table count (for large InnoDB tables)
+sub get_table_count {
+    my $dbh = shift;   # database connection handle
+    my $table = shift; # table name
+    my $where = shift; # optional where clause
+    return unless ($dbh and $table);
+    my $id = $table . '_id';
     
-    # Execute query
-    my $query = qq{
-        SELECT f.chromosome AS chr
-        FROM dataset_connector AS dc 
-        JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
-    };
-    if ($genome_id) {
-        $query .= " WHERE dc.genome_id=$genome_id";
-    }
-    else { # dataset_id
-        $query .= " WHERE dc.dataset_id=$dataset_id";
-    }
+    my $query = "SELECT $id FROM $table " . ($where ? "WHERE $where" : '') . " ORDER BY $id DESC LIMIT 1";
+    print STDERR $query, "\n";
     my $sth = $dbh->prepare($query);
     $sth->execute();
-    my $results = $sth->fetchall_hashref(['chr']);
-    #print STDERR Dumper $results, "\n";
+    my ($count) = $sth->fetchrow_array();
     
-    return wantarray ? keys %$results : [ keys %$results ];
+    return $count;
 }
 
 sub get_total_queries {

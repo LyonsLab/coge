@@ -1,40 +1,45 @@
+var coge_track_list;
+
+// ----------------------------------------------------------------
+
 define(['dojo/_base/declare',
         'dojo/_base/array',
+        'dojo/query',
+        'dojo/dom-attr',
         'dojo/dom-construct',
         'dojo/dom-geometry',
+        'dojo/dom-style',
         'dojo/aspect',
         'dijit/layout/ContentPane',
         'dojo/dnd/Source',
-        'dojo/fx/easing',
-        'dijit/form/TextBox',
         'dojo/mouse',
-        "dijit/form/DropDownButton",
-        "dijit/DropDownMenu",
-        "dijit/MenuItem",
-        'JBrowse/View/ConfirmDialog',
-        'JBrowse/View/InfoDialog'
+        'dijit/form/DropDownButton',
+        'dijit/Menu',
+        'dijit/MenuItem',
+        'dijit/MenuSeparator',
+        'dijit/Dialog'
        ],
-       function( declare, array, dom, domGeom, aspect, ContentPane, dndSource, animationEasing, dijitTextBox, mouse, DropDownButton, DropDownMenu, MenuItem, ConfirmDialog, InfoDialog ) {
-return declare( 'JBrowse.View.TrackList.CoGe', null,
+       function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, mouse, DropDownButton, Menu, MenuItem, MenuSeparator, Dialog ) {
+	return declare( 'JBrowse.View.TrackList.CoGe', null,
 
     /** @lends JBrowse.View.TrackList.CoGe.prototype */
     {
     /**
-     * CoGe drag-and-drop track selector.
-     * @constructs
-     */
+	 * CoGe drag-and-drop track selector.
+	 * 
+	 * @constructs
+	 */
     constructor: function( args ) {
+    	coge_track_list = this;
         this.browser = args.browser;
+        this._track_configs = args.trackConfigs;
 
         // make the track list DOM nodes and widgets
-        this.createTrackList( args.browser.container, args.trackConfigs );
-
-        // maintain a list of the HTML nodes of filtered tracks
-        this.filteredNodes = {};
+        this._create_track_list( args.browser.container );
 
         // maximum tracks that can be added via "+" button
         this.maxTracksToAdd = 20;
-
+        
         // subscribe to drop events for tracks being DND'ed
         this.browser.subscribe( '/dnd/drop',
         						dojo.hitch( this, 'moveTracks' ));
@@ -52,565 +57,208 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
                                 dojo.hitch( this, 'deleteTracks' ));
     },
 
-    moveTracks: function( source, nodes, copy, target ) {
-    	if ( source == target) { // both source and target
-    		console.log('source = target');
-    		return;
+    // ----------------------------------------------------------------
+
+    _add_expander: function (container) {
+    	var button = dom.create('img', {
+    			className: 'coge-tracklist-expand',
+    			src: 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png'
+        	},
+        	container
+        );
+    	dojo.connect(button, 'click', dojo.hitch(this, function() {
+            if (button.src.indexOf('down') != -1)
+            	this._collapse(container);
+            else
+            	this._expand(container);
+        	this._update_tracks_shown();
+        }));
+    },
+
+    // ----------------------------------------------------------------
+
+    _add_to_notebook: function(items, notebook_id, create) {
+    	var on_error = function() {
+			if (!create) {
+				var notebook_node = dojo.byId('notebook' + notebook_id);
+				items.forEach(function(item) {
+					dojo.destroy(dojo.query('#' + item.type + item.id, notebook_node)[0]);
+				});
+			}
     	}
-
-    	var isSource = this.trackListWidgets.indexOf(source) != -1;
-    	var isTarget = this.trackListWidgets.indexOf(target) != -1;
-
-    	if( isSource && !isTarget ) { // source
-        	console.log('/dnd/drop/source');
-        	// get the configs from the tracks being dragged in
-            var confs = dojo.filter(
-                dojo.map( nodes, function(n) {
-                              return source.map[n.id].data;
-                        }),
-                function(c) {return c;}
-            );
-
-            // highlight track to show it is enabled
-            this.dndDrop = true;
-            this.browser.publish( '/jbrowse/v1/v/tracks/show', confs ); // mdb: why not just call setTrackActive directly?
-            this.dndDrop = false;
-        }
-
-        if( this.trackListWidgets.indexOf(target) != -1 ) { // target
-        	console.log('/dnd/drop/target');
-
-            // get the configs from the tracks being dragged in
-            var confs = dojo.filter(
-                dojo.map( nodes, function(n) {
-                              return n.track && n.track.config;
-                        }),
-                function(c) {return c;}
-            );
-
-            // return if no confs; whatever was dragged here probably wasn't a track from browser
-            if( confs.length ) {
-                // un-highlight track to show it is disabled
-                this.dndDrop = true;
-                this.browser.publish( '/jbrowse/v1/v/tracks/hide', confs ); // mdb: why not just call setTrackInactive directly?
-                this.dndDrop = false;
-            }
-            else { // dragged-in from track selector
-            	var notebookName;
-            	var notebookId;
-            	target.getAllNodes().forEach( function(node) { // FIXME: kludge
-            		dojo.query('.coge-notebook', node).forEach( function(n) {
-            			notebookName = n.id;
-            			notebookId = notebookName.match(/\d+/);
-            		});
-            	});
-
-            	if (notebookId && notebookId > 0) { // target is notebook
-            		// Add experiment to notebook
-            		nodes.forEach( dojo.hitch(this, function(node) {
-            			var nodeId;
-            			dojo.query('.coge-experiment', node).forEach( function(n) {
-                			nodeId = n.id;
-                		});
-            			var conf = this.browser.trackConfigsByName[nodeId];
-            			if (conf) {
-            				dojo.xhrPut({
-	      					    url: "NotebookView.pl",
-	    					    putData: {
-	    					    	fname: 'add_item_to_list',
-	    					    	lid: notebookId,
-	    					    	item_spec: '3:'+conf.coge.id, // FIXME: hardcoded type to experiment
-	    					    },
-	    					    handleAs: "json",
-	    					    load: dojo.hitch(this, function(data) {
-	    					    	if (!data) {
-	    					    		new InfoDialog({
-	    				                            title: 'Permission denied',
-	    				                            content: "You don't have permission to do that."
-	    				                        }).show();
-	    					    		return;
-	    					    	}
-	    					    	// Reload track in browser
-	    		                	this.browser.view.tracks.forEach( function(track) {
-	    		                		if (track.config.label == notebookName) {
-	    		                			track.changed();
-	    		                		}
-	    		                	});
-	    					    })
-						    });
-            			}
-            		}));
-            	}
-            }
-		}
+	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+	  	dojo.xhrPost({
+	  		url: coge_api + '/notebooks/' + notebook_id + '/items/add?username='+un,
+	  		postData: JSON.stringify({ items: items }),
+	  		handleAs: 'json',
+	  		load: dojo.hitch(this, function(data) {
+	  			if (data.error) {
+		  			on_error();
+	  				coge.error('Add Notebook Item', data);
+	  			} else { 
+	  				var n = dojo.byId('notebook' + notebook_id);
+	  				if (create)
+	  					items.forEach(function(item) {
+	  						var e = dojo.byId(item.type + item.id);
+	  						dojo.place(coge_track_list._new_track(e.config), n.parentNode);
+	  					});
+	  				this._expand(n);
+	  			}
+	  		}),
+	  		error: function(data) {
+	  			on_error();
+	  			coge.error('Add Notebook Item', data);
+	  		}
+	  	});
+	  	if (this._add_dialog)
+	  		this._add_dialog.hide();
     },
 
-    addTracks: function( trackConfigs ) { // mdb: unused now
-    	console.log('addTracks');
-//        // note that new tracks are, by default, hidden, so we just put them in the list
-//        this.trackListWidget.insertNodes(
-//            false,
-//            trackConfigs
-//        );
-//
-//        this._blinkTracks( trackConfigs );
-    },
+    // ----------------------------------------------------------------
 
-    replaceTracks: function( trackConfigs ) { // mdb: unused now
-    	console.log('replaceTracks');
-//        // for each one
-//        array.forEach( trackConfigs, function( conf ) {
-//            // figure out its position in the genome view and delete it
-//            var oldNode = this.inactiveTrackNodes[ conf.label ];
-//            if( ! oldNode )
-//                return;
-//            delete this.inactiveTrackNodes[ conf.label ];
-//
-//            this.trackListWidget.delItem( oldNode.id );
-//            if( oldNode.parentNode )
-//                oldNode.parentNode.removeChild( oldNode );
-//
-//           // insert the new track config into the trackListWidget after the 'before'
-//           this.trackListWidget.insertNodes( false, [conf], false, oldNode.previousSibling );
-//       },this);
-    },
-
-    /** @private */
-    createTrackList: function( renderTo, trackConfigs ) {
-    	var that = this;
-
-        var trackPane = this.pane = dojo.create(
-            'div',
-            { id: 'trackPane',
-              style: {
-            	  width: '215px', // 'min-width': '200px' -- mdb: messes up resize
-            	  'background-color': 'rgb(242, 242, 242)'
-              }
+    _add_to_notebook_dialog: function(type, id, name) {
+    	var content = '<table><tr><td><label>Notebook:</label></td><td><select id="coge_notebook">';
+    	var notebooks = this._track_configs.filter(function(e) {
+    		return (e.coge.type && e.coge.type == 'notebook' && e.coge.id != 0);
+    	});
+    	notebooks.sort();
+    	for (var i=0; i<notebooks.length; i++)
+    		content += '<option value="' + notebooks[i].coge.id + '">' + notebooks[i].coge.name + '</option>';
+    	content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="var s=dojo.byId(\'coge_notebook\');coge_track_list._add_to_notebook([{type:\'' + type + '\',id:' + id + '}],s.options[s.selectedIndex].value,true);">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.hide()">Cancel</button></div>';
+    	this._add_dialog = new Dialog({
+            title: 'Add to Notebook ' + name,
+            onHide: function() {
+            	this.destroyRecursive();
+            	coge_track_list._add_dialog = null;
             },
-            renderTo
-        );
-
-        // create text filter input
-        this._createTextFilter(trackConfigs, trackPane);
-        this._updateTextFilterControl();
-
-        // splitter on right side
-        var trackWidget = new ContentPane({region: "right", splitter: true}, trackPane);
-
-        this.div = dojo.create(
-            'div',
-            { id: 'tracksAvail',
-              className: 'container handles',
-              style: { width: '100%', height: '100%', overflowX: 'hidden', overflowY: 'auto' },
-              //innerHTML: '<h2>Available Tracks</h2>',
-              //onclick: dojo.hitch( this, function() { this.trackListWidget.selectNone(); } )
-            },
-            trackPane
-        );
-
-        // create a DnD source for sequence
-        this.trackListWidgets = [];
-        this.trackListWidgets.push(
-        	this._createDnDSource(1).insertNodes(
-            	false,
-            	trackConfigs.filter( function(e) {
-            		var type = e.coge.type;
-            		return ( !type ||
-            				  type == 'sequence' ||
-            				  type == 'gc_content' );
-            	})
-            )
-        );
-
-        // create a DnD source for each feature group
-        var feature_groups = trackConfigs.filter( function(fg) {
-    		return (fg.coge.type && fg.coge.type == 'feature_group');
-    	});
-    	var features = trackConfigs.filter( function(f) {
-    		return (f.coge.type && f.coge.type == 'features');
-    	});
-    	feature_groups.forEach( function(fg) {
-    		that.trackListWidgets.push(
-    			that._createDnDSource().insertNodes(
-                	false,
-                	[fg].concat(features.filter( function(f) {
-                		return f.coge.dataset_id == fg.coge.id;
-                	}))
-                )
-            );
-    	});
-
-        // create a DnD source for each notebook
-        var notebooks = trackConfigs.filter( function(e) {
-    		return (e.coge.type && e.coge.type == 'notebook');
-    	});
-    	var experiments = trackConfigs.filter( function(e) {
-    		return (e.coge.type && e.coge.type == 'experiment');
-    	});
-        notebooks.forEach( function(n) {
-    		that.trackListWidgets.push(
-    			that._createDnDSource().insertNodes(
-                	false,
-                	[n].concat(experiments.filter( function(e) {
-                		return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, n.coge.id) != -1;
-                	}))
-                )
-            );
-    	});
-
-        // Initialize text filter label
-        this._textFilter();
-
-        return this.div;
+            content: content
+        });
+    	this._add_dialog.show();
     },
 
-    _createDnDSource: function(isStatic) {
-        var div = dojo.create( 'div', {}, this.div );
+    // ----------------------------------------------------------------
+    // currently just for adding search tracks
 
-    	return new dndSource( // modifies div to be DnD-able
-            div,
-            {
-                accept: ["track"], // accepts only tracks
-                withHandles: false,
-                copyOnly: true,
-                checkAcceptance: function( source, nodes ) {
-                	console.log('checkAcceptance');
-                	if (isStatic)
-                		return false;
-                	var target = this;
-                	var nbNode = target.getAllNodes().shift();
-                	var nbConfig = target.map[nbNode.id].data.coge;
-                	return ( nbConfig.editable && !hasLabelNode(div, nodes) );
-                },
-                creator: dojo.hitch( this, function( trackConfig, hint ) {
-                	//console.log('creator ' + trackConfig.coge.id);
-
-                	var node = this._createLabelNode( trackConfig );
-                	var coge = trackConfig.coge;
-
-                	node.id = coge.type + coge.id;
-
-                    if (coge.classes) {
-                    	dojo.addClass( node, coge.classes.join(' ') );
-                    }
-
-                    this._setTrackTitle(trackConfig, node);
-
-                    dojo.connect( node, "click", dojo.hitch(this, function(e) {
-                    	//console.log('click ' + node.id + ' ' + e.shiftKey);
-                    	if (dojo.hasClass(node, 'selected')) {
-                    		this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
-                    	}
-                    	else {
-                    		this.browser.publish( '/jbrowse/v1/v/tracks/show', [trackConfig] );
-                    	}
-                    }));
-
-                    // in the list, wrap the list item in a container for border drag-insertion-point monkeying
-                    var container = dojo.create( 'div',
-	                    {  	className: 'coge-tracklist-container',
-	                    	style: { 'white-space': 'nowrap', 'overflow-x': 'hidden' }
-	                    });
-
-                    // Add expand/collapse button
-                    if ( dojo.hasClass( node, 'coge-tracklist-collapsible') ) { // parent
-	                	var button = dom.create( // FIXME: how to put image in div using css?
-	                			'img',
-	                    	    {	className: (coge.collapsed ? 'coge-tracklist-expandIcon' : 'coge-tracklist-collapseIcon'),
-	                				src: (coge.collapsed ? 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png' : 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png'),
-	                				style: { float: 'right', padding: '5px' }
-	                    	    },
-	                    	    container
-	                    	);
-	                	dojo.connect( button, "click", dojo.hitch(this, function() {
-	                		dojo.toggleClass(button, 'coge-tracklist-expandIcon coge-tracklist-collapseIcon');
-	                        if (dojo.hasClass(button, 'coge-tracklist-expandIcon')) {
-	                        	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png';
-	                        	// Hide child nodes
-	                        	var children = div.children;
-	                        	for (var i = 1;  i < children.length;  i++) {
-		                            dojo.addClass(children[i], 'collapsed');
-	                        	}
-	                        }
-	                        else {
-	                        	button.src = 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png';
-	                        	// Show child nodes
-	                        	var children = div.children;
-	                        	for (var i = 1;  i < children.length;  i++) {
-		                            dojo.removeClass(children[i], 'collapsed');
-	                        	}
-	                        }
-	                    }));
-                    }
-                    else if (coge.collapsed) { // child
-                    	dojo.addClass(container, 'collapsed');
-                    }
-
-                    // Add delete button
-                    if ( dojo.hasClass( node, 'coge-tracklist-deletable' ) ) {
-	            		var deleteButton = dom.create( // FIXME: how to put image in div using css?
-	                			'img',
-	                    	    {	title: 'Remove experiment',
-	                				src: 'js/jbrowse/plugins/CoGe/img/remove-icon.png',
-	                				style: { // FIXME: move into css
-	                					visibility: 'hidden',
-	                					float: 'right', padding: '3px', width: '14px', height: '14px' }
-	                    	    },
-	                    	    container
-	                    	);
-	            		dojo.connect( deleteButton, "click", dojo.hitch(this, function(e) {
-	            			// Determine if node is inside a notebook
-	            			if (coge.type == 'experiment') {
-		            			var notebookName;
-		                    	var notebookId;
-		                		dojo.query('.coge-notebook', div).forEach( function(n) {
-		                			notebookName = n.id;
-		                			notebookId = notebookName.match(/\d+/);
-		                		});
-		                		if (notebookId) { // it's inside a notebook
-		                			dojo.xhrPut({ // FIXME: make webservice for this
-			      					    url: "NotebookView.pl",
-			    					    putData: {
-			    					    	fname: 'remove_list_item',
-			    					    	lid: notebookId,
-			    					    	item_type: '3', // FIXME: hardcoded type to experiment
-			    					    	item_id: coge.id
-			    					    },
-			    					    handleAs: "json",
-			    					    load: dojo.hitch(this, function(data) {
-			    					    	if (!data) {
-			    					    		new InfoDialog({
-			    				                            title: 'Permission denied',
-			    				                            content: "You don't have permission to do that."
-			    				                        }).show();
-			    					    		return;
-			    					    	}
-
-			    					    	// Remove node from tracklist
-			    					    	div.removeChild(container);
-			    					    	// Reload track in browser
-			    		                	this.browser.view.tracks.forEach( function(track) {
-			    		                		if (track.config.label == notebookName) {
-			    		                			track.changed();
-//			    		                			track.config.coge.count--;
-//			    		                			this._setTrackTitle(track.config,);
-			    		                		}
-			    		                	});
-			    					    })
-								    });
-		                			return;
-		                		}
-	            			}
-
-                			// Else, it's not inside a notebook
-                			new ConfirmDialog({
-                    				title: 'Delete ' + coge.type + '?',
-                    				message: 'Really delete this ' + coge.type + '?  Deleting it will move it to the trash.'
-                				})
-                                .show( dojo.hitch(this, function( confirmed ) {
-                                     if( confirmed ) {
-             					    	if (coge.type == 'experiment') {
-                                 			// Update database
-	                             			dojo.xhrPut({ // FIXME: make webservice for this
-	         		      					    url: "Experiments.pl",
-	         		    					    putData: {
-	         		    					    	fname: 'delete_experiment',
-	         		    					    	eid: coge.id
-	         		    					    },
-	         		    					    handleAs: "json",
-	         		    					    load: dojo.hitch(this, function(data) {
-	         		    					    	if (!data) {
-	         		    					    		new InfoDialog({
-					    				                            title: 'Permission denied',
-					    				                            content: "You don't have permission to do that."
-					    				                        }).show();
-					    					    		return;
-					    					    	}
-	         		    					    	// Remove node from tracklist
-	         		    					    	dojo.query( '.coge-tracklist-label', this.div )
-	         		    					        	.forEach( function( labelNode ) {
-	         		    					        		if (labelNode.id == node.id) {
-	         		    					        			labelNode.parentNode.parentNode.removeChild(labelNode.parentNode);
-	         		    					        		}
-	         		    					        	});
-	         		    					    	// Remove track in browser
-	         		    					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
-	         		    					   })
-	         							    });
-             					    	}
-             					    	else if (coge.type == 'notebook') {
-             					    		// Update database
-             					    		dojo.xhrPut({ // FIXME: make webservice for this
-	         		      					    url: "NotebookView.pl",
-	         		    					    putData: {
-	         		    					    	fname: 'delete_list',
-	         		    					    	lid: coge.id
-	         		    					    },
-	         		    					    handleAs: "json",
-	         		    					    load: dojo.hitch(this, function(data) {
-	         		    					    	if (!data) {
-	         		    					    		new InfoDialog({
-					    				                            title: 'Permission denied',
-					    				                            content: "You don't have permission to do that."
-					    				                        }).show();
-					    					    		return;
-					    					    	}
-	         		    					    	// Remove all notebook nodes from tracklist
-	                                     			div.parentNode.removeChild(div);
-	         		    					    	// Remove track in browser
-	         		    					    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [trackConfig] );
-	         		    					   })
-	         							    });
-             					    	}
-                                     }
-                                 }));
-	                    }));
-
-	            		// Show/hide button based on hover
-	            		dojo.connect( container, "onmouseenter", function(e) {
-	            			dojo.style(deleteButton, 'visibility', 'visible');
-	                    });
-	            		dojo.connect( container, "onmouseleave", function(e) {
-	            			dojo.style(deleteButton, 'visibility', 'hidden');
-	                    });
-                    }
-
-                    // Add info button
-                    if ( dojo.hasClass( node, 'coge-tracklist-info' ) ) {
-	            		var infoButton = dom.create( // FIXME: how to put image in div using css?
-	                			'img',
-	                    	    {	title: 'Open info page',
-	                				src: 'js/jbrowse/plugins/CoGe/img/info-icon.png',
-	                				style: {
-	                					visibility: 'hidden',
-	                					float: 'right', padding: '3px', width: '14px', height: '14px' }
-	                    	    },
-	                    	    container
-	                    	);
-
-	            		dojo.connect( infoButton, "click", dojo.hitch(this, function() {
-	            			// Open dialog (copied from BlockBased.js)
-	            			var iframeDims = function() {
-	                            var d = domGeom.position( this.browser.container );
-	                            return { h: Math.round(d.h * 0.8), w: Math.round( d.w * 0.8 ) };
-	                        }.call(this);
-
-	                        var dialog = new dijit.Dialog( { title: capitalize(coge.type) + ' View' } );
-
-	                        var iframe = dojo.create(
-	                            'iframe', {
-	                                tabindex: "0",
-	                                width: iframeDims.w,
-	                                height: iframeDims.h,
-	                                style: { border: 'none' },
-	                                src: trackConfig.coge.onClick
-	                            });
-
-	                        dialog.set( 'content', iframe );
-
-	                        var updateIframeSize = function() {
-	                            // hitch a ride on the dialog box's
-	                            // layout function, which is called on
-	                            // initial display, and when the window
-	                            // is resized, to keep the iframe
-	                            // sized to fit exactly in it.
-	                            var cDims = domGeom.position( dialog.containerNode );
-	                            var width  = cDims.w;
-	                            var height = cDims.h - domGeom.position(dialog.titleBar).h;
-	                            iframe.width = width;
-	                            iframe.height = height;
-	                        };
-	                        aspect.after( dialog, 'layout', updateIframeSize );
-	                        aspect.after( dialog, 'show', updateIframeSize );
-
-	                        dialog.show();
-	                    }));
-
-	            		// Show/hide button based on hover
-	            		dojo.connect( container, "onmouseenter", function(e) {
-	            			dojo.style(infoButton, 'visibility', 'visible');
-	                    });
-	            		dojo.connect( container, "onmouseleave", function(e) {
-	            			dojo.style(infoButton, 'visibility', 'hidden');
-	                    });
-                    }
-
-                    container.appendChild(node);
-                    container.id = node.id;//dojo.dnd.getUniqueId();
-                    return {node: container, data: trackConfig, type: ["track", coge.type]};
-                })
-            }
-        );
+    addTracks: function(track_configs) {
+    	var before = this.div.firstChild; // going to insert before Sequence
+    	track_configs.forEach(function(track_config) {
+    		this.div.insertBefore(this._new_track(track_config), before);
+    	}, this);
     },
 
-    _setTrackTitle: function( config, node) {
-    	var coge = config.coge;
-    	var name = config.key;
-    	if (coge.type == 'notebook') {
-        	node.innerHTML = '<img src="picts/notebook-icon-small.png"/>' + ' ';
-//        	name += ' (' + coge.count + ')';
+    // ----------------------------------------------------------------
+
+    _build_title: function(track_config) {
+    	var coge = track_config.coge;
+    	var title = this._capitalize(coge.type) + " id" + coge.id;
+    	if (coge.name)
+    		title += "\nName: " + coge.name;
+    	if (coge.description)
+    		title += "\nDescription: " + coge.description;
+    	if (coge.annotations)
+    		title += coge.annotations;
+    	return title;
+    },
+
+    // ----------------------------------------------------------------
+
+    _capitalize: function (string) {
+        return string.charAt(0).toUpperCase() + string.substring(1);
+    },
+
+    // ----------------------------------------------------------------
+
+    _collapse: function(container) {
+	    container.config.coge.expanded = false;
+    	container.firstChild.src = 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png';
+    	var n = container.nextSibling;
+    	while (n) {
+    		n.style.display = 'none';
+    		n = n.nextSibling;
     	}
-    	else if (coge.type == 'experiment') {
-    		node.innerHTML = '<img src="picts/testtube-icon-small.png"/>' + ' ';
-    	}
-    	node.innerHTML += '<img height="19" width="0" style="visibility:hidden;"/>'; // force min height
-    	node.innerHTML += '<span class="tracklist-text" style="white-space:nowrap">' + name + '</span>';
     },
 
-    _createTextFilter: function( trackConfigs, parent ) {
-        this.textFilterDiv = dom.create( 'div', {
-            className: 'coge-textfilter', //className: 'textfilter', // replace jbrowse styling
-            style:
-	            { width: '95%',
-	              position: 'relative',
-	              overflow: 'hidden',
-	              'border-bottom': '1px solid lightgray'
-	            }
-        }, parent); //this.div );
+    // ----------------------------------------------------------------
 
-		this.textFilterInput = dom.create(
-			'input',
-			{	type: 'text',
-				style: { cursor: 'text', paddingLeft: '18px', height: '20px', width: '75%' },
-				placeholder: 'filter by text',
-				onkeypress: dojo.hitch( this, function( evt ) {
-					if( this.textFilterTimeout )
-						window.clearTimeout( this.textFilterTimeout );
-					this.textFilterTimeout = window.setTimeout(
-						dojo.hitch( this, function() {
-						      this._updateTextFilterControl();
-						      this._textFilter( this.textFilterInput.value, this.filteredNodes );
-						  }),
-						500
-					);
-					this._updateTextFilterControl();
+    _create_notebook: function() {
+	  	var name = dojo.getAttr('notebook_name', 'value');
+	  	var description = dojo.getAttr('notebook_description', 'value');
+	  	var restricted = dojo.getAttr('notebook_restricted', 'checked');
+	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+	  	dojo.xhrPut({
+	  		url: coge_api + '/notebooks?username='+un,
+	  		postData: JSON.stringify({
+	  			metadata: {
+	  				name: name,
+	  				description: description,
+	  				restricted: restricted,
+	  				type: 'experiment'
+	  			}
+	  		}),
+	  		handleAs: 'json',
+	  		load: dojo.hitch(this, function(data) {
+	  			if (data.error)
+	  				coge.error('Create Notebook', data);
+	  			else {
+	  				var config = this._new_notebook_config(data.id, name, description, restricted);
+	  				this._track_configs.push(config);
+	  				this._filter_tracks();
+	  				this.div.scrollTop = this.div.scrollHeight;
+	  				this._create_notebook_dialog.hide();
+	  			}
+	  		}),
+	  		error: function(data) {
+	  			coge.error('Create Notebook', data);
+	  		}
+	  	});
+    },
 
-					evt.stopPropagation();
-				})
-			},
-			dom.create('div',{ style: 'overflow: show;' }, this.textFilterDiv )
-		);
+    // ----------------------------------------------------------------
 
-		dom.create('div', {
+    _create_text_filter: function() {
+        var div = dom.create( 'div', { className: 'coge-textfilter' }, this.pane);
+
+        var d = dom.create('div',{ style: 'display:inline;overflow:show;position:relative' }, div );
+		this.text_filter_input = dom.create('input', {
+			className: 'coge-filter-input',
+			type: 'text',
+			placeholder: 'filter by text',
+			onkeypress: dojo.hitch(this, function( evt ) {
+				if (this._text_filter_timeout)
+					window.clearTimeout( this._text_filter_timeout );
+				this._text_filter_timeout = window.setTimeout(
+					dojo.hitch( this, function() {
+					      this._update_text_filter_control();
+					      this._filter_tracks(this.text_filter_input.value);
+					  }),
+					500
+				);
+				this._update_text_filter_control();
+				evt.stopPropagation();
+			})
+		}, d);
+		this.text_filter_cancel = dom.create('div', {
 			className: 'jbrowseIconCancel',
+			id: 'text_filter_cancel',
 			onclick: dojo.hitch( this, function() {
-				this._clearTextFilterControl();
-				this._textFilter( this.textFilterInput.value, this.filteredNodes );
-			}),
-			style: { // FIXME move into css
-				cursor: 'pointer', position: 'absolute', left: '4px', top: '4px' }
-		}, this.textFilterDiv );
+		        this.text_filter_input.value = '';
+		        this._update_text_filter_control();
+				this._filter_tracks();
+			})
+		}, d );
 
-//		this._createDropDownMenu();
-
-		dom.create('img', { // FIXME: style with css icon instead of img
-			title: 'Add all experiments',
-			src: 'js/jbrowse/plugins/CoGe/img/plus-icon.png',
-			style: { cursor: 'pointer', position: 'absolute', right: '28px', top: '4px', width: '14px', height: '14px' },
-			onclick: dojo.hitch( this, function() {
-				var configs = getVisibleConfigs(this.div, trackConfigs);
-				if (configs.length) {
-					if (configs.length > this.maxTracksToAdd) {
+		var menu_button = dom.create('div', {id: 'coge_menu_button'}, div);
+        var menu = new Menu();
+        menu.addChild(new MenuItem({
+            label: "Add All Tracks Shown",
+            onClick: dojo.hitch(this, function() {
+            	var visible_configs = [];
+            	dojo.query('.coge-track', this.div).forEach(function(container) {
+           	    	if (container.style.display != 'none')
+           	    		visible_configs.push(container.config);
+            	});
+				if (visible_configs.length) {
+					if (visible_configs.length > this.maxTracksToAdd) {
 					    var myDialog = new dijit.Dialog({
 					        title: "Warning",
 					        content: "There are too many tracks to add (>" + this.maxTracksToAdd + "), please filter them further.",
@@ -619,302 +267,790 @@ return declare( 'JBrowse.View.TrackList.CoGe', null,
 					    myDialog.show();
 					}
 					else {
-						this.browser.publish( '/jbrowse/v1/v/tracks/show', configs );
+						this.browser.publish('/jbrowse/v1/v/tracks/show', visible_configs);
 					}
 				}
 			})
-		}, this.textFilterDiv );
+        }));
+        menu.addChild(new MenuItem({
+            label: "Clear All Tracks",
+            onClick: dojo.hitch(this, function() {
+            	var visible_configs = [];
+	        	for (var i=0;  i<this._track_configs.length; i++)
+	        		if (this._track_configs[i].label)
+	        			visible_configs.push(this._track_configs[i]);
+	        	if (visible_configs.length)
+        			this.browser.publish('/jbrowse/v1/v/tracks/hide', visible_configs);
+			})
+        }));
+        menu.addChild(new MenuSeparator());
+        menu.addChild(new MenuItem({
+            label: "Create New Notebook",
+            onClick: dojo.hitch(this, function() {
+            	this._create_notebook_dialog = new Dialog({
+                    title: 'Create New Notebook',
+                    content: '<table><tr><td><label>Name:</label></td><td><input id="notebook_name"></td></tr><tr><td><label>Description:</label></td><td><input id="notebook_description"></td></tr><tr><td><label>Restricted:</label></td><td><input type="checkbox" checked="checked" id="notebook_restricted"></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook_dialog.hide()">Cancel</button></div>',
+                    onHide: function() {
+                    	this.destroyRecursive();
+                    	coge_track_list._create_notebook_dialog = null;
+                    },
+                    style: 'width: 300px'
+                });
+            	this._create_notebook_dialog.show();
+            })
+        }));
+        menu.addChild(new MenuSeparator());
+        menu.addChild(new MenuItem({
+            label: 'Move Track Selector to ' + (dijit.byId('track_pane').get('region') == 'right' ? 'Left' : 'Right') + ' Side',
+            onClick: function() {
+            	var bc = dijit.byId('jbrowse');
+            	var pane = dijit.byId('track_pane');
+            	bc.removeChild(pane);
+            	var region = pane.get('region');
+            	this.set('label', 'Move Track Selector to ' + (region == 'right' ? 'Right' : 'Left') + ' Side');
+            	localStorage.setItem("track-selector-side", region == 'right' ? 'left' : 'right');
+            	pane.set('region', region == 'right' ? 'left' : 'right');
+            	bc.addChild(pane);
+            	
+            }
+        }));
+        var btn = new DropDownButton({ dropDown: menu }, menu_button);
+        menu.startup();
+        btn.startup();
 
-		dom.create('img', { // FIXME: style with css icon instead of img
-			title: 'Clear all experiments',
-			src: 'js/jbrowse/plugins/CoGe/img/clear-icon.png',
-			onclick: dojo.hitch( this, function() {
-				var configs = getVisibleConfigs(this.div, trackConfigs);
-				if (configs.length) {
-					this.browser.publish( '/jbrowse/v1/v/tracks/hide', configs );
-				}
-			}),
-			style: { cursor: 'pointer', position: 'absolute', right: '8px', top: '4px', width: '14px', height: '14px' }
-		}, this.textFilterDiv );
-
-		dom.create('div', {
-			style: { clear: 'both' }
-		}, this.textFilterDiv );
-
-		this.textFilterLabel = dom.create('div', {
-			innerHTML: '? tracks shown',
-			style: { color: 'gray', 'text-shadow': '1px 1px white', 'padding-left' : '20px' }
-		}, this.textFilterDiv );
+		this._tracks_shown = dom.create('div', { className: 'coge-tracks-shown' }, div );
     },
 
-//    _createDropDownMenu: function() {
-//    	var menu = new DropDownMenu({ style: "display: none;"});
-//	    var menuItem1 = new MenuItem({
-//	        label: "Save",
-//	        iconClass:"dijitEditorIcon dijitEditorIconSave",
-//	        onClick: function(){ alert('save'); }
-//	    });
-//	    menu.addChild(menuItem1);
-//
-//	    var menuItem2 = new MenuItem({
-//	        label: "Cut",
-//	        iconClass:"dijitEditorIcon dijitEditorIconCut",
-//	        onClick: function(){ alert('cut'); }
-//	    });
-//	    menu.addChild(menuItem2);
-//
-//	    var button = new DropDownButton({
-//	        label: "hello!",
-//	        name: "programmatic2",
-//	        dropDown: menu,
-//	        id: "progButton"
-//	    });
-//	    this.div.appendChild(button.domNode);
-//    },
+    // ----------------------------------------------------------------
 
-    _createLabelNode: function( trackConfig ) {
-    	var coge = trackConfig.coge;
-    	return dojo.create(
-    				'div',
-	                { className: 'coge-tracklist-label coge-' + coge.type,
-	                  title: capitalize(coge.type) + " id" + coge.id +
-	                  		 (coge.name ? "\nName: " + coge.name : '') +
-	                  		 (coge.description ? "\nDescription: " + coge.description : '') +
-	                  		 (coge.annotations ?
-	                  				"\n" +
-	                  				 coge.annotations
-		                  				.map(function(a) {
-	                  						return a.type + ': ' + a.text
-	                  					})
-	                  					.join("\n")
-	                  				: '')
-	                }
-	        	);
+    _create_track_list: function(parent) {
+        this.pane = dojo.create('div', { id: 'track_pane' }, parent);
+        var side = 'right';
+        if (localStorage) {
+        	var s = localStorage.getItem('track-selector-side');
+        	if (s)
+        		side = s;
+        }
+        new ContentPane({region: side, splitter: true}, this.pane);
+        this._create_text_filter(this.pane);
+        this._update_text_filter_control();
+        this.div = dojo.create('div', { id: 'coge-tracks' }, this.pane);
+
+        this._track_configs.filter(function(tc) {
+    		var type = tc.coge.type;
+    		return (!type || type == 'sequence' || type == 'gc_content');
+    	}).forEach(function(t) {
+    		this.div.appendChild(this._new_track(t));
+    	}, this);
+
+        var feature_groups = this._track_configs.filter(function(fg) {
+    		return (fg.coge.type && fg.coge.type == 'feature_group');
+    	});
+    	var features = this._track_configs.filter(function(f) {
+    		return (f.coge.type && f.coge.type == 'features');
+    	});
+    	feature_groups.forEach(function(fg) {
+    		var d = dojo.create('div', null, this.div);
+    		d.appendChild(this._new_track(fg));
+        	features.filter(function(f) {
+        		return f.coge.dataset_id == fg.coge.id;
+        	}).forEach(function(t) {
+        		d.appendChild(this._new_track(t, true));
+        	}, this);
+    	}, this);
+
+        // create a DnD source for each notebook
+        var notebooks = this._track_configs.filter(function(e) {
+    		return (e.coge.type && e.coge.type == 'notebook');
+    	});
+    	var experiments = this._track_configs.filter(function(e) {
+    		return (e.coge.type && e.coge.type == 'experiment');
+    	});
+        notebooks.forEach(function(n) {
+        	this._new_notebook_source().insertNodes(
+            	false,
+            	[n].concat(experiments.filter(function(e) {
+            		return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, n.coge.id) != -1;
+            	}))
+            );
+    	}, this);
+
+        // show all tracks
+        this._filter_tracks();
     },
 
-    _textFilter: function( text, filteredNodes ) {
-    	// Filter tracks
-        if( text && /\S/.test(text) ) { // filter on text
+    // ----------------------------------------------------------------
+
+    _delete: function(track_config, type, id, container) {
+    	var Type = this._capitalize(type);
+    	var message = 'Delete this ' + Type + '?  Deleting it will move it to the trash.';
+    	if (type == 'notebook')
+    		message += '<br>Note: Experiments in this notebook will NOT be deleted.'
+    	coge.confirm('Delete ' + Type, message, dojo.hitch(this, function() {
+	    	if (type == 'experiment') {
+     			dojo.xhrPut({ // FIXME: make webservice for this
+				    url: "Experiments.pl",
+				    putData: {
+				    	fname: 'delete_experiment',
+				    	eid: id
+				    },
+				    handleAs: "json",
+				    load: dojo.hitch(this, function(data) {
+				    	if (!data) {
+				    		coge.error('Permission denied', "You don't have permission to do that.");
+				    		return;
+				    	}
+				    	dojo.destroy(container);
+				    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
+				   })
+			    });
+	    	} else if (type == 'notebook') {
+	    		dojo.xhrPut({ // FIXME: make webservice for this
+				    url: "NotebookView.pl",
+				    putData: {
+				    	fname: 'delete_list',
+				    	lid: id
+				    },
+				    handleAs: "json",
+				    load: dojo.hitch(this, function(data) {
+				    	if (!data) {
+				    		coge.error('Permission denied', "You don't have permission to do that.");
+				    		return;
+				    	}
+				    	dojo.destroy(container.parentNode);
+				    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
+				   })
+			    });
+	    	}
+    	}));
+	},
+
+    // ----------------------------------------------------------------
+    // are we supposed to delete the experiment(s) from the database? for now just acknowledge their removal from the view
+
+    deleteTracks: function(track_configs) {
+    	this.setTracksInactive(track_configs);
+    },
+
+    // ----------------------------------------------------------------
+
+    _expand: function(container) {
+    	container.config.coge.expanded = true;
+	    container.firstChild.src = 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png';
+		var n = container.nextSibling;
+		while (n) {
+			n.style.display = '';
+			n = n.nextSibling;
+		}
+    },
+
+    // ----------------------------------------------------------------
+
+    _filter_tracks: function( text ) {
+        if (text && /\S/.test(text)) { // filter on text
             text = text.toLowerCase();
-            dojo.query( '.tracklist-text', this.div )
-                .forEach( function( labelNode, i ) {
-                	var container = labelNode.parentNode.parentNode;
-                    if( labelNode.innerHTML.toLowerCase().indexOf( text ) != -1 ) {
-                    	if (dojo.query('.coge-tracklist-expandIcon', labelNode.parentNode.parentNode)) {
-	                        dojo.removeClass( container, 'collapsed');
-	                        delete filteredNodes[container.id];
-                    	}
-                    }
-                    else if( !dojo.hasClass( container, 'collapsed' ) ) { // check if already hidden in collapsed notebook
-                        dojo.addClass( container, 'collapsed');
-                        filteredNodes[container.id] = container;
-                    }
-                 });
+        	var already_shown = {};
+            this._traverse_tracks(function(container) {
+            	var t = container.lastChild.title ? container.lastChild.title : container.lastChild.innerHTML;
+             	if (t.toLowerCase().indexOf(text) != -1) {
+             		if (!already_shown[container.id]) {
+                		container.style.display = '';
+             			already_shown[container.id] = true;
+             		} else
+                		container.style.display = 'none';
+             	} else
+            		container.style.display = 'none';
+            });
+        } else { // empty string, show all
+        	var expanded = true;
+        	this._traverse_tracks(function(container) {
+        		if (container.config.coge.collapsible) {
+        			expanded = container.config.coge.expanded;
+        			container.style.display = '';
+        		} else
+        			container.style.display = expanded ? '' : 'none';
+            });
         }
-        else { // empty string, show all
-        	for( var id in filteredNodes ) {
-        		dojo.removeClass(filteredNodes[id], 'collapsed');
-        	}
-        	filteredNodes = {};
-        }
-
-        // Update filter label
-        var count = dojo.query( '.coge-tracklist-container:not(.collapsed)', this.div ).length;
-        this.textFilterLabel.innerHTML = count + ' track' + (count == 1 ? '' : 's') + ' shown';
+        this._update_tracks_shown();
     },
 
-   /**
-    * Clear the text filter control input.
-    * @private
-    */
-    _clearTextFilterControl: function() {
-        this.textFilterInput.value = '';
-        this._updateTextFilterControl();
+    // ----------------------------------------------------------------
+
+    get_search_config: function(eid) {
+    	var n = this.div.firstChild;
+    	while (n && dojo.hasClass(n, 'coge-track')) {
+			if (n.config.coge.id == eid)
+				return n.config;
+    		n = n.nextSibling;
+    	}
+    	return null;
     },
+
+    // ----------------------------------------------------------------
+
+    _get_track_color: function(container) {
+		var id = container.config.coge.id;
+        var style = container.config.style;
+        var cookie = this.browser.cookie('track-' + container.config.track);
+        if (cookie)
+            style = dojo.fromJson(cookie);
+        if (style.featureColor && style.featureColor[id])
+		    return style.featureColor[id];
+    	return coge.calc_color(id);
+    },
+
+    // ----------------------------------------------------------------
     /**
-     * Update the display of the text filter control based on whether
-     * it has any text in it.
-     * @private
-     */
-    _updateTextFilterControl: function() {
-        if( this.textFilterInput.value.length )
-            dojo.removeClass( this.textFilterDiv, 'dijitDisabled' );
-        else
-            dojo.addClass( this.textFilterDiv, 'dijitDisabled' );
-    },
+	 * Make the track selector invisible
+	 */
 
-    /**
-     * Given an array of track configs, update the track list to show
-     * that they are turned on.
-     */
-    setTracksActive: function( /**Array[Object]*/ trackConfigs ) {
-        var browser = this.browser;
-    	console.log('setTracksActive ');
-        dojo.query( '.coge-tracklist-label', this.div )
-	        .forEach( function( labelNode, i ) {
-	        	trackConfigs.forEach( function (trackConfig) {
-	        		var trackId = trackConfig.coge.type + trackConfig.coge.id;
-	        		if (labelNode.id == trackId) {
-	    				dojo.addClass(labelNode, 'selected');
-	        			if (dojo.hasClass(labelNode, 'coge-experiment')) {
-	        				var id = trackConfig.coge.id;
-                            var color;
-                            var style = trackConfig.style;
-                            var cookie = browser.cookie('track-' + trackConfig.track);
-
-                            if (cookie) {
-                                style = dojo.fromJson(cookie);
-                            }
-
-                            if (style.featureColor &&
-                                style.featureColor[id]) {
-	        				    color = style.featureColor[id];
-                            } else {
-	        				    color = getFeatureColor(id);
-                            }
-	        				dojo.style(labelNode, 'background', color);
-	        			}
-	        			else {
-	        				dojo.style(labelNode, 'background', 'lightgray');
-	        			}
-	        		}
-	        	});
-	        });
-    },
-
-    // mdb: unused now
-    deleteTracks: function( /**Array[Object]*/ trackConfigs ) { // mdb: unused now ...?
-//    	console.log('deleteTracks');
-//        // remove any tracks in our track list that are being set as visible
-//        array.forEach( trackConfigs || [], function( conf ) {
-//            var oldNode = this.inactiveTrackNodes[ conf.label ];
-//            if( ! oldNode )
-//                return;
-//            delete this.inactiveTrackNodes[ conf.label ];
-//
-//            if( oldNode.parentNode )
-//                oldNode.parentNode.removeChild( oldNode );
-//
-//            this.trackListWidget.delItem( oldNode.id );
-//        },this);
-    },
-
-    /**
-     * Given an array of track configs, update the track list to show
-     * that they are turned off.
-     */
-    setTracksInactive: function( /**Array[Object]*/ trackConfigs ) {
-    	console.log('setTracksInactive');
-        dojo.query( '.coge-tracklist-label', this.div )
-	        .forEach( function( labelNode, i ) {
-	        	trackConfigs.forEach(function (trackConfig) {
-	        		var trackId = trackConfig.coge.type + trackConfig.coge.id;
-	        		if (labelNode.id == trackId) {
-	    				dojo.style(labelNode, 'background', '');
-	        			dojo.removeClass(labelNode, 'selected');
-	        		}
-	        	});
-	        });
-
-        // remove any tracks in our track list that are being set as visible
-//        if( ! this.dndDrop ) {
-//            var n = this.trackListWidget.insertNodes( false, trackConfigs );
-//
-//            // blink the track(s) that we just turned off to make it
-//            // easier for users to tell where they went.
-//            // note that insertNodes will have put its html element in
-//            // inactivetracknodes
-//            this._blinkTracks( trackConfigs );
-//        }
-    },
-
-    _blinkTracks: function( trackConfigs ) {
-    	console.log('_blinkTracks');
-
-        // scroll the tracklist all the way to the bottom so we can see the blinking nodes
-//        this.trackListWidget.node.scrollTop = this.trackListWidget.node.scrollHeight;
-//
-//        array.forEach( trackConfigs, function(c) {
-//            var label = this.inactiveTrackNodes[c.label].firstChild;
-//            if( label ) {
-//                dojo.animateProperty({
-//                                         node: label,
-//                                         duration: 400,
-//                                         properties: {
-//                                             backgroundColor: { start: '#DEDEDE', end:  '#FFDE2B' }
-//                                         },
-//                                         easing: animationEasing.sine,
-//                                         repeat: 2,
-//                                         onEnd: function() {
-//                                             label.style.backgroundColor = null;
-//                                         }
-//                                     }).play();
-//            }
-//        },this);
-    },
-
-    /**
-     * Make the track selector visible.
-     * This does nothing for the Simple track selector, since it is always visible.
-     */
-    show: function() {
-    },
-
-    /**
-     * Make the track selector invisible.
-     * This does nothing for the Simple track selector, since it is always visible.
-     */
     hide: function() {
     },
 
+    // ----------------------------------------------------------------
+
+    _info: function(track_config, type) {
+        var dialog = new dijit.Dialog( { title: this._capitalize(type) + ' View' } );
+
+        var iframe = dojo.create(
+            'iframe', {
+                tabindex: "0",
+                width: $(window).width() * 0.8,
+                height: $(window).height() * 0.8,
+                style: { border: 'none' },
+                src: track_config.coge.onClick
+            });
+
+        dialog.set( 'content', iframe );
+
+        var updateIframeSize = function() {
+            // hitch a ride on the dialog box's
+            // layout function, which is called on
+            // initial display, and when the window
+            // is resized, to keep the iframe
+            // sized to fit exactly in it.
+            var cDims = domGeom.position( dialog.containerNode );
+            var width  = cDims.w;
+            var height = cDims.h - domGeom.position(dialog.titleBar).h;
+            iframe.width = width;
+            iframe.height = height;
+        };
+        aspect.after( dialog, 'layout', updateIframeSize );
+        aspect.after( dialog, 'show', updateIframeSize );
+
+        dialog.show();
+    },
+
+    // ----------------------------------------------------------------
+
+    _in_notebook(container)
+    {
+    	return container.parentNode.firstChild.lastChild.innerHTML != 'All Experiments';    	
+    },
+
+    // ----------------------------------------------------------------
+
+    _menu_popped_up: function () {
+    	var m = dojo.query('.dijitMenuPopup');
+    	if (m.length == 0)
+    		return false;
+    	var display = m.style('display');
+    	if (display instanceof Array) {
+    		if (display.some(function(d){return d != 'none';}))
+    			return true;
+    		return false;
+    	} else if (display == 'none')
+    		return false;
+    	return true;
+    },
+
+    // ----------------------------------------------------------------
+
+    _mouse_enter: function(track_config, node, container) {
+    	if (this._menu_popped_up())
+    		return;
+    	var b = dijit.byId('coge_track_menu_button');
+    	if (b)
+    		b.destroy();
+ 		this._menu_node = node;
+		this._menu_track_config = track_config;
+		var id = track_config.coge.id;
+		var type = track_config.coge.type;
+		var Type = this._capitalize(type);
+		var menu_button = dom.create('div', {id: 'coge_track_menu_button'}, container);
+        var menu = new Menu();
+        menu.addChild(new MenuItem({
+            label: 'Info',
+            onClick: dojo.hitch( this, function() {
+            	this._info(track_config, type);
+			})
+        }));
+        if (track_config.coge.editable) {
+            menu.addChild(new MenuItem({
+                label: 'Rename',
+                onClick: dojo.hitch( this, function() {
+                	this._rename_dialog(type, id, track_config.coge.name);
+    			})
+            }));
+            if (type == 'experiment') {
+                menu.addChild(new MenuItem({
+                    label: 'Add to Notebook',
+                    onClick: dojo.hitch( this, function() {
+                    	this._add_to_notebook_dialog(type, id, track_config.coge.name);
+        			})
+                }));
+            }
+            if (track_config.coge.notebooks && this._in_notebook(container)) {
+        		var notebook_node = container.parentNode.firstChild;                	
+        		var notebook_name = notebook_node.lastChild.innerHTML;
+                menu.addChild(new MenuItem({
+                    label: 'Remove from Notebook',
+                    onClick: dojo.hitch( this, function() {
+                    	if (notebook_name.substring(0, 2) == '® ')
+                    		notebook_name = notebook_name.substring(2);
+                    	this._remove_from_notebook_dialog(type, id, track_config.coge.name, notebook_node.id.substring(8), notebook_name);
+        			})
+                }));
+        	}
+            menu.addChild(new MenuItem({
+                label: 'Delete',
+                onClick: dojo.hitch( this, function() {
+                	this._delete(track_config, type, id, container);
+    			})
+            }));
+        }
+        var btn = new DropDownButton({ dropDown: menu }, menu_button);
+        menu.startup();
+        btn.startup();
+    },
+
+    // ----------------------------------------------------------------
+
+    _mouse_leave: function() {
+		if (!this._menu_popped_up()) {
+			var b = dijit.byId('coge_track_menu_button');
+			if (b)
+				b.destroy();
+		}
+	},
+
+    // ----------------------------------------------------------------
+
+    moveTracks: function( source, nodes, copy, target ) {
+    	if (source == target) // dropping in same place dragged from. should only happen in jbrowse track container
+    		return;
+    	var target_is_in_selector = target.node.firstChild.config;
+    	if (!target_is_in_selector) // dragging a track from the selector onto jbrowse's track container
+            this.browser.publish('/jbrowse/v1/v/tracks/show', nodes.map(function(n){ return source.map[n.id].data; }));
+        else {
+    		var items = [];
+    		nodes.forEach(function(node) {
+    			var n = target.node.firstChild;
+    			while (n.id != node.id)
+    				n = n.nextSibling;
+    			target.node.removeChild(n);
+    			target.node.appendChild(n);
+    			items.push({type: node.config.coge.type, id: node.config.coge.id});
+    		});
+    		this._add_to_notebook(items, target.node.firstChild.config.coge.id);
+		}
+    },
+
+    // ----------------------------------------------------------------
+
+    _new_notebook_config: function(id, name, description, restricted) {
+    	return {
+    		key: (restricted ? '&reg; ' : '') + name,
+    		baseUrl: api_base_url + '/experiment/notebook/' + id + '/',
+    		autocomplete: 'all',
+    		track: 'notebook' + id,
+    		label: 'notebook' + id,
+    		type: 'CoGe/View/Track/Wiggle/MultiXYPlot',
+    		storeClass: 'JBrowse/Store/SeqFeature/REST',
+    		style: { featureScale: 0.001 },
+    		showHoverScores: 1,
+    		coge: {
+    			id: id,
+    			type: 'notebook',
+    			collapsible: true,
+    			name: name,
+    			description: description,
+    			editable: true,
+    			experiments: null,
+    			onClick: 'NotebookView.pl?embed=1&lid=' + id,
+    			menuOptions: [{
+                    label: 'NotebookView',
+                    action: "function() { window.open( 'NotebookView.pl?lid=" + id + "' ); }"
+                }]
+    		}
+    	};
+    },
+
+    // ----------------------------------------------------------------
+
+    _new_notebook_source: function() {
+        var div = dojo.create( 'div', null, this.div );
+    	return new dndSource(div, {
+            accept: ["track"],
+            checkAcceptance: function(source, nodes) {
+            	for (var i=0; i<nodes.length; i++) {
+            		if (!nodes[i].config) // only accept experiments from the track selector (not from jbrowse's track container)
+            			return false;
+	            	if (nodes[i].config.coge.type == 'notebook') {
+	            		dojo.dnd.manager().stopDrag();
+	            		return false;
+	            	}
+            	}
+            	var container = this.node.firstChild;
+            	if (container.id == 'notebook0') // "All Experiments"
+            		return false;
+            	if (container.id == source.node.firstChild.id) // same notebook
+            		return false;
+            	if (!container.config.coge.editable)
+            		return false;
+            	for (var i=0; i<this.node.children.length; i++)
+            		if (this.node.children[i].id == nodes[0].id) // already has experiment
+            			return false;
+            	return true;
+            },
+            copyOnly: true,
+            creator: dojo.hitch(this, function(track_config, hint) {
+                return {node: this._new_track(track_config, track_config.coge.type == 'experiment'), data: track_config, type: ["track", track_config.coge.type]};
+            }),
+            delay: 2,
+            selfAccept: false
+        });
+    },
+
+    // ----------------------------------------------------------------
+
+    _new_track: function(track_config, hide) {
+    	var coge = track_config.coge;
+        var container = dojo.create( 'div', {
+        	className: 'coge-track',
+    		id: coge.type + coge.id,
+        });
+        container.config = track_config;
+    	var label = dojo.create('div', {
+			className: 'coge-track-label coge-' + coge.type,
+			title: this._build_title(track_config)
+        });
+        if (coge.type == 'experiment' || coge.type == 'features')
+        	dojo.addClass(label, 'coge-track-indented');
+
+        this._set_track_label(track_config, label);
+
+        dojo.connect(label, "click", dojo.hitch(this, function() {
+        	if (track_config.coge.selected)
+        		this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
+        	else
+        		this.browser.publish( '/jbrowse/v1/v/tracks/show', [track_config] );
+        }));
+
+        if (coge.type == 'experiment' || coge.type == 'notebook') {
+        	dojo.connect(container, "onmouseenter", dojo.hitch(this, function(){this._mouse_enter(track_config, label, container)}));
+        	dojo.connect(container, "onmouseleave", dojo.hitch(this, this._mouse_leave));
+        }
+        if (coge.collapsible)
+        	this._add_expander(container);
+        else if (hide)
+        	container.style.display = 'none';
+
+        container.appendChild(label);
+        return container;
+    },
+
+    // ----------------------------------------------------------------
+
+    _remove_from_notebook: function(type, id, notebook_id) {
+	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+	  	dojo.xhrPost({
+	  		url: coge_api + '/notebooks/' + notebook_id + '/items/remove?username='+un,
+	  		postData: JSON.stringify({
+	  			items: [{
+	  				type: type,
+	  				id, id
+	  			}]
+	  		}),
+	  		handleAs: 'json',
+	  		load: dojo.hitch(this, function(data) {
+	  			if (data.error)
+	  				coge.error('Remove Notebook Item', data);
+	  			else
+	  				dojo.destroy(this._menu_node.parentNode);
+	  		}),
+	  		error: function(data) {
+	  			coge.error('Remove Notebook Item', data);
+	  		}
+	  	});
+    },
+
+    // ----------------------------------------------------------------
+
+    _remove_from_notebook_dialog: function(type, id, name, notebook_id, notebook_name) {
+		coge.confirm(
+			'Remove ' + this._capitalize(type),
+			'Remove ' + type + ' "' + name + '" from notebook "' + notebook_name + '"?',
+			dojo.hitch(this, function(confirmed) {
+           		this._remove_from_notebook(type, id, notebook_id);
+			})
+		);
+    },
+
+    // ----------------------------------------------------------------
+
+    _rename: function (type, id, old_name) {
+	  	var name = dojo.getAttr('name', 'value');
+	  	if (name == old_name)
+	  		return;
+	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+	  	dojo.xhrPost({
+	  		url: coge_api + '/' + type + 's/' + id + '?username='+un,
+	  		postData: JSON.stringify({
+	  			metadata: {
+	  				name: name
+	  			}
+	  		}),
+	  		handleAs: 'json',
+	  		load: dojo.hitch(this, function(data) {
+	  			if (data.error)
+	  				coge.error('Rename ' + type, data);
+	  			else {
+	  				this._menu_track_config.coge.name = name;
+	  				var key = this._menu_track_config.key;
+	  				if (key.length > 6 && key.substring(0, 6) == '&reg; ') {
+	  					key = '&reg; ' + name;
+	  					old_name = '&reg; ' + old_name;
+	  				} else
+	  					key = name;
+	  				this._menu_track_config.key = key;
+	  				this._set_track_label(this._menu_track_config, this._menu_node);
+	  				this._track_changed(old_name, key);
+	  				this._rename_dialog.hide();
+	  			}
+	  		}),
+	  		error: function(data) {
+	  			coge.error('Rename ' + type, data);
+	  		}
+	  	});
+    },
+
+    // ----------------------------------------------------------------
+
+    _rename_dialog: function(type, id, name) {
+    	this._rename_dialog = new Dialog({
+            title: 'Rename ' + type,
+            content: '<table><tr><td><label>Name:</label></td><td><input id="name" value=' + JSON.stringify(name) + '></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._rename(\'' + type + '\',' + id + ',\'' + name.replace(/'/g, "\\'") + '\')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._rename_dialog.hide()">Cancel</button></div>',
+            onHide: function() {
+            	this.destroyRecursive();
+            	coge_track_list._rename_dialog = null;
+            },
+            style: "width: 300px"
+        });
+    	this._rename_dialog.show();
+    	var i = dojo.byId("name");
+    	i.setSelectionRange(0, i.value.length);
+    },
+
+    // ----------------------------------------------------------------
+
+    replaceTracks: function( track_configs ) { // mdb: unused now
+    	console.log('replaceTracks');
+    },
+
+    // ----------------------------------------------------------------
+
+    _set_track_label: function(track_config, node) {
+// var coge = track_config.coge;
+    	var name = track_config.key;
+// var html;
+// if (coge.type == 'notebook')
+// html = '<img src="picts/notebook-icon-small.png"/>' + ' ';
+// else if (coge.type == 'experiment')
+// html = '<img src="picts/testtube-icon-small.png"/>' + ' ';
+// html += '<img height="19" width="0" style="visibility:hidden;"/>'; // force
+// min height
+// html += '<span>' + name + '</span>';
+//    	if ((track_config.coge.type == 'experiment' || track_config.coge.type == 'notebook') && !track_config.coge.editable)
+//    		name += ' <span class="glyphicon glyphicon-ban-circle" style="font-size:smaller;margin-left:10px;" title="User may not modify"></span>';
+    	node.innerHTML = name;
+    	node.title = this._build_title(track_config);
+    },
+
+    // ----------------------------------------------------------------
+
+    _set_tracks_active: function(container, combined) {
+		var label_node = container.firstChild;
+		while (!dojo.hasClass(label_node, 'coge-track-label'))
+			label_node = label_node.nextSibling;
+    	if (!combined)
+    		container.config.coge.selected = true;
+		if (container.config.coge.type == 'experiment') {
+			if (combined)
+				dojo.create('div', { className: 'coge-circle', style: { backgroundColor: coge_track_list._get_track_color(container) } }, container, 'first');
+			else
+				dojo.style(label_node, 'background', coge_track_list._get_track_color(container));
+		} else if (container.config.coge.type == 'notebook') {
+			dojo.style(label_node, 'background', 'lightgray');
+			var experiment = container.nextSibling;
+			while (experiment) {
+				this.setTracksActive([experiment.config], true);
+				experiment = experiment.nextSibling;
+			}
+		} else
+			dojo.style(label_node, 'background', 'lightgray');
+    },
+
+    // ----------------------------------------------------------------
+
+    _set_tracks_inactive: function(container, combined) {
+    	if (combined) {
+    		dojo.destroy(container.firstChild);
+    		return;
+    	}
+		var label_node = container.firstChild;
+		while (!dojo.hasClass(label_node, 'coge-track-label'))
+			label_node = label_node.nextSibling;
+		container.config.coge.selected = false;
+		dojo.style(label_node, 'background', '');
+		if (container.config.coge.type == 'notebook') {
+			var experiment = container.nextSibling;
+			while (experiment) {
+				this.setTracksInactive([experiment.config], true);
+				experiment = experiment.nextSibling;
+			}
+		}
+    },
+
+    // ----------------------------------------------------------------
     /**
-     * Toggle visibility of this track selector.
-     * This does nothing for the Simple track selector, since it is always visible.
-     */
+	 * Given an array of track configs, update the track list to show that they
+	 * are turned on.
+	 */
+
+    setTracksActive: function(track_configs, combined) {
+    	track_configs.forEach(function(track_config) {
+    		coge_track_list._traverse_tracks(function(container) {
+    			if (container.id == track_config.coge.type + track_config.coge.id)
+    				coge_track_list._set_tracks_active(container, combined);
+    		});
+    	});
+    },
+
+    // ----------------------------------------------------------------
+    /**
+	 * Given an array of track configs, update the track list to show that they
+	 * are turned off.
+	 */
+
+    setTracksInactive: function(track_configs, combined) {
+    	var search_tracks = [];
+    	track_configs.forEach(function(track_config) {
+    		coge_track_list._traverse_tracks(function(container) {
+    			if (container.id == track_config.coge.type + track_config.coge.id)
+    				if (container.config.coge.search_track)
+    					search_tracks.push(container);
+    				else
+    					coge_track_list._set_tracks_inactive(container, combined);
+    		});
+    	});
+    	search_tracks.forEach(function(container) {
+    		coge_track_list.browser._deleteTrackConfigs([container.config]);
+    		dojo.destroy(container);
+    	});
+    },
+
+    // ----------------------------------------------------------------
+
+    /**
+	 * Make the track selector visible. This does nothing for the Simple track
+	 * selector, since it is always visible.
+	 */
+    show: function() {
+    },
+
+    // ----------------------------------------------------------------
+
+    /**
+	 * Toggle visibility of this track selector. This does nothing for the
+	 * Simple track selector, since it is always visible.
+	 */
     toggle: function() {
-    }
+    },
+    
+    // ----------------------------------------------------------------
 
-});
-});
+    _track_changed: function(key, new_key) {
+    	this.browser.view.tracks.forEach(function(track) {
+    		if (track.config.key == key) {
+    			if (new_key) {
+    				track.config.key = new_key;
+    				track.label.children[1].innerHTML = new_key;
+    			}
+    			track.changed();
+    		}
+    	});
+    },
 
-function hasLabelNode(div, nodes) {
-	var container;
+    // ----------------------------------------------------------------
+    // optionally skips Sequence, GC Content and Feature tracks
 
-	nodes.forEach( function(node) {
-		dojo.query( '#'+node.id+' > .coge-tracklist-label', div )
-		 	.forEach( function( labelNode ) {
-		 		if (labelNode.id == node.id) {
-		 			container = labelNode.parentNode;
-		 			return;
-		 		}
-		 	});
-	});
+    _traverse_tracks: function(f) {
+    	var n = this.div.firstChild;
+    	while (n && dojo.hasClass(n, 'coge-track')) {
+			f(n);
+    		n = n.nextSibling;
+    	}
+    	while (n) {
+    		var c = n.firstChild;
+    		while (c) {
+    			f(c);
+    			c = c.nextSibling;
+    		}
+    		n = n.nextSibling;
+    	}
+    },
 
-	return container;
-}
+    // ----------------------------------------------------------------
+    // show cancel button only when text filter has text
 
-function getVisibleConfigs(div, trackConfigs) {
-	var visibleConfigs = [];
-	dojo.query( '.coge-experiment, .coge-notebook', div ) // TODO: optimize this
-	    .forEach( function( labelNode ) {
-	    	if (!dojo.hasClass(labelNode.parentNode, 'collapsed')) {
-	        	for (var i = 0;  i < trackConfigs.length;  i++) {
-	        		var conf = trackConfigs[i];
-	        		var trackId = conf.coge.type + conf.coge.id;
-	        		if (labelNode.id == trackId) {
-	        			visibleConfigs.push(conf);
-	    				return;
-	        		}
-	        	}
+    _update_text_filter_control: function() {
+        if (this.text_filter_input.value.length)
+            dojo.setStyle(this.text_filter_cancel, 'display', 'flex');
+        else
+            dojo.setStyle(this.text_filter_cancel, 'display', 'none');
+    },
+
+    // ----------------------------------------------------------------
+
+    _update_tracks_shown: function() {
+    	var num_experiments = 0;
+    	var num_notebooks = 0;
+    	var total_experiments = 0;
+    	var total_notebooks = 0;
+    	var all = dojo.byId('notebook0');
+    	if (all) {
+	    	total_experiments = all.parentNode.children.length - 1;
+	    	var n = all.parentNode;
+	    	while (n) {
+	    		var c = n.firstChild;
+	    		while (c) {
+	    			if (c.config.coge.type == 'experiment') {
+	    	    		if (c.style.display != 'none')
+	    	    			++num_experiments;
+	     			} else {
+	    	    		if (c.style.display != 'none')
+	        				++num_notebooks;
+	       				++total_notebooks;
+	    			}
+	    			c = c.nextSibling;
+	    		}
+	    		n = n.nextSibling;
 	    	}
-	    });
-	return visibleConfigs;
-}
-
-function getFeatureColor(id) { //FIXME: dup'ed in MultiXYPlot.js
-	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16);
-}
-
-function capitalize( string ) { //FIXME: doesn't go here, extend String class instead
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
+    	}
+        this._tracks_shown.innerHTML =
+        	Math.min(num_experiments, total_experiments) + ' of ' + total_experiments + ' experiment' + (total_experiments == 1 ? '' : 's') + ' shown<br>' +
+        	num_notebooks + ' of ' + total_notebooks + ' notebook' + (total_notebooks == 1 ? '' : 's') + ' shown';
+    }
+});
+});

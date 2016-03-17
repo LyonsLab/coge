@@ -21,6 +21,7 @@ use CoGe::Core::Metadata qw(create_annotations);
 use vars qw($staging_dir $install_dir $data_file $file_type 
   $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
+  $exit_without_error_for_empty_input
   $user_id $annotations $tags $wid $host $port $db $user $pass $P);
 
 #my $MIN_QUANT_COLUMNS = 5;
@@ -50,10 +51,11 @@ GetOptions(
     "normalize=s"   => \$normalize,      # optional: percentage, log10 or loge    
     "config=s"      => \$config,         # configuration file
 
-    # Optional flags for debug and bulk loader
+    # Optional flags (mostly for debug and bulk loader)
     "ignore-missing-chr=i" => \$ignore_missing_chr,
     "allow_negative=i"     => \$allow_negative,
     "disable_range_check"  => \$disable_range_check, # allow any value in val1 column
+    "exit_without_error_for_empty_input" => \$exit_without_error_for_empty_input, # added for SNP analysis pipeline where no SNPs found
 );
 
 $| = 1;
@@ -233,6 +235,11 @@ elsif ( $data_type == $DATA_TYPE_MARKER ) {
 }
 if ( !$count ) {
     print STDOUT "log: error: file contains no data\n";
+    if ($exit_without_error_for_empty_input) {
+        touch($logdonefile);
+        print STDOUT "Exited early due to no data and exit_without_error_for_empty_input\n";
+        exit(0);
+    }
     exit(-1);
 }
 print STDOUT "log: Successfully read " . commify($count) . " lines\n";
@@ -654,6 +661,12 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
             log_line("missing value in a column: $missing", $line_num, $line);
             return;
         }
+
+	# mdb added 2/10/16
+	if ($start =~ /[^\d]/ || $stop =~ /[^\d]/) {
+		log_line('start/stop not integer values', $line_num, $line);
+		return;
+	}
 
         # mdb added 2/19/14 for bulk loading based on user request
         if ($allow_negative and $val1 < 0) {

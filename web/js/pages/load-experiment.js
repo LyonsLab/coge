@@ -15,7 +15,7 @@ var ALIGN_FILES = [
 ];
 
 var SEQ_FILES = [
-    "fastq", "fq"
+    "fastq", "fq", "sra"
 ];
 
 var QUANT_FILES = [
@@ -238,6 +238,92 @@ $.extend(ExperimentDescriptionView.prototype, {
     },
 });
 
+function MethylationView(opts) {
+	if (opts)
+		this.format = opts.format;
+    this.data = {};
+    this.initialize();
+};
+
+$.extend(MethylationView.prototype, {
+    initialize: function () {
+        this.el = $($("#methyl-template").html());
+        this.checkbox = this.el.find("#methyl");
+        this.enabled = false;
+        this.container = this.el.find("#methyl-container");
+        this.templates = {
+            bismark: $($("#bismark-methyl-template").html()),
+            bwameth: $($("#bwameth-methyl-template").html())
+        };
+    },
+
+    render: function () {
+        this.checkbox.unbind().change(this.update.bind(this));
+    },
+
+    update: function() {
+        var checkbox = this.checkbox;//$(ev.target);
+        var enabled = checkbox.is(":checked"); 
+        var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
+        var template = this.templates[selected];
+        var el = $(document.getElementById(selected));
+        
+        if (enabled && template) {
+            this.data.methylation_params = $.extend({}, this.data.methylation_params, {method: selected});
+        	el.show();
+            this.container.slideDown();
+        	render_template(template, this.container);
+        } 
+        else {
+            this.data.methylation_params = undefined;
+            checkbox.attr('checked', false); // uncheck it
+            this.container.hide();
+            if (enabled && !template)
+            	this.container.html('<span class="alert indent">Please select one of these two aligners above:  Bismark or BWAmeth</span>').show();
+        }
+    },
+
+    is_valid: function() {
+        var enabled = this.checkbox.is(":checked");
+        var method = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
+        var paired = ( this.format && this.format.is_paired() );
+        
+        if (enabled) {
+            if (method === "bismark") {
+                this.data.methylation_params = {
+                    method: method,
+                    'bismark-deduplicate': this.el.find('#bismark-deduplicate').is(":checked"),
+                    'bismark-min_converage': this.el.find('#bismark-min_coverage').val(),
+                };
+                if (paired) {
+                    this.data.methylation_params['--ignore'] = this.el.find('#--ignore').val();
+                    this.data.methylation_params['--ignore_3prime'] = this.el.find('#--ignore_3prime').val();
+                    this.data.methylation_params['--ignore_r2'] = this.el.find('#--ignore_r2').val();
+                    this.data.methylation_params['--ignore_3prime_r2'] = this.el.find('#--ignore_3prime_r2').val();
+                }
+                else { // single-ended
+                    this.data.methylation_params['--ignore'] = this.el.find('#--ignore').val();
+                    this.data.methylation_params['--ignore_3prime'] = this.el.find('#--ignore_3prime').val();
+                }
+            }
+            else if (method === "bwameth") {
+                this.data.methylation_params = {
+                    method: method,
+                    'picard-deduplicate': this.el.find('#picard-deduplicate').is(":checked"),
+                    'pileometh-min_converage': this.el.find('#pileometh-min_coverage').val(),
+                    '--OT': this.el.find('#--OT').val(),
+                    '--OB': this.el.find('#--OB').val(),
+                };
+            }
+        }
+        return true;
+    },
+
+    get_options: function() {
+    	return this.data;
+    },
+});
+
 function FindSNPView() {
     this.data = {};
     this.initialize();
@@ -249,10 +335,10 @@ $.extend(FindSNPView.prototype, {
         this.snp_container = this.el.find("#snp-container");
 
         this.snp_templates = {
-            coge: $($("#coge-snp-template").html()),
+            coge:     $($("#coge-snp-template").html()),
             samtools: $($("#samtools-snp-template").html()),
             platypus: $($("#platypus-snp-template").html()),
-            gatk: $($("#gatk-snp-template").html())
+            gatk:     $($("#gatk-snp-template").html())
         };
     },
 
@@ -284,12 +370,15 @@ $.extend(FindSNPView.prototype, {
             this.data.snp_params = $.extend({}, this.data.snp_params, { method: method.val() });
             el.show();
             method.removeAttr("disabled");
+            method.parent('div').slideDown();
             this.snp_container.slideDown();
             var selected = $("#snp-method").val();
             render_template(this.snp_templates[selected], this.snp_container);
-        } else {
+        } 
+        else {
             this.data.snp_params = undefined;
             method.attr("disabled", 1);
+            method.parent('div').slideUp();
             this.snp_container.slideUp();
         }
     },
@@ -334,7 +423,103 @@ $.extend(FindSNPView.prototype, {
     },
 });
 
-function AlignmentView() {
+function ReadFormatView() {
+    this.initialize();
+    this.data = {};
+}
+
+$.extend(ReadFormatView.prototype, {
+    initialize: function() {
+        this.el = $($("#format-template").html());
+        this.container = this.el.find("#format-container");
+    },
+
+    render: function() {
+    },
+
+    is_valid: function() {
+        return true;
+    },
+
+    get_options: function() {
+        this.data.read_params = {
+        	read_type: this.el.find("#read_type :checked").val(),
+        	encoding: this.el.find("#encoding :checked").val(),
+        };
+
+        return this.data;
+    },
+    
+    is_paired: function() {
+    	return (this.get_options().read_type === 'paired');
+    }
+});
+
+function TrimmingView() {
+    this.data = {};
+    this.initialize();
+}
+
+$.extend(TrimmingView.prototype, {
+    initialize:function() {
+        this.el = $($("#trim-template").html());
+        this.container = this.el.find("#trim-container");
+        this.templates = {
+        	none:       $($("#none-template").html()),
+            cutadapt:   $($("#cutadapt-template").html()),
+            trimgalore: $($("#trimgalore-template").html()),
+        };
+    },
+
+    render: function() {
+        // jQuery events
+        this.el.find("[name=trimmer]").unbind().click(this.update.bind(this));
+        this.update();
+    },
+
+    // Callback to display the selected aligner
+    update: function() {
+        var selected = this.el.find("#trimming :checked").val();
+        render_template(this.templates[selected], this.container);
+    },
+
+    is_valid: function() {
+        var trimmer = this.el.find("#trimming :checked").val();
+        // Pick the aligner and set the options
+        if (trimmer === "cutadapt") {
+            this.data = {
+                trimming_params: {
+                	'trimmer': 'cutadapt',
+                    '-q': this.el.find("[id='-q']").val(),
+                    '-m': this.el.find("[id='-m']").val()
+                    //'--quality-base': this.el.find("[id='--quality-base']").val()
+                }
+            };
+        } 
+        else if (trimmer === "trimgalore") {
+            this.data = {
+                trimming_params: {
+                	'trimmer': 'trimgalore',
+                	'-q': this.el.find("[id='-q']").val(),
+                }
+            };
+        } 
+        else {
+        	this.data = {}; // Skip trimming
+        }
+
+        return true;
+    },
+
+    get_options: function() {
+        return this.data;
+    }
+});
+
+function AlignmentView(opts) {
+	if (opts) {
+		this.onChange = opts.onChange;
+	}
     this.data = {};
     this.initialize();
 }
@@ -342,24 +527,39 @@ function AlignmentView() {
 $.extend(AlignmentView.prototype, {
     initialize:function() {
         this.el = $($("#align-template").html());
-        this.align_container = this.el.find("#align-container");
-        this.align_templates = {
-            gsnap: $($("#gsnap-template").html()),
-            tophat: $($("#tophat-template").html()),
-            hisat2: $($("#hisat2-template").html())
+        this.container = this.el.find("#align-container");
+        this.templates = {
+            gsnap:   $($("#gsnap-template").html()),
+            bowtie2: $($("#bowtie2-template").html()),
+            tophat:  $($("#tophat-template").html()),
+            hisat2:  $($("#hisat2-template").html()),
+            bismark: $($("#bismark-template").html()),
+            bwameth: $($("#bwameth-template").html())
         };
     },
 
     render: function() {
-        // jQuery events
-        this.el.find("[name=aligner]").unbind().click(this.update_aligner.bind(this));
-        this.update_aligner();
+    	var self = this;
+    	
+        var aligner = this.el.find("#alignment");
+        aligner.unbind().change(this.update.bind(this));
+
+        if (this.data.alignment_params) {
+        	aligner.val(this.data.alignment_params.tool);
+        }
+        this.update();
     },
 
-    // Callback to display the selected aligner
-    update_aligner: function() {
-        var selected = this.el.find("#alignment :checked").val();
-        render_template(this.align_templates[selected], this.align_container);
+    update: function() {
+        var selected = this.el.find("#alignment").val();
+        var el = $(document.getElementById(selected));
+        this.data.alignment_params = $.extend({}, this.data.alignment_params, { tool: selected });
+        el.show();
+        this.container.show();
+        render_template(this.templates[selected], this.container);
+        
+        if (this.onChange)
+        	this.onChange();
     },
 
     is_valid: function() {
@@ -374,29 +574,53 @@ $.extend(AlignmentView.prototype, {
                     '-Q': this.el.find("[id='-Q']").is(":checked"),
                     '--gap-mode': this.el.find("[id='--gap-mode']").val(),
                     '--nofails': this.el.find("[id='--nofails']").is(":checked"),
-                    read_type: this.el.find("#read_type :checked").val()
-                },
-                trimming_params: {
-                    '-q': this.el.find("[id='-q']").val(),
-                    '-m': this.el.find("[id='-m']").val(),
-                    '--quality-base': this.el.find("[id='--quality-base']").val()
                 }
             };
-        } else if (aligner === "tophat") {
+            
+            if (this.el.find("[id='--max-mismatches-chk']").is(":checked")) {
+            	this.data.alignment_params['--max-mismatches'] = this.el.find("[id='--max-mismatches']").val();
+            }
+        }
+        else if (aligner === "bowtie2") {
+        	this.data = {
+        		alignment_params: {
+        			tool: "bowtie2"
+        		}
+        	}
+        }
+        else if (aligner === "tophat") {
             this.data = {
                 alignment_params: {
                     tool: "tophat",
                     '-g': this.el.find("[id='-g']").val(),
-                    read_type: this.el.find("#read_type :checked").val()
                 }
             }
-        } else {
+        } 
+        else if (aligner === "hisat2") {
         	this.data = {
         		alignment_params: {
-        			tool: "hisat2",
-        			'--phred33': this.el.find("[id='--phred33']").is(":checked")
+        			tool: "hisat2"
         		}
         	}
+        }
+        else if (aligner === "bismark") {
+        	this.data = {
+        		alignment_params: {
+        			tool: "bismark",
+        			'-N': this.el.find("[id='-N']").val(),
+        			'-L': this.el.find("[id='-L']").val(),
+        		}
+        	}
+        }
+        else if (aligner === "bwameth") {
+        	this.data = {
+        		alignment_params: {
+        			tool: "bwameth"
+        		}
+        	}
+        }
+        else { // should never happen
+        	console.error('Invalid aligner');
         }
 
         return true;
@@ -451,12 +675,13 @@ $.extend(AlignmentOptionView.prototype, {
     },
 
     is_valid: function() {
-        return this.snp_view.is_valid();
+        return this.snp_view.is_valid()
+        	   && this.expression_view.is_valid();
     },
 
     get_options: function() {
-        return $.extend(this.snp_view.get_options(),
-                        this.expression_view.get_options());
+        return $.extend(this.expression_view.get_options(),
+        				this.snp_view.get_options());
     },
 });
 
@@ -530,32 +755,118 @@ $.extend(ExpressionView.prototype, {
     get_options: function() {
         if (this.enabled) {
             this.data.expression_params = {
-                '-Q': this.el.find("[id='-Q']").val()
+                '-q': this.el.find("[id='-q']").val()
             };
         }
 
         return this.data;
     },
+});
 
-})
+function ChIPSeqView(opts) {
+	this.experiment = opts.experiment;
+    this.initialize();
+    this.data = {};
+}
 
-function FastqView() {
+$.extend(ChIPSeqView.prototype, {
+    initialize: function() {
+        this.el = $($("#chipseq-template").html());
+        this.enabled = false;
+        this.container = this.el.find("#chipseq-container");
+        this.template = $(this.container.html());
+    },
+
+    render: function() {
+        this.el.find("#chipseq").unbind().change(this.update.bind(this));
+    },
+
+    update: function() {
+    	var checkbox = this.el.find("#chipseq");
+    	
+        var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
+        if (selected != 'gsnap' && selected != 'bowtie2' && selected != 'hisat2') {
+        	this.container.html('<span class="alert indent">Please select one of these aligners above: GSNAP, Bowtie2, or HISAT2</span>').show();
+        	checkbox.attr('checked', false); // uncheck it
+        	return;
+        }
+        
+        var data = this.experiment.data;
+        if (!data || data.length < 3) {
+        	this.container.html('<span class="alert indent">This analysis requires 3 input files (the input and two replicates).</span>').show();
+        	checkbox.attr('checked', false); // uncheck it
+        	return;
+        }
+
+        this.enabled = checkbox.is(":checked");
+        if (this.enabled) {
+        	render_template(this.template, this.container);
+        	
+        	// Add input files to dropdown
+            var select = this.el.find("#chipseq-input");
+            var data = this.experiment.data;
+            for(i = 0; i < data.length; i++) {
+            	var file = data[i];
+            	select.append("<option>" + file.name + "</option>");
+            }
+            
+            this.container.slideDown();
+        }
+        else 
+            this.container.slideUp();
+    },
+
+    is_valid: function() {
+        return true;
+    },
+
+    get_options: function() {
+        if (this.enabled) {
+        	var notSelected = $('#chipseq-input option:not(:selected)').map(function(index, element) {
+        		return $(element).val()
+        	}).get().join(', ');
+        	
+            this.data.chipseq_params = {
+            	'input':  this.el.find("#chipseq-input").val(),
+            	'replicates': notSelected,
+                '-size':  this.el.find("[id='-size']").val(),
+                '-gsize': this.el.find("[id='-gsize']").val(),
+                '-norm':  this.el.find("[id='-norm']").val(),
+                '-fdr':   this.el.find("[id='-fdr']").val(),
+                '-F':     this.el.find("[id='-F']").val(),
+            };
+        }
+
+        return this.data;
+    },
+});
+
+function FastqView(opts) {
+	this.experiment = opts.experiment
     this.initialize();
 }
 
 $.extend(FastqView.prototype, {
     initialize: function() {
+    	this.read_view = new ReadFormatView();
+    	this.trim_view = new TrimmingView();
         this.expression_view = new ExpressionView();
         this.snp_view = new FindSNPView();
-        this.align_view = new AlignmentView();
+        this.methylation_view = new MethylationView({ format: this.read_view });
+        this.chipseq_view = new ChIPSeqView({ experiment: this.experiment });
+        this.align_view = new AlignmentView({ onChange: this.methylation_view.update.bind(this.methylation_view) });
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
 
             layout: {
+                '#read-view': this.read_view,
+                '#trim-view': this.trim_view,
+                "#align-view": this.align_view,
                 "#expression-view": this.expression_view,
                 "#snp-view": this.snp_view,
-                "#align-view": this.align_view
+                "#methylation-view": this.methylation_view,
+                "#chipseq-view": this.chipseq_view
             }
         });
 
@@ -568,22 +879,23 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
-        if (!this.snp_view.is_valid())
-            return false;
-
-        if (!this.align_view.is_valid())
-            return false;
-
-        if (!this.expression_view.is_valid())
-            return false;
-
-        return true;
+    	return (   this.read_view.is_valid()
+    			&& this.trim_view.is_valid()
+    			&& this.align_view.is_valid()
+    			&& this.snp_view.is_valid()
+    			&& this.expression_view.is_valid()
+    			&& this.methylation_view.is_valid()
+    			&& this.chipseq_view.is_valid());
     },
 
     get_options: function() {
-        return $.extend(this.expression_view.get_options(),
+        return $.extend(this.read_view.get_options(),
+		        		this.trim_view.get_options(),
+		        		this.align_view.get_options(),
+                        this.expression_view.get_options(),
                         this.snp_view.get_options(),
-                        this.align_view.get_options());
+                        this.methylation_view.get_options(),
+                        this.chipseq_view.get_options());
     },
 });
 
@@ -713,7 +1025,8 @@ $.extend(OptionsView.prototype, {
             template: "#options-layout-template",
             layout: {
                 "#general-options": this.general_view
-            }
+            },
+            experiment: this.experiment
         });
 
         if (this.admin)
@@ -752,7 +1065,7 @@ $.extend(OptionsView.prototype, {
         if ($.inArray(file_type, POLY_FILES) > -1)
             this.analysis_view = new PolymorphismView();
         else if ($.inArray(file_type, SEQ_FILES) > -1)
-            this.analysis_view = new FastqView();
+            this.analysis_view = new FastqView({experiment: this.experiment});
         else if ($.inArray(file_type, QUANT_FILES) > -1)
             this.analysis_view = new QuantativeView();
         else if ($.inArray(file_type, ALIGN_FILES) > -1)
@@ -770,7 +1083,7 @@ $.extend(OptionsView.prototype, {
 function load(experiment) {
 	coge.progress.begin();
     newLoad = true;
-
+    
 	// Convert request into format for job service
 	var request = {
 		type: 'load_experiment',
@@ -779,20 +1092,23 @@ function load(experiment) {
 			user_name: USER_NAME
 		},
 		parameters: {
-			genome_id:         experiment.gid,
-			metadata:          experiment.metadata,
-			alignment_params:  experiment.options.alignment_params,
-			trimming_params:   experiment.options.trimming_params,
-			expression_params: experiment.options.expression_params,
-			snp_params:        experiment.options.snp_params,
-			normalize:         experiment.options.normalize,
-			normalize_method:  experiment.options.normalize_method,
-			email:             experiment.options.email,
-			notebook:          experiment.options.notebook,
-			notebook_name:     experiment.options.notebook_name,
-			notebook_id:       experiment.options.notebook_id,
-			source_data:       experiment.data,
-			load_id:           load_id
+			genome_id:          experiment.gid,
+			metadata:           experiment.metadata,
+			read_params:    	experiment.options.read_params,
+			trimming_params:    experiment.options.trimming_params,
+			alignment_params:   experiment.options.alignment_params,
+			expression_params:  experiment.options.expression_params,
+			snp_params:         experiment.options.snp_params,
+            methylation_params: experiment.options.methylation_params,
+            chipseq_params:     experiment.options.chipseq_params,
+			normalize:          experiment.options.normalize,
+			normalize_method:   experiment.options.normalize_method,
+			email:              experiment.options.email,
+			notebook:           experiment.options.notebook,
+			notebook_name:      experiment.options.notebook_name,
+			notebook_id:        experiment.options.notebook_id,
+			source_data:        experiment.data,
+			load_id:            load_id
 		}
 	};
 	
@@ -847,10 +1163,15 @@ function initialize_wizard(opts) {
     wizard.addStep(new OptionsView({experiment: current_experiment, admin: opts.admin, onError: wizard.error_help }));
     wizard.addStep(new ConfirmationView(current_experiment));
 
+    // mdb debug 12/4/15
+//    current_experiment.data = [ { file_type: 'fastq' } ];
+//    wizard.move(2);
+    
     // Render all the wizard sub views
     wizard.render();
-
+    
     // Add the wizard to the document
     root.html(wizard.el);
+    
     return wizard;
 }

@@ -1,6 +1,7 @@
 package CoGe::Builder::SNP::IdentifySNPs;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use Switch;
@@ -23,7 +24,7 @@ sub build {
     my $self = shift;
     
     # Validate inputs
-    my $eid = $self->params->{eid};
+    my $eid = $self->params->{eid} || $self->params->{experiment_id};
     return unless $eid;
     return unless $self->params->{snp_params};
     my $method = $self->params->{snp_params}->{method};
@@ -74,7 +75,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;

@@ -14,6 +14,7 @@ const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
 const IRODS_HOME    = '<TMPL_VAR NAME=IRODS_HOME>';
+const POPGEN_RESULT_URL = '<TMPL_VAR NAME="POPGEN_RESULT_URL">';
 
 var EXPERIMENT_ID = '<TMPL_VAR NAME="EXPERIMENT_ID">';
 var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
@@ -54,7 +55,10 @@ $(document).ready(function() {
     	onReset: reset_location
     });
     
+    // Initialize analysis dialogs
     snpMenu.init();
+    expressionMenu.init();
+    diversityMenu.init();
     
     // Open status dialog
     if (WORKFLOW_ID) {
@@ -106,7 +110,7 @@ $(document).ready(function() {
 			    		<td>
 		            		<span class="data5 link" ondblclick="download_files();" onclick="download_files();">Download</span>
 		            		<TMPL_UNLESS NAME="PUBLIC">
-		            		|&nbsp;<span class="data5 link" ondblclick="export_data();" onclick="export_data();">iPlant Data Store</span>
+		            		|&nbsp;<span class="data5 link" ondblclick="export_data();" onclick="export_data();">CyVerse Data Store</span>
 		            		</TMPL_UNLESS>
 		            	</td>
 		            </tr>
@@ -116,7 +120,18 @@ $(document).ready(function() {
                     		<span class="title5">Analyze:</span>
                     	</td>
                     	<td>
-                    		<span class="data5 link" ondblclick="snpMenu.open();" onclick="snpMenu.open();">Identify SNPs</span>
+                    		<span class="data5 link" ondblclick="snpMenu.open();" onclick="snpMenu.open();">SNPs</span> |
+                    		<span class="data5 link" ondblclick="expressionMenu.open();" onclick="expressionMenu.open();">Expression</span>
+                    	</td>
+			        </tr>
+			        </TMPL_IF>
+			        <TMPL_IF NAME="POLYMORPHISM_TYPE">
+		            <tr style="padding:3px;">
+                    	<td>
+                    		<span class="title5">Analyze:</span>
+                    	</td>
+                    	<td>
+                    		<span class="data5 link" ondblclick="analyze_diversity();" onclick="analyze_diversity();">Diversity</span>
                     	</td>
 			        </tr>
 			        </TMPL_IF>

@@ -1,11 +1,22 @@
+<style>
+.ui-resizable-helper {
+	border: 1px solid gray;
+    background-color: gray;
+    opacity: .2;
+}
+</style>
+
 <script id="fileselect-template" type="text/template">
-	<div id='fileselect-tabs'>
+	<div>
 	  <ul>
-	    <li class="small"><a href="#fileselect-tab-1">iPlant Data Store</a></li>
+	    <li class="small"><a href="#fileselect-tab-1">CyVerse Data Store</a></li>
 	    <li class="small"><a href="#fileselect-tab-2">FTP/HTTP</a></li>
 	    <li class="small"><a href="#fileselect-tab-3">Upload</a></li>
 	    <TMPL_IF NAME='ENABLE_NCBI'>
-	    <li class="small"><a href="#fileselect-tab-4">NCBI</a></li>
+	    <li class="small"><a href="#fileselect-tab-4">GenBank</a></li>
+	    </TMPL_IF>
+	    <TMPL_IF NAME='ENABLE_SRA'>
+	    <li class="small"><a href="#fileselect-tab-4">SRA</a></li>
 	    </TMPL_IF>
 	  </ul>
 	
@@ -44,15 +55,15 @@
 	
 	  <div id="fileselect-tab-3" class="small" style="height:200px;">
 		Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum).
-		For larger files use the iPlant Data Store. <br><br><br>
+		For larger files use the CyVerse Data Store. <br><br><br>
 	    File: <input id="input_upload_file" name="input_upload_file" type="file" size="30" data-url='<TMPL_VAR NAME="PAGE_NAME">' />
 	  </div>
 	
 	  <TMPL_IF NAME='ENABLE_NCBI'>
 	  <div id="fileselect-tab-4" class="small" style="height:200px;">
-	    Enter the NCBI accession number of the item to add.<br><br>
+	    Enter the NCBI GenBank accession number of the item to add.<br><br>
 	    <div>
-	      <span>Accession: <input id="input_accn" size="15" /></span>
+	      <span>Accession: <input id="input_accn" size="15" spellcheck="false"/></span>
 	      <span id="ncbi_get_button" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span>
 	      <span id="ncbi_status" class="note" style="padding-left:15px;min-height:50px;"></span>
 	    </div>
@@ -62,5 +73,17 @@
 	    </div>
 	  </div>
 	  </TMPL_IF>
+
+	  <TMPL_IF NAME='ENABLE_SRA'>
+	  <div id="fileselect-tab-4" class="small" style="height:200px;">
+	    Enter the NCBI Short Read Archive (SRA) accession number of the item to add.<br><br>
+	    <div>
+	      <span>Accession: <input id="input_accn" size="15" spellcheck="false"/></span>
+	      <span id="sra_get_button" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span>
+	      <span id="sra_status" class="note" style="padding-left:15px;min-height:50px;"></span>
+	    </div>
+	  </div>
+	  </TMPL_IF>
+	  
 	</div>
 </script>

@@ -62,14 +62,15 @@ our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR,
 BEGIN {
     require Exporter;
 
-    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : '/opt/apache/coge/web/' );
+    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : $ENV{PWD} );#'/opt/apache/coge/web/' ); # mdb changed 2/5/16 for Hypnotoad setup
     $VERSION = 0.1;
-    $TEMPDIR = $BASEDIR . "tmp";
+    $TEMPDIR = catdir($BASEDIR, 'web', 'tmp'); #FIXME move out of web
     @ISA     = ( qw (Exporter Class::Accessor) );
     @EXPORT  = qw( get_session_id check_filename_taint check_taint gunzip gzip 
-                   send_email get_defaults set_defaults url_for get_job 
+                   send_email get_defaults set_defaults url_for api_url_for get_job 
                    schedule_job render_template ftp_get_path ftp_get_file split_url
-                   parse_proxy_response jwt_decode_token add_user write_log
+                   parse_proxy_response jwt_decode_token add_user write_log log_history
+                   download_url_for
                );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
@@ -184,7 +185,7 @@ sub get_defaults {
     return $CONF if ($CONF);
 
     my ( $self, $conf_file ) = self_or_default(@_);
-    $conf_file = $BASEDIR . "/coge.conf" unless defined $conf_file;
+    $conf_file = catfile($BASEDIR, 'coge.conf') unless defined $conf_file;
     #print STDERR "Web::get_defaults $conf_file\n";
     unless ( -r $conf_file ) {
         print STDERR
@@ -206,6 +207,9 @@ A valid configuration file must be specified or very little will work!};
 
     # mdb added 4/10/14 - add path to the file that was loaded
     $items{_CONFIG_PATH} = $conf_file;
+    
+    # mdb added 2/23/16 - add path to top-level directory (for hypnotoad)
+    $items{_HOME_PATH} = $BASEDIR;
 
     $CONF = \%items;
     return $CONF;
@@ -449,7 +453,7 @@ sub logout_cas {
 sub login_cas_proxy {
     my ( $self, %opts ) = self_or_default(@_);
     my $cookie_name = $opts{cookie_name};
-    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $ticket      = $opts{ticket};        # CAS ticket from CyVerse
     my $this_url    = $opts{this_url};      # URL to tell CAS to redirect to
     my $coge        = $opts{coge};          # db object
 	print STDERR "Web::login_cas_proxy ticket=$ticket this_url=$this_url\n";
@@ -524,7 +528,7 @@ sub parse_proxy_response {
 sub login_cas_saml {
     my ( $self, %opts ) = self_or_default(@_);
     my $cookie_name = $opts{cookie_name};
-    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $ticket      = $opts{ticket};        # CAS ticket from CyVerse
     my $this_url    = $opts{this_url};      # URL to tell CAS to redirect to
     my $coge        = $opts{coge};          # db object
 	print STDERR "Web::login_cas_saml ticket=$ticket this_url=$this_url\n";
@@ -544,9 +548,7 @@ sub login_cas_saml {
       . '</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
 
     my $request_ua =
-      HTTP::Request->new(
-        #POST => 'https://gucumatz.iplantcollaborative.org/cas/samlValidate?TARGET=' # mdb added 12/5/13 - Hackathon1
-        POST => $cas_url . '/samlValidate?TARGET=' . $this_url );
+      HTTP::Request->new( POST => $cas_url . '/samlValidate?TARGET=' . $this_url );
     $request_ua->content($request);
     $request_ua->content_type("text/xml; charset=utf-8");
     my $response = $ua->request($request_ua);
@@ -726,7 +728,7 @@ sub jwt_decode_token {
 sub login_cas4 {
     my ( $self, %opts ) = self_or_default(@_);
     my $cookie_name = $opts{cookie_name};
-    my $ticket      = $opts{ticket};        # CAS ticket from iPlant
+    my $ticket      = $opts{ticket};        # CAS ticket from CyVerse
     my $this_url    = $opts{this_url};      # URL that CAS redirected to
     my $db          = $opts{db};            # db object
     my $server      = $opts{server};        # server -- this was added to get apache proxying to work with cas
@@ -773,7 +775,7 @@ sub add_user {
                 first_name  => $fname,
                 last_name   => $lname,
                 email       => $email,
-                description => "Validated by iPlant"
+                description => "Validated by CyVerse"
             }
         );
         $user->insert; # mdb: what is this for?
@@ -922,7 +924,10 @@ sub write_log {
     $message = $1;
     my $file = shift;
     return unless $file;
-    open( OUT, ">>$file" ) || return;
+    if (!open( OUT, ">>$file" )) {
+        warn 'error opening ' . $file;
+        return;
+    }
     print OUT $message, "\n";
     close OUT;
 }
@@ -1160,6 +1165,47 @@ sub send_email {
 
     print $mailer $body;
     $mailer->close();
+}
+
+sub download_url_for { # mdb added 3/8/16 for hypnotoad
+    my %args = @_;
+    my $gid = $args{gid};
+    my $eid = $args{eid};
+    my $wid = $args{wid};
+    my $filename = ($args{file} ? basename($args{file}) : '');
+#    my $username = $args{username};
+    
+    my $params = '';
+    if ($gid) {
+        $params .= "gid=$gid";
+    }
+    elsif ($eid) {
+        $params .= "eid=$eid";
+    }
+    elsif ($wid) {
+        $params .= "wid=$wid";
+    }
+    
+#    my $user_str = '';
+#    if ($username) {
+#        $params .= "&username=$username";
+#    }
+
+    if ($filename) {
+        $params .= "&filename=$filename";
+    }
+    
+    return url_for(api_url_for("downloads/?$params"));
+}
+
+sub api_url_for {
+    my $path = shift;
+    
+    my $API_URL = $CONF->{API_URL};
+    croak "API_URL was not found in the config file" unless $API_URL;
+    
+    return $API_URL unless $path;
+    return catdir($API_URL, $path);
 }
 
 sub url_for {

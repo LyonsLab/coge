@@ -93,9 +93,6 @@ sub gen_html {
         $report_file =~ s/$TEMPDIR/$TEMPURL/;
         $report_file =~ /([^\/]*$)/;
         $template->param(
-            BOX_NAME => qq{<a href=$report_file>$1</a>} . " HSP: $hsp_num" )
-          if $1;
-        $template->param(
             BODY => gen_body(
                 report_file => $report_file,
                 hsp_num     => $hsp_num,

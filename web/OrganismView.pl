@@ -42,7 +42,7 @@ $SERVER    = $P->{SERVER};
 $HISTOGRAM = $P->{HISTOGRAM};
 
 $MAX_NUM_ORGANISM_RESULTS = 500; #5000; # mdb changed 9/25/14, COGE-504
-$MAX_NUM_CHROMOSOME_RESULTS = 20;
+$MAX_NUM_CHROMOSOME_RESULTS = 50; # mdb changed 2/29/16 from 20
 $MAX_DS_LENGTH = 10000000;
 
 %FUNCTION = (
@@ -180,8 +180,8 @@ sub gen_body {
     $template->param( GET_SEQ  => $seqview ) if ($seqview);
 
     # Finish template
-    $template->param( ORGANISM_ID => $oid)  if ($selected_oid);
-    $template->param( GENOME_ID   => $gid ) if ($selected_gid);
+    $template->param( ORGANISM_ID => $selected_oid)  if ($selected_oid);
+    $template->param( GENOME_ID   => $selected_gid ) if ($selected_gid);
     $template->param( DATASET_ID  => $dsid)  if ($dsid);
     $template->param( CHR_ID      => $selected_chr) if ($selected_chr);
     
@@ -312,7 +312,7 @@ sub get_orgs {
         my $this_name = $org->name;
 
         # Set selected option if first or specified by user - FIXME there is a bettery way
-        my $selected;
+        my $selected = '';
         if ( ($oid && $this_id == $oid) || ($gid && $this_id == $genomes{$gid}->organism->id) ) {
             $selected = "selected";
             $oid = $this_id;
@@ -321,7 +321,7 @@ sub get_orgs {
             $selected = "selected";
             $oid = $this_id;
         }
-        elsif (scalar(@opts) == 0) {
+        elsif (scalar(@opts) == 0) { # first in list
             $selected = "selected"; # index
             $oid = $this_id;    
         }
@@ -577,7 +577,7 @@ sub get_genome_info {
     #    my $cogedir  = $P->{COGEDIR};
     #    my $cogeurl  = $P->{URL};
     #    $seq_file =~ s/$cogedir/$cogeurl/i;
-    my $seq_url = "api/v1/legacy/sequence/$gid"; #"services/service.pl/sequence/$gid"; # mdb changed 2/5/15, COGE-289
+    #my $seq_url = api_url_for("genomes/$gid/sequence"); #"api/v1/legacy/sequence/$gid"; # mdb changed 2/12/16 for hypnotoad
 
     $html .= "<tr><td>Tools:</td>"
      . qq{<td>}
@@ -595,10 +595,9 @@ sub get_genome_info {
      #. qq{<td id="dsg_features"></td>}
      . qq{</table>};
 
-
 #temporarily removed until this is connected correctly for individual users
 #    $html .= qq{&nbsp|&nbsp};
-#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$gid'],['irods']);">Send To iPlant Data Store</span>};
+#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$gid'],['irods']);">Send To CyVerse Data Store</span>};
 
     return $html if ($output eq 'html');
     return encode_json({ genome => $html });

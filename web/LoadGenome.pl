@@ -9,12 +9,15 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
 use HTML::Template;
+use LWP::Simple qw(get);
+use XML::Simple qw(XMLin);
 use JSON::XS;
 use Sort::Versions;
 use File::Path qw(mkpath);
 use File::Copy qw(copy);
 use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
+use File::Touch;
 use File::Listing qw(parse_dir);
 use File::Slurp;
 use URI::Escape::JavaScript qw(escape unescape);
@@ -86,7 +89,6 @@ sub generate_html {
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
         $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
     
-        $template->param( ADJUST_BOX => 1 );
         $template->param( ADMIN_ONLY => $USER->is_admin );
         $template->param( CAS_URL    => $CONF->{CAS_URL} || '' );
     }
@@ -191,6 +193,7 @@ sub upload_file {
 
         #print STDERR "temp files: $tmpfilename $targetpath\n";
         copy( $tmpfilename, $targetpath );
+        touch($targetpath . '.done'); # for JEX
         $size = -s $fh;
     }
 

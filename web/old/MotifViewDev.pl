@@ -208,7 +208,6 @@ sub gen_html {
           HTML::Template->new( filename => $TMPLDIR . 'MotifView.tmpl' );
         $prebox->param( RESULTS_DIV => 1 );
         $template->param( PREBOX     => $prebox->output );
-        $template->param( ADJUST_BOX => 1 );
         $template->param( ADMIN_ONLY => $USER->is_admin );
         $template->param( CAS_URL    => $P->{CAS_URL} || '' );
         $html .= $template->output;
@@ -524,9 +523,6 @@ qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>
     $gobe_version =~ s/\n//g;
 
     $template->param( GOBE_VERSION => $gobe_version );
-
-#    $box->param(BOX_NAME=>"<font color=black><span class=alert>PUT THIS STUFF IN THE WIKI:</span><br>For a list of all TFBS motifs used in Spangler <i>et al.,</i> New Phytologist (2011) Evidence for Conserved Noncoding Sequence Functions in Arabidopsis thaliana. , click <a href=http://synteny.cnr.berkeley.edu/CoGe/data/distrib/MotifsUsedInSpanglerPaper.txt target=new>here</a><br><br><font color=black>For a list of all TFBS motifs used in this site, click <a href=http://synteny.cnr.berkeley.edu/CoGe/data/distrib/Motiflist.txt target=new>here</a><br>");
-
     $template->param( OPTIONS            => 1 );
     $template->param( ALIGNMENT_PROGRAMS => algorithm_list($prog) );
     $template->param( MOTIF_SELECT       => motif_list() );
@@ -1288,7 +1284,6 @@ qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a>
     $results_name .=
       qq{ <span class="small">(spike sequence filter length: $spike_len)</span>}
       if $spike_len;
-    $template->param( BOX_NAME => $results_name );
     $template->param( BODY     => $html );
     my $outhtml     = $template->output;
     my $t5          = new Benchmark;

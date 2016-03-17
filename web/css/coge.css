@@ -12,13 +12,17 @@
     padding-top: 1em;
 }
 
-BODY {
+body {
   font-family: "Helvetica Neue", Helvetica, Arial, fixed;
   line-height: 1.125; /* 18/16 = 1.125 */
   font-size: 16px;
   background: #FFFFFF;
   margin: 0;
   height: 100%;
+}
+
+html {
+    height: 100%;
 }
 
 a {
@@ -50,6 +54,10 @@ a:hover {
 
 .info {
   color: gray;
+}
+
+.coge-inlaid {
+    text-shadow: 0px 1px 0px lightgray;
 }
 
 .indent {
@@ -90,13 +98,13 @@ div.box {
   padding-bottom: 70px;
   margin-top: 3px;
   overflow-y: auto;
-  border-top: 1px solid lightgray;
 }
 
 div.footer {
 	position: relative;
-	margin-top: -55px;
-	height: 55px;
+	margin-top: -50px;
+	padding-right: 7px;
+	height: 50px;
 	clear: both;
 	border-top: 1px solid lightgray;
 }
@@ -268,6 +276,7 @@ div.panel {
  background: #cbfecb;
  border:1px solid #00FF36;
 }
+
 .species {
   font-style: oblique;
   color: #009900;
@@ -1068,7 +1077,7 @@ li {
 }
 
 .running {
-    color: 3366FF;
+    color: #3366FF;
 }
 
 /* Main Page */
@@ -1131,10 +1140,6 @@ h5 > small {
     color: #4B4949;
 }
 
-header {
-    padding: 10px;
-}
-
 #intro, #highlights {
     width: 100%;
     padding: 10px 20px;
@@ -1153,16 +1158,14 @@ header {
     color: #c0c0c0;
 }
 
-#brand {
-    float: left;
-}
-
-/*.dev:after {
-    content: " *** Development ***";
+.dev:after {
+    content: " Development";
     font-size: 80%;
     color: red;
-    margin-left: 1em;
-}*/
+    position: absolute;
+    top: 0;
+    left: 0;
+}
 
 /* CoGepedia Wiki Feed */
 
@@ -1803,3 +1806,166 @@ div.dataTables_scrollBody {
     margin-right: 5px;
 }
 
+/*
+ * Header
+ */
+
+@media (min-width: 981px) {
+	.coge-header {
+		height: 3.1em;
+		padding: 2px;
+		margin-bottom: 1em;
+		background-color: #f5f5f5;
+		border-bottom: 1px solid lightgray;
+	}
+}
+
+@media (max-width: 980px) {
+	.coge-header {
+		height: 6em;
+		padding: 2px;
+		margin-bottom: 1em;
+		background-color: #f5f5f5;
+		border-bottom: 1px solid lightgray;
+	}
+}
+
+.coge-logo {
+    font-family: impact;
+    font-size: 3em;
+    font-weight: bold;
+    color: #41AD41;
+}
+
+.coge-header-main li {
+	float: left;
+}
+
+.coge-header-menu > li {
+	float: right;
+	margin-left: 3em;
+}
+
+.coge-header-search button {
+	border-color: #65d022;
+	height: 2em;
+	width: 2em;
+	margin-top: 0.85em;
+}
+
+.coge-header-searchbar {
+	margin-right: 0.25em;
+	margin-top: 0.75em;
+}
+
+.coge-header-search input {
+	width: 40vw;
+	/*height: 3em;*/
+	font-size:	1.2em;
+	font-family: helvetica;
+}
+
+.coge-header-menu {
+    padding-top: 0.90em;
+}
+
+.coge-user-image {
+    /*background: url('image.pl');*/
+    border-radius: 5px;
+    width: 1.75em;
+    height: 1.75em;
+    background-size: 1.5em;
+    background-position: right;
+}
+
+.coge-header-button {
+    font-weight: 600;
+    font-size: 0.875em;
+    line-height: 1.5;
+    /*border: 1px solid #7adf39;*/
+    /*background: #beef9f;*/
+    /*vertical-align: middle;*/
+    height: 2.5em;
+    /*margin-top: 1em;*/
+    cursor: pointer;
+}
+
+.coge-header-button > div {
+	font-size: 1.25em;
+	font-family: helvetica;
+	color: #41AD41;
+}
+
+.coge-login-button {
+	max-width: 6em;
+	margin-left: 5%;
+}
+
+.coge-login-button > div {
+	/*font-family: impact;*/
+	font-size: 12;
+	color: #41AD41;
+	text-align: center;
+	white-space: nowrap;
+}
+
+#image_upload_info {
+	position: absolute;
+	right: 0.25em;
+	top: 3em;
+	border: 1px solid #ccc;
+	display: none;
+	font-size: 10px;
+	margin-top: 10px;
+	padding: 5px;
+	z-index: 1000;
+	background-color: #f5f5f5;
+}
+
+#user_image:hover {
+	cursor: pointer;
+}
+
+#user_image_container:hover #image_upload_info {
+	display: block;
+}
+
+.dropdown {
+	position: relative;
+}
+
+.dropdown-arrow {
+	width: 0.4em;
+	height: 0.4em;
+	padding-bottom: 0.15em;
+}
+
+.dropdown-menu {
+	position: absolute;
+	z-index: 1000;
+	min-width: 6em;
+	font-size: 14px;
+	background-color: #f5f5f5;
+	border: 1px solid rgba(0, 0, 0, .15);
+	border-radius: 4px;
+}
+
+.dropdown-item {
+	font-weight: normal;
+	padding: 3px 13px;
+	white-space: nowrap;
+}
+
+.dropdown-item:hover {
+	background-color: #E7F5E7;
+}
+
+.dropdown-label {
+	display: inline-block;
+    height: 37px;
+}
+
+.dropdown-link {
+	color: #41AD41;
+	display: block;
+}

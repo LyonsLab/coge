@@ -27,6 +27,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Metadata qw(create_annotations);
 no warnings 'redefine';
 
 use vars qw(
@@ -74,6 +75,7 @@ $node_types = CoGeX::node_types();
     activity_viz  		=> 105,
     activity_analyses	=> 106,
     activity_loads      => 107,
+    metadata			=> 108,
     user          		=> $node_types->{user},
     group         		=> $node_types->{group},
     notebook      		=> $node_types->{list},
@@ -103,7 +105,8 @@ $node_types = CoGeX::node_types();
     create_new_notebook             => \&create_new_notebook,
     toggle_star                     => \&toggle_star,
     cancel_job				        => \&cancel_job,
-    comment_job                     => \&comment_job
+    comment_job                     => \&comment_job,
+    upload_metadata					=> \&upload_metadata
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -111,13 +114,12 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( USER       => $USER->display_name || '',
-                      PAGE_TITLE => 'User Profile',
-				      TITLE      => "My Profile",
+                      PAGE_TITLE => 'My Data',
+				      TITLE      => "My Data",
     				  PAGE_LINK  => $LINK,
     				  HOME       => $CONF->{SERVER},
                       HELP       => 'User',
                       WIKI_URL   => $CONF->{WIKI_URL} || '',
-    				  ADJUST_BOX => 1,
                       ADMIN_ONLY => $USER->is_admin,
                       CAS_URL    => $CONF->{CAS_URL} || '' );
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
@@ -399,7 +401,7 @@ sub delete_items {
 
         # Record in log
         if ($type_name) {
-            my $item_type_code = node_types{$item_type};
+            my $item_type_code = $node_types->{$item_type};
 			CoGe::Accessory::Web::log_history(
 			    db          => $DB,
 			    user_id     => $USER->id,
@@ -472,7 +474,7 @@ sub undelete_items {
 
         # Record in log
         if ($type_name) {
-            my $item_type_code = node_types{$item_type};
+            my $item_type_code = $node_types->{$item_type};
 			CoGe::Accessory::Web::log_history(
 			    db          => $DB,
 			    user_id     => $USER->id,
@@ -1328,13 +1330,22 @@ sub get_contents {
     elsif ( $type eq 'notebook' ) {
         $items = get_lists_for_user($DB->storage->dbh, $USER->id);
     }
+    elsif ( $type eq 'metadata' ) {
+		my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+		$template->param(
+			METADATA => 1,
+			EXPERIMENT_METADATA_STATS => get_stats('experiment', get_experiments_for_user($DB->storage->dbh, $USER->id)),
+			GENOME_METADATA_STATS => get_stats('genome', get_genomes_for_user($DB->storage->dbh, $USER->id)),
+			NOTEBOOK_METADATA_STATS => get_stats('list', get_lists_for_user($DB->storage->dbh, $USER->id))
+		);
+		return $template->output;
+    }
     elsif ( $type eq 'group' ) {
         $items = get_groups_for_user($DB->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'activity' ) {
         my $jobs = get_jobs($last_update);
-        my $summary_html = summarize_jobs($jobs);
-        return $summary_html;
+        return summarize_jobs($jobs);
     }
     elsif ( $type eq 'analyses' ) {
         my $jobs = get_jobs($last_update);
@@ -1379,6 +1390,36 @@ sub get_contents {
 
 #    print STDERR Dumper \@items, "\n";
     return encode_json($items);
+}
+
+sub get_stats {
+	my $type = shift;
+	my $items = shift;
+	return '' if !@$items;
+	my $sql = 'select annotation_type.name,count(*) from ' . $type . '_annotation join annotation_type on annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id where ' . $type . '_id in (' .
+		join( ',', map { $_->{'id'} } @$items ) .
+		') group by annotation_type.name';
+	my $sth = $DB->storage->dbh->prepare($sql);
+    $sth->execute();
+    my ($name, $count);
+    $sth->bind_columns(\$name, \$count);
+	my $html = '<table class="border-top border-bottom">';
+	my $odd_even = 1;
+    while (my $row = $sth->fetch) {
+    	$html .= '<tr class="';
+    	$html .= $odd_even ? 'odd' : 'even';
+    	$odd_even ^= 1;
+    	$html .= '" style="cursor:pointer;" onclick="document.location=\'SearchResults.pl?s=';
+    	$html .= $type;
+    	$html .= '_metadata_key::';
+    	$html .= $name;
+    	$html .= '\'"><td class="title5" style="padding-right:10px;white-space:nowrap;text-align:right;">';
+    	$html .= $name;
+    	$html .= '</td><td class="data5">';
+    	$html .= $count;
+    	$html .= '</td></tr>';
+    }
+    return $html . '</table>';
 }
 
 sub get_jobs {
@@ -1551,6 +1592,60 @@ sub upload_image_file {
     }
 
     return;
+}
+
+sub upload_metadata {
+    my %opts = @_;
+    my $type = $opts{type};
+    my @error_ids;
+    my $file = $FORM->param('metadata_file');
+
+    open my $fh, $FORM->tmpFileName($file);
+    local $/ = undef;
+	my $content = <$fh>;
+	close $fh;
+
+	my @lines = split /\r\n|\n|\r/, $content;
+    my $line = shift @lines;
+    chomp $line;
+    my @headers = split(/\t/, $line);
+    foreach (@lines) {
+		chomp $_;
+		next if !$_;
+		my @row = split(/\t/, $_);
+		my $annotations;
+		for my $i (1..$#row) {
+			next if !$row[$i];
+			$annotations .= ';' if $annotations;
+			$annotations .= $headers[$i] . '|' . $row[$i];
+		}
+		if ($annotations) {
+			my @ids = split(/,/, $row[0]);
+			foreach (@ids) {
+			    my $can_annotate = 0;
+			    if ($type eq 'Experiment') {
+			        $can_annotate = $USER->is_owner_editor(experiment => $_);
+			    }
+			    elsif ($type eq 'Notebook') {
+			        $can_annotate = $USER->is_owner_editor(list => $_);
+			    }
+			    else {
+			        $can_annotate = $USER->is_owner_editor(dsg => $_);
+			    }
+			    if ($can_annotate) {
+				    my $target = $DB->resultset($type eq 'Notebook' ? 'List' : $type)->find($_);
+				    create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
+			    }
+			    else {
+			        push @error_ids, $_;
+			    }
+			}
+		}
+	}
+	if (@error_ids) {
+	    return 'Permission denied for the following ' . $type . 's: ' . join(',', @error_ids);
+	}
+	return 'Metadata added';
 }
 
 sub search_notebooks

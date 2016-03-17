@@ -51,8 +51,13 @@ sub new {
 	my $self = {};
 	my $genome_file = get_genome_file($gid);
 	if ($genome_file) {
-	   open(my $fh, $genome_file . '.fai');
-	   $self->{fh} = $fh;
+	    my $fh;
+	    if (!open($fh, $genome_file . '.fai')) { # sd added 12/8/2015 COGE-687
+	        warn 'error opening index file in Chromosomes::new()';
+	        sleep 1;
+	        open($fh, $genome_file . '.fai');
+	    }
+        $self->{fh} = $fh;
 	}
 	$self->{lines} = 0;
 	return bless $self, $class;

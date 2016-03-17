@@ -77,7 +77,6 @@ sub gen_html {
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
     $template->param( BODY       => $body );
-    $template->param( ADJUST_BOX => 1 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     $html .= $template->output;
@@ -614,7 +613,7 @@ qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>
         # mdb removed 7/31/13 issue 77
         #        my $file      = $dsg->file_path;
         #        $file =~ s/$COGEDIR/$URL/;
-        my $seq_url = "api/v1/legacy/sequence/$dsgid"; #"services/JBrowse/service.pl/sequence/$dsgid"; # mdb changed 2/5/15, COGE-289
+        my $seq_url = api_url_for("genomes/$dsgid/sequence"); #"api/v1/legacy/sequence/$dsgid"; # mdb changed 2/12/16 for hypnotoad
         $type = $type . "<br><a href='$seq_url'>Fasta</a><br><a href='bin/export/coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
         my ($ds_source) = $dsg->source;
         my $source      = $ds_source->name;
@@ -918,7 +917,7 @@ sub send_to_xls {
         #my ($wgc, $wat) = $dsg->wobble_content;
         #$wat*=100;
         #$wgc*=100;
-        my $seq_url = $P->{SERVER}."api/v1/legacy/sequence/$dsgid"; #"services/JBrowse/service.pl/sequence/$dsgid"; # mdb changed 2/5/15, COGE-289
+        my $seq_url = url_for(api_url_for("genomes/sequence/$dsgid"));#$P->{SERVER}."api/v1/legacy/sequence/$dsgid"; # mdb changed 2/12/16 for hypnotoad
         my $GFF_url = $P->{SERVER}."bin/export/coge_gff.pl?dsgid=$dsgid;annos=1";
         $worksheet->write( $i, 0, $name );
         $worksheet->write( $i, 1, $desc );

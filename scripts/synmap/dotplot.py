@@ -80,7 +80,7 @@ def gff_parse(fname, name_val, gene_order=True,
             mychr = mychr.replace('c','C')
             mychr = mychr.replace('Chromosome_','')
             mychr = mychr.replace('Chr','')
-            mychr = mychr.replace('Bd','')
+            #mychr = mychr.replace('Bd','') # mdb removed 10/21/15 COGE-669
 
             if 'affold' in mychr:
                 continue
@@ -258,7 +258,7 @@ def define_colors(ksvalue, max_ks=1.5, iterations=1):
 def parse_dag_line(aline):
     myvals = aline.split('||')
     results = {}
-    myvals[0] = myvals[0].replace('Bd','')
+    #myvals[0] = myvals[0].replace('Bd','') # mdb removed 10/21/15 COGE-669
     results['chr'] = myvals[0]
 
     if myvals[3] == 'genomic_hit':
@@ -304,7 +304,7 @@ def draw_dots(fname, xgenes, ygenes, xchrs, ychrs, noks=False):
         columns = line.split()
         xgene = parse_dag_line(columns[3 - offset])
         ygene = parse_dag_line(columns[7 - offset])
-
+        
         if not xgene['name'] in xgenes:
             if xgene['name'] in ygenes:
                 xgene, ygene = ygene, xgene
@@ -326,7 +326,7 @@ def draw_dots(fname, xgenes, ygenes, xchrs, ychrs, noks=False):
         else:
             ks = columns[0]
             mycolor = define_colors(ks)
-
+            
         xcoord = xchrs[xgene['chr']] + xgenes[xgene['name']]
         ycoord = ychrs[ygene['chr']] + ygenes[ygene['name']]
         adot = svgfig.SVG('circle', cx=xcoord, cy=ycoord, r=1, fill=mycolor)
@@ -471,7 +471,7 @@ if __name__ == "__main__":
     ychrs = rescale(ychrs, yscale)
     xgenes = rescale(xgenes, xscale)
     ygenes = rescale(ygenes, yscale)
-
+    
     boxes = draw_boxes(xchrs, ychrs, xend, yend, linewidth, xheader=opts.xhead,
                         yheader=opts.yhead)
     dots = draw_dots(opts.dag_file, xgenes, ygenes, xchrs, ychrs, noks=opts.noks)

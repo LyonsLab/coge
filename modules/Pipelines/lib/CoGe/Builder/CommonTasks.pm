@@ -6,13 +6,14 @@ use warnings;
 use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(basename dirname);
 use File::Path qw(make_path);
+use JSON qw(encode_json);
 use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
-use CoGe::Accessory::Utils qw(sanitize_name to_filename);
-use CoGe::Accessory::IRODS qw(irods_iget irods_iput);
+use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension to_filename_base);
+use CoGe::Accessory::IRODS qw(irods_iget irods_iput irods_set_env);
 use CoGe::Accessory::Web qw(get_defaults split_url);
-use CoGe::Core::Storage qw(get_workflow_results_file get_download_path);
+use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path);
 use CoGe::Core::Metadata qw(tags_to_string);
 
 require Exporter;
@@ -28,6 +29,12 @@ our @EXPORT = qw(
     create_notebook_job create_bam_sort_job create_iget_job
     create_load_annotation_job create_data_retrieval_workflow
     send_email_job add_items_to_notebook_job create_hisat2_workflow
+    export_experiment_job create_cutadapt_workflow
+    create_trimgalore_job create_trimgalore_workflow
+    create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
+    create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
+    create_bgzip_job create_tabix_index_job create_sumstats_job
+    add_workflow_result create_bowtie2_workflow 
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -62,6 +69,28 @@ sub generate_results { #FIXME deprecated, remove soon
         outputs => [catfile($result_dir, "1")],
         description => "Generating results..."
    };
+}
+
+sub add_workflow_result {
+    my %opts = @_;
+    my $username = $opts{username};
+    my $wid = $opts{wid};
+    my $result = encode_json($opts{result});
+    my $dependency = $opts{dependency};
+    
+    my $result_file = get_workflow_results_file($username, $wid);
+
+    return {
+        cmd  => catfile($CONF->{SCRIPTDIR}, "add_workflow_result.pl"),
+        args => [
+            ['-user_name', $username, 0],
+            ['-wid', $wid, 0],
+            ['-result', "'".$result."'", 0]
+        ],
+        inputs  => [$dependency],
+        outputs => [$result_file],
+        description => "Adding workflow result..."
+    };
 }
 
 sub copy_and_mask {
@@ -158,6 +187,7 @@ sub export_to_irods {
 
     $overwrite = 0 unless defined $overwrite;
 
+    irods_set_env(catfile($CONF->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
     my $cmd = irods_iput($src, $dest, { no_execute => 1, overwrite => $overwrite });
 
     my $filename = basename($done_file);
@@ -171,22 +201,50 @@ sub export_to_irods {
    };
 }
 
+sub export_experiment_job {
+    my %args = @_;
+    my $eid = $args{eid};
+    my $output = $args{output};
+
+    return {
+        cmd => catdir($CONF->{SCRIPTDIR}, "export_experiment_or_genome.pl"),
+        description => "Generating experiment files",
+        args => [
+            ["-id", $eid, 0],
+            ["-type", '"experiment"', 0],
+            ["-output", $output, 1],
+            ["-conf", $CONF->{_CONFIG_PATH}, 0],
+            ["-dir", ".", ""]
+        ],
+        inputs => [],
+        outputs => [$output]
+    };
+}
+
 sub create_iget_job {
     my %args = @_;
     my $irods_path = $args{irods_path}; # source path
     my $local_path = $args{local_path}; # destination path
 
     my $dest_file = catdir($local_path, 'irods', $irods_path);
+    my $done_file = $dest_file . '.done';
     my $dest_path = dirname($dest_file);
-    make_path($dest_path) unless (-r $dest_path);
-    my $cmd = irods_iget( $irods_path, $dest_path, { no_execute => 1 } );
+    #make_path($dest_path) unless (-r $dest_path); # mdb removed 2/9/16 -- for hypnotoad
+    my $cmd;
+    $cmd .= "mkdir -p $dest_path ; "; # mdb added 2/9/16 -- for hypnotoad
+    irods_set_env(catfile($CONF->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
+    $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1 } ) . ' ; ';
+    $cmd .= "touch $done_file";
 
     return {
         cmd => $cmd,
         script => undef,
         args => [],
         inputs => [],
-        outputs => [ $dest_file ],
+        outputs => [ 
+            $dest_file,
+            $done_file
+        ],
         description => "Fetching $irods_path..."
     };
 }
@@ -199,7 +257,7 @@ sub create_ftp_get_job {
     my $dest_path = $opts{dest_path};
     
     my ($filename, $path) = split_url($url);
-    my $output_file = catdir($dest_path, $path, $filename);
+    my $output_file = catfile($dest_path, $path, $filename);
     
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, "ftp.pl"),
@@ -211,7 +269,9 @@ sub create_ftp_get_job {
             ["-dest_path", $dest_path,         0]
         ],
         inputs => [],
-        outputs => [ $output_file ],
+        outputs => [ 
+            $output_file
+        ],
         description => "Fetching $url..."
     };
 }
@@ -219,9 +279,9 @@ sub create_ftp_get_job {
 sub create_data_retrieval_workflow {
     my %opts = @_;
     my $upload_dir = $opts{upload_dir};
-    my $data = $opts{data};
+    my $data       = $opts{data};
     
-    my (@tasks, @files);
+    my (@tasks, @outputs, @ncbi);
     foreach my $item (@$data) {
         my $type = lc($item->{type});
         
@@ -230,7 +290,7 @@ sub create_data_retrieval_workflow {
         if ($item->{path}) {
             my $filepath = catfile($upload_dir, $item->{path});
             if (-r $filepath) {
-                push @files, $filepath;
+                push @outputs, $filepath;
                 next;
             }
         }
@@ -250,17 +310,53 @@ sub create_data_retrieval_workflow {
                 dest_path => $upload_dir
             );
         }
+        elsif ($type eq 'ncbi') {
+            #TODO move file retrieval from genbank_genome_loader.pl to here
+            push @ncbi, $item->{path};
+        }
+        elsif ($type eq 'sra') {
+            my $cache_path = get_sra_cache_path();
+            $task = create_fastq_dump_job(
+                accn => $item->{path},
+                dest_path => $cache_path
+            );
+        }
         
         # Add task to workflow
         if ($task) {
             push @tasks, $task;
-            push @files, $task->{outputs}[0];
+            push @outputs, $task->{outputs}[0];
         }
     }
     
     return {
         tasks => \@tasks,
-        files => \@files
+        outputs => \@outputs,
+        ncbi  => \@ncbi
+    };
+}
+
+sub create_fastq_dump_job {
+    my %opts = @_;
+    my $accn = $opts{accn};
+    my $dest_path = $opts{dest_path};
+    die unless $accn;
+    
+    my $output_file = catfile($dest_path, $accn . '.fastq');
+    my $done_file = "$output_file.done";
+
+    my $cmd = $CONF->{FASTQ_DUMP} || 'fastq-dump';
+
+    return {
+        cmd => "$cmd $accn --outdir $dest_path ; touch $done_file",
+        script => undef,
+        args => [],
+        inputs => [],
+        outputs => [
+            $output_file,
+            $done_file
+        ],
+        description => "Fetching $accn from NCBI-SRA..."
     };
 }
 
@@ -331,13 +427,58 @@ sub create_gunzip_job {
         script => undef,
         args => [],
         inputs => [
-            $input_file
+            $input_file,
+            $input_file . '.done' # ensure file is done transferring
         ],
         outputs => [
             $output_file,
             "$output_file.decompressed"
         ],
         description => "Decompressing " . basename($input_file) . "..."
+    };
+}
+
+sub create_bgzip_job {
+    my $input_file = shift;
+    my $output_file = $input_file . '.bgz';
+
+    my $cmd = $CONF->{BGZIP} || 'bgzip';
+
+    return {
+        cmd => "$cmd -c $input_file > $output_file ;  touch $output_file.done",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.done"
+        ],
+        description => "Compressing " . basename($input_file) . " with bgzip..."
+    };
+}
+
+sub create_tabix_index_job {
+    my $input_file = shift;
+    my $index_type = shift; 
+    my $output_file = $input_file . '.tbi';
+
+    my $cmd = $CONF->{TABIX} || 'tabix';
+
+    return {
+        cmd => "$cmd -p $index_type $input_file ;  touch $output_file.done",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file,
+            $input_file . '.done'
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.done"
+        ],
+        description => "Indexing " . basename($input_file) . "..."
     };
 }
 
@@ -373,7 +514,6 @@ sub create_fasta_index_job {
     
     # Required params
     my $fasta = $opts{fasta};
-    my $cache_dir = $opts{cache_dir};
 
     return {
         cmd => $CONF->{SAMTOOLS} || "samtools",
@@ -452,6 +592,7 @@ sub create_load_vcf_job {
             ['-desc', qq{"$desc"}, 0],
             ['-version', "'".$metadata->{version}."'", 0],
             ['-restricted', "'".$metadata->{restricted}."'", 0],
+            ['-exit_without_error_for_empty_input', 1, 0],
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
             ['-source_name', "'".$metadata->{source}."'", 0],
@@ -460,16 +601,15 @@ sub create_load_vcf_job {
             ['-staging_dir', "./load_vcf", 0],
             ['-file_type', qq["vcf"], 0],
             ['-data_file', $vcf, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH},
             $opts->{vcf},
         ],
         outputs => [
             [$output_path, '1'],
             catfile($output_path, "log.done"),
-            $result_file
+            #$result_file
         ],
         description => "Loading SNPs as new experiment ..."
     };
@@ -487,11 +627,13 @@ sub create_load_experiment_job {
     my $gid = $opts{gid};
     my $input_file = $opts{input_file};
     my $normalize = $opts{normalize} || 0;
+    my $name = $opts{name}; # optional name for this load
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
-    my $output_path = catdir($staging_dir, "load_experiment");
+    my $output_name = "load_experiment" . ($name ? "_$name" : '');
+    my $output_path = catdir($staging_dir, $output_name);
     
     my $result_file = get_workflow_results_file($user->name, $wid);
     
@@ -514,21 +656,20 @@ sub create_load_experiment_job {
             ['-source_name', "'" . $metadata->{source_name} . "'", 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-tags', qq["$tags_str"], 0],
-            ['-staging_dir', "./load_experiment", 0],
+            ['-staging_dir', $output_name, 0],
             ['-data_file', $input_file, 0],
             ['-normalize', $normalize, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH},
-            $input_file,
+            $input_file
         ],
         outputs => [
             [$output_path, '1'],
             catfile($output_path, "log.done"),
             $result_file
         ],
-        description => "Loading experiment ..."
+        description => "Loading" . ($name ? " $name" : '') . " experiment..."
     };
 }
 
@@ -544,7 +685,7 @@ sub create_load_genome_job {
     my $input_files = $opts{input_files};
     my $irods_files = $opts{irods_files};
     
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_genome.pl");
+    my $cmd = 'perl ' . catfile($CONF->{SCRIPTDIR}, "load_genome.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
     my $output_path = catdir($staging_dir, "load_genome");
@@ -552,7 +693,8 @@ sub create_load_genome_job {
     my $result_file = get_workflow_results_file($user->name, $wid);
 
     my $file_str = '';
-    $file_str = join(',', map { basename($_) } @$input_files) if ($input_files && @$input_files);
+    #$file_str = join(',', map { basename($_) } @$input_files) if ($input_files && @$input_files);
+    $file_str = join(',', @$input_files) if ($input_files && @$input_files);
     my $irods_str = '';
     $irods_str = join(',', map { basename($_) } @$irods_files) if ($irods_files && @$irods_files);
 
@@ -573,10 +715,9 @@ sub create_load_genome_job {
             ['-staging_dir', "./load_genome", 0],
             ['-fasta_files', "'".$file_str."'", 0],
             ['-irods_files', "'".$irods_str."'", 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH}, 
             @$input_files
         ],
         outputs => [
@@ -609,7 +750,7 @@ sub create_load_genome_from_NCBI_job {
         ['-user_name', $user->name, 0],
         ['-wid', $wid, 0],
         ['-staging_dir', "./load_genome_from_ncbi", 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-GO', 1, 0]
     ];
     foreach (@$ncbi_accns) {
@@ -620,9 +761,7 @@ sub create_load_genome_from_NCBI_job {
         cmd => $cmd,
         script => undef,
         args => $args,
-        inputs => [
-            $CONF->{_CONFIG_PATH}
-        ],
+        inputs => [],
         outputs => [
             [$output_path, '1'],
             catfile($output_path, "log.done"),
@@ -664,10 +803,9 @@ sub create_load_annotation_job {
             ['-gid', $gid, 0],
             ['-staging_dir', "./load_annotation", 0],
             ['-data_file', "'".$input_file."'", 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH}, 
             $input_file
         ],
         outputs => [
@@ -704,7 +842,7 @@ sub create_load_batch_job {
         ['-wid', $wid, 0],
         ['-staging_dir', "'".$staging_dir."'", 0],
         ['-files', "'".$file_str."'", 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1]    
+        ['-config', $CONF->{_CONFIG_PATH}, 0]    
     ];
     push $args, ['-nid', $nid, 0] if ($nid);
 
@@ -713,7 +851,6 @@ sub create_load_batch_job {
         script => undef,
         args => $args,
         inputs => [
-            $CONF->{_CONFIG_PATH}, 
             @$files
         ],
         outputs => [
@@ -737,11 +874,13 @@ sub create_load_bam_job {
     my $wid = $opts{wid};
     my $gid = $opts{gid};
     my $bam_file = $opts{bam_file};
+    die unless ($user && $staging_dir && $wid && $gid && $bam_file);
     
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
+    my $cmd = 'perl ' . catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
-    my $output_path = catdir($staging_dir, "load_bam");
+    my $output_name = "load_bam_" . to_filename_base($bam_file);
+    my $output_path = catdir($staging_dir, $output_name);
     
     my $result_file = get_workflow_results_file($user->name, $wid);
     
@@ -757,7 +896,7 @@ sub create_load_bam_job {
         script => undef,
         args => [
             ['-user_name', $user->name, 0],
-            ['-name', "'" . $metadata->{name} . " (Alignment)" . "'", 0],
+            ['-name', "'" . $metadata->{name} . " (BAM alignment)" . "'", 0],
             ['-desc', "'" . $metadata->{description} . "'", 0],
             ['-version', "'" . $metadata->{version} . "'", 0],
             ['-restricted', "'" . $metadata->{restricted} . "'", 0],
@@ -766,13 +905,12 @@ sub create_load_bam_job {
             ['-source_name', "'" . $metadata->{source} . "'", 0],
             ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
-            ['-staging_dir', "./load_bam", 0],
+            ['-staging_dir', $output_name, 0],
             ['-file_type', qq["bam"], 0],
             ['-data_file', $bam_file, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1]
+            ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            $CONF->{_CONFIG_PATH},
             $bam_file
         ],
         outputs => [
@@ -798,7 +936,7 @@ sub create_validate_fastq_job {
         cmd => $cmd,
         script => undef,
         args => [
-            ["", $fastq, 1]
+            ["", $fastq, 0] # mdb changed 3/1/16 from 1 to 0, COGE-707
         ],
         inputs => $inputs,
         outputs => [
@@ -813,32 +951,33 @@ sub create_cutadapt_job {
 
     # Required params
     my $fastq = $opts{fastq};            # for single fastq file (backwards compatibility) or two paired-end fastq files (new functionality)
-    my $validated = $opts{validated};    # input dependency from previous task, one or two files based on fastq arg
+    my $done_files = $opts{done_files};  # input dependency from previous task, one or two files based on fastq arg
     my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
-    my $params = $opts{params} // {}; #/
-    my $q = $params->{'-q'} // 25; #/
-    my $quality = $params->{'--quality-base'} // 32; #/
-    my $m = $params->{'-m'} // 17; #/
-    my $read_type = $params->{read_type} // 'single'; #/
+    my $trimming_params = $opts{trimming_params} // {};
+    my $q = $trimming_params->{'-q'} // 25;
+    my $m = $trimming_params->{'-m'} // 17;
+    my $read_params = $opts{read_params} // {};
+    my $encoding = $read_params->{encoding} // 33;
+    my $read_type = $read_params->{read_type} // 'single';
 
     $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
-    $validated = [ $validated ] unless (ref($validated) eq 'ARRAY');
+    $done_files = [ $done_files ] unless (ref($done_files) eq 'ARRAY');
     
     my $name = join(', ', map { basename($_) } @$fastq);
-    my @inputs = ( @$fastq, @$validated);
+    my @inputs = ( @$fastq, @$done_files);
     my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
+    my @done_files = map { $_ . '.done' } @outputs;
 
     # Build up command/arguments string
-    my $cmd = $CONF->{CUTADAPT};
-    die "ERROR: CUTADAPT is not in the config." unless $cmd;
+    my $cmd = $CONF->{CUTADAPT} || 'cutadapt';
     $cmd = 'nice ' . $cmd; # run at lower priority
 
     my $arg_str;
     $arg_str .= $cmd . ' ';
-    $arg_str .= "-q $q --quality-base=$quality -m $m -o $outputs[0] ";
-    $arg_str .= "-p $outputs[1] " if (@$fastq > 1); # paired-end
+    $arg_str .= "-q $q --quality-base=$encoding -m $m -o $outputs[0] ";
+    $arg_str .= "-p $outputs[1] " if ($read_type eq 'paired'); # paired-end
     
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, 'cutadapt.pl'), # this script was created because JEX can't handle Cutadapt's paired-end argument syntax
@@ -851,8 +990,181 @@ sub create_cutadapt_job {
         ],
         inputs => \@inputs,
         outputs => \@outputs,
+        done_files => \@done_files, # JEX will ignore this
         description => "Trimming (cutadapt) $name..."
     };
+}
+
+sub create_cutadapt_workflow {
+    my %opts = @_;
+    my $fastq1 = $opts{fastq1}; # array ref of left reads (or all reads if single-ended)
+    my $fastq2 = $opts{fastq2}; # array ref of right reads (or undef if single-ended)
+    my $done_files = $opts{done_files};
+    my $staging_dir = $opts{staging_dir};
+    my $read_params = $opts{read_params};
+    my $read_type = $read_params->{read_type} // 'single'; #/
+    my $trimming_params = $opts{trimming_params};
+    
+    my (@tasks, @outputs, @done_files);
+
+    if ($read_type eq 'single') { # single-ended
+        # Create cutadapt task for each file
+        foreach my $file (@$fastq1) {
+            my $task = create_cutadapt_job(
+                fastq => $file,
+                done_files => $done_files,
+                staging_dir => $staging_dir,
+                read_params => $read_params,
+                trimming_params => $trimming_params
+            );
+            push @outputs, $task->{outputs}->[0];
+            push @done_files, @{$task->{done_files}};
+            push @tasks, $task;
+        }
+    }
+    else { # paired-end
+        # Create cutadapt task for each file pair
+        for (my $i = 0;  $i < @$fastq1;  $i++) { 
+            my $file1 = shift @$fastq1;
+            my $file2 = shift @$fastq2;
+            my $task = create_cutadapt_job(
+                fastq => [ $file1, $file2 ],
+                done_files => $done_files,
+                staging_dir => $staging_dir,
+                read_params => $read_params,
+                trimming_params => $trimming_params
+            );
+            push @outputs, @{$task->{outputs}};
+            push @done_files, @{$task->{done_files}};
+            push @tasks, $task;
+        }
+    }
+    
+    return ( \@tasks, \@outputs, \@done_files );
+}
+
+sub create_trimgalore_job {
+    my %opts = @_;
+
+    # Required params
+    my $fastq = $opts{fastq};            # for single fastq file (backwards compatibility) or two paired-end fastq files (new functionality)
+    my $done_files = $opts{done_files};  # input dependency from previous task, one or two files based on fastq arg
+    my $staging_dir = $opts{staging_dir};
+
+    # Optional arguments
+    my $trimming_params = $opts{trimming_params} // {}; #/
+    my $q = $trimming_params->{'-q'} // 20; #/
+    my $length = $trimming_params->{'-length'} // 20; #/
+    my $a = $trimming_params->{'-a'};
+    my $read_params = $opts{read_params} // {}; #/
+    my $encoding = $read_params->{encoding} // 33; #/
+    my $read_type = $read_params->{read_type} // 'single'; #/
+
+    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
+    $done_files = [ $done_files ] unless (ref($done_files) eq 'ARRAY');
+    
+    my $name = join(', ', map { basename($_) } @$fastq);
+    my @inputs = ( @$fastq, @$done_files);
+
+    # Build up command/arguments string
+    my $cmd = $CONF->{TRIMGALORE} || 'trim_galore';
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
+    # Create staging dir
+    $cmd = "mkdir -p $staging_dir ; " . $cmd;
+
+    my $args = [
+        ['--output_dir', $staging_dir, 0],
+        ['-q', $q, 0],
+        ['--length', $length, 0],
+    ];
+    
+    my $phred = ($encoding == 64 ? '--phred64' : '--phred33');
+    push @$args, [$phred, '', 0];
+    
+    if (defined $a) {
+        push @$args, ['-a', '"'.$a.'"', 0];
+    }
+    
+    my @outputs;
+    if ($read_type eq 'paired') {
+        push @$args, ['--paired', join(' ', @$fastq), 0];
+        
+        my ($r1, $r2) = @$fastq;
+        @outputs = ( catfile($staging_dir, to_filename_without_extension($r1) . '_val_1.fq'), 
+                     catfile($staging_dir, to_filename_without_extension($r2) . '_val_2.fq') );
+    }
+    else { # single
+        my ($file) = @$fastq;
+        push @$args, ['', $file, 0];
+        @outputs = ( catfile($staging_dir, to_filename_without_extension($file) . '_trimmed.fq') );
+    }
+    
+    # kludge to fix JEX sequencing
+    foreach (@$args) {
+        $cmd .= ' ' . $_->[0] . ' ' . $_->[1];    
+    }
+    my @done_files = map { $_ . '.done' } @outputs;
+    foreach (@done_files) {
+        $cmd .= " ; touch $_";
+    }
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [], #$args
+        inputs => \@inputs,
+        outputs => \@outputs,
+        done_files => \@done_files,
+        description => "Trimming (trimgalore) $name..."
+    };
+}
+
+sub create_trimgalore_workflow {
+    my %opts = @_;
+    my $fastq1 = $opts{fastq1} // []; # array ref of left reads (or all reads if single-ended)
+    my $fastq2 = $opts{fastq2} // []; # array ref of right reads (or undef if single-ended)
+    my $done_files = $opts{done_files};
+    my $staging_dir = $opts{staging_dir};
+    my $read_params = $opts{read_params};
+    my $trimming_params = $opts{trimming_params};
+    
+    my (@tasks, @outputs, @done_files);
+
+    if (!$read_params->{read_type} || $read_params->{read_type} eq 'single') { # single-ended
+        # Create trimgalore task for each file
+        foreach my $file (@$fastq1, @$fastq2) {
+            my $task = create_trimgalore_job(
+                fastq => $file,
+                done_files => $done_files,
+                staging_dir => $staging_dir,
+                read_params => $read_params,
+                trimming_params => $trimming_params
+            );
+            push @outputs, $task->{outputs}->[0];
+            push @done_files, @{$task->{done_files}};
+            push @tasks, $task;
+        }
+    }
+    else { # paired-end
+        # Create trimgalore task for each file pair
+        for (my $i = 0;  $i < @$fastq1;  $i++) { 
+            my $file1 = shift @$fastq1;
+            my $file2 = shift @$fastq2;
+            my $task = create_trimgalore_job(
+                fastq => [ $file1, $file2 ],
+                done_files => $done_files,
+                staging_dir => $staging_dir,
+                read_params => $read_params,
+                trimming_params => $trimming_params
+            );
+            push @outputs, @{$task->{outputs}};
+            push @done_files, @{$task->{done_files}};
+            push @tasks, $task;
+        }
+    }
+    
+    return ( \@tasks, \@outputs, \@done_files );
 }
 
 sub create_gff_generation_job {
@@ -866,7 +1178,7 @@ sub create_gff_generation_job {
     my $cmd = catfile($CONF->{SCRIPTDIR}, "coge_gff.pl");
     my $name = sanitize_name($organism_name) . "-1-name-0-0-id-" . $gid . "-1.gff";
 
-    my $inputs = [ $CONF->{_CONFIG_PATH} ];
+    my $inputs = [];
     #push @{$inputs}, $validated if $validated;
 
     return {
@@ -881,7 +1193,7 @@ sub create_gff_generation_job {
             ['-cds', 0, 0],
             ['-annos', 0, 0],
             ['-nu', 1, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 1],
+            ['-config', $CONF->{_CONFIG_PATH}, 0],
         ],
         inputs => $inputs,
         outputs => [
@@ -893,56 +1205,109 @@ sub create_gff_generation_job {
 
 sub create_hisat2_workflow {
     my %opts = @_;
+    my $fasta        = $opts{fasta};
+    my $fastq        = $opts{fastq};
+    my $done_files   = $opts{done_files};
+    my $gid          = $opts{gid};
+    my $encoding     = $opts{encoding};
+    my $read_type    = $opts{read_type} // 'single';
+    my $staging_dir  = $opts{staging_dir};
+    my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
 
-    # Required arguments
-    my $gid = $opts{gid};
-    my $fasta = $opts{fasta};
-    my $fastq = $opts{fastq};
-    my $read_type = $opts{'read_type'} // "single"; #/
-    my $staging_dir = $opts{staging_dir};
+    my @tasks;
 
-    my ($index, %build) = create_hisat2_build_job($gid, $fasta);
+    # Add index task
+    my $index_task = create_hisat2_index_job($gid, $fasta);
+    push @tasks, $index_task;
     
-    my %hisat2 = create_hisat2_job(
-        fastq => $fastq,
-        gid => $gid,
-        index_files => ($build{outputs}),
-        read_type => $read_type,
-        staging_dir => $staging_dir
-    );
+    # Add one or more alignment tasks
+    my @sam_files;
+    if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
+        foreach my $file (@$fastq) {
+            my $task = create_hisat2_alignment_job(
+                fastq => [ $file ],
+                done_files => $done_files,
+                gid => $gid,
+                index_files => $index_task->{outputs},
+                encoding => $encoding,
+                read_type => $read_type,
+                staging_dir => $staging_dir
+            );
+            push @tasks, $task;
+            push @sam_files, $task->{outputs}->[0];
+        }
+    }
+    else { # standard Bowtie run (all fastq's at once)
+        my $task = create_hisat2_alignment_job(
+            fastq => $fastq,
+            done_files => $done_files,
+            gid => $gid,
+            index_files => $index_task->{outputs},
+            encoding => $encoding,
+            read_type => $read_type,
+            staging_dir => $staging_dir
+        );
+        push @tasks, $task;
+        push @sam_files, $task->{outputs}->[0];
+    }
     
-    my %bam = create_samtools_bam_job($hisat2{outputs}->[0], $staging_dir);
-
-    my @tasks = ( \%build, \%hisat2, \%bam );
-    my %results = (
-        bam_file => $bam{outputs}->[0]
-    );
-    return \@tasks, \%results;
+    # Add one or more sam-to-bam tasks
+    my %results;
+    foreach my $file (@sam_files) {
+        my $task = create_sam_to_bam_job($file, $staging_dir);
+        push @tasks, $task;
+        push @{$results{bam_files}}, $task->{outputs}->[0];
+    }    
+    
+    return (\@tasks, \%results);
 }
 
-sub create_hisat2_job {
+sub create_hisat2_alignment_job {
     my %opts = @_;
     my $fastq       = $opts{fastq};
+    my $done_files  = $opts{done_files};
     my $gid         = $opts{gid};
     my $index_files = $opts{index_files};
+    my $encoding    = $opts{encoding};
     my $read_type   = $opts{read_type};
     my $staging_dir = $opts{staging_dir};
 
-    return (
+    my ($first_fastq) = @$fastq;
+    my $output_file = to_filename_without_extension($first_fastq) . '.sam';
+
+	my $args = [
+		['-p', '32', 0],
+		['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
+		['-S', $output_file, 0]
+    ];
+    
+    if ($encoding eq '64') {
+        push $args, ['--phred64', '', 0];
+    }
+    else {
+        push $args, ['--phred33', '', 0];
+    }
+    
+    if ($read_type eq 'single') {
+    	push $args, ['-U', join(',', @$fastq), 0];
+    }
+    else {
+		my ($m1, $m2) = detect_paired_end($fastq);
+    	push $args, ['-1', join(',', sort @$m1), 0];
+    	push $args, ['-2', join(',', sort @$m2), 0];
+	}
+	
+	return {
         cmd => 'nice ' . $CONF->{HISAT2},
         script => undef,
-        args => [
-        	['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
-			['-U', join(',', @$fastq), 0],
-			['-S', 'hisat2.sam', 0]
-        ],
-        inputs => [ @$fastq, @$index_files ],
-        outputs => [ catfile($staging_dir, 'hisat2.sam') ],
-        description => "Aligning sequences (HISAT2)..."
-    );
+        args => $args,
+        inputs => [ @$fastq, @$done_files, @$index_files ],
+        outputs => [ catfile($staging_dir, $output_file) ],
+        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using HISAT2..."
+	};
 }
 
-sub create_hisat2_build_job {
+sub create_hisat2_index_job {
     my $gid = shift;
     my $fasta = shift;
 
@@ -950,13 +1315,13 @@ sub create_hisat2_build_job {
 	make_path $cache_dir unless (-d $cache_dir);
     my $name = catfile($cache_dir, 'genome.reheader');
     
-    return catdir($cache_dir, $name), (
+    return {
         cmd => 'nice ' . $CONF->{HISAT2_BUILD},
         script => undef,
         args => [
-        	['-p', '8', 0],
-            ["", $fasta, 0],
-            ["", $name, 0],
+        	['-p', '32', 0],
+            ['', $fasta, 0],
+            ['', $name, 0],
         ],
         inputs => [ $fasta ],
         outputs => [
@@ -970,7 +1335,70 @@ sub create_hisat2_build_job {
             $name . ".8.ht2"
         ],
         description => "Indexing genome sequence with hisat2-build..."
-    );
+    };
+}
+
+sub create_bowtie2_workflow {
+    my %opts = @_;
+
+    # Required arguments
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $done_files = $opts{done_files};
+    my $staging_dir = $opts{staging_dir};
+    my $read_type = $opts{read_type};
+    my $encoding = $opts{encoding};
+    my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
+
+    my @tasks;
+
+    # Add index task
+    my ($index_path, $index_task) = create_bowtie_index_job($gid, $fasta);
+    push @tasks, $index_task;
+    
+    # Add one or more alignment tasks
+    my @sam_files;
+    if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
+        foreach my $file (@$fastq) {
+            my $task = create_bowtie2_alignment_job(
+                staging_dir => $staging_dir,
+                fasta => $fasta,
+                fastq => [ $file ],
+                done_files => $done_files,
+                index_name => $index_path,
+                index_files => $index_task->{outputs},
+                read_type => $read_type,
+                encoding => $encoding
+            );
+            push @tasks, $task;
+            push @sam_files, $task->{outputs}[0];
+        }
+    }
+    else { # standard Bowtie run (all fastq's at once)
+        my $task = create_bowtie2_alignment_job(
+            staging_dir => $staging_dir,
+            fasta => $fasta,
+            fastq => $fastq,
+            done_files => $done_files,
+            index_name => $index_path,
+            index_files => $index_task->{outputs},
+            read_type => $read_type,
+            encoding => $encoding
+        );
+        push @tasks, $task;
+        push @sam_files, $task->{outputs}[0];
+    }
+    
+    # Add one or more sam-to-bam tasks
+    my %results;
+    foreach my $file (@sam_files) {
+        my $task = create_sam_to_bam_job($file, $staging_dir);
+        push @tasks, $task;
+        push @{$results{bam_files}}, $task->{outputs}[0];
+    }
+
+    return (\@tasks, \%results);
 }
 
 sub create_tophat_workflow {
@@ -980,26 +1408,30 @@ sub create_tophat_workflow {
     my $gid = $opts{gid};
     my $fasta = $opts{fasta};
     my $fastq = $opts{fastq};
-    my $validated = $opts{validated};
+    my $done_files = $opts{done_files};
     my $gff = $opts{gff};
     my $staging_dir = $opts{staging_dir};
+    my $read_type = $opts{read_type};
+    my $encoding = $opts{encoding};
     my $params = $opts{params};
 
-    my ($index, %bowtie) = create_bowtie_index_job($gid, $fasta);
+    my ($index, $bowtie) = create_bowtie_index_job($gid, $fasta);
     
     my %tophat = create_tophat_job(
         staging_dir => $staging_dir,
         fasta => $fasta,
         fastq => $fastq,
-        validated => $validated,
+        done_files => $done_files,
         gff => $gff,
         index_name => $index,
-        index_files => ($bowtie{outputs}),
+        index_files => ($bowtie->{outputs}),
+        read_type => $read_type,
+        encoding => $encoding,
         params => $params,
     );
 
     # Return the bam output name and jobs required
-    my @tasks = ( \%bowtie, \%tophat );
+    my @tasks = ( $bowtie, \%tophat );
     my %results = (
         bam_file => $tophat{outputs}->[0]
     );
@@ -1015,7 +1447,7 @@ sub create_bowtie_index_job {
     my $BOWTIE_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bowtie_index");
     die "ERROR: BOWTIE_BUILD is not in the config." unless ($cmd);
 
-    return catdir($BOWTIE_CACHE_DIR, $name), (
+    return catdir($BOWTIE_CACHE_DIR, $name), {
         cmd => $cmd,
         script => undef,
         args => [
@@ -1034,7 +1466,60 @@ sub create_bowtie_index_job {
             catfile($BOWTIE_CACHE_DIR, $name . ".rev.2.bt2")
         ],
         description => "Indexing genome sequence with Bowtie..."
-    );
+    };
+}
+
+sub create_bowtie2_alignment_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $staging_dir = $opts{staging_dir};
+    my $fasta       = $opts{fasta};     # reheadered fasta file
+    my $fastq       = $opts{fastq};     # array ref to fastq files
+    my $done_files  = $opts{done_files}; # array ref to validation files
+    my $index_name  = basename($opts{index_name});
+    my $index_files = $opts{index_files};
+    my $read_type   = $opts{read_type} // 'single';
+    my $encoding    = $opts{encoding};
+
+    # Setup input dependencies
+    my $inputs = [
+        $fasta,
+        @$fastq,
+        @$done_files,
+        @$index_files
+    ];
+    print STDERR Dumper $inputs, "\n";
+
+    # Build up command/arguments string
+    my $cmd = $CONF->{BOWTIE2} || 'bowtie2';
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
+    $cmd .= " -x $index_name ";
+    
+    if ($read_type eq 'paired') {
+        my ($m1, $m2) = detect_paired_end(\@$fastq);
+        die "error: invalid paired-end files: m1: @$m1 -- m2: @$m2" unless (@$m1 and @$m2);
+        $cmd .= '-1 ' . join(',', sort @$m1) . ' -2 ' . join(',', sort @$m2);     
+    }
+    else { # single-ended
+        $cmd .= '-U ' . join(',', sort @$fastq);
+    }
+    
+    my ($first_fastq) = @$fastq;
+    my $output_file = to_filename_without_extension($first_fastq) . '.sam';
+    $cmd .= " -S $output_file";
+    
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [],
+        inputs => $inputs,
+        outputs => [
+            catfile($staging_dir, $output_file)
+        ],
+        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using Bowtie2..."
+    };    
 }
 
 sub create_tophat_job {
@@ -1044,21 +1529,22 @@ sub create_tophat_job {
     my $staging_dir = $opts{staging_dir};
     my $fasta       = $opts{fasta};
     my $fastq       = $opts{fastq};
-    my $validated   = $opts{validated};
+    my $done_files  = $opts{done_files};
     my $gff         = $opts{gff};
     my $index_name  = basename($opts{index_name});
     my $index_files = $opts{index_files};
+    my $read_type   = $opts{read_type} // 'single';
+    my $encoding    = $opts{encoding};
     my $params      = $opts{params};
 
     # Optional arguments
     my $g = $params->{'-g'} // 1; #/
-    my $read_type = $params->{read_type} // 'single'; #/
 
     # Setup input dependencies
     my $inputs = [
         $fasta,
         @$fastq,
-        @$validated,
+        @$done_files,
         @$index_files
     ];
     push @$inputs, $gff if $gff;
@@ -1071,6 +1557,7 @@ sub create_tophat_job {
     my $arg_str;
     $arg_str .= $cmd . ' ';
     $arg_str .= "-G $gff " if ($gff);
+    $arg_str .= "--phred64_quals " if ($encoding eq '64');
     $arg_str .= "-o . -g $g -p 32 $index_name ";
 
     return (
@@ -1085,9 +1572,255 @@ sub create_tophat_job {
         outputs => [
             catfile($staging_dir, "accepted_hits.bam")
         ],
-        description => "Aligning sequences (tophat)..."
+        description => "Aligning sequences with TopHat..."
     );
 }
+
+sub create_bismark_workflow {
+    my %opts = @_;
+
+    # Required arguments
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $done_files = $opts{done_files};
+    my $staging_dir = $opts{staging_dir};
+    my $encoding = $opts{encoding};
+    my $read_type = $opts{read_type};
+    my $params = $opts{params};
+
+    my ($index_path, %index_task) = create_bismark_index_job($gid, $fasta);
+    
+    my %align_task = create_bismark_alignment_job(
+        staging_dir => $staging_dir,
+        fasta => $fasta,
+        fastq => $fastq,
+        done_files => $done_files,
+        index_path => $index_path,
+        index_files => ($index_task{outputs}),
+        encoding => $encoding,
+        read_type => $read_type,
+        params => $params
+    );
+
+    # Return the bam output name and jobs required
+    my @tasks = ( \%index_task, \%align_task );
+    my %results = (
+        bam_file => $align_task{outputs}->[0]
+    );
+    return \@tasks, \%results;
+}
+
+sub create_bismark_index_job {
+    my $gid = shift;
+    my $fasta = shift;
+    my $name = to_filename($fasta);
+    
+    my $done_file = 'bismark_genome_preparation.done';
+    
+    my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark_genome_preparation') : 'bismark_genome_preparation';
+    my $BISMARK_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bismark_index");
+    $cmd = "mkdir -p $BISMARK_CACHE_DIR ; " .
+           "cp $fasta $BISMARK_CACHE_DIR/$name.fa ; " . # bismark requires fasta file to end in .fa or .fasta, not .faa
+           "nice $cmd $BISMARK_CACHE_DIR ; " .
+           "touch $done_file";
+
+    return $BISMARK_CACHE_DIR, (
+        cmd => $cmd,
+        script => undef,
+        args => [],
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.1.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.2.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.3.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.4.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.rev.1.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'CT_conversion', 'BS_CT.rev.2.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.1.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.2.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.3.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.4.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.rev.1.bt2'),
+            catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.rev.2.bt2'),
+            catfile($BISMARK_CACHE_DIR, $done_file)
+        ],
+        description => "Indexing genome sequence with Bismark..."
+    );
+}
+
+sub create_bismark_alignment_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $staging_dir = $opts{staging_dir};
+    my $fastq       = $opts{fastq};
+    my $done_files  = $opts{done_files};
+    my $index_path  = $opts{index_path};#basename($opts{index_path});
+    my $index_files = $opts{index_files};
+    my $encoding    = $opts{encoding};
+    my $read_type   = $opts{read_type} // 'single'; #/
+    my $params      = $opts{params};
+
+    # Optional arguments
+    my $N = $params->{'-N'} // 0; #/
+    my $L = $params->{'-L'} // 20; #/
+
+    # Setup input dependencies
+    my $inputs = [
+        @$fastq,
+        @$done_files,
+        @$index_files
+    ];
+
+    # Build up command/arguments string
+    my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark') : 'bismark';
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
+    my $args = [
+        ['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
+        [($encoding eq '64' ? '--phred64-quals' : '--phred33-quals'), '', 0],
+        ['-N', $N, 0],
+        ['-L', $L, 0],
+        [$index_path, '', 0]
+    ];
+    
+    my ($output_bam) = @$fastq;
+    if ($read_type eq 'paired') {
+        $output_bam .= '_bismark_bt2_pe.bam';
+        push @$args, ['-1', shift @$fastq, 0];
+        push @$args, ['-2', shift @$fastq, 0];
+    }
+    else { # single-ended
+        $output_bam .= '_bismark_bt2.bam';
+        push @$args, ['', join(' ', @$fastq), 0];
+    }
+    
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => $inputs,
+        outputs => [
+            $output_bam
+        ],
+        description => "Aligning sequences with Bismark..."
+    );
+}
+
+sub create_bwameth_workflow {
+    my %opts = @_;
+
+    # Required arguments
+    my $gid = $opts{gid};
+    my $fasta = $opts{fasta};
+    my $fastq = $opts{fastq};
+    my $done_files = $opts{done_files};
+    my $staging_dir = $opts{staging_dir};
+    my $read_type = $opts{read_type};
+    my $params = $opts{params};
+
+    my ($index_path, %index_task) = create_bwameth_index_job($gid, $fasta);
+    
+    my %align_task = create_bwameth_alignment_job(
+        staging_dir => $staging_dir,
+        fasta => $fasta,
+        fastq => $fastq,
+        done_files => $done_files,
+        index_path => $index_path,
+        index_files => ($index_task{outputs}),
+        read_type => $read_type,
+        params => $params
+    );
+
+    # Return the bam output name and jobs required
+    my @tasks = ( \%index_task, \%align_task );
+    my %results = (
+        bam_file => $align_task{outputs}->[0]
+    );
+    return \@tasks, \%results;
+}
+
+sub create_bwameth_index_job {
+    my $gid = shift;
+    my $fasta = shift;
+    my $name = to_filename($fasta);
+    
+    my $done_file = 'bwameth_index.done';
+    
+    my $cmd = ($CONF->{BWAMETH} ? $CONF->{BWAMETH} : 'bwameth') . ' index';
+    my $BWAMETH_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bwameth_index");
+    
+    $cmd = "mkdir -p $BWAMETH_CACHE_DIR ; " .
+           "cd $BWAMETH_CACHE_DIR ; " .
+           "cp $fasta . ; " . 
+           "$cmd $name ; " .
+           "touch $done_file";
+
+    return $BWAMETH_CACHE_DIR, (
+        cmd => $cmd,
+        script => undef,
+        args => [],
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.amb"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.ann"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.bwt"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.pac"),
+            catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.sa"),
+            catfile($BWAMETH_CACHE_DIR, $done_file)
+        ],
+        description => "Indexing genome sequence with bwameth..."
+    );
+}
+
+sub create_bwameth_alignment_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $staging_dir = $opts{staging_dir};
+    my $fastq       = $opts{fastq};
+    my $done_files  = $opts{done_files};
+    my $index_path  = $opts{index_path};#basename($opts{index_path});
+    my $index_files = $opts{index_files};
+    my $read_type   = $opts{read_type} // 'single'; #/
+    my $params      = $opts{params};
+
+    # Setup input dependencies
+    my $inputs = [
+        @$fastq,
+        @$done_files,
+        @$index_files
+    ];
+
+    # Build command and arguments
+    my $cmd = $CONF->{BWAMETH} || 'bwameth';
+    $cmd = 'nice ' . $cmd; # run at lower priority
+    
+    my $args = [
+        ['--reference', catfile($index_path, 'genome.faa.reheader.faa'), 0],
+        ['', join(' ', @$fastq), 0],
+        ['-t', 8, 0],
+        ['-p', 'alignment', 0]
+    ];
+    
+    return (
+        cmd => $cmd,
+        script => undef,
+        args => $args,
+        inputs => $inputs,
+        outputs => [
+            catfile($staging_dir, 'alignment.bam')
+        ],
+        description => "Aligning sequences with bwameth..."
+    );
+}
+
 
 sub create_gsnap_workflow {
     my %opts = @_;
@@ -1097,48 +1830,68 @@ sub create_gsnap_workflow {
     my $gid = $opts{gid};
     my $fasta = $opts{fasta};
     my $fastq = $opts{fastq};
-    my $validated = $opts{validated};
-    my $params = $opts{params} // {}; #/
+    my $done_files = $opts{done_files};
+    my $params = $opts{params} // {};
+    my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
+
+    my @tasks;
 
     # Generate index
-    my %gmap = create_gmap_index_job($gid, $fasta);
+    my $gmap_task = create_gmap_index_job($gid, $fasta);
+    push @tasks, $gmap_task;
 
     # Generate sam file
-    my %gsnap = create_gsnap_job({
-        fastq => $fastq,
-        validated => $validated,
-        gmap => $gmap{outputs}->[0]->[0],
-        staging_dir => $staging_dir,
-        params => $params,
-    });
+    my @sam_files;
+    if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
+        foreach my $file (@$fastq) {
+            my $gsnap_task = create_gsnap_alignment_job(
+                fastq => [ $file ],
+                done_files => $done_files,
+                gmap => $gmap_task->{outputs}->[0]->[0],
+                staging_dir => $staging_dir,
+                params => $params
+            );
+            push @tasks, $gsnap_task;
+            push @sam_files, $gsnap_task->{outputs}->[0];
+        }
+    }
+    else { # standard GSNAP run (all fastq's at once)
+        my $gsnap_task = create_gsnap_alignment_job(
+            fastq => $fastq,
+            done_files => $done_files,
+            gmap => $gmap_task->{outputs}->[0]->[0],
+            staging_dir => $staging_dir,
+            params => $params,
+        );
+        push @tasks, $gsnap_task;
+        push @sam_files, $gsnap_task->{outputs}->[0];
+    }
     
-    # Filter sam file
-    my %filter = create_sam_filter_job($gsnap{outputs}->[0], $staging_dir);
-
-    # Convert sam file to bam
-    my %bam = create_samtools_bam_job($filter{outputs}->[0], $staging_dir);
-
-    # Return the bam output name and jobs required
-    my @tasks = (
-        \%gmap,
-        \%gsnap,
-        \%filter,
-        \%bam
-    );
-    my %results = (
-        bam_file => $bam{outputs}->[0]
-    );
-    return \@tasks, \%results;
+    # Add one or more sam-to-bam tasks
+    my %results;
+    foreach my $file (@sam_files) {
+        # Filter sam file
+        my $filter_task = create_sam_filter_job($file, $staging_dir);
+        push @tasks, $filter_task;
+        
+        # Convert sam file to bam
+        my $bam_task = create_sam_to_bam_job($filter_task->{outputs}->[0], $staging_dir);
+        push @tasks, $bam_task;
+        push @{$results{bam_files}}, $bam_task->{outputs}->[0];
+    }
+    print STDERR Dumper \@tasks, "\n";
+    
+    return (\@tasks, \%results);
 }
 
 sub create_gmap_index_job {
     my $gid = shift;
     my $fasta = shift;
     my $name = to_filename($fasta);
-    my $cmd = $CONF->{GMAP_BUILD};
+    my $cmd = $CONF->{GMAP_BUILD} || 'gmap_build';
     my $GMAP_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "gmap_index");
 
-    return (
+    return {
         cmd => $cmd,
         script => undef,
         args => [
@@ -1153,17 +1906,17 @@ sub create_gmap_index_job {
             [catdir($GMAP_CACHE_DIR, $name . "-index"), 1]
         ],
         description => "Indexing genome sequence with GMAP..."
-    );
+    };
 }
 
-sub create_samtools_bam_job {
+sub create_sam_to_bam_job {
     my $samfile = shift;
     my $staging_dir = shift;
     
     my $filename = to_filename($samfile);
     my $cmd = $CONF->{SAMTOOLS} || 'samtools';
 
-    return (
+    return {
         cmd => $cmd,
         script => undef,
         args => [
@@ -1178,7 +1931,7 @@ sub create_samtools_bam_job {
             catfile($staging_dir, $filename . ".bam")
         ],
         description => "Generating BAM file..."
-    );
+    };
 }
 
 sub create_sam_filter_job {
@@ -1189,7 +1942,7 @@ sub create_sam_filter_job {
     my $cmd = catfile($CONF->{SCRIPTDIR}, "filter_sam.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
-    return (
+    return {
         cmd => "$cmd $filename $filename.processed",
         script => undef,
         args => [],
@@ -1200,7 +1953,7 @@ sub create_sam_filter_job {
             catfile($staging_dir, $filename . ".processed")
         ],
         description => "Filtering SAM file..."
-    );
+    };
 }
 
 sub create_bam_sort_job {
@@ -1209,6 +1962,7 @@ sub create_bam_sort_job {
     # Required arguments
     my $input_file = $opts{input_file}; # bam file
     my $staging_dir = $opts{staging_dir};
+    die unless ($input_file && $staging_dir);
     
     my $filename = to_filename($input_file);
     my $cmd = $CONF->{SAMTOOLS} || 'samtools';
@@ -1231,43 +1985,48 @@ sub create_bam_sort_job {
     };
 }
 
-sub create_gsnap_job {
-    my $opts = shift;
+sub create_gsnap_alignment_job {
+    my %opts = @_;
 
     # Required arguments
-    my $fastq = $opts->{fastq};
-    my $validated = $opts->{validated};
-    my $gmap = $opts->{gmap};
-    my $staging_dir = $opts->{staging_dir};
+    my $fastq = $opts{fastq};
+    my $done_files = $opts{done_files};
+    my $gmap = $opts{gmap};
+    my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
-    my $params = $opts->{params};
-    my $read_type = $params->{'read_type'} // "single"; #/
+    my $params = $opts{params};
+    my $read_type = $params->{read_type} // "single"; #/
     my $gapmode = $params->{'--gap-mode'} // "none"; #/
     my $Q = $params->{'-Q'} // 1; #/
     my $n = $params->{'-n'} // 5; #/
     my $N = $params->{'-N'} // 1; #/
     my $nofails = $params->{'--nofails'} // 1; #/
+    my $max_mismatches = $params->{'--max-mismatches'};
 
-    my $name = basename($gmap);
+    my ($first_fastq) = @$fastq;
+    my $output_file = basename($first_fastq) . '.sam';
     
-    my $cmd = $CONF->{GSNAP};
+    my $index_name = basename($gmap);
+    
+    my $cmd = $CONF->{GSNAP} || 'gsnap';
     die "ERROR: GSNAP is not in the config." unless ($cmd);
     $cmd = 'nice ' . $cmd; # run at lower priority
 
     my $args = [
         ["-D", ".", 0],
-        ["-d", $name, 0],
+        ["-d", $index_name, 0],
         ["--nthreads=32", '', 0],
         ["-n", $n, 0],
         ["-N", $N, 0],
         ["--format=sam", '', 0],
         ["--gmap-mode=$gapmode", '', 1],
-        ["--batch=5", '', 0],
+        ["--batch=5", '', 0]
     ];
 
     push @$args, ["-Q", "", 0] if $Q;
     push @$args, ["--nofails", "", 1] if $nofails;
+    push @$args, ["--max-mismatches=$max_mismatches", "", 0] if $max_mismatches;
     push @$args, ['--force-single-end', '', 0] if ($read_type eq 'single');
     
     # Sort fastq files in case of paired-end reads, 
@@ -1276,9 +2035,9 @@ sub create_gsnap_job {
         push @$args, ["", $_, 1];
     }
     
-    push @$args, [">", $name . ".sam", 1];
+    push @$args, [">", $output_file, 1];
 
-    return (
+    return {
         cmd => $cmd,
         script => undef,
 # mdb removed 2/2/15 -- fails on zero-length validation input
@@ -1288,14 +2047,48 @@ sub create_gsnap_job {
         args => $args,
         inputs => [
             @$fastq,
-            @$validated,
+            @$done_files,
             [$gmap, 1]
         ],
         outputs => [
-            catfile($staging_dir, $name . ".sam")
+            catfile($staging_dir, $output_file)
         ],
-        description => "Aligning sequences (gsnap)..."
-    );
+        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq)  . " with GSNAP..."
+    };
+}
+
+sub create_sumstats_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $vcf = $opts{vcf};
+    my $gff = $opts{gff};
+    my $fasta = $opts{fasta};
+    my $output_path = $opts{output_path};
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "popgen/sumstats.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+    
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-vcf',    $vcf,         0],
+            ['-gff',    $gff,         0],
+            ['-fasta',  $fasta,       0],
+            ['-output', $output_path, 0],
+            ['-debug',  '',           0]
+        ],
+        inputs => [
+            $vcf,
+            $gff,
+            $fasta
+        ],
+        outputs => [
+            catfile($output_path, "sumstats.done"),
+        ],
+        description => "Calculating summary statistics ..."
+    };
 }
 
 sub create_notebook_job {
@@ -1325,7 +2118,7 @@ sub create_notebook_job {
         ['-type', 2, 0],
         ['-restricted', $metadata->{restricted}, 0],
         ['-annotations', qq{"$annotations_str"}, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-log', $log_file, 0]
     ];
 
@@ -1334,7 +2127,6 @@ sub create_notebook_job {
         script => undef,
         args => $args,
         inputs => [ 
-            $CONF->{_CONFIG_PATH},
             @$done_files
         ],
         outputs => [ 
@@ -1365,7 +2157,7 @@ sub add_items_to_notebook_job {
         ['-uid', $user->id, 0],
         ['-wid', $wid, 0],
         ['-notebook_id', $notebook_id, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-log', $log_file, 0]
     ];
 
@@ -1374,7 +2166,6 @@ sub add_items_to_notebook_job {
         script => undef,
         args => $args,
         inputs => [ 
-            $CONF->{_CONFIG_PATH},
             @$done_files
         ],
         outputs => [ 
@@ -1407,7 +2198,7 @@ sub add_metadata_to_results_job {
         ['-uid', $user->id, 0],
         ['-wid', $wid, 0],
         ['-annotations', qq{"$annotations_str"}, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 1],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-log', $log_file, 0]
     ];
 
@@ -1416,7 +2207,6 @@ sub add_metadata_to_results_job {
         script => undef,
         args => $args,
         inputs => [ 
-            $CONF->{_CONFIG_PATH},
             @$done_files
         ],
         outputs => [ 
@@ -1454,7 +2244,6 @@ sub send_email_job {
         script => undef,
         args => $args,
         inputs => [ 
-            $CONF->{_CONFIG_PATH},
             @$done_files
         ],
         outputs => [ 

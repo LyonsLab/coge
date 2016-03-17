@@ -5,10 +5,11 @@ use warnings;
 
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
+use Clone qw(clone);
 
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_upload_path get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations);
-use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end);
+use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end to_filename_base);
 use CoGe::Builder::CommonTasks;
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -26,39 +27,43 @@ sub build {
     my %opts = @_;
     my $user        = $opts{user};
     my $wid         = $opts{wid};
-    my $input_files = $opts{input_files}; # array of file paths
+    my $input_files = $opts{input_files}; # array of paths of FASTQ files
     my $genome      = $opts{genome};
     my $metadata    = $opts{metadata};
     my $additional_metadata = $opts{additional_metadata};
     my $load_id     = $opts{load_id};
-    my $alignment_params = $opts{alignment_params};
-    my $trimming_params  = $opts{trimming_params};
+    my $params      = $opts{params};
+    my $read_params      = $params->{read_params};
+    my $trimming_params  = $params->{trimming_params};
+    my $alignment_params = $params->{alignment_params};
+    my $chipseq_params   = $params->{chipseq_params};
     
     my @tasks;
     
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
 
-    # Check multiple files (if more than one file then all should be FASTQ)
-    my $numFastq = 0;
-    foreach (@$input_files) {
-        $numFastq++ if (is_fastq_file($_));
-    }
-    if ($numFastq > 0 and $numFastq != @$input_files) {
-        my $error = 'Unsupported combination of file types';
-        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-        return { error => $error };
-    }
-    if ($numFastq == 0 and @$input_files > 1) {
-        my $error = 'Too many files';
-        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-        return { error => $error };
-    }
-    
+# mdb removed 11/6/15 COGE-673
+#    # Check multiple files (if more than one file then all should be FASTQ)
+#    my $numFastq = 0;
+#    foreach (@$input_files) {
+#        $numFastq++ if (is_fastq_file($_));
+#    }
+#    if ($numFastq > 0 and $numFastq != @$input_files) {
+#        my $error = 'Unsupported combination of file types';
+#        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
+#        return { error => $error };
+#    }
+#    if ($numFastq == 0 and @$input_files > 1) {
+#        my $error = 'Too many files';
+#        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
+#        return { error => $error };
+#    }
+
     # Decompress and validate the fastq input files
     my (@decompressed, @validated);
     foreach my $input_file (@$input_files) {
         # Decompress
-        my $done_file;
+        my $done_file = "$input_file.done";
         if ( $input_file =~ /\.gz$/ ) {
             push @tasks, create_gunzip_job($input_file);
             $input_file =~ s/\.gz$//;
@@ -73,46 +78,44 @@ sub build {
     }
         
     # Trim the fastq input files
-    my @trimmed;
-    my $trim_reads = 1; #TODO add this as an option in LoadExperiment interface
-    if ($trim_reads && $trimming_params) {
-        if ($alignment_params->{read_type} eq 'paired') { # mdb added 5/8/15 COGE-624 - enable paired-end support in cutadapt
+    my (@trimmed, @trimming_done_files);
+    if ($trimming_params) {
+        my ($fastq1, $fastq2);
+        if ($read_params->{read_type} eq 'paired') {
             # Separate files based on last occurrence of _R1 or _R2 in filename
-            my ($m1, $m2) = detect_paired_end($input_files);
+            my ($m1, $m2) = detect_paired_end(\@decompressed);
             unless (@$m1 and @$m2 and @$m1 == @$m2) {
                 my $error = 'Mispaired FASTQ files, m1=' . @$m1 . ' m2=' . @$m2;
                 print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
                 print STDERR 'm1: ', join(' ', @$m1), "\n", 'm2: ', join(' ', @$m2), "\n";
                 return { error => $error };
             }
-            
-            # Create cutadapt task for each file pair
-            for (my $i = 0;  $i < @$m1;  $i++) { 
-                my $file1 = shift @$m1;
-                my $file2 = shift @$m2;
-                my $trim_task = create_cutadapt_job(
-                    fastq => [ $file1, $file2 ],
-                    validated => [ "$file1.validated", "$file2.validated" ],
-                    staging_dir => $staging_dir,
-                    params => $trimming_params
-                );
-                push @trimmed, @{$trim_task->{outputs}};
-                push @tasks, $trim_task;
-            }
+            $fastq1 = $m1;
+            $fastq2 = $m2;
         }
-        else { # single-ended
-            # Create cutadapt task for each file
-            foreach my $file (@decompressed) {
-                my $trim_task = create_cutadapt_job(
-                    fastq => $file,
-                    validated => "$file.validated",
-                    staging_dir => $staging_dir,
-                    params => $trimming_params
-                );
-                push @trimmed, $trim_task->{outputs}->[0];
-                push @tasks, $trim_task;
-            }
+        else { # default to single-ended
+            $fastq1 = \@decompressed;
         }
+        
+        my %params = (
+            fastq1 => $fastq1,
+            fastq2 => $fastq2,
+            done_files => \@validated,
+            staging_dir => $staging_dir,
+            read_params => $read_params,
+            trimming_params => $trimming_params
+        );
+        
+        my ($tasks, $outputs, $done_files);
+        if ($trimming_params->{trimmer} eq 'cutadapt') {
+            ($tasks, $outputs, $done_files) = create_cutadapt_workflow(%params);
+        }
+        elsif ($trimming_params->{trimmer} eq 'trimgalore') {
+            ($tasks, $outputs, $done_files) = create_trimgalore_workflow(%params);
+        }
+        push @trimmed, @$outputs;
+        push @tasks, @$tasks;
+        push @trimming_done_files, @$done_files if $done_files; # kludge for JEX
     }
     else { # no trimming
         push @trimmed, @decompressed;
@@ -124,32 +127,40 @@ sub build {
 
     # Reheader the fasta file
     my $fasta = get_genome_file($gid);
-    my $reheader_fasta = to_filename($fasta) . ".reheader.faa";
     push @tasks, create_fasta_reheader_job(
         fasta => $fasta,
-        reheader_fasta => $reheader_fasta,
         cache_dir => $fasta_cache_dir
     );
+    my $reheader_fasta = $tasks[-1]->{outputs}[0];
 
     # Index the fasta file
     push @tasks, create_fasta_index_job(
-        fasta => catfile($fasta_cache_dir, $reheader_fasta),
-        cache_dir => $fasta_cache_dir
+        fasta => $reheader_fasta
     );
     
     # Add aligner workflow
+    my %params = ( 
+        done_files => [ @validated, @trimming_done_files ],
+        fasta => $reheader_fasta,
+        fastq => \@trimmed,
+        gid => $gid,
+        encoding => $read_params->{encoding},
+        read_type => $read_params->{read_type},
+        staging_dir => $staging_dir,
+        params => $alignment_params
+    );
+    $params{doSeparately} = 1 if $chipseq_params;
+    
     my ($alignment_tasks, $alignment_results);
-    if ($alignment_params && $alignment_params->{tool} eq 'hisat2') {
-        ($alignment_tasks, $alignment_results) = create_hisat2_workflow(
-            gid => $gid,
-            fasta => $fasta,
-        	fastq => \@trimmed,
-            read_type => $alignment_params->{read_type},
-            staging_dir => $staging_dir,
-            params => $alignment_params,
-        );    	
+    $alignment_params = {} unless $alignment_params;
+    
+    if ($alignment_params->{tool} eq 'hisat2') {
+        ($alignment_tasks, $alignment_results) = create_hisat2_workflow(%params);
     }
-    elsif ($alignment_params && $alignment_params->{tool} eq 'tophat') {
+    elsif ($alignment_params->{tool} eq 'bowtie2') {
+        ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params);
+    }
+    elsif ($alignment_params->{tool} eq 'tophat') {
         # Generate gff if genome annotated
         my $gff_file;
         if ( $genome->has_gene_features ) {
@@ -162,91 +173,113 @@ sub build {
             push @tasks, $gff_task;
         }
         
-        ($alignment_tasks, $alignment_results) = create_tophat_workflow(
-            gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
-            fastq => \@trimmed,
-            validated => \@validated,
-            read_type => $alignment_params->{read_type},
-            gff => $gff_file,
-            staging_dir => $staging_dir,
-            params => $alignment_params,
-        );
+        $params{gff} = $gff_file;
+        ($alignment_tasks, $alignment_results) = create_tophat_workflow(%params);
     }
-    else { # ($alignment_params->{tool} eq 'gsnap') {
-        ($alignment_tasks, $alignment_results) = create_gsnap_workflow(
-            gid => $gid,
-            fasta => catfile($fasta_cache_dir, $reheader_fasta),
-            fastq => \@trimmed,
-            validated => \@validated,
-            read_type => $alignment_params->{read_type},
-            staging_dir => $staging_dir,
-            params => $alignment_params,
-        );
+    elsif ($alignment_params->{tool} eq 'bismark') {
+        ($alignment_tasks, $alignment_results) = create_bismark_workflow(%params);
     }
-# mdb removed 9/15/15 -- make GSNAP the default aligner
-#    else {
-#        my $error = "Unrecognized alignment tool '" . $alignment_params->{tool};
-#        print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-#        return { error => $error };
-#    }
+    elsif ($alignment_params->{tool} eq 'bwameth') {
+        ($alignment_tasks, $alignment_results) = create_bwameth_workflow(%params);
+    }
+    else { # GSNAP is the default
+        ($alignment_tasks, $alignment_results) = create_gsnap_workflow(%params);
+    }
+    
+    unless (@$alignment_tasks && $alignment_results) {
+        print STDERR "CoGe::Builder::Common::Alignment ERROR: Invalid alignment workflow\n";
+        return { error => 'Invalid alignment workflow' };
+    }
     push @tasks, @$alignment_tasks;
 
-    # Sort and index the bam output file
-    my $bam_file = $alignment_results->{bam_file};
-    my $sort_bam_task = create_bam_sort_job(
-        input_file => $bam_file, 
-        staging_dir => $staging_dir
-    );
-    push @tasks, $sort_bam_task;
-    my $sorted_bam_file = $sort_bam_task->{outputs}->[0];
+    my @raw_bam_files;
+    push @raw_bam_files, $alignment_results->{bam_file} if ($alignment_results->{bam_file});
+    push @raw_bam_files, @{$alignment_results->{bam_files}} if ($alignment_results->{bam_files});
     
-    push @tasks, create_bam_index_job(
-        input_file => $sorted_bam_file
-    );
-
-    # Get custom metadata to add to experiment
-    my $annotations = generate_additional_metadata($trimming_params, $alignment_params);
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
-    push @$annotations, @annotations2;
-
-    # Load alignment
-    my $load_task = create_load_bam_job(
-        user => $user,
-        metadata => $metadata,
-        staging_dir => $staging_dir,
-        result_dir => $result_dir,
-        annotations => $annotations,
-        wid => $wid,
-        gid => $gid,
-        bam_file => $sorted_bam_file
-    );
-    push @tasks, $load_task;
+    my (@sorted_bam_files, @load_task_outputs);
+    foreach my $bam_file (@raw_bam_files) {
+        # Sort and index the bam output file(s)
+        my $sort_bam_task = create_bam_sort_job(
+            input_file => $bam_file, 
+            staging_dir => $staging_dir
+        );
+        push @tasks, $sort_bam_task;
+        my $sorted_bam_file = $sort_bam_task->{outputs}->[0];
+        push @sorted_bam_files, $sorted_bam_file;
+        
+        push @tasks, create_bam_index_job(
+            input_file => $sorted_bam_file
+        );
+    
+        # Get custom metadata to add to experiment
+        my $annotations = generate_additional_metadata($read_params, $trimming_params, $alignment_params);
+        my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+        push @$annotations, @annotations2;
+        
+        # Add bam filename to experiment name for ChIP-seq pipeline
+        my $md = clone($metadata);
+        if (@raw_bam_files > 1) {
+            $md->{name} .= ' (' . to_filename_base($sorted_bam_file) . ')';
+        }
+    
+        # Load alignment
+        my $load_task = create_load_bam_job(
+            user => $user,
+            metadata => $md,
+            staging_dir => $staging_dir,
+            result_dir => $result_dir,
+            annotations => $annotations,
+            wid => $wid,
+            gid => $gid,
+            bam_file => $sorted_bam_file
+        );
+        push @tasks, $load_task;
+        push @load_task_outputs, $load_task->{outputs}->[1];
+    }
     
     return {
         tasks => \@tasks,
-        bam_file => $sorted_bam_file,
+        bam_files => \@sorted_bam_files,
+        raw_bam_files => \@raw_bam_files, # mdb added 2/29/16 for Bismark, COGE-706
         done_files => [
-            $sorted_bam_file,
-            $load_task->{outputs}->[1]
+            @sorted_bam_files,
+            @load_task_outputs
         ]
     }
 }
 
 sub generate_additional_metadata {
-    my ($trimming_params, $alignment_params) = @_;
+    my ($read_params, $trimming_params, $alignment_params) = @_;
     my @annotations;
     
     push @annotations, qq{https://genomevolution.org/wiki/index.php/Expression_Analysis_Pipeline||note|Generated by CoGe's RNAseq Analysis Pipeline};
     
-    if ($trimming_params) {
-        push @annotations, 'note|cutadapt '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '--quality-base', '-m'));
+    if ($trimming_params && $trimming_params->{trimmer}) {
+        if ($trimming_params->{trimmer} eq 'cutadapt') {
+            push @annotations, 'note|cutadapt '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '--quality-base', '-m'));
+        }
+        elsif ($trimming_params->{trimmer} eq 'trimgalore') {
+            push @annotations, 'note|trimgalore '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '--length', '-a'));
+        }
     }
 
     if ($alignment_params && $alignment_params->{tool}) {
-        if ($alignment_params->{tool} eq 'tophat') { # tophat
+        if ($alignment_params->{tool} eq 'hisat2') {
+            push @annotations, qq{note|hisat2_build};
+            my $params = ($read_params->{encoding} eq '64' ? '--phred64' : '--phred33');
+            push @annotations, 'note|hisat2 ' . $params;
+        }
+        elsif ($alignment_params->{tool} eq 'tophat') {
             push @annotations, qq{note|bowtie2_build};
             push @annotations, 'note|tophat ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-g'));
+        }
+        elsif ($alignment_params->{tool} eq 'bismark') {
+            push @annotations, qq{note|bismark_genome_preparation};
+            push @annotations, 'note|bismark ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-N', '-L'));
+        }
+        elsif ($alignment_params->{tool} eq 'bwameth') {
+            push @annotations, qq{note|bwameth index};
+            push @annotations, 'note|bwameth';
         }
         else { # gsnap
             push @annotations, qq{note|gmap_build};

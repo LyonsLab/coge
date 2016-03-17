@@ -54,11 +54,20 @@ var coge = window.coge = (function(namespace) {
 			self.container.tabs({selected: self.defaultTab});
 			
 			self.container.resizable({
+				handles: 's',
+				ghost: true,
 				stop: self.resize.bind(self)
 			});
 			
 			// Initialize irods view
 			self._irods_get_path();
+			
+			// Setup file list event handlers
+			self.selectedFiles.forEach(function(file) {
+				file.tr.find(".ui-icon-closethick")
+					.unbind()
+					.click(self._cancel_callback.bind(self, file));
+			});
 			
 			// Setup menu event handlers
 			self.container.find('.fileselect-home').click(function() {
@@ -81,7 +90,7 @@ var coge = window.coge = (function(namespace) {
 				var search_term = self.container.find('.fileselect-filter').val();
 				self.container.find('#ids_table tr td:nth-child(1)').each(function() {
 					var obj = $(this);
-					if (obj.text().indexOf(search_term) >= 0)
+					if (obj.text().toLowerCase().indexOf(search_term.toLowerCase()) >= 0)
 						obj.parent().show();
 					else
 						obj.parent().hide();
@@ -109,16 +118,20 @@ var coge = window.coge = (function(namespace) {
 			});
 
 			self.container.find('#input_accn').bind('keyup focus click', function() {
-				if ( self.container.find('#input_accn').val() ) {
-					self.container.find('#ncbi_get_button').removeClass('ui-state-disabled');
+				if ( self.container.find('#input_accn').val() && self.container.find('#input_accn').val().length >= 6 ) {
+					self.container.find('#ncbi_get_button,#sra_get_button').removeClass('ui-state-disabled');
 				}
 				else {
-					self.container.find('#ncbi_get_button').addClass('ui-state-disabled');
+					self.container.find('#ncbi_get_button,#sra_get_button').addClass('ui-state-disabled');
 				}
 			});
 			
 			self.container.find('#ncbi_get_button').bind('click', function() {
 				self._load_from_ncbi();
+			});
+			
+			self.container.find('#sra_get_button').bind('click', function() {
+				self._load_from_sra();
 			});
 
 			self.container.find('#input_upload_file').fileupload({
@@ -191,7 +204,8 @@ var coge = window.coge = (function(namespace) {
 			var file = { 
 				name: filename, 
 				url: url, 
-				tr: tr
+				tr: tr,
+				isTransferring: true
 			};
 			if (username) file.username = username;
 			if (password) file.password = password;
@@ -218,7 +232,7 @@ var coge = window.coge = (function(namespace) {
 			
 			// Update view of file
 			var td1 = $('<td><span style="margin-right:15px;">' + (error ? error : 'failed') + '</span></td>').fadeIn();
-			var closeIcon = $('<span class="link ui-icon ui-icon-closethick"></span>');
+			var closeIcon = $('<span class="link ui-icon ui-icon-closethick" title="Remove file"></span>');
 			closeIcon.click(self._cancel_callback.bind(self, file));
 			var td2 = $('<td></td>').append(closeIcon).fadeIn();
 
@@ -248,7 +262,7 @@ var coge = window.coge = (function(namespace) {
 			if (size)
 				td1.html('<span style="margin-right:15px;"><span class="text">Size:</span> ' + self._units(size) + '</span>');
 			td1.fadeIn();
-			var closeIcon = $('<span class="link ui-icon ui-icon-closethick"></span>');
+			var closeIcon = $('<span class="link ui-icon ui-icon-closethick" title="Remove file"></span>');
 			closeIcon.click(self._cancel_callback.bind(self, file));
 			var td2 = $('<td></td>').append(closeIcon).fadeIn();
 			
@@ -312,7 +326,7 @@ var coge = window.coge = (function(namespace) {
 		},
 
 		_resolve_path: function(path) {
-			if (typeof path === 'undefined')
+			if (typeof path === 'undefined' || path === 'undefined')
 				return '';
 			else if (path == '.')
 				return this.current_path;
@@ -587,7 +601,7 @@ var coge = window.coge = (function(namespace) {
 			var accn = $('#input_accn').val();
 
 			$('#ncbi_get_button').addClass('ui-state-disabled');
-			$('#ncbi_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI...');
+			$('#ncbi_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI Nucleotide DB...');
 
 			$.ajax({
 				data: {
@@ -613,6 +627,38 @@ var coge = window.coge = (function(namespace) {
 					$('#ncbi_status').html('');
 				},
 			});
+		},
+		
+		_load_from_sra: function() {
+			var self = this;
+			
+			var accn = $('#input_accn').val();
+			if (!(accn && accn.toLowerCase().startsWith('srr'))) {
+				$('#sra_status').html('Please enter an SRR accession (starts with "SRR")');
+				return;
+			}
+
+			$('#sra_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI SRA...');
+			
+		    var entrez = new Entrez({ database: 'sra' });
+		    entrez.search(accn).then(function(id) {
+		    	if (id) {
+		    		entrez.fetch(id).then(function(result) {
+		    			if (result) {
+		    				if (self._add_file_to_list(result.accn, 'sra://'+result.accn)) {
+								self._finish_file_in_list('sra', 'sra://'+result.accn, result.accn, result.size);
+							}
+							$('#sra_status').html('');
+		    			}
+		    			else {
+		    				$('#sra_status').html('Item not found');
+		    			}
+		    		});
+		    	}
+		    	else {
+		    		$('#sra_status').html('Item not found');
+		    	}
+		    });
 		}
     };
 

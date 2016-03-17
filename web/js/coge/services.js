@@ -13,11 +13,36 @@ var coge = window.coge = (function(namespace) {
 				this.BASE_URL = opts.baseUrl;
 			if (opts.userName)
 				this.userName = opts.userName;
-			this.debug = 0; // display console debug messages
+			this.debug = opts.debug; // display console debug messages
+			
+			this._debug('init completed');
+		},
+		
+		download_url: function(opts) { // duplicated in Web.pm::download_url_for()
+			var gid = opts.gid;
+			var eid = opts.eid;
+			var wid = opts.wid;
+			var filename = opts.filename;
+//			var username = opts.username;
+			
+		    var params = '';
+		    if (gid)
+		        params += "gid=" + gid;
+		    else if (eid)
+		        params += "eid=" + eid;
+		    else if (wid)
+		        params += "wid=" + wid;
+		    
+//		    if (username)
+//		        params += "&username=" + username;
+		    
+		    if (filename)
+		    	params += "&filename=" + filename;
+		    
+		    return BASE_URL + "downloads/?" + params;			
 		},
 		
 		search_global: function(search_term) {
-			console.log(search_term);
 			return this._ajax("GET", BASE_URL + "global/search/" + search_term + "/");
 		},
 		
@@ -27,7 +52,7 @@ var coge = window.coge = (function(namespace) {
 		},
 
 		add_organism: function(request) {
-			return this._ajax("PUT", BASE_URL + "organisms/", JSON.stringify(request));
+			return this._ajax("PUT", BASE_URL + "organisms/", request);
 		},
 		
 		search_genomes: function(search_term, opts) {
@@ -46,7 +71,7 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		submit_job: function(request) {
-			return this._ajax("PUT", BASE_URL + "jobs/", JSON.stringify(request));
+			return this._ajax("PUT", BASE_URL + "jobs/", request);
 		},
 		
 		fetch_job: function(id) {
@@ -90,8 +115,11 @@ var coge = window.coge = (function(namespace) {
 			url = url + (opts_str ? "?" + opts_str : '');
 			
 			// Return deferred
-			if (this.debug) 
-				console.log('coge.services._ajax: ' + url + ' ' + (data ? data : ''));
+			if (this.debug) {
+				this._debug('coge.services._ajax: ' + url);
+				if (data)
+					console.log(data);
+			}
 		    return $.ajax({
 				    	type: type,
 				    	url: url,
@@ -100,7 +128,7 @@ var coge = window.coge = (function(namespace) {
 				        xhrFields: {
 			                withCredentials: true
 			            },
-				        data: data,
+				        data: JSON.stringify(data),
 				    })
 				    .fail(function(jqXHR, textStatus, errorThrown) { 
 				    	self._error('ajax:error: ' + jqXHR.status + ' ' + jqXHR.statusText); 

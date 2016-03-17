@@ -1,0 +1,65 @@
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/pages/search-results.js"></script>
+<script type="text/javascript">
+// Page constants
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
+const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
+</script>
+
+<div>
+	<div id="loading" class="spinner hidden" style="display:flex;justify-content:center;align-items:center;margin-top:40%;"></div>
+	<div id="noresult" class="note hidden"></div>
+	
+	<div id="masterTable" style="position:relative;left:20px;padding-top:10px;padding-bottom:10px;" class="collapse result hidden">
+
+		<div id="organism" class="collapse" style="padding-top:10px;">
+			<span id='orgCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#orgArrow');show_table('#orgList')"></span>
+			<div id="orgArrow" onclick="toggle_arrow('#orgArrow');show_table('#orgList')" style='display:inline;'>
+				<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+			</div>
+			<table cellspacing="5" class="collapse" id='orgList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+		</div>
+	
+		<div id="genome" class="collapse" style="padding-top:10px;">
+			<span id='genCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#genArrow');show_table('#genList')"></span>
+			<div id="genArrow" onclick="toggle_arrow('#genArrow');show_table('#genList')" style='display:inline;'>
+	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	    	</div>
+	    	<table cellspacing="5" class="collapse" id='genList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+		</div>
+	
+		<div id="user" class="collapse" style="padding-top:10px;">
+			<span id='userCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#userArrow');show_table('#userList')"></span>
+			<div id="userArrow" onclick="toggle_arrow('#userArrow');show_table('#userList')" style='display:inline;'>
+	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	    	</div>
+	    	<table cellspacing="5" class="collapse" id='userList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+		</div>
+	
+		<div id="user_group" class="collapse" style="padding-top:10px;">
+			<span id='usrgroupCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')"></span>
+			<div id="usrGArrow" onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')" style='display:inline;'>
+	    		<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	    	</div>
+	    	<table cellspacing="5" class="collapse" id='usrgroupList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+		</div>
+	
+		<div id="notebook" class="collapse" style="padding-top:10px;">
+			<span id='noteCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#noteArrow');show_table('#noteList')"></span>
+			<div id="noteArrow" onclick="toggle_arrow('#noteArrow');show_table('#noteList')" style='display:inline;'>
+	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	    	</div>
+	    	<table cellspacing="5" class="collapse" id='noteList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+		</div>
+	
+		<div id="experiment" class="collapse" style="padding-top:10px;">
+			<span id='expCount' class='coge-table-header' style='color:119911;' onclick="toggle_arrow('#expArrow');show_table('#expList')"></span>
+			<div id="expArrow" onclick="toggle_arrow('#expArrow');show_table('#expList')" style='display:inline;'>
+	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	        </div>
+	        <table cellspacing="5" class="collapse" id='expList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
+		</div>
+		
+	</div>
+</div>

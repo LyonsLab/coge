@@ -5,6 +5,7 @@ use warnings;
 
 use Getopt::Long qw(GetOptions);
 use CoGe::Accessory::Web qw(ftp_get_file);
+use File::Touch;
 
 our ($url, $username, $password, $dest_path);
 
@@ -34,5 +35,7 @@ if ( !$result || $result->{error} ) {
     print STDERR "Failed: ", $result->{error}, "\n";
     exit(-1);
 }
+
+touch $dest_path . '.done';
 
 exit;

@@ -6,51 +6,121 @@
 	padding: 1px !important;
 }
 
-.coge-tracklist-container {
-	border: 1px solid transparent;
+.coge-circle {
+	border: solid white 1px;
+    border-radius: 50%;
+    height: 15px;
+    left: 5;
+	position: absolute;
+    top: 4;
+    width: 15px;
 }
 
-.coge-tracklist-container.collapsed {
+.coge-experiment,
+.coge-features {
+	background-color: #fbfbfb;
+}
+
+.coge-filter-input {
+	cursor: text;
+	height: 20px;
+	paddingRight: 18px;
+	width: 85%;
+}
+
+#coge_menu_button,
+#coge_track_menu_button {
+    margin-left: -10px;
+    outline: none;
+	padding: 2px;
+    width: 20px;
+}
+
+.coge-textfilter {
+	border-bottom: 1px solid lightgray;
+	overflow: hidden;
+	position: relative;
+	width: 95%;
+}
+
+.coge-track {
+	border: 1px solid transparent;
+	cursor: pointer;
+	display: flex;
+	overflow-x: hidden;
+	position: relative;
+	white-space: nowrap;
+}
+
+.coge-track.collapsed {
 	display: none;
 }
 
-.coge-tracklist-container:hover {
+.coge-track:hover {
 	border: 1px solid gray;
 }
 
-.coge-tracklist-indented {
-	padding-left: 25px;
+.coge-track-indented {
+	padding-left: 25px !important;
 }
 
-#trackPane div.coge-textfilter {
+.coge-track-label {
+	flex: 2;
+	min-height: 16px;
+	overflow: hidden;
+	padding-left: 2px;
+	padding-top: 6px;
+}
+
+.coge-tracklist-collapse,
+.coge-tracklist-expand
+ {
+ 	height: 10px;
+	padding: 5px;
+	width: 10px;
+}
+
+#coge-tracks {
+	flex: 2 2;
+	overflow-x: hidden;
+	overflow-y: auto;
+	width: 100%;
+}
+
+.coge-tracks-shown {
+	color: gray;
+	margin-bottom: -4px;
+	margin-top: 4px;
+	text-align: center;
+}
+
+#text_filter_cancel {
+	cursor: pointer;
+	display: none;
+	position: absolute;
+	right: 1px;
+	top: 1px;
+}
+
+.track-menu-button {
+	position: absolute;
+	right: 40px;
+}
+
+#track_pane {
+ 	background-color: rgb(242, 242, 242);
+ 	display: flex;
+ 	flex-direction: column;
+ 	overflow: hidden;
+	width: 215px;
+}
+
+#track_pane div.coge-textfilter {
     margin: 0.5em 0 0 0.3em;
     padding-bottom: 5px;
 }
-#trackPane div.coge-textfilter input {
+
+#track_pane div.coge-textfilter input {
     line-height: 16px;
     padding: 2px 0;
 }
-
-/* .notebookExpandIcon {
-	background-image: url('/../../../picts/arrow-right-icon.png');
-    width: 16px;
-    height: 16px;
-}
-
-.notebookCollapseIcon {
-	background-image: url('/../../../picts/arrow-down-icon.png');
-    width: 16px;
-    height: 16px;
-} 
-
-.cogeIconPlus {
-    background-image: url('js/jbrowse/plugins/CoGe/img/plus.png');
-    width: 16px;
-    height: 16px;
-}
-
-.cogeIconTest {
-    background-image: url('img/spinner.gif');
-    width: 16px;
-    height: 16px;
-} */

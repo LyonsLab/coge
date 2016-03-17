@@ -91,6 +91,10 @@ __PACKAGE__->has_many( # child lists
 __PACKAGE__->mk_accessors(qw(_genome_ids _experiment_ids));
 #_genome_ids is a hash_ref of the genome_ids that a user has access to
 
+sub item_type {
+    return $node_types->{user};   
+}
+
 ################################################ subroutine header begin ##
 
 =head2 generate_passwd

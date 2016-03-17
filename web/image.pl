@@ -4,12 +4,16 @@ use strict;
 use CGI;
 use CoGe::Accessory::Web;
 
-my $FORM = new CGI;
-my $id   = $FORM->param('id');
+my $form = new CGI;
+my $id = $form->param('id');
+my ( $coge, $user ) = CoGe::Accessory::Web->init;
+if (!$id) {
+	$id	 = $user->image_id;
+}
 exit unless $id;
 
-my ( $coge, $USER, $P ) = CoGe::Accessory::Web->init;
 my $img = $coge->resultset('Image')->find($id);
+exit unless $img;
 
 $| = 1;    # turn off buffering
-print "Content-type: image/png\n\n", $img->image;
+print "Cache-Control: public\nContent-type: image/png\n\n", $img->image; # mdb added caching 11/24/15

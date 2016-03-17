@@ -9,4 +9,5 @@ WriteMakefile(
     PREREQ_PM    => {
                      'Test::Simple' => 0.44,
                     },
+    INSTALLMAN1DIR => 'none', # mdb added 11/19/15
 );

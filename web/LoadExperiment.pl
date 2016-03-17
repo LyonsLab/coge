@@ -11,6 +11,7 @@ use URI::Escape::JavaScript qw(unescape);
 use File::Path;
 use File::Copy qw(copy);
 use File::Spec::Functions qw(catdir catfile);
+use File::Touch;
 use Sort::Versions;
 use Data::Dumper;
 use CoGeX;
@@ -79,7 +80,6 @@ sub generate_html {
 			              HOME       => $CONF->{SERVER},
                           HELP       => 'LoadExperiment',
                           WIKI_URL   => $CONF->{WIKI_URL} || '',
-			              ADJUST_BOX => 1,
                           ADMIN_ONLY => $USER->is_admin,
                           USER       => $USER->display_name || '',
                           CAS_URL    => $CONF->{CAS_URL} || ''
@@ -123,6 +123,7 @@ sub generate_body {
         HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadExperiment',
         SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         DEFAULT_TAB              => 0,
+        ENABLE_SRA               => 1,
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
@@ -133,44 +134,6 @@ sub generate_body {
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
-}
-
-sub ncbi_search {
-    my %opts      = @_;
-    my $accn      = $opts{accn};
-    my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=$accn";
-    my $result = get($esearch);
-
-    #print STDERR $result;
-
-    my $record = XMLin($result);
-
-    #print STDERR Dumper $record;
-
-    my $id = $record->{IdList}->{Id};
-    print STDERR "id = $id\n";
-
-    my $title;
-    if ($id) {
-        $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&id=$id";
-        my $result = get($esearch);
-        #print STDERR $result;
-        $record = XMLin($result);
-        #print STDERR Dumper $record;
-
-        foreach ( @{ $record->{DocSum}->{Item} } )
-        {    #FIXME use grep here instead
-            if ( $_->{Name} eq 'Title' ) {
-                $title = $_->{content};
-                print STDERR "title=$title\n";
-                last;
-            }
-        }
-    }
-
-    return unless $id and $title;
-    return encode_json(
-        { name => $title, id => $id } );
 }
 
 sub upload_file {
@@ -191,6 +154,7 @@ sub upload_file {
 
         #print STDERR "temp files: $tmpfilename $targetpath\n";
         copy( $tmpfilename, $targetpath );
+        touch($targetpath . '.done'); # for JEX
         $size = -s $fh;
     }
 

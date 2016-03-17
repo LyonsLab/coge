@@ -17,14 +17,14 @@ use CoGeX::ResultSet::Feature;
 no warnings 'redefine';
 
 use vars
-  qw($P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $BASEFILE $coge %FUNCTION $EMBED
+  qw($P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $BASEFILE $DB %FUNCTION $EMBED
   $FORM $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS $LINK $node_types);
 
 $PAGE_TITLE = 'NotebookView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $DB, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
@@ -34,7 +34,7 @@ $TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
 
 $MAX_SEARCH_RESULTS = 1000;
 
-$node_types = $coge->node_types();
+$node_types = $DB->node_types();
 
 %FUNCTION = (
     get_list_info              => \&get_list_info,
@@ -56,6 +56,7 @@ $node_types = $coge->node_types();
     search_experiments         => \&search_experiments,
     search_features            => \&search_features,
     search_lists               => \&search_lists,
+    search_users               => \&search_users,
     search_annotation_types    => \&search_annotation_types,
     get_annotation_type_groups => \&get_annotation_type_groups,
     delete_list                => \&delete_list,
@@ -71,6 +72,7 @@ $node_types = $coge->node_types();
     send_to_fasta              => \&send_to_fasta,
     send_to_csv                => \&send_to_csv,
     send_to_xls                => \&send_to_xls,
+    update_owner               => \&update_owner,
 );
 
 # debug for fileupload:
@@ -97,7 +99,6 @@ sub gen_html {
             PAGE_TITLE => $PAGE_TITLE,
             TITLE      => "NotebookView",
             PAGE_LINK  => $LINK,
-            ADJUST_BOX => 1,
             HOME       => $P->{SERVER},
             HELP       => 'NotebookView',
             WIKI_URL   => $P->{WIKI_URL} || ''
@@ -115,7 +116,7 @@ sub gen_body {
     my $lid = $FORM->param('lid');
     $lid = $FORM->param('nid') unless $lid;                 # alias
     return "Must have valid notebook id\n" unless ($lid);
-    my ($list) = $coge->resultset('List')->find($lid);
+    my ($list) = $DB->resultset('List')->find($lid);
     return "<br>Notebook id$lid does not exist.<br>" unless ($list);
     return "Access denied\n" unless $USER->has_access_to_list($list);
 
@@ -141,7 +142,7 @@ sub get_list_info {
     my %opts = @_;
     my $lid  = $opts{lid};
     return unless $lid;
-    my ($list) = $coge->resultset('List')->find($lid);
+    my ($list) = $DB->resultset('List')->find($lid);
     return unless $USER->has_access_to_list($list);
 
     my $html          = $list->annotation_pretty_print_html();
@@ -174,8 +175,8 @@ sub get_list_info {
             map  { $_->genome_id } $list->experiments
           )
         {    # Pick a genome, any genome # TODO show user a list of genomes to choose from
-            my $link = qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid');};
-            $html .= qq{<span class='ui-button ui-corner-all ui-button-icon-right coge-button coge-button-right' style="margin-right:5px;" onClick="$link"><span class="ui-icon ui-icon-extlink"></span>View</span>};
+            my $link = qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid', '_self');};
+            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="$link">Browse</span>};
             last;
         }
     }
@@ -189,7 +190,7 @@ sub get_list_types {
     my $current_type_id = shift;
 
     my @types;
-    foreach my $type ( $coge->resultset('ListType')->all() ) {
+    foreach my $type ( $DB->resultset('ListType')->all() ) {
         next
           if ( $type->name =~ /owner/i )
           ;    # reserve this type for system-created lists
@@ -208,7 +209,7 @@ sub edit_list_info {
     my $lid  = $opts{lid};
     return 0 unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
 
     my $desc = ( $list->description ? $list->description : '' );
@@ -239,7 +240,7 @@ sub update_list_info {
     my $desc = $opts{desc};
     my $type = $opts{type};
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
 
     $list->name($name);
@@ -257,7 +258,7 @@ sub make_list_public {
 
     #return unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
 
     $list->restricted(0);
@@ -273,7 +274,7 @@ sub make_list_private {
 
     #return unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
 
     $list->restricted(1);
@@ -291,7 +292,7 @@ sub get_annotations {
     my %opts = @_;
     my $lid  = $opts{lid};
     return unless ($lid);
-    my ($list) = $coge->resultset('List')->find($lid);
+    my ($list) = $DB->resultset('List')->find($lid);
     return unless $USER->has_access_to_list($list);
 
     my $user_can_edit = $USER->is_admin
@@ -377,7 +378,7 @@ sub get_annotation {
 
     #TODO check user access here
 
-    my $ea = $coge->resultset('ListAnnotation')->find($aid);
+    my $ea = $DB->resultset('ListAnnotation')->find($aid);
     return unless $ea;
 
     my $type       = '';
@@ -419,19 +420,19 @@ sub add_annotation {
     my $group_rs;
     if ($type_group) {
         $group_rs =
-          $coge->resultset('AnnotationTypeGroup')
+          $DB->resultset('AnnotationTypeGroup')
           ->find( { name => $type_group } );
 
         # Create type group if it doesn't already exist
         if ( !$group_rs ) {
             $group_rs =
-              $coge->resultset('AnnotationTypeGroup')
+              $DB->resultset('AnnotationTypeGroup')
               ->create( { name => $type_group } );
         }
     }
 
     my $type_rs;
-    $type_rs = $coge->resultset('AnnotationType')->find(
+    $type_rs = $DB->resultset('AnnotationType')->find(
         {
             name                     => $type,
             annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
@@ -440,7 +441,7 @@ sub add_annotation {
 
     # Create type if it doesn't already exist
     if ( !$type_rs ) {
-        $type_rs = $coge->resultset('AnnotationType')->create(
+        $type_rs = $DB->resultset('AnnotationType')->create(
             {
                 name => $type,
                 annotation_type_group_id =>
@@ -455,7 +456,7 @@ sub add_annotation {
 
         #		print STDERR "size: " . (-s $fh) . "\n";
         read( $fh, my $contents, -s $fh );
-        $image = $coge->resultset('Image')->create(
+        $image = $DB->resultset('Image')->create(
             {
                 filename => $image_filename,
                 image    => $contents
@@ -465,7 +466,7 @@ sub add_annotation {
     }
 
     # Create the annotation
-    my $la = $coge->resultset('ListAnnotation')->create(
+    my $la = $DB->resultset('ListAnnotation')->create(
         {
             list_id            => $lid,
             annotation         => $annotation,
@@ -493,17 +494,17 @@ sub update_annotation {
 
     #TODO check user access here
 
-    my $ea = $coge->resultset('ListAnnotation')->find($aid);
+    my $ea = $DB->resultset('ListAnnotation')->find($aid);
     return unless $ea;
 
     # Create the type and type group if not already present
     my $group_rs;
     if ($type_group) {
         $group_rs =
-          $coge->resultset('AnnotationTypeGroup')
+          $DB->resultset('AnnotationTypeGroup')
           ->find_or_create( { name => $type_group } );
     }
-    my $type_rs = $coge->resultset('AnnotationType')->find_or_create(
+    my $type_rs = $DB->resultset('AnnotationType')->find_or_create(
         {
             name                     => $type,
             annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
@@ -515,7 +516,7 @@ sub update_annotation {
     my $image;
     if ($fh) {
         read( $fh, my $contents, -s $fh );
-        $image = $coge->resultset('Image')->create(
+        $image = $DB->resultset('Image')->create(
             {
                 filename => $image_filename,
                 image    => $contents
@@ -542,11 +543,11 @@ sub remove_annotation {
 
 #return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return 0 if ( $list->locked && !$USER->is_admin );
 
     my $la =
-      $coge->resultset('ListAnnotation')
+      $DB->resultset('ListAnnotation')
       ->find( { list_annotation_id => $laid } );
     return 0 unless $la;
     $la->delete();
@@ -559,7 +560,7 @@ sub get_list_contents {
     my $lid  = $opts{lid};
     return "Must have valid notebook id\n" unless ($lid);
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return "Notebook id$lid does not exist.<br>" unless $list;
 
     return "Access denied\n" unless $USER->has_access_to_list($list);
@@ -691,7 +692,7 @@ sub add_list_items {
     my $lid  = $opts{lid};
     return 0 unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
 
     my $desc = ( $list->description ? $list->description : '' );
@@ -721,22 +722,22 @@ sub add_item_to_list {
     my ( $item_type, $item_id ) = split( /:/, $item_spec );
     #print STDERR "add_item_to_list: lid=$lid item_type=$item_type item_id=$item_id\n";
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
     return 0 if ( $list->locked && !$USER->is_admin );
     return 0 unless ( $USER->is_admin || $USER->is_owner_editor( list => $lid ) );
 
     my $lc =
-      $coge->resultset('ListConnector')->find_or_create(
+      $DB->resultset('ListConnector')->find_or_create(
         {   parent_id => $lid,
             child_id => $item_id,
             child_type => $item_type
         });
     return 0 unless $lc;
 
-    my $type_name = $coge->node_type_name($item_type);
+    my $type_name = $DB->node_type_name($item_type);
     CoGe::Accessory::Web::log_history(
-        db          => $coge,
+        db          => $DB,
         user_id     => $USER->id,
         page        => "NotebookView",
         description => "added $type_name id$item_id to notebook " . $list->info_html,
@@ -753,7 +754,7 @@ sub remove_list_item {
     my $lid  = $opts{lid};
     return 0 unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
     return 0 if ( $list->locked && !$USER->is_admin );
     return 0 unless ( $USER->is_admin || $USER->is_owner_editor( list => $lid ) );
@@ -763,7 +764,7 @@ sub remove_list_item {
     #print STDERR "remove_list_item: lid=$lid item_type=$item_type item_id=$item_id\n";
 
     my $lc =
-      $coge->resultset('ListConnector')->find(
+      $DB->resultset('ListConnector')->find(
         {   parent_id => $lid,
             child_id => $item_id,
             child_type => $item_type
@@ -771,9 +772,9 @@ sub remove_list_item {
     if ($lc) {
         $lc->delete();
 
-        my $type_name = $coge->node_type_name($item_type);
+        my $type_name = $DB->node_type_name($item_type);
         CoGe::Accessory::Web::log_history(
-            db          => $coge,
+            db          => $DB,
             user_id     => $USER->id,
             page        => "NotebookView",
             description => "removed $type_name id$item_id from notebook " . $list->info_html,
@@ -796,7 +797,7 @@ sub search_mystuff {
     return 0 unless $lid;
 
     # Get items already in list
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
 
     my %exists;
     my $children = $list->children_by_type;
@@ -890,7 +891,7 @@ sub search_genomes {
     return 0 unless $lid;
 
     # Get genomes already in list
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     my %exists;
     map { $exists{ $_->id }++ } $list->genomes;
 
@@ -901,9 +902,9 @@ sub search_genomes {
     if ( !$search_term ) {
 
         # Get all genomes
-        $num_results = $coge->resultset("Genome")->count;
+        $num_results = $DB->resultset("Genome")->count;
         if ( $num_results < $MAX_SEARCH_RESULTS ) {
-            my @genomes = $coge->resultset("Genome")->all;
+            my @genomes = $DB->resultset("Genome")->all;
             map {
                 $unique{ $_->id } = $_
                   if ( !$_->deleted and $USER->has_access_to_genome($_) )
@@ -916,7 +917,7 @@ sub search_genomes {
         $search_term = '%' . $search_term . '%';
 
         # Get all matching organisms
-        my @organisms = $coge->resultset("Organism")->search(
+        my @organisms = $DB->resultset("Organism")->search(
             \[
                 'name LIKE ? OR description LIKE ?',
                 [ 'name',        $search_term ],
@@ -925,7 +926,7 @@ sub search_genomes {
         );
 
         # Get all matching genomes
-        my @genomes = $coge->resultset("Genome")->search(
+        my @genomes = $DB->resultset("Genome")->search(
             \[
                 'name LIKE ? OR description LIKE ?',
                 [ 'name',        $search_term ],
@@ -983,7 +984,7 @@ sub search_experiments {
     return 0 unless $lid;
 
     # Get experiments already in list
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     my %exists;
     map { $exists{ $_->id }++ } $list->experiments;
 
@@ -994,10 +995,10 @@ sub search_experiments {
     if ( !$search_term ) {
 
         # Get all experiments
-        $num_results = $coge->resultset("Experiment")->count;
+        $num_results = $DB->resultset("Experiment")->count;
         if ( $num_results < $MAX_SEARCH_RESULTS ) {
             map { $unique{ $_->id } = $_ }
-              $coge->resultset("Experiment")->search( { deleted => 0 } );
+              $DB->resultset("Experiment")->search( { deleted => 0 } );
         }
     }
 
@@ -1013,7 +1014,7 @@ sub search_experiments {
 
         # Get all public experiments
         $search_term = '%' . $search_term . '%';
-        map { $unique{ $_->id } = $_ } $coge->resultset("Experiment")->search(
+        map { $unique{ $_->id } = $_ } $DB->resultset("Experiment")->search(
             \[
 'restricted=? AND deleted=? AND (name LIKE ? OR description LIKE ?)',
                 [ 'restricted',  0 ],
@@ -1063,7 +1064,7 @@ sub search_features {
     return 0 unless $lid;
 
     # Get lists already in list
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     my %exists;
     map { $exists{ $_->id }++ } $list->features;
 
@@ -1074,9 +1075,9 @@ sub search_features {
     if ( !$search_term ) {
 
         # Get all features
-        $num_results = $coge->resultset("FeatureName")->count;
+        $num_results = $DB->resultset("FeatureName")->count;
         if ( $num_results < $MAX_SEARCH_RESULTS ) {
-            @fnames = $coge->resultset("FeatureName")->all;
+            @fnames = $DB->resultset("FeatureName")->all;
         }
     }
 
@@ -1085,10 +1086,10 @@ sub search_features {
 
         # Fulltext search copied from FeatView.pl
         push @fnames,
-          $coge->resultset('FeatureName')->search( name => $search_term );
+          $DB->resultset('FeatureName')->search( name => $search_term );
         unless (@fnames) {
             push @fnames,
-              $coge->resultset('FeatureName')
+              $DB->resultset('FeatureName')
               ->search_literal( 'MATCH(me.name) AGAINST (?)', $search_term );
         }
         $num_results = @fnames;
@@ -1140,10 +1141,10 @@ sub search_lists
     if ( !$search_term ) {
         my $sql = "locked=0"
           ;    # AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
-        $num_results = $coge->resultset("List")->count_literal($sql);
+        $num_results = $DB->resultset("List")->count_literal($sql);
         if ( $num_results < $MAX_SEARCH_RESULTS ) {
             foreach
-              my $notebook ( $coge->resultset("List")->search_literal($sql) )
+              my $notebook ( $DB->resultset("List")->search_literal($sql) )
             {
                 next unless $USER->has_access_to_list($notebook);
                 push @notebooks, $notebook;
@@ -1157,7 +1158,7 @@ sub search_lists
         # Get public lists and user's private lists
         $search_term = '%' . $search_term . '%';
         foreach my $notebook (
-            $coge->resultset("List")->search_literal(
+            $DB->resultset("List")->search_literal(
 "locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"
             )
           )
@@ -1190,6 +1191,38 @@ sub search_lists
     return encode_json( { timestamp => $timestamp, html => $html } );
 }
 
+sub search_users {
+    my %opts        = @_;
+    my $search_term = $opts{search_term};
+    my $timestamp   = $opts{timestamp};
+
+    #print STDERR "$search_term $timestamp\n";
+    return unless $search_term;
+
+    # Perform search
+    $search_term = '%' . $search_term . '%';
+    my @users = $DB->resultset("User")->search(
+        \[
+            'user_name LIKE ? OR first_name LIKE ? OR last_name LIKE ?',
+            [ 'user_name',  $search_term ],
+            [ 'first_name', $search_term ],
+            [ 'last_name',  $search_term ]
+        ]
+    );
+
+    # Limit number of results displayed
+    # if (@users > $MAX_SEARCH_RESULTS) {
+    #   return encode_json({timestamp => $timestamp, items => undef});
+    # }
+
+    return encode_json(
+        {
+            timestamp => $timestamp,
+            items     => [ sort map { $_->user_name } @users ]
+        }
+    );
+}
+
 sub search_annotation_types {
     my %opts        = @_;
     my $type_group  = $opts{type_group};
@@ -1203,7 +1236,7 @@ sub search_annotation_types {
     my $group;
     if ($type_group) {
         $group =
-          $coge->resultset('AnnotationTypeGroup')
+          $DB->resultset('AnnotationTypeGroup')
           ->find( { name => $type_group } );
     }
 
@@ -1211,7 +1244,7 @@ sub search_annotation_types {
     if ($group) {
 
         #		print STDERR "type_group=$type_group " . $group->id . "\n";
-        @types = $coge->resultset("AnnotationType")->search(
+        @types = $DB->resultset("AnnotationType")->search(
             \[
 'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
                 [ 'annotation_type_group_id', $group->id ],
@@ -1221,7 +1254,7 @@ sub search_annotation_types {
         );
     }
     else {
-        @types = $coge->resultset("AnnotationType")->search(
+        @types = $DB->resultset("AnnotationType")->search(
             \[
                 'name LIKE ? OR description LIKE ?',
                 [ 'name',        $search_term ],
@@ -1240,7 +1273,7 @@ sub get_annotation_type_groups {
     #my %opts = @_;
     my %unique;
 
-    my $rs = $coge->resultset('AnnotationTypeGroup');
+    my $rs = $DB->resultset('AnnotationTypeGroup');
     while ( my $atg = $rs->next ) {
         $unique{ $atg->name }++;
     }
@@ -1258,15 +1291,15 @@ sub delete_list {
     my $lid  = $opts{lid};
     return 0 unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
 
     my $success;
     if ($list->deleted) {
-        $success = undelete_notebook(db => $coge, user => $USER, notebook_id => $lid, page => $PAGE_TITLE);
+        $success = undelete_notebook(db => $DB, user => $USER, notebook_id => $lid, page => $PAGE_TITLE);
     }
     else {
-        $success = delete_notebook(db => $coge, user => $USER, notebook_id => $lid, page => $PAGE_TITLE);
+        $success = delete_notebook(db => $DB, user => $USER, notebook_id => $lid, page => $PAGE_TITLE);
     }
    
     return $success;
@@ -1277,7 +1310,7 @@ sub send_to_blast {
     my $lid  = $opts{lid};
     return unless $lid;
 
-    #my $list = $coge->resultset('List')->find($lid);
+    #my $list = $DB->resultset('List')->find($lid);
     #return unless $list;
 
     #my $accn_list = join(',', map { $_->id } $list->genomes);
@@ -1315,7 +1348,7 @@ sub send_to_msa {
     my $lid  = $opts{lid};
     return unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return unless $list;
 
     my $accn_list = join( '&', map { 'fid=' . $_->id } $list->features );
@@ -1328,7 +1361,7 @@ sub send_to_gevo {
     my $lid  = $opts{lid};
     return unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return unless $list;
 
     my $count = 1;
@@ -1352,7 +1385,7 @@ sub send_to_synfind {
     my $lid  = $opts{lid};
     return unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return unless $list;
 
     my $accn_list = join( ',', map { $_->id } $list->genomes );
@@ -1367,7 +1400,7 @@ sub send_to_featmap {
     my $lid  = $opts{lid};
     return unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return unless $list;
 
     my $accn_list = join( '&', map { 'fid=' . $_->id } $list->features );
@@ -1380,7 +1413,7 @@ sub send_to_codeon {
     my $lid  = $opts{lid};
     return unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return unless $list;
 
     my $accn_list = join( '::', map { $_->id } $list->features );
@@ -1393,7 +1426,7 @@ sub send_to_fasta {
     my $lid  = $opts{lid};
     return unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return unless $list;
 
     my $cogeweb =
@@ -1414,7 +1447,7 @@ sub send_to_csv {
     my $lid  = $opts{lid};
     return unless $lid;
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $DB->resultset('List')->find($lid);
     return unless $list;
 
     my $cogeweb =
@@ -1494,7 +1527,7 @@ sub send_to_xls {
     $worksheet->write( 0, 10, "OrganismView Link" );
 
     foreach my $dsgid ( split( /,/, $accn_list ) ) {
-        my ($dsg) = $coge->resultset("Genome")->find($dsgid);
+        my ($dsg) = $DB->resultset("Genome")->find($dsgid);
         next unless $dsg;
 
         my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
@@ -1532,4 +1565,76 @@ sub send_to_xls {
     $workbook->close() or die "Error closing file: $!";
     $file =~ s/$TEMPDIR/$TEMPURL/;
     return $file;
+}
+
+sub update_owner {
+    my %opts      = @_;
+    my $nid       = $opts{nid};
+    my $user_name = $opts{user_name};
+    return unless $nid and $user_name;
+
+    # Admin-only function
+    return unless $USER->is_admin;
+
+    # Get user to become owner
+    my $user = $DB->resultset('User')->find( { user_name => $user_name } );
+    unless ($user) {
+        return "error finding user '$user_name'\n";
+    }
+
+    # Get notebook
+    my $notebook = $DB->resultset('List')->find($nid);
+    unless ($notebook) {
+        return "error finding notebook id$nid\n";
+    }    
+
+    # Make user owner of notebook and its contents
+    foreach my $item ($notebook, $notebook->children) {
+        print STDERR 'Reassigning ', $item->id, ' ', $item->item_type, "\n";
+        
+        # Remove current owner (should only be one, but loop just in case)
+        foreach my $conn (
+            $DB->resultset('UserConnector')->search(
+                {
+                    parent_type => $node_types->{user},
+                    child_id    => $item->id,
+                    child_type  => $item->item_type,
+                    role_id     => 2                        # FIXME hardcoded
+                }
+            ))
+        {
+            $conn->delete;
+        }
+        
+        # Remove existing user connection (should only be one, but loop just in case)
+        foreach my $conn (
+            $DB->resultset('UserConnector')->search(
+                {
+                    parent_id   => $user->id,
+                    parent_type => $node_types->{user},
+                    child_id    => $item->id,
+                    child_type  => $item->item_type,
+                    role_id     => {'!=' => 2}           # FIXME hardcoded
+                }
+            ))
+        {
+            $conn->delete;
+        }
+        
+        # Make given user the owner
+        my $conn = $DB->resultset('UserConnector')->find_or_create(
+            {
+                parent_id   => $user->id,
+                parent_type => $node_types->{user},
+                child_id    => $item->id,
+                child_type  => $item->item_type,
+                role_id     => 2                        # FIXME hardcoded
+            }
+        );
+        unless ($conn) {
+            return "error creating user connector\n";
+        }
+    }
+
+    return;
 }

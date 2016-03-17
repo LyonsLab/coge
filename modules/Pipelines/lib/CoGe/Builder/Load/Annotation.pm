@@ -1,6 +1,7 @@
 package CoGe::Builder::Load::Annotation;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use Switch;
@@ -46,7 +47,7 @@ sub build {
     my $upload_dir = get_upload_path($self->user->name, $load_id);
     my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data);
     push @tasks, @{$data_workflow->{tasks}} if ($data_workflow->{tasks});
-    push @input_files, @{$data_workflow->{files}} if ($data_workflow->{files});
+    push @input_files, @{$data_workflow->{outputs}} if ($data_workflow->{outputs});
     
     # Submit workflow to generate annotation
     my $load_task = create_load_annotation_job(
@@ -64,7 +65,5 @@ sub build {
     
     return 1;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;

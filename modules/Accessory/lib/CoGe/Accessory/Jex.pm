@@ -4,6 +4,7 @@ use v5.10;
 use strict;
 use warnings;
 
+use Data::Dumper;
 use Moose;
 use JSON::XS;
 use ZMQ::LibZMQ3;
@@ -201,7 +202,7 @@ sub find_workflows {
 # Private functions
 sub _send_request {
     my ($self, $request) = @_;
-    my ($submitted, $TIMEOUT) = (time, 30);
+    my ($submitted, $TIMEOUT) = (time, 600);#60);#30); # mdb changed from 60 to 600 3/3/16 COGE-707
 
     # Set the default response as an error in case a response is not recieved.
     my $response = { status => "error" };

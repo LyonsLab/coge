@@ -49,7 +49,11 @@ sub get {
     elsif ($type eq "export_experiment") {
         return CoGe::Request::Experiment->new($options);
     }
-    elsif ($type eq "analyze_snps") {
+    elsif ($type eq "analyze_snps" ||
+           $type eq "analyze_expression" ||
+           $type eq "analyze_methylation" || 
+           $type eq "analyze_diversity") 
+    {
         return CoGe::Request::ExperimentAnalysis->new($options);
     }
     elsif ($type eq "load_genome") {

@@ -17,6 +17,7 @@ use File::Copy;
 use File::Basename;
 use File::Slurp;
 use File::Spec::Functions qw( catdir catfile );
+use File::Touch;
 use File::Listing qw(parse_dir);
 use Sort::Versions;
 use Data::Dumper;
@@ -83,7 +84,6 @@ sub generate_html {
                           WIKI_URL   => $CONF->{WIKI_URL} || '',
                           USER       => $USER->display_name || '' );
         $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
-        $template->param( ADJUST_BOX => 1 );
         $template->param( ADMIN_ONLY => $USER->is_admin );
         $template->param( CAS_URL    => $CONF->{CAS_URL} || '' );
     }
@@ -154,6 +154,7 @@ sub upload_file {
 
         #print STDERR "temp files: $tmpfilename $targetpath\n";
         copy( $tmpfilename, $targetpath );
+        touch($targetpath . '.done'); # for JEX
         $size = -s $fh;
     }
 

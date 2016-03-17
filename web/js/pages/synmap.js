@@ -1154,14 +1154,14 @@ function checkRequestSize(url) {
         $('#depth_org_2').html($('#org_id2 option:selected').html());
 
         if (options.autostart) {
-            run_synmap(true, $('#regen_images')[0].checked);
+            run_synmap($('#regen_images')[0].checked);
         }
 
         $("#tabs").removeClass("invisible");
 
         // track analysis
         $("#synmap_go").on("click", function() {
-            run_synmap(false, $('#regen_images')[0].checked);
+            run_synmap($('#regen_images')[0].checked);
             ga('send', 'event', 'synmap', 'run');
         });
     };
@@ -1195,7 +1195,7 @@ function checkRequestSize(url) {
             ($('#org_id2').val() != "");
     }
 
-    function run_synmap(scheduled, regenerate){
+    function run_synmap(regenerate){
         populate_page_obj();
 
         var org_name1 = pageObj.org_name1;
@@ -1242,7 +1242,8 @@ function checkRequestSize(url) {
         $('#results').hide();
 
         if (regenerate) {
-            return schedule(get_params("go", regenerate));
+            schedule(get_params("go", regenerate));
+            return;
         }
 
         return $.ajax({
@@ -1339,7 +1340,7 @@ function checkRequestSize(url) {
         var status_dialog = $('#synmap_dialog');
         close_dialog(status_dialog);
 
-        return $.ajax({
+        $.ajax({
             type: "post",
             dataType: 'json',
             data: params,
@@ -1357,10 +1358,7 @@ function checkRequestSize(url) {
                     + data.link + " onclick=window.open('tiny')"
                     + "target = _new>" + data.link + "</a>";
 
-                    var logfile = '<a href="tmp/SynMap/'
-                    + pageObj.basename + '.log">Logfile</a>';
-
-                    $('#dialog_log').html(logfile);
+                     $('#dialog_log').html('<a href="' + data.log + '">Logfile</a>');
                     $('#synmap_link').html(link);
 
                     update_dialog(data.request, "#synmap_dialog", synmap_formatter,
@@ -1431,7 +1429,7 @@ function checkRequestSize(url) {
             codeml_max: $('#codeml_max').val(),
             logks: $('#logks')[0].checked,
             csco: $('#csco').val(),
-            jquery_ajax: 1,
+            jquery_ajax: 1
         };
     }
 

@@ -75,6 +75,12 @@ $(function() {
 			dataTypes: ['notebook'],
 			operations: ['share', 'delete', 'sendto', 'add']
 		},
+		metadata: {
+			title: 'Metadata',
+			displayType: 'html',
+			dataTypes: ['metadata'],
+			search: false
+		},
 		group: {
 			title: 'User Groups',
 			displayType: 'grid',
@@ -287,6 +293,8 @@ function default_info() {
 		case 'shared':
 			return "These are data items that your collaborators shared with you.<br><br>" +
 				"Hover over an item to view additional info. Select one or more items to share with others or add to a notebook.";
+		case 'metadata':
+			return "Here is a summary of the metadata for your experiments, genomes and notebooks.";
 		case 'mine':
 		case 'notebook':
 		case 'genome':
@@ -491,7 +499,7 @@ $.extend(ContentPanel.prototype, {
     	this.selectedView = viewId;
     	var view = this.views[viewId];
     	
-    	// 
+    	// Setup requests for content data
     	var promises = new Array();
     	view.dataTypes.forEach(function (dataType) {
     		var deferred = $.Deferred();
@@ -510,8 +518,9 @@ $.extend(ContentPanel.prototype, {
         
         return $.when.apply($, promises).then(function(schemas) {
 	            console.log("ContentPanel.update: DONE");
+	            self.grid.clearSelection();
 	        }, function(e) {
-	            console.log("My ajax failed");
+	            console.log("ContentPanel.update: FAILED");
 	        });
     },
     
@@ -547,9 +556,9 @@ $.extend(ContentPanel.prototype, {
     
     fetch: function(sync, typeId) {
     	var self = this;
+    	console.log('ContentPanel.fetch ' + typeId + ' ' + self.selectedTypeId);
     	if (!typeId)
-    		typeId = this.selectedType;
-    	console.log('ContentPanel.fetch ' + typeId);
+    		typeId = self.selectedTypeId;
     	
     	var lastUpdate = (sync ? timestamps['lastUpdate'] : 0);
 
@@ -655,14 +664,27 @@ $.extend(DataGrid.prototype, {
 	            $(tr).removeClass('selected');
 	        }
 	        else { // select
-	        	if (event.ctrlKey || event.metaKey)
-	        		; // do-nothing for multi-select
-	        	else if (event.shiftKey)
-	        		; //TODO handle block selection
+	        	if (event.ctrlKey || event.metaKey) // multi select
+	        		; // no action required
+	        	else if (event.shiftKey) { // block select
+		            var oSettings = dataTable.fnSettings(),
+			            fromPos = dataTable.fnGetPosition(self.lastRowSelected),
+		            	toPos = dataTable.fnGetPosition(tr),
+		            	fromIndex = $.inArray(fromPos, oSettings.aiDisplay),
+		            	toIndex = $.inArray(toPos, oSettings.aiDisplay),
+			            start = (fromIndex < toIndex ? fromIndex : toIndex),
+			            end = (fromIndex < toIndex ? toIndex : fromIndex);
+		            
+		            for (var i = start; i <= end; i++) {
+		            	var tr2 = dataTable.api().row(oSettings.aiDisplay[i]).node();
+		            	$(tr2).addClass('selected'); // select item
+		            }
+	        	}
 	        	else
-	        		self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
+	        		dataTable.$('tr.selected').removeClass('selected'); // unselect all
 	        	
 	            $(tr).addClass('selected'); // select item
+	            self.lastRowSelected = tr;
 	        }
 	        
 	        self.selectItem(row);
@@ -793,7 +815,7 @@ $.extend(DataGrid.prototype, {
     },
     
     clearSelection: function() {
-    	this.dataTable.api().rows('.selected').removeClass('selected');
+    	this.dataTable.$('tr.selected').removeClass('selected'); // unselect all
     },
     
     selectItem: function(item) {
@@ -1095,7 +1117,7 @@ $.extend(TocPanel.prototype, {
     	var itemType = $(item).data('type');
     	console.log('TocPanel.selectItem ' + itemType);
     	
-    	if (this.selectedTypeId && itemType == this.selectedTypeId) // already selected
+    	if (this.selectedTypeId && itemType === this.selectedTypeId) // already selected
     		return;
     	this.selectedTypeId = itemType;
     	
@@ -1687,6 +1709,22 @@ function create_new_notebook() {
         	$('#create_notebook_dialog').dialog('close');
         }
     });
+}
+
+function upload_metadata_dialog(type) {
+	$('#upload_metadata_dialog').dialog({
+		width:'28em'
+	}).dialog('open');
+	$('#metadata_file').fileupload({
+		done: function(e,data) {
+			alert(data);
+			$('#upload_metadata_dialog').dialog('close');
+		},
+		formData: {
+			fname: 'upload_metadata',
+			type: type
+		}
+	});
 }
 
 function send_menu() {

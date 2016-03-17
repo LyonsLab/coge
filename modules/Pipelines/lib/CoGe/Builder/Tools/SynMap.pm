@@ -29,6 +29,11 @@ sub add_jobs {
 	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
 	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
+	my $tiny_link = get_query_link( $config, $db, @_ );
+	my $path = catdir($config->{DIAGSDIR}, $dir1, $dir2, 'html');
+	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
+	$workflow->logfile($path);
+
 	my $SEQUENCE_SIZE_LIMIT =
 	  50_000_000;    # Limit the maximum genome size for genomic-genomic
 	my $DIAGSDIR      = $config->{DIAGSDIR};
@@ -175,8 +180,6 @@ sub add_jobs {
 	  unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
 	my $logks = $opts{logks};
 	$logks = $logks eq "true" ? 1 : 0;
-
-	my $email = 0 if check_address_validity( $opts{email} ) eq 'invalid';
 
 	my $assemble = $opts{assemble} =~ /true/i ? 1 : 0;
 	$assemble = 2 if $assemble && $opts{show_non_syn} =~ /true/i;
@@ -685,8 +688,6 @@ sub add_jobs {
 	############################################################################
 	# Run quota align merge
 	############################################################################
-	my $final_results_files;
-
 	#id 1 is to specify quota align as a merge algo
 	if ( $merge_algo == 1 ) {
 		$merged_dagchainer_file = "$dagchainer_file.Dm$Dm.ma1";
@@ -806,7 +807,7 @@ sub add_jobs {
 	############################################################################
 	# Create html output directory
 	############################################################################
-	my ( $qlead, $slead ) = ( "a", "b" );
+#	my ( $qlead, $slead ) = ( "a", "b" );
 	my $out = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/html/";
 	mkpath( $out, 0, 0777 ) unless -d $out;
 	$out .= "master_";
@@ -918,7 +919,7 @@ sub add_jobs {
 	my @plotargs   = ();
 	my @plotinputs = ();
 
-	my $basename =
+	my ($basename) =
 	  $final_dagchainer_file =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
 	$width = 1000 unless defined($width);
 
@@ -1372,6 +1373,199 @@ sub generate_pseudo_assembly {
 	};
 }
 
+sub get_logfile {
+    my $db = shift;
+    my $config = shift;
+	my %opts     = @_;
+	my $dsgid1 = $opts{dsgid1} || $opts{genome_id1};
+	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
+	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
+	my $feat_type1 = $opts{feat_type1};
+	my $feat_type2 = $opts{feat_type2};
+	my ($genome1) = $db->resultset('Genome')->find($dsgid1);
+	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
+	my ( $org_name1, $title1 ) = gen_org_name(
+		db        => $db,
+		dsgid     => $dsgid1,
+		feat_type => $feat_type1
+	);
+	my ( $org_name2, $title2 ) = gen_org_name(
+		db        => $db,
+		dsgid     => $dsgid2,
+		feat_type => $feat_type2
+	);
+	my $ks_type = $opts{ks_type};
+	my $blast = $opts{blast};
+	my $dagchainer_D = $opts{D};
+	my $dagchainer_A = $opts{A};
+	my $Dm           = $opts{Dm};
+	my $gm           = $opts{gm};
+	($Dm) = $Dm =~ /(\d+)/;
+	($gm) = $gm =~ /(\d+)/;
+	my $cscore = $opts{csco};
+	my $dupdist = defined( $opts{tdd} ) ? $opts{tdd} : 10;
+	my $width             = $opts{width};
+	my $axis_metric       = $opts{axis_metric};
+	my $axis_relationship = $opts{axis_relationship};
+	my $min_chr_size      = $opts{min_chr_size};
+	my $dagchainer_type   = $opts{dagchainer_type};
+	my $color_type        = $opts{color_type};
+	my $merge_algo        = $opts{merge_algo}; #is there a merging function? will non-syntenic dots be shown?
+	my $snsd              = $opts{show_non_syn_dots} =~ /true/i ? 1 : 0;
+	my $flip = $opts{flip} =~ /true/i ? 1 : 0;
+	my $clabel = $opts{clabel} =~ /true/i ? 1 : 0;
+	my $skip_rand = $opts{skip_rand} =~ /true/i ? 1 : 0;
+	my $color_scheme = $opts{color_scheme};
+	my $fid1 = $opts{fid1};
+	my $fid2 = $opts{fid2};
+	my $box_diags = $opts{box_diags};
+	$box_diags = $box_diags eq "true" ? 1 : 0;
+	my $chr_sort_order = $opts{chr_sort_order};
+	my $codeml_min = $opts{codeml_min};
+	$codeml_min = undef
+	  unless $codeml_min =~ /\d/ && $codeml_min =~ /^-?\d*.?\d*$/;
+	my $codeml_max = $opts{codeml_max};
+	$codeml_max = undef
+	  unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
+	my $logks = $opts{logks};
+	$logks = $logks eq "true" ? 1 : 0;
+	my $assemble = $opts{assemble} =~ /true/i ? 1 : 0;
+	$assemble = 2 if $assemble && $opts{show_non_syn} =~ /true/i;
+	$assemble *= -1 if $assemble && $opts{spa_ref_genome} < 0;
+	my $depth_algo        = $opts{depth_algo};
+	my $depth_org_1_ratio = $opts{depth_org_1_ratio};
+	my $depth_org_2_ratio = $opts{depth_org_2_ratio};
+	my $depth_overlap     = $opts{depth_overlap};
+	$feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
+	$feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
+	$feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
+	$feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
+	(
+		$dsgid1,     $genome1,           $org_name1,
+		$feat_type1, $depth_org_1_ratio, $dsgid2,
+		$genome2,    $org_name2,         $feat_type2,
+		$depth_org_2_ratio
+	  )
+	  = (
+		$dsgid2,     $genome2,           $org_name2,
+		$feat_type2, $depth_org_2_ratio, $dsgid1,
+		$genome1,    $org_name1,         $feat_type1,
+		$depth_org_1_ratio
+	  ) if ( $dsgid2 lt $dsgid1 );
+	my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
+	my $ALGO_LOOKUP = algo_lookup();
+	my $DIAGSDIR      = $config->{DIAGSDIR};
+	my %org_dirs = (
+		$orgkey1 . "_" . $orgkey2 => {
+			basename => $dsgid1 . "_" 
+			  . $dsgid2
+			  . ".$feat_type1-$feat_type2."
+			  . $ALGO_LOOKUP->{$blast}{filename},
+			dir => "$DIAGSDIR/$dir1/$dir2",
+		  },
+	);
+	foreach my $org_dir ( keys %org_dirs ) {
+		my $outfile = $org_dirs{$org_dir}{dir};
+		$outfile .= "/" . $org_dirs{$org_dir}{basename};
+		$org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
+	}
+	my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
+	$raw_blastfile .= ".new" if $raw_blastfile =~ /genomic/;
+	my $filtered_blastfile = $raw_blastfile;
+	$filtered_blastfile .= ".tdd$dupdist";
+	$filtered_blastfile .= ".cs$cscore" if $cscore < 1;
+	$filtered_blastfile .= ".filtered";
+	my $dag_file12       = $filtered_blastfile . ".dag";
+	my $dag_file12_all   = $dag_file12 . ".all";
+	my $dag_file12_all_geneorder = "$dag_file12_all.go";
+	my $all_file;
+	if ( $dagchainer_type eq "geneorder" ) {
+		$all_file = $dag_file12_all_geneorder;
+		$dag_file12 .= ".go";
+	}
+	else {
+		$all_file = $dag_file12_all;
+	}
+	unless ( ( -r $dag_file12 && -s $dag_file12 )
+		|| ( -r $dag_file12 . ".gz" && -s $dag_file12 . ".gz" ) )
+	{
+		$dag_file12 = $all_file;
+	}
+	my ( $dagchainer_file );
+	my $dag_merge_enabled = ( $merge_algo == 2 ) ? 1 : 0;
+	my $gap = defined( $opts{g} ) ? $opts{g} : floor( $dagchainer_D / 2 );
+	$gap = 1 if $gap < 1;
+	$dagchainer_file = $dag_file12;
+	$dagchainer_file .= "_D$dagchainer_D" if defined $dagchainer_D;
+	$dagchainer_file .= "_g$gap"          if defined $gap;
+	$dagchainer_file .= "_A$dagchainer_A" if defined $dagchainer_A;
+	$dagchainer_file .= "_Dm$Dm"          if $dag_merge_enabled;
+	$dagchainer_file .= "_gm$gm"          if $dag_merge_enabled;
+	$dagchainer_file .= ".aligncoords";
+	$dagchainer_file .= ".ma2.dag"        if $dag_merge_enabled;
+	my $post_dagchainer_file;
+	if ($dag_merge_enabled) {
+		$post_dagchainer_file = "$dagchainer_file.merged";
+	}
+	else {
+		$post_dagchainer_file = $dagchainer_file;
+	}
+	if ( $merge_algo == 1 ) {
+		$post_dagchainer_file = "$dagchainer_file.Dm$Dm.ma1";
+	}
+	my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
+	$post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
+	$post_dagchainer_file_w_nearby = $post_dagchainer_file; # are the previous two lines necessary if we just overwrite here?
+	my ( $quota_align_coverage, $final_dagchainer_file );
+	if ( $depth_algo == 1 ) {    #id 1 is to specify quota align
+		$quota_align_coverage = $post_dagchainer_file_w_nearby;
+		$quota_align_coverage .= ".qac" . $depth_org_1_ratio . ".";
+		$quota_align_coverage .= $depth_org_2_ratio . "." . $depth_overlap;
+		$final_dagchainer_file = $quota_align_coverage;
+	}
+	else {
+		$final_dagchainer_file = $post_dagchainer_file_w_nearby;
+	}
+	$final_dagchainer_file .= ".gcoords" if $dagchainer_type eq "geneorder";
+	unless ($width) {
+		my $chr1_count = $genome1->chromosome_count;
+		my $chr2_count = $genome2->chromosome_count;
+		my $max_chr    = $chr1_count;
+		$max_chr = $chr2_count if $chr2_count > $chr1_count;
+		$width   = int( $max_chr * 100 );
+		$width   = 1000 if $width > 1000;
+		$width   = 500 if $width < 500;
+	}
+	my $out = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/html/";
+	$out .= "master_";
+	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
+	$out .= $base;
+	$out .= "_ct$color_type" if defined $color_type;
+	$out .= ".w$width";
+	my $check_ks = $final_dagchainer_file =~ /^(.*?CDS-CDS)/;
+	$check_ks = $final_dagchainer_file =~ /^(.*?protein-protein)/ unless $check_ks;
+	$ks_type = undef unless $ks_type and $check_ks;
+	my $dotfile = $out;
+	$dotfile .= ".spa$assemble"     if $assemble;
+	$dotfile .= ".gene"             if $axis_metric =~ /gene/i;
+	$dotfile .= ".s"                if $axis_relationship =~ /s/i;
+	$dotfile .= ".mcs$min_chr_size" if $min_chr_size;
+	$dotfile .= ".$fid1"            if $fid1;
+	$dotfile .= ".$fid2"            if $fid2;
+	$dotfile .= ".$ks_type"          if $ks_type;
+	$dotfile .= ".box"                if $box_diags;
+	$dotfile .= ".flip"               if $flip;
+	$dotfile .= ".c0"                 if $clabel eq 0;
+	$dotfile .= ".sr"                 if $skip_rand;
+	$dotfile .= ".cs$color_scheme"    if defined $color_scheme;
+	$dotfile .= ".cso$chr_sort_order" if defined $chr_sort_order;
+	$dotfile .= ".min$codeml_min"     if defined $codeml_min;
+	$dotfile .= ".max$codeml_max"     if defined $codeml_max;
+	$dotfile .= ".log"                if $logks;
+	$dotfile .= ".nsd" unless $snsd;    #no syntenic dots, yes, nomicalture is confusing.
+    return $dotfile . '.log';
+}
+
 sub get_name {
 	return 'SynMap';
 }
@@ -1395,7 +1589,6 @@ sub get_query_link {
 	my $dupdist =
 	  $url_options{tdd};    #tandem duplication distance, fed to blast to raw
 	my $regen_images = $url_options{regen_images};
-	my $email        = $url_options{email};
 	my $job_title    = $url_options{jobtitle};
 	my $width        = $url_options{width};
 
@@ -1429,7 +1622,7 @@ sub get_query_link {
 	my $depth_overlap     = $url_options{depth_overlap};
 
 	#options for fractionation bias
-	my $frac_bias       = $url_options{frac_bias};
+	my $frac_bias       = $url_options{frac_bias} =~ /true/i;
 	my $fb_window_size  = $url_options{fb_window_size};
 	my $fb_target_genes = $url_options{fb_target_genes};
 
@@ -1530,8 +1723,6 @@ sub get_query_link {
 	$synmap_link .= ";sr=$skip_rand"       if defined $skip_rand;
 	$synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
 
-	$email = 0 if check_address_validity($email) eq 'invalid';
-
 	$feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
 	$feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
 	$feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
@@ -1564,7 +1755,6 @@ sub go {
 	}
 	my $dsgid1 = $opts{dsgid1};
 	my $dsgid2 = $opts{dsgid2};
-
 	return encode_json(
 		{
 			success => JSON::false,
@@ -1606,7 +1796,7 @@ sub go {
 	) unless -r $genome2->file_path;
 
 	my $tiny_link = get_query_link( $config, $db, @_ );
-	say STDERR "tiny_link is required for logging." unless defined($tiny_link);
+	warn "tiny_link is required for logging." unless defined($tiny_link);
 	my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
 	my $workflow_name = "synmap-$tiny_id";
 
@@ -1615,9 +1805,6 @@ sub go {
 		port => $config->{JOBPORT}
 	);
 	my $workflow = $JEX->create_workflow( name => $workflow_name );
-    my ($staging_dir, $result_dir) = get_workflow_paths(user->name, $workflow->id);
-    $workflow->logfile(catfile($result_dir, "debug.log"));
-
 	$workflow->log_section( "Creating Workflow" );
 	$workflow->log( "Link to Regenerate Analysis" );
 	$workflow->log( "$tiny_link" );
@@ -1635,7 +1822,6 @@ sub go {
 	$workflow->log_section( "Running Workflow" );
 
 	my $response = $JEX->submit_workflow($workflow);
-
 	if ( $response and $response->{id} ) {
 		my $feat_type1 = $opts{feat_type1};
 		my $feat_type2 = $opts{feat_type2};
@@ -1653,7 +1839,7 @@ sub go {
 		  ; #"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
 		$log_msg .= " Ks" if $opts{ks_type};
 
-		my $log = CoGe::Accessory::Web::log_history(
+		CoGe::Accessory::Web::log_history(
 			db          => $db,
 			user_id     => $user->id,
 			description => $log_msg,
@@ -1663,9 +1849,14 @@ sub go {
 			parent_type => 7                  #FIXME magic number
 		);
 
+		my $DIR = $config->{COGEDIR};
+		my $URL = $config->{URL};
+		my $log = $workflow->logfile;
+		$log =~ s/$DIR/$URL/;
 		return encode_json(
 			{
 				link    => $tiny_link,
+				log     => $log,
 				request => "jex/synmap/status/" . $response->{id},
 				status  => $response->{status},
 				success => $JEX->is_successful($response)
@@ -1678,6 +1869,119 @@ sub go {
 		return encode_json( { success => JSON::false } );
 	}
 }
+
+# FIXME: Currently this feature is disabled.
+# @by Evan Briones
+# @on 3/1/2013
+#sub run_tandem_finder {
+#	my %opts    = @_;
+#	my $infile  = $opts{infile};    #dag file produced by dat_tools.py
+#	my $outfile = $opts{outfile};
+#	while ( -e "$outfile.running" ) {
+#		print STDERR "detecting $outfile.running.  Waiting. . .\n";
+#		sleep 60;
+#	}
+#	unless ( -r $infile && -s $infile ) {
+#		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
+#		CoGe::Accessory::Web::write_log(
+#"WARNING:   Cannot run tandem finder! DAGChainer input file ($infile) contains no data!",
+#			$cogeweb->logfile
+#		);
+#		return 0;
+#	}
+#	if ( -r $outfile ) {
+#		CoGe::Accessory::Web::write_log(
+#			"run_tandem_filter: file $outfile already exists",
+#			$cogeweb->logfile );
+#		return 1;
+#	}
+#	my $cmd = "$PYTHON $TANDEM_FINDER -i '$infile' > '$outfile'";
+#	system "/usr/bin/touch '$outfile.running'"
+#	  ;    #track that a blast anlaysis is running for this
+#	CoGe::Accessory::Web::write_log( "run_tandem_filter: running\n\t$cmd",
+#		$cogeweb->logfile );
+#	`$cmd`;
+#	system "/bin/rm '$outfile.running'"
+#	  if -r "$outfile.running";    #remove track file
+#	return 1 if -r $outfile;
+#}
+
+#FIXME: Currently this feature is disabled
+# @by Evan Briones
+# @on 3/1/2013
+#sub run_adjust_dagchainer_evals {
+#	my %opts    = @_;
+#	my $infile  = $opts{infile};
+#	my $outfile = $opts{outfile};
+#	my $cvalue  = $opts{cvalue};
+#	$cvalue = 4 unless defined $cvalue;
+#	while ( -e "$outfile.running" ) {
+#		print STDERR "detecting $outfile.running.  Waiting. . .\n";
+#		sleep 60;
+#	}
+#	if ( -r $outfile || -r $outfile . ".gz" ) {
+#		CoGe::Accessory::Web::write_log(
+#			"run_adjust_dagchainer_evals: file $outfile already exists",
+#			$cogeweb->logfile );
+#		return 1;
+#	}
+#	CoGe::Accessory::Web::gunzip( $infile . ".gz" ) if -r $infile . ".gz";
+#	unless ( -r $infile && -s $infile ) {
+#		CoGe::Accessory::Web::write_log(
+#"WARNING:   Cannot adjust dagchainer evals! DAGChainer input file ($infile) contains no data!",
+#			$cogeweb->logfile
+#		);
+#		return 0;
+#	}
+#	my $cmd = "$PYTHON $EVAL_ADJUST -c $cvalue '$infile' > '$outfile'";
+#
+##There is a parameter that can be passed into this to filter repetitive sequences more or less stringently:
+## -c   2 gets rid of more stuff; 10 gets rid of less stuff; default is 4
+##consider making this a parameter than can be adjusted from SynMap -- will need to actually play with this value to see how it works
+##if implemented, this will require re-naming all the files to account for this parameter
+##and updating the auto-SynMap link generator for redoing an analysis
+#
+#	system "/usr/bin/touch '$outfile.running'"
+#	  ;    #track that a blast anlaysis is running for this
+#	CoGe::Accessory::Web::write_log(
+#		"run_adjust_dagchainer_evals: running\n\t$cmd",
+#		$cogeweb->logfile );
+#	`$cmd`;
+#	system "/bin/rm '$outfile.running'" if -r "$outfile.running";
+#	;      #remove track file
+#	return 1 if -r $outfile;
+#
+#}
+
+#FIXME: Currently this feature is disabled
+# @by Evan Briones
+# @on 6/18/2013
+#sub run_find_nearby {
+#	my %opts         = @_;
+#	my $infile       = $opts{infile};
+#	my $dag_all_file = $opts{dag_all_file};
+#	my $outfile      = $opts{outfile};
+#	while ( -e "$outfile.running" ) {
+#		print STDERR "detecting $outfile.running.  Waiting. . .\n";
+#		sleep 60;
+#	}
+#	if ( -r $outfile ) {
+#		CoGe::Accessory::Web::write_log(
+#			"run find_nearby: file $outfile already exists",
+#			$cogeweb->logfile );
+#		return 1;
+#	}
+#	my $cmd =
+#"$PYTHON $FIND_NEARBY --diags='$infile' --all='$dag_all_file' > '$outfile'";
+#	system "/usr/bin/touch '$outfile.running'"
+#	  ;    #track that a blast anlaysis is running for this
+#	CoGe::Accessory::Web::write_log( "run find_nearby: running\n\t$cmd",
+#		$cogeweb->logfile );
+#	`$cmd`;
+#	system "/bin/rm '$outfile.running'" if -r "$outfile.running";
+#	;      #remove track file
+#	return 1 if -r $outfile;
+#}
 
 with qw(CoGe::Builder::Buildable);
 
