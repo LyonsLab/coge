@@ -153,30 +153,34 @@
 
         <div class="form-field">
             <label class="col-md-2">X-Axis Genome:</label>
-            <input class="col-md-8" id="edit_xgenome" type="search" placeholder="Search"
-            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
-            	size="50" value="<TMPL_VAR NAME='X_GENOME_NAME'>" />
-            <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+            <input class="col-md-6" id="edit_xgenome" type="search" placeholder="Search"
+            	title="Enter the genome associated with the x-axis. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            	size="50" value="<TMPL_VAR NAME='X_GENOME_NAME'>"
+            	style="float:left;" />
+            <img id="edit_xgenome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
-        
 
         <div class="form-field">
             <label class="col-md-2">Y-Axis Genome:</label>
-            <input class="col-md-8" id="edit_ygenome" type="search" placeholder="Search"
-            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
-            	size="50" value="<TMPL_VAR NAME='Y_GENOME_NAME'>" />
-            <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+            <input class="col-md-6" id="edit_ygenome" type="search" placeholder="Search"
+            	title="Enter the genome associated with the y-axis. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            	size="50" value="<TMPL_VAR NAME='Y_GENOME_NAME'>"
+            	style="float:left;" />
+            <img id="edit_ygenome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
-
 
         <div class="form-field">
             <label class="col-md-2">Z-Axis Genome:</label>
-            <input class="col-md-8" id="edit_zgenome" type="search" placeholder="Search"
-            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
-            	size="50" value="<TMPL_VAR NAME='Z_GENOME_NAME'>" />
-            <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+            <input class="col-md-6" id="edit_zgenome" type="search" placeholder="Search"
+            	title="Enter the genome associated with the z-axis. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            	size="50" value="<TMPL_VAR NAME='Z_GENOME_NAME'>"
+            	style="float:left;" />
+            <img id="edit_zgenome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
-    
+
     </div>
 </script>
 
@@ -203,49 +207,84 @@
 	<div class="form-section">
 	    <h4>General Options</h4>
 
+        <!-- Sort contigs by. -->
         <div class="form-field">
-		<label class="col-md-2">Sort chromosomes by:</label>
+		<label class="col-md-2">Sort contigs by:</label>
 		<select id="sortby">
             <option value="name">Name</option>
 		    <option value="length">Length</option>
 		</select>
 	    </div>
 
+        <!-- Minimum contig synteny. -->
         <div class="form-field">
             <label class="col-md-2">Minimum syntenic points per contig:</label>
             <input id="min_synteny" type="number" value="1">
 	    </div>
-	
+
+        <!-- Minimum contig length. -->
 	    <div class="form-field">
             <label class="col-md-2">Minimum contig length (bp):</label>
             <input id="min_length" type="number" value="10000">
 	    </div>
 
+        <!-- Mutation ratio options. -->
         <div class="form-field">
-            <label class="col-md-2">Limit by DBSCAN clustering:</label>
-            <input id="enable_clustering" type="checkbox">
-	    </div>
-        <div id="cluster_opts">
-            <div class="form-field" style="font-size: smaller; margin-left: 20px">
-                <label class="col-md-2">DBSCAN parameters:</label>
-                Maximum Neighborhood Distance (EPS) <input id="cluster_eps" type="number" value="0.5">
-                Minimum Samples per Cluster <input id="cluster_min" type="number" value="10">
-            </div>
-        </div>
+	        <label class="col-md-2">Limit by mutation ratio:</label>
+	        <input id="enable_ratio" type="checkbox" style="float:left;margin-right:10px;">
 
+	        <div id="ratio-container" class="form-group hidden">
+		    	<div style="padding-left:3em">
+                    <div>
+                        <label>Mutation Ratio: </label>
+                        <select id="ratio">
+                            <option value="kn">Non-Synonymous (Kn)</option>
+                            <option value="ks">Synonymous (Ks)</option>
+                            <option value="knks">Kn/Ks</option>
+                        </select>
+					</div>
+                    <div>
+                        <label>Comparison: </label>
+                        <select id="ratio_by">
+                            <option value="xy">XY</option>
+                            <option value="xz">XZ</option>
+                            <option value="yz">YZ</option>
+                            <option value="mean">mean</option>
+                            <option value="median">median</option>
+                        </select>
+					</div>
+		    		<div>
+                        <label>Minimum log10(ratio): </label>
+                        <input name="ratio_min" type="number" value="-1">
+					</div>
+					<div>
+                        <label>Maximum log10(ratio): </label>
+                        <input name="ratio_max" type="number" value="1">
+					</div>
+				</div>
+			</div>
+	    </div>
+
+        <!-- Clustering options. -->
         <div class="form-field">
-            <label class="col-md-2">Limit by Mutation Ratio:</label>
-            <input id="enable_ratio" type="checkbox">
-	    </div>
-        <div id="ratio_opts" style="display:none">
-            <div class="form-field">
-                <label class="col-md-2">log10(Ratio) limits:</label>
-                Min <input id="ratio_min" type="number" value="-1">
-                Max <input id="ratio_max" type="number" value="1">
-            </div>
-        </div>
+	        <label class="col-md-2">Limit by DBSCAN clustering:</label>
+	        <input id="enable_cluster" type="checkbox" style="float:left;margin-right:10px;">
 
-	</div>
+	        <div id="cluster-container" class="form-group hidden">
+		    	<div style="padding-left:3em">
+		    		<div>
+                        <label>Maximum Neighborhood Distance(EPS): </label>
+                        <input id="cluster_eps" type="number" value="0.5">
+					</div>
+					<div>
+                        <label>Minimum Samples per Cluster: </label>
+                        <input id="cluster_min" type="number" value="10">
+					</div>
+				</div>
+			</div>
+	    </div>
+
+    </div>
 	<hr>
 </script>
 
@@ -256,6 +295,7 @@
 	    <div class="form-field">
 		<label class="col-md-2">Enable VR mode:</label>
 		<input id="vr" type="checkbox" disabled>
+        <span style="color: red; font-size: 0.75em; font-style: italic">Coming Soon!</span>
 	   </div>
 	</div>	
 </script>

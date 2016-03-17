@@ -6,33 +6,25 @@ var concat = Array.prototype.concat;
 var current_experiment = {};
 var options_name;
 var final_experiment;
-var edit_focus = undefined;
 
-var pt_select;
-
-//AKB - Modified search_genomes to work on multiple genomes.
 function search_genomes (search_term) {
+    var edit_genome = $(geneSelect[0]);
+	edit_genome.autocomplete("close");
+    var spinner = $(geneSelect[1]);
+	spinner.show();
+
 	coge.services.search_genomes(search_term, { fast: true })
-		.done(function(result) { // success
-			if (result && result.genomes) {
-				var transformed = result.genomes.map(function(obj) {
+		.done(function(response) { // success
+			if (response && response.genomes) {
+				var results = response.genomes.map(function(obj) {
 					var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
 					return { label: label, value: obj.id };
 				});
-				if (edit_focus == 'x') {
-					$('#edit_xgenome')
-						.autocomplete({source: transformed})
-						.autocomplete("search");
-				} else if (edit_focus == 'y') {
-					$('#edit_ygenome')
-						.autocomplete({source: transformed})
-						.autocomplete("search");
-				} else if (edit_focus == 'z') {
-					$('#edit_zgenome')
-						.autocomplete({source: transformed})
-						.autocomplete("search");
-				}				
+				edit_genome
+					.autocomplete({source: results})
+					.autocomplete("search");
 			}
+			spinner.hide();
 		})
 		.fail(function() { // error
 			//TODO
@@ -48,7 +40,7 @@ function render_template(template, container) {
 
 function ExperimentDescriptionView(opts) {
     this.experiment = opts.experiment;
-    this.metadata = opts.metadata;
+    //this.metadata = opts.metadata;
     this.x_gid = opts.x_gid;
     this.y_gid = opts.y_gid;
     this.z_gid = opts.z_gid;
@@ -63,17 +55,17 @@ $.extend(ExperimentDescriptionView.prototype, {
         this.edit_xgenome = this.el.find("#edit_xgenome");
 		this.edit_ygenome = this.el.find("#edit_ygenome");
 		this.edit_zgenome = this.el.find("#edit_zgenome");
-        if (this.metadata) {
-            //this.el.find('#edit_name').val(this.metadata.name);
-            //this.el.find('#edit_description').val(this.metadata.description);
-            //this.el.find('#edit_version').val(this.metadata.version);
-            //this.edit_source.val(this.metadata.source_name);
-
-            //if (!this.metadata.restricted)
-            //    this.el.find('#restricted').removeAttr('checked');
-
-            //this.el.find('#edit_genome').val(this.metadata.genome); AKB REMOVED 9/15
-        }
+        //if (this.metadata) {
+        //    //this.el.find('#edit_name').val(this.metadata.name);
+        //    //this.el.find('#edit_description').val(this.metadata.description);
+        //    //this.el.find('#edit_version').val(this.metadata.version);
+        //    //this.edit_source.val(this.metadata.source_name);
+        //
+        //    //if (!this.metadata.restricted)
+        //    //    this.el.find('#restricted').removeAttr('checked');
+        //
+        //    //this.el.find('#edit_genome').val(this.metadata.genome); AKB REMOVED 9/15
+        //}
     },
 
     render: function() {
@@ -105,7 +97,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             },
 
             focus: function(event, ui) {
-                //$("#edit_genome").val(ui.item.label);
+                //$("#edit_xgenome").val(ui.item.label);
                 return false; // Prevent the widget from inserting the value.
             }
         });
@@ -118,7 +110,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             },
 
             focus: function(event, ui) {
-                //$("#edit_genome").val(ui.item.label);
+                //$("#edit_ygenome").val(ui.item.label);
                 return false; // Prevent the widget from inserting the value.
             }
         });
@@ -131,42 +123,39 @@ $.extend(ExperimentDescriptionView.prototype, {
             },
 
             focus: function(event, ui) {
-                //$("#edit_genome").val(ui.item.label);
+                //$("#edit_zgenome").val(ui.item.label);
                 return false; // Prevent the widget from inserting the value.
             }
         });
-       
- 
+
+
         edit_xgenome.keyup(function() {
-			edit_focus = 'x';
-        	coge.utils.wait_to_search(search_genomes, self.edit_xgenome.get(0));
+            geneSelect = [ "#edit_xgenome", "#edit_xgenome_busy"];
+            coge.utils.wait_to_search(search_genomes, self.edit_xgenome.get(0));
         });
         edit_xgenome.click(function() {
-			edit_focus = 'x';
         	$(this).autocomplete('search');
         });
         edit_ygenome.keyup(function() {
-        	edit_focus = 'y';
-			coge.utils.wait_to_search(search_genomes, self.edit_ygenome.get(0));
+            geneSelect = ["#edit_ygenome", "#edit_ygenome_busy"];
+            coge.utils.wait_to_search(search_genomes, self.edit_ygenome.get(0));
         });
         edit_ygenome.click(function() {
-        	edit_focus = 'y';
 			$(this).autocomplete('search');
         });
         edit_zgenome.keyup(function() {
-        	edit_focus = 'z';
-			coge.utils.wait_to_search(search_genomes, self.edit_zgenome.get(0));
+            geneSelect = [ "#edit_zgenome", "#edit_zgenome_busy"];
+            coge.utils.wait_to_search(search_genomes, self.edit_zgenome.get(0));
         });
         edit_zgenome.click(function() {
-        	edit_focus = 'z';
 			$(this).autocomplete('search');
         });
     },
 
     is_valid: function() {
-        var xgenome = this.el.find('#edit_xGenome').val();
-		var ygenome = this.el.find('#edit_yGenome').val();
-		var zgenome = this.el.find('#edit_zGenome').val();
+        var xgenome = this.el.find('#edit_xgenome').val();
+		var ygenome = this.el.find('#edit_ygenome').val();
+		var zgenome = this.el.find('#edit_zgenome').val();
         
 		if (!xgenome || xgenome === 'Search' || !this.x_gid) {
         	if (this.onError)
@@ -187,12 +176,12 @@ $.extend(ExperimentDescriptionView.prototype, {
         }
 
        $.extend(this.experiment, {
-            metadata: {
-				xgenome: xgenome,
-				ygenome: ygenome,
-				zgenome: zgenome
-            },
-	    
+            //metadata: {
+				//xgenome: xgenome,
+				//ygenome: ygenome,
+				//zgenome: zgenome
+            //},
+
             x_gid: this.x_gid,
 	    	y_gid: this.y_gid,
 	    	z_gid: this.z_gid
@@ -204,39 +193,118 @@ $.extend(ExperimentDescriptionView.prototype, {
 function GeneralOptionsView(opts) {
     this.data = {};
     this.initialize();
-    this.usr_hide = opts.hide;
-    this.usr_minLen = opts.minLen;
-    this.usr_sort = opts.sortBy;
     this.onError = opts.onError;
 }
 
 $.extend(GeneralOptionsView.prototype, {
     initialize: function() {
         this.el = $($("#general-options-template").html());
-		this.no_synt = this.el.find("#nosynt");
-		this.min_len = this.el.find("#min_length");
-		this.sortby = this.el.find("#sortby");
-		//TODO: Add function selection from URL
-		if (this.usr_hide) {
-	    	console.log("SHOULD HIDE");
-	    	this.no_synt.prop("checked", true)
-        }
+
+        this.sortby = this.el.find("#sortby");
+
+        this.min_synteny = this.el.find("#min_synteny");
+        this.min_length = this.el.find("#min_length");
+
+        this.cluster = this.el.find("#enable_cluster");
+        this.cluster_container = this.el.find("#cluster-container");
+
+        this.ratio = this.el.find("#enable_ratio");
+        this.ratio_container = this.el.find("#ratio-container");
+
+		//this.no_synt = this.el.find("#nosynt");
+		//this.min_len = this.el.find("#min_length");
+		//this.sortby = this.el.find("#sortby");
+    },
+
+    toggleCluster: function() {
+        this.cluster_enabled = this.cluster.is(":checked");
+
+        if (this.cluster_enabled)
+            this.cluster_container.slideDown();
+        else
+            this.cluster_container.slideUp();
+    },
+
+    toggleRatio: function() {
+        this.ratio_enabled = this.ratio.is(":checked");
+
+        if (this.ratio_enabled)
+            this.ratio_container.slideDown();
+        else
+            this.ratio_container.slideUp();
+    },
+
+    render: function() {
+        //var self = this;
+
+        // jQuery Events
+        this.el.find("#enable_cluster").unbind().change(this.toggleCluster.bind(this));
+        this.el.find("#enable_ratio").unbind().change(this.toggleRatio.bind(this));
+        //this.el.find("[name=notebook]").unbind().click(function() {
+        //	var option = $(this).val();
+        //	self.edit_notebook.prop("disabled", (option === 'new' ? true : false));
+        //});
+        //this.edit_notebook.unbind().change(function() {
+        //    // Reset notebook_id when item has changed
+        //    self.notebook_id = undefined;
+        //});
+        //
+        //// jQuery UI
+        //this.edit_notebook.autocomplete({
+        //    source:[],
+        //    select: function(event, ui) {
+        //        $(this).val(ui.item.label);
+        //        self.notebook_id = ui.item.value;
+        //        return false; // Prevent the widget from inserting the value.
+        //    },
+        //
+        //    focus: function(event, ui) {
+        //        return false; // Prevent the widget from inserting the value.
+        //    }
+        //});
     },
 
     is_valid: function() {
-        var no_synt = this.no_synt.is(":checked");
-		var min_len = this.min_len.val();
-		var sortby = this.sortby.val();
-	
-		if (min_len < 0) {
+        // Sort By
+        var sortby = this.sortby.val();
+        this.data.sortby = sortby;
+
+        // Minimum synteny per contig.
+        var min_synteny = this.min_synteny.val();
+        if (min_synteny < 0) {
 	    	if (this.onError)
-	    	this.onError('Minimum chromosome length must be greater than 0.')
+	    	this.onError('Minimum chromosome length must be greater than 0.');
 	    	return false;
 		}
+        this.data.min_synteny = min_synteny;
 
-		this.data.hide = no_synt;
-		this.data.min_len = min_len;
-		this.data.sortby = sortby;
+        // Minimum contig length.
+		var min_length = this.min_length.val();
+		if (min_length < 0) {
+	    	if (this.onError)
+	    	this.onError('Minimum chromosome length must be greater than 0.');
+	    	return false;
+		}
+        this.data.min_length = min_length;
+
+        // Cluster parsing.
+        if (this.cluster.is(":checked")) {
+            this.data.cluster = true;
+            this.data.c_eps = this.el.find("#cluster_eps").val();
+            this.data.c_min = this.el.find("#cluster_min").val();
+        } else {
+            this.data.cluster = false;
+        }
+
+        // Mutation ratio parsing.
+        if (this.ratio.is(":checked")) {
+            this.data.ratio = true;
+            // TODO: Include ratio cutting
+        } else {
+            this.data.ratio = true;
+        }
+
+        console.log(this.data);
 		return true;
     },
 
@@ -630,7 +698,7 @@ function initialize_wizard(opts) {
 
     wizard.addStep(new ExperimentDescriptionView({
         experiment: current_experiment,
-        metadata: opts.metadata,
+        //metadata: opts.metadata,
         x_gid: opts.x_gid,
         y_gid: opts.y_gid,
         z_gid: opts.z_gid,
