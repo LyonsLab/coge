@@ -96,13 +96,13 @@ sub generate_body {
             API_BASE_URL => 'api/v1/'
     );
     
-    # Force login 
-    if ( $USER->is_public ) {
-        $template->param( LOGIN => 1 );
-        return $template->output;
-    }
+#    # Force login
+#    if ( $USER->is_public ) {
+#        $template->param( LOGIN => 1 );
+#        return $template->output;
+#    }
     
-    # Set genome IDs if specified
+    # Set genome IDs if specified.
     my $x_gid = $FORM->param('x_gid');
     my $y_gid = $FORM->param('y_gid');
     my $z_gid = $FORM->param('z_gid');
@@ -134,17 +134,58 @@ sub generate_body {
         }
     }
 
-    # Set options if specified
-    my $hide_nosynt = $FORM->param('hide');
-    my $min_len = $FORM->param('min_len');
-    my $sortby = $FORM->param('sortby');
-    my $vr = $FORM->param('vr');
-    if ($hide_nosynt) {
-	$template->param( HIDE_NOSYNT => $hide_nosynt );
+    # Set options if specified.
+    my $sort= $FORM->param('sort');
+    if (($sort eq 'name') || ($sort eq 'length')) {
+        $template->param(
+            SORTBY => $sort
+        );
     }
-    if ($min_len) {}
-    if ($sortby) {}
-    if ($vr) {}
+
+    my $min_syn = $FORM->param('min_syn');
+    if ($min_syn) {
+        $template->param(
+            MIN_SYN => $min_syn
+        );
+    }
+
+    my $min_len = $FORM->param('min_len');
+    if ($min_len) {
+        $template->param(
+            MIN_LEN => $min_len
+        );
+    }
+
+    my $ratio = $FORM->param('ratio');
+    if ($ratio) {
+        my @r_opts = split /,/, $ratio;
+        $template->param(
+            RATIO => $r_opts[0],
+            R_BY => $r_opts[1],
+            R_MIN => $r_opts[2],
+            R_MAX => $r_opts[3]
+        )
+    }
+
+    my $cluster = $FORM->param('cluster');
+    if ($cluster) {
+        my @c_opts = split /,/,  $cluster;
+        $template->param(
+            C_EPS => $c_opts[0],
+            C_MIN => $c_opts[1]
+        )
+    }
+
+    #my $hide_nosynt = $FORM->param('hide');
+    #my $min_len = $FORM->param('min_len');
+    #my $sortby = $FORM->param('sortby');
+    #my $vr = $FORM->param('vr');
+    #if ($hide_nosynt) {
+	#$template->param( HIDE_NOSYNT => $hide_nosynt );
+    #}
+    #if ($min_len) {}
+    #if ($sortby) {}
+    #if ($vr) {}
 
 
     $template->param(

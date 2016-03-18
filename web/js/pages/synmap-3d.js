@@ -40,7 +40,7 @@ function render_template(template, container) {
 
 function ExperimentDescriptionView(opts) {
     this.experiment = opts.experiment;
-    //this.metadata = opts.metadata;
+    this.metadata = opts.metadata;
     this.x_gid = opts.x_gid;
     this.y_gid = opts.y_gid;
     this.z_gid = opts.z_gid;
@@ -55,17 +55,17 @@ $.extend(ExperimentDescriptionView.prototype, {
         this.edit_xgenome = this.el.find("#edit_xgenome");
 		this.edit_ygenome = this.el.find("#edit_ygenome");
 		this.edit_zgenome = this.el.find("#edit_zgenome");
-        //if (this.metadata) {
-        //    //this.el.find('#edit_name').val(this.metadata.name);
-        //    //this.el.find('#edit_description').val(this.metadata.description);
-        //    //this.el.find('#edit_version').val(this.metadata.version);
-        //    //this.edit_source.val(this.metadata.source_name);
-        //
-        //    //if (!this.metadata.restricted)
-        //    //    this.el.find('#restricted').removeAttr('checked');
-        //
-        //    //this.el.find('#edit_genome').val(this.metadata.genome); AKB REMOVED 9/15
-        //}
+        if (this.metadata) {
+            //this.el.find('#edit_name').val(this.metadata.name);
+            //this.el.find('#edit_description').val(this.metadata.description);
+            //this.el.find('#edit_version').val(this.metadata.version);
+            //this.edit_source.val(this.metadata.source_name);
+
+            //if (!this.metadata.restricted)
+            //    this.el.find('#restricted').removeAttr('checked');
+
+            //this.el.find('#edit_genome').val(this.metadata.genome); AKB REMOVED 9/15
+        }
     },
 
     render: function() {
@@ -176,11 +176,11 @@ $.extend(ExperimentDescriptionView.prototype, {
         }
 
        $.extend(this.experiment, {
-            //metadata: {
-				//xgenome: xgenome,
-				//ygenome: ygenome,
-				//zgenome: zgenome
-            //},
+            metadata: {
+				xgenome: xgenome,
+				ygenome: ygenome,
+				zgenome: zgenome
+            },
 
             x_gid: this.x_gid,
 	    	y_gid: this.y_gid,
@@ -192,6 +192,15 @@ $.extend(ExperimentDescriptionView.prototype, {
 
 function GeneralOptionsView(opts) {
     this.data = {};
+    this.sort = opts.sortby;
+    this.min_syn = opts.min_syn;
+    this.min_len = opts.min_len;
+    this.c_eps = opts.c_eps;
+    this.c_min = opts.c_min;
+    this.ratio_type = opts.ratio;
+    this.r_by = opts.r_by;
+    this.r_min = opts.r_min;
+    this.r_max = opts.r_max;
     this.initialize();
     this.onError = opts.onError;
 }
@@ -211,9 +220,33 @@ $.extend(GeneralOptionsView.prototype, {
         this.ratio = this.el.find("#enable_ratio");
         this.ratio_container = this.el.find("#ratio-container");
 
-		//this.no_synt = this.el.find("#nosynt");
-		//this.min_len = this.el.find("#min_length");
-		//this.sortby = this.el.find("#sortby");
+        if (this.sort) {
+            this.sortby.val(this.sort)
+        }
+        if (this.min_syn) {
+            this.min_synteny.val(this.min_syn)
+        }
+        if (this.min_len) {
+            this.min_length.val(this.min_len)
+        }
+
+        if (this.c_eps && this.c_min) {
+            this.cluster.prop("checked", true);
+            this.cluster_container.slideDown();
+            this.el.find("#cluster_eps").val(this.c_eps);
+            this.el.find("#cluster_min").val(this.c_min);
+        }
+
+        console.log(this.ratio_type);
+        if (this.ratio_type && this.r_by && this.r_min && this.r_max) {
+            this.ratio.prop("checked", true);
+            this.ratio_container.slideDown();
+            this.el.find("#ratio").val(this.ratio_type);
+            this.el.find("#ratio_by").val(this.r_by);
+            this.el.find("#ratio_min").val(this.r_min);
+            this.el.find("#ratio_max").val(this.r_max);
+        }
+
     },
 
     toggleCluster: function() {
@@ -240,28 +273,6 @@ $.extend(GeneralOptionsView.prototype, {
         // jQuery Events
         this.el.find("#enable_cluster").unbind().change(this.toggleCluster.bind(this));
         this.el.find("#enable_ratio").unbind().change(this.toggleRatio.bind(this));
-        //this.el.find("[name=notebook]").unbind().click(function() {
-        //	var option = $(this).val();
-        //	self.edit_notebook.prop("disabled", (option === 'new' ? true : false));
-        //});
-        //this.edit_notebook.unbind().change(function() {
-        //    // Reset notebook_id when item has changed
-        //    self.notebook_id = undefined;
-        //});
-        //
-        //// jQuery UI
-        //this.edit_notebook.autocomplete({
-        //    source:[],
-        //    select: function(event, ui) {
-        //        $(this).val(ui.item.label);
-        //        self.notebook_id = ui.item.value;
-        //        return false; // Prevent the widget from inserting the value.
-        //    },
-        //
-        //    focus: function(event, ui) {
-        //        return false; // Prevent the widget from inserting the value.
-        //    }
-        //});
     },
 
     is_valid: function() {
@@ -294,21 +305,28 @@ $.extend(GeneralOptionsView.prototype, {
             this.data.c_min = this.el.find("#cluster_min").val();
         } else {
             this.data.cluster = false;
+            //delete this.data.c_eps;
+            //delete this.data.c_min;
         }
 
         // Mutation ratio parsing.
         if (this.ratio.is(":checked")) {
-            this.data.ratio = true;
-            // TODO: Include ratio cutting
+            this.data.ratio = this.el.find("#ratio").val();
+            this.data.r_by = this.el.find("#ratio_by").val();
+            this.data.r_min = this.el.find("#ratio_min").val();
+            this.data.r_max = this.el.find("#ratio_max").val();
         } else {
-            this.data.ratio = true;
+            this.data.ratio = false;
+            //delete this.data.r_by;
+            //delete this.data.r_min;
+            //delete this.data.r_max;
         }
 
-        console.log(this.data);
 		return true;
     },
 
     get_options: function() {
+        //this.is_valid();
         return this.data;
     }
 });
@@ -357,10 +375,18 @@ $.extend(AdminOptionsView.prototype, {
 function OptionsView(opts) {
     this.experiment = opts.experiment;
     this.admin = opts.admin;
+    this.sortby = opts.sortby;
+    this.min_syn = opts.min_syn;
+    this.min_len = opts.min_len;
+    this.c_eps = opts.c_eps;
+    this.c_min = opts.c_min;
+    this.ratio = opts.ratio;
+    this.r_by = opts.r_by;
+    this.r_min = opts.r_min;
+    this.r_max = opts.r_max;
     this.onError = opts.onError;
     this.title = "Options";
     this.initialize();
-    this.hide = opts.hide;
 }
 
 //AKB - Removed Admin Options (commented out in this extend)
@@ -369,6 +395,15 @@ $.extend(OptionsView.prototype, {
         //this.admin_view = new AdminOptionsView();
         this.general_view = new GeneralOptionsView({
 			onError: this.onError,
+            sortby: this.sortby,
+            min_syn: this.min_syn,
+            min_len: this.min_len,
+            c_eps: this.c_eps,
+            c_min: this.c_min,
+            ratio: this.ratio,
+            r_by: this.r_by,
+            r_min: this.r_min,
+            r_max: this.r_max,
 			hide: this.hide
 		});
 	
@@ -402,6 +437,7 @@ $.extend(OptionsView.prototype, {
         }*/
 
         $.extend(this.experiment.options, options);
+
         return true;
     },
 
@@ -679,26 +715,31 @@ function reset_launch() { //AKB - Renamed from reset_load()
     initialize_wizard({
         admin: IS_ADMIN,
         metadata: current_experiment.metadata,
-	x_gid: current_experiment.x_gid,
-	y_gid: current_experiment.y_gid,
-	z_gid: current_experiment.z_gid
+        x_gid: current_experiment.x_gid,
+        y_gid: current_experiment.y_gid,
+        z_gid: current_experiment.z_gid,
+        sortby: current_experiment.sortby
     });
 
     $('#wizard-container').hide().fadeIn();
+}
+
+function logExperiment(exp) {
+    console.log(exp);
 }
 
 function initialize_wizard(opts) {
     current_experiment = {};
     var root = $("#wizard-container");
     var wizard = new Wizard({ 
-    	onCompleted: launch, //AKB, changed from 'load' 
+    	onCompleted: logExperiment, //launch, //AKB, changed from 'load'
     	data: current_experiment, 
     	helpUrl: opts.helpUrl 
     });
 
     wizard.addStep(new ExperimentDescriptionView({
         experiment: current_experiment,
-        //metadata: opts.metadata,
+        metadata: opts.metadata,
         x_gid: opts.x_gid,
         y_gid: opts.y_gid,
         z_gid: opts.z_gid,
@@ -707,11 +748,17 @@ function initialize_wizard(opts) {
 
     wizard.addStep(new OptionsView({
 		experiment: current_experiment,
-		hide: opts.hide,
-		minLen: opts.minLen,
-		sortBy: opts.sortBy,
-		vr: opts.vr, 
-		admin: opts.admin, 
+        sortby: opts.sortby,
+        min_syn: opts.min_syn,
+        min_len: opts.min_len,
+        c_eps: opts.c_eps,
+        c_min: opts.c_min,
+        ratio: opts.ratio,
+        r_by: opts.r_by,
+        r_min: opts.r_min,
+        r_max: opts.r_max,
+		//vr: opts.vr,
+		//admin: opts.admin,
 		onError: wizard.error_help.bind(wizard) 
     }));
 
