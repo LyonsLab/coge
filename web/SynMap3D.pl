@@ -176,16 +176,12 @@ sub generate_body {
         )
     }
 
-    #my $hide_nosynt = $FORM->param('hide');
-    #my $min_len = $FORM->param('min_len');
-    #my $sortby = $FORM->param('sortby');
-    #my $vr = $FORM->param('vr');
-    #if ($hide_nosynt) {
-	#$template->param( HIDE_NOSYNT => $hide_nosynt );
-    #}
-    #if ($min_len) {}
-    #if ($sortby) {}
-    #if ($vr) {}
+    my $vr = $FORM->param('vr');
+    if ($vr) {
+        $template->param(
+            VR => 1 #$vr
+        )
+    }
 
 
     $template->param(

@@ -1,9 +1,10 @@
 import numpy as np
 
 from argparse import ArgumentParser
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import datetime
 from json import load, dump
+from math import log10
 from natsort import natsorted
 from plotly.plotly import plot
 from plotly.graph_objs import Scatter3d, Layout, Figure, Scene
@@ -70,6 +71,14 @@ def minimizeSyntenicPoints(sp_object, genomes_object):
 
 
 def syntenyParser(sp_object, genomes_object, cutoff):
+    """
+    Parses chromosomes under a minimum syntenic points count.
+
+    :param sp_object: syntenic_points object
+    :param genomes_object: genomes_object
+    :param cutoff: minimum syntenic points
+    :return:
+    """
     gid1 = sp_object.keys()[0]
     gid2 = sp_object[gid1].keys()[0]
 
@@ -227,7 +236,16 @@ def getPointCoords(syntenic_points, relative_chr, absolute_chr, relative_genome,
                 sp1_val = (sp1chr_relative_length * (float(sp1_raw) / sp1chr_length)) + sp1_sum
                 sp2_val = (sp2chr_relative_length * (float(sp2_raw) / sp2chr_length)) + sp2_sum
 
-                coord = [sp1_val, sp2_val, sp1_fid, sp2_fid, hit[4]["Kn"], hit[4]["Ks"]]
+                try:
+                    Kn = log10(float(hit[4]["Kn"]))
+                except ValueError:
+                    Kn = 'NA'
+                try:
+                    Ks = log10(float(hit[4]["Ks"]))
+                except ValueError:
+                    Ks = 'NA'
+
+                coord = [sp1_val, sp2_val, sp1_fid, sp2_fid, Kn, Ks]
                 coords.append(coord)
 
     ids = (gid1, gid2)
@@ -287,26 +305,15 @@ def mergePoints(setXY, setXZ, setYZ):
     hits = []
     errors = []
 
-    # Build indexed XY sets.
-    setXY_xindexed = defaultdict(list)
-    setXY_yindexed = defaultdict(list)
-    for s in setXY:
-        setXY_xindexed[s[2]].append(s)
-        setXY_yindexed[s[3]].append(s)
-
     # Build indexed XZ sets.
     setXZ_xindexed = defaultdict(list)
-    setXZ_zindexed = defaultdict(list)
     for s in setXZ:
         setXZ_xindexed[s[2]].append(s)
-        setXZ_zindexed[s[3]].append(s)
 
     # Build indexed YZ sets.
     setYZ_yindexed = defaultdict(list)
-    setYZ_zindexed = defaultdict(list)
     for s in setYZ:
         setYZ_yindexed[s[2]].append(s)
-        setYZ_zindexed[s[3]].append(s)
 
     # Find hits.
     for XY in setXY:
@@ -317,8 +324,11 @@ def mergePoints(setXY, setXZ, setYZ):
                 for YZ in YZ_Y_matches:
                     if XY[2] == XZ[2] and XY[3] == YZ[2] and XZ[3] == YZ[3]:
                         if XY[0] == XZ[0] and XY[1] == YZ[0] and YZ[1] == XZ[1]:
-                            #ht = [X, Y,Z, X_FID, Y_ID, Z_ID, XY_Kn, XY_Ks, XZ_Kn, XZ_Ks, YZ_Kn, YZ_Ks]
-                            hit = [XY[0], YZ[0], XZ[1], XY[2], YZ[2], XZ[2], XY[4], XY[5], XZ[4], XZ[5], YZ[4], YZ[5]]
+                            #hit = [X, Y,Z, X_FID, Y_ID, Z_ID, XY_Kn, XY_Ks, XZ_Kn, XZ_Ks, YZ_Kn, YZ_Ks]
+                            hit = [XY[0], YZ[0], XZ[1], XY[2], YZ[2], XZ[2],
+                                   XY[4], XY[5],
+                                   XZ[4], XZ[5],
+                                   YZ[4], YZ[5]]
                             hits.append(hit)
                         else:
                             err = [XY, XZ, YZ]
@@ -408,6 +418,24 @@ parser.add_argument('-C_ms',
                     type=int,
                     default=5,
                     help="Minimum samples in neighborhood for DBSCAN clustering")
+parser.add_argument('-R',
+                    type=str,
+                    choices=["kn", "ks", "knks"],
+                    required=False,
+                    help="Enable Kn/Ks ratio cutoff ('kn', 'ks', 'knks'")
+parser.add_argument('-Rby',
+                    type=str,
+                    choices=["xy", "xz", "yz", "mean", "median"],
+                    default="xy",
+                    help="Comparison to base ratio cutoff ('xy', 'xz', 'yz', 'mean', 'median')")
+parser.add_argument('-Rmin',
+                    type=float,
+                    default=-1.0,
+                    help="Minimum log10(ratio) cutoff (log10)")
+parser.add_argument('-Rmax',
+                    type=float,
+                    default=1.0,
+                    help="Maximum log10(ratio) cutoff (log10)")
 parser.add_argument('-ml',
                     type=int,
                     default=0,
@@ -437,7 +465,14 @@ min_length = args.ml
 min_synteny = args.ms
 # TODO: Kn/Ks Parse
 
+# Kn/Ks Ratio Cutoff
+ratio_cutoff = args.R
+ratio_by = args.Rby
+rcutoff_min = args.Rmin
+rcutoff_max = args.Rmax
 
+#except:
+#ratio_cutoff = args.R
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                 __  ___      _          _____           _       __                                  #
 #                                /  |/  /___ _(_)___     / ___/__________(_)___  / /_                                 #
@@ -563,6 +598,94 @@ else:
     clusters = coordinates
     sparse = np.array([[-1, -1, -1]])
 
+## ----- Kn or Ks cutoff. ----- ##
+# Value Indices
+# XY: Kn=6 , Ks=7
+# XZ: Kn=8 , Ks=9
+# YZ: Kn=10 , Ks=11
+if ratio_cutoff:
+    rcut_start = datetime.now()
+    start_pts = clusters.shape[0]
+    clusters = clusters.tolist()
+    if ratio_cutoff == 'kn':
+        if ratio_by == 'xy':
+            clusters = [c for c in clusters if c[6] != 'NA' and float(c[6])>rcutoff_min and float(c[6])<rcutoff_max]
+        elif ratio_by == 'xz':
+            clusters = [c for c in clusters if c[8] != 'NA' and float(c[8])>rcutoff_min and float(c[8])<rcutoff_max]
+        elif ratio_by == 'yz':
+            clusters = [c for c in clusters if c[10] != 'NA' and float(c[10])>rcutoff_min and float(c[10])<rcutoff_max]
+
+        elif ratio_by == 'mean':
+            clusters = [c for c in clusters if c[6] != 'NA' and c[8] != 'NA' and c[10] != 'NA' and \
+                        np.mean([float(c[6]), float(c[8]), float(c[10])]) > rcutoff_min and \
+                        np.mean([float(c[6]), float(c[8]), float(c[10])]) < rcutoff_max]
+        elif ratio_by == 'median':
+            clusters = [c for c in clusters if c[6] != 'NA' and c[8] != 'NA' and c[10] != 'NA' and \
+                        np.median([float(c[6]), float(c[8]), float(c[10])]) > rcutoff_min and \
+                        np.median([float(c[6]), float(c[8]), float(c[10])]) < rcutoff_max]
+        else:
+            print("ERROR: Unknown ratio cutoff value. Skipping...")
+    elif ratio_cutoff == 'ks':
+        if ratio_by == 'xy':
+            clusters = [c for c in clusters if c[7] != 'NA' and float(c[7])>rcutoff_min and float(c[7])<rcutoff_max]
+        elif ratio_by == 'xz':
+            clusters = [c for c in clusters if c[9] != 'NA' and float(c[9])>rcutoff_min and float(c[9])<rcutoff_max]
+        elif ratio_by == 'yz':
+            clusters = [c for c in clusters if c[11] != 'NA' and float(c[11])>rcutoff_min and float(c[11])<rcutoff_max]
+
+        elif ratio_by == 'mean':
+            clusters = [c for c in clusters if c[7] != 'NA' and c[9] != 'NA' and c[11] != 'NA' and \
+                        np.mean([float(c[7]), float(c[9]), float(c[11])]) > rcutoff_min and \
+                        np.mean([float(c[7]), float(c[9]), float(c[11])]) < rcutoff_max]
+        elif ratio_by == 'median':
+            clusters = [c for c in clusters if c[7] != 'NA' and c[9] != 'NA' and c[11] != 'NA' and \
+                        np.median([float(c[7]), float(c[9]), float(c[11])]) > rcutoff_min and \
+                        np.median([float(c[7]), float(c[9]), float(c[11])]) < rcutoff_max]
+        else:
+            print("ERROR: Unknown ratio cutoff value. Skipping...")
+    elif ratio_cutoff == 'knks':
+        if ratio_by == 'xy':
+            clusters = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and \
+                        (float(c[6]) / float(c[7])) > rcutoff_min and \
+                        (float(c[6]) / float(c[7])) < rcutoff_max]
+        elif ratio_by == 'xz':
+            clusters = [c for c in clusters if c[8] != 'NA' and c[9] != 'NA' and \
+                        (float(c[8]) / float(c[9])) > rcutoff_min and \
+                        (float(c[8]) / float(c[9])) < rcutoff_max]
+        elif ratio_by == 'yz':
+            clusters = [c for c in clusters if c[10] != 'NA' and c[11] != 'NA' and \
+                        (float(c[10]) / float(c[11])) > rcutoff_min and \
+                        (float(c[10]) / float(c[11])) < rcutoff_max]
+
+        elif ratio_by == 'mean':
+            clusters = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and c[8] != 'NA' and \
+                        c[9] != 'NA' and c[10] != 'NA' and c[11] != 'NA' and \
+                        np.mean([float(c[6])/float(c[7]),
+                                 float(c[8])/float(c[9]),
+                                 float(c[10])/float(c[11])]) > rcutoff_min and \
+                        np.mean([float(c[6])/float(c[7]),
+                                 float(c[8])/float(c[9]),
+                                 float(c[10])/float(c[11])]) < rcutoff_max]
+
+        elif ratio_by == 'median':
+            clusters = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and c[8] != 'NA' and \
+                        c[9] != 'NA' and c[10] != 'NA' and c[11] != 'NA' and \
+                        np.median([float(c[6])/float(c[7]),
+                                   float(c[8])/float(c[9]),
+                                   float(c[10])/float(c[11])]) > rcutoff_min and \
+                        np.median([float(c[6])/float(c[7]),
+                                   float(c[8])/float(c[9]),
+                                   float(c[10])/float(c[11])]) < rcutoff_max]
+        else:
+            print("ERROR: Unknown ratio cutoff value. Skipping...")
+    else:
+        print("ERROR: Unknown ratio cutoff value. Skipping...")
+
+    clusters = np.array(clusters)
+    print("Thinning by %s %s Complete (%s)" % (ratio_by, ratio_cutoff, str(datetime.now()-rcut_start)))
+    print("--> Removed Point Count: %s" % str(start_pts - clusters.shape[0]))
+    print("--> Remaining Points: %s" % str(clusters.shape[0]))
+
 
 ## ----- Calculate axis data. ----- ##
 x_chrs, x_len = buildAxisTicks(c_sort[X_GID], g_size_rel[X_GID], c_rel[X_GID])
@@ -570,74 +693,74 @@ y_chrs, y_len = buildAxisTicks(c_sort[Y_GID], g_size_rel[Y_GID], c_rel[Y_GID])
 z_chrs, z_len = buildAxisTicks(c_sort[Z_GID], g_size_rel[Z_GID], c_rel[Z_GID])
 
 
-## ----- Plotting (for confirmation). ----- ##
-# Define hover text.
-Xtext = [genomes[X_GID]["organism"]["name"] + ": " + str(x[3]) for x in clusters]
-Ytext = [genomes[Y_GID]["organism"]["name"] + ": " + str(x[4]) for x in clusters]
-Ztext = [genomes[Z_GID]["organism"]["name"] + ": " + str(x[5]) for x in clusters]
-XYtext = ["XY: Kn=%s,Ks=%s" % (str(x[6]), str(x[7])) for x in clusters]
-XZtext = ["XZ: Kn=%s,Ks=%s" % (str(x[8]), str(x[9])) for x in clusters]
-YZtext = ["YZ: Kn=%s,Ks=%s" % (str(x[10]), str(x[11])) for x in clusters]
-ZIPtext = zip(Xtext, Ytext, Ztext, XYtext, XZtext, YZtext)
-text = [t[0] + '<br>' + t[1] + '<br>' + t[2] + '<br>' + t[3] + '<br>' + t[4] + '<br>' + t[5] for t in ZIPtext]
-
-# Define data.
-kept = Scatter3d(
-    x=clusters[:,0],
-    y=clusters[:,1],
-    z=clusters[:,2],
-    text=text,
-    name='Clustered Points',
-    mode='markers',
-    marker=dict(
-        size=5
-    )
-)
-removed = Scatter3d(
-    x=sparse[:,0],
-    y=sparse[:,1],
-    z=sparse[:,2],
-    name="Removed Points",
-    mode='markers',
-    marker=dict(
-        color='red',
-        size=5,
-        symbol='cross'
-    )
-)
-
-# Define layout.
-layout = Layout(
-    title="Syntenic Dotplot: Clustering Results, EPS=%s, MinSample=%s" % (eps, min_samples),
-    scene=Scene(
-        xaxis=dict(
-            title = genomes[X_GID]["organism"]["name"],
-            range = [0, x_len],
-            tickmode = 'array',
-            tickvals = x_chrs["positions"],
-            ticktext = x_chrs["labels"]
-        ),
-        yaxis=dict(
-            title = genomes[Y_GID]["organism"]["name"],
-            range = [0, y_len],
-            tickmode = 'array',
-            tickvals = y_chrs["positions"],
-            ticktext = y_chrs["labels"]
-        ),
-        zaxis=dict(
-            title = genomes[Z_GID]["organism"]["name"],
-            range = [0, z_len],
-            tickmode = 'array',
-            tickvals = z_chrs["positions"],
-            ticktext = z_chrs["labels"]
-        )
-    )
-)
-
-# Plot figure.
-#fig=Figure(data=[kept, removed], layout=layout)  # Show points removed by clustering.
-fig=Figure(data=[kept], layout=layout)  # Only show clustered points.
-#plot(fig)
+# ## ----- Plotting (for confirmation). ----- ##
+# # Define hover text.
+# Xtext = [genomes[X_GID]["organism"]["name"] + ": " + str(x[3]) for x in clusters]
+# Ytext = [genomes[Y_GID]["organism"]["name"] + ": " + str(x[4]) for x in clusters]
+# Ztext = [genomes[Z_GID]["organism"]["name"] + ": " + str(x[5]) for x in clusters]
+# XYtext = ["XY: Kn=%s,Ks=%s" % (str(x[6]), str(x[7])) for x in clusters]
+# XZtext = ["XZ: Kn=%s,Ks=%s" % (str(x[8]), str(x[9])) for x in clusters]
+# YZtext = ["YZ: Kn=%s,Ks=%s" % (str(x[10]), str(x[11])) for x in clusters]
+# ZIPtext = zip(Xtext, Ytext, Ztext, XYtext, XZtext, YZtext)
+# text = [t[0] + '<br>' + t[1] + '<br>' + t[2] + '<br>' + t[3] + '<br>' + t[4] + '<br>' + t[5] for t in ZIPtext]
+#
+# # Define data.
+# kept = Scatter3d(
+#     x=clusters[:,0],
+#     y=clusters[:,1],
+#     z=clusters[:,2],
+#     text=text,
+#     name='Clustered Points',
+#     mode='markers',
+#     marker=dict(
+#         size=5
+#     )
+# )
+# removed = Scatter3d(
+#     x=sparse[:,0],
+#     y=sparse[:,1],
+#     z=sparse[:,2],
+#     name="Removed Points",
+#     mode='markers',
+#     marker=dict(
+#         color='red',
+#         size=5,
+#         symbol='cross'
+#     )
+# )
+#
+# # Define layout.
+# layout = Layout(
+#     title="Syntenic Dotplot: Clustering Results, EPS=%s, MinSample=%s" % (eps, min_samples),
+#     scene=Scene(
+#         xaxis=dict(
+#             title = genomes[X_GID]["organism"]["name"],
+#             range = [0, x_len],
+#             tickmode = 'array',
+#             tickvals = x_chrs["positions"],
+#             ticktext = x_chrs["labels"]
+#         ),
+#         yaxis=dict(
+#             title = genomes[Y_GID]["organism"]["name"],
+#             range = [0, y_len],
+#             tickmode = 'array',
+#             tickvals = y_chrs["positions"],
+#             ticktext = y_chrs["labels"]
+#         ),
+#         zaxis=dict(
+#             title = genomes[Z_GID]["organism"]["name"],
+#             range = [0, z_len],
+#             tickmode = 'array',
+#             tickvals = z_chrs["positions"],
+#             ticktext = z_chrs["labels"]
+#         )
+#     )
+# )
+#
+# # Plot figure.
+# #fig=Figure(data=[kept, removed], layout=layout)  # Show points removed by clustering.
+# fig=Figure(data=[kept], layout=layout)  # Only show clustered points.
+# plot(fig)
 
 
 ## ----- Write out graph object(s) ----- ##
@@ -673,18 +796,27 @@ log_obj["matches"] = clusters.shape[0]
 log_obj["execution_time"] = str(datetime.now() - start)
 
 # Build output filename.
-# Basename.
-outputname = "%s-%s-%s" % (X_GID, Y_GID, Z_GID)
-# Append sort method.
-outputname += '_sort-%s' % sort_method
-# Append cluster name.
+# Filename follows standard: XGID_YGID_ZGID_<options, '_' separated and in alphabetic order>_<filetype>.json
+name_base = "%s_%s_%s_" % (X_GID, Y_GID, Z_GID)
+name_ext = []  # deque([])
+# Sort
+name_ext.append('sort=%s' % sort_method)
+# Parse
+name_ext.append('parse.len=%s' % str(min_length))
+name_ext.append('parse.syn=%s' % str(min_synteny))
+# Cluster
 if remove_unclustered:
-    outputname += "_clusters-eps%s-samp%s" % (str(eps), str(min_samples))
-# Append parsing methods.
-outputname += "_parse-len%s-syn%s" % (str(min_length), str(min_synteny))
-# Build graph & log output names.
-graph_out = outputname + '_graph.json'
-log_out = outputname + '_log.json'
+    name_ext.append('cluster.eps=%s' % str(eps))
+    name_ext.append('cluster.min=%s' % str(min_samples))
+# Ratio Thinning
+if ratio_cutoff:
+    name_ext.append('ratio.by=%s.%s' % (ratio_by, ratio_cutoff))
+    name_ext.append('ratio.min=%s' % rcutoff_min)
+    name_ext.append('ratio.max=%s' % rcutoff_max)
+# Sort name extensions, write graph & log filenames.
+name_ext.sort()
+graph_out = name_base + '_'.join(name_ext) + '_graph.json'
+log_out = name_base + '_'.join(name_ext) + '_log.json'
 
 # Write output file.
 dump(graph_obj, open(graph_out, 'wb'))

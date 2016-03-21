@@ -237,7 +237,6 @@ $.extend(GeneralOptionsView.prototype, {
             this.el.find("#cluster_min").val(this.c_min);
         }
 
-        console.log(this.ratio_type);
         if (this.ratio_type && this.r_by && this.r_min && this.r_max) {
             this.ratio.prop("checked", true);
             this.ratio_container.slideDown();
@@ -276,6 +275,8 @@ $.extend(GeneralOptionsView.prototype, {
     },
 
     is_valid: function() {
+        this.data = {};
+
         // Sort By
         var sortby = this.sortby.val();
         this.data.sortby = sortby;
@@ -305,8 +306,6 @@ $.extend(GeneralOptionsView.prototype, {
             this.data.c_min = this.el.find("#cluster_min").val();
         } else {
             this.data.cluster = false;
-            //delete this.data.c_eps;
-            //delete this.data.c_min;
         }
 
         // Mutation ratio parsing.
@@ -317,34 +316,34 @@ $.extend(GeneralOptionsView.prototype, {
             this.data.r_max = this.el.find("#ratio_max").val();
         } else {
             this.data.ratio = false;
-            //delete this.data.r_by;
-            //delete this.data.r_min;
-            //delete this.data.r_max;
         }
 
 		return true;
     },
 
     get_options: function() {
-        //this.is_valid();
         return this.data;
     }
 });
 
-function AdvancedOptionView() {
+function AdvancedOptionView(opts) {
     this.data = {};
+    this.vr = opts.vr;
     this.initialize();
 }
 
 $.extend(AdvancedOptionView.prototype, {
     initialize: function() {
-	this.el = $($("#advanced-options-template").html());
-        this.vr = this.el.find("#vr");
+	    this.el = $($("#advanced-options-template").html());
+        this.enable_vr = this.el.find("#vr");
+
+        if (this.vr) {
+            this.enable_vr.prop("checked", true);
+        }
     },
 
     is_valid: function() {
-		var vr = this.vr.is(":checked");
-		this.data.vr = vr;
+		this.data.vr = this.enable_vr.is(":checked");
 		return true;
     },
 
@@ -384,6 +383,7 @@ function OptionsView(opts) {
     this.r_by = opts.r_by;
     this.r_min = opts.r_min;
     this.r_max = opts.r_max;
+    this.vr = opts.vr;
     this.onError = opts.onError;
     this.title = "Options";
     this.initialize();
@@ -403,11 +403,12 @@ $.extend(OptionsView.prototype, {
             ratio: this.ratio,
             r_by: this.r_by,
             r_min: this.r_min,
-            r_max: this.r_max,
-			hide: this.hide
+            r_max: this.r_max
 		});
 	
-		this.advanced_view = new AdvancedOptionView();
+		this.advanced_view = new AdvancedOptionView({
+            vr: this.vr
+        });
     	this.layout_view = new LayoutView({
         	template: "#options-layout-template",
 			layout: {
@@ -420,11 +421,12 @@ $.extend(OptionsView.prototype, {
 		//    this.layout_view.updateLayout({"#admin-options": this.admin_view});
 
 		this.el = this.layout_view.el;
-		this.experiment.options = {};
     },
 
     // Validate and add all options to the experiment
     is_valid: function() {
+        this.experiment.options = {};
+
         if (!this.advanced_view.is_valid() || !this.general_view.is_valid())
             return false;
 
@@ -496,12 +498,34 @@ function launch(experiment) {
     final_experiment.links = {};
 
     function buildOptionsName(exp) {
-        var name = '';
-        if (exp.options.hide) { name += 'parsed_'; }
-        if (exp.options.nim_len > 0) { name += 'min' + exp.options.min_len + '_'; }
+        var name = xgid + '_' + ygid + '_' + zgid + '_';
+        var name_ext = [];
+        // Add sort method.
+        name_ext.push("sort=" + exp.options.sortby);
+        // Add length parsing.
+        name_ext.push('parse.len=' + exp.options.min_length);
+        // Add synteny parsing.
+        name_ext.push('parse.syn=' + exp.options.min_synteny);
+        // Add clustering options.
+        if (exp.options.cluster) {
+            name_ext.push('cluster.eps=' + exp.options.c_eps);
+            name_ext.push('cluster.min=' + exp.options.c_min);
+        }
+        // Add ratio options.
+        if (exp.options.ratio) {
+            name_ext.push('ratio.by=' + exp.options.r_by + '.' + exp.options.ratio);
+            name_ext.push('ratio.min=' + exp.options.r_min);
+            name_ext.push('ratio.max=' + exp.options.r_max);
+        }
+        // Sort & join name extensions, add to GID string.
+        name_ext=name_ext.sort().join("_");
+        name = name + name_ext;
+
         return name;
     }
     options_name = buildOptionsName(final_experiment);
+    graph_obj = options_name + '_graph.json';
+    log_obj = options_name + '_log.json';
 
     var fileDir = "/home/asherkhb/repos/coge/web/data/diags/";
     var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks";
@@ -559,6 +583,7 @@ function launch(experiment) {
     // Compute XY Comparison
     // onSuccess: Launch XZ Comparison
     function makeXY() {
+        console.log("Make XY");
         coge.progress.init({title: "Running SynMap Analysis 1/3",
                             onSuccess: function(results) {
                                 coge.progress.end();
@@ -566,10 +591,14 @@ function launch(experiment) {
                                 makeXZ();
                             } 
                            });
+        console.log("Progress Initialized");
         coge.progress.begin();
-        
+        console.log("Progress Began");
+        console.log(xy_request);
+
         coge.services.submit_job(xy_request)
             .done(function(response) {
+                console.log(response.id);
                 if (!response) {
                     coge.progress.failed("Error: empty response from server");
                     return;
@@ -578,6 +607,7 @@ function launch(experiment) {
                     coge.progress.failed("Error: failed to start workflow", response.error);
                     return;
                 }
+                console.log(response.id);
                 //Start status update
                 window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
                 coge.progress.update(response.id);
@@ -718,21 +748,41 @@ function reset_launch() { //AKB - Renamed from reset_load()
         x_gid: current_experiment.x_gid,
         y_gid: current_experiment.y_gid,
         z_gid: current_experiment.z_gid,
-        sortby: current_experiment.sortby
+        sortby: current_experiment.sortby,
+        min_syn: MIN_SYN,
+        min_len: MIN_LEN,
+        c_eps: C_EPS,
+        c_min: C_MIN,
+        ratio: RATIO,
+        r_by: R_BY,
+        r_min: R_MIN,
+        r_max: R_MAX,
+	    vr: VR
     });
 
     $('#wizard-container').hide().fadeIn();
 }
 
+// Log Experiment for Confirmation
 function logExperiment(exp) {
-    console.log(exp);
+    console.log("Sort By: " + exp.options.sortby);
+    console.log("Minimum Synteny: " + exp.options.min_synteny);
+    console.log("Minimum Length: " + exp.options.min_length);
+    console.log("Clustering: " + exp.options.cluster);
+    console.log("--> EPS: " + exp.options.c_eps);
+    console.log("--> Minimum Cluster: " + exp.options.c_min);
+    console.log("Ratio Parsing: " + exp.options.ratio);
+    console.log("--> By: " + exp.options.r_by);
+    console.log("--> Min: " + exp.options.r_min);
+    console.log("--> Max: " + exp.options.r_max);
+    console.log("VR Mode: " + exp.options.vr);
 }
 
 function initialize_wizard(opts) {
     current_experiment = {};
     var root = $("#wizard-container");
     var wizard = new Wizard({ 
-    	onCompleted: logExperiment, //launch, //AKB, changed from 'load'
+    	onCompleted: launch,  //logExperiment,  //AKB, changed from 'load'
     	data: current_experiment, 
     	helpUrl: opts.helpUrl 
     });
@@ -757,7 +807,7 @@ function initialize_wizard(opts) {
         r_by: opts.r_by,
         r_min: opts.r_min,
         r_max: opts.r_max,
-		//vr: opts.vr,
+		vr: opts.vr,
 		//admin: opts.admin,
 		onError: wizard.error_help.bind(wizard) 
     }));
