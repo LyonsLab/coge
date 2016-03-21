@@ -614,6 +614,7 @@ function launch(experiment) {
                 //coge.progress.update(response.id, response.site_url);
             })
             .fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("Fucked!")
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
             })
     }
