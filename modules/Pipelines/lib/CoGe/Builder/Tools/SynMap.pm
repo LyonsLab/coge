@@ -34,28 +34,27 @@ sub add_jobs {
 	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
 	$workflow->logfile($path);
 
-	my $SEQUENCE_SIZE_LIMIT =
-	  50_000_000;    # Limit the maximum genome size for genomic-genomic
+	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
 	my $DIAGSDIR      = $config->{DIAGSDIR};
 	my $SCRIPTDIR     = catdir( $config->{SCRIPTDIR}, 'synmap' );
-	my $GEVO_LINKS    = catfile( $SCRIPTDIR, 'gevo_links.pl' );
+	my $GEVO_LINKS    = 'nice ' . catfile( $SCRIPTDIR, 'gevo_links.pl' );
 	my $DAG_TOOL      = 'nice ' . catfile( $SCRIPTDIR, 'dag_tools.py' );
-	my $BLAST2BED     = catfile( $SCRIPTDIR, 'blast2bed.pl' );
-	my $GENE_ORDER    = catfile( $SCRIPTDIR, 'gene_order.py' );
-	my $KSCALC        = catfile( $SCRIPTDIR, 'kscalc.pl' );
-	my $GEN_FASTA     = catfile( $SCRIPTDIR, 'generate_fasta.pl' );
-	my $RUN_ALIGNMENT = catfile( $SCRIPTDIR, 'quota_align_merge.pl' );
-	my $RUN_COVERAGE  = catfile( $SCRIPTDIR, 'quota_align_coverage.pl' );
-	my $PROCESS_DUPS  = catfile( $SCRIPTDIR, 'process_dups.pl' );
-	my $DOTPLOT       = $config->{DOTPLOT} . " -cf " . $config->{_CONFIG_PATH};
-	my $SVG_DOTPLOT   = catfile( $SCRIPTDIR, 'dotplot.py' );
-
-#$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
-	my $RUN_DAGCHAINER =
-	  'nice ' . $config->{PYTHON} . ' ' . $config->{DAGCHAINER};
-	my $BLAST2RAW  = $config->{BLAST2RAW};    #find local duplicates
-	my $FORMATDB   = $config->{FORMATDB};
+	my $BLAST2BED     = 'nice ' . catfile( $SCRIPTDIR, 'blast2bed.pl' );
+	my $GENE_ORDER    = 'nice ' . catfile( $SCRIPTDIR, 'gene_order.py' );
+	my $KSCALC        = 'nice ' . catfile( $SCRIPTDIR, 'kscalc.pl' );
+	my $GEN_FASTA     = 'nice ' . catfile( $SCRIPTDIR, 'generate_fasta.pl' );
+	my $RUN_ALIGNMENT = 'nice ' . catfile( $SCRIPTDIR, 'quota_align_merge.pl' );
+	my $RUN_COVERAGE  = 'nice ' . catfile( $SCRIPTDIR, 'quota_align_coverage.pl' );
+	my $PROCESS_DUPS  = 'nice ' . catfile( $SCRIPTDIR, 'process_dups.pl' );
+	my $DOTPLOT       = 'nice ' . $config->{DOTPLOT} . " -cf " . $config->{_CONFIG_PATH};
+	my $SVG_DOTPLOT   = 'nice ' . catfile( $SCRIPTDIR, 'dotplot.py' );
+    #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
+	my $RUN_DAGCHAINER = 'nice ' . $config->{PYTHON} . ' ' . $config->{DAGCHAINER};
+	my $BLAST2RAW  = 'nice ' . $config->{BLAST2RAW}; #find local duplicates
+	my $FORMATDB   = 'nice ' . $config->{FORMATDB};
 	my $BLASTDBDIR = $config->{BLASTDB};
+	my $LASTDB     = 'nice ' . $config->{LASTDB2}; # fix name
+	my $LASTDBDIR  = $config->{LASTDB} // catdir($config->{DATADIR}, 'last', 'db');
 	my $FASTADIR   = $config->{FASTADIR};
 
 	############################################################################
@@ -68,18 +67,13 @@ sub add_jobs {
 	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
 
 	# Block large genomic-genomic jobs from running
-	if (
-		(
-			   $feat_type1 == 2
+	if (   ( $feat_type1 == 2
 			&& $genome1->length > $SEQUENCE_SIZE_LIMIT
-			&& !$genome1->type->name =~ /hard/i
-		)
-		&& (   $feat_type2 == 2
+			&& !$genome1->type->name =~ /hard/i )
+		&& ( $feat_type2 == 2
 			&& $genome2->length > $SEQUENCE_SIZE_LIMIT
-			&& !$genome2->type->name =~ /hard/i )
-	  )
+			&& !$genome2->type->name =~ /hard/i ))
 	{
-
 		return encode_json(
 			{
 				success => JSON::false,
@@ -90,13 +84,12 @@ sub add_jobs {
 		);
 	}
 
-	#	my $basename = $opts{basename};
+	#my $basename = $opts{basename};
 	my ( $org_name1, $title1 ) = gen_org_name(
 		db        => $db,
 		dsgid     => $dsgid1,
 		feat_type => $feat_type1
 	);
-
 	my ( $org_name2, $title2 ) = gen_org_name(
 		db        => $db,
 		dsgid     => $dsgid2,
@@ -146,8 +139,6 @@ sub add_jobs {
 	my $merge_algo        = $opts{merge_algo}; #is there a merging function? will non-syntenic dots be shown?
 	my $snsd              = $opts{show_non_syn_dots} =~ /true/i ? 1 : 0;
 
-	#	my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
-
 	#will the axis be flipped?
 	my $flip = $opts{flip} =~ /true/i ? 1 : 0;
 
@@ -173,11 +164,9 @@ sub add_jobs {
 
 	#codeml min and max calues
 	my $codeml_min = $opts{codeml_min};
-	$codeml_min = undef
-	  unless $codeml_min =~ /\d/ && $codeml_min =~ /^-?\d*.?\d*$/;
+	$codeml_min = undef unless $codeml_min =~ /\d/ && $codeml_min =~ /^-?\d*.?\d*$/;
 	my $codeml_max = $opts{codeml_max};
-	$codeml_max = undef
-	  unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
+	$codeml_max = undef unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
 	my $logks = $opts{logks};
 	$logks = $logks eq "true" ? 1 : 0;
 
@@ -245,16 +234,14 @@ sub add_jobs {
 		push @fasta1args, [ "--feature_type", $feat_type1, 1 ];
 		push @fasta1args, [ "--fasta",        $fasta1,     1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $GEN_FASTA,
-				script      => undef,
-				args        => \@fasta1args,
-				inputs      => undef,
-				outputs     => [$fasta1],
-				description => "Generating fasta file...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $GEN_FASTA,
+			script      => undef,
+			args        => \@fasta1args,
+			inputs      => undef,
+			outputs     => [$fasta1],
+			description => "Generating fasta file...",
+		});
 
 		$workflow->log( "Added fasta file generation for:" );
 		$workflow->log( " " x (2) . $org_name1 );
@@ -275,16 +262,14 @@ sub add_jobs {
 		push @fasta2args, [ "--feature_type", $feat_type2, 1 ];
 		push @fasta2args, [ "--fasta",        $fasta2,     1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $GEN_FASTA,
-				script      => undef,
-				args        => \@fasta2args,
-				inputs      => undef,
-				outputs     => [$fasta2],
-				description => "Generating fasta file...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $GEN_FASTA,
+			script      => undef,
+			args        => \@fasta2args,
+			inputs      => undef,
+			outputs     => [$fasta2],
+			description => "Generating fasta file...",
+		});
 
 		$workflow->log( "" );
 		$workflow->log( "Added fasta file generation for:" );
@@ -297,7 +282,6 @@ sub add_jobs {
 	my ( $blastdb, @blastdb_files );
 	my $ALGO_LOOKUP = algo_lookup();
 	if ( $ALGO_LOOKUP->{$blast}{formatdb} ) {
-
 		my $basename = "$BLASTDBDIR/$dsgid2-$feat_type2";
 
 		my @blastdbargs = ();
@@ -313,37 +297,55 @@ sub add_jobs {
 		push @blastdb_files, "$basename" . "in";
 		push @blastdb_files, "$basename" . "hr";
 
-		$workflow->add_job(
-			{
-				cmd         => $FORMATDB,
-				script      => undef,
-				args        => \@blastdbargs,
-				inputs      => [$fasta2],
-				outputs     => \@blastdb_files,
-				description => "Generating BlastDB...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $FORMATDB,
+			script      => undef,
+			args        => \@blastdbargs,
+			inputs      => [$fasta2],
+			outputs     => \@blastdb_files,
+			description => "Generating BlastDB...",
+		});
 
 		$workflow->log( "" );
 		$workflow->log( "Added BlastDB generation" );
 		$workflow->log( $blastdb );
 	}
+	elsif ( $ALGO_LOOKUP->{$blast}{lastdb} ) { # mdb added 3/17/16 for upgrade to Last v731
+	    my $basedir = "$LASTDBDIR/$dsgid2";
+	    my $basename = "$LASTDBDIR/$dsgid2/$dsgid2-$feat_type2";
+        $workflow->add_job({
+            cmd         => "mkdir -p $basedir ; $LASTDB $basename $fasta2",
+            script      => undef,
+            args        => [],
+            inputs      => [$fasta2],
+            outputs     => [
+                $basename . '.prj'
+            ],
+            description => "Generating LastDB...",
+        });	
+        
+        $blastdb = $basename;
+#        push @blastdb_files, $basename . '.prj';
+#        
+#        $workflow->log( "" );
+#        $workflow->log( "Added LastDB generation" );
+#        $workflow->log( $blastdb );
+	}
 	else {
 		$blastdb = $fasta2;
 		push @blastdb_files, $blastdb;
 	}
+	
 	my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
 	my %org_dirs = (
-		$orgkey1 . "_"
-		  . $orgkey2 => {
+		$orgkey1 . "_" . $orgkey2 => {
 			fasta    => $fasta1,
 			db       => $blastdb,
-			basename => $dsgid1 . "_" 
-			  . $dsgid2
+			basename => $dsgid1 . "_" . $dsgid2
 			  . ".$feat_type1-$feat_type2."
 			  . $ALGO_LOOKUP->{$blast}{filename},
 			dir => "$DIAGSDIR/$dir1/$dir2",
-		  },
+		},
 	);
 
 	foreach my $org_dir ( keys %org_dirs ) {
@@ -362,10 +364,7 @@ sub add_jobs {
 	my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
 
 	foreach my $key ( keys %org_dirs ) {
-		my $cmd = 'nice '
-		  . $ALGO_LOOKUP->{$blast}
-		  {algo};    #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
-
+		my $cmd = 'nice ' . $ALGO_LOOKUP->{$blast}{algo}; #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
 		my $fasta   = $org_dirs{$key}{fasta};
 		my $db      = $org_dirs{$key}{db};
 		my $outfile = $org_dirs{$key}{blastfile};
@@ -376,24 +375,30 @@ sub add_jobs {
 			push @blastargs, [ "-d", $db,      0 ];
 			push @blastargs, [ "-o", $outfile, 1 ];
 		}
-		elsif ( $cmd =~ /last_wrapper/i ) {
-
-			# mdb added 9/20/13 issue 213
-			my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
-			mkpath( $dbpath, 0, 0777 );
-			push @blastargs, [ "--dbpath", $dbpath, 0 ];
-
-			push @blastargs, [ "",   $db,      0 ];
-			push @blastargs, [ "",   $fasta,   0 ];
-			push @blastargs, [ "-o", $outfile, 1 ];
-		}
+# mdb removed 3/17/16 -- wrapper no longer needed
+#		elsif ( $cmd =~ /last_wrapper/i ) {
+#			# mdb added 9/20/13 issue 213
+#			my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
+#			mkpath( $dbpath, 0, 0777 );
+#			push @blastargs, [ "--dbpath", $dbpath, 0 ];
+#
+#			push @blastargs, [ "",   $db,      0 ];
+#			push @blastargs, [ "",   $fasta,   0 ];
+#			push @blastargs, [ "-o", $outfile, 1 ];
+#		}
+        elsif ( $cmd =~ /lastal/i ) { # mdb added 3/17/16 -- new multithreaded last v731
+            my $fasta   = $org_dirs{$key}{fasta};
+            my $db      = $org_dirs{$key}{db};
+            my $outfile = $org_dirs{$key}{blastfile};
+            $cmd .= " $db $fasta > $outfile";
+        }		
 		else {
 			push @blastargs, [ "-out",   $outfile, 1 ];
 			push @blastargs, [ "-query", $fasta,   0 ];
 			push @blastargs, [ "-db",    $db,      0 ];
 		}
 
-		( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd);
+		#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
 		push @blastdb_files, $fasta;
 		$workflow->add_job(
 			{
@@ -407,19 +412,15 @@ sub add_jobs {
 		);
 	}
 
-	$workflow->log( "" );
-	$workflow->log(
-		"Added genome comparison (algorithm: "
-		  . $ALGO_LOOKUP->{$blast}{displayname} . ")");
+	$workflow->log("");
+	$workflow->log("Added genome comparison (algorithm: " . $ALGO_LOOKUP->{$blast}{displayname} . ")");
 
 	###########################################################################
 	# Converting blast to bed and finding local duplications
 	###########################################################################
-	#
 	# NOTES: The blast2bed program will take the input rawblast file and
 	# filter it and creating a new rawblast and moving the old to
 	# rawblast.orig
-	#
 	my $query_bed   = $raw_blastfile . ".q.bed";
 	my $subject_bed = $raw_blastfile . ".s.bed";
 
@@ -433,7 +434,7 @@ sub add_jobs {
 	push @bedoutputs, $subject_bed;
 	push @bedoutputs, $raw_blastfile if ( $raw_blastfile =~ /genomic/ );
 
-#    push @bedoutputs, "$raw_blastfile.orig" if ( $raw_blastfile =~ /genomic/ );
+#   push @bedoutputs, "$raw_blastfile.orig" if ( $raw_blastfile =~ /genomic/ );
 	push @bedoutputs, "$raw_blastfile.new" if ( $raw_blastfile =~ /genomic/ );
 	$workflow->add_job(
 		{
@@ -1181,21 +1182,18 @@ sub add_jobs {
 }
 
 sub algo_lookup {
-
-#in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
+    # In the web form, each sequence search algorithm has a unique number.  
+    # This table identifies those and adds appropriate options.
 	my $config        = get_defaults();
-	my $MAX_PROC      = $config->{MAX_PROC};
+	my $MAX_PROC      = $config->{MAX_PROC} // 32;
 	my $blast_options = " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6";
 	my $TBLASTX       = $config->{TBLASTX} . $blast_options;
 	my $BLASTN        = $config->{BLASTN} . $blast_options;
 	my $BLASTP        = $config->{BLASTP} . $blast_options;
-	my $LASTZ =
-	    $config->{PYTHON} . " "
-	  . $config->{MULTI_LASTZ}
-	  . " -A $MAX_PROC --path="
-	  . $config->{LASTZ};
-	my $LAST =
-	  $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH};
+	my $LASTZ = $config->{PYTHON} . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . $config->{LASTZ};
+	#my $LAST  = $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH}; # mdb removed 3/17/16
+	my $LAST = $config->{LASTAL} // 'lastal'; $LAST .= " -u 0 -P $MAX_PROC -i3G -f BlastTab"; # mdb added 3/17/16 for new multithreaded LAST v731
+	
 	return {
 		0 => {
 			algo => $BLASTN . " -task megablast",    #megablast
@@ -1206,7 +1204,7 @@ sub algo_lookup {
 			formatdb        => 1,
 		},
 		1 => {
-			algo => $BLASTN . " -task dc-megablast",   #discontinuous megablast,
+			algo => $BLASTN . " -task dc-megablast",   #discontinuous megablast
 			opt  => "DCMEGA_SELECT",
 			filename        => "dcmegablast",
 			displayname     => "Discontinuous MegaBlast",
@@ -1250,6 +1248,7 @@ sub algo_lookup {
 			filename        => "last",
 			displayname     => "Last",
 			html_select_val => 6,
+			lastdb          => 1, # mdb added 3/17/16 for last v731
 		}
 	};
 }
@@ -1439,8 +1438,6 @@ sub get_query_link {
 
 	#will non-syntenic dots be shown?
 	my $snsd = $url_options{show_non_syn_dots} =~ /true/i ? 1 : 0;
-#	my $ALGO_LOOKUP = algo_lookup();
-#	my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
 
 	#will the axis be flipped?
 	my $flip = $url_options{flip};
