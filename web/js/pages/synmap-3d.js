@@ -497,6 +497,7 @@ function launch(experiment) {
     final_experiment = experiment;
     final_experiment.links = {};
 
+    // Build Options-Based Name
     function buildOptionsName(exp) {
         var name = xgid + '_' + ygid + '_' + zgid + '_';
         var name_ext = [];
@@ -527,8 +528,21 @@ function launch(experiment) {
     graph_obj = options_name + '_graph.json';
     log_obj = options_name + '_log.json';
 
-    var fileDir = "/home/asherkhb/repos/coge/web/data/diags/";
-    var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks";
+    // Build Link to SynMap Output
+    function synmapOutputLink(id1, id2) {
+        var fileDir = "/home/asherkhb/repos/coge/web/data/diags/";
+        var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks";
+        var link = '';
+        id1 = id1.toString();
+        id2 = id2.toString();
+        if ( parseInt(id1.charAt(0)) <= parseInt(id2.charAt(0)) ) {
+            link = fileDir + id1 + '/' + id2 + '/' + id1 + '_' + id2 + fileTag;
+        }
+        else {
+            link = fileDir + id2 + '/' + id1 + '/' + id2 + '_' + id1 + fileTag;
+        }
+        return link;
+    }
     
     var xy_request = {
         type: 'synmap',
@@ -566,35 +580,18 @@ function launch(experiment) {
 			ks_type: 'kn_ks'
 		}
     };
-  
-    function buildLink(id1, id2) {
-        var link = '';
-        id1 = id1.toString();
-        id2 = id2.toString();
-        if ( parseInt(id1.charAt(0)) <= parseInt(id2.charAt(0)) ) {
-            link = fileDir + id1 + '/' + id2 + '/' + id1 + '_' + id2 + fileTag;
-        }
-        else {
-            link = fileDir + id2 + '/' + id1 + '/' + id2 + '_' + id1 + fileTag;
-        }
-        return link;
-    }
 
     // Compute XY Comparison
     // onSuccess: Launch XZ Comparison
     function makeXY() {
-        console.log("Make XY");
         coge.progress.init({title: "Running SynMap Analysis 1/3",
                             onSuccess: function(results) {
                                 coge.progress.end();
-                                final_experiment.links.xy = buildLink(xgid, ygid);
+                                final_experiment.links.xy = synmapOutputLink(xgid, ygid);
                                 makeXZ();
                             } 
                            });
-        console.log("Progress Initialized");
         coge.progress.begin();
-        console.log("Progress Began");
-        console.log(xy_request);
 
         coge.services.submit_job(xy_request)
             .done(function(response) {
@@ -607,14 +604,13 @@ function launch(experiment) {
                     coge.progress.failed("Error: failed to start workflow", response.error);
                     return;
                 }
-                console.log(response.id);
                 //Start status update
                 window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
                 coge.progress.update(response.id);
                 //coge.progress.update(response.id, response.site_url);
             })
             .fail(function(jqXHR, textStatus, errorThrown) {
-                console.log("Fucked!")
+                console.log("Fucked!");
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
             })
     }
@@ -625,7 +621,7 @@ function launch(experiment) {
         coge.progress.init({title: "Running SynMap Analysis 2/3",
                             onSuccess: function(results) {
                                 coge.progress.end();
-                                final_experiment.links.xz = buildLink(xgid, zgid);
+                                final_experiment.links.xz = synmapOutputLink(xgid, zgid);
                                 makeYZ();
                             } 
                            });
@@ -658,7 +654,7 @@ function launch(experiment) {
         coge.progress.init({title: "Running SynMap Analysis 3/3",
                             onSuccess: function(results) {
                                 coge.progress.end();
-                                final_experiment.links.yz = buildLink(ygid, zgid);
+                                final_experiment.links.yz = synmapOutputLink(ygid, zgid);
                                 runDotplotDots();
                             } 
                            });
