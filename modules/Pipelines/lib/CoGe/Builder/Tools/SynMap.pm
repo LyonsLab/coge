@@ -1,6 +1,7 @@
 package CoGe::Builder::Tools::SynMap;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw( get_defaults );
@@ -29,7 +30,7 @@ sub add_jobs {
 	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
 	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
-	my $tiny_link = get_query_link( $config, $db, @_ );
+	my $tiny_link = get_query_link( $config, $db, %opts );
 	my $path = catdir($config->{DIAGSDIR}, $dir1, $dir2, 'html');
 	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
 	$workflow->logfile($path);
@@ -1602,7 +1603,9 @@ sub get_query_link {
 	my $dsgid2 = $url_options{dsgid2};
 
 	unless ( $dsgid1 and $dsgid2 ) {
-		return encode_json( { error => "Missing a genome id." } );
+		#return encode_json( { error => "Missing a genome id." } ); # mdb removed 3/22/16 -- shows up in log filename
+		print STDERR "CoGe::Builder::Tools::SynMap:  ERROR: Missing a genome id: ", Dumper [$dsgid1, $dsgid2], "\n";
+		return;
 	}
 
 	my $assemble = $url_options{assemble} =~ /true/i ? 1 : 0;
@@ -1795,7 +1798,7 @@ sub go {
 		}
 	) unless -r $genome2->file_path;
 
-	my $tiny_link = get_query_link( $config, $db, @_ );
+	my $tiny_link = get_query_link( $config, $db, %opts );
 	warn "tiny_link is required for logging." unless defined($tiny_link);
 	my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
 	my $workflow_name = "synmap-$tiny_id";
@@ -1982,7 +1985,5 @@ sub go {
 #	;      #remove track file
 #	return 1 if -r $outfile;
 #}
-
-with qw(CoGe::Builder::Buildable);
 
 1;
