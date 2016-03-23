@@ -325,11 +325,11 @@ sub add_jobs {
         });	
         
         $blastdb = $basename;
-#        push @blastdb_files, $basename . '.prj';
-#        
-#        $workflow->log( "" );
-#        $workflow->log( "Added LastDB generation" );
-#        $workflow->log( $blastdb );
+        push @blastdb_files, $basename . '.prj';
+        
+        $workflow->log( "" );
+        $workflow->log( "Added LastDB generation" );
+        $workflow->log( $blastdb );
 	}
 	else {
 		$blastdb = $fasta2;
