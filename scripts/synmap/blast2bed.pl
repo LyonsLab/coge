@@ -17,6 +17,7 @@ my $input =[];
 open (IN, $infile)  || die "Can't open $infile for reading: $!";
 while (<IN>)
   {
+    next if /^#/;
     chomp;
     next unless $_;
     push @$input, $_;

@@ -1,5 +1,4 @@
 #! /usr/bin/perl -w
-
 use v5.10;
 use strict;
 use CoGeX;
@@ -16,7 +15,7 @@ use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
 use POSIX;
 use File::Path;
-use File::Basename qw(fileparse);
+use File::Basename qw(basename fileparse);
 use File::Spec::Functions;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
@@ -29,16 +28,15 @@ no warnings 'redefine';
 
 use vars qw($config $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS
     $PAGE_TITLE $PAGE_NAME $DIR $LINK $TEMPDIR $TEMPURL $DATADIR $FASTADIR
-    $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED
+    $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $LASTDB $CONVERT_BLAST $BLAST2BED
     $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE
     $coge $cogeweb $RESULTSLIMIT $MAX_SEARCH_RESULTS $MAX_PROC $SERVER $COOKIE_NAME
     $JEX $GEN_FASTA $MAX_FEATURES_IN_LIST $SCRIPTDIR);
 
-$PAGE_TITLE    = "SynFind";
-$PAGE_NAME     = $PAGE_TITLE . ".pl";
-
-$RESULTSLIMIT       = 100;
-$MAX_SEARCH_RESULTS = 1000;
+$PAGE_TITLE = "SynFind";
+$PAGE_NAME  = $PAGE_TITLE . ".pl";
+$RESULTSLIMIT         = 100;
+$MAX_SEARCH_RESULTS   = 1000;
 $MAX_FEATURES_IN_LIST = 100;
 
 $FORM = new CGI;
@@ -47,7 +45,7 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
-$JEX         = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+$JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 
 $ENV{PATH}     = $config->{COGEDIR};
 $TEMPDIR       = $config->{TEMPDIR} . $PAGE_TITLE;
@@ -65,20 +63,12 @@ $BEDDIR     = $config->{BEDDIR};
 mkpath( $BEDDIR, 0, 0777 ) unless -d $BEDDIR;
 
 $MAX_PROC = $config->{MAX_PROC};
-$LASTZ =
-    'nice '
-  . $config->{PYTHON} . ' '
-  . $config->{MULTI_LASTZ}
-  . " -A $MAX_PROC --path="
-  . $config->{LASTZ};
-$LAST =
-    'nice '
-  . $config->{PYTHON} . ' '
-  . $config->{MULTI_LAST}
-  . " -a $MAX_PROC --path="
-  . $config->{LAST_PATH};
+$LASTZ = 'nice ' . $config->{PYTHON} . ' ' . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . $config->{LASTZ};
+#$LAST  = 'nice ' . $config->{PYTHON} . ' ' . $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH}; $ mdb removed /3/21/16 for LAST v731 -- wrapper no longer needed
+$LAST = $config->{LASTAL} // 'lastal'; $LAST .= " -u 0 -P $MAX_PROC -i3G -f BlastTab"; # mdb added 3/21/16 for LAST v731
+$LASTDB = $config->{LASTDB2} // 'lastdb'; # mdb added 3/21/16 for LAST v731
 
-$SCRIPTDIR        = $config->{SCRIPTDIR} . '/synmap/';
+$SCRIPTDIR        = catdir($config->{SCRIPTDIR}, 'synmap');
 $GEN_FASTA        = 'nice ' . catfile($SCRIPTDIR, 'generate_fasta.pl');
 $CONVERT_BLAST    = 'nice ' . $config->{CONVERT_BLAST};
 $BLAST2BED        = 'nice ' . catfile($SCRIPTDIR, 'blast2bed.pl');
@@ -130,7 +120,7 @@ sub gen_html {
                       WIKI_URL   => $config->{WIKI_URL} || '',
 		              USER       => $USER->display_name || '' );
 
-    $template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
+    $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => $body );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $config->{CAS_URL} || '' );
@@ -1180,11 +1170,7 @@ sub go_synfind {
 
             CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
             CoGe::Accessory::Web::write_log( "WARNING:", $cogeweb->logfile );
-            CoGe::Accessory::Web::write_log(
-                $dsg->organism->name
-                  . " does not have CDS sequences.  Can't process in SynFind.\n",
-                $cogeweb->logfile
-            );
+            CoGe::Accessory::Web::write_log( $dsg->organism->name . " does not have CDS sequences.  Can't process in SynFind.\n", $cogeweb->logfile );
             next;
         }
 
@@ -1262,37 +1248,54 @@ sub go_synfind {
         #######################################################################
         # Blast
         #######################################################################
-        my ( $blast_args, $blast_cmd );
-
         if ( $algo =~ /lastz/i ) {
-            $blast_args = [
-                [ "-i", $target->{query_fasta},  1 ],
-                [ "-d", $target->{target_fasta}, 1 ],
-                [ "-o", $target->{blastfile},    1 ]
-            ];
-            $blast_cmd = $LASTZ;
+            $workflow->add_job({
+                cmd         => $LASTZ,
+                description => "Running blast ($algo) algorithm...",
+                script      => undef,
+                args        => [
+                    [ "-i", $target->{query_fasta},  1 ],
+                    [ "-d", $target->{target_fasta}, 1 ],
+                    [ "-o", $target->{blastfile},    1 ]
+                ],
+                inputs      => [ $target->{query_fasta}, $target->{target_fasta} ],
+                outputs     => [ $target->{blastfile} ]
+            });
         }
-        else {
+        else { # lastal
             my $dbpath = catdir($config->{LASTDB}, $target->{dsgid2});
             mkpath($dbpath, 0, 0777);
 
-            $blast_args = [
-                [ "--dbpath", $dbpath, 0 ],
-                [ "",   $target->{target_fasta}, 1 ],
-                [ "",   $target->{query_fasta},  1 ],
-                [ "-o", $target->{blastfile},    1 ]
-            ];
-            $blast_cmd = $LAST;
-        }
+# mdb removed 3/21/16 for LAST v731
+#            $blast_args = [
+#                [ "--dbpath", $dbpath, 0 ],
+#                [ "",   $target->{target_fasta}, 1 ],
+#                [ "",   $target->{query_fasta},  1 ],
+#                [ "-o", $target->{blastfile},    1 ]
+#            ];
+#            $blast_cmd = $LAST;
 
-        $workflow->add_job({
-            cmd         => $blast_cmd,
-            description => "Running blast ($algo) algorithm...",
-            script      => undef,
-            args        => $blast_args,
-            inputs      => [ $target->{query_fasta}, $target->{target_fasta} ],
-            outputs     => [ $target->{blastfile} ]
-        });
+            
+            # mdb added 3/21/16 for LAST v731
+            $dbpath = catfile($dbpath, basename($target->{query_fasta}));
+            $workflow->add_job({
+                cmd         => "$LASTDB $dbpath $target->{query_fasta}",
+                description => "Creating database for $algo...",
+                script      => undef,
+                args        => [],
+                inputs      => [ $target->{query_fasta} ],
+                outputs     => [ $dbpath . '.prj' ]
+            });
+            
+            $workflow->add_job({
+                cmd         => "$LAST $dbpath $target->{target_fasta} > $target->{blastfile}",
+                description => "Running blast ($algo) algorithm...",
+                script      => undef,
+                args        => [],
+                inputs      => [ $target->{target_fasta}, $dbpath . '.prj'],
+                outputs     => [ $target->{blastfile} ]
+            });
+        }
 
         #######################################################################
         # Convert Blast
@@ -1919,19 +1922,13 @@ sub run_blast {
         $pre_command .= "$LAST $fasta2 $fasta1 -o $outfile";
     }
     my $x;
-    system "/usr/bin/touch $outfile.running"
-      ;    #track that a blast anlaysis is running for this
+    system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
     ( $x, $pre_command ) = CoGe::Accessory::Web::check_taint($pre_command);
-    CoGe::Accessory::Web::write_log( "running $pre_command",
-        $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "running $pre_command", $cogeweb->logfile );
     `$pre_command`;
-    system "/bin/rm $outfile.running"
-      if -r "$outfile.running";    #remove track file
+    system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
     unless ( -s $outfile ) {
-        CoGe::Accessory::Web::write_log(
-"WARNING: Problem running $pre_command command.  Blast output file contains no data!",
-            $cogeweb->logfile
-        );
+        CoGe::Accessory::Web::write_log("WARNING: Problem running $pre_command command.  Blast output file contains no data!", $cogeweb->logfile);
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         return 0;
     }

@@ -1210,8 +1210,6 @@ function checkRequestSize(url) {
         var seq_type2 = pageObj.seq_type2;
         //check to see if we will allow this run
         var max_size = 50 * 1000 * 1000;
-        // console.log (org_name1, org_length1, seq_type1);
-        // console.log (org_name2, org_length2, seq_type2);
         if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
             ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1) ) {
             var message = "You are trying to compare unmasked genomic sequences that are large!  This is a bad idea.  Chances are there will be many repeat sequences that will cause the entire pipeline to take a long time to complete.  This usually means that the analyses will use a lot of RAM and other resources.  As such, these jobs are usually killed before they can complete.  Please contact coge.genome@gmail.com for assistance with your analysis.";
@@ -1358,7 +1356,7 @@ function checkRequestSize(url) {
                     + data.link + " onclick=window.open('tiny')"
                     + "target = _new>" + data.link + "</a>";
 
-                     $('#dialog_log').html('<a href="' + data.log + '">Logfile</a>');
+                     $('#dialog_log').html('<a href="' + data.log + '" target="_blank">Logfile</a>');
                     $('#synmap_link').html(link);
 
                     update_dialog(data.request, "#synmap_dialog", synmap_formatter,
