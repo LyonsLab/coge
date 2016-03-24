@@ -525,8 +525,8 @@ function launch(experiment) {
         return name;
     }
     options_name = buildOptionsName(final_experiment);
-    graph_obj = options_name + '_graph.json';
-    log_obj = options_name + '_log.json';
+    var graph_obj = options_name + '_graph.json';
+    var log_obj = options_name + '_log.json';
 
     // Build Link to SynMap Output
     function synmapOutputLink(id1, id2) {
@@ -655,7 +655,7 @@ function launch(experiment) {
                             onSuccess: function(results) {
                                 coge.progress.end();
                                 final_experiment.links.yz = synmapOutputLink(ygid, zgid);
-                                runDotplotDots();
+                                runDotplotDots(final_experiment);
                             } 
                            });
         coge.progress.begin();
@@ -681,7 +681,7 @@ function launch(experiment) {
             })
     }
 
-    function runDotplotDots() {
+    function runDotplotDots(exp) {
         coge.progress.init({title: "Finding Syntenic Points",
                             onSuccess: function(results) {
                                 showVisualizer(final_experiment);
@@ -693,15 +693,24 @@ function launch(experiment) {
                 dataType: "json",
                 data: {
                     fname: "dotplot_dots",
-                    genome_idX: xgid.toString(),
-                    genome_idY: ygid.toString(),
-                    genome_idZ: zgid.toString(),
-                    ksfile_xy: final_experiment.links.xy,
-                    ksfile_xz: final_experiment.links.xz,
-                    ksfile_yz: final_experiment.links.yz,
-                    option_name: options_name,
-                    hide: experiment.options.hide,
-                    min_len: experiment.options.min_len
+                    genome_idX: exp.x_gid, // xgid.toString(),
+                    genome_idY: exp.y_gid, // ygid.toString(),
+                    genome_idZ: exp.z_gid, // zgid.toString(),
+                    ksfile_xy: exp.links.xy,
+                    ksfile_xz: exp.links.xz,
+                    ksfile_yz: exp.links.yz,
+                    sort: exp.options.sortby,
+                    min_length: exp.options.min_length,
+                    min_synteny: exp.options.min_synteny,
+                    cluster: exp.options.cluster,
+                    c_eps: exp.options.c_eps,
+                    c_min: exp.options.c_min,
+                    ratio: exp.options.ratio,
+                    r_by: exp.options.r_by,
+                    r_min: exp.options.r_min,
+                    r_max: exp.options.r_max,
+                    graph_out: graph_obj,
+                    log_out: log_obj
                 }
             })
             .done(function (response) {
@@ -722,14 +731,64 @@ function launch(experiment) {
                 final_experiment.links.xy_json = response.xy_json;
                 final_experiment.links.xz_json = response.xz_json;
                 final_experiment.links.yz_json = response.yz_json;
-                final_experiment.links.merge = response.merge_json;
-                final_experiment.links.histo = response.histo_json;
+                final_experiment.links.graph = response.graph;
+                final_experiment.links.log = response.log;
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
             })
 
     }
+
+    //function runDotplotDots() {
+    //    coge.progress.init({title: "Finding Syntenic Points",
+    //                        onSuccess: function(results) {
+    //                            showVisualizer(final_experiment);
+    //                        }
+    //                       });
+    //    coge.progress.begin();
+    //
+    //    $.ajax({
+    //            dataType: "json",
+    //            data: {
+    //                fname: "dotplot_dots",
+    //                genome_idX: xgid.toString(),
+    //                genome_idY: ygid.toString(),
+    //                genome_idZ: zgid.toString(),
+    //                ksfile_xy: final_experiment.links.xy,
+    //                ksfile_xz: final_experiment.links.xz,
+    //                ksfile_yz: final_experiment.links.yz,
+    //                option_name: options_name,
+    //                hide: experiment.options.hide,
+    //                min_len: experiment.options.min_len
+    //            }
+    //        })
+    //        .done(function (response) {
+    //            if (!response) {
+    //                coge.progress.failed("Error: empty response from server");
+    //                return;
+    //            }
+    //            else if (!response.success || !response.id) {
+    //                coge.progress.failed("Error: failed to start workflow", response.error);
+    //                return;
+    //            }
+    //
+    //            //Start status update
+    //            window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
+    //            coge.progress.update(response.id);
+    //            //coge.progress.update(response.id, response.site_url); TODO: Add tiny link (see SynMap.pm for example)
+    //
+    //            final_experiment.links.xy_json = response.xy_json;
+    //            final_experiment.links.xz_json = response.xz_json;
+    //            final_experiment.links.yz_json = response.yz_json;
+    //            final_experiment.links.merge = response.merge_json;
+    //            final_experiment.links.histo = response.histo_json;
+    //        })
+    //        .fail(function (jqXHR, textStatus, errorThrown) {
+    //            coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+    //        })
+    //
+    //}
 
     // Start Comparisons
     makeXY();
@@ -762,6 +821,7 @@ function reset_launch() { //AKB - Renamed from reset_load()
 
 // Log Experiment for Confirmation
 function logExperiment(exp) {
+    console.log(exp);
     console.log("Sort By: " + exp.options.sortby);
     console.log("Minimum Synteny: " + exp.options.min_synteny);
     console.log("Minimum Length: " + exp.options.min_length);
