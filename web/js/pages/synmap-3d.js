@@ -581,7 +581,7 @@ function launch(experiment) {
 		}
     };
 
-    // Compute XY Comparison
+    // Compute XY Comparison!
     // onSuccess: Launch XZ Comparison
     function makeXY() {
         coge.progress.init({title: "Running SynMap Analysis 1/3",
