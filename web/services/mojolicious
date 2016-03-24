@@ -1,0 +1,37 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+# Set the module include path -- this is primarily for sandboxes in the dev
+# environment.  On production the directory will not exist and will be skipped.
+use lib '../../modules/perl';
+
+use Mojolicious::Commands;
+
+Mojolicious::Commands->start_app("CoGe::Services::Routes");
+
+__DATA__
+@@ not_found.html.ep
+<!DOCTYPE html>
+<html>
+  <head><title>Page not found</title></head>
+  <body>
+    <div style="text-align:center;padding-top:100px">
+        <img src="https://genomevolution.org/coge/picts/gnome.jpg">
+        <img src="https://genomevolution.org/coge/picts/page_not_found.png" style="vertical-align:top;margin-top:30px;margin-left:-70px;">
+    </div>
+  </body>
+</html>
+
+@@ exception.html.ep
+<!DOCTYPE html>
+<html>
+  <head><title>Server Error</title></head>
+  <body>
+    <div style="text-align:center;padding-top:100px">
+        <img src="https://genomevolution.org/coge/picts/gnome.jpg">
+        <img src="https://genomevolution.org/coge/picts/server_error.png" style="vertical-align:top;margin-top:30px;margin-left:-70px;">
+    </div>
+  </body>
+</html>
