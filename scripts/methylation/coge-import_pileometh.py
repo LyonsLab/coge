@@ -78,7 +78,7 @@ next(methylation_summary)  # Skip header
 
 for row in methylation_summary:
     chrm = fix_chromosome_id(row[1])
-    pos = row[2] - 1
+    pos = int(row[2]) - 1
     strand = row[3]
     if strand == 'F':
         strand = '1'
