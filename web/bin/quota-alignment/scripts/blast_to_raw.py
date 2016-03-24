@@ -72,8 +72,17 @@ def main(blast_file, options):
     print >>sys.stderr, "read BLAST file %s (total %d lines)" % \
             (blast_file, sum(1 for line in fp))
     fp.seek(0)
-    blasts = sorted([BlastLine(line) for line in fp], \
-            key=lambda b: b.score, reverse=True)
+    
+    # mdb added 3/18/16 for Last v731
+    blasts = []
+    for line in fp:
+        if not line.startswith("#"):
+            blasts.append(BlastLine(line))
+    blasts = sorted(blasts, key=lambda b: b.score, reverse=True)
+            
+    # mdb removed 3/18/16 for Last v731
+#     blasts = sorted([BlastLine(line) for line in fp], \
+#             key=lambda b: b.score, reverse=True)
 
     filtered_blasts = []
     seen = set() 
