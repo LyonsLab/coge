@@ -348,10 +348,8 @@ sub add_jobs {
 		},
 	);
 
-    my @tmp_org_dirs;
 	foreach my $org_dir ( keys %org_dirs ) {
 		my $outfile = $org_dirs{$org_dir}{dir};
-		push @tmp_org_dirs, $outfile;
 		#mkpath( $outfile, 1, 0777 ) unless -d $outfile; # mdb removed 3/24/16 for hypnotoad (permissions issue)
 		#warn "didn't create path $outfile: $!" unless -d $outfile;
 		$outfile = catfile($outfile, $org_dirs{$org_dir}{basename});
@@ -360,12 +358,14 @@ sub add_jobs {
 	
 	# mdb added 3/24/16 for hypnotoad: run mkdir as JEX to get proper directory permissions for subsequent tasks
     $workflow->add_job({
-        cmd         => 'mkdir -p ' . join(' ', @tmp_org_dirs),
+        cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
         script      => undef,
         args        => undef,
         inputs      => undef,
-        outputs     => undef,
-        description => "Creating results directories...",
+        outputs     => [
+            #map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
+        ],
+        description => "Creating results directories..."
     });
 
 	############################################################################
@@ -821,7 +821,7 @@ sub add_jobs {
 	# Create html output directory
 	############################################################################
 #	my ( $qlead, $slead ) = ( "a", "b" );
-	my $out = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/html/";
+	my $out = catdir($org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir}, 'html');
 	#mkpath( $out, 0, 0777 ) unless -d $out; # mdb removed 3/24/16 for hypnotoad (permissions issue)
 	$out .= "master_";
 	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
