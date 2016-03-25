@@ -38,7 +38,7 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-    print STDERR "CoGe::Services::API::Notebook fetch id=$id\n";
+#    print STDERR "CoGe::Services::API::Notebook fetch id=$id\n";
     
     # Validate input
     unless ($id) {
