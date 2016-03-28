@@ -1,4 +1,4 @@
-package CoGe::Services::Data::Experiment;
+package CoGe::Services::API::Experiment;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Data::Dumper;

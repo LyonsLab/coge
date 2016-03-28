@@ -21,12 +21,11 @@ use CoGe::Core::Storage;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
-    $WORKFLOW_ID $LOAD_ID $TEMPDIR $CONFIGFILE
+    $WORKFLOW_ID $LOAD_ID $TEMPDIR
 );
 
 $PAGE_TITLE = "ExperimentView";
 $ERROR = encode_json( { error => 1 } );
-$CONFIGFILE = $ENV{COGE_HOME} . '/coge.conf';
 
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
@@ -527,31 +526,20 @@ sub generate_export { #TODO replace with ExperimentBuilder.pm
 
     my $filename = "experiment_$exp_name.tar.gz";
 
-    my $conf = File::Spec->catdir($P->{COGEDIR}, "coge.conf");
+    my $conf = $P->{_CONFIG_PATH};
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment_or_genome.pl");
     my $workdir = get_download_path('experiment', $eid);
     my $resdir = $P->{RESOURCEDIR};
 
     my $cmd = "$script -id $eid -type 'experiment' -config $conf -dir $workdir -output $filename";
 
-    return (execute($cmd), File::Spec->catdir(($workdir, $filename)));
-}
-
-sub get_download_url {
-    my %args = @_;
-    my $id = $args{id};
-    my $dir = $args{dir};
-    my $filename = basename($args{file});
-    my $username = $USER->user_name;
-
-    return join('/', $P->{SERVER}, 
-        'api/v1/legacy/download', #"services/JBrowse/service.pl/download/ExperimentView", # mdb changed 2/5/15 COGE-289
-        "?username=$username&eid=$id&filename=$filename");
+    return (execute($cmd), File::Spec->catdir($workdir, $filename));
 }
 
 sub get_file_urls {
     my %opts = @_;
     my $eid = $opts{eid};
+    return 0 unless $eid;
 
     my $experiment = $coge->resultset('Experiment')->find($eid);
     return 0 unless $USER->has_access_to_experiment($experiment);
@@ -559,8 +547,8 @@ sub get_file_urls {
     my ($statusCode, $file) = generate_export($experiment);
 
     unless($statusCode) {
-        #my $dir = basename(dirname($file));
-        my $url = get_download_url(id => $eid, file => $file);
+        my $url = download_url_for(eid => $eid, file => $file);
+        print STDERR "matt: $url\n";
         return encode_json({ filename => basename($file), url => $url });
     };
 
@@ -615,6 +603,7 @@ sub gen_body {
     return "Need a valid experiment id\n" unless $eid;
 
     my $exp = $coge->resultset('Experiment')->find($eid);
+    return "Experiment not found" unless $exp;
     return "Access denied" unless $USER->has_access_to_experiment($exp);
 
     my $gid = $exp->genome_id;

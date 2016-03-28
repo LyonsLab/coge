@@ -69,7 +69,7 @@ def status(environ, start_response):
 
 
     root_dir = os.path.dirname(__file__)
-    filepath = os.path.abspath(os.path.join(root_dir, '../coge.conf'))
+    filepath = os.path.abspath(os.path.join(root_dir, environ['COGE_HOME'], 'coge.conf'))
 
     config = load_config(filepath)
     host = _defaults['connection'].format(config['JOBSERVER'],

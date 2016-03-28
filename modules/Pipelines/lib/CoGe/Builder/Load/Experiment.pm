@@ -139,6 +139,7 @@ sub build {
                 wid => $self->workflow->id,
                 genome => $genome,
                 input_file => $bam_file,
+                sorted => ($file_type ne 'bam'),
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 params => $self->params->{snp_params},
@@ -164,10 +165,11 @@ sub build {
                 user => $self->user,
                 wid => $self->workflow->id,
                 genome => $genome,
-                bam_file => $bam_file,
+                input_file => $bam_file,
                 raw_bam_file => $raw_bam_files[0], # mdb added 2/29/16 for Bismark, COGE-706
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
+                read_params => $self->params->{read_params},
                 methylation_params => $self->params->{methylation_params},
                 skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };

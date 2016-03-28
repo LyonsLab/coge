@@ -1,22 +1,13 @@
-package CoGe::Services::JBrowse::Genome;
-use base 'CGI::Application';
+package CoGe::Services::API::JBrowse::Genome;
 
+use Mojo::Base 'Mojolicious::Controller';
 use CoGeX;
-use CoGe::Accessory::Web;
-use JSON::XS;
+use CoGe::Services::Auth qw(init);
 use Data::Dumper;
-
-sub setup {
-    my $self = shift;
-    $self->run_modes(
-        'features' => 'features',
-        'genes' => 'genes',
-    );
-    $self->mode_param('rm');
-}
 
 sub _add_features {
     my ($name, $chr, $type_ids, $dsid, $hits, $dbh) = @_;
+    #TODO move this query to CoGeDBI.pm
     my $query = 'SELECT name,chromosome,start,stop FROM feature JOIN feature_name on feature.feature_id=feature_name.feature_id WHERE dataset_id=' . $dsid;
     if ($chr) {
     	$query .= " AND chromosome='" . $chr . "'";
@@ -39,50 +30,53 @@ sub _add_features {
 
 sub features {
     my $self = shift;
-    my $name = scalar $self->query->param('name');
-    my $chr = $self->query->param('chr');
+    my $name = scalar $self->param('name');
+    my $chr = $self->param('chr');
 
-    my ( $db, $user ) = CoGe::Accessory::Web->init;
+    my ($db, $user) = CoGe::Accessory::Web->init;
     my $dbh = $db->storage->dbh;
 
-	my $types = $self->query->param('features');
+	my $types = $self->param('features');
 	my $type_ids;
 	if ($types ne 'all') {
 		$type_ids = join(',', @{$dbh->selectcol_arrayref('SELECT feature_type_id FROM feature_type WHERE name IN(' . $types . ')')});
 	}
 	
     my $hits = [];
-    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'));
+    #TODO move this query to CoGeDBI.pm
+    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->stash('gid'));
     foreach my $dsid (@$ids) {
         _add_features '%' . lc($name) . '%', $chr, $type_ids, $dsid, $hits, $dbh;
     }
     my @sorted = sort { $a->{name} cmp $b->{name} } @{$hits};
-    return encode_json(\@sorted);
+    $self->render(json => \@sorted);
 }
 
 sub genes {
     my $self = shift;
-    my $name = scalar $self->query->param('equals');
+    my $name = scalar $self->param('equals');
     if (!$name) {
-        $name = scalar $self->query->param('startswith');
+        $name = scalar $self->param('startswith');
         if ($name) {
             $name .= '%';
         }
     }
     
     if (index($name, ':') != -1 && index($name, '..') != -1) {
-        return '[]';
+        $self->render(json => []);
+        return;
     }
 
     my ( $db, $user ) = CoGe::Accessory::Web->init;
     my $dbh = $db->storage->dbh;
 
     my $hits = [];
-    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->param('gid'));
+    #TODO move this query to CoGeDBI.pm
+    my $ids = $dbh->selectcol_arrayref('SELECT dataset_id FROM dataset_connector WHERE genome_id=' . $self->stash('gid'));
     foreach my $dsid (@$ids) {
         _add_features lc($name), undef, '1', $dsid, $hits, $dbh;
     }
-    return encode_json($hits);
+    $self->render(json => $hits);
 }
 
 1;

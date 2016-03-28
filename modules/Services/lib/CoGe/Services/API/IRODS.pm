@@ -1,4 +1,4 @@
-package CoGe::Services::Data::IRODS;
+package CoGe::Services::API::IRODS;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;

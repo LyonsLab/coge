@@ -133,7 +133,7 @@ var coge = window.coge = (function(namespace) {
 		    	);
 
 		    // Show link to log file
-		    var logfile = this.baseUrl + 'legacy/download?username=' + this.userName + '&' + 'wid=' + this.job_id;
+		    var logfile = coge.services.download_url({wid: this.job_id}); //this.baseUrl + 'downloads/?username=' + this.userName + '&' + 'wid=' + this.job_id;
 		    $(".logfile a").attr("href", logfile);
 		    $('.logfile').fadeIn();
 

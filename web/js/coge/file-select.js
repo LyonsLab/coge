@@ -326,7 +326,7 @@ var coge = window.coge = (function(namespace) {
 		},
 
 		_resolve_path: function(path) {
-			if (typeof path === 'undefined')
+			if (typeof path === 'undefined' || path === 'undefined')
 				return '';
 			else if (path == '.')
 				return this.current_path;
