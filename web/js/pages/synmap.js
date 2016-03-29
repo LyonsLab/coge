@@ -1154,14 +1154,14 @@ function checkRequestSize(url) {
         $('#depth_org_2').html($('#org_id2 option:selected').html());
 
         if (options.autostart) {
-            run_synmap(true, $('#regen_images')[0].checked);
+            run_synmap($('#regen_images')[0].checked);
         }
 
         $("#tabs").removeClass("invisible");
 
         // track analysis
         $("#synmap_go").on("click", function() {
-            run_synmap(false, $('#regen_images')[0].checked);
+            run_synmap($('#regen_images')[0].checked);
             ga('send', 'event', 'synmap', 'run');
         });
     };
@@ -1195,7 +1195,7 @@ function checkRequestSize(url) {
             ($('#org_id2').val() != "");
     }
 
-    function run_synmap(scheduled, regenerate){
+    function run_synmap(regenerate){
         populate_page_obj();
 
         var org_name1 = pageObj.org_name1;
@@ -1210,8 +1210,6 @@ function checkRequestSize(url) {
         var seq_type2 = pageObj.seq_type2;
         //check to see if we will allow this run
         var max_size = 50 * 1000 * 1000;
-        // console.log (org_name1, org_length1, seq_type1);
-        // console.log (org_name2, org_length2, seq_type2);
         if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
             ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1) ) {
             var message = "You are trying to compare unmasked genomic sequences that are large!  This is a bad idea.  Chances are there will be many repeat sequences that will cause the entire pipeline to take a long time to complete.  This usually means that the analyses will use a lot of RAM and other resources.  As such, these jobs are usually killed before they can complete.  Please contact coge.genome@gmail.com for assistance with your analysis.";
@@ -1242,7 +1240,8 @@ function checkRequestSize(url) {
         $('#results').hide();
 
         if (regenerate) {
-            return schedule(get_params("go", regenerate));
+            schedule(get_params("go", regenerate));
+            return;
         }
 
         return $.ajax({
@@ -1339,7 +1338,7 @@ function checkRequestSize(url) {
         var status_dialog = $('#synmap_dialog');
         close_dialog(status_dialog);
 
-        return $.ajax({
+        $.ajax({
             type: "post",
             dataType: 'json',
             data: params,
@@ -1357,10 +1356,7 @@ function checkRequestSize(url) {
                     + data.link + " onclick=window.open('tiny')"
                     + "target = _new>" + data.link + "</a>";
 
-                    var logfile = '<a href="tmp/SynMap/'
-                    + pageObj.basename + '.log">Logfile</a>';
-
-                    $('#dialog_log').html(logfile);
+                     $('#dialog_log').html('<a href="' + data.log + '" target="_blank">Logfile</a>');
                     $('#synmap_link').html(link);
 
                     update_dialog(data.request, "#synmap_dialog", synmap_formatter,
@@ -1431,7 +1427,7 @@ function checkRequestSize(url) {
             codeml_max: $('#codeml_max').val(),
             logks: $('#logks')[0].checked,
             csco: $('#csco').val(),
-            jquery_ajax: 1,
+            jquery_ajax: 1
         };
     }
 

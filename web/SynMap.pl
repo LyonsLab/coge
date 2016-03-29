@@ -5,9 +5,9 @@ no warnings 'redefine';
 umask(0);
 
 use CoGeX;
-use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Web qw(url_for api_url_for);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
-use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_logfile get_query_link go );
+use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -94,14 +94,11 @@ $TANDEM_FINDER = $config->{TANDEM_FINDER} . " -d 5 -s -r"; #-d option is the dis
 
 $EVAL_ADJUST    = $config->{EVALUE_ADJUST};
 
-$FIND_NEARBY = $config->{FIND_NEARBY}
-  . " -d 20"
-  ; #the parameter here is for nucleotide distances -- will need to make dynamic when gene order is selected -- 5 perhaps?
+$FIND_NEARBY = $config->{FIND_NEARBY} . " -d 20"; #the parameter here is for nucleotide distances -- will need to make dynamic when gene order is selected -- 5 perhaps?
 
 #programs to run Haibao Tang's quota_align program for merging diagonals and mapping coverage
 $QUOTA_ALIGN = 'nice ' . $config->{QUOTA_ALIGN};    #the program
-$CLUSTER_UTILS =
-  $config->{CLUSTER_UTILS};    #convert dag output to quota_align input
+$CLUSTER_UTILS = $config->{CLUSTER_UTILS};    #convert dag output to quota_align input
 $SYNTENY_SCORE = $config->{SYNTENY_SCORE};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
@@ -125,7 +122,6 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 	get_dotplot            => \&get_dotplot,
 	gen_dsg_menu           => \&gen_dsg_menu,
 	get_dsg_gc             => \&get_dsg_gc,
-
 	#read_log               => \&CoGe::Accessory::Web::read_log,
 	get_results       => \&get_results,
 	generate_assembly => \&generate_assembly,
@@ -137,22 +133,20 @@ if ( $FORM->param('jquery_ajax') ) {
 	my %args  = $FORM->Vars;
 	my $fname = $args{'fname'};
 
-	#print STDERR Dumper \%args;
 	if ( $fname and defined $FUNCTIONS{$fname} ) {
+	    my $header = $FORM->header;
 		if ( $args{args} ) {
 			my @args_list = split( /,/, $args{args} );
-			print $FORM->header, $FUNCTIONS{$fname}->(@args_list);
+			print $header, $FUNCTIONS{$fname}->(@args_list);
 		}
 		else {
-			print $FORM->header, $FUNCTIONS{$fname}->(%args);
+			print $header, $FUNCTIONS{$fname}->(%args);
 		}
 	}
 }
 else {
 	$pj->js_encode_function('escape');
 	print $pj->build_html( $FORM, \&gen_html );
-
-	#   print $FORM->header; print gen_html();
 }
 
 ################################################################################
@@ -178,11 +172,7 @@ else {
 #}
 
 sub gen_html {
-	my $html;
-	my ($body) = gen_body();
-	my $template =
-	  HTML::Template->new(
-		filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
+	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param(
 		PAGE_TITLE => 'SynMap',
 		TITLE      => 'SynMap: Whole Genome Synteny Analysis',
@@ -193,6 +183,7 @@ sub gen_html {
 
 	$template->param( LOGON => 1 ) unless $USER->user_name eq "public";
 
+    my ($body) = gen_body();
 	$template->param( BODY => $body );
 	$template->param(
 		HOME       => $config->{SERVER},
@@ -201,26 +192,22 @@ sub gen_html {
 		ADMIN_ONLY => $USER->is_admin,
 		CAS_URL    => $config->{CAS_URL} || ''
 	);
-	$html .= $template->output;
-	return $html;
+	return $template->output;
 }
 
 sub gen_body {
-	my $form = shift || $FORM;
-	my $template =
-	  HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMap.tmpl' );
+	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMap.tmpl' );
 
 	$template->param( MAIN => 1 );
-
 	#$template->param( EMAIL       => $USER->email )  if $USER->email;
 
 	my $master_width = $FORM->param('w') || 0;
 	$template->param( MWIDTH => $master_width );
 
 	#set search algorithm on web-page
-	if ( defined( $FORM->param('b') ) ) {
-		$template->param(
-			$ALGO_LOOKUP->{ $FORM->param('b') }{opt} => "selected" );
+	my $b = $FORM->param('b');
+	if ( defined($b) ) {
+		$template->param( $ALGO_LOOKUP->{$b}{opt} => "selected" );
 	}
 	else {
 		$template->param( $ALGO_LOOKUP->{6}{opt} => "selected" );
@@ -262,28 +249,24 @@ sub gen_body {
 	$dupdist = 10 unless defined $dupdist;
 	$template->param( 'DUPDIST' => $dupdist );
 	$template->param( 'CSCORE'  => $cscore );
-	$template->param(
-		'DISPLAY_DAGCHAINER_SETTINGS' => $display_dagchainer_settings );
-	$template->param( 'MIN_CHR_SIZE' => $FORM->param('mcs') )
-	  if $FORM->param('mcs');
+	$template->param( 'DISPLAY_DAGCHAINER_SETTINGS' => $display_dagchainer_settings );
+	my $mcs = $FORM->param('mcs');
+	$template->param( 'MIN_CHR_SIZE' => $mcs ) if $mcs;
 
 	#will the program automatically run?
 	my $autogo = $FORM->param('autogo');
 	$autogo = 0 unless defined $autogo;
 	$template->param( AUTOGO => $autogo );
 
-#if the page is loading with genomes, there will be a check for whether the genome is rest
-#populate organism menus
+    #if the page is loading with genomes, there will be a check for whether the genome is rest
+    #populate organism menus
 	my $error = 0;
 
 	for ( my $i = 1 ; $i <= 2 ; $i++ ) {
 		my $dsgid = 0;
-		$dsgid = $form->param( 'dsgid' . $i )
-		  if $form->param( 'dsgid' . $i );    #old method for specifying genome
-		$dsgid = $form->param( 'gid' . $i )
-		  if $form->param( 'gid' . $i );      #new method for specifying genome
-		my $feattype_param = $FORM->param( 'ft' . $i )
-		  if $FORM->param( 'ft' . $i );
+		$dsgid = $FORM->param( 'dsgid' . $i ) if $FORM->param( 'dsgid' . $i );    #old method for specifying genome
+		$dsgid = $FORM->param( 'gid' . $i ) if $FORM->param( 'gid' . $i );      #new method for specifying genome
+		my $feattype_param = $FORM->param( 'ft' . $i ) if $FORM->param( 'ft' . $i );
 		my $name = $FORM->param( 'name' . $i ) if $FORM->param( 'name' . $i );
 		my $org_menu = gen_org_menu(
 			dsgid          => $dsgid,
@@ -294,7 +277,6 @@ sub gen_body {
 		$template->param( "ORG_MENU" . $i => $org_menu );
 
 		my ($dsg) = $coge->resultset('Genome')->find($dsgid);
-
 		if ( $dsgid > 0 and !$USER->has_access_to_genome($dsg) ) {
 			$error = 1;
 		}
@@ -417,7 +399,8 @@ sub gen_body {
 	$depth_overlap = $FORM->param('do') if $FORM->param('do');
 	$template->param( DEPTH_OVERLAP => $depth_overlap );
 	
-	$template->param( FRAC_BIAS => "checked" ) if defined $FORM->param('fb') && $FORM->param('fb');
+	my $fb = $FORM->param('fb');
+	$template->param( FRAC_BIAS => "checked" ) if (defined $fb && $fb);
 	my $fb_window_size = 100;
 	$fb_window_size = $FORM->param('fb_ws') if $FORM->param('fb_ws');
 	$template->param( FB_WINDOW_SIZE => $fb_window_size );
@@ -436,7 +419,7 @@ sub gen_body {
 	$template->param( 'SPA_MORE_SELECT' => "selected" ) if $spa && $spa < 0;
 	$template->param( beta => 1 ) if $FORM->param("beta");
 
-	my $file = $form->param('file');
+	my $file = $FORM->param('file');
 	if ($file) {
 		my $results = read_file($file);
 		$template->param( RESULTS => $results );
@@ -469,9 +452,7 @@ sub gen_org_menu {
 	$desc = "Search" unless $desc;
 	my ($dsg) = $coge->resultset('Genome')->find($dsgid);
 
-	my $template =
-	  HTML::Template->new(
-		filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
+	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
 	$template->param(
 		ORG_MENU => 1,
 		NUM      => $num,
@@ -499,8 +480,7 @@ sub gen_org_menu {
 		$dsgid = 0;
 	}
 
-	$template->param(
-		'ORG_LIST' => get_orgs( search => $name, i => $num, oid => $oid ) );
+	$template->param( 'ORG_LIST' => get_orgs( search => $name, i => $num, oid => $oid ) );
 
 	my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
 	$template->param( DSG_MENU => $dsg_menu );
@@ -575,7 +555,7 @@ sub gen_dsg_menu {
 	return ( qq{<span id="dsgid$num" class="hidden"></span>}, '' )
 	  unless (@dsg_menu);
 
-#my $dsg_menu = qq{<select id="dsgid$num" onChange="\$('#dsg_info$num').html('<div class=dna_small class="loading" class="small">loading. . .</div>'); get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
+    #my $dsg_menu = qq{<select id="dsgid$num" onChange="\$('#dsg_info$num').html('<div class=dna_small class="loading" class="small">loading. . .</div>'); get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
 	my $dsg_menu =
 	    qq{<span class="coge-padded-top">}
 	  . qq{<span class="small text">Genomes: </span>}
@@ -665,14 +645,11 @@ sub get_orgs {
 	}
 
 	$org_count = scalar @opts unless $org_count;
-	my $html;
-	$html .=
+	my $html =
 	    qq{<span class="small info">Organisms: (}
 	  . $org_count
 	  . qq{)</span>\n<BR>\n};
-
-	$html .=
-qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_genome_info_chain($i)" class="coge-fill-width">\n}
+	$html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_genome_info_chain($i)" class="coge-fill-width">\n}
 	  . join( "\n", @opts )
 	  . "\n</SELECT>\n";
 	$html =~ s/OPTION/OPTION SELECTED/ unless $oid;
@@ -691,7 +668,7 @@ sub get_genome_info {
 
 	my $html_dsg_info;
 
-#my ($dsg) = $coge->resultset("Genome")->find({genome_id=>$dsgid},{join=>['organism','genomic_sequences'],prefetch=>['organism','genomic_sequences']});
+    #my ($dsg) = $coge->resultset("Genome")->find({genome_id=>$dsgid},{join=>['organism','genomic_sequences'],prefetch=>['organism','genomic_sequences']});
 	my ($dsg) = $coge->resultset("Genome")->find( { genome_id => $dsgid },
 		{ join => 'organism', prefetch => 'organism' } );
 	return " ", " ", " " unless $dsg;
@@ -722,14 +699,12 @@ sub get_genome_info {
 	my $link = $ds->data_source->link;
 	$link = $BASE_URL unless $link;
 	$link = "http://" . $link unless $link && $link =~ /^http/;
-	$html_dsg_info .=
-qq{<table class="xsmall" style="margin-left:1em; border-top:1px solid lightgray;">};
-	$html_dsg_info .=
-qq{<tr><td>Description:</td><td class="link" onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}
+	$html_dsg_info .= qq{<table class="xsmall" style="margin-left:1em; border-top:1px solid lightgray;">};
+	$html_dsg_info .= qq{<tr><td>Description:</td><td class="link" onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}
 	  . $dsg->info
 	  . qq{</td></tr>};
 
-#$html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>}; # redundant
+    #$html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>}; # redundant
 	$html_dsg_info .= qq{<tr><td>Taxonomy:</td><td>$org_desc</td></tr>};
 	$html_dsg_info .= "<tr><td>Name: <td>" . $dsg->name if $dsg->name;
 	$html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
@@ -745,12 +720,10 @@ qq{<tr><td>Description:</td><td class="link" onclick=window.open('GenomeInfo.pl?
 	$html_dsg_info .= ": " . $ds->description if $ds->description;
 	$html_dsg_info .= "<tr><td>Chromosomes: <td>" . commify($chr_count);
 	if ( $percent_gc > 0 ) {
-		$html_dsg_info .=
-"<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%";
+		$html_dsg_info .= "<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%";
 	}
 	else {
-		$html_dsg_info .=
-qq{<tr><td>DNA content: <td id='gc_content$org_num' class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
+		$html_dsg_info .= qq{<tr><td>DNA content: <td id='gc_content$org_num' class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
 	}
 	$html_dsg_info .= "<tr><td>Total length: <td>" . commify($chr_length);
 	$html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
@@ -763,8 +736,7 @@ qq{<tr><td>DNA content: <td id='gc_content$org_num' class='link' onclick="get_gc
 		$html_dsg_info = "Restricted";
 	}
 	if ( $dsg->deleted ) {
-		$html_dsg_info =
-"<span class='alert'>This genome has been deleted and cannot be used in this analysis.</span>  <a href='GenomeInfo.pl?gid=$dsgid' target=_new>More information</a>.";
+		$html_dsg_info = "<span class='alert'>This genome has been deleted and cannot be used in this analysis.</span>  <a href='GenomeInfo.pl?gid=$dsgid' target=_new>More information</a>.";
 	}
 
 	my $message;
@@ -792,14 +764,11 @@ qq{<tr><td>DNA content: <td id='gc_content$org_num' class='link' onclick="get_gc
 	$cds_selected     = "selected" if $feattype eq 1 || $feattype eq "CDS";
 	$genomic_selected = "selected" if $feattype eq 2 || $feattype eq "genomic";
 
-	my $feattype_menu =
-	  qq{<select id="feat_type$org_num" name ="feat_type$org_num">#};
-	$feattype_menu .= qq{<OPTION VALUE=1 $cds_selected>CDS</option>}
-	  if $has_cds;
+	my $feattype_menu = qq{<select id="feat_type$org_num" name ="feat_type$org_num">#};
+	$feattype_menu .= qq{<OPTION VALUE=1 $cds_selected>CDS</option>} if $has_cds;
 	$feattype_menu .= qq{<OPTION VALUE=2 $genomic_selected>genomic</option>};
 	$feattype_menu .= "</select>";
-	$message = "<span class='small alert'>No Coding Sequence in Genome</span>"
-	  unless $has_cds;
+	$message = "<span class='small alert'>No Coding Sequence in Genome</span>" unless $has_cds;
 
 	return $html_dsg_info, $feattype_menu, $message, $chr_length, $org_num,
 	  $dsg->organism->name, $dsg->genomic_sequence_type_id;
@@ -1090,12 +1059,9 @@ sub get_results {
 	my ($genome1) = $coge->resultset('Genome')->find($dsgid1);
 	my ($genome2) = $coge->resultset('Genome')->find($dsgid2);
 
-	return encode_json(
-		{
-			error =>
-"Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
-		}
-	) unless ( $genome1 && $genome2 );
+	return encode_json({
+		error => "Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
+	}) unless ( $genome1 && $genome2 );
 
 	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
@@ -1114,7 +1080,9 @@ sub get_results {
 		basename => $basename,
 		tempdir  => $TEMPDIR
 	);
-	$cogeweb->logfile(get_logfile($coge, $config, %opts));
+	my $path = catdir($DIAGSDIR, $dir1, $dir2, 'html');
+	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
+	$cogeweb->logfile($path);
 
 	############################################################################
 	# Parameters
@@ -1480,8 +1448,7 @@ sub get_results {
 	############################################################################
 	# Generate dot plot
 	############################################################################
-	($basename) =
-	  $final_dagchainer_file =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
+	($basename) = $final_dagchainer_file =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
 	$width = 1000 unless defined($width);
 
 	my $dotfile = "$out";
@@ -1519,24 +1486,19 @@ sub get_results {
 	############################################################################
 	# Generate html
 	############################################################################
-	my $results =
-	  HTML::Template->new(
-		filename => $config->{TMPLDIR} . 'partials/synmap_results.tmpl' );
+	my $results = HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/synmap_results.tmpl' );
 
 	my ( $x_label, $y_label );
 
 	if ($clabel) {
 		$y_label = "$out.y.png";
 		$x_label = "$out.x.png";
-
 		$warn .= qq{Unable to display the y-axis.} unless -r $y_label;
 		$warn .= qq{Unable to display the x-axis.} unless -r $x_label;
 	}
 
 	my $problem;
-
 	if ( -r "$out.html" ) {
-
 		#Dotplot
 		$/ = "\n";
 		open( IN, "$out.html" )
@@ -1643,15 +1605,12 @@ sub get_results {
 			);
 		}
 
-		my $final_dagchainer_file_condensed =
-		  $final_dagchainer_file . ".condensed";
+		my $final_dagchainer_file_condensed = $final_dagchainer_file . ".condensed";
 		my $qa_file = $merged_dagchainer_file;
 		$qa_file =~ s/\.ma\d$/\.qa/ if $qa_file;
 		my $qa_merged_file = $qa_file . ".merged" if $qa_file;
-		my $qa_coverage_tmp = $quota_align_coverage . ".tmp"
-		  if $quota_align_coverage;
-		my $qa_coverage_qa = $quota_align_coverage . ".qa"
-		  if $quota_align_coverage;
+		my $qa_coverage_tmp = $quota_align_coverage . ".tmp" if $quota_align_coverage;
+		my $qa_coverage_qa = $quota_align_coverage . ".qa" if $quota_align_coverage;
 
 		########################################################################
 		# Compress Results
@@ -1787,7 +1746,7 @@ sub get_results {
 			msg  => qq{Merged DAGChainer output}
 		);
 
-#merged dagchainer output is not specified in results.  This hack gets it there.
+        #merged dagchainer output is not specified in results.  This hack gets it there.
 		if ( $merged_dagchainer_file and -r $merged_dagchainer_file ) {
 			$dagchainer_url .= $merged_dag_url;
 		}
@@ -1833,7 +1792,6 @@ sub get_results {
 		my $spa_result = "";
 
 		if ( $spa_url and $assemble ) {
-
 			#added by EHL: 6/17/15
 			#fixing problem where
 			my $genome1_chr_count = $genome1->chromosome_count();
@@ -2001,13 +1959,9 @@ sub get_results {
 
 	##print out all the datafiles created
 	$html .= "<br>";
-
-	$html .=
-qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
+	$html .= qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
         onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Clear Results</span>};
-
 	$html .= qq{</div>};
-
 	$warn = qq{There was a problem running your analysis.}
 	  . qq{ Please check the log file for details};
 
@@ -2064,8 +2018,8 @@ sub _filename_to_link {
 		  . "</span><br>";
 	}
 	elsif ( $opts{required} ) {
-		$link =
-		  q{<span class="alert">} . $opts{msg} . q{ (missing)} . q{</span};
+		$link = q{<span class="alert">} . $opts{msg} . q{ (missing)} . q{</span};
+		warn "missing file: $file";
 	}
 	else {
 

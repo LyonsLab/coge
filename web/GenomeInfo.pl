@@ -1884,7 +1884,7 @@ sub get_tbl {
 
     my %json;
     $json{file} = basename($output);
-    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
+    $json{files} = [ download_url_for(gid => $args{gid}, file => $output) ];
 
     return encode_json(\%json);
 }
@@ -1931,7 +1931,7 @@ sub get_bed {
 
     my %json;
     $json{file} = basename($output);
-    $json{files} = [ get_download_url(dsgid => $args{gid}, file => basename($output))];
+    $json{files} = [ download_url_for(gid => $args{gid}, file => $output) ];
 
     return encode_json(\%json);
 }
@@ -1964,7 +1964,7 @@ sub get_gff {
 
     return encode_json({
         file => basename($output),
-        files => [ get_download_url(dsgid => $args{gid}, file => basename($output)) ]
+        files => [ download_url_for(gid => $args{gid}, file => $output) ]
     });
 }
 
@@ -2031,19 +2031,6 @@ sub export_to_irods {
     CoGe::Accessory::IRODS::irods_imeta($ifile, $meta);
 
     return 0;
-}
-
-sub get_download_url {
-    my %args = @_;
-    my $dsgid = $args{dsgid};
-    my $filename = basename($args{file});
-    my $username = $USER->user_name;
-
-    my $server = $config->{SERVER};
-    $server =~ s/\/$//;
-    return join('/', $server, 
-        'api/v1/legacy/download', #"services/JBrowse/service.pl/download/GenomeInfo", # mdb changed 2/5/15 COGE-289
-        "?username=$username&gid=$dsgid&filename=$filename");
 }
 
 sub generate_html {

@@ -4,8 +4,8 @@ Library		RequestsLibrary
 Library		Collections
 
 *** Variables ***
-${AUTH_USERNAME}	mbomhoff
-${AUTH_TOKEN}	10f4578e8327edc4ce4bb49215147e85
+${AUTH_USERNAME}	coge	
+${AUTH_TOKEN}	ca67baa8ac101bfd501bff9ae49e6e45
 ${AUTH_PARAMS}	?username=${AUTH_USERNAME}&token=${AUTH_TOKEN}
 ${DATA_PATH}	./data
 ${API_URL}	https://geco.iplantcollaborative.org/coge/api/v1

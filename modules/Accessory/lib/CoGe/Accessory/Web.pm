@@ -70,6 +70,7 @@ BEGIN {
                    send_email get_defaults set_defaults url_for api_url_for get_job 
                    schedule_job render_template ftp_get_path ftp_get_file split_url
                    parse_proxy_response jwt_decode_token add_user write_log log_history
+                   download_url_for
                );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
@@ -956,11 +957,12 @@ sub read_log {
 sub check_filename_taint {
     my $v = shift;
     return 1 unless $v;
-    if ( $v =~ /^([A-Za-z0-9\-\.=\/_#\|]*)$/ ) {
+    if ( $v =~ /^([A-Za-z0-9\:\-\.=\/_#\|]*)$/ ) { # mdb changed 3/15/16 -- added ':'
         my $v1 = $1;
         return ($v1);
     }
     else {
+        carp "check_filename_taint: '$v' failed taint check\n";
         return (0);
     }
 }
@@ -968,14 +970,14 @@ sub check_filename_taint {
 sub check_taint {
     my $v = shift;
     return 1 unless $v;
-    if ( $v =~ /^([-\w\._=\s+\/,#\]\['"%\|]+)$/ ) {
+    if ( $v =~ /^([\:\-\w\._=\s+\/,#\]\['"%\|]+)$/ ) { # mdb changed 3/15/16 -- added ':'
         $v = $1;
         # $v now untainted
         return ( 1, $v );
     }
     else {
         # data should be thrown out
-        carp "'$v' failed taint check\n";
+        carp "check_taint: '$v' failed taint check\n";
         return (0);
     }
 }
@@ -1164,6 +1166,37 @@ sub send_email {
 
     print $mailer $body;
     $mailer->close();
+}
+
+sub download_url_for { # mdb added 3/8/16 for hypnotoad
+    my %args = @_;
+    my $gid = $args{gid};
+    my $eid = $args{eid};
+    my $wid = $args{wid};
+    my $filename = ($args{file} ? basename($args{file}) : '');
+#    my $username = $args{username};
+    
+    my $params = '';
+    if ($gid) {
+        $params .= "gid=$gid";
+    }
+    elsif ($eid) {
+        $params .= "eid=$eid";
+    }
+    elsif ($wid) {
+        $params .= "wid=$wid";
+    }
+    
+#    my $user_str = '';
+#    if ($username) {
+#        $params .= "&username=$username";
+#    }
+
+    if ($filename) {
+        $params .= "&filename=$filename";
+    }
+    
+    return url_for(api_url_for("downloads/?$params"));
 }
 
 sub api_url_for {

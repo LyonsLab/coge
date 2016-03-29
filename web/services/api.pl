@@ -21,7 +21,7 @@ app->config(
         listen => ["http://localhost:$port/"],
         pid_file => get_defaults->{_HOME_PATH},
         proxy => 1,
-        heartbeat_timeout => 15, # number of seconds before restarting unresponsive worker (needed for large JBrowse requests)
+        heartbeat_timeout => 30, # number of seconds before restarting unresponsive worker (needed for large JBrowse requests)
     }
 );
 #app->log( Mojo::Log->new( path => catdir(get_defaults->{_HOME_PATH}, 'mojo.log'), level => 'debug' ) ); # log in sandbox top-level directory
@@ -211,6 +211,11 @@ $r->get("/irods/list/(*path)")
 $r->get("/ftp/list/")
     ->name("ftp-list")
     ->to("FTP#list");
+
+# Downloads route
+$r->get("/downloads/")
+    ->name("downloads")
+    ->to("download#get");
 
 # JBrowse configuration routes
 $r->get("/jbrowse/config/refseq")

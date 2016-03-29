@@ -13,7 +13,7 @@ use File::Path qw(make_path);
 use File::Copy qw(move);
 use File::Touch;
 use File::Spec::Functions qw(catfile);
-use CoGe::Accessory::Utils qw(execute is_fastq_file add_fastq_ext to_filename);
+use CoGe::Accessory::Utils qw(execute is_fastq_file add_fastq_ext to_filename detect_paired_end);
 
 my $read_type = shift;   # 'single' or 'paired'
 my $output_path = shift; # path for output files
@@ -37,10 +37,9 @@ foreach my $orig_file (@files) {
 
 # Split files into pair groups if paired-end
 if ($read_type eq 'paired') {
-    my @m1 = grep { $_ =~ /\_R1\./ } keys %verified_files;
-    my @m2 = grep { $_ =~ /\_R2\./ } keys %verified_files;
-    die "error: invalid paired-end files" unless (@m1 and @m2);
-    $cmd_args .= join(' ', sort @m1) . ' ' . join(' ', sort @m2);
+    my ($m1, $m2) = detect_paired_end([keys %verified_files]);
+    die "error: invalid paired-end files" unless (@$m1 and @$m2);
+    $cmd_args .= join(' ', sort @$m1) . ' ' . join(' ', sort @$m2);
 }
 else {
     $cmd_args .= join(' ', keys %verified_files);

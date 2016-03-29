@@ -38,11 +38,12 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
+#    print STDERR "CoGe::Services::API::Notebook fetch id=$id\n";
     
     # Validate input
     unless ($id) {
         $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
+            error => { Error => "Invalid input" }
         });
         return;
     }
@@ -54,15 +55,15 @@ sub fetch {
     my $notebook = $db->resultset("List")->find($id);
     unless (defined $notebook) {
         $self->render(status => 404, json => {
-            error => { Error => "Resource not found"}
+            error => { Error => "Resource not found" }
         });
         return;
     }
 
     # Verify that user has read access to the notebook
-    unless ( !$notebook->restricted || (defined $user && $user->has_access_to_genome($notebook)) ) {
+    unless ( !$notebook->restricted || (defined $user && $user->has_access_to_list($notebook)) ) {
         $self->render(json => {
-            error => { Auth => "Access denied"}
+            error => { Auth => "Access denied" }
         }, status => 401);
         return;
     }

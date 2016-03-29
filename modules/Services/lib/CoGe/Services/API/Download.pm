@@ -3,11 +3,11 @@ package CoGe::Services::API::Download;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 
-use CoGeX;
-use CoGe::Accessory::Web;
+use CoGe::Services::Auth qw(init);
 use CoGe::Core::Storage qw(get_download_path get_workflow_log_file);
 use File::Spec;
 use File::Slurp;
+use File::Basename;
 
 sub get {
     my $self = shift;
@@ -15,18 +15,19 @@ sub get {
     my $gid = $self->param('gid');
     my $eid = $self->param('eid');
     my $wid = $self->param('wid');
-    my $username = $self->param('username');
+    #my $username = $self->param('username');
     my $uuid = $self->param('uuid') || ''; # optional
     my $attachment = $self->param('attachment') || 1;
     
     # Validate inputs
-    unless ($gid || $eid || ($wid && $username)) {
-        print STDERR "CoGe::Services::Data::Download invalid request\n";
+    #unless ($gid || $eid || ($wid && $username)) {
+    unless ($gid || $eid || $wid) {
+        print STDERR "CoGe::Services::Download invalid request\n";
         return;
     }
     
-    # Connect to the database
-    my ( $db, $user, $conf ) = CoGe::Accessory::Web->init();
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
     # Determine path to file
     my $file_path = '';
@@ -35,8 +36,8 @@ sub get {
         if ( $genome->restricted
             and ( not defined $user or not $user->has_access_to_genome($genome) ) )
         {
-            print STDERR "CoGe::Services::Data::Download access denied to genome $gid\n";
-            return;
+            print STDERR "CoGe::Services::Download access denied to genome $gid\n";
+            return $self->render(status => 400);
         }
 
         my $dl_path = get_download_path('genome', $gid, $uuid);
@@ -46,28 +47,34 @@ sub get {
         my $exp = $db->resultset('Experiment')->find($eid);
         if ($exp->restricted and
             (not defined $user or not $user->has_access_to_experiment($exp))) {
-            print STDERR "CoGe::Services::Data::Download access denied to experiment $eid\n";
-            return;
+            print STDERR "CoGe::Services::Download access denied to experiment $eid\n";
+            return $self->render(status => 400);
         }
 
         my $dl_path = get_download_path('experiment', $eid, $uuid);
         $file_path = File::Spec->catdir($dl_path, $filename);
     }
-    elsif ($wid && $username) { # workflow debug log file
-        $file_path = get_workflow_log_file($username, $wid);
+    elsif ($wid && $user->name) { # workflow debug log file
+        $file_path = get_workflow_log_file($user->name, $wid);
+        unless (-r $file_path) {
+            print STDERR "CoGe::Services::Download ERROR: workflow log not found for wid $wid\n";
+            $self->render(status => 400);
+            return;
+        }
+        $filename = "workflow_$wid.log";
     }
     
-    say STDERR "CoGe::Services::Data::Download file=$file_path";
-    return unless ($file_path);
+    say STDERR "CoGe::Services::Download file=$file_path";
+    return $self->render(status => 400) unless ($file_path);
 
     # Send file
-    $self->header_add( -attachment => $filename ) if $attachment; # tell browser to download file
+    $self->res->headers->content_disposition("attachment; filename=$filename;") if $attachment; # tell browser to download file
     my $content;
     eval {
         $content = read_file($file_path) if -r $file_path;
     };
 
-    return $content;
+    $self->render(text => $content);
 }
 
 1;

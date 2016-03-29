@@ -18,6 +18,30 @@ var coge = window.coge = (function(namespace) {
 			this._debug('init completed');
 		},
 		
+		download_url: function(opts) { // duplicated in Web.pm::download_url_for()
+			var gid = opts.gid;
+			var eid = opts.eid;
+			var wid = opts.wid;
+			var filename = opts.filename;
+//			var username = opts.username;
+			
+		    var params = '';
+		    if (gid)
+		        params += "gid=" + gid;
+		    else if (eid)
+		        params += "eid=" + eid;
+		    else if (wid)
+		        params += "wid=" + wid;
+		    
+//		    if (username)
+//		        params += "&username=" + username;
+		    
+		    if (filename)
+		    	params += "&filename=" + filename;
+		    
+		    return BASE_URL + "downloads/?" + params;			
+		},
+		
 		search_global: function(search_term) {
 			return this._ajax("GET", BASE_URL + "global/search/" + search_term + "/");
 		},

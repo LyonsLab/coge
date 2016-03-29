@@ -219,7 +219,7 @@ sub sequence {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    print STDERR "CoGe::Services::Data::Genome2::add\n", Dumper $data, "\n";
+    #print STDERR "CoGe::Services::Data::Genome::add\n", Dumper $data, "\n";
 
 # mdb removed 9/17/15 -- auth is handled by Job::add below, redundant token validation breaks CAS proxyValidate
 #    # Authenticate user and connect to the database
