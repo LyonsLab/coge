@@ -29,7 +29,7 @@ Genome Add 2
         Dictionary Should Contain Item  ${resp2.json()}  success	True
         Dictionary Should Contain Key   ${resp2.json()}  id
         Set Suite Variable      ${id2}	${resp2.json()["id"]}
-        Log     ${id1}
+        Log     ${id2}
 
 Annotation Add 1
         [Tags]  auth-required
