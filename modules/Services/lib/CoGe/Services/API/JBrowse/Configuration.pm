@@ -75,15 +75,15 @@ sub track_config {
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
-    # Admins have ability to simulate other users using the "user_id" query parameter
-#    my $user_id = $self->query->param('user_id');
-#    if (defined $user_id && $user->is_admin && $user_id != $user->id) {
-#        my $simulated_user = $db->resultset('User')->find($user_id);
-#        if (defined $simulated_user) {
-#            print STDERR "Switching to user '", $simulated_user->name, "'\n";
-#            $user = $simulated_user;
-#        }
-#    }
+	# Admins have ability to simulate other users using the "user_id" query parameter
+	my $user_id = $self->param('user_id');
+	if (defined $user_id && $user->is_admin && $user_id != $user->id) {
+	    my $u = $db->resultset('User')->find($user_id);
+	    if (defined $u) {
+	        warn "Switching to user '", $u->name, "'";
+	        $user = $u;
+	    }
+	}
 
     # Get server name for constructing URLs
     my $SERVER_NAME = $conf->{SERVER};#$ENV{SERVER_NAME}; # mdb added 12/11/14 for COGE-568
@@ -310,7 +310,6 @@ sub track_config {
         my $eid = $e->{experiment_id};
         my $role = $connectors->{3}{$eid};
         $role = $role->{role_id} if $role;
-
         next if ($e->{restricted} && !(($user && $user->admin) || $role)); #next unless $user->has_access_to_experiment($e); #TODO move into an API
         $experiments{$eid} = $e;
 
