@@ -21,7 +21,7 @@ use CoGeX;
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
-use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape);
+use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape commify);
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
 use CoGe::Core::Notebook qw(notebookcmp);
@@ -244,6 +244,7 @@ sub get_item_info {
         $html .=
             '<b>Genome id' . $genome->id . '</b><br>'
           . '<b>Organism: </b>' . $genome->organism->name . '<br>'
+          . '<b>Chromosomes: </b>' . commify($genome->chromosome_count) . '<br>'
           . '<b>Name:</b> ' . ( $genome->name ? $genome->name : '' ) . '<br>'
           . '<b>Description:</b> ' . ( $genome->description ? $genome->description : '' ) . '<br>'
           . '<b>Version:</b> ' . $genome->version . '<br>'
