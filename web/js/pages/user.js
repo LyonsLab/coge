@@ -632,6 +632,7 @@ $.extend(DataGrid.prototype, {
 			searching: true,
 			dom:       'lrt', // remove unused elements (like search box)
 			sScrollY:  $(window).height() - 245, // this depends on the height of the header/footer
+			"oLanguage": {"sZeroRecords": "", "sEmptyTable": ""},
 			columns: [
 	            { 	title: "Name", 
 	            	targets: 0,
@@ -659,6 +660,8 @@ $.extend(DataGrid.prototype, {
 		dataTableBody.on('click', 'tr', function(event) {
 			var tr = this;
 			var row = dataTable.api().row(tr).data();
+			if (!row)
+				return;
 			
 	        if ( $(tr).hasClass('selected') ) { // unselect
 	            $(tr).removeClass('selected');
@@ -695,10 +698,12 @@ $.extend(DataGrid.prototype, {
 			var tr = this;
 			var row = dataTable.api().row(tr).data();
 			
-			self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
-	        $(tr).addClass('selected'); // select item
-	        
-	        self.openItem(row);
+			if (row) {
+				self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
+		        $(tr).addClass('selected'); // select item
+		        
+		        self.openItem(row);
+			}
 		});
 		
 		// Handle row hover events
@@ -708,7 +713,8 @@ $.extend(DataGrid.prototype, {
 	    	
 	        var tr = $(this).closest('tr');
 	        var row = dataTable.api().row(tr).data();
-	    	infoPanel.busy().scheduleUpdate([row]);
+	        if (row)
+	        	infoPanel.busy().scheduleUpdate([row]);
 	    });
 		
 		dataTableBody.on('mouseout', 'tr', function () {
@@ -1047,9 +1053,11 @@ $.extend(InfoPanel.prototype, {
     	if (numItems > 0) {
     		if (numItems == 1) {
     			var item = items[0];
-    			item.getInfo().pipe(function(info) {
-    				self.element.html(info);
-    			});
+    			if (item) {
+	    			item.getInfo().pipe(function(info) {
+	    				self.element.html(info);
+	    			});
+    			}
     		}
     		else {
     			self.element.html(numItems + ' item' + (numItems > 1 ? 's' : '') + 
