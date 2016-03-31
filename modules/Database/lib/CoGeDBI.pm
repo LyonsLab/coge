@@ -298,6 +298,7 @@ sub get_experiments_for_user {
             AND uc.child_type=3
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
+    $query .= " ORDER BY uc.role_id DESC"; # mdb added 3/31/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
     my $sth = $dbh->prepare($query);
     $sth->execute();
     my $results1 = $sth->fetchall_hashref(['id']);
@@ -316,6 +317,7 @@ sub get_experiments_for_user {
             AND uc.child_type=1 AND lc.child_type=3 
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
+    $query .= " ORDER BY uc.role_id DESC"; # mdb added 3/31/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
     $sth = $dbh->prepare($query);
     $sth->execute();
     my $results2 = $sth->fetchall_hashref(['id']);
