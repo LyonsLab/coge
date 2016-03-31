@@ -262,6 +262,7 @@ sub notebooks_desc { #FIXME move this view code out of here
     my $embed = shift || 0;
     my @notebooks;
     foreach my $notebook ($self->notebooks) {
+        next if ($notebook->deleted);
         my $link = "NotebookView.pl?nid=" . $notebook->id . "&embed=$embed";
         my $desc = "<a href='$link'>" . $notebook->name . '</a>';
         $desc =~ s/&reg;\s*//;
