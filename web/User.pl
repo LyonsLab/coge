@@ -639,20 +639,22 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         elsif ( $conn->is_parent_group ) {
             my $group = $conn->parent;
 
-            my @users = map {
-                {
-                    GROUP_USER_FULL_NAME => $_->display_name,
-                    GROUP_USER_NAME      => $_->name
-                }
-            } sort usercmp $group->users;
-
-            $group_rows{ $group->id } = {
-                GROUP_ITEM   => $group->id . ':' . $conn->parent_type,
-                GROUP_NAME   => $group->name,
-                GROUP_ROLE   => $group->role->name,
-                GROUP_DELETE => $USER->is_owner_editor( group => $group->id ),
-                GROUP_USER_LOOP => \@users
-            };
+            if (not $group->deleted) {
+                my @users = map {
+                    {
+                        GROUP_USER_FULL_NAME => $_->display_name,
+                        GROUP_USER_NAME      => $_->name
+                    }
+                } sort usercmp $group->users;
+    
+                $group_rows{ $group->id } = {
+                    GROUP_ITEM   => $group->id . ':' . $conn->parent_type,
+                    GROUP_NAME   => $group->name,
+                    GROUP_ROLE   => $group->role->name,
+                    GROUP_DELETE => $USER->is_owner_editor( group => $group->id ),
+                    GROUP_USER_LOOP => \@users
+                };
+            }
         }
     }
 
