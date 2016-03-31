@@ -342,11 +342,16 @@ return declare( JBrowsePlugin,
 		var string;
 		if (search.type == 'range')
 			string = 'range: ' + search.gte + ' .. ' + search.lte;
-		else if (search.type == 'SNPs') {
-			string = search.type;
-			if (search.features != 'all')
-				string += ' in ' + search.features;
-		} else
+		else if (search.type == 'SNPs')
+			if (search.features) {
+				string = 'SNPs';
+				if (search.features != 'all')
+					string += ' in ' + search.features;
+				else
+					string += ' in any feature';
+			} else
+				string += search.snp_type + ' SNPs';
+		else
 			string = search.type;
 		if (search.chr && search.chr != 'Any')
 			string += ', chr=' + search.chr;

@@ -8,7 +8,7 @@ use CoGe::Services::API::JBrowse::FeatureIndex;
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
 use CoGe::Core::Storage qw( get_experiment_path );
-use CoGeDBI qw( feature_type_names_to_id get_dataset_ids );
+use CoGeDBI qw( feature_type_names_to_id );
 use Data::Dumper;
 use File::Path;
 use JSON::XS;
@@ -250,9 +250,8 @@ sub snps {
 		$type_ids = feature_type_names_to_id($type_names, $dbh);
 	}
 
-	my $type = (split ',', $type_names)[0];
-	$type = substr($type, 1, -1);
-	my $fi = FeatureIndex->new($experiments->[0]->genome_id, $type, $chr, $conf);
+	my $type = (split ',', $type_ids)[0];
+	my $fi = CoGe::Services::API::JBrowse::FeatureIndex->new($experiments->[0]->genome_id, $type, $chr, $conf);
 	my $features = $fi->get_features($dbh);
 	my $hits = [];
     foreach my $snp (@$snps) {

@@ -243,9 +243,11 @@ sub query_data {
 	my $value1;
     if ($type eq 'max') {
     	$value1 = CoGe::Accessory::FastBit::max($eid);
+    	$where .= ' and value1>' . ($value1 - 0.001);
     }
     elsif ($type eq 'min') {
     	$value1 = CoGe::Accessory::FastBit::min($eid);
+    	$where .= ' and value1<' . ($value1 + 0.001);
     }
     elsif ($type eq 'range') {
 		$where .= ' and value1>=' . $gte if $gte;
