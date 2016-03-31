@@ -4,13 +4,14 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 
 use CoGeX;
+use CoGe::Services::API::JBrowse::FeatureIndex;
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
+use CoGe::Core::Storage qw( get_experiment_path );
 use CoGeDBI qw( feature_type_names_to_id get_dataset_ids );
 use Data::Dumper;
 use File::Path;
 use JSON::XS;
-use Path::Class;
 
 #TODO: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -160,7 +161,6 @@ sub histogram {
     my $self = shift;
     my $eid = $self->stash('eid');
     my $chr = $self->param('chr');
-
     my $storage_path = get_experiment_path($eid);
     my $hist_file = "$storage_path/value1.hist";
     if (!-e $hist_file) {
@@ -182,7 +182,7 @@ sub histogram {
     open(my $fh, $hist_file);
     my $hist = <$fh>;
     close($fh);
-    return $hist;
+	$self->render(json => decode_json($hist));
 }
 
 sub query_data {
@@ -223,34 +223,6 @@ sub snp_overlaps_feature {
 	return 0;
 }
 
-sub _add_features {
-    my ($chr, $type_ids, $dsid, $hits, $dbh) = @_;
-    my $query = 'SELECT chromosome,start,stop FROM feature WHERE dataset_id=' . $dsid;
-    if ($chr) {
-    	$query .= " AND chromosome='" . $chr . "'";
-    }
-    if ($type_ids) {
-    	if (index($type_ids, ',') != -1) {
-		    $query .= ' AND feature_type_id IN(' . $type_ids . ')';
-    	}
-    	else {
-    		$query .= ' AND feature_type_id=' . $type_ids;
-    	}
-    }
-    $query .= ' ORDER BY chromosome,start';
-    my $sth = $dbh->prepare($query);
-    $sth->execute();
-    while (my @row = $sth->fetchrow_array) {
-    	my $chromosome = $hits->{$row[0]};
-    	if (!$chromosome) {
-    		$hits->{$row[0]} = [\@row];
-    	}
-    	else {
-	    	push @$chromosome, \@row;
-    	}
-    }
-}
-
 sub snps {
     my $self = shift;
     my $eid = $self->stash('eid');
@@ -278,35 +250,14 @@ sub snps {
 		$type_ids = feature_type_names_to_id($type_names, $dbh);
 	}
 
-    my $features = {};
-	foreach my $experiment (@$experiments) {
-	    my $ids = get_dataset_ids($experiment->genome_id, $dbh);
-	    foreach my $dsid (@$ids) {
-	        _add_features $chr, $type_ids, $dsid, $features, $dbh;
-	    }
-	}
-
-	my $dir = dir($conf->{CACHEDIR}, $experiments->[0]->genome_id, 'features');
-	make_path($dir, { mode => 0700}) unless -d $dir;
 	my $type = (split ',', $type_names)[0];
 	$type = substr($type, 1, -1);
-	my @chromosomes = keys %$features;
-	foreach my $chromosome (@chromosomes) {
-		warn ">$dir/" . $chromosome . "_$type.loc";
-		open(my $fh, ">$dir/" . $chromosome . "_$type.loc");
-		binmode($fh);
-		my $locs = $features->{$chromosome};
-		print $fh pack('L', scalar @$locs);
-		foreach my $loc (@$locs) {
-			print $fh pack('LL', $loc->[1], $loc->[2]);
-		}
-		close($fh);
-	}
-
+	my $fi = FeatureIndex->new($experiments->[0]->genome_id, $type, $chr, $conf);
+	my $features = $fi->get_features($dbh);
 	my $hits = [];
     foreach my $snp (@$snps) {
     	my @tokens = split(',', $snp);
-    	if (snp_overlaps_feature(0 + $tokens[1], $features->{substr $tokens[0], 1, -1})) {
+    	if (snp_overlaps_feature(0 + $tokens[1], $features)) {
     		push @$hits, $snp;
     	}
     }
