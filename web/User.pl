@@ -657,8 +657,9 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
     }
 
     foreach my $notebook ( values %notebooks ) {
+        next if $notebook->deleted;
+        
         my %users;
-
         foreach my $conn ( $notebook->user_connectors ) {
             my $user = $conn->parent;
             next unless $user;
