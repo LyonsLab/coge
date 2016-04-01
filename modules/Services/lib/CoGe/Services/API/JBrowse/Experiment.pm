@@ -245,22 +245,27 @@ sub snps {
     my $dbh = $db->storage->dbh;
 
 	my $type_names = $self->param('features');
-	my $type_ids;
-	if ($type_names ne 'all') {
-		$type_ids = feature_type_names_to_id($type_names, $dbh);
+	if ($type_names) {
+		my $type_ids;
+		if ($type_names ne 'all') {
+			$type_ids = feature_type_names_to_id($type_names, $dbh);
+		}
+	
+		my $type = (split ',', $type_ids)[0];
+		my $fi = CoGe::Services::API::JBrowse::FeatureIndex->new($experiments->[0]->genome_id, $type, $chr, $conf);
+		my $features = $fi->get_features($dbh);
+		my $hits = [];
+	    foreach my $snp (@$snps) {
+	    	my @tokens = split(',', $snp);
+	    	if (snp_overlaps_feature(0 + $tokens[1], $features)) {
+	    		push @$hits, $snp;
+	    	}
+	    }
+	    $self->render(json => $hits);
 	}
-
-	my $type = (split ',', $type_ids)[0];
-	my $fi = CoGe::Services::API::JBrowse::FeatureIndex->new($experiments->[0]->genome_id, $type, $chr, $conf);
-	my $features = $fi->get_features($dbh);
-	my $hits = [];
-    foreach my $snp (@$snps) {
-    	my @tokens = split(',', $snp);
-    	if (snp_overlaps_feature(0 + $tokens[1], $features)) {
-    		push @$hits, $snp;
-    	}
-    }
-    $self->render(json => $hits);
+	else {
+		
+	}
 }
 
 sub features {
