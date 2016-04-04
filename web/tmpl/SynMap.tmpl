@@ -193,15 +193,18 @@ div.deleted { display: none; }
                 <input type="text" id="fb_window_size" name="fb_window_size" value="<tmpl_var name=fb_window_size>" />
             </li>
             <li>
-                <label>Max query chromosomes:</label>
+                <label>Restrict maximum number of chromosomes in analysis:</label>
+            </li>
+            <li>
+                <label style="padding-left: 20px">Max query chromosomes:</label>
                 <input type="text" id="fb_numquerychr" name="fb_numquerychr" value="<tmpl_var name=fb_numquerychr>" />
             </li>
             <li>
-                <label>Max target chromosomes:</label>
+                <label style="padding-left: 20px">Max target chromosomes:</label>
                 <input type="text" id="fb_numtargetchr" name="fb_numtargetchr" value="<tmpl_var name=fb_numtargetchr>" />
             </li>
             <li>
-                <label>Remove random and unknown:</label>
+                <label>Skip Random/Unknown Chromosomes:</label>
                 <input type="checkbox" id="fb_remove_random_unknown" name="fb_remove_random_unknown" <tmpl_var name=fb_remove_random_unknown> />
             </li>
             Fractionation bias calculation:
