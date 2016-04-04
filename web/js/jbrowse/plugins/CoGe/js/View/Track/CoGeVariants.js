@@ -141,7 +141,7 @@ return declare( [ HTMLFeatures ], {
 	_search_types: function() {
     	var types = document.getElementById('coge_search_types').getElementsByTagName('INPUT');
     	var type;
-    	for (var i=0; i<features.length; i++)
+    	for (var i=0; i<types.length; i++)
     		if (types[i].checked) {
     			type = types[i].nextElementSibling.innerText;
     			break;
@@ -153,7 +153,7 @@ return declare( [ HTMLFeatures ], {
 		div.innerHTML = '<img src="picts/ajax-loader.gif">';
 		var search = {type: 'SNPs', chr: chr, snp_type: type};
 		var eid = this._track.config.coge.id;
-    	var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?type=' + type;
+    	var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?type=' + type.charAt(0) + '-' + type.charAt(2);
     	dojo.xhrGet({
     		url: url,
     		handleAs: 'json',

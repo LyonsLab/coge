@@ -213,16 +213,6 @@ sub _parse_fastbit_line {
     return \%result;
 }
 
-sub debug {
-	my $data = shift;
-	my $new_file = shift;
-	my $OUTFILE;
-	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
-	print {$OUTFILE} Dumper $data;
-	print {$OUTFILE} "\n";
-	close $OUTFILE;
-}
-
 sub query_data {
     my %opts = @_;
     my $eid  = $opts{eid};    # required

@@ -350,7 +350,7 @@ return declare( JBrowsePlugin,
 				else
 					string += ' in any feature';
 			} else
-				string += search.snp_type + ' SNPs';
+				string = search.snp_type + ' SNPs';
 		else
 			string = search.type;
 		if (search.chr && search.chr != 'Any')

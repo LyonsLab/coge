@@ -233,19 +233,24 @@ sub snps {
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
 	my $experiments = _get_experiments($db, $user, $eid);
-	my $snps;
-	foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
-		$snps = CoGe::Core::Experiment::query_data(
-			eid => $eid,
-			data_type => $experiment->data_type,
-			chr => $chr,
-		);
-	}
-
-    my $dbh = $db->storage->dbh;
+    if (scalar @{$experiments} == 0) {
+        $self->render(json => { error => 'User does not have permission to view this experiment' });
+        return;
+    }
 
 	my $type_names = $self->param('features');
 	if ($type_names) {
+        my $snps;
+        foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
+            $snps = CoGe::Core::Experiment::query_data(
+                eid => $eid,
+                data_type => $experiment->data_type,
+                chr => $chr,
+            );
+        }
+
+        my $dbh = $db->storage->dbh;
+
 		my $type_ids;
 		if ($type_names ne 'all') {
 			$type_ids = feature_type_names_to_id($type_names, $dbh);
@@ -264,7 +269,26 @@ sub snps {
 	    $self->render(json => $hits);
 	}
 	else {
-		
+       my $cmdpath = CoGe::Accessory::Web::get_defaults()->{COGEDIR};
+        $cmdpath = substr($cmdpath, 0, -3) . 'tools/snp_search/snp_search';
+        my $storage_path = get_experiment_path($eid);
+        opendir(my $dh, $storage_path);
+        my @files = grep(/\.vcf$/,readdir($dh));
+        closedir $dh;
+        my $cmd = "$cmdpath $storage_path/" . $files[0] . ' ' . $self->stash('chr') . ' ' . $self->param('type');
+        warn $cmd;
+        my @cmdOut = qx{$cmd};
+
+        my $cmdStatus = $?;
+        if ( $? != 0 ) {
+            warn "CoGe::Services::API::JBrowse::Experiment: error $? executing command: $cmd";
+        }
+        my @lines;
+        foreach (@cmdOut) {
+            chomp;
+            push @lines, $_;
+        }
+        $self->render(json => \@lines);
 	}
 }
 
