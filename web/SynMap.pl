@@ -410,6 +410,17 @@ sub gen_body {
 	else {
 		$template->param ( FB_ALL_GENES => "checked" );
 	}
+	my $fb_numquerychr = 25;
+	$fb_numquerychr = $FORM->param('fb_nqc') if $FORM->param('fb_nqc');
+	$template->param( FB_NUMQUERYCHR => $fb_numquerychr );
+	my $fb_numtargetchr = 25;
+	$fb_numtargetchr = $FORM->param('fb_ntc') if $FORM->param('fb_ntc');
+	$template->param( FB_NUMTARGETCHR => $fb_numtargetchr );
+	my $fb_rru = 1;
+	$fb_rru = $FORM->param('fb_rru') if defined $FORM->param('fb_rru');
+	if ($fb_rru) {
+		$template->param( FB_REMOVE_RANDOM_UNKNOWN => "checked" );
+	}
 
 	$template->param( 'BOX_DIAGS' => "checked" ) if $FORM->param('bd');
 	my $spa = $FORM->param('sp') if $FORM->param('sp');

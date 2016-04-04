@@ -192,6 +192,18 @@ div.deleted { display: none; }
                 <label>Window size (genes):</label>
                 <input type="text" id="fb_window_size" name="fb_window_size" value="<tmpl_var name=fb_window_size>" />
             </li>
+            <li>
+                <label>Max query chromosomes:</label>
+                <input type="text" id="fb_numquerychr" name="fb_numquerychr" value="<tmpl_var name=fb_numquerychr>" />
+            </li>
+            <li>
+                <label>Max target chromosomes:</label>
+                <input type="text" id="fb_numtargetchr" name="fb_numtargetchr" value="<tmpl_var name=fb_numtargetchr>" />
+            </li>
+            <li>
+                <label>Remove random and unknown:</label>
+                <input type="checkbox" id="fb_remove_random_unknown" name="fb_remove_random_unknown" <tmpl_var name=fb_remove_random_unknown> />
+            </li>
             Fractionation bias calculation:
             <li>
             	&nbsp<input type="radio" id="fb_all_genes" name="fb_genes" value="all_genes" <tmpl_var name=fb_all_genes> /> Use all genes in target genome<br />
