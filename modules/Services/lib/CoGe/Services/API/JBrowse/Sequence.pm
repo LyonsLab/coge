@@ -16,17 +16,18 @@ sub features {
     my $self = shift;
     my $gid  = $self->stash('id');
     my $chr  = $self->stash('chr');
-    $chr = uri_unescape($chr) if (defined $chr);
-    my $size  = $self->param('seqChunkSize');
+#    $chr = uri_unescape($chr) if (defined $chr);
+#    my $size  = $self->param('seqChunkSize');
     my $start = $self->param('start');
     my $end   = $self->param('end');
     my $len   = $end - $start;
-    print STDERR "JBrowse::Sequence::features gid=$gid chr=$chr size=$size start=$start end=$end\n";
+    print STDERR "JBrowse::Sequence::features gid=$gid chr=$chr start=$start end=$end\n";
 
     # Check params
-    my $null_response = $self->render(json => { "features" => [] });
-    if ( $end < 0 ) {
-        return $null_response;
+     if ( $end < 0 ) {
+        warn 'end < 0';
+        $self->render(json => { "features" => [] });
+        return;
     }
 
     # Authenticate user and connect to the database
@@ -34,7 +35,11 @@ sub features {
 
     # Retrieve genome
     my $genome = $db->resultset('Genome')->find($gid);
-    return unless $genome;
+    unless ($genome) {
+        warn 'no genome';
+        $self->render(json => { "features" => [] });
+        return;
+    }
 
     # Adjust location - note: incoming coordinates are interbase!
     $start = 0 if ( $start < 0 );
@@ -42,14 +47,18 @@ sub features {
     $start = min( $start, $chrLen );
     $end   = min( $end,   $chrLen );
     if ( $start == $end ) {
-        return $null_response;
+        warn 'start = end';
+        $self->render(json => { "features" => [] });
+        return;
     }
 
     # Check permissions
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
-        return $null_response;
+        warn 'permissions problem';
+        $self->render(json => { "features" => [] });
+        return;
     }
 
     # Extract requested piece of sequence file

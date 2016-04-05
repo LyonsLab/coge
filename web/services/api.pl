@@ -227,7 +227,7 @@ $r->get("/jbrowse/config/tracks")
     ->to("configuration#track_config");    
 
 # JBrowse sequence route
-$r->get("/jbrowse/sequence/:id/features/:chr" => { id => qr/\d+/, chr => qr/\w+/ })
+$r->get("/jbrowse/sequence/:id/features/:chr" => { id => qr/\d+/, chr => qr/[\w.]+/ })
     ->name("jbrowse-sequence")
     ->to("sequence#features", id => undef, chr => undef);
 
