@@ -357,16 +357,16 @@ sub add_jobs {
 	}
 	
 	# mdb added 3/24/16 for hypnotoad: run mkdir as JEX to get proper directory permissions for subsequent tasks
-    $workflow->add_job({
-        cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
-        script      => undef,
-        args        => undef,
-        inputs      => undef,
-        outputs     => [
-            #map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
-        ],
-        description => "Creating results directories...",
-    });
+    # $workflow->add_job({
+    #     cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
+    #     script      => undef,
+    #     args        => undef,
+    #     inputs      => undef,
+    #     outputs     => [
+    #         #map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
+    #     ],
+    #     description => "Creating results directories...",
+    # });
 
 	############################################################################
 	# Run Blast
@@ -1170,7 +1170,7 @@ sub add_jobs {
 					[ '--numtargetchr', $opts{fb_numtargetchr},   0 ],
 					[
 						'--remove_random_unknown',
-						$opts{fb_remove_random_unknown},
+						( $opts{fb_remove_random_unknown} eq 'true' ) ? 'True' : 'False',
 						0
 					],
 					[ '--query',        $query_id,                0 ],
