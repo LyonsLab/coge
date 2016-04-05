@@ -16,10 +16,11 @@ parser.add_argument("--windowsize", help="Sets the size of the sliding window fo
 parser.add_argument("--query", help="Query genome CoGe ID number. The query genome is the one with more subgenomes or higher syntenic depth. Used to determine which side of the SynMap output file the target genome data exists.")
 parser.add_argument("--output", help="File path to output directory. Specify SynMap directory: 'storage/coge/data/diags' file path.")
 parser.add_argument("--allgenes", help="Determines whether all genes in target genome gff or only conserved genes should be used in analysis.")
-parser.add_argument("--numtargetchr", help="Restricts the maximum number of target chromosomes to use in the analysis.")
-parser.add_argument("--numquerychr", help="Restricts the maximum number of target chromosomes to use in the analysis.")
-parser.add_argument("--remove_random_unknown", help="Restricts the maximum number of target chromosomes to use in the analysis.")
+parser.add_argument("--numtargetchr", help="Restricts the maximum number of target chromosomes to use in the analysis.", type=int)
+parser.add_argument("--numquerychr", help="Restricts the maximum number of target chromosomes to use in the analysis.", type=int)
+parser.add_argument("--remove_random_unknown", help="Restricts the maximum number of target chromosomes to use in the analysis.", type=bool)
 args = parser.parse_args()
+
 
 
 #For importing data and parsing data and benchmarking program
@@ -131,19 +132,18 @@ def window(seq, n):
 # 
 
 """Calls Genome Fetch CoGE API to get query genome and target chromosomes and orders them"""
+t_api_before = datetime.now()
 
 #retrieves api chromsome lists and length and moves json() object into Python dictionary
 query_api = requests.get("https://genomevolution.org/coge/api/v1/genomes/" + str(args.query))
 target_api = requests.get("https://genomevolution.org/coge/api/v1/genomes/" + str(args.target))
-query_api.text
 query_api = query_api.json()
-target_api.text
 target_api = target_api.json()
 
 #initializes dictionaries to drop api data into
 target_api_chrs = []
 target_api_chrs_sorted = []
-query_api_chrs_sorted_filtered = []
+target_api_chrs_sorted_filtered = []
 target_api_chrs_sorted_name = []
 target_api_chrs_final = []
 query_api_chrs = []
@@ -155,7 +155,7 @@ query_api_chrs_final = []
 #query genome chromosomes parsed, restricted by length largest -> smallest, and sorted according to name
 for chr in query_api['chromosomes']:
     if args.remove_random_unknown == True:
-        if "Random" in chr['name'] or "random" in chr['name'] or "Unknown" in chr['name'] or "unknown" in chr['name']:
+        if ("Random" in chr['name']) or ("random" in chr['name']) or ("Unknown" in chr['name']) or ("unknown" in chr['name']):
             continue
         else:
             query_api_chrs.append((chr['name'], chr['length']))
@@ -170,7 +170,8 @@ for chr in query_api_chrs_sorted_name:
 #target genome chromosomes parsed, restricted by length largest ->smallest, and sorted according to name
 for chr in target_api['chromosomes']:
     if args.remove_random_unknown == True:
-        if "Random" in chr['name'] or "random" in chr['name'] or "Unknown" in chr['name'] or "unknown" in chr['name']:
+        print chr['name']
+        if ("Random" in chr['name']) or ("random" in chr['name']) or ("Unknown" in chr['name']) or ("unknown" in chr['name']):
             continue
         else:
             target_api_chrs.append((chr['name'], chr['length']))
@@ -182,6 +183,12 @@ target_api_chrs_sorted_name = natsorted(target_api_chrs_sorted_filtered, key=lam
 for chr in target_api_chrs_sorted_name:
     target_api_chrs_final.append(chr[0])
 
+"""print target_api_chrs 
+print target_api_chrs_sorted 
+print target_api_chrs_sorted_filtered 
+print target_api_chrs_sorted_name
+print target_api_chrs_final"""
+t_api_after = datetime.now()
 
 
 """
@@ -191,13 +198,15 @@ Reads SynMap and GFF files and parse data into columns in array
 print "Making Synmap Data Structure"
 t0 = datetime.now()
 
+print target_api_chrs_sorted_name
+
 with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic genes
     synmap_rowcount = 0
     cols = []  # list for parsing columns from SynMap data
     decimal_strip_check_target_gene = 0
     for line in f:  # for loop to parse columns
         new_line = line.replace('||', '\t')  #converts || into tabs for universal delimination
-        if line[0] != '#' and line[0] != '\n' and line[0] != '{' and line[0] != '}' and (line[0] != "\\"):  #sorts out columns containing syntenic block information/headings
+        if line[0] != '#' and line[0] != '\n':  #sorts out columns containing syntenic block information/headings
             cols = new_line.split('\t', )  #splits all syntenic gene pair lines into parsed columns in a list
             synmap_rowcount += 1
             global target_chr
@@ -210,16 +219,15 @@ with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic
                 ida = ida[1:cols[0].index('_')]
             if args.target == ida:
                 target_chr = cols[1]
-                for j in target_api_chrs_sorted_name:
-                    if j[0] == target_chr:
-                        target_gene = str(cols[4]).rsplit(".", 1)[0]  #puts all genome1_genes with synteny into a list
-                        decimal_strip_check_target_gene = target_gene.find('.')
-                        if not decimal_strip_check_target_gene == (-1):
-                            target_gene = target_gene[:(decimal_strip_check_target_gene)]
+                if any(target_chr in s for s in target_api_chrs_final):
+                    target_gene = str(cols[4]).rsplit(".", 1)[0]  #puts all genome1_genes with synteny into a list
+                    decimal_strip_check_target_gene = target_gene.find('.')
+                    if not decimal_strip_check_target_gene == (-1):
+                        target_gene = target_gene[:(decimal_strip_check_target_gene)]
                 else:
                     continue
                 query_chr = str(cols[13])  #puts all genome2_chrs with synteny to genes in genome1 into a list
-                if query_chr in query_api_chrs_sorted_name:
+                if any(query_chr in s for s in query_api_chrs_final):
                     query_gene = str(cols[16]).rsplit(".", 1)[0]  #puts all genome2_genes with synteny to genes in a genome1 into a list
                 else:
                     continue
@@ -285,7 +293,7 @@ gff_sort_all = {}
 gff_sort_all = natsorted(gff_genes_target)
 for chr in gff_genes_target:
     gff_genes_sorted = sorted(gff_genes_target[chr], key=itemgetter('start'))  #Creates dictionary for searching genes against::CONSIDER sorting on midpoint of genes rather than
-    gff_genes[chr] = gff_genes_sorted
+    gff_genes_target[chr] = gff_genes_sorted
 
     #CONSIDER WRITING A CHECK PROGRAM TO RETURN TRUE IF ALL VALUES ARE SORTED OR FALSE
 
@@ -439,14 +447,14 @@ for tchr in windanalysis_input_dict:
             
 #Sort output_dict for tchr alphanumberic at top level
 #if tchr are only integers (not alpha&numeric) the except statement will sort just integers
-try:
+"""try:
     alphanumbsort = lambda k,v: [k, int(v)]
     output_dict = collections.OrderedDict(sorted(output_dict.items(), key=lambda t: alphanumbsort(*re.match(r'([a-zA-Z]+)(\d+)',t[0]).groups())))
 except AttributeError:
     #sorted(output_dict, key=lambda x: output_dict[x])
     #natsorted(output_dict[tchr])
     print "Alphanumeric sort didn't work"
-
+"""
 t5 = datetime.now()
 
 
@@ -460,6 +468,13 @@ with open(retention_calc_output_file, 'wb') as csvf:
         for qchr in windanalysis_input_dict[tchr]:            
             #Prints into two columns
             writer.writerows(izip( output_dict[tchr][qchr]))"""
+
+print "Length of d " + str(len(d))
+print "Length of gff_sort_all " + str(len(gff_sort_all))
+print "Length of gff_genes_target " + str(len(gff_genes_target))
+print "Length of windanalysis_input_dict " + str(len(windanalysis_input_dict))
+print "Length of output_dict " + str(len(output_dict))
+
 
 
 #Check output data before graphing
@@ -478,9 +493,10 @@ for tchr in output_dict:
         countofchrgraph += 1
         listofchrgraph.append(str(tchr))
 
+print listofchrgraph
 listofchrgraph = natsorted(listofchrgraph)
-
-
+print listofchrgraph
+16911
 ##Statistics Output NEEDS FIXING
 
 #for tchr in output_dict:
@@ -492,12 +508,13 @@ listofchrgraph = natsorted(listofchrgraph)
 
 print "Plotting FractBias Data"
 
+print "setting up figsize, cols, and gridspec"
 #define figure size, column layout, grid layout
 figsize = (15, (len(target_api_chrs_final)*2.4))
 cols = 2
 gs = gridspec.GridSpec(len(output_dict) // cols + 1, cols)
 
-
+print "setting up tableau palette"
 
 # These are the "Tableau 20" colors as RGB
 tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
@@ -506,19 +523,25 @@ tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),
              (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),
              (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)]
 
+print "scaling palette"
 # Scale the RGB values to the [0, 1] range, which is the format matplotlib accepts
 for i in range(len(tableau20)):
     r, g, b = tableau20[i]
     tableau20[i] = (r / 255., g / 255., b / 255.)
 
 #Alternate color palettes Seaborn/Brewer
-
+print "setting palette"
 current_palette = sns.color_palette("Set2", 40)
+
+
 #tableau20
+print "Starting to plot figure"
 
 fig = plt.figure(figsize=figsize, frameon=False)
+print "set figure size and plt.figure"
 subplt_count = -1
 ax = []
+print "beginning subplots"
 for tchr in listofchrgraph:
     subplt_count += 1
     print "Plotting subplot: "+str(subplt_count)
@@ -557,6 +580,7 @@ t6 = datetime.now()
 
 
 """Printing Out Benchmarking Times"""
+benchmark_api_call = t_api_after - t_api_before
 benchmark_synmap_data = t1 - t0
 benchmark_gff_data = t2 - t1
 benchmark_output_data = t3 - t2
@@ -566,10 +590,11 @@ benchmark_plotting = t6 - t5
 benchmark_total = t6 - t0
 
 
+print "API Call Time: " + str(benchmark_api_call)
 print "SynMap Data Processing Time: " + str(benchmark_synmap_data)
 print "GFF Data Processing Time: " + str(benchmark_gff_data)
 print "Data Structure Output Time: " + str(benchmark_output_data)
 print "Raw Data Processing Time: " + str(benchmark_processing_data)
 print "Sliding Window Analysis Time: " + str(benchmark_sliding_window)
 print "Plotting Graphs Time: " + str(benchmark_plotting)
-print "Total Time: " + str(benchmark_total)
+print "Total Time: " + str(benchmark_total + benchmark_api_call)
