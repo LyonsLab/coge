@@ -1157,6 +1157,9 @@ sub add_jobs {
 		$workflow->add_job($gff_job);
 
 		my $output_dir = catdir( $config->{DIAGSDIR}, $dir1, $dir2 );
+		my $all_genes = ( $opts{fb_target_genes} eq 'true' ) ? 'False' : 'True';
+		my $rru = ( $opts{fb_remove_random_unknown} eq 'true' ) ? 'True' : 'False';
+		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
 		$workflow->add_job(
 			{
 				cmd => 'python '
@@ -1170,17 +1173,14 @@ sub add_jobs {
 					[ '--numtargetchr', $opts{fb_numtargetchr},   0 ],
 					[
 						'--remove_random_unknown',
-						( $opts{fb_remove_random_unknown} eq 'true' ) ? 'True' : 'False',
+						$rru,
 						0
 					],
 					[ '--query',        $query_id,                0 ],
+					[ '--syndepth',     $syn_depth,               0 ],
 					[ '--target',       $target_id,               0 ],
 					[ '--windowsize',   $opts{fb_window_size},    0 ],
-					[
-						'--allgenes',
-						( $opts{fb_target_genes} eq 'true' ) ? 'False' : 'True',
-						0
-					],
+					[ '--allgenes',     $all_genes,               0 ],
 					[ '--output', $output_dir, 0 ]
 				],
 				inputs => [
@@ -1189,8 +1189,8 @@ sub add_jobs {
 				],
 				outputs => [
 					catfile(
-						catdir( $output_dir, 'html' ),
-						'fractbias_figure1.png'
+						catdir($output_dir, 'html'),
+						'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.png'
 					)
 				],
 				description => "Running Fractination Bias...",

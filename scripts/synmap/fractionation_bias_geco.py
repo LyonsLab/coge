@@ -19,7 +19,9 @@ parser.add_argument("--allgenes", help="Determines whether all genes in target g
 parser.add_argument("--numtargetchr", help="Restricts the maximum number of target chromosomes to use in the analysis.", type=int)
 parser.add_argument("--numquerychr", help="Restricts the maximum number of target chromosomes to use in the analysis.", type=int)
 parser.add_argument("--remove_random_unknown", help="Restricts the maximum number of target chromosomes to use in the analysis.", type=bool)
+parser.add_argument("--syndepth", help="Passes synetic depth setting from SynMap for saving a unique figure.", type=str)
 args = parser.parse_args()
+
 
 
 
@@ -574,7 +576,9 @@ for tchr in listofchrgraph:
             continue
 
 fig.subplots_adjust(wspace=0.45, hspace=0.6)
-plt.savefig(args.output+"/html/"+"fractbias_figure1.png", transparent=True) #<--------
+plt.savefig(args.output+"/html/"+"fractbias_figure-" + "-TarID" + str(args.target) + "-TarChrNum" + str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + \
+"-QueryID" + str(args.query) + "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + str(args.remove_random_unknown) + "-WindSize" \
++ str(args.windowsize) + ".png", transparent=True) 
 
 t6 = datetime.now()
 
