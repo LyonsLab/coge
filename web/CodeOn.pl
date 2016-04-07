@@ -105,8 +105,11 @@ sub gen_body {
     @oids = map { split /::/, $_ } $form->param('oid');
     my @dsgids;
     @dsgids = map { split /::/, $_ } $form->param('dsgid');
-
-    if ( @fids || @oids || @dsgids ) {
+    my $html;
+    if ($USER->user_name eq "public") {
+	$html = "Due to the computationally intensive nature of CodeOn, you must be logged in to use this tool.";
+    }	
+    elsif ( @fids || @oids || @dsgids ) {
         my $res = go(
             fids   => \@fids,
             oids   => \@oids,
@@ -114,7 +117,7 @@ sub gen_body {
         );
         $template->param( RESULTS => $res );
     }
-    my $html = $template->output;
+    $html .= $template->output;
     return $html;
 }
 
