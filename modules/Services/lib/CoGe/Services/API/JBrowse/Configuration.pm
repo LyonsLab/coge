@@ -69,7 +69,6 @@ sub _annotations {
 sub track_config {
     my $self = shift;
     my $gid  = $self->param('gid');
-#    warn "JBrowse::Configuration::track_config gid=$gid";
     my $start_time = time; # for performance testing
     
     # Authenticate user and connect to the database
