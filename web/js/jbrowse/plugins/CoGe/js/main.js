@@ -158,6 +158,32 @@ return declare( JBrowsePlugin,
 
     // ----------------------------------------------------------------
 
+    create_download_dialog: function(track) {
+        this._track = track;
+        var content = '<div id="coge-track-download"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
+        this.browser.refSeqOrder.forEach(function(rs) {
+            content += '<option>' + rs + '</option>';
+        });
+        content += '</select></td></tr>';
+        if (track.config.coge.transform)
+            content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
+        if (track.config.coge.search)
+            content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge.search_to_string(track.config.coge.search) + '</td></tr>';
+        content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.download_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge._track_download_dialog.hide()">Cancel</button></div></div>';
+        this._track_download_dialog = new Dialog({
+            title: 'Download Track',
+            content: content,
+            onHide: function() {
+                this.destroyRecursive();
+                coge._track_download_dialog = null;
+            },
+            style: "width: 350px"
+        });
+        this._track_download_dialog.show();
+    },
+
+    // ----------------------------------------------------------------
+
     create_search_button: function() {
     	var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
     	this.browser.refSeqOrder.forEach(function(rs) {
@@ -188,6 +214,19 @@ return declare( JBrowsePlugin,
 	        	dojo.stopEvent(event);
 	        },
 	    }, dojo.create('button', null, this.browser.navbox));
+    },
+
+    // ----------------------------------------------------------------
+
+    download_track: function() {
+        var ref_seq = dojo.byId('coge_ref_seq');
+        var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username='+un;
+        if (dojo.byId('search') && dojo.byId('search').checked)
+            url += '&' + coge.search_to_params(this._track.config.coge.search);
+        if (dojo.byId('transform') && dojo.byId('transform').checked)
+            url += '&transform=' + this._track.config.coge.transform;
+        document.location = url;
+        coge._track_download_dialog.hide();
     },
 
     // ----------------------------------------------------------------
@@ -342,16 +381,11 @@ return declare( JBrowsePlugin,
 		var string;
 		if (search.type == 'range')
 			string = 'range: ' + search.gte + ' .. ' + search.lte;
-		else if (search.type == 'SNPs')
-			if (search.features) {
-				string = 'SNPs';
-				if (search.features != 'all')
-					string += ' in ' + search.features;
-				else
-					string += ' in any feature';
-			} else
-				string = search.snp_type + ' SNPs';
-		else
+		else if (search.type == 'SNPs') {
+			string = search.type;
+			if (search.features != 'all')
+				string += ' in ' + search.features;
+		} else
 			string = search.type;
 		if (search.chr && search.chr != 'Any')
 			string += ', chr=' + search.chr;

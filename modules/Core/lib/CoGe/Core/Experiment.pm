@@ -245,7 +245,7 @@ sub query_data {
     }
     my $format = get_fastbit_format($eid, $data_type);
     my $columns = join(',', map { $_->{name} } @{$format->{columns}});
-    my $results = CoGe::Accessory::FastBit::query("select $columns where 0.0=0.0 and $where order by $order_by limit 999999999", $eid);
+    my $results = CoGe::Accessory::FastBit::query("select $columns where $where order by $order_by limit 999999999", $eid);
     if ($type eq 'max' || $type eq 'min') {
     	my $value_col = get_fastbit_score_column $data_type;
         my @lines = grep { $value1 == (split(',', $_))[$value_col] } @{$results};

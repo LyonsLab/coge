@@ -122,6 +122,92 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     });
 }
 
+sub data {
+    my $self = shift;
+    my $id = int($self->stash('eid'));
+    my $chr = $self->stash('chr');
+    my $data_type = $self->param('data_type');
+    my $type = $self->param('type');
+    my $gte = $self->param('gte');
+    my $lte = $self->param('lte');
+    my $transform = $self->param('transform');
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    unless ($user) {
+        $self->render(json => {
+            error => { Error => "User not logged in" }
+        });
+        return;
+    }       
+
+    # Get experiment
+    my $experiment = $db->resultset("Experiment")->find($id);
+    unless (defined $experiment) {
+        $self->render(json => {
+            error => { Error => "Experiment not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_admin() || $user->is_owner_editor(experiment => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+    $self->res->headers->content_disposition('attachment; filename=experiment.csv;');
+    $self->write('# experiment: ' . $experiment->name . "\n");
+    $self->write("# chromosome: $chr\n");
+    if ($type) {
+        $self->write("# search: type = $type");
+        $self->write(", gte = $gte") if $gte;
+        $self->write(", lte = $lte") if $lte;
+        $self->write("\n");
+    }
+    $self->write("# transform: $transform\n") if $transform;
+    my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
+    my @columns = map { $_->{name} } @{$cols};
+    $self->write('# columns: ');
+    for (my $i=0; $i<scalar @columns; $i++) {
+        $self->write(',') if $i;
+        $self->write($columns[$i]);
+    }
+    $self->write("\n");
+
+    my $lines = CoGe::Core::Experiment::query_data(
+        eid => $id,
+        data_type => $data_type,
+        col => join(',', @columns),
+        chr => $chr,
+        type => $type,
+        gte => $gte,
+        lte => $lte,
+    );
+    my $score_column = CoGe::Core::Experiment::get_fastbit_score_column($data_type);
+    my $log10 = log(10);
+    foreach my $line (@{$lines}) {
+        if ($transform) {
+            my @tokens = split ',', $line;
+            if ($transform eq 'Inflate') {
+                $tokens[$score_column] = 1;
+            }
+            elsif ($transform eq 'Log2') {
+                $tokens[$score_column] = log(1 + $tokens[$score_column]);
+            }
+            elsif ($transform eq 'Log10') {
+                $tokens[$score_column] = log(1 + $tokens[$score_column]) / $log10;
+            }
+            $line = join ',', @tokens;
+        }
+        $self->write($line);
+        $self->write("\n");
+    }
+    $self->finish();
+}
+
 sub _get_experiments {
 	my $db = shift;
 	my $user = shift;

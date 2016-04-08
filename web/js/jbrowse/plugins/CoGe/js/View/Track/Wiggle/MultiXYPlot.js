@@ -169,32 +169,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
     // ----------------------------------------------------------------
 
-    _create_download_dialog: function(track) {
-    	this._track = track;
-    	var content = '<div id="coge-track-download"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
-    	this.browser.refSeqOrder.forEach(function(rs) {
-    		content += '<option>' + rs + '</option>';
-    	});
-    	content += '</select></td></tr>';
-    	if (track.config.coge.transform)
-    		content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
-    	if (track.config.coge.search)
-    		content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge.search_to_string(track.config.coge.search) + '</td></tr>';
-    	content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._download_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_download_dialog.hide()">Cancel</button></div></div>';
-    	this._track_download_dialog = new Dialog({
-            title: 'Download Track',
-            content: content,
-            onHide: function() {
-            	this.destroyRecursive();
-            	coge_xyplot._track_download_dialog = null;
-            },
-            style: "width: 350px"
-        });
-    	this._track_download_dialog.show();
-    },
-
-    // ----------------------------------------------------------------
-
     _create_search_dialog: function(track) {
     	this._track = track;
     	var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
@@ -249,22 +223,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 },
             }
         );
-    },
-
-    // ----------------------------------------------------------------
-
-    _download_track: function() {
-	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
-    	var url = coge_api + '/experiments/' + this._track.config.coge.id + '/data?username='+un;
-    	var ref_seq = dojo.byId('coge_ref_seq');
-    	if (ref_seq.selectedIndex > 0)
-    		url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
-    	if (dojo.byId('search') && dojo.byId('search').checked)
-    		url += '&' + coge.search_to_params(this._track.config.coge.search);
-    	if (dojo.byId('transform') && dojo.byId('transform').checked)
-    		url += '&transform=' + this._track.config.coge.transform;
-    	document.location = url;
-		coge_xyplot._track_download_dialog.hide();
     },
 
     // ----------------------------------------------------------------
@@ -919,7 +877,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         if (config.coge.type != 'notebook')
 	        options.push({
 		        label: 'Download Track Data',
-		        onClick: function(){coge_xyplot._create_download_dialog(track);}
+		        onClick: function(){coge.create_download_dialog(track);}
 	        });
 
         return options;
