@@ -248,6 +248,15 @@ $r->get("/jbrowse/track/annotation/:gid/types/:type/features/#chr" => { gid => q
     ->name("jbrowse-annotation-types-features")
     ->to("annotation#features", gid => undef, chr => undef, type => undef); 
 
+$r->get("/jbrowse/track/annotation/:gid/datasets/:dsid/stats/global/" => { gid => qr/\d+/, dsid => qr/\w+/ }) # can this be combined with overall using regex?
+    ->name("jbrowse-annotation-datasets-stats-global")
+    ->to("annotation#stats_global", gid => undef, dsid => undef);     
+    
+$r->get("/jbrowse/track/annotation/:gid/datasets/:dsid/features/#chr" => { gid => qr/\d+/, dsid => qr/\w+/ }) # can this be combined with overall using regex?
+    ->name("jbrowse-annotation-datasets-features")
+    ->to("annotation#features", gid => undef, chr => undef, dsid => undef);
+
+# JBrowse GC content routes
 $r->get("/jbrowse/track/gc/:gid/stats/global/" => [gid => qr/\d+/])
     ->name("jbrowse-gccontent-stats-global")
     ->to("GCcontent#stats_global", gid => undef); 
