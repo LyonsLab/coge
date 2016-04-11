@@ -137,7 +137,15 @@ $r->delete("/notebooks/:id" => [id => qr/\d+/])
     ->name("notebooks-remove")
     ->to("notebook#remove");
 
+$r->post("/notebooks/:id/items/add" => [id => qr/\d+/])
+    ->name("notebooks-items-add")
+    ->to("notebook#add_items", id => undef);
+    
 # User routes -- not documented, only for internal use
+$r->post("/notebooks/:id/items/remove" => [id => qr/\d+/])
+    ->name("notebooks-items-remove")
+    ->to("notebook#remove_items", id => undef);
+    
 $r->get("/users/search/#term")
     ->name("users-search")
     ->to("user#search", term => undef);
@@ -257,6 +265,14 @@ $r->get("/jbrowse/experiment/:eid/stats/regionFeatureDensities/:chr" => { eid =>
     ->name("jbrowse-experiment-regionFeatureDensitites")
     ->to("experiment#stats_regionFeatureDensities", eid => undef, chr => undef);
 
+$r->get("/jbrowse/experiment/:eid/histogram/" => [eid => qr/\d+/])
+    ->name("jbrowse-experiment-histogram")
+    ->to("experiment#histogram", eid => undef);
+    
+$r->get("/jbrowse/experiment/:eid/query/" => [eid => qr/\d+/])
+    ->name("jbrowse-experiment-query")
+    ->to("experiment#query_data", eid => undef);
+    
 $r->get("/jbrowse/experiment/:eid/features/:chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", eid => undef, chr => undef);
@@ -269,7 +285,7 @@ $r->get("/jbrowse/experiment/:eid/snps/:chr"  => { eid => qr/\d+/, chr => qr/\w+
 $r->get("/jbrowse/experiment/notebook/:nid/stats/global/" => [nid => qr/\d+/])
     ->name("jbrowse-experiment-stats-global")
     ->to("experiment#stats_global", nid => undef);
-    
+ 
 $r->get("/jbrowse/experiment/notebook/:nid/stats/regionFeatureDensities/:chr" => { nid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-regionFeatureDensitites")
     ->to("experiment#stats_regionFeatureDensities", nid => undef, chr => undef);
