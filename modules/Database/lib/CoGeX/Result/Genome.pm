@@ -378,6 +378,7 @@ sub get_chromosome {
 	if ($c->find($name)) {
 		return (chromosome=>$c->name, sequence_length=>$c->length);
 	}
+	print STDERR "CoGeX::Result::Genome::get_chromosome ERROR, chromosome '$name' not found\n";
 	return 0;
 }
 
@@ -405,6 +406,7 @@ sub get_chromosome_length {
 	if ($c->find($name)) {
 		return $c->length;
 	}
+	print STDERR "CoGeX::Result::Genome::get_chromosome_length ERROR, chromosome '$name' not found\n";
 	return 0;
 }
 
