@@ -21,7 +21,7 @@ Genome Fetch
 	${resp}=	Get Request	coge	${GENOMES}/${GENOME_ID}
 	Should Be Equal As Strings	${resp.status_code}	200
 	${expected}=	Evaluate	json.load(open('${DATA_PATH}/genome_fetch.json', 'r'))	json
-	Dictionaries Should Be Equal	${resp.json()}	${expected}
+	Dictionary Should Contain Sub Dictionary	${resp.json()}	${expected}
 
 #Genome Fetch Sequence
 #        Create Session  coge    ${API_URL}
