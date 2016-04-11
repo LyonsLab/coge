@@ -102,7 +102,7 @@ sub fetch {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-#    print STDERR "CoGe::Services::Data::Notebook::add\n", Dumper $data, "\n";
+    print STDERR "CoGe::Services::Data::Notebook::add\n", Dumper $data, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -263,7 +263,7 @@ sub remove {
     });    
 }
 
-sub remove_item {
+sub remove_items {
 	my $self = shift;
     my $id = int($self->stash('id'));
     
