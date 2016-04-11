@@ -8,7 +8,7 @@ use CoGe::Accessory::Workflow;
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Core::Storage qw( get_workflow_paths );
 use Data::Dumper;
-use File::Path;
+#use File::Path qw(mkpath);
 use File::Spec::Functions;
 use JSON qw( encode_json );
 use POSIX;
@@ -53,7 +53,7 @@ sub add_jobs {
 	my $BLAST2RAW  = 'nice ' . $config->{BLAST2RAW}; #find local duplicates
 	my $FORMATDB   = 'nice ' . $config->{FORMATDB};
 	my $BLASTDBDIR = $config->{BLASTDB};
-	my $LASTDB     = 'nice ' . $config->{LASTDB2}; # fix name
+	my $LASTDB     = $config->{LASTDB2} // 'lastdb'; $LASTDB = 'nice ' . $LASTDB; # fix name
 	my $LASTDBDIR  = $config->{LASTDB} // catdir($config->{DATADIR}, 'last', 'db');
 	my $FASTADIR   = $config->{FASTADIR};
 
@@ -325,11 +325,11 @@ sub add_jobs {
         });	
         
         $blastdb = $basename;
-#        push @blastdb_files, $basename . '.prj';
-#        
-#        $workflow->log( "" );
-#        $workflow->log( "Added LastDB generation" );
-#        $workflow->log( $blastdb );
+        push @blastdb_files, $basename . '.prj';
+        
+        $workflow->log( "" );
+        $workflow->log( "Added LastDB generation" );
+        $workflow->log( $blastdb );
 	}
 	else {
 		$blastdb = $fasta2;
@@ -350,11 +350,23 @@ sub add_jobs {
 
 	foreach my $org_dir ( keys %org_dirs ) {
 		my $outfile = $org_dirs{$org_dir}{dir};
-		mkpath( $outfile, 0, 0777 ) unless -d $outfile;
-		warn "didn't create path $outfile: $!" unless -d $outfile;
-		$outfile .= "/" . $org_dirs{$org_dir}{basename};
+		#mkpath( $outfile, 1, 0777 ) unless -d $outfile; # mdb removed 3/24/16 for hypnotoad (permissions issue)
+		#warn "didn't create path $outfile: $!" unless -d $outfile;
+		$outfile = catfile($outfile, $org_dirs{$org_dir}{basename});
 		$org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
 	}
+	
+	# mdb added 3/24/16 for hypnotoad: run mkdir as JEX to get proper directory permissions for subsequent tasks
+    # $workflow->add_job({
+    #     cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
+    #     script      => undef,
+    #     args        => undef,
+    #     inputs      => undef,
+    #     outputs     => [
+    #         #map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
+    #     ],
+    #     description => "Creating results directories...",
+    # });
 
 	############################################################################
 	# Run Blast
@@ -810,7 +822,7 @@ sub add_jobs {
 	############################################################################
 #	my ( $qlead, $slead ) = ( "a", "b" );
 	my $out = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/html/";
-	mkpath( $out, 0, 0777 ) unless -d $out;
+	#mkpath( $out, 0, 0777 ) unless -d $out; # mdb removed 3/24/16 for hypnotoad (permissions issue)
 	$out .= "master_";
 	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
 	$out .= $base;
@@ -1125,13 +1137,16 @@ sub add_jobs {
 
 	if ( $opts{frac_bias} =~ /true/i ) {
 		my $organism_name;
+		my $query_id;
 		my $target_id;
 		if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
 			$organism_name = $genome1->organism->name;
+			$query_id      = $dsgid2;
 			$target_id     = $dsgid1;
 		}
 		else {
 			$organism_name = $genome2->organism->name;
+			$query_id      = $dsgid1;
 			$target_id     = $dsgid2;
 		}
 
@@ -1142,6 +1157,9 @@ sub add_jobs {
 		$workflow->add_job($gff_job);
 
 		my $output_dir = catdir( $config->{DIAGSDIR}, $dir1, $dir2 );
+		my $all_genes = ( $opts{fb_target_genes} eq 'true' ) ? 'False' : 'True';
+		my $rru = ( $opts{fb_remove_random_unknown} eq 'true' ) ? 'True' : 'False';
+		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
 		$workflow->add_job(
 			{
 				cmd => 'python '
@@ -1149,15 +1167,20 @@ sub add_jobs {
 				  . '/synmap/fractionation_bias_geco.py',
 				script => undef,
 				args   => [
-					[ '--align',      $final_dagchainer_file,   0 ],
-					[ '--gff',        $gff_job->{outputs}->[0], 0 ],
-					[ '--target',     $target_id,               0 ],
-					[ '--windowsize', $opts{fb_window_size},    0 ],
+					[ '--gff',          $gff_job->{outputs}->[0], 0 ],
+					[ '--align',        $final_dagchainer_file,   0 ],
+					[ '--numquerychr',  $opts{fb_numquerychr},    0 ],
+					[ '--numtargetchr', $opts{fb_numtargetchr},   0 ],
 					[
-						'--allgenes',
-						( $opts{fb_target_genes} eq 'true' ) ? 'False' : 'True',
+						'--remove_random_unknown',
+						$rru,
 						0
 					],
+					[ '--query',        $query_id,                0 ],
+					[ '--syndepth',     $syn_depth,               0 ],
+					[ '--target',       $target_id,               0 ],
+					[ '--windowsize',   $opts{fb_window_size},    0 ],
+					[ '--allgenes',     $all_genes,               0 ],
 					[ '--output', $output_dir, 0 ]
 				],
 				inputs => [
@@ -1166,8 +1189,8 @@ sub add_jobs {
 				],
 				outputs => [
 					catfile(
-						catdir( $output_dir, 'html' ),
-						'fractbias_figure1.png'
+						catdir($output_dir, 'html'),
+						'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.png'
 					)
 				],
 				description => "Running Fractination Bias...",
@@ -1306,6 +1329,7 @@ sub defaults {
 		feat_type2        => 1,
 		flip              => 'false',
 		frac_bias         => 'false',
+		fb_rru            => 'true',
 		gm                => 0,
 		ks_type           => 0,
 		logks             => 1,
@@ -1431,6 +1455,9 @@ sub get_query_link {
 	my $frac_bias       = $url_options{frac_bias} =~ /true/i;
 	my $fb_window_size  = $url_options{fb_window_size};
 	my $fb_target_genes = $url_options{fb_target_genes};
+	my $fb_numquerychr  = $url_options{fb_numquerychr};
+	my $fb_numtargetchr = $url_options{fb_numtargetchr};
+	my $fb_remove_random_unknown = $url_options{fb_remove_random_unknown};
 
 	#fids that are passed in for highlighting the pair in the dotplot
 	#	my $fid1 = $url_options{fid1};
@@ -1505,18 +1532,26 @@ sub get_query_link {
 	$synmap_link .= ";gm=$gm"       if defined $gm;
 	$synmap_link .= ";snsd=$snsd";
 
-	$synmap_link .= ";bd=$box_diags"          if $box_diags;
-	$synmap_link .= ";mcs=$min_chr_size"      if $min_chr_size;
-	$synmap_link .= ";sp=$assemble"           if $assemble;
-	$synmap_link .= ";ma=$merge_algo"         if $merge_algo;
-	$synmap_link .= ";da=$depth_algo"         if $depth_algo;
-	$synmap_link .= ";do1=$depth_org_1_ratio" if $depth_org_1_ratio;
-	$synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
-	$synmap_link .= ";do=$depth_overlap"      if $depth_overlap;
-	$synmap_link .= ";fb=1"                   if $frac_bias;
-	$synmap_link .= ";fb_ws=$fb_window_size"  if $fb_window_size;
-	$synmap_link .= ";fb_tg=1"                if $fb_target_genes eq 'true';
-	$synmap_link .= ";flip=1"                 if $flip;
+	$synmap_link .= ";bd=$box_diags"           if $box_diags;
+	$synmap_link .= ";mcs=$min_chr_size"       if $min_chr_size;
+	$synmap_link .= ";sp=$assemble"            if $assemble;
+	$synmap_link .= ";ma=$merge_algo"          if $merge_algo;
+	$synmap_link .= ";da=$depth_algo"          if $depth_algo;
+	$synmap_link .= ";do1=$depth_org_1_ratio"  if $depth_org_1_ratio;
+	$synmap_link .= ";do2=$depth_org_2_ratio"  if $depth_org_2_ratio;
+	$synmap_link .= ";do=$depth_overlap"       if $depth_overlap;
+	$synmap_link .= ";fb=1"                    if $frac_bias;
+	$synmap_link .= ";fb_ws=$fb_window_size"   if $fb_window_size;
+	$synmap_link .= ";fb_tg=1"                 if $fb_target_genes eq 'true';
+	$synmap_link .= ";fb_nqc=$fb_numquerychr"  if $fb_numquerychr;
+	$synmap_link .= ";fb_ntc=$fb_numtargetchr" if $fb_numtargetchr;
+	if ($fb_remove_random_unknown eq 'true') {
+		$synmap_link .= ";fb_rru=1";
+	}
+	else {
+		$synmap_link .= ";fb_rru=0";		
+	}
+	$synmap_link .= ";flip=1"                  if $flip;
 	$synmap_link .= ";cs=$color_scheme";
 	$synmap_link .= ";cmin=$codeml_min"
 	  if defined $codeml_min;   #$codeml_min=~/\d/ && $codeml_min=~/^\d*.?\d*$/;

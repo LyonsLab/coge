@@ -3611,7 +3611,7 @@ sub write_fasta {
     $seq = substr( $seq, $start - 1, $stop - $start + 1 );
     $gbobj->sequence($seq);    #replace objects sequence with modified sequence
     ($fullname) = CoGe::Accessory::Web::check_filename_taint($fullname);
-    open( OUT, ">$fullname" ) or die "Couldn't open $fullname!: $!\n";
+    open( OUT, ">$fullname" ) or die "Couldn't open '$fullname': $!";
     print OUT "$hdr\n";
     print OUT $seq, "\n";
     close(OUT);
