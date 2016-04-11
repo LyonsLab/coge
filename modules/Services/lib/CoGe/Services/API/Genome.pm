@@ -3,7 +3,7 @@ package CoGe::Services::API::Genome;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGe::Services::Auth qw(init);
-use CoGe::Services::Data::Job;
+use CoGe::Services::API::Job;
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Storage qw(get_genome_seq);
 use CoGe::Accessory::Utils qw(sanitize_name);

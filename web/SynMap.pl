@@ -410,6 +410,17 @@ sub gen_body {
 	else {
 		$template->param ( FB_ALL_GENES => "checked" );
 	}
+	my $fb_numquerychr = 25;
+	$fb_numquerychr = $FORM->param('fb_nqc') if $FORM->param('fb_nqc');
+	$template->param( FB_NUMQUERYCHR => $fb_numquerychr );
+	my $fb_numtargetchr = 25;
+	$fb_numtargetchr = $FORM->param('fb_ntc') if $FORM->param('fb_ntc');
+	$template->param( FB_NUMTARGETCHR => $fb_numtargetchr );
+	my $fb_rru = 1;
+	$fb_rru = $FORM->param('fb_rru') if defined $FORM->param('fb_rru');
+	if ($fb_rru) {
+		$template->param( FB_REMOVE_RANDOM_UNKNOWN => "checked" );
+	}
 
 	$template->param( 'BOX_DIAGS' => "checked" ) if $FORM->param('bd');
 	my $spa = $FORM->param('sp') if $FORM->param('sp');
@@ -1558,9 +1569,11 @@ sub get_results {
 		}
 
 		# dotplot
-		my $ks_blocks_file_url = $ks_blocks_file;
-		$ks_blocks_file_url =~ s/$DIR/$URL/;
-		$results->param( ks_file_url => $ks_blocks_file_url );
+		if ($ks_blocks_file) {
+			my $ks_blocks_file_url = $ks_blocks_file;
+			$ks_blocks_file_url =~ s/$DIR/$URL/;
+			$results->param( ks_file_url => $ks_blocks_file_url );
+		}
 		$results->param( dsgid1 => $dsgid1 );
 		$results->param( dsgid2 => $dsgid2 );
 	    my $chromosomes1 = $genome1->chromosomes_all;
@@ -1584,10 +1597,24 @@ sub get_results {
 			my $output_dir = $config->{DIAGSDIR} . $dir1 . '/' . $dir2 . '/';
 			my $output_url = $output_dir;
 			$output_url =~ s/$DIR/$URL/;
-			if (! -r $output_dir . 'html/fractbias_figure1.png') {
+			my $query_id;
+			my $target_id;
+			if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
+				$query_id      = $dsgid2;
+				$target_id     = $dsgid1;
+			}
+			else {
+				$query_id      = $dsgid1;
+				$target_id     = $dsgid2;
+			}
+			my $all_genes = ($opts{'fb_target_genes'} eq 'true') ? 'False' : 'True';
+			my $rru = $opts{'fb_remove_random_unknown'} ? 'True' : 'False';
+			my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
+			my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
+			if (! -r $output_dir . 'html/' . $fb_img_file) {
 				return encode_json( { error => "The fractionation bias image could not be found." } );
 			}
-			$results->param( frac_bias => $output_url . 'html/fractbias_figure1.png' );
+			$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
 			$gff_sort_output_file = _filename_to_link(
 				file => $output_dir . 'gff_sort.txt',
 				msg  => qq{GFF Sort output file},
