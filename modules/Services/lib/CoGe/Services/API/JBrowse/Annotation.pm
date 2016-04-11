@@ -23,6 +23,7 @@ sub features {
     my $self = shift;
     my $gid  = $self->stash('gid');
     my $chr  = $self->stash('chr');
+    warn $chr;
     $chr = uri_unescape($chr) if (defined $chr);
     my $feat_type    = $self->stash('type');
     my $start        = $self->param('start');
@@ -36,6 +37,7 @@ sub features {
     # Check params
     my $null_response = $self->render(json => { "features" => [] });
     if ( $end <= 0 ) {
+        warn 'end <= 0';
         return $null_response;
     }
 
@@ -52,6 +54,7 @@ sub features {
     $start = min( $start, $chrLen );
     $end   = min( $end,   $chrLen );
     if ( $start == $end ) {
+        warn 'start == end';
         return $null_response;
     }
 
@@ -59,6 +62,7 @@ sub features {
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
+        warn 'user does not have access';
         return $null_response;
     }
 
