@@ -1,0 +1,12 @@
+{
+     "type": "load_annotation",
+     "parameters": {
+         "metadata": {
+             "version": 1,
+             "source": "Matt Bomhoff"
+         },
+         "source_data": [
+             { "type": "irods", "path": "/iplant/home/mbomhoff/coge_data/Arabidopsis_thaliana_Col-0_thale_cress_annos1-cds0-id_typename-nu1-upa1-add_chr0.gid16911.gff" }
+         ]
+    }
+}

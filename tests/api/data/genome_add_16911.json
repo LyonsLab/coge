@@ -1,0 +1,13 @@
+{
+     "organism_id": 1,
+     "metadata": {
+         "restricted": true,
+         "version": 1,
+         "name": "test",
+         "description": "test",
+         "source_name": "Matt Bomhoff"
+     },
+     "source_data": [
+          { "type": "irods", "path": "/iplant/home/coge/coge_data/genome_16911.faa" }
+     ]
+}
