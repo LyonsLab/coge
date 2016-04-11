@@ -304,13 +304,13 @@ sub datasets {
     my %opts = @_;
     my $chr  = $opts{chr};
     $chr = $opts{chromosome} unless defined $chr;
-    my $restricted = $opts{restricted};
+    my $restricted = $opts{restricted}; #FIXME why is this here? restricted datasets are not used
 
     my %datasets;
     foreach my $dsc ( $self->dataset_connectors() ) {
         my $ds = $dsc->dataset;
-        next if ( $restricted and not $ds->restricted );
         next unless $ds;
+        next if ( $restricted and not $ds->restricted );
 
         if ( defined $chr ) {
             $datasets{ $ds->id } = $ds
