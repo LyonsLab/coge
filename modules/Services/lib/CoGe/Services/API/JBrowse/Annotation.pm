@@ -25,13 +25,14 @@ sub features {
     my $chr  = $self->stash('chr');
     $chr = uri_unescape($chr) if (defined $chr);
     my $feat_type    = $self->stash('type');
+    my $dsid         = $self->stash('dsid');
     my $start        = $self->param('start');
     my $end          = $self->param('end');
     my $show_wobble  = $self->param('showWobble');
     my $scale        = $self->param('scale');
     my $basesPerSpan = $self->param('basesPerSpan');
     my $len = $end - $start;
-    #print STDERR "JBrowse::Annotation::features gid=$gid ", ($feat_type ? "type=$feat_type " : ''), "chr=$chr start=$start end=$end\n";
+    print STDERR "JBrowse::Annotation::features gid=$gid ", ($dsid ? "dsid=$dsid " : ''), ($feat_type ? "type=$feat_type " : ''), "chr=$chr start=$start end=$end\n";
 
     # Check params
     my $null_response = $self->render(json => { "features" => [] });
@@ -66,6 +67,7 @@ sub features {
     my $features = get_features_by_range(
         dbh => $db->storage->dbh, 
         gid => $gid, 
+        dsid => $dsid,
         chr => $chr, 
         start => $start, 
         end => $end,
