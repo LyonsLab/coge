@@ -1277,22 +1277,23 @@ sub go_synfind {
 
             
             # mdb added 3/21/16 for LAST v731
-            $dbpath = catfile($dbpath, basename($target->{query_fasta}));
+            #$dbpath = catfile($dbpath, basename($target->{query_fasta})); #Eric is changing all query to target 4/10/16
+            $dbpath = catfile($dbpath, basename($target->{target_fasta}));
             $workflow->add_job({
-                cmd         => "$LASTDB $dbpath $target->{query_fasta}",
+                cmd         => "$LASTDB $dbpath $target->{target_fasta}",
                 description => "Creating database for $algo...",
                 script      => undef,
                 args        => [],
-                inputs      => [ $target->{query_fasta} ],
+                inputs      => [ $target->{target_fasta} ],
                 outputs     => [ $dbpath . '.prj' ]
             });
-            
+            #Eric is changing all target to query 4/10/16
             $workflow->add_job({
-                cmd         => "$LAST $dbpath $target->{target_fasta} > $target->{blastfile}",
+                cmd         => "$LAST $dbpath $target->{query_fasta} > $target->{blastfile}",
                 description => "Running blast ($algo) algorithm...",
                 script      => undef,
                 args        => [],
-                inputs      => [ $target->{target_fasta}, $dbpath . '.prj'],
+                inputs      => [ $target->{query_fasta}, $dbpath . '.prj'],
                 outputs     => [ $target->{blastfile} ]
             });
         }
