@@ -5,8 +5,6 @@ import os.path
 from argparse import ArgumentParser
 from sys import exit
 
-from fix_chromosome_id import fix_chromosome_id
-
 __author__ = 'groverj3'
 
 # Define functions
@@ -165,7 +163,7 @@ if unfiltered == 't':
 
 for chrm in bismark_data:
     for pos in bismark_data[chrm]:
-        chrm_key = fix_chromosome_id(chrm)
+        chrm_key = chrm
         pos_key = int(pos) - 1  # Subtract 1 from position to fix alignment with sequence in CoGe
         dec_met = bismark_data[chrm][pos]['dec_met']
         total = bismark_data[chrm][pos]['total']
