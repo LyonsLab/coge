@@ -105,8 +105,11 @@ sub gen_body {
     @oids = map { split /::/, $_ } $form->param('oid');
     my @dsgids;
     @dsgids = map { split /::/, $_ } $form->param('dsgid');
-
-    if ( @fids || @oids || @dsgids ) {
+    my $html;
+    if ($USER->user_name eq "public") {
+	$html = "Due to the computationally intensive nature of CodeOn, you must be logged in to use this tool.";
+    }	
+    elsif ( @fids || @oids || @dsgids ) {
         my $res = go(
             fids   => \@fids,
             oids   => \@oids,
@@ -114,7 +117,7 @@ sub gen_body {
         );
         $template->param( RESULTS => $res );
     }
-    my $html = $template->output;
+    $html .= $template->output;
     return $html;
 }
 
@@ -333,7 +336,7 @@ sub get_features {
     my %feats;
     my %orgs;
     my %dsgs;
-
+    my $t1 = new Benchmark;
     if ($fids) {
         foreach my $fid (@$fids) {
             next unless $fid && $fid =~ /^\d+$/;
@@ -409,6 +412,8 @@ sub get_features {
     my %data;
     my $count = 0;
     my @aa;
+    
+    my $t2 = new Benchmark;
 
     my %codes;    #store genetic codes for reuse;
     foreach my $feat ( values %feats ) {
@@ -435,6 +440,9 @@ sub get_features {
         #	push @feats, {f=>$feat, gc=>$gc, at=>$at};
         #	last if $count > 50;
     }
+
+    my $t3 = new Benchmark;
+
     my %return_data;
     foreach my $bin ( sort keys %data ) {
         $return_data{$bin}{bin_count} = scalar @{ $data{$bin}{"A"} };
@@ -445,6 +453,9 @@ sub get_features {
         }
         $return_data{$bin}{data}{"*"} = 0 unless $return_data{$bin}{data}{"*"};
     }
+
+    my $t4 = new Benchmark;
+
     foreach my $bin ( keys %return_data ) {
         my $hash  = $return_data{$bin}{data};
         my $total = 0;
@@ -456,7 +467,23 @@ sub get_features {
         map { $hash->{$_} = $hash->{$_} / $total } keys %$hash;
         map { $total += $hash->{$_} } keys %$hash;
     }
+    my $t5 = new Benchmark;
 
+    my $query_time = timestr (timediff ($t2,$t1) );
+    my $feat_time = timestr (timediff ($t3,$t2) );
+    my $stats_time = timestr (timediff ($t4,$t3) );
+    my $final_stats_time = timestr (timediff ($t5,$t4) );
+    my $total_time = timestr( timediff ($t5, $t1) );
+    print STDERR qq{
+
+---CodeOn Benchmarks---
+Time to do query:          $query_time
+Time to process features:  $feat_time
+Time for basic statistics: $stats_time
+Time for final statistics: $final_stats_time
+Total time:                $total_time
+
+};
     return \%return_data, \%feats, \%dsgs;
 }
 

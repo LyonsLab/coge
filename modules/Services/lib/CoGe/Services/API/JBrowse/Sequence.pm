@@ -16,16 +16,18 @@ sub features {
     my $self = shift;
     my $gid  = $self->stash('id');
     my $chr  = $self->stash('chr');
+    print STDERR "matt $chr\n";
     $chr = uri_unescape($chr) if (defined $chr);
-    my $size  = $self->param('seqChunkSize');
+#    my $size  = $self->param('seqChunkSize'); # mdb removed 4/11/16 -- unused
     my $start = $self->param('start');
     my $end   = $self->param('end');
     my $len   = $end - $start;
-    print STDERR "JBrowse::Sequence::features gid=$gid chr=$chr size=$size start=$start end=$end\n";
+    print STDERR "JBrowse::Sequence::features gid=$gid chr=$chr start=$start end=$end\n";
 
     # Check params
     my $null_response = $self->render(json => { "features" => [] });
     if ( $end < 0 ) {
+        print STDERR "JBrowse::Sequence::features ERROR, invalid 'end' value\n";
         return $null_response;
     }
 
@@ -34,7 +36,10 @@ sub features {
 
     # Retrieve genome
     my $genome = $db->resultset('Genome')->find($gid);
-    return unless $genome;
+    unless ($genome) {
+        print STDERR "JBrowse::Sequence::features ERROR, genome '$gid' not found\n";
+        return $null_response;
+    }
 
     # Adjust location - note: incoming coordinates are interbase!
     $start = 0 if ( $start < 0 );
@@ -42,6 +47,7 @@ sub features {
     $start = min( $start, $chrLen );
     $end   = min( $end,   $chrLen );
     if ( $start == $end ) {
+        print STDERR "JBrowse::Sequence::features ERROR, start==end: start=$start end=$end chrLen=$chrLen\n";
         return $null_response;
     }
 
@@ -49,6 +55,7 @@ sub features {
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
+        print STDERR "JBrowse::Sequence::features ERROR, access denied\n";
         return $null_response;
     }
 
@@ -59,6 +66,10 @@ sub features {
         start => $start + 1, # convert from interbase to base
         stop  => $end
     );
+    unless ($seq && length($seq)) {
+        print STDERR "JBrowse::Sequence::features ERROR, no sequence returned\n";
+        return $null_response;
+    }
 
     $self->render(json => {
         "features" => [ 
