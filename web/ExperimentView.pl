@@ -630,7 +630,7 @@ sub gen_body {
         POPGEN_RESULT_URL => $popgenUrl,
         PUBLIC            => $USER->user_name eq "public" ? 1 : 0,
         ADMIN_AREA        => $USER->is_admin,
-        API_BASE_URL      => 'api/v1/', #TODO move into config file or module
+        API_BASE_URL      => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
     );
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );

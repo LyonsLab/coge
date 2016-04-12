@@ -102,7 +102,7 @@ sub gen_body {
 	my $template =
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
 	$template->param( 	MAIN 			=> 1,
-						API_BASE_URL  	=> 'api/v1/',  
+						API_BASE_URL  	=> $P->{SERVER} . 'api/v1/',  
 						USER			=> $USER->user_name,	
 					);
 

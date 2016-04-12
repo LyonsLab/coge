@@ -115,7 +115,7 @@ sub generate_body {
         PAGE_NAME     => $PAGE_TITLE . '.pl',
         LOAD_ID       => $LOAD_ID,
         WORKFLOW_ID   => $WORKFLOW_ID,
-        API_BASE_URL  => 'api/v1/', #TODO move into config file or module
+        API_BASE_URL  => $CONF->{SERVER} . 'api/v1/', #TODO move into config file or module
         HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadGenome',
         SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         ENABLE_NCBI              => 1,

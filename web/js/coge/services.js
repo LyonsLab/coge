@@ -10,10 +10,15 @@ var coge = window.coge = (function(namespace) {
 	namespace.services = {
 		init: function(opts) {
 			if (opts.baseUrl)
-				this.BASE_URL = opts.baseUrl;
+				this.baseUrl = opts.baseUrl;
+			else 
+				this.baseUrl = BASE_URL;
+			
 			if (opts.userName)
 				this.userName = opts.userName;
+			
 			this.debug = opts.debug; // display console debug messages
+			this.debug = 1;
 			
 			this._debug('init completed');
 		},
@@ -39,39 +44,39 @@ var coge = window.coge = (function(namespace) {
 		    if (filename)
 		    	params += "&filename=" + filename;
 		    
-		    return BASE_URL + "downloads/?" + params;			
+		    return this.baseUrl + "downloads/?" + params;			
 		},
 		
 		search_global: function(search_term) {
-			return this._ajax("GET", BASE_URL + "global/search/" + search_term + "/");
+			return this._ajax("GET", this.baseUrl + "global/search/" + search_term + "/");
 		},
 		
 		search_organisms: function(search_term) {
 			// TODO add param validation
-			return this._ajax("GET", BASE_URL + "organisms/search/" + search_term + "/");
+			return this._ajax("GET", this.baseUrl + "organisms/search/" + search_term + "/");
 		},
 
 		add_organism: function(request) {
-			return this._ajax("PUT", BASE_URL + "organisms/", request);
+			return this._ajax("PUT", this.baseUrl + "organisms/", request);
 		},
 		
 		search_genomes: function(search_term, opts) {
 			// TODO add param validation
-			return this._ajax("GET", BASE_URL + "genomes/search/" + search_term + "/", null, opts);
+			return this._ajax("GET", this.baseUrl + "genomes/search/" + search_term + "/", null, opts);
 		},
 			
 		search_notebooks: function(search_term) {
 			// TODO add param validation
-			return this._ajax("GET", BASE_URL + "notebooks/search/" + search_term + "/");
+			return this._ajax("GET", this.baseUrl + "notebooks/search/" + search_term + "/");
 		},
 		
 		search_users: function(search_term) {
 			// TODO add param validation
-			return this._ajax("GET", BASE_URL + "users/search/" + search_term + "/");
+			return this._ajax("GET", this.baseUrl + "users/search/" + search_term + "/");
 		},
 		
 		submit_job: function(request) {
-			return this._ajax("PUT", BASE_URL + "jobs/", request);
+			return this._ajax("PUT", this.baseUrl + "jobs/", request);
 		},
 		
 		fetch_job: function(id) {
@@ -80,7 +85,7 @@ var coge = window.coge = (function(namespace) {
 				this._error('fetch_job: missing id value');
 				return;
 			}
-			return this._ajax("GET", BASE_URL + "jobs/" + id);
+			return this._ajax("GET", this.baseUrl + "jobs/" + id);
 		},
 		
 		fetch_logs: function(id, type) {
@@ -89,15 +94,15 @@ var coge = window.coge = (function(namespace) {
 				this._error('fetch_job: missing id/type value');
 				return;
 			}
-			return this._ajax("GET", BASE_URL + "logs/" + type + '/' + id);
+			return this._ajax("GET", this.baseUrl + "logs/" + type + '/' + id);
 		},
 		
 		irods_list: function(path) {
-			return this._ajax("GET", BASE_URL + "irods/list/" + path);
+			return this._ajax("GET", this.baseUrl + "irods/list/" + path);
 		},
 		
 		ftp_list: function(url) {
-			return this._ajax("GET", BASE_URL + "ftp/list/", null, { url: url });
+			return this._ajax("GET", this.baseUrl + "ftp/list/", null, { url: url });
 		},
 		
 		_ajax: function(type, url, data, opts) { //, success, error) {
@@ -131,7 +136,7 @@ var coge = window.coge = (function(namespace) {
 				        data: JSON.stringify(data),
 				    })
 				    .fail(function(jqXHR, textStatus, errorThrown) { 
-				    	self._error('ajax:error: ' + jqXHR.status + ' ' + jqXHR.statusText); 
+				    	self._error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
 				    });		
 		},
 		
