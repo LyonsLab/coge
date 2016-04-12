@@ -310,7 +310,7 @@ sub track_config {
         my $eid = $e->{experiment_id};
         my $role = $connectors->{3}{$eid};
         $role = $role->{role_id} if $role;
-        next if ($e->{restricted} && !(($user && $user->admin) || $role)); #next unless $user->has_access_to_experiment($e); #TODO move into an API
+        next if ($e->{restricted} && !($user && $user->admin) && !$connectors->{3}{$eid}); #next unless $user->has_access_to_experiment($e); #TODO move into an API
         $experiments{$eid} = $e;
 
         # Build a list of notebook id's

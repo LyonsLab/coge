@@ -53,7 +53,7 @@ sub add_jobs {
 	my $BLAST2RAW  = 'nice ' . $config->{BLAST2RAW}; #find local duplicates
 	my $FORMATDB   = 'nice ' . $config->{FORMATDB};
 	my $BLASTDBDIR = $config->{BLASTDB};
-	my $LASTDB     = 'nice ' . $config->{LASTDB2}; # fix name
+	my $LASTDB     = $config->{LASTDB2} // 'lastdb'; $LASTDB = 'nice ' . $LASTDB; # fix name
 	my $LASTDBDIR  = $config->{LASTDB} // catdir($config->{DATADIR}, 'last', 'db');
 	my $FASTADIR   = $config->{FASTADIR};
 
