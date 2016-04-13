@@ -193,10 +193,10 @@ $.extend(AnnotationDescriptionView.prototype, {
 
        $.extend(this.annotation, {
             metadata: {
-                name: name,
-                description: description,
+                name: coge.utils.removeSpecialChars(name),
+                description: coge.utils.removeSpecialChars(description),
                 link: link,
-                version: version,
+                version: coge.utils.removeSpecialChars(version),
                 source: source,
                 genome: genome,
             },

@@ -488,10 +488,10 @@ $.extend(GenomeDescriptionView.prototype, {
 
        $.extend(this.genome, {
             metadata: {
-                name: name,
-                description: description,
+                name: coge.utils.removeSpecialChars(name),
+                description: coge.utils.removeSpecialChars(description),
                 link: link,
-                version: version,
+                version: coge.utils.removeSpecialChars(version),
                 type: type,
                 restricted: restricted,
                 source_name: source,
