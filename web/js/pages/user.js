@@ -337,7 +337,7 @@ $.extend(ContentPanel.prototype, {
 						return false;
 					if (view.shared && data.role_id == '2')
 						return false;
-					if (!view.shared && data.role_id != '2')
+					if (!view.shared && data.role_id != '2' && !view.deleted)
 						return false;
 				}
 				return true;

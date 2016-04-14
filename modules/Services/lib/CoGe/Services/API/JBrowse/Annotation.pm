@@ -23,6 +23,7 @@ sub features {
     my $self = shift;
     my $gid  = $self->stash('gid');
     my $chr  = $self->stash('chr');
+    warn $chr;
     $chr = uri_unescape($chr) if (defined $chr);
     my $feat_type    = $self->stash('type');
     my $start        = $self->param('start');
