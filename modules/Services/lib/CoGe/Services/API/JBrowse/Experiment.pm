@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 
 use CoGeX;
+use CoGe::Accessory::histogram;
 use CoGe::Services::API::JBrowse::FeatureIndex;
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
@@ -134,12 +135,12 @@ sub data {
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-    unless ($user) {
-        $self->render(json => {
-            error => { Error => "User not logged in" }
-        });
-        return;
-    }       
+    # unless ($user) {
+    #     $self->render(json => {
+    #         error => { Error => "User not logged in" }
+    #     });
+    #     return;
+    # }       
 
     # Get experiment
     my $experiment = $db->resultset("Experiment")->find($id);
@@ -246,10 +247,11 @@ sub _get_experiments {
 sub histogram {
     my $self = shift;
     my $eid = $self->stash('eid');
-    my $chr = $self->param('chr');
+    my $chr = $self->stash('chr');
     my $storage_path = get_experiment_path($eid);
-    my $hist_file = "$storage_path/value1.hist";
+    my $hist_file = "$storage_path/value1_$chr.hist";
     if (!-e $hist_file) {
+        $chr = undef if $chr eq 'Any';
 		my $result = CoGe::Core::Experiment::query_data(
 			eid => $eid,
 			col => 'value1',
@@ -257,13 +259,17 @@ sub histogram {
 		);
 	    my $bins = CoGe::Accessory::histogram::_histogram_bins($result, 20);
 	    my $counts = CoGe::Accessory::histogram::_histogram_frequency($result, $bins);
-	    open my $fh, ">", $hist_file;
-	    print {$fh} encode_json({
-	    	first => 0 + $bins->[0][0],
-	    	gap => $bins->[0][1] - $bins->[0][0],
-	    	counts => $counts
-	    });
-	    close $fh; 
+	    if (open my $fh, ">", $hist_file) {
+    	    print {$fh} encode_json({
+    	    	first => 0 + $bins->[0][0],
+    	    	gap => $bins->[0][1] - $bins->[0][0],
+    	    	counts => $counts
+    	    });
+    	    close $fh;
+        }
+        else {
+            warn "error opening $hist_file";
+        }
     }
     open(my $fh, $hist_file);
     my $hist = <$fh>;

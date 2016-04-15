@@ -221,6 +221,7 @@ sub query_data {
         return;
     }
     my $chr = $opts{chr};
+    my $col = $opts{col};
     my $data_type = $opts{data_type};
     my $gte = $opts{gte};
     my $limit = $opts{limit};
@@ -243,9 +244,11 @@ sub query_data {
 		$where .= ' and value1>=' . $gte if $gte;
 		$where .= ' and value1<=' . $lte if $lte;
     }
-    my $format = get_fastbit_format($eid, $data_type);
-    my $columns = join(',', map { $_->{name} } @{$format->{columns}});
-    my $results = CoGe::Accessory::FastBit::query("select $columns where $where order by $order_by limit 999999999", $eid);
+    if (!$col) {
+        my $format = get_fastbit_format($eid, $data_type);
+        $col = join(',', map { $_->{name} } @{$format->{columns}});
+    }
+    my $results = CoGe::Accessory::FastBit::query("select $col where $where order by $order_by limit 999999999", $eid);
     if ($type eq 'max' || $type eq 'min') {
     	my $value_col = get_fastbit_score_column $data_type;
         my @lines = grep { $value1 == (split(',', $_))[$value_col] } @{$results};

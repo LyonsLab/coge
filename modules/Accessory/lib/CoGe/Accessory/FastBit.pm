@@ -37,37 +37,37 @@ BEGIN {
 }
 
 sub max {
-   	my $max = query('select max(value1) where 0.0=0.0', shift);
-   	return 0 + $max->[0];
+	my $max = query('select max(value1) where 0.0=0.0', shift);
+	return 0 + $max->[0];
 }
 
 sub min {
-   	my $min = query('select min(value1) where 0.0=0.0', shift);
-   	return 0 + $min->[0];
+	my $min = query('select min(value1) where 0.0=0.0', shift);
+	return 0 + $min->[0];
 }
 
 sub query {
 	my $query = shift;
 	my $eid = shift;
 
-    my $cmdpath = get_defaults()->{FASTBIT_QUERY};
-    my $storage_path = get_experiment_path($eid);
-    my $cmd = "$cmdpath -v 1 -d $storage_path -q \"$query\" 2>&1";
+	my $cmdpath = get_defaults()->{FASTBIT_QUERY};
+	my $storage_path = get_experiment_path($eid);
+	my $cmd = "$cmdpath -v 1 -d $storage_path -q \"$query\" 2>&1";
 	#warn $cmd;
-    my @cmdOut = qx{$cmd};
+	my @cmdOut = qx{$cmd};
 
-    my $cmdStatus = $?;
-    if ( $? != 0 ) {
-        warn "CoGe::Accessory::FastBit::query: error $? executing command: $cmd";
-    }
-    my @lines;
-    foreach (@cmdOut) {
-	    chomp;
-	    if (/^(\"|\d)/) {
-            push @lines, $_;
-        }
-    }
-    return \@lines;
+	my $cmdStatus = $?;
+	if ( $? != 0 ) {
+		warn "CoGe::Accessory::FastBit::query: error $? executing command: $cmd";
+	}
+	my @lines;
+	foreach (@cmdOut) {
+		chomp;
+		if (/^(\"|\d)/) {
+			push @lines, $_;
+		}
+	}
+	return \@lines;
 }
 
 1;

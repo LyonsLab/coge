@@ -282,9 +282,9 @@ $r->get("/jbrowse/experiment/:eid/features/#chr"  => { eid => qr/\d+/, chr => qr
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", eid => undef, chr => undef);
 
-$r->get("/jbrowse/experiment/:eid/histogram/" => [eid => qr/\d+/])
+$r->get("/jbrowse/experiment/:eid/histogram/#chr" => { eid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-histogram")
-    ->to("experiment#histogram", eid => undef);
+    ->to("experiment#histogram", eid => undef, chr => undef);
     
 $r->get("/jbrowse/experiment/:eid/query/" => [eid => qr/\d+/])
     ->name("jbrowse-experiment-query")
