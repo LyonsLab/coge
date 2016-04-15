@@ -40,7 +40,6 @@ int main(int argc, char* argv[]) {
 		to = argv[3][2];
 		snp_type = 's';
 	}
-
 	string line;
 	ifstream f (argv[1]);
 	while (getline(f, line)) {

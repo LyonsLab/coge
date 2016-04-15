@@ -112,6 +112,7 @@ return declare( [ HTMLFeatures ], {
 		dojo.empty(div);
 		div.innerHTML = '<img src="picts/ajax-loader.gif">';
 		var search = {type: 'SNPs', chr: chr, features: types.length == features.length ? 'all' : types.join()};
+        this._track.config.coge.search = search;
 		var eid = this._track.config.coge.id;
     	var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?features=' + search.features;
     	dojo.xhrGet({
@@ -127,7 +128,7 @@ return declare( [ HTMLFeatures ], {
 	  				coge.error('Search', 'no SNPs found');
 	  				return;
 	  			}
-	  			coge.new_search_track(this._track, data, search);
+	  			coge.new_search_track(this._track, data);
     		}),
     		error: dojo.hitch(this, function(data) {
     			this._search_dialog.hide();
@@ -152,8 +153,9 @@ return declare( [ HTMLFeatures ], {
         dojo.empty(div);
         div.innerHTML = '<img src="picts/ajax-loader.gif">';
         var search = {type: 'SNPs', chr: chr, snp_type: type};
+        this._track.config.coge.search = search;
         var eid = this._track.config.coge.id;
-        var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?type=' + type.charAt(0) + '-' + type.charAt(2);
+        var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?snp_type=' + type.charAt(0) + '-' + type.charAt(2);
         dojo.xhrGet({
             url: url,
             handleAs: 'json',
@@ -167,7 +169,7 @@ return declare( [ HTMLFeatures ], {
                     coge.error('Search', 'no SNPs found');
                     return;
                 }
-                coge.new_search_track(this._track, data, search);
+                coge.new_search_track(this._track, data);
             }),
             error: dojo.hitch(this, function(data) {
                 this._search_dialog.hide();
@@ -182,7 +184,10 @@ return declare( [ HTMLFeatures ], {
         var options = this.inherited(arguments);
         var track = this;
 
-        if (!track.config.coge.search_track && track.config.coge.type != 'notebook') {
+        if (track.config.coge.type == 'notebook')
+            return options;
+
+        if (!track.config.coge.search_track)  {
 	        options.push({
                 label: 'Find SNPs in Features',
                 onClick: function(){coge_variants._create_features_search_dialog(track);}
@@ -191,11 +196,11 @@ return declare( [ HTMLFeatures ], {
                 label: 'Find types of SNPs',
                 onClick: function(){coge_variants._create_types_search_dialog(track);}
             });
-            options.push({
-                label: 'Download Track Data',
-                onClick: function(){coge_variants._create_download_dialog(track);}
-            });
         }
+        options.push({
+            label: 'Download Track Data',
+            onClick: function(){coge.create_download_dialog(track);}
+        });
         return options;
     },
 

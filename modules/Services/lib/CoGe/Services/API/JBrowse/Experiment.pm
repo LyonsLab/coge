@@ -162,49 +162,72 @@ sub data {
     $self->res->headers->content_disposition('attachment; filename=experiment.csv;');
     $self->write('# experiment: ' . $experiment->name . "\n");
     $self->write("# chromosome: $chr\n");
-    if ($type) {
-        $self->write("# search: type = $type");
-        $self->write(", gte = $gte") if $gte;
-        $self->write(", lte = $lte") if $lte;
-        $self->write("\n");
-    }
-    $self->write("# transform: $transform\n") if $transform;
-    my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
-    my @columns = map { $_->{name} } @{$cols};
-    $self->write('# columns: ');
-    for (my $i=0; $i<scalar @columns; $i++) {
-        $self->write(',') if $i;
-        $self->write($columns[$i]);
-    }
-    $self->write("\n");
 
-    my $lines = CoGe::Core::Experiment::query_data(
-        eid => $id,
-        data_type => $data_type,
-        col => join(',', @columns),
-        chr => $chr,
-        type => $type,
-        gte => $gte,
-        lte => $lte,
-    );
-    my $score_column = CoGe::Core::Experiment::get_fastbit_score_column($data_type);
-    my $log10 = log(10);
-    foreach my $line (@{$lines}) {
-        if ($transform) {
-            my @tokens = split ',', $line;
-            if ($transform eq 'Inflate') {
-                $tokens[$score_column] = 1;
-            }
-            elsif ($transform eq 'Log2') {
-                $tokens[$score_column] = log(1 + $tokens[$score_column]);
-            }
-            elsif ($transform eq 'Log10') {
-                $tokens[$score_column] = log(1 + $tokens[$score_column]) / $log10;
-            }
-            $line = join ',', @tokens;
+    my $exp_data_type = $experiment->data_type;
+    if ( !$exp_data_type || $exp_data_type == $DATA_TYPE_QUANT ) {
+        if ($type) {
+            $self->write("# search: type = $type");
+            $self->write(", gte = $gte") if $gte;
+            $self->write(", lte = $lte") if $lte;
+            $self->write("\n");
         }
-        $self->write($line);
+        $self->write("# transform: $transform\n") if $transform;
+        my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
+        my @columns = map { $_->{name} } @{$cols};
+        $self->write('# columns: ');
+        for (my $i=0; $i<scalar @columns; $i++) {
+            $self->write(',') if $i;
+            $self->write($columns[$i]);
+        }
         $self->write("\n");
+
+        my $lines = CoGe::Core::Experiment::query_data(
+            eid => $id,
+            data_type => $data_type,
+            col => join(',', @columns),
+            chr => $chr,
+            type => $type,
+            gte => $gte,
+            lte => $lte,
+        );
+        my $score_column = CoGe::Core::Experiment::get_fastbit_score_column($data_type);
+        my $log10 = log(10);
+        foreach my $line (@{$lines}) {
+            if ($transform) {
+                my @tokens = split ',', $line;
+                if ($transform eq 'Inflate') {
+                    $tokens[$score_column] = 1;
+                }
+                elsif ($transform eq 'Log2') {
+                    $tokens[$score_column] = log(1 + $tokens[$score_column]);
+                }
+                elsif ($transform eq 'Log10') {
+                    $tokens[$score_column] = log(1 + $tokens[$score_column]) / $log10;
+                }
+                $line = join ',', @tokens;
+            }
+            $self->write($line);
+            $self->write("\n");
+        }
+    }
+    elsif ( $exp_data_type == $DATA_TYPE_POLY ) {
+        my $type_names = $self->param('features');
+        if ($type_names) {
+            $self->write('# search: SNPs in ');
+            $self->write($type_names);
+            $self->write("\n");
+        }
+        my $type = $self->param('type');
+        if ($type) {
+            $self->write('# search: ');
+            $self->write($type);
+            $self->write("\n");
+        }
+        my $snps = $self->_snps;
+        foreach my $line (@{$snps}) {
+            $self->write($line);
+            $self->write("\n");
+        }
     }
     $self->finish();
 }
@@ -317,17 +340,25 @@ sub snp_overlaps_feature {
 
 sub snps {
     my $self = shift;
+    my $results = $self->_snps;
+    if ($results) {
+        $self->render(json => $results);
+    }
+}
+
+sub _snps {
+    my $self = shift;
     my $eid = $self->stash('eid');
     my $chr = $self->stash('chr');
     $chr = undef if $chr eq 'Any';
-    
+
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
 	my $experiments = _get_experiments($db, $user, $eid);
     if (scalar @{$experiments} == 0) {
         $self->render(json => { error => 'User does not have permission to view this experiment' });
-        return;
+        return undef;
     }
 
 	my $type_names = $self->param('features');
@@ -358,16 +389,16 @@ sub snps {
 	    		push @$hits, $snp;
 	    	}
 	    }
-	    $self->render(json => $hits);
+	    return $hits;
 	}
-	else {
-       my $cmdpath = CoGe::Accessory::Web::get_defaults()->{COGEDIR};
+	elsif ($self->param('snp_type')) {
+        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{COGEDIR};
         $cmdpath = substr($cmdpath, 0, -3) . 'tools/snp_search/snp_search';
         my $storage_path = get_experiment_path($eid);
         opendir(my $dh, $storage_path);
         my @files = grep(/\.vcf$/,readdir($dh));
         closedir $dh;
-        my $cmd = "$cmdpath $storage_path/" . $files[0] . ' ' . $self->stash('chr') . ' ' . $self->param('type');
+        my $cmd = "$cmdpath $storage_path/" . $files[0] . ' ' . $self->stash('chr') . ' "' . $self->param('snp_type') . '"';
         warn $cmd;
         my @cmdOut = qx{$cmd};
 
@@ -380,8 +411,19 @@ sub snps {
             chomp;
             push @lines, $_;
         }
-        $self->render(json => \@lines);
+        return \@lines;
 	}
+    else {
+        my $snps;
+        foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
+            $snps = CoGe::Core::Experiment::query_data(
+                eid => $eid,
+                data_type => $experiment->data_type,
+                chr => $chr,
+            );
+        }
+        return $snps;
+    }
 }
 
 sub features {

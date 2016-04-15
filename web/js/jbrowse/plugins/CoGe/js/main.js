@@ -168,7 +168,7 @@ return declare( JBrowsePlugin,
         if (track.config.coge.transform)
             content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
         if (track.config.coge.search)
-            content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge.search_to_string(track.config.coge.search) + '</td></tr>';
+            content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge.search_to_string(track.config.coge.search, true) + '</td></tr>';
         content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.download_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge._track_download_dialog.hide()">Cancel</button></div></div>';
         this._track_download_dialog = new Dialog({
             title: 'Download Track',
@@ -267,7 +267,7 @@ return declare( JBrowsePlugin,
 
     // ----------------------------------------------------------------
 
-    new_search_track: function(track, data, search) {
+    new_search_track: function(track, data) {
     	var browser = this.browser;
     	var config = track.config;
     	var eid = config.coge.id;
@@ -289,7 +289,7 @@ return declare( JBrowsePlugin,
 //        });
 //        d.promise.then(function() {
         	config = dojo.clone(config);
-        	config.key = 'Search: ' + config.key + ' (' + coge.search_to_string(search) + ')';
+        	config.key = 'Search: ' + config.key + ' (' + coge.search_to_string(track.config.coge.search) + ')';
         	config.track = 'search_' + eid;
         	config.label = 'search_' + eid;
             config.metadata = {Description: 'Track to show results of searching a track.'};
@@ -366,7 +366,12 @@ return declare( JBrowsePlugin,
 
 	search_to_params: function(search, without_chr) {
 		var params;
-		if (search.type == 'range')
+        if (search.type == 'SNPs')
+            if (search.snp_type)
+                params = 'snp_type=' + search.snp_type;
+            else
+                params = 'features=' + search.features;
+        else if (search.type == 'range')
 			params = 'type=range&gte=' + search.gte + '&lte=' + search.lte;
 		else
 			params = 'type=' + search.type;
@@ -377,17 +382,21 @@ return declare( JBrowsePlugin,
 
     // ----------------------------------------------------------------
 
-	search_to_string: function(search) {
+	search_to_string: function(search, without_chr) {
 		var string;
 		if (search.type == 'range')
 			string = 'range: ' + search.gte + ' .. ' + search.lte;
 		else if (search.type == 'SNPs') {
-			string = search.type;
-			if (search.features != 'all')
-				string += ' in ' + search.features;
+            if (search.snp_type)
+                string = search.snp_type;
+            else {
+    			string = 'SNPs';
+    			if (search.features != 'all')
+    				string += ' in ' + search.features;
+            }
 		} else
 			string = search.type;
-		if (search.chr && search.chr != 'Any')
+		if (!without_chr && search.chr && search.chr != 'Any')
 			string += ', chr=' + search.chr;
 		return string;
 	}

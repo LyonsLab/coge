@@ -669,7 +669,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	  			if (data.length == 0)
 	  				coge.error('Search', 'Search returned zero hits');
 	  			else
-	  				coge.new_search_track(this._track, data, search);
+	  				coge.new_search_track(this._track, data);
     		}),
     		error: dojo.hitch(this, function(data) {
     			this._track_search_dialog.hide();
