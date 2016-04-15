@@ -222,7 +222,7 @@ return declare( JBrowsePlugin,
         var ref_seq = dojo.byId('coge_ref_seq');
         var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username='+un;
         if (dojo.byId('search') && dojo.byId('search').checked)
-            url += '&' + coge.search_to_params(this._track.config.coge.search);
+            url += '&' + coge.search_to_params(this._track.config.coge.search, true);
         if (dojo.byId('transform') && dojo.byId('transform').checked)
             url += '&transform=' + this._track.config.coge.transform;
         document.location = url;
@@ -364,13 +364,13 @@ return declare( JBrowsePlugin,
 
     // ----------------------------------------------------------------
 
-	search_to_params: function(search) {
+	search_to_params: function(search, without_chr) {
 		var params;
 		if (search.type == 'range')
 			params = 'type=range&gte=' + search.gte + '&lte=' + search.lte;
 		else
 			params = 'type=' + search.type;
-		if (search.chr && search.chr != 'Any')
+		if (!without_chr && search.chr && search.chr != 'Any')
 			params += '&chr=' + search.chr;
 		return params;		
 	},
