@@ -24,31 +24,63 @@ return declare( [ HTMLFeatures ], {
 
     // ----------------------------------------------------------------
 
-    _create_search_dialog: function(track) {
-    	this._track = track;
-    	var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
-    	this.browser.refSeqOrder.forEach(function(rs) {
-    		content += '<option>' + rs + '</option>';
-    	})
-    	content += '</select></td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
-    	var features = coge_track_list._track_configs.filter(function(f) {
-    		return (f.coge.type && f.coge.type == 'features');
-    	});
-    	features.forEach(function(t) {
-    		content += '<div><input type="checkbox"> <label>' + t.coge.id + '</label></div>';
-    	});
-    	content += '</td></tr><tr><td></td><td><button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></td></tr></table>';
-    	content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_dialog.hide()">Cancel</button></div></div>';
+    _create_features_search_dialog: function(track) {
+        this._track = track;
+        var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
+        this.browser.refSeqOrder.forEach(function(rs) {
+            content += '<option>' + rs + '</option>';
+        })
+        content += '</select></td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
+        var features = coge_track_list._track_configs.filter(function(f) {
+            return (f.coge.type && f.coge.type == 'features');
+        });
+        features.forEach(function(t) {
+            content += '<div><input type="checkbox"> <label>' + t.coge.id + '</label></div>';
+        });
+        content += '</td></tr><tr><td></td><td><button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></td></tr></table>';
+        content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_dialog.hide()">Cancel</button></div></div>';
         this._search_dialog = new Dialog({
             title: "Find SNPs in Features",
             content: content,
             onHide: function() {
-            	this.destroyRecursive();
-            	coge_variants._search_dialog = null;
+                this.destroyRecursive();
+                coge_variants._search_dialog = null;
             },
             style: "width: 300px"
         });
-    	this._search_dialog.show();
+        this._search_dialog.show();
+    },
+
+    // ----------------------------------------------------------------
+
+    _create_types_search_dialog: function(track) {
+        this._track = track;
+        var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
+        this.browser.refSeqOrder.forEach(function(rs) {
+            content += '<option>' + rs + '</option>';
+        })
+        content += '</select></td></tr><tr><td style="vertical-align:top;">SNPs:</td><td id="coge_search_types">';
+        var first = true;
+        ['A>C','A>G','A>T','C>A','C>G','C>T','G>A','G>C','G>T','T>A','T>C','T>G','deletion','insertion'].forEach(function(t) {
+            content += '<div><input name="type" type="radio"';
+            if (first) {
+                content += ' checked';
+                first = false;
+            }
+            content += '> <label>' + t + '</label></div>';
+        });
+        content += '</td></tr></table>';
+        content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_types()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_dialog.hide()">Cancel</button></div></div>';
+        this._search_dialog = new Dialog({
+            title: "Find types of SNPs",
+            content: content,
+            onHide: function() {
+                this.destroyRecursive();
+                coge_variants._search_dialog = null;
+            },
+            style: "width: 300px"
+        });
+        this._search_dialog.show();
     },
 
     // ----------------------------------------------------------------
@@ -106,15 +138,59 @@ return declare( [ HTMLFeatures ], {
 
     // ----------------------------------------------------------------
 
+    _search_types: function() {
+        var types = document.getElementById('coge_search_types').getElementsByTagName('INPUT');
+        var type;
+        for (var i=0; i<types.length; i++)
+            if (types[i].checked) {
+                type = types[i].nextElementSibling.innerText;
+                break;
+            }
+        var ref_seq = dojo.byId('coge_ref_seq');
+        var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
+        var div = dojo.byId('coge-track-search-dialog');
+        dojo.empty(div);
+        div.innerHTML = '<img src="picts/ajax-loader.gif">';
+        var search = {type: 'SNPs', chr: chr, snp_type: type};
+        var eid = this._track.config.coge.id;
+        var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?type=' + type.charAt(0) + '-' + type.charAt(2);
+        dojo.xhrGet({
+            url: url,
+            handleAs: 'json',
+            load: dojo.hitch(this, function(data) {
+                this._search_dialog.hide();
+                if (data.error) {
+                    coge.error('Search', data);
+                    return;
+                }
+                if (data.length == 0) {
+                    coge.error('Search', 'no SNPs found');
+                    return;
+                }
+                coge.new_search_track(this._track, data, search);
+            }),
+            error: dojo.hitch(this, function(data) {
+                this._search_dialog.hide();
+                coge.error('Search', data);
+            })
+        })
+    },
+
+    // ----------------------------------------------------------------
+
     _trackMenuOptions: function() {
         var options = this.inherited(arguments);
         var track = this;
 
         if (!track.config.coge.search_track && track.config.coge.type != 'notebook') {
 	        options.push({
-		        label: 'Search',
-		        onClick: function(){coge_variants._create_search_dialog(track);}
-	        });
+                label: 'Find SNPs in Features',
+                onClick: function(){coge_variants._create_features_search_dialog(track);}
+            });
+            options.push({
+                label: 'Find types of SNPs',
+                onClick: function(){coge_variants._create_types_search_dialog(track);}
+            });
             options.push({
                 label: 'Download Track Data',
                 onClick: function(){coge_variants._create_download_dialog(track);}

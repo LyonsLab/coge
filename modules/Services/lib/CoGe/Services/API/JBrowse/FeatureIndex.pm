@@ -28,31 +28,32 @@ sub _add_features {
     my $sth = $dbh->prepare($query);
     $sth->execute();
     while (my @row = $sth->fetchrow_array) {
-    	my $chromosome = $hits->{$row[0]};
-    	if (!$chromosome) {
-    		$hits->{$row[0]} = [\@row];
-    	}
-    	else {
-	    	push @$chromosome, \@row;
-    	}
+    	push @$hits, \@row;
+    	# my $chromosome = $hits->{$row[0]};
+    	# if (!$chromosome) {
+    	# 	$hits->{$row[0]} = [\@row];
+    	# }
+    	# else {
+	    # 	push @$chromosome, \@row;
+    	# }
     }
 }
 
 sub get_features {
 	my $self = shift;
 	my $dbh = shift;
-	my $dir = dir($self->{conf}{CACHEDIR}, $self->{gid}, 'features');
-	my $file = file($dir, $self->{chromosome} . '_' . $self->{type} . '.loc');
+#	my $dir = dir($self->{conf}{CACHEDIR}, $self->{gid}, 'features');
+#	my $file = file($dir, $self->{chromosome} . '_' . $self->{type} . '.loc');
 #	if (-e $file) {
 #		return _read_index($file);
 #	}
-	my $features = {};
+	my $features = [];
     my $ids = get_dataset_ids($self->{gid}, $dbh);
     foreach my $dsid (@$ids) {
         _add_features $self->{chromosome}, $self->{type}, $dsid, $features, $dbh;
     }
 #	_write_index($file, $features);
-	return $features->{$self->{chromosome}};
+	return $features;
 }
 
 sub _read_index {
