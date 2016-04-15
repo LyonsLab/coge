@@ -119,7 +119,7 @@ sub generate_body {
         EMBED         => $EMBED,
     	LOAD_ID       => $LOAD_ID,
     	WORKFLOW_ID   => $WORKFLOW_ID,
-        API_BASE_URL  => 'api/v1/', #TODO move into config file or module
+        API_BASE_URL  => $CONF->{SERVER} . 'api/v1/', #TODO move into config file or module
         HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadExperiment',
         SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         DEFAULT_TAB              => 0,

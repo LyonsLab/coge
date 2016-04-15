@@ -130,11 +130,9 @@ sub add_annotations {
     my $dsgid1 = $opts{gid1};
     my $dsgid2 = $opts{gid2};
     my $cmd    = $replicate_annotations;
-    $cmd .= " -db " . $DBNAME;
-    $cmd .= " -u " . $DBUSER;
-    $cmd .= " -pw " . $DBPASS;
     $cmd .= " -dsgid1 " . $dsgid1;
     $cmd .= " -dsgid2 " . $dsgid2;
+    $cmd .= " -config " . $conf_file;
     execute($cmd);
 }
 

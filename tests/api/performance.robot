@@ -36,7 +36,7 @@ Annotation Add 1
         Create Session  coge    ${API_URL}
         ${content3}=    Evaluate        json.load(open('${DATA_PATH}/load_annotation.json', 'r'))       json
         ${headers3}=    Create Dictionary       Content-Type=application/json
-	Set To Dictionary	${content3["parameters"]}	genome_id=19620
+	Set To Dictionary	${content3["parameters"]}	genome_id=28114
         ${resp3}=       Put Request     coge	${JOBS}/${AUTH_PARAMS}	data=${content3}	headers=${headers3}
         Should Be Equal As Strings	${resp3.status_code}	201
         Dictionary Should Contain Item	${resp3.json()}	success	True
@@ -49,7 +49,7 @@ Annotation Add 2
         Create Session  coge    ${API_URL}
         ${content4}=    Evaluate        json.load(open('${DATA_PATH}/load_annotation.json', 'r'))       json
         ${headers4}=    Create Dictionary       Content-Type=application/json
-        Set To Dictionary       ${content4["parameters"]}       genome_id=28110
+        Set To Dictionary       ${content4["parameters"]}       genome_id=28115
         ${resp4}=       Put Request     coge    ${JOBS}/${AUTH_PARAMS}  data=${content4}        headers=${headers4}
         Should Be Equal As Strings      ${resp4.status_code}    201
         Dictionary Should Contain Item	${resp4.json()}	success	True
