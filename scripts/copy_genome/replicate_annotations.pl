@@ -5,23 +5,34 @@ use CoGeX;
 use Data::Dumper;
 use Getopt::Long;
 
-use vars qw($DEBUG $db $user $pass $coge $dsgid1 $dsgid2);
+use vars qw($DEBUG $config $conf $db $host $port $user $pass $coge $dsgid1 $dsgid2);
 
 $DEBUG = 0;
 
 GetOptions(
-	"database|db=s"   => \$db,
-	"user|u=s"        => \$user,
-	"password|pw|p=s" => \$pass,
-	"dsgid1=i"        => \$dsgid1,
-	"dsgid2=i"        => \$dsgid2,
+	"dsgid1=i" => \$dsgid1,
+	"dsgid2=i" => \$dsgid2,
+	"config=s" => \$config
 );
 
 print STDOUT "Starting $0 (pid $$)\n";
 
-my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307";
-$coge = CoGeX->connect( $connstr, $user, $pass );
+# Load config file
+unless ($config) {
+    print STDOUT "log: error: can't find config file\n";
+    print STDERR "can't find config file\n";
+    exit(-1);
+}
+$conf = CoGe::Accessory::Web::get_defaults($config);
+$db   = $conf->{DBNAME};
+$host = $conf->{DBHOST};
+$port = $conf->{DBPORT};
+$user = $conf->{DBUSER};
+$pass = $conf->{DBPASS};
 
+# Connect to DB
+my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port";
+$coge = CoGeX->connect( $connstr, $user, $pass );
 unless ( $coge && $dsgid1 && $dsgid2 )
 {
 	print qq{
@@ -44,7 +55,6 @@ unless ( $dsg1 && $dsg2 ) {
 	print STDERR "Error:  unable to create a datasetgroup object for one of the IDs\n" if $DEBUG;
 	exit;
 }
-
 my $ds1 = map_chr_to_ds($dsg1);
 my $ds2 = map_chr_to_ds($dsg2);
 

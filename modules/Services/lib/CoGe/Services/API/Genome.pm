@@ -175,11 +175,14 @@ sub sequence {
     my $self   = shift;
     my $gid    = $self->stash('id');
     return unless $gid;
-    my $chr    = $self->stash('chr');
-    my $start  = $self->param('start');
-    my $stop   = $self->param('stop') || $self->param('end');
-    my $strand = $self->param('strand');
-    print STDERR "Data::Genome::fetch_sequence gid=$gid chr=$chr start=$start stop=$stop\n";
+    my $chr    = $self->stash('chr');    # optional
+    my $start  = $self->param('start');  # optional
+    my $stop   = $self->param('stop') || $self->param('end'); # optional
+    my $strand = $self->param('strand'); # optional
+    print STDERR "Data::Genome::fetch_sequence gid=$gid ",
+        (defined $chr ? "chr=$chr " : ''),
+        (defined $start ? "start=$start " : ''),
+        (defined $stop ? "stop=$stop " : ''), "\n";
 
     # Connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);

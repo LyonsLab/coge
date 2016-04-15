@@ -223,9 +223,9 @@ $.extend(ExperimentDescriptionView.prototype, {
 
        $.extend(this.experiment, {
             metadata: {
-                name: name,
-                description: description,
-                version: version,
+                name: coge.utils.removeSpecialChars(name),
+                description: coge.utils.removeSpecialChars(description),
+                version: coge.utils.removeSpecialChars(version),
                 restricted: restricted,
                 source_name: source,
                 genome: genome,

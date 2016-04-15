@@ -35,7 +35,7 @@ sub gen_html {
 
 sub gen_body {
 	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'SearchResults.tmpl' );
-	$template->param( API_BASE_URL => 'api/v1/',
+	$template->param( API_BASE_URL => $CONF->{SERVER} . 'api/v1/',
 	                  USER_NAME   => $USER->user_name,
 	                  SEARCH_TERM => $SEARCH_TERM );
 	

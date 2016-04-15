@@ -24,7 +24,7 @@ function search_genomes (search_term) {
 	var spinner = $('#edit_genome_busy');
 	spinner.show();
 	
-	coge.services.search_genomes(search_term)
+	coge.services.search_genomes(search_term, { fast: true })
 		.done(function(response) {
 			var results = response.genomes.map(function(obj) {
 				var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
@@ -193,10 +193,10 @@ $.extend(AnnotationDescriptionView.prototype, {
 
        $.extend(this.annotation, {
             metadata: {
-                name: name,
-                description: description,
+                name: coge.utils.removeSpecialChars(name),
+                description: coge.utils.removeSpecialChars(description),
                 link: link,
-                version: version,
+                version: coge.utils.removeSpecialChars(version),
                 source: source,
                 genome: genome,
             },

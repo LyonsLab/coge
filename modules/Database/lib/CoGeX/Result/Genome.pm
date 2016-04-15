@@ -304,13 +304,13 @@ sub datasets {
     my %opts = @_;
     my $chr  = $opts{chr};
     $chr = $opts{chromosome} unless defined $chr;
-    my $restricted = $opts{restricted};
+    my $restricted = $opts{restricted}; #FIXME why is this here? restricted datasets are not used
 
     my %datasets;
     foreach my $dsc ( $self->dataset_connectors() ) {
         my $ds = $dsc->dataset;
-        next if ( $restricted and not $ds->restricted );
         next unless $ds;
+        next if ( $restricted and not $ds->restricted );
 
         if ( defined $chr ) {
             $datasets{ $ds->id } = $ds
@@ -378,6 +378,7 @@ sub get_chromosome {
 	if ($c->find($name)) {
 		return (chromosome=>$c->name, sequence_length=>$c->length);
 	}
+	print STDERR "CoGeX::Result::Genome::get_chromosome ERROR, chromosome '$name' not found\n";
 	return 0;
 }
 
@@ -405,6 +406,7 @@ sub get_chromosome_length {
 	if ($c->find($name)) {
 		return $c->length;
 	}
+	print STDERR "CoGeX::Result::Genome::get_chromosome_length ERROR, chromosome '$name' not found\n";
 	return 0;
 }
 

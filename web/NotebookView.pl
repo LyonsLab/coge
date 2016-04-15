@@ -127,7 +127,7 @@ sub gen_body {
         PAGE_NAME    => $PAGE_TITLE . '.pl',
         NOTEBOOK_ID  => $lid,
         DEFAULT_TYPE => 'note',
-        API_BASE_URL => 'api/v1/', #TODO move into config file or module
+        API_BASE_URL => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
         USER         => $USER->user_name
     );
     $template->param( LIST_INFO => get_list_info( lid => $lid ) );
