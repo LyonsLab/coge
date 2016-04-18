@@ -65,6 +65,7 @@ sub add {
             description => $pipeline->workflow->name,
             link        => ($response->{site_url} ? $response->{site_url} : '')
         );
+        print STDERR "CoGe::Services::API::Job::add submitted workflow ", $pipeline->workflow->id, "\n";
     }
     
     # Convert 'success' to boolean
