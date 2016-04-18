@@ -36,10 +36,10 @@ sub features {
     print STDERR "JBrowse::Annotation::features gid=$gid ", ($dsid ? "dsid=$dsid " : ''), ($feat_type ? "type=$feat_type " : ''), "chr=$chr start=$start end=$end\n";
 
     # Check params
-    my $null_response = $self->render(json => { "features" => [] });
     if ( $end <= 0 ) {
         warn 'end <= 0';
-        return $null_response;
+        $self->render(json => { "features" => [] });
+        return;
     }
 
     # Authenticate user and connect to the database
@@ -56,7 +56,8 @@ sub features {
     $end   = min( $end,   $chrLen );
     if ( $start == $end ) {
         warn 'start == end';
-        return $null_response;
+        $self->render(json => { "features" => [] });
+        return;
     }
 
     # Check permissions
@@ -64,7 +65,8 @@ sub features {
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
         warn 'user does not have access';
-        return $null_response;
+        $self->render(json => { "features" => [] });
+        return;
     }
 
     # Get features

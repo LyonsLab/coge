@@ -159,11 +159,12 @@ sub data {
         return;
     }
 
-    $self->res->headers->content_disposition('attachment; filename=experiment.csv;');
+    my $exp_data_type = $experiment->data_type;
+    my $filename = 'experiment' . ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : '.csv');
+    $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
     $self->write('# experiment: ' . $experiment->name . "\n");
     $self->write("# chromosome: $chr\n");
 
-    my $exp_data_type = $experiment->data_type;
     if ( !$exp_data_type || $exp_data_type == $DATA_TYPE_QUANT ) {
         if ($type) {
             $self->write("# search: type = $type");
@@ -223,10 +224,28 @@ sub data {
             $self->write($type);
             $self->write("\n");
         }
+        $self->write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n");
         my $snps = $self->_snps;
         foreach my $line (@{$snps}) {
-            $self->write($line);
-            $self->write("\n");
+            my @l = split(',', $line);
+            $self->write(substr($l[0], 1, -1));
+            $self->write("\t");
+            $self->write($l[1]);
+            $self->write("\t");
+            chomp $l[4];
+            $self->write(substr($l[4], 1, -1));
+            $self->write("\t");
+            chomp $l[5];
+            $self->write(substr($l[5], 1, -1));
+            $self->write("\t");
+            chomp $l[6];
+            $self->write(substr($l[6], 1, -1));
+            $self->write("\t");
+            $self->write($l[7]);
+            $self->write("\t\t");
+            chomp $l[8];
+            $self->write(substr($l[8], 1, -1));
+            $self->write("\t\n");
         }
     }
     $self->finish();
