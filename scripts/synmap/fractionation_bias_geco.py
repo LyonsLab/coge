@@ -219,33 +219,34 @@ with open(synmap_import_file, 'r') as f:  # open SynMap file containing syntenic
                 #clean ID subgenome A from the column on left of data
                 ida = cols[0]
                 ida = ida[1:cols[0].index('_')]
+            #Determines which are target and query genes                
             if args.target == ida:
                 target_chr = cols[1]
                 if any(target_chr in s for s in target_api_chrs_final):
-                    target_gene = str(cols[4]).rsplit(".", 1)[0]  #puts all genome1_genes with synteny into a list
-                    decimal_strip_check_target_gene = target_gene.find('.')
-                    if not decimal_strip_check_target_gene == (-1):
-                        target_gene = target_gene[:(decimal_strip_check_target_gene)]
+                    target_gene = str(cols[7]) #.rsplit(".", 1)[0]  #puts all genome1_genes with synteny into a list
+                    #decimal_strip_check_target_gene = target_gene.find('.')
+                    #if not decimal_strip_check_target_gene == (-1):
+                        #target_gene = target_gene[:(decimal_strip_check_target_gene)]
                 else:
                     continue
                 query_chr = str(cols[13])  #puts all genome2_chrs with synteny to genes in genome1 into a list
                 if any(query_chr in s for s in query_api_chrs_final):
-                    query_gene = str(cols[16]).rsplit(".", 1)[0]  #puts all genome2_genes with synteny to genes in a genome1 into a list
+                    query_gene = str(cols[19])  #.rsplit(".", 1)[0]  #puts all genome2_genes with synteny to genes in a genome1 into a list
                 else:
                     continue
             else:
                 target_chr = cols[13]
                 if any(target_chr in s for s in target_api_chrs_final):
-                    target_gene = str(cols[16])
-                    decimal_strip_check_target_gene = target_gene.find('.')
-                    if not decimal_strip_check_target_gene == (-1):
-                        target_gene = target_gene[:(decimal_strip_check_target_gene)]
+                    target_gene = str(cols[19])
+                    #decimal_strip_check_target_gene = target_gene.find('.')
+                    #if not decimal_strip_check_target_gene == (-1):
+                    #    target_gene = target_gene[:(decimal_strip_check_target_gene)]
                     #puts all genome1_genes with synteny into a list
                 else:
                     continue
                 query_chr = str(cols[1])  #puts all genome2_chrs with synteny to genes in genome1 into a list
                 if any(query_chr in s for s in query_api_chrs_final):
-                    query_gene = cols[4].rsplit(".", 1)[0]  #puts all genome2_genes with synteny to genes in a genome1 into a list
+                    query_gene = cols[7]  #.rsplit(".", 1)[0]  #puts all genome2_genes with synteny to genes in a genome1 into a list
                 else:
                     continue
             if not target_chr in d:
@@ -273,14 +274,13 @@ with open(gff_import_file, 'r') as g:  # opens gff file
         new_line = new_line.replace('Name=', '')  #strips Name= off gene_name in gff file from CoGe
         if new_line[0] != '#' and new_line[0] != '\n':  #selects only lines with CDS information
             gffcols = new_line.split('\t', )  #parses all columns
-            if any(gffcols[0] in s for s in query_api_chrs_final) and (gffcols[2] == 'CDS'):  #selects only 'CDS' lines for consideration
+            if any (gffcols[0] in s for s in target_api_chrs_final) and (gffcols[2] == 'CDS'):  #selects only 'CDS' lines for consideration
                 chr = gffcols[0]  #adds genome1_chrs to list
                 if not chr in gff_genes_target:
                     gff_genes_target[chr] = []  #initializes chr list in dictionary if chr does not exist yet
-                gene_name = str(gffcols[9]).rsplit(".", 1)[0]
-                gene_name = gene_name.rsplit(".", 1)[0]
-                gene_name = gene_name.rstrip(".")
-                gene_name1 = gene_name[3:] #adds targetgenome_genes to list and removes the "ID=" added by CoGe
+                gene_name = str(gffcols[-1])  
+                gene_name = gene_name.rstrip("\n")
+                gene_name1 = gene_name[9:] #adds targetgenome_genes to list and removes the "ID=" added by CoGe
                 start = int(gffcols[3])  #adds targetgenome_gene start bp to list for ordering as integer
                 stop = int(gffcols[4])  #adds targetgenome_gene stop bp to list ?for ordering? as integer
                 try:
@@ -535,7 +535,6 @@ for i in range(len(tableau20)):
 print "setting palette"
 current_palette = sns.color_palette("Set2", 40)
 
-
 #tableau20
 print "Starting to plot figure"
 
@@ -575,10 +574,11 @@ for tchr in listofchrgraph:
         except ValueError:
             continue
 
+
 fig.subplots_adjust(wspace=0.45, hspace=0.6)
 plt.savefig(args.output+"/html/"+"fractbias_figure-" + "-TarID" + str(args.target) + "-TarChrNum" + str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + \
 "-QueryID" + str(args.query) + "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + str(args.remove_random_unknown) + "-WindSize" \
-+ str(args.windowsize) + ".png", transparent=True) 
++ str(args.windowsize) + ".png", transparent=True, bbox_inches='tight') 
 
 t6 = datetime.now()
 
@@ -594,11 +594,11 @@ benchmark_plotting = t6 - t5
 benchmark_total = t6 - t0
 
 
-print "API Call Time: " + str(benchmark_api_call)
+"""print "API Call Time: " + str(benchmark_api_call)
 print "SynMap Data Processing Time: " + str(benchmark_synmap_data)
 print "GFF Data Processing Time: " + str(benchmark_gff_data)
 print "Data Structure Output Time: " + str(benchmark_output_data)
 print "Raw Data Processing Time: " + str(benchmark_processing_data)
 print "Sliding Window Analysis Time: " + str(benchmark_sliding_window)
 print "Plotting Graphs Time: " + str(benchmark_plotting)
-print "Total Time: " + str(benchmark_total + benchmark_api_call)
+print "Total Time: " + str(benchmark_total + benchmark_api_call)"""
