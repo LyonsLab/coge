@@ -535,7 +535,6 @@ for i in range(len(tableau20)):
 print "setting palette"
 current_palette = sns.color_palette("Set2", 40)
 
-
 #tableau20
 print "Starting to plot figure"
 
@@ -575,10 +574,11 @@ for tchr in listofchrgraph:
         except ValueError:
             continue
 
+
 fig.subplots_adjust(wspace=0.45, hspace=0.6)
 plt.savefig(args.output+"/html/"+"fractbias_figure-" + "-TarID" + str(args.target) + "-TarChrNum" + str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + \
 "-QueryID" + str(args.query) + "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + str(args.remove_random_unknown) + "-WindSize" \
-+ str(args.windowsize) + ".png", transparent=True) 
++ str(args.windowsize) + ".png", transparent=True, bbox_inches='tight') 
 
 t6 = datetime.now()
 
