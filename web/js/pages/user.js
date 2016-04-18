@@ -701,6 +701,8 @@ $.extend(DataGrid.prototype, {
 			if (row) {
 				self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
 		        $(tr).addClass('selected'); // select item
+		        self.lastRowSelected = tr;
+		        self.selectItem(row);
 		        
 		        self.openItem(row);
 			}
@@ -945,10 +947,10 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatAnalysis: function() {
         var isRunning   = (this.status.toLowerCase() == 'running');
         var isCancelled = (this.status.toLowerCase() == 'cancelled');
-        var star_icon    = '<img title="Favorite this analysis"' + ( this.is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) + 'width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this, '+this.id+');" />';
+        var star_icon    = '<img title="Favorite this analysis" src="picts/star-' + (this.is_important ? 'full' : 'hollow') + '.png" width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this, '+this.id+');" />';
         var cancel_icon  = '<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('+this.id+');"/>';
         var restart_icon = '<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('+this.id+');"/>';
-        var comment_icon = '<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog('+this.id+');" />';
+        var comment_icon = '<img title=' + (this.comment && this.comment.length ? JSON.stringify(this.comment) : '"Add comment"') + ' class="link" height="15" style="vertical-align:middle;" src="picts/' + (this.comment && this.comment.length ? 'comment' : 'no-comment') + '-icon.png" width="15" onclick="comment_dialog('+this.id+');" />';
         var icons = star_icon + ' ' + comment_icon + ' ' + (isCancelled ? restart_icon : '') + ' ' + (isRunning ? cancel_icon : '');
     	var descStr =
     		icons + ' ' + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + this.comment : '') + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
