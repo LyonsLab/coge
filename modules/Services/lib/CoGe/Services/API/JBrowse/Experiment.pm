@@ -226,25 +226,22 @@ sub data {
         }
         $self->write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n");
         my $snps = $self->_snps;
+        my $s = (index(@{$snps}[0], ', ') == -1 ? 1 : 2);
         foreach my $line (@{$snps}) {
             my @l = split(',', $line);
             $self->write(substr($l[0], 1, -1));
             $self->write("\t");
             $self->write($l[1]);
             $self->write("\t");
-            chomp $l[4];
-            $self->write(substr($l[4], 1, -1));
+            $self->write(substr($l[4], $s, -1));
             $self->write("\t");
-            chomp $l[5];
-            $self->write(substr($l[5], 1, -1));
+            $self->write(substr($l[5], $s, -1));
             $self->write("\t");
-            chomp $l[6];
-            $self->write(substr($l[6], 1, -1));
+            $self->write(substr($l[6], $s, -1));
             $self->write("\t");
             $self->write($l[7]);
             $self->write("\t\t");
-            chomp $l[8];
-            $self->write(substr($l[8], 1, -1));
+            $self->write(substr($l[8], $s, -1));
             $self->write("\t\n");
         }
     }
