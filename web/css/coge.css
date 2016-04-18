@@ -56,6 +56,10 @@ a:hover {
   color: gray;
 }
 
+.highlighted {
+    background-color: yellow;    
+}
+
 .coge-inlaid {
     text-shadow: 0px 1px 0px lightgray;
 }
