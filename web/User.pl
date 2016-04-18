@@ -333,8 +333,9 @@ sub get_item_info {
             '<b>Workflow id' . $log->parent_id . '</b><br>'
           . '<b>Type:</b> ' . $log->page . '<br>'
           . '<b>Description:</b> ' . $log->description . '<br>'
-          . '<b>Date:</b> ' . $log->time . '<br>'
-          . qq{<div><b>Tools:</b><br>}
+          . '<b>Date:</b> ' . $log->time . '<br>';
+        $html .= '<b>Comment:</b> ' . $log->comment . '<br>' if $log->comment;
+        $html .= qq{<div><b>Tools:</b><br>}
           . qq{<div style="padding-left:20px;">}
           . qq{<a href="} . $log->link . qq{" target=_blank>Open result</a>}
           . qq{</div>}
