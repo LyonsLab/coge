@@ -701,6 +701,8 @@ $.extend(DataGrid.prototype, {
 			if (row) {
 				self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
 		        $(tr).addClass('selected'); // select item
+		        self.lastRowSelected = tr;
+		        self.selectItem(row);
 		        
 		        self.openItem(row);
 			}
