@@ -1896,6 +1896,10 @@ div.dataTables_scrollBody {
 	color: #41AD41;
 }
 
+.coge-header-button a {
+  color: #41AD41;
+}
+
 .coge-login-button {
 	max-width: 6em;
 	margin-left: 5%;
