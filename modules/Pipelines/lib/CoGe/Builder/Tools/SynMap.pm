@@ -1164,7 +1164,7 @@ sub add_jobs {
 			{
 				cmd => 'python '
 				  . $config->{SCRIPTDIR}
-				  . '/synmap/fractionation_bias_geco.py',
+				  . '/synmap/fractionation_bias.py',
 				script => undef,
 				args   => [
 					[ '--gff',          $gff_job->{outputs}->[0], 0 ],
