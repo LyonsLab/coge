@@ -512,7 +512,7 @@ print "Plotting FractBias Data"
 
 print "setting up figsize, cols, and gridspec"
 #define figure size, column layout, grid layout
-figsize = (15, (len(target_api_chrs_final)*2.4))
+figsize = (15, (len(query_api_chrs_final))+30) #(15, (len(target_api_chrs_final)*2.4))
 cols = 2
 gs = gridspec.GridSpec(len(output_dict) // cols + 1, cols)
 
