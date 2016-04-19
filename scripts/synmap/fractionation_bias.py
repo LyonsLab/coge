@@ -22,6 +22,7 @@ parser.add_argument("--remove_random_unknown", help="Restricts the maximum numbe
 parser.add_argument("--syndepth", help="Passes synetic depth setting from SynMap for saving a unique figure.", type=str)
 args = parser.parse_args()
 
+#Flag for printing debug statements
 
 
 
@@ -512,7 +513,7 @@ print "Plotting FractBias Data"
 
 print "setting up figsize, cols, and gridspec"
 #define figure size, column layout, grid layout
-figsize = (15, (len(query_api_chrs_final))+30) #(15, (len(target_api_chrs_final)*2.4))
+figsize = (15, (0.2*len(query_api_chrs_final))+20) #(15, (len(target_api_chrs_final)*2.4))
 cols = 2
 gs = gridspec.GridSpec(len(output_dict) // cols + 1, cols)
 
@@ -575,7 +576,7 @@ for tchr in listofchrgraph:
             continue
 
 
-fig.subplots_adjust(wspace=0.45, hspace=0.6)
+fig.subplots_adjust(wspace=0.45, hspace=0.3)
 plt.savefig(args.output+"/html/"+"fractbias_figure-" + "-TarID" + str(args.target) + "-TarChrNum" + str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + \
 "-QueryID" + str(args.query) + "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + str(args.remove_random_unknown) + "-WindSize" \
 + str(args.windowsize) + ".png", transparent=True, bbox_inches='tight') 
