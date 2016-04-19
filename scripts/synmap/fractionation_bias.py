@@ -576,7 +576,7 @@ for tchr in listofchrgraph:
             continue
 
 
-fig.subplots_adjust(wspace=0.45, hspace=0.4)
+fig.subplots_adjust(wspace=0.45, hspace=0.6)
 plt.savefig(args.output+"/html/"+"fractbias_figure-" + "-TarID" + str(args.target) + "-TarChrNum" + str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + \
 "-QueryID" + str(args.query) + "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + str(args.remove_random_unknown) + "-WindSize" \
 + str(args.windowsize) + ".png", transparent=True, bbox_inches='tight') 
