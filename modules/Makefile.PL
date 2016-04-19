@@ -7,6 +7,7 @@ WriteMakefile(
     VERSION_FROM => '', # finds \$VERSION
     AUTHOR       => 'Eric Lyons (elyons@email.arizona.edu), et al.',
     INSTALLMAN1DIR => 'none', # mdb added 9/30/15
+    INSTALLMAN3DIR => 'none', # mdb added 9/30/15
     #ABSTRACT     => '',
     #PREREQ_PM    => {}
 );
