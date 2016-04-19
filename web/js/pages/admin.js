@@ -961,17 +961,20 @@ $.extend(JobGrid.prototype, {
 		//Setup table formatting
 		self.table = $('#' + self.elementId + '_table').DataTable({
     		columnDefs : [
-    		              { 
-    		            	  orderSequence : [ "desc", "asc" ], 
-    		            	  targets : [0, 1, 2] 
-    		              },
-    		              {
-     		            	 "render": function ( data, type, full, meta ) {
-     		            	      return '<a href="'+data+'" target="_blank">'+data+'</a>';
-     		            	 },
-     		            	 targets : 6
-     		             }
-    		             ],
+				{ 
+					orderSequence : [ "desc", "asc" ], 
+					targets : [0, 1, 2] 
+				},
+				{
+					"render": function ( data, type, full, meta ) {
+						if (meta.col == 0)
+							return '<a href="'+'jex/status/'+data+'" target="_blank">'+data+'</a>';
+						if (meta.col == 6)
+							return '<a href="'+data+'" target="_blank">'+data+'</a>';
+					},
+					targets : [ 0, 6 ]
+				}
+    		],
     		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[1, "desc"]],
     		scrollY: self.height,
