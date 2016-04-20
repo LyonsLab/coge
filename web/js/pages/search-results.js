@@ -29,6 +29,7 @@ function search_stuff(search_term) {
 	}
 	
 	$("#noresult").hide();
+	$('masterTable').css('display', 'none');
 	$("#loading").show();
 	
 	coge.services.search_global(search_term)
@@ -116,6 +117,7 @@ function search_stuff(search_term) {
 
 			//Populate the html with the results
 			$("#loading").show();
+			$('masterTable').css('display', 'block');
 			$(".result").fadeIn( 'fast');
 			
 			if (userCounter + orgCounter + genCounter + expCounter + noteCounter + usrgroupCounter == 0)
