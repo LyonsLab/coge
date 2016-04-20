@@ -137,12 +137,12 @@ define(['dojo/_base/declare',
     },
 
     // ----------------------------------------------------------------
-    // currently just for adding search tracks
 
     addTracks: function(track_configs) {
     	var before = this.div.firstChild; // going to insert before Sequence
     	track_configs.forEach(function(track_config) {
-    		this.div.insertBefore(this._new_track(track_config), before);
+            if (track_config.coge)
+        		this.div.insertBefore(this._new_track(track_config), before);
     	}, this);
     },
 
@@ -666,7 +666,7 @@ define(['dojo/_base/declare',
     		autocomplete: 'all',
     		track: 'notebook' + id,
     		label: 'notebook' + id,
-    		type: 'CoGe/View/Track/Wiggle/MultiXYPlot',
+    		type: 'CoGe/View/Track/Wiggle/XYPlot',
     		storeClass: 'JBrowse/Store/SeqFeature/REST',
     		style: { featureScale: 0.001 },
     		showHoverScores: 1,
