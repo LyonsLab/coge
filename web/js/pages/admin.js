@@ -1779,7 +1779,7 @@ $.extend(ReportGrid.prototype, {
 				var min_value = Number.MAX_SAFE_INTEGER;
 				for(var i = 0; i < json.data.length; i++) {
 					var total_items = 0;
-					if (this.selection == "total") {
+					if (self.selection == "total") {
 						for(var j = 0; j < json.data[i].length; j++) {
 							var num = parseInt(json.data[i][j], 10);
 							total_items += num;
