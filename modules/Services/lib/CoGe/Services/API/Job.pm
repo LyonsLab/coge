@@ -14,7 +14,7 @@ use CoGe::Factory::PipelineFactory;
 sub add {
     my $self = shift;
     my $payload = shift || $self->req->json; # allow special payload to be passed in from other controllers
-    print STDERR "CoGe::Services::Data::Job::add\n", Dumper $payload, "\n";
+    print STDERR "CoGe::Services::API::Job::add\n", Dumper $payload, "\n";
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -65,6 +65,7 @@ sub add {
             description => $pipeline->workflow->name,
             link        => ($response->{site_url} ? $response->{site_url} : '')
         );
+        print STDERR "CoGe::Services::API::Job::add submitted workflow ", $pipeline->workflow->id, "\n";
     }
     
     # Convert 'success' to boolean

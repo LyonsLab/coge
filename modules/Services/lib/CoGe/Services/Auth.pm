@@ -10,16 +10,16 @@ use File::Spec::Functions qw(catfile);
 sub init {
     my $self = shift;
     return unless $self;
-    #print STDERR Dumper $self, "\n";
+#    print STDERR Dumper $self->req, "\n";
     my $username  = $self->param('username');
     my $token     = $self->param('token');
     my $token2    = $self->req->headers->header('x-iplant-de-jwt'); # mdb added 9/23/15 for DE
     my $remote_ip = $ENV{REMOTE_ADDR}; #$self->req->env->{HTTP_X_FORWARDED_FOR};
-#    warn "CoGe::Services::Auth::init";
-#    warn "username=" . ($username ? $username : '');
-#    warn "token=" . ($token ? $token : '');
-#    warn "token2=" . ($token2 ? $token2 : '');
-#    warn "remote_ip=" . ($remote_ip ? $remote_ip : '');
+#    print STDERR "CoGe::Services::Auth::init" .
+#        " username=" . ($username ? $username : '') .
+#        " token=" . ($token ? $token : '') .
+#        " token2=" . ($token2 ? $token2 : '') .
+#        " remote_ip=" . ($remote_ip ? $remote_ip : '') . "\n";
 
     # Get config
     my $conf = get_defaults();

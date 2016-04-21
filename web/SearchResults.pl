@@ -25,6 +25,7 @@ sub gen_html {
 	                  HOME        => $CONF->{SERVER},
                       HELP        => '',
                       WIKI_URL    => $CONF->{WIKI_URL} || '',
+                      ADMIN_ONLY  => $USER->is_admin,
                       CAS_URL     => $CONF->{CAS_URL} || '',
                       SEARCH_TERM => $SEARCH_TERM );
 	$template->param( LOGON       => 1 ) unless $USER->user_name eq "public";
@@ -35,7 +36,7 @@ sub gen_html {
 
 sub gen_body {
 	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'SearchResults.tmpl' );
-	$template->param( API_BASE_URL => 'api/v1/',
+	$template->param( API_BASE_URL => $CONF->{SERVER} . 'api/v1/',
 	                  USER_NAME   => $USER->user_name,
 	                  SEARCH_TERM => $SEARCH_TERM );
 	

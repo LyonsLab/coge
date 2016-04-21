@@ -169,35 +169,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
     // ----------------------------------------------------------------
 
-    _create_download_dialog: function(track) {
-    	this._track = track;
-    	var content = '<div id="coge-track-download"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
-    	this.browser.refSeqOrder.forEach(function(rs) {
-    		content += '<option>' + rs + '</option>';
-    	});
-    	content += '</select></td></tr>';
-    	if (track.config.coge.transform)
-    		content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
-    	if (track.config.coge.search)
-    		content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge.search_to_string(track.config.coge.search) + '</td></tr>';
-    	content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._download_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_download_dialog.hide()">Cancel</button></div></div>';
-    	this._track_download_dialog = new Dialog({
-            title: 'Download Track',
-            content: content,
-            onHide: function() {
-            	this.destroyRecursive();
-            	coge_xyplot._track_download_dialog = null;
-            },
-            style: "width: 350px"
-        });
-    	this._track_download_dialog.show();
-    },
-
-    // ----------------------------------------------------------------
-
     _create_search_dialog: function(track) {
     	this._track = track;
-    	var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
+    	var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq" onchange="coge_xyplot._getHistogram(this.options[this.selectedIndex].text)"><option>Any</option>';
     	this.browser.refSeqOrder.forEach(function(rs) {
     		content += '<option>' + rs + '</option>';
     	});
@@ -205,7 +179,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
     		'<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
     		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: <span id="selected_range">&nbsp;</span></td></tr>' +
-    		'<tr><td></td><td><div id="coge-hist">loading histogram <img src="picts/ajax-loader.gif"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
+    		'<tr><td></td><td><div id="coge-hist"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
     	this._track_search_dialog = new Dialog({
             title: 'Search Track',
             content: content,
@@ -215,23 +189,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             },
             style: "width: 350px"
         });
-    	dojo.xhrGet({
-    		url: api_base_url + '/experiment/' + track.config.coge.id + '/histogram',
-    		handleAs: 'json',
-	  		load: function(data) {
-	  			if (data.error) {
-	  				coge.error('Search', data);
-	  				coge_xyplot._track_search_dialog.hide();
-	  				return;
-	  			}
-	  			dojo.empty(dojo.byId('coge-hist'));
-	  			coge_xyplot._brush = chart(d3.select('#coge-hist'), data.first, data.gap, data.counts);
-    		},
-    		error: function(data) {
-    			coge.error('Search', data);
-    			coge_xyplot._track_search_dialog.hide();
-    		}
-    	});
+        this._getHistogram('Any');
     	this._track_search_dialog.show();
     },
 
@@ -249,22 +207,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 },
             }
         );
-    },
-
-    // ----------------------------------------------------------------
-
-    _download_track: function() {
-	  	var coge_api = api_base_url.substring(0, api_base_url.length - 8);
-    	var url = coge_api + '/experiments/' + this._track.config.coge.id + '/data?username='+un;
-    	var ref_seq = dojo.byId('coge_ref_seq');
-    	if (ref_seq.selectedIndex > 0)
-    		url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
-    	if (dojo.byId('search') && dojo.byId('search').checked)
-    		url += '&' + coge.search_to_params(this._track.config.coge.search);
-    	if (dojo.byId('transform') && dojo.byId('transform').checked)
-    		url += '&transform=' + this._track.config.coge.transform;
-    	document.location = url;
-		coge_xyplot._track_download_dialog.hide();
     },
 
     // ----------------------------------------------------------------
@@ -556,6 +498,32 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
     // ----------------------------------------------------------------
 
+    _getHistogram: function(chr) {
+        dojo.byId('coge-hist').innerHTML='loading histogram <img src="picts/ajax-loader.gif">';
+        dojo.xhrGet({
+            url: api_base_url + '/experiment/' + this._track.config.coge.id + '/histogram/' + chr,
+            handleAs: 'json',
+            load: function(data) {
+                if (data.error) {
+                    coge.error('Search', data);
+                    coge_xyplot._track_search_dialog.hide();
+                    return;
+                }
+                if (chr != coge_xyplot._hist_chr) {
+                    coge_xyplot._hist_chr = chr;
+                    dojo.empty(dojo.byId('coge-hist'));
+                    coge_xyplot._brush = chart(d3.select('#coge-hist'), data.first, data.gap, data.counts);
+                }
+            },
+            error: function(data) {
+                coge.error('Search', data);
+                coge_xyplot._track_search_dialog.hide();
+            }
+        });
+    },
+
+    // ----------------------------------------------------------------
+
     _getScaling: function( viewArgs, successCallback, errorCallback ) {
 
         this._getScalingStats( viewArgs, dojo.hitch(this, function( stats ) {
@@ -701,7 +669,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	  			if (data.length == 0)
 	  				coge.error('Search', 'Search returned zero hits');
 	  			else
-	  				coge.new_search_track(this._track, data, search);
+	  				coge.new_search_track(this._track, data);
     		}),
     		error: dojo.hitch(this, function(data) {
     			this._track_search_dialog.hide();
@@ -919,7 +887,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
         if (config.coge.type != 'notebook')
 	        options.push({
 		        label: 'Download Track Data',
-		        onClick: function(){coge_xyplot._create_download_dialog(track);}
+		        onClick: function(){coge.create_download_dialog(track);}
 	        });
 
         return options;

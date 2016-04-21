@@ -4,13 +4,15 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 
 use CoGeX;
+use CoGe::Accessory::histogram;
+use CoGe::Services::API::JBrowse::FeatureIndex;
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
-use CoGeDBI qw( feature_type_names_to_id get_dataset_ids );
+use CoGe::Core::Storage qw( get_experiment_path );
+use CoGeDBI qw( feature_type_names_to_id );
 use Data::Dumper;
 use File::Path;
 use JSON::XS;
-use Path::Class;
 
 #TODO: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -121,6 +123,131 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     });
 }
 
+sub data {
+    my $self = shift;
+    my $id = int($self->stash('eid'));
+    my $chr = $self->stash('chr');
+    my $data_type = $self->param('data_type');
+    my $type = $self->param('type');
+    my $gte = $self->param('gte');
+    my $lte = $self->param('lte');
+    my $transform = $self->param('transform');
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    # unless ($user) {
+    #     $self->render(json => {
+    #         error => { Error => "User not logged in" }
+    #     });
+    #     return;
+    # }       
+
+    # Get experiment
+    my $experiment = $db->resultset("Experiment")->find($id);
+    unless (defined $experiment) {
+        $self->render(json => {
+            error => { Error => "Experiment not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ($user->is_admin() || $user->is_owner_editor(experiment => $id)) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+    my $exp_data_type = $experiment->data_type;
+    my $filename = 'experiment' . ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : '.csv');
+    $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
+    $self->write('# experiment: ' . $experiment->name . "\n");
+    $self->write("# chromosome: $chr\n");
+
+    if ( !$exp_data_type || $exp_data_type == $DATA_TYPE_QUANT ) {
+        if ($type) {
+            $self->write("# search: type = $type");
+            $self->write(", gte = $gte") if $gte;
+            $self->write(", lte = $lte") if $lte;
+            $self->write("\n");
+        }
+        $self->write("# transform: $transform\n") if $transform;
+        my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
+        my @columns = map { $_->{name} } @{$cols};
+        $self->write('# columns: ');
+        for (my $i=0; $i<scalar @columns; $i++) {
+            $self->write(',') if $i;
+            $self->write($columns[$i]);
+        }
+        $self->write("\n");
+
+        my $lines = CoGe::Core::Experiment::query_data(
+            eid => $id,
+            data_type => $data_type,
+            col => join(',', @columns),
+            chr => $chr,
+            type => $type,
+            gte => $gte,
+            lte => $lte,
+        );
+        my $score_column = CoGe::Core::Experiment::get_fastbit_score_column($data_type);
+        my $log10 = log(10);
+        foreach my $line (@{$lines}) {
+            if ($transform) {
+                my @tokens = split ',', $line;
+                if ($transform eq 'Inflate') {
+                    $tokens[$score_column] = 1;
+                }
+                elsif ($transform eq 'Log2') {
+                    $tokens[$score_column] = log(1 + $tokens[$score_column]);
+                }
+                elsif ($transform eq 'Log10') {
+                    $tokens[$score_column] = log(1 + $tokens[$score_column]) / $log10;
+                }
+                $line = join ',', @tokens;
+            }
+            $self->write($line);
+            $self->write("\n");
+        }
+    }
+    elsif ( $exp_data_type == $DATA_TYPE_POLY ) {
+        my $type_names = $self->param('features');
+        if ($type_names) {
+            $self->write('# search: SNPs in ');
+            $self->write($type_names);
+            $self->write("\n");
+        }
+        my $type = $self->param('type');
+        if ($type) {
+            $self->write('# search: ');
+            $self->write($type);
+            $self->write("\n");
+        }
+        $self->write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n");
+        my $snps = $self->_snps;
+        my $s = (index(@{$snps}[0], ', ') == -1 ? 1 : 2);
+        foreach my $line (@{$snps}) {
+            my @l = split(',', $line);
+            $self->write(substr($l[0], 1, -1));
+            $self->write("\t");
+            $self->write($l[1]);
+            $self->write("\t");
+            $self->write(substr($l[4], $s, -1));
+            $self->write("\t");
+            $self->write(substr($l[5], $s, -1));
+            $self->write("\t");
+            $self->write(substr($l[6], $s, -1));
+            $self->write("\t");
+            $self->write($l[7]);
+            $self->write("\t\t");
+            $self->write(substr($l[8], $s, -1));
+            $self->write("\t\n");
+        }
+    }
+    $self->finish();
+}
+
 sub _get_experiments {
 	my $db = shift;
 	my $user = shift;
@@ -159,11 +286,11 @@ sub _get_experiments {
 sub histogram {
     my $self = shift;
     my $eid = $self->stash('eid');
-    my $chr = $self->param('chr');
-
+    my $chr = $self->stash('chr');
     my $storage_path = get_experiment_path($eid);
-    my $hist_file = "$storage_path/value1.hist";
+    my $hist_file = "$storage_path/value1_$chr.hist";
     if (!-e $hist_file) {
+        $chr = undef if $chr eq 'Any';
 		my $result = CoGe::Core::Experiment::query_data(
 			eid => $eid,
 			col => 'value1',
@@ -171,18 +298,22 @@ sub histogram {
 		);
 	    my $bins = CoGe::Accessory::histogram::_histogram_bins($result, 20);
 	    my $counts = CoGe::Accessory::histogram::_histogram_frequency($result, $bins);
-	    open my $fh, ">", $hist_file;
-	    print {$fh} encode_json({
-	    	first => 0 + $bins->[0][0],
-	    	gap => $bins->[0][1] - $bins->[0][0],
-	    	counts => $counts
-	    });
-	    close $fh; 
+	    if (open my $fh, ">", $hist_file) {
+    	    print {$fh} encode_json({
+    	    	first => 0 + $bins->[0][0],
+    	    	gap => $bins->[0][1] - $bins->[0][0],
+    	    	counts => $counts
+    	    });
+    	    close $fh;
+        }
+        else {
+            warn "error opening $hist_file";
+        }
     }
     open(my $fh, $hist_file);
     my $hist = <$fh>;
     close($fh);
-    return $hist;
+	$self->render(json => decode_json($hist));
 }
 
 sub query_data {
@@ -223,94 +354,92 @@ sub snp_overlaps_feature {
 	return 0;
 }
 
-sub _add_features {
-    my ($chr, $type_ids, $dsid, $hits, $dbh) = @_;
-    my $query = 'SELECT chromosome,start,stop FROM feature WHERE dataset_id=' . $dsid;
-    if ($chr) {
-    	$query .= " AND chromosome='" . $chr . "'";
-    }
-    if ($type_ids) {
-    	if (index($type_ids, ',') != -1) {
-		    $query .= ' AND feature_type_id IN(' . $type_ids . ')';
-    	}
-    	else {
-    		$query .= ' AND feature_type_id=' . $type_ids;
-    	}
-    }
-    $query .= ' ORDER BY chromosome,start';
-    my $sth = $dbh->prepare($query);
-    $sth->execute();
-    while (my @row = $sth->fetchrow_array) {
-    	my $chromosome = $hits->{$row[0]};
-    	if (!$chromosome) {
-    		$hits->{$row[0]} = [\@row];
-    	}
-    	else {
-	    	push @$chromosome, \@row;
-    	}
+sub snps {
+    my $self = shift;
+    my $results = $self->_snps;
+    if ($results) {
+        $self->render(json => $results);
     }
 }
 
-sub snps {
+sub _snps {
     my $self = shift;
     my $eid = $self->stash('eid');
     my $chr = $self->stash('chr');
     $chr = undef if $chr eq 'Any';
-    
+
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
 	my $experiments = _get_experiments($db, $user, $eid);
-	my $snps;
-	foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
-		$snps = CoGe::Core::Experiment::query_data(
-			eid => $eid,
-			data_type => $experiment->data_type,
-			chr => $chr,
-		);
-	}
-
-    my $dbh = $db->storage->dbh;
+    if (scalar @{$experiments} == 0) {
+        $self->render(json => { error => 'User does not have permission to view this experiment' });
+        return undef;
+    }
 
 	my $type_names = $self->param('features');
-	my $type_ids;
-	if ($type_names ne 'all') {
-		$type_ids = feature_type_names_to_id($type_names, $dbh);
-	}
+	if ($type_names) {
+        my $snps;
+        foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
+            $snps = CoGe::Core::Experiment::query_data(
+                eid => $eid,
+                data_type => $experiment->data_type,
+                chr => $chr,
+            );
+        }
 
-    my $features = {};
-	foreach my $experiment (@$experiments) {
-	    my $ids = get_dataset_ids($experiment->genome_id, $dbh);
-	    foreach my $dsid (@$ids) {
-	        _add_features $chr, $type_ids, $dsid, $features, $dbh;
-	    }
-	}
+        my $dbh = $db->storage->dbh;
 
-	my $dir = dir($conf->{CACHEDIR}, $experiments->[0]->genome_id, 'features');
-	make_path($dir, { mode => 0700}) unless -d $dir;
-	my $type = (split ',', $type_names)[0];
-	$type = substr($type, 1, -1);
-	my @chromosomes = keys %$features;
-	foreach my $chromosome (@chromosomes) {
-		warn ">$dir/" . $chromosome . "_$type.loc";
-		open(my $fh, ">$dir/" . $chromosome . "_$type.loc");
-		binmode($fh);
-		my $locs = $features->{$chromosome};
-		print $fh pack('L', scalar @$locs);
-		foreach my $loc (@$locs) {
-			print $fh pack('LL', $loc->[1], $loc->[2]);
+		my $type_ids;
+		if ($type_names ne 'all') {
+			$type_ids = feature_type_names_to_id($type_names, $dbh);
 		}
-		close($fh);
+	
+		my $type = (split ',', $type_ids)[0];
+		my $fi = CoGe::Services::API::JBrowse::FeatureIndex->new($experiments->[0]->genome_id, $type, $chr, $conf);
+		my $features = $fi->get_features($dbh);
+		my $hits = [];
+	    foreach my $snp (@$snps) {
+	    	my @tokens = split(',', $snp);
+	    	if (snp_overlaps_feature(0 + $tokens[1], $features)) {
+	    		push @$hits, $snp;
+	    	}
+	    }
+	    return $hits;
 	}
+	elsif ($self->param('snp_type')) {
+        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{COGEDIR};
+        $cmdpath = substr($cmdpath, 0, -3) . 'tools/snp_search/snp_search';
+        my $storage_path = get_experiment_path($eid);
+        opendir(my $dh, $storage_path);
+        my @files = grep(/\.vcf$/,readdir($dh));
+        closedir $dh;
+        my $cmd = "$cmdpath $storage_path/" . $files[0] . ' ' . $self->stash('chr') . ' "' . $self->param('snp_type') . '"';
+        warn $cmd;
+        my @cmdOut = qx{$cmd};
 
-	my $hits = [];
-    foreach my $snp (@$snps) {
-    	my @tokens = split(',', $snp);
-    	if (snp_overlaps_feature(0 + $tokens[1], $features->{substr $tokens[0], 1, -1})) {
-    		push @$hits, $snp;
-    	}
+        my $cmdStatus = $?;
+        if ( $? != 0 ) {
+            warn "CoGe::Services::API::JBrowse::Experiment: error $? executing command: $cmd";
+        }
+        my @lines;
+        foreach (@cmdOut) {
+            chomp;
+            push @lines, $_;
+        }
+        return \@lines;
+	}
+    else {
+        my $snps;
+        foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
+            $snps = CoGe::Core::Experiment::query_data(
+                eid => $eid,
+                data_type => $experiment->data_type,
+                chr => $chr,
+            );
+        }
+        return $snps;
     }
-    $self->render(json => $hits);
 }
 
 sub features {

@@ -491,11 +491,7 @@ sub chromosome_count {
 }
 
 sub has_gene_annotation {
-    my $self = shift;
-
-    #my %opts = @_;
-    return $self->features( { 'feature_type_id' => { -in => [ 1, 2, 3 ] } } )
-      ->count;
+    return shift->features( { 'feature_type_id' => { -in => [ 1, 2, 3 ] } } )->count;
 }
 
 sub sequence_type {
@@ -608,7 +604,6 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub has_chromosome {
-
     my $self = shift;
     my %opts = @_;
     my $chr  = $opts{chr};

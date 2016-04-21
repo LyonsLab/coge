@@ -23,20 +23,23 @@ sub features {
     my $self = shift;
     my $gid  = $self->stash('gid');
     my $chr  = $self->stash('chr');
+    warn $chr;
     $chr = uri_unescape($chr) if (defined $chr);
     my $feat_type    = $self->stash('type');
+    my $dsid         = $self->stash('dsid');
     my $start        = $self->param('start');
     my $end          = $self->param('end');
     my $show_wobble  = $self->param('showWobble');
     my $scale        = $self->param('scale');
     my $basesPerSpan = $self->param('basesPerSpan');
     my $len = $end - $start;
-    #print STDERR "JBrowse::Annotation::features gid=$gid ", ($feat_type ? "type=$feat_type " : ''), "chr=$chr start=$start end=$end\n";
+    print STDERR "JBrowse::Annotation::features gid=$gid ", ($dsid ? "dsid=$dsid " : ''), ($feat_type ? "type=$feat_type " : ''), "chr=$chr start=$start end=$end\n";
 
     # Check params
-    my $null_response = $self->render(json => { "features" => [] });
     if ( $end <= 0 ) {
-        return $null_response;
+        warn 'end <= 0';
+        $self->render(json => { "features" => [] });
+        return;
     }
 
     # Authenticate user and connect to the database
@@ -52,20 +55,25 @@ sub features {
     $start = min( $start, $chrLen );
     $end   = min( $end,   $chrLen );
     if ( $start == $end ) {
-        return $null_response;
+        warn 'start == end';
+        $self->render(json => { "features" => [] });
+        return;
     }
 
     # Check permissions
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
-        return $null_response;
+        warn 'user does not have access';
+        $self->render(json => { "features" => [] });
+        return;
     }
 
     # Get features
     my $features = get_features_by_range(
         dbh => $db->storage->dbh, 
         gid => $gid, 
+        dsid => $dsid,
         chr => $chr, 
         start => $start, 
         end => $end,

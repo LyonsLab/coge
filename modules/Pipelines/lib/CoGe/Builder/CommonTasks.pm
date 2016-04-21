@@ -9,6 +9,7 @@ use File::Path qw(make_path);
 use JSON qw(encode_json);
 use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
+use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension to_filename_base);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput irods_set_env);
@@ -588,14 +589,14 @@ sub create_load_vcf_job {
         script => undef,
         args => [
             ['-user_name', qq["$username"], 0],
-            ['-name', "'".$metadata->{name}." (SNPs)". "'", 0],
-            ['-desc', qq{"$desc"}, 0],
-            ['-version', "'".$metadata->{version}."'", 0],
+            ['-name', ($metadata->{name} ? shell_quote($metadata->{name}." (SNPs)") : '""'), 0],
+            ['-desc', ($desc ? shell_quote($desc) : '""'), 0],
+            ['-version', ($metadata->{version} ? shell_quote($metadata->{version}) : '""'), 0],
             ['-restricted', "'".$metadata->{restricted}."'", 0],
             ['-exit_without_error_for_empty_input', 1, 0],
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
-            ['-source_name', "'".$metadata->{source}."'", 0],
+            ['-source_name', ($metadata->{source} ? shell_quote($metadata->{source}) : '""'), 0],
             ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-staging_dir', "./load_vcf", 0],
@@ -649,11 +650,11 @@ sub create_load_experiment_job {
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
             ['-user_name', $user->name, 0],
-            ['-name', "'" . $metadata->{name} . "'", 0],
-            ['-desc', "'" . $metadata->{description} . "'", 0],
-            ['-version', "'" . $metadata->{version} . "'", 0],
+            ['-name', ($metadata->{name} ? shell_quote($metadata->{name}) : '""'), 0],
+            ['-desc', ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
+            ['-version', ($metadata->{version} ? shell_quote($metadata->{version}) : '""'), 0],
             ['-restricted', "'" . $metadata->{restricted} . "'", 0],
-            ['-source_name', "'" . $metadata->{source_name} . "'", 0],
+            ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-tags', qq["$tags_str"], 0],
             ['-staging_dir', $output_name, 0],
@@ -704,17 +705,17 @@ sub create_load_genome_job {
         args => [
             ['-user_name', $user->name, 0],
             ['-wid', $wid, 0],
-            ['-name', '"' . $metadata->{name} . '"', 0],
-            ['-desc', '"' . ($metadata->{description} ? $metadata->{description} : '') . '"', 0],
-            ['-link', '"' . ($metadata->{link} ? $metadata->{link} : '') . '"', 0],
-            ['-version', '"' . $metadata->{version} . '"', 0],
-            ['-restricted', ( $metadata->{restricted} ? 1 : 0 ), 0],
-            ['-source_name', '"' . $metadata->{source_name} . '"', 0],
+            ['-name', ($metadata->{name} ? shell_quote($metadata->{name}) : '""'), 0],
+            ['-desc', ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
+            ['-link', ($metadata->{link} ? shell_quote($metadata->{link}) : '""'), 0],
+            ['-version', ($metadata->{version} ? shell_quote($metadata->{version}) :'""'), 0],
+            ['-restricted', ($metadata->{restricted} ? 1 : 0), 0],
+            ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
             ['-organism_id', $organism_id, 0],
-            ['-type_id', '"' . ( $metadata->{type} ? $metadata->{type} : 1 ) . '"', 0], # default to "unmasked"
+            ['-type_id', ( $metadata->{type} ? shell_quote($metadata->{type}) : 1 ), 0], # default to "unmasked"
             ['-staging_dir', "./load_genome", 0],
-            ['-fasta_files', "'".$file_str."'", 0],
-            ['-irods_files', "'".$irods_str."'", 0],
+            ['-fasta_files', shell_quote($file_str), 0],
+            ['-irods_files', shell_quote($irods_str), 0],
             ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
@@ -795,14 +796,14 @@ sub create_load_annotation_job {
         args => [
             ['-user_name', $user->name, 0],
             ['-wid', $wid, 0],
-            ['-name', '"' . ($metadata->{name} ? $metadata->{name} : '') . '"', 0],
-            ['-desc', '"' . ($metadata->{description} ? $metadata->{description} : ''). '"', 0],
-            ['-link', '"' . ($metadata->{link} ? $metadata->{link} : '') . '"', 0],
-            ['-version', '"' . $metadata->{version} . '"', 0],
-            ['-source_name', '"' . $metadata->{source} . '"', 0],
+            ['-name', ($metadata->{name} ? shell_quote($metadata->{name}) : '""'), 0],
+            ['-desc', ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
+            ['-link', ($metadata->{link} ? shell_quote($metadata->{link}) : '""'), 0],
+            ['-version', ($metadata->{version} ? shell_quote($metadata->{version}) : '""'), 0],
+            ['-source_name', ($metadata->{source} ? shell_quote($metadata->{source}) : '""'), 0],
             ['-gid', $gid, 0],
             ['-staging_dir', "./load_annotation", 0],
-            ['-data_file', "'".$input_file."'", 0],
+            ['-data_file', shell_quote($input_file), 0],
             ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
@@ -836,8 +837,8 @@ sub create_load_batch_job {
 
     my $args = [
         ['-user_name', $user->name, 0],
-        ['-name', '"' . $metadata->{name} . '"', 0],
-        ['-desc', '"' . $metadata->{description} . '"', 0],
+        ['-name', shell_quote($metadata->{name}), 0],
+        ['-desc', shell_quote($metadata->{description}), 0],
         ['-gid', $gid, 0],
         ['-wid', $wid, 0],
         ['-staging_dir', "'".$staging_dir."'", 0],
@@ -896,13 +897,13 @@ sub create_load_bam_job {
         script => undef,
         args => [
             ['-user_name', $user->name, 0],
-            ['-name', "'" . $metadata->{name} . " (BAM alignment)" . "'", 0],
-            ['-desc', "'" . $metadata->{description} . "'", 0],
-            ['-version', "'" . $metadata->{version} . "'", 0],
+            ['-name', ($metadata->{name} ? shell_quote($metadata->{name} . " (BAM alignment)") : '""'), 0],
+            ['-desc', "'" . shell_quote($metadata->{description}) . "'", 0],
+            ['-version', "'" . shell_quote($metadata->{version}) . "'", 0],
             ['-restricted', "'" . $metadata->{restricted} . "'", 0],
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
-            ['-source_name', "'" . $metadata->{source} . "'", 0],
+            ['-source_name', "'" . shell_quote($metadata->{source}) . "'", 0],
             ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-staging_dir', $output_name, 0],
@@ -1680,7 +1681,7 @@ sub create_bismark_alignment_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
-        ['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
+        ['-p', 16, 0],#['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
         [($encoding eq '64' ? '--phred64-quals' : '--phred33-quals'), '', 0],
         ['-N', $N, 0],
         ['-L', $L, 0],
@@ -1805,7 +1806,7 @@ sub create_bwameth_alignment_job {
     my $args = [
         ['--reference', catfile($index_path, 'genome.faa.reheader.faa'), 0],
         ['', join(' ', @$fastq), 0],
-        ['-t', 8, 0],
+        ['-t', 16, 0],#['-t', 8, 0],
         ['-p', 'alignment', 0]
     ];
     
@@ -2113,8 +2114,8 @@ sub create_notebook_job {
     my $args = [
         ['-uid', $user->id, 0],
         ['-wid', $wid, 0],
-        ['-name', '"'.$metadata->{name}.'"', 0],
-        ['-desc', '"'.$metadata->{description}.'"', 0],
+        ['-name', shell_quote($metadata->{name}), 0],
+        ['-desc', shell_quote($metadata->{description}), 0],
         ['-type', 2, 0],
         ['-restricted', $metadata->{restricted}, 0],
         ['-annotations', qq{"$annotations_str"}, 0],

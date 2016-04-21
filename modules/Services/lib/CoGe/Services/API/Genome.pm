@@ -3,7 +3,7 @@ package CoGe::Services::API::Genome;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGe::Services::Auth qw(init);
-use CoGe::Services::Data::Job;
+use CoGe::Services::API::Job;
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Storage qw(get_genome_seq);
 use CoGe::Accessory::Utils qw(sanitize_name);
@@ -175,11 +175,14 @@ sub sequence {
     my $self   = shift;
     my $gid    = $self->stash('id');
     return unless $gid;
-    my $chr    = $self->stash('chr');
-    my $start  = $self->param('start');
-    my $stop   = $self->param('stop') || $self->param('end');
-    my $strand = $self->param('strand');
-    print STDERR "Data::Genome::fetch_sequence gid=$gid chr=$chr start=$start stop=$stop\n";
+    my $chr    = $self->stash('chr');    # optional
+    my $start  = $self->param('start');  # optional
+    my $stop   = $self->param('stop') || $self->param('end'); # optional
+    my $strand = $self->param('strand'); # optional
+    print STDERR "Data::Genome::fetch_sequence gid=$gid ",
+        (defined $chr ? "chr=$chr " : ''),
+        (defined $start ? "start=$start " : ''),
+        (defined $stop ? "stop=$stop " : ''), "\n";
 
     # Connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -219,7 +222,7 @@ sub sequence {
 sub add {
     my $self = shift;
     my $data = $self->req->json;
-    print STDERR "CoGe::Services::Data::Genome2::add\n", Dumper $data, "\n";
+    #print STDERR "CoGe::Services::Data::Genome::add\n", Dumper $data, "\n";
 
 # mdb removed 9/17/15 -- auth is handled by Job::add below, redundant token validation breaks CAS proxyValidate
 #    # Authenticate user and connect to the database
@@ -249,7 +252,7 @@ sub add {
         parameters => $data
     };
     
-    return CoGe::Services::Data::Job::add($self, $request);
+    return CoGe::Services::API::Job::add($self, $request);
 }
 
 1;

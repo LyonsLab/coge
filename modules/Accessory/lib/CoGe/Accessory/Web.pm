@@ -196,6 +196,11 @@ A valid configuration file must be specified or very little will work!};
     
     open( IN, $conf_file );
     my %items;
+    $items{BINDIR} = catdir($BASEDIR, 'bin') . '/';
+    $items{COGEDIR} = catdir($BASEDIR, 'web') . '/';
+    $items{RESOURCEDIR} = catdir($BASEDIR, 'resources') . '/';
+    $items{SCRIPTDIR} = catdir($BASEDIR, 'scripts') . '/';
+    $items{TMPLDIR} = catdir($BASEDIR, 'tmpl') . '/';
     while (<IN>) {
         chomp;
         next if /^#/;
@@ -957,11 +962,12 @@ sub read_log {
 sub check_filename_taint {
     my $v = shift;
     return 1 unless $v;
-    if ( $v =~ /^([A-Za-z0-9\-\.=\/_#\|]*)$/ ) {
+    if ( $v =~ /^([A-Za-z0-9\:\-\.=\/_#\|]*)$/ ) { # mdb changed 3/15/16 -- added ':'
         my $v1 = $1;
         return ($v1);
     }
     else {
+        carp "check_filename_taint: '$v' failed taint check\n";
         return (0);
     }
 }
@@ -969,14 +975,14 @@ sub check_filename_taint {
 sub check_taint {
     my $v = shift;
     return 1 unless $v;
-    if ( $v =~ /^([-\w\._=\s+\/,#\]\['"%\|]+)$/ ) {
+    if ( $v =~ /^([\:\-\w\._=\s+\/,#\]\['"%\|]+)$/ ) { # mdb changed 3/15/16 -- added ':'
         $v = $1;
         # $v now untainted
         return ( 1, $v );
     }
     else {
         # data should be thrown out
-        carp "'$v' failed taint check\n";
+        carp "check_taint: '$v' failed taint check\n";
         return (0);
     }
 }

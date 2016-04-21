@@ -123,6 +123,16 @@ var coge = window.coge = (function(ns) {
     			},
     			wait_time
     		);
+    	},
+    	
+    	removeSpecialChars: function(s) {
+    		if (s) {
+    			var s2 = s.replace(/[^\w\s\'\"\`\.\,\!\:\;\-\~\&\%\@\#\*\=\+\?\^\$\<\>\{\}\(\)\|\[\]\\]/gi, '');
+    			return s2;
+    		}
+    		else {
+    			return s;
+    		}
     	}
     };
 

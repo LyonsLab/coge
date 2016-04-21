@@ -337,7 +337,7 @@ $.extend(ContentPanel.prototype, {
 						return false;
 					if (view.shared && data.role_id == '2')
 						return false;
-					if (!view.shared && data.role_id != '2')
+					if (!view.shared && data.role_id != '2' && !view.deleted)
 						return false;
 				}
 				return true;
@@ -632,6 +632,7 @@ $.extend(DataGrid.prototype, {
 			searching: true,
 			dom:       'lrt', // remove unused elements (like search box)
 			sScrollY:  $(window).height() - 245, // this depends on the height of the header/footer
+			"oLanguage": {"sZeroRecords": "", "sEmptyTable": ""},
 			columns: [
 	            { 	title: "Name", 
 	            	targets: 0,
@@ -659,6 +660,8 @@ $.extend(DataGrid.prototype, {
 		dataTableBody.on('click', 'tr', function(event) {
 			var tr = this;
 			var row = dataTable.api().row(tr).data();
+			if (!row)
+				return;
 			
 	        if ( $(tr).hasClass('selected') ) { // unselect
 	            $(tr).removeClass('selected');
@@ -695,10 +698,14 @@ $.extend(DataGrid.prototype, {
 			var tr = this;
 			var row = dataTable.api().row(tr).data();
 			
-			self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
-	        $(tr).addClass('selected'); // select item
-	        
-	        self.openItem(row);
+			if (row) {
+				self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
+		        $(tr).addClass('selected'); // select item
+		        self.lastRowSelected = tr;
+		        self.selectItem(row);
+		        
+		        self.openItem(row);
+			}
 		});
 		
 		// Handle row hover events
@@ -708,7 +715,8 @@ $.extend(DataGrid.prototype, {
 	    	
 	        var tr = $(this).closest('tr');
 	        var row = dataTable.api().row(tr).data();
-	    	infoPanel.busy().scheduleUpdate([row]);
+	        if (row)
+	        	infoPanel.busy().scheduleUpdate([row]);
 	    });
 		
 		dataTableBody.on('mouseout', 'tr', function () {
@@ -939,13 +947,13 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatAnalysis: function() {
         var isRunning   = (this.status.toLowerCase() == 'running');
         var isCancelled = (this.status.toLowerCase() == 'cancelled');
-        var star_icon    = '<img title="Favorite this analysis"' + ( this.is_important ? 'src="picts/star-full.png"' : 'src="picts/star-hollow.png"' ) + 'width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this, '+this.id+');" />';
+        var star_icon    = '<img title="Favorite this analysis" src="picts/star-' + (this.is_important ? 'full' : 'hollow') + '.png" width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this, '+this.id+');" />';
         var cancel_icon  = '<img title="Cancel this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/cancel.png" width="15" onclick="cancel_job_dialog('+this.id+');"/>';
         var restart_icon = '<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('+this.id+');"/>';
-        var comment_icon = '<img title="Add comment" class="link" height="15" style="vertical-align:middle;" src="picts/comment-icon.png" width="15" onclick="comment_dialog('+this.id+');" />';
+        var comment_icon = '<img title=' + (this.comment && this.comment.length ? JSON.stringify(this.comment) : '"Add comment"') + ' class="link" height="15" style="vertical-align:middle;" src="picts/' + (this.comment && this.comment.length ? 'comment' : 'no-comment') + '-icon.png" width="15" onclick="comment_dialog('+this.id+');" />';
         var icons = star_icon + ' ' + comment_icon + ' ' + (isCancelled ? restart_icon : '') + ' ' + (isRunning ? cancel_icon : '');
     	var descStr =
-    		icons + ' ' + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + this.comment : '') + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
+    		icons + ' ' + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + '<span class="highlighted">' + this.comment : '') + '</span>' + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
     	return descStr;
     },
     
@@ -1047,9 +1055,11 @@ $.extend(InfoPanel.prototype, {
     	if (numItems > 0) {
     		if (numItems == 1) {
     			var item = items[0];
-    			item.getInfo().pipe(function(info) {
-    				self.element.html(info);
-    			});
+    			if (item) {
+	    			item.getInfo().pipe(function(info) {
+	    				self.element.html(info);
+	    			});
+    			}
     		}
     		else {
     			self.element.html(numItems + ' item' + (numItems > 1 ? 's' : '') + 

@@ -21,7 +21,7 @@ use CoGeX;
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
-use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape);
+use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape commify);
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
 use CoGe::Core::Notebook qw(notebookcmp);
@@ -244,6 +244,7 @@ sub get_item_info {
         $html .=
             '<b>Genome id' . $genome->id . '</b><br>'
           . '<b>Organism: </b>' . $genome->organism->name . '<br>'
+          . '<b>Chromosomes: </b>' . commify($genome->chromosome_count) . '<br>'
           . '<b>Name:</b> ' . ( $genome->name ? $genome->name : '' ) . '<br>'
           . '<b>Description:</b> ' . ( $genome->description ? $genome->description : '' ) . '<br>'
           . '<b>Version:</b> ' . $genome->version . '<br>'
@@ -332,8 +333,9 @@ sub get_item_info {
             '<b>Workflow id' . $log->parent_id . '</b><br>'
           . '<b>Type:</b> ' . $log->page . '<br>'
           . '<b>Description:</b> ' . $log->description . '<br>'
-          . '<b>Date:</b> ' . $log->time . '<br>'
-          . qq{<div><b>Tools:</b><br>}
+          . '<b>Date:</b> ' . $log->time . '<br>';
+        $html .= '<b>Comment:</b> ' . $log->comment . '<br>' if $log->comment;
+        $html .= qq{<div><b>Tools:</b><br>}
           . qq{<div style="padding-left:20px;">}
           . qq{<a href="} . $log->link . qq{" target=_blank>Open result</a>}
           . qq{</div>}
@@ -638,26 +640,29 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         elsif ( $conn->is_parent_group ) {
             my $group = $conn->parent;
 
-            my @users = map {
-                {
-                    GROUP_USER_FULL_NAME => $_->display_name,
-                    GROUP_USER_NAME      => $_->name
-                }
-            } sort usercmp $group->users;
-
-            $group_rows{ $group->id } = {
-                GROUP_ITEM   => $group->id . ':' . $conn->parent_type,
-                GROUP_NAME   => $group->name,
-                GROUP_ROLE   => $group->role->name,
-                GROUP_DELETE => $USER->is_owner_editor( group => $group->id ),
-                GROUP_USER_LOOP => \@users
-            };
+            if (not $group->deleted) {
+                my @users = map {
+                    {
+                        GROUP_USER_FULL_NAME => $_->display_name,
+                        GROUP_USER_NAME      => $_->name
+                    }
+                } sort usercmp $group->users;
+    
+                $group_rows{ $group->id } = {
+                    GROUP_ITEM   => $group->id . ':' . $conn->parent_type,
+                    GROUP_NAME   => $group->name,
+                    GROUP_ROLE   => $group->role->name,
+                    GROUP_DELETE => $USER->is_owner_editor( group => $group->id ),
+                    GROUP_USER_LOOP => \@users
+                };
+            }
         }
     }
 
     foreach my $notebook ( values %notebooks ) {
+        next if $notebook->deleted;
+        
         my %users;
-
         foreach my $conn ( $notebook->user_connectors ) {
             my $user = $conn->parent;
             next unless $user;

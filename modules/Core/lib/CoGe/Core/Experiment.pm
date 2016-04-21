@@ -213,16 +213,6 @@ sub _parse_fastbit_line {
     return \%result;
 }
 
-sub debug {
-	my $data = shift;
-	my $new_file = shift;
-	my $OUTFILE;
-	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
-	print {$OUTFILE} Dumper $data;
-	print {$OUTFILE} "\n";
-	close $OUTFILE;
-}
-
 sub query_data {
     my %opts = @_;
     my $eid  = $opts{eid};    # required
@@ -231,6 +221,7 @@ sub query_data {
         return;
     }
     my $chr = $opts{chr};
+    my $col = $opts{col};
     my $data_type = $opts{data_type};
     my $gte = $opts{gte};
     my $limit = $opts{limit};
@@ -243,17 +234,21 @@ sub query_data {
 	my $value1;
     if ($type eq 'max') {
     	$value1 = CoGe::Accessory::FastBit::max($eid);
+    	$where .= ' and value1>' . ($value1 - 0.001);
     }
     elsif ($type eq 'min') {
     	$value1 = CoGe::Accessory::FastBit::min($eid);
+    	$where .= ' and value1<' . ($value1 + 0.001);
     }
     elsif ($type eq 'range') {
 		$where .= ' and value1>=' . $gte if $gte;
 		$where .= ' and value1<=' . $lte if $lte;
     }
-    my $format = get_fastbit_format($eid, $data_type);
-    my $columns = join(',', map { $_->{name} } @{$format->{columns}});
-    my $results = CoGe::Accessory::FastBit::query("select $columns where 0.0=0.0 and $where order by $order_by limit 999999999", $eid);
+    if (!$col) {
+        my $format = get_fastbit_format($eid, $data_type);
+        $col = join(',', map { $_->{name} } @{$format->{columns}});
+    }
+    my $results = CoGe::Accessory::FastBit::query("select $col where $where order by $order_by limit 999999999", $eid);
     if ($type eq 'max' || $type eq 'min') {
     	my $value_col = get_fastbit_score_column $data_type;
         my @lines = grep { $value1 == (split(',', $_))[$value_col] } @{$results};

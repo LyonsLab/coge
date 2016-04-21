@@ -4,7 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGeX;
 use CoGe::Services::Auth;
-use CoGe::Services::Data::Job;
+use CoGe::Services::API::Job;
 use CoGe::Core::Search;
 
 sub search {

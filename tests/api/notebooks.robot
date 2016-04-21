@@ -5,18 +5,18 @@ Documentation	blah blah blah
 Resource	resource.robot
 
 *** Variables ***
-${EXPERIMENT_ID}	758
+${NOTEBOOK_ID}	758
 
 *** Test Cases ***
 Notebook Search
 	Create Session	coge	${API_URL}	
-	${resp}=        Get Request	    coge	 ${NOTEBOOKS}/search/${EXPERIMENT_ID}
+	${resp}=        Get Request	    coge	 ${NOTEBOOKS}/search/${NOTEBOOK_ID}
 	Should Be Equal As Strings	${resp.status_code}	200
 	Dictionary Should Contain Key	${resp.json()}		notebooks
 
 Notebook Fetch
 	Create Session  coge    ${API_URL}   
-	${resp}=	Get Request	coge	${NOTEBOOKS}/${EXPERIMENT_ID}
+	${resp}=	Get Request	coge	${NOTEBOOKS}/${NOTEBOOK_ID}
 	Log Dictionary  ${resp.json()}	level=DEBUG
 	Should Be Equal As Strings	${resp.status_code}	200
 	${expected}=	Evaluate	json.load(open('${DATA_PATH}/notebook_fetch.json', 'r'))	json
@@ -36,7 +36,6 @@ Notebook Fetch Added
 	Create Session  coge    ${API_URL}	debug=1
 	Set Test Message	${id}
 	${resp}=        Get Request     coge    ${NOTEBOOKS}/${id}/${AUTH_PARAMS}
-#	Log Dictionary	${resp.json()} level=DEBUG
 	Should Be Equal As Strings      ${resp.status_code}     200
 	${content}=     Evaluate        json.load(open('${DATA_PATH}/notebook_add.json', 'r'))       json
 	Dictionary Should Contain Sub Dictionary	${resp.json()}	${content["metadata"]}
