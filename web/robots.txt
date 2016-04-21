@@ -20,7 +20,6 @@ Disallow: /diags_perl/
 Disallow: /scripts/
 Disallow: /data/
 Disallow: /bin/
-Disallow: /old/
 Disallow: /CodeOn.pl
 Crawl-delay: 10
 
