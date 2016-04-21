@@ -1,5 +1,6 @@
 # -*- coding: robot -*-
 *** Settings ***
+Library         HttpLibrary.HTTP
 Documentation	blah blah blah
 ...		blah blah blah
 Resource	resource.robot
@@ -7,6 +8,28 @@ Resource	resource.robot
 *** Variables ***
 
 *** Test Cases ***
+Export GFF to Data Store
+        [Tags]  auth-required
+        Create Session  coge    ${API_URL}
+        ${document0}=   Catenate
+        ...     {
+        ...             "type": "export_gff",
+        ...             "parameters": {
+        ...                     "dest_type": "irods",
+        ...                     "genome_id": 16911,
+        ...                     "overwrite": 1
+        ...             }
+        ...     }
+        Should Be Valid JSON    ${document0}
+        ${content0}=    Parse Json      ${document0}
+        ${headers0}=    Create Dictionary       Content-Type=application/json
+        ${resp0}=       Put Request     coge    ${JOBS}/${AUTH_PARAMS}  data=${content0}        headers=${headers0}
+        Should Be Equal As Strings      ${resp0.status_code}    201
+        Dictionary Should Contain Item	${resp0.json()}	success	True
+        Dictionary Should Contain Key   ${resp0.json()}	id
+        Set Suite Variable      ${id0}  ${resp0.json()["id"]}
+        Log     ${id0}
+
 Genome Add 1
 	[Tags]	auth-required 
 	Create Session  coge    ${API_URL}

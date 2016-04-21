@@ -5,7 +5,7 @@ Library		Collections
 
 *** Variables ***
 ${AUTH_USERNAME}	coge	
-${AUTH_TOKEN}	bbd9f29a7fa704b8021e279832d55a
+${AUTH_TOKEN}	2572c335e64542d9abef64ca3fcf2a5
 ${AUTH_PARAMS}	?username=${AUTH_USERNAME}&token=${AUTH_TOKEN}
 ${DATA_PATH}	./data
 ${API_URL}	https://geco.iplantcollaborative.org/coge/api/v1
