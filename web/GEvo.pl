@@ -1263,7 +1263,7 @@ sub run {
 
     #set up buttons for gobe
 
-    my $gobe_buttons = qq{
+    my $gobe_buttons = qq@
 <table>
 <tr>
 <td><span class='ui-button ui-corner-all coge-button-sm' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
@@ -1278,15 +1278,38 @@ sub run {
  <span class='ui-button ui-corner-all coge-button-sm' id="" onclick="update_line_width(1)">+</span>
  <span class='ui-button ui-corner-all coge-button-sm' id="" onclick="update_line_width(-1)">-</span>
 </div>
-};
-    #$gobe_buttons .=
-#qq{<td><a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left' onClick="save_GEvo_results()"><span class="ui-icon ui-icon-newwin"></span>Save Results</a>}
-      #unless $USER->user_name eq 'public';
-    $gobe_buttons .= "</table>";
+</td></tr></table>
+<style>
+.set_title {
+    background: #f4f4f4;
+    border: solid 1px #cccccc;
+    font-size: 9pt;
+    margin-left: 15px;
+    padding: 2px;
+}
+</style>
+@;
     $html         .= $gobe_buttons;
-    $html         .= qq{<DIV id=flashcontent></DIV>};
+    $html         .= qq{<DIV id=flashcontent></DIV><br>};
+    $html .= '<div>';
+    foreach my $item (@sets) {
+        my $title;
+        $title = $item->{obj}->organism() if $item->{obj}->organism();
+        $title .= " " if $title;
+        $title .= $item->{obj}->accn;
+        $title .=
+            " (chr: "
+          . $item->{obj}->chromosome . " "
+          . $item->{obj}->start . "-"
+          . $item->{obj}->stop . ")"
+          if defined $item->{up};
+        $title .= qq! Reverse Complement! if $item->{rev};
+        $html .= '<span class="set_title">' . $title . '</span><br>';
+        $html .= '<img src="' . $TEMPURL . "/" . basename($item->{png_filename}) . '"><br>';
+    }
+    $html .= '</div>';
     $html .=
-qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" class="small" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
+qq{<a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" class="small" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
     $html .= $gobe_buttons;
     $html .= qq{<table class=small>};
     $html .= qq{<tr valign=top><td><span class=bold>Alignment reports</span>};
