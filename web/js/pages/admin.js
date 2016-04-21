@@ -1747,12 +1747,12 @@ $.extend(ReportGrid.prototype, {
 			case "user":
 				fname = 'get_user_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th><th>Total</th></tr></thead></table>');
+					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th><th>Groups</th></tr></thead></table>');
 				break;
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Total</th></tr></thead></table>');
+					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th><th>Users</th></tr></thead></table>');
 				break;
 			case "total":
 				fname = 'get_total_table';
@@ -1791,6 +1791,11 @@ $.extend(ReportGrid.prototype, {
 						}
 					}
 					json.data[i].push(total_items);
+					if (self.selection != 'total') {
+						var t = json.data[i][4];
+						json.data[i][4] = json.data[i][5];
+						json.data[i][5] = t;
+					}
 				}
 				self.data = json;
 				$('#' + element + '_table').dataTable(self.data);
