@@ -196,6 +196,7 @@ A valid configuration file must be specified or very little will work!};
     
     open( IN, $conf_file );
     my %items;
+    $items{TMPLDIR} = catdir($BASEDIR, 'tmpl');
     while (<IN>) {
         chomp;
         next if /^#/;
