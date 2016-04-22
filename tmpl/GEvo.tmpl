@@ -28,8 +28,14 @@
 	.portlet { margin: 0 1em 1em 0; float: left}
 	.portlet-header { margin: 0.3em; padding-bottom: 4px; padding-left: 0.2em; cursor:move;}
 	.ui-sortable-placeholder { placeholder: ".portlet"; border: 1px dotted black; visibility: visible !important; width: 200px !important; }
+.set_title {
+    background: #f4f4f4;
+    border: solid 1px #cccccc;
+    font-size: 9pt;
+    margin-left: 15px;
+    padding: 2px;
+}
 </style>
-
 <script language="JavaScript">
 function animate_section(name, style, speedy, show) {
   if (show) {alert (name+"::"+style)}
@@ -790,6 +796,22 @@ function rand ()
   return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
 }
 
+function img_click(basename,img,x,y) {
+    Gobe.handle_html('');
+    jQuery.ajax({
+        dataType: 'json',
+        url: 'gobe/gobe.py/' + basename + '/query/?y=' + y + '&img=' + img + '&x=' + x,
+        success: function(data) {
+            data = data.resultset;
+            for (var i=0; i<data.length; i++) {
+                var pair = data[i];
+                Gobe.handle_html('<p><a target="_blank" href="' + pair.link + '">full annotation</a></p>&#10;&#10;<p>' + pair.annotation + '</p>');
+                if (!pair.has_pair)
+                    continue;
+            }
+        }
+    });
+}
 </SCRIPT>
 
 <div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>

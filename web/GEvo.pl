@@ -1176,7 +1176,6 @@ sub run {
     my @gfxs;
 
     foreach my $item (@sets) {
-        my $obj      = $item->{obj};
         my $filename = $cogeweb->basefile . "_" . $item->{seq_num} . ".png";
         $filename = CoGe::Accessory::Web::check_filename_taint($filename);
         $item->{png_filename} = $filename;
@@ -1279,20 +1278,11 @@ sub run {
  <span class='ui-button ui-corner-all coge-button-sm' id="" onclick="update_line_width(-1)">-</span>
 </div>
 </td></tr></table>
-<style>
-.set_title {
-    background: #f4f4f4;
-    border: solid 1px #cccccc;
-    font-size: 9pt;
-    margin-left: 15px;
-    padding: 2px;
-}
-</style>
 @;
     $html         .= $gobe_buttons;
     $html         .= qq{<DIV id=flashcontent></DIV><br>};
     $html .= '<div>';
-    foreach my $item (@sets) {
+   foreach my $item (@sets) {
         my $title;
         $title = $item->{obj}->organism() if $item->{obj}->organism();
         $title .= " " if $title;
@@ -1305,7 +1295,7 @@ sub run {
           if defined $item->{up};
         $title .= qq! Reverse Complement! if $item->{rev};
         $html .= '<span class="set_title">' . $title . '</span><br>';
-        $html .= '<img src="' . $TEMPURL . "/" . basename($item->{png_filename}) . '"><br>';
+        $html .= '<img src="' . $TEMPURL . "/" . basename($item->{png_filename}) . '" onclick="img_click(\'' . basename($cogeweb->basefile) . '\',' . $item->{seq_num} . ',event.offsetX,event.offsetY)"><br>';
     }
     $html .= '</div>';
     $html .=
