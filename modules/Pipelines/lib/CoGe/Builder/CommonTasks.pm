@@ -1681,7 +1681,7 @@ sub create_bismark_alignment_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
-        ['-p', 16, 0],#['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
+        ['-p', 8, 0],#['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
         [($encoding eq '64' ? '--phred64-quals' : '--phred33-quals'), '', 0],
         ['-N', $N, 0],
         ['-L', $L, 0],
@@ -1806,7 +1806,7 @@ sub create_bwameth_alignment_job {
     my $args = [
         ['--reference', catfile($index_path, 'genome.faa.reheader.faa'), 0],
         ['', join(' ', @$fastq), 0],
-        ['-t', 16, 0],#['-t', 8, 0],
+        ['-t', 8, 0],
         ['-p', 'alignment', 0]
     ];
     
