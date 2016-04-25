@@ -130,9 +130,9 @@ var coge = window.coge = (function(namespace) {
 				    	url: url,
 				    	dataType: "json",
 				        contentType: "application/json",
-				        xhrFields: {
-			                withCredentials: true
-			            },
+				        // xhrFields: {
+			         //        withCredentials: true
+			         //    },
 				        data: JSON.stringify(data),
 				    })
 				    .fail(function(jqXHR, textStatus, errorThrown) { 

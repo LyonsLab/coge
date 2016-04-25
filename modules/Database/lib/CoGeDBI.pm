@@ -678,7 +678,6 @@ sub get_table_count {
     my $id = $table . '_id';
     
     my $query = "SELECT $id FROM $table " . ($where ? "WHERE $where" : '') . " ORDER BY $id DESC LIMIT 1";
-    print STDERR $query, "\n";
     my $sth = $dbh->prepare($query);
     $sth->execute();
     my ($count) = $sth->fetchrow_array();

@@ -56,6 +56,10 @@ a:hover {
   color: gray;
 }
 
+.highlighted {
+    background-color: yellow;    
+}
+
 .coge-inlaid {
     text-shadow: 0px 1px 0px lightgray;
 }
@@ -1894,6 +1898,10 @@ div.dataTables_scrollBody {
 	font-size: 1.25em;
 	font-family: helvetica;
 	color: #41AD41;
+}
+
+.coge-header-button a {
+  color: #41AD41;
 }
 
 .coge-login-button {

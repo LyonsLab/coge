@@ -12,6 +12,7 @@ use CoGe::Core::Storage qw( get_experiment_path );
 use CoGeDBI qw( feature_type_names_to_id );
 use Data::Dumper;
 use File::Path;
+use File::Spec::Functions;
 use JSON::XS;
 
 #TODO: use these from Storage.pm instead of redeclaring them
@@ -408,8 +409,7 @@ sub _snps {
 	    return $hits;
 	}
 	elsif ($self->param('snp_type')) {
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{COGEDIR};
-        $cmdpath = substr($cmdpath, 0, -3) . 'tools/snp_search/snp_search';
+        my $cmdpath = catfile(CoGe::Accessory::Web::get_defaults()->{BINDIR}, 'snp_search', 'snp_search');
         my $storage_path = get_experiment_path($eid);
         opendir(my $dh, $storage_path);
         my @files = grep(/\.vcf$/,readdir($dh));

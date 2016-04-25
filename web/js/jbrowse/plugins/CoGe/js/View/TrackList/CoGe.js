@@ -150,7 +150,9 @@ define(['dojo/_base/declare',
 
     _build_title: function(track_config) {
     	var coge = track_config.coge;
-    	var title = this._capitalize(coge.type) + " id" + coge.id;
+    	var title = this._capitalize(coge.type) + ' id: ' + coge.id;
+        if (coge.type == 'experiment')
+            title += "\nData Type: " + (coge.data_type == 4 ? 'Markers' : coge.data_type == 3 ? 'Alignments' : coge.data_type == 2 ? 'Polymorphism Data' : 'Quantitative Data');
     	if (coge.name)
     		title += "\nName: " + coge.name;
     	if (coge.description)
@@ -733,8 +735,7 @@ define(['dojo/_base/declare',
         });
         container.config = track_config;
     	var label = dojo.create('div', {
-			className: 'coge-track-label coge-' + coge.type,
-			title: this._build_title(track_config)
+			className: 'coge-track-label coge-' + coge.type
         });
         if (coge.type == 'experiment' || coge.type == 'features')
         	dojo.addClass(label, 'coge-track-indented');

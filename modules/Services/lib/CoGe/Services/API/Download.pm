@@ -18,6 +18,7 @@ sub get {
     #my $username = $self->param('username');
     my $uuid = $self->param('uuid') || ''; # optional
     my $attachment = $self->param('attachment') || 1;
+    print STDERR "CoGe::Services::Download\n";
     
     # Validate inputs
     #unless ($gid || $eid || ($wid && $username)) {
@@ -37,7 +38,9 @@ sub get {
             and ( not defined $user or not $user->has_access_to_genome($genome) ) )
         {
             print STDERR "CoGe::Services::Download access denied to genome $gid\n";
-            return $self->render(status => 400);
+            return $self->render(status => 401, json => {
+                error => { Auth => "Access denied" }
+            });
         }
 
         my $dl_path = get_download_path('genome', $gid, $uuid);
@@ -48,24 +51,35 @@ sub get {
         if ($exp->restricted and
             (not defined $user or not $user->has_access_to_experiment($exp))) {
             print STDERR "CoGe::Services::Download access denied to experiment $eid\n";
-            return $self->render(status => 400);
+            return $self->render(status => 401, json => {
+                error => { Auth => "Access denied" }
+            });
         }
 
         my $dl_path = get_download_path('experiment', $eid, $uuid);
         $file_path = File::Spec->catdir($dl_path, $filename);
     }
-    elsif ($wid && $user->name) { # workflow debug log file
+    elsif ($wid) { # workflow debug log file
+        unless ($user) {
+            print STDERR "CoGe::Services::Download ERROR: not logged in\n";
+            return $self->render(status => 401, json => {
+                error => { Auth => "Access denied" }
+            });
+        }
         $file_path = get_workflow_log_file($user->name, $wid);
         unless (-r $file_path) {
             print STDERR "CoGe::Services::Download ERROR: workflow log not found for wid $wid\n";
-            $self->render(status => 400);
-            return;
+            return $self->render(status => 400, json => {
+                error => { Error => "Not found" }
+            });
         }
         $filename = "workflow_$wid.log";
     }
     
     say STDERR "CoGe::Services::Download file=$file_path";
-    return $self->render(status => 400) unless ($file_path);
+    return $self->render(status => 400, json => {
+        error => { Error => "Not found" }
+    }) unless ($file_path);
 
     # Send file
     $self->res->headers->content_disposition("attachment; filename=$filename;") if $attachment; # tell browser to download file

@@ -961,17 +961,20 @@ $.extend(JobGrid.prototype, {
 		//Setup table formatting
 		self.table = $('#' + self.elementId + '_table').DataTable({
     		columnDefs : [
-    		              { 
-    		            	  orderSequence : [ "desc", "asc" ], 
-    		            	  targets : [0, 1, 2] 
-    		              },
-    		              {
-     		            	 "render": function ( data, type, full, meta ) {
-     		            	      return '<a href="'+data+'" target="_blank">'+data+'</a>';
-     		            	 },
-     		            	 targets : 6
-     		             }
-    		             ],
+				{ 
+					orderSequence : [ "desc", "asc" ], 
+					targets : [0, 1, 2] 
+				},
+				{
+					"render": function ( data, type, full, meta ) {
+						if (meta.col == 0)
+							return '<a href="'+'jex/status/'+data+'" target="_blank">'+data+'</a>';
+						if (meta.col == 6)
+							return '<a href="'+data+'" target="_blank">'+data+'</a>';
+					},
+					targets : [ 0, 6 ]
+				}
+    		],
     		iDisplayLength: Math.floor(self.height/24), //Each row is 24 pixels tall
     		order: [[1, "desc"]],
     		scrollY: self.height,
@@ -1744,12 +1747,12 @@ $.extend(ReportGrid.prototype, {
 			case "user":
 				fname = 'get_user_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Groups</th><th>Total</th></tr></thead></table>');
+					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th><th>Groups</th></tr></thead></table>');
 				break;
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Total</th></tr></thead></table>');
+					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th><th>Users</th></tr></thead></table>');
 				break;
 			case "total":
 				fname = 'get_total_table';
@@ -1776,7 +1779,7 @@ $.extend(ReportGrid.prototype, {
 				var min_value = Number.MAX_SAFE_INTEGER;
 				for(var i = 0; i < json.data.length; i++) {
 					var total_items = 0;
-					if (this.selection == "total") {
+					if (self.selection == "total") {
 						for(var j = 0; j < json.data[i].length; j++) {
 							var num = parseInt(json.data[i][j], 10);
 							total_items += num;
@@ -1788,6 +1791,11 @@ $.extend(ReportGrid.prototype, {
 						}
 					}
 					json.data[i].push(total_items);
+					if (self.selection != 'total') {
+						var t = json.data[i][4];
+						json.data[i][4] = json.data[i][5];
+						json.data[i][5] = t;
+					}
 				}
 				self.data = json;
 				$('#' + element + '_table').dataTable(self.data);

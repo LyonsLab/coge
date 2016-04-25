@@ -252,7 +252,7 @@ sub add {
         parameters => $data
     };
     
-    return CoGe::Services::Data::Job::add($self, $request);
+    return CoGe::Services::API::Job::add($self, $request);
 }
 
 1;
