@@ -419,17 +419,16 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 	                if (label && label != '.') {
 	                	if (!(start >= prevStart && start <= prevEnd)) { // mdb added 4/15/14 - don't allow overlapping labels, only print the first one
 		                	var topOffset = ( isUpward ? fRect.t-12 : fRect.t );
-		                    var rulerdiv =
-		                        dojo.create('div',
-		                    		{   style: {
-		                                	width: '100px',
-		                                    position: 'absolute',
-		                                    left: fRect.l,
-		                                    top: topOffset,
-		                                    //zIndex: 10,
-		                                },
-		                                innerHTML: label
-		                            }, canvas.parentNode );
+		                    dojo.create('div',
+	                    		{   style: {
+	                                	width: '100px',
+	                                    position: 'absolute',
+	                                    left: fRect.l,
+	                                    top: topOffset,
+	                                    //zIndex: 10,
+	                                },
+	                                innerHTML: label
+	                            }, canvas.parentNode );
 		                    prevStart = start;
 		                    prevEnd = f.get('end');
 	                	}
@@ -524,12 +523,12 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
     // ----------------------------------------------------------------
 
-    _getScaling: function( viewArgs, successCallback, errorCallback ) {
+     _getScaling: function( viewArgs, successCallback, errorCallback ) {
 
         this._getScalingStats( viewArgs, dojo.hitch(this, function( stats ) {
 
             //calculate the scaling if necessary
-            if( ! this.lastScaling || ! this.lastScaling.sameStats( stats ) ) {
+            if( ! this.lastScaling || ! this.lastScaling.sameStats( stats ) || this.trackHeightChanged ) {
 
                 var scaling = new Scale( this.config, stats );
 
@@ -550,6 +549,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 scaling.range = scaling.max - scaling.min;
 
                 this.lastScaling = scaling;
+                this.trackHeightChanged=false; //reset flag
             }
 
             successCallback( this.lastScaling );
