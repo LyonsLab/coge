@@ -403,7 +403,7 @@ sub track_config {
     if ( keys %experiments ) {
         push @tracks, {
             key     => 'All Experiments',
-            baseUrl => "$JBROWSE_API/genome/$gid/",
+            baseUrl => "$JBROWSE_API/experiment/genome/$gid/",
             autocomplete => "all",
             track        => "notebook0",
             label        => "notebook0",
