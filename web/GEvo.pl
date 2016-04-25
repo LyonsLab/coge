@@ -1281,7 +1281,7 @@ sub run {
 @;
     $html         .= $gobe_buttons;
     $html         .= qq{<DIV id=flashcontent></DIV><br>};
-    $html .= '<div>';
+    $html .= '<script>var basename=\'' . basename($cogeweb->basefile) . '\';</script><div style="position:relative" onmousedown="event.preventDefault();event.stopPropagation();">';
    foreach my $item (@sets) {
         my $title;
         $title = $item->{obj}->organism() if $item->{obj}->organism();
@@ -1295,9 +1295,9 @@ sub run {
           if defined $item->{up};
         $title .= qq! Reverse Complement! if $item->{rev};
         $html .= '<span class="set_title">' . $title . '</span><br>';
-        $html .= '<img src="' . $TEMPURL . "/" . basename($item->{png_filename}) . '" onclick="img_click(\'' . basename($cogeweb->basefile) . '\',' . $item->{seq_num} . ',event.offsetX,event.offsetY)"><br>';
+        $html .= '<img id="img' . $item->{seq_num} . '" src="' . $TEMPURL . "/" . basename($item->{png_filename}) . '"><br>';
     }
-    $html .= '</div>';
+    $html .= '<svg id="svg" style="position:absolute;top:0;left:0;width:100%;height:100%;" onclick="svg_click(event)"></svg></div>';
     $html .=
 qq{<a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" class="small" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
     $html .= $gobe_buttons;
