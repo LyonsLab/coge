@@ -277,7 +277,12 @@ sub _get_experiments {
         	push @experiments, $e;
         }
         else {
-        	warn "JBrowse::Experiment::_get_experiments access denied to experiment $eid for user ", $user->name;
+            if ($user && $user->name) {
+            	warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $eid . ' for user ' . $user->name;
+            }
+            else {
+                warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $eid;
+            }
         }
     }
     splice(@experiments, $MAX_EXPERIMENTS);
