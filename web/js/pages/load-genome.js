@@ -494,7 +494,7 @@ $.extend(GenomeDescriptionView.prototype, {
                 version: coge.utils.removeSpecialChars(version),
                 type: type,
                 restricted: restricted,
-                source_name: web/js/pages/load-experiment.js(source),
+                source_name: coge.utils.removeSpecialChars(source),
                 organism: organism
             },
             organism_id: this.organism_id
