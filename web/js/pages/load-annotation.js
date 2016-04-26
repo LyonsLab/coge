@@ -197,7 +197,7 @@ $.extend(AnnotationDescriptionView.prototype, {
                 description: coge.utils.removeSpecialChars(description),
                 link: link,
                 version: coge.utils.removeSpecialChars(version),
-                source: source,
+                source: web/js/pages/load-experiment.js(source),
                 genome: genome,
             },
 

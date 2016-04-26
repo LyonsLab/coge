@@ -227,7 +227,7 @@ $.extend(ExperimentDescriptionView.prototype, {
                 description: coge.utils.removeSpecialChars(description),
                 version: coge.utils.removeSpecialChars(version),
                 restricted: restricted,
-                source_name: source,
+                source_name: coge.utils.removeSpecialChars(source),
                 genome: genome,
             },
 
