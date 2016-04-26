@@ -26,6 +26,7 @@ sub gen_html {
                       PAGE_TITLE => 'Error',
 				      TITLE      => "Error",
     				  PAGE_LINK  => $LINK,
+    				  SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
     				  HOME       => $CONF->{SERVER},
                       HELP       => '',
                       WIKI_URL   => $CONF->{WIKI_URL} || '',

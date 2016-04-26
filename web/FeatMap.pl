@@ -73,6 +73,7 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( TITLE      => 'Feature Map',
                       PAGE_TITLE => 'FeatMap',
+                      SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
                       HOME       => $P->{SERVER},
                       HELP       => 'FeatMap',
                       WIKI_URL   => $P->{WIKI_URL} || '',

@@ -11,13 +11,13 @@ use CoGe::Accessory::Web;
 
 use vars qw( 
     $CONF $PAGE_TITLE $USER $DB %FUNCTION $FORM %ITEM_TYPE $MAX_SEARCH_RESULTS
-    $EMBED
+    $EMBED $LINK
 );
 
 $PAGE_TITLE = 'GenomeView';
 
 $FORM = new CGI;
-( $DB, $USER, $CONF ) = CoGe::Accessory::Web->init(
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
@@ -37,6 +37,8 @@ sub gen_html {
         $template->param(
             USER       => $USER->display_name || '',
             PAGE_TITLE => 'Genome Viewer',
+            PAGE_LINK  => $LINK,
+            SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
 	        TITLE      => 'Genome Viewer',
 	        HOME       => $CONF->{SERVER},
             HELP       => 'GenomeView',

@@ -462,6 +462,7 @@ sub gen_html {
     $template->param( PAGE_TITLE => 'FeatView',
 		              TITLE      => 'FeatView: Search Features Across Organisms',
                       PAGE_LINK  => $LINK,
+                      SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
                       HOME       => $P->{SERVER},
                       HELP       => 'FeatView',
                       WIKI_URL   => $P->{WIKI_URL} || '',

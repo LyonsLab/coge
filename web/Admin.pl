@@ -79,6 +79,8 @@ sub gen_html {
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( USER       => $USER->display_name || '',
 	                  PAGE_TITLE => qq{Admin},
+	                  PAGE_LINK  => $LINK,
+	                  SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
 	                  TITLE      => "GODVIEW",
 	                  HOME       => $P->{SERVER},
                       HELP       => '',

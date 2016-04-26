@@ -85,6 +85,7 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( TITLE      => 'ClustalW2 Alignments',
                       PAGE_TITLE => 'Align',
+                      SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
                       HOME       => $P->{SERVER},
                       HELP       => 'CoGeAlign',
                       WIKI_URL   => $P->{WIKI_URL} || '',

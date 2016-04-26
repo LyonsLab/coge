@@ -11,7 +11,7 @@ use CoGeX::Result::Feature;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
 
-use vars qw($P $PAGE_TITLE $PAGE_NAME
+use vars qw($P $PAGE_TITLE $PAGE_NAME $LINK
   $TEMPDIR $TEMPURL $USER $DATE $BASEFILE $coge $cogeweb $FORM %FUNCTION);
 
 $DATE = sprintf(
@@ -24,7 +24,7 @@ $PAGE_TITLE = 'FeatList';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
@@ -64,6 +64,8 @@ sub gen_html {
 
     $template->param( TITLE => 'FeatList',
                       PAGE_TITLE => 'FeatList',
+                      PAGE_LINK  => $LINK,
+                      SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
                       HOME       => $P->{SERVER},
                       HELP       => 'FeatList',
                       WIKI_URL   => $P->{WIKI_URL} || '',

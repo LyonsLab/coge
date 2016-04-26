@@ -78,6 +78,7 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( TITLE      => 'Coding Sequence Evolution',
                       PAGE_TITLE => 'CodeOn',
+                      SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
                       HOME       => $P->{SERVER},
                       HELP       => 'CodeOn',
                       WIKI_URL   => $P->{WIKI_URL} || '',

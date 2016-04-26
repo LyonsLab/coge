@@ -87,6 +87,7 @@ sub gen_html {
     $template->param( PAGE_TITLE => 'FastaView',
 				      TITLE      => 'FastaView',
     				  PAGE_LINK  => $LINK,
+    				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
     				  HOME       => $P->{SERVER},
                       HELP       => 'FastaView',
                       WIKI_URL   => $P->{WIKI_URL} || '',

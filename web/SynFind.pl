@@ -115,6 +115,8 @@ sub gen_html {
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( TITLE      => 'SynFind: Syntenic Compiler',
                       PAGE_TITLE => 'SynFind',
+                      PAGE_LINK  => $LINK,
+                      SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
                       HOME       => $config->{SERVER},
                       HELP       => 'SynFind',
                       WIKI_URL   => $config->{WIKI_URL} || '',

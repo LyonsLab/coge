@@ -120,6 +120,7 @@ sub gen_html {
     $template->param(TITLE=>'CoGeBLAST: Perform BLAST Analysis');
     $template->param( PAGE_TITLE => 'BLAST',
     				  PAGE_LINK  => $LINK,
+    				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
     				  HOME       => $P->{SERVER},
                       HELP       => 'CoGeBlast',
                       WIKI_URL   => $P->{WIKI_URL} || '' );
