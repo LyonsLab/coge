@@ -31,7 +31,7 @@ sub gen_html {
     $template->param( PAGE_TITLE => 'My Account',
                       TITLE      => 'View my account info',
                       PAGE_LINK  => $LINK,
-                      SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
+                      SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
                       HEAD       => qq{},
                       HOME       => $P->{SERVER},
                       HELP       => 'My Account',
