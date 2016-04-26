@@ -20,16 +20,17 @@ use Statistics::Basic::Mean;
 use POSIX;
 no warnings 'redefine';
 
-use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $COOKIE_NAME);
+use vars qw(
+    $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR 
+    $USER $DATE $BASEFILE $coge $cogeweb $FORM $COOKIE_NAME
+);
 
 $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
-    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-      ->(localtime)
+    sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
 $PAGE_NAME = "CodeOn.pl";
 $TEMPDIR   = $P->{TEMPDIR};
@@ -74,11 +75,10 @@ print $pj->build_html( $FORM, \&gen_html );
 sub gen_html {
     my $html;
     my ($body) = gen_body();
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( TITLE      => 'Coding Sequence Evolution',
                       PAGE_TITLE => 'CodeOn',
-                      SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
+                      SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
                       HOME       => $P->{SERVER},
                       HELP       => 'CodeOn',
                       WIKI_URL   => $P->{WIKI_URL} || '',
