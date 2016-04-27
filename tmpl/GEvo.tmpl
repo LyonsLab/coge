@@ -796,20 +796,48 @@ function rand ()
   return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
 }
 
+function drag_slider(event, ui) {
+//    ui.position.left -= 16;
+}
+
+function get_tops() {
+    var tops = [];
+    for (var i=1; i<=num_img; i++) {
+        var img = $('#img' + i);
+        tops.push(img.offset().top - img.parent().offset().top);
+    }
+    return tops;
+}
+
+var loaded_img = 0;
+function img_loaded() {
+    loaded_img++;
+    if (loaded_img == num_img) {
+        var div = $('#images');
+        var tops = get_tops();
+        for (var i=0; i<num_img; i++) {
+            var top = tops[i] + 24;
+            var img = $('#img' + (i + 1));
+            var h = img.height() - 24;
+            $('<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:' + top + 'px;width:11px;height:' + h + 'px"><path d="M 10 0 s -16 8 -2 16 l 0 ' + (h - 32) + ' s -16 8 2 16 z" fill="#cccccc" stroke="black" stroke-width="1" /></svg>').draggable({axis:'x',containment:'parent',drag:drag_slider}).appendTo(div);
+            $('<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:' + (img.width() + 22) + ';top:' + top + 'px;width:11px;height:' + h + 'px"><path d="M 1 0 s 16 8 2 16 l 0 ' + (h - 32) + ' s 16 8 -2 16 z" fill="#cccccc" stroke="black" stroke-width="1" /></svg>').draggable({axis:'x',containment:'parent',drag:drag_slider}).appendTo(div);
+        }
+    }
+}
+
 function svg_click(event) {
-    Gobe.handle_html('');
-    var y1 = $('#img1').offset().top - $('#img1').parent().offset().top;
-    var y2= $('#img2').offset().top - $('#img2').parent().offset().top;
-    var img;
     var x = event.offsetX;
     var y = event.offsetY;
-    if (y >= y2) {
-        img = 2;
-        y -= y2;
-    } else if (y >= y1 && y <= y1 + 140) {
-        img = 1;
-        y -= y1;
-    } else
+    Gobe.handle_html('');
+    var tops = get_tops();
+    var img = 0;
+    for (var i=0; i<num_img; i++)
+        if (y >= tops[i] && y <= tops[i] + 140) {
+            img = i + 1;
+            y -= tops[i];
+            break;
+        }
+    if (img == 0)
         return;
     var url = 'gobe/gobe.py/' + basename + '/query/?y=' + y + '&img=' + img + '&x=' + x;
     if (event.shiftKey)
@@ -819,15 +847,21 @@ function svg_click(event) {
         url: url,
         success: function(data) {
             data = data.resultset;
-            var svg = document.getElementById('svg');
+            var svg = $('#svg');
             for (var i=0; i<data.length; i++) {
                 var pair = data[i];
                 Gobe.handle_html('<p><a target="_blank" href="' + pair.link + '">full annotation</a></p>&#10;&#10;<p>' + pair.annotation + '</p>');
                 if (!pair.has_pair)
                     continue;
                 var color = '#' + pair.color.substring(2);
-                var coords1 = pair.features.key1;
-                var coords2 = pair.features.key2;
+                var keys = [];
+                for (key in pair.features)
+                    keys.push(key);
+                keys.sort();
+                var coords1 = pair.features[keys[0]];
+                var coords2 = pair.features[keys[1]];
+                var y1 = tops[keys[0].substring(3) - 1];
+                var y2 = tops[keys[1].substring(3) - 1];
                 var r1 = newSVG('rect', {x: coords1[0] - 1.15, y: coords1[1] + y1, width: coords1[2] - coords1[0] + 1.0, height: coords1[3] - coords1[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r2);p.removeChild(this.poly);p.removeChild(this);event.stopPropagation();'});
                 var r2 = newSVG('rect', {x: coords2[0] - 1.15, y: coords2[1] + y2, width: coords2[2] - coords2[0] + 1.0, height: coords2[3] - coords2[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.poly);p.removeChild(this);event.stopPropagation();'});
                 var poly = newSVG('polygon', {points: coords1[0] + ',' + (coords1[3] + y1) + ' ' + coords2[0] + ',' + (coords2[1] + y2) + ' ' + coords2[2] + ',' + (coords2[1] + y2) + ' ' + coords1[2] + ',' + (coords1[3] + y1), style: 'fill:' + color + ';fill-opacity:0.3;stroke:' + color + ';stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.r2);p.removeChild(this);event.stopPropagation();'});
@@ -844,6 +878,7 @@ function svg_click(event) {
         }
     });
 }
+
 function newSVG(tag, attrs) {
     var el= document.createElementNS('http://www.w3.org/2000/svg', tag);
     for (var k in attrs)

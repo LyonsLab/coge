@@ -1281,7 +1281,7 @@ sub run {
 @;
     $html         .= $gobe_buttons;
     $html         .= qq{<DIV id=flashcontent></DIV><br>};
-    $html .= '<script>var basename=\'' . basename($cogeweb->basefile) . '\';</script><div style="position:relative" onmousedown="event.preventDefault();event.stopPropagation();">';
+    $html .= '<script>var basename=\'' . basename($cogeweb->basefile) . '\';var num_img=' . (scalar @sets) . ';</script><div id="images" style="position:relative;" onmousedown="event.preventDefault();event.stopPropagation();">';
    foreach my $item (@sets) {
         my $title;
         $title = $item->{obj}->organism() if $item->{obj}->organism();
@@ -1295,7 +1295,7 @@ sub run {
           if defined $item->{up};
         $title .= qq! Reverse Complement! if $item->{rev};
         $html .= '<span class="set_title">' . $title . '</span><br>';
-        $html .= '<img id="img' . $item->{seq_num} . '" src="' . $TEMPURL . "/" . basename($item->{png_filename}) . '"><br>';
+        $html .= '<img id="img' . $item->{seq_num} . '" src="' . $TEMPURL . "/" . basename($item->{png_filename}) . '" onload="img_loaded()" style="margin-left:11px;margin-right:11px;"><br>';
     }
     $html .= '<svg id="svg" style="position:absolute;top:0;left:0;width:100%;height:100%;" onclick="svg_click(event)"></svg></div>';
     $html .=
