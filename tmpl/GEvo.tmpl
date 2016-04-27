@@ -796,32 +796,51 @@ function rand ()
   return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
 }
 
-function drag_slider(event, ui) {
-//    ui.position.left -= 16;
+function drag_left(event, ui) {
+    ui.position.left -= 16;
+    ui.position.left = Math.max(0, ui.position.left);
+    ui.position.left = Math.min(ui.helper[0].r.position().left - 26, ui.position.left);
 }
 
+function drag_right(event, ui) {
+    ui.position.left -= 16;
+    ui.position.left = Math.max(ui.helper[0].l.position().left, ui.position.left);
+    ui.position.left = Math.min(1011, ui.position.left);
+}
+
+var tops;
 function get_tops() {
-    var tops = [];
+    tops = [];
     for (var i=1; i<=num_img; i++) {
         var img = $('#img' + i);
         tops.push(img.offset().top - img.parent().offset().top);
     }
-    return tops;
 }
 
-var loaded_img = 0;
-function img_loaded() {
-    loaded_img++;
-    if (loaded_img == num_img) {
-        var div = $('#images');
-        var tops = get_tops();
-        for (var i=0; i<num_img; i++) {
-            var top = tops[i] + 24;
-            var img = $('#img' + (i + 1));
-            var h = img.height() - 24;
-            $('<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:0;top:' + top + 'px;width:11px;height:' + h + 'px"><path d="M 10 0 s -16 8 -2 16 l 0 ' + (h - 32) + ' s -16 8 2 16 z" fill="#cccccc" stroke="black" stroke-width="1" /></svg>').draggable({axis:'x',containment:'parent',drag:drag_slider}).appendTo(div);
-            $('<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;left:' + (img.width() + 22) + ';top:' + top + 'px;width:11px;height:' + h + 'px"><path d="M 1 0 s 16 8 2 16 l 0 ' + (h - 32) + ' s 16 8 -2 16 z" fill="#cccccc" stroke="black" stroke-width="1" /></svg>').draggable({axis:'x',containment:'parent',drag:drag_slider}).appendTo(div);
+var lefts;
+var rights;
+function images_loaded() {
+    for (var i=1; i<=num_img; i++) {
+        var img = document.getElementById('img' + i);
+        if (!img.complete || img.naturalWidth == undefined) {
+            setTimeout(images_loaded, 100);
+            return;
         }
+    }
+    get_tops();
+    lefts = [];
+    rights = [];
+    var div = $('#images');
+    for (var i=0; i<num_img; i++) {
+        var top = tops[i] + 24;
+        var img = $('#img' + (i + 1));
+        var h = img.height() - 24;
+        var l = $('<svg xmlns="http://www.w3.org/2000/svg" id="slider_up_' + (i + 1) + '" style="position:absolute;left:0;top:' + top + 'px;width:11px;height:' + h + 'px"><path d="M 10 0 s -16 8 -2 16 l 0 ' + (h - 32) + ' s -16 8 2 16 z" fill="#cccccc" stroke="black" stroke-width="1" /></svg>').appendTo(div).draggable({axis:'x',drag:drag_left});
+        var r = $('<svg xmlns="http://www.w3.org/2000/svg" id="slider_down_' + (i + 1) + '" style="position:absolute;left:' + (img.width() + 11) + ';top:' + top + 'px;width:11px;height:' + h + 'px"><path d="M 1 0 s 16 8 2 16 l 0 ' + (h - 32) + ' s 16 8 -2 16 z" fill="#cccccc" stroke="black" stroke-width="1" /></svg>').appendTo(div).draggable({axis:'x',drag:drag_right});
+        l[0].r = r;
+        r[0].l = l;
+        lefts.push(parseInt($('#drup' + (i + 1)).val()));
+        rights.push(parseInt($('#drdown' + (i + 1)).val());
     }
 }
 
@@ -829,7 +848,6 @@ function svg_click(event) {
     var x = event.offsetX;
     var y = event.offsetY;
     Gobe.handle_html('');
-    var tops = get_tops();
     var img = 0;
     for (var i=0; i<num_img; i++)
         if (y >= tops[i] && y <= tops[i] + 140) {
