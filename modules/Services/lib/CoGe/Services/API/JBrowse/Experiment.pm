@@ -153,7 +153,7 @@ sub data {
     }
 
     # Check permissions
-    unless ($user->is_admin() || $user->is_owner_editor(experiment => $id)) {
+    unless (!$experiment->restricted() || ($user && ($user->is_admin() || $user->is_owner_editor(experiment => $id)))) {
         $self->render(json => {
             error => { Auth => "Access denied" }
         }, status => 401);
