@@ -789,6 +789,7 @@ function update_line_width(val)
     $(this).val(val);
    });
    Gobe.set_linewidth($('#line_width_val').val());
+   $('#svg').find('line').css('stroke-width', val);
  }
 
 function rand ()
@@ -840,7 +841,7 @@ function images_loaded() {
         l[0].r = r;
         r[0].l = l;
         lefts.push(parseInt($('#drup' + (i + 1)).val()));
-        rights.push(parseInt($('#drdown' + (i + 1)).val());
+        rights.push(parseInt($('#drdown' + (i + 1)).val()));
     }
 }
 
@@ -865,7 +866,9 @@ function svg_click(event) {
         url: url,
         success: function(data) {
             data = data.resultset;
-            var svg = $('#svg');
+            var wedges = $('#set_wedges').css('display') == 'none';
+            var line_width = $('#line_width_val').val();
+            var svg = document.getElementById('svg');
             for (var i=0; i<data.length; i++) {
                 var pair = data[i];
                 Gobe.handle_html('<p><a target="_blank" href="' + pair.link + '">full annotation</a></p>&#10;&#10;<p>' + pair.annotation + '</p>');
@@ -880,9 +883,13 @@ function svg_click(event) {
                 var coords2 = pair.features[keys[1]];
                 var y1 = tops[keys[0].substring(3) - 1];
                 var y2 = tops[keys[1].substring(3) - 1];
-                var r1 = newSVG('rect', {x: coords1[0] - 1.15, y: coords1[1] + y1, width: coords1[2] - coords1[0] + 1.0, height: coords1[3] - coords1[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r2);p.removeChild(this.poly);p.removeChild(this);event.stopPropagation();'});
-                var r2 = newSVG('rect', {x: coords2[0] - 1.15, y: coords2[1] + y2, width: coords2[2] - coords2[0] + 1.0, height: coords2[3] - coords2[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.poly);p.removeChild(this);event.stopPropagation();'});
-                var poly = newSVG('polygon', {points: coords1[0] + ',' + (coords1[3] + y1) + ' ' + coords2[0] + ',' + (coords2[1] + y2) + ' ' + coords2[2] + ',' + (coords2[1] + y2) + ' ' + coords1[2] + ',' + (coords1[3] + y1), style: 'fill:' + color + ';fill-opacity:0.3;stroke:' + color + ';stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.r2);p.removeChild(this);event.stopPropagation();'});
+                var r1 = newSVG('rect', {x: coords1[0] + 11, y: coords1[1] + y1, width: coords1[2] - coords1[0], height: coords1[3] - coords1[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r2);p.removeChild(this.poly);p.removeChild(this);event.stopPropagation();'});
+                var r2 = newSVG('rect', {x: coords2[0] + 11, y: coords2[1] + y2, width: coords2[2] - coords2[0], height: coords2[3] - coords2[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.poly);p.removeChild(this);event.stopPropagation();'});
+                var poly;
+                if (wedges)
+                    poly = newSVG('polygon', {points: coords1[0] + ',' + (coords1[3] + y1) + ' ' + coords2[0] + ',' + (coords2[1] + y2) + ' ' + coords2[2] + ',' + (coords2[1] + y2) + ' ' + coords1[2] + ',' + (coords1[3] + y1), style: 'fill:' + color + ';fill-opacity:0.3;stroke:' + color + ';stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.r2);p.removeChild(this);event.stopPropagation();'});
+                else
+                    poly = newSVG('line', {x1: (coords1[0] + coords1[2]) / 2 + 11, y1: coords1[3] + y1, x2: (coords2[0] + coords2[2]) / 2 + 11, y2: coords2[1] + y2, style: 'stroke:' + color + ';stroke-width:' + line_width + ';stroke-linecap:round;stroke-opacity:.6;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.r2);p.removeChild(this);event.stopPropagation();'});
                 r1.r2 = r2;
                 r1.poly = poly;
                 r2.r1 = r1;
