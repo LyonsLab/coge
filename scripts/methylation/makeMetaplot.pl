@@ -151,7 +151,7 @@ sub readGffFile { # load a CoGe GFF file
     open(my $fh, $file) or 
         die("Error: cannot open file '$file'\n");
     
-#    my %out;
+    my $count = 0;
     while (<$fh>) {
         next if /^#/;
         chomp;
@@ -172,11 +172,12 @@ sub readGffFile { # load a CoGe GFF file
         
         $self->{bedFile}->{$chr}->{$id}->{coord} = { start => $start, stop => $stop };
         $self->{bedFile}->{$chr}->{$id}->{strand} = $strand;
+        
+        $count++;
     }
     close($fh);
     
-#   print "" . (keys %out) . " total genes loaded\n";
-#    return \%out;
+   print STDERR "readGffFile: $count features loaded\n";
 }
 
 sub getCoverageFromBam{
