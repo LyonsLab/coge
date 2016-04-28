@@ -69,13 +69,13 @@ sub main {
 			print STDERR "INFO $prog: Could not find file: " . $self->{_currentFile} . " -> next file\n"; next;
 		}
 		$self->makeWindows();
-		if(defined $metType){
-			$self->getCoverageFromMet();
-			$self->calcMetPercentage();
-		}
-		else{
+#		if(defined $metType){
+#			$self->getCoverageFromMet();
+#			$self->calcMetPercentage();
+#		}
+#		else{
 			$self->getCoverageFromBam();
-		}
+#		}
 		$self->calcMeanAndCi();
 		delete($self->{windows});
 	} # END OF foreach
@@ -266,98 +266,6 @@ sub getCoverageFromBam{
 			}
 		}
 	}
-}
-
-sub getCoverageFromMet{
-	my $self = shift;
-	tie my @array, 'Tie::File', $self->{_currentFile} or die("Unable to open file \"$self->{_currentFile}\": $!\n");
-	print STDERR "INFO $prog: Reading file $self->{_currentFile} ... done !\n" ;
-	my $startFile = 1 ;
-	my $endFile = scalar(@array)-1 ;
-	# my $endFile = 100011 ;
-	my $rememberStartLine = 1;
-	foreach my $chr (sort keys %{$self->{bedFile}}){
-		my ($number) = $chr =~/Chr([0-9])/ ;
-		foreach my $featureId (sort {$self->{bedFile}->{$chr}->{$a}->{coord}->{start} <=> $self->{bedFile}->{$chr}->{$b}->{coord}->{start} } keys %{$self->{bedFile}->{$chr}} ){
-			if($self->{bedFile}->{$chr}->{$featureId}->{coord}->{start}-$outside<=0){ next ;} # if start - outside is negative
-			# check if feature is not inclute in area
-			if($rmInclude eq "YES"){
-				if($self->{bedFile}->{$chr}->{$featureId}->{coord}->{start}+$inside>$self->{bedFile}->{$chr}->{$featureId}->{coord}->{stop}){ next ;}
-			}
-			my $test = "TRUE" ;
-			for (my $i = $startFile ; $i < $endFile ; $i++){ # going through the txt file
-				print STDERR "\r$featureId" ;
-				my @line = split("\t", $array[$i]) ;
-				if($line[0] < $number){ next ;}
-				elsif($line[0] == $number and $line[1]>$self->{bedFile}->{$chr}->{$featureId}->{coord}->{stop}+$outside){
-					$startFile = $rememberStartLine ;
-					last ;
-				}
-				elsif($line[0] > $number){
-					$startFile = $rememberStartLine ;
-					last ;}
-				#### surrounding start + and stop -
-				if($line[1] >= $self->{bedFile}->{$chr}->{$featureId}->{coord}->{start}-$outside and $line[1] < $self->{bedFile}->{$chr}->{$featureId}->{coord}->{start}+$inside and $line[7] eq $metType){
-					if($test eq "TRUE"){
-						$rememberStartLine = $i ;
-						$test = "FALSE" ;
-					}
-					my $pos ;
-					my $stOrSp ;
-					if(defined $outOfRange and $line[1]>$self->{bedFile}->{$chr}->{$featureId}->{coord}->{stop} ){ goto(HERE) ;} # need to use a goto because area around 5' and 3' could be overlapping
-					if ($self->{bedFile}->{$chr}->{$featureId}->{strand} eq "+"){
-						$pos = ($line[1]-$self->{bedFile}->{$chr}->{$featureId}->{coord}->{start})+$outside+1 ;
-						$stOrSp = "st" ;
-					}
-					elsif ($self->{bedFile}->{$chr}->{$featureId}->{strand} eq "-"){
-						$pos = $inside+$outside-(($line[1]-$self->{bedFile}->{$chr}->{$featureId}->{coord}->{start})+$outside+1)+1 ;
-						$stOrSp = "sp" ;
-					}
-					push (@{$self->{windows}->{$self->{nc}->{$pos}}->{met}->{$stOrSp}->{$featureId}->{nbCm}}, $line[4]) ;
-					push (@{$self->{windows}->{$self->{nc}->{$pos}}->{met}->{$stOrSp}->{$featureId}->{nbR}}, $line[5]) ;
-				}
-				
-				#### surrounding stop + and start -
-				HERE:if($line[1] >= $self->{bedFile}->{$chr}->{$featureId}->{coord}->{stop}-$inside and $line[1] < $self->{bedFile}->{$chr}->{$featureId}->{coord}->{stop}+$outside and $line[7] eq $metType){
-					my $pos ;
-					my $stOrSp ;
-					if(defined $outOfRange and $line[1]<$self->{bedFile}->{$chr}->{$featureId}->{coord}->{start} ){ next ;}
-					if ($self->{bedFile}->{$chr}->{$featureId}->{strand} eq "+"){
-						$pos = ($line[1]-$self->{bedFile}->{$chr}->{$featureId}->{coord}->{stop})+$inside+1 ;
-						$stOrSp = "sp" ;
-					}
-					if ($self->{bedFile}->{$chr}->{$featureId}->{strand} eq "-"){
-						$pos = $inside+$outside-(($line[1]-$self->{bedFile}->{$chr}->{$featureId}->{coord}->{stop})+$inside) ;
-						$stOrSp = "st" ;
-					}
-					push (@{$self->{windows}->{$self->{nc}->{$pos}}->{met}->{$stOrSp}->{$featureId}->{nbCm}}, $line[4]) ;
-					push (@{$self->{windows}->{$self->{nc}->{$pos}}->{met}->{$stOrSp}->{$featureId}->{nbR}}, $line[5]) ;
-				}
-			} # end of For line in map file
-		}
-	}
-	print STDERR "\n" ;
-	# print Dumper $self->{windows} ; exit ;
-}
-
-sub calcMetPercentage {
-	my $self = shift;
-	foreach my $windK (sort {$a <=> $b} keys %{$self->{windows}} ){
-		if(not defined $self->{windows}->{$windK}->{met}){
-			print STDERR "ERROR $prog: Not Cytosine in a given window: $prog can't calculate the % of cytosine metylated foreach windows (increase the window size).\n" and die ;
-		}
-		foreach my $storsp (sort keys $self->{windows}->{$windK}->{met}){
-			foreach my $featureId (sort keys $self->{windows}->{$windK}->{met}->{$storsp}){
-				my $statNbCm = Statistics::Descriptive::Full->new();
-			 	$statNbCm->add_data(@{$self->{windows}->{$windK}->{met}->{$storsp}->{$featureId}->{nbCm}});
-				my $statNbR = Statistics::Descriptive::Full->new();
-			 	$statNbR->add_data(@{$self->{windows}->{$windK}->{met}->{$storsp}->{$featureId}->{nbR}});
-			 	my $percMet = ($statNbCm->sum/$statNbR->sum)*100 ;
-			 	push(@{$self->{windows}->{$windK}->{cov}->{$storsp}}, $percMet) ;
-			}
-		}
-	}
-	# print Dumper $self->{windows} ;
 }
 
 sub makeWindows{
