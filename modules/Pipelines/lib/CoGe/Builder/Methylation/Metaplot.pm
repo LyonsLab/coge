@@ -26,8 +26,7 @@ sub build {
     my $opts = shift;
     my $genome = $opts->{genome};
     my $user = $opts->{user};
-    my $bam_file = $opts->{raw_bam_file}; # path to bam file -- important: this should be the unsorted version
-                                          # see COGE-706 and http://seqanswers.com/forums/showthread.php?t=45192
+    my $bam_file = $opts->{input_file}; # path to sorted & indexed bam file
 #    my $metadata = $opts->{metadata};
 #    my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
@@ -64,7 +63,8 @@ sub build {
         gff_file => $gff_file,
         outside => 2000,
         inside => 5000,
-        window_size => 100
+        window_size => 100,
+        staging_dir => $staging_dir
     );
     push @done_files, @{$metaplot_task->{outputs}};
     push @tasks, $metaplot_task;
@@ -82,6 +82,7 @@ sub create_metaplot_job {
     my $outside     = $opts{outside};
     my $inside      = $opts{inside};
     my $window_size = $opts{window_size};
+    my $staging_dir = $opts{staging_dir};
 
     my $cmd = catfile($CONF->{SCRIPTDIR}, 'methylation', 'makeMetaplot.pl');
 
@@ -95,7 +96,7 @@ sub create_metaplot_job {
             ['-inside', $inside, 0],
             ['-w', $window_size, 0],
             ['-outRange', '', 0],
-            ['', '', $bam_file]
+            ['', $bam_file, 0]
         ],
         inputs => [
             $bam_file,
@@ -103,8 +104,8 @@ sub create_metaplot_job {
             $gff_file
         ],
         outputs => [
-            'metaplot.tab',
-            'metaplot.pdf'
+            catfile($staging_dir, 'metaplot.tab'),
+            catfile($staging_dir, 'metaplot.pdf')
         ],
         description => "Generating metaplot..."
     };
