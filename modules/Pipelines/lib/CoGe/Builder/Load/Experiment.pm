@@ -20,6 +20,7 @@ use CoGe::Builder::SNP::Samtools qw(build);
 use CoGe::Builder::SNP::Platypus qw(build);
 #use CoGe::Builder::SNP::GATK qw(build);
 use CoGe::Builder::Methylation::Bismark qw(build);
+use CoGe::Builder::Methylation::Metaplot qw(build);
 use CoGe::Builder::Protein::ChIPseq qw(build);
 
 sub get_name {
@@ -182,6 +183,13 @@ sub build {
             }
             push @tasks, @{$methylation_workflow->{tasks}};
             push @done_files, @{$methylation_workflow->{done_files}};
+            
+            # Add metaplot workflow (if specified and genome is annotated)
+            #if ( $self->params->{methylation_params}->{metaplot} ) {
+                my $metaplot_workflow = CoGe::Builder::Methylation::Metaplot::build($methylation_params);
+                push @tasks, @{$metaplot_workflow->{tasks}};
+                push @done_files, @{$metaplot_workflow->{done_files}};
+            #}
         }
         
         # Add ChIP-seq workflow (if specified)
