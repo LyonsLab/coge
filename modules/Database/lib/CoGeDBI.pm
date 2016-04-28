@@ -241,6 +241,7 @@ sub get_genomes_for_user {
             AND uc.child_type=2 
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
+    $query .= " ORDER BY uc.role_id DESC"; # mdb added 4/28/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
     #my $t1    = new Benchmark;
     my $sth = $dbh->prepare($query);
     $sth->execute();
@@ -265,6 +266,7 @@ sub get_genomes_for_user {
             AND uc.child_type=1 AND lc.child_type=2
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
+    $query .= " ORDER BY uc.role_id DESC"; # mdb added 4/28/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
     $sth = $dbh->prepare($query);
     $sth->execute();
     my $results2 = $sth->fetchall_hashref(['id']);
@@ -352,6 +354,7 @@ sub get_lists_for_user {
             AND uc.child_type=1 
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
+    $query .= " ORDER BY uc.role_id DESC"; # mdb added 4/28/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
     my $sth = $dbh->prepare($query);
     $sth->execute();
     my $results = $sth->fetchall_arrayref({});
