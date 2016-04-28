@@ -1267,9 +1267,9 @@ sub run {
 <tr>
 <td><span class='ui-button ui-corner-all coge-button-sm' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
 
-<td><span class='ui-button ui-corner-all coge-button-sm drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
+<td><span class='ui-button ui-corner-all coge-button-sm drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line');set_connector('line');">Set connector as Lines</span>
 
-<span style="display: none" class='ui-button ui-corner-all coge-button-sm lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
+<span style="display: none" class='ui-button ui-corner-all coge-button-sm lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge');set_connector('wedge');">Set connector as Wedges</span>
 
 <td><div class=lineopt style="float: left; display: none">
  <span class='ui-button ui-corner-all coge-button-sm' id="">Line Width</span>

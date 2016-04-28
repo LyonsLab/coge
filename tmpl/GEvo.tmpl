@@ -883,25 +883,72 @@ function svg_click(event) {
                 var coords2 = pair.features[keys[1]];
                 var y1 = tops[keys[0].substring(3) - 1];
                 var y2 = tops[keys[1].substring(3) - 1];
-                var r1 = newSVG('rect', {x: coords1[0] + 11, y: coords1[1] + y1, width: coords1[2] - coords1[0], height: coords1[3] - coords1[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r2);p.removeChild(this.poly);p.removeChild(this);event.stopPropagation();'});
-                var r2 = newSVG('rect', {x: coords2[0] + 11, y: coords2[1] + y2, width: coords2[2] - coords2[0], height: coords2[3] - coords2[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.poly);p.removeChild(this);event.stopPropagation();'});
-                var poly;
+                var r1x1 = coords1[0] + 11;
+                var r1x2 = coords1[2] + 11;
+                var r2x1 = coords2[0] + 11;
+                var r2x2 = coords2[2] + 11;
+                var r1y = coords1[3] + y1;
+                var r2y = coords2[1] + y2;
+                var r1 = newSVG('rect', {x: r1x1, y: coords1[1] + y1, width: r1x2 - r1x1, height: coords1[3] - coords1[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'remove_connector(this);event.stopPropagation();'});
+                var r2 = newSVG('rect', {x: r2x1, y: r2y, width: r2x2 - r2x1, height: coords2[3] - coords2[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'remove_connector(this);event.stopPropagation();'});
+                var c;
                 if (wedges)
-                    poly = newSVG('polygon', {points: coords1[0] + ',' + (coords1[3] + y1) + ' ' + coords2[0] + ',' + (coords2[1] + y2) + ' ' + coords2[2] + ',' + (coords2[1] + y2) + ' ' + coords1[2] + ',' + (coords1[3] + y1), style: 'fill:' + color + ';fill-opacity:0.3;stroke:' + color + ';stroke-width:0.5;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.r2);p.removeChild(this);event.stopPropagation();'});
+                    c = newPolygon(r1x1 + ',' + r1y + ' ' + r2x1 + ',' + r2y + ' ' + r2x2 + ',' + r2y + ' ' + r1x2 + ',' + r1y, color);
                 else
-                    poly = newSVG('line', {x1: (coords1[0] + coords1[2]) / 2 + 11, y1: coords1[3] + y1, x2: (coords2[0] + coords2[2]) / 2 + 11, y2: coords2[1] + y2, style: 'stroke:' + color + ';stroke-width:' + line_width + ';stroke-linecap:round;stroke-opacity:.6;', onclick: 'var p=this.parentNode;p.removeChild(this.r1);p.removeChild(this.r2);p.removeChild(this);event.stopPropagation();'});
+                    c = newLine((r1x1 + r1x2) / 2, r1y, (r2x1 + r2x2) / 2, r2y, color, line_width);
                 r1.r2 = r2;
-                r1.poly = poly;
+                r1.c = c;
                 r2.r1 = r1;
-                r2.poly = poly;
-                poly.r1 = r1;
-                poly.r2 = r2;
+                r2.c = c;
+                c.r1 = r1;
+                c.r2 = r2;
                 svg.appendChild(r1);
                 svg.appendChild(r2);
-                svg.appendChild(poly);
+                svg.appendChild(c);
             }
         }
     });
+}
+
+function remove_connector(e) {
+    var p = e.parentNode;
+    if (e.r1)
+        p.removeChild(e.r1);
+    if (e.r2)
+        p.removeChild(e.r2);
+    if (e.c)
+        p.removeChild(e.c);
+    p.removeChild(e);
+}
+
+function set_connector(type) {
+    $('#svg').find(type == 'line' ? 'polygon' : 'line').each(function(i, e) {
+        var c;
+        var r1x1 = parseFloat(e.r1.getAttribute('x'));
+        var r1x2 = r1x1 + parseFloat(e.r1.getAttribute('width'));
+        var r1y = parseFloat(e.r1.getAttribute('y')) + parseFloat(e.r1.getAttribute('height'));
+        var r2x1 = parseFloat(e.r2.getAttribute('x'));
+        var r2x2 = r2x1 + parseFloat(e.r2.getAttribute('width'));
+        var r2y = parseFloat(e.r2.getAttribute('y'));
+        if (type == 'line') {
+            var line_width = $('#line_width_val').val();
+            c = newLine((r1x1 + r1x2) / 2, r1y, (r2x1 + r2x2) / 2, r2y, e.style.stroke, line_width);
+        } else
+            c = newPolygon(r1x1 + ',' + r1y + ' ' + r2x1 + ',' + r2y + ' ' + r2x2 + ',' + r2y + ' ' + r1x2 + ',' + r1y, e.style.stroke);
+        c.r1 = e.r1;
+        c.r1.c = c;
+        c.r2 = e.r2;
+        c.r2.c = c;
+        e.parentNode.replaceChild(c, e);
+    });
+}
+
+function newLine(x1,y1,x2,y2,color,width) {
+    return newSVG('line', {x1: x1, y1: y1, x2: x2, y2: y2, style: 'stroke:' + color + ';stroke-width:' + width + ';stroke-linecap:round;stroke-opacity:.6;', onclick: 'remove_connector(this);event.stopPropagation();'});
+}
+
+function newPolygon(points, color) {
+    return newSVG('polygon', {points: points, style: 'fill:' + color + ';fill-opacity:0.3;stroke:' + color + ';stroke-width:0.5;', onclick: 'remove_connector(this);event.stopPropagation();'});
 }
 
 function newSVG(tag, attrs) {

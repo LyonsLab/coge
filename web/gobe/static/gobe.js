@@ -19,7 +19,9 @@ var Gobe = {
     'clear': function(){
         // dont change this!
         Gobe.swf.clear_wedges();
-        $('svg').empty();
+        $('svg').find('rect').remove();
+        $('svg').find('line').remove();
+        $('svg').find('polygon').remove();
     },
     'set_linewidth': function(linewidth){
         // dont change this. could check for 0 <= lw <= ?
