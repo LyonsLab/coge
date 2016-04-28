@@ -35,7 +35,7 @@ our @EXPORT = qw(
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
-    add_workflow_result create_bowtie2_workflow 
+    add_workflow_result create_bowtie2_workflow
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -1681,7 +1681,7 @@ sub create_bismark_alignment_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
-        ['-p', 8, 0],#['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
+        ['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
         [($encoding eq '64' ? '--phred64-quals' : '--phred33-quals'), '', 0],
         ['-N', $N, 0],
         ['-L', $L, 0],
@@ -1821,7 +1821,6 @@ sub create_bwameth_alignment_job {
         description => "Aligning sequences with bwameth..."
     );
 }
-
 
 sub create_gsnap_workflow {
     my %opts = @_;
