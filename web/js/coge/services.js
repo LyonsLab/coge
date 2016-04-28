@@ -98,6 +98,10 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		irods_list: function(path) {
+			if (typeof path === 'undefined') {
+				this._error('irods_list: undefined path value');
+				path = '';
+			}
 			return this._ajax("GET", this.baseUrl + "irods/list/" + path);
 		},
 		
