@@ -8,8 +8,8 @@ from os import path
 from requests import get
 from sys import argv, stderr
 
-api_base = "https://genomevolution.org/coge/api/v1/genomes/"
-# api_base = "https://geco.iplantc.org/asherkhb/coge/api/v1/genomes/" MAYBE BROKEN?
+#api_base = "https://genomevolution.org/coge/api/v1/genomes/"
+api_base = "https://geco.iplantc.org/asherkhb/coge/api/v1/genomes/"
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Define Input/Outputs

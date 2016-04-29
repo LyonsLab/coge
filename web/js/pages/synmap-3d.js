@@ -457,13 +457,10 @@ function getBgColor(slideValue) {
 
 var visVisible = false;
 function showVisualizer(data) {
-    console.log(data);
-
     if (visVisible) {
         //Refresh function can go here.
     } else {
-        console.log(final_experiment);
-        $.getScript( "js/syn3d/syn3d.js", function( data, textStatus, jqxhr ) {
+        $.getScript( "js/syn3d/syn3d_new.js", function( data, textStatus, jqxhr ) {
             console.log( "Visualizer loaded." );
             //console.log( data ); // Data returned
             //console.log( textStatus ); // Success
@@ -471,24 +468,57 @@ function showVisualizer(data) {
         });
         $('#analysis').css("display", "");
     }
-
-    $(document).ready( function() {
-        /* Halt scrolling when controlling visualization. */
-        $('#canvas').hover( function() {
-            $("body").css("overflow", "hidden");
-        }, function() {
-            $("body").css("overflow", "scroll");
-        });
-
-        /* Change background color with slider */
-        var renderDiv = $("#rendering");
-        var bg_slider = $("#bgslider");
-        renderDiv.css("background-color", getBgColor(bg_slider.val()));
-        bg_slider.change( function() {
-            renderDiv.css("background-color", getBgColor(bg_slider.val()));
-        });
-    });
+    //
+    // $(document).ready( function() {
+    //     /* Halt scrolling when controlling visualization. */
+    //     $('#canvas').hover( function() {
+    //         $("body").css("overflow", "hidden");
+    //     }, function() {
+    //         $("body").css("overflow", "scroll");
+    //     });
+    //
+    //     /* Change background color with slider */
+    //     var renderDiv = $("#rendering");
+    //     var bg_slider = $("#bgslider");
+    //     renderDiv.css("background-color", getBgColor(bg_slider.val()));
+    //     bg_slider.change( function() {
+    //         renderDiv.css("background-color", getBgColor(bg_slider.val()));
+    //     });
+    // });
 }
+// function showVisualizer(data) { // OLD!!!!!
+//     console.log(data);
+//
+//     if (visVisible) {
+//         //Refresh function can go here.
+//     } else {
+//         console.log(final_experiment);
+//         $.getScript( "js/syn3d/syn3d.js", function( data, textStatus, jqxhr ) {
+//             console.log( "Visualizer loaded." );
+//             //console.log( data ); // Data returned
+//             //console.log( textStatus ); // Success
+//             //console.log( jqxhr.status ); // 200
+//         });
+//         $('#analysis').css("display", "");
+//     }
+//
+//     $(document).ready( function() {
+//         /* Halt scrolling when controlling visualization. */
+//         $('#canvas').hover( function() {
+//             $("body").css("overflow", "hidden");
+//         }, function() {
+//             $("body").css("overflow", "scroll");
+//         });
+//
+//         /* Change background color with slider */
+//         var renderDiv = $("#rendering");
+//         var bg_slider = $("#bgslider");
+//         renderDiv.css("background-color", getBgColor(bg_slider.val()));
+//         bg_slider.change( function() {
+//             renderDiv.css("background-color", getBgColor(bg_slider.val()));
+//         });
+//     });
+// }
 
 function launch(experiment) {
     var xgid = experiment.x_gid;
@@ -530,7 +560,7 @@ function launch(experiment) {
 
     // Build Link to SynMap Output
     function synmapOutputLink(id1, id2) {
-        var fileDir = "/home/asherkhb/repos/coge/web/data/diags/";
+        var fileDir = "/storage/coge/data/diags/";
         var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks";
         var link = '';
         id1 = id1.toString();

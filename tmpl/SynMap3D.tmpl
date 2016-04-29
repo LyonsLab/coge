@@ -50,8 +50,37 @@
     margin: 0px;
     padding: 0px;
     margin-left: 0.5%;
-    float: left;
-    width: 69%;
+    margin-right: 0.5%;
+    margin-bottom: .2em;
+}
+
+#histos {
+    margin: 0px;
+    padding: 0px;
+    margin-left: 0.5%;
+    margin-right: 0.5%;
+    text-align: justify;
+    -ms-text-justify: distribute-all-lines;
+    text-justify: distribute-all-lines;
+}
+
+#hKs, #hKn, #hKnKs{
+    width: 33%;
+    height: auto;
+    background-color: #F5F5F5;
+    border: 1px solid #119911;
+    vertical-align: top;
+    display: inline-block;
+    *display: inline;
+    zoom: 1;
+    text-align: center;
+}
+
+.stretch {
+    width: 100%;
+    display: inline-block;
+    font-size: 0;
+    line-height: 0
 }
 
 #right {
@@ -76,6 +105,22 @@
 
 </style>
 
+<div id="analysis" style="display:none">
+    <div id="rendering" class="contentBox">
+        <canvas id="canvas"></canvas>
+        <!--<div id="canvas" style="width:100%;height:100%"></div>-->
+    </div>
+
+    <div id="histos">
+        <div id="hKs">Ks Histogram</div>
+        <div id="hKn">Kn Histogram</div>
+        <div id="hKnKs">Kn/Ks Histogram</div>
+        <span class="stretch"></span>
+    </div>
+    <div style="clear:both"></div>
+</div><br>
+
+<!--OLD!
 <div id="analysis" style="display:none">
     <div id="rendering" class="contentBox">
         <canvas id="canvas"></canvas>
@@ -144,6 +189,7 @@
     </div><br>
     <div style="clear:both"></div>
 </div><br>
+-->
 
 <div id="wizard-container"></div>
 
