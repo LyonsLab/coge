@@ -387,17 +387,17 @@ sub add_jobs {
 			push @blastargs, [ "-d", $db,      0 ];
 			push @blastargs, [ "-o", $outfile, 1 ];
 		}
-# mdb removed 3/17/16 -- wrapper no longer needed
-#		elsif ( $cmd =~ /last_wrapper/i ) {
-#			# mdb added 9/20/13 issue 213
-#			my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
-#			mkpath( $dbpath, 0, 0777 );
-#			push @blastargs, [ "--dbpath", $dbpath, 0 ];
-#
-#			push @blastargs, [ "",   $db,      0 ];
-#			push @blastargs, [ "",   $fasta,   0 ];
-#			push @blastargs, [ "-o", $outfile, 1 ];
-#		}
+        # mdb removed 3/17/16 -- wrapper no longer needed
+		#elsif ( $cmd =~ /last_wrapper/i ) {
+		#	# mdb added 9/20/13 issue 213
+		#	my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
+		#	mkpath( $dbpath, 0, 0777 );
+		#	push @blastargs, [ "--dbpath", $dbpath, 0 ];
+
+		#	push @blastargs, [ "",   $db,      0 ];
+		#	push @blastargs, [ "",   $fasta,   0 ];
+		#	push @blastargs, [ "-o", $outfile, 1 ];
+		#}
         elsif ( $cmd =~ /lastal/i ) { # mdb added 3/17/16 -- new multithreaded last v731
             my $fasta   = $org_dirs{$key}{fasta};
             my $db      = $org_dirs{$key}{db};
@@ -821,7 +821,7 @@ sub add_jobs {
 	# Create html output directory
 	############################################################################
 #	my ( $qlead, $slead ) = ( "a", "b" );
-	my $out = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/html/";
+	my $out = catdir($org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir}, 'html');
 	#mkpath( $out, 0, 0777 ) unless -d $out; # mdb removed 3/24/16 for hypnotoad (permissions issue)
 	$out .= "master_";
 	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
