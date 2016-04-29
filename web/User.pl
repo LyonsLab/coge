@@ -84,7 +84,7 @@ $node_types = CoGeX::node_types();
 );
 
 %FUNCTION = (
-    upload_image_file               => \&upload_image_file,
+#    upload_image_file               => \&upload_image_file,
     get_item_info                   => \&get_item_info,
     delete_items                    => \&delete_items,
     undelete_items                  => \&undelete_items,
@@ -1568,37 +1568,30 @@ sub format_job_status {
     return '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:' . $color . ';">' . ucfirst($status) . '</span>';
 }
 
-sub upload_image_file {
-    return if ( $USER->user_name eq "public" );
-
-    my %opts           = @_;
-    my $image_filename = '' . $FORM->param('input_upload_file');
-    my $fh             = $FORM->upload('input_upload_file');
-    return if ( -s $fh > 2 * 1024 * 1024 ); # limit to 2MB
-
-    #TODO delete old image
-
-    # Create the image
-    my $image;
-    if ($fh) {
-        #print STDERR "$image_filename size=" . (-s $fh) . "\n";
-        read( $fh, my $contents, -s $fh );
-        $image = $DB->resultset('Image')->create(
-            {
-                filename => $image_filename,
-                image    => $contents
-            }
-        );
-        return unless $image;
-
-        # Link to user
-        $USER->image_id( $image->id );
-        $USER->update;
-        return encode_json( { link => 'image.pl?id=' . $image->id } );
-    }
-
-    return;
-}
+#sub upload_image_file {
+#    return if ( $USER->user_name eq "public" );
+#
+#    my %opts           = @_;
+#    my $image_filename = '' . $FORM->param('input_upload_file');
+#    my $fh             = $FORM->upload('input_upload_file');
+#    return if ( -s $fh > 2 * 1024 * 1024 ); # limit to 2MB
+#
+#    #TODO delete old image
+#
+#    # Create the image
+#    my $image;
+#    if ($fh) {
+#        $image = create_image(fh => $fh, filename => $image_filename, db => $DB);
+#        return 0 unless $image;
+#
+#        # Link to user
+#        $USER->image_id( $image->id );
+#        $USER->update;
+#        return encode_json( { link => 'image.pl?id=' . $image->id } );
+#    }
+#
+#    return;
+#}
 
 sub upload_metadata {
     my %opts = @_;

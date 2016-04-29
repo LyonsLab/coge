@@ -454,15 +454,7 @@ sub add_annotation {
     # Create the image
     my $image;
     if ($fh) {
-
-        #		print STDERR "size: " . (-s $fh) . "\n";
-        read( $fh, my $contents, -s $fh );
-        $image = $DB->resultset('Image')->create(
-            {
-                filename => $image_filename,
-                image    => $contents
-            }
-        );
+        $image = create_image(fh => $fh, filename => $image_filename, db => $DB);
         return 0 unless $image;
     }
 
@@ -516,13 +508,7 @@ sub update_annotation {
     #TODO if image was changed delete previous image
     my $image;
     if ($fh) {
-        read( $fh, my $contents, -s $fh );
-        $image = $DB->resultset('Image')->create(
-            {
-                filename => $image_filename,
-                image    => $contents
-            }
-        );
+        $image = create_image(fh => $fh, filename => $image_filename, db => $DB);
         return 0 unless $image;
     }
 
