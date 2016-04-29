@@ -22,7 +22,7 @@ $DIR       = $CONFIG->{COGEDIR};
 $URL       = $CONFIG->{URL};
 $DATADIR   = $CONFIG->{DATADIR};
 $DIAGSDIR  = $CONFIG->{DIAGSDIR};
-$DOTPLOT   = catfile($CONFIG->{BINDIR}, 'dotplot.pl') . " -cf " . $CONFIG->{_CONFIG_PATH};
+$DOTPLOT   = catfile($CONFIG->{BINDIR}, 'dotplot.pl') . " -cf " . $CONFIG->{_CONFIG_PATH} . ' -tmpl ' . catdir($CONFIG->{TMPLDIR}, 'widgets');
 
 my $dsgid1       = $FORM->param('dsg1');
 my $dsgid2       = $FORM->param('dsg2');
