@@ -117,6 +117,7 @@ sub gen_html {
                       PAGE_TITLE => 'My Data',
 				      TITLE      => "My Data",
     				  PAGE_LINK  => $LINK,
+    				  SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
     				  HOME       => $CONF->{SERVER},
                       HELP       => 'User',
                       WIKI_URL   => $CONF->{WIKI_URL} || '',

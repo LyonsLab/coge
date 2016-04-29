@@ -2049,6 +2049,7 @@ sub generate_html {
             PAGE_TITLE => $PAGE_TITLE,
 	        TITLE      => 'GenomeInfo',
             PAGE_LINK  => $LINK,
+            SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
 	        HOME       => $config->{SERVER},
 	        HELP       => 'GenomeInfo',
 	        WIKI_URL   => $config->{WIKI_URL} || '',

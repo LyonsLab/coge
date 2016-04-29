@@ -51,6 +51,7 @@ sub gen_html {
                           TITLE      => qq{GroupView},
         			 	  PAGE_TITLE => qq{GroupView},
         				  PAGE_LINK  => $LINK,
+        				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         				  ADMIN_ONLY => $USER->is_admin,
         				  CAS_URL    => $P->{CAS_URL} || '',
         				  HOME       => $P->{SERVER},

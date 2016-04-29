@@ -584,6 +584,7 @@ sub gen_html {
             PAGE_TITLE => $PAGE_TITLE,
             TITLE      => 'ExperimentView',
             PAGE_LINK  => $LINK,
+            SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
             HOME       => $P->{SERVER},
             HELP       => 'ExperimentView',
             WIKI_URL   => $P->{WIKI_URL} || '',

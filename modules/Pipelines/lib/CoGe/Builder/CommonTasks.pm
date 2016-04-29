@@ -596,7 +596,7 @@ sub create_load_vcf_job {
             ['-exit_without_error_for_empty_input', 1, 0],
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
-            ['-source_name', ($metadata->{source} ? shell_quote($metadata->{source}) : '""'), 0],
+            ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
             ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-staging_dir', "./load_vcf", 0],
@@ -655,7 +655,7 @@ sub create_load_experiment_job {
             ['-version', ($metadata->{version} ? shell_quote($metadata->{version}) : '""'), 0],
             ['-restricted', "'" . $metadata->{restricted} . "'", 0],
             ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
-            ['-annotations', qq["$annotations_str"], 0],
+            ['-annotations', ($annotations_str ? shell_quote($annotations_str) : '""'), 0],
             ['-tags', qq["$tags_str"], 0],
             ['-staging_dir', $output_name, 0],
             ['-data_file', $input_file, 0],
@@ -903,7 +903,7 @@ sub create_load_bam_job {
             ['-restricted', "'" . $metadata->{restricted} . "'", 0],
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
-            ['-source_name', "'" . shell_quote($metadata->{source}) . "'", 0],
+            ['-source_name', "'" . shell_quote($metadata->{source_name}) . "'", 0],
             ['-tags', qq{"$tags_str"}, 0],
             ['-annotations', qq["$annotations_str"], 0],
             ['-staging_dir', $output_name, 0],
@@ -1681,7 +1681,7 @@ sub create_bismark_alignment_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
-        ['-p', 16, 0],#['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
+        ['-p', 8, 0],#['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
         [($encoding eq '64' ? '--phred64-quals' : '--phred33-quals'), '', 0],
         ['-N', $N, 0],
         ['-L', $L, 0],
@@ -1806,7 +1806,7 @@ sub create_bwameth_alignment_job {
     my $args = [
         ['--reference', catfile($index_path, 'genome.faa.reheader.faa'), 0],
         ['', join(' ', @$fastq), 0],
-        ['-t', 16, 0],#['-t', 8, 0],
+        ['-t', 8, 0],
         ['-p', 'alignment', 0]
     ];
     

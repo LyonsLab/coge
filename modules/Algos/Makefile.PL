@@ -11,4 +11,5 @@ WriteMakefile(
                      'Test::Simple' => 0.44,
                     },
     INSTALLMAN1DIR => 'none', # mdb added 11/19/15
+    INSTALLMAN3DIR => 'none', # mdb added 9/30/15
 );

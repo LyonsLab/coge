@@ -115,6 +115,8 @@ sub gen_html {
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( TITLE      => 'SynFind: Syntenic Compiler',
                       PAGE_TITLE => 'SynFind',
+                      PAGE_LINK  => $LINK,
+                      SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
                       HOME       => $config->{SERVER},
                       HELP       => 'SynFind',
                       WIKI_URL   => $config->{WIKI_URL} || '',
@@ -1279,22 +1281,26 @@ sub go_synfind {
             # mdb added 3/21/16 for LAST v731
             #$dbpath = catfile($dbpath, basename($target->{query_fasta})); #Eric is changing all query to target 4/10/16
             $dbpath = catfile($dbpath, basename($target->{target_fasta}));
+            my @dbfiles = map { $dbpath . '.' . $_ } ('bck', 'des', 'prj', 'sds', 'ssp', 'suf', 'tis'); 
             $workflow->add_job({
-                cmd         => "$LASTDB $dbpath $target->{target_fasta}",
+                cmd         => "$LASTDB",
                 description => "Creating database for $algo...",
                 script      => undef,
-                args        => [],
+                args        => [
+                    ['', $dbpath, 0],
+                    ['', $target->{target_fasta}, 1]
+                ],
                 inputs      => [ $target->{target_fasta} ],
-                outputs     => [ $dbpath . '.prj' ]
+                outputs     => \@dbfiles
             });
             #Eric is changing all target to query 4/10/16
             $workflow->add_job({
-                cmd         => "$LAST $dbpath $target->{query_fasta} > $target->{blastfile}",
+                cmd         => "$LAST $dbpath $target->{query_fasta} > $target->{blastfile} ; touch $target->{blastfile}.done ;",
                 description => "Running blast ($algo) algorithm...",
                 script      => undef,
                 args        => [],
-                inputs      => [ $target->{query_fasta}, $dbpath . '.prj'],
-                outputs     => [ $target->{blastfile} ]
+                inputs      => [ $target->{query_fasta}, @dbfiles],
+                outputs     => [ $target->{blastfile}, "$target->{blastfile}.done" ]
             });
         }
 
@@ -1305,7 +1311,7 @@ sub go_synfind {
             [ '<', $target->{blastfile},           1 ],
             [ '>', $target->{converted_blastfile}, 1 ]
         ];
-        my $convert_inputs = [ $target->{blastfile} ];
+        my $convert_inputs = [ $target->{blastfile}, "$target->{blastfile}.done" ];
         my $convert_outputs = [ $target->{converted_blastfile}, ];
 
         $workflow->add_job({

@@ -178,6 +178,7 @@ sub gen_html {
     $template->param( TITLE      => 'GEvo: Genome Evolution Analysis',
     				  PAGE_TITLE => 'GEvo',
     				  PAGE_LINK  => $LINK,
+    				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
     				  HOME       => $P->{SERVER},
                       HELP       => 'GEvo',
                       WIKI_URL   => $P->{WIKI_URL} || '' );

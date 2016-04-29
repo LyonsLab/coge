@@ -52,6 +52,7 @@ sub gen_html {
 
         $template->param( PAGE_TITLE => 'SeqView',
         				  PAGE_LINK  => $LINK,
+        				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         				  HOME       => $P->{SERVER},
                           HELP       => 'SeqView',
                           WIKI_URL   => $P->{WIKI_URL} || '',

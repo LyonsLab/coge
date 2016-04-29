@@ -294,16 +294,29 @@ $r->get("/jbrowse/experiment/:eid/snps/#chr"  => { eid => qr/\d+/, chr => qr/\w+
     ->name("jbrowse-experiment-snps")
     ->to("experiment#snps", eid => undef, chr => undef);
 
-# Is there a way to combine these 3 notebook routes with the 3 experiment routes above using regex?
+# genome track (all experiments)
+$r->get("/jbrowse/experiment/genome/:gid/stats/global/" => [gid => qr/\d+/])
+    ->name("jbrowse-experiment-stats-global")
+    ->to("experiment#stats_global", gid => undef);
+ 
+$r->get("/jbrowse/experiment/genome/:gid/stats/regionFeatureDensities/#chr" => { gid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-regionFeatureDensitites")
+    ->to("experiment#stats_regionFeatureDensities", gid => undef, chr => undef);
+
+$r->get("/jbrowse/experiment/genome/:gid/features/#chr"  => { gid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-features")
+    ->to("experiment#features", gid => undef, chr => undef);
+
+# notebook tracks
 $r->get("/jbrowse/experiment/notebook/:nid/stats/global/" => [nid => qr/\d+/])
     ->name("jbrowse-experiment-stats-global")
     ->to("experiment#stats_global", nid => undef);
  
-$r->get("/jbrowse/experiment/notebook/:nid/stats/regionFeatureDensities/#chr" => { nid => qr/\d+/ })
+$r->get("/jbrowse/experiment/notebook/:nid/stats/regionFeatureDensities/#chr" => { nid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-regionFeatureDensitites")
     ->to("experiment#stats_regionFeatureDensities", nid => undef, chr => undef);
 
-$r->get("/jbrowse/experiment/notebook/:nid/features/#chr"  => { nid => qr/\d+/ })
+$r->get("/jbrowse/experiment/notebook/:nid/features/#chr"  => { nid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", nid => undef, chr => undef);
 

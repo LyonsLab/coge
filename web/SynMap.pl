@@ -42,7 +42,7 @@ our (
 	$BLAST2BED,     $SYNTENY_SCORE, $TEMPDIR,
 	$TEMPURL,       $ALGO_LOOKUP,
 #	$GZIP,$GUNZIP,
-	%FUNCTIONS,     $SCRIPTDIR
+	%FUNCTIONS,     $SCRIPTDIR,    $LINK
 );
 
 $|     = 1;    # turn off buffering
@@ -51,7 +51,7 @@ $FORM       = new CGI;
 $PAGE_TITLE = "SynMap";
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
-( $coge, $USER, $config ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $config, $LINK ) = CoGe::Accessory::Web->init(
 	cgi        => $FORM,
 	page_title => $PAGE_TITLE,
 );
@@ -176,6 +176,8 @@ sub gen_html {
 	$template->param(
 		PAGE_TITLE => 'SynMap',
 		TITLE      => 'SynMap: Whole Genome Synteny Analysis',
+		PAGE_LINK  => $LINK,
+		SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
 		HEAD       => qq{},
 		USER       => $USER->display_name || '',
 		NO_DOCTYPE => 1

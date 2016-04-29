@@ -25,14 +25,15 @@ html {
     height: 100%;
 }
 
-a {
-  outline: none;
-  text-decoration: none;
+a, a:visited {
+    color: #007000;
+    outline: none;
+    text-decoration: none;
 }
 
 a:hover {
-  color: #009900;
-  cursor: pointer;
+    color: #009900;
+    cursor: pointer;
 }
 
 .hidden {
@@ -857,7 +858,7 @@ td.link:hover {
 }
 
 .link {
-  color: #0000EE;
+  color: #007000;
   cursor: pointer;
 }
 

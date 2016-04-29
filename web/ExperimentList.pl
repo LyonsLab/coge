@@ -62,6 +62,7 @@ sub gen_html {
     $template->param( PAGE_TITLE => 'ExperimentList',
 				      TITLE	     => 'ExperimentList',
     				  PAGE_LINK  => $LINK,
+    				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
     				  HOME       => $P->{SERVER},
                       HELP       => 'ExperimentList',
                       WIKI_URL   => $P->{WIKI_URL} || '' );

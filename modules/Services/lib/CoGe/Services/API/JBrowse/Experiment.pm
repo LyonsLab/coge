@@ -12,6 +12,7 @@ use CoGe::Core::Storage qw( get_experiment_path );
 use CoGeDBI qw( feature_type_names_to_id );
 use Data::Dumper;
 use File::Path;
+use File::Spec::Functions;
 use JSON::XS;
 
 #TODO: use these from Storage.pm instead of redeclaring them
@@ -152,7 +153,7 @@ sub data {
     }
 
     # Check permissions
-    unless ($user->is_admin() || $user->is_owner_editor(experiment => $id)) {
+    unless (!$experiment->restricted() || ($user && ($user->is_admin() || $user->is_owner_editor(experiment => $id)))) {
         $self->render(json => {
             error => { Auth => "Access denied" }
         }, status => 401);
@@ -276,7 +277,12 @@ sub _get_experiments {
         	push @experiments, $e;
         }
         else {
-        	warn "JBrowse::Experiment::_get_experiments access denied to experiment $eid for user ", $user->name;
+            if ($user && $user->name) {
+            	warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $eid . ' for user ' . $user->name;
+            }
+            else {
+                warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $eid;
+            }
         }
     }
     splice(@experiments, $MAX_EXPERIMENTS);
@@ -408,8 +414,7 @@ sub _snps {
 	    return $hits;
 	}
 	elsif ($self->param('snp_type')) {
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{COGEDIR};
-        $cmdpath = substr($cmdpath, 0, -3) . 'tools/snp_search/snp_search';
+        my $cmdpath = catfile(CoGe::Accessory::Web::get_defaults()->{BINDIR}, 'snp_search', 'snp_search');
         my $storage_path = get_experiment_path($eid);
         opendir(my $dh, $storage_path);
         my @files = grep(/\.vcf$/,readdir($dh));

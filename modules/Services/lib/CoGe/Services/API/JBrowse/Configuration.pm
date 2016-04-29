@@ -332,7 +332,7 @@ sub track_config {
 
         my ($type, $featureScale, $histScale, $labelScale);
         if (!$e->{data_type} or $e->{data_type} == 1) { #FIXME hardcoded data_type 'quantitative'
-			$type = 'CoGe/View/Track/Wiggle/MultiXYPlot';
+			$type = 'CoGe/View/Track/Wiggle/XYPlot';
 			$featureScale = 0.001;
 			#$histScale = 0.05;
 			#$labelScale = 0.1;
@@ -407,7 +407,7 @@ sub track_config {
             autocomplete => "all",
             track        => "notebook0",
             label        => "notebook0",
-            type         => "CoGe/View/Track/Wiggle/MultiXYPlot",
+            type         => "CoGe/View/Track/Wiggle/XYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
             coge => {
@@ -433,7 +433,7 @@ sub track_config {
             autocomplete => "all",
             track        => "notebook$nid",
             label        => "notebook$nid",
-            type         => "CoGe/View/Track/Wiggle/MultiXYPlot",
+            type         => "CoGe/View/Track/Wiggle/XYPlot",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
             showHoverScores => 1,
@@ -468,7 +468,7 @@ sub track_config {
     });
 }
 
-# FIXME this is duplicated in JBrowse MultiXYPlot.js, need to either make totally client side or totally server side
+# FIXME this is duplicated in XYPlot.js, need to either make totally client side or totally server side
 sub _getFeatureColor {
     my $id = shift;
     return '#'

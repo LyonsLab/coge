@@ -4,12 +4,15 @@ use warnings;
 use CGI;
 use CoGe::Accessory::Web;
 
-use vars qw($CONF $USER $DB %FUNCTION $FORM $SEARCH_TERM );
+use vars qw($CONF $USER $DB %FUNCTION $FORM $SEARCH_TERM $LINK $PAGE_TITLE $PAGE_NAME);
+
+$PAGE_TITLE = 'Search';
+$PAGE_NAME  = 'SearchResults.pl';
 
 $FORM = new CGI;
 $SEARCH_TERM = $FORM->param('s');
 
-( $DB, $USER, $CONF ) = CoGe::Accessory::Web->init( cgi => $FORM );
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM, page_title => $PAGE_TITLE );
 
 %FUNCTION = (
 	user_is_admin => \&user_is_admin,
@@ -22,6 +25,8 @@ sub gen_html {
 	$template->param( USER        => $USER->display_name || '',
 	                  PAGE_TITLE  => "Search Results",
 	                  TITLE       => "Search Results",
+	                  PAGE_LINK   => $LINK,
+	                  SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
 	                  HOME        => $CONF->{SERVER},
                       HELP        => '',
                       WIKI_URL    => $CONF->{WIKI_URL} || '',

@@ -13,11 +13,16 @@ use DBI;
 use Data::Dumper;
 use DBI;
 use POSIX;
+use File::Spec::Functions;
 use Sort::Versions;
 use HTML::Template;
 
-use vars
-  qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $conffile $skip_random $force_box $chr_order $dotsize $linesize $STANDALONE);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 
+    $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip 
+    $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type 
+    $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order 
+    $font $GZIP $GUNZIP $conffile $skip_random $force_box $chr_order $dotsize 
+    $linesize $STANDALONE $TMPLDIR);
 
 GetOptions(
     "dagfile|d=s"            => \$dagfile,        #all dots
@@ -61,7 +66,8 @@ GetOptions(
     , #string of ":" delimted chromosome name order to display for the genome with fewer chromosomes
     "dotsize|ds=i"  => \$dotsize,     #size of dots in dotplot
     "linesize|ls=i" => \$linesize,    #size of lines in dotplot
-    "standalone|sa=i"  => \$STANDALONE
+    "standalone|sa=i"  => \$STANDALONE,
+    "tmpl=s" => \$TMPLDIR
 );
 $selfself       = 1      unless defined $selfself;
 $labels         = 1      unless defined $labels;
@@ -765,7 +771,7 @@ sub draw_dots {
         my ($img) = $basename =~ /([^\/]*$)/;
 
         my $template = HTML::Template->new(
-            filename => $P->{TMPLDIR} . '/widgets/Dotplot.tmpl'
+            filename => catfile($TMPLDIR, 'Dotplot.tmpl')
         );
 
         #Loop through the features list and print out the click map info
@@ -924,7 +930,7 @@ sub draw_chromosome_grid {
 
     if ( $link_type == 2 ) {
         my $template = HTML::Template->new(
-            filename => $P->{TMPLDIR} . '/widgets/Dotplot.tmpl'
+            filename => catfile($TMPLDIR, 'Dotplot.tmpl')
         );
 
         #Loop through our list of chromosomes and print out the corrosponding click map tag

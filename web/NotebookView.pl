@@ -99,6 +99,7 @@ sub gen_html {
             PAGE_TITLE => $PAGE_TITLE,
             TITLE      => "NotebookView",
             PAGE_LINK  => $LINK,
+            SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
             HOME       => $P->{SERVER},
             HELP       => 'NotebookView',
             WIKI_URL   => $P->{WIKI_URL} || ''

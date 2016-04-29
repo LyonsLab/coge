@@ -84,6 +84,7 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => "tRNAView",
                       TITLE      => 'CoGe tRNA and tmRNA Search Tool',
+                      SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
                       HOME       => $P->{SERVER},
                       HELP       => 'tRNAView',
                       WIKI_URL   => $P->{WIKI_URL} || '',

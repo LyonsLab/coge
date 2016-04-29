@@ -533,8 +533,8 @@ sub process_fasta_file {
             print STDOUT "log: error: Duplicate section name '$chr'\n";
             exit(-1);
         }
-        if ( $filteredSeq =~ /\W/ ) {
-            print STDOUT "log: error: sequence on line $lineNum contains non-alphanumeric characters, perhaps this is not a FASTA file?\n";
+        if ( $filteredSeq =~ /[^ACGTURYSWKMBDHVNX]/i ) { #/\W/ ) { # mdb modified 4/28/16 COGE-715, see http://www.bioinformatics.org/sms/iupac.html
+            print STDOUT "log: error: sequence in section '$chr' contains invalid characters, perhaps this is not a nucleotide FASTA file?\n";
             #print STDOUT "log: error: chromosome name $sectionName\n";
             #print STDOUT "log: error: $filteredSeq\n";
             exit(-1);

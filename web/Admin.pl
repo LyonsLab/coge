@@ -22,11 +22,16 @@ no warnings 'redefine';
 
 $|=1;
 
-use vars
-  qw($P $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE $JEX);
+use vars qw(
+    $P $PAGE_TITLE $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION 
+    $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE $JEX $LINK
+);
+
+$PAGE_TITLE = 'Admin';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
-( $coge, $USER, $P ) = CoGe::Accessory::Web->init( cgi => $FORM );
+( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM, page_title => $PAGE_TITLE );
 
 $JEX =
   CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
@@ -79,6 +84,8 @@ sub gen_html {
 	  HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( USER       => $USER->display_name || '',
 	                  PAGE_TITLE => qq{Admin},
+	                  PAGE_LINK  => $LINK,
+	                  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
 	                  TITLE      => "GODVIEW",
 	                  HOME       => $P->{SERVER},
                       HELP       => '',

@@ -78,6 +78,7 @@ sub gen_html {
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'SynSub',
                       TITLE      => 'Synteny Substitution Matrix',
+                      SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
                       HEAD       => qq{},
                       HOME       => $P->{SERVER},
                       HELP       => 'SynSub',

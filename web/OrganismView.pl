@@ -112,6 +112,7 @@ sub gen_html {
     $template->param( PAGE_TITLE => 'OrganismView',
 		              TITLE      => 'OrganismView: Search Organisms and Genomes',
     				  PAGE_LINK  => $LINK,
+    				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
     				  HEAD       => qq{},
 				      HOME       => $P->{SERVER},
                       HELP       => 'OrganismView',

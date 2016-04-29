@@ -58,7 +58,8 @@ sub generate_html {
         USER       => $USER->display_name || undef,
         BODY       => generate_body(),
         ADMIN_ONLY => $USER->is_admin,
-        CAS_URL    => $CONF->{CAS_URL} || ''
+        CAS_URL    => $CONF->{CAS_URL} || '',
+        SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
     );
 
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";

@@ -46,7 +46,7 @@ sub add_jobs {
 	my $RUN_ALIGNMENT = 'nice ' . catfile( $SCRIPTDIR, 'quota_align_merge.pl' );
 	my $RUN_COVERAGE  = 'nice ' . catfile( $SCRIPTDIR, 'quota_align_coverage.pl' );
 	my $PROCESS_DUPS  = 'nice ' . catfile( $SCRIPTDIR, 'process_dups.pl' );
-	my $DOTPLOT       = 'nice ' . $config->{DOTPLOT} . " -cf " . $config->{_CONFIG_PATH};
+	my $DOTPLOT       = 'nice ' . catfile($config->{BINDIR}, 'dotplot.pl') . " -cf " . $config->{_CONFIG_PATH} . " -tmpl " . catdir($config->{TMPLDIR}, 'widgets');
 	my $SVG_DOTPLOT   = 'nice ' . catfile( $SCRIPTDIR, 'dotplot.py' );
     #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
 	my $RUN_DAGCHAINER = 'nice ' . $config->{PYTHON} . ' ' . $config->{DAGCHAINER};
