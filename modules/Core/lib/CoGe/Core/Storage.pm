@@ -762,9 +762,21 @@ sub create_image { # mdb: don't have a better place for this atm
     my $fh = $opts{fh};
     my $filename = $opts{filename};
     my $db = $opts{db};
-    return unless ($fh && $filename && $db);
+    return unless (($fh || $filename) && $db);
     
-    read( $fh, my $contents, -s $fh );
+    unless (defined $fh) {
+        unless (open($fh, $filename)) {
+            print STDERR "Storage::create_image: ERROR, couldn't open file '$filename'\n";
+            return;
+        }
+    }
+    
+    my $contents = <$fh>; #read_file($fh, my $contents, -s $fh);
+    unless ($contents) {
+        print STDERR "Storage::create_image: ERROR, couldn't read file '$filename'\n";
+        return;
+    }
+    
     my $image = $db->resultset('Image')->create({
         filename => $filename,
         image    => $contents
