@@ -22,6 +22,7 @@ var Gobe = {
         $('svg').find('rect').remove();
         $('svg').find('line').remove();
         $('svg').find('polygon').remove();
+        $('#svg')[0].connectors = {};
     },
     'set_linewidth': function(linewidth){
         // dont change this. could check for 0 <= lw <= ?
