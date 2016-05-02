@@ -67,21 +67,19 @@ sub add_jobs {
 	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
 
 	# Block large genomic-genomic jobs from running
-	if (   ( $feat_type1 == 2
-			&& $genome1->length > $SEQUENCE_SIZE_LIMIT
-			&& !$genome1->type->name =~ /hard/i )
-		&& ( $feat_type2 == 2
-			&& $genome2->length > $SEQUENCE_SIZE_LIMIT
-			&& !$genome2->type->name =~ /hard/i ))
+	if (   ( #$feat_type1 == 2 && # mdb removed 5/2/16 COGE-717
+			$genome1->length > $SEQUENCE_SIZE_LIMIT &&
+			!$genome1->type->name =~ /hard/i )
+		&& ( #$feat_type2 == 2 && # mdb removed 5/2/16 COGE-717
+			$genome2->length > $SEQUENCE_SIZE_LIMIT &&
+			!$genome2->type->name =~ /hard/i ))
 	{
-		return encode_json(
-			{
-				success => JSON::false,
-				error   => "The analysis was blocked: "
-				  . "a comparison of two unmasked and unannotated genomes larger than 50Mb requires many days to weeks to finish. "
-				  . "Please use at least one annotated genome in the analysis."
-			}
-		);
+		return encode_json({
+			success => JSON::false,
+			error   => "The analysis was blocked: "
+			  . "a comparison of two unmasked and unannotated genomes larger than 50Mb requires many days to weeks to finish. "
+			  . "Please use at least one annotated genome in the analysis."
+		});
 	}
 
 	#my $basename = $opts{basename};
