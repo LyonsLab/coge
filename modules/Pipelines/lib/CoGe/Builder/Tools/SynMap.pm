@@ -67,13 +67,17 @@ sub add_jobs {
 	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
 
 	# Block large genomic-genomic jobs from running
-	if (   ( #$feat_type1 == 2 && # mdb removed 5/2/16 COGE-717
+	if (   ( $feat_type1 == 2 &&
 			$genome1->length > $SEQUENCE_SIZE_LIMIT &&
-			!$genome1->type->name =~ /hard/i )
-		&& ( #$feat_type2 == 2 && # mdb removed 5/2/16 COGE-717
+			!($genome1->type->name =~ /hard/i) )
+		&& ( $feat_type2 == 2 &&
 			$genome2->length > $SEQUENCE_SIZE_LIMIT &&
-			!$genome2->type->name =~ /hard/i ))
+			!($genome2->type->name =~ /hard/i) ))
 	{
+	    print STDERR 'CoGe::Builder::Tools::SynMap: !!!!!!!!!!! blocking analysis ', 
+           $genome1->id, '(', $genome1->length, ',', $genome1->type->name, ')',
+           ' vs. ', $genome2->id, '(', $genome2->length, ',', $genome2->type->name, ') ', 
+           'feat_type1=', $feat_type1, ' feat_type2=', $feat_type2, "\n";
 		return encode_json({
 			success => JSON::false,
 			error   => "The analysis was blocked: "
