@@ -1312,6 +1312,7 @@ function checkRequestSize(url) {
                     promise.resolve(args);
                     break;
                 case "Failed":
+                	console.warn(response);
                     promise.reject("The workflow has failed");
                     break;
                 default:
@@ -1339,7 +1340,7 @@ function checkRequestSize(url) {
         close_dialog(status_dialog);
 
         $.ajax({
-            type: "post",
+            type: 'post',
             dataType: 'json',
             data: params,
             success: function(data) {
@@ -1347,27 +1348,27 @@ function checkRequestSize(url) {
                 $("#overlay").hide();
                 status_dialog.dialog('open');
 
-                if (data.error) {
-                    status_dialog.find('#text').html(data.error).addClass("alert");
-                    status_dialog.find('#progress').hide();
-                    status_dialog.find('#dialog_error').slideDown();
-                } else if (data.success) {
+                if (data && data.success) {
                     var link = "Return to this analysis: <a href="
-                    + data.link + " onclick=window.open('tiny')"
-                    + "target = _new>" + data.link + "</a>";
+	                    + data.link + " onclick=window.open('tiny')"
+	                    + "target = _new>" + data.link + "</a>";
 
-                     $('#dialog_log').html('<a href="' + data.log + '" target="_blank">Logfile</a>');
+                    $('#dialog_log').html('<a href="' + data.log + '" target="_blank">Logfile</a>');
                     $('#synmap_link').html(link);
 
-                    update_dialog(data.request, "#synmap_dialog", synmap_formatter,
-                            get_params("get_results"));
-                } else {
-                    status_dialog.find('#text').html(pageObj.failed).addClass("alert");
+                    update_dialog(data.request, "#synmap_dialog", synmap_formatter, get_params("get_results"));
+                } 
+                else { // (!data || data.error || !data.success)
+                	console.warn('synmap:schedule: submission error');
+                	console.warn(data);
+                	var error_message = ( data.error ? data.error : pageObj.failed );
+                    status_dialog.find('#text').html(error_message).addClass("alert");
                     status_dialog.find('#progress').hide();
                     status_dialog.find('#dialog_error').slideDown();
                 }
             },
             error: function(err) {
+            	console.warn(err);
                 $('.box').css("float", "left");
                 $("#overlay").hide();
                 status_dialog.dialog('open');
@@ -1375,7 +1376,7 @@ function checkRequestSize(url) {
                 status_dialog.find('#progress').hide();
                 status_dialog.find('#dialog_error').slideDown();
             }
-        })
+        });
     }
 
     function get_params(name, regenerate) {
@@ -1562,6 +1563,7 @@ function checkRequestSize(url) {
             }
 
             if (json.error) {
+            	console.warn(json);
                 pageObj.error++;
                 if (pageObj.error > 3) {
                     workflow_status.html(pageObj.engine);
