@@ -27,8 +27,8 @@ sub new {
 	$opts = {} unless $opts;
 	my $class = ref($proto) || $proto;
 	my $self = bless ({%$opts}, $class);
-	$self->run_anchor("/opt/apache/coge/web/bin/lagan/chaos_coge") unless $self->run_anchor;
-	$self->run_dialign("/opt/apache/coge/web/bin/dialign2_dir/dialign2-2_coge") unless $self->run_dialign;
+	$self->run_anchor("/opt/apache/coge/bin/lagan/chaos_coge") unless $self->run_anchor;
+	$self->run_dialign("/opt/apache/coge/bin/dialign2_dir/dialign2-2_coge") unless $self->run_dialign;
 	$self->output_dir("/opt/apache/coge/web/tmp") unless $self->output_dir;
 	$self->run_anchor_opts("-v") unless $self->run_anchor_opts;
 	$self->run_dialign_opts("-n") unless $self->run_dialign_opts;

@@ -14,7 +14,7 @@
 #define VER_NUM "0.932"
 #define BLOSUM_FILE "blosum62s.txt"
 #define BLOSUM_FILE_SIZE 24
-#define NUC_FILE "/opt/apache/coge/web/bin/lagan-64bit/nucmatrix.txt"
+#define NUC_FILE "/opt/apache/coge/bin/lagan-64bit/nucmatrix.txt"
 #define NUC_FILE_SIZE 6
 
 #define MAX2(x,y)   ( (x) >= (y) ? (x) : (y) )

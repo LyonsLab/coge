@@ -284,7 +284,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
           . $feats->{$type}{id}
           . ";gstid=$gstid')\">FeatList";
         $feat_string .= "<td>|</td>";
-        $feat_string .= "<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?ftid="
+        $feat_string .= "<td class='small link' onclick=\"window.open('get_seqs_for_feattype_for_genome.pl?ftid="
           . $feats->{$type}{id} . ";";
         $feat_string .= "dsgid=$dsgid;" if $dsgid;
         $feat_string .= "dsid=$dsid;"   if $dsid;
@@ -307,7 +307,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 
         if ( $feats->{$type}{name} eq "CDS" ) {
             $feat_string .= "<td>|</td>";
-            $feat_string .= "<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?p=1;ftid="
+            $feat_string .= "<td class='small link' onclick=\"window.open('get_seqs_for_feattype_for_genome.pl?p=1;ftid="
               . $feats->{$type}{id};
             $feat_string .= ";dsgid=$dsgid" if $dsgid;
             $feat_string .= ";dsid=$dsid"   if $dsid;
@@ -2049,7 +2049,6 @@ sub generate_html {
             PAGE_TITLE => $PAGE_TITLE,
 	        TITLE      => 'GenomeInfo',
             PAGE_LINK  => $LINK,
-            SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
 	        HOME       => $config->{SERVER},
 	        HELP       => 'GenomeInfo',
 	        WIKI_URL   => $config->{WIKI_URL} || '',

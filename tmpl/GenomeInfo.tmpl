@@ -296,7 +296,7 @@ function download_chromosome_sequence(chr) {
             chr: chr
         },
         success: function(data) {
-        	document.location='bin/get_seq_for_chr.pl?gid=' + genome_id + '&chr=' + chr;
+        	document.location='get_seq_for_chr.pl?gid=' + genome_id + '&chr=' + chr;
         }
     });
 }

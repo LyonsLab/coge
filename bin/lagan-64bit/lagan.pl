@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-$ENV{LAGAN_DIR}='/opt/apache/coge/web/bin/lagan-64bit';
+$ENV{LAGAN_DIR}='/opt/apache/coge/bin/lagan-64bit';
 $lagandir = $ENV{LAGAN_DIR};
 $consrate = 45;
 $consupperrate = 65;

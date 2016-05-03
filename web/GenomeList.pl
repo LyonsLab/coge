@@ -615,7 +615,7 @@ qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>
         #        my $file      = $dsg->file_path;
         #        $file =~ s/$COGEDIR/$URL/;
         my $seq_url = api_url_for("genomes/$dsgid/sequence"); #"api/v1/legacy/sequence/$dsgid"; # mdb changed 2/12/16 for hypnotoad
-        $type = $type . "<br><a href='$seq_url'>Fasta</a><br><a href='bin/export/coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
+        $type = $type . "<br><a href='$seq_url'>Fasta</a><br><a href='coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
         my ($ds_source) = $dsg->source;
         my $source      = $ds_source->name;
         my $source_link = $ds_source->link;
@@ -919,7 +919,7 @@ sub send_to_xls {
         #$wat*=100;
         #$wgc*=100;
         my $seq_url = url_for(api_url_for("genomes/sequence/$dsgid"));#$P->{SERVER}."api/v1/legacy/sequence/$dsgid"; # mdb changed 2/12/16 for hypnotoad
-        my $GFF_url = $P->{SERVER}."bin/export/coge_gff.pl?dsgid=$dsgid;annos=1";
+        my $GFF_url = $P->{SERVER}."coge_gff.pl?dsgid=$dsgid;annos=1";
         $worksheet->write( $i, 0, $name );
         $worksheet->write( $i, 1, $desc );
         $worksheet->write( $i, 2, $source );

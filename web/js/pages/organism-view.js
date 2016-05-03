@@ -356,7 +356,7 @@ function get_feat_gc(opts) {
  */
 
 function export_gff () {
-    var link = "bin/export/coge_gff.pl?dsgid=" + page.gid;
+    var link = "coge_gff.pl?dsgid=" + page.gid;
     if ($('#cds_only')[0].checked) {link += ";cds=1";}
     if ($('#annos')[0].checked) {link += ";annos=1";}
     if ($('#name_unique')[0].checked) {link += ";nu=1";}
@@ -367,13 +367,13 @@ function export_gff () {
 }
 
 function export_tbl () {
-    var link = "bin/export/export_NCBI_TBL.pl?dsgid=";
+    var link = "export_NCBI_TBL.pl?dsgid=";
     link += page.gid;
     window.open(link);
 }
 
 function export_bed () {
-    var link = "bin/export/coge2bed.pl?gid=";
+    var link = "coge2bed.pl?gid=";
     link += page.gid;
     window.open(link);
 }

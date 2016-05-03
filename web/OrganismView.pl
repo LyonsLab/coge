@@ -1002,7 +1002,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
           . ";gstid=$gstid')\">FeatList";
         $feat_string .= "<td>|</td>";
         $feat_string .=
-"<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?ftid="
+"<td class='small link' onclick=\"window.open('get_seqs_for_feattype_for_genome.pl?ftid="
           . $feats->{$type}{id} . ";";
         $feat_string .= "dsgid=$dsgid;" if $dsgid;
         $feat_string .= "dsid=$dsid;"   if $dsid;
@@ -1011,7 +1011,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         if ( $feats->{$type}{name} eq "CDS" ) {
             $feat_string .= "<td>|</td>";
             $feat_string .=
-"<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?p=1;ftid="
+"<td class='small link' onclick=\"window.open('get_seqs_for_feattype_for_genome.pl?p=1;ftid="
               . $feats->{$type}{id};
             $feat_string .= ";dsgid=$dsgid" if $dsgid;
             $feat_string .= ";dsid=$dsid"   if $dsid;
