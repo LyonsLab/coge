@@ -137,6 +137,45 @@ return declare( JBrowsePlugin,
 
     // ----------------------------------------------------------------
 
+    build_chromosome_select: function(first, onchange) {
+        var chr = this.browser.refSeq.name;
+        var html = '<select id="coge_ref_seq"';
+        if (onchange)
+            html += ' onchange="' + onchange + '"';
+        html += '>';
+        if (first)
+            html += '<option>' + first + '</option>';
+        this.browser.refSeqOrder.forEach(function(rs) {
+            html += '<option';
+            if (rs == chr)
+                html += ' selected';
+            html += '>';
+            html += rs;
+            html += '</option>';
+        });
+        html += '</select>';
+        return html;
+    },
+
+    build_features_checkboxes: function() {
+        var html = '';
+        var features = this.browser.config.tracks.reduce(function(accum, current) {
+            if (current.coge.type && current.coge.type == 'features' && accum.indexOf(current.coge.id) < 0)
+                accum.push(current.coge.id);
+            return accum;
+        }, []);
+        features.forEach(function(f) {
+            html += '<div><input type="checkbox"';
+            if (f == 'gene')
+                html += ' checked';
+            html += '> <label>' + f + '</label></div>';
+        });
+        html += '<div><button onClick="coge.check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge.check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></div>';
+        return html;
+    },
+
+    // ----------------------------------------------------------------
+
     check_all: function(element, value) {
     	var cb = element.getElementsByTagName('INPUT');
     	for (var i=0; i<cb.length; i++)
@@ -160,11 +199,9 @@ return declare( JBrowsePlugin,
 
     create_download_dialog: function(track) {
         this._track = track;
-        var content = '<div id="coge-track-download"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>All</option>';
-        this.browser.refSeqOrder.forEach(function(rs) {
-            content += '<option>' + rs + '</option>';
-        });
-        content += '</select></td></tr>';
+        var content = '<div id="coge-track-download"><table align="center"><tr><td>Chromosome:</td><td>';
+        content += this.build_chromosome_select('All');
+        content += '</td></tr>';
         if (track.config.coge.transform)
             content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
         if (track.config.coge.search)
@@ -185,18 +222,11 @@ return declare( JBrowsePlugin,
     // ----------------------------------------------------------------
 
     create_search_button: function() {
-    	var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
-    	this.browser.refSeqOrder.forEach(function(rs) {
-    		content += '<option>' + rs + '</option>';
-    	})
-    	content += '</select></td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
-    	var features = this.browser.config.tracks.filter(function(f) {
-    		return (f.coge.type && f.coge.type == 'features');
-    	});
-    	features.forEach(function(t) {
-    		content += '<div><input type="checkbox"> <label>' + t.coge.id + '</label></div>';
-    	});
-    	content += '</td></tr><tr><td></td><td><button onClick="coge.check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge.check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></td></tr></table>';
+    	var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td>';
+        content += this.build_chromosome_select('Any');
+    	content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
+        content += this.build_features_checkboxes();
+    	content += '</td></tr></table>';
     	content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_dialog.hide()">Cancel</button></div></div>';
         new Button({
 	        label: 'Search',

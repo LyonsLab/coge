@@ -120,6 +120,10 @@ $r->put("/experiments")
     ->name("experiments-add")
     ->to("experiment#add", namespace => 'CoGe::Services::API');
 
+$r->post("/experiments/:id" => [id => qr/\d+/])
+    ->name("experiments-update")
+    ->to("experiment#update", namespace => 'CoGe::Services::API', id => undef);
+
 # Notebook routes
 $r->get("/notebooks/search/#term")
     ->name("notebooks-search")
@@ -127,12 +131,16 @@ $r->get("/notebooks/search/#term")
 
 $r->get("/notebooks/:id" => [id => qr/\d+/])
     ->name("notebooks-fetch")
-    ->to("notebook#fetch", id => undef);
+    ->to("notebook#fetch");
     
 $r->put("/notebooks")
     ->name("notebooks-add")
     ->to("notebook#add");
     
+$r->post("/notebooks/:id" => [id => qr/\d+/])
+    ->name("notebooks-update")
+    ->to("notebook#update", id => undef);
+
 $r->delete("/notebooks/:id" => [id => qr/\d+/])
     ->name("notebooks-remove")
     ->to("notebook#remove");

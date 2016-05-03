@@ -26,18 +26,11 @@ return declare( [ HTMLFeatures ], {
 
     _create_features_search_dialog: function(track) {
         this._track = track;
-        var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
-        this.browser.refSeqOrder.forEach(function(rs) {
-            content += '<option>' + rs + '</option>';
-        })
-        content += '</select></td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
-        var features = coge_track_list._track_configs.filter(function(f) {
-            return (f.coge.type && f.coge.type == 'features');
-        });
-        features.forEach(function(t) {
-            content += '<div><input type="checkbox"> <label>' + t.coge.id + '</label></div>';
-        });
-        content += '</td></tr><tr><td></td><td><button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge_track_list._check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></td></tr></table>';
+        var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td>';
+        content += coge.build_chromosome_select('Any');
+        content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features">';
+        content += coge.build_features_checkboxes();
+        content += '</td></tr></table>';
         content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_dialog.hide()">Cancel</button></div></div>';
         this._search_dialog = new Dialog({
             title: "Find SNPs in Features",
@@ -55,11 +48,9 @@ return declare( [ HTMLFeatures ], {
 
     _create_types_search_dialog: function(track) {
         this._track = track;
-        var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td><select id="coge_ref_seq"><option>Any</option>';
-        this.browser.refSeqOrder.forEach(function(rs) {
-            content += '<option>' + rs + '</option>';
-        })
-        content += '</select></td></tr><tr><td style="vertical-align:top;">SNPs:</td><td id="coge_search_types">';
+        var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td>';
+        content += coge.build_chromosome_select('Any');
+        content += '</td></tr><tr><td style="vertical-align:top;">SNPs:</td><td id="coge_search_types">';
         var first = true;
         ['A>C','A>G','A>T','C>A','C>G','C>T','G>A','G>C','G>T','T>A','T>C','T>G','deletion','insertion'].forEach(function(t) {
             content += '<div><input name="type" type="radio"';

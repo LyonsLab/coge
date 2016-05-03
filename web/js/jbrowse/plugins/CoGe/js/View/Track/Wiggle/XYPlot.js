@@ -171,11 +171,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
     _create_search_dialog: function(track) {
     	this._track = track;
-    	var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td><select id="coge_ref_seq" onchange="coge_xyplot._getHistogram(this.options[this.selectedIndex].text)"><option>Any</option>';
-    	this.browser.refSeqOrder.forEach(function(rs) {
-    		content += '<option>' + rs + '</option>';
-    	});
-    	content += '</select></td></tr>' +
+    	var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td>';
+        content += coge.build_chromosome_select('Any', 'coge_xyplot._getHistogram(this.options[this.selectedIndex].text)');
+    	content += '</td></tr>' +
     		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
     		'<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
     		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: <span id="selected_range">&nbsp;</span></td></tr>' +
@@ -189,7 +187,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             },
             style: "width: 350px"
         });
-        this._getHistogram('Any');
+        this._getHistogram(coge.browser.refSeq.name);
     	this._track_search_dialog.show();
     },
 
