@@ -50,18 +50,24 @@ BEGIN {
 
 sub units {
     my $val = shift;
+    
+    # mdb added 5/2/16 for genomic values
+    my $divisor = shift; # optional divisor
+       $divisor = 1024 unless $divisor;
+    my $type = shift; # optional unit type (e.g. 'bp' or 'B')
+       $type = '' unless $type;
 
-    if ( $val < 1024 ) {
-        return $val;
+    if ( $val < $divisor ) {
+        return $val . $type;
     }
-    elsif ( $val < 1024 * 1024 ) {
-        return ceil( $val / 1024 ) . 'K';
+    elsif ( $val < $divisor * $divisor ) {
+        return ceil( $val / $divisor ) . 'K' . $type;
     }
-    elsif ( $val < 1024 * 1024 * 1024 ) {
-        return ceil( $val / ( 1024 * 1024 ) ) . 'M';
+    elsif ( $val < $divisor * $divisor * $divisor ) {
+        return ceil( $val / ( $divisor * $divisor ) ) . 'M' . $type;
     }
     else {
-        return ceil( $val / ( 1024 * 1024 * 1024 ) ) . 'G';
+        return ceil( $val / ( $divisor * $divisor * $divisor ) ) . 'G' . $type;
     }
 }
 
