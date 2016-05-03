@@ -67,8 +67,11 @@ GetOptions(
     "dotsize|ds=i"  => \$dotsize,     #size of dots in dotplot
     "linesize|ls=i" => \$linesize,    #size of lines in dotplot
     "standalone|sa=i"  => \$STANDALONE,
-    "tmpl=s" => \$TMPLDIR
+    "tmpl=s" => \$TMPLDIR # mdb added 4/25/16 for moving tmpl/ out of web/
 );
+
+die "Missing 'tmpl' argument" unless $TMPLDIR;
+
 $selfself       = 1      unless defined $selfself;
 $labels         = 1      unless defined $labels;
 $chr_sort_order = "size" unless defined $chr_sort_order;

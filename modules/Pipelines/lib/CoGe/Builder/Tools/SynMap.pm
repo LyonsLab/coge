@@ -5,6 +5,7 @@ use Moose;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw( get_defaults );
 use CoGe::Accessory::Workflow;
+use CoGe::Accessory::Utils qw(units);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Core::Storage qw( get_workflow_paths );
 use Data::Dumper;
@@ -67,19 +68,24 @@ sub add_jobs {
 	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
 
 	# Block large genomic-genomic jobs from running
-	if (   ( #$feat_type1 == 2 && # mdb removed 5/2/16 COGE-717
+	if (   ( $feat_type1 == 2 &&
 			$genome1->length > $SEQUENCE_SIZE_LIMIT &&
-			!$genome1->type->name =~ /hard/i )
-		&& ( #$feat_type2 == 2 && # mdb removed 5/2/16 COGE-717
+			!($genome1->type->name =~ /hard/i) )
+		&& ( $feat_type2 == 2 &&
 			$genome2->length > $SEQUENCE_SIZE_LIMIT &&
-			!$genome2->type->name =~ /hard/i ))
+			!($genome2->type->name =~ /hard/i) ))
 	{
-		return encode_json({
+	    print STDERR 'CoGe::Builder::Tools::SynMap: !!!!!!!!!!! blocking analysis ', 
+           $genome1->id, '(', $genome1->length, ',', $genome1->type->name, ')',
+           ' vs. ', $genome2->id, '(', $genome2->length, ',', $genome2->type->name, ') ', 
+           'feat_type1=', $feat_type1, ' feat_type2=', $feat_type2, "\n";
+		return {
 			success => JSON::false,
-			error   => "The analysis was blocked: "
-			  . "a comparison of two unmasked and unannotated genomes larger than 50Mb requires many days to weeks to finish. "
-			  . "Please use at least one annotated genome in the analysis."
-		});
+			error   => "Unfortunately this analysis cannot be performed. "
+			  . "A comparison of two unmasked and unannotated genomes larger "
+			  . "than " . units($SEQUENCE_SIZE_LIMIT, 1000, 'bp') . " requires many days to weeks to finish. "
+			  . "Please try:  1) select a hard-masked sequence or 2) use at least one annotated genome."
+		};
 	}
 
 	#my $basename = $opts{basename};
@@ -1200,6 +1206,8 @@ sub add_jobs {
 	$workflow->log( "Added GEvo links generation" );
 	$workflow->log( "#" x (25) );
 	$workflow->log( "" );
+	
+	return; # empty means success
 }
 
 sub algo_lookup {
@@ -1284,12 +1292,15 @@ sub build {
 	return unless $genome_id2;
 
 	my %opts = ( %{ defaults() }, %{ $self->params } );
-	add_jobs(
+	my $resp = add_jobs(
 		workflow => $self->workflow,
 		db       => $self->db,
 		config   => $self->conf,
 		%opts
 	);
+	if ($resp) { # an error occurred
+	   return 0;    
+	}
 
 	return 1;
 }
@@ -1430,7 +1441,10 @@ sub get_query_link {
 	my $dsgid2 = $url_options{dsgid2};
 
 	unless ( $dsgid1 and $dsgid2 ) {
-		return encode_json( { error => "Missing a genome id." } );
+		return encode_json( { 
+		    success => JSON::false,
+		    error => "Missing a genome id" 
+		} );
 	}
 
 	my $assemble = $url_options{assemble} =~ /true/i ? 1 : 0;
@@ -1649,62 +1663,64 @@ sub go {
 	$workflow->log( "Created Workflow: $workflow_name" );
 	$workflow->log( "" );
 
-	add_jobs(
+	my $add_response = add_jobs(
 		workflow => $workflow,
 		db       => $db,
 		config   => $config,
 		@_
 	);
+	if ($add_response) { # an error occurred
+	    return encode_json($add_response);
+	}
 
 	$workflow->log_section( "Running Workflow" );
 
 	my $response = $JEX->submit_workflow($workflow);
-	if ( $response and $response->{id} ) {
-		my $feat_type1 = $opts{feat_type1};
-		my $feat_type2 = $opts{feat_type2};
-		my ( $org_name1, $title1 ) = gen_org_name(
-			db        => $db,
-			dsgid     => $dsgid1,
-			feat_type => $feat_type1
-		);
-		my ( $org_name2, $title2 ) = gen_org_name(
-			db        => $db,
-			dsgid     => $dsgid2,
-			feat_type => $feat_type2
-		);
-		my $log_msg = "$org_name1 v. $org_name2"
-		  ; #"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
-		$log_msg .= " Ks" if $opts{ks_type};
+	unless (defined $response && $response->{id}) {
+        return encode_json( { 
+            success => JSON::false,
+            error => 'The workflow could not be submitted (JEX error)'
+        } );
+    }
 
-		CoGe::Accessory::Web::log_history(
-			db          => $db,
-			user_id     => $user->id,
-			description => $log_msg,
-			page        => 'SynMap',
-			link        => $tiny_link,
-			parent_id   => $response->{id},
-			parent_type => 7                  #FIXME magic number
-		);
+	my $feat_type1 = $opts{feat_type1};
+	my $feat_type2 = $opts{feat_type2};
+	my ( $org_name1, $title1 ) = gen_org_name(
+		db        => $db,
+		dsgid     => $dsgid1,
+		feat_type => $feat_type1
+	);
+	my ( $org_name2, $title2 ) = gen_org_name(
+		db        => $db,
+		dsgid     => $dsgid2,
+		feat_type => $feat_type2
+	);
+	my $log_msg = "$org_name1 v. $org_name2"; #"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
+	$log_msg .= " Ks" if $opts{ks_type};
 
-		my $DIR = $config->{COGEDIR};
-		my $URL = $config->{URL};
-		my $log = $workflow->logfile;
-		$log =~ s/$DIR/$URL/;
-		return encode_json(
-			{
-				link    => $tiny_link,
-				log     => $log,
-				request => "jex/synmap/status/" . $response->{id},
-				status  => $response->{status},
-				success => $JEX->is_successful($response)
-				? JSON::true
-				: JSON::false
-			}
-		);
-	}
-	else {
-		return encode_json( { success => JSON::false } );
-	}
+	CoGe::Accessory::Web::log_history(
+		db          => $db,
+		user_id     => $user->id,
+		description => $log_msg,
+		page        => 'SynMap',
+		link        => $tiny_link,
+		parent_id   => $response->{id},
+		parent_type => 7                  #FIXME magic number
+	);
+
+	my $DIR = $config->{COGEDIR};
+	my $URL = $config->{URL};
+	my $log = $workflow->logfile;
+	$log =~ s/$DIR/$URL/;
+	return encode_json(
+		{
+			link    => $tiny_link,
+			log     => $log,
+			request => "jex/synmap/status/" . $response->{id}, #FIXME hardcoded
+			status  => $response->{status},
+			success => ($JEX->is_successful($response) ? JSON::true : JSON::false)
+		}
+	);
 }
 
 # FIXME: Currently this feature is disabled.
