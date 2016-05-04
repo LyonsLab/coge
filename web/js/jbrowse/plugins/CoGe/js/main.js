@@ -157,6 +157,8 @@ return declare( JBrowsePlugin,
         return html;
     },
 
+    // ----------------------------------------------------------------
+
     build_features_checkboxes: function() {
         var html = '';
         var features = this.browser.config.tracks.reduce(function(accum, current) {
@@ -172,6 +174,12 @@ return declare( JBrowsePlugin,
         });
         html += '<div><button onClick="coge.check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge.check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></div>';
         return html;
+    },
+
+    // ----------------------------------------------------------------
+
+    calc_color: function(id) {
+        return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16);
     },
 
     // ----------------------------------------------------------------
@@ -281,8 +289,17 @@ return declare( JBrowsePlugin,
 
     // ----------------------------------------------------------------
 
-    calc_color: function(id) {
-    	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16);
+    get_checked_values: function(id, description) {
+        var checkboxes = document.getElementById(id).getElementsByTagName('INPUT');
+        var values = [];
+        for (var i=0; i<checkboxes.length; i++)
+            if (checkboxes[i].checked)
+                values.push("'" + checkboxes[i].nextElementSibling.innerText + "'");
+        if (!values.length) {
+            coge.error('Search', 'Please select one or more ' + description + ' to search.');
+            return null;
+        }
+        return values.length == checkboxes.length ? 'all' : values.join();
     },
 
     // ----------------------------------------------------------------
@@ -337,18 +354,12 @@ return declare( JBrowsePlugin,
     // ----------------------------------------------------------------
 
 	search_features: function() {
-    	var features = document.getElementById('coge_search_features').getElementsByTagName('INPUT');
-    	var types = [];
-    	for (var i=0; i<features.length; i++)
-    		if (features[i].checked)
-    			types.push("'" + features[i].nextElementSibling.innerText + "'");
-    	if (!types.length) {
-    		coge.error('Search', 'Please select one or more feature types to search.');
-    		return;
-    	}
+        var types = this.get_checked_values('coge_search_features', 'feature types');
+        if (!types)
+            return;
 
     	var name = encodeURIComponent(dojo.byId('coge_search_text').value);
-		var url = api_base_url + '/genome/' + gid + '/features?name=' + name + '&features=' + (types.length == features.length ? 'all' : types.join());
+		var url = api_base_url + '/genome/' + gid + '/features?name=' + name + '&features=' + types;
     	var ref_seq = dojo.byId('coge_ref_seq');
     	if (ref_seq.selectedIndex > 0)
     		url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
