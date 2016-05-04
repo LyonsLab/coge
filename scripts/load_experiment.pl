@@ -216,13 +216,13 @@ if (-s $staged_data_file == 0) {
     print STDOUT "log: error: input file '", basename($staged_data_file), "' is empty\n";
     exit(-1);
 }
-my ($count, $pChromosomes, $format);
+my ($count, $pChromosomes, $format, $detected_tags);
 if ( $data_type == $DATA_TYPE_QUANT ) {
     ( $staged_data_file, $format, $count, $pChromosomes ) =
       validate_quant_data_file( file => $staged_data_file, file_type => $file_type, genome_chr => \%genome_chr );
 }
 elsif ( $data_type == $DATA_TYPE_POLY ) {
-    ( $staged_data_file, $format, $count, $pChromosomes ) =
+    ( $staged_data_file, $format, $count, $pChromosomes, $detected_tags ) =
       validate_vcf_data_file( file => $staged_data_file, genome_chr => \%genome_chr );
 }
 elsif ( $data_type == $DATA_TYPE_ALIGN ) {
@@ -349,8 +349,10 @@ my $experiment = $coge->resultset('Experiment')->create(
 print STDOUT "experiment id: " . $experiment->id . "\n";
 
 # Create tags
-if ($tags) {
-    foreach my $name ( split(/\s*;\s*/, $tags) ) {
+if ($tags || $detected_tags) {
+    foreach my $name ( @$detected_tags, split(/\s*;\s*/, $tags) ) {
+        next unless $name;
+        
         # Try to find a matching type by name, ignoring description
         my $type = $coge->resultset('ExperimentType')->find({ name => $name });
         if (!$type) {
@@ -747,6 +749,7 @@ sub validate_vcf_data_file {
     my $genome_chr = $opts{genome_chr};
 
     my %chromosomes;
+    my $isGVCF = 0;
     my $line_num = 1;
     my $count;
 
@@ -767,6 +770,11 @@ sub validate_vcf_data_file {
         if ( @tok < $MIN_VCF_COLUMNS ) {
             log_line('more columns expected ('.@tok.' < '.$MIN_VCF_COLUMNS.')', $line_num, $line);
             return;
+        }
+        
+        # Check for extra columns in GVCF # mdb added 5/4/16
+        if ( @tok > 8 ) {
+            $isGVCF = 1;    
         }
 
         # Validate values and set defaults
@@ -807,7 +815,7 @@ sub validate_vcf_data_file {
     }
     close($in);
     close($out);
-
+    
     #my $format = "chr:key, start:unsigned long, stop:unsigned long, type:key, id:text, ref:key, alt:key, qual:double, info:text"; # mdb removed 4/2/14, issue 352
     # mdb added 4/2/14, issue 352
     my $format = {
@@ -823,8 +831,11 @@ sub validate_vcf_data_file {
             #{ name => 'info',  type => 'text' }
         ]
     };
+    
+    # Add detected tags
+    my @tags = ( $isGVCF ? 'Multisample-GVCF' : 'VCF' );
 
-    return ( $outfile, $format, $count, \%chromosomes );
+    return ( $outfile, $format, $count, \%chromosomes, \@tags );
 }
 
 sub detect_site_type {
