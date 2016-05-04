@@ -9,7 +9,7 @@ use CoGe::Services::API::JBrowse::FeatureIndex;
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
 use CoGe::Core::Storage qw( get_experiment_path );
-use CoGeDBI qw( feature_type_names_to_id );
+use CoGeDBI qw( get_dataset_ids feature_type_names_to_id );
 use Data::Dumper;
 use File::Path;
 use File::Spec::Functions;
@@ -397,9 +397,32 @@ sub _snps {
         my $dbh = $db->storage->dbh;
 
 		my $type_ids;
+        my $type_where;
 		if ($type_names ne 'all') {
 			$type_ids = feature_type_names_to_id($type_names, $dbh);
+            if ($type_ids)
 		}
+
+        my $ids = get_dataset_ids($experiments->[0]->genome_id, $dbh);
+        my $ids_where;
+        if (scalar @$ids == 1) {
+            $ids_where = 'dataset_id=' + $ids->[0];
+        }
+        else
+            $ids_where = 'dataset_id IN(' . join(',', @$ids) . ')';
+
+        my $query = 'SELECT chromosome,start,stop FROM feature WHERE ' . $ids_where;
+        if ($chr) {
+            $query .= " AND chromosome='" . $chr . "'";
+        }
+        if ($type_ids) {
+            $query .= ' AND feature_type_id=' . $type_id;
+        }
+        $query .= ' ORDER BY chromosome,start';
+        my $sth = $dbh->prepare($query);
+        $sth->execute();
+        while (my @row = $sth->fetchrow_array) {
+        }
 	
 		my $type = (split ',', $type_ids)[0];
 		my $fi = CoGe::Services::API::JBrowse::FeatureIndex->new($experiments->[0]->genome_id, $type, $chr, $conf);

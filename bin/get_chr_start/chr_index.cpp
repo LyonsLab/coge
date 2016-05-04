@@ -5,7 +5,6 @@
 #include <sys/stat.h>
 
 #include <fstream>
-#include <iostream>
 
 //----------------------------------------
 
