@@ -69,6 +69,7 @@ sub build {
     
     # Determine output path for result files
     my $result_path = get_popgen_result_path($experiment->id);
+    die "Cannot determine sumstat result path" unless $result_path;
     
     # Compute summary stats
     $task = create_sumstats_job(
