@@ -289,12 +289,15 @@ return declare( JBrowsePlugin,
 
     // ----------------------------------------------------------------
 
-    get_checked_values: function(id, description) {
+    get_checked_values: function(id, description, quote) {
         var checkboxes = document.getElementById(id).getElementsByTagName('INPUT');
         var values = [];
         for (var i=0; i<checkboxes.length; i++)
             if (checkboxes[i].checked)
-                values.push("'" + checkboxes[i].nextElementSibling.innerText + "'");
+                if (quote)
+                    values.push("'" + checkboxes[i].nextElementSibling.innerText + "'");
+                else
+                    values.push(checkboxes[i].nextElementSibling.innerText);
         if (!values.length) {
             coge.error('Search', 'Please select one or more ' + description + ' to search.');
             return null;
@@ -354,7 +357,7 @@ return declare( JBrowsePlugin,
     // ----------------------------------------------------------------
 
 	search_features: function() {
-        var types = this.get_checked_values('coge_search_features', 'feature types');
+        var types = this.get_checked_values('coge_search_features', 'feature types', true);
         if (!types)
             return;
 

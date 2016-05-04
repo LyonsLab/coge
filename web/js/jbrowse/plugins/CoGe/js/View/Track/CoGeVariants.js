@@ -82,7 +82,7 @@ return declare( [ HTMLFeatures ], {
     // ----------------------------------------------------------------
 
 	_search_features: function() {
-        var types = coge.get_checked_values('coge_search_features', 'feature types');
+        var types = coge.get_checked_values('coge_search_features', 'feature types', true);
         if (!types)
             return;
 		var ref_seq = dojo.byId('coge_ref_seq');
