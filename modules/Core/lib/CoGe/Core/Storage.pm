@@ -59,7 +59,7 @@ BEGIN {
       get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files
       reverse_complement get_irods_file get_irods_path get_popgen_result_path
-      is_popgen_finished data_type get_sra_cache_path create_image
+      is_popgen_finished data_type get_sra_cache_path
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
 
@@ -755,33 +755,6 @@ sub get_irods_file {
     }
 
     return { path => $localpath, size => -s $localfilepath };
-}
-
-sub create_image { # mdb: don't have a better place for this atm
-    my %opts = @_;
-    my $fh = $opts{fh};
-    my $filename = $opts{filename};
-    my $db = $opts{db};
-    return unless (($fh || $filename) && $db);
-    
-    unless (defined $fh) {
-        unless (open($fh, $filename)) {
-            print STDERR "Storage::create_image: ERROR, couldn't open file '$filename'\n";
-            return;
-        }
-    }
-    
-    my $contents = <$fh>; #read_file($fh, my $contents, -s $fh);
-    unless ($contents) {
-        print STDERR "Storage::create_image: ERROR, couldn't read file '$filename'\n";
-        return;
-    }
-    
-    my $image = $db->resultset('Image')->create({
-        filename => $filename,
-        image    => $contents
-    });
-    return unless $image;
 }
 
 sub reverse_complement { #TODO move into Util.pm
