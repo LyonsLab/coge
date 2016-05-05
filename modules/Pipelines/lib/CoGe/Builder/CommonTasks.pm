@@ -35,7 +35,8 @@ our @EXPORT = qw(
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
-    add_workflow_result create_bowtie2_workflow
+    add_workflow_result create_bowtie2_workflow create_image_job
+    add_metadata_to_results_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -413,6 +414,28 @@ sub generate_gff {
         args    => $args,
         outputs => [ $output_file ],
         description => "Generating GFF..."
+    };
+}
+
+sub create_image_job {
+    my $input_file = shift;
+    my $staging_dir = shift;
+    
+    return {
+        cmd => catfile($CONF->{SCRIPTDIR}, 'create_image.pl'),
+        script => undef,
+        args => [
+            ['', $input_file, 0],
+            ['', $CONF->{_CONFIG_PATH}, 0],
+            ['', "$input_file.log", 0]
+        ],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            catfile($staging_dir, "$input_file.log")
+        ],
+        description => "Loading image into database..."
     };
 }
 
