@@ -98,7 +98,8 @@ return declare( [ HTMLFeatures ], {
     		url: url,
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
-	  			this._search_dialog.hide();
+                if (this._search_dialog)
+	  				this._search_dialog.hide();
 	  			if (data.error) {
 	  				coge.error('Search', data);
 	  				return;
@@ -110,7 +111,8 @@ return declare( [ HTMLFeatures ], {
 	  			coge.new_search_track(this._track, data);
     		}),
     		error: dojo.hitch(this, function(data) {
-    			this._search_dialog.hide();
+    			if (this._search_dialog)
+	  				this._search_dialog.hide();
 	  			coge.error('Search', data);
     		})
     	})
@@ -135,7 +137,8 @@ return declare( [ HTMLFeatures ], {
             url: url,
             handleAs: 'json',
             load: dojo.hitch(this, function(data) {
-                this._search_dialog.hide();
+                if (this._search_dialog)
+	  				this._search_dialog.hide();
                 if (data.error) {
                     coge.error('Search', data);
                     return;
@@ -147,7 +150,8 @@ return declare( [ HTMLFeatures ], {
                 coge.new_search_track(this._track, data);
             }),
             error: dojo.hitch(this, function(data) {
-                this._search_dialog.hide();
+                if (this._search_dialog)
+	  				this._search_dialog.hide();
                 coge.error('Search', data);
             })
         })

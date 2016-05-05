@@ -184,6 +184,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             onHide: function() {
             	this.destroyRecursive();
             	coge_xyplot._track_search_dialog = null;
+                coge_xyplot._hist_chr = null;
             },
             style: "width: 350px"
         });
@@ -503,18 +504,23 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             load: function(data) {
                 if (data.error) {
                     coge.error('Search', data);
-                    coge_xyplot._track_search_dialog.hide();
+                    if (coge_xyplot._track_search_dialog)
+                        coge_xyplot._track_search_dialog.hide();
                     return;
                 }
                 if (chr != coge_xyplot._hist_chr) {
-                    coge_xyplot._hist_chr = chr;
-                    dojo.empty(dojo.byId('coge-hist'));
-                    coge_xyplot._brush = chart(d3.select('#coge-hist'), data.first, data.gap, data.counts);
+                    var hist = dojo.byId('coge-hist');
+                    if (hist) {
+                        coge_xyplot._hist_chr = chr;
+                        dojo.empty(hist);
+                        coge_xyplot._brush = chart(d3.select('#coge-hist'), data.first, data.gap, data.counts);
+                    }
                 }
             },
             error: function(data) {
                 coge.error('Search', data);
-                coge_xyplot._track_search_dialog.hide();
+                if (coge_xyplot._track_search_dialog)
+                    coge_xyplot._track_search_dialog.hide();
             }
         });
     },
@@ -663,14 +669,16 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     		url: api_base_url + '/experiment/' + this._track.config.coge.id + '/query?' + coge.search_to_params(search),
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
- 				this._track_search_dialog.hide();
+                if (this._track_search_dialog)
+ 				    this._track_search_dialog.hide();
 	  			if (data.length == 0)
 	  				coge.error('Search', 'Search returned zero hits');
 	  			else
 	  				coge.new_search_track(this._track, data);
     		}),
     		error: dojo.hitch(this, function(data) {
-    			this._track_search_dialog.hide();
+    			if (this._track_search_dialog)
+                    this._track_search_dialog.hide();
     			coge.error('Search', data);
     		})
     	});
