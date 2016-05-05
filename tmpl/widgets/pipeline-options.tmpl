@@ -114,6 +114,34 @@
     </div>
 </script>
 
+<script id="metaplot-template" type="text/template">
+	<div id="metaplot">
+	    <div class="form-field">
+	        <label class="col-md-2">Metaplot:</label>
+	        <div class="form-group">
+		        <div class="form entry" title="Generate plot of average methylation across all genes.">
+		            <label>Enable</label>
+		            <input id="metaplot-enable" type="checkbox"/>
+		        </div>
+		        <div id="metaplot-options" class="hidden">
+			        <div class="form-entry" title="Distance outside of each gene (bp)">
+	                    <label>Outer distance</label>
+	                    <input id="metaplot-outer" type="number" value="2000"/>
+	                </div>
+	                <div class="form-entry" title="Distince inside of each gene (bp)">
+	                    <label>Inner distance</label>
+	                    <input id="metaplot-inner" type="number" value="5000"/>
+	                </div>
+	                <div class="form-entry" title="Window size (bp)">
+	                    <label>Window size</label>
+	                    <input id="metaplot-window" type="number" value="100"/>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+</script>
+
 <!-- SNP Analysis -->
 <script id="snp-template" type="text/template">
     <div class="form-section">
