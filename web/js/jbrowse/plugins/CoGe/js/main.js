@@ -237,7 +237,7 @@ return declare( JBrowsePlugin,
     	content += '</td></tr></table>';
     	content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_dialog.hide()">Cancel</button></div></div>';
         new Button({
-	        label: 'Search',
+	        label: 'Find Features',
 	        onClick: function(event) {
 	        	coge.search_dialog = new Dialog({
                     title: "Search",
@@ -375,20 +375,23 @@ return declare( JBrowsePlugin,
     		url: url,
     		handleAs: 'json',
 	  		load: function(data) {
+                coge.search_dialog.hide();
 	  			if (data.error) {
 	  				coge.error('Search', data);
 	  				return;
 	  			}
 	  			if (data.length == 0) {
 	  				coge.error('Search', 'no features found');
-	  				dojo.destroy(coge.search_dialog);
 	  				return;
 	  			}
-	  			dojo.query('.dijitDialogUnderlayWrapper')[0].style.display = 'none';
-  				var div = dojo.byId('coge-search-dialog');
-  				div.style.maxHeight = '500px';
-  				div.style.overflow = 'auto';
-    			dojo.empty(div);
+	  			//dojo.query('.dijitDialogUnderlayWrapper')[0].style.display = 'none';
+  				//var div = dojo.byId('coge-search-dialog');
+  				//div.style.maxHeight = '500px';
+  				//div.style.overflow = 'auto';
+    			//dojo.empty(div);
+                var div = dojo.byId('feature_hits')
+                dojo.create('div', { innerHTML: 'Features <span class="glyphicon glyphicon-remove" onclick="dojo.byId(\'feature_hits\').empty();dijit.byId(\'jbrowse\').resize()"></span>' }, div);
+                div = dojo.create('div', { 'class': 'feature_hits' }, div);
     			data.forEach(function(hit) {
     				dojo.create('a', {
     					innerHTML: hit.name,
@@ -399,6 +402,7 @@ return declare( JBrowsePlugin,
     				}, div);
     				dojo.create('br', null, div);
     			});
+                dijit.byId('jbrowse').resize();
     		},
     		error: function(data) {
     			coge.error('Search', data);
