@@ -189,10 +189,10 @@ sub to_annotations {
     my $md_array = shift; # array of metadata hash refs
     # [
     #    {
-    #       �type_group�: "string",
-    #       �type�: "string",
-    #       �text�: "string",
-    #       �link�: "string"
+    #       type_group: "string",
+    #       type: "string",
+    #       text: "string",
+    #       link: "string"
     #    }
     # ]
     # will be converted to
