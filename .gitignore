@@ -26,3 +26,4 @@ modules/perl
 /.ignorepath
 /.includepath
 bin/snp_search/snp_search
+bin/get_chr_start/get_chr_start

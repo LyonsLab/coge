@@ -5,11 +5,10 @@ use Mojo::JSON;
 
 use CoGeX;
 use CoGe::Accessory::histogram;
-use CoGe::Services::API::JBrowse::FeatureIndex;
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
 use CoGe::Core::Storage qw( get_experiment_path );
-use CoGeDBI qw( feature_type_names_to_id );
+use CoGeDBI qw( get_dataset_ids feature_type_names_to_id );
 use Data::Dumper;
 use File::Path;
 use File::Spec::Functions;
@@ -349,15 +348,10 @@ sub query_data {
     $self->render(json => $result);
 }
 
-sub snp_overlaps_feature {
-	my $loc = shift;
-	my $features = shift;
-	foreach my $feature (@$features) {
-		if ($loc >= $feature->[1] && $loc <= $feature->[2]) {
-			return 1;
-		}
-	}
-	return 0;
+sub get_start {
+    my $snp = shift;
+    my $s = index($snp, ',') + 1;
+    return int(substr($snp, $s, index($snp, ',', $s) - $s));
 }
 
 sub snps {
@@ -396,31 +390,52 @@ sub _snps {
 
         my $dbh = $db->storage->dbh;
 
-		my $type_ids;
-		if ($type_names ne 'all') {
-			$type_ids = feature_type_names_to_id($type_names, $dbh);
-		}
-	
-		my $type = (split ',', $type_ids)[0];
-		my $fi = CoGe::Services::API::JBrowse::FeatureIndex->new($experiments->[0]->genome_id, $type, $chr, $conf);
-		my $features = $fi->get_features($dbh);
-		my $hits = [];
-	    foreach my $snp (@$snps) {
-	    	my @tokens = split(',', $snp);
-	    	if (snp_overlaps_feature(0 + $tokens[1], $features)) {
-	    		push @$hits, $snp;
-	    	}
-	    }
+        my $query = 'SELECT start,stop';
+        $query .= ',chromosome' unless $chr;
+        $query .= ' FROM feature WHERE dataset_id';
+        my $ids = get_dataset_ids($experiments->[0]->genome_id, $dbh);
+        $query .= (scalar @$ids == 1) ? '=' . $ids->[0] : ' IN(' . join(',', @$ids) . ')';
+        $query .= " AND chromosome='" . $chr . "'" if $chr;
+        if ($type_names ne 'all') {
+            my $type_ids = feature_type_names_to_id($type_names, $dbh);
+            $query .= ' AND feature_type_id';
+            $query .= (index($type_ids, ',') == -1) ? '=' . $type_ids : ' IN(' . $type_ids . ')';
+        }
+        $query .= ' ORDER BY ';
+        $query .= 'chromosome,' unless $chr;
+        $query .= 'start,stop';
+        my $sth = $dbh->prepare($query);
+        $sth->execute();
+
+        my $hits = [];
+        my $row = $sth->fetchrow_arrayref;
+        my $snp_index = 0;
+        my $num_snps = scalar @$snps;
+        while ($row && $snp_index < $num_snps) {
+            my $snp_start = get_start($snps->[$snp_index]);
+            while ($row && $row->[1] < $snp_start) {
+                $row = $sth->fetchrow_arrayref;
+            }
+            last unless $row;
+            while ($snp_start < $row->[0] && $snp_index < $num_snps) {
+                $snp_index++;
+                last if $snp_index == $num_snps;
+                $snp_start = get_start($snps->[$snp_index]);
+            }
+            last if $snp_index == $num_snps;
+            push @$hits, $snps->[$snp_index] if $snp_start <= $row->[1];
+            $snp_index++;
+        }
 	    return $hits;
 	}
 	elsif ($self->param('snp_type')) {
         my $cmdpath = catfile(CoGe::Accessory::Web::get_defaults()->{BINDIR}, 'snp_search', 'snp_search');
         my $storage_path = get_experiment_path($eid);
         opendir(my $dh, $storage_path);
-        my @files = grep(/\.vcf$/,readdir($dh));
+        my @files = grep(/\.processed$/, readdir($dh));
+        @files = grep(/\.vcf$/, readdir($dh)) if (scalar @files) == 0;
         closedir $dh;
         my $cmd = "$cmdpath $storage_path/" . $files[0] . ' ' . $self->stash('chr') . ' "' . $self->param('snp_type') . '"';
-        warn $cmd;
         my @cmdOut = qx{$cmd};
 
         my $cmdStatus = $?;
