@@ -83,6 +83,51 @@
     line-height: 0
 }
 
+.bar rect {
+    /*fill: steelblue;*/
+    shape-rendering: crispEdges;
+}
+
+.bar text {
+    fill: #fff;
+    font: 8px sans-serif;
+}
+
+.axis path, .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+
 #right {
     margin-top: 0px;
     margin-bottom: 2px;
@@ -470,7 +515,8 @@ $(function() {
 <script type="text/javascript" src="js/syn3d/threex.domevent.js"></script>
 <script type="text/javascript" src="js/syn3d/modified_FlatOrbitControls.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-<script type="text/javascript" src="js/plotly-latest.min.js"></script>
+<script type="text/javascript" src="js/d3-tip-0.6.3.js"></script>
+<!--<script type="text/javascript" src="js/plotly-latest.min.js"></script>-->
 
 <!-- CoGe Utilities -->
 <script type="text/javascript" src="js/coge/utils.js"></script>
@@ -479,5 +525,7 @@ $(function() {
 <script type="text/javascript" src="js/coge/wizard.js"></script>
 <script type="text/javascript" src="js/coge/file-select.js"></script>
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
+
+
 
 </TMPL_IF> <!-- MAIN -->

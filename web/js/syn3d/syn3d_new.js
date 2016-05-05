@@ -5,6 +5,7 @@
 console.log("Syn3D_New Loaded!");
 
 var camView = { "x": 0, "y": 0, "z": 80 };
+var histData = {"kn": [], "ks": [], "knks": []};
 var pointData = [];
 
 /* CORE FUNCTION: Load Data */
@@ -16,8 +17,93 @@ function loadData(graph_json) {
     }
 
     return $.when( getData() ).then(function() {
+        console.log(graphObj);
         return graphObj;
     });
+}
+
+/* CORE FUNCTION: Render Histograms */
+function renderHistogram(element_id, values) {
+    /* RESOURCES
+        Basic Mouseover: http://bl.ocks.org/phil-pedruco/9032348
+        Tooltip Mouseover: http://bl.ocks.org/Caged/6476579
+     */
+    // A formatter for counts.
+    var formatCount = d3.format(",.0f");
+    var binCount = 100;
+
+    //var w = document.getElementById(element_id).clientWidth;
+    var margin = {top: 10, right: 30, bottom: 30, left: 30},
+        width = document.getElementById(element_id).clientWidth - margin.left - margin.right,
+        height = document.getElementById(element_id).clientWidth - margin.bottom - margin.top;
+
+    var minVal = Math.min.apply(null, values);
+    var maxVal = Math.max.apply(null, values);
+    var x = d3.scale.linear()
+        .domain([minVal, maxVal])
+        .range([0, width]);
+
+    // Generate histogram bins.
+    var data = d3.layout.histogram()
+        .bins(x.ticks(binCount))
+        (values);
+    //console.log(data);
+
+    var y = d3.scale.linear()
+        .domain([0, d3.max(data, function(d) { return d.y; })])
+        .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+    var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([-10, 0])
+        .html(function(d) {
+            return "<strong>Frequency:</strong> <span style='color:red'>" + d + "</span>";
+        });
+
+    var svg = d3.select('#' + element_id).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.call(tip);
+
+    var bar = svg.selectAll(".bar")
+        .data(data)
+        .enter().append("g")
+        .attr("class", "bar")
+        .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+    bar.append("rect")
+        .attr("x", 1)
+        .attr("width", width/binCount)
+        .attr("height", function(d) { return height - y(d.y); })
+        .attr("fill", "steelblue")
+        .on("mouseover", function() {
+            d3.select(this).attr("fill", "red");
+            tip.show();
+        })
+        .on("mouseout", function() {
+            d3.select(this).attr("fill", "steelblue");
+            tip.hide();
+        });
+
+
+    // bar.append("text")
+    //     .attr("dy", ".75em")
+    //     .attr("y", 6)
+    //     .attr("x", width/binCount/2)
+    //     .attr("text-anchor", "middle")
+    //     .text(function(d) { return formatCount(d.y); });
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
 }
 
 /* CORE FUNCTION: Render SynMap */
@@ -215,8 +301,25 @@ function renderSynMap(graph_object, element_id) {
             pointData.push(i);
             ptCount += 1;
 
+            // Get Substitution Data
+            // NOTE: CURRENTLY IMPLEMENTED FOR XY
+            var kn = points[i][6];
+            var ks = points[i][7];
+            var knks = Math.log10(Math.pow(10, kn) / Math.pow(10, ks));
+            
+            if (!isNaN(kn)) {
+                histData.kn.push(kn);
+            }
+            if (!isNaN(ks)) {
+                histData.ks.push(ks);
+            }
+            if (!isNaN(knks)) {
+                histData.knks.push(knks);
+            }
+
             // TODO: Assign Color
             colors[ptCount] = new THREE.Color("#33cc33");
+
         }
 
         // OLD CODE!
@@ -466,8 +569,9 @@ function renderSynMap(graph_object, element_id) {
         containerWidth = container.clientWidth;
         containerHeight = container.clientHeight;
 
-        renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
-            histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
+        // TODO: Rerender Histograms on page resize
+        //renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
+        //    histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
     }
     window.addEventListener( 'resize', onWindowResize, false );
 
@@ -567,5 +671,9 @@ $(document).ready( function() {
         renderSynMap(data, "canvas");
         // Render Histograms
         // TODO
+        var testValues = d3.range(1000).map(d3.random.bates(10));
+        renderHistogram("hKs", histData.ks);
+        renderHistogram("hKn", histData.kn);
+        renderHistogram("hKnKs", histData.knks);
     });
 });
