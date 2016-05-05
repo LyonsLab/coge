@@ -432,7 +432,8 @@ sub _snps {
         my $cmdpath = catfile(CoGe::Accessory::Web::get_defaults()->{BINDIR}, 'snp_search', 'snp_search');
         my $storage_path = get_experiment_path($eid);
         opendir(my $dh, $storage_path);
-        my @files = grep(/\.vcf$/,readdir($dh));
+        my @files = grep(/\.processed$/, readdir($dh));
+        @files = grep(/\.vcf$/, readdir($dh)) if (scalar @files) == 0;
         closedir $dh;
         my $cmd = "$cmdpath $storage_path/" . $files[0] . ' ' . $self->stash('chr') . ' "' . $self->param('snp_type') . '"';
         my @cmdOut = qx{$cmd};
