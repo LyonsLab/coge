@@ -5,6 +5,7 @@ use warnings;
 
 use File::Path qw(mkpath);
 use Getopt::Long qw(GetOptions);
+use Data::Dumper;
 
 use CoGe::Accessory::Utils qw(to_pathname);
 use CoGe::Accessory::Web qw(get_defaults);
@@ -47,9 +48,12 @@ die "ERROR: user could not be found for id: $userid" unless $user;
 # Get items to add to the notebook
 my $results = get_workflow_results($user->name, $wid);
 exit unless $results;
+#print STDERR Dumper $results, "\n";
 
 # Add annotations to workflow results (genomes, experiments, notebooks)
 foreach my $result (@$results) {
+    next unless ($result->{id} && $result->{type} 
+        && ($result->{type} eq 'genome' || $result->{type} eq 'experiment' || $result->{type} eq 'notebook' ));
     CoGe::Core::Metadata::create_annotations(
         db => $db, 
         target_id => $result->{id}, 
