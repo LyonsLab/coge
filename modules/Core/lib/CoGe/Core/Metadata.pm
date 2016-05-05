@@ -5,6 +5,8 @@ use strict;
 use warnings;
 
 use File::Basename;
+use File::Slurp;
+use Data::Dumper;
 
 use CoGeX;
 
@@ -14,8 +16,8 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotations export_annotations 
-                  to_annotations tags_to_string );
+    @EXPORT = qw( create_annotations export_annotations to_annotations 
+                  tags_to_string create_image );
 }
 
 sub create_annotations {
@@ -23,20 +25,32 @@ sub create_annotations {
     my $db = $opts{db};
     my $target = $opts{target};           # experiment, genome, or list object
     my ($target_id, $target_type) = ($opts{target_id}, $opts{target_type}); # or an experiment/genome/list id and type
-    my $annotations = $opts{annotations}; # semicolon-separated list of annotations (link:group:type:text;...)
+    my $annotations = $opts{annotations}; # semicolon-separated list of annotations (image_file|link|group|type|text;[...])
     my $locked = $opts{locked};           # boolean flag to indicate locked (not editable) annotations
 
     my @result = ();
     foreach ( split(/\s*;\s*/, $annotations) ) {
         my @tok = split(/\s*\|\s*/, $_);
-        my ($link, $group_name, $type_name, $anno_text);
-        $link  = shift @tok if (@tok == 4);
+        my ($image_file, $link, $group_name, $type_name, $anno_text);
+        $image_file = shift @tok if (@tok == 5);
+        $link       = shift @tok if (@tok == 4);
         $group_name = shift @tok if (@tok == 3);
         $type_name  = shift @tok if (@tok == 2);
         $anno_text  = shift @tok if (@tok == 1);
         unless ($anno_text and $type_name) {
-            print STDERR "missing required annotation type and text fields\n";
+            print STDERR "CoGe::Core::Metadata: missing required annotation type and text fields\n";
+            print STDERR Dumper [ $image_file, $link, $group_name, $type_name, $anno_text ], "\n";
             return;
+        }
+        
+        my $image_id;
+        if ($image_file) {
+            my $image = create_image(filename => $image_file, db => $db);
+            unless($image) {
+                print STDERR "CoGe::Core::Metadata: error creating image\n";
+                return;
+            }
+            $image_id = $image->id;
         }
 
         # Create type group - first try to find a match by name only
@@ -47,7 +61,7 @@ sub create_annotations {
                 $group = $db->resultset('AnnotationTypeGroup')->create({ name => $group }); # null description
             }
             unless ($group) {
-                print STDERR "error creating annotation type group\n";
+                print STDERR "CoGe::Core::Metadata: error creating annotation type group\n";
                 return;
             }
         }
@@ -64,7 +78,7 @@ sub create_annotations {
             }); # null description
         }
         unless ($type) {
-            print STDERR "error creating annotation type\n";
+            print STDERR "CoGe::Core::Metadata: error creating annotation type\n";
             return;
         }
 
@@ -89,6 +103,7 @@ sub create_annotations {
                     annotation_type_id => ($type ? $type->id : undef),
                     annotation => $anno_text,
                     link => $link,
+                    image_id => $image_id,
                     locked => $locked
                 }); # null description
             }
@@ -98,6 +113,7 @@ sub create_annotations {
                     annotation_type_id => ($type ? $type->id : undef),
                     annotation => $anno_text,
                     link => $link,
+                    image_id => $image_id,
                     locked => $locked
                 }); # null description
             }
@@ -107,21 +123,22 @@ sub create_annotations {
                     annotation_type_id => ($type ? $type->id : undef),
                     annotation => $anno_text,
                     link => $link,
+                    image_id => $image_id,
                     locked => $locked
                 }); # null description
             }
             else {
-                print STDERR "unknown target type\n";
+                print STDERR "CoGe::Core::Metadata: unknown target type\n";
                 return;
             }
         }
         else {
-            print STDERR "target not found\n";
+            print STDERR "CoGe::Core::Metadata: target not found\n";
             return;
         }
         
         unless ($anno) {
-            print STDERR "error creating annotation\n";
+            print STDERR "CoGe::Core::Metadata: error creating annotation\n";
             return;
         }
 
@@ -222,6 +239,33 @@ sub tags_to_string {
     }
     
     return $tags_str;
+}
+
+sub create_image { # mdb: don't have a better place for this atm
+    my %opts = @_;
+    my $fh = $opts{fh};
+    my $filename = $opts{filename};
+    my $db = $opts{db};
+    return unless (($fh || $filename) && $db);
+    
+    unless (defined $fh) {
+        unless (open($fh, $filename)) {
+            print STDERR "Storage::create_image: ERROR, couldn't open file '$filename'\n";
+            return;
+        }
+    }
+    
+    my $contents = read_file($fh, binmode => ':raw');
+    unless ($contents) {
+        print STDERR "Storage::create_image: ERROR, couldn't read file '$filename'\n";
+        return;
+    }
+    
+    my $image = $db->resultset('Image')->create({
+        filename => $filename,
+        image    => $contents
+    });
+    return unless $image;
 }
 
 1;
