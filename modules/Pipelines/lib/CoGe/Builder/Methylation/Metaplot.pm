@@ -5,11 +5,10 @@ use strict;
 use warnings;
 
 use Data::Dumper qw(Dumper);
-use File::Basename qw(basename);
-use File::Spec::Functions qw(catdir catfile);
+use File::Spec::Functions qw(catfile);
 use CoGe::Accessory::Web qw(get_defaults);
 use CoGe::Core::Storage qw(get_workflow_paths);
-use CoGe::Builder::CommonTasks qw(create_gff_generation_job);
+use CoGe::Builder::CommonTasks qw(create_gff_generation_job add_metadata_to_results_job);
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
 
@@ -31,14 +30,10 @@ sub build {
 #    my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
     my $methylation_params = $opts->{methylation_params};
+    my $metaplot_params = $methylation_params->{metaplot};
 
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
-
-    # Set metadata for the pipeline being used
-#    my $annotations = generate_additional_metadata($read_params, $methylation_params);
-#    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
-#    push @$annotations, @annotations2;
 
     # Make sure genome is annotated as is required by metaplot script
     my $isAnnotated = $genome->has_gene_features;
@@ -61,13 +56,25 @@ sub build {
     my $metaplot_task = create_metaplot_job(
         bam_file => $bam_file,
         gff_file => $gff_file,
-        outside => 2000,
-        inside => 5000,
-        window_size => 100,
+        outer => $metaplot_params->{outer},
+        inner => $metaplot_params->{inner},
+        window_size => $metaplot_params->{window},
+        feat_type => 'gene',
         staging_dir => $staging_dir
     );
     push @done_files, @{$metaplot_task->{outputs}};
     push @tasks, $metaplot_task;
+    
+    # Add metadata
+    my $annotations = generate_additional_metadata($metaplot_params, $metaplot_task->{outputs}[1]);
+    my $metadata_task = add_metadata_to_results_job(
+        user => $user,
+        wid => $wid,
+        annotations => $annotations,
+        staging_dir => $staging_dir,
+        done_files => \@done_files
+    );
+    push @tasks, $metadata_task;
 
     return {
         tasks => \@tasks,
@@ -75,28 +82,42 @@ sub build {
     };
 }
 
+sub generate_additional_metadata {
+    my $metaplot_params = shift;
+    my $metaplot_image_path = shift;
+    
+    my @annotations;
+    push @annotations, "$metaplot_image_path|||metaplot|" . join(' ', map { $_.' '.$metaplot_params->{$_} } ('outer', 'inner', 'window'));
+    
+    return \@annotations;
+}
+
 sub create_metaplot_job {
     my %opts = @_;
     my $bam_file    = $opts{bam_file};
     my $gff_file    = $opts{gff_file};
-    my $outside     = $opts{outside};
-    my $inside      = $opts{inside};
-    my $window_size = $opts{window_size};
+    my $outer       = $opts{outer} // 2000;
+    my $inner       = $opts{inner} // 5000;
+    my $window_size = $opts{window} // 100;
+    my $feat_type   = $opts{feat_type};
     my $staging_dir = $opts{staging_dir};
 
     my $cmd = catfile($CONF->{SCRIPTDIR}, 'methylation', 'makeMetaplot.pl');
+    my $output_name = 'metaplot';
 
     return {
         cmd => $cmd,
         script => undef,
         args => [
-            ['-o', 'metaplot', 0],
+            ['-o', $output_name, 0],
             ['-gff', $gff_file, 0],
-            ['-outside', $outside, 0],
-            ['-inside', $inside, 0],
+            ['-outside', $outer, 0],
+            ['-inside', $inner, 0],
             ['-w', $window_size, 0],
             ['-outRange', '', 0],
-            ['', $bam_file, 0]
+            ['-featType', $feat_type, 0],
+            ['-quiet', '', 0], # disable frequent printing of feature ID
+            ['-bam', $bam_file, 0]
         ],
         inputs => [
             $bam_file,
@@ -104,8 +125,8 @@ sub create_metaplot_job {
             $gff_file
         ],
         outputs => [
-            catfile($staging_dir, 'metaplot.tab'),
-            catfile($staging_dir, 'metaplot.pdf')
+            catfile($staging_dir, "$output_name.tab"),
+            catfile($staging_dir, "$output_name.png")
         ],
         description => "Generating metaplot..."
     };
