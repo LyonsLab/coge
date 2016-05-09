@@ -390,7 +390,7 @@ return declare( JBrowsePlugin,
   				//div.style.overflow = 'auto';
     			//dojo.empty(div);
                 var div = dojo.byId('feature_hits')
-                dojo.create('div', { innerHTML: 'Features <span class="glyphicon glyphicon-remove" onclick="dojo.byId(\'feature_hits\').empty();dijit.byId(\'jbrowse\').resize()"></span>' }, div);
+                dojo.create('div', { innerHTML: 'Features <span class="glyphicon glyphicon-remove" onclick="dojo.empty(\'feature_hits\');dijit.byId(\'jbrowse\').resize()"></span>' }, div);
                 div = dojo.create('div', { 'class': 'feature_hits' }, div);
     			data.forEach(function(hit) {
     				dojo.create('a', {
