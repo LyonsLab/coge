@@ -151,6 +151,12 @@ foreach my $file (@files) {
         execute( $GUNZIP . ' -c ' . $file . '.gz' . ' > ' . $file ); # mdb added 7/31/14 issue 438
     }
 
+    # Ensure non-zero-length file
+    unless ( -s $file > 0 ) {
+        print STDOUT "log: error: '$filename' is zero-length\n";
+        exit(-1);
+    }
+
     # Ensure text file
     if ( -B $file ) {
         print STDOUT "log: error: '$filename' is a binary file\n";

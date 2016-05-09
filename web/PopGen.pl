@@ -83,10 +83,12 @@ sub gen_html {
 }
 
 sub gen_body {
+    my $eid = $FORM->Vars->{'eid'};
     if (!$FORM->Vars->{'eid'}) {
         return 'eid url parameter not set';
     }
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    $template->param( EID => $eid );
     return $template->output;
 }
 

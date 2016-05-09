@@ -4,6 +4,15 @@
 # Author:	Matt Bomhoff
 # Created:	9/21/15
 #-------------------------------------------------------------------------------
+# Installing Tabix:
+#    git clone git@github.com:samtools/tabix.git
+#    cd tabix
+#    make
+#    sudo cp bgzip tabix /usr/local/bin
+#    cd perl
+#    perl Makefile.PL lib=/usr/local/lib/perl/5.18.2/
+#    sudo make install
+#-------------------------------------------------------------------------------
 
 use warnings;
 use strict;
@@ -14,6 +23,7 @@ use File::Spec::Functions qw(catdir catfile);
 use File::Touch;
 use CoGe::Algos::PopGen::Diversity;
 use CoGe::Algos::PopGen::FileFormats;
+use lib '/usr/local/lib/perl/5.18.2/x86_64-linux-gnu-thread-multi'; # mdb added 5/4/16 to get Tabix.pm working on PROD
 use Tabix;
 
 my ($VCF_FILE, $GFF_FILE, $FASTA_FILE, $CHR, $GENE_NAME, $FEAT_TYPE, 
