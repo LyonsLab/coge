@@ -15,10 +15,10 @@
 	content: "\e134";
 }
 </style>
-<script type="text/javascript" src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script>
-<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/buttons.colVis.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script> <!-- FIXME cdn -->
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script> <!-- FIXME cdn -->
+<script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/buttons.colVis.min.js"></script> <!-- FIXME cdn -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script> <!-- FIXME cdn -->
 <script src="/js/vendor/chosen/chosen.jquery.min.js"></script>
 <script>
 var columns = {};
@@ -29,6 +29,7 @@ var max_chromosomes;
 var num_chromosomes;
 var offset = 0;
 var page_size = 0;
+
 function build_select(s, obj, first) {
 	s.empty();
 	var keys = [];
@@ -42,13 +43,15 @@ function build_select(s, obj, first) {
 	s.trigger('chosen:updated');
 	s.next().css('width','auto');
 }
+
 function chromosome_changed() {
 	$('#busy').show();
 	dt.clear();
 	dt.destroy();
-	$('#main').empty();
+	$('#table').empty();
 	setTimeout(set_data,10);
 }
+
 function do_export() {
 	var url = '?eid=';
 	url += get_param('eid');
@@ -79,6 +82,7 @@ function do_export() {
 		$('#export_dialog').dialog('close');
 	}
 }
+
 function do_plot() {
 	var cols = $('#plot_columns option:selected');
 	var p = $('#plot');
@@ -127,6 +131,7 @@ function do_plot() {
     }
 	$('#plot_busy').hide();
 }
+
 function export_dialog() {
 	var d = $('#export_columns');
 	d.empty();
@@ -143,6 +148,7 @@ function export_dialog() {
 		resizable: false
 	});
 }
+
 function get_chromosomes() {
 	var obj = data[$('#types option:selected').text()];
 	var keys = [];
@@ -151,6 +157,7 @@ function get_chromosomes() {
 	keys.sort(natural_sort);
 	return keys;
 }
+
 function get_param(name) {
     var search = decodeURIComponent(window.location.search.substring(1));
     var nvp = search.split('&');
@@ -158,6 +165,7 @@ function get_param(name) {
     	if (nvp[i].substring(0, name.length) == name)
     		return nvp[i].substring(name.length + 1);
 };
+
 function get_plot_data(chromosome, index) {
 	var a = [];
 	var type = $('#types option:selected').text();
@@ -178,6 +186,7 @@ function get_plot_data(chromosome, index) {
 	a.sort(function(a,b){return a[0]-b[0];});
 	return a;
 }
+
 function natural_sort(a, b) {
     var re = /(^([+\-]?(?:\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?)?$|^0x[\da-fA-F]+$|\d+)/g,
         sre = /^\s+|\s+$/g,   // trim pre-post whitespace
@@ -223,6 +232,7 @@ function natural_sort(a, b) {
     }
     return 0;
 }
+
 function parse_data(d) {
 	data = {};
 	lengths = {};
@@ -244,15 +254,21 @@ function parse_data(d) {
 				data[type][chromosome] = [];
 				lengths[chromosome] = tokens[1];
 			}
-		} else
-			data[type][chromosome].push(tokens);
+		} else {
+			if (type)
+				data[type][chromosome].push(tokens);
+		}
 		start = i + 1;
 		i = d.indexOf('\n', start);
 	}
 	build_select($('#types'), data);
 	set_chromosomes();
-	set_data();
+	if (data.length > 0)
+		set_data();
+	else
+		no_data();
 }
+
 function plot(chromosome, cols, e, w, h) {
     var series = [];
     for (var i=0; i<cols.length; i++) {
@@ -274,6 +290,7 @@ function plot(chromosome, cols, e, w, h) {
 		layout.height = h;
     Plotly.newPlot(e, series, layout, { displayModeBar: false });
 }
+
 function plot_dialog() {
 	offset = 0;
 	$('#arrows').css('display', 'none');
@@ -302,6 +319,7 @@ function plot_dialog() {
 		width:$(window).width() - 30
 	});
 }
+
 function ready() {
 	$('#types').chosen({disable_search_threshold: 10});
 	$('#chromosomes').chosen();
@@ -314,9 +332,11 @@ function ready() {
 		success: parse_data
 	});
 }
+
 function set_chromosomes() {
 	build_select($('#chromosomes'), data[$('#types option:selected').text()], 'All chromosomes');
 }
+
 function set_data() {
 	var type = $('#types option:selected').text();
 	var chromosome = $('#chromosomes option:selected').text();
@@ -334,49 +354,67 @@ function set_data() {
 	var c = [];
 	for (var i=0; i<columns[type].length; i++)
 		c.push({'title': columns[type][i]});
-	dt = $('#main').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:d,scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
+	dt = $('#table').DataTable({buttons:[{extend:'colvis',text:'columns'}],columns:c,data:d,scrollX:true,lengthChange:false,order:[],ordering:false,pageLength:500,searching:false});
 	dt.buttons().container().appendTo($('#colvis'));
 	$('#busy').hide();
+	$('#results').fadeIn();
 }
+
+function no_data() {
+	$('#busy').hide();
+	$('#noresults').fadeIn();
+}
+
 function size_sort(a, b) {
 	return lengths[b] - lengths[a];
 }
+
 $(document).ready(ready);
 </script>
-<div id="busy" class="spinner" style="display:block;text-align:center;"></div>
-<div style="margin-left:14px;margin-top:20px;">View:
-<select id="types" onchange="set_chromosomes();chromosome_changed();"></select>
-<select id="chromosomes" onchange="chromosome_changed();"></select>
-<div id="colvis" style="display:inline-block;vertical-align:middle;"></div>
-    <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
-    <span onclick="plot_dialog();" class="ui-button ui-corner-all coge-button">Plot...</span>
-</div>
-<style>
-    th { text-align: left; }
-    a.dt-button { padding: 5px 1em !important; }
-    div.dt-button-collection { width: auto !important; }
-</style>
-<table id="main" class="compact display" style="margin:initial;">
-	<tbody></tbody>
-</table>
-<div style="height:75px"></div>
-<div id="export_dialog" class="dialog_box hidden" title="Export">
-Select columns to export
-<div id="export_columns">
-</div>
-<span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
-</div>
-<div id="plot_dialog" class="dialog_box hidden" title="Plot" style="display:none">
-<div style="height:100%;display:flex;flex-flow:column;">
-	<div style="flex: 0 1 auto;">
-		<select id="plot_columns" multiple onchange="$('#plot_busy').show();setTimeout(do_plot, 10)" style="width:100%;"></select>
-		<div id="plot_busy" class="spinner" style="display:none;text-align:center;"></div>
+
+<div id="busy" class="spinner" style="display:block;text-align:center;margin-top:20%;"></div>
+
+<div id="results" class="hidden" style="margin-left:14px;margin-top:20px;">
+	<div>
+	    View:
+		<select id="types" onchange="set_chromosomes();chromosome_changed();"></select>
+		<select id="chromosomes" onchange="chromosome_changed();"></select>
+		<div id="colvis" style="display:inline-block;vertical-align:middle;"></div>
+		    <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
+		    <span onclick="plot_dialog();" class="ui-button ui-corner-all coge-button">Plot...</span>
+		</div>
 	</div>
-	<div id="plot" style="flex: 1 1 auto;"></div>
-	<div id="arrows" style="flex: 0 1 auto;">
-		<span id="up" class="glyphicon glyphicons-circle-arrow-top" onclick="if(offset!=0){$('#plot_busy').show();offset-=page_size;setTimeout(do_plot, 10);}"></span>
-		<span id="down" class="glyphicon glyphicons-circle-arrow-down" onclick="if(num_chromosomes-offset>max_chromosomes){$('#plot_busy').show();offset+=page_size;setTimeout(do_plot, 10);}"></span>
-		view <select id="page_size" onchange="page_size=parseInt(this.options[this.selectedIndex].text);offset=0;$('#plot_busy').show();setTimeout(do_plot, 10);"><option>1</option><option>4</option><option>9</option><option>16</option></select> chromosomes at a time
+	<style>
+	    th { text-align: left; }
+	    a.dt-button { padding: 5px 1em !important; }
+	    div.dt-button-collection { width: auto !important; }
+	</style>
+	<table id="table" class="compact display" style="margin:initial;">
+		<tbody></tbody>
+	</table>
+	<div style="height:75px"></div>
+	<div id="export_dialog" class="dialog_box hidden" title="Export">
+		Select columns to export
+		<div id="export_columns">
+		</div>
+		<span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
+		</div>
+	<div id="plot_dialog" class="dialog_box hidden" title="Plot" style="display:none">
+	<div style="height:100%;display:flex;flex-flow:column;">
+		<div style="flex: 0 1 auto;">
+			<select id="plot_columns" multiple onchange="$('#plot_busy').show();setTimeout(do_plot, 10)" style="width:100%;"></select>
+			<div id="plot_busy" class="spinner" style="display:none;text-align:center;"></div>
+		</div>
+		<div id="plot" style="flex: 1 1 auto;"></div>
+		<div id="arrows" style="flex: 0 1 auto;">
+			<span id="up" class="glyphicon glyphicons-circle-arrow-top" onclick="if(offset!=0){$('#plot_busy').show();offset-=page_size;setTimeout(do_plot, 10);}"></span>
+			<span id="down" class="glyphicon glyphicons-circle-arrow-down" onclick="if(num_chromosomes-offset>max_chromosomes){$('#plot_busy').show();offset+=page_size;setTimeout(do_plot, 10);}"></span>
+			view <select id="page_size" onchange="page_size=parseInt(this.options[this.selectedIndex].text);offset=0;$('#plot_busy').show();setTimeout(do_plot, 10);"><option>1</option><option>4</option><option>9</option><option>16</option></select> chromosomes at a time
+		</div>
 	</div>
 </div>
+
+<div id="noresults" class="hidden large info" style="text-align:center;margin-top:20%;">
+	No results to display.<br><br>
+	Please check that the GVCF file loaded as <a href="ExperimentView.pl?eid=<TMPL_VAR NAME=EID>">Experiment #<TMPL_VAR NAME=EID></a> conforms to the format described <a href="https://genomevolution.org/wiki/index.php/Popgen">here</a>.
 </div>
