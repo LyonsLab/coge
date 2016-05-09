@@ -74,6 +74,10 @@ a:hover {
   font-size: 0.875em; /* 14/16 = 0.875 */
 }
 
+.coge-underline {
+    text-decoration: underline;
+}
+
 .coge-bg { 
     background: #f5f5f5;
 }
