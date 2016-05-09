@@ -88,7 +88,7 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
 	        # Convert SAMTools output into JSON
 	        foreach (@$pData) {
 	        	chomp;
-	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
+	        	my (undef, undef, undef, $pos, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
 
 	        	my $len = length($seq);
 	        	my $s = $pos;
@@ -244,6 +244,20 @@ sub data {
             $self->write("\t\t");
             $self->write(substr($l[8], $s, -1));
             $self->write("\t\n");
+        }
+    }
+    elsif ( $exp_data_type == $DATA_TYPE_ALIGN) {
+        my $type_names = $self->param('features');
+        if ($type_names) {
+            $self->write('# search: Alignments in ');
+            $self->write($type_names);
+            $self->write("\n");
+        }
+        my $type = $self->param('type');
+        if ($type) {
+            $self->write('# search: ');
+            $self->write($type);
+            $self->write("\n");
         }
     }
     elsif ( $exp_data_type == $DATA_TYPE_MARKER) {
@@ -449,6 +463,33 @@ sub find_overlaping {
     return $hits;
 }
 
+sub alignments {
+    my $self = shift;
+    my $results = $self->_alignments;
+    if ($results) {
+        $self->render(json => $results);
+    }
+}
+
+sub _alignments {
+    my $self = shift;
+    my $eid = $self->stash('eid');
+    my $chr = $self->stash('chr');
+    $chr = undef if $chr eq 'Any';
+
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    my $experiments = _get_experiments($db, $user, $eid);
+    if (scalar @{$experiments} == 0) {
+        $self->render(json => { error => 'User does not have permission to view this experiment' });
+        return undef;
+    }
+
+    my $type_names = $self->param('features');
+    return find_overlaping($experiments, $type_names, $chr, $db);
+}
+
 sub markers {
     my $self = shift;
     my $results = $self->_markers;
@@ -640,7 +681,7 @@ sub features {
                 my %bins;
                 foreach (@$pData) {
                     chomp;
-                    my (undef, undef, undef, $pos, $mapq, undef, undef, undef, undef, $seq) = split(/\t/);
+                    my (undef, undef, undef, $pos, undef, undef, undef, undef, undef, $seq) = split(/\t/);
                     for (my $i = $pos; $i < $pos+length($seq); $i++) {
                         $bins{$i}++;
                     }
@@ -663,8 +704,8 @@ sub features {
                     }
                     $lastCount = $count;
                     $stop = $pos;
-               }
-               if (defined $start and $start != $stop) { # do last interval
+                }
+                if (defined $start and $start != $stop) { # do last interval
                     $stop++;
                     push(@results, { 
                         "id"    => $eid, 
@@ -677,7 +718,7 @@ sub features {
 	        else { # else return list reads with qual and seq
     	        foreach (@$pData) {
     	        	chomp;
-    	        	my ($qname, $flag, $rname, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, $tags) = split(/\t/);
+    	        	my ($qname, $flag, undef, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, undef) = split(/\t/);
 
     	        	my $len = length($seq);
     	        	my $start = $pos;

@@ -298,6 +298,10 @@ $r->get("/jbrowse/experiment/:eid/query/" => [eid => qr/\d+/])
     ->name("jbrowse-experiment-query")
     ->to("experiment#query_data", eid => undef);
 
+$r->get("/jbrowse/experiment/:eid/alignments/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-alignments")
+    ->to("experiment#alignments", eid => undef, chr => undef);
+
 $r->get("/jbrowse/experiment/:eid/markers/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-markers")
     ->to("experiment#markers", eid => undef, chr => undef);

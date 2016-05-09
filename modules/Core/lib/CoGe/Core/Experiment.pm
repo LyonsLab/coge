@@ -229,6 +229,32 @@ sub query_data {
     my $order_by = $opts{order_by} || 'chr,start';
     my $type = $opts{type};
 
+    # alignment data
+    if ($data_type == 3) {
+        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
+        my $storage_path = get_experiment_path($eid);
+        my $cmd = "$cmdpath view $storage_path/alignment.bam";
+        $cmd .= ' ' . $chr if $chr;
+        $cmd .= ' 2>&1';
+        my @cmdOut = qx{$cmd};
+        my $cmdStatus = $?;
+        if ( $? != 0 ) {
+            warn "CoGe::Core::Experiment::query_data: error $? executing command: $cmd";
+            return;
+        }
+        # Return if error message detected (starts with '[')
+        map { return if (/^\[/) } @cmdOut;
+
+        my @results;
+        foreach (@$pData) {
+            chomp;
+            my (undef, $flag, $chr, $start, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
+            my $strand = ($flag & 0x10 ? '-1' : '1');
+            push @results, '"' . $chr . '",' . $start . ',' . ($start + length($seq)) . ',' . $strand;
+        }
+        return \@results;
+    }
+
 	my $where = '0.0=0.0';
 	$where .= " and chr='$chr'" if $chr;
 	my $value1;
