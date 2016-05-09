@@ -176,7 +176,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	content += '</td></tr>' +
     		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
     		'<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
-    		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: <span id="selected_range">&nbsp;</span></td></tr>' +
+    		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: from <input id="hist_from" size="4" onfocus="dojo.byId(\'range\').checked=true;" /> to <input id="hist_to" size="4" onfocus="dojo.byId(\'range\').checked=true;" /></td></tr>' +
     		'<tr><td></td><td><div id="coge-hist"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
     	this._track_search_dialog = new Dialog({
             title: 'Search Track',
@@ -646,17 +646,19 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     	else if (dojo.byId('min').checked)
     		search.type = 'min';
     	else {
-    		if (this._brush.empty()) {
-    			coge.error('Unspecified Range', 'Please drag on the histogram to select the range of values you wish to search for');
+            search.type = 'range';
+            search.gte = dojo.byId('hist_from').value;
+            search.lte = dojo.byId('hist_to').value;
+    		if (!search.gte && !search.lte) {
+    			coge.error('Unspecified Range', 'Please drag on the histogram or enter the range of values you wish to search for');
     			return;
     		}
-    		search.type = 'range';
-    		var extent = this._brush.extent();
-    		var domain = this._brush.x().domain();
-    		if (extent[0] != domain[0])
-    			search.gte = extent[0];
-    		if (extent[1] != domain[1])
-    			search.lte = extent[1];
+    		// var extent = this._brush.extent();
+    		// var domain = this._brush.x().domain();
+    		// if (extent[0] != domain[0])
+    		// 	search.gte = extent[0];
+    		// if (extent[1] != domain[1])
+    		// 	search.lte = extent[1];
     	}
     	var ref_seq = dojo.byId('coge_ref_seq');
     	if (ref_seq.selectedIndex > 0)
@@ -1009,14 +1011,11 @@ function chart(div, first, gap, counts) {
     brush.on("brush.chart", function() {
     	var g = d3.select(this.parentNode),
           	extent = brush.extent();
-//      if (round) g.select(".brush")
-//          .call(brush.extent(extent = extent.map(round)))
-//        .selectAll(".resize")
-//          .style("display", null);
     	g.select("#clip rect")
           	.attr("x", x(extent[0]))
           	.attr("width", x(extent[1]) - x(extent[0]));
-    	dojo.byId('selected_range').innerHTML = parseFloat(Math.round(extent[0] * 100) / 100).toFixed(2) + ' .. ' + parseFloat(Math.round(extent[1] * 100) / 100).toFixed(2);
+    	dojo.byId('hist_from').value = parseFloat(Math.round(extent[0] * 100) / 100).toFixed(2);
+        dojo.byId('hist_to').value = parseFloat(Math.round(extent[1] * 100) / 100).toFixed(2);
     });
 
     brush.on("brushend.chart", function() {
@@ -1024,7 +1023,8 @@ function chart(div, first, gap, counts) {
     		var div = d3.select(this.parentNode.parentNode.parentNode);
     		div.select(".title a").style("display", "none");
     		div.select("#clip rect").attr("x", null).attr("width", "100%");
-    		dojo.byId('selected_range').innerHTML = '&nbsp;';
+    		dojo.byId('hist_from').value = '';
+            dojo.byId('hist_to').value = '';
     	}
     });
     d3.rebind(chart, brush, "on");

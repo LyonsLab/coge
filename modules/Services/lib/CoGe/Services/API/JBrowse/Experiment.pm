@@ -162,6 +162,7 @@ sub data {
     my $exp_data_type = $experiment->data_type;
     my $filename = 'experiment' . ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : '.csv');
     $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
+    $self->write("##gff-version 3\n") if $exp_data_type == $DATA_TYPE_MARKER;
     $self->write('# experiment: ' . $experiment->name . "\n");
     $self->write("# chromosome: $chr\n");
 
@@ -243,6 +244,40 @@ sub data {
             $self->write("\t\t");
             $self->write(substr($l[8], $s, -1));
             $self->write("\t\n");
+        }
+    }
+    elsif ( $exp_data_type == $DATA_TYPE_MARKER) {
+        my $type_names = $self->param('features');
+        if ($type_names) {
+            $self->write('# search: Markers in ');
+            $self->write($type_names);
+            $self->write("\n");
+        }
+        my $type = $self->param('type');
+        if ($type) {
+            $self->write('# search: ');
+            $self->write($type);
+            $self->write("\n");
+        }
+        $self->write("#seqid\tsource\ttype\tstart\tend\tscore\tstrand\tphase\tattributes\n");
+        my $markers = $self->_markers;
+        my $s = (index(@{$markers}[0], ', ') == -1 ? 1 : 2);
+        foreach my $line (@{$markers}) {
+            my @l = split(',', $line);
+            $self->write(substr($l[0], 1, -1));
+            $self->write("\t.\t");
+            $self->write(substr($l[4], $s, -1));
+            $self->write("\t");
+            $self->write($l[1]);
+            $self->write("\t");
+            $self->write($l[2]);
+            $self->write("\t");
+            $self->write($l[5]);
+            $self->write("\t");
+            $self->write(substr($l[3], $s, -1) == 1 ? '+' : '-');
+            $self->write("\t.\t");
+            $self->write(substr($l[6], $s, -1));
+            $self->write("\n");
         }
     }
     $self->finish();
@@ -348,10 +383,97 @@ sub query_data {
     $self->render(json => $result);
 }
 
-sub get_start {
-    my $snp = shift;
-    my $s = index($snp, ',') + 1;
-    return int(substr($snp, $s, index($snp, ',', $s) - $s));
+sub get_start_end {
+    my $data_point = shift;
+    my $c1 = index($data_point, ',') + 1;
+    my $c2 = index($data_point, ',', $c1) + 1;
+    my $c3 = index($data_point, ',', $c2);
+    return (int(substr($data_point, $c1, $c2 - $c1 - 1)), int(substr($data_point, $c2, $c3 - $c2)));
+}
+
+sub find_overlaping {
+    my $experiments = shift;
+    my $type_names = shift;
+    my $chr = shift;
+    my $db = shift;
+
+    my $data_points;
+    foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
+        $data_points = CoGe::Core::Experiment::query_data(
+            eid => $experiment->id,
+            data_type => $experiment->data_type,
+            chr => $chr,
+        );
+    }
+
+    my $dbh = $db->storage->dbh;
+
+    my $query = 'SELECT start,stop';
+    $query .= ',chromosome' unless $chr;
+    $query .= ' FROM feature WHERE dataset_id';
+    my $ids = get_dataset_ids($experiments->[0]->genome_id, $dbh);
+    $query .= (scalar @$ids == 1) ? '=' . $ids->[0] : ' IN(' . join(',', @$ids) . ')';
+    $query .= " AND chromosome='" . $chr . "'" if $chr;
+    if ($type_names ne 'all') {
+        my $type_ids = feature_type_names_to_id($type_names, $dbh);
+        $query .= ' AND feature_type_id';
+        $query .= (index($type_ids, ',') == -1) ? '=' . $type_ids : ' IN(' . $type_ids . ')';
+    }
+    $query .= ' ORDER BY ';
+    $query .= 'chromosome,' unless $chr;
+    $query .= 'start,stop';
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+
+    my $hits = [];
+    my $row = $sth->fetchrow_arrayref;
+    my $data_point_index = 0;
+    my $num_data_points = scalar @$data_points;
+    while ($row && $data_point_index < $num_data_points) {
+        my ($data_point_start, $data_point_end) = get_start_end($data_points->[$data_point_index]);
+        while ($row && $row->[1] < $data_point_start) {
+            $row = $sth->fetchrow_arrayref;
+        }
+        last unless $row;
+        while ($data_point_start < $row->[0] && $data_point_index < $num_data_points) {
+            $data_point_index++;
+            last if $data_point_index == $num_data_points;
+            ($data_point_start, $data_point_end) = get_start_end($data_points->[$data_point_index]);
+        }
+        last if $data_point_index == $num_data_points;
+        if ($row->[1] >= $data_point_start) {
+            push @$hits, $data_points->[$data_point_index] if $data_point_end >= $row->[0];
+            $data_point_index++;
+        }
+    }
+    return $hits;
+}
+
+sub markers {
+    my $self = shift;
+    my $results = $self->_markers;
+    if ($results) {
+        $self->render(json => $results);
+    }
+}
+
+sub _markers {
+    my $self = shift;
+    my $eid = $self->stash('eid');
+    my $chr = $self->stash('chr');
+    $chr = undef if $chr eq 'Any';
+
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    my $experiments = _get_experiments($db, $user, $eid);
+    if (scalar @{$experiments} == 0) {
+        $self->render(json => { error => 'User does not have permission to view this experiment' });
+        return undef;
+    }
+
+    my $type_names = $self->param('features');
+    return find_overlaping($experiments, $type_names, $chr, $db);
 }
 
 sub snps {
@@ -379,54 +501,7 @@ sub _snps {
 
 	my $type_names = $self->param('features');
 	if ($type_names) {
-        my $snps;
-        foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
-            $snps = CoGe::Core::Experiment::query_data(
-                eid => $eid,
-                data_type => $experiment->data_type,
-                chr => $chr,
-            );
-        }
-
-        my $dbh = $db->storage->dbh;
-
-        my $query = 'SELECT start,stop';
-        $query .= ',chromosome' unless $chr;
-        $query .= ' FROM feature WHERE dataset_id';
-        my $ids = get_dataset_ids($experiments->[0]->genome_id, $dbh);
-        $query .= (scalar @$ids == 1) ? '=' . $ids->[0] : ' IN(' . join(',', @$ids) . ')';
-        $query .= " AND chromosome='" . $chr . "'" if $chr;
-        if ($type_names ne 'all') {
-            my $type_ids = feature_type_names_to_id($type_names, $dbh);
-            $query .= ' AND feature_type_id';
-            $query .= (index($type_ids, ',') == -1) ? '=' . $type_ids : ' IN(' . $type_ids . ')';
-        }
-        $query .= ' ORDER BY ';
-        $query .= 'chromosome,' unless $chr;
-        $query .= 'start,stop';
-        my $sth = $dbh->prepare($query);
-        $sth->execute();
-
-        my $hits = [];
-        my $row = $sth->fetchrow_arrayref;
-        my $snp_index = 0;
-        my $num_snps = scalar @$snps;
-        while ($row && $snp_index < $num_snps) {
-            my $snp_start = get_start($snps->[$snp_index]);
-            while ($row && $row->[1] < $snp_start) {
-                $row = $sth->fetchrow_arrayref;
-            }
-            last unless $row;
-            while ($snp_start < $row->[0] && $snp_index < $num_snps) {
-                $snp_index++;
-                last if $snp_index == $num_snps;
-                $snp_start = get_start($snps->[$snp_index]);
-            }
-            last if $snp_index == $num_snps;
-            push @$hits, $snps->[$snp_index] if $snp_start <= $row->[1];
-            $snp_index++;
-        }
-	    return $hits;
+        return find_overlaping($experiments, $type_names, $chr, $db);
 	}
 	elsif ($self->param('snp_type')) {
         my $cmdpath = catfile(CoGe::Accessory::Web::get_defaults()->{BINDIR}, 'snp_search', 'snp_search');
@@ -553,8 +628,8 @@ sub features {
                     name     => $name
                 );
                 $result{'strand'} = -1 if ($result{'strand'} == 0);
-                $result{'stop'} = $result{'start'} + 1 if ( $result{'stop'} == $result{'start'} ); #FIXME revisit this
-                $result{'value1'} = $result{'strand'} * $result{'value1'};
+                $result{'end'} = $result{'start'} + 1 if ( $result{'end'} == $result{'start'} ); #FIXME revisit this
+                $result{'score'} = $result{'strand'} * $result{'score'} if $result{'score'};
                 push(@results, \%result);
             }
         }

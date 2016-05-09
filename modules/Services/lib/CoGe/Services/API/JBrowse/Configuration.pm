@@ -350,7 +350,7 @@ sub track_config {
 			$labelScale = 0.5;
 		}
         elsif ($e->{data_type} == 4) { #FIXME hardcoded data_type 'marker'
-            $type = "JBrowse/View/Track/HTMLFeatures";
+            $type = 'CoGe/View/Track/Markers'; #"JBrowse/View/Track/HTMLFeatures";
             $histScale = 0.002;
             $labelScale = 0.5;
         }
