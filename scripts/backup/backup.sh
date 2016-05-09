@@ -19,7 +19,7 @@ DAYS_UNTIL_DELETE=21
 VERSION=$(date '+%Y%m%d')
 LOCAL=/storage/coge/backup
 REMOTE=backup
-CONFIG=/opt/apache2/coge/web/coge.conf
+CONFIG=/opt/apache2/coge/coge.conf
 
 #
 # Dump databases and copy to remote IRODS location
