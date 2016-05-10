@@ -221,13 +221,7 @@ sub query_data {
         return;
     }
     my $chr = $opts{chr};
-    my $col = $opts{col};
     my $data_type = $opts{data_type};
-    my $gte = $opts{gte};
-    my $limit = $opts{limit};
-    my $lte = $opts{lte};
-    my $order_by = $opts{order_by} || 'chr,start';
-    my $type = $opts{type};
 
     # alignment data
     if ($data_type == 3) {
@@ -245,8 +239,10 @@ sub query_data {
         # Return if error message detected (starts with '[')
         map { return if (/^\[/) } @cmdOut;
 
+        return \@cmdOut if $opts{all};
+
         my @results;
-        foreach (@$pData) {
+        foreach (@cmdOut) {
             chomp;
             my (undef, $flag, $chr, $start, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
             my $strand = ($flag & 0x10 ? '-1' : '1');
@@ -254,6 +250,12 @@ sub query_data {
         }
         return \@results;
     }
+
+    my $col = $opts{col};
+    my $gte = $opts{gte};
+    my $lte = $opts{lte};
+    my $order_by = $opts{order_by} || 'chr,start';
+    my $type = $opts{type};
 
 	my $where = '0.0=0.0';
 	$where .= " and chr='$chr'" if $chr;

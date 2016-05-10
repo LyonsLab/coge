@@ -47,9 +47,17 @@ return declare(SeqFeatureStore, {
 						alt: hit[5],
 						score: hit[6],
 						info: hit[7],
-						name: hit[2] + ' ' + hit[4] + ' > ' + hit[5] // snps only
+						name: hit[2] + ' ' + hit[4] + ' > ' + hit[5]
 					}}));
-				else if (coge.data_type == 4) {
+				else if (coge.data_type == 3) {
+					var strand = hit[2] == '1' ? 1 : -1;
+					featureCallback(new SimpleFeature({ data: {
+						//id: coge.id,
+						start: hit[0],
+						end: hit[1],
+						strand: strand
+					}}));
+				} else if (coge.data_type == 4) {
 					var strand = hit[2] == '1' ? 1 : -1;
 					featureCallback(new SimpleFeature({ data: {
 						//id: coge.id,

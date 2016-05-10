@@ -160,7 +160,7 @@ sub data {
     }
 
     my $exp_data_type = $experiment->data_type;
-    my $filename = 'experiment' . ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : '.csv');
+    my $filename = 'experiment' . ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : $exp_data_type == $DATA_TYPE_ALIGN ? '.sam' : $exp_data_type == $DATA_TYPE_MARKER ? '.gff' : '.csv');
     $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
     $self->write("##gff-version 3\n") if $exp_data_type == $DATA_TYPE_MARKER;
     $self->write('# experiment: ' . $experiment->name . "\n");
@@ -259,6 +259,7 @@ sub data {
             $self->write($type);
             $self->write("\n");
         }
+        my $alignments = $self->_alignments(1);
     }
     elsif ( $exp_data_type == $DATA_TYPE_MARKER) {
         my $type_names = $self->param('features');
@@ -410,6 +411,7 @@ sub find_overlaping {
     my $type_names = shift;
     my $chr = shift;
     my $db = shift;
+    my $all = shift;
 
     my $data_points;
     foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
@@ -417,6 +419,7 @@ sub find_overlaping {
             eid => $experiment->id,
             data_type => $experiment->data_type,
             chr => $chr,
+            all => $all
         );
     }
 
@@ -473,6 +476,7 @@ sub alignments {
 
 sub _alignments {
     my $self = shift;
+    my $all = shift;
     my $eid = $self->stash('eid');
     my $chr = $self->stash('chr');
     $chr = undef if $chr eq 'Any';
@@ -487,7 +491,7 @@ sub _alignments {
     }
 
     my $type_names = $self->param('features');
-    return find_overlaping($experiments, $type_names, $chr, $db);
+    return find_overlaping($experiments, $type_names, $chr, $db, $all);
 }
 
 sub markers {
@@ -548,9 +552,10 @@ sub _snps {
         my $cmdpath = catfile(CoGe::Accessory::Web::get_defaults()->{BINDIR}, 'snp_search', 'snp_search');
         my $storage_path = get_experiment_path($eid);
         opendir(my $dh, $storage_path);
-        my @files = grep(/\.processed$/, readdir($dh));
-        @files = grep(/\.vcf$/, readdir($dh)) if (scalar @files) == 0;
+        my @dir_entries = readdir($dh);
         closedir $dh;
+        my @files = grep(/\.processed$/, @dir_entries);
+        @files = grep(/\.vcf$/, @dir_entries) unless @files;
         my $cmd = "$cmdpath $storage_path/" . $files[0] . ' ' . $self->stash('chr') . ' "' . $self->param('snp_type') . '"';
         my @cmdOut = qx{$cmd};
 
