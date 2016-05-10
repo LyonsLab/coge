@@ -14,7 +14,7 @@ BEGIN {
     $VERSION = 0.1;
     @ISA = qw( Exporter );
     @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @OTHER_TYPES @SUPPORTED_TYPES);
-    @EXPORT_OK = qw( detect_data_type download_data experimentcmp get_data get_fastbit_format get_fastbit_score_column query_data );
+    @EXPORT_OK = qw( delete_experiment detect_data_type download_data experimentcmp get_data get_fastbit_format get_fastbit_score_column query_data );
     
     # Setup supported experiment file types
     @QUANT_TYPES = qw(csv tsv bed wig);
@@ -36,6 +36,21 @@ sub experimentcmp($$) { # for sorting DBI-X objects or DBI hashes
           || $a->name cmp $b->name
           || $b->id cmp $a->id;
     }
+}
+
+sub delete_experiment {
+    my $id = shift;
+    my $db = shift;
+    my $user = shift;
+
+    my $experiment = $db->resultset('Experiment')->find($id);
+    return 'experiment not found' unless $experiment;
+
+    return 'permission denied' unless $user->is_admin or $user->is_owner(experiment => $experiment);
+
+    $experiment->deleted(1);
+    $experiment->update;
+    return undef;
 }
 
 sub detect_data_type {
