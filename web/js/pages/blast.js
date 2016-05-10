@@ -1014,7 +1014,8 @@ function handle_results(selector, data) {
         if (table_height > max_height) $('#hsp_result_table_body').height(max_height);
     }
 
-    setup_button_states();
+    if (typeof setup_button_states !== 'undefined') // mdb added condition 5/10/16 - kludge for EMBED support: this routine is in header.tmpl. Not calling it prevents button highlight on hover.
+    	setup_button_states();
     click_all_feat_links(feature_links);
     check_display();
 }

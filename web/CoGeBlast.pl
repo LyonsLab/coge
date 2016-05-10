@@ -35,7 +35,7 @@ use Sort::Versions;
 
 use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR
   $FORMATDB $BLAST_PROGS $FORM $USER $LINK $coge $cogeweb $RESULTSLIMIT
-  $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE $JEX);
+  $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE $JEX $EMBED);
 
 $PAGE_TITLE = "CoGeBlast";
 $PAGE_NAME  = $PAGE_TITLE . ".pl";
@@ -112,26 +112,30 @@ $BLAST_PROGS   = {
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-    my $html;
-    my ($body) = gen_body();
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-
-    $template->param(TITLE=>'CoGeBLAST: Perform BLAST Analysis');
-    $template->param( PAGE_TITLE => 'BLAST',
-    				  PAGE_LINK  => $LINK,
-    				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
-    				  HOME       => $P->{SERVER},
-                      HELP       => 'CoGeBlast',
-                      WIKI_URL   => $P->{WIKI_URL} || '' );
-    $template->param( USER => $USER->display_name || '' );
-
-    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-
-    $template->param( ADMIN_ONLY => $USER->is_admin );
-    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
-    $template->param( BODY => $body );
-    $html .= $template->output;
+    my $template;
+    
+    $EMBED = $FORM->param('embed') || 0;
+    if ($EMBED) {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    
+        $template->param( TITLE => 'CoGeBLAST: Perform BLAST Analysis',
+                          PAGE_TITLE => 'BLAST',
+        				  PAGE_LINK  => $LINK,
+        				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
+        				  HOME       => $P->{SERVER},
+                          HELP       => 'CoGeBlast',
+                          WIKI_URL   => $P->{WIKI_URL} || '' );
+        $template->param( USER => $USER->display_name || '' );
+        $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+        $template->param( ADMIN_ONLY => $USER->is_admin );
+        $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+    }
+    
+    $template->param( BODY => gen_body() );
+    return $template->output;
 }
 
 sub gen_body {
