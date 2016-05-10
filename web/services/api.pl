@@ -124,6 +124,10 @@ $r->post("/experiments/:id" => [id => qr/\d+/])
     ->name("experiments-update")
     ->to("experiment#update", namespace => 'CoGe::Services::API', id => undef);
 
+$r->delete("/experiments/:id" => [id => qr/\d+/])
+    ->name("experiments-remove")
+    ->to("experiment#remove", namespace => 'CoGe::Services::API', id => undef);
+
 # Notebook routes
 $r->get("/notebooks/search/#term")
     ->name("notebooks-search")

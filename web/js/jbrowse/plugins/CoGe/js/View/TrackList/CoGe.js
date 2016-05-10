@@ -396,41 +396,22 @@ define(['dojo/_base/declare',
     	if (type == 'notebook')
     		message += '<br>Note: Experiments in this notebook will NOT be deleted.'
     	coge.confirm('Delete ' + Type, message, dojo.hitch(this, function() {
-	    	if (type == 'experiment') {
-     			dojo.xhrPut({ // FIXME: make webservice for this
-				    url: "Experiments.pl",
-				    putData: {
-				    	fname: 'delete_experiment',
-				    	eid: id
-				    },
-				    handleAs: "json",
-				    load: dojo.hitch(this, function(data) {
-				    	if (!data) {
-				    		coge.error('Permission denied', "You don't have permission to do that.");
-				    		return;
-				    	}
-				    	dojo.destroy(container);
-				    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
-				   })
-			    });
-	    	} else if (type == 'notebook') {
-	    		dojo.xhrPut({ // FIXME: make webservice for this
-				    url: "NotebookView.pl",
-				    putData: {
-				    	fname: 'delete_list',
-				    	lid: id
-				    },
-				    handleAs: "json",
-				    load: dojo.hitch(this, function(data) {
-				    	if (!data) {
-				    		coge.error('Permission denied', "You don't have permission to do that.");
-				    		return;
-				    	}
-				    	dojo.destroy(container.parentNode);
-				    	this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track_config] );
-				   })
-			    });
-	    	}
+            var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+ 			dojo.xhrDelete({
+			    url: coge_api + '/' + type + 's/' + id,
+			    handleAs: "json",
+			    load: dojo.hitch(this, function(data) {
+			    	if (data.error)
+                        coge.error('Delete ' + Type, data);
+                    else {
+			    	   dojo.destroy(type == 'notebook' ? container.parentNode : container);
+			    	   this.browser.publish('/jbrowse/v1/v/tracks/hide', [track_config]);
+                    }
+			    }),
+                error: function(data) {
+                    coge.error('Delete ' + Type, data);
+                }
+		    });
     	}));
 	},
 

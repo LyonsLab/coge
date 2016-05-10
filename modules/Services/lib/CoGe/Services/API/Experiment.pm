@@ -5,7 +5,7 @@ use Data::Dumper;
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Experiment;
+use CoGe::Core::Experiment qw( delete_experiment );
 use CoGe::Services::Auth;
 use CoGe::Services::Data::Job;
 
@@ -152,6 +152,20 @@ sub add {
     return CoGe::Services::Data::Job::add($self, $request);
 }
 
+sub remove {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    my $error = delete_experiment($id, $db, $user);
+    if ($error) {
+        $self->render(status => 400, json => { error => { Error => $error} });
+        return;
+    }
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
 sub update {
 	my $self = shift;
     my $id = int($self->stash('id'));
@@ -189,9 +203,7 @@ sub update {
 	    delete $data->{metadata}->{id};
     }
 	$experiment->update($data->{metadata});
-	$self->render(json => {
-		success => Mojo::JSON->true
-	});
+	$self->render(json => { success => Mojo::JSON->true });
 }
 
 1;
