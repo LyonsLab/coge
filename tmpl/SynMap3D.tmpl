@@ -50,41 +50,35 @@
     margin: 0px;
     padding: 0px;
     margin-left: 0.5%;
-    margin-right: 0.5%;
+    margin-right: 0.25%;
     margin-bottom: .2em;
+    float: left;
+    width: 70%;
+}
+#right {
+    margin-top: 0px;
+    margin-bottom: 0.2em;
+    margin-right: 0.5%;
+    margin-left: 0.25%;
+    float: right;
+    width: 28.5%;
 }
 
 #histos {
     margin: 0px;
+    margin-bottom: 10px;
     padding: 0px;
-    margin-left: 0.5%;
-    margin-right: 0.5%;
-    text-align: justify;
-    -ms-text-justify: distribute-all-lines;
-    text-justify: distribute-all-lines;
+    background-color: #F5F5F5;
+    border: 1px solid #119911;
 }
 
 #hKs, #hKn, #hKnKs{
-    width: 33%;
     height: auto;
-    background-color: #F5F5F5;
-    border: 1px solid #119911;
-    vertical-align: top;
-    display: inline-block;
-    *display: inline;
     zoom: 1;
     text-align: center;
 }
 
-.stretch {
-    width: 100%;
-    display: inline-block;
-    font-size: 0;
-    line-height: 0
-}
-
 .bar rect {
-    /*fill: steelblue;*/
     shape-rendering: crispEdges;
 }
 
@@ -123,15 +117,6 @@
   left: 0;
 }
 
-#right {
-    margin-top: 0px;
-    margin-bottom: 2px;
-    margin-right: 0.5%;
-    margin-left: 0;
-    float: right;
-    width: 29.5%;
-}
-
 #gene_info h5 {
     margin-top: .2em;
     margin-bottom: .05em;
@@ -148,88 +133,30 @@
 <div id="analysis" style="display:none">
     <div id="rendering" class="contentBox">
         <canvas id="canvas"></canvas>
-        <!--<div id="canvas" style="width:100%;height:100%"></div>-->
     </div>
 
-    <div id="histos">
-        <div id="hKs">Ks Histogram</div>
-        <div id="hKn">Kn Histogram</div>
-        <div id="hKnKs">Kn/Ks Histogram</div>
-        <span class="stretch"></span>
-    </div>
-    <div style="clear:both"></div>
-</div><br>
-
-<!--OLD!
-<div id="analysis" style="display:none">
-    <div id="rendering" class="contentBox">
-        <canvas id="canvas"></canvas>
-    </div>
     <div id="right">
-        <div id="opts" class="contentBox">
-            <h3>Visualization Options</h3>
-            <div class="option_tag"><label for="color_select">Color Scheme:</label></div>
-            <div class="option_select">
-                <select id="color_select" disabled>
-                    <option value="Jet" selected>Rainbow</option>
-                    <option value="Bluered">Blue-Red</option>
-                    <option value="Portland">Portland</option>
-                    <option value="Viridis">Viridis</option>
-                </select>
+        <div id="histos">
+            <div id="hKs" style="">
+                <button type="button" onclick="rotateHistogram('L')">&lsaquo;</button>
+                Synonymous Mutations (Ks) Histogram
+                <button type="button" onclick="rotateHistogram('R')">&rsaquo;</button>
             </div>
-
-            <div class="option_tag"><label for="knks_select">Color Points By:</label></div>
-            <div class="option_select">
-                <select id="knks_select" disabled>
-                    <option value="Ks" selected="selected">Synonymouse Mutation (Ks)</option>
-                    <option value="Kn">Non-Synonymous Mutation (Kn)</option>
-                </select>
-                <select id="comparison_select" disabled>
-                    <option value="xy">XY</option>
-                    <option value="xz">XZ</option>
-                    <option value="yz">YZ</option>
-                    <option value="mean" selected="selected">Mean</option>
-                </select>
-            </div><br>
-
-            <div class="option_tag"><label for="grid_toggle">Toggle Grid:</label></div>
-            <div class="option_select">
-                <input type="checkbox" id="grid_toggle" checked>
-            </div><br>
-
-            <div class="option_tag"><label for="bgslider">Adjust Background Color:</label></div>
-            <input class="option_select" id=bgslider type="range" min="1" value="1" max="10" step="1" autocomplete="on">
-        </div>
-
-        <div id="histogram"></div>
-
-        <div id="gene_info" class="contentBox">
-            <h3>Information</h3>
-
-            <h5 style="color:red">X Axis:
-                <span style="font-weight:lighter"><TMPL_VAR NAME='X_GENOME_NAME'></span>
-            </h5>
-            <div id="x-gene-display" class="gene-info-display" style="display:none"></div>
-
-            <h5 style="color:blue">Y Axis:
-                <span style="font-weight:lighter"><TMPL_VAR NAME='Y_GENOME_NAME'></span>
-            </h5>
-            <div id="y-gene-display" class="gene-info-display" style="display:none"></div>
-
-            <h5 style="color:green">Z Axis:
-                <span style="font-weight:lighter"><TMPL_VAR NAME='Z_GENOME_NAME'></span>
-            </h5>
-            <div id="z-gene-display" class="gene-info-display" style="display:none"></div>
-
-            <div id="gevo_div" style="text-align:center; display:none">
-                <input type="button" id="gevo_button" class="ui-button ui-corner-all" value="Compare in GEvo">
+            <div id="hKn" style="display: none;">
+                <button type="button" onclick="rotateHistogram('L')">&lsaquo;</button>
+                Non-synonymous Mutations (Kn) Histogram
+                <button type="button" onclick="rotateHistogram('R')">&rsaquo;</button>
+            </div>
+            <div id="hKnKs" style="display: none;">
+                <button type="button" onclick="rotateHistogram('L')">&lsaquo;</button>
+                Kn/Ks Histogram
+                <button type="button" onclick="rotateHistogram('R')">&rsaquo;</button>
             </div>
         </div>
-
-    </div><br>
+        <div class="contentBox">OPTIONS! YAY!</div>
+    </div>
     <div style="clear:both"></div>
 </div><br>
--->
 
 <div id="wizard-container"></div>
 

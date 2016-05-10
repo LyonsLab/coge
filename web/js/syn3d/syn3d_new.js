@@ -6,7 +6,9 @@ console.log("Syn3D_New Loaded!");
 
 var camView = { "x": 0, "y": 0, "z": 80 };
 var histData = {"kn": [], "ks": [], "knks": []};
+var colorScheme = "Jet";
 var pointData = [];
+var colors = {"kn": [], "ks": [], "knks": []};
 var schemes = {
     "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
         [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
@@ -22,11 +24,10 @@ var schemes = {
         [0.5647058823529412,'#1fa088'], [0.6274509803921569,'#28ae80'],[0.6901960784313725,'#3fbc73'],
         [0.7529411764705882,'#5ec962'], [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],
         [0.9411764705882353,'#d8e219'], [1,'#fde725']]
-};
+}; // Source: https://github.com/plotly/plotly.js/blob/master/src/components/colorscale/scales.js
 
+/* CORE FUNCTION: Create coloring function */
 function getPtColorFunc(minVal, maxVal, colorScheme) {
-    //var minVal = Math.min.apply(null, histogramData);
-    //var maxVal = Math.max.apply(null, histogramData);
     var N = colorScheme.length,
         domain = new Array(N),
         range = new Array(N),
@@ -46,7 +47,6 @@ function getPtColorFunc(minVal, maxVal, colorScheme) {
     return calcColor
 }
 
-
 /* CORE FUNCTION: Load Data */
 function loadData(graph_json) {
     var graphObj;
@@ -61,14 +61,47 @@ function loadData(graph_json) {
     });
 }
 
+/* CORE FUNCTION: Rotate Histograms */
+var hQueue = ["hKnKs", "hKs", "hKn"];
+var hCurrent = ["hKs", "ks"];
+function rotateHistogram(direction) {
+    var n, c, type;
+    if (direction == "R") {
+        n = hQueue.pop();
+        c = hQueue.pop();
+        type = n.slice(1).toLowerCase();
+        d3.select("#chartSvg").remove();
+        document.getElementById(c).style.display = "none";
+        document.getElementById(n).style.display = "";
+        renderHistogram(n, histData[type]);
+        hCurrent = [n, type];
+        hQueue.unshift(n);
+        hQueue.unshift(c);
+    } else if (direction=="L") {
+        n = hQueue.shift();
+        c = hQueue.shift();
+        type = n.slice(1).toLowerCase();
+        d3.select("#chartSvg").remove();
+        document.getElementById(c).style.display = "none";
+        document.getElementById(n).style.display = "";
+        renderHistogram(n, histData[type]);
+        hCurrent = [n, type];
+        hQueue.push(n);
+        hQueue.push(c);
+    } else {
+        console.log("ERROR: Unrecognized Direction")
+    }
+}
+
 /* CORE FUNCTION: Render Histograms */
 function renderHistogram(element_id, values) {
     /* RESOURCES
+        Simple Histogram: https://bl.ocks.org/mbostock/3048450
         Basic Mouseover: http://bl.ocks.org/phil-pedruco/9032348
         Tooltip Mouseover: http://bl.ocks.org/Caged/6476579
      */
 
-    // Convert type of values
+    // Convert type of values.
     for (var i = 0; i < values.length; i++) {
         values[i] = +values[i];
     }
@@ -82,36 +115,36 @@ function renderHistogram(element_id, values) {
     // Set margins & canvas size.
     var margin = {top: 10, right: 30, bottom: 30, left: 30},
         width = document.getElementById(element_id).clientWidth - margin.left - margin.right,
-        height = document.getElementById(element_id).clientWidth - margin.bottom - margin.top;
-
+        height = (document.getElementById("rendering").clientHeight * .65) - margin.bottom - margin.top;
+    
+    // Get minimum & maximum values.
     var minVal = Math.min.apply(null, values);
     var maxVal = Math.max.apply(null, values);
 
     // Generate function to calculate point colors by colorscheme.
-    var calcColor = getPtColorFunc(minVal, maxVal, schemes["Jet"]);
+    var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
 
+    // Set X scale.
     var x = d3.scale.linear()
         .domain([minVal, maxVal])
         .range([0, width]);
-
-
+    
     // Generate histogram bins.
-    // var data = d3.layout.histogram()
-    //     .bins(x.ticks(binCount))
-    //     (values);
     var data = d3.layout.histogram()
         .bins(binCount)
         (values);
-    //console.log(data);
 
+    // Set Y scale.
     var y = d3.scale.linear()
         .domain([0, d3.max(data, function(d) { return d.y; })])
         .range([height, 0]);
 
+    // Build X axis object.
     var xAxis = d3.svg.axis()
         .scale(x)
         .orient("bottom");
 
+    // Build tip object.
     var tip = d3.tip()
         .attr('class', 'd3-tip')
         .offset([-10, 0])
@@ -122,15 +155,19 @@ function renderHistogram(element_id, values) {
             return range + "<br>" + count;
         });
 
+    // Draw SVG in specified element.
     var svg = d3.select('#' + element_id).append("svg")
+        .attr("id", "chartSvg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+    // Add tip to SVG.
     svg.call(tip);
 
-    // TODO: FIX overlapping bars
+    // Draw histogram bars.
+    // TODO: FIX overlapping bars (maybe has to do with SVG element size).
     var bar = svg.selectAll(".bar")
         .data(data)
         .enter().append("g")
@@ -142,7 +179,6 @@ function renderHistogram(element_id, values) {
         .attr("width", formatWide(width/(binCount)) )
         .attr("height", function(d) { return height - y(d.y); })
         .attr("fill", function(d) { return calcColor(d.x) })
-        //.attr("fill", "steelblue")
         .on("mouseover", function(d) {
             tip.show(d);
             d3.select(this).attr("fill", "red");
@@ -152,8 +188,7 @@ function renderHistogram(element_id, values) {
             d3.select(this).attr("fill", function(d) { return calcColor(d.x) })
         });
 
-    //console.log(data[0].dx);
-    //console.log(x(data[0].dx));
+    // Append count labels to bars.
     // bar.append("text")
     //     .attr("dy", ".75em")
     //     .attr("y", 6)
@@ -161,6 +196,7 @@ function renderHistogram(element_id, values) {
     //     .attr("text-anchor", "middle")
     //     .text(function(d) { return formatCount(d.y); });
 
+    // Draw X axis.
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
@@ -185,32 +221,13 @@ function renderSynMap(graph_object, element_id) {
 
     // Scaling variables.
     var axisWidth = 0.5;
-    var POINT_SIZE = 8;
+    var pointSize = 8;
 
     // Raycasting variables.
-    var raycaster, intersects;
-    var mouse, INTERSECTED;
+    var raycaster, intersects, mouse, INTERSECTED;
     var ptHistory = ["NULL", "NULL"];
     var black = new THREE.Color("#000");
 
-    // TODO: Pull these straight from Plotly
-    // https://github.com/plotly/plotly.js/blob/master/src/components/colorscale/scales.js
-    var schemes = {
-        "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
-            [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
-
-        "Bluered": [[0,'rgb(0,0,255)'],[1,'rgb(255,0,0)']],
-
-        "Portland": [[0,'rgb(12,51,131)'],[0.25,'rgb(10,136,186)'], [0.5,'rgb(242,211,56)'],
-            [0.75,'rgb(242,143,56)'], [1,'rgb(217,30,30)']],
-
-        "Viridis": [[0,'#440154'],[0.06274509803921569,'#48186a'], [0.12549019607843137,'#472d7b'],
-            [0.18823529411764706,'#424086'], [0.25098039215686274,'#3b528b'],[0.3137254901960784,'#33638d'],
-            [0.3764705882352941,'#2c728e'], [0.4392156862745098,'#26828e'], [0.5019607843137255,'#21918c'],
-            [0.5647058823529412,'#1fa088'], [0.6274509803921569,'#28ae80'],[0.6901960784313725,'#3fbc73'],
-            [0.7529411764705882,'#5ec962'], [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],
-            [0.9411764705882353,'#d8e219'], [1,'#fde725']]
-    };
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~INITIALIZE & ANIMATE SYNMAP~~~~
@@ -291,29 +308,6 @@ function renderSynMap(graph_object, element_id) {
         return axis;
     }
 
-    /* FUNCTION: Create Point Coloring Function */
-    function getPtColorFunc(histogramData, colorScheme) {
-        var minVal = Math.min.apply(null, histogramData);
-        var maxVal = Math.max.apply(null, histogramData);
-        var N = colorScheme.length,
-            domain = new Array(N),
-            range = new Array(N),
-            si;
-
-        for (var i = 0; i < N; i++) {
-            si = colorScheme[i];
-            domain[i] = minVal + si[0] * (maxVal - minVal);
-            range[i] = si[1]
-        }
-
-        var calcColor = d3.scale.linear()
-                .domain(domain)
-                .interpolate(d3.interpolateRgb)
-                .range(range);
-
-        return calcColor
-    }
-
     /* FUNCTION: Generate GEvo Link */
     function genGevoLink(xDbId, yDbId, zDbId) {
         // https://genomevolution.org/wiki/index.php/Linking_to_GEvo
@@ -333,24 +327,22 @@ function renderSynMap(graph_object, element_id) {
 
     /* FUNCTION: Draw Points */
     function drawPoints(points) {
-        // Generate function to calculate point colors by colorscheme.
-        //var calcPtColor = getPtColorFunc(histogram_data.logten.data[knKsSelect][comparisonSelect], schemes[colorSelect]);
         // Load point image.
-
         var loader = new THREE.TextureLoader();
         var sprite = loader.load("picts/ball.png");
         // Define plot geometry & material & color array.
         var plotGeo = new THREE.Geometry();
         //plotGeo.addAttribute(size, new THREE.BufferAttribute( size, 1 ));
-        var plotMat = new THREE.PointsMaterial( {size: POINT_SIZE, sizeAttenuation: false, map: sprite,
+        var plotMat = new THREE.PointsMaterial( {size: pointSize, sizeAttenuation: false, map: sprite,
             vertexColors: THREE.VertexColors, alphaTest: 0.5, transparent: true });
-        var colors = [];
+        //var colors = [];
 
         //Set up point counter.
-        var ptCount = 0;
+        var ptCount = points.length;
+        var pointMutData = {"kn": [], "ks": [], "knks": []};
 
         // Build points.
-        for (var i=0; i<points.length; i++ ) {
+        for (var i=0; i<ptCount; i++ ) {
             // Assign position
             var vertex = new THREE.Vector3();
             vertex.x = points[i][0];
@@ -360,67 +352,67 @@ function renderSynMap(graph_object, element_id) {
 
             // Add reference to pointData for retrieving feature info.
             pointData.push(i);
-            ptCount += 1;
 
             // Get Substitution Data
-            // NOTE: CURRENTLY IMPLEMENTED FOR XY
+            // NOTE: CURRENTLY IMPLEMENTED FOR XY!!!!!!!!!!!!!!!!!!!!!!!!!!
             var kn = points[i][6];
             var ks = points[i][7];
             var knks = Math.log10(Math.pow(10, kn) / Math.pow(10, ks));
-            
+
             if (!isNaN(kn)) {
                 histData.kn.push(kn);
+                pointMutData.kn.push(kn);
+            } else {
+                pointMutData.kn.push("NULL");
             }
             if (!isNaN(ks)) {
                 histData.ks.push(ks);
+                pointMutData.ks.push(ks);
+            } else {
+                pointMutData.ks.push("NULL");
             }
             if (!isNaN(knks)) {
                 histData.knks.push(knks);
+                pointMutData.knks.push(knks);
+            } else {
+                pointMutData.knks.push("NULL");
             }
-
-            // TODO: Assign Color
-            colors[ptCount] = new THREE.Color("#33cc33");
-
+            
         }
 
-        // OLD CODE!
-        // for (x_ch in matches) {
-        //     for (y_ch in matches[x_ch]) {
-        //         for (z_ch in matches[x_ch][y_ch]) {
-        //             for (index in matches[x_ch][y_ch][z_ch]) {
-        //                 var coordinate = matches[x_ch][y_ch][z_ch][index];
-        //                 var xPos = coordinate[0];
-        //                 var yPos = coordinate[1];
-        //                 var zPos = coordinate[2];
-        //                 var knks = coordinate[3][comparisonSelect][knKsSelect];
-        //                 var ptdata = coordinate[4];
+        // Assign colors.
+        // var compar = "ks";
+        // var minVal = Math.min.apply(null, histData[compar]);
+        // var maxVal = Math.max.apply(null, histData[compar]);
+        // var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
         //
-        //                 // Assign position.
-        //                 var vertex = new THREE.Vector3();
-        //                 vertex.x = xChrIndexed[x_ch]['start'] + (xPos * scaleFactor);
-        //                 vertex.y = yChrIndexed[y_ch]['start'] + (yPos * scaleFactor);
-        //                 vertex.z = zChrIndexed[z_ch]['start'] + (zPos * scaleFactor);
-        //                 plotGeo.vertices.push(vertex);
-        //
-        //                 // Assign color.
-        //                 var logKnKs = knks != 0 ? Math.log10(knks) : 'NA';
-        //                 if (isNaN(logKnKs)) {
-        //                     colors[ptCount] = new THREE.Color("#fff");
-        //                 } else {
-        //                     colors[ptCount] = new THREE.Color(calcPtColor(logKnKs));
-        //                 }
-        //
-        //                 // Push point data
-        //                 pointData.push(ptdata);
-        //
-        //                 ptCount += 1;
-        //             }
-        //         }
+        // for (var j=0; j<ptCount; j++ ) {
+        //     if (pointMutData[compar][j] != 'NULL') {
+        //         colors[j] = new THREE.Color(calcColor(pointMutData[compar][j]))
+        //     } else {
+        //         colors[j] = new THREE.Color("#fff");
         //     }
         // }
 
+        // Build colors lists.
+        var cList = ["ks", "kn", "knks"];
+        for (var s=0; s<cList.length; s++) {
+            var c = cList[s];
+            var minVal = Math.min.apply(null, histData[c]);
+            var maxVal = Math.max.apply(null, histData[c]);
+            var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
+
+            for (var j=0; j<ptCount; j++ ) {
+                if (pointMutData[c][j] != 'NULL') {
+                    colors[c][j] = new THREE.Color(calcColor(pointMutData[c][j]))
+                } else {
+                    colors[c][j] = new THREE.Color("#fff");
+                }
+            }
+        }
+
         // Apply colors to geometry.
-        plotGeo.colors = colors;
+        plotGeo.colors = colors.ks;
 
         // Create points object.
         var pts = new THREE.Points(plotGeo, plotMat);
@@ -600,13 +592,19 @@ function renderSynMap(graph_object, element_id) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~ANIMATE~~~~
      --------------------------------------------------------------------------------------------------------*/
-
+    var current = "ks";
     function animate() {
         /* Update controls. */
         controls.update();
 
         /* Update camera position record. */
         camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
+
+        /* Check for recoloring */
+        if (hCurrent[1] != current) {
+            updateColors(hCurrent[1]);
+            current = hCurrent[1];
+        }
 
         /* Render the scene. */
         render();
@@ -618,6 +616,15 @@ function renderSynMap(graph_object, element_id) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~HANDLERS~~~~
      --------------------------------------------------------------------------------------------------------*/
+
+    /* Histogram Change */
+    function updateColors(select) {
+        var geometry = points.geometry;
+        geometry.colors = colors[select];
+        geometry.colorsNeedUpdate = true;
+    }
+    //document.getElementById("").onclick = updateColors(?);
+    //window.addEventListener()
 
     /* Window Resize */
     function onWindowResize() {
@@ -631,8 +638,8 @@ function renderSynMap(graph_object, element_id) {
         containerHeight = container.clientHeight;
 
         // TODO: Rerender Histograms on page resize
-        //renderHistogram(document.getElementById("histogram"), comparisonSelect + " log(" + knKsSelect + ")",
-        //    histogram_data.logten.data[knKsSelect][comparisonSelect], 100);
+        d3.select("#chartSvg").remove();
+        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
     }
     window.addEventListener( 'resize', onWindowResize, false );
 
@@ -724,17 +731,13 @@ function renderSynMap(graph_object, element_id) {
 $(document).ready( function() {
     // TODO: Start Spinny Wheely(s)
     $.when(loadData(final_experiment.links.graph)).done(function(data) {
-        // TODO: End Spinny Wheely(s)
-        console.log("Loaded and ready to go!");
-        console.log(data);
+        // Log data (development)
+        //console.log(data);
+        // TODO: End spinny wheel(s)
+
         // Render SynMap
-        // TODO
         renderSynMap(data, "canvas");
         // Render Histograms
-        // TODO
-        var testValues = d3.range(1000).map(d3.random.bates(10));
         renderHistogram("hKs", histData.ks);
-        renderHistogram("hKn", histData.kn);
-        renderHistogram("hKnKs", histData.knks);
     });
 });
