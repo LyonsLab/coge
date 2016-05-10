@@ -7,6 +7,45 @@ console.log("Syn3D_New Loaded!");
 var camView = { "x": 0, "y": 0, "z": 80 };
 var histData = {"kn": [], "ks": [], "knks": []};
 var pointData = [];
+var schemes = {
+    "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
+        [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
+
+    "Bluered": [[0,'rgb(0,0,255)'],[1,'rgb(255,0,0)']],
+
+    "Portland": [[0,'rgb(12,51,131)'],[0.25,'rgb(10,136,186)'], [0.5,'rgb(242,211,56)'],
+        [0.75,'rgb(242,143,56)'], [1,'rgb(217,30,30)']],
+
+    "Viridis": [[0,'#440154'],[0.06274509803921569,'#48186a'], [0.12549019607843137,'#472d7b'],
+        [0.18823529411764706,'#424086'], [0.25098039215686274,'#3b528b'],[0.3137254901960784,'#33638d'],
+        [0.3764705882352941,'#2c728e'], [0.4392156862745098,'#26828e'], [0.5019607843137255,'#21918c'],
+        [0.5647058823529412,'#1fa088'], [0.6274509803921569,'#28ae80'],[0.6901960784313725,'#3fbc73'],
+        [0.7529411764705882,'#5ec962'], [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],
+        [0.9411764705882353,'#d8e219'], [1,'#fde725']]
+};
+
+function getPtColorFunc(minVal, maxVal, colorScheme) {
+    //var minVal = Math.min.apply(null, histogramData);
+    //var maxVal = Math.max.apply(null, histogramData);
+    var N = colorScheme.length,
+        domain = new Array(N),
+        range = new Array(N),
+        si;
+
+    for (var i = 0; i < N; i++) {
+        si = colorScheme[i];
+        domain[i] = minVal + si[0] * (maxVal - minVal);
+        range[i] = si[1]
+    }
+
+    var calcColor = d3.scale.linear()
+            .domain(domain)
+            .interpolate(d3.interpolateRgb)
+            .range(range);
+
+    return calcColor
+}
+
 
 /* CORE FUNCTION: Load Data */
 function loadData(graph_json) {
@@ -28,24 +67,40 @@ function renderHistogram(element_id, values) {
         Basic Mouseover: http://bl.ocks.org/phil-pedruco/9032348
         Tooltip Mouseover: http://bl.ocks.org/Caged/6476579
      */
-    // A formatter for counts.
-    var formatCount = d3.format(",.0f");
-    var binCount = 100;
 
-    //var w = document.getElementById(element_id).clientWidth;
+    // Convert type of values
+    for (var i = 0; i < values.length; i++) {
+        values[i] = +values[i];
+    }
+
+    // Format count function.
+    var formatCount = d3.format(",.3f");
+    var formatWide = d3.format(",.10f");
+    // Bin Count.
+    var binCount = 100.0;
+
+    // Set margins & canvas size.
     var margin = {top: 10, right: 30, bottom: 30, left: 30},
         width = document.getElementById(element_id).clientWidth - margin.left - margin.right,
         height = document.getElementById(element_id).clientWidth - margin.bottom - margin.top;
 
     var minVal = Math.min.apply(null, values);
     var maxVal = Math.max.apply(null, values);
+
+    // Generate function to calculate point colors by colorscheme.
+    var calcColor = getPtColorFunc(minVal, maxVal, schemes["Jet"]);
+
     var x = d3.scale.linear()
         .domain([minVal, maxVal])
         .range([0, width]);
 
+
     // Generate histogram bins.
+    // var data = d3.layout.histogram()
+    //     .bins(x.ticks(binCount))
+    //     (values);
     var data = d3.layout.histogram()
-        .bins(x.ticks(binCount))
+        .bins(binCount)
         (values);
     //console.log(data);
 
@@ -61,7 +116,10 @@ function renderHistogram(element_id, values) {
         .attr('class', 'd3-tip')
         .offset([-10, 0])
         .html(function(d) {
-            return "<strong>Frequency:</strong> <span style='color:red'>" + d + "</span>";
+            //console.log(d.x); // Returns bin minimum
+            var range = formatCount(d3.min(d)) + " < log10(x) < " + formatCount(d3.max(d));
+            var count = "Bin Count: <span style='color:red'>" + d.y + "</span>";
+            return range + "<br>" + count;
         });
 
     var svg = d3.select('#' + element_id).append("svg")
@@ -72,27 +130,30 @@ function renderHistogram(element_id, values) {
 
     svg.call(tip);
 
+    // TODO: FIX overlapping bars
     var bar = svg.selectAll(".bar")
         .data(data)
         .enter().append("g")
         .attr("class", "bar")
-        .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+        .attr("transform", function(d) { return "translate(" + formatWide(x(formatWide(d.x))) + "," + y(d.y) + ")"; });
 
     bar.append("rect")
         .attr("x", 1)
-        .attr("width", width/binCount)
+        .attr("width", formatWide(width/(binCount)) )
         .attr("height", function(d) { return height - y(d.y); })
-        .attr("fill", "steelblue")
-        .on("mouseover", function() {
+        .attr("fill", function(d) { return calcColor(d.x) })
+        //.attr("fill", "steelblue")
+        .on("mouseover", function(d) {
+            tip.show(d);
             d3.select(this).attr("fill", "red");
-            tip.show();
         })
-        .on("mouseout", function() {
-            d3.select(this).attr("fill", "steelblue");
-            tip.hide();
+        .on("mouseout", function(d) {
+            tip.hide(d);
+            d3.select(this).attr("fill", function(d) { return calcColor(d.x) })
         });
 
-
+    //console.log(data[0].dx);
+    //console.log(x(data[0].dx));
     // bar.append("text")
     //     .attr("dy", ".75em")
     //     .attr("y", 6)
