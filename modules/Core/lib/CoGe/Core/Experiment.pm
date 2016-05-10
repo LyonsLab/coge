@@ -221,10 +221,38 @@ sub query_data {
         return;
     }
     my $chr = $opts{chr};
-    my $col = $opts{col};
     my $data_type = $opts{data_type};
+
+    # alignment data
+    if ($data_type == 3) {
+        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
+        my $storage_path = get_experiment_path($eid);
+        my $cmd = "$cmdpath view $storage_path/alignment.bam";
+        $cmd .= ' ' . $chr if $chr;
+        $cmd .= ' 2>&1';
+        my @cmdOut = qx{$cmd};
+        my $cmdStatus = $?;
+        if ( $? != 0 ) {
+            warn "CoGe::Core::Experiment::query_data: error $? executing command: $cmd";
+            return;
+        }
+        # Return if error message detected (starts with '[')
+        map { return if (/^\[/) } @cmdOut;
+
+        return \@cmdOut if $opts{all};
+
+        my @results;
+        foreach (@cmdOut) {
+            chomp;
+            my (undef, $flag, $chr, $start, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
+            my $strand = ($flag & 0x10 ? '-1' : '1');
+            push @results, '"' . $chr . '",' . $start . ',' . ($start + length($seq)) . ',' . $strand;
+        }
+        return \@results;
+    }
+
+    my $col = $opts{col};
     my $gte = $opts{gte};
-    my $limit = $opts{limit};
     my $lte = $opts{lte};
     my $order_by = $opts{order_by} || 'chr,start';
     my $type = $opts{type};

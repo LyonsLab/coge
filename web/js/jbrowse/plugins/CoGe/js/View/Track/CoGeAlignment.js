@@ -59,38 +59,50 @@ define( [
                         if (!track.colorDialog) {
                             track.colorDialog = new ColorDialog({
                                 title: "Change colors",
-                                style: {
-                                    width: '230px',
-                            },
-                            items: [track.config.coge],
-                            featureColor: track.config.style.featureColor,
-                            callback: function(id, color) {
-                                var curColor = track.config.style.featureColor[id];
-                                if (!curColor || curColor != color) {
-                                    track.config.style.featureColor[id] = color;
+                                style: { width: '230px' },
+                                items: [track.config.coge],
+                                featureColor: track.config.style.featureColor,
+                                callback: function(id, color) {
+                                    var curColor = track.config.style.featureColor[id];
+                                    if (!curColor || curColor != color) {
+                                        track.config.style.featureColor[id] = color;
 
-                                    // Save color choice
-                                    track.config.histograms.color = color;
+                                        // Save color choice
+                                        track.config.histograms.color = color;
 
-                                    // Use cookie to persist color choice - mdb added 1/13/14, issue 279
-                                    var cookieName = 'track-' + track.name;
-                                    track.browser.cookie(cookieName, config.style);
+                                        // Use cookie to persist color choice - mdb added 1/13/14, issue 279
+                                        var cookieName = 'track-' + track.name;
+                                        track.browser.cookie(cookieName, config.style);
 
-                                    // Repaint track
-                                    track.changed();
+                                        // Repaint track
+                                        track.changed();
 
-                                    //FIXME TrackList should update itself
-                                    track.browser.publish('/jbrowse/v1/c/tracks/show', [track.config]);
+                                        //FIXME TrackList should update itself
+                                        track.browser.publish('/jbrowse/v1/c/tracks/show', [track.config]);
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
+                        track.colorDialog.show();
                     }
-                    track.colorDialog.show();
-                }
-            }]);
+                }]);
 
-            return options;
-        });
-    },
-})
+                if (track.config.coge.type == 'notebook')
+                    return options;
+
+                if (!track.config.coge.search_track)  {
+                    options.push({
+                        label: 'Find Alignments in Features',
+                        onClick: function(){coge.create_features_overlap_search_dialog(track, 'Alignments', 'alignments');}
+                    });
+                }
+                options.push({
+                    label: 'Download Track Data',
+                    onClick: function(){coge.create_download_dialog(track);}
+                });
+
+                return options;
+            });
+        }
+    });
 });

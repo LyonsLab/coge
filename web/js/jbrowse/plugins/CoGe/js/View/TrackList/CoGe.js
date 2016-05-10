@@ -139,10 +139,10 @@ define(['dojo/_base/declare',
     // ----------------------------------------------------------------
 
     addTracks: function(track_configs) {
-    	var before = this.div.firstChild; // going to insert before Sequence
+    	var before = this.tracks_div.firstChild; // going to insert before Sequence
     	track_configs.forEach(function(track_config) {
             if (track_config.coge)
-        		this.div.insertBefore(this._new_track(track_config), before);
+        		this.tracks_div.insertBefore(this._new_track(track_config), before);
     	}, this);
     },
 
@@ -206,7 +206,7 @@ define(['dojo/_base/declare',
 	  				this._track_configs.push(config);
 					this._new_notebook_source().insertNodes(false, [config]);
 	  				this._filter_tracks();
-	  				this.div.scrollTop = this.div.scrollHeight;
+	  				this.tracks_div.scrollTop = this.tracks_div.scrollHeight;
 	  				this._create_notebook_dialog.hide();
 	  			}
 	  		}),
@@ -218,8 +218,8 @@ define(['dojo/_base/declare',
 
     // ----------------------------------------------------------------
 
-    _create_text_filter: function() {
-        var div = dom.create( 'div', { className: 'coge-textfilter' }, this.pane);
+    _create_text_filter: function(parent) {
+        var div = dom.create( 'div', { className: 'coge-textfilter' }, parent);
 
         var d = dom.create('div',{ style: 'display:inline;overflow:show;position:relative' }, div );
 		this.text_filter_input = dom.create('input', {
@@ -256,7 +256,7 @@ define(['dojo/_base/declare',
             label: "Add All Tracks Shown",
             onClick: dojo.hitch(this, function() {
             	var visible_configs = [];
-            	dojo.query('.coge-track', this.div).forEach(function(container) {
+            	dojo.query('.coge-track', this.tracks_div).forEach(function(container) {
            	    	if (container.style.display != 'none')
            	    		visible_configs.push(container.config);
             	});
@@ -306,16 +306,16 @@ define(['dojo/_base/declare',
         }
         menu.addChild(new MenuSeparator());
         menu.addChild(new MenuItem({
-            label: 'Move Track Selector to ' + (dijit.byId('track_pane').get('region') == 'right' ? 'Left' : 'Right') + ' Side',
+            label: 'Move Track Selector to ' + (dijit.byId('coge').get('region') == 'right' ? 'Left' : 'Right') + ' Side',
             onClick: function() {
-            	var bc = dijit.byId('jbrowse');
-            	var pane = dijit.byId('track_pane');
-            	bc.removeChild(pane);
-            	var region = pane.get('region');
+            	var parent = dijit.byId('jbrowse');
+                var root = dijit.byId('coge');
+                parent.removeChild(root);
+            	var region = root.get('region');
             	this.set('label', 'Move Track Selector to ' + (region == 'right' ? 'Right' : 'Left') + ' Side');
             	localStorage.setItem("track-selector-side", region == 'right' ? 'left' : 'right');
-            	pane.set('region', region == 'right' ? 'left' : 'right');
-            	bc.addChild(pane);
+            	root.set('region', region == 'right' ? 'left' : 'right');
+            	parent.addChild(root);
             	
             }
         }));
@@ -329,23 +329,27 @@ define(['dojo/_base/declare',
     // ----------------------------------------------------------------
 
     _create_track_list: function(parent) {
-        this.pane = dojo.create('div', { id: 'track_pane' }, parent);
+        var root = dojo.create('div', { id: 'coge', style: 'display:flex' }, parent);
         var side = 'right';
         if (localStorage) {
         	var s = localStorage.getItem('track-selector-side');
         	if (s)
         		side = s;
         }
-        new ContentPane({region: side, splitter: true}, this.pane);
-        this._create_text_filter(this.pane);
+        new ContentPane({region: side, splitter: true}, root);
+
+        dojo.create('div', { id: 'feature_hits' }, root);
+    
+        var pane = dojo.create('div', { id: 'track_pane' }, root);
+        this._create_text_filter(pane);
         this._update_text_filter_control();
-        this.div = dojo.create('div', { id: 'coge-tracks' }, this.pane);
+        this.tracks_div = dojo.create('div', { id: 'coge-tracks' }, pane);
 
         this._track_configs.filter(function(tc) {
     		var type = tc.coge.type;
     		return (!type || type == 'sequence' || type == 'gc_content');
     	}).forEach(function(t) {
-    		this.div.appendChild(this._new_track(t));
+    		this.tracks_div.appendChild(this._new_track(t));
     	}, this);
 
         var feature_groups = this._track_configs.filter(function(fg) {
@@ -355,7 +359,7 @@ define(['dojo/_base/declare',
     		return (f.coge.type && f.coge.type == 'features');
     	});
     	feature_groups.forEach(function(fg) {
-    		var d = dojo.create('div', null, this.div);
+    		var d = dojo.create('div', null, this.tracks_div);
     		d.appendChild(this._new_track(fg));
         	features.filter(function(f) {
         		return f.coge.dataset_id == fg.coge.id;
@@ -482,7 +486,7 @@ define(['dojo/_base/declare',
     // ----------------------------------------------------------------
 
     get_search_config: function(eid) {
-    	var n = this.div.firstChild;
+    	var n = this.tracks_div.firstChild;
     	while (n && dojo.hasClass(n, 'coge-track')) {
 			if (n.config.coge.id == eid)
 				return n.config;
@@ -694,7 +698,7 @@ define(['dojo/_base/declare',
     // ----------------------------------------------------------------
 
     _new_notebook_source: function() {
-        var div = dojo.create( 'div', null, this.div );
+        var div = dojo.create( 'div', null, this.tracks_div );
     	return new dndSource(div, {
             accept: ["track"],
             checkAcceptance: function(source, nodes) {
@@ -990,7 +994,7 @@ define(['dojo/_base/declare',
     // optionally skips Sequence, GC Content and Feature tracks
 
     _traverse_tracks: function(f) {
-    	var n = this.div.firstChild;
+    	var n = this.tracks_div.firstChild;
     	while (n && dojo.hasClass(n, 'coge-track')) {
 			f(n);
     		n = n.nextSibling;

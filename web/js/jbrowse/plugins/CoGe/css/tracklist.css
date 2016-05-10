@@ -8,12 +8,12 @@
 
 .coge-circle {
 	border: solid white 1px;
-    border-radius: 50%;
-    height: 15px;
-    left: 5;
+	border-radius: 50%;
+	height: 15px;
+	left: 5;
 	position: absolute;
-    top: 4;
-    width: 15px;
+	top: 4;
+	width: 15px;
 }
 
 .coge-experiment,
@@ -30,10 +30,10 @@
 
 #coge_menu_button,
 #coge_track_menu_button {
-    margin-left: -10px;
-    outline: none;
+	margin-left: -10px;
+	outline: none;
 	padding: 2px;
-    width: 20px;
+	width: 20px;
 }
 
 .coge-textfilter {
@@ -75,13 +75,12 @@
 .coge-tracklist-collapse,
 .coge-tracklist-expand
  {
- 	height: 10px;
+	height: 10px;
 	padding: 5px;
 	width: 10px;
 }
 
 #coge-tracks {
-	flex: 2 2;
 	overflow-x: hidden;
 	overflow-y: auto;
 	width: 100%;
@@ -92,6 +91,39 @@
 	margin-bottom: -4px;
 	margin-top: 4px;
 	text-align: center;
+}
+
+.feature_hits {
+	height: 100%;
+	overflow-x: hidden;
+	overflow-y: auto;
+	padding-left: 2px;
+	padding-right: 10px;
+}
+
+#feature_hits {
+	background: #f2f2f2;
+	border-left: black solid 1px;
+	cursor: default;
+}
+
+#feature_hits div:first-child {
+	align-items: center;
+	display: flex;
+	font-weight: bold;
+	height: 26px;
+	justify-content: space-between;
+	min-width: 80px;
+	padding: 2px;
+}
+
+#feature_hits span {
+	cursor: pointer;
+	float: right;
+}
+
+.glyphicon-remove:before {
+  content: "\e014";
 }
 
 #text_filter_cancel {
@@ -108,19 +140,18 @@
 }
 
 #track_pane {
- 	background-color: rgb(242, 242, 242);
- 	display: flex;
- 	flex-direction: column;
- 	overflow: hidden;
+	background-color: rgb(242, 242, 242);
+	overflow-x: hidden;
+	overflow-y: auto;
 	width: 215px;
 }
 
 #track_pane div.coge-textfilter {
-    margin: 0.5em 0 0 0.3em;
-    padding-bottom: 5px;
+	margin: 0.5em 0 0 0.3em;
+	padding-bottom: 5px;
 }
 
 #track_pane div.coge-textfilter input {
-    line-height: 16px;
-    padding: 2px 0;
+	line-height: 16px;
+	padding: 2px 0;
 }

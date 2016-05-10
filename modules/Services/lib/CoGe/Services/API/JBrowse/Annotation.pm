@@ -176,7 +176,7 @@ sub features {
             my $seq = '';
             my $rcseq = '';
             foreach my $f (values %$feats) {
-                if ($f->{type} eq 'CDS' && _is_overlapping($f->{locstart}, $f->{locstop}, $start, $end)) {
+                if ($f->{type} eq 'CDS' && $f->{locstart} <= $end && $f->{locstop} <= $start) {
                     if (!$seq) {
                         # Get chromosome subsequence using interbase coordinates
                         $seq = get_genome_seq(
@@ -225,11 +225,6 @@ sub features {
     }
 
     $self->render(json => { "features" => \@results });
-}
-
-sub _is_overlapping {
-    my ($s1, $e1, $s2, $e2) = @_;
-    return ($s1 <= $e2 and $s2 <= $e1);
 }
 
 # mdb added 11/4/13 issue 246 - add wobble shading
