@@ -812,6 +812,7 @@ sub search_share {
         next
           unless ( escape($_->user_name) =~ /$search_term/i
             || escape($_->display_name) =~ /$search_term/i );
+        next if ($_->user_name eq $USER->user_name); # mdb added 5/11/16 -- prevent user from sharing with themselves
         my $label = $_->display_name . ' (' . $_->user_name . ')';
         my $value = $_->id . ':' . 'user'; #$ITEM_TYPE{user};
         push @results, { 'label' => $label, 'value' => $value };
@@ -910,6 +911,7 @@ sub add_items_to_user_or_group {
     if ( $target_type eq 'user' ) { #$ITEM_TYPE{user} ) {
         my $user = $DB->resultset('User')->find($target_id);
         return unless $user;
+        next if ($user->user_name eq $USER->user_name); # mdb added 5/11/16 -- prevent user from sharing with themselves
 
         foreach (@verified) {
             my ( $item_id, $item_type, $item_type_name, $item_info ) = ( $_->{id}, $_->{type}, $_->{type_name}, $_->{info} );
@@ -946,7 +948,7 @@ sub add_items_to_user_or_group {
                 db          => $DB,
                 user_id     => $USER->id,
                 page        => $PAGE_TITLE,
-                description => "shared $item_type_name $item_info with user " . $user->info,
+                description => "shared (role=$role_id) $item_type_name $item_info with user " . $user->info,
                 parent_id   => $target_id,
                 parent_type => 6 #FIXME magic number
             );
