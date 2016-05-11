@@ -240,33 +240,42 @@ function parse_data(d) {
 	var type;
 	var i = d.indexOf('\n');
 	var start = 0;
+	var count = 0;
+	
 	while (i != -1) {
+		count++;
 		var l = d.substring(start, i);
 		var tokens = l.split('\t');
-		if (l.charAt(0) == '#') {
-			if (tokens.length > 2) {
+		
+		if (l.charAt(0) == '#') { // Header line
+			if (tokens.length > 2) { // #type column1 column2 ... columnN
 				type = tokens[0].substring(1);
 				data[type] = {};
 				tokens.shift();
 				columns[type] = tokens;
-			} else {
+			}
+			else { // #chr length
 				chromosome = tokens[0].substring(1);
 				data[type][chromosome] = [];
 				lengths[chromosome] = tokens[1];
 			}
-		} else {
+		}
+		else { // Data line
 			if (type)
 				data[type][chromosome].push(tokens);
+			else
+				console.error('parse_data: undefined type, line ' + count);
 		}
 		start = i + 1;
 		i = d.indexOf('\n', start);
 	}
+	
 	build_select($('#types'), data);
 	set_chromosomes();
-	if (data.length > 0)
-		set_data();
-	else
+	if (jQuery.isEmptyObject(data))
 		no_data();
+	else
+		set_data();
 }
 
 function plot(chromosome, cols, e, w, h) {
