@@ -488,6 +488,8 @@ return declare( JBrowsePlugin,
 				params = 'snp_type=' + search.snp_type;
 			else
 				params = 'features=' + search.features;
+		else if (search.type == 'Alignments')
+			params = 'features=' + search.features;
 		else if (search.type == 'Markers')
 			params = 'features=' + search.features;
 		else if (search.type == 'range')
@@ -505,7 +507,11 @@ return declare( JBrowsePlugin,
 		var string;
 		if (search.type == 'range')
 			string = 'range: ' + search.gte + ' .. ' + search.lte;
-		else if (search.type == 'Markers') {
+		else if (search.type == 'Alignments') {
+			string = 'Alignments'
+			if (search.features != 'all')
+				string += ' in ' + search.features;
+		} else if (search.type == 'Markers') {
 			string = 'Markers'
 			if (search.features != 'all')
 				string += ' in ' + search.features;
