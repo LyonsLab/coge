@@ -96,9 +96,6 @@ foreach my $type (sort keys %$pAnnot) {
     foreach my $chr (sort keys %{$pAnnot->{$type}}) {
         next if (defined $CHR and $chr ne $CHR);
     
-        # Print chromosome header line
-        print $fh "#$chr\t", length($pSeq->{$chr}), "\n";
-            
         foreach my $id (sort keys %{$pAnnot->{$type}{$chr}}) {
             next if (defined $GENE_NAME and $id ne $GENE_NAME);
             
@@ -195,6 +192,9 @@ foreach my $type (sort keys %$pAnnot) {
                 $stats{$d}{theta} = Theta($segregating, $sites, $NUM_INDIVIDUALS);
                 $stats{$d}{tajD}  = TajimasD($stats{$d}{pi}, $segregating, $NUM_INDIVIDUALS);
             }
+            
+            # Print chromosome header line
+            print $fh "#$chr\t", length($pSeq->{$chr}), "\n";
             
             # Print result row
             print $fh join("\t", $chr, $id, $featStart, $featEnd);
