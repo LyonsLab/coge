@@ -131,9 +131,7 @@
 </style>
 
 <div id="analysis" style="display:none">
-    <div id="rendering" class="contentBox">
-        <canvas id="canvas"></canvas>
-    </div>
+    <div id="rendering" class="contentBox"><canvas id="canvas"></canvas></div>
 
     <div id="right">
         <div id="histos">
@@ -153,7 +151,17 @@
                 <button type="button" onclick="rotateHistogram('R')">&rsaquo;</button>
             </div>
         </div>
-        <div class="contentBox">OPTIONS! YAY!</div>
+        <div id="opts" class="contentBox">
+            <span style="text-align: center;">Controls & Options</span><br>
+            <button type="button" onclick="resetCamera()">Reset Camera</button><br>
+            <label>Mutation Ratio: </label>
+            <select id="color_by">
+                <option value="xz">XY</option>
+                <option value="yz">XZ</option>
+                <option value="yz">YZ</option>
+                <option value="xyz">XYZ</option>
+            </select>
+        </div>
     </div>
     <div style="clear:both"></div>
 </div><br>

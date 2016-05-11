@@ -2,13 +2,19 @@
  * Created by senorrift on 4/29/16.
  */
 
-console.log("Syn3D_New Loaded!");
-
+// SynMap Global Variables [note: when adding, make sure to reset in renderSynMap().initialize()]
 var camView = { "x": 0, "y": 0, "z": 80 };
 var histData = {"kn": [], "ks": [], "knks": []};
-var colorScheme = "Jet";
 var pointData = [];
 var colors = {"kn": [], "ks": [], "knks": []};
+
+// Updating Variables
+var camUpdate = false;
+var hQueue = ["hKnKs", "hKs", "hKn"];
+var hCurrent = ["hKs", "ks"];
+
+// Color scheme variables
+var colorScheme = "Jet";
 var schemes = {
     "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
         [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
@@ -62,8 +68,6 @@ function loadData(graph_json) {
 }
 
 /* CORE FUNCTION: Rotate Histograms */
-var hQueue = ["hKnKs", "hKs", "hKn"];
-var hCurrent = ["hKs", "ks"];
 function rotateHistogram(direction) {
     var n, c, type;
     if (direction == "R") {
@@ -91,6 +95,12 @@ function rotateHistogram(direction) {
     } else {
         console.log("ERROR: Unrecognized Direction")
     }
+}
+
+/* CORE FUNCTION: Reset Camera */
+function resetCamera() {
+    camUpdate = true;
+    camView = { "x": 0, "y": 0, "z": 80 };
 }
 
 /* CORE FUNCTION: Render Histograms */
@@ -204,7 +214,7 @@ function renderHistogram(element_id, values) {
 }
 
 /* CORE FUNCTION: Render SynMap */
-function renderSynMap(graph_object, element_id) {
+function renderSynMap(graph_object, element_id, color_by) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~VARIABLE DECLARATIONS~~~~
      --------------------------------------------------------------------------------------------------------*/
@@ -241,7 +251,7 @@ function renderSynMap(graph_object, element_id) {
      --------------------------------------------------------------------------------------------------------*/
 
     /* FUNCTION: Build Axis from Chromosome List */
-    function buildAxisFromChr(chrNames, chrStarts, maxLen, focusAxis) {
+    function buildAxisFromChr(label, chrNames, chrStarts, maxLen, focusAxis) {
         var axis = new THREE.Object3D();
         var colorToggle = true;
 
@@ -266,7 +276,6 @@ function renderSynMap(graph_object, element_id) {
                 colorOne = '';
                 colorTwo = '';
         }
-
         for (var i = 0; i<chrNames.length; i++) {
             // Set chromosome length.
             var chLen;
@@ -305,6 +314,25 @@ function renderSynMap(graph_object, element_id) {
             axis.add( ch );
         }
 
+        // Draw axis labels.
+        var labelSprite;
+        if (focusAxis =='x') {
+            labelSprite = makeTextSprite(label, { fontsize: 12, borderColor: {r:139, g:0, b:0, a:1.0}, backgroundColor: {r:255, g:100, b:100, a:0.65} });
+            labelSprite.geometry.center();
+            labelSprite.position.set(maxLen*1.5,-(axisWidth / 2),-(axisWidth / 2));
+            //console.log(labelSprite);
+        } else if (focusAxis == 'y') {
+            labelSprite = makeTextSprite(label, { fontsize: 12, borderColor: {r:0, g:0, b:139, a:1.0}, backgroundColor: {r:0, g:100, b:255, a:0.65} });
+            labelSprite.geometry.center();
+            labelSprite.position.set(0,maxLen,0); //TODO (figure out which one is correct)
+        } else if (focusAxis == 'z') {
+            labelSprite = makeTextSprite(label, { fontsize: 12, borderColor: {r:0, g:128, b:0, a:1.0}, backgroundColor: {r:144, g:238, b:144, a:0.65} });
+            labelSprite.geometry.center();
+            labelSprite.position.set(0,0,maxLen);
+        } else {console.log("Invalid focus axis, please select x y or z.")}
+
+        axis.add(labelSprite);
+
         return axis;
     }
 
@@ -320,6 +348,86 @@ function renderSynMap(graph_object, element_id) {
         var numSeq = 'num_seqs=3';
         return linkbase + seqX + seqY + seqZ + range + numSeq;
     }
+
+    /* FUNCTION: Histogram Change */
+    function updateColors(select) {
+        var geometry = points.geometry;
+        geometry.colors = colors[select];
+        geometry.colorsNeedUpdate = true;
+    }
+
+    /* FUNCTION: Make Text Sprites */
+    function makeTextSprite( message, parameters ) {
+        if ( parameters === undefined ) parameters = {};
+
+        var fontface = parameters.hasOwnProperty("fontface") ?
+            parameters["fontface"] : "Arial";
+
+        var fontsize = parameters.hasOwnProperty("fontsize") ?
+            parameters["fontsize"] : 18;
+
+        var borderThickness = parameters.hasOwnProperty("borderThickness") ?
+            parameters["borderThickness"] : 2;
+
+        var borderColor = parameters.hasOwnProperty("borderColor") ?
+            parameters["borderColor"] : { r:0, g:0, b:0, a:1.0 };
+
+        var backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
+            parameters["backgroundColor"] : { r:255, g:255, b:255, a:1.0 };
+
+        //var spriteAlignment = THREE.SpriteAlignment.topLeft;
+
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        context.font = "Bold " + fontsize + "px " + fontface;
+
+        // get size data (height depends only on font size)
+        var metrics = context.measureText( message );
+        var textWidth = metrics.width;
+
+        // background color
+        context.fillStyle   = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
+                                      + backgroundColor.b + "," + backgroundColor.a + ")";
+        // border color
+        context.strokeStyle = "rgba(" + borderColor.r + "," + borderColor.g + ","
+                                      + borderColor.b + "," + borderColor.a + ")";
+
+        context.lineWidth = borderThickness;
+        roundRect(context, borderThickness/2, borderThickness/2, textWidth + borderThickness, fontsize * 1.4 + borderThickness, 6);
+        // 1.4 is extra height factor for text below baseline: g,j,p,q.
+
+        // text color
+        context.fillStyle = "rgba(0, 0, 0, 1.0)";
+
+        context.fillText( message, borderThickness, fontsize + borderThickness);
+
+        // canvas contents will be used for a texture
+        var texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+
+        var spriteMaterial = new THREE.SpriteMaterial( { map: texture } );
+        var sprite = new THREE.Sprite( spriteMaterial );
+
+        sprite.scale.set(100,50,1.0);
+        return sprite;
+    } // Source: http://stemkoski.github.io/Three.js/Sprite-Text-Labels.html
+
+    /* FUNCTION: Draw Rectangles (for text sprites) */
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.lineTo(x+w-r, y);
+        ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+        ctx.lineTo(x+w, y+h-r);
+        ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+        ctx.lineTo(x+r, y+h);
+        ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+        ctx.lineTo(x, y+r);
+        ctx.quadraticCurveTo(x, y, x+r, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    } // Source: http://stemkoski.github.io/Three.js/Sprite-Text-Labels.html
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~MAJOR FUNCTIONS: CREATE 3D OBJECTS~~~~
@@ -355,8 +463,20 @@ function renderSynMap(graph_object, element_id) {
 
             // Get Substitution Data
             // NOTE: CURRENTLY IMPLEMENTED FOR XY!!!!!!!!!!!!!!!!!!!!!!!!!!
-            var kn = points[i][6];
-            var ks = points[i][7];
+            var substitution_indexes = {"xy": [6, 7], "xz": [8, 9], "yz": [10, 11]};
+            var kn, ks;
+            if (color_by != "xyz") {
+                kn = points[i][substitution_indexes[color_by][0]];
+                ks = points[i][substitution_indexes[color_by][1]];
+            } else if (color_by == "xyz") {
+                kn = ( points[i][6] + points[i][8] + points[i][10] ) / 3;
+                ks = ( points[i][7] + points[i][9] + points[i][11] ) / 3;
+            } else {
+                console.log("Error: Unrecognized comparison")
+            }
+
+            // var kn = points[i][6];
+            // var ks = points[i][7];
             var knks = Math.log10(Math.pow(10, kn) / Math.pow(10, ks));
 
             if (!isNaN(kn)) {
@@ -380,20 +500,6 @@ function renderSynMap(graph_object, element_id) {
             
         }
 
-        // Assign colors.
-        // var compar = "ks";
-        // var minVal = Math.min.apply(null, histData[compar]);
-        // var maxVal = Math.max.apply(null, histData[compar]);
-        // var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
-        //
-        // for (var j=0; j<ptCount; j++ ) {
-        //     if (pointMutData[compar][j] != 'NULL') {
-        //         colors[j] = new THREE.Color(calcColor(pointMutData[compar][j]))
-        //     } else {
-        //         colors[j] = new THREE.Color("#fff");
-        //     }
-        // }
-
         // Build colors lists.
         var cList = ["ks", "kn", "knks"];
         for (var s=0; s<cList.length; s++) {
@@ -412,7 +518,7 @@ function renderSynMap(graph_object, element_id) {
         }
 
         // Apply colors to geometry.
-        plotGeo.colors = colors.ks;
+        plotGeo.colors = colors[hCurrent[1]];
 
         // Create points object.
         var pts = new THREE.Points(plotGeo, plotMat);
@@ -430,9 +536,9 @@ function renderSynMap(graph_object, element_id) {
     /* FUNCTION: Draw Chromosomes */
     function drawChromosomes() {
         /* 3d Object: Axes */
-        xAxis = buildAxisFromChr(graph_object.axes[0], graph_object.axes[1], graph_object.x[2], 'x');
-        yAxis = buildAxisFromChr(graph_object.axes[2], graph_object.axes[3], graph_object.y[2], 'y');
-        zAxis = buildAxisFromChr(graph_object.axes[4], graph_object.axes[5], graph_object.z[2], 'z');
+        xAxis = buildAxisFromChr(graph_object.x[1], graph_object.axes[0], graph_object.axes[1], graph_object.x[2], 'x');
+        yAxis = buildAxisFromChr(graph_object.y[1], graph_object.axes[2], graph_object.axes[3], graph_object.y[2], 'y');
+        zAxis = buildAxisFromChr(graph_object.z[1], graph_object.axes[4], graph_object.axes[5], graph_object.z[2], 'z');
 
         // Shift axes to place graph center in middle.
         xAxis.translateX(-graph_object.x[2] / 2);
@@ -536,6 +642,13 @@ function renderSynMap(graph_object, element_id) {
      --------------------------------------------------------------------------------------------------------*/
 
     function initialize() {
+        /* Reset Globals */
+        //camView = { "x": 0, "y": 0, "z": 80 };
+        histData = {"kn": [], "ks": [], "knks": []};
+        pointData = [];
+        colors = {"kn": [], "ks": [], "knks": []};
+
+        /* Set sizing variables */
         width = document.getElementById("rendering").clientWidth;
         height = window.innerHeight * 0.9;
         containerWidth = container.clientWidth;
@@ -592,13 +705,23 @@ function renderSynMap(graph_object, element_id) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~ANIMATE~~~~
      --------------------------------------------------------------------------------------------------------*/
-    var current = "ks";
+    var current = hCurrent[1];
+    //var current = "ks";
     function animate() {
         /* Update controls. */
         controls.update();
 
-        /* Update camera position record. */
-        camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
+        /* Camera control */
+        if (camUpdate) {
+            camera.position.x = camView.x;
+            camera.position.y = camView.y;
+            camera.position.z = camView.z;
+            camUpdate = false;
+        } else {
+            /* Update camera position record. */
+            camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
+        }
+
 
         /* Check for recoloring */
         if (hCurrent[1] != current) {
@@ -616,15 +739,6 @@ function renderSynMap(graph_object, element_id) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~HANDLERS~~~~
      --------------------------------------------------------------------------------------------------------*/
-
-    /* Histogram Change */
-    function updateColors(select) {
-        var geometry = points.geometry;
-        geometry.colors = colors[select];
-        geometry.colorsNeedUpdate = true;
-    }
-    //document.getElementById("").onclick = updateColors(?);
-    //window.addEventListener()
 
     /* Window Resize */
     function onWindowResize() {
@@ -727,17 +841,37 @@ function renderSynMap(graph_object, element_id) {
     // GridToggle.addEventListener("click", onGridToggle);
 }
 
+/*-----------------------------------------------------------------------------------------------------------------
+ ~~~~ POPULATE PAGE ~~~~
+ -----------------------------------------------------------------------------------------------------------------*/
 
 $(document).ready( function() {
-    // TODO: Start Spinny Wheely(s)
+    var d;
+    // TODO: Start Spinny Wheely(s) & end after loading
+    // Load data & launch initial visualizations
     $.when(loadData(final_experiment.links.graph)).done(function(data) {
-        // Log data (development)
-        //console.log(data);
-        // TODO: End spinny wheel(s)
-
-        // Render SynMap
-        renderSynMap(data, "canvas");
-        // Render Histograms
-        renderHistogram("hKs", histData.ks);
+        d = data;
+        // Render initial SynMap & Histogram
+        renderSynMap(data, "canvas", "xy");
+        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
     });
+
+    /* Monitor mutation ratio coloring option & update visualizations on change. */
+    var colorBySelect = $("#color_by");
+    colorBySelect.change( function () {
+        console.log(colorBySelect.val());
+        // Remove old SynMap
+        var oldCanvas = document.getElementById("canvas");
+        oldCanvas.parentNode.removeChild(oldCanvas);
+        // Add new canvas
+        var newCanvas = document.createElement('canvas');
+        newCanvas.id = 'canvas';
+        document.getElementById('rendering').appendChild(newCanvas);
+        // Remove old histogram.
+        d3.select("#chartSvg").remove();
+        // Draw new SynMap & histogram.
+        renderSynMap(d, "canvas", colorBySelect.val());
+        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+    });
+
 });
