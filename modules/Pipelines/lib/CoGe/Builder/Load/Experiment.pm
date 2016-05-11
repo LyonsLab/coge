@@ -144,7 +144,6 @@ sub build {
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 params => $self->params->{snp_params},
-                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
             my $snp_workflow;
@@ -172,7 +171,6 @@ sub build {
                 additional_metadata => $additional_metadata,
                 read_params => $self->params->{read_params},
                 methylation_params => $self->params->{methylation_params},
-                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
             my $methylation_workflow;
@@ -203,7 +201,6 @@ sub build {
                 additional_metadata => $additional_metadata,
                 read_params => $self->params->{read_params},
                 chipseq_params => $self->params->{chipseq_params},
-                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
             my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
@@ -222,7 +219,6 @@ sub build {
                 additional_metadata => $additional_metadata,
                 read_params => $self->params->{read_params},
                 chipseq_params => $self->params->{chipseq_params},
-                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
             my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
