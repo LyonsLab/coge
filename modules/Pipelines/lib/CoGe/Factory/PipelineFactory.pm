@@ -85,7 +85,7 @@ sub get {
         $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
     }
     elsif ($message->{type} eq "analyze_metaplot") {
-        $builder = CoGe::Builder::Methylation::MeasureMethylation->new($request);
+        $builder = CoGe::Builder::Methylation::CreateMetaplot->new($request);
     }        
     elsif ($message->{type} eq "analyze_diversity") {
         $builder = CoGe::Builder::PopGen::MeasureDiversity->new($request);

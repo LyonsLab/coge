@@ -1,4 +1,4 @@
-package CoGe::Builder::Methylation::MeasureMethylation;
+package CoGe::Builder::Methylation::CreateMetaplot;
 
 use Moose;
 with qw(CoGe::Builder::Buildable);
