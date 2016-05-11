@@ -2,6 +2,7 @@
 
 die "DIE $prog: Statistics::Descriptive module is missing! (try: perl -MCPAN -e 'install Statistics::Descriptive')" unless(eval{require Statistics::Descriptive});
 die "DIE $prog: Statistics::R module is missing! (try: perl -MCPAN -e 'install Statistics::R')" unless(eval{require Statistics::R});
+die "DIE $prog: Parallel::ForkManager module is missing!" unless(eval{require Parallel::ForkManager});
 die "DIE $prog: Bio::DB::Sam module is missing!" unless(eval{require Bio::DB::Sam});
 
 use strict;
@@ -9,6 +10,10 @@ use warnings;
 use Getopt::Long;
 use Data::Dumper;
 use File::Basename;
+use Parallel::ForkManager;
+use Hash::Merge;
+use Hash::Merge::Simple;
+use Storable;
 use Cwd;
 use Bio::DB::Sam;
 use Statistics::Descriptive;
@@ -28,6 +33,7 @@ my $windowSize = 10;
 my $metType;
 my $outputPrefix;
 my $FEAT_TYPE;
+my $CPUS = 1; # default to single processor
 my $QUIET = 0;
 
 &GetOptions(
@@ -42,11 +48,12 @@ my $QUIET = 0;
     "gff:s"      => \$gffFile,
     "bam:s"      => \$bamFile,
     "featType:s" => \$FEAT_TYPE,
+    "cpu:i"      => \$CPUS,
     "o:s"        => \$outputPrefix,
     "h|help"     => \$help
 );
 
-
+$| = 1;
 $help and &help;
 #@ARGV or &help;
 
@@ -67,7 +74,7 @@ sub main {
 			print STDERR "INFO $prog: Could not find file: " . $self->{_currentFile} . " -> next file\n"; next;
 		}
 		$self->makeWindows();
-	    $self->getCoverageFromBam();
+	    $self->getCoverageFromBam2();
 		$self->calcMeanAndCi();
 #		delete($self->{windows});
 #	}
@@ -250,6 +257,127 @@ sub getCoverageFromBam {
 			}
 		}
 	}
+}
+
+sub getCoverageFromBam2 {
+    my $self = shift;
+
+    print STDERR "Using $CPUS cpus\n" unless $QUIET;
+    my $pm = new Parallel::ForkManager($CPUS-1);
+    $pm->run_on_finish(
+        sub { 
+            my ($pid, $exit_code, $chr) = @_;
+            
+            my $tmpFile = $outputPrefix.'_'.$chr.'.tmp';
+            next unless -e $tmpFile;
+            
+            print STDERR "Merging $chr\n" unless $QUIET;
+            my $h = retrieve($tmpFile);
+            Hash::Merge::set_behavior('RIGHT_PRECEDENT');
+            $self->{windows} = Hash::Merge::merge($self->{windows}, $h);
+        }
+    );
+    
+    my @sortedChr = sort keys %{$self->{features}};
+    
+    foreach my $chr (@sortedChr) {
+        print STDERR "Starting $chr\n" unless $QUIET;
+        $pm->start($chr) and next; # fork
+        
+        my $sam = Bio::DB::Sam->new(-bam => $self->{_currentFile});
+        
+        foreach my $featureId (sort {$self->{features}->{$chr}->{$a}->{start} <=> $self->{features}->{$chr}->{$b}->{start} } keys %{$self->{features}->{$chr}} ) {
+            #print STDERR "\r$chr $featureId" unless $QUIET;
+            
+            my $start  = $self->{features}->{$chr}->{$featureId}->{start};
+            my $stop   = $self->{features}->{$chr}->{$featureId}->{stop};
+            my $strand = $self->{features}->{$chr}->{$featureId}->{strand};
+            
+            next if ($rmInclude eq 'YES' && ($start+$inside)>$stop); # check if feature is not inclute in area of interest
+            
+            foreach my $typeCoord (sort ('start', 'stop') ) {
+                # extract coverage from bam file
+                my ($tmpStart, $tmpStop);
+                if($typeCoord eq 'start'){
+                    $tmpStart = $start - $outside;
+                    $tmpStop = $start + $inside;
+                }
+                elsif($typeCoord eq 'stop'){
+                    $tmpStart = $stop - $inside;
+                    $tmpStop = $stop + $outside;
+                }
+                
+                my %coverage;
+                $sam->fast_pileup($chr.':'.$tmpStart.'-'.$tmpStop,
+                    sub {
+                         my (undef,$pos,$pileup) = @_;
+                        $coverage{$pos} = @$pileup;
+                    }
+                );
+
+                # add 0 and filtered out unwanted position
+                my $k = 1 ;
+                for(my $i = $tmpStart ; $i < $tmpStop ; $i++ ){
+                    my ($stOrSt, $pos);
+                    if ($strand eq '+') {
+                        if($typeCoord eq 'start') {
+                            $stOrSt = 'st' ;
+                            $pos = ($i-$start)+$outside+1 ;
+                        }
+                        elsif($typeCoord eq 'stop') {
+                            $stOrSt = 'sp' ;
+                            $pos = ($i-$stop)+$inside+1 ;
+                        }
+                    }
+                    elsif ($strand eq '-') {
+                        if ($typeCoord eq 'start') {
+                            $stOrSt = 'sp' ;
+                            $pos = $inside+$outside-(($i-$start)+$outside+1)+1 ;
+                        }
+                        elsif ($typeCoord eq 'stop') {
+                            $stOrSt = 'st' ;
+                            $pos = $inside+$outside-(($i-$stop)+$inside) ;
+                        }
+                    }
+
+                    if (not defined $coverage{$i}) { # when cov is equal to 0
+                        if(defined $matrice){ $self->{mat}->{$stOrSt}->{$k++}->{$featureId} = 0 ; }
+                        next if (defined $outOfRange and $typeCoord eq 'start' and $i>$stop );
+                        next if (defined $outOfRange and $typeCoord eq 'stop' and $i<$start );
+                        push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSt}}, 0) ;
+                    }
+                    else {
+                        if(defined $matrice){ $self->{mat}->{$stOrSt}->{$k++}->{$featureId} = $coverage{$i} ;}
+                        next if (defined $outOfRange and $typeCoord eq 'start' and $i>$stop );
+                        next if (defined $outOfRange and $typeCoord eq 'stop' and $i<$start );
+                        push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSt}}, $coverage{$i});
+                    }
+                }
+            }
+        }
+        print STDERR "\n" unless $QUIET;
+        
+        print STDERR 'Finished ', $chr, ' ', scalar(keys %{$self->{windows}}), "\n" unless $QUIET;
+        store $self->{windows}, $outputPrefix.'_'.$chr.'.tmp';
+        $pm->finish; # exit the child process
+        
+        # print Dumper $self->{windows}; exit;
+    }
+    $pm->wait_all_children;
+    
+    if (defined($matrice)) {
+        print join("\t", keys %{$self->{mat}->{up}->{"1"}}), "\n" ;
+        foreach my $startOrStop (sort keys %{$self->{cov}}) {
+            foreach my $pos (sort {$a <=> $b} keys %{$self->{mat}->{$startOrStop}}) {
+                my @print ;
+                push (@print, $pos) ;
+                foreach my $featureId (sort keys %{$self->{mat}->{$startOrStop}->{$pos}}) {
+                    push (@print, $self->{mat}->{$startOrStop}->{$pos}->{$featureId}) ;
+                }
+                print join("\t", @print), "\n" ;
+            }
+        }
+    }
 }
 
 sub makeWindows {
