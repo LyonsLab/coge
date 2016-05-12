@@ -329,21 +329,23 @@ define(['dojo/_base/declare',
     // ----------------------------------------------------------------
 
     _create_track_list: function(parent) {
-        var root = dojo.create('div', { id: 'coge', style: 'display:flex' }, parent);
+        var root = dojo.create('div', { id: 'coge', style: 'display:flex;overflow:hidden;' }, parent);
         var side = 'right';
         if (localStorage) {
         	var s = localStorage.getItem('track-selector-side');
         	if (s)
         		side = s;
         }
-        new ContentPane({region: side, splitter: true}, root);
+        var cp = new ContentPane({region: side, splitter: true}, root);
+        aspect.after(cp, "resize", function(size) { dojo.byId('track_pane').style.width=size.w - dojo.position('feature_hits').w + 'px'; }, true);
 
         dojo.create('div', { id: 'feature_hits' }, root);
     
         var pane = dojo.create('div', { id: 'track_pane' }, root);
         this._create_text_filter(pane);
         this._update_text_filter_control();
-        this.tracks_div = dojo.create('div', { id: 'coge-tracks' }, pane);
+        var scroller = dojo.create('div', { style: 'height:100%;overflow-x:hidden;overflow-y:auto;' }, pane);
+        this.tracks_div = dojo.create('div', null, scroller);
 
         this._track_configs.filter(function(tc) {
     		var type = tc.coge.type;

@@ -80,12 +80,6 @@
 	width: 10px;
 }
 
-#coge-tracks {
-	overflow-x: hidden;
-	overflow-y: auto;
-	width: 100%;
-}
-
 .coge-tracks-shown {
 	color: gray;
 	margin-bottom: -4px;
@@ -126,6 +120,10 @@
   content: "\e014";
 }
 
+html {
+	overflow: hidden;
+}
+
 #text_filter_cancel {
 	cursor: pointer;
 	display: none;
@@ -141,8 +139,9 @@
 
 #track_pane {
 	background-color: rgb(242, 242, 242);
-	overflow-x: hidden;
-	overflow-y: auto;
+	display: flex;
+    flex-direction: column;
+	overflow: hidden;
 	width: 215px;
 }
 
