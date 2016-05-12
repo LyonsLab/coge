@@ -26,6 +26,7 @@ sub build {
     my $genome = $opts->{genome};
     my $user = $opts->{user};
     my $bam_file = $opts->{bam_file}; # path to sorted & indexed bam file
+    my $experiment_id = $opts->{experiment_id}; # for when called from ExperimentView
 #    my $metadata = $opts->{metadata};
 #    my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
@@ -76,7 +77,9 @@ sub build {
         wid => $wid,
         annotations => $annotations,
         staging_dir => $staging_dir,
-        done_files => \@done_files
+        done_files => \@done_files,
+        item_id => $experiment_id,
+        item_type => 'experiment'
     );
     push @tasks, $metadata_task;
 
@@ -91,7 +94,7 @@ sub generate_additional_metadata {
     my $metaplot_image_path = shift;
     
     my @annotations;
-    push @annotations, "$metaplot_image_path|||metaplot|" . join(' ', map { $_.' '.$metaplot_params->{$_} } ('outer', 'inner', 'window'));
+    push @annotations, "$metaplot_image_path|||metaplot|parameters: " . join(' ', map { $_.' '.$metaplot_params->{$_} } ('outer', 'inner', 'window'));
     
     return \@annotations;
 }
@@ -107,6 +110,7 @@ sub create_metaplot_job {
     my $staging_dir = $opts{staging_dir};
 
     my $cmd = catfile($CONF->{SCRIPTDIR}, 'methylation', 'makeMetaplot.pl');
+    $cmd = 'nice ' . $cmd;
     my $output_name = 'metaplot';
 
     return {
@@ -120,6 +124,7 @@ sub create_metaplot_job {
             ['-w', $window_size, 0],
             ['-outRange', '', 0],
             ['-featType', $feat_type, 0],
+            ['-cpu', 8, 0],
             ['-quiet', '', 0], # disable frequent printing of feature ID
             ['-bam', $bam_file, 0]
         ],

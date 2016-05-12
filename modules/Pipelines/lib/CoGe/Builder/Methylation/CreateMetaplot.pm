@@ -37,14 +37,6 @@ sub build {
     }    
     my $genome = $experiment->genome;
     
-    # Copy metadata from input experiment
-#    my $metadata = { # could almost use experiment->to_hash here except for source_name
-#        name => $experiment->name,
-#        version => $experiment->version,
-#        source => $experiment->source->name,
-#        restricted => $experiment->restricted
-#    };
-    
     # Get input file
     my $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
 
@@ -59,6 +51,7 @@ sub build {
         wid => $self->workflow->id,
         genome => $genome,
         bam_file => $bam_file,
+        experiment_id => $eid,
 #        metadata => $metadata,
         methylation_params => $self->params->{methylation_params}
     });

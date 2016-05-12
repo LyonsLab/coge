@@ -2203,6 +2203,8 @@ sub add_metadata_to_results_job {
     my %opts = @_;
     my $user = $opts{user};
     my $wid = $opts{wid};
+    my $item_id = $opts{item_id};
+    my $item_type = $opts{item_type};
     my $annotations = $opts{annotations}; # array ref
     my $staging_dir = $opts{staging_dir};
     my $done_files = $opts{done_files};
@@ -2224,6 +2226,11 @@ sub add_metadata_to_results_job {
         ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-log', $log_file, 0]
     ];
+    
+    if ($item_id && $item_type) {
+        push @$args, ['-item_id', $item_id, 0];
+        push @$args, ['-item_type', $item_type, 0];  
+    }
 
     return {
         cmd => $cmd,
@@ -2233,7 +2240,6 @@ sub add_metadata_to_results_job {
             @$done_files
         ],
         outputs => [ 
-            $result_file,
             $log_file
         ],
         description => "Adding metadata to results..."
