@@ -2,6 +2,10 @@
  * Created by senorrift on 4/29/16.
  */
 
+/*-----------------------------------------------------------------------------------------------------------------
+ ~~~~ GLOBAL DECLARATIONS ~~~~
+ -----------------------------------------------------------------------------------------------------------------*/
+
 // SynMap Global Variables [note: when adding, make sure to reset in renderSynMap().initialize()]
 var camView = { "x": 0, "y": 0, "z": 80 };
 var histData = {"kn": [], "ks": [], "knks": []};
@@ -12,9 +16,10 @@ var colors = {"kn": [], "ks": [], "knks": []};
 var camUpdate = false;
 var hQueue = ["hKnKs", "hKs", "hKn"];
 var hCurrent = ["hKs", "ks"];
-
-// Color scheme variables
+var gridState = true;
 var colorScheme = "Jet";
+
+// Color schemes variables
 var schemes = {
     "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
         [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
@@ -101,6 +106,24 @@ function rotateHistogram(direction) {
 function resetCamera() {
     camUpdate = true;
     camView = { "x": 0, "y": 0, "z": 80 };
+}
+
+/* CORE FUNCTION: Toggle Grid Display */
+function toggleGrid() {
+    gridState = !gridState;
+}
+
+/* CORE FUNCTION: Empty Renderings */
+function emptyRenderings() {
+    // Remove old SynMap
+    var oldCanvas = document.getElementById("canvas");
+    oldCanvas.parentNode.removeChild(oldCanvas);
+    // Add new canvas
+    var newCanvas = document.createElement('canvas');
+    newCanvas.id = 'canvas';
+    document.getElementById('rendering').appendChild(newCanvas);
+    // Remove old histogram.
+    d3.select("#chartSvg").remove();
 }
 
 /* CORE FUNCTION: Render Histograms */
@@ -554,88 +577,63 @@ function renderSynMap(graph_object, element_id, color_by) {
         return [xAxis, yAxis, zAxis];
     }
 
-    /* TODO: FUNCTION: Draw Grid */
-    // function drawGrid(xLengths, xMax, yLengths, yMax, zLengths, zMax) {
-    //     var g = new THREE.Object3D();
-    //     var gridWidth = 0.25;
-    //     var gridMat = new THREE.MeshBasicMaterial({color: 'grey'});
-    //
-    //     for (var i=1; i<xLengths.length; i++) {
-    //         var start;
-    //         if (i == xLengths.length - 1) {
-    //             start =
-    //         } else {
-    //             start = xLengths[i]
-    //         }
-    //         var yxGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
-    //         var yxGrid = new THREE.Mesh( yxGridGeo, gridMat );
-    //         yxGrid.position.x = (startPositions.x / 2);
-    //         yxGrid.position.y = e.end;
-    //         yxGrid.position.z = 0;
-    //         g.add(yxGrid);
-    //
-    //         var yzGridGeo = new THREE.BoxGeometry (gridWidth, gridWidth, startPositions.z);
-    //         var yzGrid = new THREE.Mesh( yzGridGeo, gridMat);
-    //         yzGrid.position.x = 0;
-    //         yzGrid.position.y = e.end; //(yStartPos / 2);
-    //         yzGrid.position.z = (startPositions.z / 2);
-    //         g.add(yzGrid)
-    //     }
-    //
-    //     yChr.forEach( function(e) {
-    //         var yxGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
-    //         var yxGrid = new THREE.Mesh( yxGridGeo, gridMat );
-    //         yxGrid.position.x = (startPositions.x / 2);
-    //         yxGrid.position.y = e.end;
-    //         yxGrid.position.z = 0;
-    //         g.add(yxGrid);
-    //
-    //         var yzGridGeo = new THREE.BoxGeometry (gridWidth, gridWidth, startPositions.z);
-    //         var yzGrid = new THREE.Mesh( yzGridGeo, gridMat);
-    //         yzGrid.position.x = 0;
-    //         yzGrid.position.y = e.end; //(yStartPos / 2);
-    //         yzGrid.position.z = (startPositions.z / 2);
-    //         g.add(yzGrid)
-    //     });
-    //
-    //     xChr.forEach( function(e) {
-    //         var hGridGeo = new THREE.BoxGeometry( gridWidth, gridWidth, startPositions.z );
-    //         var hGrid = new THREE.Mesh( hGridGeo, gridMat );
-    //         hGrid.position.x = e.end;
-    //         hGrid.position.y = 0;
-    //         hGrid.position.z = (startPositions.z / 2);
-    //         g.add(hGrid);
-    //
-    //         var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
-    //         var vGrid = new THREE.Mesh( vGridGeo, gridMat);
-    //         vGrid.position.x = e.end;
-    //         vGrid.position.y = (startPositions.y /2);
-    //         vGrid.position.z = 0;
-    //         g.add(vGrid)
-    //     });
-    //
-    //     zChr.forEach( function(e) {
-    //         var hGridGeo = new THREE.BoxGeometry( startPositions.x, gridWidth, gridWidth );
-    //         var hGrid = new THREE.Mesh( hGridGeo, gridMat );
-    //         hGrid.position.x = (startPositions.x / 2);
-    //         hGrid.position.y = 0;
-    //         hGrid.position.z = e.end;
-    //         g.add(hGrid);
-    //
-    //         var vGridGeo = new THREE.BoxGeometry (gridWidth, startPositions.y, gridWidth);
-    //         var vGrid = new THREE.Mesh( vGridGeo, gridMat);
-    //         vGrid.position.x = 0;
-    //         vGrid.position.y = (startPositions.y / 2);
-    //         vGrid.position.z = e.end;
-    //         g.add(vGrid)
-    //     });
-    //
-    //     g.translateX(-startPositions.x / 2);
-    //     g.translateY(-startPositions.y / 2);
-    //     g.translateZ(-startPositions.z / 2);
-    //     //scene.add(grid);
-    //     return g;
-    // }
+    /* FUNCTION: Draw Grid */
+    function drawGrid(graph_object) {
+        var g = new THREE.Object3D();
+        var gridWidth = 0.25;
+        var gridMat = new THREE.MeshBasicMaterial({color: 'grey'});
+
+        var xA = graph_object.axes[1];
+        var xL = graph_object.x[2];
+        xA.push(xL);
+        var yA = graph_object.axes[3];
+        var yL = graph_object.y[2];
+        yA.push(yL);
+        var zA = graph_object.axes[5];
+        var zL = graph_object.z[2];
+        zA.push(zL);
+
+        for (var x=1; x<xA.length; x++) {
+            var xyGeo = new THREE.BoxGeometry(gridWidth, yL, gridWidth);
+            var xzGeo = new THREE.BoxGeometry(gridWidth, gridWidth, zL);
+            var xyGrid = new THREE.Mesh( xyGeo, gridMat );
+            xyGrid.position.set(xA[x], yL/2, 0);
+            g.add(xyGrid);
+            var xzGrid = new THREE.Mesh( xzGeo, gridMat );
+            xzGrid.position.set(xA[x], 0, zL/2);
+            g.add(xzGrid);
+        }
+
+        for (var y=1; y<yA.length; y++) {
+            var yxGeo = new THREE.BoxGeometry(xL, gridWidth, gridWidth);
+            var yzGeo = new THREE.BoxGeometry(gridWidth, gridWidth, zL);
+            var yxGrid = new THREE.Mesh( yxGeo, gridMat );
+            yxGrid.position.set(xL/2, yA[y], 0);
+            g.add(yxGrid);
+            var yzGrid = new THREE.Mesh( yzGeo, gridMat );
+            yzGrid.position.set(0, yA[y], zL/2);
+            g.add(yzGrid);
+        }
+
+        for (var z=1; z<zA.length; z++) {
+            var zxGeo = new THREE.BoxGeometry(xL, gridWidth, gridWidth);
+            var zyGeo = new THREE.BoxGeometry(gridWidth, yL, gridWidth);
+
+            var zxGrid = new THREE.Mesh( zxGeo, gridMat );
+            zxGrid.position.set(xL/2, 0, zA[z]);
+            g.add(zxGrid);
+
+            var zyGrid = new THREE.Mesh( zyGeo, gridMat );
+            zyGrid.position.set(0, yL/2, zA[z]);
+            g.add(zyGrid);
+        }
+
+        g.translateX(-xL / 2);
+        g.translateY(-yL / 2);
+        g.translateZ(-zL / 2);
+
+        return g
+    }
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~INITIALIZE~~~~
@@ -674,18 +672,15 @@ function renderSynMap(graph_object, element_id, color_by) {
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
 
-        // Clear point data.
-        //pointData = [];
-
         /* Create chromosome axes */
         var axes = drawChromosomes();
         for (var i = 0; i < axes.length; i++) {
             scene.add(axes[i])
         }
 
-        /* TODO: Create grid */
-        // grid = drawGrid();
-        // scene.add(grid);
+        /* Create grid */
+        grid = drawGrid(graph_object);
+        scene.add(grid);
 
         /* Create points geometry */
         points = drawPoints(graph_object.points);
@@ -706,7 +701,8 @@ function renderSynMap(graph_object, element_id, color_by) {
      ~~~~ANIMATE~~~~
      --------------------------------------------------------------------------------------------------------*/
     var current = hCurrent[1];
-    //var current = "ks";
+    var gridS = gridState;
+
     function animate() {
         /* Update controls. */
         controls.update();
@@ -727,6 +723,16 @@ function renderSynMap(graph_object, element_id, color_by) {
         if (hCurrent[1] != current) {
             updateColors(hCurrent[1]);
             current = hCurrent[1];
+        }
+
+        /* Check for grid toggling */
+        if (gridState != gridS) {
+            if (gridState) {
+                scene.add(grid);
+            } else {
+                scene.remove(grid);
+            }
+            gridS = gridState;
         }
 
         /* Render the scene. */
@@ -751,7 +757,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         containerWidth = container.clientWidth;
         containerHeight = container.clientHeight;
 
-        // TODO: Rerender Histograms on page resize
+        // Re-render Histograms on page resize
         d3.select("#chartSvg").remove();
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);
     }
@@ -760,11 +766,12 @@ function renderSynMap(graph_object, element_id, color_by) {
     /* Mouse Click */
     function onDocumentMouseDown( event ) {
         // Specify object of interest (points).
+        var canvas = $("canvas");
         var geometry = points.geometry;
 
         // Calculate mouse location on canvas.
-        var offset_l = $("canvas").offset().left - $(window).scrollLeft();
-        var offset_t = $("canvas").offset().top - $(window).scrollTop();
+        var offset_l = canvas.offset().left - $(window).scrollLeft();
+        var offset_t = canvas.offset().top - $(window).scrollTop();
         mouse.x = ( (event.clientX - offset_l) / container.clientWidth ) * 2 - 1;
         mouse.y = -( (event.clientY - offset_t) / container.clientHeight ) * 2 + 1;
 
@@ -826,19 +833,6 @@ function renderSynMap(graph_object, element_id, color_by) {
     }
     window.addEventListener('mousedown', onDocumentMouseDown, false);
 
-    /* TODO: Reinstate Grid Toggle */
-    // var grid_state = 1;
-    // function onGridToggle() {
-    //     if (grid_state == 1) {
-    //         grid_state = 0;
-    //         scene.remove(grid);
-    //     } else {
-    //         grid_state = 1;
-    //         scene.add(grid);
-    //     }
-    // }
-    // var GridToggle = document.getElementById("grid_toggle");
-    // GridToggle.addEventListener("click", onGridToggle);
 }
 
 /*-----------------------------------------------------------------------------------------------------------------
@@ -859,16 +853,17 @@ $(document).ready( function() {
     /* Monitor mutation ratio coloring option & update visualizations on change. */
     var colorBySelect = $("#color_by");
     colorBySelect.change( function () {
-        console.log(colorBySelect.val());
-        // Remove old SynMap
-        var oldCanvas = document.getElementById("canvas");
-        oldCanvas.parentNode.removeChild(oldCanvas);
-        // Add new canvas
-        var newCanvas = document.createElement('canvas');
-        newCanvas.id = 'canvas';
-        document.getElementById('rendering').appendChild(newCanvas);
-        // Remove old histogram.
-        d3.select("#chartSvg").remove();
+        emptyRenderings();
+        // Draw new SynMap & histogram.
+        renderSynMap(d, "canvas", colorBySelect.val());
+        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+    });
+
+    /* Monitor mutation ratio coloring option & update visualizations on change. */
+    var colorSchemeSelect = $("#color_scheme");
+    colorSchemeSelect.change( function () {
+        emptyRenderings();
+        colorScheme = colorSchemeSelect.val();
         // Draw new SynMap & histogram.
         renderSynMap(d, "canvas", colorBySelect.val());
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);

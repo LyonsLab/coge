@@ -153,13 +153,21 @@
         </div>
         <div id="opts" class="contentBox">
             <span style="text-align: center;">Controls & Options</span><br>
-            <button type="button" onclick="resetCamera()">Reset Camera</button><br>
+            <button type="button" onclick="resetCamera()">Reset Camera</button>
+            <button type="button" onclick="toggleGrid()">Toggle Grid</button><br>
             <label>Mutation Ratio: </label>
             <select id="color_by">
                 <option value="xz">XY</option>
                 <option value="yz">XZ</option>
                 <option value="yz">YZ</option>
                 <option value="xyz">XYZ</option>
+            </select>
+            <label>Color Scheme: </label>
+            <select id="color_scheme">
+                <option value="Jet" selected>Rainbow</option>
+                <option value="Bluered">Blue-Red</option>
+                <option value="Portland">Portland</option>
+                <option value="Viridis">Viridis</option>
             </select>
         </div>
     </div>
