@@ -528,9 +528,9 @@ var metaplotMenu = {
 
 	is_valid: function () {
         return { 
-            'metaplot-outer':  this.dialog.find("#metaplot-outer").val(),
-            'metaplot-inner':  this.dialog.find("#metaplot-inner").val(),
-            'metaplot-window': this.dialog.find("#metaplot-window").val()
+            'outer':  this.dialog.find("#metaplot-outer").val(),
+            'inner':  this.dialog.find("#metaplot-inner").val(),
+            'window': this.dialog.find("#metaplot-window").val()
         };
 	},
 	
