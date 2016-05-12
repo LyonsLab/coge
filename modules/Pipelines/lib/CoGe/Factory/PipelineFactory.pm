@@ -17,7 +17,7 @@ use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Expression::MeasureExpression;
-use CoGe::Builder::Methylation::MeasureMethylation;
+use CoGe::Builder::Methylation::CreateMetaplot;
 use CoGe::Builder::PopGen::MeasureDiversity;
 
 has 'db' => (

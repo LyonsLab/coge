@@ -6,35 +6,44 @@ with qw(CoGe::Builder::Buildable);
 use Data::Dumper qw(Dumper);
 use Switch;
 use CoGe::Core::Storage qw(get_experiment_files);
-use CoGe::Builder::Methylation::Bismark qw(build);
-use CoGe::Builder::Methylation::BWAmeth qw(build);
+use CoGe::Builder::Methylation::Metaplot qw(build);
 
 sub get_name {
     #my $self = shift;
-    return 'Measure Methylation';
+    return 'Create Metaplot';
 }
 
 sub build {
     my $self = shift;
     
-    # Validate inputs
+    # Validate inputs #TODO add error messages to STDERR
     my $eid = $self->params->{eid} || $self->params->{experiment_id};
-    return unless $eid;
-    return unless $self->params->{methylation_params};
-    my $method = $self->params->{methylation_params}->{method};
+    my $methylation_params = $self->params->{methylation_params};
+    unless ($eid && $methylation_params) {
+        print STDERR "CoGe::Builder::Methylation::CreateMetaplot ERROR, missing 'eid' or 'methylation_params'\n";
+        return;
+    }
+    my $metaplot_params = $self->params->{methylation_params}->{metaplot_params};
+    unless ($metaplot_params) {
+        print STDERR "CoGe::Builder::Methylation::CreateMetaplot ERROR, missing 'metaplot_params'\n";
+        return;
+    }    
     
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
-    return unless $experiment;
+    unless ($experiment) {
+        print STDERR "CoGe::Builder::Methylation::CreateMetaplot ERROR, experiment '$eid' not found\n";
+        return;
+    }    
     my $genome = $experiment->genome;
     
     # Copy metadata from input experiment
-    my $metadata = { # could almost use experiment->to_hash here except for source_name
-        name => $experiment->name,
-        version => $experiment->version,
-        source => $experiment->source->name,
-        restricted => $experiment->restricted
-    };
+#    my $metadata = { # could almost use experiment->to_hash here except for source_name
+#        name => $experiment->name,
+#        version => $experiment->version,
+#        source => $experiment->source->name,
+#        restricted => $experiment->restricted
+#    };
     
     # Get input file
     my $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
@@ -45,23 +54,15 @@ sub build {
     my @tasks;
     
     # Add methylation analysis workflow
-    my $methyl_params = {
+    my $metaplot_workflow = CoGe::Builder::Methylation::Metaplot::build({
         user => $self->user,
         wid => $self->workflow->id,
         genome => $genome,
-        input_file => $bam_file,
-        metadata => $metadata,
-        read_params => $self->params->{read_params},
+        bam_file => $bam_file,
+#        metadata => $metadata,
         methylation_params => $self->params->{methylation_params}
-    };
-    
-    my $methyl_workflow;
-    switch ($method) { # TODO move this into subroutine
-        case 'bismark' { $methyl_workflow = CoGe::Builder::Methylation::Bismark::build($methyl_params); }
-        case 'bwameth' { $methyl_workflow = CoGe::Builder::Methylation::BWAmeth::build($methyl_params); }
-        else           { die "unknown methylation method"; }
-    }
-    push @tasks, @{$methyl_workflow->{tasks}};
+    });
+    push @tasks, @{$metaplot_workflow->{tasks}};
         
     $self->workflow->add_jobs(\@tasks);
     

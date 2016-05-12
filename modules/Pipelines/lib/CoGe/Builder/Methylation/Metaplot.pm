@@ -25,12 +25,16 @@ sub build {
     my $opts = shift;
     my $genome = $opts->{genome};
     my $user = $opts->{user};
-    my $bam_file = $opts->{input_file}; # path to sorted & indexed bam file
+    my $bam_file = $opts->{bam_file}; # path to sorted & indexed bam file
 #    my $metadata = $opts->{metadata};
 #    my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};
     my $methylation_params = $opts->{methylation_params};
-    my $metaplot_params = $methylation_params->{metaplot};
+    my $metaplot_params = $methylation_params->{metaplot_params};
+    unless ($genome && $user && $bam_file && $wid && $methylation_params && $metaplot_params) {
+        print STDERR " CoGe::Builder::Methylation::Metaplot ERROR, missing inputs:\n", Dumper $opts, "\n";
+        return;
+    }
 
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);

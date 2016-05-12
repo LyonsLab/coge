@@ -183,7 +183,7 @@ sub build {
             push @done_files, @{$methylation_workflow->{done_files}};
             
             # Add metaplot workflow (if specified and genome is annotated)
-            if ( $self->params->{methylation_params}->{metaplot} ) {
+            if ( $self->params->{methylation_params}->{metaplot_params} ) {
                 my $metaplot_workflow = CoGe::Builder::Methylation::Metaplot::build($methylation_params);
                 push @tasks, @{$metaplot_workflow->{tasks}};
                 push @done_files, @{$metaplot_workflow->{done_files}};
