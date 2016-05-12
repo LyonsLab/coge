@@ -58,6 +58,7 @@ $(document).ready(function() {
     // Initialize analysis dialogs
     snpMenu.init();
     expressionMenu.init();
+    metaplotMenu.init();
     diversityMenu.init();
     
     // Open status dialog
@@ -121,7 +122,8 @@ $(document).ready(function() {
                     	</td>
                     	<td>
                     		<span class="data5 link" ondblclick="snpMenu.open();" onclick="snpMenu.open();">SNPs</span> |
-                    		<span class="data5 link" ondblclick="expressionMenu.open();" onclick="expressionMenu.open();">Expression</span>
+                    		<span class="data5 link" ondblclick="expressionMenu.open();" onclick="expressionMenu.open();">Expression</span> |
+                    		<span class="data5 link" ondblclick="metaplotMenu.open();" onclick="metaplotMenu.open();">Metaplot</span>
                     	</td>
 			        </tr>
 			        </TMPL_IF>
