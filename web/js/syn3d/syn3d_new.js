@@ -18,6 +18,7 @@ var hQueue = ["hKnKs", "hKs", "hKn"];
 var hCurrent = ["hKs", "ks"];
 var gridState = true;
 var colorScheme = "Jet";
+var dataSubset;
 
 // Color schemes variables
 var schemes = {
@@ -132,6 +133,7 @@ function renderHistogram(element_id, values) {
         Simple Histogram: https://bl.ocks.org/mbostock/3048450
         Basic Mouseover: http://bl.ocks.org/phil-pedruco/9032348
         Tooltip Mouseover: http://bl.ocks.org/Caged/6476579
+        Brushing (range selector): http://bl.ocks.org/cjfont/4420257
      */
 
     // Convert type of values.
@@ -200,7 +202,7 @@ function renderHistogram(element_id, values) {
     svg.call(tip);
 
     // Draw histogram bars.
-    // TODO: FIX overlapping bars (maybe has to do with SVG element size).
+    // TODO: FIX overlapping bars (maybe has to do with SVG element size). Maybe use math.floor
     var bar = svg.selectAll(".bar")
         .data(data)
         .enter().append("g")
@@ -221,13 +223,54 @@ function renderHistogram(element_id, values) {
             d3.select(this).attr("fill", function(d) { return calcColor(d.x) })
         });
 
-    // Append count labels to bars.
-    // bar.append("text")
-    //     .attr("dy", ".75em")
-    //     .attr("y", 6)
-    //     .attr("x", width/binCount/2)
-    //     .attr("text-anchor", "middle")
-    //     .text(function(d) { return formatCount(d.y); });
+    // Set up & animate selection brush.
+    var brush, brushg;
+
+    function brushstart() {}
+
+    function brushmove() {}
+
+    function brushend() {
+        if (!brush.empty()) {
+            dataSubset = brush.extent();
+        } else {
+            dataSubset = [minVal, maxVal]
+        }
+        console.log(dataSubset);
+    }
+
+    function resizePath(d) {
+        var e = +(d == "e"),
+            x = e ? 1 : -1,
+            h = height * 2/3,
+            y = ((height - h) / 2);
+        return "M" + (.5 * x) + "," + y
+            + "A6,6 0 0 " + e + " " + (6.5 * x) + "," + (y + 6)
+            + "V" + (y + h - 6)
+            + "A6,6 0 0 " + e + " " + (.5 * x) + "," + (y + h)
+            + "Z"
+            + "M" + (2.5 * x) + "," + (y + 8)
+            + "V" + (y + h - 8)
+            + "M" + (4.5 * x) + "," + (y + 8)
+            + "V" + (y + h - 8);
+    }
+
+    brush = d3.svg.brush()
+        .x(x)
+        .on("brushstart", brushstart)
+        .on("brush", brushmove)
+        .on("brushend", brushend);
+
+    brushg = svg.append("g")
+        .attr("class", "brush")
+        .call(brush);
+
+    brushg.selectAll("rect")
+        .attr("height", height);
+
+    brushg.selectAll(".resize").append("path").attr("d", resizePath);
+
+    if (brush) { brushmove(); }
 
     // Draw X axis.
     svg.append("g")
@@ -868,5 +911,7 @@ $(document).ready( function() {
         renderSynMap(d, "canvas", colorBySelect.val());
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);
     });
+
+    //var viewSubsetSelect =
 
 });
