@@ -7,7 +7,7 @@
  -----------------------------------------------------------------------------------------------------------------*/
 
 // SynMap Global Variables [note: when adding, make sure to reset in renderSynMap().initialize()]
-var camView = { "x": 0, "y": 0, "z": 80 };
+var camView = { "x": 0, "y": 0, "z": 120 };
 var histData = {"kn": [], "ks": [], "knks": []};
 var pointData = [];
 var colors = {"kn": [], "ks": [], "knks": []};
@@ -911,7 +911,5 @@ $(document).ready( function() {
         renderSynMap(d, "canvas", colorBySelect.val());
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);
     });
-
-    //var viewSubsetSelect =
 
 });
