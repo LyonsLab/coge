@@ -33,7 +33,14 @@ sub build {
     my $methylation_params = $opts->{methylation_params};
     my $metaplot_params = $methylation_params->{metaplot_params};
     unless ($genome && $user && $bam_file && $wid && $methylation_params && $metaplot_params) {
-        print STDERR " CoGe::Builder::Methylation::Metaplot ERROR, missing inputs:\n", Dumper $opts, "\n";
+        print STDERR " CoGe::Builder::Methylation::Metaplot ERROR, missing inputs: ",
+            ($genome ? '' : ' genome '),
+            ($user ? '' : ' user '),
+            ($bam_file ? '' : ' bam_file '),
+            ($wid ? '' : ' wid '),
+            ($methylation_params ? '' : ' methylation_params '),
+            ($metaplot_params ? '' : ' metaplot_params '),
+            "\n";
         return;
     }
 
@@ -42,7 +49,10 @@ sub build {
 
     # Make sure genome is annotated as is required by metaplot script
     my $isAnnotated = $genome->has_gene_features;
-    return unless $isAnnotated;
+    unless ($isAnnotated) {
+        print STDERR "CoGe::Builder::Methylation::Metaplot ERROR, genome must be annotated to generate metaplot\n";
+        return;
+    }
 
     #
     # Build the workflow
