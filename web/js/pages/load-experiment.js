@@ -338,7 +338,7 @@ $.extend(MethylationView.prototype, {
             if (metaplot_enabled) {
 	            this.data.methylation_params = $.extend(this.data.methylation_params, 
 	            	{
-	            		metaplot: {
+	            		metaplot_params: {
 	            			outer:  this.el.find('#metaplot-outer').val(),
 	            			inner:  this.el.find('#metaplot-inner').val(),
 	            	        window: this.el.find('#metaplot-window').val()
