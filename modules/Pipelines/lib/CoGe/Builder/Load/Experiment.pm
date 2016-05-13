@@ -20,6 +20,7 @@ use CoGe::Builder::SNP::Samtools qw(build);
 use CoGe::Builder::SNP::Platypus qw(build);
 #use CoGe::Builder::SNP::GATK qw(build);
 use CoGe::Builder::Methylation::Bismark qw(build);
+use CoGe::Builder::Methylation::BWAmeth qw(build);
 use CoGe::Builder::Methylation::Metaplot qw(build);
 use CoGe::Builder::Protein::ChIPseq qw(build);
 
@@ -165,7 +166,7 @@ sub build {
                 user => $self->user,
                 wid => $self->workflow->id,
                 genome => $genome,
-                input_file => $bam_file,
+                bam_file => $bam_file,
                 raw_bam_file => $raw_bam_files[0], # mdb added 2/29/16 for Bismark, COGE-706
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
