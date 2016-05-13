@@ -488,6 +488,108 @@ var expressionMenu = {
 	}
 }
 
+var metaplotMenu = {
+    init: function() {
+    	var self = this;
+    	this.dialog = $('<div class="dialog_box small" style="padding:1em;"></div>');
+    	var template = $($("#metaplot-template").html()).find('#metaplot-options');
+    	template.removeClass('hidden');
+    	
+    	var render = function() {
+            render_template(template, self.dialog);
+        };
+        
+        render();
+        
+    	this.dialog.dialog({ 
+    		title: "Select Metaplot Analysis Options",
+    		width: '30em',
+    		autoOpen: false,
+    		buttons: [
+    	        {
+    	            text: " Create Metaplot ",
+    	            "class": "coge-button", //FIXME isn't working
+    	            click: function() {
+    	            	self.close();
+    	            	setTimeout($.proxy(self.submit, self), 0);
+    	            }
+    	        }
+    	    ]
+    	});
+    },
+    
+    open: function() {
+    	this.dialog.dialog("open");
+    },
+    
+    close: function() {
+    	this.dialog.dialog("close");
+    },
+
+	is_valid: function () {
+        return { 
+            'outer':  this.dialog.find("#metaplot-outer").val(),
+            'inner':  this.dialog.find("#metaplot-inner").val(),
+            'window': this.dialog.find("#metaplot-window").val()
+        };
+	},
+	
+	submit: function() { 
+		// Prevent concurrent executions
+		//if ( $("#progress_dialog").dialog( "isOpen" ) )
+		//    return;
+	
+		// Make sure user is still logged-in
+		//if (!check_and_report_login())
+		//    return;
+		
+		var params = this.is_valid();
+	
+		coge.progress.begin({ 
+			title: "Creating Metaplot ...",
+			width: '60%',
+	    	height: '50%'
+		});
+		newLoad = true;
+	  
+		// Build request
+		var request = {
+			type: 'analyze_metaplot',
+			requester: {
+				page: PAGE_NAME,
+				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID,
+				user_name: USER_NAME
+			},
+			parameters: {
+				eid: EXPERIMENT_ID,
+				methylation_params: {
+					metaplot_params: params
+				}
+			}
+		};
+		
+		// Submit request
+		coge.services.submit_job(request)
+			.done(function(response) {
+		  		if (!response) {
+		  			coge.progress.failed("Error: empty response from server");
+		  			return;
+		  		}
+		  		else if (!response.success || !response.id) {
+		  			coge.progress.failed("Error: failed to start workflow");
+		  			return;
+		  		}
+		  		
+		        // Start status update
+		  		window.history.pushState({}, "Title", PAGE_NAME + "?eid=" + EXPERIMENT_ID + "&wid=" + response.id); // Add workflow id to browser URL
+		  		coge.progress.update(response.id, response.site_url);
+		    })
+		    .fail(function(jqXHR, textStatus, errorThrown) {
+		    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+		    });
+	}
+}
+
 var diversityMenu = {
     init: function() {
     	var self = this;

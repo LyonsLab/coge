@@ -35,7 +35,8 @@ our @EXPORT = qw(
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
-    add_workflow_result create_bowtie2_workflow 
+    add_workflow_result create_bowtie2_workflow create_image_job
+    add_metadata_to_results_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -413,6 +414,28 @@ sub generate_gff {
         args    => $args,
         outputs => [ $output_file ],
         description => "Generating GFF..."
+    };
+}
+
+sub create_image_job {
+    my $input_file = shift;
+    my $staging_dir = shift;
+    
+    return {
+        cmd => catfile($CONF->{SCRIPTDIR}, 'create_image.pl'),
+        script => undef,
+        args => [
+            ['', $input_file, 0],
+            ['', $CONF->{_CONFIG_PATH}, 0],
+            ['', "$input_file.log", 0]
+        ],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            catfile($staging_dir, "$input_file.log")
+        ],
+        description => "Loading image into database..."
     };
 }
 
@@ -1681,7 +1704,7 @@ sub create_bismark_alignment_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $args = [
-        ['-p', 8, 0],#['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
+        ['-p', 4, 0], # documentation states that 4 cpus is optimal, more yields diminishing returns
         [($encoding eq '64' ? '--phred64-quals' : '--phred33-quals'), '', 0],
         ['-N', $N, 0],
         ['-L', $L, 0],
@@ -1821,7 +1844,6 @@ sub create_bwameth_alignment_job {
         description => "Aligning sequences with bwameth..."
     );
 }
-
 
 sub create_gsnap_workflow {
     my %opts = @_;
@@ -2181,6 +2203,8 @@ sub add_metadata_to_results_job {
     my %opts = @_;
     my $user = $opts{user};
     my $wid = $opts{wid};
+    my $item_id = $opts{item_id};
+    my $item_type = $opts{item_type};
     my $annotations = $opts{annotations}; # array ref
     my $staging_dir = $opts{staging_dir};
     my $done_files = $opts{done_files};
@@ -2202,6 +2226,11 @@ sub add_metadata_to_results_job {
         ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-log', $log_file, 0]
     ];
+    
+    if ($item_id && $item_type) {
+        push @$args, ['-item_id', $item_id, 0];
+        push @$args, ['-item_type', $item_type, 0];  
+    }
 
     return {
         cmd => $cmd,
@@ -2211,7 +2240,6 @@ sub add_metadata_to_results_job {
             @$done_files
         ],
         outputs => [ 
-            $result_file,
             $log_file
         ],
         description => "Adding metadata to results..."

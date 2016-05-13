@@ -126,7 +126,6 @@ function update_annotation() {
 }
 
 function image_preview(obj, preview) {
-	console.log(obj);
     var id = obj.src; // need a unique identifier for the obj
     if (pageObj.timers[id]) {
         clearInterval(pageObj.timers[id]);

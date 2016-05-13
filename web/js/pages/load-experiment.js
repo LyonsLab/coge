@@ -45,6 +45,9 @@ function create_source() {
 }
 
 function search_genomes (search_term) {
+	if (!search_term || search_term.length < 3)
+		return;
+	
 	var edit_genome = $("#edit_genome");
 	edit_genome.autocomplete("close");
 	var spinner = $('#edit_genome_busy');
@@ -249,16 +252,18 @@ $.extend(MethylationView.prototype, {
     initialize: function () {
         this.el = $($("#methyl-template").html());
         this.checkbox = this.el.find("#methyl");
-        this.enabled = false;
         this.container = this.el.find("#methyl-container");
         this.templates = {
             bismark: $($("#bismark-methyl-template").html()),
             bwameth: $($("#bwameth-methyl-template").html())
         };
+        this.metaplot_template = $($("#metaplot-template").html());
+        this.metaplot_checkbox = this.metaplot_template.find("#metaplot-enable");
     },
 
     render: function () {
         this.checkbox.unbind().change(this.update.bind(this));
+        this.metaplot_checkbox.unbind().change(this.update_metaplot.bind(this));
     },
 
     update: function() {
@@ -273,7 +278,8 @@ $.extend(MethylationView.prototype, {
         	el.show();
             this.container.slideDown();
         	render_template(template, this.container);
-        } 
+        	this.container.append(this.metaplot_template);
+        }
         else {
             this.data.methylation_params = undefined;
             checkbox.attr('checked', false); // uncheck it
@@ -281,6 +287,17 @@ $.extend(MethylationView.prototype, {
             if (enabled && !template)
             	this.container.html('<span class="alert indent">Please select one of these two aligners above:  Bismark or BWAmeth</span>').show();
         }
+    },
+    
+    update_metaplot: function() {
+    	var metaplot_enabled = this.metaplot_checkbox.is(":checked");
+    	
+    	if (metaplot_enabled) {
+    		this.metaplot_template.find('#metaplot-options').removeClass('hidden');
+    	}
+    	else {
+    		this.metaplot_template.find('#metaplot-options').addClass('hidden');
+    	}
     },
 
     is_valid: function() {
@@ -314,6 +331,20 @@ $.extend(MethylationView.prototype, {
                     '--OT': this.el.find('#--OT').val(),
                     '--OB': this.el.find('#--OB').val(),
                 };
+            }
+            
+            // Add metaplot params
+            var metaplot_enabled = this.metaplot_checkbox.is(":checked");
+            if (metaplot_enabled) {
+	            this.data.methylation_params = $.extend(this.data.methylation_params, 
+	            	{
+	            		metaplot_params: {
+	            			outer:  this.el.find('#metaplot-outer').val(),
+	            			inner:  this.el.find('#metaplot-inner').val(),
+	            	        window: this.el.find('#metaplot-window').val()
+	            		}
+	            	}
+	            );
             }
         }
         return true;

@@ -17,7 +17,7 @@ use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Expression::MeasureExpression;
-use CoGe::Builder::Methylation::MeasureMethylation;
+use CoGe::Builder::Methylation::CreateMetaplot;
 use CoGe::Builder::PopGen::MeasureDiversity;
 
 has 'db' => (
@@ -84,9 +84,9 @@ sub get {
     elsif ($message->{type} eq "analyze_expression") {
         $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
     }
-    elsif ($message->{type} eq "analyze_methylation") {
-        $builder = CoGe::Builder::Methylation::MeasureMethylation->new($request);
-    }    
+    elsif ($message->{type} eq "analyze_metaplot") {
+        $builder = CoGe::Builder::Methylation::CreateMetaplot->new($request);
+    }        
     elsif ($message->{type} eq "analyze_diversity") {
         $builder = CoGe::Builder::PopGen::MeasureDiversity->new($request);
     }

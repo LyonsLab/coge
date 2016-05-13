@@ -100,11 +100,18 @@ var coge = window.coge = (function(ns) {
 		    return str.join("&");
     	},
     	
-    	objToString: function(obj) {
+    	objToString: function(obj, indent) {
+    		if (typeof indent === 'undefined') indent = '';
+    		indent += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+    		
     	    var str = '<br>';
     	    for (var p in obj) {
     	        if (obj.hasOwnProperty(p)) {
-    	            str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + p + ': ' + obj[p] + '<br>';
+    	        	var val = obj[p];
+    	        	if (typeof val === 'object')
+    	        		str += indent + p + ': ' + this.objToString(val, indent) + '<br>';
+    	        	else
+    	        		str += indent + p + ': ' + obj[p] + '<br>';
     	        }
     	    }
     	    return str;

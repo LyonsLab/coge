@@ -5,6 +5,7 @@ use warnings;
 
 use File::Path qw(mkpath);
 use Getopt::Long qw(GetOptions);
+use Data::Dumper;
 
 use CoGe::Accessory::Utils qw(to_pathname);
 use CoGe::Accessory::Web qw(get_defaults);
@@ -12,7 +13,7 @@ use CoGe::Core::Metadata qw(create_annotations);
 use CoGe::Core::Storage qw(get_workflow_results);
 use CoGeX;
 
-our ($userid, $wid, $log_file, $config_file, $annotations);
+our ($userid, $wid, $log_file, $config_file, $annotations, $item_id, $item_type);
 
 GetOptions(
     # Required workflow params
@@ -24,7 +25,11 @@ GetOptions(
     "config|cfg=s"      => \$config_file,
 
     # Metadata (aka "annotations")
-    "annotations=s"     => \$annotations # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
+    "annotations=s"     => \$annotations, # optional: semicolon-separated list of locked annotations (link:group:type:text;...)
+    
+    # Experiment/Genome/Notebook ID -- optional alternative when no .results file exists
+    "item_id=i"         => \$item_id,
+    "item_type=s"       => \$item_type
 );
 
 $| = 1;
@@ -45,11 +50,18 @@ my $user = $db->resultset("User")->find($userid);
 die "ERROR: user could not be found for id: $userid" unless $user;
 
 # Get items to add to the notebook
-my $results = get_workflow_results($user->name, $wid);
-exit unless $results;
+my @results;
+my $workflow_results = get_workflow_results($user->name, $wid);
+push @results, @$workflow_results if ($workflow_results);
+
+# Add additional item specified on command-line
+push @results, { id => $item_id, type => $item_type } if ($item_id && $item_type);
 
 # Add annotations to workflow results (genomes, experiments, notebooks)
-foreach my $result (@$results) {
+#print STDERR Dumper $results, "\n";
+foreach my $result (@results) {
+    next unless ($result->{id} && $result->{type} 
+        && ($result->{type} eq 'genome' || $result->{type} eq 'experiment' || $result->{type} eq 'notebook' ));
     CoGe::Core::Metadata::create_annotations(
         db => $db, 
         target_id => $result->{id}, 

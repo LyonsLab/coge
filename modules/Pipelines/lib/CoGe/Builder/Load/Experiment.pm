@@ -20,6 +20,8 @@ use CoGe::Builder::SNP::Samtools qw(build);
 use CoGe::Builder::SNP::Platypus qw(build);
 #use CoGe::Builder::SNP::GATK qw(build);
 use CoGe::Builder::Methylation::Bismark qw(build);
+use CoGe::Builder::Methylation::BWAmeth qw(build);
+use CoGe::Builder::Methylation::Metaplot qw(build);
 use CoGe::Builder::Protein::ChIPseq qw(build);
 
 sub get_name {
@@ -143,7 +145,6 @@ sub build {
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 params => $self->params->{snp_params},
-                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
             my $snp_workflow;
@@ -165,13 +166,12 @@ sub build {
                 user => $self->user,
                 wid => $self->workflow->id,
                 genome => $genome,
-                input_file => $bam_file,
+                bam_file => $bam_file,
                 raw_bam_file => $raw_bam_files[0], # mdb added 2/29/16 for Bismark, COGE-706
                 metadata => $metadata,
                 additional_metadata => $additional_metadata,
                 read_params => $self->params->{read_params},
                 methylation_params => $self->params->{methylation_params},
-                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
             my $methylation_workflow;
@@ -182,6 +182,13 @@ sub build {
             }
             push @tasks, @{$methylation_workflow->{tasks}};
             push @done_files, @{$methylation_workflow->{done_files}};
+            
+            # Add metaplot workflow (if specified and genome is annotated)
+            if ( $self->params->{methylation_params}->{metaplot_params} ) {
+                my $metaplot_workflow = CoGe::Builder::Methylation::Metaplot::build($methylation_params);
+                push @tasks, @{$metaplot_workflow->{tasks}};
+                push @done_files, @{$metaplot_workflow->{done_files}};
+            }
         }
         
         # Add ChIP-seq workflow (if specified)
@@ -195,7 +202,6 @@ sub build {
                 additional_metadata => $additional_metadata,
                 read_params => $self->params->{read_params},
                 chipseq_params => $self->params->{chipseq_params},
-                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
             my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
@@ -214,7 +220,6 @@ sub build {
                 additional_metadata => $additional_metadata,
                 read_params => $self->params->{read_params},
                 chipseq_params => $self->params->{chipseq_params},
-                skipAnnotations => 1 # annotations for each result experiment are set together in create_notebook_job() later on
             };
             
             my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
