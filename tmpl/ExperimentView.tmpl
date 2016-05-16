@@ -52,7 +52,8 @@ $(document).ready(function() {
     	baseUrl: API_BASE_URL,
     	userName: USER_NAME,
     	supportEmail: SUPPORT_EMAIL,
-    	onReset: reset_location
+    	onReset: reset_location,
+    	onSuccess: get_annotations
     });
     
     // Initialize analysis dialogs
