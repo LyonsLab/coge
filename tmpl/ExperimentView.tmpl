@@ -117,6 +117,7 @@ $(document).ready(function() {
 		            	</td>
 		            </tr>
 		            <TMPL_IF NAME="ALIGNMENT_TYPE">
+		            <TMPL_UNLESS NAME="PUBLIC">
 		            <tr style="padding:3px;">
                     	<td>
                     		<span class="title5">Analyze:</span>
@@ -127,6 +128,7 @@ $(document).ready(function() {
                     		<span class="data5 link" ondblclick="metaplotMenu.open();" onclick="metaplotMenu.open();">Metaplot</span>
                     	</td>
 			        </tr>
+			        </TMPL_UNLESS>
 			        </TMPL_IF>
 			        <TMPL_IF NAME="POLYMORPHISM_TYPE">
 		            <tr style="padding:3px;">
