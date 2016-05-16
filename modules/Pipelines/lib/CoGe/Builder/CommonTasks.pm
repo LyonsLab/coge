@@ -2206,6 +2206,7 @@ sub add_metadata_to_results_job {
     my $item_id = $opts{item_id};
     my $item_type = $opts{item_type};
     my $annotations = $opts{annotations}; # array ref
+    my $locked = $opts{locked} // 1;
     my $staging_dir = $opts{staging_dir};
     my $done_files = $opts{done_files};
     
@@ -2222,6 +2223,7 @@ sub add_metadata_to_results_job {
     my $args = [
         ['-uid', $user->id, 0],
         ['-wid', $wid, 0],
+        ['-locked', $locked, 0],
         ['-annotations', qq{"$annotations_str"}, 0],
         ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-log', $log_file, 0]

@@ -89,7 +89,8 @@ sub build {
         staging_dir => $staging_dir,
         done_files => \@done_files,
         item_id => $experiment_id,
-        item_type => 'experiment'
+        item_type => 'experiment',
+        locked => 0
     );
     push @tasks, $metadata_task;
 

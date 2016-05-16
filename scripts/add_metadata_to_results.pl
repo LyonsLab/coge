@@ -13,7 +13,7 @@ use CoGe::Core::Metadata qw(create_annotations);
 use CoGe::Core::Storage qw(get_workflow_results);
 use CoGeX;
 
-our ($userid, $wid, $log_file, $config_file, $annotations, $item_id, $item_type);
+our ($userid, $wid, $log_file, $config_file, $annotations, $item_id, $item_type, $locked);
 
 GetOptions(
     # Required workflow params
@@ -29,7 +29,10 @@ GetOptions(
     
     # Experiment/Genome/Notebook ID -- optional alternative when no .results file exists
     "item_id=i"         => \$item_id,
-    "item_type=s"       => \$item_type
+    "item_type=s"       => \$item_type,
+    
+    # Locked or unlocked:  user cannot remove locked metadata items
+    "locked=i"          => \$locked
 );
 
 $| = 1;
@@ -39,6 +42,7 @@ print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
 die "ERROR: userid not specified, use userid argument" unless $userid;
 die "ERROR: wid not specified" unless $wid;
 die "ERROR: annotations not specified" unless $annotations;
+$locked = 1 unless (defined $locked);
 
 # Connect to DB
 my $conf = get_defaults($config_file);
@@ -67,7 +71,7 @@ foreach my $result (@results) {
         target_id => $result->{id}, 
         target_type => $result->{type}, 
         annotations => $annotations, 
-        locked => 1
+        locked => $locked
     );
 }
 
