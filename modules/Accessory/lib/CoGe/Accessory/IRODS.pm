@@ -62,7 +62,7 @@ sub irods_ils {
 
 #	print STDERR "cmd: $cmd\n";
     my @ils = capture( EXIT_ANY, $cmd );
-#    print STDERR 'results: ', Dumper \@ils, "\n";
+    warn Dumper \@ils;
     if ($EXITVAL) {
         return { error => "Error: ils rc=$EXITVAL" };
     }

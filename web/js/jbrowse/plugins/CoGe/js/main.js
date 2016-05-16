@@ -209,26 +209,52 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	create_download_dialog: function(track) {
+	create_export_dialog: function(track) {
 		this._track = track;
-		var content = '<div id="coge-track-download"><table align="center"><tr><td>Chromosome:</td><td>';
+		var content = '<div id="coge-track-export"><table align="center" style="width:100%"><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('All');
 		content += '</td></tr>';
 		if (track.config.coge.transform)
 			content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
 		if (track.config.coge.search)
 			content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge.search_to_string(track.config.coge.search, true) + '</td></tr>';
-		content += '<tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.download_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge._track_download_dialog.hide()">Cancel</button></div></div>';
-		this._track_download_dialog = new Dialog({
-			title: 'Download Track',
+		content += '<tr><td>Method:</td><td style="white-space:nowrap"><input type="radio" name="export_method" checked="checked" onchange="coge.export_method_changed()"> Download to local computer <input id="to_cyverse" type="radio" name="export_method" onchange="coge.export_method_changed()"> Save in CyVerse</td></tr><tr><td colspan="2" id="cyverse"></td></tr><tr><td>Filename:</td><td><input id="export_filename" /></td></tr><tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.export_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge._track_export_dialog.hide()">Cancel</button></div></div>';
+		this._track_export_dialog = new Dialog({
+			title: 'Export Track',
 			content: content,
 			onHide: function() {
 				this.destroyRecursive();
-				coge._track_download_dialog = null;
+				coge._track_export_dialog = null;
 			},
-			style: "width: 350px"
+			style: "width: 700px"
 		});
-		this._track_download_dialog.show();
+		this._track_export_dialog.show();
+	},
+
+	// ----------------------------------------------------------------
+
+	create_features_overlap_search_dialog: function(track, type, api_path) {
+		this._track = track;
+		var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td>';
+		content += this.build_chromosome_select('Any');
+		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features_overlap">';
+		content += this.build_features_checkboxes();
+		content += '</td></tr></table>';
+		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_features_overlap(\'';
+		content += type;
+		content += "','";
+		content += api_path;
+		content += '\')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_dialog.hide()">Cancel</button></div></div>';
+		this.search_dialog = new Dialog({
+			title: 'Find ' + type + ' in Features',
+			content: content,
+			onHide: function() {
+				this.destroyRecursive();
+				coge.search_dialog = null;
+			},
+			style: "width: 300px"
+		});
+		this.search_dialog.show();
 	},
 
 	// ----------------------------------------------------------------
@@ -260,45 +286,6 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	create_features_overlap_search_dialog: function(track, type, api_path) {
-		this._track = track;
-		var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td>';
-		content += this.build_chromosome_select('Any');
-		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features_overlap">';
-		content += this.build_features_checkboxes();
-		content += '</td></tr></table>';
-		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_features_overlap(\'';
-		content += type;
-		content += "','";
-		content += api_path;
-		content += '\')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_dialog.hide()">Cancel</button></div></div>';
-		this.search_dialog = new Dialog({
-			title: 'Find ' + type + ' in Features',
-			content: content,
-			onHide: function() {
-				this.destroyRecursive();
-				coge.search_dialog = null;
-			},
-			style: "width: 300px"
-		});
-		this.search_dialog.show();
-	},
-
-	// ----------------------------------------------------------------
-
-	download_track: function() {
-		var ref_seq = dojo.byId('coge_ref_seq');
-		var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username='+un;
-		if (dojo.byId('search') && dojo.byId('search').checked)
-			url += '&' + this.search_to_params(this._track.config.coge.search, true);
-		if (dojo.byId('transform') && dojo.byId('transform').checked)
-			url += '&transform=' + this._track.config.coge.transform;
-		document.location = url;
-		this._track_download_dialog.hide();
-	},
-
-	// ----------------------------------------------------------------
-
 	error: function(title, content) {
 		if (content.responseText) {
 			var error = JSON.parse(content.responseText);
@@ -315,6 +302,29 @@ return declare( JBrowsePlugin,
 			else
 				content = JSON.stringify(content.error);
 		this.info(title, content);
+	},
+
+	// ----------------------------------------------------------------
+
+	export_method_changed: function() {
+		if (dojo.byId('to_cyverse').checked) {
+			var dir_chooser = React.createElement(DirChooser);
+			ReactDOM.render(dir_chooser, dojo.byId('cyverse'));
+		} else
+			dojo.empty('cyverse');
+	},
+
+	// ----------------------------------------------------------------
+
+	export_track: function() {
+		var ref_seq = dojo.byId('coge_ref_seq');
+		var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un;
+		if (dojo.byId('search') && dojo.byId('search').checked)
+			url += '&' + this.search_to_params(this._track.config.coge.search, true);
+		if (dojo.byId('transform') && dojo.byId('transform').checked)
+			url += '&transform=' + this._track.config.coge.transform;
+		document.location = url;
+		this._track_export_dialog.hide();
 	},
 
 	// ----------------------------------------------------------------
@@ -420,7 +430,7 @@ return declare( JBrowsePlugin,
 					this.search_dialog.hide();
 				coge.error('Search', data);
 			})
-		})
+		});
 	},
 
 	// ----------------------------------------------------------------

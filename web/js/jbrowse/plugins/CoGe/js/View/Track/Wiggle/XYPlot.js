@@ -894,8 +894,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
         if (config.coge.type != 'notebook')
 	        options.push({
-		        label: 'Download Track Data',
-		        onClick: function(){coge.create_download_dialog(track);}
+		        label: 'Export Track Data',
+		        onClick: function(){coge.create_export_dialog(track);}
 	        });
 
         return options;
