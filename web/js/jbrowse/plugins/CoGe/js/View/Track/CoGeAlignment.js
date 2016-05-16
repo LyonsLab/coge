@@ -97,12 +97,19 @@ define( [
                     });
                 }
                 options.push({
-                    label: 'Download Track Data',
-                    onClick: function(){coge.create_download_dialog(track);}
+                    label: 'Export Track Data',
+                    onClick: function(){coge.create_export_dialog(track);}
                 });
 
                 return options;
             });
+        }
+
+        // ----------------------------------------------------------------
+
+        updateStaticElements: function( coords ) {
+            this.inherited( arguments );
+            coge.adjust_nav(this.config.coge.id)
         }
     });
 });

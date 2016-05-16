@@ -116,8 +116,8 @@ return declare( [ HTMLFeatures ], {
             });
         }
         options.push({
-            label: 'Download Track Data',
-            onClick: function(){coge.create_download_dialog(track);}
+            label: 'Export Track Data',
+            onClick: function(){coge.create_export_dialog(track);}
         });
         return options;
     },
