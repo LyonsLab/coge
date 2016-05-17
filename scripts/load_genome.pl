@@ -168,13 +168,11 @@ foreach my $file (@files) {
     $numSequences = keys %sequences;
 
     if ( $seqLength > $MAX_SEQUENCE_SIZE ) {
-        print STDOUT "log: error: total sequence size exceeds limit of "
-          . units($MAX_SEQUENCE_SIZE) . "\n";
+        print STDOUT "log: error: total sequence size exceeds limit of " . units($MAX_SEQUENCE_SIZE) . "\n";
         exit(-1);
     }
     if ( !$ignore_chr_limit && $numSequences > $MAX_CHROMOSOMES ) {
-        print STDOUT
-          "log: error: too many sequences, limit is $MAX_CHROMOSOMES\n";
+        print STDOUT "log: error: too many sequences, limit is $MAX_CHROMOSOMES\n";
         exit(-1);
     }
 }
