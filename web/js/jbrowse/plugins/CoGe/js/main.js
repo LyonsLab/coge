@@ -1,4 +1,4 @@
-var coge;
+var coge_plugin;
 define([
 		   'dojo/_base/declare',
 		   'dojo/Deferred',
@@ -23,7 +23,7 @@ define([
 			this.browser = browser;
 			this.hit = 0;
 			this.div = dojo.create('div', { id: 'nav_' + eid, style: { background: 'white', opacity: 0.7, position: 'absolute' } }, dojo.byId('container'));
-			coge.adjust_nav(eid);
+			coge_plugin.adjust_nav(eid);
 			dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: dojo.hitch(this, function() { this.go_to(0) }), style: { cursor: 'pointer' } }, this.div);
 			dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', onclick: dojo.hitch(this, function() { if (this.hit > 0) this.go_to(this.hit - 1) }), style: { cursor: 'pointer' } }, this.div);
 			this.num_span = dojo.create('span', { innerHTML: '1', style: { cursor: 'default' } }, this.div);
@@ -118,10 +118,10 @@ define([
 return declare( JBrowsePlugin,
 {
 	constructor: function( args ) {
-		coge = this;
+		coge_plugin = this;
 		this.browser = args.browser;
 		JBrowse.afterMilestone('initView', function() {
-			coge.create_search_button();
+			coge_plugin.create_search_button();
 		});
 	},
 
@@ -176,7 +176,7 @@ return declare( JBrowsePlugin,
 				html += ' checked';
 			html += '> <label>' + f + '</label></div>';
 		});
-		html += '<div><button onClick="coge.check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge.check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></div>';
+		html += '<div><button onClick="coge_plugin.check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge_plugin.check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></div>';
 		return html;
 	},
 
@@ -217,14 +217,14 @@ return declare( JBrowsePlugin,
 		if (track.config.coge.transform)
 			content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
 		if (track.config.coge.search)
-			content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge.search_to_string(track.config.coge.search, true) + '</td></tr>';
-		content += '<tr><td>Method:</td><td style="white-space:nowrap"><input type="radio" name="export_method" checked="checked" onchange="coge.export_method_changed()"> Download to local computer <input id="to_cyverse" type="radio" name="export_method" onchange="coge.export_method_changed()"> Save in CyVerse</td></tr><tr><td colspan="2" id="cyverse"></td></tr><tr><td>Filename:</td><td><input id="export_filename" /></td></tr><tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.export_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge._track_export_dialog.hide()">Cancel</button></div></div>';
+			content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge_plugin.search_to_string(track.config.coge.search, true) + '</td></tr>';
+		content += '<tr><td>Method:</td><td style="white-space:nowrap"><input type="radio" name="export_method" checked="checked" onchange="coge_plugin.export_method_changed()"> Download to local computer <input id="to_cyverse" type="radio" name="export_method" onchange="coge_plugin.export_method_changed()"> Save in CyVerse</td></tr><tr><td colspan="2" id="cyverse"></td></tr><tr><td>Filename:</td><td><input id="export_filename" /></td></tr><tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.export_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin._track_export_dialog.hide()">Cancel</button></div></div>';
 		this._track_export_dialog = new Dialog({
 			title: 'Export Track',
 			content: content,
 			onHide: function() {
 				this.destroyRecursive();
-				coge._track_export_dialog = null;
+				coge_plugin._track_export_dialog = null;
 			},
 			style: "width: 700px"
 		});
@@ -240,17 +240,17 @@ return declare( JBrowsePlugin,
 		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features_overlap">';
 		content += this.build_features_checkboxes();
 		content += '</td></tr></table>';
-		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_features_overlap(\'';
+		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.search_features_overlap(\'';
 		content += type;
 		content += "','";
 		content += api_path;
-		content += '\')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_dialog.hide()">Cancel</button></div></div>';
+		content += '\')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.search_dialog.hide()">Cancel</button></div></div>';
 		this.search_dialog = new Dialog({
 			title: 'Find ' + type + ' in Features',
 			content: content,
 			onHide: function() {
 				this.destroyRecursive();
-				coge.search_dialog = null;
+				coge_plugin.search_dialog = null;
 			},
 			style: "width: 300px"
 		});
@@ -265,20 +265,20 @@ return declare( JBrowsePlugin,
 		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_for_features">';
 		content += this.build_features_checkboxes();
 		content += '</td></tr></table>';
-		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_for_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge.search_dialog.hide()">Cancel</button></div></div>';
+		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.search_for_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.search_dialog.hide()">Cancel</button></div></div>';
 		new Button({
 			label: 'Find Features',
 			onClick: function(event) {
-				coge.search_dialog = new Dialog({
+				coge_plugin.search_dialog = new Dialog({
 					title: "Search",
 					content: content,
 					onHide: function() {
 						this.destroyRecursive();
-						coge.search_dialog = null;
+						coge_plugin.search_dialog = null;
 					},
 					style: "width: 300px"
 				});
-				coge.search_dialog.show();
+				coge_plugin.search_dialog.show();
 				dojo.stopEvent(event);
 			},
 		}, dojo.create('button', null, this.browser.navbox));
@@ -308,8 +308,21 @@ return declare( JBrowsePlugin,
 
 	export_method_changed: function() {
 		if (dojo.byId('to_cyverse').checked) {
-			var dir_chooser = React.createElement(DirChooser);
-			ReactDOM.render(dir_chooser, dojo.byId('cyverse'));
+//			var dir_chooser = React.createElement(DirChooser);
+//			ReactDOM.render(dir_chooser, dojo.byId('cyverse'));
+			dojo.xhrGet({
+				url: 'DirSelect.pl',
+				load: function(data) {
+					dojo.byId('cyverse').innerHTML = data;
+					coge.fileSelect.init({
+						container: $('#cyverse')
+					});
+					coge.fileSelect.render();
+				},
+				error: dojo.hitch(this, function(data) {
+					coge_plugin.error('DirSelect', data);
+				})
+			});
 		} else
 			dojo.empty('cyverse');
 	},
@@ -317,6 +330,11 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	export_track: function() {
+		var filename = dojo.byId('export_filename').value;
+		if (!filename) {
+			this.info('Filename required', 'Please enter a filename');
+			return;
+		}
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un;
 		if (dojo.byId('search') && dojo.byId('search').checked)
@@ -339,7 +357,7 @@ return declare( JBrowsePlugin,
 				else
 					values.push(checkboxes[i].nextElementSibling.innerText);
 		if (!values.length) {
-			coge.error('Search', 'Please select one or more ' + description + ' to search.');
+			coge_plugin.error('Search', 'Please select one or more ' + description + ' to search.');
 			return null;
 		}
 		return values.length == checkboxes.length ? 'all' : values.join();
@@ -379,7 +397,7 @@ return declare( JBrowsePlugin,
 //        });
 //        d.promise.then(function() {
 			config = dojo.clone(config);
-			config.key = 'Search: ' + config.key + ' (' + coge.search_to_string(track.config.coge.search) + ')';
+			config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
 			config.track = 'search_' + eid;
 			config.label = 'search_' + eid;
 			config.metadata = {Description: 'Track to show results of searching a track.'};
@@ -416,19 +434,19 @@ return declare( JBrowsePlugin,
 				if (this.search_dialog)
 					this.search_dialog.hide();
 				if (data.error) {
-					coge.error('Search', data);
+					coge_plugin.error('Search', data);
 					return;
 				}
 				if (data.length == 0) {
-					coge.error('Search', 'no ' + type + ' found');
+					coge_plugin.error('Search', 'no ' + type + ' found');
 					return;
 				}
-				coge.new_search_track(this._track, data);
+				coge_plugin.new_search_track(this._track, data);
 			}),
 			error: dojo.hitch(this, function(data) {
 				if (this.search_dialog)
 					this.search_dialog.hide();
-				coge.error('Search', data);
+				coge_plugin.error('Search', data);
 			})
 		});
 	},
@@ -454,13 +472,13 @@ return declare( JBrowsePlugin,
 			url: url,
 			handleAs: 'json',
 			load: function(data) {
-				coge.search_dialog.hide();
+				coge_plugin.search_dialog.hide();
 				if (data.error) {
-					coge.error('Search', data);
+					coge_plugin.error('Search', data);
 					return;
 				}
 				if (data.length == 0) {
-					coge.error('Search', 'no features found');
+					coge_plugin.error('Search', 'no features found');
 					return;
 				}
 				//dojo.query('.dijitDialogUnderlayWrapper')[0].style.display = 'none';
@@ -475,7 +493,7 @@ return declare( JBrowsePlugin,
 					dojo.create('a', {
 						innerHTML: hit.name,
 						onclick: dojo.hitch(hit, function() {
-							coge.browser.navigateToLocation(this.location);
+							coge_plugin.browser.navigateToLocation(this.location);
 							return false;
 						})
 					}, div);
@@ -484,7 +502,7 @@ return declare( JBrowsePlugin,
 				dijit.byId('jbrowse').resize();
 			},
 			error: function(data) {
-				coge.error('Search', data);
+				coge_plugin.error('Search', data);
 			}
 		})
 	},
