@@ -6,6 +6,7 @@
 }
 </style>
 
+<TMPL_UNLESS NAME='DIR_SELECT'>
 <script id="fileselect-template" type="text/template">
 	<div>
 	  <ul>
@@ -19,6 +20,7 @@
 	    <li class="small"><a href="#fileselect-tab-4">SRA</a></li>
 	    </TMPL_IF>
 	  </ul>
+</TMPL_UNLESS>
 	
 	  <div id="fileselect-tab-1" class="small">
 		<div style="white-space:nowrap;border-bottom:1px solid gray;">
@@ -37,7 +39,8 @@
 	    	<table id="ids_table" class="small" style="width:100%;"></table>
 	    </div>
 	  </div>
-	
+
+<TMPL_UNLESS NAME='DIR_SELECT'>
 	  <div id="fileselect-tab-2" class="small" style="height:200px;">
 	  	Enter the location of the file or directory to retrieve.<br><br>
 	    URL: <input id="input_url" size="60" style="color:gray;"/>
@@ -52,7 +55,7 @@
 	    <br>
 	    <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
 	  </div>
-	
+
 	  <div id="fileselect-tab-3" class="small" style="height:200px;">
 		Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum).
 		For larger files use the CyVerse Data Store. <br><br><br>
@@ -84,6 +87,6 @@
 	    </div>
 	  </div>
 	  </TMPL_IF>
-	  
 	</div>
 </script>
+</TMPL_UNLESS>	  

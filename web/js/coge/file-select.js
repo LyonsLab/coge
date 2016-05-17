@@ -30,14 +30,14 @@ var coge = window.coge = (function(namespace) {
 				console.error('FileSelect widget error: container not defined!');
 				return;
 			}
-			if (!self.fileTable) {
-				console.error('FileSelect widget error: file table not defined!');
-				return;
-			}
-			if (!self.loadId) {
-				console.error('FileSelect widget error: loadId not defined!');
-				return;
-			}
+			// if (!self.fileTable) {
+			// 	console.error('FileSelect widget error: file table not defined!');
+			// 	return;
+			// }
+			// if (!self.loadId) {
+			// 	console.error('FileSelect widget error: loadId not defined!');
+			// 	return;
+			// }
 		},
 		
 		resize: function(event, ui) {
@@ -134,28 +134,29 @@ var coge = window.coge = (function(namespace) {
 				self._load_from_sra();
 			});
 
-			self.container.find('#input_upload_file').fileupload({
-		    	dataType: 'json',
-		    	add:
-		    		function(e, data) {
-		    			var filename = data.files[0].name;
-						if ( !self._add_file_to_list(filename, 'file://'+filename) ) {
-							//alert('File already exists.');
-						}
-						else {
-							self.container.find('#input_upload_file').fileupload('option', { formData: {
-					    		fname: 'upload_file',
-					    		load_id: self.loadId
-					    	}});
+			if (self.container.find('#input_upload_file').length)
+				self.container.find('#input_upload_file').fileupload({
+			    	dataType: 'json',
+			    	add:
+			    		function(e, data) {
+			    			var filename = data.files[0].name;
+							if ( !self._add_file_to_list(filename, 'file://'+filename) ) {
+								//alert('File already exists.');
+							}
+							else {
+								self.container.find('#input_upload_file').fileupload('option', { formData: {
+						    		fname: 'upload_file',
+						    		load_id: self.loadId
+						    	}});
 
-							data.submit(); // what is this?
+								data.submit(); // what is this?
+							}
+			    		},
+					done:
+						function(e, data) {
+							self._finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
 						}
-		    		},
-				done:
-					function(e, data) {
-						self._finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
-					}
-			});
+				});
 		},
 		
 		get_selected_files: function() {

@@ -27,7 +27,7 @@ return declare( [ HTMLFeatures ], {
     _create_types_search_dialog: function(track) {
         this._track = track;
         var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td>';
-        content += coge.build_chromosome_select('Any');
+        content += coge_plugin.build_chromosome_select('Any');
         content += '</td></tr><tr><td style="vertical-align:top;">SNPs:</td><td id="coge_search_types">';
         ['A>C','A>G','A>T','C>A','C>G','C>T','G>A','G>C','G>T','T>A','T>C','T>G','deletion','insertion'].forEach(function(t) {
             content += '<div><input name="type" type="checkbox"> <label>' + t + '</label></div>';
@@ -60,7 +60,7 @@ return declare( [ HTMLFeatures ], {
     // ----------------------------------------------------------------
 
     _search_types: function() {
-        var types = coge.get_checked_values('coge_search_types', 'SNP types');
+        var types = coge_plugin.get_checked_values('coge_search_types', 'SNP types');
         if (!types)
             return;
         var ref_seq = dojo.byId('coge_ref_seq');
@@ -79,19 +79,19 @@ return declare( [ HTMLFeatures ], {
                 if (this._search_dialog)
 	  				this._search_dialog.hide();
                 if (data.error) {
-                    coge.error('Search', data);
+                    coge_plugin.error('Search', data);
                     return;
                 }
                 if (data.length == 0) {
-                    coge.error('Search', 'no SNPs found');
+                    coge_plugin.error('Search', 'no SNPs found');
                     return;
                 }
-                coge.new_search_track(this._track, data);
+                coge_plugin.new_search_track(this._track, data);
             }),
             error: dojo.hitch(this, function(data) {
                 if (this._search_dialog)
 	  				this._search_dialog.hide();
-                coge.error('Search', data);
+                coge_plugin.error('Search', data);
             })
         })
     },
@@ -108,7 +108,7 @@ return declare( [ HTMLFeatures ], {
         if (!track.config.coge.search_track)  {
 	        options.push({
                 label: 'Find SNPs in Features',
-                onClick: function(){coge.create_features_overlap_search_dialog(track, 'SNPs', 'snps');}
+                onClick: function(){coge_plugin.create_features_overlap_search_dialog(track, 'SNPs', 'snps');}
             });
             options.push({
                 label: 'Find types of SNPs',
@@ -117,7 +117,7 @@ return declare( [ HTMLFeatures ], {
         }
         options.push({
             label: 'Export Track Data',
-            onClick: function(){coge.create_export_dialog(track);}
+            onClick: function(){coge_plugin.create_export_dialog(track);}
         });
         return options;
     },
@@ -126,7 +126,7 @@ return declare( [ HTMLFeatures ], {
 
     updateStaticElements: function( coords ) {
         this.inherited( arguments );
-        coge.adjust_nav(this.config.coge.id)
+        coge_plugin.adjust_nav(this.config.coge.id)
     }
 });
 });
