@@ -357,33 +357,27 @@ foreach my $chr ( sort keys %sequences ) {
 
 	# Must add a feature of type chromosome to the dataset so the dataset
 	# "knows" its chromosomes
-    my $feat_type =
-      $coge->resultset('FeatureType')
-      ->find_or_create( { name => 'chromosome' } );
-    my $feat = $coge->resultset('Feature')->find_or_create(
-        {
-            dataset_id      => $dsid,
-            feature_type_id => $feat_type->id,
-            start           => 1,
-            stop            => $seqlen,
-            chromosome      => $chr,
-            strand          => 1
-        }
-    );
-    my $feat_name =
-      $coge->resultset('FeatureName')
-      ->find_or_create(
-        { name => "chromosome $chr", feature_id => $feat->id } );
+    my $feat_type = $coge->resultset('FeatureType')->find_or_create( { name => 'chromosome' } );
+    my $feat = $coge->resultset('Feature')->find_or_create({
+        dataset_id      => $dsid,
+        feature_type_id => $feat_type->id,
+        start           => 1,
+        stop            => $seqlen,
+        chromosome      => $chr,
+        strand          => 1
+    });
+    my $feat_name = $coge->resultset('FeatureName')->find_or_create({ 
+        name => "chromosome $chr", 
+        feature_id => $feat->id 
+    });
 
-    my $loc = $coge->resultset('Location')->find_or_create(
-        {
-            feature_id => $feat->id,
-            start      => 1,
-            stop       => $seqlen,
-            strand     => 1,
-            chromosome => $chr
-        }
-    );
+    my $loc = $coge->resultset('Location')->find_or_create({
+        feature_id => $feat->id,
+        start      => 1,
+        stop       => $seqlen,
+        strand     => 1,
+        chromosome => $chr
+    });
 }
 
 # Copy files from staging directory to installation directory
