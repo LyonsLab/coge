@@ -1,22 +1,97 @@
 var coge_plugin;
 define([
 		   'dojo/_base/declare',
+		   'dojo/_base/array',
+		   'dojo/on',
 		   'dojo/Deferred',
 		   'dijit/Dialog',
 		   'dijit/form/Button',
+		   'JBrowse/View/Dialog/WithActionBar',
 		   'JBrowse/View/ConfirmDialog',
 		   'JBrowse/View/InfoDialog',
 		   'JBrowse/Plugin'
 	   ],
 	   function(
 		   declare,
+		   array,
+		   on,
 		   Deferred,
 		   Dialog,
 		   Button,
+		   ActionBarDialog,
 		   ConfirmDialog,
 		   InfoDialog,
 		   JBrowsePlugin
 	   ) {
+	var PromptDialog = declare( ActionBarDialog,
+
+	    /**
+	     * JBrowse ActionDialog subclass with a few customizations that make it
+	     * more pleasant for use as an information popup.
+	     * @lends JBrowse.View.InfoDialog
+	     */
+	{
+	    refocus: false,
+	    autofocus: false,
+
+	    _fillActionBar: function( actionBar ) {
+	            new Button({
+	                className: 'Cancel',
+	                label: 'Cancel',
+	                onClick: dojo.hitch(this,'hide')
+	            })
+	            .placeAt( actionBar);
+	            new Button({
+	                className: 'OK',
+	                label: 'OK',
+	                onClick: dojo.hitch(this,'ok')
+	            })
+	            .placeAt( actionBar);
+	    },
+
+	    hide: function() {
+	        this.inherited(arguments);
+	        array.forEach( this._extraEvents, function( e ) { e.remove(); });
+	    },
+
+	    hideIfVisible: function() {
+	        if( this.get('open') )
+	            this.hide();
+	    },
+
+	    ok: function() {
+	    	var value = dojo.byId('prompt_value').value;
+	    	if (!value) {
+	    		coge_plugin.info('Value Required', 'Please enter a value');
+	    		return;
+	    	}
+	    	this.on_ok(value);
+	    	this.hide();
+	    },
+
+	    show: function(on_ok) {
+
+	        this.inherited( arguments );
+
+	        this.on_ok = on_ok;
+
+	        // holds the handles for the extra events we are registering
+	        // so we can clean them up in the hide() method
+	        this._extraEvents = [];
+
+	        // make it so that clicking outside the dialog (on the underlay) will close it
+	        var underlay = ((dijit||{})._underlay||{}).domNode;
+	        if( underlay ) {
+	            this._extraEvents.push(
+	                on( underlay, 'click', dojo.hitch( this, 'hideIfVisible' ))
+	            );
+	        }
+	    }
+
+	});
+
+	// ----------------------------------------------------------------
+
 	var SearchNav = declare(null, {
 		constructor: function(eid, results, browser) {
 			this.results = results;
@@ -371,7 +446,7 @@ return declare( JBrowsePlugin,
 			title: title,
 			content: content,
 			onHide: function(){this.destroyRecursive(); if(focus)focus.focus();}
-		}).show();	
+		}).show();
 	},
 
 	// ----------------------------------------------------------------
@@ -411,6 +486,16 @@ return declare( JBrowsePlugin,
 			browser.view.updateTrackList();
 			new SearchNav(eid, results, browser).go_to(0);
 		});
+	},
+
+	// ----------------------------------------------------------------
+
+	prompt: function(title, prompt, on_ok) {
+		new PromptDialog({
+			title: title,
+			content: prompt + ' <input id="prompt_value" />',
+			onHide: function(){this.destroyRecursive()}
+		}).show(on_ok);	
 	},
 
 	// ----------------------------------------------------------------
