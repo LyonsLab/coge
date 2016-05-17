@@ -313,9 +313,10 @@ return declare( JBrowsePlugin,
 			dojo.xhrGet({
 				url: 'DirSelect.pl',
 				load: function(data) {
-					dojo.byId('cyverse').innerHTML = data;
+					var div = $('<div>' + data + '</div>');
+					div.appendTo($('#cyverse'));
 					coge.fileSelect.init({
-						container: $('#cyverse')
+						container: div
 					});
 					coge.fileSelect.render();
 				},
@@ -332,7 +333,7 @@ return declare( JBrowsePlugin,
 	export_track: function() {
 		var filename = dojo.byId('export_filename').value;
 		if (!filename) {
-			this.info('Filename required', 'Please enter a filename');
+			this.info('Filename required', 'Please enter a filename', dojo.byId('export_filename'));
 			return;
 		}
 		var ref_seq = dojo.byId('coge_ref_seq');
@@ -365,11 +366,11 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	info: function(title, content) {
+	info: function(title, content, focus) {
 		new InfoDialog({
 			title: title,
 			content: content,
-			onHide: function(){this.destroyRecursive()}
+			onHide: function(){this.destroyRecursive(); if(focus)focus.focus();}
 		}).show();	
 	},
 
