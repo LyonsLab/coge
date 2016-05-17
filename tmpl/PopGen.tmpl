@@ -1,5 +1,5 @@
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css"/>
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.1.0/css/buttons.dataTables.min.css"/>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css"/> <!-- FIXME cdn -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.1.0/css/buttons.dataTables.min.css"/> <!-- FIXME cdn -->
 <link rel="stylesheet" type="text/css" href="/js/vendor/chosen/chosen.min.css"/>
 <style>
 #chromosomes_chosen {
@@ -45,6 +45,7 @@ function build_select(s, obj, first) {
 }
 
 function chromosome_changed() {
+	$('#results').hide();
 	$('#busy').show();
 	dt.clear();
 	dt.destroy();
