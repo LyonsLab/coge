@@ -30,8 +30,8 @@ our @EXPORT = qw(
     create_notebook_job create_bam_sort_job create_iget_job
     create_load_annotation_job create_data_retrieval_workflow
     send_email_job add_items_to_notebook_job create_hisat2_workflow
-    export_experiment_job create_cutadapt_workflow
-    create_trimgalore_job create_trimgalore_workflow
+    export_experiment_job create_cutadapt_workflow create_join_files_job
+    create_trimgalore_job create_trimgalore_workflow create_sort_fasta_job
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
@@ -439,6 +439,27 @@ sub create_image_job {
     };
 }
 
+sub create_untar_job {
+    my $input_file = shift;
+    my $done_file = "$input_file.untarred";
+
+    my $cmd = $CONF->{TAR} || 'tar';
+
+    return {
+        cmd => "$cmd -xvf $input_file ;  touch $done_file",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file,
+            $input_file . '.done' # ensure file is done transferring
+        ],
+        outputs => [
+            $done_file
+        ],
+        description => "Unarchiving " . basename($input_file) . "..."
+    };
+}
+
 sub create_gunzip_job {
     my $input_file = shift;
     my $output_file = $input_file;
@@ -575,6 +596,55 @@ sub create_bam_index_job {
             $input_file . '.bai'
         ],
         description => "Indexing BAM file...",
+    };
+}
+
+sub create_join_files_job {
+    my %opts = @_;
+    my $input_files = $opts{input_files};
+    my $output_file = $opts{output_file};
+    
+    $output_file = catfile($staging_dir, $output_file);
+    
+    my $cmd = 'cat ' . join(' ', @$input_files) . ' > ' . $output_file;
+    
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [],
+        inputs => [
+            @$input_files
+        ],
+        outputs => [
+            $output_file
+        ],
+        description => 'Joining files...'
+    };
+}
+
+sub create_sort_fasta_job {
+    my ($fasta_file, $staging_dir) = @_;
+    
+    my $filename = basename($fasta_file);
+    my $output_file = "$filename.sorted";
+    
+    my $cmd = $CONF->{SIZESEQ} || 'sizeseq';
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['-sequences', $filename, 0],
+            ['-descending', 'Y', 0],
+            ['-outseq', $output_file, 0]
+        ],
+        inputs => [
+            $fasta_file
+        ],
+        outputs => [
+            catfile($staging_dir, $output_file)
+        ],
+        description => 'Sorting FASTA file...'
     };
 }
 
