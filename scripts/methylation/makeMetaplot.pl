@@ -202,39 +202,39 @@ sub getCoverageFromBam {
 				# Add 0 and filtered out unwanted position
 				my $k = 1;
 				for(my $i = $tmpStart; $i < $tmpStop; $i++ ) {
-					my ($stOrSt, $pos);
+					my ($stOrSp, $pos);
 					if ($feature->{strand} eq "+"){
 						if($typeCoord eq "start"){
-							$stOrSt = "st";
+							$stOrSp = "st";
 							$pos = ($i-$feature->{start})+$outside+1;
 						}
 						elsif($typeCoord eq "stop"){
-							$stOrSt = "sp";
+							$stOrSp = "sp";
 							$pos = ($i-$feature->{stop})+$inside+1;
 						}
 					}
 					elsif ($feature->{strand} eq "-"){
 						if ($typeCoord eq "start"){
-							$stOrSt = "sp";
+							$stOrSp = "sp";
 							$pos = $inside+$outside-(($i-$feature->{start})+$outside+1)+1;
 						}
 						elsif ($typeCoord eq "stop"){
-							$stOrSt = "st";
+							$stOrSp = "st";
 							$pos = $inside+$outside-(($i-$feature->{stop})+$inside);
 						}
 					}
 
 					if (not defined $coverage{$i}) { #$self->{tmp}->{$i}) { # when cov is equal to 0
-						if (defined $matrice) { $self->{mat}->{$stOrSt}->{$k++}->{$featureId} = 0; }
+						if (defined $matrice) { $self->{mat}->{$stOrSp}->{$k++}->{$featureId} = 0; }
 						next if (defined $outOfRange and $typeCoord eq "start" and $i > $feature->{stop} );
 						next if (defined $outOfRange and $typeCoord eq "stop" and $i < $feature->{start} );
-						push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSt}}, 0);
+						push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSp}}, 0);
 					}
 					else {
-						if (defined $matrice) { $self->{mat}->{$stOrSt}->{$k++}->{$featureId} = $coverage{$i}; }#$self->{tmp}->{$i};}
+						if (defined $matrice) { $self->{mat}->{$stOrSp}->{$k++}->{$featureId} = $coverage{$i}; }#$self->{tmp}->{$i};}
 						next if (defined $outOfRange and $typeCoord eq "start" and $i > $feature->{stop} );
 						next if (defined $outOfRange and $typeCoord eq "stop" and $i < $feature->{start} );
-						push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSt}}, $coverage{$i});#$self->{tmp}->{$i});
+						push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSp}}, $coverage{$i});#$self->{tmp}->{$i});
 					}
 				}
 #				delete($self->{tmp});
@@ -318,39 +318,39 @@ sub getCoverageFromBam2 {
                 # add 0 and filtered out unwanted position
                 my $k = 1 ;
                 for(my $i = $tmpStart ; $i < $tmpStop ; $i++ ){
-                    my ($stOrSt, $pos);
+                    my ($stOrSp, $pos);
                     if ($strand eq '+') {
                         if($typeCoord eq 'start') {
-                            $stOrSt = 'st' ;
+                            $stOrSp = 'st' ;
                             $pos = ($i-$start)+$outside+1 ;
                         }
                         elsif($typeCoord eq 'stop') {
-                            $stOrSt = 'sp' ;
+                            $stOrSp = 'sp' ;
                             $pos = ($i-$stop)+$inside+1 ;
                         }
                     }
                     elsif ($strand eq '-') {
                         if ($typeCoord eq 'start') {
-                            $stOrSt = 'sp' ;
+                            $stOrSp = 'sp' ;
                             $pos = $inside+$outside-(($i-$start)+$outside+1)+1 ;
                         }
                         elsif ($typeCoord eq 'stop') {
-                            $stOrSt = 'st' ;
+                            $stOrSp = 'st' ;
                             $pos = $inside+$outside-(($i-$stop)+$inside) ;
                         }
                     }
 
                     if (not defined $coverage{$i}) { # when cov is equal to 0
-                        if(defined $matrice){ $self->{mat}->{$stOrSt}->{$k++}->{$featureId} = 0 ; }
+                        if(defined $matrice){ $self->{mat}->{$stOrSp}->{$k++}->{$featureId} = 0 ; }
                         next if (defined $outOfRange and $typeCoord eq 'start' and $i>$stop );
                         next if (defined $outOfRange and $typeCoord eq 'stop' and $i<$start );
-                        push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSt}}, 0) ;
+                        push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSp}}, 0) ;
                     }
                     else {
-                        if(defined $matrice){ $self->{mat}->{$stOrSt}->{$k++}->{$featureId} = $coverage{$i} ;}
+                        if(defined $matrice){ $self->{mat}->{$stOrSp}->{$k++}->{$featureId} = $coverage{$i} ;}
                         next if (defined $outOfRange and $typeCoord eq 'start' and $i>$stop );
                         next if (defined $outOfRange and $typeCoord eq 'stop' and $i<$start );
-                        push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSt}}, $coverage{$i});
+                        push(@{$self->{windows}->{$self->{nc}->{$pos}}->{cov}->{$stOrSp}}, $coverage{$i});
                     }
                 }
             }
