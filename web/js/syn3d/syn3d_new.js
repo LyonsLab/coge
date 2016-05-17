@@ -11,6 +11,7 @@ var camView = { "x": 0, "y": 0, "z": 120 };
 var histData = {"kn": [], "ks": [], "knks": []};
 var pointData = [];
 var colors = {"kn": [], "ks": [], "knks": []};
+var xsp, ysp, zsp;
 
 // Updating Variables
 var camUpdate = false;
@@ -19,6 +20,7 @@ var hCurrent = ["hKs", "ks"];
 var gridState = true;
 var colorScheme = "Jet";
 var dataSubset;
+var redraw = false;
 
 // Color schemes variables
 var schemes = {
@@ -106,7 +108,7 @@ function rotateHistogram(direction) {
 /* CORE FUNCTION: Reset Camera */
 function resetCamera() {
     camUpdate = true;
-    camView = { "x": 0, "y": 0, "z": 80 };
+    camView = { "x": 0, "y": 0, "z": 120 };
 }
 
 /* CORE FUNCTION: Toggle Grid Display */
@@ -185,7 +187,7 @@ function renderHistogram(element_id, values) {
         .offset([-10, 0])
         .html(function(d) {
             //console.log(d.x); // Returns bin minimum
-            var range = formatCount(d3.min(d)) + " < log10(x) < " + formatCount(d3.max(d));
+            var range = formatCount(d3.min(d)) + " < log10(" + hCurrent[1] + ") < " + formatCount(d3.max(d));
             var count = "Bin Count: <span style='color:red'>" + d.y + "</span>";
             return range + "<br>" + count;
         });
@@ -201,29 +203,7 @@ function renderHistogram(element_id, values) {
     // Add tip to SVG.
     svg.call(tip);
 
-    // Draw histogram bars.
-    // TODO: FIX overlapping bars (maybe has to do with SVG element size). Maybe use math.floor
-    var bar = svg.selectAll(".bar")
-        .data(data)
-        .enter().append("g")
-        .attr("class", "bar")
-        .attr("transform", function(d) { return "translate(" + formatWide(x(formatWide(d.x))) + "," + y(d.y) + ")"; });
 
-    bar.append("rect")
-        .attr("x", 1)
-        .attr("width", formatWide(width/(binCount)) )
-        .attr("height", function(d) { return height - y(d.y); })
-        .attr("fill", function(d) { return calcColor(d.x) })
-        .on("mouseover", function(d) {
-            tip.show(d);
-            d3.select(this).attr("fill", "red");
-        })
-        .on("mouseout", function(d) {
-            tip.hide(d);
-            d3.select(this).attr("fill", function(d) { return calcColor(d.x) })
-        });
-
-    // Set up & animate selection brush.
     var brush, brushg;
 
     function brushstart() {}
@@ -233,10 +213,11 @@ function renderHistogram(element_id, values) {
     function brushend() {
         if (!brush.empty()) {
             dataSubset = brush.extent();
-        } else {
+        }
+        else {
             dataSubset = [minVal, maxVal]
         }
-        console.log(dataSubset);
+        // console.log(dataSubset);
     }
 
     function resizePath(d) {
@@ -271,6 +252,33 @@ function renderHistogram(element_id, values) {
     brushg.selectAll(".resize").append("path").attr("d", resizePath);
 
     if (brush) { brushmove(); }
+
+    // Draw histogram bars.
+    // TODO: FIX overlapping bars (maybe has to do with SVG element size). Maybe use math.floor
+    var bar = svg.selectAll(".bar")
+        .data(data)
+        .enter().append("g")
+        .attr("class", "bar")
+        .attr("transform", function(d) { return "translate(" + formatWide(x(formatWide(d.x))) + "," + y(d.y) + ")"; });
+
+    bar.append("rect")
+        .attr("x", 1)
+        .attr("width", formatWide(width/(binCount)) )
+        .attr("height", function(d) { return height - y(d.y); })
+        .attr("fill", function(d) { return calcColor(d.x) })
+        .on("mouseover", function(d) {
+            tip.show(d);
+            d3.select(this).attr("fill", "red");
+        })
+        .on("mouseout", function(d) {
+            tip.hide(d);
+            d3.select(this).attr("fill", function(d) { return calcColor(d.x) })
+        });
+
+    // Set up & animate selection brush.
+
+
+
 
     // Draw X axis.
     svg.append("g")
@@ -415,6 +423,32 @@ function renderSynMap(graph_object, element_id, color_by) {
         return linkbase + seqX + seqY + seqZ + range + numSeq;
     }
 
+    /* FUNCTION: Generate Point HTML */
+    function displaySelection(xDbId, yDbId, zDbId) {
+        var feature_api = API_BASE_URL + 'features/';
+        var xFeat, yFeat, zFeat;
+        var gevoLink = genGevoLink(xDbId, yDbId, zDbId);
+        gevoLink = '"' + gevoLink + '"'
+        console.log(gevoLink);
+        function getX() {
+            return $.getJSON(feature_api + xDbId, function(json) { xFeat = json})
+        }
+        function getY() {
+            return $.getJSON(feature_api + yDbId, function(json) { yFeat = json})
+        }
+        function getZ() {
+            return $.getJSON(feature_api + zDbId, function(json) { zFeat = json})
+        }
+
+
+        return $.when( getX(), getY(), getZ() ).then(function() {
+            return "<span style='color:red;'>" + xsp + ": </span>" + xFeat.names[0] + " <br>" +
+                    "<span style='color:blue;'>" + ysp + ": </span>" + yFeat.names[0] + " <br>" +
+                    "<span style='color:green;'>" + zsp + ": </span>" + zFeat.names[0] + " <br>" +
+                    "<button type='button' onclick='window.open(" + gevoLink + ")'>Compare in GEvo &rsaquo;&rsaquo;&rsaquo;</button>"
+        });
+
+    }
     /* FUNCTION: Histogram Change */
     function updateColors(select) {
         var geometry = points.geometry;
@@ -551,19 +585,20 @@ function renderSynMap(graph_object, element_id, color_by) {
             } else {
                 pointMutData.kn.push("NULL");
             }
+
             if (!isNaN(ks)) {
                 histData.ks.push(ks);
                 pointMutData.ks.push(ks);
             } else {
                 pointMutData.ks.push("NULL");
             }
+
             if (!isNaN(knks)) {
                 histData.knks.push(knks);
                 pointMutData.knks.push(knks);
             } else {
                 pointMutData.knks.push("NULL");
             }
-            
         }
 
         // Build colors lists.
@@ -574,7 +609,7 @@ function renderSynMap(graph_object, element_id, color_by) {
             var maxVal = Math.max.apply(null, histData[c]);
             var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
 
-            for (var j=0; j<ptCount; j++ ) {
+            for (var j = 0; j < ptCount; j++) {
                 if (pointMutData[c][j] != 'NULL') {
                     colors[c][j] = new THREE.Color(calcColor(pointMutData[c][j]))
                 } else {
@@ -583,11 +618,27 @@ function renderSynMap(graph_object, element_id, color_by) {
             }
         }
 
-        // Apply colors to geometry.
-        plotGeo.colors = colors[hCurrent[1]];
+        // Build points depending on data subset.
+        var pts;
+        if (redraw) {
+            // For histogram brushing, build new geometries & colors based on cutoffs.
+            var newGeo = new THREE.Geometry();
+            var newColors = [];
+            for (var i=0; i<ptCount; i++) {
+                if (pointMutData[hCurrent[1]][i] >= dataSubset[0] && pointMutData[hCurrent[1]][i] <= dataSubset[1]) {
+                    newGeo.vertices.push(plotGeo.vertices[i]);
+                    newColors.push(colors[hCurrent[1]][i]);
+                }
 
-        // Create points object.
-        var pts = new THREE.Points(plotGeo, plotMat);
+            }
+            newGeo.colors = newColors;
+            pts = new THREE.Points(newGeo, plotMat);
+            redraw = false;
+        } else {
+            // If not redrawing points from histogram, apply general colors & build pts object.
+            plotGeo.colors = colors[hCurrent[1]];
+            pts = new THREE.Points(plotGeo, plotMat);
+        }
 
         // Shift points object to rotation offset.
         pts.translateX(-graph_object.x[2] / 2);
@@ -595,7 +646,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         pts.translateZ(-graph_object.z[2] / 2);
 
         // Report point count.
-        console.log("POINTS RENDERED: " + ptCount);
+        console.log("POINTS RENDERED: " + pts.geometry.vertices.length);
         return pts;
     }
 
@@ -729,6 +780,10 @@ function renderSynMap(graph_object, element_id, color_by) {
         points = drawPoints(graph_object.points);
         scene.add(points);
 
+        var minVal = Math.min.apply(null, histData[hCurrent[1]]);
+        var maxVal = Math.max.apply(null, histData[hCurrent[1]]);
+        dataSubset = [minVal, maxVal];
+        dataS = dataSubset;
     }
 
     /*---------------------------------------------------------------------------------------------------------
@@ -745,6 +800,7 @@ function renderSynMap(graph_object, element_id, color_by) {
      --------------------------------------------------------------------------------------------------------*/
     var current = hCurrent[1];
     var gridS = gridState;
+    var dataS;
 
     function animate() {
         /* Update controls. */
@@ -755,6 +811,7 @@ function renderSynMap(graph_object, element_id, color_by) {
             camera.position.x = camView.x;
             camera.position.y = camView.y;
             camera.position.z = camView.z;
+            //camera.updateProjectionMatrix();
             camUpdate = false;
         } else {
             /* Update camera position record. */
@@ -778,11 +835,21 @@ function renderSynMap(graph_object, element_id, color_by) {
             gridS = gridState;
         }
 
+        /* Check for histogram brushing */
+        if (dataSubset != dataS) {
+            redraw = true;
+            scene.remove(points);
+            points = drawPoints(graph_object.points);
+            scene.add(points);
+            dataS = dataSubset;
+        }
+
         /* Render the scene. */
         render();
 
         /* Create continuous animation. */
         requestAnimationFrame( animate );
+
     }
 
     /*---------------------------------------------------------------------------------------------------------
@@ -834,6 +901,15 @@ function renderSynMap(graph_object, element_id, color_by) {
             var zFid = graph_object.points[pt_select][5];
             // Log a GEvo link.
             console.log(genGevoLink(xFid, yFid, zFid));
+
+            //var pointHtml = displaySelection(xFid, yFid, zFid);
+            $.when(displaySelection(xFid, yFid, zFid)).done(function(data) {
+                var pointHtml = data;
+                var el = $("#pt_display");
+                el.empty();
+                el.append(pointHtml);
+            });
+
 
             /*
             // Show point info panels & GEvo button.
@@ -888,6 +964,10 @@ $(document).ready( function() {
     // Load data & launch initial visualizations
     $.when(loadData(final_experiment.links.graph)).done(function(data) {
         d = data;
+        xsp = d.x[1];
+        ysp = d.y[1];
+        zsp = d.z[1];
+
         // Render initial SynMap & Histogram
         renderSynMap(data, "canvas", "xy");
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);
