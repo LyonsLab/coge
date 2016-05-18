@@ -468,57 +468,7 @@ function showVisualizer(data) {
         });
         $('#analysis').css("display", "");
     }
-    //
-    // $(document).ready( function() {
-    //     /* Halt scrolling when controlling visualization. */
-    //     $('#canvas').hover( function() {
-    //         $("body").css("overflow", "hidden");
-    //     }, function() {
-    //         $("body").css("overflow", "scroll");
-    //     });
-    //
-    //     /* Change background color with slider */
-    //     var renderDiv = $("#rendering");
-    //     var bg_slider = $("#bgslider");
-    //     renderDiv.css("background-color", getBgColor(bg_slider.val()));
-    //     bg_slider.change( function() {
-    //         renderDiv.css("background-color", getBgColor(bg_slider.val()));
-    //     });
-    // });
 }
-// function showVisualizer(data) { // OLD!!!!!
-//     console.log(data);
-//
-//     if (visVisible) {
-//         //Refresh function can go here.
-//     } else {
-//         console.log(final_experiment);
-//         $.getScript( "js/syn3d/syn3d.js", function( data, textStatus, jqxhr ) {
-//             console.log( "Visualizer loaded." );
-//             //console.log( data ); // Data returned
-//             //console.log( textStatus ); // Success
-//             //console.log( jqxhr.status ); // 200
-//         });
-//         $('#analysis').css("display", "");
-//     }
-//
-//     $(document).ready( function() {
-//         /* Halt scrolling when controlling visualization. */
-//         $('#canvas').hover( function() {
-//             $("body").css("overflow", "hidden");
-//         }, function() {
-//             $("body").css("overflow", "scroll");
-//         });
-//
-//         /* Change background color with slider */
-//         var renderDiv = $("#rendering");
-//         var bg_slider = $("#bgslider");
-//         renderDiv.css("background-color", getBgColor(bg_slider.val()));
-//         bg_slider.change( function() {
-//             renderDiv.css("background-color", getBgColor(bg_slider.val()));
-//         });
-//     });
-// }
 
 function launch(experiment) {
     var xgid = experiment.x_gid;
@@ -557,6 +507,25 @@ function launch(experiment) {
     options_name = buildOptionsName(final_experiment);
     var graph_obj = options_name + '_graph.json';
     var log_obj = options_name + '_log.json';
+
+    // Build URL for updating.
+    function buildUrl(exp) {
+        var url = "?x_gid=" + exp.x_gid + ";y_gid=" + exp.y_gid + ";z_gid=" + exp.z_gid;
+        url += ";min_syn=" + exp.options.min_synteny + ";min_len=" + exp.options.min_length;
+        url += ";sort=" + exp.options.sortby;
+        if (exp.options.cluster) {
+            url += ";cluster=" + exp.options.c_eps + "," + exp.options.c_min;
+        }
+        if (exp.options.ratio) {
+            url += ";ratio=" + exp.options.ratio + "," + exp.options.r_by + "," + exp.options.r_min + "," + exp.options.r_max;
+        }
+        if (exp.options.vr) {
+            url += ";vr=" + exp.options.vr;
+        }
+
+        return url
+    }
+    var urlUpdate = buildUrl(final_experiment);
 
     // Build Link to SynMap Output
     function synmapOutputLink(id1, id2) {
@@ -635,12 +604,13 @@ function launch(experiment) {
                     return;
                 }
                 //Start status update
-                window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
+                console.log("Launching XY SynMap Job (ID: " + response.id + ")");
+                window.history.pushState({}, "Title", "SynMap3D.pl" + urlUpdate); // Update URL with all options.
                 coge.progress.update(response.id);
                 //coge.progress.update(response.id, response.site_url);
             })
             .fail(function(jqXHR, textStatus, errorThrown) {
-                console.log("Fucked!");
+                console.log("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
             })
     }
@@ -669,7 +639,8 @@ function launch(experiment) {
                 }
 
                 //Start status update
-                window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
+                console.log("Launching XZ SynMap Job (ID: " + response.id + ")");
+                //window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
                 coge.progress.update(response.id);
                 //coge.progress.update(response.id, response.site_url);
             })
@@ -702,7 +673,8 @@ function launch(experiment) {
                 }
 
                 //Start status update
-                window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
+                console.log("Launching YZ SynMap Job (ID: " + response.id + ")");
+                //window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
                 coge.progress.update(response.id);
                 //coge.progress.update(response.id, response.site_url);
             })
@@ -718,7 +690,9 @@ function launch(experiment) {
                             }
                            });
         coge.progress.begin();
-
+        console.log(exp);
+        console.log(graph_obj);
+        console.log(log_obj);
         $.ajax({
                 dataType: "json",
                 data: {
@@ -754,15 +728,18 @@ function launch(experiment) {
                 }
 
                 //Start status update
-                window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
+                console.log("Launching Dotplot Dots Job (ID: " + response.id + ")");
+                //window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
                 coge.progress.update(response.id);
                 //coge.progress.update(response.id, response.site_url); TODO: Add tiny link (see SynMap.pm for example)
-
+                //console.log(response);
                 final_experiment.links.xy_json = response.xy_json;
                 final_experiment.links.xz_json = response.xz_json;
                 final_experiment.links.yz_json = response.yz_json;
                 final_experiment.links.graph = response.graph;
                 final_experiment.links.log = response.log;
+                final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate;
+                //console.log(final_experiment);
             })
             .fail(function (jqXHR, textStatus, errorThrown) {
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);

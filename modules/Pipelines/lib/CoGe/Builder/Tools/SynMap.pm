@@ -823,7 +823,7 @@ sub add_jobs {
 #	my ( $qlead, $slead ) = ( "a", "b" );
 	my $out = catdir($org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir}, 'html');
 	#mkpath( $out, 0, 0777 ) unless -d $out; # mdb removed 3/24/16 for hypnotoad (permissions issue)
-	$out .= "master_";
+	$out .= "/master_";
 	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
 	$out .= $base;
 

@@ -412,8 +412,8 @@ parser.add_argument('-C',
                     action="store_true",
                     help="Flag to enable thinning by clustering")
 parser.add_argument('-C_eps',
-                    type=float,
-                    default=0.5,
+                    type=str,
+                    default="0.5",
                     help="EPS (maximum sample distance for neighborhood) for DBSCAN clustering")
 parser.add_argument('-C_ms',
                     type=int,
@@ -430,12 +430,12 @@ parser.add_argument('-Rby',
                     default="xy",
                     help="Comparison to base ratio cutoff ('xy', 'xz', 'yz', 'mean', 'median')")
 parser.add_argument('-Rmin',
-                    type=float,
-                    default=-1.0,
+                    type=str,
+                    default="-1.0",
                     help="Minimum log10(ratio) cutoff (log10)")
 parser.add_argument('-Rmax',
-                    type=float,
-                    default=1.0,
+                    type=str,
+                    default="1.0",
                     help="Maximum log10(ratio) cutoff (log10)")
 parser.add_argument('-ml',
                     type=int,
@@ -458,7 +458,7 @@ sort_method = args.S
 
 # Clustering
 remove_unclustered = args.C
-eps = args.C_eps
+eps = float(args.C_eps)
 min_samples = args.C_ms
 
 # Parsing
@@ -469,8 +469,8 @@ min_synteny = args.ms
 # Kn/Ks Ratio Cutoff
 ratio_cutoff = args.R
 ratio_by = args.Rby
-rcutoff_min = args.Rmin
-rcutoff_max = args.Rmax
+rcutoff_min = float(args.Rmin)
+rcutoff_max = float(args.Rmax)
 
 #except:
 #ratio_cutoff = args.R
@@ -697,8 +697,8 @@ z_chrs, z_len = buildAxisTicks(c_sort[Z_GID], g_size_rel[Z_GID], c_rel[Z_GID])
 ## ----- Write out graph object(s) ----- ##
 # Build graph object.
 # graph_obj = {'axes': [[xsp_chname1, ... xsp_chnameN], [xsp_chstart1, ... xsp_chstartN],
-#                       [xsp_chname1, ... xsp_chnameN], [xsp_chstart1, ... xsp_chstartN],
-#                       [xsp_chname1, ... xsp_chnameN], [xsp_chstart1, ... xsp_chstartN]],
+#                       [ysp_chname1, ... ysp_chnameN], [ysp_chstart1, ... ysp_chstartN],
+#                       [zsp_chname1, ... zsp_chnameN], [zsp_chstart1, ... zsp_chstartN]],
 #              'points': [[x1, y1, z1, x1_fid, y1_fid, z1_fid, XY_Kn, XY_Ks, XZ_Kn, XZ_Ks, YZ_Kn, YZ_Ks],
 #                         ...,
 #                         [xN, yN, zN, xN_fid, yN_fid, zN_fid, XY_Kn, XY_Ks, XZ_Kn, XZ_Ks, YZ_Kn, YZ_Ks]],
@@ -737,13 +737,13 @@ name_ext.append('parse.len=%s' % str(min_length))
 name_ext.append('parse.syn=%s' % str(min_synteny))
 # Cluster
 if remove_unclustered:
-    name_ext.append('cluster.eps=%s' % str(eps))
+    name_ext.append('cluster.eps=%s' % args.C_eps)
     name_ext.append('cluster.min=%s' % str(min_samples))
 # Ratio Thinning
 if ratio_cutoff:
     name_ext.append('ratio.by=%s.%s' % (ratio_by, ratio_cutoff))
-    name_ext.append('ratio.min=%s' % rcutoff_min)
-    name_ext.append('ratio.max=%s' % rcutoff_max)
+    name_ext.append('ratio.min=%s' % args.Rmin)
+    name_ext.append('ratio.max=%s' % args.Rmax)
 # Sort name extensions, write graph & log filenames.
 name_ext.sort()
 graphName_out = name_base + '_'.join(name_ext) + '_graph.json'

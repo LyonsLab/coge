@@ -129,6 +129,16 @@ function emptyRenderings() {
     d3.select("#chartSvg").remove();
 }
 
+/* CORE FUNCTION: Post Tinylink */
+function postTiny(element, url) {
+    var el = document.getElementById(element);
+    var request_url = "https://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=" + url;
+    $.get(request_url, function( data ) {
+        var link = "<a href=" + data + ">" + data + "</a>";
+        el.innerHTML = link;
+    });
+}
+
 /* CORE FUNCTION: Render Histograms */
 function renderHistogram(element_id, values) {
     /* RESOURCES
@@ -428,7 +438,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         var feature_api = API_BASE_URL + 'features/';
         var xFeat, yFeat, zFeat;
         var gevoLink = genGevoLink(xDbId, yDbId, zDbId);
-        gevoLink = '"' + gevoLink + '"'
+        gevoLink = '"' + gevoLink + '"'; // puts quotes around it so in the return later the link works.
         console.log(gevoLink);
         function getX() {
             return $.getJSON(feature_api + xDbId, function(json) { xFeat = json})
@@ -445,7 +455,8 @@ function renderSynMap(graph_object, element_id, color_by) {
             return "<span style='color:red;'>" + xsp + ": </span>" + xFeat.names[0] + " <br>" +
                     "<span style='color:blue;'>" + ysp + ": </span>" + yFeat.names[0] + " <br>" +
                     "<span style='color:green;'>" + zsp + ": </span>" + zFeat.names[0] + " <br>" +
-                    "<button type='button' onclick='window.open(" + gevoLink + ")'>Compare in GEvo &rsaquo;&rsaquo;&rsaquo;</button>"
+                    "<button type='button' onclick='window.open(" + gevoLink +
+                    ")'>Compare in GEvo &rsaquo;&rsaquo;&rsaquo;</button>"
         });
 
     }
@@ -580,21 +591,21 @@ function renderSynMap(graph_object, element_id, color_by) {
             var knks = Math.log10(Math.pow(10, kn) / Math.pow(10, ks));
 
             if (!isNaN(kn)) {
-                histData.kn.push(kn);
+                if (!redraw) histData.kn.push(kn);
                 pointMutData.kn.push(kn);
             } else {
                 pointMutData.kn.push("NULL");
             }
 
             if (!isNaN(ks)) {
-                histData.ks.push(ks);
+                if (!redraw) histData.ks.push(ks);
                 pointMutData.ks.push(ks);
             } else {
                 pointMutData.ks.push("NULL");
             }
 
             if (!isNaN(knks)) {
-                histData.knks.push(knks);
+                if (!redraw) histData.knks.push(knks);
                 pointMutData.knks.push(knks);
             } else {
                 pointMutData.knks.push("NULL");
@@ -794,7 +805,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         // Render scene.
         renderer.render( scene, camera );
     }
-
+    
     /*---------------------------------------------------------------------------------------------------------
      ~~~~ANIMATE~~~~
      --------------------------------------------------------------------------------------------------------*/
@@ -808,9 +819,12 @@ function renderSynMap(graph_object, element_id, color_by) {
 
         /* Camera control */
         if (camUpdate) {
+            console.log("Hi friend, I should be resetting the camera view!");
+            console.log(camera.position);
             camera.position.x = camView.x;
             camera.position.y = camView.y;
             camera.position.z = camView.z;
+            console.log(camera.position);
             //camera.updateProjectionMatrix();
             camUpdate = false;
         } else {
@@ -900,7 +914,7 @@ function renderSynMap(graph_object, element_id, color_by) {
             var yFid = graph_object.points[pt_select][4];
             var zFid = graph_object.points[pt_select][5];
             // Log a GEvo link.
-            console.log(genGevoLink(xFid, yFid, zFid));
+            //console.log(genGevoLink(xFid, yFid, zFid));
 
             //var pointHtml = displaySelection(xFid, yFid, zFid);
             $.when(displaySelection(xFid, yFid, zFid)).done(function(data) {
@@ -910,32 +924,6 @@ function renderSynMap(graph_object, element_id, color_by) {
                 el.append(pointHtml);
             });
 
-
-            /*
-            // Show point info panels & GEvo button.
-            $(".gene-info-display").css("display", "");
-            $("#gevo_div").css("display", "");
-            // Select info panels.
-            var xdisplay = $("#x-gene-display");
-            var ydisplay = $("#y-gene-display");
-            var zdisplay = $("#z-gene-display");
-            // Empty old content from info panels.
-            xdisplay.empty();
-            ydisplay.empty();
-            zdisplay.empty();
-            // Print intersected point data to respective info panels.
-            xdisplay.append(displayGenePair(pt_select, final_experiment.x_gid));
-            ydisplay.append(displayGenePair(pt_select, final_experiment.y_gid));
-            zdisplay.append(displayGenePair(pt_select, final_experiment.z_gid));
-
-            // Build GEvo link.
-            var gevoLink = genGevoLink(
-                pt_select[final_experiment.x_gid].db_feature_id,
-                pt_select[final_experiment.y_gid].db_feature_id,
-                pt_select[final_experiment.z_gid].db_feature_id);
-            // Assign link to click event.
-            document.getElementById("gevo_button").onclick = function() { window.open(gevoLink) };
-            */
             // Revert previously selected point color.
             if (ptHistory[0] != "NULL") { geometry.colors[ ptHistory[0] ] = ptHistory[1]; }
             // Record new point index & color.
@@ -971,6 +959,7 @@ $(document).ready( function() {
         // Render initial SynMap & Histogram
         renderSynMap(data, "canvas", "xy");
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+        postTiny("tiny", final_experiment.page_url);
     });
 
     /* Monitor mutation ratio coloring option & update visualizations on change. */
