@@ -91,3 +91,25 @@
 	</div>
 </script>
 </TMPL_UNLESS>	  
+<div id="dirname_dialog" title="Create new directory" style="display:none">
+  <form>
+    <fieldset>
+      <label for="name">Name</label>
+      <input id="dirname" class="text ui-widget-content ui-corner-all">
+    </fieldset>
+  </form>
+</div>
+<script type="text/javascript">
+	function get_dirname(on_ok) {
+		var dialog = $( "#dirname_dialog" ).dialog({
+	      	autoOpen: true,
+	      	height: 150,
+	      	width: 300,
+	      	modal: true,
+	      	buttons: {
+	        	Cancel: function() { dialog.dialog("close"); },
+	        	OK: function() { on_ok($('#dirname').val());dialog.dialog("close"); }
+	      	}
+	    });
+	}
+</script>

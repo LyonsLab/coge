@@ -289,11 +289,24 @@ return declare( JBrowsePlugin,
 		var content = '<div id="coge-track-export"><table align="center" style="width:100%"><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('All');
 		content += '</td></tr>';
-		if (track.config.coge.transform)
-			content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ' + track.config.coge.transform + '</td></tr>';
-		if (track.config.coge.search)
-			content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ' + coge_plugin.search_to_string(track.config.coge.search, true) + '</td></tr>';
-		content += '<tr><td>Method:</td><td style="white-space:nowrap"><input type="radio" name="export_method" checked="checked" onchange="coge_plugin.export_method_changed()"> Download to local computer <input id="to_cyverse" type="radio" name="export_method" onchange="coge_plugin.export_method_changed()"> Save in CyVerse</td></tr><tr><td colspan="2" id="cyverse"></td></tr><tr><td>Filename:</td><td><input id="export_filename" /></td></tr><tr><td></td><td></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.export_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin._track_export_dialog.hide()">Cancel</button></div></div>';
+		if (track.config.coge.transform) {
+			content += '<tr><td>Transform:</td><td style="white-space:nowrap"><input type="radio" name="transform" checked="checked"> None <input id="transform" type="radio" name="transform"> ';
+			content += track.config.coge.transform;
+			content += '</td></tr>';
+		}
+		if (track.config.coge.search) {
+			content += '<tr><td>Search:</td><td style="white-space:nowrap"><input type="radio" name="search" checked="checked"> None <input id="search" type="radio" name="search"> ';
+			content += coge_plugin.search_to_string(track.config.coge.search, true);
+			content += '</td></tr>';
+		}
+		content += '<tr><td>Method:</td><td style="white-space:nowrap">';
+		content += '<input type="radio" name="export_method" checked="checked" onchange="coge_plugin.export_method_changed()"> Download to local computer&nbsp;&nbsp;&nbsp;';
+		content += '<input id="to_cyverse" type="radio" name="export_method" onchange="coge_plugin.export_method_changed()"> Save in CyVerse</td></tr>';
+		content += '<tr><td colspan="2" id="cyverse"></td></tr><tr><td>Filename:</td><td><input id="export_filename" />';
+		content += track.config.coge.ext;
+		content += '</td></tr><tr><td></td><td></td></tr></table>';
+		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.export_track()">OK</button>';
+		content += '<button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin._track_export_dialog.hide()">Cancel</button></div></div>';
 		this._track_export_dialog = new Dialog({
 			title: 'Export Track',
 			content: content,
@@ -340,7 +353,8 @@ return declare( JBrowsePlugin,
 		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_for_features">';
 		content += this.build_features_checkboxes();
 		content += '</td></tr></table>';
-		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.search_for_features()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.search_dialog.hide()">Cancel</button></div></div>';
+		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.search_for_features()">OK</button>';
+		content += '<button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.search_dialog.hide()">Cancel</button></div></div>';
 		new Button({
 			label: 'Find Features',
 			onClick: function(event) {
@@ -383,8 +397,6 @@ return declare( JBrowsePlugin,
 
 	export_method_changed: function() {
 		if (dojo.byId('to_cyverse').checked) {
-//			var dir_chooser = React.createElement(DirChooser);
-//			ReactDOM.render(dir_chooser, dojo.byId('cyverse'));
 			dojo.xhrGet({
 				url: 'DirSelect.pl',
 				load: function(data) {
@@ -412,12 +424,15 @@ return declare( JBrowsePlugin,
 			return;
 		}
 		var ref_seq = dojo.byId('coge_ref_seq');
-		var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un;
+		var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&filename=' + filename;
 		if (dojo.byId('search') && dojo.byId('search').checked)
 			url += '&' + this.search_to_params(this._track.config.coge.search, true);
 		if (dojo.byId('transform') && dojo.byId('transform').checked)
 			url += '&transform=' + this._track.config.coge.transform;
-		document.location = url;
+		if (dojo.byId('to_cyverse').checked) {
+			url += '&irods_path=' + $('#ids_current_path').html();
+		} else
+			document.location = url;
 		this._track_export_dialog.hide();
 	},
 

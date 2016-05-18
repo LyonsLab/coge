@@ -40,7 +40,7 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
-    @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_iput $IRODS_METADATA_PREFIX );
+    @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_imkdir irods_iput $IRODS_METADATA_PREFIX );
     @EXPORT_OK = qw( irods_get_base_path irods_set_env );
 
     $IRODS_METADATA_PREFIX = 'ipc-coge-';
@@ -215,6 +215,18 @@ sub irods_imeta {
 	}
 
     return;
+}
+
+sub irods_imkdir {
+    my $path = shift;
+    return 'path not specified' unless $path;
+
+    my $env_file = _irods_get_env_file();
+    return 'irods env file missing' unless $env_file;
+
+    my $cmd = "export irodsEnvFile='$env_file'; imkdir '" . $path . "'";
+    my @result = `$cmd`;
+    return $result[0] if scalar @result;
 }
 
 sub irods_get_base_path {
