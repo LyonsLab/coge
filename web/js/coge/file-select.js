@@ -85,6 +85,9 @@ var coge = window.coge = (function(namespace) {
 			self.container.find('.fileselect-getall').click(function() {
 				self._irods_get_all_files(".");
 			});
+			self.container.find('.fileselect-mkdir').click(function() {
+				self._irods_mkdir();
+			});
 			
 			self.container.find('.fileselect-filter').unbind().bind('keyup', function() {
 				var search_term = self.container.find('.fileselect-filter').val();
@@ -183,23 +186,25 @@ var coge = window.coge = (function(namespace) {
 		_add_file_to_list: function(filename, url, username, password) { // username/password only for FTP
 			var self = this;
 			
-			// Skip if file already exists in file table
-			if (self._find_file_in_list(url)) {
-				console.warn('_fine_file_in_list: file already exists');
-				return 0;
+			if (self.fileTable) {
+				// Skip if file already exists in file table
+				if (self._find_file_in_list(url)) {
+					console.warn('_fine_file_in_list: file already exists');
+					return 0;
+				}
+				
+				// Add file to view
+				var tr = $('<tr class="note middle" style="height:1em;"><td style="padding-right:15px;">' +
+						   '<span class="text">Name:</span> ' + filename +
+						   '</td>' + '</tr>');
+				var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
+				$(tr).append(td).fadeIn();
+
+				if (self.fileSelectSingle)
+					self.fileTable.empty(); // remove all rows
+
+				self.fileTable.append(tr).show();
 			}
-			
-			// Add file to view
-			var tr = $('<tr class="note middle" style="height:1em;"><td style="padding-right:15px;">' +
-					   '<span class="text">Name:</span> ' + filename +
-					   '</td>' + '</tr>');
-			var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
-			$(tr).append(td).fadeIn();
-
-			if (self.fileSelectSingle)
-				self.fileTable.empty(); // remove all rows
-
-			self.fileTable.append(tr).show();
 			
 			// Add file to internal list
 			var file = { 
@@ -500,6 +505,20 @@ var coge = window.coge = (function(namespace) {
 				.fail(function() {
 					//TODO
 				});
+		},
+
+		_irods_mkdir: function() {
+			var self = this;
+			get_dirname(function(path){
+				path = $('#ids_current_path').html() + '/' + path;
+				coge.services.irods_mkdir(path).done(function(result) {
+					self._irods_busy(false);
+					if (result.error)
+						alert(result.error.Error);
+					else
+						self._irods_get_path(path);
+				});
+			});
 		},
 
 		_units: function(val) {

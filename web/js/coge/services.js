@@ -105,6 +105,10 @@ var coge = window.coge = (function(namespace) {
 			return this._ajax("GET", this.baseUrl + "irods/list/" + path);
 		},
 		
+		irods_mkdir: function(path) {
+			return this._ajax("POST", this.baseUrl + "irods/mkdir", null, { path: path });
+		},
+		
 		ftp_list: function(url) {
 			return this._ajax("GET", this.baseUrl + "ftp/list/", null, { url: url });
 		},
