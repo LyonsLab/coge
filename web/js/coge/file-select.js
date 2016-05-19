@@ -77,7 +77,8 @@ var coge = window.coge = (function(namespace) {
 				self._irods_get_path("/iplant/home/shared");
 			});
 			self.container.find('.fileselect-up').click(function() {
-				self._irods_get_path("..");
+				if ($('.fileselect-up').css('cursor') === 'pointer')
+					self._irods_get_path("..");
 			});
 			self.container.find('.fileselect-refresh').click(function() {
 				self._irods_get_path(".");
@@ -98,6 +99,13 @@ var coge = window.coge = (function(namespace) {
 					else
 						obj.parent().hide();
 				});
+			});
+			self.container.find('.fileselect-filter').bind('search', function() {
+				var search_term = self.container.find('.fileselect-filter').val();
+				if (!search_term.length)
+					self.container.find('#ids_table tr td:nth-child(1)').each(function() {
+						$(this).parent().show();
+					});
 			});
 			
 			self.container.find('#ftp_get_button').bind('click', function() {
@@ -410,7 +418,8 @@ var coge = window.coge = (function(namespace) {
 					var p = result.path;
 					if (p.charAt(p.length - 1) == '/')
 						p = p.substring(0, p.length - 1);
-					$('.fileselect-up').css('visibility', p === self.home_path || p === '/iplant/home/shared' ? 'hidden' : 'visible');
+					$('.fileselect-up').css('opacity', p === self.home_path || p === '/iplant/home/shared' ? 0.4 : 1.0);
+					$('.fileselect-up').css('cursor', p === self.home_path || p === '/iplant/home/shared' ? 'default' : 'pointer');
 	
 					self._filenames = [];
 					if (result.items.length == 0)
@@ -426,7 +435,7 @@ var coge = window.coge = (function(namespace) {
 								icon = '<span class="ui-icon ui-icon-link"></span>';
 							else // assume file type
 								icon = '<span class="ui-icon ui-icon-document"></span>';
-							tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;">' 
+							tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;user-select:none;">' 
 									+ icon
 									+ decodeURIComponent(obj.name) + '</td><td>'
 									+ (obj.size ? decodeURIComponent(obj.size) : '') + '</td><td>' 
@@ -444,6 +453,14 @@ var coge = window.coge = (function(namespace) {
 										if ( self._add_file_to_list(decodeURIComponent(obj.name), 'irods://'+obj.path) )
 											//self._irods_get_file(obj.path);
 											self._finish_file_in_list('irods', 'irods://'+obj.path, obj.path, obj.size);
+									}
+								);
+								tr.contextmenu(
+									function(e) {
+										console.log(obj.name);
+										e.preventDefault();
+										e.stopPropagation();
+										return false;
 									}
 								);
 								self._filenames.push(obj.name);
