@@ -40,7 +40,7 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
-    @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_iput $IRODS_METADATA_PREFIX );
+    @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_imkdir irods_iput $IRODS_METADATA_PREFIX );
     @EXPORT_OK = qw( irods_get_base_path irods_set_env );
 
     $IRODS_METADATA_PREFIX = 'ipc-coge-';
@@ -56,13 +56,13 @@ sub irods_ils {
     return { error => "Error: iRODS env file missing" } unless $env_file;
 
     $path = uri_unescape($path); # mdb added 8/15/14 issue 441
-
+warn $env_file;
     $ENV{irodsEnvFile} = $env_file;  # mdb added 2/17/16 for hypnotoad
     my $cmd = "ils -l '$path' 2>&1"; #"export irodsEnvFile='$env_file'; ils -l '$path' 2>&1"; # mdb changed 2/17/16 for hypnotoad
 
 #	print STDERR "cmd: $cmd\n";
     my @ils = capture( EXIT_ANY, $cmd );
-#    print STDERR 'results: ', Dumper \@ils, "\n";
+    warn Dumper \@ils;
     if ($EXITVAL) {
         return { error => "Error: ils rc=$EXITVAL" };
     }
@@ -215,6 +215,18 @@ sub irods_imeta {
 	}
 
     return;
+}
+
+sub irods_imkdir {
+    my $path = shift;
+    return 'path not specified' unless $path;
+
+    my $env_file = _irods_get_env_file();
+    return 'irods env file missing' unless $env_file;
+
+    my $cmd = "export irodsEnvFile='$env_file'; imkdir '" . $path . "'";
+    my @result = `$cmd`;
+    return $result[0] if scalar @result;
 }
 
 sub irods_get_base_path {

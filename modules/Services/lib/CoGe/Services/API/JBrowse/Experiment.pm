@@ -5,6 +5,7 @@ use Mojo::JSON;
 
 use CoGeX;
 use CoGe::Accessory::histogram;
+use CoGe::Accessory::IRODS qw( irods_iput );
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
 use CoGe::Core::Storage qw( get_experiment_path );
@@ -12,8 +13,8 @@ use CoGeDBI qw( get_dataset_ids feature_type_names_to_id );
 use Data::Dumper;
 use File::Path;
 use File::Spec::Functions;
+use File::Temp qw/ tempfile tempdir /;
 use JSON::XS;
-
 #TODO: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
 my $DATA_TYPE_POLY	 = 2; # Polymorphism data
@@ -132,15 +133,11 @@ sub data {
     my $gte = $self->param('gte');
     my $lte = $self->param('lte');
     my $transform = $self->param('transform');
+    my $filename = $self->param('filename');
+    my $irods_path = $self->param('irods_path');
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-    # unless ($user) {
-    #     $self->render(json => {
-    #         error => { Error => "User not logged in" }
-    #     });
-    #     return;
-    # }       
 
     # Get experiment
     my $experiment = $db->resultset("Experiment")->find($id);
@@ -159,29 +156,35 @@ sub data {
         return;
     }
 
+    my $fh;
+    my $tempfile;
+    ($fh, $tempfile) = tempfile() if $irods_path;
+
     my $exp_data_type = $experiment->data_type;
-    my $filename = 'experiment' . ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : $exp_data_type == $DATA_TYPE_ALIGN ? '.sam' : $exp_data_type == $DATA_TYPE_MARKER ? '.gff' : '.csv');
+    $filename = 'experiment' unless $filename;
+    $filename .= ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : $exp_data_type == $DATA_TYPE_ALIGN ? '.sam' : $exp_data_type == $DATA_TYPE_MARKER ? '.gff' : '.csv');
     $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
-    $self->write("##gff-version 3\n") if $exp_data_type == $DATA_TYPE_MARKER;
-    $self->write('# experiment: ' . $experiment->name . "\n");
-    $self->write("# chromosome: $chr\n");
+    $self->_write("##gff-version 3\n", $fh) if $exp_data_type == $DATA_TYPE_MARKER;
+    my $comment_char = ($exp_data_type == $DATA_TYPE_ALIGN) ? '@CO' : '#';
+    $self->_write($comment_char . ' experiment: ' . $experiment->name . "\n", $fh);
+    $self->_write($comment_char . ' chromosome: ' . $chr . "\n", $fh);
 
     if ( !$exp_data_type || $exp_data_type == $DATA_TYPE_QUANT ) {
         if ($type) {
-            $self->write("# search: type = $type");
-            $self->write(", gte = $gte") if $gte;
-            $self->write(", lte = $lte") if $lte;
-            $self->write("\n");
+            $self->_write('# search: type = ' . $type, $fh);
+            $self->_write(", gte = $gte", $fh) if $gte;
+            $self->_write(", lte = $lte", $fh) if $lte;
+            $self->_write("\n", $fh);
         }
-        $self->write("# transform: $transform\n") if $transform;
+        $self->_write('# transform: ' . $transform . "\n", $fh) if $transform;
         my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
         my @columns = map { $_->{name} } @{$cols};
-        $self->write('# columns: ');
+        $self->_write('# columns: ', $fh);
         for (my $i=0; $i<scalar @columns; $i++) {
-            $self->write(',') if $i;
-            $self->write($columns[$i]);
+            $self->_write(',', $fh) if $i;
+            $self->_write($columns[$i], $fh);
         }
-        $self->write("\n");
+        $self->_write("\n", $fh);
 
         my $lines = CoGe::Core::Experiment::query_data(
             eid => $id,
@@ -208,94 +211,102 @@ sub data {
                 }
                 $line = join ',', @tokens;
             }
-            $self->write($line);
-            $self->write("\n");
+            $self->_write($line, $fh);
+            $self->_write("\n", $fh);
         }
     }
     elsif ( $exp_data_type == $DATA_TYPE_POLY ) {
         my $type_names = $self->param('features');
         if ($type_names) {
-            $self->write('# search: SNPs in ');
-            $self->write($type_names);
-            $self->write("\n");
+            $self->_write('# search: SNPs in ' . $type_names . "\n", $fh);
         }
         my $type = $self->param('type');
         if ($type) {
-            $self->write('# search: ');
-            $self->write($type);
-            $self->write("\n");
+            $self->_write('# search: ' . $type . "\n", $fh);
         }
-        $self->write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n");
+        $self->_write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n", $fh);
         my $snps = $self->_snps;
         my $s = (index(@{$snps}[0], ', ') == -1 ? 1 : 2);
-        foreach my $line (@{$snps}) {
-            my @l = split(',', $line);
-            $self->write(substr($l[0], 1, -1));
-            $self->write("\t");
-            $self->write($l[1]);
-            $self->write("\t");
-            $self->write(substr($l[4], $s, -1));
-            $self->write("\t");
-            $self->write(substr($l[5], $s, -1));
-            $self->write("\t");
-            $self->write(substr($l[6], $s, -1));
-            $self->write("\t");
-            $self->write($l[7]);
-            $self->write("\t\t");
-            $self->write(substr($l[8], $s, -1));
-            $self->write("\t\n");
+        foreach (@{$snps}) {
+            my @l = split(',');
+            $self->_write(substr($l[0], 1, -1), $fh);
+            $self->_write("\t", $fh);
+            $self->_write($l[1], $fh);
+            $self->_write("\t", $fh);
+            $self->_write(substr($l[4], $s, -1), $fh);
+            $self->_write("\t", $fh);
+            $self->_write(substr($l[5], $s, -1), $fh);
+            $self->_write("\t", $fh);
+            $self->_write(substr($l[6], $s, -1), $fh);
+            $self->_write("\t", $fh);
+            $self->_write($l[7], $fh);
+            $self->_write("\t\t", $fh);
+            $self->_write(substr($l[8], $s, -1), $fh);
+            $self->_write("\t\n", $fh);
         }
     }
     elsif ( $exp_data_type == $DATA_TYPE_ALIGN) {
         my $type_names = $self->param('features');
         if ($type_names) {
-            $self->write('# search: Alignments in ');
-            $self->write($type_names);
-            $self->write("\n");
+            $self->_write('@CO search: Alignments in ' . $type_names . "\n", $fh);
         }
         my $type = $self->param('type');
         if ($type) {
-            $self->write('# search: ');
-            $self->write($type);
-            $self->write("\n");
+            $self->_write('@CO search: ' . $type . "\n", $fh);
         }
         my $alignments = $self->_alignments(1);
+        foreach (@{$alignments}) {
+            $self->_write($_, $fh);
+            $self->_write("\n", $fh);
+        }
     }
     elsif ( $exp_data_type == $DATA_TYPE_MARKER) {
         my $type_names = $self->param('features');
         if ($type_names) {
-            $self->write('# search: Markers in ');
-            $self->write($type_names);
-            $self->write("\n");
+            $self->_write('# search: Markers in ' . $type_names . "\n", $fh);
         }
         my $type = $self->param('type');
         if ($type) {
-            $self->write('# search: ');
-            $self->write($type);
-            $self->write("\n");
+            $self->_write('# search: ' . $type . "\n", $fh);
         }
-        $self->write("#seqid\tsource\ttype\tstart\tend\tscore\tstrand\tphase\tattributes\n");
+        $self->_write("#seqid\tsource\ttype\tstart\tend\tscore\tstrand\tphase\tattributes\n", $fh);
         my $markers = $self->_markers;
         my $s = (index(@{$markers}[0], ', ') == -1 ? 1 : 2);
-        foreach my $line (@{$markers}) {
-            my @l = split(',', $line);
-            $self->write(substr($l[0], 1, -1));
-            $self->write("\t.\t");
-            $self->write(substr($l[4], $s, -1));
-            $self->write("\t");
-            $self->write($l[1]);
-            $self->write("\t");
-            $self->write($l[2]);
-            $self->write("\t");
-            $self->write($l[5]);
-            $self->write("\t");
-            $self->write(substr($l[3], $s, -1) == 1 ? '+' : '-');
-            $self->write("\t.\t");
-            $self->write(substr($l[6], $s, -1));
-            $self->write("\n");
+        foreach (@{$markers}) {
+            my @l = split(',');
+            $self->_write(substr($l[0], 1, -1), $fh);
+            $self->_write("\t.\t", $fh);
+            $self->_write(substr($l[4], $s, -1), $fh);
+            $self->_write("\t", $fh);
+            $self->_write($l[1], $fh);
+            $self->_write("\t", $fh);
+            $self->_write($l[2], $fh);
+            $self->_write("\t", $fh);
+            $self->_write($l[5], $fh);
+            $self->_write("\t", $fh);
+            $self->_write(substr($l[3], $s, -1) == 1 ? '+' : '-', $fh);
+            $self->_write("\t.\t", $fh);
+            $self->_write(substr($l[6], $s, -1), $fh);
+            $self->_write("\n", $fh);
         }
     }
     $self->finish();
+    if ($fh) {
+        close $fh;
+        irods_iput($tempfile, $irods_path . '/' . $filename);
+    }
+}
+
+sub _write {
+    my $self = shift;
+    my $s = shift;
+    my $fh = shift;
+    if ($fh) {
+        print $fh $s;
+    }
+    else {
+        $self->write($s);
+    }
 }
 
 sub _get_experiments {
@@ -398,7 +409,7 @@ sub query_data {
     $self->render(json => $result);
 }
 
-sub get_start_end {
+sub get_start_end_fastbit {
     my $data_point = shift;
     my $c1 = index($data_point, ',') + 1;
     my $c2 = index($data_point, ',', $c1) + 1;
@@ -406,11 +417,19 @@ sub get_start_end {
     return (int(substr($data_point, $c1, $c2 - $c1 - 1)), int(substr($data_point, $c2, $c3 - $c2)));
 }
 
+sub get_start_end_sam {
+    my $data_point = shift;
+    my (undef, undef, undef, $pos, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/, $data_point);
+    $pos = int($pos);
+    return ($pos, $pos + length($seq));
+}
+
 sub find_overlaping {
     my $experiments = shift;
     my $type_names = shift;
     my $chr = shift;
     my $db = shift;
+    my $get_start_end = shift;
     my $all = shift;
 
     my $data_points;
@@ -447,7 +466,7 @@ sub find_overlaping {
     my $data_point_index = 0;
     my $num_data_points = scalar @$data_points;
     while ($row && $data_point_index < $num_data_points) {
-        my ($data_point_start, $data_point_end) = get_start_end($data_points->[$data_point_index]);
+        my ($data_point_start, $data_point_end) = $get_start_end->($data_points->[$data_point_index]);
         while ($row && $row->[1] < $data_point_start) {
             $row = $sth->fetchrow_arrayref;
         }
@@ -455,7 +474,7 @@ sub find_overlaping {
         while ($data_point_start < $row->[0] && $data_point_index < $num_data_points) {
             $data_point_index++;
             last if $data_point_index == $num_data_points;
-            ($data_point_start, $data_point_end) = get_start_end($data_points->[$data_point_index]);
+            ($data_point_start, $data_point_end) = $get_start_end->($data_points->[$data_point_index]);
         }
         last if $data_point_index == $num_data_points;
         if ($row->[1] >= $data_point_start) {
@@ -491,7 +510,7 @@ sub _alignments {
     }
 
     my $type_names = $self->param('features');
-    return find_overlaping($experiments, $type_names, $chr, $db, $all);
+    return find_overlaping($experiments, $type_names, $chr, $db, $all ? \&get_start_end_sam : \&get_start_end_fastbit, $all);
 }
 
 sub markers {
@@ -518,7 +537,7 @@ sub _markers {
     }
 
     my $type_names = $self->param('features');
-    return find_overlaping($experiments, $type_names, $chr, $db);
+    return find_overlaping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 }
 
 sub snps {
@@ -546,7 +565,7 @@ sub _snps {
 
 	my $type_names = $self->param('features');
 	if ($type_names) {
-        return find_overlaping($experiments, $type_names, $chr, $db);
+        return find_overlaping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 	}
 	elsif ($self->param('snp_type')) {
         my $cmdpath = catfile(CoGe::Accessory::Web::get_defaults()->{BINDIR}, 'snp_search', 'snp_search');

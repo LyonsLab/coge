@@ -4,7 +4,7 @@ use Mojo::JSON;
 use CoGeX;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Core::Storage qw(get_irods_path get_irods_file);
+use CoGe::Core::Storage qw(get_irods_path get_irods_file irods_mkdir);
 use CoGe::Services::Auth;
 use Data::Dumper;
 
@@ -34,6 +34,25 @@ sub list {
     }
 
     $self->render(json => { path => $result->{path}, items => $result->{items} });
+}
+
+sub mkdir {
+    my $self = shift;
+    my $path = $self->param('path');
+
+    # Authenticate user and connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+    unless ($user) {
+        $self->render(json => { error => { Error => 'Access denied' } });
+        return;
+    }
+
+    my $error = irods_mkdir($path);
+    if ($error) {
+        $self->render(json => { error => { Error => $error } });
+        return;
+    }
+    $self->render(json => { success => Mojo::JSON->true });
 }
 
 # mdb removed 8/24/15 -- not used

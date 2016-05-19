@@ -42,7 +42,7 @@ define( [
         _getFeatureColor: function(id) {
             if (this.config.style.featureColor && this.config.style.featureColor[id])
                 return this.config.style.featureColor[id];
-            return coge.calc_color(id);
+            return coge_plugin.calc_color(id);
         },
 
         _trackMenuOptions: function() {
@@ -93,16 +93,23 @@ define( [
                 if (!track.config.coge.search_track)  {
                     options.push({
                         label: 'Find Alignments in Features',
-                        onClick: function(){coge.create_features_overlap_search_dialog(track, 'Alignments', 'alignments');}
+                        onClick: function(){coge_plugin.create_features_overlap_search_dialog(track, 'Alignments', 'alignments');}
                     });
                 }
                 options.push({
-                    label: 'Download Track Data',
-                    onClick: function(){coge.create_download_dialog(track);}
+                    label: 'Export Track Data',
+                    onClick: function(){coge_plugin.create_export_dialog(track);}
                 });
 
                 return options;
             });
+        }
+
+        // ----------------------------------------------------------------
+
+        updateStaticElements: function( coords ) {
+            this.inherited( arguments );
+            coge_plugin.adjust_nav(this.config.coge.id)
         }
     });
 });

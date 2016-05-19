@@ -30,14 +30,14 @@ var coge = window.coge = (function(namespace) {
 				console.error('FileSelect widget error: container not defined!');
 				return;
 			}
-			if (!self.fileTable) {
-				console.error('FileSelect widget error: file table not defined!');
-				return;
-			}
-			if (!self.loadId) {
-				console.error('FileSelect widget error: loadId not defined!');
-				return;
-			}
+			// if (!self.fileTable) {
+			// 	console.error('FileSelect widget error: file table not defined!');
+			// 	return;
+			// }
+			// if (!self.loadId) {
+			// 	console.error('FileSelect widget error: loadId not defined!');
+			// 	return;
+			// }
 		},
 		
 		resize: function(event, ui) {
@@ -84,6 +84,9 @@ var coge = window.coge = (function(namespace) {
 			});
 			self.container.find('.fileselect-getall').click(function() {
 				self._irods_get_all_files(".");
+			});
+			self.container.find('.fileselect-mkdir').click(function() {
+				self._irods_mkdir();
 			});
 			
 			self.container.find('.fileselect-filter').unbind().bind('keyup', function() {
@@ -134,28 +137,29 @@ var coge = window.coge = (function(namespace) {
 				self._load_from_sra();
 			});
 
-			self.container.find('#input_upload_file').fileupload({
-		    	dataType: 'json',
-		    	add:
-		    		function(e, data) {
-		    			var filename = data.files[0].name;
-						if ( !self._add_file_to_list(filename, 'file://'+filename) ) {
-							//alert('File already exists.');
-						}
-						else {
-							self.container.find('#input_upload_file').fileupload('option', { formData: {
-					    		fname: 'upload_file',
-					    		load_id: self.loadId
-					    	}});
+			if (self.container.find('#input_upload_file').length)
+				self.container.find('#input_upload_file').fileupload({
+			    	dataType: 'json',
+			    	add:
+			    		function(e, data) {
+			    			var filename = data.files[0].name;
+							if ( !self._add_file_to_list(filename, 'file://'+filename) ) {
+								//alert('File already exists.');
+							}
+							else {
+								self.container.find('#input_upload_file').fileupload('option', { formData: {
+						    		fname: 'upload_file',
+						    		load_id: self.loadId
+						    	}});
 
-							data.submit(); // what is this?
+								data.submit(); // what is this?
+							}
+			    		},
+					done:
+						function(e, data) {
+							self._finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
 						}
-		    		},
-				done:
-					function(e, data) {
-						self._finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
-					}
-			});
+				});
 		},
 		
 		get_selected_files: function() {
@@ -165,6 +169,10 @@ var coge = window.coge = (function(namespace) {
 			if (!files || files.length == 0)
 				return;
 			return files;
+		},
+
+		has_file: function(filename) {
+			return this._filenames.indexOf(filename) != -1;
 		},
 		
 		_clear_filter: function() {
@@ -182,23 +190,25 @@ var coge = window.coge = (function(namespace) {
 		_add_file_to_list: function(filename, url, username, password) { // username/password only for FTP
 			var self = this;
 			
-			// Skip if file already exists in file table
-			if (self._find_file_in_list(url)) {
-				console.warn('_fine_file_in_list: file already exists');
-				return 0;
+			if (self.fileTable) {
+				// Skip if file already exists in file table
+				if (self._find_file_in_list(url)) {
+					console.warn('_fine_file_in_list: file already exists');
+					return 0;
+				}
+				
+				// Add file to view
+				var tr = $('<tr class="note middle" style="height:1em;"><td style="padding-right:15px;">' +
+						   '<span class="text">Name:</span> ' + filename +
+						   '</td>' + '</tr>');
+				var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
+				$(tr).append(td).fadeIn();
+
+				if (self.fileSelectSingle)
+					self.fileTable.empty(); // remove all rows
+
+				self.fileTable.append(tr).show();
 			}
-			
-			// Add file to view
-			var tr = $('<tr class="note middle" style="height:1em;"><td style="padding-right:15px;">' +
-					   '<span class="text">Name:</span> ' + filename +
-					   '</td>' + '</tr>');
-			var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
-			$(tr).append(td).fadeIn();
-
-			if (self.fileSelectSingle)
-				self.fileTable.empty(); // remove all rows
-
-			self.fileTable.append(tr).show();
 			
 			// Add file to internal list
 			var file = { 
@@ -395,7 +405,14 @@ var coge = window.coge = (function(namespace) {
 					self.current_path = result.path;
 	
 					$('#ids_current_path').html(result.path);
+					if (path === '')
+						self.home_path = result.path;
+					var p = result.path;
+					if (p.charAt(p.length - 1) == '/')
+						p = p.substring(0, p.length - 1);
+					$('.fileselect-up').css('visibility', p === self.home_path || p === '/iplant/home/shared' ? 'hidden' : 'visible');
 	
+					self._filenames = [];
 					if (result.items.length == 0)
 						table.append('<tr><td style="padding-left:20px;font-style:italic;color:gray;">(empty)</td></tr>');
 	
@@ -429,6 +446,7 @@ var coge = window.coge = (function(namespace) {
 											self._finish_file_in_list('irods', 'irods://'+obj.path, obj.path, obj.size);
 									}
 								);
+								self._filenames.push(obj.name);
 							}
 	
 							$(tr).hover(
@@ -499,6 +517,20 @@ var coge = window.coge = (function(namespace) {
 				.fail(function() {
 					//TODO
 				});
+		},
+
+		_irods_mkdir: function() {
+			var self = this;
+			get_dirname(function(path){
+				path = $('#ids_current_path').html() + '/' + path;
+				coge.services.irods_mkdir(path).done(function(result) {
+					self._irods_busy(false);
+					if (result.error)
+						alert(result.error.Error);
+					else
+						self._irods_get_path(path);
+				});
+			});
 		},
 
 		_units: function(val) {
