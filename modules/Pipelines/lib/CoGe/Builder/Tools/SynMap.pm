@@ -1285,21 +1285,31 @@ sub algo_lookup {
 sub build {
 	my $self = shift;
 
-	# Validate inputs
-	my $genome_id1 = $self->params->{genome_id1};
-	return unless $genome_id1;
-	my $genome_id2 = $self->params->{genome_id2};
-	return unless $genome_id2;
-
-	my %opts = ( %{ defaults() }, %{ $self->params } );
-	my $resp = add_jobs(
-		workflow => $self->workflow,
-		db       => $self->db,
-		config   => $self->conf,
-		%opts
-	);
-	if ($resp) { # an error occurred
-	   return 0;    
+	my @genome_ids;
+	my $i = 1;
+	while (1) {
+		if ($self->params->{'genome_id' . $i}) {
+			push @genome_ids, $self->params->{'genome_id' . $i++};
+		}
+		else {
+			last;
+		}
+	}
+	for (my $j=1; $j<$i-1; $j++) {
+		for (my $k=$j+1; $k<$i; $k++) {
+			$self->params->{genome_id1} = $genome_ids[$j];
+			$self->params->{genome_id2} = $genome_ids[$k];
+			my %opts = ( %{ defaults() }, %{ $self->params } );
+			my $resp = add_jobs(
+				workflow => $self->workflow,
+				db       => $self->db,
+				config   => $self->conf,
+				%opts
+			);
+			if ($resp) { # an error occurred
+			   return 0;    
+			}
+		}
 	}
 
 	return 1;
