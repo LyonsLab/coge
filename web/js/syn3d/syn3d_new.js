@@ -18,6 +18,7 @@ var camUpdate = false;
 var hQueue = ["hKnKs", "hKs", "hKn"];
 var hCurrent = ["hKs", "ks"];
 var gridState = true;
+var autoRotate = false;
 var colorScheme = "Jet";
 var dataSubset;
 var redraw = false;
@@ -106,9 +107,18 @@ function rotateHistogram(direction) {
 }
 
 /* CORE FUNCTION: Reset Camera */
-function resetCamera() {
+function resetCamera(view) {
     camUpdate = true;
-    camView = { "x": 0, "y": 0, "z": 120 };
+    if (view == 'reset') { camView = { "x": 0, "y": 0, "z": 120 }; }
+    else if (view == 'xy') { camView = { "x": 0, "y": 0, "z": -120 }; }
+    else if (view == 'xz') { camView = { "x": 0, "y": -120, "z": 0 }; }
+    else if (view == 'yz') { camView = { "x": -120, "y": 0, "z": 0 }; }
+    else { console.log("Unrecognized camera reset.")}
+}
+
+/* CORE FUNCTION: Launch 2-way comparison in SynMap */
+function launchSynmap(comp) {
+    console.log("Launching SynMap!")
 }
 
 /* CORE FUNCTION: Toggle Grid Display */
@@ -116,15 +126,18 @@ function toggleGrid() {
     gridState = !gridState;
 }
 
+function toggleRotate() {
+    autoRotate = !autoRotate
+}
 /* CORE FUNCTION: Empty Renderings */
 function emptyRenderings() {
     // Remove old SynMap
     var oldCanvas = document.getElementById("canvas");
     oldCanvas.parentNode.removeChild(oldCanvas);
     // Add new canvas
-    var newCanvas = document.createElement('canvas');
-    newCanvas.id = 'canvas';
-    document.getElementById('rendering').appendChild(newCanvas);
+    var newCanvas = document.createElement("canvas");
+    newCanvas.id = "canvas";
+    document.getElementById("rendering").appendChild(newCanvas);
     // Remove old histogram.
     d3.select("#chartSvg").remove();
 }
@@ -331,7 +344,7 @@ function renderSynMap(graph_object, element_id, color_by) {
     animate();
 
     /*---------------------------------------------------------------------------------------------------------
-     ~~~~MINOR FUNCTIONS~~~~
+     ~~~~ACCESSORY FUNCTIONS~~~~
      --------------------------------------------------------------------------------------------------------*/
 
     /* FUNCTION: Build Axis from Chromosome List */
@@ -460,6 +473,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         });
 
     }
+
     /* FUNCTION: Histogram Change */
     function updateColors(select) {
         var geometry = points.geometry;
@@ -750,6 +764,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         histData = {"kn": [], "ks": [], "knks": []};
         pointData = [];
         colors = {"kn": [], "ks": [], "knks": []};
+        camUpdate = false;
 
         /* Set sizing variables */
         width = document.getElementById("rendering").clientWidth;
@@ -816,22 +831,22 @@ function renderSynMap(graph_object, element_id, color_by) {
     function animate() {
         /* Update controls. */
         controls.update();
+        controls.autoRotate = autoRotate;
 
         /* Camera control */
         if (camUpdate) {
             console.log("Hi friend, I should be resetting the camera view!");
-            console.log(camera.position);
+            //console.log(camera.position);
             camera.position.x = camView.x;
             camera.position.y = camView.y;
             camera.position.z = camView.z;
-            console.log(camera.position);
+            //console.log(camera.position);
             //camera.updateProjectionMatrix();
             camUpdate = false;
         } else {
             /* Update camera position record. */
             camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
         }
-
 
         /* Check for recoloring */
         if (hCurrent[1] != current) {
@@ -952,9 +967,15 @@ $(document).ready( function() {
     // Load data & launch initial visualizations
     $.when(loadData(final_experiment.links.graph)).done(function(data) {
         d = data;
+        // Save species names to global variables.
         xsp = d.x[1];
         ysp = d.y[1];
         zsp = d.z[1];
+
+        // Update camera view buttons with spp names.
+        document.getElementById("viewXY").innerHTML = "View " + xsp + "-" + ysp;
+        document.getElementById("viewXZ").innerHTML = "View " + xsp + "-" + zsp;
+        document.getElementById("viewYZ").innerHTML = "View " + ysp + "-" + zsp;
 
         // Render initial SynMap & Histogram
         renderSynMap(data, "canvas", "xy");
