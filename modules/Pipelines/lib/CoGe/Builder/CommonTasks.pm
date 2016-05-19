@@ -36,7 +36,7 @@ our @EXPORT = qw(
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
     add_workflow_result create_bowtie2_workflow create_image_job
-    add_metadata_to_results_job create_process_fasta_job create_fasta_index_job
+    add_metadata_to_results_job create_process_fasta_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -574,7 +574,7 @@ sub create_fasta_index_job {
         outputs => [
             $fasta . '.fai',
         ],
-        description => "Indexing fasta file...",
+        description => "Indexing FASTA file...",
     };
 }
 
@@ -600,48 +600,29 @@ sub create_bam_index_job {
     };
 }
 
-sub create_fasta_index_job {
-    my %opts = @_;
-
-    # Required arguments
-    my $input_file = $opts{input_file}; # fasta file
-
-    return {
-        cmd => $CONF->{SAMTOOLS} || "samtools",
-        script => undef,
-        args => [
-            ["faidx", $input_file, 1],
-        ],
-        inputs => [
-            $input_file,
-        ],
-        outputs => [
-            $input_file . '.fai'
-        ],
-        description => "Indexing FASTA file...",
-    };
-}
-
 sub create_process_fasta_job {
     my %opts = @_;
 
     # Required arguments
-    my $input_file = $opts{input_file}; # fasta file
+    my $input_fasta_file = $opts{input_fasta_file}; # fasta file
+    my $output_fasta_file = $opts{output_fasta_file};
+    my $staging_dir = $opts{staging_dir};
+    
+    my $done_file = $input_fasta_file . '.processed';
     
     my $cmd = catfile($CONF->{SCRIPTDIR}, "process_fasta.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     return {
-        cmd => $cmd,
+        cmd => "$cmd -input_fasta_file $input_fasta_file -output_fasta_file $output_fasta_file -staging_dir $staging_dir && touch $done_file",
         script => undef,
-        args => [
-            ['', $input_file, 0],
-        ],
+        args => [],
         inputs => [
-            $input_file,
+            $input_fasta_file
         ],
         outputs => [
-            $input_file . '.processed'
+            catfile($staging_dir, $output_fasta_file),
+            $done_file
         ],
         description => "Validating/processing FASTA file...",
     };
@@ -826,8 +807,9 @@ sub create_load_genome_job {
     my $staging_dir = $opts{staging_dir};
     my $wid = $opts{wid};
     my $organism_id = $opts{organism_id};
-    my $input_files = $opts{input_files};
+    my $fasta_file = $opts{fasta_file};
     my $irods_files = $opts{irods_files};
+    my $done_files = $opts{done_files};
     
     my $cmd = 'perl ' . catfile($CONF->{SCRIPTDIR}, "load_genome.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
@@ -836,9 +818,6 @@ sub create_load_genome_job {
     
     my $result_file = get_workflow_results_file($user->name, $wid);
 
-    my $file_str = '';
-    #$file_str = join(',', map { basename($_) } @$input_files) if ($input_files && @$input_files);
-    $file_str = join(',', @$input_files) if ($input_files && @$input_files);
     my $irods_str = '';
     $irods_str = join(',', map { basename($_) } @$irods_files) if ($irods_files && @$irods_files);
 
@@ -857,12 +836,13 @@ sub create_load_genome_job {
             ['-organism_id', $organism_id, 0],
             ['-type_id', ( $metadata->{type} ? shell_quote($metadata->{type}) : 1 ), 0], # default to "unmasked"
             ['-staging_dir', "./load_genome", 0],
-            ['-fasta_files', shell_quote($file_str), 0],
+            ['-fasta_file', shell_quote($fasta_file), 0],
             ['-irods_files', shell_quote($irods_str), 0],
             ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
-            @$input_files
+            $fasta_file,
+            @$done_files
         ],
         outputs => [
             [$output_path, '1'],

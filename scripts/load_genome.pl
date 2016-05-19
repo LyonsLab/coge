@@ -3,37 +3,29 @@
 use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Core::Storage qw( index_genome_file get_tiered_path add_workflow_result );
-use CoGe::Core::Genome qw( fix_chromosome_id );
-use CoGe::Accessory::Utils qw( commify units print_fasta );
-use CoGe::Accessory::IRODS qw( irods_imeta $IRODS_METADATA_PREFIX );
+use CoGe::Accessory::Utils qw(read_fasta_index);
+use CoGe::Core::Storage qw(get_tiered_path add_workflow_result);
+use CoGe::Accessory::IRODS qw(irods_imeta $IRODS_METADATA_PREFIX);
 use Data::Dumper;
 use Getopt::Long;
-use File::Path;
 use File::Touch;
-use File::Basename qw( basename dirname );
-use File::Spec::Functions qw( catdir catfile );
+use File::Basename qw(basename);
+use File::Spec::Functions qw(catdir catfile);
 use URI::Escape::JavaScript qw(unescape);
 use POSIX qw(ceil);
 use Benchmark;
 
-use vars qw($staging_dir $install_dir $fasta_files $irods_files
+use vars qw($staging_dir $install_dir $fasta_file $irods_files
   $name $description $link $version $type_id $restricted $message $wid
   $organism_id $source_id $source_name $source_desc $user_id $user_name
   $keep_headers $compress $creator_id $ignore_chr_limit
-  $host $port $db $user $pass $config
-  $P $MAX_CHROMOSOMES $MAX_PRINT $MAX_SEQUENCE_SIZE $MAX_CHR_NAME_LENGTH );
-
-$MAX_CHROMOSOMES     = 200*1000;    # max number of chromosomes or contigs
-$MAX_PRINT           = 50;
-$MAX_SEQUENCE_SIZE   = 5 * 1024 * 1024 * 1024;    # 5 gig
-$MAX_CHR_NAME_LENGTH = 255;
+  $host $port $db $user $pass $config $P );
 
 GetOptions(
     "staging_dir=s" => \$staging_dir,
     "install_dir=s" => \$install_dir,    # optional, for debug
     "wid=s"         => \$wid,            # workflow id
-    "fasta_files=s" => \$fasta_files,    # comma-separated list (JS escaped) of files to load
+    "fasta_file=s"  => \$fasta_file,     # pre-processed fasta file to load
     "irods_files=s" => \$irods_files,    # optional comma-separated list (JS escaped) of files to set metadata
     "name=s"        => \$name,           # genome name (JS escaped)
     "desc=s"        => \$description,    # genome description (JS escaped)
@@ -49,21 +41,11 @@ GetOptions(
     "user_id=i"		=> \$user_id,		 # user ID to assign genome
     "user_name=s"   => \$user_name,      # user name to assign genome (alternative to user_id)
     "creator_id=i"	=> \$creator_id,     # user ID to set as genome creator
-    "keep_headers=i" => \$keep_headers,  # flag to keep original headers (no parsing)
-    "ignore_chr_limit=i" => \$ignore_chr_limit, # flag to ignore chromosome/contig limit # mdb added 3/9/15 COGE-595
-    "compress=i" => \$compress,    # compress fasta into RAZF before indexing
-    "config=s"   => \$config       # configuration file
+    "config=s"      => \$config       # configuration file
 );
 
 $| = 1;
 print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
-
-# Setup staging path
-unless ($staging_dir) {
-    print STDOUT "log: error: staging_dir argument is missing\n";
-    exit(-1);
-}
-mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
 
 # Prevent loading again (issue #417)
 my $logdonefile = "$staging_dir/log.done";
@@ -73,7 +55,7 @@ if (-e $logdonefile) {
 }
 
 # Process and verify parameters
-$fasta_files = unescape($fasta_files) if ($fasta_files);
+$fasta_file = unescape($fasta_file) if ($fasta_file);
 $irods_files = unescape($irods_files) if ($irods_files);
 $name        = unescape($name) if ($name);
 $description = unescape($description) if ($description);
@@ -123,77 +105,75 @@ $host = $P->{DBHOST};
 $port = $P->{DBPORT};
 $user = $P->{DBUSER};
 $pass = $P->{DBPASS};
-my $GUNZIP = $P->{GUNZIP};
-my $TAR = $P->{TAR};
 
-# Process each file into staging area
-my %sequences;
-my $seqLength;
-my $numSequences = 0;
-my @files = split( ',', $fasta_files );
-foreach my $file (@files) {
-    my $filename = basename($file);# =~ /^.+\/([^\/]+)$/;
-    my $path = dirname($file);
+# Process each file into staging area -- MOVED INTO process_fasta.pl, mdb 5/18/16
+#my %sequences;
+#my $seqLength;
+#my $numSequences = 0;
+#my @files = split( ',', $fasta_files );
+#foreach my $file (@files) {
+#    my $filename = basename($file);# =~ /^.+\/([^\/]+)$/;
+#    my $path = dirname($file);
+#
+#    # Decompress file if necessary
+#    if ( $file =~ /\.tgz|\.tar\.gz$/ ) {
+#        print STDOUT "log: Unarchiving/decompressing '$filename'\n";
+#        my $orig = $file;
+#        my $filelist = execute( $TAR . ' -xvf ' . $file ); # mdb added 7/31/14 issue 438
+#        chomp(@$filelist);
+#        push @files, map { catfile($path, $_) } @$filelist;
+#        next;
+#    }
+#    if ( $file =~ /\.gz$/ ) {
+#        print STDOUT "log: Decompressing '$filename'\n";
+#        #execute($GUNZIP . ' ' . $file); # mdb removed 7/31/14 issue 438
+#        $file =~ s/\.gz$//;
+#        execute( $GUNZIP . ' -c ' . $file . '.gz' . ' > ' . $file ); # mdb added 7/31/14 issue 438
+#    }
+#
+#    # Ensure non-zero-length file
+#    unless ( -s $file > 0 ) {
+#        print STDOUT "log: error: '$filename' is zero-length\n";
+#        exit(-1);
+#    }
+#
+#    # Ensure text file
+#    if ( -B $file ) {
+#        print STDOUT "log: error: '$filename' is a binary file\n";
+#        exit(-1);
+#    }
+#
+#    # Load file
+#    $seqLength += process_fasta_file( \%sequences, $file, $staging_dir );
+#    $numSequences = keys %sequences;
+#
+#    if ( $seqLength > $MAX_SEQUENCE_SIZE ) {
+#        print STDOUT "log: error: total sequence size exceeds limit of " . units($MAX_SEQUENCE_SIZE) . "\n";
+#        exit(-1);
+#    }
+#    if ( !$ignore_chr_limit && $numSequences > $MAX_CHROMOSOMES ) {
+#        print STDOUT "log: error: too many sequences, limit is $MAX_CHROMOSOMES\n";
+#        exit(-1);
+#    }
+#}
 
-    # Decompress file if necessary
-    if ( $file =~ /\.tgz|\.tar\.gz$/ ) {
-        print STDOUT "log: Unarchiving/decompressing '$filename'\n";
-        my $orig = $file;
-        my $filelist = execute( $TAR . ' -xvf ' . $file ); # mdb added 7/31/14 issue 438
-        chomp(@$filelist);
-        push @files, map { catfile($path, $_) } @$filelist;
-        next;
-    }
-    if ( $file =~ /\.gz$/ ) {
-        print STDOUT "log: Decompressing '$filename'\n";
-        #execute($GUNZIP . ' ' . $file); # mdb removed 7/31/14 issue 438
-        $file =~ s/\.gz$//;
-        execute( $GUNZIP . ' -c ' . $file . '.gz' . ' > ' . $file ); # mdb added 7/31/14 issue 438
-    }
-
-    # Ensure non-zero-length file
-    unless ( -s $file > 0 ) {
-        print STDOUT "log: error: '$filename' is zero-length\n";
-        exit(-1);
-    }
-
-    # Ensure text file
-    if ( -B $file ) {
-        print STDOUT "log: error: '$filename' is a binary file\n";
-        exit(-1);
-    }
-
-    # Load file
-    $seqLength += process_fasta_file( \%sequences, $file, $staging_dir );
-    $numSequences = keys %sequences;
-
-    if ( $seqLength > $MAX_SEQUENCE_SIZE ) {
-        print STDOUT "log: error: total sequence size exceeds limit of " . units($MAX_SEQUENCE_SIZE) . "\n";
-        exit(-1);
-    }
-    if ( !$ignore_chr_limit && $numSequences > $MAX_CHROMOSOMES ) {
-        print STDOUT "log: error: too many sequences, limit is $MAX_CHROMOSOMES\n";
-        exit(-1);
-    }
-}
-
-if ( $numSequences == 0 or $seqLength == 0 ) {
-    print STDOUT "log: error: couldn't parse sequences\n";
-    exit(-1);
-}
-
-print STDOUT "log: Processed " . commify($numSequences) . " sequences total\n";
+#if ( $numSequences == 0 or $seqLength == 0 ) {
+#    print STDOUT "log: error: couldn't parse sequences\n";
+#    exit(-1);
+#}
+#
+#print STDOUT "log: Processed " . commify($numSequences) . " sequences total\n";
 
 # Index the overall fasta file
-print STDOUT "Indexing genome file\n";
-my $rc = CoGe::Core::Storage::index_genome_file(
-    file_path => "$staging_dir/genome.faa",
-    compress  => $compress
-);
-if ( $rc != 0 ) {
-    print STDOUT "log: error: couldn't index fasta file\n";
-    exit(-1);
-}
+#print STDOUT "Indexing genome file\n";
+#my $rc = CoGe::Core::Storage::index_genome_file(
+#    file_path => "$staging_dir/genome.faa",
+#    compress  => $compress
+#);
+#if ( $rc != 0 ) {
+#    print STDOUT "log: error: couldn't index fasta file\n";
+#    exit(-1);
+#}
 
 ################################################################################
 # If we've made it this far without error then we can feel confident about our
@@ -298,7 +278,7 @@ if ( -e $storage_path ) {
 my $node_types = CoGeX::node_types();
 
 # Add owner connector
-my $conn       = $coge->resultset('UserConnector')->create(
+my $conn = $coge->resultset('UserConnector')->create(
     {
         parent_id   => $user->id,
         parent_type => $node_types->{user},
@@ -313,53 +293,47 @@ unless ($conn) {
 }
 
 # Create datasets
-my %datasets;
-foreach my $file (@files) {
-    my $filename = basename($file);#$file =~ /^.+\/([^\/]+)$/;
-    my $dataset = $coge->resultset('Dataset')->create(
-        {
-            data_source_id => $datasource->id,
-            name           => $filename,
-            description    => $description,
-            version        => $version,
-            restricted     => $restricted,
-            creator_id     => $creator->id,
-        }
-    );
-    unless ($dataset) {
-        print STDOUT "log: error creating dataset\n";
-        exit(-1);
+# mdb changed 5/18/16: this used to generate one dataset per input FASTA file.
+# As part of splitting the genome load workflow into multiple steps this was
+# changed to only load one overall dataset for all input FASTA files.
+my $filename = basename($fasta_file);
+my $dataset = $coge->resultset('Dataset')->create(
+    {
+        data_source_id => $datasource->id,
+        name           => $filename,
+        description    => $description,
+        version        => $version,
+        restricted     => $restricted,
+        creator_id     => $creator->id,
     }
+);
+unless ($dataset) {
+    print STDOUT "log: error creating dataset\n";
+    exit(-1);
+}
 
-    #TODO set link field if loaded from FTP
-    print STDOUT "dataset id: " . $dataset->id . "\n";
-    $datasets{$file} = $dataset->id;
+#TODO set link field if loaded from FTP
+print STDOUT "dataset id: " . $dataset->id . "\n";
 
-    my $dsconn =
-      $coge->resultset('DatasetConnector')->create( {
-          dataset_id => $dataset->id,
-          genome_id => $genome->id
-      } );
-    unless ($dsconn) {
-        print STDOUT "log: error creating dataset connector\n";
-        exit(-1);
-    }
+my $dsconn = $coge->resultset('DatasetConnector')->create( {
+    dataset_id => $dataset->id,
+    genome_id => $genome->id
+} );
+unless ($dsconn) {
+    print STDOUT "log: error creating dataset connector\n";
+    exit(-1);
 }
 
 # Create genomic_sequence/feature/location for ea. chromosome
+my %sequences = read_fasta_index("$fasta_file.fai"); # assumes indexed FASTA
 foreach my $chr ( sort keys %sequences ) {
-    my $seqlen = $sequences{$chr}{size};
-    my $dsid   = $datasets{ $sequences{$chr}{file} };
-
-# using index file instead of db
-#    $genome->add_to_genomic_sequences(
-#        { sequence_length => $seqlen, chromosome => $chr } );
+    my $seqlen = $sequences{$chr};
 
 	# Must add a feature of type chromosome to the dataset so the dataset
 	# "knows" its chromosomes
     my $feat_type = $coge->resultset('FeatureType')->find_or_create( { name => 'chromosome' } );
     my $feat = $coge->resultset('Feature')->find_or_create({
-        dataset_id      => $dsid,
+        dataset_id      => $dataset->id,
         feature_type_id => $feat_type->id,
         start           => 1,
         stop            => $seqlen,
@@ -394,11 +368,6 @@ if ($compress) {
     execute("cp $staging_dir/genome.faa.razf $storage_path/");
     execute("cp $staging_dir/genome.faa.razf.fai $storage_path/");
 }
-
-print STDOUT "log: "
-  . commify($numSequences)
-  . " sequences loaded totaling "
-  . commify($seqLength) . " nt\n";
 
 # Update IRODS metadata #FIXME not working anymore, need to separate out into separate task in workflow
 if ($irods_files) {
@@ -454,128 +423,6 @@ print STDOUT "All done!\n";
 exit;
 
 #-------------------------------------------------------------------------------
-sub process_fasta_file {
-    my $pSeq       = shift;
-    my $filepath   = shift;
-    my $target_dir = shift;
-    print STDOUT "process_fasta_file: $filepath\n";
-    
-    my $fileSize    = -s $filepath;
-    my $lineNum     = 0;
-    my $totalLength = 0;
-    
-    # Open fasta file
-    my $in; # file handle
-    unless (open( $in, $filepath )) {
-        print STDOUT "log: error: Error opening file for reading: $!\n";
-        exit(-1);
-    }
-    
-    # Process fasta file by sections
-    $/ = '>'; # set file parsing delimiter
-    while (my $section = <$in>) {
-        $lineNum++;
-        
-        # Process the section in chunks.  There is a known problem where
-        # Perl substitions fail on strings larger than 1GB.
-        my $sectionName;
-        my $sectionLen = length($section);
-        my $filteredSeq;
-        my $CHUNK_LEN = 10_000; # 8/19/15 COGE-647 mdb increased from 1000 for section headers >1000 chars
-        my $ofs = 0;
-        while ($ofs < $sectionLen) {
-            my $chunk = substr($section, $ofs, $CHUNK_LEN);
-            $ofs += $CHUNK_LEN;
-            
-            $chunk =~ s/>//g;
-            $chunk =~ s/^\n+//m;
-            $chunk =~ s/\n+$//m;
-            next unless $chunk;
-            
-            if ($ofs == $CHUNK_LEN) { # first chunk
-                ( $sectionName, $chunk ) = split(/\n/, $chunk, 2);
-            }
-            elsif ($sectionLen < $ofs) { # last chunk
-                $chunk =~ s/\s+$//; # trim trailing whitespace
-            }
-            $chunk =~ s/\n//g;
-            $chunk =~ s/\r//g;
-            $filteredSeq .= $chunk;
-        }
-        next unless $filteredSeq;
-    
-        # Convert refseq (chromosome) name
-        my $chr;
-        if ($keep_headers) { # Don't modify refseq name
-            $chr = $sectionName;
-        }
-        else {
-            ($chr) = split(/\s+/, $sectionName);
-            $chr = fix_chromosome_id($chr);
-        }
-
-        # Check validity of chr name and sequence
-        if ( not defined $chr ) {
-            print STDOUT "log: error parsing section header, line $lineNum, name='$name'\n";
-            exit(-1);
-        }
-        if ( length $filteredSeq == 0 ) {
-            print STDOUT "log: warning: skipping zero-length section '$chr'\n";
-            next;
-        }
-        if ( length($chr) > $MAX_CHR_NAME_LENGTH ) {
-            print STDOUT "log: error: section header name '$chr' is too long (>$MAX_CHR_NAME_LENGTH characters)\n";
-            exit(-1);
-        }
-        if ( defined $pSeq->{$chr} ) {
-            print STDOUT "log: error: Duplicate section name '$chr'\n";
-            exit(-1);
-        }
-        if ( $filteredSeq =~ /[^ACGTURYSWKMBDHVNX]/i ) { #/\W/ ) { # mdb modified 4/28/16 COGE-715, see http://www.bioinformatics.org/sms/iupac.html
-            print STDOUT "log: error: sequence in section '$chr' contains invalid characters, perhaps this is not a nucleotide FASTA file?\n";
-            #print STDOUT "log: error: chromosome name $sectionName\n";
-            #print STDOUT "log: error: $filteredSeq\n";
-            exit(-1);
-        }
-
-        # Append sequence to master file
-        my $out;
-        unless (open( $out, ">>$target_dir/genome.faa" )) {
-            print STDOUT "log: error: Couldn't open genome.faa\n";
-            exit(-1);
-        }
-        my $head = $chr =~ /^\d+$/ ? "gi" : "lcl";
-        $head .= "|" . $chr;
-        print_fasta($out, $head, \$filteredSeq);
-        close($out);
-
-        $pSeq->{$chr} = { size => length $filteredSeq, file => $filepath };
-
-        # Print log message
-        my $count = keys %$pSeq;
-        $totalLength += length $filteredSeq;
-        if ( !$ignore_chr_limit && ($count > $MAX_CHROMOSOMES or $totalLength > $MAX_SEQUENCE_SIZE) ) {
-            return $totalLength;
-        }
-        if ( $count <= $MAX_PRINT ) {
-            my $filename = basename($filepath);
-            print STDOUT "log: Processed chr '$chr' in $filename (".commify(length($filteredSeq))." bp)\n";
-        }
-        elsif ( $count == $MAX_PRINT + 1 ) {
-            print STDOUT "log: (only showing first $MAX_PRINT chromosomes)\n";
-        }
-        elsif ( ( $count % 10000 ) == 0 ) {
-            print STDOUT "log: Processed "
-              . commify($count) . " ("
-              . units($totalLength) . ", "
-              . int( 100 * $totalLength / $fileSize )
-              . "%) sequences so far ...\n";
-        }
-    }
-    close($in);
-
-    return $totalLength;
-}
 
 sub execute { # FIXME move into Util.pm
     my $cmd = shift;
