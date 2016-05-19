@@ -65,7 +65,9 @@ if ( -B $input_fasta_file ) {
 
 # Process/validate the file
 my ($seqLength, $numSequences, $numRemoved, $removedLength) = process_fasta_file( $input_fasta_file, $staging_dir );
-print STDOUT "log: " . commify($numRemoved) . " sequences (", commify($removedLength) , " bp) removed due to size less than ", commify(MIN_CHROMOSOME_SIZE), " bp \n";
+if ($numRemoved && $removedLength) {
+    print STDOUT "log: " . commify($numRemoved) . " sequences (", commify($removedLength) , " bp) removed due to size less than ", commify(MIN_CHROMOSOME_SIZE), " bp \n";
+}
 
 if ( $seqLength > MAX_SEQUENCE_SIZE ) {
     print STDOUT "log: error: total sequence size exceeds limit of " . units(MAX_SEQUENCE_SIZE) . "\n";
@@ -197,7 +199,7 @@ sub process_fasta_file {
         $totalLength += length $filteredSeq;
         if ( !$ignore_chr_limit && ($count >= MAX_CHROMOSOMES or $totalLength > MAX_SEQUENCE_SIZE) ) {
             print STDOUT "log: warning: skipping remaining sections due to number exceeding ", MAX_CHROMOSOMES, "\n" if ($count >= MAX_CHROMOSOMES);
-            return $totalLength;
+            goto DONE;
         }
         if ( $count <= MAX_PRINT ) {
             my $filename = basename($filepath);
@@ -214,8 +216,9 @@ sub process_fasta_file {
               . "%) sequences so far ...\n";
         }
     }
-    close($in);
 
+    DONE:    
+    close($in);
     return $totalLength, scalar(keys %seq), $chrRemoved, $removedLength;
 }
 
