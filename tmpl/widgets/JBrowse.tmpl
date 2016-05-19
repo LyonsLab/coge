@@ -9,11 +9,20 @@
 .glyphicon-chevron-right:before {
   content: "\e080";
 }
+.glyphicon-file:before {
+  content: "\e022";
+}
+.glyphicon-folder-open:before {
+  content: "\e118";
+}
 .glyphicon-step-backward:before {
   content: "\e069";
 }
 .glyphicon-step-forward:before {
   content: "\e077";
+}
+.glyphicon-upload:before {
+  content: "\e027";
 }
 .coge-hist {
   display: inline-block;
@@ -46,6 +55,9 @@
 .brush .resize path {
   fill: #eee;
   stroke: #666;
+}
+tr.file {
+	cursor: default !important;
 }
 </style>
 <script src="//d3js.org/d3.v3.js" charset="utf-8"></script>
@@ -109,9 +121,24 @@
 	                names: { type: 'REST', url: apiBaseUrl + '/genome/' + gid + '/genes' },
 	            };
 
+			    coge.services.init({
+			    	baseUrl: api_base_url.substring(0, api_base_url.length - 7),
+			    	userName: USER_NAME
+			    });
+
 	            JBrowse = new Browser( config );
 	            if (callback) callback(JBrowse);
 	      	}
 	    );
     }
 </script>
+<script type="text/javascript">
+// Page constants
+const USER_NAME     = '<TMPL_VAR NAME="USER">';
+// File Select constants
+const MAX_IRODS_LIST_FILES     = '<TMPL_VAR NAME="MAX_IRODS_LIST_FILES">';
+const MAX_IRODS_TRANSFER_FILES = '<TMPL_VAR NAME="MAX_IRODS_TRANSFER_FILES">';
+</script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/file-select.js"></script>
