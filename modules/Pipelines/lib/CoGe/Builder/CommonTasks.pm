@@ -27,7 +27,7 @@ our @EXPORT = qw(
     create_load_genome_job create_load_genome_from_NCBI_job create_load_batch_job
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
-    create_notebook_job create_bam_sort_job create_iget_job
+    create_notebook_job create_bam_sort_job create_iget_job create_untar_job
     create_load_annotation_job create_data_retrieval_workflow
     send_email_job add_items_to_notebook_job create_hisat2_workflow
     export_experiment_job create_cutadapt_workflow create_join_files_job
@@ -36,7 +36,7 @@ our @EXPORT = qw(
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
     add_workflow_result create_bowtie2_workflow create_image_job
-    add_metadata_to_results_job
+    add_metadata_to_results_job create_process_fasta_job create_fasta_index_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -441,12 +441,13 @@ sub create_image_job {
 
 sub create_untar_job {
     my $input_file = shift;
+    my $output_path = shift;
     my $done_file = "$input_file.untarred";
 
     my $cmd = $CONF->{TAR} || 'tar';
 
     return {
-        cmd => "$cmd -xvf $input_file ;  touch $done_file",
+        cmd => "mkdir -p $output_path && $cmd -xf $input_file --directory $output_path && touch $done_file",
         script => undef,
         args => [],
         inputs => [
@@ -454,6 +455,7 @@ sub create_untar_job {
             $input_file . '.done' # ensure file is done transferring
         ],
         outputs => [
+            [$output_path, '1'],
             $done_file
         ],
         description => "Unarchiving " . basename($input_file) . "..."
@@ -578,7 +580,6 @@ sub create_fasta_index_job {
 
 sub create_bam_index_job {
     my %opts = @_;
-    #print STDERR 'create_bam_index_job ', Dumper \%opts, "\n";
 
     # Required arguments
     my $input_file = $opts{input_file}; # bam file
@@ -599,12 +600,58 @@ sub create_bam_index_job {
     };
 }
 
+sub create_fasta_index_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $input_file = $opts{input_file}; # fasta file
+
+    return {
+        cmd => $CONF->{SAMTOOLS} || "samtools",
+        script => undef,
+        args => [
+            ["faidx", $input_file, 1],
+        ],
+        inputs => [
+            $input_file,
+        ],
+        outputs => [
+            $input_file . '.fai'
+        ],
+        description => "Indexing FASTA file...",
+    };
+}
+
+sub create_process_fasta_job {
+    my %opts = @_;
+
+    # Required arguments
+    my $input_file = $opts{input_file}; # fasta file
+    
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "process_fasta.pl");
+    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ['', $input_file, 0],
+        ],
+        inputs => [
+            $input_file,
+        ],
+        outputs => [
+            $input_file . '.processed'
+        ],
+        description => "Validating/processing FASTA file...",
+    };
+}
+
 sub create_join_files_job {
     my %opts = @_;
     my $input_files = $opts{input_files};
     my $output_file = $opts{output_file};
-    
-    $output_file = catfile($staging_dir, $output_file);
+    my $done_files  = $opts{done_files};
     
     my $cmd = 'cat ' . join(' ', @$input_files) . ' > ' . $output_file;
     
@@ -613,7 +660,8 @@ sub create_join_files_job {
         script => undef,
         args => [],
         inputs => [
-            @$input_files
+            #@$input_files,
+            @$done_files
         ],
         outputs => [
             $output_file
@@ -623,7 +671,9 @@ sub create_join_files_job {
 }
 
 sub create_sort_fasta_job {
-    my ($fasta_file, $staging_dir) = @_;
+    my %opts = @_;
+    my $fasta_file = $opts{fasta_file};
+    my $staging_dir = $opts{staging_dir};
     
     my $filename = basename($fasta_file);
     my $output_file = "$filename.sorted";
