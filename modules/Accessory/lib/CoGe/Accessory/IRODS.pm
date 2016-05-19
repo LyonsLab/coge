@@ -56,7 +56,7 @@ sub irods_ils {
     return { error => "Error: iRODS env file missing" } unless $env_file;
 
     $path = uri_unescape($path); # mdb added 8/15/14 issue 441
-
+warn $env_file;
     $ENV{irodsEnvFile} = $env_file;  # mdb added 2/17/16 for hypnotoad
     my $cmd = "ils -l '$path' 2>&1"; #"export irodsEnvFile='$env_file'; ils -l '$path' 2>&1"; # mdb changed 2/17/16 for hypnotoad
 

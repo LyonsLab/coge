@@ -5,6 +5,7 @@ use Mojo::JSON;
 
 use CoGeX;
 use CoGe::Accessory::histogram;
+use CoGe::Accessory::IRODS qw( irods_iput );
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
 use CoGe::Core::Storage qw( get_experiment_path );

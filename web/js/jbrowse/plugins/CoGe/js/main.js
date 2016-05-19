@@ -23,57 +23,30 @@ define([
 		   InfoDialog,
 		   JBrowsePlugin
 	   ) {
-	var PromptDialog = declare( ActionBarDialog,
-
-	    /**
-	     * JBrowse ActionDialog subclass with a few customizations that make it
-	     * more pleasant for use as an information popup.
-	     * @lends JBrowse.View.InfoDialog
-	     */
+	var BusyDialog = declare( ActionBarDialog,
 	{
 	    refocus: false,
 	    autofocus: false,
-
-	    _fillActionBar: function( actionBar ) {
-	            new Button({
-	                className: 'Cancel',
-	                label: 'Cancel',
-	                onClick: dojo.hitch(this,'hide')
-	            })
-	            .placeAt( actionBar);
-	            new Button({
-	                className: 'OK',
-	                label: 'OK',
-	                onClick: dojo.hitch(this,'ok')
-	            })
-	            .placeAt( actionBar);
-	    },
-
+		_fillActionBar: function( actionBar ) {
+            new Button({
+                className: 'OK',
+                label: 'OK',
+                onClick: dojo.hitch(this,'hide'),
+                style: { display: 'none'}
+            })
+            .placeAt( actionBar);
+    	},
 	    hide: function() {
 	        this.inherited(arguments);
 	        array.forEach( this._extraEvents, function( e ) { e.remove(); });
+	        this.destroyRecursive();
 	    },
-
 	    hideIfVisible: function() {
 	        if( this.get('open') )
 	            this.hide();
 	    },
-
-	    ok: function() {
-	    	var value = dojo.byId('prompt_value').value;
-	    	if (!value) {
-	    		coge_plugin.info('Value Required', 'Please enter a value');
-	    		return;
-	    	}
-	    	this.on_ok(value);
-	    	this.hide();
-	    },
-
-	    show: function(on_ok) {
-
+	    show: function() {
 	        this.inherited( arguments );
-
-	        this.on_ok = on_ok;
 
 	        // holds the handles for the extra events we are registering
 	        // so we can clean them up in the hide() method
@@ -407,9 +380,9 @@ return declare( JBrowsePlugin,
 					});
 					coge.fileSelect.render();
 				},
-				error: dojo.hitch(this, function(data) {
+				error: function(data) {
 					coge_plugin.error('DirSelect', data);
-				})
+				}
 			});
 		} else
 			dojo.empty('cyverse');
@@ -423,6 +396,10 @@ return declare( JBrowsePlugin,
 			this.info('Filename required', 'Please enter a filename', dojo.byId('export_filename'));
 			return;
 		}
+		if (coge.fileSelect.has_file(filename + this._track.config.coge.ext)) {
+			this.info('File exists', 'There is already a file in the current directory with the name ' + filename + this._track.config.coge.ext + '. Please enter a different filename.', dojo.byId('export_filename'));
+			return;
+		}
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&filename=' + filename;
 		if (dojo.byId('search') && dojo.byId('search').checked)
@@ -430,7 +407,29 @@ return declare( JBrowsePlugin,
 		if (dojo.byId('transform') && dojo.byId('transform').checked)
 			url += '&transform=' + this._track.config.coge.transform;
 		if (dojo.byId('to_cyverse').checked) {
+			var d = new BusyDialog({
+				title: 'Exporting to CyVerse...',
+				content: '<img src="picts/ajax-loader.gif" /><span></span>'
+			});
+			d.show();
 			url += '&irods_path=' + $('#ids_current_path').html();
+			dojo.xhrGet({
+				url: url,
+				load: function(data) {
+					if (data.error) {
+						d.hideIfVisible();
+						coge_plugin.error('DirSelect', data);
+					} else {
+						dojo.destroy(d.containerNode.firstChild);
+						d.containerNode.firstChild.innerText = 'done';
+						d.actionBar.firstChild.style.display=''
+					}
+				},
+				error: function(data) {
+					d.hideIfVisible();
+					coge_plugin.error('DirSelect', data);
+				}
+			});
 		} else
 			document.location = url;
 		this._track_export_dialog.hide();

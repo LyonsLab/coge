@@ -170,6 +170,10 @@ var coge = window.coge = (function(namespace) {
 				return;
 			return files;
 		},
+
+		has_file: function(filename) {
+			return this._filenames.indexOf(filename) != -1;
+		},
 		
 		_clear_filter: function() {
 			this.container.find('.fileselect-filter').val('');
@@ -401,7 +405,14 @@ var coge = window.coge = (function(namespace) {
 					self.current_path = result.path;
 	
 					$('#ids_current_path').html(result.path);
+					if (path === '')
+						self.home_path = result.path;
+					var p = result.path;
+					if (p.charAt(p.length - 1) == '/')
+						p = p.substring(0, p.length - 1);
+					$('.fileselect-up').css('visibility', p === self.home_path || p === '/iplant/home/shared' ? 'hidden' : 'visible');
 	
+					self._filenames = [];
 					if (result.items.length == 0)
 						table.append('<tr><td style="padding-left:20px;font-style:italic;color:gray;">(empty)</td></tr>');
 	
@@ -435,6 +446,7 @@ var coge = window.coge = (function(namespace) {
 											self._finish_file_in_list('irods', 'irods://'+obj.path, obj.path, obj.size);
 									}
 								);
+								self._filenames.push(obj.name);
 							}
 	
 							$(tr).hover(
