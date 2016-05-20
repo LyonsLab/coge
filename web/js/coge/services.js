@@ -98,15 +98,15 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		irods_list: function(path) {
-			if (typeof path === 'undefined') {
-				this._error('irods_list: undefined path value');
-				path = '';
-			}
 			return this._ajax("GET", this.baseUrl + "irods/list/" + path);
 		},
 		
 		irods_mkdir: function(path) {
 			return this._ajax("POST", this.baseUrl + "irods/mkdir", null, { path: path });
+		},
+		
+		irods_rm: function(path) {
+			return this._ajax("DELETE", this.baseUrl + "irods/rm", null, { path: path });
 		},
 		
 		ftp_list: function(url) {

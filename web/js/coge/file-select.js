@@ -435,7 +435,7 @@ var coge = window.coge = (function(namespace) {
 								icon = '<span class="ui-icon ui-icon-link"></span>';
 							else // assume file type
 								icon = '<span class="ui-icon ui-icon-document"></span>';
-							tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;user-select:none;">' 
+							tr = $('<tr class="'+ obj.type +'" style="white-space:nowrap;user-select:none;-webkit-user-select:none;"><td>' 
 									+ icon
 									+ decodeURIComponent(obj.name) + '</td><td>'
 									+ (obj.size ? decodeURIComponent(obj.size) : '') + '</td><td>' 
@@ -457,7 +457,21 @@ var coge = window.coge = (function(namespace) {
 								);
 								tr.contextmenu(
 									function(e) {
-										console.log(obj.name);
+										var tr = $(e.target).closest('tr');
+										var m = $('#fileselect_menu');
+										var position = $(e.target).position();
+										var panel = $('#ids_panel');
+										m.css('left', position.left + e.offsetX - 3);
+										m.css('top', position.top + e.offsetY - 3);
+										m.show();
+										m.one('click', function() { coge.fileSelect._irods_rm(obj.name); });
+										m.one('contextmenu', function() { coge.fileSelect._irods_rm(obj.name); return false; });
+										m.one("mouseleave", function() {
+											m.off('mouseover');
+											m.hide();
+											tr.css('background-color', 'white');
+										});
+										m.on('mouseover', function() {tr.css('background-color', 'greenyellow')});
 										e.preventDefault();
 										e.stopPropagation();
 										return false;
@@ -541,6 +555,20 @@ var coge = window.coge = (function(namespace) {
 			get_dirname(function(path){
 				path = $('#ids_current_path').html() + '/' + path;
 				coge.services.irods_mkdir(path).done(function(result) {
+					self._irods_busy(false);
+					if (result.error)
+						alert(result.error.Error);
+					else
+						self._irods_get_path(path);
+				});
+			});
+		},
+
+		_irods_rm: function(path) {
+			var self = this;
+			this._confirm('Delete File', 'Really delete file: ' + path + '?', function() {
+				path = $('#ids_current_path').html() + '/' + path;
+				coge.services.irods_rm(path).done(function(result) {
 					self._irods_busy(false);
 					if (result.error)
 						alert(result.error.Error);
@@ -708,6 +736,28 @@ var coge = window.coge = (function(namespace) {
 		    		$('#sra_status').html('Item not found');
 		    	}
 		    });
+		},
+
+		_confirm: function(title, question, on_ok) {
+			$('<div></div>').appendTo('body')
+			    .html('<div><h6>' + question + '</h6></div>')
+			    .dialog({
+				    modal: true,
+				    title: title,
+				    resizable: false,
+				    buttons: {
+				        OK: function () {
+				            on_ok();
+				            $(this).dialog("close");
+				        },
+				        Cancel: function () {
+				            $(this).dialog("close");
+				        }
+				    },
+				    close: function (event, ui) {
+				        $(this).remove();
+				    }
+				});
 		}
     };
 

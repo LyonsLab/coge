@@ -38,9 +38,13 @@
 		<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
 	    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
 	    	<table id="ids_table" class="small" style="width:100%;"></table>
+	    	<ul id="fileselect_menu" class="coge-menu hidden ui-menu ui-widget ui-widget-content ui-corner-all" style="white-space: nowrap; position: absolute; display: none;" role="listbox" aria-activedescendant="ui-active-menuitem">
+				<li class="ui-menu-item" role="menuitem"><a class="ui-corner-all" tabindex="-1">Delete File</a></li>
+			</ul>
+		</ul>
 	    </div>
 	  </div>
-
+		
 <TMPL_UNLESS NAME='DIR_SELECT'>
 	  <div id="fileselect-tab-2" class="small" style="height:200px;">
 	  	Enter the location of the file or directory to retrieve.<br><br>
