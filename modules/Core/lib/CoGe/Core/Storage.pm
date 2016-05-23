@@ -762,6 +762,11 @@ sub irods_mkdir {
     return CoGe::Accessory::IRODS::irods_imkdir($path);
 }
 
+# sub irods_rm {
+#     my $path = shift;
+#     return CoGe::Accessory::IRODS::irods_irm($path);
+# }
+
 sub reverse_complement { #TODO move into Util.pm
     my $seq   = shift;
     my $rcseq = reverse($seq);

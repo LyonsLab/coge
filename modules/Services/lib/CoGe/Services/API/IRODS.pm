@@ -55,6 +55,25 @@ sub mkdir {
     $self->render(json => { success => Mojo::JSON->true });
 }
 
+# sub rm {
+#     my $self = shift;
+#     my $path = $self->param('path');
+
+#     # Authenticate user and connect to the database
+#     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+#     unless ($user) {
+#         $self->render(json => { error => { Error => 'Access denied' } });
+#         return;
+#     }
+
+#     my $error = irods_rm($path);
+#     if ($error) {
+#         $self->render(json => { error => { Error => $error } });
+#         return;
+#     }
+#     $self->render(json => { success => Mojo::JSON->true });
+# }
+
 # mdb removed 8/24/15 -- not used
 #sub fetch {
 #    my $self = shift;
