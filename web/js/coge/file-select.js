@@ -77,7 +77,8 @@ var coge = window.coge = (function(namespace) {
 				self._irods_get_path("/iplant/home/shared");
 			});
 			self.container.find('.fileselect-up').click(function() {
-				self._irods_get_path("..");
+				if ($('.fileselect-up').css('cursor') === 'pointer')
+					self._irods_get_path("..");
 			});
 			self.container.find('.fileselect-refresh').click(function() {
 				self._irods_get_path(".");
@@ -98,6 +99,13 @@ var coge = window.coge = (function(namespace) {
 					else
 						obj.parent().hide();
 				});
+			});
+			self.container.find('.fileselect-filter').bind('search', function() {
+				var search_term = self.container.find('.fileselect-filter').val();
+				if (!search_term.length)
+					self.container.find('#ids_table tr td:nth-child(1)').each(function() {
+						$(this).parent().show();
+					});
 			});
 			
 			self.container.find('#ftp_get_button').bind('click', function() {
@@ -410,7 +418,8 @@ var coge = window.coge = (function(namespace) {
 					var p = result.path;
 					if (p.charAt(p.length - 1) == '/')
 						p = p.substring(0, p.length - 1);
-					$('.fileselect-up').css('visibility', p === self.home_path || p === '/iplant/home/shared' ? 'hidden' : 'visible');
+					$('.fileselect-up').css('opacity', p === self.home_path || p === '/iplant/home/shared' ? 0.4 : 1.0);
+					$('.fileselect-up').css('cursor', p === self.home_path || p === '/iplant/home/shared' ? 'default' : 'pointer');
 	
 					self._filenames = [];
 					if (result.items.length == 0)
@@ -426,7 +435,7 @@ var coge = window.coge = (function(namespace) {
 								icon = '<span class="ui-icon ui-icon-link"></span>';
 							else // assume file type
 								icon = '<span class="ui-icon ui-icon-document"></span>';
-							tr = $('<tr class="'+ obj.type +'"><td style="white-space:nowrap;">' 
+							tr = $('<tr class="'+ obj.type +'" style="white-space:nowrap;user-select:none;-webkit-user-select:none;-moz-user-select:none;"><td>' 
 									+ icon
 									+ decodeURIComponent(obj.name) + '</td><td>'
 									+ (obj.size ? decodeURIComponent(obj.size) : '') + '</td><td>' 
@@ -437,6 +446,7 @@ var coge = window.coge = (function(namespace) {
 										self._irods_get_path(obj.path);
 									}
 								);
+								tr.contextmenu( function(e) { return coge.fileSelect._delete_menu(e, obj, coge.fileSelect._irods_rmdir.bind(self)); } );
 							}
 							else {
 								$(tr).click(
@@ -446,6 +456,7 @@ var coge = window.coge = (function(namespace) {
 											self._finish_file_in_list('irods', 'irods://'+obj.path, obj.path, obj.size);
 									}
 								);
+								tr.contextmenu( function(e) { return coge.fileSelect._delete_menu(e, obj, coge.fileSelect._irods_rm.bind(self)); } );
 								self._filenames.push(obj.name);
 							}
 	
@@ -463,21 +474,26 @@ var coge = window.coge = (function(namespace) {
 				});
 		},
 
-// mdb removed 7/13/15 -- IRODS files are now transferred in workflow
-//		_irods_get_file: function(path) {
-//			var self = this;
-//			$.ajax({
-//				data: {
-//					fname: 'irods_get_file',
-//					path: path,
-//					load_id: self.loadId
-//				},
-//				success : function(data) {
-//					var obj = jQuery.parseJSON(data); //FIXME change ajax type to "json" and remove this
-//					self._finish_file_in_list('irods', 'irods://'+path, obj.path, obj.size);
-//				}
-//			});
-//		},
+		_delete_menu: function(e, obj, func) {
+			var tr = $(e.target).closest('tr');
+			var m = $('#fileselect_menu');
+			m.children().children().html('Delete ' + obj.type);
+			var position = $(e.target).position();
+			m.css('left', position.left + e.offsetX - 3);
+			m.css('top', position.top + e.offsetY - 3);
+			m.show();
+			m.one('click', function() { func(obj); });
+			m.one('contextmenu', function() { func(obj); return false; });
+			m.one("mouseleave", function() {
+				m.off('mouseover');
+				m.hide();
+				tr.css('background-color', 'white');
+			});
+			m.on('mouseover', function() {tr.css('background-color', 'greenyellow')});
+			e.preventDefault();
+			e.stopPropagation();
+			return false;
+		},
 
 		_irods_get_all_files: function(path) {
 			var self = this;
@@ -529,6 +545,32 @@ var coge = window.coge = (function(namespace) {
 						alert(result.error.Error);
 					else
 						self._irods_get_path(path);
+				});
+			});
+		},
+
+		_irods_rm: function(obj) {
+			var self = this;
+			this._confirm('Delete File', 'Really delete file ' + obj.name + '?', function() {
+				coge.services.irods_rm(obj.path).done(function(result) {
+					self._irods_busy(false);
+					if (result.error)
+						alert(result.error.Error);
+					else
+						self._irods_get_path($('#ids_current_path').html());
+				});
+			});
+		},
+
+		_irods_rmdir: function(obj) {
+			var self = this;
+			this._confirm('Delete Directory', 'Really delete directory ' + obj.name + ' and everything in it?', function() {
+				coge.services.irods_rm(obj.path).done(function(result) {
+					self._irods_busy(false);
+					if (result.error)
+						alert(result.error.Error);
+					else
+						self._irods_get_path($('#ids_current_path').html());
 				});
 			});
 		},
@@ -691,6 +733,28 @@ var coge = window.coge = (function(namespace) {
 		    		$('#sra_status').html('Item not found');
 		    	}
 		    });
+		},
+
+		_confirm: function(title, question, on_ok) {
+			$('<div></div>').appendTo('body')
+			    .html('<div><h6>' + question + '</h6></div>')
+			    .dialog({
+				    modal: true,
+				    title: title,
+				    resizable: false,
+				    buttons: {
+				        OK: function () {
+				            on_ok();
+				            $(this).dialog("close");
+				        },
+				        Cancel: function () {
+				            $(this).dialog("close");
+				        }
+				    },
+				    close: function (event, ui) {
+				        $(this).remove();
+				    }
+				});
 		}
     };
 

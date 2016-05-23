@@ -32,7 +32,7 @@ use CoGe::Accessory::Web qw(get_defaults url_for);
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
-use CoGe::Accessory::IRODS qw(irods_iget irods_ils irods_imkdir);
+use CoGe::Accessory::IRODS qw(irods_iget irods_ils irods_imkdir irods_irm);
 use File::Basename;
 use POSIX qw(floor);
 use File::Spec::Functions;
@@ -59,7 +59,7 @@ BEGIN {
       get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files
       reverse_complement get_irods_file get_irods_path get_popgen_result_path
-      is_popgen_finished data_type get_sra_cache_path irods_mkdir
+      is_popgen_finished data_type get_sra_cache_path irods_mkdir irods_rm
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
     );
 
@@ -760,6 +760,11 @@ sub get_irods_file {
 sub irods_mkdir {
     my $path = shift;
     return CoGe::Accessory::IRODS::irods_imkdir($path);
+}
+
+sub irods_rm {
+    my $path = shift;
+    return CoGe::Accessory::IRODS::irods_irm($path);
 }
 
 sub reverse_complement { #TODO move into Util.pm

@@ -375,6 +375,7 @@ return declare( JBrowsePlugin,
 				load: function(data) {
 					var div = $('<div>' + data + '</div>');
 					div.appendTo($('#cyverse'));
+					$('#fileselect-tab-1').removeClass('small');
 					coge.fileSelect.init({
 						container: div
 					});
