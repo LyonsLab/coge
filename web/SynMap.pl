@@ -1525,9 +1525,14 @@ sub get_results {
 		$org_name2 .= " (v" . $genome2->version . ")";
 
 		my $out_url = $out;
-		$out_url =~ s/$DIR/$URL/;
-		$y_label =~ s/$DIR/$URL/;
-		$x_label =~ s/$DIR/$URL/;
+		if ($DIR =~ /$URL/) {
+    		$out_url =~ s/$DIR/$URL/;
+    		$y_label =~ s/$DIR/$URL/;
+    		$x_label =~ s/$DIR/$URL/;
+		}
+		else {
+		    print STDERR "get_results: ERROR !!!!, cannot perform URL substitution: out_url=$out_url DIR=$DIR URL=$URL\n";
+		}
 
 		$/ = "\n";
 		my $tmp;
