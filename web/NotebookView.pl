@@ -11,6 +11,7 @@ use CoGe::Accessory::Web;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Notebook qw(notebookcmp delete_notebook undelete_notebook);
+use CoGe::Core::Storage qw(data_type);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -1445,41 +1446,69 @@ sub send_to_csv {
     #	print STDERR $P->{SERVER} . " $TEMPURL $file\n";
     open( OUT, ">$file" );
 
-    print OUT join( "\t",
-        "CoGe Genome ID",
-        "Name",
-        "Description",
-        "Source",
-        "Provenance",
-        "Sequence Type",
-        "Chr Count",
-        "Length (bp)",
-        "Percent GC",
-        "Percent AT",
-        "Percent N|X",
-        "OrganismView Link" ),
-      "\n";
-    foreach my $g ( sort genomecmp $list->genomes ) {
-        my $name = $g->name ? $g->name : $g->organism->name;
-        my $desc =
-          $g->description ? $g->description : $g->organism->description;
-        my ($ds_source) = $g->source;
-        my $source = $ds_source->name;
-        my $provenance = join( "||", map { $_->name } $g->datasets );
-        my $chr_count  = $g->chromosome_count;
-        my $length     = $g->length;
-        my $type       = $g->type->name;
-        my ( $gc, $at, $n ) = $g->percent_gc();
-        $at *= 100;
-        $gc *= 100;
+    my @genomes = $list->genomes;
+    if (scalar @genomes) {
         print OUT join( "\t",
-            $g->id,      $name,
-            $desc,       $source,
-            $provenance, $type,
-            $chr_count,  $length,
-            $gc,         $at,
-            $n,          $P->{SERVER} . 'OrganismView.pl?dsgid=' . $g->id ),
-          "\n";
+            "CoGe Genome ID",
+            "Name",
+            "Description",
+            "Source",
+            "Provenance",
+            "Sequence Type",
+            "Chr Count",
+            "Length (bp)",
+            "Percent GC",
+            "Percent AT",
+            "Percent N|X",
+            "OrganismView Link" ),
+            "\n";
+        foreach my $g ( sort genomecmp @genomes ) {
+            my $name = $g->name ? $g->name : $g->organism->name;
+            my $desc = $g->description ? $g->description : $g->organism->description;
+            my ($ds_source) = $g->source;
+            my $source = $ds_source->name;
+            my $provenance = join( "||", map { $_->name } $g->datasets );
+            my $chr_count  = $g->chromosome_count;
+            my $length     = $g->length;
+            my $type       = $g->type->name;
+            warn 1;
+            my ( $gc, $at, $n ) = $g->percent_gc();
+            warn 2;
+            $at *= 100;
+            $gc *= 100;
+            print OUT join( "\t",
+                $g->id,      $name,
+                $desc,       $source,
+                $provenance, $type,
+                $chr_count,  $length,
+                $gc,         $at,
+                $n,          $P->{SERVER} . 'OrganismView.pl?dsgid=' . $g->id ),
+                "\n";
+        }
+    }
+
+    my @experiments = $list->experiments;
+    if (scalar @experiments) {
+        print OUT join( "\t",
+            "CoGe Experiment ID",
+            "Name",
+            "Description",
+            "Data Type",
+            "Genome ID",
+            "Source",
+            "Version" ),
+            "\n";
+        foreach my $e ( sort experimentcmp @experiments ) {
+            print OUT join( "\t",
+                $e->id,
+                $e->name,
+                $e->description,
+                data_type($e->data_type),
+                $e->genome_id,
+                $e->source->name,
+                $e->version ),
+                "\n";
+        }
     }
 
     close OUT;
