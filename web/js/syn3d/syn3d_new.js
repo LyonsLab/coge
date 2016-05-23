@@ -18,6 +18,7 @@ var camUpdate = false;
 var hQueue = ["hKnKs", "hKs", "hKn"];
 var hCurrent = ["hKs", "ks"];
 var gridState = true;
+var labelState = true;
 var autoRotate = false;
 var colorScheme = "Jet";
 var dataSubset;
@@ -117,8 +118,30 @@ function resetCamera(view) {
 }
 
 /* CORE FUNCTION: Launch 2-way comparison in SynMap */
-function launchSynmap(comp) {
-    console.log("Launching SynMap!")
+// TODO: FIX baseURL to load from coge.conf
+function launchSynmap2(comp) {
+    // Example URL: https://genomevolution.org/coge/SynMap.pl?dsgid1=25747;dsgid2=28817;ks=1
+    var baseURL = 'https://genomevolution.org/coge/SynMap.pl?';
+    var link;
+    switch (comp) {
+        case "xy":
+            link = baseURL + "dsgid1=" + final_experiment.x_gid + ";dsgid2=" + final_experiment.y_gid + ";ks=1";
+            break;
+        case "xz":
+            link = baseURL + "dsgid1=" + final_experiment.x_gid + ";dsgid2=" + final_experiment.z_gid + ";ks=1";
+            break;
+        case "yz":
+            link = baseURL + "dsgid1=" + final_experiment.y_gid + ";dsgid2=" + final_experiment.z_gid + ";ks=1";
+            break;
+        default:
+            console.log("Unrecognized SynMap comparison - unable to launch.")
+    }
+    window.open(link);
+}
+
+/* CORE FUNCTION: Hide elements */
+function hideEl(elem) {
+    $(elem).addClass('hidden');
 }
 
 /* CORE FUNCTION: Toggle Grid Display */
@@ -126,9 +149,15 @@ function toggleGrid() {
     gridState = !gridState;
 }
 
+/* CORE FUNCTION: Toggle Auto-Rotate */
 function toggleRotate() {
     autoRotate = !autoRotate
 }
+
+function toggleLabels() {
+    labelState = !labelState;
+}
+
 /* CORE FUNCTION: Empty Renderings */
 function emptyRenderings() {
     // Remove old SynMap
@@ -323,7 +352,7 @@ function renderSynMap(graph_object, element_id, color_by) {
 
     // Visualization & Data variables.
     var points;
-    var xAxis, yAxis, zAxis;
+    var xAxis, yAxis, zAxis, labels;
     var grid;
 
     // Scaling variables.
@@ -428,7 +457,7 @@ function renderSynMap(graph_object, element_id, color_by) {
             labelSprite.position.set(0,0,maxLen);
         } else {console.log("Invalid focus axis, please select x y or z.")}
 
-        axis.add(labelSprite);
+        labels.add(labelSprite);
 
         return axis;
     }
@@ -672,17 +701,23 @@ function renderSynMap(graph_object, element_id, color_by) {
 
         // Report point count.
         console.log("POINTS RENDERED: " + pts.geometry.vertices.length);
+        document.getElementById("pt_ct").innerHTML = pts.geometry.vertices.length;
         return pts;
     }
 
     /* FUNCTION: Draw Chromosomes */
     function drawChromosomes() {
+        /* Start labels object */
+        labels = new THREE.Object3D();
         /* 3d Object: Axes */
         xAxis = buildAxisFromChr(graph_object.x[1], graph_object.axes[0], graph_object.axes[1], graph_object.x[2], 'x');
         yAxis = buildAxisFromChr(graph_object.y[1], graph_object.axes[2], graph_object.axes[3], graph_object.y[2], 'y');
         zAxis = buildAxisFromChr(graph_object.z[1], graph_object.axes[4], graph_object.axes[5], graph_object.z[2], 'z');
 
         // Shift axes to place graph center in middle.
+        labels.translateX(-graph_object.x[2] / 2);
+        labels.translateY(-graph_object.y[2] / 2);
+        labels.translateZ(-graph_object.z[2] / 2);
         xAxis.translateX(-graph_object.x[2] / 2);
         xAxis.translateY(-graph_object.y[2] / 2);
         xAxis.translateZ(-graph_object.z[2] / 2);
@@ -693,7 +728,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         zAxis.translateY(-graph_object.y[2] / 2);
         zAxis.translateZ(-graph_object.z[2] / 2);
 
-        return [xAxis, yAxis, zAxis];
+        return [xAxis, yAxis, zAxis, labels];
     }
 
     /* FUNCTION: Draw Grid */
@@ -806,6 +841,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         points = drawPoints(graph_object.points);
         scene.add(points);
 
+        /* Get min/max values & build initial data subset */
         var minVal = Math.min.apply(null, histData[hCurrent[1]]);
         var maxVal = Math.max.apply(null, histData[hCurrent[1]]);
         dataSubset = [minVal, maxVal];
@@ -826,6 +862,7 @@ function renderSynMap(graph_object, element_id, color_by) {
      --------------------------------------------------------------------------------------------------------*/
     var current = hCurrent[1];
     var gridS = gridState;
+    var labelS = labelState;
     var dataS;
 
     function animate() {
@@ -862,6 +899,19 @@ function renderSynMap(graph_object, element_id, color_by) {
                 scene.remove(grid);
             }
             gridS = gridState;
+        }
+
+        /* Check for label toggling */
+        if (labelState != labelS) {
+            var flatlabels = $("#axislabels");
+            if (labelState) {
+                scene.add(labels);
+                flatlabels.addClass("hidden")
+            } else {
+                scene.remove(labels);
+                flatlabels.removeClass("hidden")
+            }
+            labelS = labelState;
         }
 
         /* Check for histogram brushing */
@@ -981,6 +1031,23 @@ $(document).ready( function() {
         renderSynMap(data, "canvas", "xy");
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);
         postTiny("tiny", final_experiment.page_url);
+
+        // Render an instruction pop-up over SynMap
+        var instructor = $("#instruct");
+        var iH = instructor.height();
+        var iW = instructor.width();
+        var canvas = $("#canvas");
+        var cH = canvas.height();
+        var cW = canvas.width();
+        instructor.removeClass("hidden");
+        instructor.css("top", cH/2 - iH/2).css("left", cW/2 - iW/2);
+
+        // Update flat label text.
+        document.getElementById("xlabel").innerHTML = xsp;
+        document.getElementById("ylabel").innerHTML = ysp;
+        document.getElementById("zlabel").innerHTML = zsp;
+        var al = $("#axislabels");
+        al.css("left", 8).css("top", cH - al.height() - 8);
     });
 
     /* Monitor mutation ratio coloring option & update visualizations on change. */
