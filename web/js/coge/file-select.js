@@ -435,7 +435,7 @@ var coge = window.coge = (function(namespace) {
 								icon = '<span class="ui-icon ui-icon-link"></span>';
 							else // assume file type
 								icon = '<span class="ui-icon ui-icon-document"></span>';
-							tr = $('<tr class="'+ obj.type +'" style="white-space:nowrap;user-select:none;-webkit-user-select:none;"><td>' 
+							tr = $('<tr class="'+ obj.type +'" style="white-space:nowrap;user-select:none;-webkit-user-select:none;-moz-user-select:none;"><td>' 
 									+ icon
 									+ decodeURIComponent(obj.name) + '</td><td>'
 									+ (obj.size ? decodeURIComponent(obj.size) : '') + '</td><td>' 
@@ -446,6 +446,7 @@ var coge = window.coge = (function(namespace) {
 										self._irods_get_path(obj.path);
 									}
 								);
+								tr.contextmenu( function(e) { return coge.fileSelect._delete_menu(e, obj, coge.fileSelect._irods_rmdir.bind(self)); } );
 							}
 							else {
 								$(tr).click(
@@ -455,28 +456,7 @@ var coge = window.coge = (function(namespace) {
 											self._finish_file_in_list('irods', 'irods://'+obj.path, obj.path, obj.size);
 									}
 								);
-								tr.contextmenu(
-									function(e) {
-										var tr = $(e.target).closest('tr');
-										var m = $('#fileselect_menu');
-										var position = $(e.target).position();
-										var panel = $('#ids_panel');
-										m.css('left', position.left + e.offsetX - 3);
-										m.css('top', position.top + e.offsetY - 3);
-										m.show();
-										m.one('click', function() { coge.fileSelect._irods_rm(obj.name); });
-										m.one('contextmenu', function() { coge.fileSelect._irods_rm(obj.name); return false; });
-										m.one("mouseleave", function() {
-											m.off('mouseover');
-											m.hide();
-											tr.css('background-color', 'white');
-										});
-										m.on('mouseover', function() {tr.css('background-color', 'greenyellow')});
-										e.preventDefault();
-										e.stopPropagation();
-										return false;
-									}
-								);
+								tr.contextmenu( function(e) { return coge.fileSelect._delete_menu(e, obj, coge.fileSelect._irods_rm.bind(self)); } );
 								self._filenames.push(obj.name);
 							}
 	
@@ -494,21 +474,26 @@ var coge = window.coge = (function(namespace) {
 				});
 		},
 
-// mdb removed 7/13/15 -- IRODS files are now transferred in workflow
-//		_irods_get_file: function(path) {
-//			var self = this;
-//			$.ajax({
-//				data: {
-//					fname: 'irods_get_file',
-//					path: path,
-//					load_id: self.loadId
-//				},
-//				success : function(data) {
-//					var obj = jQuery.parseJSON(data); //FIXME change ajax type to "json" and remove this
-//					self._finish_file_in_list('irods', 'irods://'+path, obj.path, obj.size);
-//				}
-//			});
-//		},
+		_delete_menu: function(e, obj, func) {
+			var tr = $(e.target).closest('tr');
+			var m = $('#fileselect_menu');
+			m.children().children().html('Delete ' + obj.type);
+			var position = $(e.target).position();
+			m.css('left', position.left + e.offsetX - 3);
+			m.css('top', position.top + e.offsetY - 3);
+			m.show();
+			m.one('click', function() { func(obj); });
+			m.one('contextmenu', function() { func(obj); return false; });
+			m.one("mouseleave", function() {
+				m.off('mouseover');
+				m.hide();
+				tr.css('background-color', 'white');
+			});
+			m.on('mouseover', function() {tr.css('background-color', 'greenyellow')});
+			e.preventDefault();
+			e.stopPropagation();
+			return false;
+		},
 
 		_irods_get_all_files: function(path) {
 			var self = this;
@@ -564,16 +549,28 @@ var coge = window.coge = (function(namespace) {
 			});
 		},
 
-		_irods_rm: function(path) {
+		_irods_rm: function(obj) {
 			var self = this;
-			this._confirm('Delete File', 'Really delete file: ' + path + '?', function() {
-				path = $('#ids_current_path').html() + '/' + path;
-				coge.services.irods_rm(path).done(function(result) {
+			this._confirm('Delete File', 'Really delete file ' + obj.name + '?', function() {
+				coge.services.irods_rm(obj.path).done(function(result) {
 					self._irods_busy(false);
 					if (result.error)
 						alert(result.error.Error);
 					else
-						self._irods_get_path(path);
+						self._irods_get_path($('#ids_current_path').html());
+				});
+			});
+		},
+
+		_irods_rmdir: function(obj) {
+			var self = this;
+			this._confirm('Delete Directory', 'Really delete directory ' + obj.name + ' and everything in it?', function() {
+				coge.services.irods_rm(obj.path).done(function(result) {
+					self._irods_busy(false);
+					if (result.error)
+						alert(result.error.Error);
+					else
+						self._irods_get_path($('#ids_current_path').html());
 				});
 			});
 		},

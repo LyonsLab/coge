@@ -4,6 +4,9 @@
     background-color: gray;
     opacity: .2;
 }
+.ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button {
+    font-size: 1em !important;
+}
 </style>
 
 <TMPL_UNLESS NAME='DIR_SELECT'>
@@ -39,7 +42,7 @@
 	    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
 	    	<table id="ids_table" class="small" style="width:100%;"></table>
 	    	<ul id="fileselect_menu" class="coge-menu hidden ui-menu ui-widget ui-widget-content ui-corner-all" style="white-space: nowrap; position: absolute; display: none;" role="listbox" aria-activedescendant="ui-active-menuitem">
-				<li class="ui-menu-item" role="menuitem"><a class="ui-corner-all" tabindex="-1">Delete File</a></li>
+				<li class="ui-menu-item" role="menuitem"><a class="ui-corner-all" tabindex="-1"></a></li>
 			</ul>
 		</ul>
 	    </div>
@@ -98,8 +101,8 @@
 <div id="dirname_dialog" title="Create new directory" style="display:none">
   <form>
     <fieldset>
-      <label for="name">Name</label>
-      <input id="dirname" class="text ui-widget-content ui-corner-all">
+      <label for="name">Name:</label>
+      <input id="dirname">
     </fieldset>
   </form>
 </div>

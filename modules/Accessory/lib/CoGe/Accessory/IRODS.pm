@@ -236,7 +236,7 @@ sub irods_irm {
 
     $ENV{irodsEnvFile} = $env_file;
     warn $path;
-    my $cmd = "irm '" . $path . "'";
+    my $cmd = "irm -rf '" . $path . "'";
     my @result = `$cmd`;
     return $result[0] if scalar @result;
 }
