@@ -360,17 +360,17 @@ sub add_jobs {
 		$org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
 	}
 	
-	# mdb added 3/24/16 for hypnotoad: run mkdir as JEX to get proper directory permissions for subsequent tasks
-    # $workflow->add_job({
-    #     cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
-    #     script      => undef,
-    #     args        => undef,
-    #     inputs      => undef,
-    #     outputs     => [
-    #         #map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
-    #     ],
-    #     description => "Creating results directories...",
-    # });
+	#mdb added 3/24/16 for hypnotoad: run mkdir as JEX to get proper directory permissions for subsequent tasks
+    $workflow->add_job({
+        cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
+        script      => undef,
+        args        => undef,
+        inputs      => undef,
+        outputs     => [
+            #map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
+        ],
+        description => "Creating results directories...",
+    });
 
 	############################################################################
 	# Run Blast
@@ -380,7 +380,7 @@ sub add_jobs {
 	my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
 
 	foreach my $key ( keys %org_dirs ) {
-		my $cmd = 'nice ' . $ALGO_LOOKUP->{$blast}{algo}; #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
+		my $cmd = 'nice ' . $ALGO_LOOKUP->{$blast}{algo} . ";touch $raw_blastfile.done"; #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
 		my $fasta   = $org_dirs{$key}{fasta};
 		my $db      = $org_dirs{$key}{db};
 		my $outfile = $org_dirs{$key}{blastfile};
@@ -422,7 +422,7 @@ sub add_jobs {
 				script      => undef,
 				args        => \@blastargs,
 				inputs      => \@blastdb_files,
-				outputs     => [$outfile],
+				outputs     => [$outfile . '.done'],
 				description => "Running genome comparison...",
 			}
 		);
@@ -457,7 +457,7 @@ sub add_jobs {
 			cmd         => $BLAST2BED,
 			script      => undef,
 			args        => \@blastargs,
-			inputs      => [$raw_blastfile],
+			inputs      => [$raw_blastfile . '.done'],
 			outputs     => \@bedoutputs,
 			description => "Creating .bed files...",
 		}
@@ -1297,9 +1297,8 @@ sub build {
 	}
 	for (my $j=1; $j<$i-1; $j++) {
 		for (my $k=$j+1; $k<$i; $k++) {
-			$self->params->{genome_id1} = $genome_ids[$j - 1];
-			$self->params->{genome_id2} = $genome_ids[$k - 1];
-			warn Dumper $self->params;
+			$self->params->{genome_id1} = $genome_ids[$j];
+			$self->params->{genome_id2} = $genome_ids[$k];
 			my %opts = ( %{ defaults() }, %{ $self->params } );
 			my $resp = add_jobs(
 				workflow => $self->workflow,
