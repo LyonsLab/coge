@@ -71,7 +71,7 @@ $node_types = $DB->node_types();
     send_to_featmap            => \&send_to_featmap,
     send_to_codeon             => \&send_to_codeon,
     send_to_fasta              => \&send_to_fasta,
-    send_to_csv                => \&send_to_csv,
+    send_to_tsv                => \&send_to_tsv,
     send_to_xls                => \&send_to_xls,
     update_owner               => \&update_owner,
 );
@@ -1430,7 +1430,7 @@ sub send_to_fasta {
     return $file;
 }
 
-sub send_to_csv {
+sub send_to_tsv {
     my %opts = @_;
     my $lid  = $opts{lid};
     return unless $lid;
@@ -1441,7 +1441,7 @@ sub send_to_csv {
     my $cogeweb =
       CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
     my $basename = $cogeweb->basefilename;
-    my $file     = "$TEMPDIR/$basename.csv";
+    my $file     = "$TEMPDIR/$basename.tsv";
 
     #	print STDERR $P->{SERVER} . " $TEMPURL $file\n";
     open( OUT, ">$file" );
