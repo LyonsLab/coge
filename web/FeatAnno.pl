@@ -173,12 +173,13 @@ sub gen_html {
         else {
             $color = "#FFDDBB";
         }
-        $html .= "<table bgcolor=$color width=100%><tr><td>"
-          . $feat->annotation_pretty_print_html( gstid => $gstid, P => $P);
-        $html .= qq{<font class="title4">Type: </font>};
-        $html .= qq{<font class="data">} . $feat->type->name . "</font>\n";
-        $html .= qq{</table>};
-        $html .= qq{<HR>};
+        $html .= '<div style="background-color:';
+        $html .= $color;
+        $html .= ';width:100%"><h4>';
+        $html .= $feat->type->name;
+        $html .= '</h4>';
+        $html .= $feat->annotation_pretty_print_html( gstid => $gstid, P => $P);
+        $html .= '</div><hr>';
     }
     return $html;
 }
