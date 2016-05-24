@@ -542,7 +542,8 @@ function launch(experiment) {
         }
         return link;
     }
-    
+
+    /* REMOVED FOR MULTIWAY!
     var xy_request = {
         type: 'synmap',
         requester: {
@@ -588,7 +589,7 @@ function launch(experiment) {
                                 coge.progress.end();
                                 final_experiment.links.xy = synmapOutputLink(xgid, ygid);
                                 makeXZ();
-                            } 
+                            }
                            });
         coge.progress.begin();
 
@@ -614,19 +615,19 @@ function launch(experiment) {
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
             })
     }
-    
+
     // Compute XZ Comparison
     // onSuccess: Launch YZ Comparison
-    function makeXZ() { 
+    function makeXZ() {
         coge.progress.init({title: "Running SynMap Analysis 2/3",
                             onSuccess: function(results) {
                                 coge.progress.end();
                                 final_experiment.links.xz = synmapOutputLink(xgid, zgid);
                                 makeYZ();
-                            } 
+                            }
                            });
         coge.progress.begin();
-        
+
         coge.services.submit_job(xz_request)
             .done(function(response) {
                 if (!response) {
@@ -650,18 +651,67 @@ function launch(experiment) {
     }
 
     // Compute YZ Comparison
-    // onSuccess: Analyses are complete 
+    // onSuccess: Analyses are complete
     function makeYZ() {
         coge.progress.init({title: "Running SynMap Analysis 3/3",
                             onSuccess: function(results) {
                                 coge.progress.end();
                                 final_experiment.links.yz = synmapOutputLink(ygid, zgid);
                                 runDotplotDots(final_experiment);
-                            } 
+                            }
                            });
         coge.progress.begin();
-        
+
         coge.services.submit_job(yz_request)
+            .done(function(response) {
+                if (!response) {
+                    coge.progress.failed("Error: empty response from server");
+                    return;
+                }
+                else if (!response.success || !response.id) {
+                    coge.progress.failed("Error: failed to start workflow", response.error);
+                    return;
+                }
+
+                //Start status update
+                console.log("Launching YZ SynMap Job (ID: " + response.id + ")");
+                //window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
+                coge.progress.update(response.id);
+                //coge.progress.update(response.id, response.site_url);
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+            })
+    }
+    END REMOVE FOR NWAY */
+
+    var synmap_request = {
+        type: 'synmap',
+        requester: {
+		    page:      PAGE_NAME,
+		    user_name: USER_NAME
+	    },
+        parameters: {
+            genome_id1: xgid,
+            genome_id2: ygid,
+            genome_id3: zgid,
+            ks_type: "kn_ks"
+        }
+    };
+
+    function makeSynmaps() {
+        coge.progress.init({title: "Running Pairwise SynMap Analyses",
+                            onSuccess: function(results) {
+                                coge.progress.end();
+                                final_experiment.links.xy = synmapOutputLink(xgid, ygid);
+                                final_experiment.links.xz = synmapOutputLink(xgid, zgid);
+                                final_experiment.links.yz = synmapOutputLink(ygid, zgid);
+                                runDotplotDots(final_experiment);
+                            }
+                           });
+        coge.progress.begin();
+
+        coge.services.submit_job(synmap_request)
             .done(function(response) {
                 if (!response) {
                     coge.progress.failed("Error: empty response from server");
@@ -747,58 +797,9 @@ function launch(experiment) {
 
     }
 
-    //function runDotplotDots() {
-    //    coge.progress.init({title: "Finding Syntenic Points",
-    //                        onSuccess: function(results) {
-    //                            showVisualizer(final_experiment);
-    //                        }
-    //                       });
-    //    coge.progress.begin();
-    //
-    //    $.ajax({
-    //            dataType: "json",
-    //            data: {
-    //                fname: "dotplot_dots",
-    //                genome_idX: xgid.toString(),
-    //                genome_idY: ygid.toString(),
-    //                genome_idZ: zgid.toString(),
-    //                ksfile_xy: final_experiment.links.xy,
-    //                ksfile_xz: final_experiment.links.xz,
-    //                ksfile_yz: final_experiment.links.yz,
-    //                option_name: options_name,
-    //                hide: experiment.options.hide,
-    //                min_len: experiment.options.min_len
-    //            }
-    //        })
-    //        .done(function (response) {
-    //            if (!response) {
-    //                coge.progress.failed("Error: empty response from server");
-    //                return;
-    //            }
-    //            else if (!response.success || !response.id) {
-    //                coge.progress.failed("Error: failed to start workflow", response.error);
-    //                return;
-    //            }
-    //
-    //            //Start status update
-    //            window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
-    //            coge.progress.update(response.id);
-    //            //coge.progress.update(response.id, response.site_url); TODO: Add tiny link (see SynMap.pm for example)
-    //
-    //            final_experiment.links.xy_json = response.xy_json;
-    //            final_experiment.links.xz_json = response.xz_json;
-    //            final_experiment.links.yz_json = response.yz_json;
-    //            final_experiment.links.merge = response.merge_json;
-    //            final_experiment.links.histo = response.histo_json;
-    //        })
-    //        .fail(function (jqXHR, textStatus, errorThrown) {
-    //            coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-    //        })
-    //
-    //}
-
     // Start Comparisons
-    makeXY();
+    //makeXY();
+    makeSynmaps();
 }
 
 function reset_launch() { //AKB - Renamed from reset_load()
