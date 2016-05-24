@@ -1297,8 +1297,8 @@ sub build {
 	}
 	for (my $j=1; $j<$i-1; $j++) {
 		for (my $k=$j+1; $k<$i; $k++) {
-			$self->params->{genome_id1} = $genome_ids[$j];
-			$self->params->{genome_id2} = $genome_ids[$k];
+			$self->params->{genome_id1} = $genome_ids[$j - 1];
+			$self->params->{genome_id2} = $genome_ids[$k - 1];
 			my %opts = ( %{ defaults() }, %{ $self->params } );
 			my $resp = add_jobs(
 				workflow => $self->workflow,
