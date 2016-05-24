@@ -8,7 +8,9 @@ MYMETA.yml
 Makefile
 api.log
 irodsEnv
+irodsEnv_local
 irodsA
+irodsA_local
 web/tmp
 web/data
 coge.conf
