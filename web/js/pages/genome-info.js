@@ -1,52 +1,19 @@
-var coge = coge || {};
-coge.GenomeInfo = {};
 
-// EXPORT DIALOG GLOBALS
-var irods_home = $("<p>Sending to: " + irods_home_path + "</p>");
-var export_error = $("<p></p>")
-    .text("Failed to export to the CyVerse Data Store.")
-    .addClass("alert");
-var download_error = $("<p></p>")
-    .text("The file could not be fetched")
-    .addClass("alert");
-var spinner = $("<img></img>").attr("src", "picts/ajax-loader.gif");
-var message = $("<div></div>").text("Please wait...  ").append(spinner.clone());
-var note = $("<p></p>").addClass("small")
-        .text("(This may take several hours)");
+function wait_to_search (search_func, search_term) {
+    pageObj.search_term = search_term;
 
-coge.GenomeInfo.init = function(options) {
-    $.ajaxSetup({
-        type: "GET",
-        url: options.PAGE_NAME,
-        timeout: 86400,
-        dataType: "html",
-        cache: false,
-    });
-
-    coge.GenomeInfo.pageObj = options;
-
-    $(".dialog_box").dialog({ autoOpen: false, width: 500 });
-
-    $("#status_dialog").dialog({modal: true});
-
-    $("#export_dialog").dialog({modal: true});
-
-    set_annotation_table();
-
-    init_annotation_dialog(coge.GenomeInfo.pageObj.genome_id, default_type);
-
-    // Open status dialog
-    if (coge.GenomeInfo.pageObj.job_id) {
-        $('#loading_msg').hide();
-        $('#load_dialog').dialog('open');
-        update_dialog("jex/status/" + coge.GenomeInfo.pageObj.job_id, "#load_dialog", progress_formatter);
+    if (pageObj.time) {
+        clearTimeout(pageObj.time);
     }
 
-    $("#edit_user").autocomplete({
-        source:[],
-        focus: function() { return false; },
-    });
-};
+    // FIXME: could generalize by passing select id instead of separate search_* functions
+    pageObj.time = setTimeout(
+        function() {
+            search_func(pageObj.search_term);
+        },
+        500
+    );
+}
 
 function get_gc_content(id, fname) {
     var elem = $(id);
@@ -60,7 +27,7 @@ function get_gc_content(id, fname) {
         dataType: "html",
         data: {
             fname: fname,
-            dsgid: coge.GenomeInfo.pageObj.genome_id,
+            dsgid: genome_id,
             gstid: $("#gstid").val()
         },
         success: function(data) {
@@ -92,15 +59,14 @@ function get_feat_gc(opts){
 
     $.ajax({
         data: {
-                dsgid: coge.GenomeInfo.pageObj.genome_id,
-                jquery_ajax: 1,
-                    fname: 'get_gc_for_feature_type',
+                dsgid: genome_id,
+                fname: 'get_gc_for_feature_type',
                 dsid: dsid,
                 typeid: typeid,
                 chr: chr,
                 min: min,
                 max: max,
-                hist_type: hist_type,
+                hist_type: hist_type
             },
             success: function(data) {
                 elem.html(data);
@@ -112,21 +78,204 @@ function chr_hist (dsgid) {
     $('#chromosome_hist').dialog({
         autoOpen: true,
         position: {
-           my: "center",
+           my: "top",
            at: "top",
-           of: $(".box")
+           of: window
         }
     });
 
     $('#chromosome_hist').html('loading. . .');
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'get_chr_length_hist',
-            dsgid: dsgid,
+            dsgid: dsgid
         },
         success: function (data) {$('#chromosome_hist').html(data);}
     });
+}
+
+var chr_list_table = null;
+function chr_list() {
+	$('#chromosome_list').dialog({
+		autoOpen: true,
+		position: {
+			my: "top",
+			at: "top",
+			of: window
+		}
+	});
+
+	if (!chr_list_table)
+	    $.ajax({
+	        data: {
+	            fname: 'get_chromosomes',
+	            gid: genome_id
+	        },
+	        dataType: "json",
+	        success: function (data) {
+				chr_list_table = $('#chr_list_table').DataTable({
+			   		columnDefs:[{targets:0,type:'natural'},{targets:1,type:'num'},{orderable:false,targets:[2,3]}],
+			   		data:data,
+					deferRender:true,
+					language:{info:'Showing _START_ to _END_ of _TOTAL_ chromosomes'},
+					lengthChange:false,
+					paging:data.length>10,
+					pagingType:'simple',
+					searching:data.length>10
+				});
+				$('#chr_list_loading').hide();
+				$('#chr_list').show();
+	        }
+		});
+ }
+(function() {
+	 
+	/*
+	 * Natural Sort algorithm for Javascript - Version 0.7 - Released under MIT license
+	 * Author: Jim Palmer (based on chunking idea from Dave Koelle)
+	 * Contributors: Mike Grier (mgrier.com), Clint Priest, Kyle Adams, guillermo
+	 * See: http://js-naturalsort.googlecode.com/svn/trunk/naturalSort.js
+	 */
+	function naturalSort (a, b) {
+	    var re = /(^-?[0-9]+(\.?[0-9]*)[df]?e?[0-9]?$|^0x[0-9a-f]+$|[0-9]+)/gi,
+	        sre = /(^[ ]*|[ ]*$)/g,
+	        dre = /(^([\w ]+,?[\w ]+)?[\w ]+,?[\w ]+\d+:\d+(:\d+)?[\w ]?|^\d{1,4}[\/\-]\d{1,4}[\/\-]\d{1,4}|^\w+, \w+ \d+, \d{4})/,
+	        hre = /^0x[0-9a-f]+$/i,
+	        ore = /^0/,
+	        // convert all to strings and trim()
+	        x = a.toString().replace(sre, '') || '',
+	        y = b.toString().replace(sre, '') || '',
+	        // chunk/tokenize
+	        xN = x.replace(re, '\0$1\0').replace(/\0$/,'').replace(/^\0/,'').split('\0'),
+	        yN = y.replace(re, '\0$1\0').replace(/\0$/,'').replace(/^\0/,'').split('\0'),
+	        // numeric, hex or date detection
+	        xD = parseInt(x.match(hre), 10) || (xN.length !== 1 && x.match(dre) && Date.parse(x)),
+	        yD = parseInt(y.match(hre), 10) || xD && y.match(dre) && Date.parse(y) || null;
+	 
+	    // first try and sort Hex codes or Dates
+	    if (yD) {
+	        if ( xD < yD ) {
+	            return -1;
+	        }
+	        else if ( xD > yD ) {
+	            return 1;
+	        }
+	    }
+	 
+	    // natural sorting through split numeric strings and default strings
+	    for(var cLoc=0, numS=Math.max(xN.length, yN.length); cLoc < numS; cLoc++) {
+	        // find floats not starting with '0', string or 0 if not defined (Clint Priest)
+	        var oFxNcL = !(xN[cLoc] || '').match(ore) && parseFloat(xN[cLoc], 10) || xN[cLoc] || 0;
+	        var oFyNcL = !(yN[cLoc] || '').match(ore) && parseFloat(yN[cLoc], 10) || yN[cLoc] || 0;
+	        // handle numeric vs string comparison - number < string - (Kyle Adams)
+	        if (isNaN(oFxNcL) !== isNaN(oFyNcL)) {
+	            return (isNaN(oFxNcL)) ? 1 : -1;
+	        }
+	        // rely on string comparison if different types - i.e. '02' < 2 != '02' < '2'
+	        else if (typeof oFxNcL !== typeof oFyNcL) {
+	            oFxNcL += '';
+	            oFyNcL += '';
+	        }
+	        if (oFxNcL < oFyNcL) {
+	            return -1;
+	        }
+	        if (oFxNcL > oFyNcL) {
+	            return 1;
+	        }
+	    }
+	    return 0;
+	}
+	 
+	jQuery.extend( jQuery.fn.dataTableExt.oSort, {
+	    "natural-asc": function ( a, b ) {
+	        return naturalSort(a,b);
+	    },
+	 
+	    "natural-desc": function ( a, b ) {
+	        return naturalSort(a,b) * -1;
+	    }
+	} );
+	 
+	}());
+function download_chromosome_sequence(chr) {
+    $.ajax({
+        data: {
+            fname: 'cache_chr_fasta',
+            gid: genome_id,
+            chr: chr
+        },
+        success: function(data) {
+        	document.location='get_seq_for_chr.pl?gid=' + genome_id + '&chr=' + chr;
+        }
+    });
+}
+
+function download_chr_file() {
+	var i = $('input[name=chr]:checked');
+	if (!i.length) {
+		alert('Please select one of the files to download first.');
+		return;
+	}
+	var id = i.attr('id');
+	if (id.substring(0,1)=='f')
+		download_chromosome_sequence(id.substring(1));
+	else
+		get_gff(id.substring(1));
+}
+
+function export_chr_file() {
+	var i = $('input[name=chr]:checked');
+	if (!i.length) {
+		alert('Please select one of the files to export first.');
+		return;
+	}
+	var id = i.attr('id');
+	if (id.substring(0,1)=='f')
+		export_fasta_chr(id.substring(1));
+	else
+		export_gff(id.substring(1));
+}
+
+function toggle_load_log() {
+	var btn = $('#log_button');
+	var log = $('#log_contents');
+	var spinner = $('#log_spinner');
+	
+	var setVisible = function(visible) { // TODO: i want to use jQuery.toggle() instead, oh well
+    	if (visible) {
+			log.removeClass('hidden');
+	    	btn.html('Hide');
+	    	spinner.animate({opacity:0});
+    	}
+    	else {
+    		log.addClass('hidden');
+    		btn.html('Show');
+    		spinner.animate({opacity:0});
+    	}
+	}
+	
+	if (log.is(":hidden")) {
+		if (log.html() == '') {
+			spinner.css({opacity:1});
+			$.ajax({
+		        data: {
+		            fname: 'get_load_log',
+		            gid: genome_id
+		        },
+		        success: function(data) {
+		        	if (data)
+		        		log.html(data);
+		        	else
+		        		log.html('<span class="alert">Error: log file not found</span>');
+		        	setVisible(true);
+		        }
+		    });
+		}
+		else
+			setVisible(true);
+	}
+	else
+		setVisible(false);
 }
 
 function export_features_to_irods(id, feature, isGenome, type) {
@@ -152,18 +301,19 @@ function export_features_to_irods(id, feature, isGenome, type) {
         fid: feature
     };
 
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
+
     if (data.protein) {
         $('#export_log').html(
-                "<br>Copying protein sequences to <br><br>" +
-                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-                irods_home_path + '</a>'
-        );
+            "<br>Copying protein sequences to <br><br>"
+        ).append(link);
     } else {
         $('#export_log').html(
-                    "<br>Copying nucleotide sequences to <br><br>" +
-                '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-                irods_home_path + '</a>'
-        );
+            "<br>Copying nucleotide sequences to <br><br>"
+        ).append(link);
 
     }
 
@@ -187,17 +337,17 @@ function export_features_to_irods(id, feature, isGenome, type) {
     });
 }
 
-function wait_to_search (search_func, search_term) {
-    coge.GenomeInfo.pageObj.search_term = search_term;
+function debounce_search(search_func, search_term) {
+    pageObj.search_term = search_term;
 
-    if (coge.GenomeInfo.pageObj.time) {
-        clearTimeout(coge.GenomeInfo.pageObj.time);
+    if (pageObj.time) {
+        clearTimeout(pageObj.time);
     }
 
     // FIXME: could generalize by passing select id instead of separate search_* functions
-    coge.GenomeInfo.pageObj.time = setTimeout(
+    pageObj.time = setTimeout(
         function() {
-            search_func(coge.GenomeInfo.pageObj.search_term);
+            search_func(pageObj.search_term);
         },
         500
     );
@@ -207,7 +357,6 @@ function search_organisms (search_term) {
     if (search_term.length > 2) {
         $.ajax({
             data: {
-                jquery_ajax: 1,
                 fname: 'search_organisms',
                 search_term: search_term,
                 timestamp: new Date().getTime()
@@ -233,7 +382,7 @@ function get_features(selector) {
     $.ajax({
         data: {
             fname: "get_features",
-            dsgid: coge.GenomeInfo.pageObj.genome_id,
+            dsgid: genome_id,
             gstid: $("#gstid").val()
         },
         success: function(data) {
@@ -247,7 +396,6 @@ function get_features(selector) {
 function search_users (search_term) {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'search_users',
             search_term: search_term,
             timestamp: new Date().getTime()
@@ -265,9 +413,8 @@ function search_users (search_term) {
 function get_genome_info () {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'get_genome_info',
-            gid: coge.GenomeInfo.pageObj.genome_id
+            gid: genome_id
         },
         success : function(data) {
             if (data) {
@@ -280,9 +427,8 @@ function get_genome_info () {
 function edit_genome_info () {
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'edit_genome_info',
-            gid: coge.GenomeInfo.pageObj.genome_id
+            gid: genome_id
         },
         success : function(data) {
             if (data) {
@@ -319,9 +465,8 @@ function update_genome_info (){
 
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'update_genome_info',
-            gid: coge.GenomeInfo.pageObj.genome_id,
+            gid: genome_id,
             name: name,
             description: description,
             version: version,
@@ -348,7 +493,7 @@ function delete_genome () {
     $.ajax({
         data: {
             fname: 'delete_genome',
-            gid: coge.GenomeInfo.pageObj.genome_id,
+            gid: genome_id,
         },
         success : function(rc) {
             if (rc) {
@@ -374,13 +519,14 @@ function show_success() {
     $('#export_ok_button').fadeIn();
 }
 
-function get_gff() {
-    var id = coge.GenomeInfo.pageObj.genome_id;
+function get_gff($chr) {
+    var id = genome_id;
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
 
-    $('#gff_export').unbind().on("dialogclose", function(event, ui) {
+    $('#gff_submit').unbind().click(function(event, ui) {
         var id_type = $('#gff_id_type').val(),
             cds = +$('#cds_only')[0].checked,
+            chr = +$chr,
             annos = +$('#annos')[0].checked,
             nu = +$('#name_unique')[0].checked,
             upa = +$('#upa')[0].checked;
@@ -388,7 +534,7 @@ function get_gff() {
         var height = $('#status_log')[0].scrollHeight;
         $("#status_log").animate({ scrollTop: height}, 500);
 
-        var title = $("<h4>Generating gff file</h4>");
+        var title = $("<br><h4>Generating GFF file</h4>");
 
         // RESET DIALOG
         reset_dialog();
@@ -410,7 +556,8 @@ function get_gff() {
                 cds: cds,
                 annos: annos,
                 nu: nu,
-                upa: upa
+                upa: upa,
+                chr: $chr
             },
             success: function(json) {
                 if (json.error) {
@@ -445,7 +592,7 @@ function get_tbl() {
         dataType: "json",
         data: {
             fname: "get_tbl",
-            gid: coge.GenomeInfo.pageObj.genome_id
+            gid: genome_id
         },
         success: function(json) {
             if (json.error) {
@@ -479,7 +626,7 @@ function get_bed() {
         dataType: "json",
         data: {
             fname: "get_bed",
-            gid: coge.GenomeInfo.pageObj.genome_id
+            gid: genome_id
         },
         success: function(json) {
             if (json.error) {
@@ -508,12 +655,12 @@ function reset_dialog() {
     $('#export_loading_msg').show();
 }
 
-function export_gff() {
+function export_gff(chr) {
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
-    $('#gff_export').unbind().on("dialogclose", function() {
+    $('#gff_submit').unbind().click(function() {
 
         // ANALYSIS OPTIONS
-        var id = coge.GenomeInfo.pageObj.genome_id;
+        var id = genome_id;
         var id_type = $('#gff_id_type').val(),
             cds = +$('#cds_only')[0].checked,
             annos = +$('#annos')[0].checked,
@@ -531,11 +678,18 @@ function export_gff() {
         // RESET DIALOG
         reset_dialog();
 
-        var title = $("<h4>Generating gff file</h4>");
+        var title = $("<h4>Generating gff and copying file</h4>");
+
+
+        var link = $("<a></a>")
+                .addClass("bold")
+                .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+                .html(irods_home_path);
 
         $("#export_log")
             .html(title)
-            .append(note)
+            .append(link)
+            .append(note);
 
         $("#export_dialog")
             .unbind()
@@ -550,7 +704,8 @@ function export_gff() {
                 cds: cds,
                 annos: annos,
                 nu: nu,
-                upa: upa
+                upa: upa,
+                chr: chr
             },
             success: function(json) {
                 $('#export_log').append('<br><br>File: ' + json.file);
@@ -564,7 +719,7 @@ function export_gff() {
     });
 }
 
-function export_tbl() {
+function export_to_irods(file_description, fname, data) {
     // Prevent concurrent executions
     if ( $("#export_dialog").dialog( "isOpen" ) )
         return;
@@ -581,18 +736,22 @@ function export_tbl() {
         .unbind()
         .dialog('open');
 
-    $('#export_log').html(
-            "<br>Copying this genomes's TBL file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home_path + '</a>'
-    );
+    var link = $("<a></a>")
+            .addClass("bold")
+            .attr("href", DISCOVERY_ENVIRONMENT.concat(irods_home_path))
+            .html(irods_home_path);
 
+    $('#export_log').html(
+        "<br>Copying " + file_description + " to <br><br>"
+    ).append(link);
+
+    if (!data)
+    	data = {};
+    data.fname = fname;
+    data.gid = genome_id;
     $.ajax({
         dataType: "json",
-        data: {
-            fname: "export_tbl",
-            gid: coge.GenomeInfo.pageObj.genome_id
-        },
+        data: data,
         success: function(json) {
             $('#export_log').append('<br><br>File: ' + json.file);
 
@@ -605,82 +764,28 @@ function export_tbl() {
     });
 }
 
-function export_bed() {
-    // Prevent concurrent executions
-    if ( $("#export_dialog").dialog( "isOpen" ) )
-        return;
-
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
-
-    // RESET DIALOG
-    reset_dialog();
-
-    // Open status dialog right away
-    $('#export_dialog')
-        .unbind()
-        .dialog('open');
-
-    $('#export_log').html(
-            "<br>Generating/copying this genomes's BED file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home_path + '</a>'
-    );
-
-    $.ajax({
-        dataType: "json",
-        data: {
-            fname: "export_bed",
-            gid: coge.GenomeInfo.pageObj.genome_id
-        },
-        success: function(json) {
-            if (json.error) {
-                show_error();
-            } else {
-                $('#export_log').append('<br><br>File: ' + json.file);
-                show_success();
-            }
-        }
-    });
+function export_tbl() {
+	export_to_irods("this genomes's TBL file", "export_tbl");
 }
 
-function export_fasta_irods() {
-    // Prevent concurrent executions
-    if ( $("#export_dialog").dialog( "isOpen" ) )
-        return;
+function export_bed() {
+	export_to_irods("this genomes's BED file", "export_bed");
+}
 
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
+function export_fasta() {
+	export_to_irods("this genomes's FASTA file", "export_fasta");
+}
 
-    // RESET DIALOG
-    reset_dialog();
-
-    // Open status dialog right away
-    $('#export_dialog')
-        .unbind()
-        .dialog('open');
-
-    $('#export_log').html(
-            "<br>Copying this genomes's FASTA file to <br><br>" +
-            '<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">' +
-            irods_home_path + '</a>'
-    );
-
+function export_fasta_chr(chr) {
     $.ajax({
         data: {
-            fname: 'export_fasta_irods',
-            gid: coge.GenomeInfo.pageObj.genome_id
+            fname: 'cache_chr_fasta',
+            gid: genome_id,
+            chr: chr
         },
-        success : function(filename) {
-            if (filename) {  // finished successfully
-                show_success();
-                $('#export_log').append('<br><br>File: ' + filename);
-            }
-            else { // error occurred
-                show_error();
-            }
+        success: function(data) {
+        	var obj = jQuery.parseJSON(data);
+        	export_to_irods("this chromosome's FASTA file", "export_fasta_chr", { chr: chr, file: obj.file });
         }
     });
 }
@@ -693,7 +798,7 @@ function reset_log() {
 }
 
 function reset_load() {
-    window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + coge.GenomeInfo.pageObj.genome_id);
+    window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + genome_id);
     $('#load_dialog').dialog('close');
 }
 
@@ -710,9 +815,9 @@ function load_failed(obj) {
 	else { // mdb added 6/24/14 - temporary message until JEX logging is improved
 		var msg =
 			'<div class="alert">' +
-			'We recently made some changes that limit our ability to report errors (more details <a href="https://genomevolution.org/wiki/index.php/Jex_Logging" target=_blank>here</a>). ' +
-			'While we fix this please feel free to contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> regarding this failure to load data ' +
-			'and we can help to determine the cause.  Thanks!' +
+			'The CoGe Support Team has been notified of this error but please ' + 
+			'feel free to contact us at <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> ' +
+			'and we can help to determine the cause.' +
 			'</div>';
 		var log = $('#load_log');
 		log.html( log.html() + msg );
@@ -723,18 +828,20 @@ function load_failed(obj) {
     $('#error_msg').fadeIn();
     $('#cancel_button').fadeIn();
 
-    $.ajax({
-        data: {
-            fname: "send_error_report",
-            load_id: load_id,
-            job_id: coge.GenomeInfo.pageObj.job_id
-        }
-    });
+    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
+	    $.ajax({
+	        data: {
+	            fname: "send_error_report",
+	            load_id: load_id,
+	            job_id: job_id
+	        }
+	    });
+    }
 }
 
 function load_succeeded(obj) {
     // Update globals
-    coge.GenomeInfo.pageObj.genome_id = obj.coge.GenomeInfo.pageObj.genome_id; // for continuing to GenomeInfo
+    genome_id = obj.genome_id; // for continuing to GenomeInfo
 
     // Update dialog
     $('#loading_msg').hide();
@@ -776,24 +883,17 @@ function copy_genome(mask, seq_only) {
 
     // Open status dialog right away - issue 101
     reset_log();
-    if (mask) {
-        $('#load_dialog').dialog('option', 'title', 'Copying & Masking Genome');
-    }
-    else if (seq_only) {
-        $('#load_dialog').dialog('option', 'title', 'Copying Genome (No Annotations)');
-    }
-    else {
-        $('#load_dialog').dialog('option', 'title', 'Copying Genome');
-    }
+
     $('#load_dialog').dialog('open');
 //   $('#status_log').html('Initializing ...');
-
+    newLoad = true;
+    
     $.ajax({
         dataType: "json",
         data: {
             fname: 'copy_genome',
             load_id: load_id,
-            gid: coge.GenomeInfo.pageObj.genome_id,
+            gid: genome_id,
             mask: mask,
             seq_only: seq_only,
             timestamp: new Date().getTime()
@@ -804,14 +904,14 @@ function copy_genome(mask, seq_only) {
                 return;
             }
 
-            coge.GenomeInfo.pageObj.job_id = data.job_id;
+            job_id = data.job_id;
 
             // Set link in status dialog
             $('#loading_msg span a').attr('href', data.link).html(data.link);
 
             // Add load_id to browser URL
-            window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + coge.GenomeInfo.pageObj.genome_id + "&job_id=" + data.job_id); // Add job_id to browser URL
-            update_dialog("jex/status/" + data.job_id, "#load_dialog", progress_formatter);
+            window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + genome_id + "&job_id=" + data.job_id); // Add job_id to browser URL
+            update_dialog("api/v1/jobs/" + data.job_id, pageObj.user, "#load_dialog", progress_formatter);
         }
         // TODO: handle error, show in status dialog
     });
@@ -820,7 +920,6 @@ function copy_genome(mask, seq_only) {
 function progress_formatter(item) {
     var msg;
     var row = $('<li>'+ item.description + ' </li>');
-    row.addClass('small');
 
     var job_status = $('<span></span>');
 
@@ -845,17 +944,35 @@ function progress_formatter(item) {
         row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
     }
 
+    if (item.log) {
+        var p = item.log.split("\n");
+
+        var pElements = p.map(function(item) {
+            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
+            return $("<div></div>").append(norm);
+        });
+
+        var log = $("<div></div>").html(pElements).addClass("padded");
+        row.append(log);
+    }
+
     return row;
 }
 
-function update_dialog(request, identifier, formatter) {
+function update_dialog(request, user, identifier, formatter) {
     var get_status = function () {
         $.ajax({
             type: 'GET',
             url: request,
             dataType: 'json',
+            data: {
+                username: user
+            },
             success: update_callback,
             error: update_callback,
+            xhrFields: {
+                withCredentials: true
+            }
         });
     };
 
@@ -868,18 +985,18 @@ function update_dialog(request, identifier, formatter) {
         var timeout = 2000;
 
         var callback = function() {
-            update_dialog(request, identifier, formatter);
+            update_dialog(request, user, identifier, formatter);
         }
 
         if (json.error) {
-            coge.GenomeInfo.pageObj.error++;
-            if (coge.GenomeInfo.pageObj.error > 3) {
+            pageObj.error++;
+            if (pageObj.error > 3) {
                 workflow_status.html('<span class=\"alert\">The job engine has failed.</span>');
                 load_failed();
                 return;
             }
         } else {
-            coge.GenomeInfo.pageObj.error = 0;
+            pageObj.error = 0;
         }
 
         if (json.status) {
@@ -892,8 +1009,8 @@ function update_dialog(request, identifier, formatter) {
             return;
         }
 
-        if (json.jobs) {
-            var jobs = json.jobs;
+        if (json.tasks) {
+            var jobs = json.tasks;
             for (var index = 0; index < jobs.length; index++) {
                 var item = formatter(jobs[index]);
                 if (item) {
@@ -908,7 +1025,7 @@ function update_dialog(request, identifier, formatter) {
 
         //FIXME Update when a workflow supports elapsed time
         if (current_status == "completed") {
-            var total = json.jobs.reduce(function(a, b) {
+            var total = json.tasks.reduce(function(a, b) {
                 if (!b.elapsed) return a;
 
                 return a + b.elapsed;
@@ -954,8 +1071,8 @@ function get_load_log(callback) {
     $.ajax({
         dataType:    'json',
         data: {
-            fname:       'get_load_log',
-            workflow_id: coge.GenomeInfo.pageObj.job_id,
+            fname:       'get_progress_log',
+            workflow_id: job_id,
             timestamp:   new Date().getTime()
         },
         success : function(data) {
@@ -968,7 +1085,7 @@ function get_load_log(callback) {
 }
 
 function continue_to_view() {
-    window.location.href = "GenomeInfo.pl?gid=" + coge.GenomeInfo.pageObj.genome_id;
+    window.location.href = "GenomeInfo.pl?gid=" + genome_id;
 }
 
 function set_annotation_table() {
@@ -979,7 +1096,7 @@ function get_annotations() {
     $.ajax({
         data: {
             fname: 'get_annotations',
-            gid: coge.GenomeInfo.pageObj.genome_id,
+            gid: genome_id,
         },
         success : function(data) {
             $('#genome_annotations').html(data);
@@ -992,7 +1109,7 @@ function remove_annotation (gaid) {
     $.ajax({
         data: {
             fname: 'remove_annotation',
-            gid: coge.GenomeInfo.pageObj.genome_id,
+            gid: genome_id,
             gaid: gaid,
         },
         success : function() {
@@ -1005,7 +1122,7 @@ function get_datasets() {
     $.ajax({
         data: {
             fname: 'get_datasets',
-            gid: coge.GenomeInfo.pageObj.genome_id,
+            gid: genome_id,
         },
         success : function(data) {
             $('#datasets').html(data);
@@ -1017,7 +1134,7 @@ function delete_dataset (dsid) {
     $.ajax({
         data: {
             fname: 'delete_dataset',
-            gid: coge.GenomeInfo.pageObj.genome_id,
+            gid: genome_id,
             dsid: dsid,
         },
         success : function() {
@@ -1026,9 +1143,7 @@ function delete_dataset (dsid) {
     });
 }
 
-function open_aa_usage_table(chromosome)
-{
-
+function open_aa_usage_table(chromosome) {
     $("#aa_usage_table")
         .html("Please wait... ")
         .append(spinner.clone())
@@ -1044,7 +1159,7 @@ function open_aa_usage_table(chromosome)
     $.ajax({
         data: {
             fname: "get_aa_usage",
-            dsgid: coge.GenomeInfo.pageObj.genome_id,
+            dsgid: genome_id,
             chr: chromosome
         },
         dataType: "html",
@@ -1053,6 +1168,8 @@ function open_aa_usage_table(chromosome)
             $('#aa_table').tablesorter();
         }
     });
+    
+    return false;
 }
 
 function get_content_dialog(id, request, chromosome) {
@@ -1073,7 +1190,7 @@ function get_content_dialog(id, request, chromosome) {
     $.ajax({
         data: {
             fname: request,
-            dsgid: coge.GenomeInfo.pageObj.genome_id,
+            dsgid: genome_id,
             chr: chromosome,
         },
         dataType: "html",
@@ -1081,6 +1198,27 @@ function get_content_dialog(id, request, chromosome) {
             elem.html(html).slideDown();
         }
     })
+}
+
+function get_experiments(e) {
+    e.preventDefault();
+    var experiments = $("#experiments");
+    experiments.html("Loading experiments... ").append(spinner.clone());
+
+    $.ajax({
+        data: {
+            fname: 'get_experiments',
+            gid: genome_id
+        },
+        success:function(html) {
+            experiments
+            	.hide()
+            	.html(html)
+            	.slideDown();
+            var count = experiments.find('span').length;
+            $('#exp_count').html('('+count+')').show();
+        }
+    });
 }
 
 function update_owner () {
@@ -1092,9 +1230,8 @@ function update_owner () {
 
     $.ajax({
         data: {
-            jquery_ajax: 1,
             fname: 'update_owner',
-            gid: coge.GenomeInfo.pageObj.genome_id,
+            gid: "<TMPL_VAR NAME='GID'>",
             user_name: user_name,
             timestamp: new Date().getTime()
         },
