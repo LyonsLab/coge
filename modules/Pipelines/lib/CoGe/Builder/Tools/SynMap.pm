@@ -326,11 +326,11 @@ sub add_jobs {
                 $basename . '.prj'
             ],
             description => "Generating LastDB...",
-        });	
-        
+        });
+
         $blastdb = $basename;
         push @blastdb_files, $basename . '.prj';
-        
+
         $workflow->log( "" );
         $workflow->log( "Added LastDB generation" );
         $workflow->log( $blastdb );
@@ -339,7 +339,7 @@ sub add_jobs {
 		$blastdb = $fasta2;
 		push @blastdb_files, $blastdb;
 	}
-	
+
 	my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
 	my %org_dirs = (
 		$orgkey1 . "_" . $orgkey2 => {
@@ -391,23 +391,23 @@ sub add_jobs {
 			push @blastargs, [ "-d", $db,      0 ];
 			push @blastargs, [ "-o", $outfile, 1 ];
 		}
-# mdb removed 3/17/16 -- wrapper no longer needed
-#		elsif ( $cmd =~ /last_wrapper/i ) {
-#			# mdb added 9/20/13 issue 213
-#			my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
-#			mkpath( $dbpath, 0, 0777 );
-#			push @blastargs, [ "--dbpath", $dbpath, 0 ];
-#
-#			push @blastargs, [ "",   $db,      0 ];
-#			push @blastargs, [ "",   $fasta,   0 ];
-#			push @blastargs, [ "-o", $outfile, 1 ];
-#		}
+        # mdb removed 3/17/16 -- wrapper no longer needed
+		#elsif ( $cmd =~ /last_wrapper/i ) {
+		#	# mdb added 9/20/13 issue 213
+		#	my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
+		#	mkpath( $dbpath, 0, 0777 );
+		#	push @blastargs, [ "--dbpath", $dbpath, 0 ];
+
+		#	push @blastargs, [ "",   $db,      0 ];
+		#	push @blastargs, [ "",   $fasta,   0 ];
+		#	push @blastargs, [ "-o", $outfile, 1 ];
+		#}
         elsif ( $cmd =~ /lastal/i ) { # mdb added 3/17/16 -- new multithreaded last v731
             my $fasta   = $org_dirs{$key}{fasta};
             my $db      = $org_dirs{$key}{db};
             my $outfile = $org_dirs{$key}{blastfile};
             $cmd .= " $db $fasta > $outfile";
-        }		
+        }
 		else {
 			push @blastargs, [ "-out",   $outfile, 1 ];
 			push @blastargs, [ "-query", $fasta,   0 ];
@@ -825,9 +825,9 @@ sub add_jobs {
 	# Create html output directory
 	############################################################################
 #	my ( $qlead, $slead ) = ( "a", "b" );
-	my $out = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/html/";
+	my $out = catdir($org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir}, 'html');
 	#mkpath( $out, 0, 0777 ) unless -d $out; # mdb removed 3/24/16 for hypnotoad (permissions issue)
-	$out .= "master_";
+	$out .= "/master_";
 	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
 	$out .= $base;
 
@@ -1211,7 +1211,7 @@ sub add_jobs {
 }
 
 sub algo_lookup {
-    # In the web form, each sequence search algorithm has a unique number.  
+    # In the web form, each sequence search algorithm has a unique number.
     # This table identifies those and adds appropriate options.
 	my $config        = get_defaults();
 	my $MAX_PROC      = $config->{MAX_PROC} // 32;
@@ -1222,7 +1222,7 @@ sub algo_lookup {
 	my $LASTZ = $config->{PYTHON} . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . $config->{LASTZ};
 	#my $LAST  = $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH}; # mdb removed 3/17/16
 	my $LAST = $config->{LASTAL} // 'lastal'; $LAST .= " -u 0 -P $MAX_PROC -i3G -f BlastTab"; # mdb added 3/17/16 for new multithreaded LAST v731
-	
+
 	return {
 		0 => {
 			algo => $BLASTN . " -task megablast",    #megablast

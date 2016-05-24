@@ -1,12 +1,14 @@
+#!/usr/bin/env python
+
 import argparse
 import json
 from copy import copy, deepcopy
 from os import path
 from sys import stderr
 import math
+import pprint
 
 __author__ = 'senorrift'
-# TODO: Add Kn/Ks Support
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ #
 #                                                                                                                     #
@@ -35,6 +37,11 @@ parser.add_argument('-o',
                     type=str,
                     required=True,
                     help="Path to output data folder")
+
+parser.add_argument('-n',
+                    type=str,
+                    required=True,
+                    help="Options-based name")
 
 parser.add_argument('-xid',
                     type=str,
@@ -221,7 +228,7 @@ def get_data(first_sp_id, second_sp_id, json_file):
                 sp2_end = int(match[3])
                 sp2_cord = (sp2_start + sp2_end) / 2
 
-                kn_ks = match[4]
+                hit_info = match[4]
 
                 # Assign correct genome/value by JSON format
                 if species[0] == first_sp_id:
@@ -239,7 +246,7 @@ def get_data(first_sp_id, second_sp_id, json_file):
                     exit()
 
                 # Populate data sets
-                coordinate = [a_cord, b_cord, kn_ks]
+                coordinate = [a_cord, b_cord, hit_info]
                 ab_a[a_chr][b_chr].append(a_cord)
                 ab_b[b_chr][a_chr].append(b_cord)
                 ab_cords[a_chr][b_chr].append(coordinate)
@@ -336,17 +343,20 @@ def find_matches(species_coordinate, link1, link2, link3):
                                     if yz_match[0] == xy_match[1]:
                                         if yz_match[1] == xz_match[1]:
                                             # Build coordinate template.
-                                            coordinate = [0, 0, 0, {}]
-                                            # Populate XYZ coordinate fields.
+                                            coordinate = [0, 0, 0, {}, {}]
+
+                                            # Populate XYZ coordinate fields (coordinate[{1,2,3}] respectively).
                                             coordinate[0] = xy_match[0]
                                             coordinate[1] = xy_match[1]
                                             coordinate[2] = xz_match[1]
-                                            # Populate Ks/Kn coordinate field.
-                                            coordinate[3]['xy'] = xy_match[2]
-                                            coordinate[3]['xz'] = xz_match[2]
-                                            coordinate[3]['yz'] = yz_match[2]
-                                            if 'NA' in xy_match[2].values() or 'NA' in xz_match[2].values() or \
-                                                            'NA' in yz_match[2].values():
+
+                                            # Populate Ks/Kn coordinate field (coordinate[3].
+                                            coordinate[3]['xy'] = {"Kn": xy_match[2]['Kn'], "Ks": xy_match[2]['Ks']}
+                                            coordinate[3]['xz'] = {"Kn": xz_match[2]['Kn'], "Ks": xz_match[2]['Ks']}
+                                            coordinate[3]['yz'] = {"Kn": yz_match[2]['Kn'], "Ks": yz_match[2]['Ks']}
+                                            if 'NA' in coordinate[3]['xy'].values() \
+                                                    or 'NA' in coordinate[3]['xz'].values() \
+                                                    or 'NA' in coordinate[3]['yz'].values():
                                                 meanKs = 'NA'
                                                 meanKn = 'NA'
                                             else:
@@ -355,10 +365,17 @@ def find_matches(species_coordinate, link1, link2, link3):
                                                 meanKn = str((float(xy_match[2]['Kn']) + float(xz_match[2]['Kn']) +
                                                               float(yz_match[2]['Kn'])) / 3)
                                             coordinate[3]['mean'] = {'Ks': meanKs, 'Kn': meanKn}
+
+                                            # Populate gene info field (coordinate[4]).
+                                            coordinate[4][x_species_id] = xy_match[2][x_species_id]
+                                            coordinate[4][y_species_id] = xy_match[2][y_species_id]
+                                            coordinate[4][z_species_id] = xz_match[2][z_species_id]
+
                                             # Add coordinate to matches, ignoring duplicates.
                                             if coordinate not in matches[x_ch][y_ch][z_ch]:
                                                 matches[x_ch][y_ch][z_ch].append(coordinate)
                                                 match_count += 1
+
                                             # Populate Ks field in "hist_data".
                                             try:
                                                 hist_data['Ks']['xy'].append(float(xy_match[2]['Ks']))
@@ -469,8 +486,8 @@ file1 = args.i1
 file2 = args.i2
 file3 = args.i3
 ofolder = args.o.rstrip('/')
-synt_out = "%s/%s_%s_%s.json" % (ofolder, x, y, z)
-hist_out = "%s/%s_%s_%s_histogram.json" % (ofolder, x, y, z)
+synt_out = "%s/%s_%s_%s_%sdots.json" % (ofolder, x, y, z, args.n)
+hist_out = "%s/%s_%s_%s_%shistogram.json" % (ofolder, x, y, z, args.n)
 
 parse_file = args.P
 min_length = args.M
@@ -481,8 +498,8 @@ if parse_file:
     file1 = "%s/parsed_%s" % (ofolder, path.basename(file1))
     file2 = "%s/parsed_%s" % (ofolder, path.basename(file2))
     file3 = "%s/parsed_%s" % (ofolder, path.basename(file3))
-    synt_out = "%s/parsed_%s_%s_%s.json" % (ofolder, x, y, z)
-    hist_out = "%s/parsed_%s_%s_%s_histogram.json" % (ofolder, x, y, z)
+    #synt_out = "%s/%s_%s_%s_%s-parsed.json" % (ofolder, x, y, z)
+    #hist_out = "%s/parsed_%s_%s_%s_histogram.json" % (ofolder, x, y, z)
 
 if min_length is not None and min_length > 0:
     # TODO: Make Minimum Length Parser
@@ -503,7 +520,7 @@ log_ks = histogram['logten']['data']['Ks']['mean']
 log_kn = histogram['logten']['data']['Kn']['mean']
 
 log = {}
-log_out = "%s/log.json" % ofolder
+log_out = "%s/%s_%s_%s_%slog.json" % (ofolder, x, y, z, args.n)
 log["status"] = "complete"
 log["matches"] = str(match_number)
 log["ks"] = {"min": str(min(log_ks)), "max": str(max(log_ks))}
