@@ -30,12 +30,12 @@ return declare( [ HTMLFeatures ], {
         if (!track.config.coge.search_track)  {
             options.push({
                 label: 'Find Markers in Features',
-                onClick: function(){coge.create_features_overlap_search_dialog(track, 'Markers', 'markers');}
+                onClick: function(){coge_plugin.create_features_overlap_search_dialog(track, 'Markers', 'markers');}
             });
         }
         options.push({
-            label: 'Download Track Data',
-            onClick: function(){coge.create_download_dialog(track);}
+            label: 'Export Track Data',
+            onClick: function(){coge_plugin.create_export_dialog(track);}
         });
         return options;
     },
@@ -44,7 +44,7 @@ return declare( [ HTMLFeatures ], {
 
     updateStaticElements: function( coords ) {
         this.inherited( arguments );
-        coge.adjust_nav(this.config.coge.id)
+        coge_plugin.adjust_nav(this.config.coge.id)
     }
 });
 });

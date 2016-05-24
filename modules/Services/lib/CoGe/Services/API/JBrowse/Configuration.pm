@@ -330,29 +330,33 @@ sub track_config {
         }
         push @notebooks, 0;    # add fake "all experiments" notebook
 
-        my ($type, $featureScale, $histScale, $labelScale);
+        my ($type, $featureScale, $histScale, $labelScale, $ext);
         if (!$e->{data_type} or $e->{data_type} == 1) { #FIXME hardcoded data_type 'quantitative'
 			$type = 'CoGe/View/Track/Wiggle/XYPlot';
 			$featureScale = 0.001;
 			#$histScale = 0.05;
 			#$labelScale = 0.1;
+            $ext = '.csv';
 		}
 		elsif ($e->{data_type} == 2) { #FIXME hardcoded data_type 'polymorphism'
 			$type = 'CoGe/View/Track/CoGeVariants';
 			$featureScale = 0.0001;
 			$histScale = 0.01;
 			$labelScale = 0.5;
+            $ext = '.vcf';
 		}
 		elsif ($e->{data_type} == 3) { #FIXME hardcoded data_type 'alignment'
 			$type = 'CoGe/View/Track/CoGeAlignment';
 			$featureScale = 0.005;
 			$histScale = 0.01;
 			$labelScale = 0.5;
+            $ext = '.sam';
 		}
         elsif ($e->{data_type} == 4) { #FIXME hardcoded data_type 'marker'
             $type = 'CoGe/View/Track/Markers'; #"JBrowse/View/Track/HTMLFeatures";
             $histScale = 0.002;
             $labelScale = 0.5;
+            $ext = '.gff';
         }
 
         push @tracks, {
@@ -381,6 +385,7 @@ sub track_config {
                 id      => $eid,
                 type    => 'experiment',
                 data_type => $e->{data_type},
+                ext => $ext,
                 editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 name        => $e->{name},
                 description => $e->{description},

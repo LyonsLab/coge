@@ -1379,6 +1379,7 @@ sub ftp_get_file { # mdb 8/24/15 copied from LoadExperiment.pl
 
     return {
         path => $relative_path,
+        full_path => catfile($full_path, $filename),
         size => -s catfile($full_path, $filename)
     };
 }

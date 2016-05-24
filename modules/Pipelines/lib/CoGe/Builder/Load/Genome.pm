@@ -4,7 +4,7 @@ use Moose;
 with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
-use File::Spec::Functions qw(catfile);
+use File::Spec::Functions qw(catfile catdir);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_upload_path);
@@ -52,7 +52,7 @@ sub build {
     push @input_files, @{$data_workflow->{outputs}} if ($data_workflow->{outputs});
     push @ncbi_accns, @{$data_workflow->{ncbi}} if ($data_workflow->{ncbi});
     
-    # Submit workflow to add genome
+    # Build steps to add genome
     if (@ncbi_accns) { # NCBI-based load
         my $task = create_load_genome_from_NCBI_job(
             user => $self->user,
@@ -65,16 +65,79 @@ sub build {
         push @done_files, $task->{outputs}->[1];
     }
     else { # File-based load
-        my $task = create_load_genome_job(
+        # Untar/decompress input files
+        my (@decompressed, $doJoin);
+        foreach my $input_file (@input_files) {
+            my $done_file = "$input_file.done";
+            
+            if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) { # Untar if necessary
+                my $untar_task = create_untar_job($input_file, catdir($self->staging_dir, 'untarred'));
+                push @tasks, $untar_task;
+                $input_file = $untar_task->{outputs}[0][0] . '/*'; # this is a directory and filespec
+                $done_file  = $untar_task->{outputs}[1]; 
+                $doJoin = 1;              
+            }
+            elsif ( $input_file =~ /\.gz$/ ) { # Decompress if necessary
+                my $gunzip_task = create_gunzip_job($input_file);
+                push @tasks, $gunzip_task;
+                $input_file = $gunzip_task->{outputs}[0];
+                $done_file  = $gunzip_task->{outputs}[1];
+            }
+            push @decompressed, $input_file;
+            push @done_files, $done_file;
+        }
+        
+        my $concatenated_file;
+        if (@decompressed > 1 || $doJoin) {
+            # Concatenate all input files into one
+            $concatenated_file = catfile($self->staging_dir, 'concatenated_genome.fasta');
+            my $cat_task = create_join_files_job(
+                input_files => \@decompressed, # this should work with wildcards from untar task above
+                output_file => $concatenated_file,
+                done_files => \@done_files
+            );
+            push @tasks, $cat_task;
+        }
+        else {
+            $concatenated_file = shift @decompressed;
+        }
+    
+        # Sort FASTA by length
+        my $sort_task = create_sort_fasta_job(
+            fasta_file => $concatenated_file,
+            staging_dir => $self->staging_dir
+        );
+        push @tasks, $sort_task;
+        my $sorted_fasta_file = $sort_task->{outputs}[0];
+        
+        # Validate/process/trim FASTA file
+        my $process_task = create_process_fasta_job(
+            input_fasta_file => $sorted_fasta_file,
+            output_fasta_file => 'genome.faa',
+            staging_dir => $self->staging_dir
+        );
+        push @tasks, $process_task;
+        my $processed_fasta_file = $process_task->{outputs}[0];
+        
+        # Index FASTA file
+        my $index_task = create_fasta_index_job(
+            fasta => $processed_fasta_file
+        );
+        push @tasks, $index_task;
+        my $index_file = $index_task->{outputs}[0];
+    
+        # Create genome in DB
+        my $load_task = create_load_genome_job(
             user => $self->user,
             staging_dir => $self->staging_dir,
             wid => $self->workflow->id,
             organism_id => $organism->id,
-            input_files => \@input_files,
+            fasta_file => $processed_fasta_file,
             metadata => $metadata,
+            done_files => [ $index_file ]
         );
-        push @tasks, $task;
-        push @done_files, $task->{outputs}->[1];
+        push @tasks, $load_task;
+        push @done_files, $load_task->{outputs}->[1];
     }
     
     # Send notification email #TODO move into shared module

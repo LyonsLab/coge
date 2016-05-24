@@ -4,8 +4,12 @@
     background-color: gray;
     opacity: .2;
 }
+.ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button {
+    font-size: 1em !important;
+}
 </style>
 
+<TMPL_UNLESS NAME='DIR_SELECT'>
 <script id="fileselect-template" type="text/template">
 	<div>
 	  <ul>
@@ -19,6 +23,7 @@
 	    <li class="small"><a href="#fileselect-tab-4">SRA</a></li>
 	    </TMPL_IF>
 	  </ul>
+</TMPL_UNLESS>
 	
 	  <div id="fileselect-tab-1" class="small">
 		<div style="white-space:nowrap;border-bottom:1px solid gray;">
@@ -29,15 +34,21 @@
 			<span class='link fileselect-up'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>&nbsp;&nbsp;
 			<span class='link fileselect-refresh'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>&nbsp;&nbsp;
 			<TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
-			<span class='link fileselect-getall'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>
+			<span class='link fileselect-getall'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>&nbsp;&nbsp;
 			</TMPL_UNLESS>
+			<span class='link fileselect-mkdir'><span class='ui-icon ui-icon-plus'></span>Create Directory</span>
 		</div>
 		<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
 	    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
 	    	<table id="ids_table" class="small" style="width:100%;"></table>
+	    	<ul id="fileselect_menu" class="coge-menu hidden ui-menu ui-widget ui-widget-content ui-corner-all" style="white-space: nowrap; position: absolute; display: none;" role="listbox" aria-activedescendant="ui-active-menuitem">
+				<li class="ui-menu-item" role="menuitem"><a class="ui-corner-all" tabindex="-1"></a></li>
+			</ul>
+		</ul>
 	    </div>
 	  </div>
-	
+		
+<TMPL_UNLESS NAME='DIR_SELECT'>
 	  <div id="fileselect-tab-2" class="small" style="height:200px;">
 	  	Enter the location of the file or directory to retrieve.<br><br>
 	    URL: <input id="input_url" size="60" style="color:gray;"/>
@@ -52,7 +63,7 @@
 	    <br>
 	    <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
 	  </div>
-	
+
 	  <div id="fileselect-tab-3" class="small" style="height:200px;">
 		Select a file to upload from your computer.  This method is best for smaller files (less than 200MB, 2GB maximum).
 		For larger files use the CyVerse Data Store. <br><br><br>
@@ -84,6 +95,28 @@
 	    </div>
 	  </div>
 	  </TMPL_IF>
-	  
 	</div>
+</script>
+</TMPL_UNLESS>	  
+<div id="dirname_dialog" title="Create new directory" style="display:none">
+  <form>
+    <fieldset>
+      <label for="name">Name:</label>
+      <input id="dirname">
+    </fieldset>
+  </form>
+</div>
+<script type="text/javascript">
+	function get_dirname(on_ok) {
+		var dialog = $( "#dirname_dialog" ).dialog({
+	      	autoOpen: true,
+	      	height: 150,
+	      	width: 300,
+	      	modal: true,
+	      	buttons: {
+	        	Cancel: function() { dialog.dialog("close"); },
+	        	OK: function() { on_ok($('#dirname').val());dialog.dialog("close"); }
+	      	}
+	    });
+	}
 </script>

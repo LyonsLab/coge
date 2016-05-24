@@ -213,6 +213,14 @@ $r->get("/irods/list/")
 $r->get("/irods/list/(*path)")
     ->name("irods-list")
     ->to("IRODS#list");
+
+$r->post("/irods/mkdir")
+    ->name("irods-mkdir")
+    ->to("IRODS#mkdir");
+
+$r->delete("/irods/rm")
+    ->name("irods-rm")
+    ->to("IRODS#rm");
         
 # mdb removed 8/24/15 -- not used
 #$r->get("/irods/fetch/(*path)")

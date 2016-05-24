@@ -36,6 +36,6 @@ if ( !$result || $result->{error} ) {
     exit(-1);
 }
 
-touch $dest_path . '.done';
+touch $result->{full_path} . '.done';
 
 exit;

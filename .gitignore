@@ -9,6 +9,8 @@ Makefile
 api.log
 irodsEnv
 irodsA
+irodsA_local
+irodsEnv_local
 web/tmp
 web/data
 coge.conf

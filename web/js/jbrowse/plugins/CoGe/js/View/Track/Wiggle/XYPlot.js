@@ -172,7 +172,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     _create_search_dialog: function(track) {
     	this._track = track;
     	var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td>';
-        content += coge.build_chromosome_select('Any', 'coge_xyplot._getHistogram(this.options[this.selectedIndex].text)');
+        content += coge_plugin.build_chromosome_select('Any', 'coge_xyplot._getHistogram(this.options[this.selectedIndex].text)');
     	content += '</td></tr>' +
     		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
     		'<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
@@ -188,7 +188,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             },
             style: "width: 350px"
         });
-        this._getHistogram(coge.browser.refSeq.name);
+        this._getHistogram(coge_plugin.browser.refSeq.name);
     	this._track_search_dialog.show();
     },
 
@@ -466,7 +466,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     _getFeatureColor: function(id) {
         if (this.config.style.featureColor && this.config.style.featureColor[id])
             return this.config.style.featureColor[id];
-         return coge.calc_color(id);
+         return coge_plugin.calc_color(id);
     },
 
     // ----------------------------------------------------------------
@@ -503,7 +503,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             handleAs: 'json',
             load: function(data) {
                 if (data.error) {
-                    coge.error('Search', data);
+                    coge_plugin.error('Search', data);
                     if (coge_xyplot._track_search_dialog)
                         coge_xyplot._track_search_dialog.hide();
                     return;
@@ -518,7 +518,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
                 }
             },
             error: function(data) {
-                coge.error('Search', data);
+                coge_plugin.error('Search', data);
                 if (coge_xyplot._track_search_dialog)
                     coge_xyplot._track_search_dialog.hide();
             }
@@ -650,7 +650,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
             search.gte = dojo.byId('hist_from').value;
             search.lte = dojo.byId('hist_to').value;
     		if (!search.gte && !search.lte) {
-    			coge.error('Unspecified Range', 'Please drag on the histogram or enter the range of values you wish to search for');
+    			coge_plugin.error('Unspecified Range', 'Please drag on the histogram or enter the range of values you wish to search for');
     			return;
     		}
     		// var extent = this._brush.extent();
@@ -668,20 +668,20 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 		div.innerHTML = '<img src="picts/ajax-loader.gif">';
 		this._track.config.coge.search = search;
      	dojo.xhrGet({
-    		url: api_base_url + '/experiment/' + this._track.config.coge.id + '/query?' + coge.search_to_params(search),
+    		url: api_base_url + '/experiment/' + this._track.config.coge.id + '/query?' + coge_plugin.search_to_params(search),
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
                 if (this._track_search_dialog)
  				    this._track_search_dialog.hide();
 	  			if (data.length == 0)
-	  				coge.error('Search', 'Search returned zero hits');
+	  				coge_plugin.error('Search', 'Search returned zero hits');
 	  			else
-	  				coge.new_search_track(this._track, data);
+	  				coge_plugin.new_search_track(this._track, data);
     		}),
     		error: dojo.hitch(this, function(data) {
     			if (this._track_search_dialog)
                     this._track_search_dialog.hide();
-    			coge.error('Search', data);
+    			coge_plugin.error('Search', data);
     		})
     	});
     },
@@ -894,8 +894,8 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
         if (config.coge.type != 'notebook')
 	        options.push({
-		        label: 'Download Track Data',
-		        onClick: function(){coge.create_download_dialog(track);}
+		        label: 'Export Track Data',
+		        onClick: function(){coge_plugin.create_export_dialog(track);}
 	        });
 
         return options;
@@ -906,7 +906,7 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     updateStaticElements: function( coords ) {
         this.inherited( arguments );
         this.updateYScaleFromViewDimensions( coords );
-        coge.adjust_nav(this.config.coge.id)
+        coge_plugin.adjust_nav(this.config.coge.id)
     }
 });
 
