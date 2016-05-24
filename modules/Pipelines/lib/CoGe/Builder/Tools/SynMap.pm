@@ -380,7 +380,7 @@ sub add_jobs {
 	my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
 
 	foreach my $key ( keys %org_dirs ) {
-		my $cmd = 'nice ' . $ALGO_LOOKUP->{$blast}{algo} . ";touch $raw_blastfile.done"; #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
+		my $cmd = 'nice ' . $ALGO_LOOKUP->{$blast}{algo}; #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
 		my $fasta   = $org_dirs{$key}{fasta};
 		my $db      = $org_dirs{$key}{db};
 		my $outfile = $org_dirs{$key}{blastfile};
@@ -418,11 +418,11 @@ sub add_jobs {
 		push @blastdb_files, $fasta;
 		$workflow->add_job(
 			{
-				cmd         => $cmd,
+				cmd         => $cmd . ";touch $raw_blastfile.done",
 				script      => undef,
 				args        => \@blastargs,
 				inputs      => \@blastdb_files,
-				outputs     => [$outfile . '.done'],
+				outputs     => [$outfile, $outfile . '.done'],
 				description => "Running genome comparison...",
 			}
 		);
