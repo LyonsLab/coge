@@ -240,8 +240,8 @@ define(['dojo/_base/declare',
 				evt.stopPropagation();
 			})
 		}, d);
-		this.text_filter_cancel = dom.create('div', {
-			className: 'jbrowseIconCancel',
+		this.text_filter_cancel = dom.create('span', {
+			className: 'glyphicon glyphicon-remove',
 			id: 'text_filter_cancel',
 			onclick: dojo.hitch( this, function() {
 				this.text_filter_input.value = '';
@@ -1073,7 +1073,7 @@ define(['dojo/_base/declare',
 		var html = Math.min(num_experiments, total_experiments) + ' of ' + total_experiments + ' experiment' + (total_experiments == 1 ? '' : 's') + ' shown<br>';
 		if (this._type_filter) {
 			html += 'showing ' + (this._type_filter === 1 ? 'quantitative' : this._type_filter === 2 ? 'polymorphism' : this._type_filter === 3 ? 'alignment' : 'marker') + ' tracks&nbsp;&nbsp;&nbsp;&nbsp;';
-			html += '<span class="glyphicon glyphicon-remove" style="cursor:pointer" onclick="coge_track_list._type_filter=null;coge_track_list._filter_tracks(coge_track_list.text_filter_input.value);"></span>';
+			html += '<span class="glyphicon glyphicon-remove" style="color:black;cursor:pointer" onclick="coge_track_list._type_filter=null;coge_track_list._filter_tracks(coge_track_list.text_filter_input.value);"></span>';
 		}
 		else
 			html += num_notebooks + ' of ' + total_notebooks + ' notebook' + (total_notebooks == 1 ? '' : 's') + ' shown';
