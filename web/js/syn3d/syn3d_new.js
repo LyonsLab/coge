@@ -1015,7 +1015,8 @@ $(document).ready( function() {
     var d;
     // TODO: Start Spinny Wheely(s) & end after loading
     // Load data & launch initial visualizations
-    $.when(loadData(final_experiment.links.graph)).done(function(data) {
+    var graphLoc = "/asherkhb/coge/data/syn3d/" + options_name + "_graph.json"; // TODO: FIX THIS HARDCODED SHIT!
+    $.when(loadData(graphLoc)).done(function(data) {
         d = data;
         // Save species names to global variables.
         xsp = d.x[1];

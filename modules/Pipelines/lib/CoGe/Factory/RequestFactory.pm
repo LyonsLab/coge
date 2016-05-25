@@ -60,7 +60,8 @@ sub get {
         return CoGe::Request::Empty->new($options);
     }
     elsif ($type eq "synmap" ||
-    	$type eq "dotplot_dots")
+           $type eq "synmap3d" ||
+    	   $type eq "dotplot_dots")
     {
         return CoGe::Request::TwoGenomes->new($options);
     }

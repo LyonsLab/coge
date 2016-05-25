@@ -1,4 +1,4 @@
-package CoGe::Builder::Tools::SynMap;
+package CoGe::Builder::Tools::SynMap3D;
 
 use Moose;
 
@@ -75,9 +75,9 @@ sub add_jobs {
 			$genome2->length > $SEQUENCE_SIZE_LIMIT &&
 			!($genome2->type->name =~ /hard/i) ))
 	{
-	    print STDERR 'CoGe::Builder::Tools::SynMap: !!!!!!!!!!! blocking analysis ', 
+	    print STDERR 'CoGe::Builder::Tools::SynMap: !!!!!!!!!!! blocking analysis ',
            $genome1->id, '(', $genome1->length, ',', $genome1->type->name, ')',
-           ' vs. ', $genome2->id, '(', $genome2->length, ',', $genome2->type->name, ') ', 
+           ' vs. ', $genome2->id, '(', $genome2->length, ',', $genome2->type->name, ') ',
            'feat_type1=', $feat_type1, ' feat_type2=', $feat_type2, "\n";
 		return {
 			success => JSON::false,
@@ -359,7 +359,7 @@ sub add_jobs {
 		$outfile = catfile($outfile, $org_dirs{$org_dir}{basename});
 		$org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
 	}
-	
+
 	#mdb added 3/24/16 for hypnotoad: run mkdir as JEX to get proper directory permissions for subsequent tasks
     $workflow->add_job({
         cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
@@ -868,6 +868,32 @@ sub add_jobs {
 		$workflow->log("Added ($ks_type) calculation of syntenic CDS pairs and color dots");
 
 		####################################################################
+		# Use dotplot_dots.py to calculate points.
+		####################################################################
+		my $dot_cmd = catfile($config->{SCRIPTDIR}, "dotplot_dots.py") . ' ' . $ks_blocks_file;
+		my $dot_syn = catfile($config->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . '_synteny.json');
+		my $dot_log = catfile($config->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . '_log.json');
+		$workflow->add_job({
+				cmd => $dot_cmd,
+				inputs => [$ks_blocks_file],
+				outputs => [$dot_syn, $dot_log],
+				description => "Extracting coordinates for merge..."
+		});
+
+#		my $cmd_xy = catfile($SCRIPTDIR, $dotplot_dots) . ' ' . $ksfile_xy;
+#		my $dot_xy = $dir1 . '_' . $dir2 . '_synteny.json';
+#		my $dot_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $dot_xy);
+#		my $dot_xy_url = catfile($DIAGSURL, $dir1, $dir2, $dot_xy);
+#		my $log_xy = $dir1 . '_' . $dir2 . '_log.json';
+#		my $log_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $log_xy);
+#		my $outputs_xy = [$log_xy_path, $dot_xy_path];
+#		$workflow->add_job({
+#			cmd => $cmd_xy,
+#			outputs => $outputs_xy,
+#			description => "extracting XY coordinates...",
+#		});
+#
+		####################################################################
 		# Generate svg dotplot
 		####################################################################
 
@@ -1206,7 +1232,7 @@ sub add_jobs {
 	$workflow->log( "Added GEvo links generation" );
 	$workflow->log( "#" x (25) );
 	$workflow->log( "" );
-	
+
 	return; # empty means success
 }
 
@@ -1307,7 +1333,7 @@ sub build {
 				%opts
 			);
 			if ($resp) { # an error occurred
-			   return 0;    
+			   return 0;
 			}
 		}
 	}
@@ -1451,9 +1477,9 @@ sub get_query_link {
 	my $dsgid2 = $url_options{dsgid2};
 
 	unless ( $dsgid1 and $dsgid2 ) {
-		return encode_json( { 
+		return encode_json( {
 		    success => JSON::false,
-		    error => "Missing a genome id" 
+		    error => "Missing a genome id"
 		} );
 	}
 
@@ -1571,7 +1597,7 @@ sub get_query_link {
 		$synmap_link .= ";fb_rru=1";
 	}
 	else {
-		$synmap_link .= ";fb_rru=0";		
+		$synmap_link .= ";fb_rru=0";
 	}
 	$synmap_link .= ";flip=1"                  if $flip;
 	$synmap_link .= ";cs=$color_scheme";
@@ -1683,11 +1709,74 @@ sub go {
 	    return encode_json($add_response);
 	}
 
+	#########################################################################
+	# Add merging job.
+	#########################################################################
+	my $merger = 'synmerge_3.py';
+
+	my $dot_xy_path = $opts{ksfile_xy};
+	my $dot_xz_path = $opts{ksfile_xz};
+	my $dot_yz_path = $opts{ksfile_yz};
+    my $sort = $opts{sort};
+    my $min_length = $opts{min_length};
+    my $min_synteny = $opts{min_synteny};
+    my $cluster = $opts{cluster};
+    my $c_eps;
+    my $c_min;
+    if ($cluster eq 'true') {
+        $c_eps = $opts{c_eps};
+        $c_min = $opts{c_min};
+    }
+    my $ratio = $opts{ratio};
+    my $r_by;
+    my $r_min;
+    my $r_max;
+    if ($ratio ne 'false') {
+        $r_by = $opts{r_by};
+        $r_min = $opts{r_min};
+        $r_max = $opts{r_max};
+    }
+    my $graph_out = $opts{graph_out};
+    my $log_out = $opts{log_out};
+
+    my $SYN3DIR = $config->{SYN3DIR};
+    my $SCRIPTDIR = $config->{SCRIPTDIR};
+
+
+	my $merge_ids = ' -xid ' . $opts{genome_id1} . ' -yid ' . $opts{genome_id2} . ' -zid ' . $opts{genome_id3};
+    my $merge_ins = ' -i1 ' . $dot_xy_path . ' -i2 ' . $dot_xz_path . ' -i3 ' . $dot_yz_path;
+    my $merge_otp = ' -o ' . $SYN3DIR;
+    my $merge_opt = ' -S ' . $sort . ' -ml ' . $min_length . ' -ms ' . $min_synteny;
+    if ($cluster eq 'true') {
+        $merge_opt .= ' -C -C_eps ' . $c_eps . ' -C_ms ' . $c_min;
+    }
+    if ($ratio ne 'false') {
+        $merge_opt .= ' -R ' . $ratio . ' -Rby ' . $r_by . ' -Rmin ' . $r_min . ' -Rmax ' . $r_max;
+    }
+    my $merge_cmd = catfile($SCRIPTDIR, $merger) . $merge_ids . $merge_ins . $merge_opt . $merge_otp;
+	# build merge inputs.
+    my $merge_i = [$dot_xy_path, $dot_xz_path, $dot_yz_path];
+    # buildmerge outputs.
+    my $dot_xyz_path = catfile($SYN3DIR, $graph_out);
+    my $log_xyz_path = catfile($SYN3DIR, $log_out);
+    my $merge_o = [$dot_xyz_path, $log_xyz_path];
+
+	$workflow->add_job({
+        cmd => $merge_cmd,
+        inputs => $merge_i,
+        outputs => $merge_o,
+        description => "merging XYZ coordinates & building graph object..."
+    });
+
+	#########################################################################
+	# Run Workflow
+	#########################################################################
+
 	$workflow->log_section( "Running Workflow" );
 
 	my $response = $JEX->submit_workflow($workflow);
 	unless (defined $response && $response->{id}) {
-        return encode_json( { 
+        return encode_json( {
             success => JSON::false,
             error => 'The workflow could not be submitted (JEX error)'
         } );
