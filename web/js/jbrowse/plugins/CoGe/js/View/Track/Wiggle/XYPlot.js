@@ -5,15 +5,14 @@ define( [
             'dojo/_base/Color',
             'dojo/dom-construct',
             'dijit/Dialog',
-            'JBrowse/View/Track/WiggleBase',
-            'JBrowse/View/Track/_YScaleMixin',
+            'JBrowse/View/Track/Wiggle/XYPlot',
             'JBrowse/Util',
             './_Scale',
             'CoGe/View/ColorDialog'
         ],
-        function( declare, array, Color, domConstruct, Dialog, WiggleBase, YScaleMixin, Util, Scale, ColorDialog ) {
+        function( declare, array, Color, domConstruct, Dialog, XYPlotBase, Util, Scale, ColorDialog ) {
 
-var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of XYPlot, extend that class instead?
+var XYPlot = declare( [XYPlotBase], // mdb: this file is a copy of XYPlot, extend that class instead?
 
 /**
  * Wiggle track that shows data with an X-Y plot along the reference.
@@ -526,6 +525,9 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
     },
 
     // ----------------------------------------------------------------
+    // I have no idea why this function is duplicated here,
+    // it's the exact same as in JBrowse's XYPlot,
+    // but removing it breaks the display of the track
 
      _getScaling: function( viewArgs, successCallback, errorCallback ) {
 
@@ -558,68 +560,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
             successCallback( this.lastScaling );
         }), errorCallback );
-    },
-
-    // ----------------------------------------------------------------
-    /**
-     * Draw anything needed after the features are drawn.
-     */
-
-    _postDraw: function( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale ) {
-        var context = canvas.getContext('2d');
-        var canvasHeight = canvas.height;
-        var toY = dojo.hitch( this, function( val ) {
-           return canvasHeight * (1-dataScale.normalize.call(this, val));
-        });
-
-        // draw the variance_band if requested
-        if( this.config.variance_band ) {
-            var bandPositions =
-                typeof this.config.variance_band == 'object'
-                    ? array.map( this.config.variance_band, function(v) { return parseFloat(v); } ).sort().reverse()
-                    : [ 2, 1 ];
-            this.getGlobalStats( dojo.hitch( this, function( stats ) {
-                if( ('scoreMean' in stats) && ('scoreStdDev' in stats) ) {
-                    var drawVarianceBand = function( plusminus, fill, label ) {
-                        context.fillStyle = fill;
-                        var varTop = toY( stats.scoreMean + plusminus );
-                        var varHeight = toY( stats.scoreMean - plusminus ) - varTop;
-                        varHeight = Math.max( 1, varHeight );
-                        context.fillRect( 0, varTop, canvas.width, varHeight );
-                        context.font = '12px sans-serif';
-                        if( plusminus > 0 ) {
-                            context.fillText( '+'+label, 2, varTop );
-                            context.fillText( '-'+label, 2, varTop+varHeight );
-                        }
-                        else {
-                            context.fillText( label, 2, varTop );
-                        }
-                    };
-
-                    var maxColor = new Color( this.config.style.variance_band_color );
-                    var minColor = new Color( this.config.style.variance_band_color );
-                    minColor.a /= bandPositions.length;
-
-                    var bandOpacityStep = 1/bandPositions.length;
-                    var minOpacity = bandOpacityStep;
-
-                    array.forEach( bandPositions, function( pos,i ) {
-                        drawVarianceBand( pos*stats.scoreStdDev,
-                                          Color.blendColors( minColor, maxColor, (i+1)/bandPositions.length).toCss(true),
-                                          pos+'σ');
-                    });
-                    drawVarianceBand( 0, 'rgba(255,255,0,0.7)', 'mean' );
-                }
-            }));
-        }
-
-        // draw the origin line if it is not disabled
-        var originColor = this.config.style.origin_color;
-        if( typeof originColor == 'string' && !{'none':1,'off':1,'no':1,'zero':1}[originColor] ) {
-            var originY = toY( dataScale.origin );
-            context.fillStyle = originColor;
-            context.fillRect( 0, originY, canvas.width-1, 1 );
-        }
     },
 
     // ----------------------------------------------------------------
@@ -905,7 +845,6 @@ var XYPlot = declare( [WiggleBase, YScaleMixin], // mdb: this file is a copy of 
 
     updateStaticElements: function( coords ) {
         this.inherited( arguments );
-        this.updateYScaleFromViewDimensions( coords );
         coge_plugin.adjust_nav(this.config.coge.id)
     }
 });
