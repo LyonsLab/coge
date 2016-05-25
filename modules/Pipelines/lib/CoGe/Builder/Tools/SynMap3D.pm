@@ -367,7 +367,7 @@ sub add_jobs {
         args        => undef,
         inputs      => undef,
         outputs     => [
-            #map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
+            map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
         ],
         description => "Creating results directories...",
     });
@@ -1310,6 +1310,12 @@ sub algo_lookup {
 
 sub build {
 	my $self = shift;
+	my $xid = $self->params->{genome_id1};
+	my $yid = $self->params->{genome_id2};
+	my $zid = $self->params->{genome_id3};
+	my ($dir1, $dir2) = sort($xid, $yid);
+	my ($dir3, $dir4) = sort($xid, $zid);
+	my ($dir5, $dir6) = sort($yid, $zid);
 
 	my @genome_ids;
 	my $i = 1;
@@ -1337,6 +1343,77 @@ sub build {
 			}
 		}
 	}
+
+	#########################################################################
+	# Add merging job.
+	#########################################################################
+	#my %opts = $self->params;
+	#print STDERR Dumper %opts;
+	my $workflow = $self->workflow;
+
+	my $merger = 'synmerge_3.py';
+
+	#my $dot_xy_path = $self->params->{ksfile_xy};
+	#my $dot_xz_path = $self->params->{ksfile_xz};
+	#my $dot_yz_path = $self->params->{ksfile_yz};
+	my $dot_xy_path = catfile($self->conf->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . "_synteny.json");
+    my $dot_xz_path = catfile($self->conf->{DIAGSDIR}, $dir3, $dir4, $dir3 . '_' . $dir4 . "_synteny.json");
+	my $dot_yz_path = catfile($self->conf->{DIAGSDIR}, $dir5, $dir6, $dir5 . '_' . $dir6 . "_synteny.json");
+
+	my $sort = $self->params->{sort};
+    my $min_length = $self->params->{min_length};
+    my $min_synteny = $self->params->{min_synteny};
+    my $cluster = $self->params->{cluster};
+    my $c_eps;
+    my $c_min;
+    if ($cluster eq 'true') {
+        $c_eps = $self->params->{c_eps};
+        $c_min = $self->params->{c_min};
+    }
+    my $ratio = $self->params->{ratio};
+    my $r_by;
+    my $r_min;
+    my $r_max;
+    if ($ratio ne 'false') {
+        $r_by = $self->params->{r_by};
+        $r_min = $self->params->{r_min};
+        $r_max = $self->params->{r_max};
+    }
+    my $graph_out = $self->params->{graph_out};
+    my $log_out = $self->params->{log_out};
+
+	#my %config = $self->conf;
+    my $SYN3DIR = $self->conf->{SYN3DIR};
+    my $SCRIPTDIR = $self->conf->{SCRIPTDIR};
+
+
+	my $merge_ids = ' -xid ' . $xid . ' -yid ' . $yid . ' -zid ' . $zid;
+    my $merge_ins = ' -i1 ' . $dot_xy_path . ' -i2 ' . $dot_xz_path . ' -i3 ' . $dot_yz_path;
+    my $merge_otp = ' -o ' . $SYN3DIR;
+    my $merge_opt = ' -S ' . $sort . ' -ml ' . $min_length . ' -ms ' . $min_synteny;
+    if ($cluster eq 'true') {
+        $merge_opt .= ' -C -C_eps ' . $c_eps . ' -C_ms ' . $c_min;
+    }
+    if ($ratio ne 'false') {
+        $merge_opt .= ' -R ' . $ratio . ' -Rby ' . $r_by . ' -Rmin ' . $r_min . ' -Rmax ' . $r_max;
+    }
+    my $merge_cmd = catfile($SCRIPTDIR, $merger) . $merge_ids . $merge_ins . $merge_opt . $merge_otp;
+	# build merge inputs.
+    my $merge_i = [$dot_xy_path, $dot_xz_path, $dot_yz_path];
+    # buildmerge outputs.
+    my $dot_xyz_path = catfile($SYN3DIR, $graph_out);
+    my $log_xyz_path = catfile($SYN3DIR, $log_out);
+    my $merge_o = [$dot_xyz_path, $log_xyz_path];
+
+	print STDERR "ARE WE HERE YET?!?!?!";
+	#print STDERR Dumper($merge_o);
+
+	$workflow->add_job({
+        cmd => $merge_cmd,
+        inputs => $merge_i,
+        outputs => $merge_o,
+        description => "Identifying common points & building graph object..."
+    });
 
 	return 1;
 }
@@ -1709,64 +1786,7 @@ sub go {
 	    return encode_json($add_response);
 	}
 
-	#########################################################################
-	# Add merging job.
-	#########################################################################
-	my $merger = 'synmerge_3.py';
 
-	my $dot_xy_path = $opts{ksfile_xy};
-	my $dot_xz_path = $opts{ksfile_xz};
-	my $dot_yz_path = $opts{ksfile_yz};
-    my $sort = $opts{sort};
-    my $min_length = $opts{min_length};
-    my $min_synteny = $opts{min_synteny};
-    my $cluster = $opts{cluster};
-    my $c_eps;
-    my $c_min;
-    if ($cluster eq 'true') {
-        $c_eps = $opts{c_eps};
-        $c_min = $opts{c_min};
-    }
-    my $ratio = $opts{ratio};
-    my $r_by;
-    my $r_min;
-    my $r_max;
-    if ($ratio ne 'false') {
-        $r_by = $opts{r_by};
-        $r_min = $opts{r_min};
-        $r_max = $opts{r_max};
-    }
-    my $graph_out = $opts{graph_out};
-    my $log_out = $opts{log_out};
-
-    my $SYN3DIR = $config->{SYN3DIR};
-    my $SCRIPTDIR = $config->{SCRIPTDIR};
-
-
-	my $merge_ids = ' -xid ' . $opts{genome_id1} . ' -yid ' . $opts{genome_id2} . ' -zid ' . $opts{genome_id3};
-    my $merge_ins = ' -i1 ' . $dot_xy_path . ' -i2 ' . $dot_xz_path . ' -i3 ' . $dot_yz_path;
-    my $merge_otp = ' -o ' . $SYN3DIR;
-    my $merge_opt = ' -S ' . $sort . ' -ml ' . $min_length . ' -ms ' . $min_synteny;
-    if ($cluster eq 'true') {
-        $merge_opt .= ' -C -C_eps ' . $c_eps . ' -C_ms ' . $c_min;
-    }
-    if ($ratio ne 'false') {
-        $merge_opt .= ' -R ' . $ratio . ' -Rby ' . $r_by . ' -Rmin ' . $r_min . ' -Rmax ' . $r_max;
-    }
-    my $merge_cmd = catfile($SCRIPTDIR, $merger) . $merge_ids . $merge_ins . $merge_opt . $merge_otp;
-	# build merge inputs.
-    my $merge_i = [$dot_xy_path, $dot_xz_path, $dot_yz_path];
-    # buildmerge outputs.
-    my $dot_xyz_path = catfile($SYN3DIR, $graph_out);
-    my $log_xyz_path = catfile($SYN3DIR, $log_out);
-    my $merge_o = [$dot_xyz_path, $log_xyz_path];
-
-	$workflow->add_job({
-        cmd => $merge_cmd,
-        inputs => $merge_i,
-        outputs => $merge_o,
-        description => "merging XYZ coordinates & building graph object..."
-    });
 
 	#########################################################################
 	# Run Workflow

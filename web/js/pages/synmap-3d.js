@@ -527,21 +527,21 @@ function launch(experiment) {
     }
     var urlUpdate = buildUrl(final_experiment);
 
-    // Build Link to SynMap Output
-    function synmapOutputLink(id1, id2) {
-        var fileDir = "/storage/coge/data/diags/";
-        var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks";
-        var link = '';
-        id1 = id1.toString();
-        id2 = id2.toString();
-        if ( parseInt(id1.charAt(0)) <= parseInt(id2.charAt(0)) ) {
-            link = fileDir + id1 + '/' + id2 + '/' + id1 + '_' + id2 + fileTag;
-        }
-        else {
-            link = fileDir + id2 + '/' + id1 + '/' + id2 + '_' + id1 + fileTag;
-        }
-        return link;
-    }
+    // Build Link to SynMap Output (AKB Removed 5/25/16 - no longer needed)
+    // function synmapOutputLink(id1, id2) {
+    //     var fileDir = "/storage/coge/data/diags/";
+    //     var fileTag = ".CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.ks";
+    //     var link = '';
+    //     id1 = id1.toString();
+    //     id2 = id2.toString();
+    //     if ( parseInt(id1.charAt(0)) <= parseInt(id2.charAt(0)) ) {
+    //         link = fileDir + id1 + '/' + id2 + '/' + id1 + '_' + id2 + fileTag;
+    //     }
+    //     else {
+    //         link = fileDir + id2 + '/' + id1 + '/' + id2 + '_' + id1 + fileTag;
+    //     }
+    //     return link;
+    // }
 
     var synmap_request = {
         type: 'synmap3d',
@@ -554,16 +554,16 @@ function launch(experiment) {
             genome_id2: ygid,
             genome_id3: zgid,
             ks_type: "kn_ks",
-            ksfile_xy: synmapOutputLink(xgid, ygid),
-            ksfile_xz: synmapOutputLink(xgid, zgid),
-            ksfile_yz: synmapOutputLink(ygid, zgid),
+            //ksfile_xy: synmapOutputLink(xgid, ygid),
+            //ksfile_xz: synmapOutputLink(xgid, zgid),
+            //ksfile_yz: synmapOutputLink(ygid, zgid),
             sort: final_experiment.options.sortby,
             min_length: final_experiment.options.min_length,
             min_synteny: final_experiment.options.min_synteny,
-            cluster: final_experiment.options.cluster,
+            cluster: final_experiment.options.cluster.toString(),
             c_eps: final_experiment.options.c_eps,
             c_min: final_experiment.options.c_min,
-            ratio: final_experiment.options.ratio,
+            ratio: final_experiment.options.ratio.toString(),
             r_by: final_experiment.options.r_by,
             r_min: final_experiment.options.r_min,
             r_max: final_experiment.options.r_max,
@@ -573,6 +573,7 @@ function launch(experiment) {
     };
 
     function makeSynmaps() {
+        console.log(final_experiment);
         coge.progress.init({title: "Running Pairwise SynMap Analyses",
                             onSuccess: function(results) {
                                 showVisualizer(final_experiment);
@@ -594,81 +595,17 @@ function launch(experiment) {
 
                 //Start status update
                 console.log("Launching YZ SynMap Job (ID: " + response.id + ")");
-                //window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
+                window.history.pushState({}, "Title", "SynMap3D.pl" + urlUpdate); // Update URL with all options.
+                final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate; // Add that URL to final_experiment.
                 coge.progress.update(response.id);
-                //coge.progress.update(response.id, response.site_url);
+                final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate;
             })
             .fail(function(jqXHR, textStatus, errorThrown) {
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
             })
     }
 
-    // function runDotplotDots(exp) {
-    //     coge.progress.init({title: "Finding Syntenic Points",
-    //                         onSuccess: function(results) {
-    //                             showVisualizer(final_experiment);
-    //                         }
-    //                        });
-    //     coge.progress.begin();
-    //     console.log(exp);
-    //     console.log(graph_obj);
-    //     console.log(log_obj);
-    //     $.ajax({
-    //             dataType: "json",
-    //             data: {
-    //                 fname: "dotplot_dots",
-    //                 genome_idX: exp.x_gid, // xgid.toString(),
-    //                 genome_idY: exp.y_gid, // ygid.toString(),
-    //                 genome_idZ: exp.z_gid, // zgid.toString(),
-    //                 ksfile_xy: exp.links.xy,
-    //                 ksfile_xz: exp.links.xz,
-    //                 ksfile_yz: exp.links.yz,
-    //                 sort: exp.options.sortby,
-    //                 min_length: exp.options.min_length,
-    //                 min_synteny: exp.options.min_synteny,
-    //                 cluster: exp.options.cluster,
-    //                 c_eps: exp.options.c_eps,
-    //                 c_min: exp.options.c_min,
-    //                 ratio: exp.options.ratio,
-    //                 r_by: exp.options.r_by,
-    //                 r_min: exp.options.r_min,
-    //                 r_max: exp.options.r_max,
-    //                 graph_out: graph_obj,
-    //                 log_out: log_obj
-    //             }
-    //         })
-    //         .done(function (response) {
-    //             if (!response) {
-    //                 coge.progress.failed("Error: empty response from server");
-    //                 return;
-    //             }
-    //             else if (!response.success || !response.id) {
-    //                 coge.progress.failed("Error: failed to start workflow", response.error);
-    //                 return;
-    //             }
-    //
-    //             //Start status update
-    //             console.log("Launching Dotplot Dots Job (ID: " + response.id + ")");
-    //             //window.history.pushState({}, "Title", "SynMap3D.pl" + "?wid=" + response.id); // Add workflow id to URL
-    //             coge.progress.update(response.id);
-    //             //coge.progress.update(response.id, response.site_url); TODO: Add tiny link (see SynMap.pm for example)
-    //             //console.log(response);
-    //             final_experiment.links.xy_json = response.xy_json;
-    //             final_experiment.links.xz_json = response.xz_json;
-    //             final_experiment.links.yz_json = response.yz_json;
-    //             final_experiment.links.graph = response.graph;
-    //             final_experiment.links.log = response.log;
-    //             final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate;
-    //             //console.log(final_experiment);
-    //         })
-    //         .fail(function (jqXHR, textStatus, errorThrown) {
-    //             coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
-    //         })
-    //
-    // }
-
     // Start Comparisons
-    //makeXY();
     makeSynmaps();
 }
 
