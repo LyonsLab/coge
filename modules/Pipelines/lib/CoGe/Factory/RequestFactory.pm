@@ -64,6 +64,11 @@ sub get {
     {
         return CoGe::Request::TwoGenomes->new($options);
     }
+    elsif ($type eq "synmap3d")
+    {
+        $options->{public} = 1;
+        return CoGe::Request::Empty->new($options);
+    }
     else {
         print STDERR "RequestFactory: error: unrecognized job type '", $type, "'\n";
         return;

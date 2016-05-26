@@ -19,13 +19,6 @@ sub add {
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
-    # User authentication is required
-    unless ($payload->{type} eq 'synmap3d' || defined $user) {
-        return $self->render(status => 401, json => {
-            error => { Auth => "Access denied" }
-        });
-    }
-
     # Create request and validate the required fields
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
@@ -37,7 +30,7 @@ sub add {
     }
 
     # Check users permissions to execute the request
-    unless ($payload->{type} eq 'synmap3d' || $request_handler->has_access) {
+    unless ($request_handler->has_access) {
         return $self->render(status => 401, json => {
             error => { Auth => "Request denied" }
         });
