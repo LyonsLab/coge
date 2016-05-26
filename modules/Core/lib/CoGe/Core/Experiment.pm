@@ -276,11 +276,11 @@ sub query_data {
 	$where .= " and chr='$chr'" if $chr;
 	my $value1;
     if ($type eq 'max') {
-    	$value1 = CoGe::Accessory::FastBit::max($eid);
+    	$value1 = CoGe::Accessory::FastBit::max($eid, $chr);
     	$where .= ' and value1>' . ($value1 - 0.001);
     }
     elsif ($type eq 'min') {
-    	$value1 = CoGe::Accessory::FastBit::min($eid);
+    	$value1 = CoGe::Accessory::FastBit::min($eid, $chr);
     	$where .= ' and value1<' . ($value1 + 0.001);
     }
     elsif ($type eq 'range') {

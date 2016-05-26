@@ -30,7 +30,7 @@ return declare(SeqFeatureStore, {
 				if (!coge.data_type || coge.data_type == 1) {
 					var strand = hit[2] == 1 ? 1 : -1;
 					featureCallback(new SimpleFeature({ data: {
-						//id: coge.id,
+						id: coge.id,
 						start: hit[0],
 						end: hit[1] == hit[0] ? hit[1] + 1 : hit[1],
 						strand: strand,
@@ -39,7 +39,7 @@ return declare(SeqFeatureStore, {
 					}}));
 				} else if (coge.data_type == 2)
 					featureCallback(new SimpleFeature({ data: {
-						//id: coge.id,
+						id: coge.id,
 						start: hit[0],
 						end: hit[1],
 						type: hit[2].toLowerCase() == 'snp' ? hit[2] + hit[4] + 'to' + hit[5] : hit[2],
@@ -52,7 +52,7 @@ return declare(SeqFeatureStore, {
 				else if (coge.data_type == 3) {
 					var strand = hit[2] == '1' ? 1 : -1;
 					featureCallback(new SimpleFeature({ data: {
-						//id: coge.id,
+						id: coge.id,
 						start: hit[0],
 						end: hit[1],
 						strand: strand
@@ -60,7 +60,7 @@ return declare(SeqFeatureStore, {
 				} else if (coge.data_type == 4) {
 					var strand = hit[2] == '1' ? 1 : -1;
 					featureCallback(new SimpleFeature({ data: {
-						//id: coge.id,
+						id: coge.id,
 						start: hit[0],
 						end: hit[1],
 						strand: strand,

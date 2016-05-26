@@ -12,15 +12,7 @@ define( [
         ],
         function( declare, array, Color, domConstruct, Dialog, XYPlotBase, Util, Scale, ColorDialog ) {
 
-var XYPlot = declare( [XYPlotBase], // mdb: this file is a copy of XYPlot, extend that class instead?
-
-/**
- * Wiggle track that shows data with an X-Y plot along the reference.
- *
- * @lends JBrowse.View.Track.Wiggle.XYPlot
- * @extends JBrowse.View.Track.WiggleBase
- */
-{
+var XYPlot = declare( [XYPlotBase], {
     // Load cookie params - mdb added 1/13/14, issue 279
     constructor: function() {
         this.inherited(arguments); // call superclass constructor
@@ -63,10 +55,10 @@ var XYPlot = declare( [XYPlotBase], // mdb: this file is a copy of XYPlot, exten
                 var name = this._getFeatureName(f.feature);
                 var color = this._getFeatureColor(id);
                 for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
-                    var label = '<div style="background-color:'+color+';">' +
+                    var label = '<div style="background-color:' + color + ';">' +
                         nbspPad(score.toPrecision(6).toString(), 11) +
                         (score2 ? nbspPad(score2.toPrecision(6).toString(), 11) : '') +
-                        fLabel+ ' ' + name + '</div>';
+                        fLabel+ ' ' + name + '&nbsp;&nbsp;' + f.feature.get('start') + '..' + f.feature.get('end') + '</div>';
                     pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
                 }
             },this);
@@ -631,12 +623,9 @@ var XYPlot = declare( [XYPlotBase], // mdb: this file is a copy of XYPlot, exten
     _showPixelValue: function( scoreDisplay, score ) {
         var scoreType = typeof score;
         if( scoreType == 'number' ) {
-            // display the score with only 6
-            // significant digits, avoiding
-            // most confusion about the
-            // approximative properties of
-            // IEEE floating point numbers
-            // parsed out of BigWig files
+            // display the score with only 6 significant digits, avoiding
+            // most confusion about the approximative properties of
+            // IEEE floating point numbers parsed out of BigWig files
             scoreDisplay.innerHTML = parseFloat( score.toPrecision(6) );
             return true;
         }
@@ -837,6 +826,11 @@ var XYPlot = declare( [XYPlotBase], // mdb: this file is a copy of XYPlot, exten
 		        label: 'Export Track Data',
 		        onClick: function(){coge_plugin.create_export_dialog(track);}
 	        });
+        if (config.coge.search)
+            options.push({
+                label: 'Save Results as New Experiment',
+                onClick: function(){coge_plugin.prompt('Save Results', 'Experiment name', function() {});}
+            });
 
         return options;
     },
