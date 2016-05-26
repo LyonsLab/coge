@@ -102,7 +102,7 @@ sub get {
     # Initialize workflow
     $builder->workflow( $self->jex->create_workflow(name => $builder->get_name, init => 1) );
     return unless ($builder->workflow && $builder->workflow->id);
-    my ($staging_dir, $result_dir) = get_workflow_paths(($self->user ? $self->user->name : undef), $builder->workflow->id);
+    my ($staging_dir, $result_dir) = get_workflow_paths(($self->user ? $self->user->name : 'public'), $builder->workflow->id);
     $builder->staging_dir($staging_dir);
     $builder->result_dir($result_dir);
     $builder->workflow->logfile(catfile($result_dir, "debug.log"));
