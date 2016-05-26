@@ -37,7 +37,7 @@ sub add {
     }
 
     # Check users permissions to execute the request
-    unless ($payload->{type} eq 'synmap3d') || $request_handler->has_access) {
+    unless ($payload->{type} eq 'synmap3d' || $request_handler->has_access) {
         return $self->render(status => 401, json => {
             error => { Auth => "Request denied" }
         });
