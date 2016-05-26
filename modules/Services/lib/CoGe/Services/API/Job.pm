@@ -20,7 +20,7 @@ sub add {
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
     # User authentication is required
-    unless (defined $user || $payload->{type} eq 'synmap3d') {
+    unless ($payload->{type} eq 'synmap3d' || defined $user) {
         return $self->render(status => 401, json => {
             error => { Auth => "Access denied" }
         });
@@ -37,7 +37,7 @@ sub add {
     }
 
     # Check users permissions to execute the request
-    unless ($request_handler->has_access) {
+    unless ($payload->{type} eq 'synmap3d' || $request_handler->has_access) {
         return $self->render(status => 401, json => {
             error => { Auth => "Request denied" }
         });
