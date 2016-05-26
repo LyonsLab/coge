@@ -17,7 +17,7 @@ use POSIX;
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT_OK =
-	  qw( add_jobs algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
+	  qw( add_jobs algo_lookup check_address_validity defaults gen_org_name generate_pseudo_assembly get_query_link go );
 }
 
 sub add_jobs {
