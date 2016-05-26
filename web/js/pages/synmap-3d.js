@@ -623,7 +623,23 @@ function launch(experiment) {
     }
 
     // Start Comparisons
-    makeSynmaps();
+    //console.log(graph_obj);
+    var graphLoc = "/asherkhb/coge/data/syn3d/" + graph_obj; // TODO: FIX THIS HARDCODED SHIT!
+    $.ajax({
+        url: graphLoc,
+        type: 'HEAD',
+        success: function() { showVisualizer(final_experiment); },
+        error: function() { makeSynmaps() }
+    });
+
+    // if (final results file does not exist) {
+    //     makeSynmaps()
+    // }
+    // else {
+    //     showVisualizer(final_experiment);
+    // }
+    
+    //makeSynmaps();
 }
 
 function reset_launch() { //AKB - Renamed from reset_load()
