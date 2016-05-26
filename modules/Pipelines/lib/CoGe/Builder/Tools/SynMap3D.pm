@@ -30,10 +30,12 @@ sub add_jobs {
 	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
 	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
-	my $tiny_link = get_query_link( $config, $db, @_ );
+	#my $tiny_link = get_query_link( $config, $db, @_ );
+	my $tiny_link = $opts{tinylink};
 	my $path = catdir($config->{DIAGSDIR}, $dir1, $dir2, 'html');
 	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
 	$workflow->logfile($path);
+
 
 	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
 	my $DIAGSDIR      = $config->{DIAGSDIR};

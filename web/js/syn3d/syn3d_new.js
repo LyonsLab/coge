@@ -174,11 +174,12 @@ function emptyRenderings() {
 /* CORE FUNCTION: Post Tinylink */
 function postTiny(element, url) {
     var el = document.getElementById(element);
-    var request_url = "https://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=" + url;
-    $.get(request_url, function( data ) {
-        var link = "<a href=" + data + ">" + data + "</a>";
-        el.innerHTML = link;
-    });
+    el.innerHTML = "<a href=" + url + ">" + url + "</a>";
+    //var request_url = "https://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=" + url;
+    // $.get(request_url, function( data ) {
+    //     var link = "<a href=" + data + ">" + data + "</a>";
+    //     el.innerHTML = link;
+    // });
 }
 
 /* CORE FUNCTION: Render Histograms */
@@ -1031,7 +1032,8 @@ $(document).ready( function() {
         // Render initial SynMap & Histogram
         renderSynMap(data, "canvas", "xy");
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);
-        postTiny("tiny", final_experiment.page_url);
+        //postTiny("tiny", final_experiment.page_url);
+        postTiny("tiny", final_experiment.tiny_url);
 
         // Render an instruction pop-up over SynMap
         var instructor = $("#instruct");

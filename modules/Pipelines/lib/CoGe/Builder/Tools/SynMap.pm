@@ -367,7 +367,7 @@ sub add_jobs {
         args        => undef,
         inputs      => undef,
         outputs     => [
-            #map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
+            map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
         ],
         description => "Creating results directories...",
     });

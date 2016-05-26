@@ -525,8 +525,25 @@ function launch(experiment) {
 
         return url
     }
+    function getTiny(url) {
+        var request_url = "https://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=" + url;
+        var link;
+        // $.get(request_url, function( data ) {
+        //     link = data;
+        //     return link;
+        // });
+        $.ajax({
+            url: request_url,
+            success: function(data) {
+                link = data;
+            },
+            async: false
+        });
+        return link;
+    }
     var urlUpdate = buildUrl(final_experiment);
-
+    final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate;
+    final_experiment.tiny_url = getTiny(SERVER_URL + PAGE_NAME + urlUpdate);
     // Build Link to SynMap Output (AKB Removed 5/25/16 - no longer needed)
     // function synmapOutputLink(id1, id2) {
     //     var fileDir = "/storage/coge/data/diags/";
@@ -554,6 +571,7 @@ function launch(experiment) {
             genome_id2: ygid,
             genome_id3: zgid,
             ks_type: "kn_ks",
+            tinylink: final_experiment.tiny_url,
             //ksfile_xy: synmapOutputLink(xgid, ygid),
             //ksfile_xz: synmapOutputLink(xgid, zgid),
             //ksfile_yz: synmapOutputLink(ygid, zgid),
@@ -596,9 +614,8 @@ function launch(experiment) {
                 //Start status update
                 console.log("Launching YZ SynMap Job (ID: " + response.id + ")");
                 window.history.pushState({}, "Title", "SynMap3D.pl" + urlUpdate); // Update URL with all options.
-                final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate; // Add that URL to final_experiment.
+                //final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate; // Add that URL to final_experiment.
                 coge.progress.update(response.id);
-                final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate;
             })
             .fail(function(jqXHR, textStatus, errorThrown) {
                 coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
