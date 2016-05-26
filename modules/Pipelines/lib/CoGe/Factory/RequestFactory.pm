@@ -66,7 +66,7 @@ sub get {
     }
     elsif ($type eq "synmap3d")
     {
-        $options->{public} = 1;
+        $options->{parameters}{public} = 1;
         return CoGe::Request::Empty->new($options);
     }
     else {
