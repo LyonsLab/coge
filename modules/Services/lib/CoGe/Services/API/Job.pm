@@ -74,7 +74,7 @@ sub fetch {
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
-    # User authentication is required -- removed 5/29/2016 because synmap3d needs public access
+    # User authentication is required -- removed 5/26/2016 because synmap3d needs public access
     # unless (defined $user) {
     #     $self->render(status => 401, json => {
     #         error => { Auth => "Access denied" }
