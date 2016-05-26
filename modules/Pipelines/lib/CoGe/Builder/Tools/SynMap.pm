@@ -17,7 +17,7 @@ use POSIX;
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT_OK =
-	  qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
+	  qw( add_jobs algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
 }
 
 sub add_jobs {
@@ -30,7 +30,7 @@ sub add_jobs {
 	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
 	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
-	my $tiny_link = get_query_link( $config, $db, @_ );
+	my $tiny_link = $opts{tinylink} || get_query_link( $config, $db, @_ );
 	my $path = catdir($config->{DIAGSDIR}, $dir1, $dir2, 'html');
 	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
 	$workflow->logfile($path);
@@ -360,18 +360,6 @@ sub add_jobs {
 		$org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
 	}
 	
-	#mdb added 3/24/16 for hypnotoad: run mkdir as JEX to get proper directory permissions for subsequent tasks
-    $workflow->add_job({
-        cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
-        script      => undef,
-        args        => undef,
-        inputs      => undef,
-        outputs     => [
-            map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
-        ],
-        description => "Creating results directories...",
-    });
-
 	############################################################################
 	# Run Blast
 	############################################################################
@@ -418,7 +406,7 @@ sub add_jobs {
 		push @blastdb_files, $fasta;
 		$workflow->add_job(
 			{
-				cmd         => $cmd . ";touch $raw_blastfile.done",
+				cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd . ";touch $raw_blastfile.done",
 				script      => undef,
 				args        => \@blastargs,
 				inputs      => \@blastdb_files,
@@ -866,6 +854,32 @@ sub add_jobs {
 
 		$workflow->log( "" );
 		$workflow->log("Added ($ks_type) calculation of syntenic CDS pairs and color dots");
+
+		####################################################################
+		# Use dotplot_dots.py to calculate points.
+		####################################################################
+		my $dot_cmd = catfile($config->{SCRIPTDIR}, "dotplot_dots.py") . ' ' . $ks_blocks_file;
+		my $dot_syn = catfile($config->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . '_synteny.json');
+		my $dot_log = catfile($config->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . '_log.json');
+		$workflow->add_job({
+				cmd => $dot_cmd,
+				inputs => [$ks_blocks_file],
+				outputs => [$dot_syn, $dot_log],
+				description => "Extracting coordinates for merge..."
+		});
+#		my $cmd_xy = catfile($SCRIPTDIR, $dotplot_dots) . ' ' . $ksfile_xy;
+#		my $dot_xy = $dir1 . '_' . $dir2 . '_synteny.json';
+#		my $dot_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $dot_xy);
+#		my $dot_xy_url = catfile($DIAGSURL, $dir1, $dir2, $dot_xy);
+#		my $log_xy = $dir1 . '_' . $dir2 . '_log.json';
+#		my $log_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $log_xy);
+#		my $outputs_xy = [$log_xy_path, $dot_xy_path];
+#		$workflow->add_job({
+#			cmd => $cmd_xy,
+#			outputs => $outputs_xy,
+#			description => "extracting XY coordinates...",
+#		});
+#
 
 		####################################################################
 		# Generate svg dotplot
