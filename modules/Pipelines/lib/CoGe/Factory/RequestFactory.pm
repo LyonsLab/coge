@@ -6,6 +6,7 @@ use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
 use CoGe::Request::Empty;
 use CoGe::Request::TwoGenomes;
+use Data::Dumper;
 
 has 'user'    => (
     is        => 'ro',
@@ -67,6 +68,7 @@ sub get {
     elsif ($type eq "synmap3d")
     {
         $options->{options} = { public => 1 };
+        warn Dumper $options;
         return CoGe::Request::Empty->new($options);
     }
     else {
