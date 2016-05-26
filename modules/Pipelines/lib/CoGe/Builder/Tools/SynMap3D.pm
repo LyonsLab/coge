@@ -363,16 +363,17 @@ sub add_jobs {
 	}
 
 	#mdb added 3/24/16 for hypnotoad: run mkdir as JEX to get proper directory permissions for subsequent tasks
-    $workflow->add_job({
-        cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
-        script      => undef,
-        args        => undef,
-        inputs      => undef,
-        outputs     => [
-            map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
-        ],
-        description => "Creating results directories...",
-    });
+#	print STDERR 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . "\n";
+#    $workflow->add_job({
+#        cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
+#        script      => undef,
+#        args        => undef,
+#        inputs      => undef,
+#        outputs     => [
+#            map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
+#        ],
+#        description => "Creating results directories...",
+#    });
 
 	############################################################################
 	# Run Blast
@@ -420,7 +421,7 @@ sub add_jobs {
 		push @blastdb_files, $fasta;
 		$workflow->add_job(
 			{
-				cmd         => $cmd . ";touch $raw_blastfile.done",
+				cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd . ";touch $raw_blastfile.done",
 				script      => undef,
 				args        => \@blastargs,
 				inputs      => \@blastdb_files,
