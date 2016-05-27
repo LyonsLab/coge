@@ -61,9 +61,7 @@ sub get {
     elsif ($type eq "load_genome") {
         return CoGe::Request::Empty->new($options);
     }
-    elsif ($type eq "synmap" ||
-           $type eq "synmap3d" ||
-    	   $type eq "dotplot_dots")
+    elsif ($type eq "dotplot_dots")
     {
         return CoGe::Request::TwoGenomes->new($options);
     }
