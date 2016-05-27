@@ -21,6 +21,7 @@ var gridState = true;
 var labelState = true;
 var autoRotate = false;
 var colorScheme = "Jet";
+var dataRange;
 var dataSubset;
 var redraw = false;
 
@@ -175,11 +176,6 @@ function emptyRenderings() {
 function postTiny(element, url) {
     var el = document.getElementById(element);
     el.innerHTML = "<a href=" + url + ">" + url + "</a>";
-    //var request_url = "https://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=" + url;
-    // $.get(request_url, function( data ) {
-    //     var link = "<a href=" + data + ">" + data + "</a>";
-    //     el.innerHTML = link;
-    // });
 }
 
 /* CORE FUNCTION: Render Histograms */
@@ -599,6 +595,8 @@ function renderSynMap(graph_object, element_id, color_by) {
         var plotMat = new THREE.PointsMaterial( {size: pointSize, sizeAttenuation: false, map: sprite,
             vertexColors: THREE.VertexColors, alphaTest: 0.5, transparent: true });
         //var colors = [];
+        // Empty pointData;
+        pointData = [];
 
         //Set up point counter.
         var ptCount = points.length;
@@ -613,8 +611,9 @@ function renderSynMap(graph_object, element_id, color_by) {
             vertex.z = points[i][2];
             plotGeo.vertices.push(vertex);
 
-            // Add reference to pointData for retrieving feature info.
-            pointData.push(i);
+            // Add features to pointData (in format [xFid, yFid, zFid]).
+            var feats = [points[i][3], points[i][4], points[i][5]];
+            pointData.push(feats);
 
             // Get Substitution Data
             // NOTE: CURRENTLY IMPLEMENTED FOR XY!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -679,15 +678,18 @@ function renderSynMap(graph_object, element_id, color_by) {
             // For histogram brushing, build new geometries & colors based on cutoffs.
             var newGeo = new THREE.Geometry();
             var newColors = [];
+            var newPointData = [];
             for (var i=0; i<ptCount; i++) {
                 if (pointMutData[hCurrent[1]][i] >= dataSubset[0] && pointMutData[hCurrent[1]][i] <= dataSubset[1]) {
                     newGeo.vertices.push(plotGeo.vertices[i]);
                     newColors.push(colors[hCurrent[1]][i]);
+                    newPointData.push(pointData[i])
                 }
 
             }
             newGeo.colors = newColors;
             pts = new THREE.Points(newGeo, plotMat);
+            pointData = newPointData;
             redraw = false;
         } else {
             // If not redrawing points from histogram, apply general colors & build pts object.
@@ -846,6 +848,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         var minVal = Math.min.apply(null, histData[hCurrent[1]]);
         var maxVal = Math.max.apply(null, histData[hCurrent[1]]);
         dataSubset = [minVal, maxVal];
+        dataRange = [minVal, maxVal];
         dataS = dataSubset;
     }
 
@@ -873,8 +876,6 @@ function renderSynMap(graph_object, element_id, color_by) {
 
         /* Camera control */
         if (camUpdate) {
-            console.log("Hi friend, I should be resetting the camera view!");
-            //console.log(camera.position);
             camera.position.x = camView.x;
             camera.position.y = camView.y;
             camera.position.z = camView.z;
@@ -917,7 +918,7 @@ function renderSynMap(graph_object, element_id, color_by) {
 
         /* Check for histogram brushing */
         if (dataSubset != dataS) {
-            redraw = true;
+            if (dataSubset[0] != dataRange[0] || dataSubset[1] != dataRange[1]) { redraw = true; }
             scene.remove(points);
             points = drawPoints(graph_object.points);
             scene.add(points);
@@ -973,14 +974,10 @@ function renderSynMap(graph_object, element_id, color_by) {
         if (intersects.length > 0) {
             // Set INTERSECTED to closest intersected point.
             INTERSECTED = intersects[ 0 ].index;
-            // Assign INTERSECTED point data to pt_select.
-            var pt_select = pointData[ INTERSECTED ];
-            // Assign FIDs
-            var xFid = graph_object.points[pt_select][3];
-            var yFid = graph_object.points[pt_select][4];
-            var zFid = graph_object.points[pt_select][5];
-            // Log a GEvo link.
-            //console.log(genGevoLink(xFid, yFid, zFid));
+
+            var xFid = pointData[INTERSECTED][0];
+            var yFid = pointData[INTERSECTED][1];
+            var zFid = pointData[INTERSECTED][2];
 
             //var pointHtml = displaySelection(xFid, yFid, zFid);
             $.when(displaySelection(xFid, yFid, zFid)).done(function(data) {
