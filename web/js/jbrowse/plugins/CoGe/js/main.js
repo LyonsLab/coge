@@ -397,7 +397,8 @@ return declare( JBrowsePlugin,
 			this.info('Filename required', 'Please enter a filename', dojo.byId('export_filename'));
 			return;
 		}
-		if (coge.fileSelect.has_file(filename + this._track.config.coge.ext)) {
+		var to_cyverse = dojo.byId('to_cyverse').checked;
+		if (to_cyverse && coge.fileSelect.has_file(filename + this._track.config.coge.ext)) {
 			this.info('File exists', 'There is already a file in the current directory with the name ' + filename + this._track.config.coge.ext + '. Please enter a different filename.', dojo.byId('export_filename'));
 			return;
 		}
@@ -407,7 +408,7 @@ return declare( JBrowsePlugin,
 			url += '&' + this.search_to_params(this._track.config.coge.search, true);
 		if (dojo.byId('transform') && dojo.byId('transform').checked)
 			url += '&transform=' + this._track.config.coge.transform;
-		if (dojo.byId('to_cyverse').checked) {
+		if (to_cyverse) {
 			var d = new BusyDialog({
 				title: 'Exporting to CyVerse...',
 				content: '<img src="picts/ajax-loader.gif" /><span></span>'
