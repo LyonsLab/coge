@@ -12,6 +12,7 @@ sub is_valid {
 }
 
 sub has_access {
+#    my $self = shift;
     return 1;
 }
 
