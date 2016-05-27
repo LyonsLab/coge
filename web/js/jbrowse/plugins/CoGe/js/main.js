@@ -148,7 +148,7 @@ define([
 			var j = b[1];
 			if (this.hits[i][0] > end)
 				return null;
-			while (i < j && this.hits[i][0] < start)
+			while (i < j && this.hits[i][1] < start)
 				++i;
 			if (i == j)
 				return null;
@@ -331,16 +331,24 @@ return declare( JBrowsePlugin,
 		new Button({
 			label: 'Find Features',
 			onClick: function(event) {
-				coge_plugin.search_dialog = new Dialog({
-					title: "Search",
-					content: content,
-					onHide: function() {
-						this.destroyRecursive();
-						coge_plugin.search_dialog = null;
-					},
-					style: "width: 300px"
-				});
-				coge_plugin.search_dialog.show();
+		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+		dojo.xhrPut({
+			url: coge_api + '/jobs',
+			postData: JSON.stringify({
+				type: 'synmap3d',
+				parameters: {}
+			})
+		});
+				// coge_plugin.search_dialog = new Dialog({
+				// 	title: "Search",
+				// 	content: content,
+				// 	onHide: function() {
+				// 		this.destroyRecursive();
+				// 		coge_plugin.search_dialog = null;
+				// 	},
+				// 	style: "width: 300px"
+				// });
+				// coge_plugin.search_dialog.show();
 				dojo.stopEvent(event);
 			},
 		}, dojo.create('button', null, this.browser.navbox));
