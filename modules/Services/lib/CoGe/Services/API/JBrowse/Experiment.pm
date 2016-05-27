@@ -338,10 +338,10 @@ sub _get_experiments {
         }
         else {
             if ($user && $user->name) {
-            	warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $eid . ' for user ' . $user->name;
+            	warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $e->id . ' for user ' . $user->name;
             }
             else {
-                warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $eid;
+                warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $e->id;
             }
         }
     }

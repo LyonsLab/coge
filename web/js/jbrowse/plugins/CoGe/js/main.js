@@ -335,7 +335,8 @@ return declare( JBrowsePlugin,
 		dojo.xhrPut({
 			url: coge_api + '/jobs',
 			postData: JSON.stringify({
-				type: 'synmap3d'
+				type: 'synmap3d',
+				parameters: {}
 			})
 		});
 				// coge_plugin.search_dialog = new Dialog({
