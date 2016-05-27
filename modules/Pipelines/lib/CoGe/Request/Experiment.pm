@@ -18,7 +18,7 @@ sub is_valid {
 
 sub has_access {
     my $self = shift;
-    return unless defined $self->parameters->{user};
+    return unless defined $self->{user};
 
     my $eid = $self->parameters->{eid} || $self->parameters->{experiment_id};
     return unless $eid;
