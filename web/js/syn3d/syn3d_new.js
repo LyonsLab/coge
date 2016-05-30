@@ -625,6 +625,7 @@ function renderSynMap(graph_object, element_id, color_by) {
             } else if (color_by == "xyz") {
                 kn = ( points[i][6] + points[i][8] + points[i][10] ) / 3;
                 ks = ( points[i][7] + points[i][9] + points[i][11] ) / 3;
+                //console.log(kn, ks);
             } else {
                 console.log("Error: Unrecognized comparison")
             }
@@ -654,6 +655,7 @@ function renderSynMap(graph_object, element_id, color_by) {
                 pointMutData.knks.push("NULL");
             }
         }
+        console.log("FINISHED MAKING FIRST SET OF POINTS with parameter " + color_by);
 
         // Build colors lists.
         var cList = ["ks", "kn", "knks"];
@@ -1011,7 +1013,11 @@ function renderSynMap(graph_object, element_id, color_by) {
 
 $(document).ready( function() {
     var d;
-    // TODO: Start Spinny Wheely(s) & end after loading
+    // Start Spinny Wheely(s)
+    // TODO
+    var overlay = $("#overlay");
+    overlay.show();
+
     // Load data & launch initial visualizations
     var graphLoc = "/asherkhb/coge/data/syn3d/" + options_name + "_graph.json"; // TODO: FIX THIS HARDCODED SHIT!
     $.when(loadData(graphLoc)).done(function(data) {
@@ -1048,25 +1054,33 @@ $(document).ready( function() {
         document.getElementById("zlabel").innerHTML = zsp;
         var al = $("#axislabels");
         al.css("left", 8).css("top", cH - al.height() - 8);
+
+        // End spinny wheel.
+        overlay.hide();
+        // TODO
     });
 
     /* Monitor mutation ratio coloring option & update visualizations on change. */
     var colorBySelect = $("#color_by");
     colorBySelect.change( function () {
+        overlay.show();
         emptyRenderings();
         // Draw new SynMap & histogram.
         renderSynMap(d, "canvas", colorBySelect.val());
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+        overlay.hide();
     });
 
     /* Monitor mutation ratio coloring option & update visualizations on change. */
     var colorSchemeSelect = $("#color_scheme");
     colorSchemeSelect.change( function () {
+        overlay.show();
         emptyRenderings();
         colorScheme = colorSchemeSelect.val();
         // Draw new SynMap & histogram.
         renderSynMap(d, "canvas", colorBySelect.val());
         renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+        overlay.hide();
     });
 
 });
