@@ -198,6 +198,7 @@ def getPointCoords(syntenic_points, relative_chr, absolute_chr, relative_genome,
     gid2 = syntenic_points[gid1].keys()[0]
     # Variable to store all coordinates.
     coords = []  # Each coord is in form [sp1_val, sp2_val, sp1_fid, sp2_fid, Kn, Ks]
+    downloads = []
 
     # Reassign syntenic_points to just points.
     syntenic_points = syntenic_points[gid1][gid2]
@@ -249,13 +250,20 @@ def getPointCoords(syntenic_points, relative_chr, absolute_chr, relative_genome,
                 coord = [sp1_val, sp2_val, sp1_fid, sp2_fid, Kn, Ks]
                 coords.append(coord)
 
+                # Build downloadable data dictionary.
+                #p1_gid||chr1||start1||stop1||name1||strand1||type1||db_feature_id1
+                downloadA = "||".join([gid1, sp1chr, hit[0], hit[1], hit[4][gid1]["name"], hit[4][gid1]["strand"], hit[4][gid1]["type"], hit[4][gid1]["db_feature_id"]])
+                downloadB = "||".join([gid2, sp2chr, hit[2], hit[3], hit[4][gid2]["name"], hit[4][gid2]["strand"], hit[4][gid2]["type"], hit[4][gid2]["db_feature_id"]])
+                download = [downloadA, downloadB]
+                downloads.append(download)
+
     ids = (gid1, gid2)
     coords = np.array(coords)
 
     coord_end = datetime.now()
     print("Point Extraction Complete (%s)" % str(coord_end-coord_start))
     print("--> %s vs %s" % (gid1, gid2))
-    return ids, coords
+    return ids, coords, downloads
 
 
 def reorganizeArray(id_A, id_B, gids_tuple, unordered_coordinates ):
@@ -286,13 +294,39 @@ def reorganizeArray(id_A, id_B, gids_tuple, unordered_coordinates ):
         exit()
 
     reorg_end = datetime.now()
-    print("Reorganization Complete (%s)" % str(reorg_end-reorg_start))
+    print("Coordinates Reorganization Complete (%s)" % str(reorg_end-reorg_start))
     print("--> (%s,%s) to (%s,%s)" % (gids_tuple[0], gids_tuple[1], id_A, id_B))
 
     return ordered_coordinates
 
 
-def mergePoints(setXY, setXZ, setYZ):
+def reorganizeDownloads(id_A, id_B, downloadsList):
+    """
+
+    :param id_A:
+    :param id_B:
+    :param downloadsList:
+    :return:
+    """
+    reorg_start = datetime.now()
+    first = downloadsList[0][0].split("||")[0]
+    second = downloadsList[0][1].split("||")[0]
+    if str(id_A) == str(first):
+        reorg_end = datetime.now()
+        print("Downloads Reorganization Complete (%s)" % str(reorg_end-reorg_start))
+        print("--> (%s,%s) to (%s,%s)" % (first, second, id_A, id_B))
+        return downloadsList
+    elif str(id_A) == str(second):
+        reorg_end = datetime.now()
+        print("Downloads Reorganization Complete (%s)" % str(reorg_end-reorg_start))
+        print("--> (%s,%s) to (%s,%s)" % (first, second, id_A, id_B))
+        return [[e[1], e[0]] for e in downloadsList]
+    else:
+        print "Reordering Error (Downloads)"
+        exit()
+
+
+def mergePoints(setXY, setXZ, setYZ, xid, yid, zid, downloadData):
     """
     Merge XY, XZ, YZ points.
 
@@ -305,6 +339,7 @@ def mergePoints(setXY, setXZ, setYZ):
 
     hits = []
     errors = []
+    downloads = []
 
     # Build indexed XZ sets.
     setXZ_xindexed = defaultdict(list)
@@ -331,6 +366,10 @@ def mergePoints(setXY, setXZ, setYZ):
                                    XZ[4], XZ[5],
                                    YZ[4], YZ[5]]
                             hits.append(hit)
+
+                            mut = "||".join([XY[4], XY[5], XZ[4], XZ[5], YZ[4], YZ[5]])
+                            down = [downloadData[xid][XY[2]], downloadData[yid][YZ[2]], downloadData[zid][XZ[3]], mut]
+                            downloads.append(down)
                         else:
                             err = [XY, XZ, YZ]
                             errors.append(err)
@@ -342,7 +381,7 @@ def mergePoints(setXY, setXZ, setYZ):
     print "Merge Complete (%s)" % str(merge_end-merge_start)
     print "--> Hits Found: %s" % str(hits.shape[0])
     print "--> Errors Recorded: %s" % str(errors.shape[0])
-    return hits
+    return hits, downloads
 
 
 def buildAxisTicks(sorted_chrs, relative_genome_size, relative_chromosomes):
@@ -364,6 +403,30 @@ def buildAxisTicks(sorted_chrs, relative_genome_size, relative_chromosomes):
         length += relative_genome_size * relative_chromosomes[name]
 
     return axis, length
+
+
+def buildDownloadData(dataXY, dataXZ):
+    data = {}
+    xgid = dataXY[0][0].split("||")[0] # For X data
+    data[xgid] = {}
+    ygid = dataXY[0][1].split("||")[0] # For Y data
+    data[ygid] = {}
+    zgid = dataXZ[0][1].split("||")[0] # For Z data
+    data[zgid] = {}
+
+    for lineitem in dataXY:
+        xdata = lineitem[0]
+        xfid = xdata.split("||")[7]
+        data[xgid][xfid] = xdata
+        ydata = lineitem[1]
+        yfid = ydata.split("||")[7]
+        data[ygid][yfid] = ydata
+    for lineitem in dataXZ:
+        zdata = lineitem[1]
+        zfid = zdata.split("||")[7]
+        data[zgid][zfid] = zdata
+
+    return data
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -527,18 +590,21 @@ if min_synteny > 0:
 g_size_abs, g_size_rel, c_sort, c_rel, c_abs = scaleSortGenomes(genomes)
 
 ## ----- Get point coordinates from each file. ----- ##
-gids1, coordinates1 = getPointCoords(file1_sp, c_rel, c_abs, g_size_rel, c_sort)
-gids2, coordinates2 = getPointCoords(file2_sp, c_rel, c_abs, g_size_rel, c_sort)
-gids3, coordinates3 = getPointCoords(file3_sp, c_rel, c_abs, g_size_rel, c_sort)
+gids1, coordinates1, downloads1 = getPointCoords(file1_sp, c_rel, c_abs, g_size_rel, c_sort)
+gids2, coordinates2, downloads2 = getPointCoords(file2_sp, c_rel, c_abs, g_size_rel, c_sort)
+gids3, coordinates3, downloads3 = getPointCoords(file3_sp, c_rel, c_abs, g_size_rel, c_sort)
 
 ## ----- Determine order of arrays & restructure to represent correct XYZ ordering. ----- ##
 # XY order.
 if X_GID in gids1 and Y_GID in gids1:
     coordinatesXY = reorganizeArray(X_GID, Y_GID, gids1, coordinates1)
+    downloadsXY = reorganizeDownloads(X_GID, Y_GID, downloads1)
 elif X_GID in gids2 and Y_GID in gids2:
     coordinatesXY = reorganizeArray(X_GID, Y_GID, gids2, coordinates2)
+    downloadsXY = reorganizeDownloads(X_GID, Y_GID, downloads2)
 elif X_GID in gids3 and Y_GID in gids3:
     coordinatesXY = reorganizeArray(X_GID, Y_GID, gids3, coordinates3)
+    downloadsXY = reorganizeDownloads(X_GID, Y_GID, downloads3)
 else:
     coordinatesXY = None
     print "ERROR: XY coordinates unidentified."
@@ -546,10 +612,13 @@ else:
 # XZ order.
 if X_GID in gids1 and Z_GID in gids1:
     coordinatesXZ = reorganizeArray(X_GID, Z_GID, gids1, coordinates1)
+    downloadsXZ = reorganizeDownloads(X_GID, Z_GID, downloads1)
 elif X_GID in gids2 and Z_GID in gids2:
     coordinatesXZ = reorganizeArray(X_GID, Z_GID, gids2, coordinates2)
+    downloadsXZ = reorganizeDownloads(X_GID, Z_GID, downloads3)
 elif X_GID in gids3 and Z_GID in gids3:
     coordinatesXZ = reorganizeArray(X_GID, Z_GID, gids3, coordinates3)
+    downloadsXZ = reorganizeDownloads(X_GID, Z_GID, downloads3)
 else:
     coordinatesXZ = None
     print "ERROR: XZ coordinates unidentified."
@@ -557,18 +626,22 @@ else:
 # YZ order.
 if Y_GID in gids1 and Z_GID in gids1:
     coordinatesYZ = reorganizeArray(Y_GID, Z_GID, gids1, coordinates1)
+    downloadsYZ = reorganizeDownloads(Y_GID, Z_GID, downloads1)
 elif Y_GID in gids2 and Z_GID in gids2:
     coordinatesYZ = reorganizeArray(Y_GID, Z_GID, gids2, coordinates2)
+    downloadsYZ = reorganizeDownloads(Y_GID, Z_GID, downloads2)
 elif Y_GID in gids3 and Z_GID in gids3:
     coordinatesYZ = reorganizeArray(Y_GID, Z_GID, gids3, coordinates3)
+    downloadsYZ = reorganizeDownloads(Y_GID, Z_GID, downloads3)
 else:
     coordinatesYZ = None
     print "ERROR: YZ coordinates unidentified."
     exit()
 
-
 ## ----- Merge & calculate coordinates. ----- ##
-coordinates = mergePoints(coordinatesXY, coordinatesXZ, coordinatesYZ)
+downloadData = buildDownloadData(downloadsXY, downloadsXZ)
+
+coordinates, downloads = mergePoints(coordinatesXY, coordinatesXZ, coordinatesYZ, X_GID, Y_GID, Z_GID, downloadData) # TODO HERE!
 
 ## ----- Clustering: DBSCAN ----- ##
 # If remove_unclustered = True
@@ -585,6 +658,10 @@ if remove_unclustered:
     # Build vectors of clustered points including all coordinate information.
     clusters = coordinates[labels != -1]
     sparse = coordinates[labels == -1]
+
+    downloads = downloads[labels != -1]
+    print len(clusters)
+    print len(downloads)
 
     # Print concluding message.
     cluster_end = datetime.now()
@@ -610,73 +687,141 @@ if ratio_cutoff:
     clusters = clusters.tolist()
     if ratio_cutoff == 'kn':
         if ratio_by == 'xy':
-            clusters = [c for c in clusters if c[6] != 'NA' and float(c[6])>rcutoff_min and float(c[6])<rcutoff_max]
+            #clusters = [c for c in clusters if c[6] != 'NA' and float(c[6])>rcutoff_min and float(c[6])<rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[6] != 'NA' and float(c[6])>rcutoff_min and float(c[6])<rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'xz':
-            clusters = [c for c in clusters if c[8] != 'NA' and float(c[8])>rcutoff_min and float(c[8])<rcutoff_max]
+            #clusters = [c for c in clusters if c[8] != 'NA' and float(c[8])>rcutoff_min and float(c[8])<rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[8] != 'NA' and float(c[8])>rcutoff_min and float(c[8])<rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'yz':
-            clusters = [c for c in clusters if c[10] != 'NA' and float(c[10])>rcutoff_min and float(c[10])<rcutoff_max]
+            #clusters = [c for c in clusters if c[10] != 'NA' and float(c[10])>rcutoff_min and float(c[10])<rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[10] != 'NA' and float(c[10])>rcutoff_min and float(c[10])<rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
 
         elif ratio_by == 'mean':
-            clusters = [c for c in clusters if c[6] != 'NA' and c[8] != 'NA' and c[10] != 'NA' and \
-                        np.mean([float(c[6]), float(c[8]), float(c[10])]) > rcutoff_min and \
-                        np.mean([float(c[6]), float(c[8]), float(c[10])]) < rcutoff_max]
+            # clusters = [c for c in clusters if c[6] != 'NA' and c[8] != 'NA' and c[10] != 'NA' and \
+            #             np.mean([float(c[6]), float(c[8]), float(c[10])]) > rcutoff_min and \
+            #             np.mean([float(c[6]), float(c[8]), float(c[10])]) < rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[6] != 'NA' and c[8] != 'NA' and c[10] != 'NA' and \
+                       np.mean([float(c[6]), float(c[8]), float(c[10])]) > rcutoff_min and \
+                       np.mean([float(c[6]), float(c[8]), float(c[10])]) < rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'median':
-            clusters = [c for c in clusters if c[6] != 'NA' and c[8] != 'NA' and c[10] != 'NA' and \
-                        np.median([float(c[6]), float(c[8]), float(c[10])]) > rcutoff_min and \
-                        np.median([float(c[6]), float(c[8]), float(c[10])]) < rcutoff_max]
+            # clusters = [c for c in clusters if c[6] != 'NA' and c[8] != 'NA' and c[10] != 'NA' and \
+            #             np.median([float(c[6]), float(c[8]), float(c[10])]) > rcutoff_min and \
+            #             np.median([float(c[6]), float(c[8]), float(c[10])]) < rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[6] != 'NA' and c[8] != 'NA' and c[10] != 'NA' and \
+                       np.median([float(c[6]), float(c[8]), float(c[10])]) > rcutoff_min and \
+                       np.median([float(c[6]), float(c[8]), float(c[10])]) < rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         else:
             print("ERROR: Unknown ratio cutoff value. Skipping...")
     elif ratio_cutoff == 'ks':
         if ratio_by == 'xy':
-            clusters = [c for c in clusters if c[7] != 'NA' and float(c[7])>rcutoff_min and float(c[7])<rcutoff_max]
+            #clusters = [c for c in clusters if c[7] != 'NA' and float(c[7])>rcutoff_min and float(c[7])<rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[7] != 'NA' and float(c[7])>rcutoff_min and float(c[7])<rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'xz':
-            clusters = [c for c in clusters if c[9] != 'NA' and float(c[9])>rcutoff_min and float(c[9])<rcutoff_max]
+            #clusters = [c for c in clusters if c[9] != 'NA' and float(c[9])>rcutoff_min and float(c[9])<rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[9] != 'NA' and float(c[9])>rcutoff_min and float(c[9])<rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'yz':
-            clusters = [c for c in clusters if c[11] != 'NA' and float(c[11])>rcutoff_min and float(c[11])<rcutoff_max]
-
+            #clusters = [c for c in clusters if c[11] != 'NA' and float(c[11])>rcutoff_min and float(c[11])<rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[11] != 'NA' and float(c[11])>rcutoff_min and float(c[11])<rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'mean':
-            clusters = [c for c in clusters if c[7] != 'NA' and c[9] != 'NA' and c[11] != 'NA' and \
-                        np.mean([float(c[7]), float(c[9]), float(c[11])]) > rcutoff_min and \
-                        np.mean([float(c[7]), float(c[9]), float(c[11])]) < rcutoff_max]
+            # clusters = [c for c in clusters if c[7] != 'NA' and c[9] != 'NA' and c[11] != 'NA' and \
+            #             np.mean([float(c[7]), float(c[9]), float(c[11])]) > rcutoff_min and \
+            #             np.mean([float(c[7]), float(c[9]), float(c[11])]) < rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[7] != 'NA' and c[9] != 'NA' and c[11] != 'NA' and \
+                       np.mean([float(c[7]), float(c[9]), float(c[11])]) > rcutoff_min and \
+                       np.mean([float(c[7]), float(c[9]), float(c[11])]) < rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'median':
-            clusters = [c for c in clusters if c[7] != 'NA' and c[9] != 'NA' and c[11] != 'NA' and \
-                        np.median([float(c[7]), float(c[9]), float(c[11])]) > rcutoff_min and \
-                        np.median([float(c[7]), float(c[9]), float(c[11])]) < rcutoff_max]
+            # clusters = [c for c in clusters if c[7] != 'NA' and c[9] != 'NA' and c[11] != 'NA' and \
+            #             np.median([float(c[7]), float(c[9]), float(c[11])]) > rcutoff_min and \
+            #             np.median([float(c[7]), float(c[9]), float(c[11])]) < rcutoff_max]
+            indexes = [i for i, c in enumerate(clusters) if c[7] != 'NA' and c[9] != 'NA' and c[11] != 'NA' and \
+                       np.median([float(c[7]), float(c[9]), float(c[11])]) > rcutoff_min and \
+                       np.median([float(c[7]), float(c[9]), float(c[11])]) < rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         else:
             print("ERROR: Unknown ratio cutoff value. Skipping...")
     elif ratio_cutoff == 'knks':
         if ratio_by == 'xy':
-            clusters = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and \
-                        (float(c[6]) / float(c[7])) > rcutoff_min and \
-                        (float(c[6]) / float(c[7])) < rcutoff_max]
+            # clusters = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and \
+            #             (float(c[6]) / float(c[7])) > rcutoff_min and \
+            #             (float(c[6]) / float(c[7])) < rcutoff_max]
+            indexes = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and \
+                       (float(c[6]) / float(c[7])) > rcutoff_min and \
+                       (float(c[6]) / float(c[7])) < rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'xz':
-            clusters = [c for c in clusters if c[8] != 'NA' and c[9] != 'NA' and \
-                        (float(c[8]) / float(c[9])) > rcutoff_min and \
-                        (float(c[8]) / float(c[9])) < rcutoff_max]
+            # clusters = [c for c in clusters if c[8] != 'NA' and c[9] != 'NA' and \
+            #             (float(c[8]) / float(c[9])) > rcutoff_min and \
+            #             (float(c[8]) / float(c[9])) < rcutoff_max]
+            indexes = [c for c in clusters if c[8] != 'NA' and c[9] != 'NA' and \
+                       (float(c[8]) / float(c[9])) > rcutoff_min and \
+                       (float(c[8]) / float(c[9])) < rcutoff_max]
         elif ratio_by == 'yz':
-            clusters = [c for c in clusters if c[10] != 'NA' and c[11] != 'NA' and \
-                        (float(c[10]) / float(c[11])) > rcutoff_min and \
-                        (float(c[10]) / float(c[11])) < rcutoff_max]
-
+            # clusters = [c for c in clusters if c[10] != 'NA' and c[11] != 'NA' and \
+            #             (float(c[10]) / float(c[11])) > rcutoff_min and \
+            #             (float(c[10]) / float(c[11])) < rcutoff_max]
+            indexes = [c for c in clusters if c[10] != 'NA' and c[11] != 'NA' and \
+                       (float(c[10]) / float(c[11])) > rcutoff_min and \
+                       (float(c[10]) / float(c[11])) < rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'mean':
-            clusters = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and c[8] != 'NA' and \
-                        c[9] != 'NA' and c[10] != 'NA' and c[11] != 'NA' and \
-                        np.mean([float(c[6])/float(c[7]),
-                                 float(c[8])/float(c[9]),
-                                 float(c[10])/float(c[11])]) > rcutoff_min and \
-                        np.mean([float(c[6])/float(c[7]),
-                                 float(c[8])/float(c[9]),
-                                 float(c[10])/float(c[11])]) < rcutoff_max]
-
+            # clusters = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and c[8] != 'NA' and \
+            #             c[9] != 'NA' and c[10] != 'NA' and c[11] != 'NA' and \
+            #             np.mean([float(c[6])/float(c[7]),
+            #                      float(c[8])/float(c[9]),
+            #                      float(c[10])/float(c[11])]) > rcutoff_min and \
+            #             np.mean([float(c[6])/float(c[7]),
+            #                      float(c[8])/float(c[9]),
+            #                      float(c[10])/float(c[11])]) < rcutoff_max]
+            indexes = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and c[8] != 'NA' and \
+                       c[9] != 'NA' and c[10] != 'NA' and c[11] != 'NA' and \
+                       np.mean([float(c[6])/float(c[7]),
+                                float(c[8])/float(c[9]),
+                                float(c[10])/float(c[11])]) > rcutoff_min and \
+                       np.mean([float(c[6])/float(c[7]),
+                                float(c[8])/float(c[9]),
+                                float(c[10])/float(c[11])]) < rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         elif ratio_by == 'median':
-            clusters = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and c[8] != 'NA' and \
-                        c[9] != 'NA' and c[10] != 'NA' and c[11] != 'NA' and \
-                        np.median([float(c[6])/float(c[7]),
-                                   float(c[8])/float(c[9]),
-                                   float(c[10])/float(c[11])]) > rcutoff_min and \
-                        np.median([float(c[6])/float(c[7]),
-                                   float(c[8])/float(c[9]),
-                                   float(c[10])/float(c[11])]) < rcutoff_max]
+            # clusters = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and c[8] != 'NA' and \
+            #             c[9] != 'NA' and c[10] != 'NA' and c[11] != 'NA' and \
+            #             np.median([float(c[6])/float(c[7]),
+            #                        float(c[8])/float(c[9]),
+            #                        float(c[10])/float(c[11])]) > rcutoff_min and \
+            #             np.median([float(c[6])/float(c[7]),
+            #                        float(c[8])/float(c[9]),
+            #                        float(c[10])/float(c[11])]) < rcutoff_max]
+            indexes = [c for c in clusters if c[6] != 'NA' and c[7] != 'NA' and c[8] != 'NA' and \
+                       c[9] != 'NA' and c[10] != 'NA' and c[11] != 'NA' and \
+                       np.median([float(c[6])/float(c[7]),
+                                  float(c[8])/float(c[9]),
+                                  float(c[10])/float(c[11])]) > rcutoff_min and \
+                       np.median([float(c[6])/float(c[7]),
+                                  float(c[8])/float(c[9]),
+                                  float(c[10])/float(c[11])]) < rcutoff_max]
+            clusters = [clusters[i] for i in indexes]
+            downloads = [downloads[i] for i in indexes]
         else:
             print("ERROR: Unknown ratio cutoff value. Skipping...")
     else:
@@ -747,15 +892,28 @@ if ratio_cutoff:
 # Sort name extensions, write graph & log filenames.
 name_ext.sort()
 graphName_out = name_base + '_'.join(name_ext) + '_graph.json'
+downloadName_out = name_base + '_'.join(name_ext) + '_data.json'
 logName_out = name_base + '_'.join(name_ext) + '_log.json'
 # Add output path to output files.
 graph_out = path.join(args.o, graphName_out)
+download_out = path.join(args.o, downloadName_out)
 log_out = path.join(args.o, logName_out)
-# Write output file.v
+# Write output files.
+# graph
 dump(graph_obj, open(graph_out, 'wb'))
+# downloads
+with open(download_out, 'wb') as dout:
+    dout.write("#Xsp_gid||Xchr1||Xstart||Xstop||Xname||Xstrand||Xtype||Xdb_feature_id1\tYsp_gid||Ychr||Ystart||Ystop||Yname||Ystrand||Ytype||Ydb_feature_id\tZsp_gid||Zchr||Zstart||Zstop||Zname||Zstrand||Ztype||Zdb_feature_id\tXY_kn||XY_ks||XZ_kn||XZ_ks||YZ_kn||YZ_ks\n")
+    for l in downloads:
+        dout.write("\t".join(l) + '\n')
+# log
 dump(log_obj, open(log_out, 'wb'))
 
 ## ----- Print concluding message & total execution time. ----- ##
 end = datetime.now()
 print("Job Complete!")
 print("Total Execution Time: %s" % str(end-start))
+
+#Sp1_Data    Sp2_Data    Sp3_data   Mutation_Data
+#sp1_gid||chr1||start1||stop1||name1||strand1||type1||db_feature_id1  sp2_gid||chr2||start2||stop2||name2||strand2||type2||db_feature_id2	sp3_gid||chr3||start3||stop3||name3||strand3||type3||db_feature_id3  1-2_kn||1-2_ks||1-3_kn||1-3_ks||2-3_kn||2-3_ks
+
