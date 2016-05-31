@@ -1929,6 +1929,15 @@ sub get_results {
 		$results->param( files => $rows );
 
 		########################################################################
+		# SynMap3D Link
+		########################################################################
+		my $syn3d = "https://geco.iplantcollaborative.org/asherkhb/coge/SynMap3D.pl"; #TODO: MAKE THIS GENERIC!
+		my $threedlink = $syn3d . "?x_gid=" . $dsgid1 . ";y_gid=" . $dsgid2;
+		#print STDERR $threedlink . "\n";
+		$results->param( syn3dlink => $threedlink) ;
+
+
+		########################################################################
 		# Regenerate Analysis Link - HTML
 		########################################################################
 
