@@ -226,7 +226,6 @@ sub irods_imkdir {
     return $result[0] if scalar @result;
 }
 
-<<<<<<< HEAD
 # sub irods_irm {
 #     my $path = shift;
 #     return 'path not specified' unless $path;
@@ -240,21 +239,6 @@ sub irods_imkdir {
 #     my @result = `$cmd`;
 #     return $result[0] if scalar @result;
 # }
-=======
-sub irods_irm {
-    my $path = shift;
-    return 'path not specified' unless $path;
-
-    my $env_file = _irods_get_env_file();
-    return 'irods env file missing' unless $env_file;
-
-    $ENV{irodsEnvFile} = $env_file;
-    warn $path;
-    my $cmd = "irm -rf '" . $path . "'";
-    my @result = `$cmd`;
-    return $result[0] if scalar @result;
-}
->>>>>>> master
 
 sub irods_get_base_path {
     my $username = shift;

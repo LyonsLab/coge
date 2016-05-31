@@ -516,6 +516,66 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	save_as_experiment: function() {
+		coge.progress.begin();
+		var load_id = this.unique_id(32);
+	    newLoad = true;
+	    
+		var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id;
+		url += '&' + this.search_to_params(this._track.config.coge.search, true);
+		if (this._track.config.coge.transform)
+			url += '&transform=' + this._track.config.coge.transform;
+		dojo.xhrGet({
+			url: url,
+			load: function(data) {
+				if (data.error) {
+					coge_plugin.error('Save Results', data);
+				} else {
+					var request = {
+						type: 'load_experiment',
+						requester: {
+							page: 'jbrowse',
+							user_name: un
+						},
+						parameters: {
+							genome_id: gid,
+							metadata: {},
+							source_data: [{
+								file_type: 'csv',
+								isTransferring: false,
+								name: 'test.csv',
+								path: 'upload/test.csv',
+								size: 123456,
+								type: 'file'
+							}],
+							load_id: load_id
+						}
+					};		
+				    coge.services.submit_job(request) 
+				    	.done(function(response) {
+				    		if (!response) {
+				    			coge.progress.failed("Error: empty response from server");
+				    			return;
+				    		}
+				    		else if (!response.success || !response.id) {
+				    			coge.progress.failed("Error: failed to start workflow", response.error);
+				    			return;
+				    		}
+				            coge.progress.update(response.id, response.site_url);
+					    })
+					    .fail(function(jqXHR, textStatus, errorThrown) {
+					    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+					    });
+				}
+			},
+			error: function(data) {
+				coge_plugin.error('Save Results', data);
+			}
+		});
+	},
+
+	// ----------------------------------------------------------------
+
 	search_features_overlap: function(type, api_path) {
 		var types = this.get_checked_values('coge_search_features_overlap', 'feature types', true);
 		if (!types)
@@ -658,6 +718,16 @@ return declare( JBrowsePlugin,
 		if (!without_chr && search.chr && search.chr != 'Any')
 			string += ', chr=' + search.chr;
 		return string;
+	},
+
+	// ----------------------------------------------------------------
+
+	unique_id: function(len) {
+		var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
+		var id = [];
+		for (var i = 0; i < len; i++)
+			id[i] = chars[0 | Math.random()*chars.length];
+		return id.join('');
 	}
 });
 });

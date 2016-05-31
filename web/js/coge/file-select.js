@@ -549,7 +549,6 @@ var coge = window.coge = (function(namespace) {
 			});
 		},
 
-<<<<<<< HEAD
 		// _irods_rm: function(obj) {
 		// 	var self = this;
 		// 	this._confirm('Delete File', 'Really delete file ' + obj.name + '?', function() {
@@ -575,33 +574,6 @@ var coge = window.coge = (function(namespace) {
 		// 		});
 		// 	});
 		// },
-=======
-		_irods_rm: function(obj) {
-			var self = this;
-			this._confirm('Delete File', 'Really delete file ' + obj.name + '?', function() {
-				coge.services.irods_rm(obj.path).done(function(result) {
-					self._irods_busy(false);
-					if (result.error)
-						alert(result.error.Error);
-					else
-						self._irods_get_path($('#ids_current_path').html());
-				});
-			});
-		},
-
-		_irods_rmdir: function(obj) {
-			var self = this;
-			this._confirm('Delete Directory', 'Really delete directory ' + obj.name + ' and everything in it?', function() {
-				coge.services.irods_rm(obj.path).done(function(result) {
-					self._irods_busy(false);
-					if (result.error)
-						alert(result.error.Error);
-					else
-						self._irods_get_path($('#ids_current_path').html());
-				});
-			});
-		},
->>>>>>> master
 
 		_units: function(val) {
 			if (isNaN(val))

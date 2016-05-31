@@ -8,7 +8,7 @@ use CoGe::Accessory::histogram;
 use CoGe::Accessory::IRODS qw( irods_iput );
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
-use CoGe::Core::Storage qw( get_experiment_path );
+use CoGe::Core::Storage qw( get_experiment_path get_upload_path );
 use CoGeDBI qw( get_dataset_ids feature_type_names_to_id );
 use Data::Dumper;
 use File::Path;
@@ -135,6 +135,7 @@ sub data {
     my $transform = $self->param('transform');
     my $filename = $self->param('filename');
     my $irods_path = $self->param('irods_path');
+    my $load_id = $self->param('load_id');
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -158,7 +159,16 @@ sub data {
 
     my $fh;
     my $tempfile;
-    ($fh, $tempfile) = tempfile() if $irods_path;
+    if ($irods_path) {
+        ($fh, $tempfile) = tempfile();
+    }
+    else {
+        $path = catfile('upload', $filename);
+        my $targetpath = catdir(get_upload_path($user->name, $load_id), 'upload');
+        mkpath($targetpath);
+        $targetpath = catfile($targetpath, 'search_results.csv');
+        open my $fh, ">", $targetpath;
+    }
 
     my $exp_data_type = $experiment->data_type;
     $filename = 'experiment' unless $filename;
@@ -294,7 +304,9 @@ sub data {
     $self->finish();
     if ($fh) {
         close $fh;
-        irods_iput($tempfile, $irods_path . '/' . $filename);
+        if ($irods_path) {
+            irods_iput($tempfile, $irods_path . '/' . $filename);
+        }
     }
 }
 
