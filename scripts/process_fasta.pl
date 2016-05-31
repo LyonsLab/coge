@@ -15,8 +15,9 @@ use vars qw(
 );
   
 use constant MAX_CHROMOSOMES     => 200_000; # max number of chromosomes/contigs
+use constant MIN_CHROMOSOME_SIZE => 1_000;   # min chromosome size (bp)
 use constant MAX_PRINT           => 50;
-use constant MAX_SEQUENCE_SIZE   => 5_000_000_000; # 5 Gbp
+use constant MAX_SEQUENCE_SIZE   => 5_000_000_000; # 5 Gbp total
 use constant MAX_CHR_NAME_LENGTH => 255;
 
 GetOptions(
@@ -63,39 +64,42 @@ if ( -B $input_fasta_file ) {
 }
 
 # Process/validate the file
-my %sequences;
-my $seqLength += process_fasta_file( \%sequences, $input_fasta_file, $staging_dir );
-my $numSequences = keys %sequences;
+my ($seqLength, $numSequences, $numRemoved, $removedLength) = process_fasta_file( $input_fasta_file, $staging_dir );
+if ($numRemoved && $removedLength) {
+    print STDOUT "log: " . commify($numRemoved) . " sequences (", commify($removedLength) , " bp) removed due to size less than ", commify(MIN_CHROMOSOME_SIZE), " bp \n";
+}
 
 if ( $seqLength > MAX_SEQUENCE_SIZE ) {
     print STDOUT "log: error: total sequence size exceeds limit of " . units(MAX_SEQUENCE_SIZE) . "\n";
     exit(-1);
 }
-if ( !$ignore_chr_limit && $numSequences > MAX_CHROMOSOMES ) {
-    print STDOUT "log: error: too many sequences, limit is MAX_CHROMOSOMES\n";
-    exit(-1);
-}
+#if ( !$ignore_chr_limit && $numSequences > MAX_CHROMOSOMES ) {
+#    print STDOUT "log: error: too many sequences, limit is MAX_CHROMOSOMES\n";
+#    exit(-1);
+#}
 
 if ( $numSequences == 0 or $seqLength == 0 ) {
     print STDOUT "log: error: couldn't parse sequences\n";
     exit(-1);
 }
 
-print STDOUT "log: " . commify($numSequences) . " sequences loaded totaling " . commify($seqLength) . " bp\n";
+print STDOUT "log: " . commify($numSequences) . " sequences allowed totaling " . commify($seqLength) . " bp\n";
 
 exit(0);
 
 #-------------------------------------------------------------------------------
 
 sub process_fasta_file {
-    my $pSeq       = shift;
     my $filepath   = shift;
     my $target_dir = shift;
     print STDOUT "process_fasta_file: $filepath\n";
     
+    my %seq;
     my $fileSize    = -s $filepath;
     my $lineNum     = 0;
     my $totalLength = 0;
+    my $chrRemoved  = 0;
+    my $removedLength = 0;
     
     # Open fasta file
     my $in; # file handle
@@ -156,11 +160,17 @@ sub process_fasta_file {
             print STDOUT "log: warning: skipping zero-length section '$chr'\n";
             next;
         }
+        if ( length $filteredSeq < MIN_CHROMOSOME_SIZE ) { # mdb added 5/19/16
+            #print STDOUT "Skipping section '$chr' less than ", MIN_CHROMOSOME_SIZE, " bp in size\n"; # removed, prints too much text and JEX truncates
+            $chrRemoved++;
+            $removedLength += length $filteredSeq;
+            next;
+        }
         if ( length($chr) > MAX_CHR_NAME_LENGTH ) {
-            print STDOUT "log: error: section header name '$chr' is too long (>MAX_CHR_NAME_LENGTH characters)\n";
+            print STDOUT "log: error: section header name '$chr' is too long (>", MAX_CHR_NAME_LENGTH, " characters)\n";
             exit(-1);
         }
-        if ( defined $pSeq->{$chr} ) {
+        if ( defined $seq{$chr} ) {
             print STDOUT "log: error: Duplicate section name '$chr'\n";
             exit(-1);
         }
@@ -182,20 +192,21 @@ sub process_fasta_file {
         print_fasta($out, $head, \$filteredSeq);
         close($out);
 
-        $pSeq->{$chr} = { size => length $filteredSeq, file => $filepath };
+        $seq{$chr} = { size => length $filteredSeq, file => $filepath };
 
         # Print log message
-        my $count = keys %$pSeq;
+        my $count = keys %seq;
         $totalLength += length $filteredSeq;
-        if ( !$ignore_chr_limit && ($count > MAX_CHROMOSOMES or $totalLength > MAX_SEQUENCE_SIZE) ) {
-            return $totalLength;
+        if ( !$ignore_chr_limit && ($count >= MAX_CHROMOSOMES or $totalLength > MAX_SEQUENCE_SIZE) ) {
+            print STDOUT "log: warning: skipping remaining sections due to number exceeding ", MAX_CHROMOSOMES, "\n" if ($count >= MAX_CHROMOSOMES);
+            goto DONE;
         }
         if ( $count <= MAX_PRINT ) {
             my $filename = basename($filepath);
-            print STDOUT "log: Processed chr '$chr' (".commify(length($filteredSeq))." bp)\n";
+            print STDOUT "log: Processed chr '$chr' (", commify(length($filteredSeq)), " bp)\n";
         }
         elsif ( $count == MAX_PRINT + 1 ) {
-            print STDOUT "log: (only showing first MAX_PRINT chromosomes)\n";
+            print STDOUT "log: (only showing first ", MAX_PRINT, " chromosomes)\n";
         }
         elsif ( ( $count % 10000 ) == 0 ) {
             print STDOUT "log: Processed "
@@ -205,9 +216,10 @@ sub process_fasta_file {
               . "%) sequences so far ...\n";
         }
     }
-    close($in);
 
-    return $totalLength;
+    DONE:    
+    close($in);
+    return $totalLength, scalar(keys %seq), $chrRemoved, $removedLength;
 }
 
 

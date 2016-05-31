@@ -17,6 +17,8 @@ sub is_valid {
 
 sub has_access {
     my $self = shift;
+    return unless defined $self->{user};
+
     my $genome_id1 = $self->parameters->{genome_id1};
     return unless $genome_id1;
     my $genome_id2 = $self->parameters->{genome_id2};

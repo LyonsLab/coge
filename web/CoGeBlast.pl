@@ -2293,8 +2293,10 @@ sub populate_sqlite {
     my $smismatch = $subject_length - $hsp->match;
 
     my $statement =
-qq{INSERT INTO hsp_data (name, eval, pid, psim, score, qgap, sgap,match,qmismatch,smismatch, strand, length, qstart,qstop, sstart, sstop,qalign,salign,align,qname,sname,hsp_num,org,schr) values ("$name", "$pval", "$pid","$psim", "$score", $qgap, $sgap, $match,$qmismatch, $smismatch, "$strand",$length,$qstart, $qstop, $sstart, $sstop,"$qalign","$salign","$align","$qname","$sname",$hsp_num,"$org","$chr")};
+qq{INSERT INTO hsp_data (name, eval, pid, psim, score, qgap, sgap,match,qmismatch,smismatch, strand, length, qstart,qstop, sstart, sstop,qalign,salign,align,qname,sname,hsp_num,org,schr) values ('$name', '$pval', '$pid','$psim', '$score', $qgap, $sgap, $match,$qmismatch, $smismatch, '$strand',$length,$qstart, $qstop, $sstart, $sstop,'$qalign','$salign','$align','$qname','$sname',$hsp_num,'$org','$chr')};
+    #my $insert_prep = $dbh->prepare('INSERT INTO hsp_data (name, eval, pid, psim, score, qgap, sgap,match,qmismatch,smismatch, strand, length, qstart,qstop, sstart, sstop,qalign,salign,align,qname,sname,hsp_num,org,schr) values (?, ?, ?,?, ?, ?, ?, ?,?, ?, ?,?,?, ?, ?, ?,?,?,?,?,?,?,?,?)');
     print STDERR $statement unless $dbh->do($statement);
+    #$insert_prep->execute("$name", "$pval", "$pid","$psim", "$score", $qgap, $sgap, $match,$qmismatch, $smismatch, "$strand",$length,$qstart, $qstop, $sstart, $sstop,"$qalign","$salign","$align","$qname","$sname",$hsp_num,"$org","$chr");
 
     # Populate sequence_info table
     $statement = "SELECT name FROM sequence_info where name = '$qname'";
@@ -2302,7 +2304,7 @@ qq{INSERT INTO hsp_data (name, eval, pid, psim, score, qgap, sgap,match,qmismatc
     unless ( $val->[0][0] ) {
         my $qlength = $hsp->query_length;
         $statement =
-qq{INSERT INTO sequence_info (name, type, length) values ("$qname","query","$qlength")};
+qq{INSERT INTO sequence_info (name, type, length) values ('$qname',"query",'$qlength')};
         print STDERR $statement unless $dbh->do($statement);
     }
     $statement = "SELECT name FROM sequence_info where name = '$sname'";
@@ -2310,7 +2312,7 @@ qq{INSERT INTO sequence_info (name, type, length) values ("$qname","query","$qle
     unless ( $val->[0][0] ) {
         my $slength = $hsp->subject_length;
         $statement =
-qq{INSERT INTO sequence_info (name, type, length) values ("$sname","subject","$slength")};
+qq{INSERT INTO sequence_info (name, type, length) values ('$sname',"subject",'$slength')};
         print STDERR $statement unless $dbh->do($statement);
     }
     $dbh->do("commit transaction") or die $dbh->errstr;

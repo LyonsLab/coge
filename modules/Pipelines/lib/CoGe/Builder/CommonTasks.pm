@@ -634,7 +634,7 @@ sub create_join_files_job {
     my $output_file = $opts{output_file};
     my $done_files  = $opts{done_files};
     
-    my $cmd = 'cat ' . join(' ', @$input_files) . ' > ' . $output_file;
+    my $cmd = "mkdir -p \$(dirname $output_file) && cat " . join(' ', @$input_files) . ' > ' . $output_file;
     
     return {
         cmd => $cmd,
@@ -814,8 +814,6 @@ sub create_load_genome_job {
     my $cmd = 'perl ' . catfile($CONF->{SCRIPTDIR}, "load_genome.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
-    my $output_path = catdir($staging_dir, "load_genome");
-    
     my $result_file = get_workflow_results_file($user->name, $wid);
 
     my $irods_str = '';
@@ -835,7 +833,7 @@ sub create_load_genome_job {
             ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
             ['-organism_id', $organism_id, 0],
             ['-type_id', ( $metadata->{type} ? shell_quote($metadata->{type}) : 1 ), 0], # default to "unmasked"
-            ['-staging_dir', "./load_genome", 0],
+            ['-staging_dir', $staging_dir, 0],
             ['-fasta_file', shell_quote($fasta_file), 0],
             ['-irods_files', shell_quote($irods_str), 0],
             ['-config', $CONF->{_CONFIG_PATH}, 0]
@@ -845,8 +843,7 @@ sub create_load_genome_job {
             @$done_files
         ],
         outputs => [
-            [$output_path, '1'],
-            catfile($output_path, "log.done"),
+            catfile($staging_dir, "log.done"),
             $result_file
         ],
         description => "Loading genome ..."

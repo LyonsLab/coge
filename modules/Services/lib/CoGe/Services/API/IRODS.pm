@@ -4,7 +4,7 @@ use Mojo::JSON;
 use CoGeX;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Core::Storage qw(get_irods_path get_irods_file irods_mkdir);
+use CoGe::Core::Storage qw(get_irods_path get_irods_file irods_mkdir irods_rm);
 use CoGe::Services::Auth;
 use Data::Dumper;
 
@@ -73,6 +73,7 @@ sub mkdir {
 #     }
 #     $self->render(json => { success => Mojo::JSON->true });
 # }
+
 
 # mdb removed 8/24/15 -- not used
 #sub fetch {

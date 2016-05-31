@@ -9,6 +9,7 @@ use CoGe::Accessory::IRODS qw(irods_imeta $IRODS_METADATA_PREFIX);
 use Data::Dumper;
 use Getopt::Long;
 use File::Touch;
+use File::Path qw(mkpath);
 use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
 use URI::Escape::JavaScript qw(unescape);
@@ -325,9 +326,13 @@ unless ($dsconn) {
 }
 
 # Create genomic_sequence/feature/location for ea. chromosome
-my %sequences = read_fasta_index("$fasta_file.fai"); # assumes indexed FASTA
-foreach my $chr ( sort keys %sequences ) {
-    my $seqlen = $sequences{$chr};
+my $sequences = read_fasta_index("$fasta_file.fai"); # assumes indexed FASTA
+unless ($sequences && keys %$sequences) {
+    print STDOUT "log: error reading fasta index\n";
+    exit(-1);   
+}
+foreach my $chr ( sort keys %$sequences ) {
+    my $seqlen = $sequences->{$chr};
 
 	# Must add a feature of type chromosome to the dataset so the dataset
 	# "knows" its chromosomes
@@ -362,12 +367,12 @@ unless (-r $storage_path) {
     exit(-1);
 }
 
-execute("cp $staging_dir/genome.faa $storage_path/"); #FIXME use perl copy and detect failure
-execute("cp $staging_dir/genome.faa.fai $storage_path/");
-if ($compress) {
-    execute("cp $staging_dir/genome.faa.razf $storage_path/");
-    execute("cp $staging_dir/genome.faa.razf.fai $storage_path/");
-}
+execute("cp $fasta_file $storage_path/"); #FIXME use perl copy and detect failure
+execute("cp $fasta_file.fai $storage_path/");
+#if ($compress) {
+#    execute("cp $fasta_file.razf $storage_path/");
+#    execute("cp $fasta_file.razf.fai $storage_path/");
+#}
 
 # Update IRODS metadata #FIXME not working anymore, need to separate out into separate task in workflow
 if ($irods_files) {

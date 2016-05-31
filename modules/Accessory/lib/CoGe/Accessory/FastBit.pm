@@ -61,7 +61,7 @@ sub query {
 	my $cmdpath = get_defaults()->{FASTBIT_QUERY};
 	my $storage_path = get_experiment_path($eid);
 	my $cmd = "$cmdpath -v 1 -d $storage_path -q \"$query\" 2>&1";
-	warn $cmd;
+#	warn $cmd;
 	my @cmdOut = qx{$cmd};
 
 	my $cmdStatus = $?;
