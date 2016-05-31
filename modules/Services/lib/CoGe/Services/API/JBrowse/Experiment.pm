@@ -198,8 +198,9 @@ sub data {
         my $score_column = CoGe::Core::Experiment::get_fastbit_score_column($data_type);
         my $log10 = log(10);
         foreach my $line (@{$lines}) {
+            my @tokens = split ', ', $line;
+            $tokens[0] = substr($tokens[0], 1, -1);
             if ($transform) {
-                my @tokens = split ',', $line;
                 if ($transform eq 'Inflate') {
                     $tokens[$score_column] = 1;
                 }
@@ -209,9 +210,9 @@ sub data {
                 elsif ($transform eq 'Log10') {
                     $tokens[$score_column] = log(1 + $tokens[$score_column]) / $log10;
                 }
-                $line = join ',', @tokens;
             }
-            $self->_write($line, $fh);
+
+            $self->_write(join(',', @tokens), $fh);
             $self->_write("\n", $fh);
         }
     }
@@ -338,10 +339,10 @@ sub _get_experiments {
         }
         else {
             if ($user && $user->name) {
-            	warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $eid . ' for user ' . $user->name;
+            	warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $e->id . ' for user ' . $user->name;
             }
             else {
-                warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $eid;
+                warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $e->id;
             }
         }
     }
