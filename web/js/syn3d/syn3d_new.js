@@ -27,6 +27,9 @@ var redraw = false;
 
 // Color schemes variables
 var schemes = {
+    "Auto": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
+        [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']], //TODO: REMOVE THIS SHITTY HACK!
+
     "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
         [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
 
@@ -42,6 +45,63 @@ var schemes = {
         [0.7529411764705882,'#5ec962'], [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],
         [0.9411764705882353,'#d8e219'], [1,'#fde725']]
 }; // Source: https://github.com/plotly/plotly.js/blob/master/src/components/colorscale/scales.js
+
+/* Persistence Functions */
+function simplify(dirtyPoints, persistence) {
+    const points = removeNonExtrema(dirtyPoints);
+    const index = indexOfSmallestPointDifference(points);
+
+    if (points.length < 3 || gapBetweenPoints(points, index) > persistence)
+        return points;
+
+    const toRemove = index === 0 ? 1 : index;
+    points.splice(toRemove, 1);
+
+    return simplify(points, persistence);
+}
+
+function removeNonExtrema(A) {
+    return _.filter(A, function(element, index) {
+        if (index === 0 || index === A.length - 1)
+            return true;
+
+        const before = A[index - 1].y;
+        const here = element.y;
+        const after = A[index + 1].y;
+        return here > Math.max(before, after) || here < Math.min(before, after);
+    });
+}
+
+function gapBetweenPoints(A, i) {
+    return Math.abs(A[i].y - A[i + 1].y);
+}
+
+function indexOfSmallestPointDifference(A) {
+    //console.log(_(A.length-1));
+    return _(A.length - 1).range().min(i => gapBetweenPoints(A, i));
+    //return _.range(A.length-1).min(i => gapBetweenPoints(A, i));
+}
+
+function generateColorScaleFromExtrema(extrema) {
+    const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
+    const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i);
+    const colors = d3.scale.category10();
+
+    const colored = _.map(extrema, function(x, i, A) {
+        const color = shouldBeMarked(x, i, A) ? colors(i) : '#D0D0D0';
+        return Object.assign({}, x, {color});
+    });
+
+    const domain = _.map(colored, d => d.x + d.dx / 2);
+    const range = _.map(colored, d => d.color);
+
+    return d3.scale.linear().domain(domain).range(range);
+};
+
+function generateAutoScale(points, persistence) {
+    const extrema = simplify(points, persistence);
+    return generateColorScaleFromExtrema(extrema);
+};
 
 /* CORE FUNCTION: Create coloring function */
 function getPtColorFunc(minVal, maxVal, colorScheme) {
@@ -88,7 +148,7 @@ function rotateHistogram(direction) {
         d3.select("#chartSvg").remove();
         document.getElementById(c).style.display = "none";
         document.getElementById(n).style.display = "";
-        renderHistogram(n, histData[type]);
+        renderHistogram(n, histData[type], $("#slide").val());
         hCurrent = [n, type];
         hQueue.unshift(n);
         hQueue.unshift(c);
@@ -99,7 +159,7 @@ function rotateHistogram(direction) {
         d3.select("#chartSvg").remove();
         document.getElementById(c).style.display = "none";
         document.getElementById(n).style.display = "";
-        renderHistogram(n, histData[type]);
+        renderHistogram(n, histData[type], $("#slide").val());
         hCurrent = [n, type];
         hQueue.push(n);
         hQueue.push(c);
@@ -179,7 +239,7 @@ function postTiny(element, url) {
 }
 
 /* CORE FUNCTION: Render Histograms */
-function renderHistogram(element_id, values) {
+function renderHistogram(element_id, values, persistence) {
     /* RESOURCES
         Simple Histogram: https://bl.ocks.org/mbostock/3048450
         Basic Mouseover: http://bl.ocks.org/phil-pedruco/9032348
@@ -198,27 +258,39 @@ function renderHistogram(element_id, values) {
     // Bin Count.
     var binCount = 100.0;
 
-    // Set margins & canvas size.
+    // Set margins & canvas size (original).
     var margin = {top: 10, right: 30, bottom: 30, left: 30},
         width = document.getElementById(element_id).clientWidth - margin.left - margin.right,
         height = (document.getElementById("rendering").clientHeight * .65) - margin.bottom - margin.top;
-    
+
     // Get minimum & maximum values.
     var minVal = Math.min.apply(null, values);
     var maxVal = Math.max.apply(null, values);
-
-    // Generate function to calculate point colors by colorscheme.
-    var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
 
     // Set X scale.
     var x = d3.scale.linear()
         .domain([minVal, maxVal])
         .range([0, width]);
-    
+
     // Generate histogram bins.
     var data = d3.layout.histogram()
         .bins(binCount)
         (values);
+
+    // Scale persistence (didn't work)
+    // var largestBin = _.max(data, function(d) { return d.length }).length;
+    // var persistenceScale = d3.scale.linear()
+    //         .domain([0, 100])
+    //         .range([0, largestBin]);
+
+    // Generate function to calculate point colors by colorscheme.
+    var calcColor;
+    if (colorScheme == 'Auto') {
+        calcColor = generateAutoScale(data, persistence);
+        console.log(calcColor)
+    } else {
+        calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
+    }
 
     // Set Y scale.
     var y = d3.scale.linear()
@@ -236,7 +308,7 @@ function renderHistogram(element_id, values) {
         .offset([-10, 0])
         .html(function(d) {
             //console.log(d.x); // Returns bin minimum
-            var range = formatCount(d3.min(d)) + " < log10(" + hCurrent[1] + ") < " + formatCount(d3.max(d));
+            var range = formatCount(d3.min(d)) + " < log10(X) < " + formatCount(d3.max(d));
             var count = "Bin Count: <span style='color:red'>" + d.y + "</span>";
             return range + "<br>" + count;
         });
@@ -252,7 +324,7 @@ function renderHistogram(element_id, values) {
     // Add tip to SVG.
     svg.call(tip);
 
-
+    // Set up & animate selection brush.
     var brush, brushg;
 
     function brushstart() {}
@@ -303,7 +375,6 @@ function renderHistogram(element_id, values) {
     if (brush) { brushmove(); }
 
     // Draw histogram bars.
-    // TODO: FIX overlapping bars (maybe has to do with SVG element size). Maybe use math.floor
     var bar = svg.selectAll(".bar")
         .data(data)
         .enter().append("g")
@@ -324,9 +395,33 @@ function renderHistogram(element_id, values) {
             d3.select(this).attr("fill", function(d) { return calcColor(d.x) })
         });
 
-    // Set up & animate selection brush.
+    // Draw persistance points.
+    function calcPersistence(data, persistence) {
+        const extrema = simplify(data, persistence);
+        const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
+        const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i);
+        const markers = _.map(extrema, function(d, i, A) {
+            return {
+                color: shouldBeMarked(d, i, A) ? 'red' : 'orange',
+                x: d.x + d.dx / 2,
+                y: d.y
+            };
+        });
+        return markers;
+    }
 
-
+    if (colorScheme == "Auto") {
+        var newData = calcPersistence(data, persistence);
+        var mark = svg.selectAll(".mark")
+                .data(newData)
+                .enter().append("g")
+                .attr("class", "mark");
+        mark.append("circle")
+                .attr("cx", function(d) { return formatWide(x(formatWide(d.x)))})
+                .attr("cy", function(d) { return y(d.y) - 5 })
+                .attr('r', 3)
+                .attr('fill', function(d) { return d.color});
+    }
 
 
     // Draw X axis.
@@ -334,10 +429,11 @@ function renderHistogram(element_id, values) {
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis);
+
 }
 
 /* CORE FUNCTION: Render SynMap */
-function renderSynMap(graph_object, element_id, color_by) {
+function renderSynMap(graph_object, element_id, color_by, persistence) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~VARIABLE DECLARATIONS~~~~
      --------------------------------------------------------------------------------------------------------*/
@@ -663,7 +759,16 @@ function renderSynMap(graph_object, element_id, color_by) {
             var c = cList[s];
             var minVal = Math.min.apply(null, histData[c]);
             var maxVal = Math.max.apply(null, histData[c]);
-            var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
+            var calcColor;
+            if (colorScheme == 'Auto') {
+                var bins = d3.layout.histogram().bins(100)(histData[c]);
+                calcColor = generateAutoScale(bins, persistence);
+            } else {
+                calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
+            }
+
+
+            //var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
 
             for (var j = 0; j < ptCount; j++) {
                 if (pointMutData[c][j] != 'NULL') {
@@ -952,7 +1057,7 @@ function renderSynMap(graph_object, element_id, color_by) {
 
         // Re-render Histograms on page resize
         d3.select("#chartSvg").remove();
-        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+        renderHistogram(hCurrent[0], histData[hCurrent[1]], $("#slide").val());
     }
     window.addEventListener( 'resize', onWindowResize, false );
 
@@ -1016,6 +1121,8 @@ $(document).ready( function() {
     // Start Spinny Wheely(s)
     // TODO
     var overlay = $("#overlay");
+    var persistanceSlide = $("#slide");
+    var persistanceDisplay = $("#slideDisplay");
     overlay.show();
 
     // Load data & launch initial visualizations
@@ -1028,13 +1135,13 @@ $(document).ready( function() {
         zsp = d.z[1];
 
         // Update camera view buttons with spp names.
-        document.getElementById("viewXY").innerHTML = "View " + xsp + "-" + ysp;
-        document.getElementById("viewXZ").innerHTML = "View " + xsp + "-" + zsp;
-        document.getElementById("viewYZ").innerHTML = "View " + ysp + "-" + zsp;
+        document.getElementById("xylabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='bluetxt'>" + ysp + "</span>";
+        document.getElementById("xzlabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
+        document.getElementById("yzlabel").innerHTML = "<span class='bluetxt'>" + ysp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
 
         // Render initial SynMap & Histogram
-        renderSynMap(data, "canvas", "xy");
-        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+        renderSynMap(data, "canvas", "xy", persistanceSlide.val());
+        renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
         //postTiny("tiny", final_experiment.page_url);
         postTiny("tiny", final_experiment.tiny_url);
 
@@ -1064,23 +1171,43 @@ $(document).ready( function() {
     var colorBySelect = $("#color_by");
     colorBySelect.change( function () {
         overlay.show();
+
         emptyRenderings();
         // Draw new SynMap & histogram.
-        renderSynMap(d, "canvas", colorBySelect.val());
-        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+        renderSynMap(d, "canvas", colorBySelect.val(), persistanceSlide.val());
+        renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
         overlay.hide();
     });
 
     /* Monitor mutation ratio coloring option & update visualizations on change. */
     var colorSchemeSelect = $("#color_scheme");
+    var autoscale = $("#autoscale");
     colorSchemeSelect.change( function () {
         overlay.show();
+        var newVal = colorSchemeSelect.val();
+        // Check for autoscale
+        if (newVal == "Auto") {
+            autoscale.removeClass("hidden");
+        } else {
+            if (!autoscale.hasClass("hidden")) { autoscale.addClass("hidden") }
+        }
         emptyRenderings();
-        colorScheme = colorSchemeSelect.val();
+        colorScheme = newVal;
         // Draw new SynMap & histogram.
-        renderSynMap(d, "canvas", colorBySelect.val());
-        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+        renderSynMap(d, "canvas", colorBySelect.val(), persistanceSlide.val());
+        renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
         overlay.hide();
+    });
+
+    /* Report persistence */
+    persistanceDisplay.html(persistanceSlide.val());
+    persistanceSlide.change( function () {
+        overlay.show();
+        persistanceDisplay.html(persistanceSlide.val());
+        emptyRenderings();
+        renderSynMap(d, "canvas", colorBySelect.val(), persistanceSlide.val());
+        renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
+        overlay.hide()
     });
 
 });
