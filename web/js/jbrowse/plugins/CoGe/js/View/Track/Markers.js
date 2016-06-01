@@ -30,12 +30,12 @@ return declare( [ HTMLFeatures ], {
         if (!track.config.coge.search_track)  {
             options.push({
                 label: 'Find Markers in Features',
-                onClick: function(){coge_plugin.create_features_overlap_search_dialog(track, 'Markers', 'markers');}
+                onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'Markers', 'markers');}
             });
         }
         options.push({
             label: 'Export Track Data',
-            onClick: function(){coge_plugin.create_export_dialog(track);}
+            onClick: function(){coge_plugin.export_dialog(track);}
         });
         return options;
     },

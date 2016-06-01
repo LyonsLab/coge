@@ -63,10 +63,11 @@ tr.file {
 	cursor: default !important;
 }
 </style>
+<TMPL_INCLUDE NAME="Progress.tmpl">
 <script src="//d3js.org/d3.v3.js" charset="utf-8"></script>
-<script type="text/javascript" src="js/jbrowse/src/dojo/dojo.js" data-dojo-config="async: 1"></script>
-<script type="text/javascript" src="js/jbrowse/src/JBrowse/init.js"></script>
-<script type="text/javascript">
+<script src="js/jbrowse/src/dojo/dojo.js" data-dojo-config="async: 1"></script>
+<script src="js/jbrowse/src/JBrowse/init.js"></script>
+<script>
     window.onerror=function(msg){
         if( document.body )
             document.body.setAttribute("JSError",msg);
@@ -134,14 +135,22 @@ tr.file {
 	      	}
 	    );
     }
+    $(function() {
+	    coge.progress.init({
+	    	title: "Creating Experiment",
+	    	baseUrl: api_base_url,
+	    	userName: un
+	    });
+	});
 </script>
-<script type="text/javascript">
+<script>
 // Page constants
 const USER_NAME     = '<TMPL_VAR NAME="USER">';
 // File Select constants
 const MAX_IRODS_LIST_FILES     = '<TMPL_VAR NAME="MAX_IRODS_LIST_FILES">';
 const MAX_IRODS_TRANSFER_FILES = '<TMPL_VAR NAME="MAX_IRODS_TRANSFER_FILES">';
 </script>
-<script type="text/javascript" src="js/coge/services.js"></script>
-<script type="text/javascript" src="js/coge/utils.js"></script>
-<script type="text/javascript" src="js/coge/file-select.js"></script>
+<script src="js/coge/services.js"></script>
+<script src="js/coge/progress.js"></script>
+<script src="js/coge/utils.js"></script>
+<script src="js/coge/file-select.js"></script>

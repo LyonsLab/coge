@@ -160,31 +160,6 @@ var XYPlot = declare( [XYPlotBase], {
 
     // ----------------------------------------------------------------
 
-    _create_search_dialog: function(track) {
-    	this._track = track;
-    	var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td>';
-        content += coge_plugin.build_chromosome_select('Any', 'coge_xyplot._getHistogram(this.options[this.selectedIndex].text)');
-    	content += '</td></tr>' +
-    		'<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
-    		'<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
-    		'<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: from <input id="hist_from" size="4" onfocus="dojo.byId(\'range\').checked=true;" /> to <input id="hist_to" size="4" onfocus="dojo.byId(\'range\').checked=true;" /></td></tr>' +
-    		'<tr><td></td><td><div id="coge-hist"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._track_search_dialog.hide()">Cancel</button></div></div>';
-    	this._track_search_dialog = new Dialog({
-            title: 'Search Track',
-            content: content,
-            onHide: function() {
-            	this.destroyRecursive();
-            	coge_xyplot._track_search_dialog = null;
-                coge_xyplot._hist_chr = null;
-            },
-            style: "width: 350px"
-        });
-        this._getHistogram(coge_plugin.browser.refSeq.name);
-    	this._track_search_dialog.show();
-    },
-
-    // ----------------------------------------------------------------
-
     _defaultConfig: function() {
         return Util.deepUpdate(
             dojo.clone( this.inherited(arguments) ),
@@ -495,8 +470,8 @@ var XYPlot = declare( [XYPlotBase], {
             load: function(data) {
                 if (data.error) {
                     coge_plugin.error('Search', data);
-                    if (coge_xyplot._track_search_dialog)
-                        coge_xyplot._track_search_dialog.hide();
+                    if (coge_xyplot._search_dialog)
+                        coge_xyplot._search_dialog.hide();
                     return;
                 }
                 if (chr != coge_xyplot._hist_chr) {
@@ -510,8 +485,8 @@ var XYPlot = declare( [XYPlotBase], {
             },
             error: function(data) {
                 coge_plugin.error('Search', data);
-                if (coge_xyplot._track_search_dialog)
-                    coge_xyplot._track_search_dialog.hide();
+                if (coge_xyplot._search_dialog)
+                    coge_xyplot._search_dialog.hide();
             }
         });
     },
@@ -603,19 +578,44 @@ var XYPlot = declare( [XYPlotBase], {
     		url: api_base_url + '/experiment/' + this._track.config.coge.id + '/query?' + coge_plugin.search_to_params(search),
     		handleAs: 'json',
 	  		load: dojo.hitch(this, function(data) {
-                if (this._track_search_dialog)
- 				    this._track_search_dialog.hide();
+                if (this._search_dialog)
+ 				    this._search_dialog.hide();
 	  			if (data.length == 0)
 	  				coge_plugin.error('Search', 'Search returned zero hits');
 	  			else
 	  				coge_plugin.new_search_track(this._track, data);
     		}),
     		error: dojo.hitch(this, function(data) {
-    			if (this._track_search_dialog)
-                    this._track_search_dialog.hide();
+    			if (this._search_dialog)
+                    this._search_dialog.hide();
     			coge_plugin.error('Search', data);
     		})
     	});
+    },
+
+    // ----------------------------------------------------------------
+
+    _search_track_dialog: function(track) {
+        this._track = track;
+        var content = '<div id="coge-track-search"><table align="center"><tr><td>Chromosome:</td><td>';
+        content += coge_plugin.build_chromosome_select('Any', 'coge_xyplot._getHistogram(this.options[this.selectedIndex].text)');
+        content += '</td></tr>' +
+            '<tr><td>Values:</td><td style="white-space:nowrap"><input id="max" type="radio" name="type" checked="checked"> max</td></tr>' +
+            '<tr><td></td><td style="white-space:nowrap"><input id="min" type="radio" name="type"> min</td></tr>' +
+            '<tr><td></td><td style="white-space:nowrap" valign="top"><input id="range" type="radio" name="type"> range: from <input id="hist_from" size="4" onfocus="dojo.byId(\'range\').checked=true;" /> to <input id="hist_to" size="4" onfocus="dojo.byId(\'range\').checked=true;" /></td></tr>' +
+            '<tr><td></td><td><div id="coge-hist"></div></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_track()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_xyplot._search_dialog.hide()">Cancel</button></div></div>';
+        this._search_dialog = new Dialog({
+            title: 'Search Track',
+            content: content,
+            onHide: function() {
+                this.destroyRecursive();
+                coge_xyplot._search_dialog = null;
+                coge_xyplot._hist_chr = null;
+            },
+            style: "width: 350px"
+        });
+        this._getHistogram(coge_plugin.browser.refSeq.name);
+        this._search_dialog.show();
     },
 
     // ----------------------------------------------------------------
@@ -733,7 +733,7 @@ var XYPlot = declare( [XYPlotBase], {
         if (!config.coge.search_track && config.coge.type != 'notebook')
 	        options.push({
 		        label: 'Search',
-		        onClick: function(){coge_xyplot._create_search_dialog(track);}
+		        onClick: function(){coge_xyplot._search_track_dialog(track);}
 	        });
 
         if (config.coge.type == 'notebook') {
@@ -824,12 +824,12 @@ var XYPlot = declare( [XYPlotBase], {
         if (config.coge.type != 'notebook')
 	        options.push({
 		        label: 'Export Track Data',
-		        onClick: function(){coge_plugin.create_export_dialog(track);}
+		        onClick: function(){coge_plugin.export_dialog(track);}
 	        });
         if (config.coge.search)
             options.push({
                 label: 'Save Results as New Experiment',
-                onClick: function(){coge_plugin.prompt('Save Results', 'Experiment name', function() {});}
+                onClick: function(){coge_plugin.save_as_experiment_dialog(track)}
             });
 
         return options;

@@ -136,7 +136,7 @@ sub data {
     my $filename = $self->param('filename');
     my $irods_path = $self->param('irods_path');
     my $load_id = $self->param('load_id');
-
+warn $load_id;
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
@@ -162,12 +162,11 @@ sub data {
     if ($irods_path) {
         ($fh, $tempfile) = tempfile();
     }
-    else {
-        $path = catfile('upload', $filename);
-        my $targetpath = catdir(get_upload_path($user->name, $load_id), 'upload');
-        mkpath($targetpath);
-        $targetpath = catfile($targetpath, 'search_results.csv');
-        open my $fh, ">", $targetpath;
+    elsif ($load_id) {
+        my $path = catdir(get_upload_path($user->name, $load_id), 'upload');
+        mkpath($path);
+        warn $path;
+        open $fh, ">", catfile($path, 'search_results.csv');
     }
 
     my $exp_data_type = $experiment->data_type;

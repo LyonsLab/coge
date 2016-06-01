@@ -428,7 +428,6 @@ print STDOUT "$cmd\n";
 `$cmd`;
 
 # Save result
-print STDOUT "log: going to add $user_name $wid\n";
 unless (add_workflow_result($user_name, $wid, 
         {
             type        => 'experiment',
