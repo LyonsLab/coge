@@ -631,7 +631,7 @@ function launch(experiment) {
 
     // Start Comparisons
     //console.log(graph_obj);
-    var graphLoc = "/asherkhb/coge/data/syn3d/" + graph_obj; // TODO: FIX THIS HARDCODED SHIT!
+    var graphLoc = DATA_LOC + "/" + graph_obj;
     $.ajax({
         url: graphLoc,
         type: 'HEAD',
