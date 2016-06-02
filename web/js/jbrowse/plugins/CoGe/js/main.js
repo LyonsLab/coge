@@ -571,11 +571,30 @@ return declare( JBrowsePlugin,
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var search = this.search_to_string(config.coge.search);
 		var description = 'Results from search: ' + search;
-		var url = api_base_url + '/experiment/' + config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id;
+		var url = api_base_url + '/experiment/' + config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id + '&ext=' + config.coge.ext;
 		url += '&' + this.search_to_params(config.coge.search, true);
+		var annotions = [
+			{
+				type: 'origional experiment name',
+				text: config.coge.name
+			},
+			{
+				type: 'origional experiment id',
+				text: config.coge.id
+			},
+			{
+				type: 'search',
+				text: search
+			},
+			{
+				type: 'search user',
+				text: un
+			}
+		];
 		if (config.coge.transform) {
 			url += '&transform=' + config.coge.transform;
 			description += ', transform: ' + config.coge.transform;
+			annotions.push({ type: 'transform', text: config.coge.transform });
 		}
 		dojo.xhrGet({
 			url: url,
@@ -590,24 +609,7 @@ return declare( JBrowsePlugin,
 							user_name: un
 						},
 						parameters: {
-							additional_metadata: [
-								{
-									type: 'origional experiment name',
-									text: config.coge.name
-								},
-								{
-									type: 'origional experiment id',
-									text: config.coge.id
-								},
-								{
-									type: 'search',
-									text: search
-								},
-								{
-									type: 'search user',
-									text: un
-								}
-							],
+							additional_metadata: annotions,
 							genome_id: gid,
 							load_id: load_id,
 							metadata: {
@@ -618,8 +620,8 @@ return declare( JBrowsePlugin,
 								version: '1'
 							},
 							source_data: [{
-								file_type: 'csv',
-								path: 'upload/search_results.csv',
+								file_type: config.coge.ext.substr(1),
+								path: 'upload/search_results' + config.coge.ext,
 								type: 'file'
 							}]
 						}

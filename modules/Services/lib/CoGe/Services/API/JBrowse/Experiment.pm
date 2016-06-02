@@ -136,7 +136,8 @@ sub data {
     my $filename = $self->param('filename');
     my $irods_path = $self->param('irods_path');
     my $load_id = $self->param('load_id');
-warn $load_id;
+    my $ext = $self->param('ext');
+
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
@@ -166,7 +167,7 @@ warn $load_id;
         my $path = catdir(get_upload_path($user->name, $load_id), 'upload');
         mkpath($path);
         warn $path;
-        open $fh, ">", catfile($path, 'search_results.csv');
+        open $fh, ">", catfile($path, 'search_results' . $ext);
     }
 
     my $exp_data_type = $experiment->data_type;
@@ -234,7 +235,7 @@ warn $load_id;
         if ($type) {
             $self->_write('# search: ' . $type . "\n", $fh);
         }
-        $self->_write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n", $fh);
+        $self->_write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n", $fh);
         my $snps = $self->_snps;
         my $s = (index(@{$snps}[0], ', ') == -1 ? 1 : 2);
         foreach (@{$snps}) {
@@ -250,9 +251,9 @@ warn $load_id;
             $self->_write(substr($l[6], $s, -1), $fh);
             $self->_write("\t", $fh);
             $self->_write($l[7], $fh);
-            $self->_write("\t\t", $fh);
+            $self->_write("\t.\t", $fh);
             $self->_write(substr($l[8], $s, -1), $fh);
-            $self->_write("\t\n", $fh);
+            $self->_write("\n", $fh);
         }
     }
     elsif ( $exp_data_type == $DATA_TYPE_ALIGN) {
