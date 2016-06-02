@@ -12,6 +12,8 @@ var histData = {"kn": [], "ks": [], "knks": []};
 var pointData = [];
 var colors = {"kn": [], "ks": [], "knks": []};
 var xsp, ysp, zsp;
+var d;
+var overlay = $("#overlay");
 
 // Updating Variables
 var camUpdate = false;
@@ -24,9 +26,14 @@ var colorScheme = "Jet";
 var dataRange;
 var dataSubset;
 var redraw = false;
+var refresh = false;
+var needsBrushUpdate = false;
 
 // Color schemes variables
 var schemes = {
+    "Auto": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
+        [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']], //TODO: REMOVE THIS SHITTY HACK!
+
     "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
         [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
 
@@ -42,6 +49,67 @@ var schemes = {
         [0.7529411764705882,'#5ec962'], [0.8156862745098039,'#84d44b'], [0.8784313725490196,'#addc30'],
         [0.9411764705882353,'#d8e219'], [1,'#fde725']]
 }; // Source: https://github.com/plotly/plotly.js/blob/master/src/components/colorscale/scales.js
+
+/* Persistence Functions */
+function simplify(dirtyPoints, persistence) {
+    const points = removeNonExtrema(dirtyPoints);
+    const index = indexOfSmallestPointDifference(points);
+
+    if (points.length < 3 || gapBetweenPoints(points, index) > persistence)
+        return points;
+
+    const toRemove = index === 0 ? 1 : index;
+    points.splice(toRemove, 1);
+
+    return simplify(points, persistence);
+}
+
+function removeNonExtrema(A) {
+    return _.filter(A, function(element, index) {
+        if (index === 0 || index === A.length - 1)
+            return true;
+
+        const before = A[index - 1].y;
+        const here = element.y;
+        const after = A[index + 1].y;
+        return here > Math.max(before, after) || here < Math.min(before, after);
+    });
+}
+
+function gapBetweenPoints(A, i) {
+    return Math.abs(A[i].y - A[i + 1].y);
+}
+
+function indexOfSmallestPointDifference(A) {
+    //return _(A.length - 1).range().min(i => gapBetweenPoints(A, i)); // AKB Removed (replace w/ func. not. below)
+    return _(A.length - 1).range().min(function(i) { return gapBetweenPoints(A, i) });
+}
+
+function generateColorScaleFromExtrema(extrema) {
+    //const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y); // AKB Removed (replace w/ func. not. below)
+    //const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i); // AKB Removed (replace w/ func. not. below)
+    const isMaxima = function(A, i) { return A[i].y > Math.max(A[i - 1].y, A[i + 1].y) };
+    const shouldBeMarked = function(x, i, A) { return i > 0 && i < A.length - 1 && isMaxima(A, i) };
+    const colors = d3.scale.category10();
+
+    const colored = _.map(extrema, function(x, i, A) {
+        const color = shouldBeMarked(x, i, A) ? colors(i) : '#D0D0D0';
+        //return Object.assign({}, x, {color}); // AKB Removed (replace w/ func. not. below)
+        return Object.assign({}, x, {color: color});
+    });
+
+    //const domain = _.map(colored, d => d.x + d.dx / 2); // AKB Removed (replace w/ func. not. below)
+    //const range = _.map(colored, d => d.color); // AKB Removed (replace w/ func. not. below)
+    const domain = _.map(colored, function(d) { return d.x + d.dx / 2 });
+    const range = _.map(colored, function(d) { return d.color });
+
+    return d3.scale.linear().domain(domain).range(range);
+};
+
+function generateAutoScale(points, persistence) {
+    const extrema = simplify(points, persistence);
+    return generateColorScaleFromExtrema(extrema);
+};
 
 /* CORE FUNCTION: Create coloring function */
 function getPtColorFunc(minVal, maxVal, colorScheme) {
@@ -88,8 +156,8 @@ function rotateHistogram(direction) {
         d3.select("#chartSvg").remove();
         document.getElementById(c).style.display = "none";
         document.getElementById(n).style.display = "";
-        renderHistogram(n, histData[type]);
         hCurrent = [n, type];
+        renderHistogram(n, histData[type], $("#slide").val());
         hQueue.unshift(n);
         hQueue.unshift(c);
     } else if (direction=="L") {
@@ -99,7 +167,7 @@ function rotateHistogram(direction) {
         d3.select("#chartSvg").remove();
         document.getElementById(c).style.display = "none";
         document.getElementById(n).style.display = "";
-        renderHistogram(n, histData[type]);
+        renderHistogram(n, histData[type], $("#slide").val());
         hCurrent = [n, type];
         hQueue.push(n);
         hQueue.push(c);
@@ -155,6 +223,7 @@ function toggleRotate() {
     autoRotate = !autoRotate
 }
 
+/* CORE FUNCTION: Toggle Axis Labels */
 function toggleLabels() {
     labelState = !labelState;
 }
@@ -162,6 +231,7 @@ function toggleLabels() {
 /* CORE FUNCTION: Empty Renderings */
 function emptyRenderings() {
     // Remove old SynMap
+    $("#canvas").empty();
     var oldCanvas = document.getElementById("canvas");
     oldCanvas.parentNode.removeChild(oldCanvas);
     // Add new canvas
@@ -179,7 +249,7 @@ function postTiny(element, url) {
 }
 
 /* CORE FUNCTION: Render Histograms */
-function renderHistogram(element_id, values) {
+function renderHistogram(element_id, values, persistence) {
     /* RESOURCES
         Simple Histogram: https://bl.ocks.org/mbostock/3048450
         Basic Mouseover: http://bl.ocks.org/phil-pedruco/9032348
@@ -198,27 +268,38 @@ function renderHistogram(element_id, values) {
     // Bin Count.
     var binCount = 100.0;
 
-    // Set margins & canvas size.
-    var margin = {top: 10, right: 30, bottom: 30, left: 30},
+    // Set margins & canvas size (original).
+    var margin = {top: 10, right: 30, bottom: 40, left: 30},
         width = document.getElementById(element_id).clientWidth - margin.left - margin.right,
         height = (document.getElementById("rendering").clientHeight * .65) - margin.bottom - margin.top;
-    
+
     // Get minimum & maximum values.
     var minVal = Math.min.apply(null, values);
     var maxVal = Math.max.apply(null, values);
-
-    // Generate function to calculate point colors by colorscheme.
-    var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
 
     // Set X scale.
     var x = d3.scale.linear()
         .domain([minVal, maxVal])
         .range([0, width]);
-    
+
     // Generate histogram bins.
     var data = d3.layout.histogram()
         .bins(binCount)
         (values);
+
+    // Scale persistence (didn't work)
+    // var largestBin = _.max(data, function(d) { return d.length }).length;
+    // var persistenceScale = d3.scale.linear()
+    //         .domain([0, 100])
+    //         .range([0, largestBin]);
+
+    // Generate function to calculate point colors by colorscheme.
+    var calcColor;
+    if (colorScheme == 'Auto') {
+        calcColor = generateAutoScale(data, persistence);
+    } else {
+        calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
+    }
 
     // Set Y scale.
     var y = d3.scale.linear()
@@ -236,7 +317,7 @@ function renderHistogram(element_id, values) {
         .offset([-10, 0])
         .html(function(d) {
             //console.log(d.x); // Returns bin minimum
-            var range = formatCount(d3.min(d)) + " < log10(" + hCurrent[1] + ") < " + formatCount(d3.max(d));
+            var range = formatCount(d3.min(d)) + " < log10(X) < " + formatCount(d3.max(d));
             var count = "Bin Count: <span style='color:red'>" + d.y + "</span>";
             return range + "<br>" + count;
         });
@@ -252,7 +333,7 @@ function renderHistogram(element_id, values) {
     // Add tip to SVG.
     svg.call(tip);
 
-
+    // Set up & animate selection brush.
     var brush, brushg;
 
     function brushstart() {}
@@ -262,9 +343,11 @@ function renderHistogram(element_id, values) {
     function brushend() {
         if (!brush.empty()) {
             dataSubset = brush.extent();
+            needsBrushUpdate = true;
         }
         else {
-            dataSubset = [minVal, maxVal]
+            dataSubset = [minVal, maxVal];
+            needsBrushUpdate = true;
         }
         // console.log(dataSubset);
     }
@@ -303,7 +386,6 @@ function renderHistogram(element_id, values) {
     if (brush) { brushmove(); }
 
     // Draw histogram bars.
-    // TODO: FIX overlapping bars (maybe has to do with SVG element size). Maybe use math.floor
     var bar = svg.selectAll(".bar")
         .data(data)
         .enter().append("g")
@@ -324,9 +406,35 @@ function renderHistogram(element_id, values) {
             d3.select(this).attr("fill", function(d) { return calcColor(d.x) })
         });
 
-    // Set up & animate selection brush.
+    // Draw persistance points.
+    function calcPersistence(data, persistence) {
+        const extrema = simplify(data, persistence);
+        //const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y); // AKB Removed (replace w/ func. not. below)
+        //const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i); // AKB Removed (replace w/ func. not. below)
+        const isMaxima = function(A, i) { return A[i].y > Math.max(A[i - 1].y, A[i + 1].y) };
+        const shouldBeMarked = function(x, i, A) { return i > 0 && i < A.length - 1 && isMaxima(A, i) };
+        const markers = _.map(extrema, function(d, i, A) {
+            return {
+                color: shouldBeMarked(d, i, A) ? 'red' : 'orange',
+                x: d.x + d.dx / 2,
+                y: d.y
+            };
+        });
+        return markers;
+    }
 
-
+    if (colorScheme == "Auto") {
+        var newData = calcPersistence(data, persistence);
+        var mark = svg.selectAll(".mark")
+                .data(newData)
+                .enter().append("g")
+                .attr("class", "mark");
+        mark.append("circle")
+                .attr("cx", function(d) { return formatWide(x(formatWide(d.x)))})
+                .attr("cy", function(d) { return y(d.y) - 5 })
+                .attr('r', 3)
+                .attr('fill', function(d) { return d.color});
+    }
 
 
     // Draw X axis.
@@ -334,10 +442,17 @@ function renderHistogram(element_id, values) {
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis);
+
+    // Draw X axis label.
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + (margin.bottom*.9))
+        .style("text-anchor", "middle")
+        .text("log10(" + hCurrent[1] + ")")
 }
 
 /* CORE FUNCTION: Render SynMap */
-function renderSynMap(graph_object, element_id, color_by) {
+var renderSynMap = function (graph_object, element_id, persistence) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~VARIABLE DECLARATIONS~~~~
      --------------------------------------------------------------------------------------------------------*/
@@ -351,6 +466,7 @@ function renderSynMap(graph_object, element_id, color_by) {
     var points;
     var xAxis, yAxis, zAxis, labels;
     var grid;
+    var color_by;
 
     // Scaling variables.
     var axisWidth = 0.5;
@@ -360,14 +476,6 @@ function renderSynMap(graph_object, element_id, color_by) {
     var raycaster, intersects, mouse, INTERSECTED;
     var ptHistory = ["NULL", "NULL"];
     var black = new THREE.Color("#000");
-
-
-    /*---------------------------------------------------------------------------------------------------------
-     ~~~~INITIALIZE & ANIMATE SYNMAP~~~~
-     --------------------------------------------------------------------------------------------------------*/
-
-    initialize();
-    animate();
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~ACCESSORY FUNCTIONS~~~~
@@ -441,16 +549,15 @@ function renderSynMap(graph_object, element_id, color_by) {
         var labelSprite;
         if (focusAxis =='x') {
             labelSprite = makeTextSprite(label, { fontsize: 12, borderColor: {r:139, g:0, b:0, a:1.0}, backgroundColor: {r:255, g:100, b:100, a:0.65} });
-            labelSprite.geometry.center();
+            //labelSprite.geometry.center();
             labelSprite.position.set(maxLen*1.5,-(axisWidth / 2),-(axisWidth / 2));
-            //console.log(labelSprite);
         } else if (focusAxis == 'y') {
             labelSprite = makeTextSprite(label, { fontsize: 12, borderColor: {r:0, g:0, b:139, a:1.0}, backgroundColor: {r:0, g:100, b:255, a:0.65} });
-            labelSprite.geometry.center();
+            //labelSprite.geometry.center();
             labelSprite.position.set(0,maxLen,0); //TODO (figure out which one is correct)
         } else if (focusAxis == 'z') {
             labelSprite = makeTextSprite(label, { fontsize: 12, borderColor: {r:0, g:128, b:0, a:1.0}, backgroundColor: {r:144, g:238, b:144, a:0.65} });
-            labelSprite.geometry.center();
+            //labelSprite.geometry.center();
             labelSprite.position.set(0,0,maxLen);
         } else {console.log("Invalid focus axis, please select x y or z.")}
 
@@ -478,7 +585,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         var xFeat, yFeat, zFeat;
         var gevoLink = genGevoLink(xDbId, yDbId, zDbId);
         gevoLink = '"' + gevoLink + '"'; // puts quotes around it so in the return later the link works.
-        console.log(gevoLink);
+        //console.log(gevoLink);
         function getX() {
             return $.getJSON(feature_api + xDbId, function(json) { xFeat = json})
         }
@@ -623,9 +730,8 @@ function renderSynMap(graph_object, element_id, color_by) {
                 kn = points[i][substitution_indexes[color_by][0]];
                 ks = points[i][substitution_indexes[color_by][1]];
             } else if (color_by == "xyz") {
-                kn = ( points[i][6] + points[i][8] + points[i][10] ) / 3;
-                ks = ( points[i][7] + points[i][9] + points[i][11] ) / 3;
-                //console.log(kn, ks);
+                kn = ( parseFloat(points[i][6]) + parseFloat(points[i][8]) + parseFloat(points[i][10]) ) / 3;
+                ks = ( parseFloat(points[i][7]) + parseFloat(points[i][9]) + parseFloat(points[i][11]) ) / 3;
             } else {
                 console.log("Error: Unrecognized comparison")
             }
@@ -655,7 +761,6 @@ function renderSynMap(graph_object, element_id, color_by) {
                 pointMutData.knks.push("NULL");
             }
         }
-        console.log("FINISHED MAKING FIRST SET OF POINTS with parameter " + color_by);
 
         // Build colors lists.
         var cList = ["ks", "kn", "knks"];
@@ -663,7 +768,16 @@ function renderSynMap(graph_object, element_id, color_by) {
             var c = cList[s];
             var minVal = Math.min.apply(null, histData[c]);
             var maxVal = Math.max.apply(null, histData[c]);
-            var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
+            var calcColor;
+            if (colorScheme == 'Auto') {
+                var bins = d3.layout.histogram().bins(100)(histData[c]);
+                calcColor = generateAutoScale(bins, persistence);
+            } else {
+                calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
+            }
+
+
+            //var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
 
             for (var j = 0; j < ptCount; j++) {
                 if (pointMutData[c][j] != 'NULL') {
@@ -705,7 +819,7 @@ function renderSynMap(graph_object, element_id, color_by) {
         pts.translateZ(-graph_object.z[2] / 2);
 
         // Report point count.
-        console.log("POINTS RENDERED: " + pts.geometry.vertices.length);
+        //console.log("POINTS RENDERED: " + pts.geometry.vertices.length);
         document.getElementById("pt_ct").innerHTML = pts.geometry.vertices.length;
         return pts;
     }
@@ -800,11 +914,13 @@ function renderSynMap(graph_object, element_id, color_by) {
 
     function initialize() {
         /* Reset Globals */
+        color_by = $("#color_by").val();
         //camView = { "x": 0, "y": 0, "z": 80 };
         histData = {"kn": [], "ks": [], "knks": []};
         pointData = [];
         colors = {"kn": [], "ks": [], "knks": []};
         camUpdate = false;
+        needsBrushUpdate = false;
 
         /* Set sizing variables */
         width = document.getElementById("rendering").clientWidth;
@@ -814,9 +930,10 @@ function renderSynMap(graph_object, element_id, color_by) {
 
         /* Create a three.js scene */
         scene = new THREE.Scene();
+        scene.autoUpdate = true;
 
         /* Setup three.js WebGL renderer */
-        renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true, canvas: container} );
+        renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true, canvas: container, autoClear: true} );
         renderer.setSize( width, height );
 
         /* Create a three.js camera */
@@ -871,23 +988,21 @@ function renderSynMap(graph_object, element_id, color_by) {
     var labelS = labelState;
     var dataS;
 
-    function animate() {
-        /* Update controls. */
-        controls.update();
-        controls.autoRotate = autoRotate;
+    var animate = function() {
+        color_by = $("#color_by").val();
 
         /* Camera control */
         if (camUpdate) {
             camera.position.x = camView.x;
             camera.position.y = camView.y;
             camera.position.z = camView.z;
-            //console.log(camera.position);
-            //camera.updateProjectionMatrix();
             camUpdate = false;
         } else {
             /* Update camera position record. */
             camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
         }
+
+
 
         /* Check for recoloring */
         if (hCurrent[1] != current) {
@@ -919,28 +1034,49 @@ function renderSynMap(graph_object, element_id, color_by) {
         }
 
         /* Check for histogram brushing */
-        if (dataSubset != dataS) {
+        if (needsBrushUpdate && (dataSubset[0] != dataS[0] || dataSubset[1] != dataS[1])) {
             if (dataSubset[0] != dataRange[0] || dataSubset[1] != dataRange[1]) { redraw = true; }
             scene.remove(points);
             points = drawPoints(graph_object.points);
             scene.add(points);
             dataS = dataSubset;
+            needsBrushUpdate = false;
         }
 
         /* Render the scene. */
         render();
 
-        /* Create continuous animation. */
-        requestAnimationFrame( animate );
+        /* Update controls. */
+        controls.autoRotate = autoRotate;
+        controls.update();
 
-    }
+        /* Refresh -or- Create continuous animation. */
+        if (refresh) {
+            overlay.show();
+            var slide = $("#slide");
+            scene = null;
+            camera = null;
+            controls = null;
+            points = null;
+            window.removeEventListener( 'resize', onWindowResize, false );
+            window.removeEventListener('mousedown', onDocumentMouseDown, false);
+            emptyRenderings();
+            refresh = false;
+            renderSynMap(d, "canvas", slide.val());
+            renderHistogram(hCurrent[0], histData[hCurrent[1]], slide.val());
+            overlay.hide();
+        } else {
+            requestAnimationFrame( animate );
+        }
+
+    };
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~HANDLERS~~~~
      --------------------------------------------------------------------------------------------------------*/
 
     /* Window Resize */
-    function onWindowResize() {
+    var onWindowResize = function() {
         width = document.getElementById("rendering").clientWidth;
         height = window.innerHeight * 0.9;
         renderer.setSize( width, height);
@@ -952,12 +1088,12 @@ function renderSynMap(graph_object, element_id, color_by) {
 
         // Re-render Histograms on page resize
         d3.select("#chartSvg").remove();
-        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
-    }
+        renderHistogram(hCurrent[0], histData[hCurrent[1]], $("#slide").val());
+    };
     window.addEventListener( 'resize', onWindowResize, false );
 
     /* Mouse Click */
-    function onDocumentMouseDown( event ) {
+    var onDocumentMouseDown = function(event) {
         // Specify object of interest (points).
         var canvas = $("canvas");
         var geometry = points.geometry;
@@ -1002,24 +1138,34 @@ function renderSynMap(graph_object, element_id, color_by) {
             // Clear INTERSECTED variable if no intersections on click.
             INTERSECTED = null;
         }
-    }
+    };
     window.addEventListener('mousedown', onDocumentMouseDown, false);
 
-}
+    /*---------------------------------------------------------------------------------------------------------
+     ~~~~INITIALIZE & ANIMATE SYNMAP~~~~
+     --------------------------------------------------------------------------------------------------------*/
+
+    initialize();
+    animate();
+};
 
 /*-----------------------------------------------------------------------------------------------------------------
  ~~~~ POPULATE PAGE ~~~~
  -----------------------------------------------------------------------------------------------------------------*/
 
 $(document).ready( function() {
-    var d;
-    // Start Spinny Wheely(s)
-    // TODO
-    var overlay = $("#overlay");
+    //var d; AKB Moved these two variables to global, 5/2/16
+    //var overlay = $("#overlay");
+    var persistanceSlide = $("#slide");
+    var persistanceDisplay = $("#slideDisplay");
     overlay.show();
 
     // Load data & launch initial visualizations
-    var graphLoc = "/asherkhb/coge/data/syn3d/" + options_name + "_graph.json"; // TODO: FIX THIS HARDCODED SHIT!
+    var graphLoc = DATA_LOC + "/" + final_experiment.graph; // NOTE: This "DATA_LOC is set in SynMap3D.pl, may need modification when moving to production.
+    var downloadLoc = DATA_LOC + "/" + final_experiment.download;
+    
+    $("#download").html("<form method='get' action='" + downloadLoc + "'><button type='submit' formtarget='_blank'>Download!</button>");
+
     $.when(loadData(graphLoc)).done(function(data) {
         d = data;
         // Save species names to global variables.
@@ -1028,13 +1174,13 @@ $(document).ready( function() {
         zsp = d.z[1];
 
         // Update camera view buttons with spp names.
-        document.getElementById("viewXY").innerHTML = "View " + xsp + "-" + ysp;
-        document.getElementById("viewXZ").innerHTML = "View " + xsp + "-" + zsp;
-        document.getElementById("viewYZ").innerHTML = "View " + ysp + "-" + zsp;
+        document.getElementById("xylabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='bluetxt'>" + ysp + "</span>";
+        document.getElementById("xzlabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
+        document.getElementById("yzlabel").innerHTML = "<span class='bluetxt'>" + ysp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
 
         // Render initial SynMap & Histogram
-        renderSynMap(data, "canvas", "xy");
-        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
+        renderSynMap(data, "canvas", persistanceSlide.val());
+        renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
         //postTiny("tiny", final_experiment.page_url);
         postTiny("tiny", final_experiment.tiny_url);
 
@@ -1057,30 +1203,50 @@ $(document).ready( function() {
 
         // End spinny wheel.
         overlay.hide();
-        // TODO
     });
 
     /* Monitor mutation ratio coloring option & update visualizations on change. */
     var colorBySelect = $("#color_by");
     colorBySelect.change( function () {
-        overlay.show();
-        emptyRenderings();
+        refresh = true;
+        //emptyRenderings();
         // Draw new SynMap & histogram.
-        renderSynMap(d, "canvas", colorBySelect.val());
-        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
-        overlay.hide();
+        //renderSynMap(d, "canvas", persistanceSlide.val());
+        //renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
+        //overlay.hide();
     });
 
     /* Monitor mutation ratio coloring option & update visualizations on change. */
     var colorSchemeSelect = $("#color_scheme");
+    var autoscale = $("#autoscale");
     colorSchemeSelect.change( function () {
+        //overlay.show();
+        var newVal = colorSchemeSelect.val();
+        // Check for autoscale
+        if (newVal == "Auto") {
+            autoscale.removeClass("hidden");
+        } else {
+            if (!autoscale.hasClass("hidden")) { autoscale.addClass("hidden") }
+        }
+        colorScheme = newVal;
+        refresh = true;
+        // emptyRenderings();
+        // // Draw new SynMap & histogram.
+        // renderSynMap(d, "canvas", persistanceSlide.val());
+        // renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
+        // overlay.hide();
+    });
+
+    /* Report persistence */
+    persistanceDisplay.html(persistanceSlide.val());
+    persistanceSlide.change( function () {
+        persistanceDisplay.html(persistanceSlide.val());
+        refresh = true;
         overlay.show();
-        emptyRenderings();
-        colorScheme = colorSchemeSelect.val();
-        // Draw new SynMap & histogram.
-        renderSynMap(d, "canvas", colorBySelect.val());
-        renderHistogram(hCurrent[0], histData[hCurrent[1]]);
-        overlay.hide();
+        // emptyRenderings();
+        // renderSynMap(d, "canvas", persistanceSlide.val());
+        // renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
+        // overlay.hide()
     });
 
 });

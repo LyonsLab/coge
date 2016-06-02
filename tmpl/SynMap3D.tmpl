@@ -91,6 +91,16 @@
     background-color: #90EE90;
 }
 
+.redtxt {
+    color: red;
+}
+.bluetxt {
+    color: blue;
+}
+.greentxt {
+    color: green;
+}
+
 #instruct {
     position: absolute;
     padding: 8px;
@@ -246,35 +256,53 @@
             </div>
         </div>
         <div id="opts" class="contentBox">
-            <span style="text-align: center; font-weight: bold;">Controls & Options</span><br>
-            <button type="button" id="viewXY" onclick="resetCamera('xy')">View XY</button>
-            <button type="button" onclick="launchSynmap2('xy')">View in SynMap&rsaquo;&rsaquo;</button><br>
+            <span style="text-align: center; font-weight: bold;">Controls</span><br>
+            <div style="padding-bottom: 5px">
+                <span id="xylabel">XY</span><br>
+                <button type="button" id="viewXY" onclick="resetCamera('xy')">Orient Camera</button>
+                <button type="button" onclick="launchSynmap2('xy')">View in SynMap&rsaquo;&rsaquo;</button><br>
+            </div>
 
-            <button type="button" id="viewXZ" onclick="resetCamera('xz')">View XZ</button>
-            <button type="button" onclick="launchSynmap2('xz')">View in SynMap&rsaquo;&rsaquo;</button>
+            <div style="padding-bottom: 5px">
+                <span id="xzlabel">XZ</span><br>
+                <button type="button" id="viewXZ" onclick="resetCamera('xz')">Orient Camera</button>
+                <button type="button" onclick="launchSynmap2('xz')">View in SynMap&rsaquo;&rsaquo;</button><br>
+            </div>
 
-            <button type="button" id="viewYZ" onclick="resetCamera('yz')">View YZ</button>
-            <button type="button" onclick="launchSynmap2('yz')">View in SynMap&rsaquo;&rsaquo;</button>
+            <div style="padding-bottom: 5px">
+                <span id="yzlabel">YZ</span><br>
+                <button type="button" id="viewYZ" onclick="resetCamera('yz')">Orient Camera</button>
+                <button type="button" onclick="launchSynmap2('yz')">View in SynMap&rsaquo;&rsaquo;</button><br>
+            </div>
 
-            <button type="button" onclick="resetCamera('reset')">Reset Camera</button><br>
+            <div style="padding-bottom: 5px">
+                <span>Additional Controls</span><br>
+                <button type="button" onclick="resetCamera('reset')">Reset Camera</button>
+                <button type="button" onclick="toggleRotate()">Toggle Auto-Rotate</button>
+                <button type="button" onclick="toggleGrid()">Toggle Grid</button>
+                <button type="button" onclick="toggleLabels()">Toggle Axis Labels</button><br>
+            </div>
 
-            <button type="button" onclick="toggleRotate()">Toggle Auto-Rotate</button>
-            <button type="button" onclick="toggleGrid()">Toggle Grid</button>
-            <button type="button" onclick="toggleLabels()">Toggle Axis Labels</button><br>
-
-            <label>Mutation Ratio: </label>
-            <select id="color_by">
-                <option value="xz">XY</option>
-                <option value="yz">XZ</option>
-                <option value="yz">YZ</option>
-                <!--<option value="xyz">XYZ</option>-->
-            </select>
+            <br><span style="text-align: center; font-weight: bold;">Color Options</span><br>
             <label>Color Scheme: </label>
             <select id="color_scheme">
                 <option value="Jet" selected>Rainbow</option>
                 <option value="Bluered">Blue-Red</option>
                 <option value="Portland">Portland</option>
                 <option value="Viridis">Viridis</option>
+                <option value="Auto">Auto</option>
+            </select>
+            <span id="autoscale" class="hidden">
+                <input id="slide" type="range" /> <span id="slideDisplay"></span>
+            </span>
+
+            <br>
+            <label>Color By Mutation Ratio: </label>
+            <select id="color_by">
+                <option value="xy">XY</option>
+                <option value="xz">XZ</option>
+                <option value="yz">YZ</option>
+                <option value="xyz">XYZ</option>
             </select>
 
             <div id="pt_selection">
@@ -285,6 +313,11 @@
             <div id="regen">
                 <br><span style="text-align: center; font-weight: bold;">Regenerate Analysis</span><br>
                 <div id="tiny"></div>
+            </div>
+
+            <div id="down">
+                <br><span style="text-align: center; font-weight: bold;">Download Results</span><br>
+                <div id="download"></div>
             </div>
         </div>
     </div>
@@ -473,6 +506,7 @@
 // Page constants
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
 const SERVER_URL    = '<TMPL_VAR NAME="SERVER_URL">';
+const DATA_LOC      = '<TMPL_VAR NAME="DATA_LOC">';
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
@@ -570,11 +604,12 @@ $(function() {
 <script type="text/javascript" src="js/pages/synmap-3d.js"></script>
 
 <!-- SynMap3D Requirements -->
-<script type="text/javascript" src="js/syn3d/three.min.js"></script>
+<script type="text/javascript" src="js/syn3d/three-77.min.js"></script>
 <script type="text/javascript" src="js/syn3d/threex.domevent.js"></script>
 <script type="text/javascript" src="js/syn3d/modified_FlatOrbitControls.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
 <script type="text/javascript" src="js/d3-tip-0.6.3.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/lodash/3.10.1/lodash.min.js"></script>
 <!--<script type="text/javascript" src="js/plotly-latest.min.js"></script>-->
 
 <!-- CoGe Utilities -->

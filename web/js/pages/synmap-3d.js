@@ -6,6 +6,7 @@ var concat = Array.prototype.concat;
 var current_experiment = {};
 var options_name;
 var final_experiment;
+var synmapRenderer = "syn3d-1.0.js";
 
 function search_genomes (search_term) {
     var edit_genome = $(geneSelect[0]);
@@ -460,12 +461,12 @@ function showVisualizer(data) {
     if (visVisible) {
         //Refresh function can go here.
     } else {
-        $.getScript( "js/syn3d/syn3d_new.js", function( data, textStatus, jqxhr ) {
+        $.getScript( "js/syn3d/" + synmapRenderer, function( data, textStatus, jqxhr ) {
             console.log( "Visualizer loaded." );
             //console.log( data ); // Data returned
             //console.log( textStatus ); // Success
             //console.log( jqxhr.status ); // 200
-        });
+        }, false);
         $('#analysis').css("display", "");
     }
 }
@@ -507,6 +508,10 @@ function launch(experiment) {
     options_name = buildOptionsName(final_experiment);
     var graph_obj = options_name + '_graph.json';
     var log_obj = options_name + '_log.json';
+    var download_obj = options_name + '_data.json';
+    final_experiment.download = download_obj;
+    final_experiment.graph = graph_obj;
+    final_experiment.log = log_obj;
 
     // Build URL for updating.
     function buildUrl(exp) {
@@ -544,6 +549,7 @@ function launch(experiment) {
     var urlUpdate = buildUrl(final_experiment);
     final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate;
     final_experiment.tiny_url = getTiny(SERVER_URL + PAGE_NAME + urlUpdate);
+
     // Build Link to SynMap Output (AKB Removed 5/25/16 - no longer needed)
     // function synmapOutputLink(id1, id2) {
     //     var fileDir = "/storage/coge/data/diags/";
@@ -586,7 +592,8 @@ function launch(experiment) {
             r_min: final_experiment.options.r_min,
             r_max: final_experiment.options.r_max,
             graph_out: graph_obj,
-            log_out: log_obj
+            log_out: log_obj,
+            download: download_obj
         }
     };
 
