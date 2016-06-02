@@ -632,11 +632,12 @@ function launch(experiment) {
     // Start Comparisons
     //console.log(graph_obj);
     var graphLoc = DATA_LOC + "/" + graph_obj;
+    console.log(graphLoc);
     $.ajax({
         url: graphLoc,
         type: 'HEAD',
-        success: function() { showVisualizer(final_experiment); },
-        error: function() { makeSynmaps() }
+        success: function() { console.log("Already generated"); showVisualizer(final_experiment); },
+        error: function() { console.log("Need to generate"); makeSynmaps() }
     });
 
     // if (final results file does not exist) {
