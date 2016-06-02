@@ -192,6 +192,8 @@ sub generate_body {
     	WORKFLOW_ID   => $WORKFLOW_ID,
         API_BASE_URL  => $CONF->{SERVER} . 'api/v1/', #TODO move into config file or module
         SERVER_URL    => $CONF->{SERVER},
+        #DATA_LOC      => $CONF->{SYN3DIR},
+        DATA_LOC      => catdir($CONF->{URL}, "data", "syn3d"),
         HELP_URL      => 'https://genomevolution.org/wiki/index.php/SynMap3d',
         SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         DEFAULT_TAB              => 0,

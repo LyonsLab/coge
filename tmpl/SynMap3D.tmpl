@@ -299,10 +299,10 @@
             <br>
             <label>Color By Mutation Ratio: </label>
             <select id="color_by">
-                <option value="xz">XY</option>
-                <option value="yz">XZ</option>
+                <option value="xy">XY</option>
+                <option value="xz">XZ</option>
                 <option value="yz">YZ</option>
-                <!--<option value="xyz">XYZ</option>-->
+                <option value="xyz">XYZ</option>
             </select>
 
             <div id="pt_selection">
@@ -313,6 +313,11 @@
             <div id="regen">
                 <br><span style="text-align: center; font-weight: bold;">Regenerate Analysis</span><br>
                 <div id="tiny"></div>
+            </div>
+
+            <div id="down">
+                <br><span style="text-align: center; font-weight: bold;">Download Results</span><br>
+                <div id="download"></div>
             </div>
         </div>
     </div>
@@ -501,6 +506,7 @@
 // Page constants
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
 const SERVER_URL    = '<TMPL_VAR NAME="SERVER_URL">';
+const DATA_LOC      = '<TMPL_VAR NAME="DATA_LOC">';
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
@@ -598,7 +604,7 @@ $(function() {
 <script type="text/javascript" src="js/pages/synmap-3d.js"></script>
 
 <!-- SynMap3D Requirements -->
-<script type="text/javascript" src="js/syn3d/three.min.js"></script>
+<script type="text/javascript" src="js/syn3d/three-77.min.js"></script>
 <script type="text/javascript" src="js/syn3d/threex.domevent.js"></script>
 <script type="text/javascript" src="js/syn3d/modified_FlatOrbitControls.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>

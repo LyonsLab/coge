@@ -12,6 +12,8 @@ var histData = {"kn": [], "ks": [], "knks": []};
 var pointData = [];
 var colors = {"kn": [], "ks": [], "knks": []};
 var xsp, ysp, zsp;
+var d;
+var overlay = $("#overlay");
 
 // Updating Variables
 var camUpdate = false;
@@ -24,6 +26,8 @@ var colorScheme = "Jet";
 var dataRange;
 var dataSubset;
 var redraw = false;
+var refresh = false;
+var needsBrushUpdate = false;
 
 // Color schemes variables
 var schemes = {
@@ -77,23 +81,27 @@ function gapBetweenPoints(A, i) {
 }
 
 function indexOfSmallestPointDifference(A) {
-    //console.log(_(A.length-1));
-    return _(A.length - 1).range().min(i => gapBetweenPoints(A, i));
-    //return _.range(A.length-1).min(i => gapBetweenPoints(A, i));
+    //return _(A.length - 1).range().min(i => gapBetweenPoints(A, i)); // AKB Removed (replace w/ func. not. below)
+    return _(A.length - 1).range().min(function(i) { return gapBetweenPoints(A, i) });
 }
 
 function generateColorScaleFromExtrema(extrema) {
-    const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
-    const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i);
+    //const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y); // AKB Removed (replace w/ func. not. below)
+    //const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i); // AKB Removed (replace w/ func. not. below)
+    const isMaxima = function(A, i) { return A[i].y > Math.max(A[i - 1].y, A[i + 1].y) };
+    const shouldBeMarked = function(x, i, A) { return i > 0 && i < A.length - 1 && isMaxima(A, i) };
     const colors = d3.scale.category10();
 
     const colored = _.map(extrema, function(x, i, A) {
         const color = shouldBeMarked(x, i, A) ? colors(i) : '#D0D0D0';
-        return Object.assign({}, x, {color});
+        //return Object.assign({}, x, {color}); // AKB Removed (replace w/ func. not. below)
+        return Object.assign({}, x, {color: color});
     });
 
-    const domain = _.map(colored, d => d.x + d.dx / 2);
-    const range = _.map(colored, d => d.color);
+    //const domain = _.map(colored, d => d.x + d.dx / 2); // AKB Removed (replace w/ func. not. below)
+    //const range = _.map(colored, d => d.color); // AKB Removed (replace w/ func. not. below)
+    const domain = _.map(colored, function(d) { return d.x + d.dx / 2 });
+    const range = _.map(colored, function(d) { return d.color });
 
     return d3.scale.linear().domain(domain).range(range);
 };
@@ -215,6 +223,7 @@ function toggleRotate() {
     autoRotate = !autoRotate
 }
 
+/* CORE FUNCTION: Toggle Axis Labels */
 function toggleLabels() {
     labelState = !labelState;
 }
@@ -222,6 +231,7 @@ function toggleLabels() {
 /* CORE FUNCTION: Empty Renderings */
 function emptyRenderings() {
     // Remove old SynMap
+    $("#canvas").empty();
     var oldCanvas = document.getElementById("canvas");
     oldCanvas.parentNode.removeChild(oldCanvas);
     // Add new canvas
@@ -287,7 +297,6 @@ function renderHistogram(element_id, values, persistence) {
     var calcColor;
     if (colorScheme == 'Auto') {
         calcColor = generateAutoScale(data, persistence);
-        console.log(calcColor)
     } else {
         calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
     }
@@ -334,9 +343,11 @@ function renderHistogram(element_id, values, persistence) {
     function brushend() {
         if (!brush.empty()) {
             dataSubset = brush.extent();
+            needsBrushUpdate = true;
         }
         else {
-            dataSubset = [minVal, maxVal]
+            dataSubset = [minVal, maxVal];
+            needsBrushUpdate = true;
         }
         // console.log(dataSubset);
     }
@@ -398,8 +409,10 @@ function renderHistogram(element_id, values, persistence) {
     // Draw persistance points.
     function calcPersistence(data, persistence) {
         const extrema = simplify(data, persistence);
-        const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y);
-        const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i);
+        //const isMaxima = (A, i) => A[i].y > Math.max(A[i - 1].y, A[i + 1].y); // AKB Removed (replace w/ func. not. below)
+        //const shouldBeMarked = (x, i, A) => i > 0 && i < A.length - 1 && isMaxima(A, i); // AKB Removed (replace w/ func. not. below)
+        const isMaxima = function(A, i) { return A[i].y > Math.max(A[i - 1].y, A[i + 1].y) };
+        const shouldBeMarked = function(x, i, A) { return i > 0 && i < A.length - 1 && isMaxima(A, i) };
         const markers = _.map(extrema, function(d, i, A) {
             return {
                 color: shouldBeMarked(d, i, A) ? 'red' : 'orange',
@@ -433,7 +446,7 @@ function renderHistogram(element_id, values, persistence) {
 }
 
 /* CORE FUNCTION: Render SynMap */
-function renderSynMap(graph_object, element_id, color_by, persistence) {
+var renderSynMap = function (graph_object, element_id, persistence) {
     /*---------------------------------------------------------------------------------------------------------
      ~~~~VARIABLE DECLARATIONS~~~~
      --------------------------------------------------------------------------------------------------------*/
@@ -447,6 +460,7 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
     var points;
     var xAxis, yAxis, zAxis, labels;
     var grid;
+    var color_by;
 
     // Scaling variables.
     var axisWidth = 0.5;
@@ -456,14 +470,6 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
     var raycaster, intersects, mouse, INTERSECTED;
     var ptHistory = ["NULL", "NULL"];
     var black = new THREE.Color("#000");
-
-
-    /*---------------------------------------------------------------------------------------------------------
-     ~~~~INITIALIZE & ANIMATE SYNMAP~~~~
-     --------------------------------------------------------------------------------------------------------*/
-
-    initialize();
-    animate();
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~ACCESSORY FUNCTIONS~~~~
@@ -537,16 +543,15 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
         var labelSprite;
         if (focusAxis =='x') {
             labelSprite = makeTextSprite(label, { fontsize: 12, borderColor: {r:139, g:0, b:0, a:1.0}, backgroundColor: {r:255, g:100, b:100, a:0.65} });
-            labelSprite.geometry.center();
+            //labelSprite.geometry.center();
             labelSprite.position.set(maxLen*1.5,-(axisWidth / 2),-(axisWidth / 2));
-            //console.log(labelSprite);
         } else if (focusAxis == 'y') {
             labelSprite = makeTextSprite(label, { fontsize: 12, borderColor: {r:0, g:0, b:139, a:1.0}, backgroundColor: {r:0, g:100, b:255, a:0.65} });
-            labelSprite.geometry.center();
+            //labelSprite.geometry.center();
             labelSprite.position.set(0,maxLen,0); //TODO (figure out which one is correct)
         } else if (focusAxis == 'z') {
             labelSprite = makeTextSprite(label, { fontsize: 12, borderColor: {r:0, g:128, b:0, a:1.0}, backgroundColor: {r:144, g:238, b:144, a:0.65} });
-            labelSprite.geometry.center();
+            //labelSprite.geometry.center();
             labelSprite.position.set(0,0,maxLen);
         } else {console.log("Invalid focus axis, please select x y or z.")}
 
@@ -574,7 +579,7 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
         var xFeat, yFeat, zFeat;
         var gevoLink = genGevoLink(xDbId, yDbId, zDbId);
         gevoLink = '"' + gevoLink + '"'; // puts quotes around it so in the return later the link works.
-        console.log(gevoLink);
+        //console.log(gevoLink);
         function getX() {
             return $.getJSON(feature_api + xDbId, function(json) { xFeat = json})
         }
@@ -719,9 +724,8 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
                 kn = points[i][substitution_indexes[color_by][0]];
                 ks = points[i][substitution_indexes[color_by][1]];
             } else if (color_by == "xyz") {
-                kn = ( points[i][6] + points[i][8] + points[i][10] ) / 3;
-                ks = ( points[i][7] + points[i][9] + points[i][11] ) / 3;
-                //console.log(kn, ks);
+                kn = ( parseFloat(points[i][6]) + parseFloat(points[i][8]) + parseFloat(points[i][10]) ) / 3;
+                ks = ( parseFloat(points[i][7]) + parseFloat(points[i][9]) + parseFloat(points[i][11]) ) / 3;
             } else {
                 console.log("Error: Unrecognized comparison")
             }
@@ -751,7 +755,6 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
                 pointMutData.knks.push("NULL");
             }
         }
-        console.log("FINISHED MAKING FIRST SET OF POINTS with parameter " + color_by);
 
         // Build colors lists.
         var cList = ["ks", "kn", "knks"];
@@ -810,7 +813,7 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
         pts.translateZ(-graph_object.z[2] / 2);
 
         // Report point count.
-        console.log("POINTS RENDERED: " + pts.geometry.vertices.length);
+        //console.log("POINTS RENDERED: " + pts.geometry.vertices.length);
         document.getElementById("pt_ct").innerHTML = pts.geometry.vertices.length;
         return pts;
     }
@@ -905,11 +908,13 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
 
     function initialize() {
         /* Reset Globals */
+        color_by = $("#color_by").val();
         //camView = { "x": 0, "y": 0, "z": 80 };
         histData = {"kn": [], "ks": [], "knks": []};
         pointData = [];
         colors = {"kn": [], "ks": [], "knks": []};
         camUpdate = false;
+        needsBrushUpdate = false;
 
         /* Set sizing variables */
         width = document.getElementById("rendering").clientWidth;
@@ -919,9 +924,10 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
 
         /* Create a three.js scene */
         scene = new THREE.Scene();
+        scene.autoUpdate = true;
 
         /* Setup three.js WebGL renderer */
-        renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true, canvas: container} );
+        renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true, canvas: container, autoClear: true} );
         renderer.setSize( width, height );
 
         /* Create a three.js camera */
@@ -976,23 +982,21 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
     var labelS = labelState;
     var dataS;
 
-    function animate() {
-        /* Update controls. */
-        controls.update();
-        controls.autoRotate = autoRotate;
+    var animate = function() {
+        color_by = $("#color_by").val();
 
         /* Camera control */
         if (camUpdate) {
             camera.position.x = camView.x;
             camera.position.y = camView.y;
             camera.position.z = camView.z;
-            //console.log(camera.position);
-            //camera.updateProjectionMatrix();
             camUpdate = false;
         } else {
             /* Update camera position record. */
             camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
         }
+
+
 
         /* Check for recoloring */
         if (hCurrent[1] != current) {
@@ -1024,28 +1028,49 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
         }
 
         /* Check for histogram brushing */
-        if (dataSubset != dataS) {
+        if (needsBrushUpdate && (dataSubset[0] != dataS[0] || dataSubset[1] != dataS[1])) {
             if (dataSubset[0] != dataRange[0] || dataSubset[1] != dataRange[1]) { redraw = true; }
             scene.remove(points);
             points = drawPoints(graph_object.points);
             scene.add(points);
             dataS = dataSubset;
+            needsBrushUpdate = false;
         }
 
         /* Render the scene. */
         render();
 
-        /* Create continuous animation. */
-        requestAnimationFrame( animate );
+        /* Update controls. */
+        controls.autoRotate = autoRotate;
+        controls.update();
 
-    }
+        /* Refresh -or- Create continuous animation. */
+        if (refresh) {
+            overlay.show();
+            var slide = $("#slide");
+            scene = null;
+            camera = null;
+            controls = null;
+            points = null;
+            window.removeEventListener( 'resize', onWindowResize, false );
+            window.removeEventListener('mousedown', onDocumentMouseDown, false);
+            emptyRenderings();
+            refresh = false;
+            renderSynMap(d, "canvas", slide.val());
+            renderHistogram(hCurrent[0], histData[hCurrent[1]], slide.val());
+            overlay.hide();
+        } else {
+            requestAnimationFrame( animate );
+        }
+
+    };
 
     /*---------------------------------------------------------------------------------------------------------
      ~~~~HANDLERS~~~~
      --------------------------------------------------------------------------------------------------------*/
 
     /* Window Resize */
-    function onWindowResize() {
+    var onWindowResize = function() {
         width = document.getElementById("rendering").clientWidth;
         height = window.innerHeight * 0.9;
         renderer.setSize( width, height);
@@ -1058,11 +1083,11 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
         // Re-render Histograms on page resize
         d3.select("#chartSvg").remove();
         renderHistogram(hCurrent[0], histData[hCurrent[1]], $("#slide").val());
-    }
+    };
     window.addEventListener( 'resize', onWindowResize, false );
 
     /* Mouse Click */
-    function onDocumentMouseDown( event ) {
+    var onDocumentMouseDown = function(event) {
         // Specify object of interest (points).
         var canvas = $("canvas");
         var geometry = points.geometry;
@@ -1107,26 +1132,34 @@ function renderSynMap(graph_object, element_id, color_by, persistence) {
             // Clear INTERSECTED variable if no intersections on click.
             INTERSECTED = null;
         }
-    }
+    };
     window.addEventListener('mousedown', onDocumentMouseDown, false);
 
-}
+    /*---------------------------------------------------------------------------------------------------------
+     ~~~~INITIALIZE & ANIMATE SYNMAP~~~~
+     --------------------------------------------------------------------------------------------------------*/
+
+    initialize();
+    animate();
+};
 
 /*-----------------------------------------------------------------------------------------------------------------
  ~~~~ POPULATE PAGE ~~~~
  -----------------------------------------------------------------------------------------------------------------*/
 
 $(document).ready( function() {
-    var d;
-    // Start Spinny Wheely(s)
-    // TODO
-    var overlay = $("#overlay");
+    //var d; AKB Moved these two variables to global, 5/2/16
+    //var overlay = $("#overlay");
     var persistanceSlide = $("#slide");
     var persistanceDisplay = $("#slideDisplay");
     overlay.show();
 
     // Load data & launch initial visualizations
-    var graphLoc = "/asherkhb/coge/data/syn3d/" + options_name + "_graph.json"; // TODO: FIX THIS HARDCODED SHIT!
+    var graphLoc = DATA_LOC + "/" + final_experiment.graph; // NOTE: This "DATA_LOC is set in SynMap3D.pl, may need modification when moving to production.
+    var downloadLoc = DATA_LOC + "/" + final_experiment.download;
+    
+    $("#download").html("<form method='get' action='" + downloadLoc + "'><button type='submit' formtarget='_blank'>Download!</button>");
+
     $.when(loadData(graphLoc)).done(function(data) {
         d = data;
         // Save species names to global variables.
@@ -1140,7 +1173,7 @@ $(document).ready( function() {
         document.getElementById("yzlabel").innerHTML = "<span class='bluetxt'>" + ysp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
 
         // Render initial SynMap & Histogram
-        renderSynMap(data, "canvas", "xy", persistanceSlide.val());
+        renderSynMap(data, "canvas", persistanceSlide.val());
         renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
         //postTiny("tiny", final_experiment.page_url);
         postTiny("tiny", final_experiment.tiny_url);
@@ -1164,26 +1197,24 @@ $(document).ready( function() {
 
         // End spinny wheel.
         overlay.hide();
-        // TODO
     });
 
     /* Monitor mutation ratio coloring option & update visualizations on change. */
     var colorBySelect = $("#color_by");
     colorBySelect.change( function () {
-        overlay.show();
-
-        emptyRenderings();
+        refresh = true;
+        //emptyRenderings();
         // Draw new SynMap & histogram.
-        renderSynMap(d, "canvas", colorBySelect.val(), persistanceSlide.val());
-        renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-        overlay.hide();
+        //renderSynMap(d, "canvas", persistanceSlide.val());
+        //renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
+        //overlay.hide();
     });
 
     /* Monitor mutation ratio coloring option & update visualizations on change. */
     var colorSchemeSelect = $("#color_scheme");
     var autoscale = $("#autoscale");
     colorSchemeSelect.change( function () {
-        overlay.show();
+        //overlay.show();
         var newVal = colorSchemeSelect.val();
         // Check for autoscale
         if (newVal == "Auto") {
@@ -1191,23 +1222,25 @@ $(document).ready( function() {
         } else {
             if (!autoscale.hasClass("hidden")) { autoscale.addClass("hidden") }
         }
-        emptyRenderings();
         colorScheme = newVal;
-        // Draw new SynMap & histogram.
-        renderSynMap(d, "canvas", colorBySelect.val(), persistanceSlide.val());
-        renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-        overlay.hide();
+        refresh = true;
+        // emptyRenderings();
+        // // Draw new SynMap & histogram.
+        // renderSynMap(d, "canvas", persistanceSlide.val());
+        // renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
+        // overlay.hide();
     });
 
     /* Report persistence */
     persistanceDisplay.html(persistanceSlide.val());
     persistanceSlide.change( function () {
-        overlay.show();
         persistanceDisplay.html(persistanceSlide.val());
-        emptyRenderings();
-        renderSynMap(d, "canvas", colorBySelect.val(), persistanceSlide.val());
-        renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-        overlay.hide()
+        refresh = true;
+        overlay.show();
+        // emptyRenderings();
+        // renderSynMap(d, "canvas", persistanceSlide.val());
+        // renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
+        // overlay.hide()
     });
 
 });
