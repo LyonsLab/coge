@@ -591,18 +591,31 @@ return declare( JBrowsePlugin,
 						},
 						parameters: {
 							additional_metadata: [
-								{origional_experiment_name: config.coge.name},
-								{origional_experiment_id: config.coge.id},
-								{search: search},
-								{search_user: un}
+								{
+									type: 'origional experiment name',
+									text: config.coge.name
+								},
+								{
+									type: 'origional experiment id',
+									text: config.coge.id
+								},
+								{
+									type: 'search',
+									text: search
+								},
+								{
+									type: 'search user',
+									text: un
+								}
 							],
 							genome_id: gid,
 							load_id: load_id,
 							metadata: {
 								description: description,
 								name: name,
+								restricted: true,
 								tags: ['search results'],
-								version: 1
+								version: '1'
 							},
 							source_data: [{
 								file_type: 'csv',
