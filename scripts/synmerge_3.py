@@ -322,7 +322,7 @@ def reorganizeDownloads(id_A, id_B, downloadsList):
         print("--> (%s,%s) to (%s,%s)" % (first, second, id_A, id_B))
         return [[e[1], e[0]] for e in downloadsList]
     else:
-        print "Reordering Error (Downloads)"
+        print("Reordering Error (Downloads)")
         exit()
 
 
@@ -615,7 +615,7 @@ if X_GID in gids1 and Z_GID in gids1:
     downloadsXZ = reorganizeDownloads(X_GID, Z_GID, downloads1)
 elif X_GID in gids2 and Z_GID in gids2:
     coordinatesXZ = reorganizeArray(X_GID, Z_GID, gids2, coordinates2)
-    downloadsXZ = reorganizeDownloads(X_GID, Z_GID, downloads3)
+    downloadsXZ = reorganizeDownloads(X_GID, Z_GID, downloads2)
 elif X_GID in gids3 and Z_GID in gids3:
     coordinatesXZ = reorganizeArray(X_GID, Z_GID, gids3, coordinates3)
     downloadsXZ = reorganizeDownloads(X_GID, Z_GID, downloads3)
