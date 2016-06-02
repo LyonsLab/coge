@@ -6,6 +6,7 @@ var concat = Array.prototype.concat;
 var current_experiment = {};
 var options_name;
 var final_experiment;
+var synmapRenderer = "syn3d-1.0.js";
 
 function search_genomes (search_term) {
     var edit_genome = $(geneSelect[0]);
@@ -460,7 +461,7 @@ function showVisualizer(data) {
     if (visVisible) {
         //Refresh function can go here.
     } else {
-        $.getScript( "js/syn3d/syn3d_new.js", function( data, textStatus, jqxhr ) {
+        $.getScript( "js/syn3d/" + synmapRenderer, function( data, textStatus, jqxhr ) {
             console.log( "Visualizer loaded." );
             //console.log( data ); // Data returned
             //console.log( textStatus ); // Success
