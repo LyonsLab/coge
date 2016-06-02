@@ -24,7 +24,9 @@ sub get {
     #unless ($gid || $eid || ($wid && $username)) {
     unless ($gid || $eid || $wid) {
         print STDERR "CoGe::Services::Download invalid request\n";
-        return;
+        return $self->render(status => 400, json => {
+            error => { Error => "gid, eid, or wid required" }
+        });
     }
     
     # Authenticate user and connect to the database

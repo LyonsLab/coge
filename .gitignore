@@ -1,11 +1,11 @@
 *.pyc
 *.o
 .project
+Makefile
 blib
 pm_to_blib
 MYMETA.json
 MYMETA.yml
-Makefile
 api.log
 irodsEnv
 irodsEnv_local
@@ -27,5 +27,4 @@ modules/perl
 /.externalToolBuilders/
 /.ignorepath
 /.includepath
-bin/snp_search/snp_search
 bin/get_chr_start/get_chr_start

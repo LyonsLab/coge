@@ -590,13 +590,12 @@ return declare( JBrowsePlugin,
 							user_name: un
 						},
 						parameters: {
-							annotations: {
-								origional_experiment_name: config.coge.name,
-								origional_experiment_id: config.coge.id,
-								search: search,
-								search_user: un
-								
-							},
+							additional_metadata: [
+								{origional_experiment_name: config.coge.name},
+								{origional_experiment_id: config.coge.id},
+								{search: search},
+								{search_user: un}
+							],
 							genome_id: gid,
 							load_id: load_id,
 							metadata: {
