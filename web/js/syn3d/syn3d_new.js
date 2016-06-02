@@ -156,8 +156,8 @@ function rotateHistogram(direction) {
         d3.select("#chartSvg").remove();
         document.getElementById(c).style.display = "none";
         document.getElementById(n).style.display = "";
-        renderHistogram(n, histData[type], $("#slide").val());
         hCurrent = [n, type];
+        renderHistogram(n, histData[type], $("#slide").val());
         hQueue.unshift(n);
         hQueue.unshift(c);
     } else if (direction=="L") {
@@ -269,7 +269,7 @@ function renderHistogram(element_id, values, persistence) {
     var binCount = 100.0;
 
     // Set margins & canvas size (original).
-    var margin = {top: 10, right: 30, bottom: 30, left: 30},
+    var margin = {top: 10, right: 30, bottom: 40, left: 30},
         width = document.getElementById(element_id).clientWidth - margin.left - margin.right,
         height = (document.getElementById("rendering").clientHeight * .65) - margin.bottom - margin.top;
 
@@ -443,6 +443,12 @@ function renderHistogram(element_id, values, persistence) {
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis);
 
+    // Draw X axis label.
+    svg.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + (margin.bottom*.9))
+        .style("text-anchor", "middle")
+        .text("log10(" + hCurrent[1] + ")")
 }
 
 /* CORE FUNCTION: Render SynMap */
