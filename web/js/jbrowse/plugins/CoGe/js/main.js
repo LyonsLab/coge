@@ -590,23 +590,26 @@ return declare( JBrowsePlugin,
 							user_name: un
 						},
 						parameters: {
-							genome_id: gid,
-							metadata: {
-								description: description,
-								name: name,
+							annotations: {
 								origional_experiment_name: config.coge.name,
 								origional_experiment_id: config.coge.id,
 								search: search,
-								search_user: un,
-								tag: 'search result',
+								search_user: un
+								
+							},
+							genome_id: gid,
+							load_id: load_id,
+							metadata: {
+								description: description,
+								name: name,
+								tags: ['search results'],
 								version: 1
 							},
 							source_data: [{
 								file_type: 'csv',
 								path: 'upload/search_results.csv',
 								type: 'file'
-							}],
-							load_id: load_id
+							}]
 						}
 					};		
 				    coge.services.submit_job(request) 
