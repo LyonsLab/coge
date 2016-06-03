@@ -633,12 +633,16 @@ function launch(experiment) {
     //console.log(graph_obj);
     var graphLoc = DATA_LOC + "/" + graph_obj;
     console.log(graphLoc);
-    $.ajax({
-        url: graphLoc,
-        type: 'HEAD',
-        success: function() { console.log("Already generated"); showVisualizer(final_experiment); },
-        error: function() { console.log("Need to generate"); makeSynmaps() }
-    });
+    // $.ajax({
+    //     url: graphLoc,
+    //     type: 'HEAD',
+    //     success: function() { console.log("Already generated"); showVisualizer(final_experiment); },
+    //     error: function() { console.log("Need to generate"); makeSynmaps() }
+    // });
+
+    $.get(graphLoc)
+        .done(function() {console.log("Already generated"); showVisualizer(final_experiment);})
+        .fail(function() {console.log("Need to generate"); makeSynmaps()});
 
     // if (final results file does not exist) {
     //     makeSynmaps()
