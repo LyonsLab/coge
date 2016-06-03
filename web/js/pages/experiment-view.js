@@ -220,7 +220,7 @@ function export_data() {
     	title: 'Exporting ...',
     	content: 
     		"<br>Copying this experiment's data files to <br><br>" +
-    		'<a class="bold" target="_blank" href="http://data.iplantcollaborative.org/">'+IRODS_HOME+'</a>',
+    		'<a class="bold" target="_blank" href="' + DISCOVERY_ENVIRONMENT.concat(IRODS_HOME) + '">'+IRODS_HOME+'</a>',
     	width: '30em',
     	height: '10em'
     });
