@@ -632,26 +632,19 @@ function launch(experiment) {
     // Start Comparisons
     //console.log(graph_obj);
     var graphLoc = DATA_LOC + "/" + graph_obj;
-    console.log(graphLoc);
-    // $.ajax({
-    //     url: graphLoc,
-    //     type: 'HEAD',
-    //     success: function(d, s, x) { console.log("Already generated"); console.log(d); console.log(x); showVisualizer(final_experiment); },
-    //     error: function(d, s, x) { console.log("Need to generate"); console.log(d); console.log(x.status); makeSynmaps() }
-    // });
-
     $.get(graphLoc)
-        .done(function(d, s, x) {
+        .done(function(d) {
             console.log("Already generated");
             var testEl = document.createElement('html');
             testEl.innerHTML = d;
-            console.log(testEl.getElementsByTagName('TITLE'));
-            //console.log(d);
-            //console.log(s);
-            //console.log(x);
-            showVisualizer(final_experiment);
+            var title = testEl.getElementsByTagName('TITLE');
+            if (title.length > 0) {
+                if (testEl.getElementsByTagName('TITLE')[0].text == 'CoGe: Error') console.log("Error!!!!");
+            } else {
+                showVisualizer(final_experiment);
+            }
         })
-        .fail(function(d, s, x) {console.log("Need to generate"); console.log(d); console.log(s); console.log(x); console.log(data); makeSynmaps()});
+        .fail(function() {makeSynmaps()});
 }
 
 function reset_launch() { //AKB - Renamed from reset_load()
