@@ -633,25 +633,21 @@ function launch(experiment) {
     //console.log(graph_obj);
     var graphLoc = DATA_LOC + "/" + graph_obj;
     console.log(graphLoc);
-    // $.ajax({
-    //     url: graphLoc,
-    //     type: 'HEAD',
-    //     success: function() { console.log("Already generated"); showVisualizer(final_experiment); },
-    //     error: function() { console.log("Need to generate"); makeSynmaps() }
-    // });
+    $.ajax({
+        url: graphLoc,
+        type: 'HEAD',
+        success: function(d, s, x) { console.log("Already generated"); console.log(d); console.log(x.status); showVisualizer(final_experiment); },
+        error: function(d, s, x) { console.log("Need to generate"); console.log(d); console.log(x.status); makeSynmaps() }
+    });
 
-    $.get(graphLoc)
-        .done(function(data) {console.log("Already generated"); console.log(data); showVisualizer(final_experiment);})
-        .fail(function(data) {console.log("Need to generate"); console.log(data); makeSynmaps()});
+    // function URLExists(url) {
+    //     var http = new XMLHttpRequest();
+    //     http.open()
+    // }
 
-    // if (final results file does not exist) {
-    //     makeSynmaps()
-    // }
-    // else {
-    //     showVisualizer(final_experiment);
-    // }
-    
-    //makeSynmaps();
+    // $.get(graphLoc)
+    //     .done(function(data) {console.log("Already generated"); console.log(data); showVisualizer(final_experiment);})
+    //     .fail(function(data) {console.log("Need to generate"); console.log(data); makeSynmaps()});
 }
 
 function reset_launch() { //AKB - Renamed from reset_load()
