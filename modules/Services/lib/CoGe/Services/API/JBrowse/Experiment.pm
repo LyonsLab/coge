@@ -139,7 +139,7 @@ sub data {
     my $ext = $self->param('ext');
 
     # Authenticate user and connect to the database
-    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
     # Get experiment
     my $experiment = $db->resultset("Experiment")->find($id);
@@ -160,13 +160,13 @@ sub data {
 
     my $fh;
     my $tempfile;
+    my $path;
     if ($irods_path) {
         ($fh, $tempfile) = tempfile();
     }
     elsif ($load_id) {
-        my $path = catdir(get_upload_path($user->name, $load_id), 'upload');
+        $path = catdir(get_upload_path($user->name, $load_id), 'upload');
         mkpath($path);
-        warn $path;
         open $fh, ">", catfile($path, 'search_results' . $ext);
     }
 
@@ -175,9 +175,9 @@ sub data {
     $filename .= ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : $exp_data_type == $DATA_TYPE_ALIGN ? '.sam' : $exp_data_type == $DATA_TYPE_MARKER ? '.gff' : '.csv');
     $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
     $self->_write("##gff-version 3\n", $fh) if $exp_data_type == $DATA_TYPE_MARKER;
-    my $comment_char = ($exp_data_type == $DATA_TYPE_ALIGN) ? '@CO' : '#';
-    $self->_write($comment_char . ' experiment: ' . $experiment->name . "\n", $fh);
-    $self->_write($comment_char . ' chromosome: ' . $chr . "\n", $fh);
+    my $comment_char = ($exp_data_type == $DATA_TYPE_ALIGN) ? "\@CO\t" : '# ';
+    $self->_write($comment_char . 'experiment: ' . $experiment->name . "\n", $fh);
+    $self->_write($comment_char . 'chromosome: ' . $chr . "\n", $fh);
 
     if ( !$exp_data_type || $exp_data_type == $DATA_TYPE_QUANT ) {
         if ($type) {
@@ -259,12 +259,23 @@ sub data {
     elsif ( $exp_data_type == $DATA_TYPE_ALIGN) {
         my $type_names = $self->param('features');
         if ($type_names) {
-            $self->_write('@CO search: Alignments in ' . $type_names . "\n", $fh);
+            $self->_write("\@CO\tsearch: Alignments in " . $type_names . "\n", $fh);
         }
         my $type = $self->param('type');
         if ($type) {
-            $self->_write('@CO search: ' . $type . "\n", $fh);
+            $self->_write("\@CO\tsearch: " . $type . "\n", $fh);
         }
+        $self->_write("\@HD\tVN:1.5\tSO:coordinate\n", $fh);
+        if ($chr eq 'All') {
+            my $chromosomes = $experiment->genome->chromosomes_all;
+            foreach (@{$chromosomes}) {
+                $self->_write("\@SQ\tSN:" . $_->{name} . "\tLN:" . $_->{length} . "\n", $fh);
+            }
+        }
+        else {
+            $self->_write("\@SQ\tSN:" . $chr . "\tLN:" . $experiment->genome->get_chromosome_length($chr) . "\n", $fh);
+        }
+
         my $alignments = $self->_alignments(1);
         foreach (@{$alignments}) {
             $self->_write($_, $fh);
@@ -306,6 +317,11 @@ sub data {
         close $fh;
         if ($irods_path) {
             irods_iput($tempfile, $irods_path . '/' . $filename);
+        }
+        elsif ($load_id && $exp_data_type == $DATA_TYPE_ALIGN) {
+                my $cmd = $conf->{SAMTOOLS} || 'samtools';
+                $cmd .= ' view -bS ' . catfile($path, 'search_results.sam') . ' > ' . catfile($path, 'search_results.bam');
+                system($cmd);
         }
     }
 }
@@ -463,7 +479,7 @@ sub find_overlaping {
     my $ids = get_dataset_ids($experiments->[0]->genome_id, $dbh);
     $query .= (scalar @$ids == 1) ? '=' . $ids->[0] : ' IN(' . join(',', @$ids) . ')';
     $query .= " AND chromosome='" . $chr . "'" if $chr;
-    if ($type_names ne 'all') {
+    if ($type_names && $type_names ne 'all') {
         my $type_ids = feature_type_names_to_id($type_names, $dbh);
         $query .= ' AND feature_type_id';
         $query .= (index($type_ids, ',') == -1) ? '=' . $type_ids : ' IN(' . $type_ids . ')';
@@ -511,7 +527,7 @@ sub _alignments {
     my $all = shift;
     my $eid = $self->stash('eid');
     my $chr = $self->stash('chr');
-    $chr = undef if $chr eq 'Any';
+    $chr = undef if $chr eq 'Any' || $chr eq 'All';
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);

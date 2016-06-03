@@ -621,7 +621,7 @@ return declare( JBrowsePlugin,
 							},
 							source_data: [{
 								file_type: config.coge.ext.substr(1),
-								path: 'upload/search_results' + config.coge.ext,
+								path: 'upload/search_results' + (config.coge.ext == '.sam' ? '.bam' : config.coge.ext),
 								type: 'file'
 							}]
 						}
@@ -664,7 +664,7 @@ return declare( JBrowsePlugin,
 		content += '<tr><td>Name:</td><td><input id="experiment_name" /></td></tr></table>';
 		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.save_as_experiment()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin._save_as_dialog.hide()">Cancel</button></div></div>';
 		this._save_as_dialog = new Dialog({
-			title: 'Save Results',
+			title: 'Save Results as New Experiment',
 			content: content,
 			onHide: function() {
 				this.destroyRecursive();
