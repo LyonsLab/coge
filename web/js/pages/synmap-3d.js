@@ -629,22 +629,22 @@ function launch(experiment) {
             })
     }
 
-    // Start Comparisons
-    //console.log(graph_obj);
+    // Check if results files already exist, if so launch visualizer, if not start workflow.
+    // Note: this is incredibly hacky to get around automatic redirects that result in 200 even if file exists. Might
+    // need to update at some point if CoGe: Error page changes.
     var graphLoc = DATA_LOC + "/" + graph_obj;
     $.get(graphLoc)
         .done(function(d) {
-            console.log("Already generated");
             var testEl = document.createElement('html');
             testEl.innerHTML = d;
             var title = testEl.getElementsByTagName('TITLE');
             if (title.length > 0) {
-                if (testEl.getElementsByTagName('TITLE')[0].text == 'CoGe: Error') console.log("Error!!!!");
+                if (testEl.getElementsByTagName('TITLE')[0].text == 'CoGe: Error') makeSynmaps();
             } else {
                 showVisualizer(final_experiment);
             }
         })
-        .fail(function() {makeSynmaps()});
+        .fail(function() { makeSynmaps() });
 }
 
 function reset_launch() { //AKB - Renamed from reset_load()
