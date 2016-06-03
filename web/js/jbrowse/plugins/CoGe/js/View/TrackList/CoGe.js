@@ -409,9 +409,12 @@ define(['dojo/_base/declare',
 		notebooks.forEach(function(n) {
 			this._new_notebook_source().insertNodes(
 				false,
-				[n].concat(experiments.filter(function(e) {
-					return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, n.coge.id) != -1;
-				}))
+				[n].concat(
+					experiments.filter(function(e) {
+						return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, n.coge.id) != -1;
+					}).sort(function(a, b) {
+						return a.coge.name < b.coge.name ? -1 : a.coge.name > b.coge.name ? 1 : 0;
+					}))
 			);
 		}, this);
 
