@@ -88,7 +88,7 @@ sub get {
         $content = read_file($file_path) if -r $file_path;
     };
 
-    $self->render(text => $content);
+    $self->render(data => $content);
 }
 
 1;
