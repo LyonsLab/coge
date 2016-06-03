@@ -636,8 +636,8 @@ function launch(experiment) {
     $.ajax({
         url: graphLoc,
         type: 'HEAD',
-        success: function(d, s, x) { console.log("Already generated"); console.log(d); console.log(x.status); showVisualizer(final_experiment); },
-        error: function(d, s, x) { console.log("Need to generate"); console.log(d); console.log(x.status); makeSynmaps() }
+        success: function(d, s, x) { console.log("Already generated"); console.log(d); console.log(x); showVisualizer(final_experiment); },
+        error: function(d, s, x) { console.log("Need to generate"); console.log(d); console.log(x); makeSynmaps() }
     });
 
     // function URLExists(url) {
