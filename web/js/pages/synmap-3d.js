@@ -641,8 +641,8 @@ function launch(experiment) {
     // });
 
     $.get(graphLoc)
-        .done(function() {console.log("Already generated"); showVisualizer(final_experiment);})
-        .fail(function() {console.log("Need to generate"); makeSynmaps()});
+        .done(function(data) {console.log("Already generated"); console.log(data); showVisualizer(final_experiment);})
+        .fail(function(data) {console.log("Need to generate"); console.log(data); makeSynmaps()});
 
     // if (final results file does not exist) {
     //     makeSynmaps()
