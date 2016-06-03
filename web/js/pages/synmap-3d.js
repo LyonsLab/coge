@@ -641,7 +641,16 @@ function launch(experiment) {
     // });
 
     $.get(graphLoc)
-        .done(function(d, s, x) {console.log("Already generated"); console.log(d); console.log(s); console.log(x); showVisualizer(final_experiment);})
+        .done(function(d, s, x) {
+            console.log("Already generated");
+            var testEl = document.createElement('html');
+            testEl.innerHTML = d;
+            console.log(testEl.getElementsByTagName('TITLE'));
+            //console.log(d);
+            //console.log(s);
+            //console.log(x);
+            showVisualizer(final_experiment);
+        })
         .fail(function(d, s, x) {console.log("Need to generate"); console.log(d); console.log(s); console.log(x); console.log(data); makeSynmaps()});
 }
 
