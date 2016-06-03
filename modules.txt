@@ -46,6 +46,7 @@ Sort::Versions
 Spreadsheet::WriteExcel
 Statistics::Basic
 Statistics::Basic::Mean
+String::ShellQuote
 Switch
 Sys::Syslog
 URI
