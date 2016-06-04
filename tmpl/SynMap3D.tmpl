@@ -63,6 +63,17 @@
     left: 8px;
 }
 
+#vrlogo {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    opacity: 0.4;
+}
+
+#vrlogo:hover {
+    opacity: 1.0;
+}
+
 #axislabels {
     position: absolute;
     top: 8px;
@@ -473,8 +484,8 @@
 
 	    <div class="form-field">
 		<label class="col-md-2">Enable VR mode:</label>
-		<input id="vr" type="checkbox" disabled>
-        <span style="color: red; font-size: 0.75em; font-style: italic">Coming Soon!</span>
+		<input id="vr" type="checkbox">
+        <!--<span style="color: red; font-size: 0.75em; font-style: italic">Coming Soon!</span>-->
 	   </div>
 	</div>	
 </script>
@@ -611,6 +622,10 @@ $(function() {
 <script type="text/javascript" src="js/d3-tip-0.6.3.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/lodash/3.10.1/lodash.min.js"></script>
 <!--<script type="text/javascript" src="js/plotly-latest.min.js"></script>-->
+
+<script src="js/syn3d/WebVR_modified.js"></script>
+<script src="js/syn3d/VREffect_modified.js"></script>
+
 
 <!-- CoGe Utilities -->
 <script type="text/javascript" src="js/coge/utils.js"></script>

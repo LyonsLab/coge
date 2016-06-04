@@ -629,29 +629,23 @@ function launch(experiment) {
             })
     }
 
-    // Start Comparisons
-    //console.log(graph_obj);
+    // Check if results files already exist, if so launch visualizer, if not start workflow.
+    // Note: this is incredibly hacky to get around automatic redirects that result in 200 even if file exists. Might
+    // need to update at some point if CoGe: Error page changes.
     var graphLoc = DATA_LOC + "/" + graph_obj;
-    console.log(graphLoc);
-    // $.ajax({
-    //     url: graphLoc,
-    //     type: 'HEAD',
-    //     success: function() { console.log("Already generated"); showVisualizer(final_experiment); },
-    //     error: function() { console.log("Need to generate"); makeSynmaps() }
-    // });
-
+    console.log(final_experiment);
     $.get(graphLoc)
-        .done(function() {console.log("Already generated"); showVisualizer(final_experiment);})
-        .fail(function() {console.log("Need to generate"); makeSynmaps()});
-
-    // if (final results file does not exist) {
-    //     makeSynmaps()
-    // }
-    // else {
-    //     showVisualizer(final_experiment);
-    // }
-    
-    //makeSynmaps();
+        .done(function(d) {
+            var testEl = document.createElement('html');
+            testEl.innerHTML = d;
+            var title = testEl.getElementsByTagName('TITLE');
+            if (title.length > 0) {
+                if (testEl.getElementsByTagName('TITLE')[0].text == 'CoGe: Error') makeSynmaps();
+            } else {
+                showVisualizer(final_experiment);
+            }
+        })
+        .fail(function() { makeSynmaps() });
 }
 
 function reset_launch() { //AKB - Renamed from reset_load()

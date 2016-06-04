@@ -28,12 +28,11 @@ var dataSubset;
 var redraw = false;
 var refresh = false;
 var needsBrushUpdate = false;
+var vrMode = false;
+//var inFullScreen = false;
 
 // Color schemes variables
 var schemes = {
-    "Auto": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
-        [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']], //TODO: REMOVE THIS SHITTY HACK!
-
     "Jet": [[0,'rgb(0,0,131)'], [0.125,'rgb(0,60,170)'], [0.375,'rgb(5,255,255)'],
         [0.625,'rgb(255,255,0)'], [0.875,'rgb(250,0,0)'], [1,'rgb(128,0,0)']],
 
@@ -206,6 +205,11 @@ function launchSynmap2(comp) {
             console.log("Unrecognized SynMap comparison - unable to launch.")
     }
     window.open(link);
+}
+
+/* CORE FUNCTION: Launch VR Visualizer */
+function launchVR() {
+    window.open("js/syn3d/vr-view.html");
 }
 
 /* CORE FUNCTION: Hide elements */
@@ -458,7 +462,7 @@ var renderSynMap = function (graph_object, element_id, persistence) {
      --------------------------------------------------------------------------------------------------------*/
 
     // Rendering Variables
-    var renderer, scene, camera, controls;
+    var renderer, scene, camera, controls, effect;
     var container = document.getElementById(element_id);
     var width, height, containerWidth, containerHeight;
 
@@ -922,6 +926,11 @@ var renderSynMap = function (graph_object, element_id, persistence) {
         camUpdate = false;
         needsBrushUpdate = false;
 
+        /* Check VR Compatibility */
+        if ( final_experiment.options.vr && WEBVR.isLatestAvailable() === false ) {
+            document.getElementById("rendering").appendChild( WEBVR.getMessage() );
+        }
+        
         /* Set sizing variables */
         width = document.getElementById("rendering").clientWidth;
         height = window.innerHeight * 0.9;
@@ -944,6 +953,17 @@ var renderSynMap = function (graph_object, element_id, persistence) {
 
         /* Apply FlatOrbitControls to camera. */
         controls = new THREE.FlatOrbitControls( camera );
+
+        /* Add VR Launch */
+        if ( final_experiment.options.vr && WEBVR.isAvailable() === true ) {
+            vrMode = true;
+            //controls = new THREE.VRControls( camera );
+            controls = new THREE.FlatOrbitControls( camera );
+            effect = new THREE.VREffect( renderer );
+            document.getElementById("rendering").appendChild( WEBVR.getButton( effect ) );
+        } else {
+            controls = new THREE.FlatOrbitControls( camera );
+        }
 
         /* Add raycaster */
         raycaster = new THREE.Raycaster();
@@ -977,7 +997,12 @@ var renderSynMap = function (graph_object, element_id, persistence) {
 
     function render() {
         // Render scene.
-        renderer.render( scene, camera );
+        if (vrMode) {
+            effect.render( scene, camera );
+        }
+        else {
+            renderer.render( scene, camera );
+        }
     }
     
     /*---------------------------------------------------------------------------------------------------------
@@ -1083,6 +1108,20 @@ var renderSynMap = function (graph_object, element_id, persistence) {
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
 
+        if (vrMode) effect.setSize(width, height);
+        //if (vrMode) effect.setSize( window.innerWidth, window.innerHeight );
+
+        // if (inFullScreen) {
+        //     renderer.setSize(window.innerWidth, window.innerHeight);
+        //     camera.aspect = window.innerWidth / window.innerHeight;
+        //     effect.setSize( window.innerWidth, window.innerHeight );
+        // } else {
+        //     renderer.setSize( width, height);
+        //     camera.aspect = width / height;
+        //     if (vrMode) effect.setSize(width, height)
+        // }
+        // camera.updateProjectionMatrix();
+
         containerWidth = container.clientWidth;
         containerHeight = container.clientHeight;
 
@@ -1156,6 +1195,7 @@ var renderSynMap = function (graph_object, element_id, persistence) {
 $(document).ready( function() {
     //var d; AKB Moved these two variables to global, 5/2/16
     //var overlay = $("#overlay");
+
     var persistanceSlide = $("#slide");
     var persistanceDisplay = $("#slideDisplay");
     overlay.show();
