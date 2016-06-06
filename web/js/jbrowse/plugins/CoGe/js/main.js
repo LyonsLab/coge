@@ -532,7 +532,7 @@ return declare( JBrowsePlugin,
 			config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
 			config.track = 'search_' + eid;
 			config.label = 'search_' + eid;
-			config.metadata = {Description: 'Track to show results of searching a track.'};
+			config.original_store = config.store;
 			config.store = store_name;
 			config.coge.collapsed = false;
 			config.coge.search_track = true;
@@ -637,6 +637,18 @@ return declare( JBrowsePlugin,
 				    			return;
 				    		}
 				            coge.progress.update(response.id, response.site_url);
+							config = dojo.clone(config);
+							config.key = name;
+							config.track = 'experiment' + response.id;
+							config.label = 'experiment' + response.id;
+							config.store = config.original_store;
+							config.coge.collapsed = false;
+							config.coge.id = response.id;
+							delete config.coge.search_track;
+							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
+							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/show', [config]);
+							dojo.place(dojo.byId('track_experiment' + response.id), dojo.byId('track_search_' + eid), 'after');
+							coge_plugin.browser.view.updateTrackList();
 					    })
 					    .fail(function(jqXHR, textStatus, errorThrown) {
 					    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);

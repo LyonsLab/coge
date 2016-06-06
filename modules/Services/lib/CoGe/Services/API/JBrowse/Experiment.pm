@@ -173,7 +173,9 @@ sub data {
     my $exp_data_type = $experiment->data_type;
     $filename = 'experiment' unless $filename;
     $filename .= ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : $exp_data_type == $DATA_TYPE_ALIGN ? '.sam' : $exp_data_type == $DATA_TYPE_MARKER ? '.gff' : '.csv');
-    $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
+    if (!$irods_path && !$load_id) {
+        $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
+    }
     $self->_write("##gff-version 3\n", $fh) if $exp_data_type == $DATA_TYPE_MARKER;
     my $comment_char = ($exp_data_type == $DATA_TYPE_ALIGN) ? "\@CO\t" : '# ';
     $self->_write($comment_char . 'experiment: ' . $experiment->name . "\n", $fh);
@@ -187,7 +189,7 @@ sub data {
             $self->_write("\n", $fh);
         }
         $self->_write('# transform: ' . $transform . "\n", $fh) if $transform;
-        my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
+        my $cols = CoGe::Core::Experiment::get_fastbit_format($id)->{columns};
         my @columns = map { $_->{name} } @{$cols};
         $self->_write('# columns: ', $fh);
         for (my $i=0; $i<scalar @columns; $i++) {

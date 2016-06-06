@@ -20,7 +20,48 @@ define(['dojo/_base/declare',
 		'dijit/Dialog'
 	   ],
 	   function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, mouse, DropDownButton, Menu, MenuItem, MenuSeparator, Dialog ) {
-	return declare( 'JBrowse.View.TrackList.CoGe', null,
+	function natural_sort (a, b) {
+	    var re = /(^-?[0-9]+(\.?[0-9]*)[df]?e?[0-9]?$|^0x[0-9a-f]+$|[0-9]+)/gi,
+	        sre = /(^[ ]*|[ ]*$)/g,
+	        dre = /(^([\w ]+,?[\w ]+)?[\w ]+,?[\w ]+\d+:\d+(:\d+)?[\w ]?|^\d{1,4}[\/\-]\d{1,4}[\/\-]\d{1,4}|^\w+, \w+ \d+, \d{4})/,
+	        hre = /^0x[0-9a-f]+$/i,
+	        ore = /^0/,
+	        i = function(s) { return (''+s).toLowerCase() || ''+s },
+	        // convert all to strings strip whitespace
+	        x = i(a).replace(sre, '') || '',
+	        y = i(b).replace(sre, '') || '',
+	        // chunk/tokenize
+	        xN = x.replace(re, '\0$1\0').replace(/\0$/,'').replace(/^\0/,'').split('\0'),
+	        yN = y.replace(re, '\0$1\0').replace(/\0$/,'').replace(/^\0/,'').split('\0'),
+	        // numeric, hex or date detection
+	        xD = parseInt(x.match(hre)) || (xN.length != 1 && x.match(dre) && Date.parse(x)),
+	        yD = parseInt(y.match(hre)) || xD && y.match(dre) && Date.parse(y) || null,
+	        oFxNcL, oFyNcL;
+	    // first try and sort Hex codes or Dates
+	    if (yD)
+	        if ( xD < yD ) return -1;
+	        else if ( xD > yD ) return 1;
+	    // natural sorting through split numeric strings and default strings
+	    for(var cLoc=0, numS=Math.max(xN.length, yN.length); cLoc < numS; cLoc++) {
+	        // find floats not starting with '0', string or 0 if not defined (Clint Priest)
+	        oFxNcL = !(xN[cLoc] || '').match(ore) && parseFloat(xN[cLoc]) || xN[cLoc] || 0;
+	        oFyNcL = !(yN[cLoc] || '').match(ore) && parseFloat(yN[cLoc]) || yN[cLoc] || 0;
+	        // handle numeric vs string comparison - number < string - (Kyle Adams)
+	        if (isNaN(oFxNcL) !== isNaN(oFyNcL)) { return (isNaN(oFxNcL)) ? 1 : -1; }
+	        // rely on string comparison if different types - i.e. '02' < 2 != '02' < '2'
+	        else if (typeof oFxNcL !== typeof oFyNcL) {
+	            oFxNcL += '';
+	            oFyNcL += '';
+	        }
+	        if (oFxNcL < oFyNcL) return -1;
+	        if (oFxNcL > oFyNcL) return 1;
+	    }
+	    return 0;
+	}
+
+	// ----------------------------------------------------------------
+
+    return declare( 'JBrowse.View.TrackList.CoGe', null,
 
 	/** @lends JBrowse.View.TrackList.CoGe.prototype */
 	{
@@ -95,7 +136,7 @@ define(['dojo/_base/declare',
 				if (data.error) {
 					on_error();
 					coge_plugin.error('Add Notebook Item', data);
-				} else { 
+				} else {
 					var n = dojo.byId('notebook' + notebook_id);
 					if (create)
 						items.forEach(function(item) {
@@ -121,12 +162,17 @@ define(['dojo/_base/declare',
 		var notebooks = this._track_configs.filter(function(e) {
 			return (e.coge.type && e.coge.type == 'notebook' && e.coge.id != 0);
 		});
-		notebooks.sort();
+		notebooks.sort(function(a, b) { return natural_sort(a.coge.name, b.coge.name); });
 		for (var i=0; i<notebooks.length; i++)
 			content += '<option value="' + notebooks[i].coge.id + '">' + notebooks[i].coge.name + '</option>';
-		content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="var s=dojo.byId(\'coge_notebook\');coge_track_list._add_to_notebook([{type:\'' + type + '\',id:' + id + '}],s.options[s.selectedIndex].value,true);">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.hide()">Cancel</button></div>';
+		content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.hide()">Cancel</button></div>';
 		this._add_dialog = new Dialog({
-			title: 'Add to Notebook ' + name,
+			title: 'Add experiment ' + name + ' to Notebook',
+			onExecute: function() {
+				var s=dojo.byId('coge_notebook');
+				//coge_track_list._add_to_notebook([{type: type,id: id}],s.options[s.selectedIndex].value,true);
+				console.log('ok');
+			},
 			onHide: function() {
 				this.destroyRecursive();
 				coge_track_list._add_dialog = null;
@@ -138,11 +184,25 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
+	_add_track_to_notebook: function(items, notebook_id) {
+		var n = dojo.byId('notebook' + notebook_id);
+		items.forEach(function(item) {
+			var e = dojo.byId(item.type + item.id);
+			dojo.place(coge_track_list._new_track(e.config), n.parentNode);
+		});
+		this._expand(n);
+	},
+
+	// ----------------------------------------------------------------
+
 	addTracks: function(track_configs) {
-		var before = this.tracks_div.firstChild; // going to insert before Sequence
 		track_configs.forEach(function(track_config) {
 			if (track_config.coge)
-				this.tracks_div.insertBefore(this._new_track(track_config), before);
+				if (track_config.coge.search_track)
+					this.tracks_div.insertBefore(this._new_track(track_config), this.tracks_div.firstChild); // insert before Sequence track at top
+				else {
+					this._add_to_notebook([{type: 'experiment', id: track_config.coge.id}], 0, true);
+				}
 		}, this);
 	},
 
@@ -412,9 +472,8 @@ define(['dojo/_base/declare',
 				[n].concat(
 					experiments.filter(function(e) {
 						return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, n.coge.id) != -1;
-					}).sort(function(a, b) {
-						return a.coge.name < b.coge.name ? -1 : a.coge.name > b.coge.name ? 1 : 0;
-					}))
+					}).sort(function(a, b) { return natural_sort(a.coge.name, b.coge.name); })
+				)
 			);
 		}, this);
 

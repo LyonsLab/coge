@@ -5,6 +5,7 @@ use Switch;
 use JSON;
 use URI::Escape qw(uri_escape);
 use Data::Dumper;
+use Sort::Naturally qw( ncmp );
 use Sort::Versions;
 use Cwd qw(abs_path);
 use Time::HiRes qw(time);
@@ -472,7 +473,7 @@ sub track_config {
     #
     # Add notebook tracks
     #
-    foreach my $n ( sort { $a->{name} cmp $b->{name} } values %notebooks ) {
+    foreach my $n ( sort { ncmp(lc($a->{name}), lc($b->{name}) } values %notebooks ) {
         my $nid = $n->{list_id};
         push @tracks, {
             key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
