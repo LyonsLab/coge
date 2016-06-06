@@ -1576,10 +1576,13 @@ sub get_results {
 		}
 
 		# dotplot
-		if ($ks_blocks_file) {
+		if ($ks_type) {
 			my $ks_blocks_file_url = $ks_blocks_file;
 			$ks_blocks_file_url =~ s/$DIR/$URL/;
-			$results->param( ks_file_url => $ks_blocks_file_url );
+			$results->param( file_url => $ks_blocks_file_url );
+		}
+		else {
+			$results->param( file_url => $final_dagchainer_file );
 		}
 		$results->param( dsgid1 => $dsgid1 );
 		$results->param( dsgid2 => $dsgid2 );
