@@ -141,15 +141,19 @@ define(['dojo/_base/declare',
 					if (create)
 						track_configs.forEach(function(track_config) {
 							var e = dojo.byId(track_config.coge.type + track_config.coge.id);
-							dojo.place(coge_track_list._new_track(e.config), n.parentNode);
-						});
-					this._expand(n);
-					var track = dojo.byId('track_notebook' + notebook_id);
-					if (track) {
-						this.browser.publish('/jbrowse/v1/v/tracks/delete', [dojo.byId('notebook' + notebook_id).config]);
-						this.browser.publish('/jbrowse/v1/v/tracks/new', [dojo.byId('notebook' + notebook_id).config]);
-						this.browser.publish('/jbrowse/v1/v/tracks/show', [dojo.byId('notebook' + notebook_id).config]);
-					}
+							var track = coge_track_list._new_track(e.config);
+							track.style.display = 'none';
+							this._add_track_to_notebook(track, n);
+						}, this);
+					if (n.style.display != 'none')
+						this._expand(n);
+					// jbrowse caches data so there's no way to refresh a track after data is added
+					// var track = dojo.byId('track_notebook' + notebook_id);
+					// if (track) {
+					// 	this.browser.publish('/jbrowse/v1/v/tracks/delete', [dojo.byId('notebook' + notebook_id).config]);
+					// 	this.browser.publish('/jbrowse/v1/v/tracks/new', [dojo.byId('notebook' + notebook_id).config]);
+					// 	this.browser.publish('/jbrowse/v1/v/tracks/show', [dojo.byId('notebook' + notebook_id).config]);
+					// }
 				}
 			}),
 			error: function(data) {
@@ -186,6 +190,19 @@ define(['dojo/_base/declare',
 			content: content
 		});
 		this._add_dialog.show();
+	},
+
+	// ----------------------------------------------------------------
+
+	_add_track_to_notebook: function(track, notebook) {
+		if (!notebook.nextSibling) {
+			dojo.place(track, notebook, 'after');
+			return;
+		}
+		var n = notebook.nextSibling;
+		while (n.nextSibling && natural_sort(n.config.coge.name, n.nextSibling.config.coge.name) < 0)
+			n = n.nextSibling;
+		dojo.place(track, n, 'after');
 	},
 
 	// ----------------------------------------------------------------
@@ -278,7 +295,6 @@ define(['dojo/_base/declare',
 						self._new_notebook_source().insertNodes(false, [config]);
 						self._filter_tracks();
 						dojo.byId('notebook' + config.coge.id).parentNode.scrollIntoView();
-						self.tracks_div.scrollTop = self.tracks_div.scrollHeight;
 						self._create_notebook_dialog.hide();
 						self.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
 					});
@@ -480,6 +496,7 @@ define(['dojo/_base/declare',
 		var experiments = this._track_configs.filter(function(e) {
 			return (e.coge.type && e.coge.type == 'experiment');
 		});
+		notebooks.sort(function(a, b) { return natural_sort(a.coge.name, b.coge.name); });
 		notebooks.forEach(function(n) {
 			this._new_notebook_source().insertNodes(
 				false,
