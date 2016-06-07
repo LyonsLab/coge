@@ -9,8 +9,12 @@ from requests import get
 from sys import argv, stderr
 
 config = {}
-#home = environ['COGE_HOME']
-home = getcwd().split('coge')[0] + "coge/"
+# Set CoGe home, if ENV variable doesnt exist use hacky way.
+try:
+    home = environ['COGE_HOME']
+except KeyError:
+    home = getcwd().split('coge')[0] + "coge/"
+
 with open(home + 'coge.conf', 'U') as c:
     for line in c:
         line = line.strip('\n')
@@ -22,11 +26,7 @@ with open(home + 'coge.conf', 'U') as c:
             line = line.split()
             config[line[0]] = line[1]
 
-print config
 api_base = config["SERVER"].rstrip('/') + path.join(config["API_URL"], "genomes/")
-print api_base
-exit()
-
 #api_base = "https://genomevolution.org/coge/api/v1/genomes/"
 #api_base = "https://geco.iplantc.org/asherkhb/coge/api/v1/genomes/"
 
