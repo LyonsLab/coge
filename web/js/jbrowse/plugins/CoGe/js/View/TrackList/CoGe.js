@@ -3,23 +3,19 @@ var coge_track_list;
 // ----------------------------------------------------------------
 
 define(['dojo/_base/declare',
-		'dojo/_base/array',
-		'dojo/query',
-		'dojo/dom-attr',
 		'dojo/dom-construct',
 		'dojo/dom-geometry',
-		'dojo/dom-style',
 		'dojo/aspect',
 		'dijit/layout/ContentPane',
 		'dojo/dnd/Source',
-		'dojo/mouse',
 		'dijit/form/DropDownButton',
 		'dijit/Menu',
 		'dijit/MenuItem',
 		'dijit/MenuSeparator',
+		'dojo/Deferred',
 		'dijit/Dialog'
 	   ],
-	   function( declare, array, query, attr, dom, domGeom, style, aspect, ContentPane, dndSource, mouse, DropDownButton, Menu, MenuItem, MenuSeparator, Dialog ) {
+	   function( declare, dom, domGeom, aspect, ContentPane, dndSource, DropDownButton, Menu, MenuItem, MenuSeparator, Deferred, Dialog ) {
 	function natural_sort (a, b) {
 	    var re = /(^-?[0-9]+(\.?[0-9]*)[df]?e?[0-9]?$|^0x[0-9a-f]+$|[0-9]+)/gi,
 	        sre = /(^[ ]*|[ ]*$)/g,
@@ -148,6 +144,12 @@ define(['dojo/_base/declare',
 							dojo.place(coge_track_list._new_track(e.config), n.parentNode);
 						});
 					this._expand(n);
+					var track = dojo.byId('track_notebook' + notebook_id);
+					if (track) {
+						this.browser.publish('/jbrowse/v1/v/tracks/delete', [dojo.byId('notebook' + notebook_id).config]);
+						this.browser.publish('/jbrowse/v1/v/tracks/new', [dojo.byId('notebook' + notebook_id).config]);
+						this.browser.publish('/jbrowse/v1/v/tracks/show', [dojo.byId('notebook' + notebook_id).config]);
+					}
 				}
 			}),
 			error: function(data) {
@@ -188,23 +190,12 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	_add_track_to_notebook: function(items, notebook_id) {
-		var n = dojo.byId('notebook' + notebook_id);
-		items.forEach(function(item) {
-			var e = dojo.byId(item.type + item.id);
-			dojo.place(coge_track_list._new_track(e.config), n.parentNode);
-		});
-		this._expand(n);
-	},
-
-	// ----------------------------------------------------------------
-
 	addTracks: function(track_configs) {
 		track_configs.forEach(function(track_config) {
 			if (track_config.coge)
 				if (track_config.coge.search_track)
 					this.tracks_div.insertBefore(this._new_track(track_config), this.tracks_div.firstChild); // insert before Sequence track at top
-				else {
+				else if (track_config.coge.type != 'notebook') {
 					this._add_to_notebook([track_config], 0, true);
 				}
 		}, this);
@@ -247,6 +238,8 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	_create_notebook: function() {
+		var self = this;
+		var browser = this.browser;
 		var name = dojo.getAttr('notebook_name', 'value');
 		var description = dojo.getAttr('notebook_description', 'value');
 		var restricted = dojo.getAttr('notebook_restricted', 'checked');
@@ -262,18 +255,35 @@ define(['dojo/_base/declare',
 				}
 			}),
 			handleAs: 'json',
-			load: dojo.hitch(this, function(data) {
+			load: function(data) {
 				if (data.error)
 					coge_plugin.error('Create Notebook', data);
 				else {
-					var config = this._new_notebook_config(data.id, name, description, restricted);
-					this._track_configs.push(config);
-					this._new_notebook_source().insertNodes(false, [config]);
-					this._filter_tracks();
-					this.tracks_div.scrollTop = this.tracks_div.scrollHeight;
-					this._create_notebook_dialog.hide();
+			        var d = new Deferred();
+					var config = self._new_notebook_config(data.id, name, description, restricted);
+					var store_config = {
+						browser: browser,
+						refSeq: browser.refSeq,
+						type: 'JBrowse/Store/SeqFeature/REST',
+						baseUrl: config.baseUrl
+					};
+					var store_name = browser.addStoreConfig(undefined, store_config);
+					store_config.name = store_name;
+					browser.getStore(store_name, function(store) {
+			           d.resolve(true);
+			       	});
+			       	d.promise.then(function() {
+						config.store = store_name;
+						self._track_configs.push(config);
+						self._new_notebook_source().insertNodes(false, [config]);
+						self._filter_tracks();
+						dojo.byId('notebook' + config.coge.id).parentNode.scrollIntoView();
+						self.tracks_div.scrollTop = self.tracks_div.scrollHeight;
+						self._create_notebook_dialog.hide();
+						self.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
+					});
 				}
-			}),
+			},
 			error: function(data) {
 				coge_plugin.error('Create Notebook', data);
 			}

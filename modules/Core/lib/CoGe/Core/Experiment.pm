@@ -109,9 +109,7 @@ sub get_data {
         $data_type == $DATA_TYPE_MARKER)
     {
         my $format = get_fastbit_format($eid, $data_type);
-        warn Dumper $format;
         my $columns = join(',', map { $_->{name} } @{$format->{columns}});
-        warn $columns;
         my $lines = CoGe::Accessory::FastBit::query("select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999", $eid);
 	    my @results = map {_parse_fastbit_line($format, $_, $chr)} @{$lines};
 	    return \@results;

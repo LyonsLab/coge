@@ -514,7 +514,7 @@ return declare( JBrowsePlugin,
 		if (dojo.byId('nav_' + eid))
 			browser.publish('/jbrowse/v1/v/tracks/hide', [coge_track_list.get_search_config(eid)]);
 		var results = new SearchResults(data);
-//        var d = new Deferred();
+        var d = new Deferred();
 		var store_config = {
 			browser: browser,
 			config: config,
@@ -525,9 +525,9 @@ return declare( JBrowsePlugin,
 		var store_name = browser.addStoreConfig(undefined, store_config);
 		store_config.name = store_name;
 		browser.getStore(store_name, function(store) {
-//            d.resolve(true);
-//        });
-//        d.promise.then(function() {
+           d.resolve(true);
+       	});
+       	d.promise.then(function() {
 			config = dojo.clone(config);
 			config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
 			config.track = 'search_' + eid;
