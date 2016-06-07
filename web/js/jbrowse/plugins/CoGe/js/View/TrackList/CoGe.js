@@ -118,16 +118,20 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	_add_to_notebook: function(items, notebook_id, create) {
+	_add_to_notebook: function(track_configs, notebook_id, create) {
 		var on_error = function() {
 			if (!create) {
 				var notebook_node = dojo.byId('notebook' + notebook_id);
-				items.forEach(function(item) {
+				track_configs.forEach(function(item) {
 					dojo.destroy(dojo.query('#' + item.type + item.id, notebook_node)[0]);
 				});
 			}
 		}
 		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+		var items = [];
+		track_configs.forEach(function(track_config){
+			items.push({type: track_config.coge.type, id: track_config.coge.id});
+		});
 		dojo.xhrPost({
 			url: coge_api + '/notebooks/' + notebook_id + '/items/add?username='+un,
 			postData: JSON.stringify({ items: items }),
@@ -139,8 +143,8 @@ define(['dojo/_base/declare',
 				} else {
 					var n = dojo.byId('notebook' + notebook_id);
 					if (create)
-						items.forEach(function(item) {
-							var e = dojo.byId(item.type + item.id);
+						track_configs.forEach(function(track_config) {
+							var e = dojo.byId(track_config.coge.type + track_config.coge.id);
 							dojo.place(coge_track_list._new_track(e.config), n.parentNode);
 						});
 					this._expand(n);
@@ -157,7 +161,7 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	_add_to_notebook_dialog: function(type, id, name) {
+	_add_to_notebook_dialog: function(track_config) {
 		var content = '<table><tr><td><label>Notebook:</label></td><td><select id="coge_notebook">';
 		var notebooks = this._track_configs.filter(function(e) {
 			return (e.coge.type && e.coge.type == 'notebook' && e.coge.id != 0);
@@ -165,13 +169,13 @@ define(['dojo/_base/declare',
 		notebooks.sort(function(a, b) { return natural_sort(a.coge.name, b.coge.name); });
 		for (var i=0; i<notebooks.length; i++)
 			content += '<option value="' + notebooks[i].coge.id + '">' + notebooks[i].coge.name + '</option>';
-		content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.hide()">Cancel</button></div>';
+		content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.onExecute()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.hide()">Cancel</button></div>';
 		this._add_dialog = new Dialog({
-			title: 'Add experiment ' + name + ' to Notebook',
+			title: 'Add experiment ' + track_config.coge.name + ' to Notebook',
 			onExecute: function() {
 				var s=dojo.byId('coge_notebook');
-				//coge_track_list._add_to_notebook([{type: type,id: id}],s.options[s.selectedIndex].value,true);
-				console.log('ok');
+				coge_track_list._add_to_notebook([track_config],s.options[s.selectedIndex].value,true);
+				this.onHide();
 			},
 			onHide: function() {
 				this.destroyRecursive();
@@ -201,7 +205,7 @@ define(['dojo/_base/declare',
 				if (track_config.coge.search_track)
 					this.tracks_div.insertBefore(this._new_track(track_config), this.tracks_div.firstChild); // insert before Sequence track at top
 				else {
-					this._add_to_notebook([{type: 'experiment', id: track_config.coge.id}], 0, true);
+					this._add_to_notebook([track_config], 0, true);
 				}
 		}, this);
 	},
@@ -675,7 +679,7 @@ define(['dojo/_base/declare',
 		var menu_button = dom.create('div', {id: 'coge_track_menu_button'}, container);
 		var menu = new Menu();
 		menu.addChild(new MenuItem({
-			label: 'Info',
+			label: this._capitalize(type) + ' View',
 			onClick: function() {
 				coge_track_list._info(track_config, type);
 			}
@@ -691,7 +695,7 @@ define(['dojo/_base/declare',
 				menu.addChild(new MenuItem({
 					label: 'Add to Notebook',
 					onClick: function() {
-						coge_track_list._add_to_notebook_dialog(type, id, track_config.coge.name);
+						coge_track_list._add_to_notebook_dialog(track_config);
 					}
 				}));
 			}
@@ -745,7 +749,7 @@ define(['dojo/_base/declare',
 					n = n.nextSibling;
 				target.node.removeChild(n);
 				target.node.appendChild(n);
-				items.push({type: node.config.coge.type, id: node.config.coge.id});
+				items.push(node.config);
 			});
 			this._add_to_notebook(items, target.node.firstChild.config.coge.id);
 		}
