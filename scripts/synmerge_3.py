@@ -259,6 +259,7 @@ def getPointCoords(syntenic_points, relative_chr, absolute_chr, relative_genome,
 
     ids = (gid1, gid2)
     coords = np.array(coords)
+    downloads = np.array(downloads, dtype=str, copy=True)
 
     coord_end = datetime.now()
     print("Point Extraction Complete (%s)" % str(coord_end-coord_start))
@@ -659,9 +660,8 @@ if remove_unclustered:
     clusters = coordinates[labels != -1]
     sparse = coordinates[labels == -1]
 
+    downloads = np.array(downloads, dtype=str)
     downloads = downloads[labels != -1]
-    print len(clusters)
-    print len(downloads)
 
     # Print concluding message.
     cluster_end = datetime.now()
