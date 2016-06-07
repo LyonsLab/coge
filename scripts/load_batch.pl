@@ -369,7 +369,7 @@ sub process_genome { #TODO merge with process_experiment?
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_genome.pl') . ' ' .
         "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
         "-version '$version' -source_name '$source' -organism_id $organism_id " .
-        "-staging_dir $path -install_dir $install_dir -fasta_files '$file' ";
+        "-staging_dir $path -install_dir $install_dir -fasta_file '$file' ";
     print "Running: ", $cmd, "\n";
     my $output = qx{ $cmd }; # TODO: use run() here instead?
     print $output;

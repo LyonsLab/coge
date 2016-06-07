@@ -162,7 +162,7 @@ sub load_genome {
     $cmd .= " -type_id " . $stid;
     $cmd .= " -config " . $conf_file;
     $cmd .= " -restricted " . $restricted if $restricted;
-    $cmd .= " -fasta_files " . $faa;
+    $cmd .= " -fasta_file " . $faa;
 
     #my $seq_dir = $genome->file_path;
     #$seq_dir =~ s/[^\/]*$//;
