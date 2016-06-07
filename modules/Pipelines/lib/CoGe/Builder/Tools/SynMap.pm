@@ -858,15 +858,18 @@ sub add_jobs {
 		####################################################################
 		# Use dotplot_dots.py to calculate points.
 		####################################################################
-		my $dot_cmd = catfile($config->{SCRIPTDIR}, "dotplot_dots.py") . ' ' . $ks_blocks_file;
-		my $dot_syn = catfile($config->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . '_synteny.json');
-		my $dot_log = catfile($config->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . '_log.json');
-		$workflow->add_job({
-				cmd => $dot_cmd,
-				inputs => [$ks_blocks_file],
-				outputs => [$dot_syn, $dot_log],
-				description => "Extracting coordinates for merge..."
-		});
+		if ($ks_type) {
+			my $api_url = $config->{SERVER}.catdir( $config->{API_URL}, "genomes/" );
+			my $dot_cmd = catfile( $config->{SCRIPTDIR}, "dotplot_dots.py" ).' '.$ks_blocks_file.' '.$api_url;
+			my $dot_syn = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_synteny.json' );
+			my $dot_log = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_log.json' );
+			$workflow->add_job( {
+					cmd         => $dot_cmd,
+					inputs      => [ $ks_blocks_file ],
+					outputs     => [ $dot_syn, $dot_log ],
+					description => "Extracting coordinates for merge..."
+				} );
+		}
 #		my $cmd_xy = catfile($SCRIPTDIR, $dotplot_dots) . ' ' . $ksfile_xy;
 #		my $dot_xy = $dir1 . '_' . $dir2 . '_synteny.json';
 #		my $dot_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $dot_xy);

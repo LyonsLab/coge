@@ -4,39 +4,20 @@ __author__ = 'senorrift'
 # Dependencies:
 
 from json import dump
-from os import path, environ, getcwd
+from os import path
 from requests import get
 from sys import argv, stderr
 
-config = {}
-# Set CoGe home, if ENV variable doesnt exist use hacky way.
-try:
-    home = environ['COGE_HOME']
-except KeyError:
-    home = getcwd().split('coge')[0] + "coge/"
-
-with open(home + 'coge.conf', 'U') as c:
-    for line in c:
-        line = line.strip('\n')
-        if len(line) < 1:
-            pass
-        elif line[0] == '#':
-            pass
-        else:
-            line = line.split()
-            config[line[0]] = line[1]
-
-api_base = config["SERVER"].rstrip('/') + path.join(config["API_URL"], "genomes/")
-#api_base = "https://genomevolution.org/coge/api/v1/genomes/"
-#api_base = "https://geco.iplantc.org/asherkhb/coge/api/v1/genomes/"
-
 # ---------------------------------------------------------------------------------------------------------------------
-# Define Input/Outputs
-# - 1st command line argument.
-# - Synmap Output - must include ks values [this file will end with '.aligncoords.gcoords.ks').
-# Define "option_name"
-# - 2nd command line argument.
-# - Will be based on options that affect outputs.
+# Use Instructions
+# python dotplot_dots.py <input_file> <genomes_api_url>
+#
+# 2 *REQUIRED* Command Line Arguments
+# 1st: SynMap Ks Blocks File (NOTE: ends with .aligncoords.gcoords.ks)
+# 2nd: API url to genomes (NOTE: full address, i.e. https://genomevolution.org/coge/api/v1/genomes/)
+#
+# Example
+#
 # ---------------------------------------------------------------------------------------------------------------------
 
 log = {}
@@ -45,16 +26,12 @@ log = {}
 try:
     input_ksfile = argv[1]
     output_dir = path.dirname(input_ksfile).rstrip("/")
+    api_base = argv[2]
 except IndexError:
-    stderr.write("dotplot_dots.py failed (Error: input/output specification)\n")
-    print "dotplot_dots.py failed (Error: input/output specification)"
+    stderr.write("dotplot_dots.py failed (Error: input or api_url specification)\n")
+    print "dotplot_dots.py failed (Error: input or api_url specification)"
     exit()
 
-# Assign second arg to option_name, set as blank string if not specified.
-try:
-    option_name = argv[2]
-except IndexError:
-    option_name = ''
 # Load input into variable "get_values"
 get_values = open(input_ksfile, 'r')
 
@@ -184,7 +161,7 @@ for line in get_values:
 if len(sp1_id) > 1 or len(sp2_id) > 1:
     log["status"] = "failed"
     log["message"] = "Error: Too many genome IDs"
-    log_out = "%s/%s_%s_%slog.json" % (output_dir, sp1_id, sp2_id, option_name)
+    log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
     dump(log, open(log_out, "wb"))
     stderr.write("dotplot_dots.py failed (Error: too many genome IDs)\n")
     print "dotplot_dots.py failed (Error: too many genome IDs)"
@@ -192,7 +169,7 @@ if len(sp1_id) > 1 or len(sp2_id) > 1:
 elif len(sp1_id) < 1 or len(sp2_id) < 1:
     log["status"] = "failed"
     log["message"] = "Error: Too few genome IDs"
-    log_out = "%s/%s_%s_%slog.json" % (output_dir, sp1_id, sp2_id, option_name)
+    log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
     dump(log, open(log_out, "wb"))
     stderr.write("dotplot_dots.py failed (Error: too few genome IDs)\n")
     print "dotplot_dots.py failed (Error: too few genome IDs)"
@@ -246,11 +223,11 @@ data["genomes"][sp2_id] = sp2_genome_info
 
 
 # Dump "data" to JSON.
-output_filename = "%s/%s_%s_%ssynteny.json" % (output_dir, sp1_id, sp2_id, option_name)
+output_filename = "%s/%s_%s_synteny.json" % (output_dir, sp1_id, sp2_id)
 dump(data, open(output_filename, 'wb'))
 
 # Print concluding message.
 log["status"] = "complete"
 log["message"] = "%s syntenic pairs identified" % str(len(hits))
-log_out = "%s/%s_%s_%slog.json" % (output_dir, sp1_id, sp2_id, option_name)
+log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
 dump(log, open(log_out, "wb"))
