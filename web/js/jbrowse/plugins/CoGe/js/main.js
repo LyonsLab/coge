@@ -514,7 +514,7 @@ return declare( JBrowsePlugin,
 		if (dojo.byId('nav_' + eid))
 			browser.publish('/jbrowse/v1/v/tracks/hide', [coge_track_list.get_search_config(eid)]);
 		var results = new SearchResults(data);
-//        var d = new Deferred();
+        var d = new Deferred();
 		var store_config = {
 			browser: browser,
 			config: config,
@@ -525,14 +525,14 @@ return declare( JBrowsePlugin,
 		var store_name = browser.addStoreConfig(undefined, store_config);
 		store_config.name = store_name;
 		browser.getStore(store_name, function(store) {
-//            d.resolve(true);
-//        });
-//        d.promise.then(function() {
+           d.resolve(true);
+       	});
+       	d.promise.then(function() {
 			config = dojo.clone(config);
 			config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
 			config.track = 'search_' + eid;
 			config.label = 'search_' + eid;
-			config.metadata = {Description: 'Track to show results of searching a track.'};
+			config.original_store = config.store;
 			config.store = store_name;
 			config.coge.collapsed = false;
 			config.coge.search_track = true;
@@ -571,9 +571,9 @@ return declare( JBrowsePlugin,
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var search = this.search_to_string(config.coge.search);
 		var description = 'Results from search: ' + search;
-		var url = api_base_url + '/experiment/' + config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id;
+		var url = api_base_url + '/experiment/' + config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id + '&ext=' + config.coge.ext;
 		url += '&' + this.search_to_params(config.coge.search, true);
-		var annotions = 
+		var annotions = [
 			{
 				type: 'origional experiment name',
 				text: config.coge.name
@@ -594,7 +594,7 @@ return declare( JBrowsePlugin,
 		if (config.coge.transform) {
 			url += '&transform=' + config.coge.transform;
 			description += ', transform: ' + config.coge.transform;
-			annotions.push({ type: 'transform', text: config.coge.transform});
+			annotions.push({ type: 'transform', text: config.coge.transform });
 		}
 		dojo.xhrGet({
 			url: url,
@@ -621,7 +621,7 @@ return declare( JBrowsePlugin,
 							},
 							source_data: [{
 								file_type: config.coge.ext.substr(1),
-								path: 'upload/search_results' + config.coge.ext,
+								path: 'upload/search_results' + (config.coge.ext == '.sam' ? '.bam' : config.coge.ext),
 								type: 'file'
 							}]
 						}
@@ -637,6 +637,18 @@ return declare( JBrowsePlugin,
 				    			return;
 				    		}
 				            coge.progress.update(response.id, response.site_url);
+							config = dojo.clone(config);
+							config.key = name;
+							config.track = 'experiment' + response.id;
+							config.label = 'experiment' + response.id;
+							config.store = config.original_store;
+							config.coge.collapsed = false;
+							config.coge.id = response.id;
+							delete config.coge.search_track;
+							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
+							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/show', [config]);
+							dojo.place(dojo.byId('track_experiment' + response.id), dojo.byId('track_search_' + eid), 'after');
+							coge_plugin.browser.view.updateTrackList();
 					    })
 					    .fail(function(jqXHR, textStatus, errorThrown) {
 					    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
@@ -664,7 +676,7 @@ return declare( JBrowsePlugin,
 		content += '<tr><td>Name:</td><td><input id="experiment_name" /></td></tr></table>';
 		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.save_as_experiment()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin._save_as_dialog.hide()">Cancel</button></div></div>';
 		this._save_as_dialog = new Dialog({
-			title: 'Save Results',
+			title: 'Save Results as New Experiment',
 			content: content,
 			onHide: function() {
 				this.destroyRecursive();

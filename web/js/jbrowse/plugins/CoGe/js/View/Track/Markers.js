@@ -37,6 +37,11 @@ return declare( [ HTMLFeatures ], {
             label: 'Export Track Data',
             onClick: function(){coge_plugin.export_dialog(track);}
         });
+        if (track.config.coge.search)
+            options.push({
+                label: 'Save Results as New Experiment',
+                onClick: function(){coge_plugin.save_as_experiment_dialog(track)}
+            });
         return options;
     },
 

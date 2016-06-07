@@ -136,9 +136,10 @@ sub data {
     my $filename = $self->param('filename');
     my $irods_path = $self->param('irods_path');
     my $load_id = $self->param('load_id');
-warn $load_id;
+    my $ext = $self->param('ext');
+
     # Authenticate user and connect to the database
-    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
     # Get experiment
     my $experiment = $db->resultset("Experiment")->find($id);
@@ -159,24 +160,26 @@ warn $load_id;
 
     my $fh;
     my $tempfile;
+    my $path;
     if ($irods_path) {
         ($fh, $tempfile) = tempfile();
     }
     elsif ($load_id) {
-        my $path = catdir(get_upload_path($user->name, $load_id), 'upload');
+        $path = catdir(get_upload_path($user->name, $load_id), 'upload');
         mkpath($path);
-        warn $path;
-        open $fh, ">", catfile($path, 'search_results.csv');
+        open $fh, ">", catfile($path, 'search_results' . $ext);
     }
 
     my $exp_data_type = $experiment->data_type;
     $filename = 'experiment' unless $filename;
     $filename .= ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : $exp_data_type == $DATA_TYPE_ALIGN ? '.sam' : $exp_data_type == $DATA_TYPE_MARKER ? '.gff' : '.csv');
-    $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
+    if (!$irods_path && !$load_id) {
+        $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
+    }
     $self->_write("##gff-version 3\n", $fh) if $exp_data_type == $DATA_TYPE_MARKER;
-    my $comment_char = ($exp_data_type == $DATA_TYPE_ALIGN) ? '@CO' : '#';
-    $self->_write($comment_char . ' experiment: ' . $experiment->name . "\n", $fh);
-    $self->_write($comment_char . ' chromosome: ' . $chr . "\n", $fh);
+    my $comment_char = ($exp_data_type == $DATA_TYPE_ALIGN) ? "\@CO\t" : '# ';
+    $self->_write($comment_char . 'experiment: ' . $experiment->name . "\n", $fh);
+    $self->_write($comment_char . 'chromosome: ' . $chr . "\n", $fh);
 
     if ( !$exp_data_type || $exp_data_type == $DATA_TYPE_QUANT ) {
         if ($type) {
@@ -186,7 +189,7 @@ warn $load_id;
             $self->_write("\n", $fh);
         }
         $self->_write('# transform: ' . $transform . "\n", $fh) if $transform;
-        my $cols = CoGe::Core::Experiment::get_fastbit_format()->{columns};
+        my $cols = CoGe::Core::Experiment::get_fastbit_format($id)->{columns};
         my @columns = map { $_->{name} } @{$cols};
         $self->_write('# columns: ', $fh);
         for (my $i=0; $i<scalar @columns; $i++) {
@@ -234,7 +237,7 @@ warn $load_id;
         if ($type) {
             $self->_write('# search: ' . $type . "\n", $fh);
         }
-        $self->_write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n", $fh);
+        $self->_write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n", $fh);
         my $snps = $self->_snps;
         my $s = (index(@{$snps}[0], ', ') == -1 ? 1 : 2);
         foreach (@{$snps}) {
@@ -250,20 +253,31 @@ warn $load_id;
             $self->_write(substr($l[6], $s, -1), $fh);
             $self->_write("\t", $fh);
             $self->_write($l[7], $fh);
-            $self->_write("\t\t", $fh);
+            $self->_write("\t.\t", $fh);
             $self->_write(substr($l[8], $s, -1), $fh);
-            $self->_write("\t\n", $fh);
+            $self->_write("\n", $fh);
         }
     }
     elsif ( $exp_data_type == $DATA_TYPE_ALIGN) {
         my $type_names = $self->param('features');
         if ($type_names) {
-            $self->_write('@CO search: Alignments in ' . $type_names . "\n", $fh);
+            $self->_write("\@CO\tsearch: Alignments in " . $type_names . "\n", $fh);
         }
         my $type = $self->param('type');
         if ($type) {
-            $self->_write('@CO search: ' . $type . "\n", $fh);
+            $self->_write("\@CO\tsearch: " . $type . "\n", $fh);
         }
+        $self->_write("\@HD\tVN:1.5\tSO:coordinate\n", $fh);
+        if ($chr eq 'All') {
+            my $chromosomes = $experiment->genome->chromosomes_all;
+            foreach (@{$chromosomes}) {
+                $self->_write("\@SQ\tSN:" . $_->{name} . "\tLN:" . $_->{length} . "\n", $fh);
+            }
+        }
+        else {
+            $self->_write("\@SQ\tSN:" . $chr . "\tLN:" . $experiment->genome->get_chromosome_length($chr) . "\n", $fh);
+        }
+
         my $alignments = $self->_alignments(1);
         foreach (@{$alignments}) {
             $self->_write($_, $fh);
@@ -305,6 +319,11 @@ warn $load_id;
         close $fh;
         if ($irods_path) {
             irods_iput($tempfile, $irods_path . '/' . $filename);
+        }
+        elsif ($load_id && $exp_data_type == $DATA_TYPE_ALIGN) {
+                my $cmd = $conf->{SAMTOOLS} || 'samtools';
+                $cmd .= ' view -bS ' . catfile($path, 'search_results.sam') . ' > ' . catfile($path, 'search_results.bam');
+                system($cmd);
         }
     }
 }
@@ -462,7 +481,7 @@ sub find_overlaping {
     my $ids = get_dataset_ids($experiments->[0]->genome_id, $dbh);
     $query .= (scalar @$ids == 1) ? '=' . $ids->[0] : ' IN(' . join(',', @$ids) . ')';
     $query .= " AND chromosome='" . $chr . "'" if $chr;
-    if ($type_names ne 'all') {
+    if ($type_names && $type_names ne 'all') {
         my $type_ids = feature_type_names_to_id($type_names, $dbh);
         $query .= ' AND feature_type_id';
         $query .= (index($type_ids, ',') == -1) ? '=' . $type_ids : ' IN(' . $type_ids . ')';
@@ -510,7 +529,7 @@ sub _alignments {
     my $all = shift;
     my $eid = $self->stash('eid');
     my $chr = $self->stash('chr');
-    $chr = undef if $chr eq 'Any';
+    $chr = undef if $chr eq 'Any' || $chr eq 'All';
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
