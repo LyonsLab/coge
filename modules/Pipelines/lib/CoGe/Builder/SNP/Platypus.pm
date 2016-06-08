@@ -111,7 +111,7 @@ sub create_platypus_job {
     my $PLATYPUS = $CONF->{PLATYPUS} || "Platypus.py";
 
     return {
-        cmd => qq[$PLATYPUS callVariants],
+        cmd => qq[export LD_LIBRARY_PATH=/usr/local/lib:\$LD_LIBRARY_PATH && $PLATYPUS callVariants], # mdb addex lib export 6/8/16
         args =>  [
             ["--bamFiles", $bam, 0],
             ["--refFile", $fasta, 0],
