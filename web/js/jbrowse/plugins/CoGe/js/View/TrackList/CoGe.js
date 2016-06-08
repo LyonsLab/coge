@@ -15,7 +15,7 @@ define(['dojo/_base/declare',
 		'dojo/Deferred',
 		'dijit/Dialog'
 	   ],
-	   function( declare, dom, domGeom, aspect, ContentPane, dndSource, DropDownButton, Menu, MenuItem, MenuSeparator, Deferred, Dialog ) {
+	   function( declare, dom, domGeom, aspect, ContentPane, DndSource, DropDownButton, Menu, MenuItem, MenuSeparator, Deferred, Dialog ) {
 	function natural_sort (a, b) {
 	    var re = /(^-?[0-9]+(\.?[0-9]*)[df]?e?[0-9]?$|^0x[0-9a-f]+$|[0-9]+)/gi,
 	        sre = /(^[ ]*|[ ]*$)/g,
@@ -113,6 +113,7 @@ define(['dojo/_base/declare',
 	},
 
 	// ----------------------------------------------------------------
+	// add experiments to notebook in CoGe
 
 	_add_to_notebook: function(track_configs, notebook_id, create) {
 		var on_error = function() {
@@ -200,7 +201,11 @@ define(['dojo/_base/declare',
 			return;
 		}
 		var n = notebook.nextSibling;
-		while (n.nextSibling && natural_sort(n.config.coge.name, n.nextSibling.config.coge.name) < 0)
+		if (natural_sort(n.config.coge.name, track.config.coge.name) > 0) {
+			dojo.place(track, n, 'before');
+			return;
+		}
+		while (n.nextSibling && natural_sort(track.config.coge.name, n.nextSibling.config.coge.name) > 0)
 			n = n.nextSibling;
 		dojo.place(track, n, 'after');
 	},
@@ -304,6 +309,17 @@ define(['dojo/_base/declare',
 				coge_plugin.error('Create Notebook', data);
 			}
 		});
+	},
+
+	// ----------------------------------------------------------------
+	_create_notebook_and_experiment_tracks: function(notebook_config, experiments) {
+		var source = this._new_notebook_source();
+		source.insertNodes(false, [notebook_config]);
+		if (notebook_config.coge.id != 0)
+			experiments = experiments.filter(function(e) {
+				return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, notebook_config.coge.id) != -1;
+			});
+		source.insertNodes(false, experiments.sort(function(a, b) { return natural_sort(a.coge.name, b.coge.name); }));
 	},
 
 	// ----------------------------------------------------------------
@@ -496,16 +512,10 @@ define(['dojo/_base/declare',
 		var experiments = this._track_configs.filter(function(e) {
 			return (e.coge.type && e.coge.type == 'experiment');
 		});
+		this._create_notebook_and_experiment_tracks(notebooks.shift(), experiments);
 		notebooks.sort(function(a, b) { return natural_sort(a.coge.name, b.coge.name); });
 		notebooks.forEach(function(n) {
-			this._new_notebook_source().insertNodes(
-				false,
-				[n].concat(
-					experiments.filter(function(e) {
-						return e.coge.notebooks && dojo.indexOf(e.coge.notebooks, n.coge.id) != -1;
-					}).sort(function(a, b) { return natural_sort(a.coge.name, b.coge.name); })
-				)
-			);
+			this._create_notebook_and_experiment_tracks(n, experiments);
 		}, this);
 
 		// show all tracks
@@ -775,9 +785,9 @@ define(['dojo/_base/declare',
 				while (n.id != node.id)
 					n = n.nextSibling;
 				target.node.removeChild(n);
-				target.node.appendChild(n);
+				this._add_track_to_notebook(n, target.node.firstChild);
 				items.push(node.config);
-			});
+			}, this);
 			this._add_to_notebook(items, target.node.firstChild.config.coge.id);
 		}
 	},
@@ -816,7 +826,7 @@ define(['dojo/_base/declare',
 
 	_new_notebook_source: function() {
 		var div = dojo.create( 'div', null, this.tracks_div );
-		return new dndSource(div, {
+		return new DndSource(div, {
 			accept: ["track"],
 			checkAcceptance: function(source, nodes) {
 				for (var i=0; i<nodes.length; i++) {
@@ -844,6 +854,18 @@ define(['dojo/_base/declare',
 				return {node: this._new_track(track_config, track_config.coge.type == 'experiment'), data: track_config, type: ["track", track_config.coge.type]};
 			}),
 			delay: 2,
+			// onDrop: function(source, nodes, copy) {
+			// 	var experiments = Array.prototype.slice.call(div.childNodes, 0);
+			// 	experiments.shift();
+			// 	experiments.sort(
+			// 	    function( a,b ) {  
+			// 	        return natural_sort(a.config.coge.name, b.config.coge.name);
+			// 	    }
+			// 	).forEach(
+			// 	    function(a, idx) { 
+			// 	        div.insertBefore(a, div.childNodes[idx]);  
+			// 	});
+			// },
 			selfAccept: false
 		});
 	},
@@ -1108,7 +1130,6 @@ define(['dojo/_base/declare',
 	},
 
 	// ----------------------------------------------------------------
-	// optionally skips Sequence, GC Content and Feature tracks
 
 	_traverse_tracks: function(f) {
 		var n = this.tracks_div.firstChild;
