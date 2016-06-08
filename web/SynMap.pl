@@ -1934,7 +1934,7 @@ sub get_results {
 		########################################################################
 		# SynMap3D Link
 		########################################################################
-		my $syn3d = "https://geco.iplantcollaborative.org/asherkhb/coge/SynMap3D.pl"; #TODO: MAKE THIS GENERIC!
+		my $syn3d = $BASE_URL . "SynMap3D.pl";
 		my $threedlink = $syn3d . "?x_gid=" . $dsgid1 . ";y_gid=" . $dsgid2;
 		#print STDERR $threedlink . "\n";
 		$results->param( syn3dlink => $threedlink) ;
