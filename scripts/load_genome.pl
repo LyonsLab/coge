@@ -367,8 +367,8 @@ unless (-r $storage_path) {
     exit(-1);
 }
 
-execute("cp $fasta_file $storage_path/"); #FIXME use perl copy and detect failure
-execute("cp $fasta_file.fai $storage_path/");
+execute("cp $fasta_file $storage_path/genome.faa"); #FIXME use perl copy and detect failure
+execute("cp $fasta_file.fai $storage_path/genome.faa.fai");
 #if ($compress) {
 #    execute("cp $fasta_file.razf $storage_path/");
 #    execute("cp $fasta_file.razf.fai $storage_path/");
