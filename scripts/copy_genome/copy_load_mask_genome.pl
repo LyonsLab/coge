@@ -142,7 +142,7 @@ sub load_genome {
     my $genome = $opts{genome};
     my $stid   = $opts{stid};
     my $cmd    = $fasta_genome_loader;
-    $cmd .= " -ignore_chr_limit 1"; # mdb added 3/9/15 COGE-595
+#    $cmd .= " -ignore_chr_limit 1"; # mdb added 3/9/15 COGE-595 # mdb removed 6/7/16
     $cmd .= " -staging_dir " . $staging_dir;
     $cmd .= " -organism_id " . $genome->organism->id;
     $cmd .= " -name '" . escape($genome->name) . "'" if $genome->name;
