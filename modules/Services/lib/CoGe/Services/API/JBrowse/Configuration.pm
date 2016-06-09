@@ -434,7 +434,8 @@ sub track_config {
         $role = $role->{role_id} if $role;
         push @tracks, {
             key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
-            baseUrl => "$JBROWSE_API/experiment/notebook/$nid/",
+            baseUrl => "$JBROWSE_API/experiment/notebook/$nid",
+            query => { gid => $gid },
             autocomplete => "all",
             track        => "notebook$nid",
             label        => "notebook$nid",

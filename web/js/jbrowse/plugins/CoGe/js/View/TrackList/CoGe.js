@@ -142,7 +142,7 @@ define(['dojo/_base/declare',
 					if (create)
 						track_configs.forEach(function(track_config) {
 							var e = dojo.byId(track_config.coge.type + track_config.coge.id);
-							var track = coge_track_list._new_track(e.config);
+							var track = this._new_track(e.config);
 							track.style.display = 'none';
 							this._add_track_to_notebook(track, n);
 						}, this);
@@ -196,6 +196,9 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	_add_track_to_notebook: function(track, notebook) {
+		if (!notebook.config.coge.experiments)
+			notebook.config.coge.experiments = [];
+		notebook.config.coge.experiments.push({id:track.config.coge.id, name:track.config.coge.name, type:track.config.coge.data_type})
 		if (!notebook.nextSibling) {
 			dojo.place(track, notebook, 'after');
 			return;

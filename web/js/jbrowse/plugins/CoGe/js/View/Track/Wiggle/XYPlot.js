@@ -51,7 +51,8 @@ var XYPlot = declare( [XYPlotBase], {
                 var score2 = f.feature.get('score2');
                 var id = f.feature.get('id');
                 var fLabel = f.feature.get('label');
-                if (!fLabel || fLabel == '.') fLabel = '';
+                if (!fLabel || fLabel == '.')
+                    fLabel = '';
                 var name = this._getFeatureName(f.feature);
                 var color = this._getFeatureColor(id);
                 for( var j = Math.round(fRect.l); j < jEnd; j++ ) {
@@ -61,7 +62,7 @@ var XYPlot = declare( [XYPlotBase], {
                         fLabel+ ' ' + name + '&nbsp;&nbsp;' + f.feature.get('start') + '..' + f.feature.get('end') + '</div>';
                     pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
                 }
-            },this);
+            }, this);
 
             // compute transform scores - FIXME dup'ed in _drawFeatures
             if (this.config.coge.transform == 'Average') {
@@ -135,9 +136,7 @@ var XYPlot = declare( [XYPlotBase], {
                     if (count_f[l] == 1)
                         diff = max_f[l];
                     for( var j = Math.round(l); j < l+width[l]; j++ ) {
-                        var label = '<div style="background-color:gray;">' +
-                            nbspPad(diff.toPrecision(6).toString(), 11)
-                            + 'Difference (+)' + '</div>';
+                        var label = '<div style="background-color:gray;">' + nbspPad(diff.toPrecision(6).toString(), 11) + 'Difference (+)' + '</div>';
                         pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
                     }
                 });
@@ -146,9 +145,7 @@ var XYPlot = declare( [XYPlotBase], {
                     if (count_r[l] == 1)
                         diff = max_r[l];
                     for( var j = Math.round(l); j < l+width[l]; j++ ) {
-                        var label = '<div style="background-color:gray;">' +
-                            nbspPad(diff.toPrecision(6).toString(), 11)
-                            + 'Difference (-)' + '</div>';
+                        var label = '<div style="background-color:gray;">' + nbspPad(diff.toPrecision(6).toString(), 11) + 'Difference (-)' + '</div>';
                         pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
                     }
                 });
@@ -389,8 +386,7 @@ var XYPlot = declare( [XYPlotBase], {
 	                                	width: '100px',
 	                                    position: 'absolute',
 	                                    left: fRect.l,
-	                                    top: topOffset,
-	                                    //zIndex: 10,
+	                                    top: topOffset
 	                                },
 	                                innerHTML: label
 	                            }, canvas.parentNode );
@@ -441,9 +437,8 @@ var XYPlot = declare( [XYPlotBase], {
         var id = f.get('id');
         var coge = this.config.coge;
 
-        if (coge.type == 'experiment') {
+        if (coge.type == 'experiment')
             return coge.name;
-        }
         else if (coge.type == 'notebook') {
             var experiments = coge.experiments || [];
             var name = '';
@@ -560,12 +555,6 @@ var XYPlot = declare( [XYPlotBase], {
     			coge_plugin.error('Unspecified Range', 'Please drag on the histogram or enter the range of values you wish to search for');
     			return;
     		}
-    		// var extent = this._brush.extent();
-    		// var domain = this._brush.x().domain();
-    		// if (extent[0] != domain[0])
-    		// 	search.gte = extent[0];
-    		// if (extent[1] != domain[1])
-    		// 	search.lte = extent[1];
     	}
     	var ref_seq = dojo.byId('coge_ref_seq');
     	if (ref_seq.selectedIndex > 0)

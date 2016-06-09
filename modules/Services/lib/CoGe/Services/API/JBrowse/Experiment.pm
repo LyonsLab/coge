@@ -365,7 +365,9 @@ sub _get_experiments {
     my @experiments;
     foreach my $e (@all_experiments) {
         if (!$e->restricted() || ($user && $user->has_access_to_experiment($e))) {
-        	push @experiments, $e;
+            if (!$nid || $e->genome_id == $gid) {
+            	push @experiments, $e;
+            }
         }
         else {
             if ($user && $user->name) {
@@ -643,11 +645,7 @@ sub features {
     my $end   = $self->param('end');
     return unless (($eid or $nid or $gid) and defined $chr and defined $start and defined $end);
 
-# mdb removed 11/6/15 COGE-678
-#    if ( $end - $start + 1 > $MAX_WINDOW_SIZE ) {
-#        print STDERR "experiment features maxed\n";
-#        return qq{{ "features" : [ ] }};
-#    }
+    $gid = $self->param('gid') if $nid; # need genome id to filter experiments for notebooks
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
