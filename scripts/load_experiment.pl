@@ -119,8 +119,8 @@ $port = $P->{DBPORT};
 $user = $P->{DBUSER};
 $pass = $P->{DBPASS};
 
-my $FASTBIT_LOAD  = $P->{FASTBIT_LOAD};
-my $FASTBIT_QUERY = $P->{FASTBIT_QUERY};
+my $FASTBIT_LOAD  = get_command_path('FASTBIT_LOAD', 'ardea');
+my $FASTBIT_QUERY = get_command_path('FASTBIT_QUERY', 'ibis');
 my $SAMTOOLS      = get_command_path('SAMTOOLS');
 my $GUNZIP        = get_command_path('GUNZIP');
 if (   not $FASTBIT_LOAD

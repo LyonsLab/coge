@@ -5,7 +5,7 @@ no warnings('redefine');
 
 use CoGeX;
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
@@ -58,16 +58,16 @@ $TEMPURL       = $P->{TEMPURL} . "CoGeBlast";
 $DATADIR       = $P->{DATADIR};
 $FASTADIR      = $P->{FASTADIR};
 $BLASTDBDIR    = $P->{BLASTDB};
-$FORMATDB      = $P->{FORMATDB};
+$FORMATDB      = get_command_path('FORMATDB');
 $MAX_PROC      = $P->{COGE_BLAST_MAX_PROC};
 $BLAST_PROGS   = {
-    blast_legacy => $P->{BLAST} . " -a $MAX_PROC",
-    tblastn      => $P->{TBLASTN} . " -num_threads $MAX_PROC",
-    tblastx      => $P->{TBLASTX} . " -num_threads $MAX_PROC",
-    blastn       => $P->{BLASTN} . " -num_threads $MAX_PROC -task blastn",
-    dcmega       => $P->{BLASTN} . " -num_threads $MAX_PROC -task dc-megablast",
-    mega         => $P->{BLASTN} . " -num_threads $MAX_PROC -task megablast",
-    lastz        => $P->{LASTZ}
+    blast_legacy => get_command_path('BLAST') . " -a $MAX_PROC",
+    tblastn      => get_command_path('TBLASTN') . " -num_threads $MAX_PROC",
+    tblastx      => get_command_path('TBLASTX') . " -num_threads $MAX_PROC",
+    blastn       => get_command_path('BLASTN') . " -num_threads $MAX_PROC -task blastn",
+    dcmega       => get_command_path('BLASTN') . " -num_threads $MAX_PROC -task dc-megablast",
+    mega         => get_command_path('BLASTN') . " -num_threads $MAX_PROC -task megablast",
+    lastz        => get_command_path('LASTZ')
 };
 
 %FUNCTION = (

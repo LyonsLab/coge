@@ -177,12 +177,8 @@ sub index_genome_file {
 
     # Optionally generate compressed version of fasta/index files
     if ($compress) {
-        my $razip = CoGe::Accessory::Web::get_defaults()->{'RAZIP'};
-        unless ($razip) {
-            print STDERR "Storage::index_genome_file: WARNING, conf file parameter RAZIP is blank!\n";
-        }
-
         # Compress fasta file into RAZF using razip
+        my $razip = get_command_path('RAZIP');
         $cmd = "$razip -c $file_path > $file_path.razf";
         qx{ $cmd };
         if ( $? != 0 ) {
@@ -398,7 +394,7 @@ sub get_experiment_data {
     {
         my $pFormat = get_fastbit_format($eid, $data_type);
         my $columns = join(',', map { $_->{name} } @{$pFormat->{columns}});
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY} || 'ibis';
+        my $cmdpath = get_command_path('FASTBIT_QUERY', 'ibis');
         $cmd = "$cmdpath -v 1 -d $storage_path -q \"select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
 
         #print STDERR "\n$cmd\n";
