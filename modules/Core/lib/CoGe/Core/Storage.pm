@@ -167,7 +167,7 @@ sub index_genome_file {
     }
 
     # Index fasta file
-    my $samtools = get_command_path('SAMTOOLS');
+    my $samtools = CoGe::Accessory::Web::get_command_path('SAMTOOLS');
     my $cmd = "$samtools faidx $file_path";
     qx{ $cmd };
     if ( $? != 0 ) {
@@ -178,7 +178,7 @@ sub index_genome_file {
     # Optionally generate compressed version of fasta/index files
     if ($compress) {
         # Compress fasta file into RAZF using razip
-        my $razip = get_command_path('RAZIP');
+        my $razip = CoGe::Accessory::Web::get_command_path('RAZIP');
         $cmd = "$razip -c $file_path > $file_path.razf";
         qx{ $cmd };
         if ( $? != 0 ) {
@@ -255,7 +255,7 @@ sub get_genome_seq {
 
         # Extract requested piece of sequence file
         my $region = $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
-        my $samtools = get_command_path('SAMTOOLS');
+        my $samtools = CoGe::Accessory::Web::get_command_path('SAMTOOLS');
         my $cmd = "$samtools faidx $file_path '$region'";
 
         #print STDERR "$cmd\n";
@@ -394,7 +394,7 @@ sub get_experiment_data {
     {
         my $pFormat = get_fastbit_format($eid, $data_type);
         my $columns = join(',', map { $_->{name} } @{$pFormat->{columns}});
-        my $cmdpath = get_command_path('FASTBIT_QUERY', 'ibis');
+        my $cmdpath = CoGe::Accessory::Web::get_command_path('FASTBIT_QUERY', 'ibis');
         $cmd = "$cmdpath -v 1 -d $storage_path -q \"select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
 
         #print STDERR "\n$cmd\n";
@@ -419,7 +419,7 @@ sub get_experiment_data {
         return \@results;
     }
     elsif ( $data_type == $DATA_TYPE_ALIGN ) { # FIXME move output parsing from Storage.pm to here
-        my $cmdpath = get_command_path('SAMTOOLS');
+        my $cmdpath = CoGe::Accessory::Web::get_command_path('SAMTOOLS');
         $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
         #print STDERR "$cmd\n";
         my @cmdOut = qx{$cmd};
