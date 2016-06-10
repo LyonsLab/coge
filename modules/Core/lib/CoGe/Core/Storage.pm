@@ -28,7 +28,7 @@ LICENSE file included with this module.
 use strict;
 use warnings;
 
-use CoGe::Accessory::Web qw(get_defaults url_for);
+use CoGe::Accessory::Web qw(get_defaults get_command_path url_for);
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
@@ -167,10 +167,7 @@ sub index_genome_file {
     }
 
     # Index fasta file
-    my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'};
-    unless ($samtools) {
-        print STDERR "Storage::index_genome_file: WARNING, conf file parameter SAMTOOLS is blank!\n";
-    }
+    my $samtools = get_command_path('SAMTOOLS');
     my $cmd = "$samtools faidx $file_path";
     qx{ $cmd };
     if ( $? != 0 ) {
@@ -262,10 +259,7 @@ sub get_genome_seq {
 
         # Extract requested piece of sequence file
         my $region = $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
-        my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'} || 'samtools';
-        unless ($samtools) {
-            print STDERR "Storage::get_genome_seq: WARNING, conf file parameter SAMTOOLS is blank!\n";
-        }
+        my $samtools = get_command_path('SAMTOOLS');
         my $cmd = "$samtools faidx $file_path '$region'";
 
         #print STDERR "$cmd\n";
@@ -429,7 +423,7 @@ sub get_experiment_data {
         return \@results;
     }
     elsif ( $data_type == $DATA_TYPE_ALIGN ) { # FIXME move output parsing from Storage.pm to here
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
+        my $cmdpath = get_command_path('SAMTOOLS');
         $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
         #print STDERR "$cmd\n";
         my @cmdOut = qx{$cmd};

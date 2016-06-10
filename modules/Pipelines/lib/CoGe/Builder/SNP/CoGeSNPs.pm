@@ -116,8 +116,7 @@ sub create_samtools_job {
     my $min_allele_count = $params->{'min-allele-count'} || 4;
     my $scale            = $params->{scale} || 32;
     
-    die "ERROR: SAMTOOLS not specified in config" unless $CONF->{SAMTOOLS};
-    my $samtools = $CONF->{SAMTOOLS};
+    my $samtools = get_command_path('SAMTOOLS');
     
     die "ERROR: SCRIPTDIR not specified in config" unless $CONF->{SCRIPTDIR};
     my $filter_script = catfile($CONF->{SCRIPTDIR}, 'pileup_SNPs.pl');
