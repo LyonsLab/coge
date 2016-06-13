@@ -13,9 +13,10 @@ BEGIN {
 }
 
 sub blast_search {
+    my $db = shift;
+    my $user = shift;
+    my $config = shift;
     my %opts = @_;
-
-    my ( $db, $user, $config ) = CoGe::Accessory::Web->init();
 
     my $BLASTDBDIR   = $config->{BLASTDB};
     my $MAX_PROC     = $config->{COGE_BLAST_MAX_PROC};
@@ -280,14 +281,45 @@ sub blast_search {
 
 sub build {
     my $self = shift;
+    my $genomes = $self->params->{genomes};
+    my $notebooks = $self->params->{notebooks};
+    my $type = $self->params->{type};
+    my $e_value = $self->params->{e_value};
+    my $word_size = $self->params->{word_size};
+    my $gap_costs = $self->params->{gap_costs};
+    my $filter_query = $self->params->{filter_query};
+    my $max_results = $self->params->{max_results};
+    my $query_seq = $self->params->{query_seq};
+    my $matrix = $self->params->{matrix};
 
-#    my %opts = ( %{ defaults() }, %{ $self->params } );
-    my %opts = ( %{ $self->params } );
-    my $resp = add_jobs(
-        workflow => $self->workflow,
-        db       => $self->db,
-        config   => $self->config,
-        %opts
+    my ( $db, $user, $config ) = CoGe::Accessory::Web->init();
+
+    my @gids
+    @ids = @$genomes if $genomes;
+    if ($notebooks) {
+        for (@$notebooks) {
+            for (@{$_->genomes}) {
+                push @gids, $_->id;
+            }
+            for (@{$_->experiments}) {
+                push @gids, $_->genome_id;
+            }
+        }
+    }
+
+    my $resp = blast_search($db, $user, $config,
+        workflow     => $self->workflow,
+        db           => $self->db,
+        config       => $self->config,
+        blastable    => join(',', @gids);
+        type         => $type,
+        expect       => $e_value,
+        wordsize     => $word_size,
+        gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
+        filter_query => $filter_query,
+        resultslimit => $max_results,
+        seq          => $query_seq,
+        matrix       => $matrix
     );
     return 0 if ($resp); # an error occurred
     return 1;

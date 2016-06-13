@@ -70,7 +70,7 @@ $MAX_PROC      = $P->{COGE_BLAST_MAX_PROC};
     blast_param              => \&blast_param,
     database_param           => \&database_param,
     gen_dsg_menu             => \&gen_dsg_menu,
-    blast_search             => \&blast_search,
+    blast_search             => \&run_blast_search,
     generate_feat_info       => \&generate_feat_info,
     get_hsp_info             => \&get_hsp_info,
     generate_overview_image  => \&generate_overview_image,
@@ -2840,4 +2840,8 @@ sub get_genomes_for_list {
     }
 
     return $genomes;
+}
+
+sub run_blast_search {
+    blast_search($db, $USER, $P, @_);
 }

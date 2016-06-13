@@ -55,7 +55,10 @@ sub get {
 
     # Select pipeline builder
     my $builder;
-    if ($message->{type} eq "export_gff") {
+    if ($message->{type} eq "coge_blast") {
+        $builder = CoGe::Builder::Tools::CoGeBlast->new($request);
+    }
+    elsif ($message->{type} eq "export_gff") {
         $builder = CoGe::Builder::Export::Gff->new($request);
     }
     elsif ($message->{type} eq "export_fasta") {
