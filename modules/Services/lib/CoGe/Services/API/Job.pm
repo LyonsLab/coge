@@ -14,7 +14,7 @@ use CoGe::Factory::PipelineFactory;
 sub add {
     my $self = shift;
     my $payload = shift || $self->req->json; # allow special payload to be passed in from other controllers
-    warn "CoGe::Services::API::Job::add\n", Dumper $payload;
+    #warn "CoGe::Services::API::Job::add\n", Dumper $payload;
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     # Create request and validate the required fields

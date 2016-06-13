@@ -796,7 +796,7 @@ sub get_results {
 sub gen_results_page {
     my %opts            = @_;
     my $results         = $opts{results};
-    my $width           = $opts{width};
+#    my $width           = $opts{width};
     my $resultslimit    = $opts{resultslimit};
     my $color_hsps      = $opts{color_hsps};
     my $prog            = $opts{prog};
@@ -2843,5 +2843,5 @@ sub get_genomes_for_list {
 }
 
 sub blast_search {
-    go($db, $USER, $P, @_);
+    go(db => $db, user => $USER, config => $P, @_);
 }

@@ -9,11 +9,12 @@ use JSON::XS;
 
 BEGIN {
     use Exporter 'import';
-    our @EXPORT_OK = qw( blast_search create_fasta_file get_blast_db go );
+    our @EXPORT_OK = qw( create_fasta_file get_blast_db go );
 }
 
-sub blast_search {
+sub add_jobs {
     my %opts = @_;
+    my $workflow = $opts{workflow};
     my $db = $opts{db};
     my $user = $opts{user};
     my $config = $opts{config};
@@ -29,14 +30,7 @@ sub blast_search {
         mega         => $config->{BLASTN} . " -num_threads $MAX_PROC -task megablast",
         lastz        => $config->{LASTZ}
     };
-    my $JEX          = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
-    my $PAGE_TITLE   = "CoGeBlast";
-    my $PAGE_NAME    = $PAGE_TITLE . ".pl";
-    my $RESULTSLIMIT = 100;
-    my $TEMPDIR      = $config->{TEMPDIR} . "CoGeBlast";
-    my $TEMPURL      = $config->{TEMPURL} . "CoGeBlast";
 
-    my $color_hsps = $opts{color_hsps};
     my $program    = $opts{program};
     my $expect     = $opts{expect};
     my $job_title  = $opts{job_title};
@@ -44,17 +38,16 @@ sub blast_search {
     my $type       = $opts{type};
 
     #$wordsize=11 if $program eq "blastn";
-    my $comp         = $opts{comp};
     my $matrix       = $opts{matrix};
     my $gapcost      = $opts{gapcost};
     my $match_score  = $opts{matchscore};
-    my $filter_query = $opts{filter_query};
-    my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
-    my $basename     = $opts{basename};
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $basename,
-        tempdir  => $TEMPDIR
-    );
+    my $cogeweb      = $opts{cogeweb};
+    unless ($cogeweb) {
+        $cogeweb = CoGe::Accessory::Web::initialize_basefile(
+            basename => $opts{basename},
+            tempdir  => $config->{TEMPDIR} . "CoGeBlast"
+        );
+    }
 
     #blastz params
     my $zwordsize      = $opts{zwordsize};
@@ -80,72 +73,7 @@ sub blast_search {
 
     my @dsg_ids = split( /,/, $blastable );
 
-#    my $width = $opts{width};
-    my $fid   = $opts{fid};
-
-    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
-        user_id => $user->id,
-        page    => "GenomeList",
-        url     => $config->{SERVER} . "GenomeList.pl?dsgid=$blastable"
-    );
-
-    my $list_link =
-        qq{<a href="$genomes_url" target_"blank">}
-      . @dsg_ids
-      . ' genome'
-      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
-
-    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
-
-    my $gap;
-
-    if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
-        $gap = qq[$1,$2];
-    }
-
-    my %params = (
-        color_hsps   => $color_hsps,
-        program      => $program,
-        expect       => $expect,
-        job_title    => $job_title,
-        wordsize     => $wordsize,
-        comp         => $comp,
-        matrix       => $matrix,
-        gapcost      => $gap,
-        match_score  => $match_score,
-        filter_query => $filter_query,
-        resultslimit => $resultslimit,
-        basename     => $basename,
-        zwordsize    => $zwordsize,
-        zgap_start   => $zgap_start,
-        zgap_exten   => $zgap_extension,
-        zchaining    => $zchaining,
-        zthreshold   => $zthreshold,
-        zmask        => $zmask,
-        type         => $type,
-
-        #Genomes
-        dsgid        => $blastable,
-    );
-
-    # Optional parameters
-    $params{fid} = $fid if $fid;
-
-    my $url = url_for($PAGE_NAME, %params);
-
-    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
-
-    my ($tiny_id) = $link =~ /\/(\w+)$/;
-    my $workflow = $JEX->create_workflow(
-        name    => "cogeblast-$tiny_id",
-        id      => 0,
-        logfile => $cogeweb->logfile
-    );
-
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
-
-# is this used?
-#    $width = 400 unless $width =~ /^\d+$/;    #something wrong with how width is calculated in tmpl file
 
     my $t1 = new Benchmark;
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq, $cogeweb);
@@ -259,25 +187,6 @@ sub blast_search {
 
         $count++;
     }
-
-    my $response = $JEX->submit_workflow($workflow);
-
-    my $log = CoGe::Accessory::Web::log_history(
-        db          => $db,
-        user_id     => $user->id,
-        page        => $PAGE_TITLE,
-        description => $log_msg,
-        link        => $link,
-        parent_id   => $response->{id},
-        parent_type => 7 #FIXME magic number
-    ) if $response and $response->{id};
-
-    return encode_json({
-        id => $response->{id},
-        link => $link,
-        logfile => $TEMPURL . "/" . $cogeweb->basefilename . ".log",
-        success => $JEX->is_successful($response) ? JSON::true : JSON::false
-    })
 }
 
 sub build {
@@ -307,7 +216,7 @@ sub build {
         }
     }
 
-    my $resp = blast_search(
+    my $resp = add_jobs(
         workflow     => $self->workflow,
         db           => $self->db,
         user         => $self->user,
@@ -346,8 +255,7 @@ sub create_fasta_file {
             $seqs{$name} = length($tmp);
         }
     }
-    CoGe::Accessory::Web::write_log( "creating user's fasta file",
-        $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "creating user's fasta file", $cogeweb->logfile );
     open( NEW, "> " . $cogeweb->basefile . ".fasta" );
     print NEW $seq;
     close NEW;
@@ -421,7 +329,121 @@ sub get_name {
 }
 
 sub go {
+    my %opts = @_;
+    my $db = $opts{db};
+    my $user = $opts{user};
+    my $config = $opts{config};
+    my $JEX          = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+    my $PAGE_TITLE   = "CoGeBlast";
+    my $PAGE_NAME    = $PAGE_TITLE . ".pl";
+    my $seq = $opts{seq};
+    my $blastable = $opts{blastable};
+    my $basename     = $opts{basename};
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
+        basename => $basename,
+        tempdir  => $config->{TEMPDIR} . "CoGeBlast"
+    );
 
+    my $color_hsps   = $opts{color_hsps};
+    my $program      = $opts{program};
+    my $expect       = $opts{expect};
+    my $job_title    = $opts{job_title};
+    my $wordsize     = $opts{wordsize};
+    my $type         = $opts{type};
+    my $comp         = $opts{comp};
+    my $matrix       = $opts{matrix};
+    my $gapcost      = $opts{gapcost};
+    my $gap;
+    if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
+        $gap = qq[$1,$2];
+    }
+    my $match_score    = $opts{matchscore};
+    my $filter_query   = $opts{filter_query};
+    my $resultslimit   = $opts{resultslimit} || 100;
+    my $zwordsize      = $opts{zwordsize};
+    my $zgap_start     = $opts{zgap_start};
+    my $zgap_extension = $opts{zgap_extension};
+    my $zchaining      = $opts{zchaining};
+    my $zthreshold     = $opts{zthreshold};
+    my $zmask          = $opts{zmask};
+    my %params = (
+        color_hsps   => $color_hsps,
+        program      => $program,
+        expect       => $expect,
+        job_title    => $job_title,
+        wordsize     => $wordsize,
+        comp         => $comp,
+        matrix       => $matrix,
+        gapcost      => $gap,
+        match_score  => $match_score,
+        filter_query => $filter_query,
+        resultslimit => $resultslimit,
+        basename     => $basename,
+        zwordsize    => $zwordsize,
+        zgap_start   => $zgap_start,
+        zgap_exten   => $zgap_extension,
+        zchaining    => $zchaining,
+        zthreshold   => $zthreshold,
+        zmask        => $zmask,
+        type         => $type,
+
+        #Genomes
+        dsgid        => $blastable,
+    );
+
+    # Optional parameters
+    my $fid = $opts{fid};
+    $params{fid} = $fid if $fid;
+
+    my $url = url_for($PAGE_NAME, %params);
+
+    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
+
+    my ($tiny_id) = $link =~ /\/(\w+)$/;
+    my $workflow = $JEX->create_workflow(
+        name    => "cogeblast-$tiny_id",
+        id      => 0,
+        logfile => $cogeweb->logfile
+    );
+
+    add_jobs(
+        cogeweb => $cogeweb,
+        workflow => $workflow,
+        @_
+    );
+
+    my $response = $JEX->submit_workflow($workflow);
+
+    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+        user_id => $user->id,
+        page    => "GenomeList",
+        url     => $config->{SERVER} . "GenomeList.pl?dsgid=$blastable"
+    );
+
+    my @dsg_ids = split( /,/, $blastable );
+    my $list_link =
+        qq{<a href="$genomes_url" target_"blank">}
+      . @dsg_ids
+      . ' genome'
+      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
+
+    my $log = CoGe::Accessory::Web::log_history(
+        db          => $db,
+        user_id     => $user->id,
+        page        => $PAGE_TITLE,
+        description => $log_msg,
+        link        => $link,
+        parent_id   => $response->{id},
+        parent_type => 7 #FIXME magic number
+    ) if $response and $response->{id};
+
+    return encode_json({
+        id => $response->{id},
+        link => $link,
+        logfile => $config->{TEMPURL} . "CoGeBlast/" . $cogeweb->basefilename . ".log",
+        success => $JEX->is_successful($response) ? JSON::true : JSON::false
+    })
 }
 
 with qw(CoGe::Builder::Buildable);
