@@ -9,14 +9,14 @@ use JSON::XS;
 
 BEGIN {
     use Exporter 'import';
-    our @EXPORT_OK = qw( blast_search create_fasta_file get_blast_db );
+    our @EXPORT_OK = qw( blast_search create_fasta_file get_blast_db go );
 }
 
 sub blast_search {
-    my $db = shift;
-    my $user = shift;
-    my $config = shift;
     my %opts = @_;
+    my $db = $opts{db};
+    my $user = $opts{user};
+    my $config = $opts{config};
 
     my $BLASTDBDIR   = $config->{BLASTDB};
     my $MAX_PROC     = $config->{COGE_BLAST_MAX_PROC};
@@ -80,7 +80,7 @@ sub blast_search {
 
     my @dsg_ids = split( /,/, $blastable );
 
-    my $width = $opts{width};
+#    my $width = $opts{width};
     my $fid   = $opts{fid};
 
     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
@@ -144,7 +144,8 @@ sub blast_search {
 
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 
-    $width = 400 unless $width =~ /^\d+$/;    #something wrong with how width is calculated in tmpl file
+# is this used?
+#    $width = 400 unless $width =~ /^\d+$/;    #something wrong with how width is calculated in tmpl file
 
     my $t1 = new Benchmark;
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq, $cogeweb);
@@ -284,6 +285,7 @@ sub build {
     my $genomes = $self->params->{genomes};
     my $notebooks = $self->params->{notebooks};
     my $type = $self->params->{type};
+    my $program = $self->params->{program};
     my $e_value = $self->params->{e_value};
     my $word_size = $self->params->{word_size};
     my $gap_costs = $self->params->{gap_costs};
@@ -291,8 +293,6 @@ sub build {
     my $max_results = $self->params->{max_results};
     my $query_seq = $self->params->{query_seq};
     my $matrix = $self->params->{matrix};
-
-    my ( $db, $user, $config ) = CoGe::Accessory::Web->init();
 
     my @gids;
     @gids = @$genomes if $genomes;
@@ -307,12 +307,14 @@ sub build {
         }
     }
 
-    my $resp = blast_search($db, $user, $config,
+    my $resp = blast_search(
         workflow     => $self->workflow,
         db           => $self->db,
-        config       => $self->config,
+        user         => $self->user,
+        config       => $self->conf,
         blastable    => join(',', @gids),
         type         => $type,
+        program      => $program,
         expect       => $e_value,
         wordsize     => $word_size,
         gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
@@ -412,6 +414,14 @@ sub get_blast_db {
     my $file_path      = $dsg->file_path;
     return unless $file_path && -r $file_path;
     return $org_name, $file_path, $dsg;
+}
+
+sub get_name {
+    return 'CoGeBlast';
+}
+
+sub go {
+
 }
 
 with qw(CoGe::Builder::Buildable);

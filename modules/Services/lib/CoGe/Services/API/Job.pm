@@ -14,11 +14,9 @@ use CoGe::Factory::PipelineFactory;
 sub add {
     my $self = shift;
     my $payload = shift || $self->req->json; # allow special payload to be passed in from other controllers
-    print STDERR "CoGe::Services::API::Job::add\n", Dumper $payload, "\n";
-
+    warn "CoGe::Services::API::Job::add\n", Dumper $payload;
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-warn '1';
     # Create request and validate the required fields
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
@@ -28,7 +26,6 @@ warn '1';
             error => { Invalid => "Invalid request" }
         });
     }
-warn '2';
 
     # Check users permissions to execute the request
     unless ($request_handler->has_access) {
@@ -36,7 +33,6 @@ warn '2';
             error => { Auth => "Request denied" }
         });
     }
-warn '3';
 
     # Create pipeline to execute job
     my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex, db => $db);
