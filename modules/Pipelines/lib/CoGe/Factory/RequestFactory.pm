@@ -58,7 +58,8 @@ sub get {
     {
         return CoGe::Request::ExperimentAnalysis->new($options);
     }
-    elsif ($type eq "load_genome") {
+    elsif ($type eq "load_genome" ||
+           $type eq "coge_blast") {
         return CoGe::Request::Empty->new($options);
     }
     elsif ($type eq "dotplot_dots")

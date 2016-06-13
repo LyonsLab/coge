@@ -294,8 +294,8 @@ sub build {
 
     my ( $db, $user, $config ) = CoGe::Accessory::Web->init();
 
-    my @gids
-    @ids = @$genomes if $genomes;
+    my @gids;
+    @gids = @$genomes if $genomes;
     if ($notebooks) {
         for (@$notebooks) {
             for (@{$_->genomes}) {
@@ -311,7 +311,7 @@ sub build {
         workflow     => $self->workflow,
         db           => $self->db,
         config       => $self->config,
-        blastable    => join(',', @gids);
+        blastable    => join(',', @gids),
         type         => $type,
         expect       => $e_value,
         wordsize     => $word_size,
