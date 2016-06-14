@@ -9,7 +9,7 @@ use JSON::XS;
 
 BEGIN {
     use Exporter 'import';
-    our @EXPORT_OK = qw( create_fasta_file get_blast_db go );
+    our @EXPORT_OK = qw( create_fasta_file get_blast_db get_tiny_url go );
 }
 
 sub add_jobs {
@@ -32,11 +32,9 @@ sub add_jobs {
     };
 
     my $program    = $opts{program};
+    my $outfmt    = $opts{outfmt};
     my $expect     = $opts{expect};
-    my $job_title  = $opts{job_title};
     my $wordsize   = $opts{wordsize};
-    my $type       = $opts{type};
-
     #$wordsize=11 if $program eq "blastn";
     my $matrix       = $opts{matrix};
     my $gapcost      = $opts{gapcost};
@@ -59,7 +57,6 @@ sub add_jobs {
     my $zmask          = $opts{zmask};
 
     my $seq = $opts{seq};
-    #this is where the dsgids are stored -- stupid name
     my $blastable = $opts{blastable};
 
     return encode_json({
@@ -76,15 +73,12 @@ sub add_jobs {
 
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 
-    my $t1 = new Benchmark;
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq, $cogeweb);
-    my $opts;
     my $pre_command;
     my $x;
     ( $x, $pre_command ) = CoGe::Accessory::Web::check_taint($pre_command);
     my @results;
     my $count = 1;
-    my $t2    = new Benchmark;
 
     foreach my $dsgid (@dsg_ids) {
         my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid, $db);
@@ -154,14 +148,12 @@ sub add_jobs {
 
             push @$args, [ "-comp_based_stats", 1, 1 ] if $program eq "tblastn";
             push @$args, [ '-matrix', $matrix, 1 ] if $program =~ /tblast/i;
-            push @$args, [ '-penalty', $nuc_penalty, 1 ]
-              unless $program =~ /tblast/i;
-            push @$args, [ '-reward', $nuc_reward, 1 ]
-              unless $program =~ /tblast/i;
+            push @$args, [ '-penalty', $nuc_penalty, 1 ] unless $program =~ /tblast/i;
+            push @$args, [ '-reward', $nuc_reward, 1 ] unless $program =~ /tblast/i;
             push @$args, [ '-gapopen', $exist, 1 ] unless $program =~ /tblast/i;
-            push @$args, [ '-gapextend', $extent, 1 ]
-              unless $program =~ /tblast/i;
+            push @$args, [ '-gapextend', $extent, 1 ] unless $program =~ /tblast/i;
             push @$args, [ '-dust', 'no', 1 ] unless $program =~ /tblast/i;
+            push @$args, [ '-outfmt', $outfmt, 1] if $outfmt;
             push @$args, [ '-query',     $fasta_file, 1 ];
             push @$args, [ '-word_size', $wordsize,   1 ];
             push @$args, [ '-evalue',    $expect,     1 ];
@@ -188,6 +180,11 @@ sub add_jobs {
 
         $count++;
     }
+
+    return encode_json({
+        success => JSON::true,
+        results => \@results
+    });
 }
 
 sub build {
@@ -211,11 +208,9 @@ sub build {
             for (@{$_->genomes}) {
                 push @gids, $_->id;
             }
-            for (@{$_->experiments}) {
-                push @gids, $_->genome_id;
-            }
         }
     }
+    return 0 if ! scalar @gids;
 
     my $resp = add_jobs(
         workflow     => $self->workflow,
@@ -223,7 +218,6 @@ sub build {
         user         => $self->user,
         config       => $self->conf,
         blastable    => join(',', @gids),
-        type         => $type,
         program      => $program,
         expect       => $e_value,
         wordsize     => $word_size,
@@ -379,13 +373,6 @@ sub go {
         logfile => $cogeweb->logfile
     );
 
-    my $gapcost = $opts{gapcost};
-    warn $gapcost;
-    if ($gapcost && $gapcost =~ /^(\d+)\s+(\d+)/) {
-        warn 'in';
-        $opts{gapcost} = qq[$1,$2];
-    }
-    warn $opts{gapcost};
     add_jobs(
         cogeweb => $cogeweb,
         workflow => $workflow,

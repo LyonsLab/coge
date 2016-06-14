@@ -9,7 +9,7 @@ use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
-use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db go );
+use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url go );
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
@@ -635,36 +635,16 @@ sub alert {
 
 sub get_results {
     my %opts = @_;
-    #print STDERR Dumper \%opts;
 
     my $color_hsps = $opts{color_hsps};
     my $program    = $opts{program};
-    my $expect     = $opts{expect};
-    my $job_title  = $opts{job_title};
-    my $wordsize   = $opts{wordsize};
-
-    #$wordsize=11 if $program eq "blastn";
-    my $comp         = $opts{comp};
-    my $matrix       = $opts{matrix};
-    my $gapcost      = $opts{gapcost};
-    my $match_score  = $opts{matchscore};
-    my $filter_query = $opts{filter_query};
     my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
     my $basename     = $opts{basename};
-    my $type = $opts{type};
 
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
         basename => $basename,
         tempdir  => $TEMPDIR
     );
-
-    #blastz params
-    my $zwordsize      = $opts{zwordsize};
-    my $zgap_start     = $opts{zgap_start};
-    my $zgap_extension = $opts{zgap_extension};
-    my $zchaining      = $opts{zchaining};
-    my $zthreshold     = $opts{zthreshold};
-    my $zmask          = $opts{zmask};
 
     my $seq = $opts{seq};
 
@@ -674,7 +654,6 @@ sub get_results {
     my @dsg_ids = split( /,/, $blastable );
 
     my $width = $opts{width};
-    my $fid   = $opts{fid};
 
     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
         user_id => $USER->id,
@@ -682,43 +661,13 @@ sub get_results {
         url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
     );
 
-    my $list_link = qq{<a href="$genomes_url" target_"blank">} . @dsg_ids . ' genome' . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+#    my $list_link = qq{<a href="$genomes_url" target_"blank">} . @dsg_ids . ' genome' . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
 
-    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
+#    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
 
-    my %params = (
-        color_hsps   => $color_hsps,
-        program      => $program,
-        expect       => $expect,
-        job_title    => $job_title,
-        wordsize     => $wordsize,
-        comp         => $comp,
-        matrix       => $matrix,
-        gapcost      => $gapcost,
-        match_score  => $match_score,
-        filter_query => $filter_query,
-        resultslimit => $resultslimit,
-        basename     => $basename,
-        zwordsize    => $zwordsize,
-        zgap_start   => $zgap_start,
-        zgap_exten   => $zgap_extension,
-        zchaining    => $zchaining,
-        zthreshold   => $zthreshold,
-        zmask        => $zmask,
-        type         => $type,
-        dsgid        => $blastable # genomes
-    );
-
-    # Optional parameters
-    $params{fid} = $fid if $fid;
-
-    my $url = url_for($PAGE_NAME, %params);
-
-    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
-
-    my ($tiny_id) = $link =~ /\/(\w+)$/;
+    my $tiny_url = get_tiny_url(%opts);
     my $workflow = $JEX->create_workflow(
-        name    => "cogeblast-$tiny_id",
+        name    => 'cogeblast-' . ($tiny_url =~ /\/(\w+)$/),
         id      => 0,
         logfile => $cogeweb->logfile
     );
@@ -782,7 +731,7 @@ sub get_results {
         prog            => $program,
         color_hsps      => $color_hsps,
         query_seqs_info => $query_seqs_info,
-        link            => $link
+        link            => $tiny_url
     );
 
     return encode_json ({
