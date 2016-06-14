@@ -41,6 +41,7 @@ sub add_jobs {
     my $matrix       = $opts{matrix};
     my $gapcost      = $opts{gapcost};
     my $match_score  = $opts{matchscore};
+    my $filter_query = $opts{filter_query};
     my $cogeweb      = $opts{cogeweb};
     unless ($cogeweb) {
         $cogeweb = CoGe::Accessory::Web::initialize_basefile(
@@ -328,88 +329,67 @@ sub get_name {
     return 'CoGeBlast';
 }
 
+sub get_tiny_url {
+    my %opts = @_;
+    my %params = (
+        color_hsps   => $opts{color_hsps},
+        program      => $opts{program},
+        expect       => $opts{expect},
+        job_title    => $opts{job_title},
+        wordsize     => $opts{wordsize},
+        comp         => $opts{comp},
+        matrix       => $opts{matrix},
+        gapcost      => $opts{gapcost},
+        match_score  => $opts{match_score},
+        filter_query => $opts{filter_query},
+        resultslimit => $opts{resultslimit},
+        basename     => $opts{basename},
+        zwordsize    => $opts{zwordsize},
+        zgap_start   => $opts{zgap_start},
+        zgap_exten   => $opts{zgap_extension},
+        zchaining    => $opts{zchaining},
+        zthreshold   => $opts{zthreshold},
+        zmask        => $opts{zmask},
+        type         => $opts{type},
+        dsgid        => $opts{blastable},
+        fid          => $opts{fid}
+    );
+    my $url = url_for("CoGeBlast.pl", %params);
+    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
+
+    return $link;
+}
+
 sub go {
     my %opts = @_;
     my $db = $opts{db};
     my $user = $opts{user};
     my $config = $opts{config};
-    my $JEX          = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
-    my $PAGE_TITLE   = "CoGeBlast";
-    my $PAGE_NAME    = $PAGE_TITLE . ".pl";
-    my $seq = $opts{seq};
+    my $JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
     my $blastable = $opts{blastable};
-    my $basename     = $opts{basename};
     my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $basename,
+        basename => $opts{basename},
         tempdir  => $config->{TEMPDIR} . "CoGeBlast"
     );
 
-    my $color_hsps   = $opts{color_hsps};
-    my $program      = $opts{program};
-    my $expect       = $opts{expect};
-    my $job_title    = $opts{job_title};
-    my $wordsize     = $opts{wordsize};
-    my $type         = $opts{type};
-    my $comp         = $opts{comp};
-    my $matrix       = $opts{matrix};
-    my $gapcost      = $opts{gapcost};
-    my $gap;
-    if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
-        $gap = qq[$1,$2];
-    }
-    my $match_score    = $opts{matchscore};
-    my $filter_query   = $opts{filter_query};
-    my $resultslimit   = $opts{resultslimit} || 100;
-    my $zwordsize      = $opts{zwordsize};
-    my $zgap_start     = $opts{zgap_start};
-    my $zgap_extension = $opts{zgap_extension};
-    my $zchaining      = $opts{zchaining};
-    my $zthreshold     = $opts{zthreshold};
-    my $zmask          = $opts{zmask};
-    my %params = (
-        color_hsps   => $color_hsps,
-        program      => $program,
-        expect       => $expect,
-        job_title    => $job_title,
-        wordsize     => $wordsize,
-        comp         => $comp,
-        matrix       => $matrix,
-        gapcost      => $gap,
-        match_score  => $match_score,
-        filter_query => $filter_query,
-        resultslimit => $resultslimit,
-        basename     => $basename,
-        zwordsize    => $zwordsize,
-        zgap_start   => $zgap_start,
-        zgap_exten   => $zgap_extension,
-        zchaining    => $zchaining,
-        zthreshold   => $zthreshold,
-        zmask        => $zmask,
-        type         => $type,
-
-        #Genomes
-        dsgid        => $blastable,
-    );
-
-    # Optional parameters
-    my $fid = $opts{fid};
-    $params{fid} = $fid if $fid;
-
-    my $url = url_for($PAGE_NAME, %params);
-
-    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
-
-    my ($tiny_id) = $link =~ /\/(\w+)$/;
+    my $tiny_url = get_tiny_url(%opts);
     my $workflow = $JEX->create_workflow(
-        name    => "cogeblast-$tiny_id",
+        name    => 'cogeblast-' . ($tiny_url =~ /\/(\w+)$/),
         id      => 0,
         logfile => $cogeweb->logfile
     );
 
+    my $gapcost = $opts{gapcost};
+    warn $gapcost;
+    if ($gapcost && $gapcost =~ /^(\d+)\s+(\d+)/) {
+        warn 'in';
+        $opts{gapcost} = qq[$1,$2];
+    }
+    warn $opts{gapcost};
     add_jobs(
         cogeweb => $cogeweb,
         workflow => $workflow,
-        @_
+        %opts
     );
 
     my $response = $JEX->submit_workflow($workflow);
@@ -426,21 +406,21 @@ sub go {
       . @dsg_ids
       . ' genome'
       . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
-    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
+    my $log_msg = 'Blast ' . length($opts{seq}) . ' characters against ' . $list_link;
 
     my $log = CoGe::Accessory::Web::log_history(
         db          => $db,
         user_id     => $user->id,
-        page        => $PAGE_TITLE,
+        page        => 'CoGeBlast',
         description => $log_msg,
-        link        => $link,
+        link        => $tiny_url,
         parent_id   => $response->{id},
         parent_type => 7 #FIXME magic number
     ) if $response and $response->{id};
 
     return encode_json({
         id => $response->{id},
-        link => $link,
+        link => $tiny_url,
         logfile => $config->{TEMPURL} . "CoGeBlast/" . $cogeweb->basefilename . ".log",
         success => $JEX->is_successful($response) ? JSON::true : JSON::false
     })
