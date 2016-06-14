@@ -1,4 +1,4 @@
-package CoGe::Request::Empty;
+package CoGe::Request::SynMap;
 
 use Moose;
 with qw(CoGe::Request::Request);
@@ -12,9 +12,7 @@ sub is_valid {
 }
 
 sub has_access {
-    my $self = shift;
-    return unless defined $self->{user};
-
+#    my $self = shift;
     return 1;
 }
 

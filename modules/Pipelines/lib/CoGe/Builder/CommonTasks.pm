@@ -13,7 +13,7 @@ use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension to_filename_base);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput irods_set_env);
-use CoGe::Accessory::Web qw(get_defaults split_url);
+use CoGe::Accessory::Web qw(get_defaults get_command_path split_url);
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path);
 use CoGe::Core::Metadata qw(tags_to_string);
 
@@ -444,7 +444,7 @@ sub create_untar_job {
     my $output_path = shift;
     my $done_file = "$input_file.untarred";
 
-    my $cmd = $CONF->{TAR} || 'tar';
+    my $cmd = get_command_path('TAR');
 
     return {
         cmd => "mkdir -p $output_path && $cmd -xf $input_file --directory $output_path && touch $done_file",
@@ -467,7 +467,7 @@ sub create_gunzip_job {
     my $output_file = $input_file;
     $output_file =~ s/\.gz$//;
 
-    my $cmd = $CONF->{GUNZIP} || 'gunzip';
+    my $cmd = get_command_path('GUNZIP');
 
     return {
         cmd => "$cmd -c $input_file > $output_file ;  touch $output_file.decompressed",
@@ -489,7 +489,7 @@ sub create_bgzip_job {
     my $input_file = shift;
     my $output_file = $input_file . '.bgz';
 
-    my $cmd = $CONF->{BGZIP} || 'bgzip';
+    my $cmd = get_command_path('BGZIP');
 
     return {
         cmd => "$cmd -c $input_file > $output_file ;  touch $output_file.done",
@@ -563,7 +563,7 @@ sub create_fasta_index_job {
     my $fasta = $opts{fasta};
 
     return {
-        cmd => $CONF->{SAMTOOLS} || "samtools",
+        cmd => get_command_path('SAMTOOLS'),
         script => undef,
         args => [
             ["faidx", $fasta, 1],
@@ -585,7 +585,7 @@ sub create_bam_index_job {
     my $input_file = $opts{input_file}; # bam file
 
     return {
-        cmd => $CONF->{SAMTOOLS} || "samtools",
+        cmd => get_command_path('SAMTOOLS'),
         script => undef,
         args => [
             ["index", $input_file, 1],
@@ -1092,7 +1092,7 @@ sub create_cutadapt_job {
     my @done_files = map { $_ . '.done' } @outputs;
 
     # Build up command/arguments string
-    my $cmd = $CONF->{CUTADAPT} || 'cutadapt';
+    my $cmd = get_command_path('CUTADAPT');
     $cmd = 'nice ' . $cmd; # run at lower priority
 
     my $arg_str;
@@ -1419,7 +1419,7 @@ sub create_hisat2_alignment_job {
 	}
 	
 	return {
-        cmd => 'nice ' . $CONF->{HISAT2},
+        cmd => 'nice ' . get_command_path('HISAT2'),
         script => undef,
         args => $args,
         inputs => [ @$fastq, @$done_files, @$index_files ],
@@ -1437,7 +1437,7 @@ sub create_hisat2_index_job {
     my $name = catfile($cache_dir, 'genome.reheader');
     
     return {
-        cmd => 'nice ' . $CONF->{HISAT2_BUILD},
+        cmd => 'nice ' . get_command_path('HISAT2_BUILD', 'hisat2-build'),
         script => undef,
         args => [
         	['-p', '32', 0],
@@ -1564,9 +1564,8 @@ sub create_bowtie_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     
-    my $cmd = $CONF->{BOWTIE_BUILD};
+    my $cmd = get_command_path('BOWTIE_BUILD', 'bowtie-build');
     my $BOWTIE_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bowtie_index");
-    die "ERROR: BOWTIE_BUILD is not in the config." unless ($cmd);
 
     return catdir($BOWTIE_CACHE_DIR, $name), {
         cmd => $cmd,
@@ -1671,8 +1670,7 @@ sub create_tophat_job {
     push @$inputs, $gff if $gff;
 
     # Build up command/arguments string
-    my $cmd = $CONF->{TOPHAT};
-    die "ERROR: TOPHAT is not in the config." unless $cmd;
+    my $cmd = get_command_path('TOPHAT');
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     my $arg_str;
@@ -2008,7 +2006,7 @@ sub create_gmap_index_job {
     my $gid = shift;
     my $fasta = shift;
     my $name = to_filename($fasta);
-    my $cmd = $CONF->{GMAP_BUILD} || 'gmap_build';
+    my $cmd = get_command_path('GMAP_BUILD');
     my $GMAP_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "gmap_index");
 
     return {
@@ -2034,7 +2032,7 @@ sub create_sam_to_bam_job {
     my $staging_dir = shift;
     
     my $filename = to_filename($samfile);
-    my $cmd = $CONF->{SAMTOOLS} || 'samtools';
+    my $cmd = get_command_path('SAMTOOLS');
 
     return {
         cmd => $cmd,
@@ -2085,7 +2083,7 @@ sub create_bam_sort_job {
     die unless ($input_file && $staging_dir);
     
     my $filename = to_filename($input_file);
-    my $cmd = $CONF->{SAMTOOLS} || 'samtools';
+    my $cmd = get_command_path('SAMTOOLS');
 
     return {
         cmd => $cmd,
@@ -2129,8 +2127,7 @@ sub create_gsnap_alignment_job {
     
     my $index_name = basename($gmap);
     
-    my $cmd = $CONF->{GSNAP} || 'gsnap';
-    die "ERROR: GSNAP is not in the config." unless ($cmd);
+    my $cmd = get_command_path('GSNAP');
     $cmd = 'nice ' . $cmd; # run at lower priority
 
     my $args = [

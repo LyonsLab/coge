@@ -11,7 +11,7 @@ use URI::Escape::JavaScript qw(unescape);
 #use File::Path;
 #use File::Copy;
 #use File::Basename;
-#use File::Spec::Functions qw(catdir catfile);
+use File::Spec::Functions qw(catdir catfile);
 #use File::Listing qw(parse_dir);
 #use File::Slurp;
 use LWP::Simple;
@@ -22,6 +22,7 @@ use Data::Dumper;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
+use CoGe::Accessory::Jex;
 use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(genomecmp);
@@ -31,7 +32,7 @@ no warnings 'redefine';
 
 use vars qw(
   $CONF $PAGE_TITLE $TEMPDIR $USER $DB $FORM $LINK $EMBED
-  %FUNCTION $LOAD_ID $WORKFLOW_ID
+  %FUNCTION $LOAD_ID $WORKFLOW_ID $JEX
 );
 
 $PAGE_TITLE = 'SynMap3D';
@@ -42,6 +43,8 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
+$JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
+
 # Get workflow_id and load_id for previous load if specified.  Otherwise
 # generate a new load_id for data upload.
 $WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
@@ -51,7 +54,8 @@ $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_u
 $EMBED = $FORM->param('embed');
 
 %FUNCTION = (
-    send_error_report       => \&send_error_report
+    dotplot_dots        => \&dotplot_dots,
+    send_error_report   => \&send_error_report
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
@@ -66,15 +70,17 @@ sub generate_html {
     }
     else {
         $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
-        $template->param( PAGE_TITLE => $PAGE_TITLE,
-		          TITLE      => "SynMap 3D",
-        	          PAGE_LINK  => $LINK,
-			  HOME       => $CONF->{SERVER},
-                          HELP       => 'SynMap3d',
-                          WIKI_URL   => $CONF->{WIKI_URL} || '',
-                          ADMIN_ONLY => $USER->is_admin,
-                          USER       => $USER->display_name || '',
-                          CAS_URL    => $CONF->{CAS_URL} || ''
+        $template->param(
+            PAGE_TITLE   => $PAGE_TITLE,
+            TITLE        => "SynMap 3D",
+            PAGE_LINK    => $LINK,
+            HOME         => $CONF->{SERVER},
+            HELP         => 'SynMap3d',
+            WIKI_URL     => $CONF->{WIKI_URL} || '',
+
+            ADMIN_ONLY   => $USER->is_admin,
+            USER         => $USER->display_name || '',
+            CAS_URL      => $CONF->{CAS_URL} || ''
         );
         $template->param( LOGON      => 1 ) unless $USER->is_public;
     }
@@ -85,15 +91,18 @@ sub generate_html {
 
 sub generate_body {
     my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-    $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+    $template->param( 
+            PAGE_NAME => "$PAGE_TITLE.pl",
+            API_BASE_URL => 'api/v1/'
+    );
     
-    # Force login - AKB Removed
-    #if ( $USER->is_public ) {
-    #    $template->param( LOGIN => 1 );
-    #    return $template->output;
-    #}
+#    # Force login
+#    if ( $USER->is_public ) {
+#        $template->param( LOGIN => 1 );
+#        return $template->output;
+#    }
     
-    # Set genome IDs if specified
+    # Set genome IDs if specified.
     my $x_gid = $FORM->param('x_gid');
     my $y_gid = $FORM->param('y_gid');
     my $z_gid = $FORM->param('z_gid');
@@ -125,17 +134,54 @@ sub generate_body {
         }
     }
 
-    # Set options if specified
-    my $hide_nosynt = $FORM->param('hide');
-    my $min_len = $FORM->param('min_len');
-    my $sortby = $FORM->param('sortby');
-    my $vr = $FORM->param('vr');
-    if ($hide_nosynt) {
-	$template->param( HIDE_NOSYNT => $hide_nosynt );
+    # Set options if specified.
+    my $sort= $FORM->param('sort');
+    if (($sort eq 'name') || ($sort eq 'length')) {
+        $template->param(
+            SORTBY => $sort
+        );
     }
-    if ($min_len) {}
-    if ($sortby) {}
-    if ($vr) {}
+
+    my $min_syn = $FORM->param('min_syn');
+    if ($min_syn) {
+        $template->param(
+            MIN_SYN => $min_syn
+        );
+    }
+
+    my $min_len = $FORM->param('min_len');
+    if ($min_len) {
+        $template->param(
+            MIN_LEN => $min_len
+        );
+    }
+
+    my $ratio = $FORM->param('ratio');
+    if ($ratio) {
+        my @r_opts = split /,/, $ratio;
+        $template->param(
+            RATIO => $r_opts[0],
+            R_BY => $r_opts[1],
+            R_MIN => $r_opts[2],
+            R_MAX => $r_opts[3]
+        )
+    }
+
+    my $cluster = $FORM->param('cluster');
+    if ($cluster) {
+        my @c_opts = split /,/,  $cluster;
+        $template->param(
+            C_EPS => $c_opts[0],
+            C_MIN => $c_opts[1]
+        )
+    }
+
+    my $vr = $FORM->param('vr');
+    if ($vr) {
+        $template->param(
+            VR => 1 #$vr
+        )
+    }
 
 
     $template->param(
@@ -145,6 +191,9 @@ sub generate_body {
     	LOAD_ID       => $LOAD_ID,
     	WORKFLOW_ID   => $WORKFLOW_ID,
         API_BASE_URL  => $CONF->{SERVER} . 'api/v1/', #TODO move into config file or module
+        SERVER_URL    => $CONF->{SERVER},
+        #DATA_LOC      => $CONF->{SYN3DIR},
+        DATA_LOC      => catdir($CONF->{URL}, "data", "syn3d"),
         HELP_URL      => 'https://genomevolution.org/wiki/index.php/SynMap3d',
         SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         DEFAULT_TAB              => 0,

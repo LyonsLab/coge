@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use CoGeX;
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Accessory::Utils qw( trim execute );
 use CoGe::Core::Notebook qw(add_items_to_notebook);
 use File::Path;
@@ -125,7 +125,7 @@ foreach my $file (@files) {
     # Untar file (if necessary) - TODO: do this before gunzip if tar.gz file
     if ( $file =~ /\.tar$/ || $file =~ /\.tar\.gz$/ || $file =~ /\.tgz$/ ) {
         print "log: Extracting files\n";
-        run( $P->{TAR}.' -xf '.$file.' --directory '.$data_dir );
+        run( get_command_path('TAR').' -xf '.$file.' --directory '.$data_dir );
         next;
     }
     

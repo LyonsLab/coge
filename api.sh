@@ -10,6 +10,9 @@ start() {
 #    hypnotoad -f ./web/services/api.pl >> ./api.log 2>&1 &
 #    ./web/services/api.pl daemon -l http://localhost:3304 >> ./api.log 2>&1 &
     port=$(grep MOJOLICIOUS_PORT ./coge.conf | cut -d ' ' -f 2)
+    if [ "$port" == "" ]; then
+        port=3303
+    fi
     morbo -w $PERL5LIB -l http://localhost:$port ./web/services/api.pl >> $HOME/api.log 2>&1 &
     echo "Started API (port $port)"
 }

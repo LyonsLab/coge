@@ -1,11 +1,13 @@
 package CoGe::Factory::RequestFactory;
 
 use Moose;
+use CoGe::Request::Empty;
 use CoGe::Request::Experiment;
 use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
-use CoGe::Request::Empty;
+use CoGe::Request::SynMap;
 use CoGe::Request::TwoGenomes;
+use Data::Dumper;
 
 has 'user'    => (
     is        => 'ro',
@@ -59,10 +61,14 @@ sub get {
     elsif ($type eq "load_genome") {
         return CoGe::Request::Empty->new($options);
     }
-    elsif ($type eq "synmap" ||
-    	$type eq "dotplot_dots")
+    elsif ($type eq "dotplot_dots")
     {
         return CoGe::Request::TwoGenomes->new($options);
+    }
+    elsif ($type eq "synmap" ||
+        $type eq "synmap3d")
+    {
+        return CoGe::Request::SynMap->new($options);
     }
     else {
         print STDERR "RequestFactory: error: unrecognized job type '", $type, "'\n";

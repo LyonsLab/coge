@@ -3,7 +3,7 @@ package CoGe::Builder::Tools::SynMap;
 use Moose;
 
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web qw( get_defaults );
+use CoGe::Accessory::Web qw( get_defaults get_command_path );
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Utils qw(units);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
@@ -17,7 +17,7 @@ use POSIX;
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT_OK =
-	  qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
+	  qw( add_jobs algo_lookup check_address_validity defaults gen_org_name generate_pseudo_assembly get_query_link go );
 }
 
 sub add_jobs {
@@ -30,7 +30,7 @@ sub add_jobs {
 	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
 	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 
-	my $tiny_link = get_query_link( $config, $db, @_ );
+	my $tiny_link = $opts{tinylink} || get_query_link( $config, $db, @_ );
 	my $path = catdir($config->{DIAGSDIR}, $dir1, $dir2, 'html');
 	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
 	$workflow->logfile($path);
@@ -52,7 +52,7 @@ sub add_jobs {
     #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
 	my $RUN_DAGCHAINER = 'nice ' . $config->{PYTHON} . ' ' . $config->{DAGCHAINER};
 	my $BLAST2RAW  = 'nice ' . $config->{BLAST2RAW}; #find local duplicates
-	my $FORMATDB   = 'nice ' . $config->{FORMATDB};
+	my $FORMATDB   = 'nice ' . get_command_path('FORMATDB');
 	my $BLASTDBDIR = $config->{BLASTDB};
 	my $LASTDB     = $config->{LASTDB2} // 'lastdb'; $LASTDB = 'nice ' . $LASTDB; # fix name
 	my $LASTDBDIR  = $config->{LASTDB} // catdir($config->{DATADIR}, 'last', 'db');
@@ -326,11 +326,11 @@ sub add_jobs {
                 $basename . '.prj'
             ],
             description => "Generating LastDB...",
-        });	
-        
+        });
+
         $blastdb = $basename;
         push @blastdb_files, $basename . '.prj';
-        
+
         $workflow->log( "" );
         $workflow->log( "Added LastDB generation" );
         $workflow->log( $blastdb );
@@ -339,7 +339,7 @@ sub add_jobs {
 		$blastdb = $fasta2;
 		push @blastdb_files, $blastdb;
 	}
-	
+
 	my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
 	my %org_dirs = (
 		$orgkey1 . "_" . $orgkey2 => {
@@ -360,18 +360,6 @@ sub add_jobs {
 		$org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
 	}
 	
-	# mdb added 3/24/16 for hypnotoad: run mkdir as JEX to get proper directory permissions for subsequent tasks
-    # $workflow->add_job({
-    #     cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs),
-    #     script      => undef,
-    #     args        => undef,
-    #     inputs      => undef,
-    #     outputs     => [
-    #         #map { [ $org_dirs{$_}{dir}, '1' ] } keys %org_dirs
-    #     ],
-    #     description => "Creating results directories...",
-    # });
-
 	############################################################################
 	# Run Blast
 	############################################################################
@@ -391,23 +379,23 @@ sub add_jobs {
 			push @blastargs, [ "-d", $db,      0 ];
 			push @blastargs, [ "-o", $outfile, 1 ];
 		}
-# mdb removed 3/17/16 -- wrapper no longer needed
-#		elsif ( $cmd =~ /last_wrapper/i ) {
-#			# mdb added 9/20/13 issue 213
-#			my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
-#			mkpath( $dbpath, 0, 0777 );
-#			push @blastargs, [ "--dbpath", $dbpath, 0 ];
-#
-#			push @blastargs, [ "",   $db,      0 ];
-#			push @blastargs, [ "",   $fasta,   0 ];
-#			push @blastargs, [ "-o", $outfile, 1 ];
-#		}
+        # mdb removed 3/17/16 -- wrapper no longer needed
+		#elsif ( $cmd =~ /last_wrapper/i ) {
+		#	# mdb added 9/20/13 issue 213
+		#	my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
+		#	mkpath( $dbpath, 0, 0777 );
+		#	push @blastargs, [ "--dbpath", $dbpath, 0 ];
+
+		#	push @blastargs, [ "",   $db,      0 ];
+		#	push @blastargs, [ "",   $fasta,   0 ];
+		#	push @blastargs, [ "-o", $outfile, 1 ];
+		#}
         elsif ( $cmd =~ /lastal/i ) { # mdb added 3/17/16 -- new multithreaded last v731
             my $fasta   = $org_dirs{$key}{fasta};
             my $db      = $org_dirs{$key}{db};
             my $outfile = $org_dirs{$key}{blastfile};
             $cmd .= " $db $fasta > $outfile";
-        }		
+        }
 		else {
 			push @blastargs, [ "-out",   $outfile, 1 ];
 			push @blastargs, [ "-query", $fasta,   0 ];
@@ -418,11 +406,11 @@ sub add_jobs {
 		push @blastdb_files, $fasta;
 		$workflow->add_job(
 			{
-				cmd         => $cmd,
+				cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd . ";touch $raw_blastfile.done",
 				script      => undef,
 				args        => \@blastargs,
 				inputs      => \@blastdb_files,
-				outputs     => [$outfile],
+				outputs     => [$outfile, $outfile . '.done'],
 				description => "Running genome comparison...",
 			}
 		);
@@ -457,7 +445,7 @@ sub add_jobs {
 			cmd         => $BLAST2BED,
 			script      => undef,
 			args        => \@blastargs,
-			inputs      => [$raw_blastfile],
+			inputs      => [$raw_blastfile, $raw_blastfile . '.done'],
 			outputs     => \@bedoutputs,
 			description => "Creating .bed files...",
 		}
@@ -825,9 +813,9 @@ sub add_jobs {
 	# Create html output directory
 	############################################################################
 #	my ( $qlead, $slead ) = ( "a", "b" );
-	my $out = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/html/";
+	my $out = catdir($org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir}, 'html');
 	#mkpath( $out, 0, 0777 ) unless -d $out; # mdb removed 3/24/16 for hypnotoad (permissions issue)
-	$out .= "master_";
+	$out .= "/master_";
 	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
 	$out .= $base;
 
@@ -866,6 +854,35 @@ sub add_jobs {
 
 		$workflow->log( "" );
 		$workflow->log("Added ($ks_type) calculation of syntenic CDS pairs and color dots");
+
+		####################################################################
+		# Use dotplot_dots.py to calculate points.
+		####################################################################
+		if ($ks_type) {
+			my $api_url = $config->{SERVER}.catdir( $config->{API_URL}, "genomes/" );
+			my $dot_cmd = catfile( $config->{SCRIPTDIR}, "dotplot_dots.py" ).' '.$ks_blocks_file.' '.$api_url;
+			my $dot_syn = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_synteny.json' );
+			my $dot_log = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_log.json' );
+			$workflow->add_job( {
+					cmd         => $dot_cmd,
+					inputs      => [ $ks_blocks_file ],
+					outputs     => [ $dot_syn, $dot_log ],
+					description => "Extracting coordinates for merge..."
+				} );
+		}
+#		my $cmd_xy = catfile($SCRIPTDIR, $dotplot_dots) . ' ' . $ksfile_xy;
+#		my $dot_xy = $dir1 . '_' . $dir2 . '_synteny.json';
+#		my $dot_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $dot_xy);
+#		my $dot_xy_url = catfile($DIAGSURL, $dir1, $dir2, $dot_xy);
+#		my $log_xy = $dir1 . '_' . $dir2 . '_log.json';
+#		my $log_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $log_xy);
+#		my $outputs_xy = [$log_xy_path, $dot_xy_path];
+#		$workflow->add_job({
+#			cmd => $cmd_xy,
+#			outputs => $outputs_xy,
+#			description => "extracting XY coordinates...",
+#		});
+#
 
 		####################################################################
 		# Generate svg dotplot
@@ -1211,18 +1228,18 @@ sub add_jobs {
 }
 
 sub algo_lookup {
-    # In the web form, each sequence search algorithm has a unique number.  
+    # In the web form, each sequence search algorithm has a unique number.
     # This table identifies those and adds appropriate options.
 	my $config        = get_defaults();
 	my $MAX_PROC      = $config->{MAX_PROC} // 32;
 	my $blast_options = " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6";
-	my $TBLASTX       = $config->{TBLASTX} . $blast_options;
-	my $BLASTN        = $config->{BLASTN} . $blast_options;
-	my $BLASTP        = $config->{BLASTP} . $blast_options;
-	my $LASTZ = $config->{PYTHON} . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . $config->{LASTZ};
+	my $TBLASTX       = get_command_path('TBLASTX') . $blast_options;
+	my $BLASTN        = get_command_path('BLASTN') . $blast_options;
+	my $BLASTP        = get_command_path('BLASTP') . $blast_options;
+	my $LASTZ = get_command_path('PYTHON') . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . get_command_path('LASTZ');
 	#my $LAST  = $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH}; # mdb removed 3/17/16
 	my $LAST = $config->{LASTAL} // 'lastal'; $LAST .= " -u 0 -P $MAX_PROC -i3G -f BlastTab"; # mdb added 3/17/16 for new multithreaded LAST v731
-	
+
 	return {
 		0 => {
 			algo => $BLASTN . " -task megablast",    #megablast
@@ -1299,7 +1316,6 @@ sub build {
 		for (my $k=$j+1; $k<$i; $k++) {
 			$self->params->{genome_id1} = $genome_ids[$j - 1];
 			$self->params->{genome_id2} = $genome_ids[$k - 1];
-			warn Dumper $self->params;
 			my %opts = ( %{ defaults() }, %{ $self->params } );
 			my $resp = add_jobs(
 				workflow => $self->workflow,

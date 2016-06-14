@@ -18,14 +18,7 @@ sub add {
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-
-    # User authentication is required
-    unless (defined $user) {
-        return $self->render(status => 401, json => {
-            error => { Auth => "Access denied" }
-        });
-    }
-
+warn '1';
     # Create request and validate the required fields
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
@@ -35,6 +28,7 @@ sub add {
             error => { Invalid => "Invalid request" }
         });
     }
+warn '2';
 
     # Check users permissions to execute the request
     unless ($request_handler->has_access) {
@@ -42,6 +36,7 @@ sub add {
             error => { Auth => "Request denied" }
         });
     }
+warn '3';
 
     # Create pipeline to execute job
     my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex, db => $db);
@@ -60,7 +55,7 @@ sub add {
             db          => $db,
             parent_id   => $pipeline->workflow->id,
             parent_type => 7, #FIXME magic number
-            user_id     => $user->id,
+            user_id     => ($user ? $user->id : 0),
             page        => $pipeline->page,
             description => $pipeline->workflow->name,
             link        => ($response->{site_url} ? $response->{site_url} : '')
@@ -81,13 +76,13 @@ sub fetch {
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
-    # User authentication is required
-    unless (defined $user) {
-        $self->render(status => 401, json => {
-            error => { Auth => "Access denied" }
-        });
-        return;
-    }
+    # User authentication is required -- removed 5/26/2016 because synmap3d needs public access
+    # unless (defined $user) {
+    #     $self->render(status => 401, json => {
+    #         error => { Auth => "Access denied" }
+    #     });
+    #     return;
+    # }
 
     # Get job status from JEX
     my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
@@ -134,7 +129,7 @@ sub fetch {
     }
 
     # Add results
-    my $user_name = ($user->is_admin ? undef : $user->name); # mdb added 8/12/15 - enables admins to see all workflow results
+    my $user_name = $user ? ($user->is_admin ? undef : $user->name) : 'public'; # mdb added 8/12/15 - enables admins to see all workflow results
     my $results = get_workflow_results($user_name, $id);
 
     $self->render(json => {

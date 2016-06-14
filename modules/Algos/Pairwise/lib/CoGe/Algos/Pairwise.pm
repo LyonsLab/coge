@@ -283,7 +283,7 @@ sub global_align {
     my $matrix = $opts{matrix};  #path to blast formated alignment matrix;
 
     $P = CoGe::Accessory::Web::get_defaults($opts{config});
-    $NWALIGN = $P->{NWALIGN};
+    $NWALIGN = get_command_path('NWALIGN');
     $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
     $matrix = $MATRIX_FILE unless $matrix && -r $matrix;
 

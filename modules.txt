@@ -5,6 +5,8 @@ CGI::Ajax
 CGI::Application::Dispatch
 CGI::Log
 Class::Accessor
+Crypt::OpenSSL::Random
+Crypt::OpenSSL::RSA
 DBD::SQLite
 DBI
 DBIx::Class
@@ -44,6 +46,8 @@ Sort::Versions
 Spreadsheet::WriteExcel
 Statistics::Basic
 Statistics::Basic::Mean
+String::ShellQuote
+Switch
 Sys::Syslog
 URI
 URI::Escape
