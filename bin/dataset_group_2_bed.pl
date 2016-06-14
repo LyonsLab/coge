@@ -27,7 +27,7 @@ my $DBPORT = $P->{DBPORT};
 my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-my $coge = CoGeX->dbconnect($connstr, $DBUSER, $DBPASS );
+my $coge = CoGeX->dbconnect($conffile);
 my $dsg = $coge->resultset('Genome')->find($dsgid);
 foreach my $ds ($dsg->datasets) {
     my $rs = $coge->resultset('Feature');
