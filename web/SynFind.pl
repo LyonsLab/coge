@@ -63,7 +63,7 @@ $BEDDIR     = $config->{BEDDIR};
 mkpath( $BEDDIR, 0, 0777 ) unless -d $BEDDIR;
 
 $MAX_PROC = $config->{MAX_PROC};
-$LASTZ = 'nice ' . $config->{PYTHON} . ' ' . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . $config->{LASTZ};
+$LASTZ = 'nice ' . get_command_path('PYTHON') . ' ' . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . get_command_path('LASTZ');
 #$LAST  = 'nice ' . $config->{PYTHON} . ' ' . $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH}; $ mdb removed /3/21/16 for LAST v731 -- wrapper no longer needed
 $LAST = $config->{LASTAL} // 'lastal'; $LAST .= " -u 0 -P $MAX_PROC -i3G -f BlastTab"; # mdb added 3/21/16 for LAST v731
 $LASTDB = $config->{LASTDB2} // 'lastdb'; # mdb added 3/21/16 for LAST v731

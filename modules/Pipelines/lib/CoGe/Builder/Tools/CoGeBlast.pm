@@ -3,7 +3,7 @@ package CoGe::Builder::Tools::CoGeBlast;
 use Moose;
 
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web;
+use CoGe::Accessory::Web qw(url_for get_command_path);
 use File::Basename;
 use JSON::XS;
 
@@ -22,13 +22,13 @@ sub add_jobs {
     my $BLASTDBDIR   = $config->{BLASTDB};
     my $MAX_PROC     = $config->{COGE_BLAST_MAX_PROC};
     my $BLAST_PROGS  = {
-        blast_legacy => $config->{BLAST} . " -a $MAX_PROC",
-        tblastn      => $config->{TBLASTN} . " -num_threads $MAX_PROC",
-        tblastx      => $config->{TBLASTX} . " -num_threads $MAX_PROC",
-        blastn       => $config->{BLASTN} . " -num_threads $MAX_PROC -task blastn",
-        dcmega       => $config->{BLASTN} . " -num_threads $MAX_PROC -task dc-megablast",
-        mega         => $config->{BLASTN} . " -num_threads $MAX_PROC -task megablast",
-        lastz        => $config->{LASTZ}
+        blast_legacy => get_command_path('BLAST') . " -a $MAX_PROC",
+        tblastn      => get_command_path('TBLASTN') . " -num_threads $MAX_PROC",
+        tblastx      => get_command_path('TBLASTX') . " -num_threads $MAX_PROC",
+        blastn       => get_command_path('BLASTN') . " -num_threads $MAX_PROC -task blastn",
+        dcmega       => get_command_path('BLASTN') . " -num_threads $MAX_PROC -task dc-megablast",
+        mega         => get_command_path('BLASTN') . " -num_threads $MAX_PROC -task megablast",
+        lastz        => get_command_path('LASTZ')
     };
 
     my $program    = $opts{program};

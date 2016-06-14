@@ -5,7 +5,7 @@ no warnings('redefine');
 
 use CoGeX;
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
@@ -57,8 +57,7 @@ $TEMPDIR       = $P->{TEMPDIR} . "CoGeBlast";
 $TEMPURL       = $P->{TEMPURL} . "CoGeBlast";
 $DATADIR       = $P->{DATADIR};
 $FASTADIR      = $P->{FASTADIR};
-$FORMATDB      = $P->{FORMATDB};
-$MAX_PROC      = $P->{COGE_BLAST_MAX_PROC};
+$FORMATDB      = get_command_path('FORMATDB');
 
 %FUNCTION = (
     source_search            => \&get_data_source_info_for_accn,

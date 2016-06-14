@@ -5,7 +5,7 @@ no warnings 'redefine';
 umask(0);
 
 use CoGeX;
-use CoGe::Accessory::Web qw(url_for api_url_for);
+use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
 use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
 use CoGeDBI qw(get_feature_counts);
@@ -102,8 +102,7 @@ $CLUSTER_UTILS = $config->{CLUSTER_UTILS};    #convert dag output to quota_align
 $SYNTENY_SCORE = $config->{SYNTENY_SCORE};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
-#$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
-$NWALIGN = $config->{NWALIGN};
+$NWALIGN = get_command_path('NWALIGN');
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 

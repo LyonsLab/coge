@@ -3,7 +3,7 @@ package CoGe::Builder::Tools::SynMap;
 use Moose;
 
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web qw( get_defaults );
+use CoGe::Accessory::Web qw( get_defaults get_command_path );
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Utils qw(units);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
@@ -52,7 +52,7 @@ sub add_jobs {
     #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
 	my $RUN_DAGCHAINER = 'nice ' . $config->{PYTHON} . ' ' . $config->{DAGCHAINER};
 	my $BLAST2RAW  = 'nice ' . $config->{BLAST2RAW}; #find local duplicates
-	my $FORMATDB   = 'nice ' . $config->{FORMATDB};
+	my $FORMATDB   = 'nice ' . get_command_path('FORMATDB');
 	my $BLASTDBDIR = $config->{BLASTDB};
 	my $LASTDB     = $config->{LASTDB2} // 'lastdb'; $LASTDB = 'nice ' . $LASTDB; # fix name
 	my $LASTDBDIR  = $config->{LASTDB} // catdir($config->{DATADIR}, 'last', 'db');
@@ -1233,10 +1233,10 @@ sub algo_lookup {
 	my $config        = get_defaults();
 	my $MAX_PROC      = $config->{MAX_PROC} // 32;
 	my $blast_options = " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6";
-	my $TBLASTX       = $config->{TBLASTX} . $blast_options;
-	my $BLASTN        = $config->{BLASTN} . $blast_options;
-	my $BLASTP        = $config->{BLASTP} . $blast_options;
-	my $LASTZ = $config->{PYTHON} . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . $config->{LASTZ};
+	my $TBLASTX       = get_command_path('TBLASTX') . $blast_options;
+	my $BLASTN        = get_command_path('BLASTN') . $blast_options;
+	my $BLASTP        = get_command_path('BLASTP') . $blast_options;
+	my $LASTZ = get_command_path('PYTHON') . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . get_command_path('LASTZ');
 	#my $LAST  = $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH}; # mdb removed 3/17/16
 	my $LAST = $config->{LASTAL} // 'lastal'; $LAST .= " -u 0 -P $MAX_PROC -i3G -f BlastTab"; # mdb added 3/17/16 for new multithreaded LAST v731
 

@@ -31,7 +31,7 @@ $TEMPURL  = $P->{TEMPURL} . "tRNA";
 $DATADIR  = $P->{DATADIR};
 $FASTADIR = $P->{FASTADIR};
 
-$ARAGORN = $P->{ARAGORN};
+$ARAGORN = get_command_path('ARAGORN');
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",

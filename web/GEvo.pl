@@ -79,7 +79,7 @@ $ENV{PATH} = $P->{COGEDIR};
 
 #print Dumper $P;
 $BL2SEQ     = $P->{BL2SEQ};
-$BLASTZ     = $P->{LASTZ};
+$BLASTZ     = get_command_path('LASTZ');
 $BLASTZ     .= " --ambiguous=iupac";
 $LAGAN          = $P->{LAGAN};
 $CHAOS          = $P->{CHAOS};
