@@ -541,9 +541,7 @@ sub get_workflow_paths {
     my ($staging_path, $results_path);
     if (!$user_name) {
         my $results_dir = catdir($tmp_path, 'results');
-        my @tmp = read_dir($results_dir);
         my @wdir = grep { -d "$results_dir/$_/$workflow_id" } read_dir($results_dir);
-        #print STDERR Dumper "wdir:\n", \@wdir, "\n";
         if (@wdir != 1) {
             warn "Storage::get_workflow_paths ERROR: ambiguous user directory";
             warn Dumper \@wdir;

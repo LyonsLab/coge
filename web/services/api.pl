@@ -192,7 +192,7 @@ $r->get("/jobs/:id" => [id => qr/\d+/])
     ->name("jobs-fetch")
     ->to("job#fetch", id => undef);
 
-$r->get("/jobs/:id/results/:name" => { id => qr/\d+/, name => qr/\w+/ })
+$r->get("/jobs/:id/results/#name" => { id => qr/\d+/, name => qr/\w+/ })
     ->name("jobs-results")
     ->to("job#results", id => undef, name => undef);
 
