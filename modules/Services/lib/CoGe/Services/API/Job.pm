@@ -154,6 +154,7 @@ sub results { # legacy for Genome Export via HTTP
 
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $id);
     my $result_file = catfile($result_dir, $name);
+    warn $result_file;
 
     unless (-r $result_file) {
         $self->render(status => 404, json => {

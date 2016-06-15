@@ -4,6 +4,7 @@ use Moose;
 
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw(url_for get_command_path);
+use Data::Dumper;
 use File::Basename;
 use JSON::XS;
 
@@ -94,9 +95,7 @@ sub add_jobs {
 
         #push @$args, ['-p', 'F', 1];
 
-        my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
-        my $db = File::Spec->catdir(($dbpath, $dsgid));
-        #my $outputs = [[$dbpath, 1]]; #["$db.nhr", "$db.nin", "$db.nsq"];
+        my $dbpath = File::Spec->catdir($BLASTDBDIR, $dsgid);
 
         $workflow->add_job(generate_blastdb_job(
             config  => $config,
@@ -141,7 +140,6 @@ sub add_jobs {
             if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
                 ( $exist, $extent ) = ( $1, $2 );
             }
-
             if ($match_score && $match_score =~ /^(\d+)\,(-\d+)/ ) {
                 ( $nuc_penalty, $nuc_reward ) = ( $2, $1 );
             }
@@ -157,7 +155,7 @@ sub add_jobs {
             push @$args, [ '-query',     $fasta_file, 1 ];
             push @$args, [ '-word_size', $wordsize,   1 ];
             push @$args, [ '-evalue',    $expect,     1 ];
-            push @$args, [ '-db',        $db,         0 ];
+            push @$args, [ '-db',        File::Spec->catdir($dbpath, $dsgid),   0 ];
             push @$args, [ '>',          $outfile,    1 ];
         }
 
@@ -181,10 +179,10 @@ sub add_jobs {
         $count++;
     }
 
-    return encode_json({
-        success => JSON::true,
-        results => \@results
-    });
+    # return encode_json({
+    #     success => JSON::true,
+    #     results => \@results
+    # });
 }
 
 sub build {
@@ -196,6 +194,7 @@ sub build {
     my $e_value = $self->params->{e_value};
     my $word_size = $self->params->{word_size};
     my $gap_costs = $self->params->{gap_costs};
+    my $match_score = $self->params->{match_score};
     my $filter_query = $self->params->{filter_query};
     my $max_results = $self->params->{max_results};
     my $query_seq = $self->params->{query_seq};
@@ -222,6 +221,7 @@ sub build {
         expect       => $e_value,
         wordsize     => $word_size,
         gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
+        matchscore  => $match_score->[0] . ',' . $match_score->[1],
         filter_query => $filter_query,
         resultslimit => $max_results,
         seq          => $query_seq,
