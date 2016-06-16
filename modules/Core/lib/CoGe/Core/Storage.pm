@@ -590,10 +590,12 @@ sub get_workflow_results {
         opendir(my $fh, $results_path);
         foreach my $file ( readdir($fh) ) {
             my $fullpath = catfile($results_path, $file);
-            next unless -f $fullpath;
+            warn $fullpath;
+            next unless -f $fullpath || -l $fullpath; # allow links for CoGeBlast
             next if $file =~ /^\./;
 
             my $name = basename($file);
+            warn $name;
             push @all_results, {
                 type => 'http',
                 name => $name,

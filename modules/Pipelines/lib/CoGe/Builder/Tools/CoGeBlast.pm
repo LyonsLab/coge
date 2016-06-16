@@ -4,8 +4,10 @@ use Moose;
 
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw(url_for get_command_path);
+use CoGe::Core::Storage qw(get_workflow_paths);
 use Data::Dumper;
 use File::Basename;
+use File::Spec::Functions;
 use JSON::XS;
 
 BEGIN {
@@ -87,14 +89,6 @@ sub add_jobs {
         next unless -s $fasta_file;
 
         my $name = $dsg->organism->name;
-        #my $args = [
-        #    ['-i', $dbfasta, 0],
-        #    ['-t', qq{"$name"}, 0],
-        #    ['-n', $dsgid, 1],
-        #];
-
-        #push @$args, ['-p', 'F', 1];
-
         my $dbpath = File::Spec->catdir($BLASTDBDIR, $dsgid);
 
         $workflow->add_job(generate_blastdb_job(
@@ -105,15 +99,6 @@ sub add_jobs {
             type    => "nucl",
             outdir  => $dbpath,
         ));
-
-        #$workflow->add_job(
-        #    cmd     => "mkdir $dsgid && cd $dsgid && $FORMATDB",
-        #    script  => undef,
-        #    args    => $args,
-        #    inputs  => undef,
-        #    outputs => $outputs,
-        #    description => "Generating blastable database..."
-        #);
 
         my $outfile = $cogeweb->basefile . "-$count.$program";
 
@@ -159,47 +144,34 @@ sub add_jobs {
             push @$args, [ '>',          $outfile,    1 ];
         }
 
-        push @results,
-          {
-            command  => $cmd,
-            file     => $outfile,
-            organism => $org,
-            dsg      => $dsg
-          };
-
         $workflow->add_job({
             cmd     => "/usr/bin/nice",
-            script  => undef,
             args    => $args,
             inputs  => [$fasta_file, [$dbpath, 1]],
             outputs => [$outfile],
             description => "Blasting sequence against $name"
         });
 
+        my (undef, $results_path) = get_workflow_paths($user->name, $workflow->id);
+        my $outfile_link = catfile($results_path, $org =~ s/[\\\/:"*?<>|]//gr);
+        $workflow->add_job({
+            cmd     => "ln -s $outfile \"$outfile_link\".$program",
+            inputs  => [$outfile],
+            outputs => [$outfile_link],
+            description => "Linking output to results"
+        });
+
         $count++;
     }
-
-    # return encode_json({
-    #     success => JSON::true,
-    #     results => \@results
-    # });
 }
 
 sub build {
     my $self = shift;
     my $genomes = $self->params->{genomes};
     my $notebooks = $self->params->{notebooks};
-    my $type = $self->params->{type};
-    my $program = $self->params->{program};
-    my $e_value = $self->params->{e_value};
-    my $word_size = $self->params->{word_size};
     my $gap_costs = $self->params->{gap_costs};
     my $match_score = $self->params->{match_score};
-    my $filter_query = $self->params->{filter_query};
-    my $max_results = $self->params->{max_results};
-    my $query_seq = $self->params->{query_seq};
-    my $matrix = $self->params->{matrix};
-
+    
     my @gids;
     @gids = @$genomes if $genomes;
     if ($notebooks) {
@@ -210,22 +182,22 @@ sub build {
         }
     }
     return 0 if ! scalar @gids;
-
     my $resp = add_jobs(
         workflow     => $self->workflow,
         db           => $self->db,
         user         => $self->user,
         config       => $self->conf,
         blastable    => join(',', @gids),
-        program      => $program,
-        expect       => $e_value,
-        wordsize     => $word_size,
+        program      => $self->params->{program},
+        expect       => $self->params->{e_value},
+        wordsize     => $self->params->{word_size},
         gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
-        matchscore  => $match_score->[0] . ',' . $match_score->[1],
-        filter_query => $filter_query,
-        resultslimit => $max_results,
-        seq          => $query_seq,
-        matrix       => $matrix
+        matchscore   => $match_score->[0] . ',' . $match_score->[1],
+        filter_query => $self->params->{filter_query},
+        resultslimit => $self->params->{max_results},
+        seq          => $self->params->{query_seq},
+        matrix       => $self->params->{matrix},
+        outfmt       => $self->params->{outfmt}
     );
     return 0 if ($resp); # an error occurred
     return 1;
@@ -346,7 +318,8 @@ sub get_tiny_url {
         zmask        => $opts{zmask},
         type         => $opts{type},
         dsgid        => $opts{blastable},
-        fid          => $opts{fid}
+        fid          => $opts{fid},
+        outfmt       => $opts{outfmt}
     );
     my $url = url_for("CoGeBlast.pl", %params);
     my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
