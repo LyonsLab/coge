@@ -401,12 +401,13 @@ sub add_jobs {
 			push @blastargs, [ "-query", $fasta,   0 ];
 			push @blastargs, [ "-db",    $db,      0 ];
 		}
+		push @blastargs, [ ";touch", "$raw_blastfile.done", 0]; # seriously hacky, JEX should known when a file is finished writing, or provide an option for this
 
 		#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
 		push @blastdb_files, $fasta;
 		$workflow->add_job(
 			{
-				cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd . ";touch $raw_blastfile.done",
+				cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd,
 				script      => undef,
 				args        => \@blastargs,
 				inputs      => \@blastdb_files,
