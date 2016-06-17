@@ -78,7 +78,7 @@ sub submit_workflow {
             id       => $workflow->id,
             name     => $workflow->name,
             logfile  => $workflow->logfile,
-            priority => $workflow->priority,
+            priority => $workflow->priority, # mdb added 6/15/16 for JEX distribution
             jobs     => $workflow->jobs(),
         }
     };
@@ -197,6 +197,23 @@ sub find_workflows {
     $workflows //= []; #/
 
     return $workflows;
+}
+
+# mdb added 6/17/16 for JEX distribution
+sub get_queues {
+    my ($self) = @_;
+    my ($request, $response, $queues);
+
+    $request = {
+        request => 'queues',
+        data    => { }
+    };
+
+    $response = _send_request($self, $request);
+    $queues = $response->{queues} if $response and $response->{queues};
+    $queues //= []; #/
+
+    return $queues;
 }
 
 # Private functions
