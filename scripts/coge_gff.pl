@@ -51,7 +51,7 @@ if (not $filename) {
 }
 
 my $file = catfile($staging_dir, $filename);
-warn $file;
+print STDERR "output file: $file\n";
 my $file_temp = $file . ".tmp";
 
 # Check if file already exists
