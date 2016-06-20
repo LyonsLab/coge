@@ -10,7 +10,7 @@ use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
 use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Accessory::Utils qw( commify to_pathname );
 use CoGe::Accessory::TDS;
 use CoGe::Core::Genome qw(fix_chromosome_id);
@@ -119,18 +119,14 @@ $port = $P->{DBPORT};
 $user = $P->{DBUSER};
 $pass = $P->{DBPASS};
 
-my $FASTBIT_LOAD  = $P->{FASTBIT_LOAD};
-my $FASTBIT_QUERY = $P->{FASTBIT_QUERY};
-my $SAMTOOLS      = $P->{SAMTOOLS};
-my $GUNZIP        = $P->{GUNZIP};
+my $FASTBIT_LOAD  = get_command_path('FASTBIT_LOAD', 'ardea');
+my $FASTBIT_QUERY = get_command_path('FASTBIT_QUERY', 'ibis');
+my $SAMTOOLS      = get_command_path('SAMTOOLS');
+my $GUNZIP        = get_command_path('GUNZIP');
 if (   not $FASTBIT_LOAD
     or not $FASTBIT_QUERY
     or not $SAMTOOLS
-    or not $GUNZIP
-    or not -e $FASTBIT_LOAD
-    or not -e $FASTBIT_QUERY
-    or not -e $SAMTOOLS
-    or not -e $GUNZIP )
+    or not $GUNZIP )
 {
     print STDOUT "log: error: can't find required command(s)\n";
     exit(-1);

@@ -11,7 +11,7 @@ use File::Basename qw(basename);
 
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
 use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::CommonTasks;
@@ -104,9 +104,9 @@ sub create_find_snps_job {
     my $snps = $opts->{bcf};
 
     # Pipe commands together
-    my $sam_command = $CONF->{SAMTOOLS} || "samtools";
+    my $sam_command = get_command_path('SAMTOOLS');
     $sam_command .= " mpileup -u -f " . basename($reference) . ' ' . basename($alignment);
-    my $bcf_command = $CONF->{BCFTOOLS} || "bcftools";
+    my $bcf_command = get_command_path('BCFTOOLS');
     $bcf_command .= " view -b -v -c -g";
 
     # Get the output filename
@@ -137,9 +137,9 @@ sub create_filter_snps_job {
     my $max_read_depth = $params->{'max-read-depth'} || 10;
 
     # Pipe commands together
-    my $bcf_command = $CONF->{BCFTOOLS} || "bcftools";
+    my $bcf_command = get_command_path('BCFTOOLS');
     $bcf_command .= " view " . basename($snps);
-    my $vcf_command = $CONF->{VCFTOOLS} || "vcfutils.pl";
+    my $vcf_command = get_command_path('VCFTOOLS', 'vcfutils.pl');
     $vcf_command .= " varFilter -d $min_read_depth -D $max_read_depth";
 
     # Get the output filename

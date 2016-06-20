@@ -29,7 +29,7 @@ sub build {
     my $opts = shift;
     my $genome = $opts->{genome};
     my $user = $opts->{user};
-    my $input_file = $opts->{input_file}; # path to bam file
+    my $input_file = $opts->{bam_file}; # path to bam file
     my $metadata = $opts->{metadata};
     my $additional_metadata = $opts->{additional_metadata};
     my $wid = $opts->{wid};

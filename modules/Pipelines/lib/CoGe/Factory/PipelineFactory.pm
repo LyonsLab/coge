@@ -15,6 +15,7 @@ use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
+use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Tools::SynMap3D;
 use CoGe::Builder::Expression::MeasureExpression;
@@ -55,7 +56,10 @@ sub get {
 
     # Select pipeline builder
     my $builder;
-    if ($message->{type} eq "export_gff") {
+    if ($message->{type} eq "coge_blast") {
+        $builder = CoGe::Builder::Tools::CoGeBlast->new($request);
+    }
+    elsif ($message->{type} eq "export_gff") {
         $builder = CoGe::Builder::Export::Gff->new($request);
     }
     elsif ($message->{type} eq "export_fasta") {

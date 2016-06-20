@@ -15,7 +15,7 @@ use URI::Escape::JavaScript qw(unescape);
 
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web qw(get_defaults get_job schedule_job);
+use CoGe::Accessory::Web qw(get_defaults get_command_path get_job schedule_job);
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
 use CoGe::Core::Metadata qw(to_annotations);
@@ -116,8 +116,7 @@ sub create_samtools_job {
     my $min_allele_count = $params->{'min-allele-count'} || 4;
     my $scale            = $params->{scale} || 32;
     
-    die "ERROR: SAMTOOLS not specified in config" unless $CONF->{SAMTOOLS};
-    my $samtools = $CONF->{SAMTOOLS};
+    my $samtools = get_command_path('SAMTOOLS');
     
     die "ERROR: SCRIPTDIR not specified in config" unless $CONF->{SCRIPTDIR};
     my $filter_script = catfile($CONF->{SCRIPTDIR}, 'pileup_SNPs.pl');

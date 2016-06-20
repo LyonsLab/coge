@@ -27,7 +27,8 @@ has 'jex'     => (
 sub get {
     my ($self, $message) = @_;
     unless (defined $message && defined $message->{type}) {
-        print STDERR "RequestFactory: error: invalid message\n";
+        warn 'RequestFactory: error: invalid message';
+        warn Dumper $message;
         return;
     }
 
@@ -58,7 +59,8 @@ sub get {
     {
         return CoGe::Request::ExperimentAnalysis->new($options);
     }
-    elsif ($type eq "load_genome") {
+    elsif ($type eq "load_genome" ||
+           $type eq "coge_blast") {
         return CoGe::Request::Empty->new($options);
     }
     elsif ($type eq "dotplot_dots")
