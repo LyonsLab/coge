@@ -189,21 +189,25 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	_add_track_to_notebook: function(track, notebook) {
-		if (!notebook.config.coge.experiments)
-			notebook.config.coge.experiments = [];
-		notebook.config.coge.experiments.push({id:track.config.coge.id, name:track.config.coge.name, type:track.config.coge.data_type})
-		if (!notebook.nextSibling) {
+		if (notebook.config.coge.id != 0) {
+			if (!notebook.config.coge.experiments)
+				notebook.config.coge.experiments = [];
+			notebook.config.coge.experiments.push({id:track.config.coge.id, name:track.config.coge.name, type:track.config.coge.data_type})
+		}
+		if (!notebook.expanded)
+			track.style.display = 'none';
+		if (!notebook.nextSibling)
 			dojo.place(track, notebook, 'after');
-			return;
+		else {
+			var n = notebook.nextSibling;
+			if (natural_sort(n.config.coge.name, track.config.coge.name) > 0)
+				dojo.place(track, n, 'before');
+			else {
+				while (n.nextSibling && natural_sort(track.config.coge.name, n.nextSibling.config.coge.name) > 0)
+					n = n.nextSibling;
+				dojo.place(track, n, 'after');
+			}
 		}
-		var n = notebook.nextSibling;
-		if (natural_sort(n.config.coge.name, track.config.coge.name) > 0) {
-			dojo.place(track, n, 'before');
-			return;
-		}
-		while (n.nextSibling && natural_sort(track.config.coge.name, n.nextSibling.config.coge.name) > 0)
-			n = n.nextSibling;
-		dojo.place(track, n, 'after');
 		if (dojo.byId('track_notebook' + notebook.config.coge.id))
 			this._traverse_tracks(function(container){
 				if (container.config.coge.type == 'experiment' && container.config.coge.id == track.config.coge.id)
@@ -219,9 +223,8 @@ define(['dojo/_base/declare',
 			if (track_config.coge)
 				if (track_config.coge.search_track)
 					this.tracks_div.insertBefore(this._new_track(track_config), this.tracks_div.firstChild); // insert before Sequence track at top
-				else if (track_config.coge.type != 'notebook') {
-					this._add_to_notebook([track_config], 0, true);
-				}
+				else if (track_config.coge.type != 'notebook')
+					this._add_track_to_notebook(this._new_track(track_config), dojo.byId('notebook0'));
 		}, this);
 	},
 
@@ -250,7 +253,7 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	_collapse: function(container) {
-		container.config.coge.expanded = false;
+		container.expanded = false;
 		container.firstChild.src = 'js/jbrowse/plugins/CoGe/img/arrow-right-icon.png';
 		var n = container.nextSibling;
 		while (n) {
@@ -562,7 +565,7 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	_expand: function(container) {
-		container.config.coge.expanded = true;
+		container.expanded = true;
 		container.firstChild.src = 'js/jbrowse/plugins/CoGe/img/arrow-down-icon.png';
 		var n = container.nextSibling;
 		while (n) {
@@ -604,7 +607,7 @@ define(['dojo/_base/declare',
 			var expanded = true;
 			this._traverse_tracks(function(container) {
 				if (container.config.coge.collapsible) {
-					expanded = container.config.coge.expanded;
+					expanded = container.expanded;
 					container.style.display = '';
 				} else
 					container.style.display = expanded ? '' : 'none';

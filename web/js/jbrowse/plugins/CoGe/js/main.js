@@ -364,7 +364,7 @@ return declare( JBrowsePlugin,
 		content += '<input type="radio" name="export_method" checked="checked" onchange="coge_plugin.export_method_changed()"> Download to local computer&nbsp;&nbsp;&nbsp;';
 		content += '<input id="to_cyverse" type="radio" name="export_method" onchange="coge_plugin.export_method_changed()"> Save in CyVerse</td></tr>';
 		content += '<tr><td colspan="2" id="cyverse"></td></tr><tr><td>Filename:</td><td><input id="export_filename" />';
-		content += track.config.coge.ext;
+		content += this._ext(track.config.coge.data_type);
 		content += '</td></tr><tr><td></td><td></td></tr></table>';
 		content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin.export_track()">OK</button>';
 		content += '<button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin._export_dialog.hide()">Cancel</button></div></div>';
@@ -412,8 +412,9 @@ return declare( JBrowsePlugin,
 			return;
 		}
 		var to_cyverse = dojo.byId('to_cyverse').checked;
-		if (to_cyverse && coge.fileSelect.has_file(filename + this._track.config.coge.ext)) {
-			this.info('File exists', 'There is already a file in the current directory with the name ' + filename + this._track.config.coge.ext + '. Please enter a different filename.', dojo.byId('export_filename'));
+		var ext = this._ext(this._track.config.coge.data_type);
+		if (to_cyverse && coge.fileSelect.has_file(filename + ext)) {
+			this.info('File exists', 'There is already a file in the current directory with the name ' + filename + ext + '. Please enter a different filename.', dojo.byId('export_filename'));
 			return;
 		}
 		var ref_seq = dojo.byId('coge_ref_seq');
@@ -449,6 +450,12 @@ return declare( JBrowsePlugin,
 		} else
 			document.location = url;
 		this._export_dialog.hide();
+	},
+
+	// ----------------------------------------------------------------
+
+	_ext: function(data_type) {
+		return data_type == 4 ? '.gff' : data_type == 3 ? '.sam' : data_type == 2 ? '.vcf' : '.csv';
 	},
 
 	// ----------------------------------------------------------------
@@ -534,7 +541,6 @@ return declare( JBrowsePlugin,
 			config.label = 'search_' + eid;
 			config.original_store = config.store;
 			config.store = store_name;
-			config.coge.collapsed = false;
 			config.coge.search_track = true;
 			browser.publish('/jbrowse/v1/v/tracks/new', [config]);
 			browser.publish('/jbrowse/v1/v/tracks/show', [config]);
@@ -571,7 +577,7 @@ return declare( JBrowsePlugin,
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var search = this.search_to_string(config.coge.search);
 		var description = 'Results from search: ' + search;
-		var url = api_base_url + '/experiment/' + config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id + '&ext=' + config.coge.ext;
+		var url = api_base_url + '/experiment/' + config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id + '&ext=' + this._ext(config.coge.data_type);
 		url += '&' + this.search_to_params(config.coge.search, true);
 		var annotions = [
 			{
@@ -596,6 +602,7 @@ return declare( JBrowsePlugin,
 			description += ', transform: ' + config.coge.transform;
 			annotions.push({ type: 'transform', text: config.coge.transform });
 		}
+		var ext = this._ext(config.coge.data_type);
 		dojo.xhrGet({
 			url: url,
 			load: function(data) {
@@ -620,8 +627,8 @@ return declare( JBrowsePlugin,
 								version: '1'
 							},
 							source_data: [{
-								file_type: config.coge.ext.substr(1),
-								path: 'upload/search_results' + (config.coge.ext == '.sam' ? '.bam' : config.coge.ext),
+								file_type: ext.substr(1),
+								path: 'upload/search_results' + (ext == '.sam' ? '.bam' : ext),
 								type: 'file'
 							}]
 						}
@@ -642,12 +649,11 @@ return declare( JBrowsePlugin,
 							config.track = 'experiment' + response.id;
 							config.label = 'experiment' + response.id;
 							config.store = config.original_store;
-							config.coge.collapsed = false;
 							config.coge.id = response.id;
+							config.coge.name = name;
 							delete config.coge.search_track;
 							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
 							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/show', [config]);
-							dojo.place(dojo.byId('track_experiment' + response.id), dojo.byId('track_search_' + eid), 'after');
 							coge_plugin.browser.view.updateTrackList();
 					    })
 					    .fail(function(jqXHR, textStatus, errorThrown) {

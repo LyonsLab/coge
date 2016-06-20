@@ -198,6 +198,7 @@ sub data {
         }
         $self->_write("\n", $fh);
 
+        $chr = undef if $chr eq 'All';
         my $lines = CoGe::Core::Experiment::query_data(
             eid => $id,
             data_type => $data_type,
@@ -296,9 +297,12 @@ sub data {
         $self->_write("#seqid\tsource\ttype\tstart\tend\tscore\tstrand\tphase\tattributes\n", $fh);
         my $markers = $self->_markers;
         my $s = (index(@{$markers}[0], ', ') == -1 ? 1 : 2);
+        $chr = undef if $chr eq 'All';
         foreach (@{$markers}) {
             my @l = split(',');
-            $self->_write(substr($l[0], 1, -1), $fh);
+            my $c = substr($l[0], 1, -1);
+            next if $chr && $chr ne $c;
+            $self->_write($c, $fh);
             $self->_write("\t.\t", $fh);
             $self->_write(substr($l[4], $s, -1), $fh);
             $self->_write("\t", $fh);
