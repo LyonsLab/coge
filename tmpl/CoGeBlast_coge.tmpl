@@ -20,7 +20,7 @@
                 <tr>
                 <td valign="top">
                     <label><input id="coge_radio" type="radio" name="cogeblast" value="coge_blast_type_n" checked onClick="get_seq('coge_radio');blast_param_on_select('coge_radio','coge');">Nucleotide Sequence</label>
-                    <select name="coge_blasttype" id="coge_blast_type_n" onChange="blast_param_on_select('coge_radio','coge')">
+                    <select id="coge_blast_type_n" onChange="blast_param_on_select('coge_radio','coge')">
                     <option value="blastn">blastn</option>
                     <option value="tblastx">tblastx</option>
                     <option value="lastz">(b)lastz</option>
@@ -32,7 +32,7 @@
                 <tr>
                 <td>
                     <label><input id="coge_radio" type="radio" name="cogeblast" value="coge_blast_type_p" onClick="get_seq('coge_radio');blast_param_on_select('coge_radio','coge')">Protein Sequence</label>
-                    <select name="coge_blasttype" id="coge_blast_type_p" onChange="blast_param_on_select('coge_radio','coge')">
+                    <select id="coge_blast_type_p" onChange="blast_param_on_select('coge_radio','coge')">
                     <option value="tblastn">tblastn</option>
                     </select>
                 </td>
@@ -184,7 +184,7 @@
                     </select>
                 </td>
                 </tr>
-                <tr>
+                <tr id="filter_query_row">
                 <td>Filter query sequence:</td>
                 <td>
                     <label><input type="radio" name="filter_query" id="filter_query" value="1" checked />Yes</label>

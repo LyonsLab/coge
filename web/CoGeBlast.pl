@@ -1960,55 +1960,45 @@ sub get_nearby_feats {
     my $mid   = ( $stop + $start ) / 2;
     $dbh = $db->storage->dbh;    #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $query = qq{
-select * from (
-  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10)
-   UNION (SELECT * FROM feature where start>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
-  UNION
-  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10)
-   UNION (SELECT * FROM feature where stop>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
+SELECT * FROM (
+          (SELECT feature_id,start,stop FROM feature WHERE start<=$mid AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY start DESC LIMIT 10)
+    UNION (SELECT feature_id,start,stop FROM feature WHERE start>=$mid AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY start LIMIT 10)
+    UNION (SELECT feature_id,start,stop FROM feature WHERE stop<=$mid  AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY stop DESC LIMIT 10)
+    UNION (SELECT feature_id,start,stop FROM feature WHERE stop>=$mid  AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY stop LIMIT 10)
    ) as w
-order by abs((start + stop)/2 - $mid) LIMIT 10};
-    my $handle = $dbh->prepare($query);
-    $handle->execute();
+ORDER BY abs((start + stop)/2 - $mid) LIMIT 10};
     my $new_checkbox_info;
     my %dist;
 
-    while ( my $res = $handle->fetchrow_arrayref() ) {
-        my $fid = $res->[0];
-        my ($tmpfeat) = $db->resultset('Feature')->find($fid);
+    my $fids = $dbh->selectcol_arrayref($query);
+    for ( @{$fids} ) {
+        my $fid = $_;
+        my $tmpfeat = $db->resultset('Feature')->find($fid);
         next
           unless $tmpfeat->type->name =~ /gene/i
               || $tmpfeat->type->name =~ /rna/i
               || $tmpfeat->type->name =~ /cds/i;
-        my $newmin =
-            abs( $tmpfeat->start - $mid ) < abs( $tmpfeat->stop - $mid )
-          ? abs( $tmpfeat->start - $mid )
-          : abs( $tmpfeat->stop - $mid );
-        $dist{$fid} =
-          { type => $tmpfeat->type->name, dist => $newmin, feat => $tmpfeat };
+        my $newmin = abs($tmpfeat->start - $mid) < abs($tmpfeat->stop - $mid) ? abs($tmpfeat->start - $mid) : abs($tmpfeat->stop - $mid);
+        $dist{$fid} = { dist => $newmin, feat => $tmpfeat };
     }
     my $feat;
     my $min_dist;
-    foreach my $fid ( sort { $dist{$a}{dist} <=> $dist{$b}{dist} } keys %dist )
-    {
-        $min_dist = $dist{$fid}{dist} unless defined $min_dist;
-        $feat     = $dist{$fid}{feat} unless $feat;
+    my @sorted = sort { $dist{$a}{dist} <=> $dist{$b}{dist} } keys %dist;
+    for ( @sorted ) {
+        $min_dist = $dist{$_}{dist} unless defined $min_dist;
+        $feat     = $dist{$_}{feat} unless $feat;
         last if $feat->type->name eq "CDS";
-        my $f = $dist{$fid}{feat};
+        my $f = $dist{$_}{feat};
         if ( $f->type->name eq "CDS" ) {
-            $feat = $f
-              unless $feat->stop < $f->start || $feat->start > $f->stop;
+            $feat = $f unless $feat->stop < $f->start || $feat->start > $f->stop;
         }
     }
     if ($feat) {
-        if (   ( $start >= $feat->start && $start <= $feat->stop )
-            || ( $stop >= $feat->start && $stop <= $feat->stop ) )
-        {
+        if (( $start >= $feat->start && $start <= $feat->stop ) || ( $stop >= $feat->start && $stop <= $feat->stop )) {
             $distance = "overlapping";
         }
         else {
-            $distance = abs(
-                ( $stop + $start ) / 2 - ( $feat->stop + $feat->start ) / 2 );
+            $distance = abs( ( $stop + $start ) / 2 - ( $feat->stop + $feat->start ) / 2 );
         }
         ($name) = $feat->names;
         $name =

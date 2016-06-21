@@ -1,6 +1,7 @@
 package CoGe::Factory::RequestFactory;
 
 use Moose;
+use CoGe::Request::CoGeBlast;
 use CoGe::Request::Empty;
 use CoGe::Request::Experiment;
 use CoGe::Request::ExperimentAnalysis;
@@ -59,8 +60,10 @@ sub get {
     {
         return CoGe::Request::ExperimentAnalysis->new($options);
     }
-    elsif ($type eq "load_genome" ||
-           $type eq "coge_blast") {
+    elsif ($type eq "coge_blast") {
+        return CoGe::Request::CoGeBlast->new($options);
+    }
+    elsif ($type eq "load_genome") {
         return CoGe::Request::Empty->new($options);
     }
     elsif ($type eq "dotplot_dots")

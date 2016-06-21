@@ -273,7 +273,7 @@ function click_all_feat_links(feature_links) { // mdb rewritten 3/8/13 issue 47
 
 function popup_blocker_check(windowObject) {
     if (!windowObject) {
-        alert("Unable to open a new window check your popup blocker settings.");
+        alert("Unable to open a new window. Check your popup blocker settings.");
     }
 }
 
@@ -562,14 +562,12 @@ function get_params(){
     var program = root.find('#'+radio).val();
 
     var gapcost;
-    if (program == "blastn" || program == 'mega' || program == 'dcmega')
-    {
+    if (program == "blastn" || program == 'mega' || program == 'dcmega') {
         var num1 = match_mismatch.substr(0,1);
         var num2 = match_mismatch.substr(2);
         gapcost = root.find('#gapcosts_'+num1+num2).val();
     }
-    else
-    {
+    else {
         gapcost = root.find('#gapcosts_'+matrix).val();
     }
 
@@ -1297,6 +1295,7 @@ function blast_param_on_select(which_type, val) {
                 }
             })
         }
+        (program == 'tblastn' || program == 'tblastx') ? $('#filter_query_row').show() : $('#filter_query_row').hide();
     }
 
     return promise;

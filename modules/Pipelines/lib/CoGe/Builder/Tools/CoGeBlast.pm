@@ -12,7 +12,7 @@ use JSON::XS;
 
 BEGIN {
     use Exporter 'import';
-    our @EXPORT_OK = qw( create_fasta_file get_blast_db get_tiny_url go );
+    our @EXPORT_OK = qw( create_fasta_file get_blast_db get_genomes get_tiny_url go );
 }
 
 sub add_jobs {
@@ -62,16 +62,34 @@ sub add_jobs {
     my $seq = $opts{seq};
     my $blastable = $opts{blastable};
 
-    return encode_json({
-        success => JSON::false,
-        error => "Please specified a sequence of characters to be blasted."
-    }) unless $seq;
+    # set defaults for missing options
+    if ($program ne 'lastz') {
+        $expect = 0.001 unless defined $expect;
+    }
+    if ($program eq 'tblastn' || $program eq 'tblastx') {
+        $wordsize = 3 unless defined $wordsize;
+    }
+    elsif ($program eq 'dcmega') {
+        $wordsize = 11 unless defined $wordsize;
+    }
+    else {
+        $wordsize = 8 unless defined $wordsize;
+    }
+    if ($program eq 'tblastn' || $program eq 'tblastx') {
+        $gapcost = '11 1' unless defined $gapcost;
+    }
+    elsif ($program ne 'lastz') {
+        $gapcost = '5 2' unless defined $gapcost;
+    }
+    if ($program eq 'blastn' || $program eq 'mega' || $program eq 'dbmega') {
+        $match_score = '1,-2' unless defined $match_score;
+    }
+    if ($program eq 'tblastn' || $program eq 'tblastx') {
+        $filter_query = 1 unless defined $filter_query;
+    }
 
-    return encode_json({
-        success => JSON::false,
-        error => "Please select genomes to be blasted."
-    }) unless $blastable;
 
+    # add jobs
     my @dsg_ids = split( /,/, $blastable );
 
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
@@ -115,8 +133,7 @@ sub add_jobs {
             push @$args, [ '', "K=" . $zthreshold, 1 ] if defined $zthreshold;
             push @$args, [ '', "M=" . $zmask,      1 ] if defined $zmask;
             push @$args, [ '', "O=" . $zgap_start, 1 ] if defined $zgap_start;
-            push @$args, [ '', "E=" . $zgap_extension, 1 ]
-              if defined $zgap_extension;
+            push @$args, [ '', "E=" . $zgap_extension, 1 ] if defined $zgap_extension;
             push @$args, [ '',  $dbfasta,    0 ];
             push @$args, [ '>', $outfile,    1 ];
         }
@@ -153,14 +170,16 @@ sub add_jobs {
             description => "Blasting sequence against $name"
         });
 
-        my (undef, $results_path) = get_workflow_paths($user->name, $workflow->id);
-        my $outfile_link = catfile($results_path, $org =~ s/[\\\/:"*?<>|]//gr);
-        $workflow->add_job({
-            cmd     => "ln -s $outfile \"$outfile_link\".$program",
-            inputs  => [$outfile],
-            outputs => [$outfile_link],
-            description => "Linking output to results"
-        });
+        if ($opts{link_results}) {
+            my (undef, $results_path) = get_workflow_paths($user->name, $workflow->id);
+            my $outfile_link = catfile($results_path, $org =~ s/[\\\/:"*?<>|]//gr);
+            $workflow->add_job({
+                cmd     => "ln -s $outfile \"$outfile_link\".$program",
+                inputs  => [$outfile],
+                outputs => [$outfile_link],
+                description => "Linking output to results"
+            });
+        }
 
         $count++;
     }
@@ -168,39 +187,33 @@ sub add_jobs {
 
 sub build {
     my $self = shift;
-    my $genomes = $self->params->{genomes};
-    my $notebooks = $self->params->{notebooks};
     my $gap_costs = $self->params->{gap_costs};
     my $match_score = $self->params->{match_score};
-    
-    my @gids;
-    @gids = @$genomes if $genomes;
-    if ($notebooks) {
-        for (@$notebooks) {
-            for (@{$_->genomes}) {
-                push @gids, $_->id;
-            }
-        }
-    }
-    return 0 if ! scalar @gids;
+    my $seq = $self->params->{query_seq};
+    my $program = $self->params->{program};
+    $program = 'mega' if $program eq 'megablast';
+    $program = 'dcmega' if $program eq 'discontinuous_megablast';
+
+    my @gids = get_genomes($self->params->{genomes}, $self->params->{notebooks}, $self->db);
+
     my $resp = add_jobs(
         workflow     => $self->workflow,
         db           => $self->db,
         user         => $self->user,
         config       => $self->conf,
         blastable    => join(',', @gids),
-        program      => $self->params->{program},
+        program      => $program,
         expect       => $self->params->{e_value},
         wordsize     => $self->params->{word_size},
         gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
         matchscore   => $match_score->[0] . ',' . $match_score->[1],
         filter_query => $self->params->{filter_query},
         resultslimit => $self->params->{max_results},
-        seq          => $self->params->{query_seq},
+        seq          => $seq,
         matrix       => $self->params->{matrix},
-        outfmt       => $self->params->{outfmt}
+        outfmt       => $self->params->{outfmt},
+        link_results => 1
     );
-    return 0 if ($resp); # an error occurred
     return 1;
 }
 
@@ -290,6 +303,23 @@ sub get_blast_db {
     my $file_path      = $dsg->file_path;
     return unless $file_path && -r $file_path;
     return $org_name, $file_path, $dsg;
+}
+
+sub get_genomes {
+    my $genomes = shift;
+    my $notebooks = shift;
+    my $db = shift;
+
+    my @gids;
+    @gids = @$genomes if $genomes;
+    if ($notebooks) {
+        for (@$notebooks) {
+            for (@{$db->resultset("List")->find($_)->genomes}) {
+                push @gids, $_->id;
+            }
+        }
+    }
+    return @gids;
 }
 
 sub get_name {
