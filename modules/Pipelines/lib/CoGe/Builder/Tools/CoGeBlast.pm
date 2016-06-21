@@ -42,7 +42,7 @@ sub add_jobs {
     my $matrix       = $opts{matrix};
     my $gapcost      = $opts{gapcost};
     my $match_score  = $opts{matchscore};
-#    my $filter_query = $opts{filter_query};
+    my $filter_query = $opts{filter_query};
     my $cogeweb      = $opts{cogeweb};
     unless ($cogeweb) {
         $cogeweb = CoGe::Accessory::Web::initialize_basefile(
@@ -136,6 +136,7 @@ sub add_jobs {
             push @$args, [ '-gapopen', $exist, 1 ] unless $program =~ /tblast/i;
             push @$args, [ '-gapextend', $extent, 1 ] unless $program =~ /tblast/i;
             push @$args, [ '-dust', 'no', 1 ] unless $program =~ /tblast/i;
+            push @$args, [ '-seg', $filter_query ? 'yes' : 'no', 1 ] if $program =~ /tblast/i;
             push @$args, [ '-outfmt', $outfmt, 1] if $outfmt;
             push @$args, [ '-query',     $fasta_file, 1 ];
             push @$args, [ '-word_size', $wordsize,   1 ];
@@ -193,7 +194,7 @@ sub build {
         wordsize     => $self->params->{word_size},
         gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
         matchscore   => $match_score->[0] . ',' . $match_score->[1],
-#        filter_query => $self->params->{filter_query},
+        filter_query => $self->params->{filter_query},
         resultslimit => $self->params->{max_results},
         seq          => $self->params->{query_seq},
         matrix       => $self->params->{matrix},
