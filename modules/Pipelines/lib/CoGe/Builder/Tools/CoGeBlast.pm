@@ -3,6 +3,7 @@ package CoGe::Builder::Tools::CoGeBlast;
 use Moose;
 
 use CoGe::Accessory::Jex;
+use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Core::Storage qw(get_workflow_paths);
 use Data::Dumper;
@@ -172,9 +173,9 @@ sub add_jobs {
 
         if ($opts{link_results}) {
             my (undef, $results_path) = get_workflow_paths($user->name, $workflow->id);
-            my $outfile_link = catfile($results_path, $org =~ s/[\\\/:"*?<>|]//gr);
+            my $outfile_link = catfile($results_path, sanitize_name("$org.$program"));
             $workflow->add_job({
-                cmd     => "ln -s $outfile \"$outfile_link\".$program",
+                cmd     => "ln -s $outfile \"$outfile_link\"",
                 inputs  => [$outfile],
                 outputs => [$outfile_link],
                 description => "Linking output to results"
