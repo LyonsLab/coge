@@ -60,7 +60,7 @@ sub get {
     {
         return CoGe::Request::ExperimentAnalysis->new($options);
     }
-    elsif ($type eq "coge_blast") {
+    elsif ($type eq "blast") {
         return CoGe::Request::CoGeBlast->new($options);
     }
     elsif ($type eq "load_genome") {

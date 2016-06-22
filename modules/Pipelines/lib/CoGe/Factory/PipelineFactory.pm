@@ -56,7 +56,7 @@ sub get {
 
     # Select pipeline builder
     my $builder;
-    if ($message->{type} eq "coge_blast") {
+    if ($message->{type} eq "blast") {
         $builder = CoGe::Builder::Tools::CoGeBlast->new($request);
     }
     elsif ($message->{type} eq "export_gff") {
