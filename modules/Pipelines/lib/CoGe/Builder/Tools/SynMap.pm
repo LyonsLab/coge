@@ -860,7 +860,10 @@ sub add_jobs {
 		# Use dotplot_dots.py to calculate points.
 		####################################################################
 		if ($ks_type) {
-			my $api_url = $config->{SERVER}.catdir( $config->{API_URL}, "genomes/" );
+			my $serve = $config->{SERVER};
+			$serve =~ s/^\s+|\s+$//g; # strip any trailing/leading whitespace
+			$serve =~ s/\/$//; # strip trailing slash
+			my $api_url = $serve.catdir( $config->{API_URL}, "genomes/" );
 			my $dot_cmd = catfile( $config->{SCRIPTDIR}, "dotplot_dots.py" ).' '.$ks_blocks_file.' '.$api_url;
 			my $dot_syn = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_synteny.json' );
 			my $dot_log = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_log.json' );
