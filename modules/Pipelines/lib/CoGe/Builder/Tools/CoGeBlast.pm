@@ -63,33 +63,6 @@ sub add_jobs {
     my $seq = $opts{seq};
     my $blastable = $opts{blastable};
 
-    # set defaults for missing options
-    if ($program ne 'lastz') {
-        $expect = 0.001 unless defined $expect;
-    }
-    if ($program eq 'tblastn' || $program eq 'tblastx') {
-        $wordsize = 3 unless defined $wordsize;
-    }
-    elsif ($program eq 'dcmega') {
-        $wordsize = 11 unless defined $wordsize;
-    }
-    else {
-        $wordsize = 8 unless defined $wordsize;
-    }
-    if ($program eq 'tblastn' || $program eq 'tblastx') {
-        $gapcost = '11 1' unless defined $gapcost;
-    }
-    elsif ($program ne 'lastz') {
-        $gapcost = '5 2' unless defined $gapcost;
-    }
-    if ($program eq 'blastn' || $program eq 'mega' || $program eq 'dbmega') {
-        $match_score = '1,-2' unless defined $match_score;
-    }
-    if ($program eq 'tblastn' || $program eq 'tblastx') {
-        $filter_query = 1 unless defined $filter_query;
-    }
-
-
     # add jobs
     my @dsg_ids = split( /,/, $blastable );
 
@@ -188,14 +161,42 @@ sub add_jobs {
 
 sub build {
     my $self = shift;
-    my $gap_costs = $self->params->{gap_costs};
-    my $match_score = $self->params->{match_score};
-    my $seq = $self->params->{query_seq};
     my $program = $self->params->{program};
     $program = 'mega' if $program eq 'megablast';
     $program = 'dcmega' if $program eq 'discontinuous_megablast';
 
     my @gids = get_genomes($self->params->{genomes}, $self->params->{notebooks}, $self->db);
+
+    # set defaults for missing options
+    my $expect = $self->params->{e_value};
+    if ($program ne 'lastz') {
+        $expect = 0.001 unless defined $expect;
+    }
+    my $wordsize = $self->params->{word_size};
+    if ($program eq 'tblastn' || $program eq 'tblastx') {
+        $wordsize = 3 unless defined $wordsize;
+    }
+    elsif ($program eq 'dcmega') {
+        $wordsize = 11 unless defined $wordsize;
+    }
+    else {
+        $wordsize = 8 unless defined $wordsize;
+    }
+    my $gap_costs = $self->params->{gap_costs};
+    if ($program eq 'tblastn' || $program eq 'tblastx') {
+        $gap_costs = [11, 1] unless $gap_costs;
+    }
+    elsif ($program ne 'lastz') {
+        $gap_costs = [5, 2] unless $gap_costs;
+    }
+    my $match_score = $self->params->{match_score};
+    if ($program eq 'blastn' || $program eq 'mega' || $program eq 'dbmega') {
+        $match_score = [1, -2] unless $match_score;
+    }
+    my $filter_query = $self->params->{filter_query};
+    if ($program eq 'tblastn' || $program eq 'tblastx') {
+        $filter_query = 1 unless defined $filter_query;
+    }
 
     my $resp = add_jobs(
         workflow     => $self->workflow,
@@ -204,13 +205,13 @@ sub build {
         config       => $self->conf,
         blastable    => join(',', @gids),
         program      => $program,
-        expect       => $self->params->{e_value},
-        wordsize     => $self->params->{word_size},
+        expect       => $expect,
+        wordsize     => $wordsize,
         gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
         matchscore   => $match_score->[0] . ',' . $match_score->[1],
-        filter_query => $self->params->{filter_query},
+        filter_query => $filter_query,
         resultslimit => $self->params->{max_results},
-        seq          => $seq,
+        seq          => $self->params->{query_seq},
         matrix       => $self->params->{matrix},
         outfmt       => $self->params->{outfmt},
         link_results => 1
