@@ -3,7 +3,7 @@ package CoGe::Builder::Tools::SynMap;
 use Moose;
 
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web qw( get_defaults get_command_path );
+use CoGe::Accessory::Web qw( get_defaults get_command_path api_url_for url_for );
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Utils qw(units);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
@@ -860,7 +860,7 @@ sub add_jobs {
 		# Use dotplot_dots.py to calculate points.
 		####################################################################
 		if ($ks_type) {
-			my $api_url = $config->{SERVER}.catdir( $config->{API_URL}, "genomes/" );
+			my $api_url = url_for(api_url_for("genomes"));
 			my $dot_cmd = catfile( $config->{SCRIPTDIR}, "dotplot_dots.py" ).' '.$ks_blocks_file.' '.$api_url;
 			my $dot_syn = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_synteny.json' );
 			my $dot_log = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_log.json' );
@@ -871,19 +871,6 @@ sub add_jobs {
 					description => "Extracting coordinates for merge..."
 				} );
 		}
-#		my $cmd_xy = catfile($SCRIPTDIR, $dotplot_dots) . ' ' . $ksfile_xy;
-#		my $dot_xy = $dir1 . '_' . $dir2 . '_synteny.json';
-#		my $dot_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $dot_xy);
-#		my $dot_xy_url = catfile($DIAGSURL, $dir1, $dir2, $dot_xy);
-#		my $log_xy = $dir1 . '_' . $dir2 . '_log.json';
-#		my $log_xy_path = catfile($DIAGSDIR, $dir1, $dir2, $log_xy);
-#		my $outputs_xy = [$log_xy_path, $dot_xy_path];
-#		$workflow->add_job({
-#			cmd => $cmd_xy,
-#			outputs => $outputs_xy,
-#			description => "extracting XY coordinates...",
-#		});
-#
 
 		####################################################################
 		# Generate svg dotplot
