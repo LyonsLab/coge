@@ -34,9 +34,14 @@ sub build {
     my $cache_file = catfile($cache_dir, $filename);
 
     # Export experiment
-    my @done_files;
-    $self->workflow->add_job( export_experiment_job(eid => $eid, output => $cache_file) );
+    $self->workflow->add_job( 
+        export_experiment_job(
+            eid => $eid, 
+            output => $cache_file
+        )
+    );
 
+    my @done_files;
     if ($dest_type eq "irods") {
         my $base = $self->params->{dest_path};
         $base = irods_get_base_path($self->user->name) unless $base;
