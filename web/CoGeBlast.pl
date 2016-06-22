@@ -1983,7 +1983,8 @@ ORDER BY abs((start + stop)/2 - $mid) LIMIT 10};
     }
     my $feat;
     my $min_dist;
-    my @sorted = sort { $dist{$a}{dist} <=> $dist{$b}{dist} } keys %dist;
+	my @fids = sort keys %dist;
+    my @sorted = sort { $dist{$a}{dist} <=> $dist{$b}{dist} } @fids;
     for ( @sorted ) {
         $min_dist = $dist{$_}{dist} unless defined $min_dist;
         $feat     = $dist{$_}{feat} unless $feat;
