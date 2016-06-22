@@ -4,10 +4,12 @@ use Moose;
 
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(sanitize_name);
-use CoGe::Accessory::Web qw(url_for get_command_path);
-use CoGe::Core::Storage qw(get_workflow_paths);
+use CoGe::Accessory::Web qw(download_url_for get_command_path url_for);
+use CoGe::Builder::CommonTasks qw(add_workflow_result);
+use CoGe::Core::Storage qw(get_download_path);
 use Data::Dumper;
 use File::Basename;
+use File::Path qw(make_path);
 use File::Spec::Functions;
 use JSON::XS;
 
@@ -145,14 +147,28 @@ sub add_jobs {
         });
 
         if ($opts{link_results}) {
-            my (undef, $results_path) = get_workflow_paths($user->name, $workflow->id);
-            my $outfile_link = catfile($results_path, sanitize_name("$org.$program"));
+            my $download_path = get_download_path("jobs", $user->name, $workflow->id);
+            make_path($download_path);
+            my $filename = sanitize_name("$org.$program");
+            my $outfile_link = catfile($download_path, $filename);
             $workflow->add_job({
                 cmd     => "ln -s $outfile \"$outfile_link\"",
                 inputs  => [$outfile],
                 outputs => [$outfile_link],
-                description => "Linking output to results"
+                description => "Linking output to downloads"
             });
+            $workflow->add_job(add_workflow_result(
+                username => $user->name,
+                wid      => $workflow->id,
+                result   => {
+                    type => 'url',
+                    path => download_url_for(
+                        wid => $workflow->id,
+                        file => $filename
+                    )
+                },
+                dependency => $outfile_link
+            ));
         }
 
         $count++;
