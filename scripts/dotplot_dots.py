@@ -26,7 +26,7 @@ log = {}
 try:
     input_ksfile = argv[1]
     output_dir = path.dirname(input_ksfile).rstrip("/")
-    api_base = argv[2]
+    api_base = argv[2].strip().rstrip('/') + '/'  # removes any white space & trailing slash if present, adds slash
 except IndexError:
     stderr.write("dotplot_dots.py failed (Error: input or api_url specification)\n")
     print "dotplot_dots.py failed (Error: input or api_url specification)"
@@ -216,11 +216,34 @@ data["syntenic_points"][sp1_id][sp2_id] = {sp1_ch: sp2_ch for sp1_ch, sp2_ch in 
     [sp2_id].iteritems() if len(data["syntenic_points"][sp1_id][sp2_id][sp1_ch]) > 0}
 
 # Populate data["genomes"] with genome information.
+stderr.write("Requesting genome info: " + api_base + sp1_id + "\n")
 sp1_genome_info = get(api_base + sp1_id).json()
+stderr.write("Requesting genome info: " + api_base + sp2_id + "\n")
 sp2_genome_info = get(api_base + sp2_id).json()
 data["genomes"][sp1_id] = sp1_genome_info
 data["genomes"][sp2_id] = sp2_genome_info
 
+# Check for genome fetch errors, exit without producing outputs if detected.
+try:
+    sp1err = sp1_genome_info["error"]
+    stderr.write("dotplot_dots.py died on genome info fetch error!" + "\n")
+    stderr.write("Error (gid " + sp1_id + "): " + str(sp1err) + "\n")
+    try:
+        sp2err = sp2_genome_info["error"]
+        stderr.write("Error (gid " + sp2_id + "): " + str(sp2err) + "\n")
+    except KeyError:
+        pass
+    exit()
+except KeyError:
+    pass
+
+try:
+    sp2err = sp2_genome_info["error"]
+    stderr.write("dotplot_dots.py died on genome info fetch error!" + "\n")
+    stderr.write("Error (gid " + sp2_id + "): " + str(sp2err) + "\n")
+    exit()
+except KeyError:
+    pass
 
 # Dump "data" to JSON.
 output_filename = "%s/%s_%s_synteny.json" % (output_dir, sp1_id, sp2_id)
