@@ -21,13 +21,7 @@ Will generate a dump of all features for a dataset_group in bed format
 }
 
 my $P = CoGe::Accessory::Web::get_defaults($conffile);
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-my $coge = CoGeX->dbconnect($conffile);
+my $coge = CoGeX->dbconnect($P);
 my $dsg = $coge->resultset('Genome')->find($dsgid);
 foreach my $ds ($dsg->datasets) {
     my $rs = $coge->resultset('Feature');
