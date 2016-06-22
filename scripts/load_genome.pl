@@ -166,15 +166,15 @@ $pass = $P->{DBPASS};
 #print STDOUT "log: Processed " . commify($numSequences) . " sequences total\n";
 
 # Index the overall fasta file
-#print STDOUT "Indexing genome file\n";
-#my $rc = CoGe::Core::Storage::index_genome_file(
-#    file_path => "$staging_dir/genome.faa",
-#    compress  => $compress
-#);
-#if ( $rc != 0 ) {
-#    print STDOUT "log: error: couldn't index fasta file\n";
-#    exit(-1);
-#}
+print STDOUT "Indexing genome file\n";
+my $rc = CoGe::Core::Storage::index_genome_file(
+    file_path => $fasta_file,
+    compress  => $compress
+);
+if ( $rc != 0 ) {
+    print STDOUT "log: error: couldn't index fasta file\n";
+    exit(-1);
+}
 
 ################################################################################
 # If we've made it this far without error then we can feel confident about our
@@ -367,8 +367,8 @@ unless (-r $storage_path) {
     exit(-1);
 }
 
-execute("cp $fasta_file $storage_path/"); #FIXME use perl copy and detect failure
-execute("cp $fasta_file.fai $storage_path/");
+execute("cp $fasta_file $storage_path/genome.faa"); #FIXME use perl copy and detect failure
+execute("cp $fasta_file.fai $storage_path/genome.faa.fai");
 #if ($compress) {
 #    execute("cp $fasta_file.razf $storage_path/");
 #    execute("cp $fasta_file.razf.fai $storage_path/");
