@@ -246,7 +246,7 @@ sub create_parse_cufflinks_job { #TODO move into CommonTasks.pm
     my $name = to_filename($cufflinks);
 
     my $cmd = get_command_path('PYTHON');
-    my $script = catfile($CONF->{SCRIPT_DIR}, 'parse_cufflinks.py');
+    my $script = catfile($CONF->{SCRIPTDIR}, 'parse_cufflinks.py');
 
     return {
         cmd => "$cmd $script",
