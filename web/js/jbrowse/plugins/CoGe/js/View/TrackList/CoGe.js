@@ -142,9 +142,7 @@ define(['dojo/_base/declare',
 					if (create)
 						track_configs.forEach(function(track_config) {
 							var e = dojo.byId(track_config.coge.type + track_config.coge.id);
-							var track = this._new_track(e.config);
-							track.style.display = 'none';
-							this._add_track_to_notebook(track, n);
+							this.add_track_to_notebook(e.config, n);
 						}, this);
 					if (n.style.display != 'none')
 						this._expand(n);
@@ -188,7 +186,8 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	_add_track_to_notebook: function(track, notebook) {
+	add_track_to_notebook: function(track_config, notebook) {
+		var track = this._new_track(track_config);
 		if (notebook.config.coge.id != 0) {
 			if (!notebook.config.coge.experiments)
 				notebook.config.coge.experiments = [];
@@ -208,6 +207,8 @@ define(['dojo/_base/declare',
 				dojo.place(track, n, 'after');
 			}
 		}
+		if (!notebook.expanded)
+			track.scrollIntoView();
 		if (dojo.byId('track_notebook' + notebook.config.coge.id))
 			this._traverse_tracks(function(container){
 				if (container.config.coge.type == 'experiment' && container.config.coge.id == track.config.coge.id)
@@ -224,7 +225,7 @@ define(['dojo/_base/declare',
 				if (track_config.coge.search_track)
 					this.tracks_div.insertBefore(this._new_track(track_config), this.tracks_div.firstChild); // insert before Sequence track at top
 				else if (track_config.coge.type != 'notebook')
-					this._add_track_to_notebook(this._new_track(track_config), dojo.byId('notebook0'));
+					this.add_track_to_notebook(track_config, dojo.byId('notebook0'));
 		}, this);
 	},
 

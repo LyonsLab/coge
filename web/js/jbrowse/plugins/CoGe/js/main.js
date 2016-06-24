@@ -666,6 +666,9 @@ return declare( JBrowsePlugin,
 							delete config.coge.search_track;
 							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
 							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/show', [config]);
+							notebooks.forEach(function(notebook) {
+								coge_track_list.add_track_to_notebook(config, dojo.byId('notebook' + notebook));
+							});
 							coge_plugin.browser.view.updateTrackList();
 					    })
 					    .fail(function(jqXHR, textStatus, errorThrown) {
