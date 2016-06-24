@@ -95,7 +95,7 @@ return declare( [ HTMLFeatures ], {
             label: 'Export Track Data',
             onClick: function(){coge_plugin.export_dialog(track);}
         });
-        if (track.config.coge.search && un != 'public')
+        if (track.config.coge.search)
             options.push({
                 label: 'Save Results as New Experiment',
                 onClick: function(){coge_plugin.save_as_experiment_dialog(track)}
@@ -114,15 +114,15 @@ return declare( [ HTMLFeatures ], {
             content += '<div><input name="type" type="checkbox"> <label>' + t + '</label></div>';
         });
         content += '</td></tr></table>';
-        content += '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_types()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_variants._search_dialog.hide()">Cancel</button></div></div>';
+        content += coge_plugin.build_buttons('coge_variants._search_types()', 'coge_variants._search_dialog.hide()');
+        content += '</div>';
         this._search_dialog = new Dialog({
             title: "Find types of SNPs",
             content: content,
             onHide: function() {
                 this.destroyRecursive();
                 coge_variants._search_dialog = null;
-            },
-            style: "width: 300px"
+            }
         });
         this._search_dialog.show();
     },
