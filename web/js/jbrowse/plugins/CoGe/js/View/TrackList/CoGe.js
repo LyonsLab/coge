@@ -13,9 +13,10 @@ define(['dojo/_base/declare',
 		'dijit/MenuItem',
 		'dijit/MenuSeparator',
 		'dojo/Deferred',
-		'dijit/Dialog'
+		'dijit/Dialog',
+		'dijit/Tooltip'
 	   ],
-	   function( declare, dom, domGeom, aspect, ContentPane, DndSource, DropDownButton, Menu, MenuItem, MenuSeparator, Deferred, Dialog ) {
+	   function( declare, dom, domGeom, aspect, ContentPane, DndSource, DropDownButton, Menu, MenuItem, MenuSeparator, Deferred, Dialog, Tooltip ) {
 	function natural_sort (a, b) {
 	    var re = /(^-?[0-9]+(\.?[0-9]*)[df]?e?[0-9]?$|^0x[0-9a-f]+$|[0-9]+)/gi,
 	        sre = /(^[ ]*|[ ]*$)/g,
@@ -78,20 +79,14 @@ define(['dojo/_base/declare',
 		this.maxTracksToAdd = 20;
 		
 		// subscribe to drop events for tracks being DND'ed
-		this.browser.subscribe( '/dnd/drop',
-								dojo.hitch( this, 'moveTracks' ));
+		this.browser.subscribe( '/dnd/drop', dojo.hitch( this, 'moveTracks' ));
 
 		// subscribe to commands coming from the the controller
-		this.browser.subscribe( '/jbrowse/v1/c/tracks/show',
-								dojo.hitch( this, 'setTracksActive' ));
-		this.browser.subscribe( '/jbrowse/v1/c/tracks/hide',
-								dojo.hitch( this, 'setTracksInactive' ));
-		this.browser.subscribe( '/jbrowse/v1/c/tracks/new',
-								dojo.hitch( this, 'addTracks' ));
-		this.browser.subscribe( '/jbrowse/v1/c/tracks/replace',
-								dojo.hitch( this, 'replaceTracks' ));
-		this.browser.subscribe( '/jbrowse/v1/c/tracks/delete',
-								dojo.hitch( this, 'deleteTracks' ));
+		this.browser.subscribe( '/jbrowse/v1/c/tracks/show', 	dojo.hitch( this, 'setTracksActive' ));
+		this.browser.subscribe( '/jbrowse/v1/c/tracks/hide', 	dojo.hitch( this, 'setTracksInactive' ));
+		this.browser.subscribe( '/jbrowse/v1/c/tracks/new', 	dojo.hitch( this, 'addTracks' ));
+		this.browser.subscribe( '/jbrowse/v1/c/tracks/replace', dojo.hitch( this, 'replaceTracks' ));
+		this.browser.subscribe( '/jbrowse/v1/c/tracks/delete',  dojo.hitch( this, 'deleteTracks' ));
 	},
 
 	// ----------------------------------------------------------------
@@ -207,7 +202,7 @@ define(['dojo/_base/declare',
 				dojo.place(track, n, 'after');
 			}
 		}
-		if (!notebook.expanded)
+		if (notebook.expanded)
 			track.scrollIntoView();
 		if (dojo.byId('track_notebook' + notebook.config.coge.id))
 			this._traverse_tracks(function(container){
@@ -231,18 +226,30 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	_build_title: function(track_config) {
+	_build_tooltip: function(track_config) {
 		var coge = track_config.coge;
-		var title = this._capitalize(coge.type) + ' id: ' + coge.id;
-		if (coge.type == 'experiment')
-			title += "\nData Type: " + (coge.data_type == 4 ? 'Markers' : coge.data_type == 3 ? 'Alignments' : coge.data_type == 2 ? 'Polymorphism Data' : 'Quantitative Data');
-		if (coge.name)
-			title += "\nName: " + coge.name;
+		var html = coge.type == 'search' ? 'Search of Experiment' : this._capitalize(coge.type);
+		html += ': <b>' + coge.name + '</b>';
+		if (coge.id != 0)
+			html += ' (id ' + (coge.type == 'search' ? coge.eid : coge.id) + ')<br>';
 		if (coge.description)
-			title += "\nDescription: " + coge.description;
-		if (coge.annotations)
-			title += coge.annotations;
-		return title;
+			html += coge.description;
+		if (coge.type == 'experiment')
+			html += '<br><i>' + (coge.data_type == 4 ? 'Markers' : coge.data_type == 3 ? 'Alignments' : coge.data_type == 2 ? 'Polymorphism Data' : 'Quantitative Data') + '</i>';
+		if (coge.annotations) {
+			var a = coge.annotations.split('\n');
+			html += '<hr><table style="max-width:500px;">';
+			a.forEach(function(line, i){
+				html += '<tr';
+				if (i % 2)
+					html += ' style="background:#eee"';
+				html += '><td>';
+				html += line.replace(':', '</td><td>');
+				html += '</td></tr>';
+			});
+			html += '</table>';
+		}
+		return html;
 	},
 
 	// ----------------------------------------------------------------
@@ -527,6 +534,8 @@ define(['dojo/_base/declare',
 
 		// show all tracks
 		this._filter_tracks();
+
+		var root = dojo.create('div', { id: 'coge tooltip', style: 'background:#eee;display:none;padding:10px;position:absolute;white-space:pre-line;z-index:100;' }, dojo.byId('jbrowse'));
 	},
 
 	// ----------------------------------------------------------------
@@ -632,7 +641,7 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	_get_track_color: function(container) {
-		var id = container.config.coge.id;
+		var id = container.config.coge.type == 'search' ? container.config.coge.eid : container.config.coge.id;
 		var style = container.config.style;
 		var cookie = this.browser.cookie('track-' + container.config.track);
 		if (cookie)
@@ -765,16 +774,20 @@ define(['dojo/_base/declare',
 		var btn = new DropDownButton({ dropDown: menu }, menu_button);
 		menu.startup();
 		btn.startup();
+		this._tt = node;
+		Tooltip.show(this._build_tooltip(track_config), node);
+		dojo.byId('dijit__MasterTooltip_0').style.left = (dojo.position('dijit__MasterTooltip_0').x + 20) + 'px';
 	},
 
 	// ----------------------------------------------------------------
 
-	_mouse_leave: function() {
+	_mouse_leave: function(container) {
 		if (!this._menu_popped_up()) {
 			var b = dijit.byId('coge_track_menu_button');
 			if (b)
 				b.destroy();
 		}
+		Tooltip.hide(this._tt);
 	},
 
 	// ----------------------------------------------------------------
@@ -891,7 +904,7 @@ define(['dojo/_base/declare',
 		if (coge.type == 'experiment' || coge.type == 'features')
 			dojo.addClass(label, 'coge-track-indented');
 
-		this._set_track_label(track_config, label);
+		label.innerHTML = track_config.key;
 
 		dojo.connect(label, "click", dojo.hitch(this, function() {
 			if (track_config.coge.selected)
@@ -902,7 +915,7 @@ define(['dojo/_base/declare',
 
 		if (coge.type == 'experiment' || coge.type == 'notebook') {
 			dojo.connect(container, "onmouseenter", dojo.hitch(this, function(){this._mouse_enter(track_config, label, container)}));
-			dojo.connect(container, "onmouseleave", dojo.hitch(this, this._mouse_leave));
+			dojo.connect(container, "onmouseleave", dojo.hitch(this, function(){this._mouse_leave(container)}));
 		}
 		if (coge.collapsible)
 			this._add_expander(container);
@@ -1013,7 +1026,7 @@ define(['dojo/_base/declare',
 					} else
 						key = name;
 					this._menu_track_config.key = key;
-					this._set_track_label(this._menu_track_config, this._menu_node);
+					this._menu_node.innerHTML = this._menu_track_config.key;
 					this._track_changed(old_name, key);
 					this._rename_dialog.hide();
 				}
@@ -1049,33 +1062,28 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	_set_track_label: function(track_config, node) {
-		var name = track_config.key;
-		node.innerHTML = name;
-		node.title = this._build_title(track_config);
-	},
-
-	// ----------------------------------------------------------------
-
 	_set_tracks_active: function(container, combined) {
 		var label_node = container.firstChild;
 		while (!dojo.hasClass(label_node, 'coge-track-label'))
 			label_node = label_node.nextSibling;
 		if (!combined)
 			container.config.coge.selected = true;
-		if (container.config.coge.type == 'experiment') {
+		var type = container.config.coge.type;
+		if (type == 'experiment') {
 			if (combined)
 				dojo.create('div', { className: 'coge-circle', style: { backgroundColor: coge_track_list._get_track_color(container) } }, container, 'first');
 			else
 				dojo.style(label_node, 'background', coge_track_list._get_track_color(container));
-		} else if (container.config.coge.type == 'notebook') {
+		} else if (type == 'notebook') {
 			dojo.style(label_node, 'background', 'lightgray');
 			var experiment = container.nextSibling;
 			while (experiment) {
 				this.setTracksActive([experiment.config], true);
 				experiment = experiment.nextSibling;
 			}
-		} else
+		} else if (type == 'search')
+			dojo.style(label_node, 'background', coge_track_list._get_track_color(container));
+		else
 			dojo.style(label_node, 'background', 'lightgray');
 	},
 
