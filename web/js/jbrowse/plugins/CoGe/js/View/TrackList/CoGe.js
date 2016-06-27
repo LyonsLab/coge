@@ -774,10 +774,8 @@ define(['dojo/_base/declare',
 		var btn = new DropDownButton({ dropDown: menu }, menu_button);
 		menu.startup();
 		btn.startup();
-		this._tt = node;
-		Tooltip.show(this._build_tooltip(track_config), node);
-		dojo.byId('dijit__MasterTooltip_0').style.left = (dojo.position('dijit__MasterTooltip_0').x + 20) + 'px';
-	},
+		Tooltip.show(this._build_tooltip(track_config), container);
+//	},
 
 	// ----------------------------------------------------------------
 
@@ -787,7 +785,7 @@ define(['dojo/_base/declare',
 			if (b)
 				b.destroy();
 		}
-		Tooltip.hide(this._tt);
+		Tooltip.hide(container);
 	},
 
 	// ----------------------------------------------------------------
