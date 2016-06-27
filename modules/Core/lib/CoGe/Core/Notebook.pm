@@ -153,16 +153,6 @@ sub create_notebook {
     return $notebook;
 }
 
-sub debug {
-	my $data = shift;
-	my $new_file = shift;
-	my $OUTFILE;
-	open $OUTFILE, ($new_file ? ">/tmp/sean" : ">>/tmp/sean");
-	print {$OUTFILE} Dumper $data;
-	print {$OUTFILE} "\n";
-	close $OUTFILE;
-}
-
 # this returns a string on error or 0 otherwise
 sub add_items_to_notebook {
     my %opts = @_;
@@ -173,7 +163,7 @@ sub add_items_to_notebook {
     return "Missing arguments: $db and $notebook and $user and $items" unless ($db and $notebook and $user and $items);
 
     # Check permissions
-    return 'Access denied' unless $user->is_owner_editor(list => $notebook);
+    return 'Access denied' unless $user->admin || $user->is_owner_editor(list => $notebook);
 
     # Create connections for each item
     foreach (@$items) {
@@ -206,7 +196,7 @@ sub remove_items_from_notebook {
     return "Missing arguments: $db and $notebook and $user and $items" unless ($db and $notebook and $user and $items);
     
     # Check permissions
-    return 'User does not have permission to remove items from this notebook' unless $user->is_owner_editor(list => $notebook);
+    return 'User does not have permission to remove items from this notebook' unless $user->admin || $user->is_owner_editor(list => $notebook);
 
     # Create connections for each item
     foreach (@$items) {
