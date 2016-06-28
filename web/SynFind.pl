@@ -201,7 +201,7 @@ sub gen_body {
         $template->param(TARGETS => $FORM->param('dsgid'));
         foreach my $item ( $FORM->param('dsgid') ) {
             foreach my $dsgid ( split( /,/, $item ) ) {
-                my $id = html_escape(get_dsg_for_menu( dsgid => $dsgid ));
+                my $id = get_dsg_for_menu( dsgid => $dsgid );
                 $doc_ready .= qq{add_to_list('$id');};
             }
         }
@@ -420,7 +420,7 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
           . $dsg->version . ")";
     }
 
-    return $html;
+    return html_escape($html);
 }
 
 #sub get_orgs {
