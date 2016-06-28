@@ -662,8 +662,8 @@ return declare( JBrowsePlugin,
 					if (config.coge.transform)
 						new_config.coge.annotations += '\ntransform:' + config.coge.transform;
 					delete new_config.coge.search_track;
-					if (new_config.coge.data_type == 1)
-						delete new_config.style;
+					if (new_config.coge.data_type == 1 || new_config.coge.data_type == 4)
+						new_config.style.featureCss = new_config.style.histCss = 'background-color: ' + coge_plugin.calc_color(id);
 					coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [new_config]);
 					notebooks.forEach(function(notebook) {
 						coge_track_list.add_to_notebook([new_config], notebook, true);

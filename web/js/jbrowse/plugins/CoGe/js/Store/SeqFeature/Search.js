@@ -66,7 +66,8 @@ return declare(SeqFeatureStore, {
 						end: hit[1],
 						strand: strand,
 						score: hit[4] * strand,
-						info: hit[5]
+						info: hit[5],
+						name: /ID\=([\w\.\-]+)\;/.exec(hit[5])[1]
 					}}));
 				}
 			}
