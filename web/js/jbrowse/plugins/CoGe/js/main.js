@@ -613,6 +613,7 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	save_as_experiment: function() {
+		var browser = this.browser;
 		var name = dojo.byId('experiment_name').value;
 		if (!name) {
 			this.info('Name required', 'Please enter a name', dojo.byId('experiment_name'));
@@ -624,25 +625,70 @@ return declare( JBrowsePlugin,
 				notebooks.push(notebook);
 		});
 
+	    var config = this._track.config;
+
 		this._save_as_dialog.hide();
-		coge.progress.begin();
+		coge.progress.init({
+			title: "Creating Experiment",
+            onSuccess: function(results) {
+            	var id;
+            	for (var i=0; i<results.length; i++)
+            		if (results[i].type == 'experiment') {
+            			id = results[i].id;
+            			break;
+            		}
+		        var d = new Deferred();
+				var store_config = {
+					baseUrl: api_base_url + '/experiment/' + id,
+					browser: browser,
+					refSeq: browser.refSeq,
+					type: 'JBrowse/Store/SeqFeature/REST'
+				};
+				var store_name = browser.addStoreConfig(undefined, store_config);
+				store_config.name = store_name;
+				browser.getStore(store_name, function(store) {
+		           d.resolve(true);
+		       	});
+		       	d.promise.then(function() {
+					var new_config = dojo.clone(config);
+					new_config.key = name;
+					new_config.track = 'experiment' + id;
+					new_config.label = 'experiment' + id;
+					new_config.store = store_name;
+					new_config.coge.id = id;
+					new_config.coge.name = name;
+					new_config.coge.type = 'experiment';
+					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + config.coge.eid + '\nsearch:' + search + '\nsearch user:' + un;
+					if (config.coge.transform)
+						new_config.coge.annotations += '\ntransform:' + config.coge.transform;
+					delete new_config.coge.search_track;
+					delete new_config.style;
+					coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [new_config]);
+					notebooks.forEach(function(notebook) {
+						coge_track_list.add_to_notebook([new_config], notebook, true);
+					});
+					coge_plugin.browser.view.updateTrackList();
+					setTimeout(function(){coge_plugin.browser.publish('/jbrowse/v1/v/tracks/show', [new_config]);}, 100);
+				});
+            }
+        });
+        coge.progress.begin();
 		var load_id = this.unique_id(32);
 	    newLoad = true;
 	    
-	    var config = this._track.config;
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var search = this.search_to_string(config.coge.search);
 		var description = 'Results from search: ' + search;
-		var url = api_base_url + '/experiment/' + config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id + '&ext=' + this._ext(config.coge.data_type);
+		var url = api_base_url + '/experiment/' + config.coge.eid + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id + '&ext=' + this._ext(config.coge.data_type);
 		url += '&' + this.search_to_params(config.coge.search, true);
 		var annotions = [
 			{
-				type: 'origional experiment name',
+				type: 'original experiment name',
 				text: config.coge.name
 			},
 			{
-				type: 'origional experiment id',
-				text: config.coge.id
+				type: 'original experiment id',
+				text: config.coge.eid
 			},
 			{
 				type: 'search',
@@ -700,21 +746,6 @@ return declare( JBrowsePlugin,
 				    			return;
 				    		}
 				            coge.progress.update(response.id, response.site_url);
-							config = dojo.clone(config);
-							config.key = name;
-							config.track = 'experiment' + response.id;
-							config.label = 'experiment' + response.id;
-							config.store = config.original_store;
-							config.coge.id = response.id;
-							config.coge.name = name;
-							config.coge.type = 'experiment';
-							delete config.coge.search_track;
-							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
-							notebooks.forEach(function(notebook) {
-								coge_track_list._add_to_notebook([config], notebook, true);
-							});
-							coge_plugin.browser.publish('/jbrowse/v1/v/tracks/show', [config]);
-							coge_plugin.browser.view.updateTrackList();
 					    })
 					    .fail(function(jqXHR, textStatus, errorThrown) {
 					    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);

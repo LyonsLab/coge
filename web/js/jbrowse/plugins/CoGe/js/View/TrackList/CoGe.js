@@ -69,7 +69,7 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 	// add experiments to notebook in CoGe
 
-	_add_to_notebook: function(track_configs, notebook_id, create) {
+	add_to_notebook: function(track_configs, notebook_id, create) {
 		var on_error = function() {
 			if (!create) {
 				var notebook_node = dojo.byId('notebook' + notebook_id);
@@ -96,7 +96,7 @@ define(['dojo/_base/declare',
 					if (create)
 						track_configs.forEach(function(track_config) {
 							var e = dojo.byId(track_config.coge.type + track_config.coge.id);
-							this.add_track_to_notebook(e.config, n);
+							this._add_track_to_notebook(e.config, n);
 						}, this);
 					if (n.style.display != 'none')
 						this._expand(n);
@@ -140,7 +140,7 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	add_track_to_notebook: function(track_config, notebook) {
+	_add_track_to_notebook: function(track_config, notebook) {
 		var track = this._new_track(track_config);
 		if (notebook.config.coge.id != 0) {
 			if (!notebook.config.coge.experiments)
@@ -179,7 +179,7 @@ define(['dojo/_base/declare',
 				if (track_config.coge.search_track)
 					this.tracks_div.insertBefore(this._new_track(track_config), this.tracks_div.firstChild); // insert before Sequence track at top
 				else if (track_config.coge.type != 'notebook')
-					this.add_track_to_notebook(track_config, dojo.byId('notebook0'));
+					this._add_track_to_notebook(track_config, dojo.byId('notebook0'));
 		}, this);
 	},
 
@@ -607,7 +607,7 @@ define(['dojo/_base/declare',
 		var cookie = this.browser.cookie('track-' + container.config.track);
 		if (cookie)
 			style = dojo.fromJson(cookie);
-		if (style.featureColor && style.featureColor[id])
+		if (style && style.featureColor && style.featureColor[id])
 			return style.featureColor[id];
 		return coge_plugin.calc_color(id);
 	},

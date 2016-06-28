@@ -173,6 +173,14 @@ sub add_items_to_notebook {
         return 'Item type not genome or experiment' unless ($item_type eq $ITEM_TYPE{genome} or $item_type eq $ITEM_TYPE{experiment});
 
         #TODO check access permission on each item
+        if ($item_type eq 'experiment') {
+            my $experiment = $db->resultset('Experiment')->find($item_id);
+            return 'Experiment id ' . $item_id . ' not found' unless $experiment;
+        }
+        elsif ($item_type eq 'genome') {
+            my $genome = $db->resultset('Genome')->find($item_id);
+            return 'Genome id ' . $item_id . ' not found' unless $genome;
+        }
 
         my $conn = $db->resultset('ListConnector')->find_or_create(
             {
