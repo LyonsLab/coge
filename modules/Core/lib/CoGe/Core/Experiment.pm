@@ -263,9 +263,9 @@ sub query_data {
         my @results;
         foreach (@cmdOut) {
             chomp;
-            my (undef, $flag, $chr, $start, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
+            my ($qname, $flag, $chr, $start, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
             my $strand = ($flag & 0x10 ? '-1' : '1');
-            push @results, '"' . $chr . '",' . $start . ',' . ($start + length($seq)) . ',' . $strand;
+            push @results, '"' . $chr . '",' . $start . ',' . ($start + length($seq)) . ',' . $strand . ',"' . $qname . '"';
         }
         return \@results;
     }

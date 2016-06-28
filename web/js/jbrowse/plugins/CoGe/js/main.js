@@ -160,7 +160,7 @@ define([
 					this.chr.push([chr, 0]);
 					current_chr = chr;
 				}
-				this.hits[i] = JSON.parse('[' + data[i].substring(index + 2) + ']');
+				this.hits[i] = JSON.parse('[' + data[i].substring(index + 2).replace(/,\.,/g, ',"",') + ']');
 			}
 			this.chr[this.chr.length - 1][1] = data.length;
 		},
@@ -662,7 +662,8 @@ return declare( JBrowsePlugin,
 					if (config.coge.transform)
 						new_config.coge.annotations += '\ntransform:' + config.coge.transform;
 					delete new_config.coge.search_track;
-					delete new_config.style;
+					if (new_config.coge.data_type == 1)
+						delete new_config.style;
 					coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [new_config]);
 					notebooks.forEach(function(notebook) {
 						coge_track_list.add_to_notebook([new_config], notebook, true);

@@ -55,7 +55,8 @@ return declare(SeqFeatureStore, {
 						id: coge.id,
 						start: hit[0],
 						end: hit[1],
-						strand: strand
+						strand: strand,
+						name: hit[3]
 					}}));
 				} else if (coge.data_type == 4) {
 					var strand = hit[2] == '1' ? 1 : -1;
