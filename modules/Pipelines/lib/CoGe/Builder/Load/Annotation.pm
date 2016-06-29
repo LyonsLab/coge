@@ -13,11 +13,15 @@ use CoGe::Builder::CommonTasks;
 
 sub get_name {
     my $self = shift;
+    my $gid = $self->params->{genome_id};
     my $metadata = $self->params->{metadata};
-    my $info = '"' . $metadata->{name};
+    my $info;
+
+    my $genome = $self->db->resultset('Genome')->find($gid);
+    $info .= $genome->organism->name;
+    $info .= " (" . $metadata->{name} . ")"  if $metadata->{name};
     $info .= ": " . $metadata->{description} if $metadata->{description};
     $info .= " (v" . $metadata->{version} . ")";
-    $info .= '"';
     return "Load Annotation " . $info;
 }
 

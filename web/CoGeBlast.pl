@@ -2014,6 +2014,7 @@ qq{<span class="link" title="Click for Feature Information" onclick=update_info_
           . $sstart . "no,"
           . $feat->id . "_"
           . $hsp_id;
+          warn 'nci: ' . $new_checkbox_info;
     }
     else {
         $distance = "No neighboring features found";
@@ -2135,6 +2136,7 @@ sub export_to_excel {
     my %opts      = @_;
     my $accn_list = $opts{accn};
     my $filename  = $opts{filename};
+    warn $accn_list;
 
     $cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir  => $TEMPDIR );
     my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
@@ -2191,17 +2193,19 @@ sub export_to_excel {
             $worksheet->write( $i, 8, $score );
         }
         else {
-            if ( $accn =~ tr/_/_/ > 2 ) {
-                my $accn_with_commas = $accn;
-                $accn_with_commas =~ tr/_/,/;
-                ( $hsp_no, $dsgid, $chr, $pos, $featid, $distance ) =
-                  $accn_with_commas =~
-                  /(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
-            }
-            else {
-                ( $featid, $hsp_no, $dsgid ) = $accn =~ /(\d+)_(\d+)_(\d+)/;
-                $distance = "overlapping";
-            }
+            warn $accn;
+            # there doesn't appear to code that would pass this in
+            # if ( $accn =~ tr/_/_/ > 2 ) {
+            #     my $accn_with_commas = $accn;
+            #     $accn_with_commas =~ tr/_/,/;
+            #     ( $hsp_no, $dsgid, $chr, $pos, $featid, $distance ) =
+            #       $accn_with_commas =~
+            #       /(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
+            # }
+            # else {
+                ( $featid, $hsp_no, $dsgid, $distance ) = $accn =~ /(\d+)_(\d+)_(\d+)_(.+)/;
+            #     $distance = "overlapping";
+            # }
             $sth->execute( $hsp_no . "_" . $dsgid ) || die "unable to execute";
             while ( my $info = $sth->fetchrow_hashref() ) {
                 $eval   = $info->{eval};
@@ -2225,8 +2229,7 @@ sub export_to_excel {
             $worksheet->write( $i, 7, $pid );
             $worksheet->write( $i, 8, $score );
             $worksheet->write( $i, 9, $feat->id );
-            $worksheet->write( $i, 10, $P->{SERVER} . "FeatView.pl?accn=$name",
-                $name );
+            $worksheet->write( $i, 10, $P->{SERVER} . "FeatView.pl?accn=$name", $name );
             $worksheet->write( $i, 11, $distance );
         }
 
