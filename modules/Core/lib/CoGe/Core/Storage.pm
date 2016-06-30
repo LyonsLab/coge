@@ -590,12 +590,10 @@ sub get_workflow_results {
         opendir(my $fh, $results_path);
         foreach my $file ( readdir($fh) ) {
             my $fullpath = catfile($results_path, $file);
-            warn $fullpath;
             next unless -f $fullpath || -l $fullpath; # allow links for CoGeBlast
             next if $file =~ /^\./;
 
             my $name = basename($file);
-            warn $name;
             push @all_results, {
                 type => 'http',
                 name => $name,
@@ -752,10 +750,10 @@ sub irods_mkdir {
     return CoGe::Accessory::IRODS::irods_imkdir($path);
 }
 
-sub irods_rm {
-    my $path = shift;
-    return CoGe::Accessory::IRODS::irods_irm($path);
-}
+# sub irods_rm {
+#     my $path = shift;
+#     return CoGe::Accessory::IRODS::irods_irm($path);
+# }
 
 sub reverse_complement { #TODO move into Util.pm
     my $seq   = shift;

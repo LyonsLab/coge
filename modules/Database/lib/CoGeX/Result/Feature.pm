@@ -555,9 +555,11 @@ sub annotation_pretty_print_html {
 	my $skip_GC = $opts{skip_GC};
 	$loc_link = "FastaView.pl" unless defined $loc_link;
 	my $anno_obj = new CoGe::Accessory::Annotation( Type => "anno" );
-	$anno_obj->Val_delimit("<BR/>");
 	$anno_obj->Add_type(0);
+	$anno_obj->Val_delimit("<BR/>");
 	$anno_obj->String_end("<BR/>");
+	my $metadata = new CoGe::Accessory::Annotation( Type => "anno" );
+	$metadata->Add_type(0);
 	my $start      = $self->start;
 	my $stop       = $self->stop;
 	my $chr        = $self->chr;
@@ -622,69 +624,6 @@ sub annotation_pretty_print_html {
 			$anno_type->add_Annot($item);
 		}
 		$anno_obj->add_Annot($anno_type);
-		foreach my $anno (
-			sort { uc( $a->type->name ) cmp uc( $b->type->name ) } $self->annos(
-				{},
-				{ prefetch => { annotation_type => 'annotation_type_group' } }
-			)
-		  )
-		{
-			my $type      = $anno->type();
-			my $group     = $type->group();
-			my $anno_name = $type->name;
-			$anno_name .= ", " . $type->description if $type->description;
-			if ( ref($group) =~ /group/i && !( $type->name eq $group->name ) ) {
-				{
-					$anno_name .= ":" unless $anno_name =~ /:$/;
-					$anno_name =
-					  "<span class=\"title5\">" . $anno_name . "</span>";
-				}
-			}
-			else {
-				if ( $anno->link ) {
-					$anno_name =
-					    "<tr><td nowrap='true'><span class=\"coge_link\">"
-					  . $anno_name
-					  . "</span>";
-				}
-				else {
-					$anno_name =
-					    "<tr><td nowrap='true'><span class=\"title5\">"
-					  . $anno_name
-					  . "</span>";
-				}
-			}
-			my $anno_type =
-			  new CoGe::Accessory::Annotation( Type => $anno_name );
-			$anno_type->Val_delimit("<br>");
-			$anno_type->Type_delimit(" ");
-
-			#	    my $annotation = $anno->annotation;
-			my $annotation = "<span class=\"data5";
-			$annotation .=
-			  qq{ link" onclick="window.open('} . $anno->link . qq{')}
-			  if $anno->link;
-			$annotation .= "\">" . $anno->annotation . "</span>";
-			$anno_type->add_Annot($annotation) if $anno->annotation;
-			if ( ref($group) =~ /group/i && !( $type->name eq $group->name ) ) {
-				my $class = $anno->link ? "coge_link" : "title5";
-				my $anno_g =
-				  new CoGe::Accessory::Annotation(
-					    Type => "<tr><td nowrap='true'><span class=\"$class\">"
-					  . $group->name
-					  . "</span>" );
-				$anno_g->add_Annot($anno_type);
-				$anno_g->Type_delimit(":<td>");
-				$anno_g->Val_delimit(", ");
-
-				#	    $anno_g->Val_delimit(" ");
-				$anno_obj->add_Annot($anno_g);
-			}
-			else {
-				$anno_type->Type_delimit(":<td>");
-				$anno_obj->add_Annot($anno_type);
-			}
-		}
 
 		my $location = "Chr " . $chr . " ";
 #       $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
@@ -698,8 +637,7 @@ sub annotation_pretty_print_html {
 				Type_delimit => ":<td>",
 				Val_delimit  => " "
 			)
-		  )
-		  unless $minimal;
+		  );
 
 #		$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid=$gstid')" >}
 #		  . $location
@@ -772,7 +710,7 @@ qq{<span class="data5 link" onclick = "window.open('OrganismView.pl?oid=}
 			$anno_obj->add_Annot(
 				new CoGe::Accessory::Annotation(
 					Type =>
-"<tr><td nowrap='true'><span class=\"title5\">Genomic Sequnce</span>",
+"<tr><td nowrap='true'><span class=\"title5\">Genomic Sequence</span>",
 					Values => [ "<span class=data5>" . $gst->name . "</span>" ],
 					Type_delimit => ":<td>",
 					Val_delimit  => " "
@@ -811,10 +749,79 @@ qq{<span class="data5 link" onclick = "window.open('OrganismView.pl?oid=}
 				);
 			}
 		}
+
+		foreach my $anno (
+			sort { uc( $a->type->name ) cmp uc( $b->type->name ) } $self->annos(
+				{},
+				{ prefetch => { annotation_type => 'annotation_type_group' } }
+			)
+		  )
+		{
+			my $type      = $anno->type();
+			my $group     = $type->group();
+			my $anno_name = $type->name;
+			$anno_name .= ", " . $type->description if $type->description;
+			if ( ref($group) =~ /group/i && !( $type->name eq $group->name ) ) {
+				{
+					$anno_name .= ":" unless $anno_name =~ /:$/;
+					$anno_name =
+					  "<span class=\"title5\">" . $anno_name . "</span>";
+				}
+			}
+			else {
+				if ( $anno->link ) {
+					$anno_name =
+					    "<tr><td nowrap='true'><span class=\"coge_link\">"
+					  . $anno_name
+					  . "</span>";
+				}
+				else {
+					$anno_name =
+					    "<tr><td nowrap='true'><span class=\"title5\">"
+					  . $anno_name
+					  . "</span>";
+				}
+			}
+			my $anno_type =
+			  new CoGe::Accessory::Annotation( Type => $anno_name );
+			$anno_type->Val_delimit("<br>");
+			$anno_type->Type_delimit(" ");
+
+			#	    my $annotation = $anno->annotation;
+			my $annotation = "<span class=\"data5";
+			$annotation .=
+			  qq{ link" onclick="window.open('} . $anno->link . qq{')}
+			  if $anno->link;
+			$annotation .= "\">" . $anno->annotation . "</span>";
+			$anno_type->add_Annot($annotation) if $anno->annotation;
+			if ( ref($group) =~ /group/i && !( $type->name eq $group->name ) ) {
+				my $class = $anno->link ? "coge_link" : "title5";
+				my $anno_g =
+				  new CoGe::Accessory::Annotation(
+					    Type => "<tr><td nowrap='true'><span class=\"$class\">"
+					  . $group->name
+					  . "</span>" );
+				$anno_g->add_Annot($anno_type);
+				$anno_g->Type_delimit(":<td>");
+				$anno_g->Val_delimit(", ");
+
+				#	    $anno_g->Val_delimit(" ");
+				$metadata->add_Annot($anno_g);
+			}
+			else {
+				$anno_type->Type_delimit(":<td>");
+				$metadata->add_Annot($anno_type);
+			}
+		}
 	}
-	return "<table cellpadding=0 class='ui-widget-content ui-corner-all'>"
-	  . $anno_obj->to_String
-	  . "</table>";
+	my $html = '<table cellpadding=0 class="ui-widget-content ui-corner-all">';
+	$html .= $anno_obj->to_String;
+	if (scalar @{$metadata->Values()}) {
+		$html .= '<tr><td colspan="2" style="border-top:0.5px solid grey;padding-left:5px;padding-top:5px;font-size:small">Metadata</td></tr>';
+		$html .= $metadata->to_String;
+	}
+	$html .= '</table>';
+	return $html;
 }
 
 ################################################ subroutine header begin ##

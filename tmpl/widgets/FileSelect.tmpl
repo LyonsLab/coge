@@ -30,7 +30,9 @@
 			<span id="ids_status" style="float:right;"></span>
 			<input class="fileselect-filter" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;" />
 			<span class='link fileselect-home'><span class='ui-icon ui-icon-home'></span>Home</span>&nbsp;&nbsp;
+			<TMPL_UNLESS NAME='DIR_SELECT'>
 			<span class='link fileselect-shared'><span class='ui-icon ui-icon-folder-collapsed'></span>Community Data</span>&nbsp;&nbsp;
+			</TMPL_UNLESS>
 			<span class='link fileselect-up'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>&nbsp;&nbsp;
 			<span class='link fileselect-refresh'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>&nbsp;&nbsp;
 			<TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
@@ -41,9 +43,9 @@
 		<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
 	    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
 	    	<table id="ids_table" class="small" style="width:100%;"></table>
-	    	<ul id="fileselect_menu" class="coge-menu hidden ui-menu ui-widget ui-widget-content ui-corner-all" style="white-space: nowrap; position: absolute; display: none;" role="listbox" aria-activedescendant="ui-active-menuitem">
+	    	<!-- <ul id="fileselect_menu" class="coge-menu hidden ui-menu ui-widget ui-widget-content ui-corner-all" style="white-space: nowrap; position: absolute; display: none;" role="listbox" aria-activedescendant="ui-active-menuitem">
 				<li class="ui-menu-item" role="menuitem"><a class="ui-corner-all" tabindex="-1"></a></li>
-			</ul>
+			</ul> -->
 		</ul>
 	    </div>
 	  </div>

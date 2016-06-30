@@ -263,9 +263,9 @@ sub query_data {
         my @results;
         foreach (@cmdOut) {
             chomp;
-            my (undef, $flag, $chr, $start, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
+            my ($qname, $flag, $chr, $start, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
             my $strand = ($flag & 0x10 ? '-1' : '1');
-            push @results, '"' . $chr . '",' . $start . ',' . ($start + length($seq)) . ',' . $strand;
+            push @results, '"' . $chr . '",' . $start . ',' . ($start + length($seq)) . ',' . $strand . ',"' . $qname . '"';
         }
         return \@results;
     }
@@ -280,11 +280,11 @@ sub query_data {
 	$where .= " and chr='$chr'" if $chr;
 	my $value1;
     if ($type eq 'max') {
-    	$value1 = CoGe::Accessory::FastBit::max($eid);
+    	$value1 = CoGe::Accessory::FastBit::max($eid, $chr);
     	$where .= ' and value1>' . ($value1 - 0.001);
     }
     elsif ($type eq 'min') {
-    	$value1 = CoGe::Accessory::FastBit::min($eid);
+    	$value1 = CoGe::Accessory::FastBit::min($eid, $chr);
     	$where .= ' and value1<' . ($value1 + 0.001);
     }
     elsif ($type eq 'range') {

@@ -37,12 +37,20 @@ BEGIN {
 }
 
 sub max {
-	my $max = query('select max(value1) where 0.0=0.0', shift);
+	my $eid = shift;
+	my $chr = shift;
+	my $where = '0.0=0.0';
+	$where .= " and chr='$chr'" if $chr;
+	my $max = query('select max(value1) where ' . $where, $eid);
 	return 0 + $max->[0];
 }
 
 sub min {
-	my $min = query('select min(value1) where 0.0=0.0', shift);
+	my $eid = shift;
+	my $chr = shift;
+	my $where = '0.0=0.0';
+	$where .= " and chr='$chr'" if $chr;
+	my $min = query('select min(value1) where ' . $where, $eid);
 	return 0 + $min->[0];
 }
 

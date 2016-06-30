@@ -93,13 +93,18 @@ define( [
                 if (!track.config.coge.search_track)  {
                     options.push({
                         label: 'Find Alignments in Features',
-                        onClick: function(){coge_plugin.create_features_overlap_search_dialog(track, 'Alignments', 'alignments');}
+                        onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'Alignments', 'alignments');}
                     });
                 }
                 options.push({
                     label: 'Export Track Data',
-                    onClick: function(){coge_plugin.create_export_dialog(track);}
+                    onClick: function(){coge_plugin.export_dialog(track);}
                 });
+                if (track.config.coge.search)
+                    options.push({
+                        label: 'Save Results as New Experiment',
+                        onClick: function(){coge_plugin.save_as_experiment_dialog(track)}
+                    });
 
                 return options;
             });
