@@ -190,9 +190,9 @@ define(['dojo/_base/declare',
 		var html = coge.type == 'search' ? 'Search of Experiment' : this._capitalize(coge.type);
 		html += ': <b>' + coge.name + '</b>';
 		if (coge.id != 0)
-			html += ' (id ' + (coge.type == 'search' ? coge.eid : coge.id) + ')<br>';
+			html += ' (id ' + (coge.type == 'search' ? coge.eid : coge.id) + ')';
 		if (coge.description)
-			html += coge.description;
+			html += '<br>' + coge.description;
 		if (coge.type == 'experiment')
 			html += '<br><i>' + (coge.data_type == 4 ? 'Markers' : coge.data_type == 3 ? 'Alignments' : coge.data_type == 2 ? 'Polymorphism Data' : 'Quantitative Data') + '</i>';
 		if (coge.annotations) {
