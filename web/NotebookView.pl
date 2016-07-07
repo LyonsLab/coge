@@ -315,11 +315,12 @@ sub get_annotations {
 
     my $html;
     if ($num_annot) {
-        $html .= '<table id="list_annotation_table" class="border-top border-bottom" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        my $num_rows = 0;
+        $html .= '<table id="list_annotation_table" class="dataTable compact hover stripe border-top border-bottom" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
         foreach my $group ( sort keys %groups ) {
             my $first = 1;
             foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
-                $html .= "<tr style='vertical-align:top;'>"
+                $html .= "<tr style='vertical-align:top;' class='" . ($num_rows++ % 2 ? 'odd' : 'even') . "'>"
                   . (
                     $first-- > 0
                     ? "<th align='right' class='title5' rowspan='"
@@ -553,8 +554,7 @@ sub get_list_contents {
 
     return "Access denied\n" unless $USER->has_access_to_list($list);
 
-    my $user_can_edit = $USER->is_admin
-      || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
+    my $user_can_edit = $USER->is_admin || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
 
     my $html;
     my $num_items = 0;
@@ -566,7 +566,14 @@ sub get_list_contents {
 
     if ($genome_count or $exp_count or $feat_count or $list_count) {
         $html = q|
-        <table id="list_contents_table" class="compact hover" style="margin:0;width:initial;"><thead><tr><th>Type</th><th>Name</th><th>Date</th><th>Remove</th></tr></thead><tbody></tbody></table>
+        <table id="list_contents_table" class="dataTable compact hover stripe border-top border-bottom" style="margin:0;width:initial;"><thead>
+            <tr>
+                <th id="type_col" class="sorting sorting_asc" onclick="sort_table('type')" style="cursor:pointer;">Type</th>
+                <th id="name_col" class="sorting" onclick="sort_table('name')" style="cursor:pointer;">Name</th>
+                <th id="date_col" class="sorting" onclick="sort_table('date')" style="cursor:pointer;">Date</th>
+                <th>Remove</th
+            </tr>
+        </thead><tbody></tbody></table>
         <script>
             var data = [|;
         foreach my $genome ( sort genomecmp $list->genomes ) {
@@ -602,6 +609,8 @@ sub get_list_contents {
             $num_items++;
         }
         $html .= q|];
+        var sort_col = 'type';
+        var sort_mult = -1;
         function build_table() {
             var t = $('#list_contents_table tbody');
             t.empty();
@@ -611,39 +620,79 @@ sub get_list_contents {
             var ids = ['gid', 'eid', 'fid', 'nid'];
             var counts = [| . $genome_count . q|, | . $exp_count . q|, | . $feat_count . q|, | . $list_count . q|];
             var node_types = ['| . $node_types->{genome} . q|', '| . $node_types->{experiment} . q|', '| . $node_types->{feature} . q|', '| . $node_types->{list} . q|'];
-            var html = '';
+            var num_rows = 0;
             data.forEach(function(row){
-                if (row[0] != type) {
-                    type = row[0];
-                    html += '<tr valign="top"><td align="right" class="title5" rowspan="';
-                    html += counts[type];
-                    html += '" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white">';
-                    html += names[type];
-                    html += 's ';
-                    html += counts[type];
-                    html += ':</td>';
-                } else
-                    html += '<tr>';
-                html += '<td class="data5"><span class="link" onclick="window.open(\'';
-                html += pages[type];
-                html += '.pl?';
-                html += ids[type];
-                html += '=';
-                html += row[1];
-                html += '\')">';
+                var html;
+                if (sort_col == 'type')
+                    if (row[0] != type) {
+                        type = row[0];
+                        html = '<tr valign="top" class="' + (num_rows % 2 ? 'odd' : 'even') + '"><td align="right" class="title5" rowspan="';
+                        html += counts[type];
+                        html += '" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white">';
+                        html += names[type];
+                        html += 's ';
+                        html += counts[type];
+                        html += ':</td>';
+                    } else
+                        html = '<tr class="' + (num_rows % 2 ? 'odd' : 'even') + '">';
+                else
+                    html = '<tr class="' + (num_rows % 2 ? 'odd' : 'even') + '"><td class="title5">' + names[row[0]] + '</td>';
+                html += '<td class="data5"><span class="link" onclick="window.open(\'' + pages[type] + '.pl?' + ids[type] + '=' + row[1] + '\')">';
                 html += row[2];
                 html += '</span></td><td class="data5">';
                 if (row.length > 3 && row[3])
                     html += row[3];
                 html += '</td>';|;
         if ($user_can_edit) {
-            $html .= q|html += '<td style="padding-left:20px;""><span onClick="remove_list_item(this, {lid: | . $lid . q|, item_type: \'' + node_types[type] + '\', item_id: ' + row[1] + '});" class="link ui-icon ui-icon-closethick"></span></td>';|;
+            $html .= q|html += '<td style="padding-left:20px;"><span onClick="remove_list_item(this, {lid: | . $lid . q|, item_type: \'' + node_types[type] + '\', item_id: ' + row[1] + '});" class="link ui-icon ui-icon-closethick"></span></td>';|;
         }
-        $html .= q|html += '</tr>';});
-            $(html).appendTo(t);
+        $html .= q@html += '</tr>';
+                t.append(html);
+                ++num_rows;
+            });
         }
+        function case_insensitive_sort(a, b) {
+            var _a = a.toLowerCase();
+            if (_a.startsWith('&reg; '))
+                _a = _a.substr(6);
+            var _b = b.toLowerCase();
+            if (_b.startsWith('&reg; '))
+                _b = _b.substr(6);
+            return _a < _b ? -1 : _a > _b ? 1 : 0;
+        }
+        function sort_table(col) {
+            if (sort_col != col) {
+                $('#' + sort_col + '_col').removeClass(sort_mult == 1 ? 'sorting_asc' : 'sorting_desc');
+                sort_col = col;
+                sort_mult = 1;
+                $('#' + sort_col + '_col').addClass('sorting_asc');
+            } else {
+                var td = $('#' + sort_col + '_col');
+                td.removeClass(sort_mult == 1 ? 'sorting_asc' : 'sorting_desc');
+                sort_mult *= -1;
+                td.addClass(sort_mult == 1 ? 'sorting_asc' : 'sorting_desc');
+            }
+            if (col == 'name')
+                data.sort(function(a, b) {return sort_mult * case_insensitive_sort(a[2], b[2]);});
+            else if (col == 'date')
+                data.sort(function(a, b) {
+                    if (a.length < 4 || !a[3])
+                        return sort_mult * -1;
+                    if (b.length < 4 || !b[3])
+                        return sort_mult * 1;
+                    return sort_mult * (a[3] < b[3] ? -1 : a[3] > b[3] ? 1 : case_insensitive_sort(a[2], b[2]));
+                });
+            else
+                data.sort(function(a, b) {
+                    if (a[0] == b[0])
+                        return case_insensitive_sort(a[2], b[2]);
+                    return sort_mult * (a[0] - b[0]);
+                });
+            build_table();
+        }
+        sort_table(sort_col);
         build_table();
-        </script>|;
+        </script>@;
 
         # foreach my $genome ( sort genomecmp $list->genomes ) {
         #     $html .= "<tr valign='top'>"

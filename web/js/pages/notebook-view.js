@@ -1,9 +1,9 @@
 function set_contents_table() {
-	$('#list_contents_table').tablesorter({widgets: ['zebra']});
+	// $('#list_contents_table').tablesorter({widgets: ['zebra']});
 }
 
 function set_annotation_table() {
-	$('#list_annotation_table').tablesorter({widgets: ['zebra']});
+//	$('#list_annotation_table').tablesorter({widgets: ['zebra']});
 }
 
 function show_dialog(id, title, html, width, height) {
