@@ -1619,11 +1619,16 @@ sub get_results {
 			my $all_genes = ($opts{'fb_target_genes'} eq 'true') ? 'False' : 'True';
 			my $rru = $opts{'fb_remove_random_unknown'} ? 'True' : 'False';
 			my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
-			my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
-			if (! -r $output_dir . 'html/' . $fb_img_file) {
-				return encode_json( { error => "The fractionation bias image could not be found." } );
+			#my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
+			#if (! -r $output_dir . 'html/' . $fb_img_file) {
+			#	return encode_json( { error => "The fractionation bias image could not be found." } );
+			#}
+			#$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
+			my $fb_json_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.json';
+			if (! -r $output_dir . $fb_json_file) {
+				return encode_json( { error => "The fractionation bias data could not be found." } );
 			}
-			$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
+			$results->param( frac_bias => $output_url . $fb_json_file );
 			$gff_sort_output_file = _filename_to_link(
 				file => $output_dir . 'gff_sort.txt',
 				msg  => qq{GFF Sort output file},

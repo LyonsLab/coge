@@ -1191,7 +1191,8 @@ sub add_jobs {
 					[ '--target',       $target_id,               0 ],
 					[ '--windowsize',   $opts{fb_window_size},    0 ],
 					[ '--allgenes',     $all_genes,               0 ],
-					[ '--output', $output_dir, 0 ]
+					[ '--output', $output_dir, 0 ],
+					[ '--apiurl', url_for(api_url_for("genomes")), 0]
 				],
 				inputs => [
 					$final_dagchainer_file, $condensed,
@@ -1201,6 +1202,10 @@ sub add_jobs {
 					catfile(
 						catdir($output_dir, 'html'),
 						'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.png'
+					),
+					catfile(
+						$output_dir,
+						'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.json'
 					)
 				],
 				description => "Running Fractination Bias...",

@@ -110,14 +110,20 @@
         </li>
     </ul>
 </div>
+
 <tmpl_if name="frac_bias">
-<div class="padded">
-    <div class="small link ui-widget-content ui-corner-all padded" style="float:left" onclick="window.open('<tmpl_var name=frac_bias>')">
-        Fractionation Bias<br>
-    	<img src="<tmpl_var name=frac_bias>" style="max-width: 100%;">
+    <script type="text/javascript" src="js/plotly-1.14.1.min.js"></script>
+    <script type="text/javascript" src="js/fractbias_plotter.js"></script>
+    <div class="padded">
+        <!--<div class="small link ui-widget-content ui-corner-all padded" style="float:left" onclick="window.open('<tmpl_var name=frac_bias>')">-->
+        <div class="ui-widget-content ui-corner-all padded">
+            Fractionation Bias<br>
+            <!--<img src="<tmpl_var name=frac_bias>" style="max-width: 100%;">-->
+            <div id="fractbias"></div>
+            <div style="clear: both;"></div>
+        </div>
+        <div style="clear: both;"> </div>
     </div>
-    <div style="clear: both;"> </div>
-</div>
 </tmpl_if>
 
 <ul class="padded">
@@ -181,15 +187,18 @@
     </li>
 </ul>
 <script src="js/vendor/synteny-vis/build/synteny-dotplot-builder.js"></script>
+
 <script>
 $(document).ready(function(){
-	var plotted;
+    if ('<tmpl_var name=frac_bias>') { plotFractBias("fractbias", "<tmpl_var name=frac_bias>") }
+
+    var plotted;
     $("#data").tabs({
     	select: function(event, ui) {
             if (ui.index === 1 && !plotted) {
 		    	makeSyntenyDotPlot({
 							element_id: 'main',
-							data_url: '<tmpl_var name=file_url>', 
+							data_url: '<tmpl_var name=file_url>',
 							genome_x: { name: '<tmpl_var name=xorg_name>', id: '<tmpl_var name=dsgid1>', chromosomes: <tmpl_var name=chromosomes1>}, 
 							genome_y: { name: '<tmpl_var name=yorg_name>', id: '<tmpl_var name=dsgid2>', chromosomes: <tmpl_var name=chromosomes2>}
 						});
