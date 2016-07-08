@@ -105,9 +105,9 @@ var coge = window.coge = (function(namespace) {
 			return this._ajax("POST", this.baseUrl + "irods/mkdir", null, { path: path });
 		},
 		
-		irods_rm: function(path) {
-			return this._ajax("DELETE", this.baseUrl + "irods/rm", null, { path: path });
-		},
+		// irods_rm: function(path) {
+		// 	return this._ajax("DELETE", this.baseUrl + "irods/rm", null, { path: path });
+		// },
 		
 		ftp_list: function(url) {
 			return this._ajax("GET", this.baseUrl + "ftp/list/", null, { url: url });

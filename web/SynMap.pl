@@ -200,11 +200,13 @@ sub gen_html {
 sub gen_body {
 	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMap.tmpl' );
 
-	$template->param( MAIN => 1 );
-	#$template->param( EMAIL       => $USER->email )  if $USER->email;
-
-	my $master_width = $FORM->param('w') || 0;
-	$template->param( MWIDTH => $master_width );
+	$template->param(
+		MAIN => 1,
+		API_BASE_URL  => $config->{SERVER} . 'api/v1/', #TODO move into config file or module
+        MWIDTH => $FORM->param('w') || 0,
+        SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
+        USER_NAME => $USER->user_name
+    );
 
 	#set search algorithm on web-page
 	my $b = $FORM->param('b');
