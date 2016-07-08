@@ -190,7 +190,9 @@
 
 <script>
 $(document).ready(function(){
-    if ('<tmpl_var name=frac_bias>') { plotFractBias("fractbias", "<tmpl_var name=frac_bias>") }
+    if ('<tmpl_var name=frac_bias>') {
+        plotFractBias("fractbias", "<tmpl_var name=frac_bias>", "<tmpl_var name=target_genome>")
+    }
 
     var plotted;
     $("#data").tabs({

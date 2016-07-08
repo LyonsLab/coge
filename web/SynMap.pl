@@ -1611,10 +1611,12 @@ sub get_results {
 			if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
 				$query_id      = $dsgid2;
 				$target_id     = $dsgid1;
+				$results -> param( target_genome => html_escape($org_name1))
 			}
 			else {
 				$query_id      = $dsgid1;
 				$target_id     = $dsgid2;
+				$results -> param( target_genome => html_escape($org_name2))
 			}
 			my $all_genes = ($opts{'fb_target_genes'} eq 'true') ? 'False' : 'True';
 			my $rru = $opts{'fb_remove_random_unknown'} ? 'True' : 'False';
