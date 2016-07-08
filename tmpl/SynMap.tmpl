@@ -433,12 +433,16 @@ div.deleted { display: none; }
 
 <tmpl_include name="/widgets/Overlay.tmpl">
 
+<TMPL_INCLUDE NAME="widgets/Progress.tmpl">
+
 <!-- Load scripts last for loading -->
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <script type="text/javascript" src="js/coge/colors.js"</script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/coge/progress.js"></script>
 <script type="text/javascript" src="js/pages/synmap.js"></script>
 <link href="js/vendor/bioplot/dist/bioplot.min.css" rel="stylesheet" />
-<script type="text/javascript" src="js/vendor/underscore/underscore.js"></script>
+<!-- <script type="text/javascript" src="js/vendor/underscore/underscore.js"></script> -->
 <script type="text/javascript" src="js/vendor/d3/d3.min.js"></script>
 <script type="text/javascript" src="js/vendor/jdot/dist/jdot.js"></script>
 <script type="text/javascript" src="js/vendor/bioplot/dist/bioplot.js"></script>
@@ -460,5 +464,27 @@ $(function(){
     };
 
     coge.synmap.setup(pageObj);
+    
+    // Initialize CoGe web services
+    coge.services.init({
+        baseUrl: API_BASE_URL,
+        userName: USER_NAME,
+        //debug: true
+    });
+    
+    // Intialize progress window
+    coge.progress.init({
+        title: "Loading Experiment",
+        baseUrl: API_BASE_URL,
+        userName: USER_NAME,
+        supportEmail: SUPPORT_EMAIL,
+        onReset: reset_load
+    });
+    
+    // Open status dialog
+    if (WORKFLOW_ID) {
+        coge.progress.begin();
+        coge.progress.update(WORKFLOW_ID);
+    }
 });
 </script>

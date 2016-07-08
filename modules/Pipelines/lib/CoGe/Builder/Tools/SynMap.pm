@@ -995,8 +995,7 @@ sub add_jobs {
 	push @plotargs, [ '-lt', 2, 1 ];
 	push @plotargs, [ '-assemble', $assemble,    1 ] if $assemble;
 	push @plotargs, [ '-am',       $axis_metric, 1 ] if $axis_metric;
-	push @plotargs, [ '-fb', '', 1 ]
-	  if $axis_relationship && $axis_relationship =~ /s/;
+	push @plotargs, [ '-fb', '', 1 ] if $axis_relationship && $axis_relationship =~ /s/;
 	push @plotargs, [ '-mcs', $min_chr_size, 1 ] if $min_chr_size;
 	push @plotargs, [ '-cdt', $color_type,   1 ] if $color_type;
 	push @plotargs, [ '-bd', 1, 1 ] if $box_diags;
@@ -1005,10 +1004,8 @@ sub add_jobs {
 	push @plotargs, [ '-f',      1, 1 ] if $flip;
 	push @plotargs, [ '-labels', 0, 1 ] if $clabel eq 0;
 	push @plotargs, [ '-sr',     1, 1 ] if $skip_rand;
-	push @plotargs, [ '-color_scheme', $color_scheme, 1 ]
-	  if defined $color_scheme;
-	push @plotargs, [ '-chr_sort_order', $chr_sort_order, 1 ]
-	  if defined $chr_sort_order;
+	push @plotargs, [ '-color_scheme', $color_scheme, 1 ] if defined $color_scheme;
+	push @plotargs, [ '-chr_sort_order', $chr_sort_order, 1 ] if defined $chr_sort_order;
 	push @plotargs, [ '-min', $codeml_min, 1 ] if defined $codeml_min;
 	push @plotargs, [ '-max', $codeml_max, 1 ] if defined $codeml_max;
 

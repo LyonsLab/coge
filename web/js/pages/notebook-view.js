@@ -1,10 +1,10 @@
-function set_contents_table() {
-	$('#list_contents_table').tablesorter({widgets: ['zebra']});
-}
+// function set_contents_table() {
+// 	// $('#list_contents_table').tablesorter({widgets: ['zebra']});
+// }
 
-function set_annotation_table() {
-	$('#list_annotation_table').tablesorter({widgets: ['zebra']});
-}
+// function set_annotation_table() {
+// //	$('#list_annotation_table').tablesorter({widgets: ['zebra']});
+// }
 
 function show_dialog(id, title, html, width, height) {
 	var d = $('#'+id);
@@ -160,7 +160,7 @@ function get_list_contents() {
 		},
 		success : function (data) {
 			$('#list_contents').html(data);
-			set_contents_table();
+			// set_contents_table();
 		}
 	});
 }
@@ -173,7 +173,7 @@ function get_annotations() {
 		},
 		success : function(data) {
 			$('#list_annotations').html(data);
-			set_annotation_table();
+			// set_annotation_table();
 		}
 	});
 }
