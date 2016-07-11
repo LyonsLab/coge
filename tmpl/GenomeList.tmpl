@@ -1,6 +1,7 @@
 <TMPL_IF NAME=MAIN>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<script type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
+<script type="text/javascript" src="./js/jquery.tablesorter.pager.js"></script>
+<script type="text/javascript" src="./js/coge/utils.js"></script>
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
@@ -493,7 +494,27 @@ function edit_list_info (lid) {
       });
 }
 
-	</SCRIPT>
+function get_gff(genome_id) {
+    $.ajax({
+    	url: 'GenomeInfo.pl',
+        dataType: "json",
+        data: {
+            fname: "get_gff",
+            gid: genome_id,
+            annos: 1,
+        },
+        success: function(json) {
+            if (json.error) {
+            	//TODO
+            }
+            else {
+                coge.utils.open(json.files[0]);
+            }
+        }
+    });
+}
+
+</SCRIPT>
 
 <div style='padding-top:10px;'>
  <span id='link_hidden' class='ui-button ui-corner-all ui-button-icon-right' onclick="$('#link_hidden').hide(); $('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
