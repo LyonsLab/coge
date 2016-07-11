@@ -438,23 +438,21 @@ div.deleted { display: none; }
 <link href="js/vendor/bioplot/dist/bioplot.min.css" rel="stylesheet" />
 
 <!-- Load scripts last for loading -->
+<script src="js/pages/synmap.js"></script>
 <script src="js/coge/services.js"></script>
-<script>console.log(coge);</script>
+<script src="js/coge/progress.js"></script>
 <script src="js/coge/utils.js"></script>
 <script src="js/coge/colors.js"</script>
-<script>console.log(coge);</script>
-<script src="js/coge/progress.js"></script>
-<script>console.log(coge);</script>
 <script src="js/vendor/d3/d3.min.js"></script>
 <script src="js/vendor/jdot/dist/jdot.js"></script>
 <script src="js/vendor/bioplot/dist/bioplot.js"></script>
 <script src="js/xhairs.js"></script>
-<script src="js/pages/synmap.js"></script>
 <script>
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
 $(function(){
-    const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
-    const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
-    const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
     <tmpl_var name=display_dagchainer_settings>
 
     //FIXME: Remove global state
@@ -462,7 +460,6 @@ $(function(){
         "id1": "<tmpl_var name=fid1>",
         "id2": "<tmpl_var name=fid2>",
         "tempdir": "<tmpl_var name=tempdir>",
-        "beta": "<tmpl_var name=beta>",
         "page": "<tmpl_var name=page_name>",
         "rootElement": $(".box"),
         "autostart": Boolean(parseInt("<tmpl_var name=autogo>", 10))
@@ -479,7 +476,7 @@ $(function(){
     
     // Intialize progress window
     coge.progress.init({
-        title: "Loading Experiment",
+        title: "Running SynMap",
         baseUrl: API_BASE_URL,
         userName: USER_NAME,
         supportEmail: SUPPORT_EMAIL

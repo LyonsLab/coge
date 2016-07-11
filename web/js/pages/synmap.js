@@ -1546,14 +1546,14 @@ var coge = window.coge = (function(namespace) {
             $('#depth_org_2').html($('#org_id2 option:selected').html());
 
             if (options.autostart) {
-                this.run_synmap($('#regen_images')[0].checked);
+                this.run_synmap();
             }
 
             $("#tabs").removeClass("invisible");
 
             // track analysis
             $("#synmap_go").on("click", function() {
-                coge.synmap.run_synmap($('#regen_images')[0].checked);
+                coge.synmap.run_synmap();
                 ga('send', 'event', 'synmap', 'run');
             });
         },
@@ -1582,7 +1582,7 @@ var coge = window.coge = (function(namespace) {
                 ($('#org_id2').val() != "");
         },
 
-        run_synmap: function(regenerate){
+        run_synmap: function(){
             this.populate_page_obj();
 
             var org_name1 = pageObj.org_name1;
@@ -1626,14 +1626,17 @@ var coge = window.coge = (function(namespace) {
 
             $('#results').hide();
 
-            if (regenerate) {
-                schedule(get_params("go", regenerate));
+            if ($('#regen_images')[0].checked) {
+                this.go();
                 return;
             }
 
+            var params = this.get_params();
+            params['fname'] = 'get_results';
+            params['jquery_ajax'] = 1;
             return $.ajax({
                 type: 'GET',
-                data: this.get_params("get_results"),
+                data: params,
                 dataType: "json",
                 success: function(data) {
                     if (!data.error) {
@@ -1642,10 +1645,12 @@ var coge = window.coge = (function(namespace) {
                         $("#synmap_zoom_box").draggable();
                         $('#results').html(data.html).slideDown();
                     } else {
-                        coge.synmap.schedule(coge.synmap.get_params("go"))
+                        coge.synmap.go();
                     }
                 },
-                error: this.schedule.bind(this, this.get_params("go"))
+                error: function() {
+                    coge.synmap.go();
+                }
             });
         },
 
@@ -1684,7 +1689,7 @@ var coge = window.coge = (function(namespace) {
             var deferred = $.Deferred();
 
             if (response.success) {
-                wait_for_job(response.id, deferred, response.output);
+                this.wait_for_job(response.id, deferred, response.output);
             } else {
                 deferred.reject(undefined);
             }
@@ -1704,7 +1709,7 @@ var coge = window.coge = (function(namespace) {
                         break;
                     default:
                         setTimeout(function() {
-                            wait_for_job(id, promise, args);
+                            coge.synmap.wait_for_job(id, promise, args);
                         }, 3000);
                         break;
                 }
@@ -1718,6 +1723,37 @@ var coge = window.coge = (function(namespace) {
         download_file: function(url) {
             $("#dialog").dialog("close");
             window.open(url, "_self");
+        },
+
+        go: function() {
+            coge.progress.begin();
+            var request = {
+                type: 'synmap',
+                requester: {
+                    page:      PAGE_NAME,
+                    user_name: USER_NAME
+                },
+                parameters: this.get_params()
+            };
+    
+            coge.services.submit_job(request) 
+                .done(function(response) {
+                    if (!response) {
+                        coge.progress.failed("Error: empty response from server");
+                        return;
+                    }
+                    else if (!response.success || !response.id) {
+                        coge.progress.failed("Error: failed to start workflow", response.error);
+                        return;
+                    }
+                    
+                    // Start status update
+//                    window.history.pushState({}, "Title", "SynMap.pl" + "?wid=" + response.id); // Add workflow id to browser URL
+                    coge.progress.update(response.id, response.site_url);
+                })
+                .fail(function(jqXHR, textStatus, errorThrown) {
+                    coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+                });
         },
 
         schedule: function(params) {
@@ -1742,7 +1778,9 @@ var coge = window.coge = (function(namespace) {
                         $('#dialog_log').html('<a href="' + data.log + '" target="_blank">Logfile</a>');
                         $('#synmap_link').html(link);
 
-                        update_dialog(data.request, "#synmap_dialog", synmap_formatter, get_params("get_results"));
+                        var params = coge.synmap.get_params();
+                        params['fname'] = 'get_results';
+                        update_dialog(data.request, "#synmap_dialog", synmap_formatter, params);
                     } 
                     else { // (!data || data.error || !data.success)
                     	console.warn('synmap:schedule: submission error');
@@ -1765,13 +1803,11 @@ var coge = window.coge = (function(namespace) {
             });
         },
 
-        get_params: function(name, regenerate) {
+        get_params: function() {
             return {
-                fname: name,
                 tdd: $('#tdd').val(),
                 D: $('#D').val(),
                 A: $('#A').val(),
-                beta: pageObj.beta,
                 gm: $('#gm').val(),
                 Dm: $('#Dm').val(),
                 blast: $('#blast').val(),
@@ -1782,7 +1818,7 @@ var coge = window.coge = (function(namespace) {
                 jobtitle: $('#jobtitle').val(),
                 basename: pageObj.basename,
                 email: $('#email').val(),
-                regen_images: regenerate,
+                regen_images: $('#regen_images')[0].checked,
                 width: $('#master_width').val(),
                 dagchainer_type: $('#dagchainer_type').filter(':checked').val(),
                 ks_type: $('#ks_type').val(),
@@ -1816,8 +1852,7 @@ var coge = window.coge = (function(namespace) {
                 codeml_min: $('#codeml_min').val(),
                 codeml_max: $('#codeml_max').val(),
                 logks: $('#logks')[0].checked,
-                csco: $('#csco').val(),
-                jquery_ajax: 1
+                csco: $('#csco').val()
             };
         },
 

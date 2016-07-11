@@ -432,7 +432,6 @@ sub gen_body {
 	$template->param( 'SHOW_NON_SYN' => "checked" ) if $spa && $spa =~ /2/;
 	$template->param( 'SPA_FEW_SELECT'  => "selected" ) if $spa && $spa > 0;
 	$template->param( 'SPA_MORE_SELECT' => "selected" ) if $spa && $spa < 0;
-	$template->param( beta => 1 ) if $FORM->param("beta");
 
 	my $file = $FORM->param('file');
 	if ($file) {
@@ -1068,8 +1067,7 @@ sub get_results {
 	my $dsgid1 = $opts{dsgid1};
 	my $dsgid2 = $opts{dsgid2};
 
-	return encode_json( { error => "You must select two genomes." } )
-	  unless ( $dsgid1 && $dsgid2 );
+	return encode_json( { error => "You must select two genomes." } ) unless ( $dsgid1 && $dsgid2 );
 
 	my ($genome1) = $coge->resultset('Genome')->find($dsgid1);
 	my ($genome2) = $coge->resultset('Genome')->find($dsgid2);
@@ -1527,14 +1525,15 @@ sub get_results {
 		$org_name2 .= " (v" . $genome2->version . ")";
 
 		my $out_url = $out;
-		if ($DIR =~ /$URL/) {
+# not sure why this test is done
+#		if ($DIR =~ /$URL/) {
     		$out_url =~ s/$DIR/$URL/;
     		$y_label =~ s/$DIR/$URL/;
     		$x_label =~ s/$DIR/$URL/;
-		}
-		else {
-		    print STDERR "get_results: ERROR !!!!, cannot perform URL substitution: out_url=$out_url DIR=$DIR URL=$URL\n";
-		}
+#		}
+#		else {
+#		    print STDERR "get_results: ERROR !!!!, cannot perform URL substitution: out_url=$out_url DIR=$DIR URL=$URL\n";
+#		}
 
 		$/ = "\n";
 		my $tmp;
@@ -1991,7 +1990,6 @@ sub get_results {
 	#$results->param( json     => $json_file );
 	#$results->param( allpairs => $all_json_file );
 	#$results->param( hist     => $hist_json_file );
-	$results->param( beta => 1 ) if $opts{beta};
 
 	##print out all the datafiles created
 	$html .= "<br>";
@@ -2056,6 +2054,8 @@ sub _filename_to_link {
 	elsif ( $opts{required} ) {
 		$link = q{<span class="alert">} . $opts{msg} . q{ (missing)} . q{</span};
 		warn "missing file: $file";
+		my ($package, $filename, $line) = caller;
+		warn 'called from line: ' . $line;
 	}
 	else {
 
