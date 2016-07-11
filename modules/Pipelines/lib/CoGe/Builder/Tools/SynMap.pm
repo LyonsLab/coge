@@ -17,7 +17,12 @@ use POSIX;
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT_OK =
-	  qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
+	  qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link );
+}
+
+sub test {
+	my $value = shift;
+	return ($value && ($value =~ /true/i || $value eq '1')) ? 1 : 0;
 }
 
 sub add_jobs {
@@ -26,9 +31,9 @@ sub add_jobs {
 	my $db       = $opts{db};
 	my $config   = $opts{config};
 
-	my $dsgid1 = $opts{dsgid1} || $opts{genome_id1};
-	my $dsgid2 = $opts{dsgid2} || $opts{genome_id2};
-	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
+	my $genome_id1 = $opts{genome_id1};
+	my $genome_id2 = $opts{genome_id2};
+	my ( $dir1, $dir2 ) = sort ( $genome_id1, $genome_id2 );
 
 	my $tiny_link = get_query_link( $config, $db, @_ );
 	my $path = catdir($config->{DIAGSDIR}, $dir1, $dir2, 'html');
@@ -64,8 +69,8 @@ sub add_jobs {
 	my $feat_type1 = $opts{feat_type1};
 	my $feat_type2 = $opts{feat_type2};
 
-	my ($genome1) = $db->resultset('Genome')->find($dsgid1);
-	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
+	my ($genome1) = $db->resultset('Genome')->find($genome_id1);
+	my ($genome2) = $db->resultset('Genome')->find($genome_id2);
 
 	# Block large genomic-genomic jobs from running
 	if (   ( $feat_type1 == 2 &&
@@ -91,12 +96,12 @@ sub add_jobs {
 	#my $basename = $opts{basename};
 	my ( $org_name1, $title1 ) = gen_org_name(
 		db        => $db,
-		dsgid     => $dsgid1,
+		genome_id     => $genome_id1,
 		feat_type => $feat_type1
 	);
 	my ( $org_name2, $title2 ) = gen_org_name(
 		db        => $db,
-		dsgid     => $dsgid2,
+		genome_id     => $genome_id2,
 		feat_type => $feat_type2
 	);
 
@@ -132,7 +137,7 @@ sub add_jobs {
 
 	# dotplot options
 	my $regen             = $opts{regen_images};
-	my $regen_images      = ( $regen && $regen eq "true" ) ? 1 : 0;
+	my $regen_images      = test($regen);
 	my $job_title         = $opts{jobtitle};
 	my $width             = $opts{width};
 	my $axis_metric       = $opts{axis_metric};
@@ -141,16 +146,16 @@ sub add_jobs {
 	my $dagchainer_type   = $opts{dagchainer_type};
 	my $color_type        = $opts{color_type};
 	my $merge_algo        = $opts{merge_algo}; #is there a merging function? will non-syntenic dots be shown?
-	my $snsd              = $opts{show_non_syn_dots} =~ /true/i ? 1 : 0;
+	my $snsd              = test($opts{show_non_syn_dots});
 
 	#will the axis be flipped?
-	my $flip = $opts{flip} =~ /true/i ? 1 : 0;
+	my $flip = test($opts{flip});
 
 	#are axes labeled?
-	my $clabel = $opts{clabel} =~ /true/i ? 1 : 0;
+	my $clabel = test($opts{clabel});
 
 	#are random chr skipped
-	my $skip_rand = $opts{skip_rand} =~ /true/i ? 1 : 0;
+	my $skip_rand = test($opts{skip_rand});
 
 	#which color scheme for ks/kn dots?
 	my $color_scheme = $opts{color_scheme};
@@ -160,8 +165,7 @@ sub add_jobs {
 	my $fid2 = $opts{fid2};
 
 	#draw a box around identified diagonals?
-	my $box_diags = $opts{box_diags};
-	$box_diags = $box_diags eq "true" ? 1 : 0;
+	my $box_diags = test($opts{box_diags});
 
 	#how are the chromosomes to be sorted?
 	my $chr_sort_order = $opts{chr_sort_order};
@@ -171,11 +175,10 @@ sub add_jobs {
 	$codeml_min = undef unless $codeml_min =~ /\d/ && $codeml_min =~ /^-?\d*.?\d*$/;
 	my $codeml_max = $opts{codeml_max};
 	$codeml_max = undef unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
-	my $logks = $opts{logks};
-	$logks = $logks eq "true" ? 1 : 0;
+	my $logks = test($opts{logks});
 
-	my $assemble = $opts{assemble} =~ /true/i ? 1 : 0;
-	$assemble = 2 if $assemble && $opts{show_non_syn} =~ /true/i;
+	my $assemble = test($opts{assemble});
+	$assemble = 2 if $assemble && test($opts{show_non_syn});
 	$assemble *= -1 if $assemble && $opts{spa_ref_genome} < 0;
 
 	#options for finding syntenic depth coverage by quota align (Bao's algo)
@@ -191,29 +194,29 @@ sub add_jobs {
 
 	# Sort by genome id
 	(
-		$dsgid1,     $genome1,           $org_name1,
-		$feat_type1, $depth_org_1_ratio, $dsgid2,
+		$genome_id1,     $genome1,           $org_name1,
+		$feat_type1, $depth_org_1_ratio, $genome_id2,
 		$genome2,    $org_name2,         $feat_type2,
 		$depth_org_2_ratio
 	  )
 	  = (
-		$dsgid2,     $genome2,           $org_name2,
-		$feat_type2, $depth_org_2_ratio, $dsgid1,
+		$genome_id2,     $genome2,           $org_name2,
+		$feat_type2, $depth_org_2_ratio, $genome_id1,
 		$genome1,    $org_name1,         $feat_type1,
 		$depth_org_1_ratio
-	  ) if ( $dsgid2 lt $dsgid1 );
+	  ) if ( $genome_id2 lt $genome_id1 );
 
 	############################################################################
 	# Generate Fasta files
 	############################################################################
 	my ( $fasta1, $fasta2 );
 
-	#my @dsgs = ([$dsgid1, $feat_type1]);
-	#push @dsgs, [$dsgid2, $feat_type2]
-	#  unless $dsgid1 == $dsgid2 && $feat_type1 eq $feat_type2;
+	#my @dsgs = ([$genome_id1, $feat_type1]);
+	#push @dsgs, [$genome_id2, $feat_type2]
+	#  unless $genome_id1 == $genome_id2 && $feat_type1 eq $feat_type2;
 	#
 	#    foreach my $item (@dsgs) {
-	#        my $dsgid = $item->[0];
+	#        my $genome_id = $item->[0];
 	#        my $feat_type = $item->[1];
 	#
 	#        #TODO: Schedule fasta generation only if feat_type not genomic
@@ -232,9 +235,9 @@ sub add_jobs {
 	}
 	else {
 		my @fasta1args = ();
-		$fasta1 = $FASTADIR . "/$dsgid1-$feat_type1.fasta";
+		$fasta1 = $FASTADIR . "/$genome_id1-$feat_type1.fasta";
 		push @fasta1args, [ "--config", $config->{_CONFIG_PATH}, 0 ];
-		push @fasta1args, [ "--genome_id",    $dsgid1,     1 ];
+		push @fasta1args, [ "--genome_id",    $genome_id1,     1 ];
 		push @fasta1args, [ "--feature_type", $feat_type1, 1 ];
 		push @fasta1args, [ "--fasta",        $fasta1,     1 ];
 
@@ -259,10 +262,10 @@ sub add_jobs {
 		$workflow->log( " " x (2) . $org_name2 );
 	}
 	else {
-		$fasta2 = $FASTADIR . "/$dsgid2-$feat_type2.fasta";
+		$fasta2 = $FASTADIR . "/$genome_id2-$feat_type2.fasta";
 		my @fasta2args = ();
 		push @fasta2args, [ "--config", $config->{_CONFIG_PATH}, 0 ];
-		push @fasta2args, [ "--genome_id",    $dsgid2,     1 ];
+		push @fasta2args, [ "--genome_id",    $genome_id2,     1 ];
 		push @fasta2args, [ "--feature_type", $feat_type2, 1 ];
 		push @fasta2args, [ "--fasta",        $fasta2,     1 ];
 
@@ -286,7 +289,7 @@ sub add_jobs {
 	my ( $blastdb, @blastdb_files );
 	my $ALGO_LOOKUP = algo_lookup();
 	if ( $ALGO_LOOKUP->{$blast}{formatdb} ) {
-		my $basename = "$BLASTDBDIR/$dsgid2-$feat_type2";
+		my $basename = "$BLASTDBDIR/$genome_id2-$feat_type2";
 
 		my @blastdbargs = ();
 		push @blastdbargs, [ '-p', $feat_type2 eq "protein" ? "T" : "F", 1 ];
@@ -315,8 +318,8 @@ sub add_jobs {
 		$workflow->log( $blastdb );
 	}
 	elsif ( $ALGO_LOOKUP->{$blast}{lastdb} ) { # mdb added 3/17/16 for upgrade to Last v731
-	    my $basedir = "$LASTDBDIR/$dsgid2";
-	    my $basename = "$LASTDBDIR/$dsgid2/$dsgid2-$feat_type2";
+	    my $basedir = "$LASTDBDIR/$genome_id2";
+	    my $basename = "$LASTDBDIR/$genome_id2/$genome_id2-$feat_type2";
         $workflow->add_job({
             cmd         => "mkdir -p $basedir ; $LASTDB $basename $fasta2",
             script      => undef,
@@ -345,7 +348,7 @@ sub add_jobs {
 		$orgkey1 . "_" . $orgkey2 => {
 			fasta    => $fasta1,
 			db       => $blastdb,
-			basename => $dsgid1 . "_" . $dsgid2
+			basename => $genome_id1 . "_" . $genome_id2
 			  . ".$feat_type1-$feat_type2."
 			  . $ALGO_LOOKUP->{$blast}{filename},
 			dir => "$DIAGSDIR/$dir1/$dir2",
@@ -394,7 +397,7 @@ sub add_jobs {
 # mdb removed 3/17/16 -- wrapper no longer needed
 #		elsif ( $cmd =~ /last_wrapper/i ) {
 #			# mdb added 9/20/13 issue 213
-#			my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
+#			my $dbpath = $config->{LASTDB} . '/' . $genome_id2;
 #			mkpath( $dbpath, 0, 0777 );
 #			push @blastargs, [ "--dbpath", $dbpath, 0 ];
 #
@@ -519,8 +522,8 @@ sub add_jobs {
  #       bedfile1  => $bedfile1,
  #       bedfile2  => $bedfile2,
  #       outfile   => $org_dirs{$orgkey1 . "_" . $orgkey2}{dir} . "/"
- #         . $dsgid1 . "_"
- #         . $dsgid2
+ #         . $genome_id1 . "_"
+ #         . $genome_id2
  #         . ".$feat_type1-$feat_type2");
 
 	############################################################################
@@ -530,8 +533,8 @@ sub add_jobs {
 	my $dag_file12_all   = $dag_file12 . ".all";
 	my $query_dup_file   = $opts{query_dup_files};
 	my $subject_dup_file = $opts{subject_dup_files};
-	my $query            = "a" . $dsgid1;
-	my $subject          = "b" . $dsgid2;
+	my $query            = "a" . $genome_id1;
+	my $subject          = "b" . $genome_id2;
 
 	my @dagtoolargs = ();
 	push @dagtoolargs, [ '-q', $query,              1 ];
@@ -573,8 +576,8 @@ sub add_jobs {
 		my @geneorderargs = ();
 		push @geneorderargs, [ "",           $dag_file12_all,           1 ];
 		push @geneorderargs, [ "",           $dag_file12_all_geneorder, 1 ];
-		push @geneorderargs, [ "--gid1",     $dsgid1,                   1 ];
-		push @geneorderargs, [ "--gid2",     $dsgid2,                   1 ];
+		push @geneorderargs, [ "--gid1",     $genome_id1,                   1 ];
+		push @geneorderargs, [ "--gid2",     $genome_id2,                   1 ];
 		push @geneorderargs, [ "--feature1", $feat_type1,               1 ];
 		push @geneorderargs, [ "--feature2", $feat_type2,               1 ];
 
@@ -628,7 +631,7 @@ sub add_jobs {
 
 	#this is for using dagchainer's merge function
 	my $dag_merge_enabled = ( $merge_algo == 2 ) ? 1 : 0;
-	my $self_comparision = ( $dsgid1 eq $dsgid2 ) ? 1 : 0;
+	my $self_comparision = ( $genome_id1 eq $genome_id2 ) ? 1 : 0;
 
 	#length of a gap (average distance expected between two syntenic genes)
 	my $gap = defined( $opts{g} ) ? $opts{g} : floor( $dagchainer_D / 2 );
@@ -981,16 +984,16 @@ sub add_jobs {
 
 	my $jsoption = "";
 	$jsoption .= qq{'javascript:synteny_zoom(};
-	$jsoption .= qq{"$dsgid1",};
-	$jsoption .= qq{"$dsgid2",};
+	$jsoption .= qq{"$genome_id1",};
+	$jsoption .= qq{"$genome_id2",};
 	$jsoption .= qq{"$basename",};
 	$jsoption .= $flip ? qq{"YCHR","XCHR"} : qq{"XCHR","YCHR"};
 	$jsoption .= qq{,"$ks_db"} if $ks_db;
 	$jsoption .= qq{)'};
 
 	push @plotargs, [ '-l',    $jsoption, 0 ];
-	push @plotargs, [ '-dsg1', $dsgid1,   1 ];
-	push @plotargs, [ '-dsg2', $dsgid2,   1 ];
+	push @plotargs, [ '-dsg1', $genome_id1,   1 ];
+	push @plotargs, [ '-dsg2', $genome_id2,   1 ];
 	push @plotargs, [ '-w',    $width,    1 ];
 	push @plotargs, [ '-lt', 2, 1 ];
 	push @plotargs, [ '-assemble', $assemble,    1 ] if $assemble;
@@ -1036,8 +1039,8 @@ sub add_jobs {
 
 	#    my $dot_args = [
 	#        [ '-cf', $config->{_CONFIG_PATH}, 0 ],
-	#        [ '-genome1', $dsgid1, 0 ],
-	#        [ '-genome2', $dsgid2, 0 ],
+	#        [ '-genome1', $genome_id1, 0 ],
+	#        [ '-genome2', $genome_id2, 0 ],
 	#        [ '-a', $final_dagchainer_file, 1 ],
 	#        [ '-b', $json_basename, 1 ],
 	#    ];
@@ -1120,8 +1123,8 @@ sub add_jobs {
 	my $link_args = [
 		[ '--config',  $config->{_CONFIG_PATH}, 0 ],
 		[ '--infile',  $final_dagchainer_file,  1 ],
-		[ '--dsgid1',  $dsgid1,                 1 ],
-		[ '--dsgid2',  $dsgid2,                 1 ],
+		[ '--dsgid1',  $genome_id1,             1 ],
+		[ '--dsgid2',  $genome_id2,             1 ],
 		[ '--outfile', $condensed,              1 ],
 	];
 
@@ -1136,19 +1139,19 @@ sub add_jobs {
 		}
 	);
 
-	if ( $opts{frac_bias} =~ /true/i ) {
+	if ( test($opts{frac_bias}) ) {
 		my $organism_name;
 		my $query_id;
 		my $target_id;
 		if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
 			$organism_name = $genome1->organism->name;
-			$query_id      = $dsgid2;
-			$target_id     = $dsgid1;
+			$query_id      = $genome_id2;
+			$target_id     = $genome_id1;
 		}
 		else {
 			$organism_name = $genome2->organism->name;
-			$query_id      = $dsgid1;
-			$target_id     = $dsgid2;
+			$query_id      = $genome_id1;
+			$target_id     = $genome_id2;
 		}
 
 		my $gff_job = create_gff_generation_job(
@@ -1158,8 +1161,8 @@ sub add_jobs {
 		$workflow->add_job($gff_job);
 
 		my $output_dir = catdir( $config->{DIAGSDIR}, $dir1, $dir2 );
-		my $all_genes = ( $opts{fb_target_genes} eq 'true' ) ? 'False' : 'True';
-		my $rru = ( $opts{fb_remove_random_unknown} eq 'true' ) ? 'True' : 'False';
+		my $all_genes = test($opts{fb_target_genes}) ? 'False' : 'True';
+		my $rru = test($opts{fb_remove_random_unknown}) ? 'True' : 'False';
 		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
 		$workflow->add_job(
 			{
@@ -1358,10 +1361,10 @@ sub defaults {
 sub gen_org_name {
 	my %opts      = @_;
 	my $db        = $opts{db};
-	my $dsgid     = $opts{dsgid};
+	my $genome_id = $opts{genome_id};
 	my $feat_type = $opts{feat_type} || 1;
 
-	my ($dsg) = $db->resultset('Genome')->search( { genome_id => $dsgid },
+	my ($dsg) = $db->resultset('Genome')->search( { genome_id => $genome_id },
 		{ join => 'organism', prefetch => 'organism' } );
 
 	my $org_name = $dsg->organism->name;
@@ -1369,7 +1372,7 @@ sub gen_org_name {
 	    $org_name . " (v"
 	  . $dsg->version
 	  . ", dsgid"
-	  . $dsgid . ") "
+	  . $genome_id . ") "
 	  . $feat_type;
 	$title =~ s/(`|')//g;
 
@@ -1444,18 +1447,18 @@ sub get_query_link {
 	my $feat_type1 = $url_options{feat_type1};
 	my $feat_type2 = $url_options{feat_type2};
 
-	my $dsgid1 = $url_options{dsgid1};
-	my $dsgid2 = $url_options{dsgid2};
+	my $genome_id1 = $url_options{genome_id1};
+	my $genome_id2 = $url_options{genome_id2};
 
-	unless ( $dsgid1 and $dsgid2 ) {
+	unless ( $genome_id1 and $genome_id2 ) {
 		return encode_json( { 
 		    success => JSON::false,
 		    error => "Missing a genome id" 
 		} );
 	}
 
-	my $assemble = $url_options{assemble} =~ /true/i ? 1 : 0;
-	$assemble = 2 if $assemble && $url_options{show_non_syn} =~ /true/i;
+	my $assemble = test($url_options{assemble});
+	$assemble = 2 if $assemble && test($url_options{show_non_syn});
 	$assemble *= -1 if $assemble && $url_options{spa_ref_genome} < 0;
 	my $axis_metric       = $url_options{axis_metric};
 	my $axis_relationship = $url_options{axis_relationship};
@@ -1471,7 +1474,7 @@ sub get_query_link {
 	my $depth_overlap     = $url_options{depth_overlap};
 
 	#options for fractionation bias
-	my $frac_bias       = $url_options{frac_bias} =~ /true/i;
+	my $frac_bias       = test($url_options{frac_bias});
 	my $fb_window_size  = $url_options{fb_window_size};
 	my $fb_target_genes = $url_options{fb_target_genes};
 	my $fb_numquerychr  = $url_options{fb_numquerychr};
@@ -1483,19 +1486,16 @@ sub get_query_link {
 	#	my $fid2 = $url_options{fid2};
 
 	#will non-syntenic dots be shown?
-	my $snsd = $url_options{show_non_syn_dots} =~ /true/i ? 1 : 0;
+	my $snsd = test($url_options{show_non_syn_dots});
 
 	#will the axis be flipped?
-	my $flip = $url_options{flip};
-	$flip = $flip =~ /true/i ? 1 : 0;
+	my $flip = test($url_options{flip});
 
 	#are axes labeled?
-	my $clabel = $url_options{clabel};
-	$clabel = $clabel =~ /true/i ? 1 : 0;
+	my $clabel = test($url_options{clabel});
 
 	#are random chr skipped
-	my $skip_rand = $url_options{skip_rand};
-	$skip_rand = $skip_rand =~ /true/i ? 1 : 0;
+	my $skip_rand = test($url_options{skip_rand});
 
 	#which color scheme for ks/kn dots?
 	my $color_scheme = $url_options{color_scheme};
@@ -1507,41 +1507,39 @@ sub get_query_link {
 	my $codeml_max = $url_options{codeml_max};
 	$codeml_max = undef
 	  unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
-	my $logks = $url_options{logks};
-	$logks = $logks eq "true" ? 1 : 0;
+	my $logks = test($url_options{logks});
 
 	#how are the chromosomes to be sorted?
 	my $chr_sort_order = $url_options{chr_sort_order};
 
 	#draw a box around identified diagonals?
-	my $box_diags = $url_options{box_diags};
-	$box_diags = $box_diags eq "true" ? 1 : 0;
+	my $box_diags = test($url_options{box_diags});
 
 	my ( $org_name1, $titleA ) = gen_org_name(
 		db        => $db,
-		dsgid     => $dsgid1,
+		genome_id     => $genome_id1,
 		feat_type => $feat_type1
 	);
 
 	my ( $org_name2, $titleB ) = gen_org_name(
 		db        => $db,
-		dsgid     => $dsgid2,
+		genome_id     => $genome_id2,
 		feat_type => $feat_type2
 	);
 
 	# Sort by genome id
 	(
-		$dsgid1, $org_name1, $feat_type1, $depth_org_1_ratio, $dsgid2,
+		$genome_id1, $org_name1, $feat_type1, $depth_org_1_ratio, $genome_id2,
 		$org_name2, $feat_type2, $depth_org_2_ratio
 	  )
 	  = (
-		$dsgid2, $org_name2, $feat_type2, $depth_org_2_ratio, $dsgid1,
+		$genome_id2, $org_name2, $feat_type2, $depth_org_2_ratio, $genome_id1,
 		$org_name1, $feat_type1, $depth_org_1_ratio
-	  ) if ( $dsgid2 lt $dsgid1 );
+	  ) if ( $genome_id2 lt $genome_id1 );
 
 	my $synmap_link =
 	    $config->{SERVER}
-	  . "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2"
+	  . "SynMap.pl?genome_id1=$genome_id1;genome_id2=$genome_id2"
 	  . ";D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;"
 	  . "ft2=$feat_type2;autogo=1";
 
@@ -1561,15 +1559,10 @@ sub get_query_link {
 	$synmap_link .= ";do=$depth_overlap"       if $depth_overlap;
 	$synmap_link .= ";fb=1"                    if $frac_bias;
 	$synmap_link .= ";fb_ws=$fb_window_size"   if $fb_window_size;
-	$synmap_link .= ";fb_tg=1"                 if $fb_target_genes eq 'true';
+	$synmap_link .= ";fb_tg=1"                 if test($fb_target_genes);
 	$synmap_link .= ";fb_nqc=$fb_numquerychr"  if $fb_numquerychr;
 	$synmap_link .= ";fb_ntc=$fb_numtargetchr" if $fb_numtargetchr;
-	if ($fb_remove_random_unknown eq 'true') {
-		$synmap_link .= ";fb_rru=1";
-	}
-	else {
-		$synmap_link .= ";fb_rru=0";		
-	}
+	$synmap_link .= ";fb_rru=" . test($fb_remove_random_unknown);
 	$synmap_link .= ";flip=1"                  if $flip;
 	$synmap_link .= ";cs=$color_scheme";
 	$synmap_link .= ";cmin=$codeml_min"
@@ -1605,130 +1598,130 @@ sub get_query_link {
 	return $tiny_link;
 }
 
-sub go {
-	my %opts = @_;
-	foreach my $k ( keys %opts ) {
-		$opts{$k} =~ s/^\s+//;
-		$opts{$k} =~ s/\s+$//;
-	}
-	my $dsgid1 = $opts{dsgid1};
-	my $dsgid2 = $opts{dsgid2};
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "You must select two genomes."
-		}
-	) unless ( $dsgid1 && $dsgid2 );
+# sub go {
+# 	my %opts = @_;
+# 	foreach my $k ( keys %opts ) {
+# 		$opts{$k} =~ s/^\s+//;
+# 		$opts{$k} =~ s/\s+$//;
+# 	}
+# 	my $genome_id1 = $opts{genome_id1};
+# 	my $genome_id2 = $opts{genome_id2};
+# 	return encode_json(
+# 		{
+# 			success => JSON::false,
+# 			error   => "You must select two genomes."
+# 		}
+# 	) unless ( $genome_id1 && $genome_id2 );
 
-	my ( $db, $user, $config ) = CoGe::Accessory::Web->init();
+# 	my ( $db, $user, $config ) = CoGe::Accessory::Web->init();
 
-	my ($genome1) = $db->resultset('Genome')->find($dsgid1);
-	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
+# 	my ($genome1) = $db->resultset('Genome')->find($genome_id1);
+# 	my ($genome2) = $db->resultset('Genome')->find($genome_id2);
 
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "The Genome $dsgid1 could not be found."
-		}
-	) unless $genome1;
+# 	return encode_json(
+# 		{
+# 			success => JSON::false,
+# 			error   => "The Genome $genome_id1 could not be found."
+# 		}
+# 	) unless $genome1;
 
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "The Genome $dsgid2 could not be found."
-		}
-	) unless $genome2;
+# 	return encode_json(
+# 		{
+# 			success => JSON::false,
+# 			error   => "The Genome $genome_id2 could not be found."
+# 		}
+# 	) unless $genome2;
 
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "Genome $dsgid1 primary data is missing."
-		}
-	) unless -r $genome1->file_path;
+# 	return encode_json(
+# 		{
+# 			success => JSON::false,
+# 			error   => "Genome $genome_id1 primary data is missing."
+# 		}
+# 	) unless -r $genome1->file_path;
 
-	return encode_json(
-		{
-			success => JSON::false,
-			error   => "Genome $dsgid2 primary data is missing."
-		}
-	) unless -r $genome2->file_path;
+# 	return encode_json(
+# 		{
+# 			success => JSON::false,
+# 			error   => "Genome $genome_id2 primary data is missing."
+# 		}
+# 	) unless -r $genome2->file_path;
 
-	my $tiny_link = get_query_link( $config, $db, @_ );
-	warn "tiny_link is required for logging." unless defined($tiny_link);
-	my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-	my $workflow_name = "synmap-$tiny_id";
+# 	my $tiny_link = get_query_link( $config, $db, @_ );
+# 	warn "tiny_link is required for logging." unless defined($tiny_link);
+# 	my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
+# 	my $workflow_name = "synmap-$tiny_id";
 
-	my $JEX = CoGe::Accessory::Jex->new(
-		host => $config->{JOBSERVER},
-		port => $config->{JOBPORT}
-	);
-	my $workflow = $JEX->create_workflow( name => $workflow_name );
-	$workflow->log_section( "Creating Workflow" );
-	$workflow->log( "Link to Regenerate Analysis" );
-	$workflow->log( "$tiny_link" );
-	$workflow->log( "" );
-	$workflow->log( "Created Workflow: $workflow_name" );
-	$workflow->log( "" );
+# 	my $JEX = CoGe::Accessory::Jex->new(
+# 		host => $config->{JOBSERVER},
+# 		port => $config->{JOBPORT}
+# 	);
+# 	my $workflow = $JEX->create_workflow( name => $workflow_name );
+# 	$workflow->log_section( "Creating Workflow" );
+# 	$workflow->log( "Link to Regenerate Analysis" );
+# 	$workflow->log( "$tiny_link" );
+# 	$workflow->log( "" );
+# 	$workflow->log( "Created Workflow: $workflow_name" );
+# 	$workflow->log( "" );
 
-	my $add_response = add_jobs(
-		workflow => $workflow,
-		db       => $db,
-		config   => $config,
-		@_
-	);
-	if ($add_response) { # an error occurred
-	    return encode_json($add_response);
-	}
+# 	my $add_response = add_jobs(
+# 		workflow => $workflow,
+# 		db       => $db,
+# 		config   => $config,
+# 		@_
+# 	);
+# 	if ($add_response) { # an error occurred
+# 	    return encode_json($add_response);
+# 	}
 
-	$workflow->log_section( "Running Workflow" );
+# 	$workflow->log_section( "Running Workflow" );
 
-	my $response = $JEX->submit_workflow($workflow);
-	unless (defined $response && $response->{id}) {
-        return encode_json( { 
-            success => JSON::false,
-            error => 'The workflow could not be submitted (JEX error)'
-        } );
-    }
+# 	my $response = $JEX->submit_workflow($workflow);
+# 	unless (defined $response && $response->{id}) {
+#         return encode_json( { 
+#             success => JSON::false,
+#             error => 'The workflow could not be submitted (JEX error)'
+#         } );
+#     }
 
-	my $feat_type1 = $opts{feat_type1};
-	my $feat_type2 = $opts{feat_type2};
-	my ( $org_name1, $title1 ) = gen_org_name(
-		db        => $db,
-		dsgid     => $dsgid1,
-		feat_type => $feat_type1
-	);
-	my ( $org_name2, $title2 ) = gen_org_name(
-		db        => $db,
-		dsgid     => $dsgid2,
-		feat_type => $feat_type2
-	);
-	my $log_msg = "$org_name1 v. $org_name2"; #"<a href='OrganismView.pl?dsgid=$dsgid1' target='_blank'>$org_name1</a> v. <a href='OrganismView.pl?dsgid=$dsgid2' target='_blank'>$org_name2</a>";
-	$log_msg .= " Ks" if $opts{ks_type};
+# 	my $feat_type1 = $opts{feat_type1};
+# 	my $feat_type2 = $opts{feat_type2};
+# 	my ( $org_name1, $title1 ) = gen_org_name(
+# 		db        => $db,
+# 		genome_id     => $genome_id1,
+# 		feat_type => $feat_type1
+# 	);
+# 	my ( $org_name2, $title2 ) = gen_org_name(
+# 		db        => $db,
+# 		genome_id     => $genome_id2,
+# 		feat_type => $feat_type2
+# 	);
+# 	my $log_msg = "$org_name1 v. $org_name2";
+# 	$log_msg .= " Ks" if $opts{ks_type};
 
-	CoGe::Accessory::Web::log_history(
-		db          => $db,
-		user_id     => $user->id,
-		description => $log_msg,
-		page        => 'SynMap',
-		link        => $tiny_link,
-		parent_id   => $response->{id},
-		parent_type => 7                  #FIXME magic number
-	);
+# 	CoGe::Accessory::Web::log_history(
+# 		db          => $db,
+# 		user_id     => $user->id,
+# 		description => $log_msg,
+# 		page        => 'SynMap',
+# 		link        => $tiny_link,
+# 		parent_id   => $response->{id},
+# 		parent_type => 7                  #FIXME magic number
+# 	);
 
-	my $DIR = $config->{COGEDIR};
-	my $URL = $config->{URL};
-	my $log = $workflow->logfile;
-	$log =~ s/$DIR/$URL/;
-	return encode_json(
-		{
-			link    => $tiny_link,
-			log     => $log,
-			request => "jex/synmap/status/" . $response->{id}, #FIXME hardcoded
-			status  => $response->{status},
-			success => ($JEX->is_successful($response) ? JSON::true : JSON::false)
-		}
-	);
-}
+# 	my $DIR = $config->{COGEDIR};
+# 	my $URL = $config->{URL};
+# 	my $log = $workflow->logfile;
+# 	$log =~ s/$DIR/$URL/;
+# 	return encode_json(
+# 		{
+# 			link    => $tiny_link,
+# 			log     => $log,
+# 			request => "jex/synmap/status/" . $response->{id}, #FIXME hardcoded
+# 			status  => $response->{status},
+# 			success => ($JEX->is_successful($response) ? JSON::true : JSON::false)
+# 		}
+# 	);
+# }
 
 # FIXME: Currently this feature is disabled.
 # @by Evan Briones

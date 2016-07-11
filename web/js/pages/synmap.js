@@ -1619,8 +1619,6 @@ var coge = window.coge = (function(namespace) {
             	return;
             }
 
-            var overlay = $("#overlay").show();
-
             //TODO Scale polling time linearly with long running jobs
             var duration = pageObj.waittime;
 
@@ -1630,6 +1628,12 @@ var coge = window.coge = (function(namespace) {
                 this.go();
                 return;
             }
+
+            this.get_results();
+        },
+
+        get_results: function() {
+            var overlay = $("#overlay").show();
 
             var params = this.get_params();
             params['fname'] = 'get_results';
@@ -1727,13 +1731,18 @@ var coge = window.coge = (function(namespace) {
 
         go: function() {
             coge.progress.begin();
+            var params = this.get_params();
+            params['genome_id1'] = params['dsgid1'];
+            delete params['dsgid1'];
+            params['genome_id2'] = params['dsgid2'];
+            delete params['dsgid2'];
             var request = {
                 type: 'synmap',
                 requester: {
                     page:      PAGE_NAME,
                     user_name: USER_NAME
                 },
-                parameters: this.get_params()
+                parameters: params
             };
     
             coge.services.submit_job(request) 
@@ -1750,6 +1759,7 @@ var coge = window.coge = (function(namespace) {
                     // Start status update
 //                    window.history.pushState({}, "Title", "SynMap.pl" + "?wid=" + response.id); // Add workflow id to browser URL
                     coge.progress.update(response.id, response.site_url);
+                    coge.synmap.get_results();
                 })
                 .fail(function(jqXHR, textStatus, errorThrown) {
                     coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);

@@ -7,7 +7,7 @@ umask(0);
 use CoGeX;
 use CoGe::Accessory::Web qw(url_for api_url_for);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
-use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
+use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link );
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -112,7 +112,6 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 %FUNCTIONS = (
-	go                     => \&go,
 	get_orgs               => \&get_orgs,
 	get_genome_info        => \&get_genome_info,
 #	get_previous_analyses  => \&get_previous_analyses,
@@ -1081,7 +1080,7 @@ sub get_results {
 	############################################################################
 	# Initialize Job info
 	############################################################################
-	my $tiny_link = get_query_link($config, $coge, @_);
+	my $tiny_link = get_query_link($config, $coge, @_, genome_id1 => $dsgid1, genome_id2 => $dsgid2);
 
 	say STDERR "tiny_link is required for logging." unless defined($tiny_link);
 
@@ -1199,13 +1198,13 @@ sub get_results {
 	############################################################################
 	my ( $org_name1, $title1 ) = gen_org_name(
 		db		  => $coge,
-		dsgid     => $dsgid1,
+		genome_id     => $dsgid1,
 		feat_type => $feat_type1,
 	);
 
 	my ( $org_name2, $title2 ) = gen_org_name(
 		db		  => $coge,
-		dsgid     => $dsgid2,
+		genome_id     => $dsgid2,
 		feat_type => $feat_type2,
 	);
 
@@ -1620,7 +1619,7 @@ sub get_results {
 			my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
 			my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
 			if (! -r $output_dir . 'html/' . $fb_img_file) {
-				return encode_json( { error => "The fractionation bias image could not be found." } );
+				return encode_json( { error => "The fractionation bias image ($fb_img_file) could not be found." } );
 			}
 			$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
 			$gff_sort_output_file = _filename_to_link(
