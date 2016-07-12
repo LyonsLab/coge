@@ -506,11 +506,7 @@ sub add_jobs {
 		{
 			cmd         => $BLAST2BED,
 			script      => undef,
-<<<<<<< HEAD
 			args        => $blastargs,
-=======
-			args        => \@blastargs,
->>>>>>> Set alignment task priorities to run remote
 			inputs      => [$raw_blastfile], #, $raw_blastfile . '.done'],
 			outputs     => \@bedoutputs,
 			description => "Creating .bed files...",
