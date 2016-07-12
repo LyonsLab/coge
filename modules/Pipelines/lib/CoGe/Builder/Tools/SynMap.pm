@@ -6,6 +6,10 @@ with qw(CoGe::Builder::Buildable);
 use CoGe::JEX::Jex;
 use CoGe::JEX::Workflow;
 use CoGe::Accessory::Web qw( get_defaults get_command_path api_url_for url_for );
+<<<<<<< HEAD
+=======
+use CoGe::Accessory::Workflow;
+>>>>>>> Set alignment task priorities to run remote
 use CoGe::Accessory::Utils qw(units to_filename);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Core::Storage qw( get_workflow_paths );
@@ -445,7 +449,10 @@ sub add_jobs {
 			push @blastargs, [ "-query", $fasta,   1 ];
 			push @blastargs, [ "-db",    $db,      1 ];
 		}
+<<<<<<< HEAD
 
+=======
+>>>>>>> Set alignment task priorities to run remote
 		#push @blastargs, [ ";touch", "$raw_blastfile.done", 1];
 		#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
 		push @blastdb_files, $fasta;
@@ -499,7 +506,11 @@ sub add_jobs {
 		{
 			cmd         => $BLAST2BED,
 			script      => undef,
+<<<<<<< HEAD
 			args        => $blastargs,
+=======
+			args        => \@blastargs,
+>>>>>>> Set alignment task priorities to run remote
 			inputs      => [$raw_blastfile], #, $raw_blastfile . '.done'],
 			outputs     => \@bedoutputs,
 			description => "Creating .bed files...",
