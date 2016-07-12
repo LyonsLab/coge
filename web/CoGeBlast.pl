@@ -133,7 +133,7 @@ sub gen_body {
     my $form   = $FORM;
     my $featid = $form->param('featid');
     my $fid = $form->param('fid');
-    $featid .= ",$fid" if $fid;
+    $featid = ($featid || $fid) ? join( ",", $featid, $fid ) : 0;
     $featid =~ s/^,//;
     $featid =~ s/,$//;
     my $chr    = $form->param('chr') || 0;
