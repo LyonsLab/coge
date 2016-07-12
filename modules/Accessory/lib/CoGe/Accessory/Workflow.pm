@@ -48,6 +48,7 @@ sub add_job {
     my $options     = $opts->{options};
     my $outputs     = $opts->{outputs} || [];
     my $description = $opts->{description};
+    my $priority    = $opts->{priority}; # mdb added 6/21/16
     my $overwrite;
 
     # Set defaults
@@ -69,6 +70,7 @@ sub add_job {
         overwrite   => $overwrite,
         inputs      => $inputs,
         outputs     => $outputs,
+        priority    => $priority
     };
 
     # mdb added 1/5/15 - prevent duplicate jobs, JEX doesn't handle them correctly
