@@ -6,7 +6,7 @@ with qw(CoGe::Builder::Buildable);
 use CoGe::JEX::Jex;
 use CoGe::JEX::Workflow;
 use CoGe::Accessory::Web qw( get_defaults get_command_path api_url_for url_for );
-use CoGe::Accessory::Utils qw(units);
+use CoGe::Accessory::Utils qw(units to_filename);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Core::Storage qw( get_workflow_paths );
 use CoGe::Accessory::TDS qw(write);
@@ -362,7 +362,15 @@ sub add_jobs {
         });
 
         $blastdb = $basename;
-        push @blastdb_files, $basename . '.prj';
+        push @blastdb_files, ( 
+            $basename . '.prj',
+            $basename . '.bck', # mdb added 6/21/16 for jex-distribution
+            $basename . '.des', # mdb added 6/21/16 for jex-distribution
+            $basename . '.sds', # mdb added 6/21/16 for jex-distribution
+            $basename . '.ssp', # mdb added 6/21/16 for jex-distribution
+            $basename . '.suf', # mdb added 6/21/16 for jex-distribution
+            $basename . '.tis', # mdb added 6/21/16 for jex-distribution
+	   );
 
         $workflow->log( "" );
         $workflow->log( "Added LastDB generation" );
@@ -407,9 +415,9 @@ sub add_jobs {
 		my $outfile = $org_dirs{$key}{blastfile};
 		my @blastargs;
 
-		if ( $cmd =~ /lastz/i ) {
-			push @blastargs, [ "-i", $fasta,   0 ];
-			push @blastargs, [ "-d", $db,      0 ];
+		if ( $cmd =~ /lastz/i ) { # LASTZ program
+			push @blastargs, [ "-i", $fasta,   1 ];
+			push @blastargs, [ "-d", $db,      1 ];
 			push @blastargs, [ "-o", $outfile, 1 ];
 		}
         # mdb removed 3/17/16 -- wrapper no longer needed
@@ -423,29 +431,43 @@ sub add_jobs {
 		#	push @blastargs, [ "",   $fasta,   0 ];
 		#	push @blastargs, [ "-o", $outfile, 1 ];
 		#}
-        elsif ( $cmd =~ /lastal/i ) { # mdb added 3/17/16 -- new multithreaded last v731
+        elsif ( $cmd =~ /lastal/i ) { # LAST program   # mdb added 3/17/16 -- new multithreaded last v731
             my $fasta   = $org_dirs{$key}{fasta};
             my $db      = $org_dirs{$key}{db};
             my $outfile = $org_dirs{$key}{blastfile};
-            $cmd .= " $db $fasta > $outfile";
+            #$cmd .= " $db $fasta > $outfile";
+            push @blastargs, [ '', $db,       1 ];
+            push @blastargs, [ '', $fasta,    1 ];
+            push @blastargs, [ '>', $outfile, 1 ];
         }
-		else {
+		else { # BLASTN program
 			push @blastargs, [ "-out",   $outfile, 1 ];
-			push @blastargs, [ "-query", $fasta,   0 ];
-			push @blastargs, [ "-db",    $db,      0 ];
+			push @blastargs, [ "-query", $fasta,   1 ];
+			push @blastargs, [ "-db",    $db,      1 ];
 		}
-		push @blastargs, [ ";touch", "$raw_blastfile.done", 0];
 
+		#push @blastargs, [ ";touch", "$raw_blastfile.done", 1];
 		#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
 		push @blastdb_files, $fasta;
-		$workflow->add_job({
-			cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd,
-			script      => undef,
-			args        => \@blastargs,
-			inputs      => \@blastdb_files,
-			outputs     => [$outfile, $outfile . '.done'],
-			description => "Running genome comparison...",
-		});
+#		$workflow->add_job(
+#			{
+#				cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd,
+#				script      => undef,
+#				args        => \@blastargs,
+#				inputs      => \@blastdb_files,
+#				outputs     => [$outfile, $outfile . '.done'],
+#				description => "Running genome comparison...",
+#			}
+#		);
+	    $workflow->add_job({
+            cmd         => $cmd,
+            script      => undef,
+            args        => \@blastargs,
+            inputs      => \@blastdb_files,
+            outputs     => [$outfile],
+            description => "Running genome comparison...",
+            priority    => 2
+        });
 	}
 
 	$workflow->log("");
@@ -472,15 +494,17 @@ sub add_jobs {
 	push @bedoutputs, $raw_blastfile if ( $raw_blastfile =~ /genomic/ );
 #   push @bedoutputs, "$raw_blastfile.orig" if ( $raw_blastfile =~ /genomic/ );
 	push @bedoutputs, "$raw_blastfile.new" if ( $raw_blastfile =~ /genomic/ );
-	
-	$workflow->add_job({
-		cmd         => $BLAST2BED,
-		script      => undef,
-		args        => $blastargs,
-		inputs      => [ $raw_blastfile, $raw_blastfile . '.done' ],
-		outputs     => \@bedoutputs,
-		description => "Creating BED files...",
-	});
+
+	$workflow->add_job(
+		{
+			cmd         => $BLAST2BED,
+			script      => undef,
+			args        => $blastargs,
+			inputs      => [$raw_blastfile], #, $raw_blastfile . '.done'],
+			outputs     => \@bedoutputs,
+			description => "Creating .bed files...",
+		}
+	);
 
 	$workflow->log( "" );
 	$workflow->log( "Added BED files creation" );
@@ -694,14 +718,17 @@ sub add_jobs {
 	else {
 		push @dagargs, [ ">", $dagchainer_file, 1 ];
 
-		$workflow->add_job({
-			cmd         => $RUN_DAGCHAINER,
-			script      => undef,
-			args        => \@dagargs,
-			inputs      => [$dag_file12],
-			outputs     => [$dagchainer_file],
-			description => "Running DAGChainer...",
-		});
+		$workflow->add_job(
+			{
+				cmd         => $RUN_DAGCHAINER,
+				script      => undef,
+				args        => \@dagargs,
+				inputs      => [$dag_file12],
+				outputs     => [$dagchainer_file],
+				priority    => 2,
+				description => "Running DAGChainer...",
+			}
+		);
 
 		$post_dagchainer_file = $dagchainer_file;
 		$workflow->log( "" );
