@@ -134,6 +134,8 @@ sub gen_body {
     my $featid = $form->param('featid');
     my $fid = $form->param('fid');
     $featid = ($featid || $fid) ? join( ",", $featid, $fid ) : 0;
+    $featid =~ s/^,//;
+    $featid =~ s/,$//;
     my $chr    = $form->param('chr') || 0;
     my $upstream   = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
