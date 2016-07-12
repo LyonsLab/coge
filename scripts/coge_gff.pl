@@ -53,7 +53,7 @@ if (not $filename) {
 #my $file = catfile($staging_dir, $filename);
 #warn $file;
 #my $file_temp = $file . ".tmp";
-
+synmap
 # Check if file already exists
 if (-r $filename && !$overwrite) {
     say STDERR "file already exists\n";
