@@ -353,17 +353,17 @@ div.deleted { display: none; }
                         <a href="http://genomevolution.org/wiki/index.php/Syntenic_path_assembly" target="_CoGepedia">Syntenic Path Assembly (SPA)</a>?
                     </label>
                     <input type="checkbox" name="assemble" id="assemble"  value="true" onclick="$('#assemble_info').toggle();" <tmpl_var name=syntenic_path>>
-                    <br>
-                    <span class="small" id="assemble_info" name="assemble_info" style="display: none; color: red;">Options:
-
-                    <label>Reference genome (to which the other genome is assembled) has</label>
-                    <select id="spa_ref_genome" name="spa_ref_genome">
-                        <option value="1" <tmpl_var name="spa_few_select"> > fewer
-                        <option value="-1" <tmpl_var name="spa_more_select"> > more
-                    </select>
-                          pieces (contigs, scaffolds, etc)
-		    </span><br>
-		    <span class ="small">(Note: SPA is not compatible with syntenic depth or merging syntenic blocks.  If SPA is selected with those options, your dotplot image will fail to be drawn.)</span>
+                    <div id="assemble_info" style="display: none;">
+                    <span class="small" style="color: red;">Options:
+                        <label>Reference genome (to which the other genome is assembled) has</label>
+                        <select id="spa_ref_genome" name="spa_ref_genome">
+                            <option value="1" <tmpl_var name="spa_few_select"> >fewer</option>
+                            <option value="-1" <tmpl_var name="spa_more_select"> >more</option>
+                        </select>
+                        pieces (contigs, scaffolds, etc)<br>
+                    </span>
+                    <span class ="small">(Note: SPA is not compatible with syntenic depth or merging syntenic blocks.  If SPA is selected with those options, your dotplot image will fail to be drawn.)</span>
+                    </div>
                 <li>
                     <label>Hide contigs without synteny?</label>
                     <input type="checkbox" name="show_non_syn" id="show_non_syn" value="true" <tmpl_var name="show_non_syn">><span><br>
@@ -465,8 +465,6 @@ $(function(){
         "autostart": Boolean(parseInt("<tmpl_var name=autogo>", 10))
     };
 
-    coge.synmap.setup(pageObj);
-    
     // Initialize CoGe web services
     coge.services.init({
         baseUrl: API_BASE_URL,
@@ -482,10 +480,6 @@ $(function(){
         supportEmail: SUPPORT_EMAIL
     });
     
-    // // Open status dialog
-    // if (WORKFLOW_ID) {
-    //     coge.progress.begin();
-    //     coge.progress.update(WORKFLOW_ID);
-    // }
+    coge.synmap.setup(pageObj);    
 });
 </script>
