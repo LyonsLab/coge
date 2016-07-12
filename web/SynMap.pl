@@ -1576,6 +1576,10 @@ sub get_results {
 			}
 			else {
 				$warn = qq{The histogram was not generated no ks or kn data found.};
+<<<<<<< HEAD
+=======
+				warn "problem reading $hist or is empty";
+>>>>>>> Fix file addressing in sandboxes
 			}
 		}
 
