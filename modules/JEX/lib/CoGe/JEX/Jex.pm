@@ -78,7 +78,7 @@ sub submit_workflow {
             id       => $workflow->id,
             name     => $workflow->name,
             logfile  => $workflow->logfile,
-            priority => $workflow->priority, # mdb added 6/15/16 for JEX distribution
+            priority => 0,#$workflow->priority, # mdb added 6/15/16 for JEX distribution
             jobs     => $workflow->jobs(),
         }
     };
