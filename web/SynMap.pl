@@ -1524,13 +1524,13 @@ sub get_results {
 		$org_name2 .= " (v" . $genome2->version . ")";
 
 		my $out_url = $out;
-		if ($DIR =~ /$URL/) {
+		if ($out_url =~ /$DIR/) {
     		$out_url =~ s/$DIR/$URL/;
     		$y_label =~ s/$DIR/$URL/;
     		$x_label =~ s/$DIR/$URL/;
 		}
 		else {
-		    print STDERR "get_results: ERROR !!!!, cannot perform URL substitution: out_url=$out_url DIR=$DIR URL=$URL\n";
+		    print STDERR "get_results: ERROR !!!!, cannot perform URL substitution: out=$out out_url=$out_url DIR=$DIR URL=$URL\n";
 		}
 
 		$/ = "\n";
@@ -1569,8 +1569,7 @@ sub get_results {
 				$results->param( ks_type   => $ks_type );
 			}
 			else {
-				$warn =
-				  qq{The histogram was not generated no ks or kn data found.};
+				$warn = qq{The histogram was not generated no ks or kn data found.};
 			}
 		}
 
