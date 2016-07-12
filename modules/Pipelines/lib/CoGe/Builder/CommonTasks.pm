@@ -397,7 +397,7 @@ sub generate_gff {
     my $args = [
         ['-gid', $args{gid}, 0],
         ['-f', $filename, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 0],
+        ['-config', $CONF->{_CONFIG_PATH}, 1],
         ['-cds', $args{cds}, 0],
         ['-annos', $args{annos}, 0],
         ['-nu', $args{nu}, 0],
@@ -408,10 +408,15 @@ sub generate_gff {
     push @$args, ['-add_chr', $args{add_chr}, 0] if (defined $args{add_chr});
     
     # Return workflow definition
+    my $cmd = 'coge_gff.pl';
     return $output_file, {
-        cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
+        cmd     => './' . $cmd,
         script  => undef,
         args    => $args,
+        inputs  => [ 
+            catfile($CONF->{SCRIPTDIR}, $cmd),
+            $CONF->{_CONFIG_PATH}
+        ],
         outputs => [ $output_file ],
         description => "Generating GFF..."
     };
