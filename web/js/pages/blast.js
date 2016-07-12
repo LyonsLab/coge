@@ -1527,6 +1527,7 @@ $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         var promise = blast_param_on_select('ncbi_radio', 'ncbi');
 
         // Set the options after the parameters have been returned
+	if (promise)
         promise.always(function() {
             switch (self.params['program']) {
                 case 'blastn': self.update_nucleotide(); break;
@@ -1654,6 +1655,7 @@ $.extend(Blast.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         var promise = blast_param_on_select('coge_radio', 'coge');
 
         // Set the options after the parameters have been returned
+	if (promise) 
         promise.always(function() {
             switch (self.params['program']) {
                 case 'lastz': self.update_blastz(); break;
