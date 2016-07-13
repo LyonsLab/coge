@@ -60,6 +60,11 @@ return declare(SeqFeatureStore, {
 					}}));
 				} else if (coge.data_type == 4) {
 					var strand = hit[2] == '1' ? 1 : -1;
+					var name = /ID\=([\w\.\-]+)\;/.exec(hit[5]);
+					if (name != null)
+						name = name[1];
+					else
+						name = hit[5];
 					featureCallback(new SimpleFeature({ data: {
 						id: coge.id,
 						start: hit[0],
@@ -67,7 +72,7 @@ return declare(SeqFeatureStore, {
 						strand: strand,
 						score: hit[4] * strand,
 						info: hit[5],
-						name: /ID\=([\w\.\-]+)\;/.exec(hit[5])[1]
+						name: name
 					}}));
 				}
 			}

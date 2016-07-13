@@ -29,6 +29,8 @@ my $MAX_WINDOW_SIZE = 1000000;#500000;
 
 my $QUAL_ENCODING_OFFSET = 33;
 
+my $log10 = log(10);
+
 sub stats_global {
     my $self = shift;
 	print STDERR "JBrowse::Experiment::stats_global\n";
@@ -124,19 +126,55 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     });
 }
 
+sub _transform_line {
+    my $line = shift;
+    my $transform = shift;
+    my @tokens = split ', ', $line;
+    $tokens[0] = substr($tokens[0], 1, -1);
+    if ($transform) {
+        if ($transform eq 'Inflate') {
+            $tokens[4] = 1;
+        }
+        elsif ($transform eq 'Log2') {
+            $tokens[4] = log(1 + $tokens[4]);
+        }
+        elsif ($transform eq 'Log10') {
+            $tokens[4] = log(1 + $tokens[4]) / $log10;
+        }
+    }
+    return \@tokens;
+}
+
+sub _get_quant_lines {
+    my ($id, $chr, $data_type, $type, $gte, $lte) = @_;
+    my $cols = CoGe::Core::Experiment::get_fastbit_format($id)->{columns};
+    my @columns = map { $_->{name} } @{$cols};
+    $chr = undef if $chr eq 'All';
+    my $lines = CoGe::Core::Experiment::query_data(
+        eid => $id,
+        data_type => $data_type,
+        col => join(',', @columns),
+        chr => $chr,
+        type => $type,
+        gte => $gte,
+        lte => $lte,
+    );
+    return (\@columns, $lines);
+}
+
 sub data {
     my $self = shift;
     my $id = int($self->stash('eid'));
     my $chr = $self->stash('chr');
-    my $data_type = $self->param('data_type');
     my $type = $self->param('type');
+    my $data_type = $self->param('data_type');
     my $gte = $self->param('gte');
     my $lte = $self->param('lte');
     my $transform = $self->param('transform');
     my $filename = $self->param('filename');
     my $irods_path = $self->param('irods_path');
     my $load_id = $self->param('load_id');
-    my $ext = $self->param('ext');
+    my $gap_max = $self->param('gap_max');
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -157,6 +195,9 @@ sub data {
         }, status => 401);
         return;
     }
+    my $exp_data_type = $experiment->data_type;
+    $exp_data_type = $DATA_TYPE_MARKER if defined $gap_max;
+    my $ext = $exp_data_type == $DATA_TYPE_POLY ? '.vcf' : $exp_data_type == $DATA_TYPE_ALIGN ? '.sam' : $exp_data_type == $DATA_TYPE_MARKER ? '.gff' : '.csv';
 
     my $fh;
     my $tempfile;
@@ -170,9 +211,8 @@ sub data {
         open $fh, ">", catfile($path, 'search_results' . $ext);
     }
 
-    my $exp_data_type = $experiment->data_type;
     $filename = 'experiment' unless $filename;
-    $filename .= ($exp_data_type == $DATA_TYPE_POLY ? '.vcf' : $exp_data_type == $DATA_TYPE_ALIGN ? '.sam' : $exp_data_type == $DATA_TYPE_MARKER ? '.gff' : '.csv');
+    $filename .= $ext;
     if (!$irods_path && !$load_id) {
         $self->res->headers->content_disposition('attachment; filename=' . $filename . ';');
     }
@@ -189,43 +229,17 @@ sub data {
             $self->_write("\n", $fh);
         }
         $self->_write('# transform: ' . $transform . "\n", $fh) if $transform;
-        my $cols = CoGe::Core::Experiment::get_fastbit_format($id)->{columns};
-        my @columns = map { $_->{name} } @{$cols};
+        my ($columns, $lines) = _get_quant_lines($id, $chr, $data_type, $type, $gte, $lte);
         $self->_write('# columns: ', $fh);
-        for (my $i=0; $i<scalar @columns; $i++) {
+        for (my $i=0; $i<scalar @{$columns}; $i++) {
             $self->_write(',', $fh) if $i;
-            $self->_write($columns[$i], $fh);
+            $self->_write($columns->[$i], $fh);
         }
         $self->_write("\n", $fh);
 
-        $chr = undef if $chr eq 'All';
-        my $lines = CoGe::Core::Experiment::query_data(
-            eid => $id,
-            data_type => $data_type,
-            col => join(',', @columns),
-            chr => $chr,
-            type => $type,
-            gte => $gte,
-            lte => $lte,
-        );
-        my $score_column = CoGe::Core::Experiment::get_fastbit_score_column($data_type);
-        my $log10 = log(10);
         foreach my $line (@{$lines}) {
-            my @tokens = split ', ', $line;
-            $tokens[0] = substr($tokens[0], 1, -1);
-            if ($transform) {
-                if ($transform eq 'Inflate') {
-                    $tokens[$score_column] = 1;
-                }
-                elsif ($transform eq 'Log2') {
-                    $tokens[$score_column] = log(1 + $tokens[$score_column]);
-                }
-                elsif ($transform eq 'Log10') {
-                    $tokens[$score_column] = log(1 + $tokens[$score_column]) / $log10;
-                }
-            }
-
-            $self->_write(join(',', @tokens), $fh);
+            my $tokens = _transform_line($line, $transform);
+            $self->_write(join(',', @{$tokens}), $fh);
             $self->_write("\n", $fh);
         }
     }
@@ -234,9 +248,9 @@ sub data {
         if ($type_names) {
             $self->_write('# search: SNPs in ' . $type_names . "\n", $fh);
         }
-        my $type = $self->param('type');
-        if ($type) {
-            $self->_write('# search: ' . $type . "\n", $fh);
+        my $snp_type = $self->param('snp_type');
+        if ($snp_type) {
+            $self->_write('# search: ' . $snp_type . "\n", $fh);
         }
         $self->_write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n", $fh);
         my $snps = $self->_snps;
@@ -264,10 +278,6 @@ sub data {
         if ($type_names) {
             $self->_write("\@CO\tsearch: Alignments in " . $type_names . "\n", $fh);
         }
-        my $type = $self->param('type');
-        if ($type) {
-            $self->_write("\@CO\tsearch: " . $type . "\n", $fh);
-        }
         $self->_write("\@HD\tVN:1.5\tSO:coordinate\n", $fh);
         if ($chr eq 'All') {
             my $chromosomes = $experiment->genome->chromosomes_all;
@@ -290,32 +300,49 @@ sub data {
         if ($type_names) {
             $self->_write('# search: Markers in ' . $type_names . "\n", $fh);
         }
-        my $type = $self->param('type');
-        if ($type) {
-            $self->_write('# search: ' . $type . "\n", $fh);
-        }
         $self->_write("#seqid\tsource\ttype\tstart\tend\tscore\tstrand\tphase\tattributes\n", $fh);
-        my $markers = $self->_markers;
-        my $s = (index(@{$markers}[0], ', ') == -1 ? 1 : 2);
-        $chr = undef if $chr eq 'All';
-        foreach (@{$markers}) {
-            my @l = split(',');
-            my $c = substr($l[0], 1, -1);
-            next if $chr && $chr ne $c;
-            $self->_write($c, $fh);
-            $self->_write("\t.\t", $fh);
-            $self->_write(substr($l[4], $s, -1), $fh);
-            $self->_write("\t", $fh);
-            $self->_write($l[1], $fh);
-            $self->_write("\t", $fh);
-            $self->_write($l[2], $fh);
-            $self->_write("\t", $fh);
-            $self->_write($l[5], $fh);
-            $self->_write("\t", $fh);
-            $self->_write(substr($l[3], $s, -1) == 1 ? '+' : '-', $fh);
-            $self->_write("\t.\t", $fh);
-            $self->_write(substr($l[6], $s, -1), $fh);
-            $self->_write("\n", $fh);
+        my $markers;
+        if (defined $gap_max) {
+            my ($columns, $lines) = _get_quant_lines($id, $chr, $data_type, $type, $gte, $lte);
+            my $c;
+            my $start;
+            my $stop;
+            my $strand;
+            my $tot_score = 0;
+            my $num = 1;
+            foreach my $line (@{$lines}) {
+                my $tokens = _transform_line($line, $transform);
+                $c = $tokens->[0] if !$c;
+                $start = $tokens->[1] if !$start;
+                $stop = $tokens->[2] if !$stop;
+                $strand = $tokens->[3] if !$strand;
+                if ($c ne $tokens->[0] || $start > $stop + $gap_max) {
+                    $self->_write_marker($c, undef, undef, $start, $stop, $tot_score / $num, $strand, undef, undef, $fh);
+                    $c = $tokens->[0];
+                    $start = $tokens->[1];
+                    $stop = $tokens->[2];
+                    $strand = $tokens->[3];
+                    $num = 1;
+                    $tot_score = 0;
+                }
+                else {
+                    $num++;
+                    $tot_score += $tokens->[4];
+                    $stop = $tokens->[2];
+                }
+            }
+            $self->_write_marker($c, undef, undef, $start, $stop, $tot_score / $num, $strand, undef, undef, $fh);
+        }
+        else {
+            $markers = $self->_markers;
+            my $s = (index(@{$markers}[0], ', ') == -1 ? 1 : 2);
+            $chr = undef if $chr eq 'All';
+            foreach (@{$markers}) {
+                my @l = split(',');
+                my $c = substr($l[0], 1, -1);
+                next if $chr && $chr ne $c;
+                $self->_write_marker($c, undef, substr($l[4], $s, -1), $l[1], $l[2], $l[5], substr($l[3], $s, -1) == 1 ? '+' : '-', undef, substr($l[6], $s, -1), $fh);
+            }
         }
     }
     $self->finish();
@@ -330,6 +357,28 @@ sub data {
                 system($cmd);
         }
     }
+}
+
+sub _write_marker {
+    my ($self, $chr, $source, $method, $start, $stop, $score, $strand, $phase, $group, $fh) = @_;
+    $self->_write($chr, $fh);
+    $self->_write("\t", $fh);
+    $self->_write($source || '.');
+    $self->_write("\t", $fh);
+    $self->_write($method || '.');
+    $self->_write("\t", $fh);
+    $self->_write($start, $fh);
+    $self->_write("\t", $fh);
+    $self->_write($stop, $fh);
+    $self->_write("\t", $fh);
+    $self->_write($score, $fh);
+    $self->_write("\t", $fh);
+    $self->_write($strand || '.', $fh);
+    $self->_write("\t", $fh);
+    $self->_write($phase || '.', $fh);
+    $self->_write("\t", $fh);
+    $self->_write($group || '.', $fh);
+    $self->_write("\n", $fh);    
 }
 
 sub _write {

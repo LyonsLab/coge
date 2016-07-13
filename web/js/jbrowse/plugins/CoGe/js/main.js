@@ -680,7 +680,7 @@ return declare( JBrowsePlugin,
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var search = this.search_to_string(config.coge.search);
 		var description = 'Results from search: ' + search;
-		var url = api_base_url + '/experiment/' + config.coge.eid + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id + '&ext=' + this._ext(config.coge.data_type);
+		var url = api_base_url + '/experiment/' + config.coge.eid + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id;
 		url += '&' + this.search_to_params(config.coge.search, true);
 		var annotions = [
 			{
@@ -706,6 +706,10 @@ return declare( JBrowsePlugin,
 			annotions.push({ type: 'transform', text: config.coge.transform });
 		}
 		var ext = this._ext(config.coge.data_type);
+		if (dojo.byId('to_marker').checked) {
+			url += '&gap_max=' + dojo.byId('gap_max').value;
+			ext = '.gff';
+		}
 		dojo.xhrGet({
 			url: url,
 			load: function(data) {
@@ -779,15 +783,25 @@ return declare( JBrowsePlugin,
 		track.config.coge.notebooks.sort(function(a, b) {
 			return coge_plugin.natural_sort(dojo.byId('notebook' + a).config.key, dojo.byId('notebook' + b).config.key);
 		});
+		var first = true;
 		track.config.coge.notebooks.forEach(function(notebook) {
 			if (notebook != 0 && coge_track_list.notebook_is_editable(notebook)) {
-				content += '<tr><td></td><td style="white-space: nowrap;"><input type="checkbox" id="add to ';
+				content += '<tr><td>';
+				if (first) {
+					content += 'Notebook:';
+					first = false;
+				}
+				content += '</td><td style="white-space: nowrap;"><input type="checkbox" id="add to ';
 				content += notebook;
 				content += '" /> add to notebook ';
 				content += dojo.byId('notebook' + notebook).config.key;
 				content += '</td></tr>';
 			}
 		});
+		if (track.config.coge.data_type == 1) {
+			content += '<tr><td>Experiment Type:</td><td><input type="radio" name="exp_type" checked> Quantitative</td></tr>';
+			content += '<tr><td></td><td style="white-space: nowrap;"><input type="radio" name="exp_type" id="to_marker"> Marker - ignore gaps of less than <input id="gap_max" value="3" size="2" /> bp</td></tr>';
+		}
 		content += '</table>';
 		content += this.build_buttons('coge_plugin.save_as_experiment()', 'coge_plugin._save_as_dialog.hide()');
 		content += '</div>';
@@ -913,7 +927,7 @@ return declare( JBrowsePlugin,
 		else if (search.type == 'range')
 			params = 'type=range&gte=' + search.gte + '&lte=' + search.lte;
 		else
-			params = 'type=' + search.type;
+			params = 'type=' + search.type; // max or min
 		if (!without_chr && search.chr && search.chr != 'Any')
 			params += '&chr=' + search.chr;
 		return params;		
@@ -923,9 +937,7 @@ return declare( JBrowsePlugin,
 
 	search_to_string: function(search, without_chr) {
 		var string;
-		if (search.type == 'range')
-			string = 'range: ' + search.gte + ' .. ' + search.lte;
-		else if (search.type == 'Alignments') {
+		if (search.type == 'Alignments') {
 			string = 'Alignments'
 			if (search.features != 'all')
 				string += ' in ' + search.features;
@@ -941,8 +953,10 @@ return declare( JBrowsePlugin,
 				if (search.features != 'all')
 					string += ' in ' + search.features;
 			}
-		} else
-			string = search.type;
+		} else if (search.type == 'range')
+			string = 'range: ' + search.gte + ' .. ' + search.lte;
+		else
+			string = search.type; // max or min
 		if (!without_chr && search.chr && search.chr != 'Any')
 			string += ', chr=' + search.chr;
 		return string;

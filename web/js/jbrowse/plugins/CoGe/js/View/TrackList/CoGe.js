@@ -486,12 +486,14 @@ define(['dojo/_base/declare',
 			return (e.coge.type && e.coge.type == 'experiment');
 		});
 		this._notebooks = {}; // hash of notebook configs by coge id
-		this._create_notebook_and_experiment_tracks(notebooks.shift(), experiments);
-		notebooks.sort(function(a, b) { return coge_plugin.natural_sort(a.coge.name, b.coge.name); });
-		notebooks.forEach(function(n) {
-			this._notebooks[n.coge.id] = n;
-			this._create_notebook_and_experiment_tracks(n, experiments);
-		}, this);
+		if (notebooks.length) {
+			this._create_notebook_and_experiment_tracks(notebooks.shift(), experiments);
+			notebooks.sort(function(a, b) { return coge_plugin.natural_sort(a.coge.name, b.coge.name); });
+			notebooks.forEach(function(n) {
+				this._notebooks[n.coge.id] = n;
+				this._create_notebook_and_experiment_tracks(n, experiments);
+			}, this);
+		}
 
 		// show all tracks
 		this._filter_tracks();
