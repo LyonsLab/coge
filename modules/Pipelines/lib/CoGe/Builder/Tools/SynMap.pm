@@ -1458,8 +1458,8 @@ sub get_query_link {
 	my $feat_type1 = $url_options{feat_type1};
 	my $feat_type2 = $url_options{feat_type2};
 
-	my $genome_id1 = $url_options{genome_id1};
-	my $genome_id2 = $url_options{genome_id2};
+	my $genome_id1 = $url_options{genome_id1} || $url_options{dsgid1};
+	my $genome_id2 = $url_options{genome_id2} || $url_options{dsgid2};
 
 	unless ( $genome_id1 and $genome_id2 ) {
 		return encode_json( { 
@@ -1550,7 +1550,7 @@ sub get_query_link {
 
 	my $synmap_link =
 	    $config->{SERVER}
-	  . "SynMap.pl?genome_id1=$genome_id1;genome_id2=$genome_id2"
+	  . "SynMap.pl?dsgid1=$genome_id1;dsgid2=$genome_id2"
 	  . ";D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;"
 	  . "ft2=$feat_type2;autogo=1";
 

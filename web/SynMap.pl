@@ -1079,7 +1079,7 @@ sub get_results {
 	############################################################################
 	# Initialize Job info
 	############################################################################
-	my $tiny_link = get_query_link($config, $coge, @_, genome_id1 => $dsgid1, genome_id2 => $dsgid2);
+	my $tiny_link = get_query_link($config, $coge, @_);
 
 	say STDERR "tiny_link is required for logging." unless defined($tiny_link);
 
