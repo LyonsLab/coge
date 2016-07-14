@@ -5,7 +5,7 @@ no warnings 'redefine';
 umask(0);
 
 use CoGeX;
-use CoGe::Accessory::Web qw(url_for api_url_for);
+use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
 use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link );
 use CoGeDBI qw(get_feature_counts);
@@ -102,8 +102,7 @@ $CLUSTER_UTILS = $config->{CLUSTER_UTILS};    #convert dag output to quota_align
 $SYNTENY_SCORE = $config->{SYNTENY_SCORE};
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
-#$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
-$NWALIGN = $config->{NWALIGN};
+$NWALIGN = get_command_path('NWALIGN');
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -1576,10 +1575,13 @@ sub get_results {
 		}
 
 		# dotplot
-		if ($ks_blocks_file) {
+		if ($ks_type) {
 			my $ks_blocks_file_url = $ks_blocks_file;
 			$ks_blocks_file_url =~ s/$DIR/$URL/;
-			$results->param( ks_file_url => $ks_blocks_file_url );
+			$results->param( file_url => $ks_blocks_file_url );
+		}
+		else {
+			$results->param( file_url => $final_dagchainer_file );
 		}
 		$results->param( dsgid1 => $dsgid1 );
 		$results->param( dsgid2 => $dsgid2 );
@@ -1609,19 +1611,26 @@ sub get_results {
 			if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
 				$query_id      = $dsgid2;
 				$target_id     = $dsgid1;
+				$results -> param( target_genome => html_escape($org_name1))
 			}
 			else {
 				$query_id      = $dsgid1;
 				$target_id     = $dsgid2;
+				$results -> param( target_genome => html_escape($org_name2))
 			}
 			my $all_genes = ($opts{'fb_target_genes'} eq 'true') ? 'False' : 'True';
 			my $rru = $opts{'fb_remove_random_unknown'} ? 'True' : 'False';
 			my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
-			my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
-			if (! -r $output_dir . 'html/' . $fb_img_file) {
-				return encode_json( { error => "The fractionation bias image ($fb_img_file) could not be found." } );
+			#my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
+			#if (! -r $output_dir . 'html/' . $fb_img_file) {
+			#	return encode_json( { error => "The fractionation bias image could not be found." } );
+			#}
+			#$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
+			my $fb_json_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.json';
+			if (! -r $output_dir . $fb_json_file) {
+				return encode_json( { error => "The fractionation bias data could not be found." } );
 			}
-			$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
+			$results->param( frac_bias => $output_url . $fb_json_file );
 			$gff_sort_output_file = _filename_to_link(
 				file => $output_dir . 'gff_sort.txt',
 				msg  => qq{GFF Sort output file},
@@ -1927,6 +1936,15 @@ sub get_results {
 			  };
 		}
 		$results->param( files => $rows );
+
+		########################################################################
+		# SynMap3D Link
+		########################################################################
+		my $syn3d = $BASE_URL . "SynMap3D.pl";
+		my $threedlink = $syn3d . "?x_gid=" . $dsgid1 . ";y_gid=" . $dsgid2;
+		#print STDERR $threedlink . "\n";
+		$results->param( syn3dlink => $threedlink) ;
+
 
 		########################################################################
 		# Regenerate Analysis Link - HTML

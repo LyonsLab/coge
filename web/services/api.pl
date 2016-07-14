@@ -192,7 +192,7 @@ $r->get("/jobs/:id" => [id => qr/\d+/])
     ->name("jobs-fetch")
     ->to("job#fetch", id => undef);
 
-$r->get("/jobs/:id/results/:name" => { id => qr/\d+/, name => qr/\w+/ })
+$r->get("/jobs/:id/results/#name" => { id => qr/\d+/, name => qr/\w+/ })
     ->name("jobs-results")
     ->to("job#results", id => undef, name => undef);
 
@@ -218,9 +218,9 @@ $r->post("/irods/mkdir")
     ->name("irods-mkdir")
     ->to("IRODS#mkdir");
 
-$r->delete("/irods/rm")
-    ->name("irods-rm")
-    ->to("IRODS#rm");
+# $r->delete("/irods/rm")
+#     ->name("irods-rm")
+#     ->to("IRODS#rm");
         
 # mdb removed 8/24/15 -- not used
 #$r->get("/irods/fetch/(*path)")

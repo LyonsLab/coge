@@ -13,7 +13,7 @@ use URI::Escape::JavaScript qw(unescape);
 
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Accessory::Workflow;
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_workflow_results_file);
 use CoGe::Core::Metadata qw(to_annotations tags_to_string);
@@ -150,8 +150,7 @@ sub generate_additional_metadata {
 
 sub create_cufflinks_job { #TODO move into CommonTasks.pm
     my ($gff, $fasta, $bam, $staging_dir) = @_;
-    my $cmd = 'nice ' . $CONF->{CUFFLINKS};
-    die "ERROR: CUFFLINKS is not in the config." unless ($cmd);
+    my $cmd = 'nice ' . get_command_path('CUFFLINKS');
 
     return {
         cmd => $cmd,
@@ -187,9 +186,8 @@ sub create_bed_file_job { #TODO move into CommonTasks.pm
     my $q = $params->{'-q'} // 20; #/
 
     my $name = to_filename($bam);
-    my $cmd = $CONF->{SAMTOOLS};
+    my $cmd = get_command_path('SAMTOOLS');
     my $PILE_TO_BED = catfile($CONF->{SCRIPTDIR}, "pileup_to_bed.pl");
-    die "ERROR: SAMTOOLS is not in the config." unless ($cmd);
     die "ERROR: SCRIPTDIR not specified in config" unless $PILE_TO_BED;
 
     return {
@@ -247,10 +245,8 @@ sub create_parse_cufflinks_job { #TODO move into CommonTasks.pm
 
     my $name = to_filename($cufflinks);
 
-    my $cmd = $CONF->{PYTHON};
-    my $script = $CONF->{PARSE_CUFFLINKS};
-    die "ERROR: PYTHON not in the config." unless ($cmd);
-    die "ERROR: PARSE_CUFFLINKS is not in the config." unless ($script);
+    my $cmd = get_command_path('PYTHON');
+    my $script = catfile($CONF->{SCRIPTDIR}, 'parse_cufflinks.py');
 
     return {
         cmd => "$cmd $script",

@@ -432,7 +432,7 @@ sub check_login {
 }
 
 #XXX: Move to a module
-sub get_irods_path {
+sub get_irods_home {
     my $username = $USER->user_name;
     my $dest = $P->{IRODSDIR};
     $dest =~ s/\<USER\>/$username/;
@@ -452,7 +452,7 @@ sub export_experiment_irods {
         my $genome = $experiment->genome;
         my @types = $experiment->tags;
         my @notebooks = $experiment->notebooks;
-        my $dir = get_irods_path();
+        my $dir = get_irods_home();
         my $dest = File::Spec->catdir($dir, basename($file));
         my $restricted = ($experiment->restricted) ? "yes" : "no";
 
@@ -505,7 +505,7 @@ sub export_experiment_irods {
     return basename($file);
 }
 
-sub generate_export { #TODO replace with ExperimentBuilder.pm
+sub generate_export { #TODO use the API "export_gff" job instead
     my $experiment = shift;
     my $eid = $experiment->id;
 
@@ -611,7 +611,7 @@ sub gen_body {
         DEFAULT_TYPE      => 'note',
         ITEMS             => commify($exp->row_count),
         FILE_SIZE         => commify(directory_size(get_experiment_path($exp->id))),
-        IRODS_HOME        => get_irods_path(),
+        IRODS_HOME        => get_irods_home(),
         WORKFLOW_ID       => $WORKFLOW_ID,
         STATUS_URL        => 'jex/status/',
         ALIGNMENT_TYPE    => ($exp->data_type == $DATA_TYPE_ALIGN),

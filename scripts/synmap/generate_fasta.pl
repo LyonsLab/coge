@@ -36,7 +36,7 @@ $ENV{PATH} = join(":",
     "/usr/bin", "/usr/local/bin" )
 );
 $TEMPDIR = $P->{TEMPDIR} . "SynMap";
-$NWALIGN = $P->{NWALIGN};
+$NWALIGN = get_command_path('NWALIGN');
 
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};

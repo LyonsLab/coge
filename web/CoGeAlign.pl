@@ -60,9 +60,9 @@ $USER = undef;
     coge        => $coge
 ) unless $USER;
 
-$CLUSTAL    = $P->{CLUSTALW};
-$NEWICKTOPS = $P->{NEWICKTOPS};
-$CONVERT    = $P->{CONVERT};
+$CLUSTAL    = get_command_path('CLUSTALW', 'clustalw2');
+$NEWICKTOPS = get_command_path('NEWICKTOPS'); # from njplot package
+$CONVERT    = get_command_path('CONVERT'); # from ImageMagic package
 
 #$CLUSTAL = "/usr/bin/clustalw-mtv";
 

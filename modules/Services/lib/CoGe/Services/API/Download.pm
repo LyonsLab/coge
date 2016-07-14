@@ -24,7 +24,9 @@ sub get {
     #unless ($gid || $eid || ($wid && $username)) {
     unless ($gid || $eid || $wid) {
         print STDERR "CoGe::Services::Download invalid request\n";
-        return;
+        return $self->render(status => 400, json => {
+            error => { Error => "gid, eid, or wid required" }
+        });
     }
     
     # Authenticate user and connect to the database
@@ -66,14 +68,21 @@ sub get {
                 error => { Auth => "Access denied" }
             });
         }
-        $file_path = get_workflow_log_file($user->name, $wid);
-        unless (-r $file_path) {
-            print STDERR "CoGe::Services::Download ERROR: workflow log not found for wid $wid\n";
-            return $self->render(status => 400, json => {
-                error => { Error => "Not found" }
-            });
+        # get workflow log by default
+        unless ($filename) {
+            $file_path = get_workflow_log_file($user->name, $wid);
+            unless (-r $file_path) {
+                print STDERR "CoGe::Services::Download ERROR: workflow log not found for wid $wid\n";
+                return $self->render(status => 400, json => {
+                    error => { Error => "Not found" }
+                });
+            }
+            $filename = "workflow_$wid.log";
         }
-        $filename = "workflow_$wid.log";
+        else {
+            my $dl_path = get_download_path('jobs', $user->name, $wid);
+            $file_path = File::Spec->catdir($dl_path, $filename);
+        }
     }
     
     say STDERR "CoGe::Services::Download file=$file_path";
@@ -88,7 +97,7 @@ sub get {
         $content = read_file($file_path) if -r $file_path;
     };
 
-    $self->render(text => $content);
+    $self->render(data => $content);
 }
 
 1;

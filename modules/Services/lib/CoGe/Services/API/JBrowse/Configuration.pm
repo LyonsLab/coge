@@ -336,27 +336,23 @@ sub track_config {
 			$featureScale = 0.001;
 			#$histScale = 0.05;
 			#$labelScale = 0.1;
-            $ext = '.csv';
 		}
 		elsif ($e->{data_type} == 2) { #FIXME hardcoded data_type 'polymorphism'
 			$type = 'CoGe/View/Track/CoGeVariants';
 			$featureScale = 0.0001;
 			$histScale = 0.01;
 			$labelScale = 0.5;
-            $ext = '.vcf';
 		}
 		elsif ($e->{data_type} == 3) { #FIXME hardcoded data_type 'alignment'
 			$type = 'CoGe/View/Track/CoGeAlignment';
 			$featureScale = 0.005;
 			$histScale = 0.01;
 			$labelScale = 0.5;
-            $ext = '.sam';
 		}
         elsif ($e->{data_type} == 4) { #FIXME hardcoded data_type 'marker'
             $type = 'CoGe/View/Track/Markers'; #"JBrowse/View/Track/HTMLFeatures";
             $histScale = 0.002;
             $labelScale = 0.5;
-            $ext = '.gff';
         }
 
         push @tracks, {
@@ -382,10 +378,9 @@ sub track_config {
             	storeClass => "JBrowse/Store/SeqFeature/REST"
             },
             coge => {
-                id      => $eid,
-                type    => 'experiment',
-                data_type => $e->{data_type},
-                ext => $ext,
+                id          => $eid,
+                type        => 'experiment',
+                data_type   => $e->{data_type} ? $e->{data_type} : 1,
                 editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 name        => $e->{name},
                 description => $e->{description},
@@ -434,7 +429,8 @@ sub track_config {
         $role = $role->{role_id} if $role;
         push @tracks, {
             key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
-            baseUrl => "$JBROWSE_API/experiment/notebook/$nid/",
+            baseUrl => "$JBROWSE_API/experiment/notebook/$nid",
+            query => { gid => $gid },
             autocomplete => "all",
             track        => "notebook$nid",
             label        => "notebook$nid",

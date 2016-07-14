@@ -27,7 +27,7 @@ use CoGe::Accessory::Jex;
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Core::Metadata qw(create_annotations);
+use CoGe::Core::Metadata qw(create_annotations create_image);
 no warnings 'redefine';
 
 use vars qw(
@@ -84,7 +84,7 @@ $node_types = CoGeX::node_types();
 );
 
 %FUNCTION = (
-#    upload_image_file               => \&upload_image_file,
+    upload_image_file               => \&upload_image_file,
     get_item_info                   => \&get_item_info,
     delete_items                    => \&delete_items,
     undelete_items                  => \&undelete_items,
@@ -1403,7 +1403,7 @@ sub get_contents {
 sub get_stats {
 	my $type = shift;
 	my $items = shift;
-	return '' if !@$items;
+	return '' if !$items;
 	my $sql = 'select annotation_type.name,count(*) from ' . $type . '_annotation join annotation_type on annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id where ' . $type . '_id in (' .
 		join( ',', map { $_->{'id'} } @$items ) .
 		') group by annotation_type.name';
@@ -1570,30 +1570,30 @@ sub format_job_status {
     return '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:' . $color . ';">' . ucfirst($status) . '</span>';
 }
 
-#sub upload_image_file {
-#    return if ( $USER->user_name eq "public" );
-#
-#    my %opts           = @_;
-#    my $image_filename = '' . $FORM->param('input_upload_file');
-#    my $fh             = $FORM->upload('input_upload_file');
-#    return if ( -s $fh > 2 * 1024 * 1024 ); # limit to 2MB
-#
-#    #TODO delete old image
-#
-#    # Create the image
-#    my $image;
-#    if ($fh) {
-#        $image = create_image(fh => $fh, filename => $image_filename, db => $DB);
-#        return 0 unless $image;
-#
-#        # Link to user
-#        $USER->image_id( $image->id );
-#        $USER->update;
-#        return encode_json( { link => 'image.pl?id=' . $image->id } );
-#    }
-#
-#    return;
-#}
+sub upload_image_file {
+    return if ( $USER->user_name eq "public" );
+
+    my %opts           = @_;
+    my $image_filename = '' . $FORM->param('input_upload_file');
+    my $fh             = $FORM->upload('input_upload_file');
+    return if ( -s $fh > 2 * 1024 * 1024 ); # limit to 2MB
+
+    #TODO delete old image
+
+    # Create the image
+    my $image;
+    if ($fh) {
+        $image = create_image(fh => $fh, filename => $image_filename, db => $DB);
+        return 0 unless $image;
+
+        # Link to user
+        $USER->image_id( $image->id );
+        $USER->update;
+        return encode_json( { link => 'image.pl?id=' . $image->id } );
+    }
+
+    return;
+}
 
 sub upload_metadata {
     my %opts = @_;

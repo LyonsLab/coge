@@ -171,7 +171,7 @@ sub to_String {
   #for each of the elements in the Values
   #array, check the data type of each
   #element.
-  $str .= $self->Type. $self->Type_delimit if $self->Add_type;
+  $str .= $self->Type . $self->Type_delimit if $self->Add_type;
 
   foreach my $item(@{$self->Values()})
     {

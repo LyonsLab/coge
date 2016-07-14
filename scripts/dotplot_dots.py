@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 __author__ = 'senorrift'
 # Dependencies:
 
@@ -6,28 +8,28 @@ from os import path
 from requests import get
 from sys import argv, stderr
 
-api_base = "https://genomevolution.org/coge/api/v1/genomes/"
-# api_base = "https://geco.iplantc.org/asherkhb/coge/api/v1/genomes/" MAYBE BROKEN?
-
 # ---------------------------------------------------------------------------------------------------------------------
-# Define Input/Outputs
-# - 1st command line argument.
-# - Synmap Output - must include ks values [this file will end with '.aligncoords.gcoords.ks').
+# Use Instructions
+# python dotplot_dots.py <input_file> <genomes_api_url>
+#
+# 2 *REQUIRED* Command Line Arguments
+# 1st: SynMap Ks Blocks File (NOTE: ends with .aligncoords.gcoords.ks)
+# 2nd: API url to genomes (NOTE: full address, i.e. https://genomevolution.org/coge/api/v1/genomes/)
+#
+# Example
+#
 # ---------------------------------------------------------------------------------------------------------------------
 
 log = {}
 
-# Assign input to variable "synmap_output", raise error and exit if not specified.
+# Assign first arg to input_ksfile, raise error and exit if not specified.
 try:
     input_ksfile = argv[1]
     output_dir = path.dirname(input_ksfile).rstrip("/")
-    #output_dir = argv[2].rstrip("/")
+    api_base = argv[2].strip().rstrip('/') + '/'  # removes any white space & trailing slash if present, adds slash
 except IndexError:
-    log["status"] = "failed"
-    log["message"] = "Error: input/output specification"
-    # TODO: Add Log Dump!
-    stderr.write("dotplot_dots.py failed\n")
-    stderr.write("Error: input/output specification")
+    stderr.write("dotplot_dots.py failed (Error: input or api_url specification)\n")
+    print "dotplot_dots.py failed (Error: input or api_url specification)"
     exit()
 
 # Load input into variable "get_values"
@@ -47,7 +49,28 @@ data = {}  # holds final data structure
 #                                                                                          sp1_stop,
 #                                                                                          sp2_start,
 #                                                                                          sp2_stop,
-#                                                                                          ["Kn", "Ks"]
+#                                                                                          {"Kn": *,
+#                                                                                           "Ks": *,
+#                                                                                           "Sp1": {"name": *,
+#                                                                                                   "chr" : *,
+#                                                                                                   "start" : *,
+#                                                                                                   "stop" : *,
+#                                                                                                   "strand" : *,
+#                                                                                                   "type" : *
+#                                                                                                   "gene_count" : *,
+#                                                                                                   "db_feature_id" : *,
+#                                                                                                   "percent_id" : *
+#                                                                                                  },
+#                                                                                           "Sp2": {"name": *,
+#                                                                                                   "chr" : *,
+#                                                                                                   "start" : *,
+#                                                                                                   "stop" : *,
+#                                                                                                   "strand" : *,
+#                                                                                                   "type" : *
+#                                                                                                   "gene_count" : *,
+#                                                                                                   "db_feature_id" : *,
+#                                                                                                   "percent_id" : *
+#                                                                                                  }
 #                                                                                         ],
 #                                                                                         ...
 #                                                                             },
@@ -88,28 +111,48 @@ for line in get_values:
         # Kn/Ks
         tmpl["Ks"] = line_contents[0]
         tmpl["Kn"] = line_contents[1]
+        sp1_info = line_contents[3].split('||')
+        sp2_info = line_contents[7].split('||')
 
         # Species 1: Genome ID, Chromosome, Start, Stop
-        id_chr_1 = line_contents[2].lstrip('a').split("_")
+        id_chr_1 = line_contents[2].lstrip('a').partition("_")
         tmpl["sp1_id"] = id_chr_1[0]
         if id_chr_1[0] not in sp1_id:
             sp1_id.append(id_chr_1[0])
-        tmpl["sp1_ch"] = id_chr_1[1]
-        if id_chr_1[1] not in sp1_chromosomes:
-            sp1_chromosomes.append(id_chr_1[1])
+        tmpl["sp1_ch"] = id_chr_1[2]
+        if id_chr_1[2] not in sp1_chromosomes:
+            sp1_chromosomes.append(id_chr_1[2])
         tmpl["sp1_start"] = line_contents[4]
         tmpl["sp1_stop"] = line_contents[5]
+        tmpl["sp1_info"] = {"chr": sp1_info[0],
+                            "start": sp1_info[1],
+                            "stop": sp1_info[2],
+                            "name": sp1_info[3],
+                            "strand": sp1_info[4],
+                            "type": sp1_info[5],
+                            "db_feature_id": sp1_info[6],
+                            "gene_count": sp1_info[7],
+                            "percent_id": sp1_info[8]}
 
         # Species 2: Genome ID, Chromosome, Start, Stop
-        id_chr_2 = line_contents[6].lstrip('b').split("_")
+        id_chr_2 = line_contents[6].lstrip('b').partition("_")
         tmpl["sp2_id"] = id_chr_2[0]
         if id_chr_2[0] not in sp2_id:
             sp2_id.append(id_chr_2[0])
-        tmpl["sp2_ch"] = id_chr_2[1]
-        if id_chr_2[1] not in sp2_chromosomes:
-            sp2_chromosomes.append(id_chr_2[1])
+        tmpl["sp2_ch"] = id_chr_2[2]
+        if id_chr_2[2] not in sp2_chromosomes:
+            sp2_chromosomes.append(id_chr_2[2])
         tmpl["sp2_start"] = line_contents[8]
         tmpl["sp2_stop"] = line_contents[9]
+        tmpl["sp2_info"] = {"chr": sp2_info[0],
+                            "start": sp2_info[1],
+                            "stop": sp2_info[2],
+                            "name": sp2_info[3],
+                            "strand": sp2_info[4],
+                            "type": sp2_info[5],
+                            "db_feature_id": sp2_info[6],
+                            "gene_count": sp2_info[7],
+                            "percent_id": sp2_info[8]}
 
         # Append hit (template) to "hits" list
         hits.append(tmpl)
@@ -118,16 +161,18 @@ for line in get_values:
 if len(sp1_id) > 1 or len(sp2_id) > 1:
     log["status"] = "failed"
     log["message"] = "Error: Too many genome IDs"
-    # TODO: Add Log Dump!
-    stderr.write("dotplot_dots.py failed\n")
-    stderr.write("Error: too many genome IDs")
+    log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
+    dump(log, open(log_out, "wb"))
+    stderr.write("dotplot_dots.py failed (Error: too many genome IDs)\n")
+    print "dotplot_dots.py failed (Error: too many genome IDs)"
     exit()
 elif len(sp1_id) < 1 or len(sp2_id) < 1:
     log["status"] = "failed"
     log["message"] = "Error: Too few genome IDs"
-    # TODO: Add Log Dump!
-    stderr.write("dotplot_dots.py failed\n")
-    stderr.write("Error: too few genome IDs")
+    log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
+    dump(log, open(log_out, "wb"))
+    stderr.write("dotplot_dots.py failed (Error: too few genome IDs)\n")
+    print "dotplot_dots.py failed (Error: too few genome IDs)"
     exit()
 else:
     sp1_id = sp1_id[0]
@@ -149,7 +194,16 @@ data["genomes"] = {}
 # Populate data["syntenic_points"] with hits.
 for hit in hits:
     # Entry Structure: [ch1_start, ch1_stop, ch2_start, ch2_stop, [kn, ks]]
-    entry = [hit["sp1_start"], hit["sp1_stop"], hit["sp2_start"], hit["sp2_stop"], {"Kn": hit["Kn"], "Ks": hit["Ks"]}]
+    entry = [hit["sp1_start"],
+             hit["sp1_stop"],
+             hit["sp2_start"],
+             hit["sp2_stop"],
+             {"Kn": hit["Kn"],
+              "Ks": hit["Ks"],
+              str(sp1_id): hit["sp1_info"],
+              str(sp2_id): hit["sp2_info"]
+              }
+             ]
     data["syntenic_points"][hit["sp1_id"]][hit["sp2_id"]][hit["sp1_ch"]][hit["sp2_ch"]].append(entry)
 
 # Remove any empty sets.
@@ -162,11 +216,34 @@ data["syntenic_points"][sp1_id][sp2_id] = {sp1_ch: sp2_ch for sp1_ch, sp2_ch in 
     [sp2_id].iteritems() if len(data["syntenic_points"][sp1_id][sp2_id][sp1_ch]) > 0}
 
 # Populate data["genomes"] with genome information.
+stderr.write("Requesting genome info: " + api_base + sp1_id + "\n")
 sp1_genome_info = get(api_base + sp1_id).json()
+stderr.write("Requesting genome info: " + api_base + sp2_id + "\n")
 sp2_genome_info = get(api_base + sp2_id).json()
 data["genomes"][sp1_id] = sp1_genome_info
 data["genomes"][sp2_id] = sp2_genome_info
 
+# Check for genome fetch errors, exit without producing outputs if detected.
+try:
+    sp1err = sp1_genome_info["error"]
+    stderr.write("dotplot_dots.py died on genome info fetch error!" + "\n")
+    stderr.write("Error (gid " + sp1_id + "): " + str(sp1err) + "\n")
+    try:
+        sp2err = sp2_genome_info["error"]
+        stderr.write("Error (gid " + sp2_id + "): " + str(sp2err) + "\n")
+    except KeyError:
+        pass
+    exit()
+except KeyError:
+    pass
+
+try:
+    sp2err = sp2_genome_info["error"]
+    stderr.write("dotplot_dots.py died on genome info fetch error!" + "\n")
+    stderr.write("Error (gid " + sp2_id + "): " + str(sp2err) + "\n")
+    exit()
+except KeyError:
+    pass
 
 # Dump "data" to JSON.
 output_filename = "%s/%s_%s_synteny.json" % (output_dir, sp1_id, sp2_id)
@@ -175,7 +252,5 @@ dump(data, open(output_filename, 'wb'))
 # Print concluding message.
 log["status"] = "complete"
 log["message"] = "%s syntenic pairs identified" % str(len(hits))
-log_out = "%s/dotplot_dots_log.json" % output_dir
+log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
 dump(log, open(log_out, "wb"))
-
-# print "%s syntenic pairs identified!\ndotplot_dots.py Complete" % str(len(hits))

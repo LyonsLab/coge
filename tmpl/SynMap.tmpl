@@ -1,28 +1,40 @@
 <tmpl_if name=MAIN>
 <style>
-div.deleted { display: none; }
+    div.deleted { display: none; }
 
-@font-face {
-	font-family: 'Glyphicons Halflings';
-	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
-	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
-}
+    @font-face {
+        font-family: 'Glyphicons Halflings';
+        src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+        src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+    }
 
-.glyphicon {
-	position: relative;
-	display: inline-block;
-	font-family: 'Glyphicons Halflings';
-	font-style: normal;
-	font-weight: normal;
-	line-height: 1;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-}
+    .glyphicon {
+        position: relative;
+        display: inline-block;
+        font-family: 'Glyphicons Halflings';
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
 
-.glyphicon-search:before {
-	content: "\e003";
-}
-}
+    .glyphicon-search:before {
+        content: "\e003";
+    }
+
+    .leftPlot {
+        float: left;
+    }
+
+    .rightPlot {
+        float: right;
+    }
+
+    .plot {
+        width: 48.5%;
+        text-align: center;
+    }
 </style>
 
 <tmpl_if name=results>

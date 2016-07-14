@@ -15,7 +15,9 @@ use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
+use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::SynMap;
+use CoGe::Builder::Tools::SynMap3D;
 use CoGe::Builder::Expression::MeasureExpression;
 use CoGe::Builder::Methylation::CreateMetaplot;
 use CoGe::Builder::PopGen::MeasureDiversity;
@@ -54,7 +56,10 @@ sub get {
 
     # Select pipeline builder
     my $builder;
-    if ($message->{type} eq "export_gff") {
+    if ($message->{type} eq "blast") {
+        $builder = CoGe::Builder::Tools::CoGeBlast->new($request);
+    }
+    elsif ($message->{type} eq "export_gff") {
         $builder = CoGe::Builder::Export::Gff->new($request);
     }
     elsif ($message->{type} eq "export_fasta") {
@@ -81,6 +86,9 @@ sub get {
     elsif ($message->{type} eq "synmap") {
         $builder = CoGe::Builder::Tools::SynMap->new($request);
     }
+    elsif ($message->{type} eq "synmap3d") {
+        $builder = CoGe::Builder::Tools::SynMap3D->new($request);
+    }
     elsif ($message->{type} eq "analyze_expression") {
         $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
     }
@@ -98,7 +106,7 @@ sub get {
     # Initialize workflow
     $builder->workflow( $self->jex->create_workflow(name => $builder->get_name, init => 1) );
     return unless ($builder->workflow && $builder->workflow->id);
-    my ($staging_dir, $result_dir) = get_workflow_paths($self->user->name, $builder->workflow->id);
+    my ($staging_dir, $result_dir) = get_workflow_paths(($self->user ? $self->user->name : 'public'), $builder->workflow->id);
     $builder->staging_dir($staging_dir);
     $builder->result_dir($result_dir);
     $builder->workflow->logfile(catfile($result_dir, "debug.log"));

@@ -1,11 +1,14 @@
 package CoGe::Factory::RequestFactory;
 
 use Moose;
+use CoGe::Request::CoGeBlast;
+use CoGe::Request::Empty;
 use CoGe::Request::Experiment;
 use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
-use CoGe::Request::Empty;
+use CoGe::Request::SynMap;
 use CoGe::Request::TwoGenomes;
+use Data::Dumper;
 
 has 'user'    => (
     is        => 'ro',
@@ -25,7 +28,8 @@ has 'jex'     => (
 sub get {
     my ($self, $message) = @_;
     unless (defined $message && defined $message->{type}) {
-        print STDERR "RequestFactory: error: invalid message\n";
+        warn 'RequestFactory: error: invalid message';
+        warn Dumper $message;
         return;
     }
 
@@ -56,13 +60,20 @@ sub get {
     {
         return CoGe::Request::ExperimentAnalysis->new($options);
     }
+    elsif ($type eq "blast") {
+        return CoGe::Request::CoGeBlast->new($options);
+    }
     elsif ($type eq "load_genome") {
         return CoGe::Request::Empty->new($options);
     }
-    elsif ($type eq "synmap" ||
-    	$type eq "dotplot_dots")
+    elsif ($type eq "dotplot_dots")
     {
         return CoGe::Request::TwoGenomes->new($options);
+    }
+    elsif ($type eq "synmap" ||
+        $type eq "synmap3d")
+    {
+        return CoGe::Request::SynMap->new($options);
     }
     else {
         print STDERR "RequestFactory: error: unrecognized job type '", $type, "'\n";

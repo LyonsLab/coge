@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use CoGeX;
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Accessory::Utils qw( trim execute );
 use CoGe::Core::Notebook qw(add_items_to_notebook);
 use File::Path;
@@ -125,7 +125,7 @@ foreach my $file (@files) {
     # Untar file (if necessary) - TODO: do this before gunzip if tar.gz file
     if ( $file =~ /\.tar$/ || $file =~ /\.tar\.gz$/ || $file =~ /\.tgz$/ ) {
         print "log: Extracting files\n";
-        run( $P->{TAR}.' -xf '.$file.' --directory '.$data_dir );
+        run( get_command_path('TAR').' -xf '.$file.' --directory '.$data_dir );
         next;
     }
     
@@ -369,7 +369,7 @@ sub process_genome { #TODO merge with process_experiment?
     my $cmd = catfile($P->{SCRIPTDIR}, 'load_genome.pl') . ' ' .
         "-config $config -user_name '".$user->user_name."' -restricted 1 -name '$name' -desc '$description' " .
         "-version '$version' -source_name '$source' -organism_id $organism_id " .
-        "-staging_dir $path -install_dir $install_dir -fasta_files '$file' ";
+        "-staging_dir $path -install_dir $install_dir -fasta_file '$file' ";
     print "Running: ", $cmd, "\n";
     my $output = qx{ $cmd }; # TODO: use run() here instead?
     print $output;

@@ -28,7 +28,7 @@ LICENSE file included with this module.
 use strict;
 use warnings;
 
-use CoGe::Accessory::Web qw(get_defaults url_for);
+use CoGe::Accessory::Web qw(get_defaults get_command_path url_for);
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
@@ -167,10 +167,7 @@ sub index_genome_file {
     }
 
     # Index fasta file
-    my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'};
-    unless ($samtools) {
-        print STDERR "Storage::index_genome_file: WARNING, conf file parameter SAMTOOLS is blank!\n";
-    }
+    my $samtools = CoGe::Accessory::Web::get_command_path('SAMTOOLS');
     my $cmd = "$samtools faidx $file_path";
     qx{ $cmd };
     if ( $? != 0 ) {
@@ -180,12 +177,8 @@ sub index_genome_file {
 
     # Optionally generate compressed version of fasta/index files
     if ($compress) {
-        my $razip = CoGe::Accessory::Web::get_defaults()->{'RAZIP'};
-        unless ($razip) {
-            print STDERR "Storage::index_genome_file: WARNING, conf file parameter RAZIP is blank!\n";
-        }
-
         # Compress fasta file into RAZF using razip
+        my $razip = CoGe::Accessory::Web::get_command_path('RAZIP');
         $cmd = "$razip -c $file_path > $file_path.razf";
         qx{ $cmd };
         if ( $? != 0 ) {
@@ -262,10 +255,7 @@ sub get_genome_seq {
 
         # Extract requested piece of sequence file
         my $region = $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
-        my $samtools = CoGe::Accessory::Web::get_defaults()->{'SAMTOOLS'} || 'samtools';
-        unless ($samtools) {
-            print STDERR "Storage::get_genome_seq: WARNING, conf file parameter SAMTOOLS is blank!\n";
-        }
+        my $samtools = CoGe::Accessory::Web::get_command_path('SAMTOOLS');
         my $cmd = "$samtools faidx $file_path '$region'";
 
         #print STDERR "$cmd\n";
@@ -404,7 +394,7 @@ sub get_experiment_data {
     {
         my $pFormat = get_fastbit_format($eid, $data_type);
         my $columns = join(',', map { $_->{name} } @{$pFormat->{columns}});
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{FASTBIT_QUERY} || 'ibis';
+        my $cmdpath = CoGe::Accessory::Web::get_command_path('FASTBIT_QUERY', 'ibis');
         $cmd = "$cmdpath -v 1 -d $storage_path -q \"select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999\" 2>&1";
 
         #print STDERR "\n$cmd\n";
@@ -429,7 +419,7 @@ sub get_experiment_data {
         return \@results;
     }
     elsif ( $data_type == $DATA_TYPE_ALIGN ) { # FIXME move output parsing from Storage.pm to here
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
+        my $cmdpath = CoGe::Accessory::Web::get_command_path('SAMTOOLS');
         $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
         #print STDERR "$cmd\n";
         my @cmdOut = qx{$cmd};
@@ -551,9 +541,7 @@ sub get_workflow_paths {
     my ($staging_path, $results_path);
     if (!$user_name) {
         my $results_dir = catdir($tmp_path, 'results');
-        my @tmp = read_dir($results_dir);
         my @wdir = grep { -d "$results_dir/$_/$workflow_id" } read_dir($results_dir);
-        #print STDERR Dumper "wdir:\n", \@wdir, "\n";
         if (@wdir != 1) {
             warn "Storage::get_workflow_paths ERROR: ambiguous user directory";
             warn Dumper \@wdir;
@@ -602,7 +590,7 @@ sub get_workflow_results {
         opendir(my $fh, $results_path);
         foreach my $file ( readdir($fh) ) {
             my $fullpath = catfile($results_path, $file);
-            next unless -f $fullpath;
+            next unless -f $fullpath || -l $fullpath; # allow links for CoGeBlast
             next if $file =~ /^\./;
 
             my $name = basename($file);
@@ -762,10 +750,10 @@ sub irods_mkdir {
     return CoGe::Accessory::IRODS::irods_imkdir($path);
 }
 
-sub irods_rm {
-    my $path = shift;
-    return CoGe::Accessory::IRODS::irods_irm($path);
-}
+# sub irods_rm {
+#     my $path = shift;
+#     return CoGe::Accessory::IRODS::irods_irm($path);
+# }
 
 sub reverse_complement { #TODO move into Util.pm
     my $seq   = shift;

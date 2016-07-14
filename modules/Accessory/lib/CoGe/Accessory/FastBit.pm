@@ -26,7 +26,7 @@ LICENSE file included with this module.
 use strict;
 use warnings;
 
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Core::Storage qw(get_experiment_path);
 use Data::Dumper;
 
@@ -37,12 +37,20 @@ BEGIN {
 }
 
 sub max {
-	my $max = query('select max(value1) where 0.0=0.0', shift);
+	my $eid = shift;
+	my $chr = shift;
+	my $where = '0.0=0.0';
+	$where .= " and chr='$chr'" if $chr;
+	my $max = query('select max(value1) where ' . $where, $eid);
 	return 0 + $max->[0];
 }
 
 sub min {
-	my $min = query('select min(value1) where 0.0=0.0', shift);
+	my $eid = shift;
+	my $chr = shift;
+	my $where = '0.0=0.0';
+	$where .= " and chr='$chr'" if $chr;
+	my $min = query('select min(value1) where ' . $where, $eid);
 	return 0 + $min->[0];
 }
 
@@ -50,7 +58,7 @@ sub query {
 	my $query = shift;
 	my $eid = shift;
 
-	my $cmdpath = get_defaults()->{FASTBIT_QUERY};
+	my $cmdpath = get_command_path('FASTBIT_QUERY', 'ibis');
 	my $storage_path = get_experiment_path($eid);
 	my $cmd = "$cmdpath -v 1 -d $storage_path -q \"$query\" 2>&1";
 #	warn $cmd;

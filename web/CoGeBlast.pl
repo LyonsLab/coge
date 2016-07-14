@@ -5,10 +5,11 @@ no warnings('redefine');
 
 use CoGeX;
 use CoGe::Accessory::Jex;
-use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
+use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url go );
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
@@ -25,7 +26,6 @@ use LWP::Simple::Post qw(post post_xml);
 use URI::Escape;
 use POSIX;
 use File::Temp;
-use File::Basename;
 use File::Path;
 use File::Spec;
 use Spreadsheet::WriteExcel;
@@ -33,8 +33,8 @@ use Benchmark qw(:all);
 use Parallel::ForkManager;
 use Sort::Versions;
 
-use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR
-  $FORMATDB $BLAST_PROGS $FORM $USER $LINK $coge $cogeweb $RESULTSLIMIT
+use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR
+  $FORMATDB $FORM $USER $LINK $db $cogeweb $RESULTSLIMIT
   $MAX_PROC $MAX_SEARCH_RESULTS %FUNCTION $PAGE_TITLE $JEX $EMBED);
 
 $PAGE_TITLE = "CoGeBlast";
@@ -44,7 +44,7 @@ $RESULTSLIMIT       = 100;
 $MAX_SEARCH_RESULTS = 1000;
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
+( $db, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     page_title => $PAGE_TITLE,
     cgi => $FORM
 );
@@ -57,18 +57,7 @@ $TEMPDIR       = $P->{TEMPDIR} . "CoGeBlast";
 $TEMPURL       = $P->{TEMPURL} . "CoGeBlast";
 $DATADIR       = $P->{DATADIR};
 $FASTADIR      = $P->{FASTADIR};
-$BLASTDBDIR    = $P->{BLASTDB};
-$FORMATDB      = $P->{FORMATDB};
-$MAX_PROC      = $P->{COGE_BLAST_MAX_PROC};
-$BLAST_PROGS   = {
-    blast_legacy => $P->{BLAST} . " -a $MAX_PROC",
-    tblastn      => $P->{TBLASTN} . " -num_threads $MAX_PROC",
-    tblastx      => $P->{TBLASTX} . " -num_threads $MAX_PROC",
-    blastn       => $P->{BLASTN} . " -num_threads $MAX_PROC -task blastn",
-    dcmega       => $P->{BLASTN} . " -num_threads $MAX_PROC -task dc-megablast",
-    mega         => $P->{BLASTN} . " -num_threads $MAX_PROC -task megablast",
-    lastz        => $P->{LASTZ}
-};
+$FORMATDB      = get_command_path('FORMATDB');
 
 %FUNCTION = (
     source_search            => \&get_data_source_info_for_accn,
@@ -142,7 +131,9 @@ sub gen_body {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
     my $form   = $FORM;
-    my $featid = join( ",", $form->param('featid'), $form->param('fid') ) || 0;
+    my $featid = $form->param('featid');
+    my $fid = $form->param('fid');
+    $featid = ($featid || $fid) ? join( ",", $featid, $fid ) : 0;
     my $chr    = $form->param('chr') || 0;
     my $upstream   = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
@@ -159,7 +150,7 @@ sub gen_body {
     my $prefs = CoGe::Accessory::Web::load_settings(
         user => $USER,
         page => $PAGE_NAME,
-        coge => $coge
+        coge => $db
     );
     $prefs = {} unless $prefs;
 
@@ -225,7 +216,7 @@ sub gen_body {
     }
 
     if ($lid) {
-        my $list = $coge->resultset('List')->find($lid);
+        my $list = $db->resultset('List')->find($lid);
         if ($list) {
             my $dsgids = join( ',', map { $_->id } $list->genomes );
             my $id = get_dsg_for_menu( dsgid => $dsgids );
@@ -297,7 +288,7 @@ sub get_sequence {
             else {
                 $gstidt = $gstid;
             }
-            my $feat = $coge->resultset('Feature')->find($fid);
+            my $feat = $db->resultset('Feature')->find($fid);
             $fasta .=
               ref($feat) =~ /Feature/i
               ? $feat->fasta(
@@ -311,7 +302,7 @@ sub get_sequence {
         }
     }
     elsif ($dsid) {
-        my $ds = $coge->resultset('Dataset')->find($dsid);
+        my $ds = $db->resultset('Dataset')->find($dsid);
         $fasta =
           ref($ds) =~ /dataset/i
           ? $ds->fasta(
@@ -325,7 +316,7 @@ sub get_sequence {
           : ">Unable to find dataset id $dsid";
     }
     elsif ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        my $dsg = $db->resultset('Genome')->find($dsgid);
         $fasta =
           ref($dsg) =~ /genome/i
           ? $dsg->fasta(
@@ -348,7 +339,7 @@ sub get_sequence {
             $start -= $upstream;
             $stop += $downstream;
             if ( not defined $genomes{$gid} ) {
-                $genomes{$gid} = $coge->resultset('Genome')->find($gid);
+                $genomes{$gid} = $db->resultset('Genome')->find($gid);
             }
             my $genome = $genomes{$gid};
             return "Unable to find genome for $gid" unless $genome;
@@ -396,39 +387,6 @@ sub get_url {
     else {
         return 1;
     }
-}
-
-sub generate_blastdb_job {
-    my %opts = @_;
-
-    # required arguments
-    my $title = $opts{title};
-    my $fasta = $opts{fasta};
-    my $type = $opts{type};
-    my $out  = $opts{out};
-    my $outdir = $opts{outdir};
-
-    my $logfile = $opts{logfile} || "db.log";
-    my $BLASTDB = $P->{MAKEBLASTDB} || "makeblastdb";
-
-    my $args = [
-        ["-in", $fasta, 0],
-        ["-out", $out, 0],
-        ["-dbtype", $type, 0],
-        ["-title", qq{"$title"}, 0],
-        ["-logfile", $logfile, 0],
-    ];
-
-    my $base = basename($outdir);
-
-    return {
-        cmd => "mkdir $base && cd $base && $BLASTDB",
-        script  => undef,
-        args    => $args,
-        inputs  => undef,
-        outputs => [[$outdir, 1]],
-        description => "Generating blastable database..."
-    };
 }
 
 sub blast_param {
@@ -494,7 +452,7 @@ sub get_orgs {
     my @organisms;
     if ($name_desc) {
         $name_desc = '%' . $name_desc . '%';
-        my @organisms = $coge->resultset("Organism")->search(
+        my @organisms = $db->resultset("Organism")->search(
             \[
                 'name LIKE ? OR description LIKE ?',
                 [ 'name',        $name_desc ],
@@ -541,7 +499,7 @@ sub get_orgs {
     }
     else {
 
-#		$html .= qq{<FONT class="small" id="org_count">Matching Organisms } . '(' . $coge->resultset('Organism')->count() . ')' . qq{</FONT>\n<br>\n};
+#		$html .= qq{<FONT class="small" id="org_count">Matching Organisms } . '(' . $db->resultset('Organism')->count() . ')' . qq{</FONT>\n<br>\n};
 #		$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>Please enter a search term</option></SELECT><input type='hidden' id='gstid'>\n};
         $html .=
 "<option id='null_org' style='color:gray;' disabled='disabled'>Please enter a search term</option>";
@@ -565,7 +523,7 @@ sub gen_dsg_menu {
         sort {
             versioncmp( $b->version, $a->version )
               || $a->type->id <=> $b->type->id
-        } $coge->resultset('Genome')->search(
+        } $db->resultset('Genome')->search(
             { organism_id => $oid },
             { prefetch    => ['genomic_sequence_type'] }
         )
@@ -624,7 +582,7 @@ sub get_dsg_for_menu {
     if ($orgids) {
         my @orgids = split( /,/, $orgids );
         foreach my $dsg (
-            $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
+            $db->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
             next unless $USER->has_access_to_genome($dsg);
             #added by EHL 12/30/2014
@@ -638,7 +596,7 @@ sub get_dsg_for_menu {
     if ($dsgids) {
         %dsgs = () if ( $dsgs{$dsgids} );
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
-            my $dsg = $coge->resultset('Genome')->find($dsgid);
+            my $dsg = $db->resultset('Genome')->find($dsgid);
             next unless $USER->has_access_to_genome($dsg);
             #added by EHL 12/30/2014
             next if $dsg->deleted;
@@ -675,285 +633,18 @@ sub alert {
     return encode_json({ error => $msg });
 }
 
-sub blast_search {
-    my %opts = @_;
-
-    #	print STDERR Dumper \%opts;
-
-    my $color_hsps = $opts{color_hsps};
-    my $program    = $opts{program};
-    my $expect     = $opts{expect};
-    my $job_title  = $opts{job_title};
-    my $wordsize   = $opts{wordsize};
-    my $type       = $opts{type};
-
-    #$wordsize=11 if $program eq "blastn";
-    my $comp         = $opts{comp};
-    my $matrix       = $opts{matrix};
-    my $gapcost      = $opts{gapcost};
-    my $match_score  = $opts{matchscore};
-    my $filter_query = $opts{filter_query};
-    my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
-    my $basename     = $opts{basename};
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $basename,
-        tempdir  => $TEMPDIR
-    );
-
-    #blastz params
-    my $zwordsize      = $opts{zwordsize};
-    my $zgap_start     = $opts{zgap_start};
-    my $zgap_extension = $opts{zgap_extension};
-    my $zchaining      = $opts{zchaining};
-    my $zthreshold     = $opts{zthreshold};
-    my $zmask          = $opts{zmask};
-
-    my $seq = $opts{seq};
-    #this is where the dsgids are stored -- stupid name
-    my $blastable = $opts{blastable};
-
-    return encode_json({
-        success => JSON::false,
-        error => "Please specified a sequence of characters to be blasted."
-    }) unless $seq;
-
-    return encode_json({
-        success => JSON::false,
-        error => "Please select genomes to be blasted."
-    }) unless $blastable;
-
-    my @dsg_ids = split( /,/, $blastable );
-
-    my $width = $opts{width};
-    my $fid   = $opts{fid};
-
-    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
-        user_id => $USER->id,
-        page    => "GenomeList",
-        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
-    );
-
-    my $list_link =
-        qq{<a href="$genomes_url" target_"blank">}
-      . @dsg_ids
-      . ' genome'
-      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
-
-    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
-
-    my $gap;
-
-    if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
-        $gap = qq[$1,$2];
-    }
-
-    my %params = (
-        color_hsps   => $color_hsps,
-        program      => $program,
-        expect       => $expect,
-        job_title    => $job_title,
-        wordsize     => $wordsize,
-        comp         => $comp,
-        matrix       => $matrix,
-        gapcost      => $gap,
-        match_score  => $match_score,
-        filter_query => $filter_query,
-        resultslimit => $resultslimit,
-        basename     => $basename,
-        zwordsize    => $zwordsize,
-        zgap_start   => $zgap_start,
-        zgap_exten   => $zgap_extension,
-        zchaining    => $zchaining,
-        zthreshold   => $zthreshold,
-        zmask        => $zmask,
-        type         => $type,
-
-        #Genomes
-        dsgid        => $blastable,
-    );
-
-    # Optional parameters
-    $params{fid} = $fid if $fid;
-
-    my $url = url_for($PAGE_NAME, %params);
-
-    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
-
-    my ($tiny_id) = $link =~ /\/(\w+)$/;
-    my $workflow = $JEX->create_workflow(
-        name    => "cogeblast-$tiny_id",
-        id      => 0,
-        logfile => $cogeweb->logfile
-    );
-
-    CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
-
-    $width = 400 unless $width =~ /^\d+$/;    #something wrong with how width is calculated in tmpl file
-
-    my $t1 = new Benchmark;
-    my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
-    my $opts;
-    my $pre_command;
-    my $x;
-    ( $x, $pre_command ) = CoGe::Accessory::Web::check_taint($pre_command);
-    my @results;
-    my $count = 1;
-    my $t2    = new Benchmark;
-
-    foreach my $dsgid (@dsg_ids) {
-        my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid);
-        next unless $dbfasta;
-        next unless -s $fasta_file;
-
-        my $name = $dsg->organism->name;
-        #my $args = [
-        #    ['-i', $dbfasta, 0],
-        #    ['-t', qq{"$name"}, 0],
-        #    ['-n', $dsgid, 1],
-        #];
-
-        #push @$args, ['-p', 'F', 1];
-
-        my $dbpath = File::Spec->catdir(($BLASTDBDIR, $dsgid));
-        my $db = File::Spec->catdir(($dbpath, $dsgid));
-        #my $outputs = [[$dbpath, 1]]; #["$db.nhr", "$db.nin", "$db.nsq"];
-
-        $workflow->add_job(generate_blastdb_job(
-            title   => $name,
-            out     => $dsgid,
-            fasta   => $dbfasta,
-            type    => "nucl",
-            outdir  => $dbpath,
-        ));
-
-        #$workflow->add_job(
-        #    cmd     => "mkdir $dsgid && cd $dsgid && $FORMATDB",
-        #    script  => undef,
-        #    args    => $args,
-        #    inputs  => undef,
-        #    outputs => $outputs,
-        #    description => "Generating blastable database..."
-        #);
-
-        my $outfile = $cogeweb->basefile . "-$count.$program";
-
-        my $cmd = $BLAST_PROGS->{$program};
-        my $args = [
-            [ '', '--adjustment=10', 1 ],
-            [ '', $BLAST_PROGS->{$program}, 0 ],
-        ];
-
-        if ( $program eq "lastz" ) {
-            push @$args, [ '',  $fasta_file, 1 ];
-            push @$args, [ '', "W=" . $zwordsize,  1 ] if defined $zwordsize;
-            push @$args, [ '', "C=" . $zchaining,  1 ] if defined $zchaining;
-            push @$args, [ '', "K=" . $zthreshold, 1 ] if defined $zthreshold;
-            push @$args, [ '', "M=" . $zmask,      1 ] if defined $zmask;
-            push @$args, [ '', "O=" . $zgap_start, 1 ] if defined $zgap_start;
-            push @$args, [ '', "E=" . $zgap_extension, 1 ]
-              if defined $zgap_extension;
-            push @$args, [ '',  $dbfasta,    0 ];
-            push @$args, [ '>', $outfile,    1 ];
-        }
-        else {
-            my ( $nuc_penalty, $nuc_reward, $exist, $extent );
-            if ( $gapcost && $gapcost =~ /^(\d+)\s+(\d+)/ ) {
-                ( $exist, $extent ) = ( $1, $2 );
-            }
-
-            if ($match_score && $match_score =~ /^(\d+)\,(-\d+)/ ) {
-                ( $nuc_penalty, $nuc_reward ) = ( $2, $1 );
-            }
-
-            push @$args, [ "-comp_based_stats", 1, 1 ] if $program eq "tblastn";
-            push @$args, [ '-matrix', $matrix, 1 ] if $program =~ /tblast/i;
-            push @$args, [ '-penalty', $nuc_penalty, 1 ]
-              unless $program =~ /tblast/i;
-            push @$args, [ '-reward', $nuc_reward, 1 ]
-              unless $program =~ /tblast/i;
-            push @$args, [ '-gapopen', $exist, 1 ] unless $program =~ /tblast/i;
-            push @$args, [ '-gapextend', $extent, 1 ]
-              unless $program =~ /tblast/i;
-            push @$args, [ '-dust', 'no', 1 ] unless $program =~ /tblast/i;
-            push @$args, [ '-query',     $fasta_file, 1 ];
-            push @$args, [ '-word_size', $wordsize,   1 ];
-            push @$args, [ '-evalue',    $expect,     1 ];
-            push @$args, [ '-db',        $db,         0 ];
-            push @$args, [ '>',          $outfile,    1 ];
-        }
-
-        push @results,
-          {
-            command  => $cmd,
-            file     => $outfile,
-            organism => $org,
-            dsg      => $dsg
-          };
-
-        $workflow->add_job({
-            cmd     => "/usr/bin/nice",
-            script  => undef,
-            args    => $args,
-            inputs  => [$fasta_file, [$dbpath, 1]],
-            outputs => [$outfile],
-            description => "Blasting sequence against $name"
-        });
-
-        $count++;
-    }
-
-    my $response = $JEX->submit_workflow($workflow);
-
-    my $log = CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        user_id     => $USER->id,
-        page        => $PAGE_TITLE,
-        description => $log_msg,
-        link        => $link,
-        parent_id   => $response->{id},
-        parent_type => 7 #FIXME magic number
-    ) if $response and $response->{id};
-
-    return encode_json({
-        id => $response->{id},
-        link => $link,
-        logfile => $TEMPURL . "/" . $cogeweb->basefilename . ".log",
-        success => $JEX->is_successful($response) ? JSON::true : JSON::false
-    })
-}
-
 sub get_results {
     my %opts = @_;
-    #print STDERR Dumper \%opts;
 
     my $color_hsps = $opts{color_hsps};
     my $program    = $opts{program};
-    my $expect     = $opts{expect};
-    my $job_title  = $opts{job_title};
-    my $wordsize   = $opts{wordsize};
-
-    #$wordsize=11 if $program eq "blastn";
-    my $comp         = $opts{comp};
-    my $matrix       = $opts{matrix};
-    my $gapcost      = $opts{gapcost};
-    my $match_score  = $opts{matchscore};
-    my $filter_query = $opts{filter_query};
     my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
     my $basename     = $opts{basename};
-    my $type = $opts{type};
 
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
         basename => $basename,
         tempdir  => $TEMPDIR
     );
-
-    #blastz params
-    my $zwordsize      = $opts{zwordsize};
-    my $zgap_start     = $opts{zgap_start};
-    my $zgap_extension = $opts{zgap_extension};
-    my $zchaining      = $opts{zchaining};
-    my $zthreshold     = $opts{zthreshold};
-    my $zmask          = $opts{zmask};
 
     my $seq = $opts{seq};
 
@@ -963,7 +654,6 @@ sub get_results {
     my @dsg_ids = split( /,/, $blastable );
 
     my $width = $opts{width};
-    my $fid   = $opts{fid};
 
     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
         user_id => $USER->id,
@@ -971,43 +661,13 @@ sub get_results {
         url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
     );
 
-    my $list_link = qq{<a href="$genomes_url" target_"blank">} . @dsg_ids . ' genome' . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+#    my $list_link = qq{<a href="$genomes_url" target_"blank">} . @dsg_ids . ' genome' . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
 
-    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
+#    my $log_msg = 'Blast ' . length($seq) . ' characters against ' . $list_link;
 
-    my %params = (
-        color_hsps   => $color_hsps,
-        program      => $program,
-        expect       => $expect,
-        job_title    => $job_title,
-        wordsize     => $wordsize,
-        comp         => $comp,
-        matrix       => $matrix,
-        gapcost      => $gapcost,
-        match_score  => $match_score,
-        filter_query => $filter_query,
-        resultslimit => $resultslimit,
-        basename     => $basename,
-        zwordsize    => $zwordsize,
-        zgap_start   => $zgap_start,
-        zgap_exten   => $zgap_extension,
-        zchaining    => $zchaining,
-        zthreshold   => $zthreshold,
-        zmask        => $zmask,
-        type         => $type,
-        dsgid        => $blastable # genomes
-    );
-
-    # Optional parameters
-    $params{fid} = $fid if $fid;
-
-    my $url = url_for($PAGE_NAME, %params);
-
-    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
-
-    my ($tiny_id) = $link =~ /\/(\w+)$/;
+    my $tiny_url = get_tiny_url(%opts);
     my $workflow = $JEX->create_workflow(
-        name    => "cogeblast-$tiny_id",
+        name    => 'cogeblast-' . ($tiny_url =~ /\/(\w+)$/),
         id      => 0,
         logfile => $cogeweb->logfile
     );
@@ -1017,7 +677,7 @@ sub get_results {
     $width = 400 unless $width =~ /^\d+$/; # something wrong with how width is calculated in tmpl file -- # mdb what does this mean!?
 
     my $t1 = new Benchmark;
-    my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
+    my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq, $cogeweb);
     my $opts;
     my $pre_command;
     my $x;
@@ -1027,7 +687,7 @@ sub get_results {
     my $t2    = new Benchmark;
 
     foreach my $dsgid (@dsg_ids) {
-        my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid);
+        my ( $org, $dbfasta, $dsg ) = get_blast_db($dsgid, $db);
         next unless $dbfasta;
         next unless -s $fasta_file;
 
@@ -1071,7 +731,7 @@ sub get_results {
         prog            => $program,
         color_hsps      => $color_hsps,
         query_seqs_info => $query_seqs_info,
-        link            => $link
+        link            => $tiny_url
     );
 
     return encode_json ({
@@ -1084,7 +744,7 @@ sub get_results {
 sub gen_results_page {
     my %opts            = @_;
     my $results         = $opts{results};
-    my $width           = $opts{width};
+#    my $width           = $opts{width};
     my $resultslimit    = $opts{resultslimit};
     my $color_hsps      = $opts{color_hsps};
     my $prog            = $opts{prog};
@@ -1629,59 +1289,6 @@ sub get_map {
     return $map;
 }
 
-sub create_fasta_file {
-    my $seq = shift;
-    my %seqs;    #names and lengths
-    $seq =~ s/>\s*\n//;
-    $seq = ">seq\n" . $seq unless $seq =~ />/;
-    if ( $seq =~ />/ ) {
-        foreach ( split( /\n>/, $seq ) ) {
-            next unless $_;
-            my ( $name, $tmp ) = split( /\n/, $_, 2 );
-            $name =~ s/^>//;
-            next unless $tmp;
-            $tmp  =~ s/\n//g;
-            $tmp  =~ s/\s//g;
-            $name =~ s/\s//g
-              ; #need to remove spaces due to how blast breaks query names at spaces or commas
-            $seqs{$name} = length($tmp);
-        }
-    }
-    CoGe::Accessory::Web::write_log( "creating user's fasta file",
-        $cogeweb->logfile );
-    open( NEW, "> " . $cogeweb->basefile . ".fasta" );
-    print NEW $seq;
-    close NEW;
-    return $cogeweb->basefile . ".fasta", \%seqs;
-}
-
-sub get_blast_db {
-    my $dsgid = shift;
-    my ($dsg) = $coge->resultset('Genome')->search(
-        { genome_id => $dsgid },
-        {
-            join     => [ 'organism', 'genomic_sequence_type' ],
-            prefetch => [ 'organism', 'genomic_sequence_type' ],
-        }
-    );
-    unless ($dsg) {
-        print STDERR "Problem getting dataset group for dsgid $dsgid\n";
-        return;
-    }
-    my ($ds) = $dsg->datasets;
-    my $org_name =
-        $dsg->organism->name . " ("
-      . $ds->data_source->name . " "
-      . $dsg->type->name . " v"
-      . $dsg->version . ")";
-
-    #$org_name .= " (".$gst->name.")" if $gst;
-
-    my $db      = $dsg->file_path;
-    return unless $db && -r $db;
-    return $org_name, $db, $dsg;
-}
-
 sub generate_fasta {
     my %opts   = @_;
     my $dslist = $opts{dslist};
@@ -1743,8 +1350,8 @@ sub generate_feat_info {
     my ( $hsp_num, $dsgid );
     ( $featid, $hsp_num, $dsgid ) = split( /_/, $featid );
 
-    my ($dsg)  = $coge->resultset('Genome')->find($dsgid);
-    my ($feat) = $coge->resultset("Feature")->find($featid);
+    my ($dsg)  = $db->resultset('Genome')->find($dsgid);
+    my ($feat) = $db->resultset("Feature")->find($featid);
     unless ( ref($feat) =~ /Feature/i ) {
         return "Unable to retrieve Feature object for id: $featid";
     }
@@ -1780,7 +1387,7 @@ sub get_hsp_info {
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
     ( $hsp_num, $dsgid ) = split( /_/, $hsp_id );
-    my $dsg   = $coge->resultset('Genome')->find($dsgid);
+    my $dsg   = $db->resultset('Genome')->find($dsgid);
     my $gstid = $dsg->type->id;
     $sth->execute($hsp_id) || die "unable to execute";
     while ( my $info = $sth->fetchrow_hashref() ) {
@@ -2031,7 +1638,7 @@ sub generate_hit_image {
     $cq->add_feature($feat);
     my ($chr) = $hsp->{schr};
     my ( $hspid, $dsgid ) = split( /_/, $hsp_name );
-    my $dsg = $coge->resultset('Genome')->find($dsgid);
+    my $dsg = $db->resultset('Genome')->find($dsgid);
     my ($ds) = $dsg->datasets( chr => $chr );
     my $len = $hsp->{sstop} - $hsp->{sstart} + 1;
     my $start = $hsp->{sstart} - 5000;
@@ -2073,7 +1680,7 @@ sub generate_hit_image {
         },
         ds   => $ds,
         chr  => $chr,
-        coge => $coge
+        coge => $db
     );
     $cs->overlap_adjustment(1);
     $cq->overlap_adjustment(1);
@@ -2153,7 +1760,7 @@ sub overlap_feats_parse    #Send to GEvo
         else {
             my ( $hspnum, $dsgid );
             ( $featid, $hspnum, $dsgid ) = $featid =~ m/^(\d+)_(\d+)_(\d+)$/;
-            my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+            my ($dsg) = $db->resultset('Genome')->find($dsgid);
 
             if ($dsg->deleted) {
                 my $name = $dsg->organism->name;
@@ -2329,8 +1936,7 @@ sub get_nearby_feats {
         basename => $filename,
         tempdir  => $TEMPDIR
     );
-    my $dbh =
-      DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
+    my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
     $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
 
@@ -2346,64 +1952,54 @@ sub get_nearby_feats {
         $sname  = $info->{sname};
         $chr    = $info->{schr};
     }
-    my $dsg = $coge->resultset('Genome')->find($dsgid);
+    my $dsg = $db->resultset('Genome')->find($dsgid);
     my $dsids = join( ',', map { $_->id } $dsg->datasets( chr => $chr ) );
     my ( $start, $stop ) = ( $sstart, $sstop );
     my @feat;
     my $count = 0;
     my $mid   = ( $stop + $start ) / 2;
-    my $cogedb =
-      $coge->storage->dbh;    #DBI->connect( $connstr, $DBUSER, $DBPASS );
+    $dbh = $db->storage->dbh;    #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $query = qq{
-select * from (
-  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10)
-   UNION (SELECT * FROM feature where start>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
-  UNION
-  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10)
-   UNION (SELECT * FROM feature where stop>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
+SELECT * FROM (
+          (SELECT feature_id,start,stop FROM feature WHERE start<=$mid AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY start DESC LIMIT 10)
+    UNION (SELECT feature_id,start,stop FROM feature WHERE start>=$mid AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY start LIMIT 10)
+    UNION (SELECT feature_id,start,stop FROM feature WHERE stop<=$mid  AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY stop DESC LIMIT 10)
+    UNION (SELECT feature_id,start,stop FROM feature WHERE stop>=$mid  AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY stop LIMIT 10)
    ) as w
-order by abs((start + stop)/2 - $mid) LIMIT 10};
-    my $handle = $cogedb->prepare($query);
-    $handle->execute();
+ORDER BY abs((start + stop)/2 - $mid) LIMIT 10};
     my $new_checkbox_info;
     my %dist;
 
-    while ( my $res = $handle->fetchrow_arrayref() ) {
-        my $fid = $res->[0];
-        my ($tmpfeat) = $coge->resultset('Feature')->find($fid);
+    my $fids = $dbh->selectcol_arrayref($query);
+    for ( @{$fids} ) {
+        my $fid = $_;
+        my $tmpfeat = $db->resultset('Feature')->find($fid);
         next
           unless $tmpfeat->type->name =~ /gene/i
               || $tmpfeat->type->name =~ /rna/i
               || $tmpfeat->type->name =~ /cds/i;
-        my $newmin =
-            abs( $tmpfeat->start - $mid ) < abs( $tmpfeat->stop - $mid )
-          ? abs( $tmpfeat->start - $mid )
-          : abs( $tmpfeat->stop - $mid );
-        $dist{$fid} =
-          { type => $tmpfeat->type->name, dist => $newmin, feat => $tmpfeat };
+        my $newmin = abs($tmpfeat->start - $mid) < abs($tmpfeat->stop - $mid) ? abs($tmpfeat->start - $mid) : abs($tmpfeat->stop - $mid);
+        $dist{$fid} = { dist => $newmin, feat => $tmpfeat };
     }
     my $feat;
     my $min_dist;
-    foreach my $fid ( sort { $dist{$a}{dist} <=> $dist{$b}{dist} } keys %dist )
-    {
-        $min_dist = $dist{$fid}{dist} unless defined $min_dist;
-        $feat     = $dist{$fid}{feat} unless $feat;
+	my @fids = sort keys %dist;
+    my @sorted = sort { $dist{$a}{dist} <=> $dist{$b}{dist} } @fids;
+    for ( @sorted ) {
+        $min_dist = $dist{$_}{dist} unless defined $min_dist;
+        $feat     = $dist{$_}{feat} unless $feat;
         last if $feat->type->name eq "CDS";
-        my $f = $dist{$fid}{feat};
+        my $f = $dist{$_}{feat};
         if ( $f->type->name eq "CDS" ) {
-            $feat = $f
-              unless $feat->stop < $f->start || $feat->start > $f->stop;
+            $feat = $f unless $feat->stop < $f->start || $feat->start > $f->stop;
         }
     }
     if ($feat) {
-        if (   ( $start >= $feat->start && $start <= $feat->stop )
-            || ( $stop >= $feat->start && $stop <= $feat->stop ) )
-        {
+        if (( $start >= $feat->start && $start <= $feat->stop ) || ( $stop >= $feat->start && $stop <= $feat->stop )) {
             $distance = "overlapping";
         }
         else {
-            $distance = abs(
-                ( $stop + $start ) / 2 - ( $feat->stop + $feat->start ) / 2 );
+            $distance = abs( ( $stop + $start ) / 2 - ( $feat->stop + $feat->start ) / 2 );
         }
         ($name) = $feat->names;
         $name =
@@ -2418,6 +2014,7 @@ qq{<span class="link" title="Click for Feature Information" onclick=update_info_
           . $sstart . "no,"
           . $feat->id . "_"
           . $hsp_id;
+          warn 'nci: ' . $new_checkbox_info;
     }
     else {
         $distance = "No neighboring features found";
@@ -2444,7 +2041,7 @@ sub export_CodeOn {
         next if $accn =~ /no$/;
         my ( $featid, $hspnum, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
 
-        #	my $dsg = $coge->resultset('Genome')->find($dsgid);
+        #	my $dsg = $db->resultset('Genome')->find($dsgid);
         #	$featid .= "_".$dsg->type->id if $dsg;
         push @list, $featid;
     }
@@ -2465,7 +2062,7 @@ sub export_fasta_file {
     foreach my $accn ( split( /,/, $accn_list ) ) {
         next if $accn =~ /no$/;
         my ( $featid, $hspnum, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        my $dsg = $db->resultset('Genome')->find($dsgid);
         $featid .= "_" . $dsg->type->id if $dsg;
         push @list, $featid;
     }
@@ -2539,6 +2136,7 @@ sub export_to_excel {
     my %opts      = @_;
     my $accn_list = $opts{accn};
     my $filename  = $opts{filename};
+    warn $accn_list;
 
     $cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir  => $TEMPDIR );
     my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
@@ -2595,17 +2193,19 @@ sub export_to_excel {
             $worksheet->write( $i, 8, $score );
         }
         else {
-            if ( $accn =~ tr/_/_/ > 2 ) {
-                my $accn_with_commas = $accn;
-                $accn_with_commas =~ tr/_/,/;
-                ( $hsp_no, $dsgid, $chr, $pos, $featid, $distance ) =
-                  $accn_with_commas =~
-                  /(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
-            }
-            else {
-                ( $featid, $hsp_no, $dsgid ) = $accn =~ /(\d+)_(\d+)_(\d+)/;
-                $distance = "overlapping";
-            }
+            warn $accn;
+            # there doesn't appear to code that would pass this in
+            # if ( $accn =~ tr/_/_/ > 2 ) {
+            #     my $accn_with_commas = $accn;
+            #     $accn_with_commas =~ tr/_/,/;
+            #     ( $hsp_no, $dsgid, $chr, $pos, $featid, $distance ) =
+            #       $accn_with_commas =~
+            #       /(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
+            # }
+            # else {
+                ( $featid, $hsp_no, $dsgid, $distance ) = $accn =~ /(\d+)_(\d+)_(\d+)_(.+)/;
+            #     $distance = "overlapping";
+            # }
             $sth->execute( $hsp_no . "_" . $dsgid ) || die "unable to execute";
             while ( my $info = $sth->fetchrow_hashref() ) {
                 $eval   = $info->{eval};
@@ -2617,7 +2217,7 @@ sub export_to_excel {
                 $length = $info->{length};
                 $qname  = $info->{qname};
             }
-            my ($feat) = $coge->resultset("Feature")->find($featid);
+            my ($feat) = $db->resultset("Feature")->find($featid);
             my ($name) = sort $feat->names;
             $worksheet->write( $i, 0, $qname );
             $worksheet->write( $i, 1, $org );
@@ -2629,8 +2229,7 @@ sub export_to_excel {
             $worksheet->write( $i, 7, $pid );
             $worksheet->write( $i, 8, $score );
             $worksheet->write( $i, 9, $feat->id );
-            $worksheet->write( $i, 10, $P->{SERVER} . "FeatView.pl?accn=$name",
-                $name );
+            $worksheet->write( $i, 10, $P->{SERVER} . "FeatView.pl?accn=$name", $name );
             $worksheet->write( $i, 11, $distance );
         }
 
@@ -2664,8 +2263,8 @@ sub generate_tab_deliminated {
     foreach my $accn ( split( /,/, $accn_list ) ) {
         next if $accn =~ /no$/;
         my ( $featid, $hsp_num, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-        my $dsg = $coge->resultset("Genome")->find($dsgid);
-        my ($feat) = $coge->resultset("Feature")->find($featid);
+        my $dsg = $db->resultset("Genome")->find($dsgid);
+        my ($feat) = $db->resultset("Feature")->find($featid);
 
         my ($name) = $feat->names;
         my $org = $dsg->organism->name;
@@ -2699,7 +2298,7 @@ sub generate_feat_list {
     foreach my $accn ( split( /,/, $accn_list ) ) {
         next if $accn =~ /no$/;
         my ( $featid, $hspnum, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        my $dsg = $db->resultset('Genome')->find($dsgid);
         $featid .= "_" . $dsg->type->id if $dsg;
         push @list, $featid;
     }
@@ -2725,7 +2324,7 @@ sub generate_blast {
     foreach my $accn ( split( /,/, $accn_list ) ) {
         next if $accn =~ /no$/;
         my ( $featid, $hspnum, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
+        my $dsg = $db->resultset('Genome')->find($dsgid);
         $featid .= "_" . $dsg->type->id if $dsg;
         push @list, $featid;
     }
@@ -2745,7 +2344,7 @@ sub get_genome_info { #FIXME: dup'ed in SynFind.pl
     #	print STDERR "get_genome_info: $dsgid\n";
     return " " unless $dsgid;
 
-    my $dsg = $coge->resultset("Genome")->find($dsgid);
+    my $dsg = $db->resultset("Genome")->find($dsgid);
     return "Unable to create genome object for id: $dsgid" unless $dsg;
 
     my $html = qq{<table class='small'>}
@@ -3008,7 +2607,7 @@ sub save_settings {
     my $prefs = CoGe::Accessory::Web::load_settings(
         user => $USER,
         page => $PAGE_NAME,
-        coge => $coge
+        coge => $db
     );
     delete $prefs->{display} unless ref( $prefs->{display} ) eq "HASH";
     foreach my $key ( keys %opts ) {
@@ -3043,7 +2642,7 @@ sub save_settings {
         opts => $prefs,
         user => $USER,
         page => $PAGE_NAME,
-        coge => $coge
+        coge => $db
     );
 }
 
@@ -3100,9 +2699,9 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
     # Try to get all items if blank search term - mdb removed 3/6/14, this is too slow
 #    if ( !$search_term ) {
 #        my $sql = "locked=0"; # AND restricted=0 OR user_group_id IN ( $group_str ))"; # FIXME
-#        $num_results = $coge->resultset("List")->count_literal($sql);
+#        $num_results = $db->resultset("List")->count_literal($sql);
 #        if ( $num_results < $MAX_SEARCH_RESULTS ) {
-#            foreach my $notebook ( $coge->resultset("List")->search_literal($sql) )
+#            foreach my $notebook ( $db->resultset("List")->search_literal($sql) )
 #            {
 #                next unless $USER->has_access_to_list($notebook);
 #                push @notebooks, $notebook;
@@ -3114,7 +2713,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
     if ($search_term) {
         # Get public lists and user's private lists
         $search_term = '%' . $search_term . '%';
-        foreach my $notebook ($coge->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"))
+        foreach my $notebook ($db->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"))
         {
             next unless $USER->has_access_to_list($notebook);
             push @notebooks, $notebook;
@@ -3154,7 +2753,7 @@ sub get_list_preview {
 
     my ( undef, $lid ) = split( ':', $item_spec );
 
-    my $list = $coge->resultset('List')->find($lid);
+    my $list = $db->resultset('List')->find($lid);
     my $html = '';
     if ($list) {
         $html .=
@@ -3175,7 +2774,7 @@ sub get_genomes_for_list {
 
     my ( undef, $lid ) = split( ':', $item_spec );
 
-    my $list    = $coge->resultset('List')->find($lid);
+    my $list    = $db->resultset('List')->find($lid);
     my $genomes = '';
     if ($list) {
         my $dsgids = join( ',', map { $_->id } $list->genomes );
@@ -3183,4 +2782,8 @@ sub get_genomes_for_list {
     }
 
     return $genomes;
+}
+
+sub blast_search {
+    go(db => $db, user => $USER, config => $P, @_);
 }

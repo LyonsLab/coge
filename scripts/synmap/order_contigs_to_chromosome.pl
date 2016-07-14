@@ -40,8 +40,8 @@ croak "Input file is missing" unless $synfile and -r $synfile;
 croak "Output filename is missing" unless $OUTPUT;
 
 $CONFIG  = CoGe::Accessory::Web::get_defaults($CONFIG_FILE);
-$GUNZIP  = $CONFIG->{GUNZIP};
-$TAR     = $CONFIG->{TAR};
+$GUNZIP  = get_command_path('GUNZIP');
+$TAR     = get_command_path('TAR');
 
 if($CONFIG) {
     my $DBNAME = $CONFIG->{DBNAME};

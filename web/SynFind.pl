@@ -3,7 +3,7 @@ use v5.10;
 use strict;
 use CoGeX;
 use DBIxProfiler;
-use CoGe::Accessory::Utils qw( commify );
+use CoGe::Accessory::Utils qw( commify html_escape);
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
@@ -63,7 +63,7 @@ $BEDDIR     = $config->{BEDDIR};
 mkpath( $BEDDIR, 0, 0777 ) unless -d $BEDDIR;
 
 $MAX_PROC = $config->{MAX_PROC};
-$LASTZ = 'nice ' . $config->{PYTHON} . ' ' . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . $config->{LASTZ};
+$LASTZ = 'nice ' . get_command_path('PYTHON') . ' ' . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . get_command_path('LASTZ');
 #$LAST  = 'nice ' . $config->{PYTHON} . ' ' . $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH}; $ mdb removed /3/21/16 for LAST v731 -- wrapper no longer needed
 $LAST = $config->{LASTAL} // 'lastal'; $LAST .= " -u 0 -P $MAX_PROC -i3G -f BlastTab"; # mdb added 3/21/16 for LAST v731
 $LASTDB = $config->{LASTDB2} // 'lastdb'; # mdb added 3/21/16 for LAST v731
@@ -199,7 +199,6 @@ sub gen_body {
 
     if ( $FORM->param('dsgid') ) {
         $template->param(TARGETS => $FORM->param('dsgid'));
-
         foreach my $item ( $FORM->param('dsgid') ) {
             foreach my $dsgid ( split( /,/, $item ) ) {
                 my $id = get_dsg_for_menu( dsgid => $dsgid );
@@ -421,7 +420,7 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
           . $dsg->version . ")";
     }
 
-    return $html;
+    return html_escape($html);
 }
 
 #sub get_orgs {

@@ -40,7 +40,7 @@ $ENV{PATH} = join ":",
 
 $TEMPDIR  = $P->{TEMPDIR} . "SynMap";
 $MAX_PROC = $P->{MAX_PROC};
-$NWALIGN  = $P->{NWALIGN};
+$NWALIGN  = get_command_path('NWALIGN');
 
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};

@@ -5,7 +5,7 @@ use GD;
 use Getopt::Long;
 
 use CoGeX;
-use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Accessory::SynMap_report;
 use CoGe::Accessory::Utils qw( commify );
 use CoGe::Core::Chromosomes;
@@ -78,8 +78,8 @@ $chr_sort_order = "size" unless defined $chr_sort_order;
 
 $P      = CoGe::Accessory::Web::get_defaults($conffile);
 $font   = $P->{FONT} unless $font && -r $font;
-$GZIP   = $P->{GZIP};
-$GUNZIP = $P->{GUNZIP};
+$GZIP   = get_command_path('GZIP');
+$GUNZIP = get_command_path('GUNZIP');
 
 usage() if $help;
 unless ( ( defined $dagfile && -r $dagfile )

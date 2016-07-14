@@ -34,9 +34,14 @@ sub build {
     my $cache_file = catfile($cache_dir, $filename);
 
     # Export experiment
-    my @done_files;
-    $self->workflow->add_job( export_experiment_job(eid => $eid, output => $cache_file) );
+    $self->workflow->add_job( 
+        export_experiment_job(
+            eid => $eid, 
+            output => $cache_file
+        )
+    );
 
+    my @done_files;
     if ($dest_type eq "irods") {
         my $base = $self->params->{dest_path};
         $base = irods_get_base_path($self->user->name) unless $base;
@@ -44,11 +49,13 @@ sub build {
         my $irods_done = catfile($self->staging_dir, "irods.done");
 
         $self->workflow->add_job( export_to_irods($cache_file, $dest, $self->params->{overwrite}, $irods_done) );
+        #TODO remove legacy generate_results, still used by ExperimentView.pl
         my $results_task = generate_results($dest, $dest_type, $self->result_dir, $self->conf, $irods_done);
         $self->workflow->add_job($results_task);
         push @done_files, $results_task->{outputs}->[0];
     } 
     else {
+        #TODO remove legacy link_results, still used by ExperimentView.pl
         my $results_task = link_results($cache_file, $cache_file, $self->result_dir, $self->conf);
         $self->workflow->add_job($results_task);
         push @done_files, $results_task->{outputs}->[0];

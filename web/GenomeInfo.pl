@@ -1932,11 +1932,7 @@ sub export_bed {
     return export_file_to_irods("bed file", \&generate_bed, @_);
 }
 
-#
-# GFF FILE
-#
-
-sub get_gff {
+sub get_gff { #TODO use the API "export_gff" job instead
     my %args = @_;
     
     # Get genome and check permission

@@ -160,9 +160,8 @@ function update_hsp_info (featid) {
 function update_checkbox(name, dist, hspid, id){
     $('#feat'+hspid).html(name);
     $('#dist'+hspid).html(dist);
-    var id_array = [];
     if (id) {
-        id_array = id.split(',');
+        var id_array = id.split(',');
 
         // mdb removed 5/19/14 issue 382 - jquery not working with html injection
         //$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
@@ -273,22 +272,27 @@ function click_all_feat_links(feature_links) { // mdb rewritten 3/8/13 issue 47
 
 function popup_blocker_check(windowObject) {
     if (!windowObject) {
-        alert("Unable to open a new window check your popup blocker settings.");
+        alert("Unable to open a new window. Check your popup blocker settings.");
     }
 }
 
 function overlap_checkboxes() {
+    var action = $('#overlap_action').val();
     var accn = "";
-    $('#hsp_result_table :checkbox').each(function() {
-        if (this.checked)
-            accn = accn + this.id+",";
+    $('#hsp_result_table :checkbox').each(function(i) {
+        if (this.checked) {
+            if (accn)
+                accn += ',';
+            accn += this.id;
+            if (action == 'xls')
+                accn += '_' + $('#dist' + (i + 1) + this.id.substr(this.id.lastIndexOf('_'))).html();
+        }
     });
-    if (!accn || accn == ",") {
+    if (!accn) {
         alert("Please select one or more features.");
         return;
     }
 
-    var action = $('#overlap_action').val();
     if (action == "gevo")
         overlap_feats_parse(accn);
     else if (action == "fasta")
@@ -562,14 +566,12 @@ function get_params(){
     var program = root.find('#'+radio).val();
 
     var gapcost;
-    if (program == "blastn" || program == 'mega' || program == 'dcmega')
-    {
+    if (program == "blastn" || program == 'mega' || program == 'dcmega') {
         var num1 = match_mismatch.substr(0,1);
         var num2 = match_mismatch.substr(2);
         gapcost = root.find('#gapcosts_'+num1+num2).val();
     }
-    else
-    {
+    else {
         gapcost = root.find('#gapcosts_'+matrix).val();
     }
 
@@ -1297,6 +1299,7 @@ function blast_param_on_select(which_type, val) {
                 }
             })
         }
+        (program == 'tblastn' || program == 'tblastx') ? $('#filter_query_row').show() : $('#filter_query_row').hide();
     }
 
     return promise;

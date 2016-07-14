@@ -62,7 +62,7 @@ our($CONF, $VERSION, @ISA, @EXPORT, @EXPORT_OK, $Q, $TEMPDIR, $BASEDIR,
 BEGIN {
     require Exporter;
 
-    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : $ENV{PWD} );#'/opt/apache/coge/web/' ); # mdb changed 2/5/16 for Hypnotoad setup
+    $BASEDIR = ( $ENV{COGE_HOME} ? $ENV{COGE_HOME} : '/opt/apache2/coge/' );#$ENV{PWD} );
     $VERSION = 0.1;
     $TEMPDIR = catdir($BASEDIR, 'web', 'tmp'); #FIXME move out of web
     @ISA     = ( qw (Exporter Class::Accessor) );
@@ -70,7 +70,7 @@ BEGIN {
                    send_email get_defaults set_defaults url_for api_url_for get_job 
                    schedule_job render_template ftp_get_path ftp_get_file split_url
                    parse_proxy_response jwt_decode_token add_user write_log log_history
-                   download_url_for
+                   download_url_for get_command_path
                );
 
     $PAYLOAD_ERROR = "The request could not be decoded";
@@ -218,6 +218,21 @@ A valid configuration file must be specified or very little will work!};
 
     $CONF = \%items;
     return $CONF;
+}
+
+sub get_command_path {
+    my $name = shift;
+    my $name2 = shift; # optional command name if different than config file parameter name
+    my $conf = get_defaults();
+    
+    # Use path in config if specified
+    $name = uc($name);
+    if ($conf->{$name} && -e $conf->{$name}) {
+        return $conf->{$name};
+    }
+    
+    # Otherwise default to shell path 
+    return ($name2 ? $name2 : lc($name));
 }
 
 sub set_defaults {
@@ -1118,7 +1133,7 @@ sub initialize_basefile {
 
 sub gzip {
     my ( $self, $file ) = self_or_default(@_);
-    my $GZIP = get_defaults()->{GZIP};
+    my $GZIP = get_command_path('GZIP');
     return $file unless $file;
     return $file . ".gz" if -r "$file.gz";
     return $file unless -r $file;
@@ -1130,11 +1145,7 @@ sub gzip {
 
 sub gunzip {
     my ( $self, $file, $debug ) = self_or_default(@_);
-    my $GUNZIP = get_defaults()->{GUNZIP};
-    unless ($GUNZIP) {
-        print STDERR "ERROR: in gunzip!  gunzip binary is not specified!\n"
-          if $debug;
-    }
+    my $GUNZIP = get_command_path('GUNZIP');
     print STDERR "Debugging sub gunzip\n" if $debug;
     print STDERR "\t", $file, "\n" if $debug;
     $file .= ".gz" if -r $file . ".gz";

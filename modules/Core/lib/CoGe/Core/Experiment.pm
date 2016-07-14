@@ -5,6 +5,7 @@ use Data::Dumper;
 use Sort::Versions;
 use CoGe::Accessory::FastBit;
 use CoGe::Core::Storage qw( $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER get_experiment_path );
+use CoGe::Accessory::Web qw(get_command_path);
 
 our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION, @QUANT_TYPES, @MARKER_TYPES, 
       @OTHER_TYPES, @SUPPORTED_TYPES );
@@ -12,14 +13,17 @@ our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION, @QUANT_TYPES, @MARKER_TYPES,
 BEGIN {
     require Exporter;
     $VERSION = 0.1;
-    @ISA = qw( Exporter );
+    @ISA = qw(Exporter);
     @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @OTHER_TYPES @SUPPORTED_TYPES);
-    @EXPORT_OK = qw( delete_experiment detect_data_type download_data experimentcmp get_data get_fastbit_format get_fastbit_score_column query_data );
+    @EXPORT_OK = qw( 
+        delete_experiment detect_data_type download_data experimentcmp get_data 
+        get_fastbit_format get_fastbit_score_column query_data 
+    );
     
     # Setup supported experiment file types
-    @QUANT_TYPES = qw(csv tsv bed wig);
+    @QUANT_TYPES  = qw(csv tsv bed wig);
     @MARKER_TYPES = qw(gff gtf gff3);
-    @OTHER_TYPES = qw(bam vcf);
+    @OTHER_TYPES  = qw(bam vcf);
     @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES);
 }
 
@@ -115,7 +119,7 @@ sub get_data {
 	    return \@results;
     }
     elsif ( $data_type == $DATA_TYPE_ALIGN ) { # FIXME move output parsing from Storage.pm to here
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
+        my $cmdpath = get_command_path('SAMTOOLS');
     	my $storage_path = get_experiment_path($eid);
         my $cmd = "$cmdpath view $storage_path/alignment.bam $chr:$start-$stop 2>&1";
         #print STDERR "$cmd\n";
@@ -240,7 +244,7 @@ sub query_data {
 
     # alignment data
     if ($data_type == 3) {
-        my $cmdpath = CoGe::Accessory::Web::get_defaults()->{SAMTOOLS};
+        my $cmdpath = get_command_path('SAMTOOLS');
         my $storage_path = get_experiment_path($eid);
         my $cmd = "$cmdpath view $storage_path/alignment.bam";
         $cmd .= ' ' . $chr if $chr;
@@ -259,9 +263,9 @@ sub query_data {
         my @results;
         foreach (@cmdOut) {
             chomp;
-            my (undef, $flag, $chr, $start, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
+            my ($qname, $flag, $chr, $start, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
             my $strand = ($flag & 0x10 ? '-1' : '1');
-            push @results, '"' . $chr . '",' . $start . ',' . ($start + length($seq)) . ',' . $strand;
+            push @results, '"' . $chr . '",' . $start . ',' . ($start + length($seq)) . ',' . $strand . ',"' . $qname . '"';
         }
         return \@results;
     }
@@ -276,11 +280,11 @@ sub query_data {
 	$where .= " and chr='$chr'" if $chr;
 	my $value1;
     if ($type eq 'max') {
-    	$value1 = CoGe::Accessory::FastBit::max($eid);
+    	$value1 = CoGe::Accessory::FastBit::max($eid, $chr);
     	$where .= ' and value1>' . ($value1 - 0.001);
     }
     elsif ($type eq 'min') {
-    	$value1 = CoGe::Accessory::FastBit::min($eid);
+    	$value1 = CoGe::Accessory::FastBit::min($eid, $chr);
     	$where .= ' and value1<' . ($value1 + 0.001);
     }
     elsif ($type eq 'range') {

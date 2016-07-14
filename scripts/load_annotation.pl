@@ -10,7 +10,7 @@ use File::Spec::Functions qw( catdir catfile );
 use File::Touch;
 use URI::Escape;
 use URI::Escape::JavaScript qw(unescape);
-use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Accessory::Utils qw( commify units );
 use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Core::Storage;
@@ -101,12 +101,7 @@ $port = $P->{DBPORT};
 $user = $P->{DBUSER};
 $pass = $P->{DBPASS};
 
-$GUNZIP = $P->{GUNZIP};
-if ( not -e $GUNZIP )
-{
-  print STDOUT "log: error: can't find required command(s)\n";
-    exit(-1);
-}
+$GUNZIP = get_command_path('GUNZIP');
 
 # Validate the data file
 print STDOUT "log: Validating data file ...\n";

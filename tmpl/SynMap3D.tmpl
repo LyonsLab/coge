@@ -28,7 +28,312 @@
 
 .jstree li a ins { display:none !important; }
 .jstree.jstree-focused { background:white; }
+
+.contentBox {
+    background-color: #F5F5F5;
+    height: auto;
+    border: 1px solid #119911;
+    border-radius: 0px;
+    margin: 0px;
+    box-sizing: border-box;
+    padding: .1em;
+    position: relative;
+}
+
+.contentBox h3 {
+    margin: 0;
+    margin-top: .1em;
+    margin-bottom: .2em;
+}
+
+#rendering {
+    margin: 0px;
+    padding: 0px;
+    margin-left: 0.5%;
+    margin-right: 0.25%;
+    margin-bottom: .2em;
+    float: left;
+    width: 70%;
+}
+
+#ptcounter {
+    position: absolute;
+    font-size: large;
+    top: 8px;
+    left: 8px;
+}
+
+#vrlogo {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    opacity: 0.4;
+}
+
+#vrlogo:hover {
+    opacity: 1.0;
+}
+
+#axislabels {
+    position: absolute;
+    top: 8px;
+    left: 300px;
+}
+
+.label {
+    border-radius: 4px;
+    padding: 2px;
+    opacity: 0.65;
+    font-weight: bold;
+}
+
+#xlabel {
+    border: 3px solid #8B0000;
+    background-color: #FF6464;
+}
+
+#ylabel {
+    border: 3px solid #00008B;
+    background-color: #0064FF;
+}
+
+#zlabel {
+    border: 3px solid #008000;
+    background-color: #90EE90;
+}
+
+.redtxt {
+    color: red;
+}
+.bluetxt {
+    color: blue;
+}
+.greentxt {
+    color: green;
+}
+
+#instruct {
+    position: absolute;
+    padding: 8px;
+    top: 30px;
+    left: 30px;
+    background-color: #FFFFFF;
+    opacity: 0.95;
+    border: 1px solid #119911;
+    border-radius: 6px;
+}
+
+#right {
+    margin-top: 0px;
+    margin-bottom: 0.2em;
+    margin-right: 0.5%;
+    margin-left: 0.25%;
+    float: right;
+    width: 28.5%;
+}
+
+#histos {
+    margin: 0px;
+    margin-bottom: 10px;
+    padding: 0px;
+    background-color: #F5F5F5;
+    border: 1px solid #119911;
+}
+
+#hKs, #hKn, #hKnKs{
+    height: auto;
+    zoom: 1;
+    text-align: center;
+}
+
+.bar rect {
+    shape-rendering: crispEdges;
+}
+
+.axis path, .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+
+#gene_info h5 {
+    margin-top: .2em;
+    margin-bottom: .05em;
+}
+
+.gene-info-display p {
+    margin: 0em;
+    margin-left: .6em;
+    font-size: 0.875em;
+}
+
+.brush .extent {
+  stroke: rgb(108, 122, 168);
+  fill: rgb(68, 104, 168);
+  fill-opacity: .25;
+  shape-rendering: crispEdges;
+}
+
+.brush .resize path {
+  fill: #eee;
+  stroke: #666;
+}
+
 </style>
+
+<div id="analysis" style="display:none">
+    <div id="rendering" class="contentBox">
+        <canvas id="canvas"></canvas>
+
+        <div id="ptcounter">
+            <span style="font-weight:bold;">Point Count:</span> <span id="pt_ct"></span>
+        </div>
+
+        <div id="axislabels" class="hidden">
+            <span id="xlabel" class="label">X Axis Label</span>
+            <span id="ylabel" class="label">Y Axis Label</span>
+            <span id="zlabel" class="label">Z Axis Label</span>
+        </div>
+
+        <div id="instruct" class="ui-draggable hidden">
+            <span style="font-weight: bold">Welcome to the new SynMap3D Viewer!</span><br>
+            <div style="padding: 6px">
+                SynMap Navigation Instructions:<br>
+                <ul>
+                    <li> - Zoom: Scroll wheel</li>
+                    <li> - Rotate: Click & drag</li>
+                    <li> - Select points: Click</li>
+                </ul><br>
+                Histogram Navigation:<br>
+                <ul>
+                    <li> - View log(value) limits and point count for each histogram bin: hover on bar</li>
+                    <li> - Display point subsets: Click and drag to select histogram region</li>
+                    <li> - Moving subset: Click and drag on brush selection</li>
+                    <li> - Clear subset: Click empty, unselected space on histogram</li>
+                </ul><br>
+                For more help, see the <a target="_blank" href="https://genomevolution.org/wiki/index.php/SynMap3D">SynMap3D Wiki</a>
+            </div>
+            <div style="text-align:center;padding-top:6px">
+                <span class="ui-button ui-corner-all" onclick="hideEl('#instruct')">Okay, got it!</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="right">
+        <div id="histos">
+            <div id="hKs" style="">
+                <button type="button" onclick="rotateHistogram('L')">&lsaquo;</button>
+                Synonymous Mutations (Ks) Histogram
+                <button type="button" onclick="rotateHistogram('R')">&rsaquo;</button>
+            </div>
+            <div id="hKn" style="display: none;">
+                <button type="button" onclick="rotateHistogram('L')">&lsaquo;</button>
+                Non-synonymous Mutations (Kn) Histogram
+                <button type="button" onclick="rotateHistogram('R')">&rsaquo;</button>
+            </div>
+            <div id="hKnKs" style="display: none;">
+                <button type="button" onclick="rotateHistogram('L')">&lsaquo;</button>
+                Kn/Ks Histogram
+                <button type="button" onclick="rotateHistogram('R')">&rsaquo;</button>
+            </div>
+        </div>
+        <div id="opts" class="contentBox">
+            <span style="text-align: center; font-weight: bold;">Controls</span><br>
+            <div style="padding-bottom: 5px">
+                <span id="xylabel">XY</span><br>
+                <button type="button" id="viewXY" onclick="resetCamera('xy')">Orient Camera</button>
+                <button type="button" onclick="launchSynmap2('xy')">View in SynMap&rsaquo;&rsaquo;</button><br>
+            </div>
+
+            <div style="padding-bottom: 5px">
+                <span id="xzlabel">XZ</span><br>
+                <button type="button" id="viewXZ" onclick="resetCamera('xz')">Orient Camera</button>
+                <button type="button" onclick="launchSynmap2('xz')">View in SynMap&rsaquo;&rsaquo;</button><br>
+            </div>
+
+            <div style="padding-bottom: 5px">
+                <span id="yzlabel">YZ</span><br>
+                <button type="button" id="viewYZ" onclick="resetCamera('yz')">Orient Camera</button>
+                <button type="button" onclick="launchSynmap2('yz')">View in SynMap&rsaquo;&rsaquo;</button><br>
+            </div>
+
+            <div style="padding-bottom: 5px">
+                <span>Additional Controls</span><br>
+                <button type="button" onclick="resetCamera('reset')">Reset Camera</button>
+                <button type="button" onclick="toggleRotate()">Toggle Auto-Rotate</button>
+                <button type="button" onclick="toggleGrid()">Toggle Grid</button>
+                <button type="button" onclick="toggleLabels()">Toggle Axis Labels</button><br>
+            </div>
+
+            <br><span style="text-align: center; font-weight: bold;">Color Options</span><br>
+            <label>Color Scheme: </label>
+            <select id="color_scheme">
+                <option value="Jet" selected>Rainbow</option>
+                <option value="Bluered">Blue-Red</option>
+                <option value="Portland">Portland</option>
+                <option value="Viridis">Viridis</option>
+                <option value="Auto">Auto</option>
+            </select>
+            <span id="autoscale" class="hidden">
+                <input id="slide" type="range" /> <span id="slideDisplay"></span>
+            </span>
+
+            <br>
+            <label>Color By Mutation Ratio: </label>
+            <select id="color_by">
+                <option value="xy">XY</option>
+                <option value="xz">XZ</option>
+                <option value="yz">YZ</option>
+                <option value="xyz">XYZ</option>
+            </select>
+
+            <div id="pt_selection">
+                <br><span style="text-align: center; font-weight: bold;">Point Selection</span><br>
+                <div id="pt_display"><span style="font-style: italic;">No Point Selected</span></div>
+            </div>
+
+            <div id="regen">
+                <br><span style="text-align: center; font-weight: bold;">Regenerate Analysis</span><br>
+                <div id="tiny"></div>
+            </div>
+
+            <div id="down">
+                <br><span style="text-align: center; font-weight: bold;">Download Results</span><br>
+                <div id="download"></div>
+            </div>
+        </div>
+    </div>
+    <div style="clear:both"></div>
+</div><br>
 
 <div id="wizard-container"></div>
 
@@ -38,30 +343,34 @@
 
         <div class="form-field">
             <label class="col-md-2">X-Axis Genome:</label>
-            <input class="col-md-8" id="edit_xgenome" type="search" placeholder="Search"
-            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
-            	size="50" value="<TMPL_VAR NAME='X_GENOME_NAME'>" />
-            <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+            <input class="col-md-6" id="edit_xgenome" type="search" placeholder="Search"
+            	title="Enter the genome associated with the x-axis. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            	size="50" value="<TMPL_VAR NAME='X_GENOME_NAME'>"
+            	style="float:left;" />
+            <img id="edit_xgenome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
-        
 
         <div class="form-field">
             <label class="col-md-2">Y-Axis Genome:</label>
-            <input class="col-md-8" id="edit_ygenome" type="search" placeholder="Search"
-            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
-            	size="50" value="<TMPL_VAR NAME='Y_GENOME_NAME'>" />
-            <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+            <input class="col-md-6" id="edit_ygenome" type="search" placeholder="Search"
+            	title="Enter the genome associated with the y-axis. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            	size="50" value="<TMPL_VAR NAME='Y_GENOME_NAME'>"
+            	style="float:left;" />
+            <img id="edit_ygenome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
-
 
         <div class="form-field">
             <label class="col-md-2">Z-Axis Genome:</label>
-            <input class="col-md-8" id="edit_zgenome" type="search" placeholder="Search"
-            	title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
-            	size="50" value="<TMPL_VAR NAME='Z_GENOME_NAME'>" />
-            <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
+            <input class="col-md-6" id="edit_zgenome" type="search" placeholder="Search"
+            	title="Enter the genome associated with the z-axis. Start typing to narrow down the list of genomes to choose from." spellcheck="false"
+            	size="50" value="<TMPL_VAR NAME='Z_GENOME_NAME'>"
+            	style="float:left;" />
+            <img id="edit_zgenome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
-    
+
     </div>
 </script>
 
@@ -88,34 +397,95 @@
 	<div class="form-section">
 	    <h4>General Options</h4>
 
-            <div class="form-field">
-		<label class="col-md-2">Hide contigs without synteny:</label>
-		<input id="nosynt" type="checkbox">
-	    </div>
-	
-	    <div class="form-field">
-		<label class="col-md-2">Minimum chromosome length:</label>
-		<input id="min_length" type="number" value="0">
-	    </div>
-
-	    <div class="form-field">
-		<label class="col-md-2">Sort chromosomes by:</label>
-		<select id="sortby">
+        <!-- Sort contigs by. -->
+        <div class="form-field">
+		<label class="col-md-2">Sort contigs by:</label>
+		<select id="sortby" value="length" title="Chromosomes/scaffolds/contigs are ordered in visualization by this metric.">
+            <option value="name">Name</option>
 		    <option value="length">Length</option>
-		    <option value="name">Name</option>
 		</select>
 	    </div>
-	</div>
+
+        <!-- Minimum contig synteny. -->
+        <div class="form-field">
+            <label class="col-md-2">Minimum syntenic points per contig:</label>
+            <input id="min_synteny" type="number" value="1" title="Only display chromosomes/scaffolds/contigs with at least this number of syntenic points.">
+	    </div>
+
+        <!-- Minimum contig length. -->
+	    <div class="form-field">
+            <label class="col-md-2">Minimum contig length (bp):</label>
+            <input id="min_length" type="number" value="10000" title="Only display chromosomes/scaffolds/contigs of at least this length (in base pairs).">
+	    </div>
+
+        <!-- Mutation ratio options. -->
+        <div class="form-field">
+	        <label class="col-md-2">Limit by mutation value:</label>
+	        <input id="enable_ratio" type="checkbox" style="float:left;margin-right:10px;" title="Use this option to limit comparisons to only gene pairs within a range of various mutation values (i.e. Ks, Kn). See 'Need help?' for more info.">
+
+	        <div id="ratio-container" class="form-group hidden">
+		    	<div style="padding-left:3em">
+                    <div>
+                        <label>Mutation Ratio: </label>
+                        <select id="ratio">
+                            <option value="kn">Non-Synonymous (Kn)</option>
+                            <option value="ks">Synonymous (Ks)</option>
+                            <option value="knks">Kn/Ks</option>
+                        </select>
+					</div>
+                    <div>
+                        <label>Comparison: </label>
+                        <select id="ratio_by">
+                            <option value="xy">XY</option>
+                            <option value="xz">XZ</option>
+                            <option value="yz">YZ</option>
+                            <option value="mean">mean</option>
+                            <option value="median">median</option>
+                        </select>
+					</div>
+		    		<div>
+                        <label>Minimum log10(ratio): </label>
+                        <input id="ratio_min" type="number" step="0.001" value="-1">
+					</div>
+					<div>
+                        <label>Maximum log10(ratio): </label>
+                        <input id="ratio_max" type="number" step="0.001" value="1">
+					</div>
+				</div>
+			</div>
+	    </div>
+
+        <!-- Clustering options. -->
+        <div class="form-field">
+	        <label class="col-md-2">Limit by <a href="https://en.wikipedia.org/wiki/DBSCAN">DBSCAN</a> clustering:</label>
+	        <input id="enable_cluster" type="checkbox" style="float:left;margin-right:10px;" title="Use this option to remove syntenic points that do not fall near other syntenic points. See 'Need help?' for more info.">
+
+	        <div id="cluster-container" class="form-group hidden">
+		    	<div style="padding-left:3em">
+		    		<div>
+                        <label>Maximum Neighborhood Distance: </label>
+                        <input id="cluster_eps" type="number" step="0.01" value="0.50">
+					</div>
+					<div>
+                        <label>Minimum Points per Cluster: </label>
+                        <input id="cluster_min" type="number" step="1" value="10">
+					</div>
+				</div>
+			</div>
+	    </div>
+
+    </div>
 	<hr>
 </script>
 
 <script id="advanced-options-template" type="text/template">
 	<div class="form-section">
-	    <h4>Advanced Options</h4>
+	    <h4>Experimental Options</h4>
 
 	    <div class="form-field">
 		<label class="col-md-2">Enable VR mode:</label>
 		<input id="vr" type="checkbox">
+        <!--<span style="color: red; font-size: 0.75em; font-style: italic">Coming Soon!</span>-->
 	   </div>
 	</div>	
 </script>
@@ -124,7 +494,7 @@
 <script id="confirm-template" type="text/template">
     <div class="step info">
         <h3>Genomes</h3>
-        <div class="confirm-genomes padded"></div>
+        <div class="confirm-description padded"></div>
         <h3>Options</h3>
         <div class="confirm-options padded"></div>
     </div>
@@ -146,18 +516,28 @@
 <script type="text/javascript">
 // Page constants
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const SERVER_URL    = '<TMPL_VAR NAME="SERVER_URL">';
+const DATA_LOC      = '<TMPL_VAR NAME="DATA_LOC">';
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER">';
 const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
-//const GENOME_ID     = '<TMPL_VAR NAME="GENOME_ID">'; AKB - Replaced with X, Y, and Z
+
+// Form options
 const X_GENOME_ID   = '<TMPL_VAR NAME="X_GENOME_ID">';
 const Y_GENOME_ID   = '<TMPL_VAR NAME="Y_GENOME_ID">';
 const Z_GENOME_ID   = '<TMPL_VAR NAME="Z_GENOME_ID">';
-const HIDE_NOSYNT   = '<TMPL_VAR NAME="HIDE_NOSYNT">';
+const SORTBY  	    = '<TMPL_VAR NAME="SORTBY">';
+const MIN_SYN       = '<TMPL_VAR NAME="MIN_SYN">';
 const MIN_LEN       = '<TMPL_VAR NAME="MIN_LEN">';
-const SORTBY	    = '<TMPL_VAR NAME="SORTBY">';
+const C_EPS         = '<TMPL_VAR NAME="C_EPS">';
+const C_MIN         = '<TMPL_VAR NAME="C_MIN">';
+const RATIO         = '<TMPL_VAR NAME="RATIO">';
+const R_BY          = '<TMPL_VAR NAME="R_BY">';
+const R_MIN         = '<TMPL_VAR NAME="R_MIN">';
+const R_MAX         = '<TMPL_VAR NAME="R_MAX">';
+
 const VR            = '<TMPL_VAR NAME="VR">';
 
 var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">';
@@ -180,7 +560,7 @@ $(function() {
         type: "GET",
         url: PAGE_NAME,
         dataType: "html",
-        cache: false,
+        cache: false
     });
 
     // Configure dialogs
@@ -190,13 +570,19 @@ $(function() {
     wizard = initialize_wizard({ 
     	admin: IS_ADMIN,
     	helpUrl: HELP_URL,
-	x_gid: X_GENOME_ID,
-	y_gid: Y_GENOME_ID,
-	z_gid: Z_GENOME_ID,
-	hide: HIDE_NOSYNT,
-	minLen: MIN_LEN,
-	sortBy: SORTBY,
-	vr: VR	
+	    x_gid: X_GENOME_ID,
+	    y_gid: Y_GENOME_ID,
+	    z_gid: Z_GENOME_ID,
+	    sortby: SORTBY,
+        min_syn: MIN_SYN,
+        min_len: MIN_LEN,
+        c_eps: C_EPS,
+        c_min: C_MIN,
+        ratio: RATIO,
+        r_by: R_BY,
+        r_min: R_MIN,
+        r_max: R_MAX,
+	    vr: VR
     });
 
     // Initialize CoGe web services
@@ -222,11 +608,33 @@ $(function() {
 });
 </script>
 
+<!-- Overlay -->
+<tmpl_include name="/widgets/Overlay.tmpl">
+
+<!-- SynMap3D Page Dynamics -->
 <script type="text/javascript" src="js/pages/synmap-3d.js"></script>
+
+<!-- SynMap3D Requirements -->
+<script type="text/javascript" src="js/syn3d/three-77.min.js"></script>
+<script type="text/javascript" src="js/syn3d/threex.domevent.js"></script>
+<script type="text/javascript" src="js/syn3d/modified_FlatOrbitControls.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+<script type="text/javascript" src="js/d3-tip-0.6.3.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/lodash/3.10.1/lodash.min.js"></script>
+<!--<script type="text/javascript" src="js/plotly-latest.min.js"></script>-->
+
+<script src="js/syn3d/WebVR_modified.js"></script>
+<script src="js/syn3d/VREffect_modified.js"></script>
+
+
+<!-- CoGe Utilities -->
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <script type="text/javascript" src="js/coge/services.js"></script>
 <script type="text/javascript" src="js/coge/progress.js"></script>
 <script type="text/javascript" src="js/coge/wizard.js"></script>
 <script type="text/javascript" src="js/coge/file-select.js"></script>
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
+
+
+
 </TMPL_IF> <!-- MAIN -->
