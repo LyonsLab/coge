@@ -34,12 +34,6 @@ function get_genome_info_chain(i) {
     ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 }
 
-// function search_bar(text, divId) {
-//     console.log(divId);
-//     var el = $(divId);
-//     el.val(el.val() + " " + text);
-// }
-
 function close_dialog(dialog) {
     dialog.dialog('close');
     dialog.find('#text').empty();
@@ -261,14 +255,6 @@ function fill_jobtitle(){
     $('#jobtitle').val(title);
 }
 
-//function update_basename(basename){
-//    pageObj.basename=basename;
-//}
-
-//function reset_basename(){
-//    if(pageObj.basename) pageObj.basename=0;
-//}
-
 function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb) {
     var url = 'dsg1='+dsgid1+';dsg2='+dsgid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
     var loc = $('#map_loc').val();
@@ -354,99 +340,6 @@ function post_to_grimm(seq1, seq2) {
     query_form.appendChild(input2);
     query_form.submit("action");
 }
-
-// function add(a, b) {
-//     return a + b;
-// };
-
-// function sum(iterable) {
-//     return iterable.reduce(add);
-// }
-
-// function pick(attribute) {
-//     return function(object, index, list) {
-//         return object[attribute];
-//     };
-// };
-
-// function scan(func, initial, iterable) {
-//     var values = [initial],
-//         index;
-
-//     for(index = 0; index < iterable.length; index++) {
-//         values.push(func(values[index], iterable[index]));
-//     }
-
-//     return values;
-// }
-
-// function toObject(pairs) {
-//     return pairs.reduce(function(object, value, index) {
-//         object[value[0]] = value[1];
-//         return object
-//     }, {});
-// }
-
-// function compareAlphaNumeric(a, b) {
-//     var regAlpha = /[^a-zA-Z_]/g,
-//         regNumeric = /[^0-9]/g,
-//         aString = a.toString(),
-//         bString = b.toString(),
-//         aAlpha,
-//         aNum,
-//         bAlpha,
-//         bNum;
-
-//     aAlpha = aString.replace(regAlpha, "");
-//     bAlpha = bString.replace(regAlpha, "");
-
-//     if(aAlpha === bAlpha) {
-//         aNum = parseInt(aString.replace(regNumeric, ""), 10);
-//         bNum = parseInt(bString.replace(regNumeric, ""), 10);
-
-//         return aNum === bNum ? 0 : aNum > bNum ? 1 : -1;
-//     }
-
-//     return aAlpha.localeCompare(bAlpha);
-// }
-
-// function sortBy(attribute, cmp) {
-//     return function (a, b) {
-//         if (cmp) {
-//             return cmp(a[attribute], b[attribute]);
-//         } else {
-//             return a[attribute] - b[attribute];
-//         }
-//     };
-// }
-
-// function identity(x) {
-//     return x;
-// }
-
-// function inverse(func) {
-//     return function(a, b) {
-//         return func(b, a);
-//     }
-// }
-
-// function getValues(object) {
-//     var key,
-//         coll = [];
-
-//     for(key in object) {
-//         coll.push(object[key]);
-//     }
-
-//     return coll;
-// }
-
-// function checkRequestSize(url) {
-//     return $.ajax({
-//         type: "HEAD",
-//         url: url
-//     });
-// }
 
 var coge = window.coge = (function(namespace) {
     var ArrayProto = Array.prototype.slice;
