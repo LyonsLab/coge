@@ -1962,13 +1962,14 @@ sub get_nearby_feats {
     my $mid   = ( $stop + $start ) / 2;
     $dbh = $db->storage->dbh;    #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $query = qq{
-SELECT * FROM (
-          (SELECT feature_id,start,stop FROM feature WHERE start<=$mid AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY start DESC LIMIT 10)
-    UNION (SELECT feature_id,start,stop FROM feature WHERE start>=$mid AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY start LIMIT 10)
-    UNION (SELECT feature_id,start,stop FROM feature WHERE stop<=$mid  AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY stop DESC LIMIT 10)
-    UNION (SELECT feature_id,start,stop FROM feature WHERE stop>=$mid  AND dataset_id IN ($dsids) AND chromosome = '$chr' ORDER BY stop LIMIT 10)
+select * from (
+  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10)
+   UNION (SELECT * FROM feature where start>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
+  UNION
+  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10)
+   UNION (SELECT * FROM feature where stop>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
    ) as w
-ORDER BY abs((start + stop)/2 - $mid) LIMIT 10};
+order by abs((start + stop)/2 - $mid) LIMIT 10};
     my $new_checkbox_info;
     my %dist;
 
