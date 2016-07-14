@@ -316,7 +316,7 @@ sub data {
                 $start = $tokens->[1] if !$start;
                 $stop = $tokens->[2] if !$stop;
                 $strand = $tokens->[3] if !$strand;
-                if ($c ne $tokens->[0] || $start > $stop + $gap_max) {
+                if ($c ne $tokens->[0] || $strand ne $tokens->[3] || $tokens->[1] > $stop + $gap_max) {
                     $self->_write_marker($c, undef, undef, $start, $stop, $tot_score / $num, $strand, undef, undef, $fh);
                     $c = $tokens->[0];
                     $start = $tokens->[1];
@@ -363,9 +363,9 @@ sub _write_marker {
     my ($self, $chr, $source, $method, $start, $stop, $score, $strand, $phase, $group, $fh) = @_;
     $self->_write($chr, $fh);
     $self->_write("\t", $fh);
-    $self->_write($source || '.');
+    $self->_write($source || '.', $fh);
     $self->_write("\t", $fh);
-    $self->_write($method || '.');
+    $self->_write($method || '.', $fh);
     $self->_write("\t", $fh);
     $self->_write($start, $fh);
     $self->_write("\t", $fh);

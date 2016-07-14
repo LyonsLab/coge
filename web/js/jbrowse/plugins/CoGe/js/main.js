@@ -684,6 +684,10 @@ return declare( JBrowsePlugin,
 		url += '&' + this.search_to_params(config.coge.search, true);
 		var annotions = [
 			{
+				type: 'created',
+				text: (new Date()).toString()
+			},
+			{
 				type: 'original experiment name',
 				text: config.coge.name
 			},
