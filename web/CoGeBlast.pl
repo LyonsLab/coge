@@ -134,8 +134,8 @@ sub gen_body {
     my $featid = $form->param('featid');
     my $fid = $form->param('fid');
     $featid .= ",$fid" if $fid;
-    $featid =~ s/^,//;
-    $featid =~ s/,$//;
+    $featid =~ s/^,// if $featid;
+    $featid =~ s/,$// if $featid;
     my $chr    = $form->param('chr') || 0;
     my $upstream   = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
@@ -1928,7 +1928,6 @@ qq{INSERT INTO sequence_info (name, type, length) values ('$sname',"subject",'$s
     $dbh->disconnect();
 
 }
-
 sub get_nearby_feats {
     my %opts     = @_;
     my $hsp_id   = $opts{num};
@@ -1955,26 +1954,36 @@ sub get_nearby_feats {
         $chr    = $info->{schr};
     }
     my $dsg = $db->resultset('Genome')->find($dsgid);
-    my $dsids = join( ',', map { $_->id } $dsg->datasets( chr => $chr ) );
+    my @dsids = map { $_->id } $dsg->datasets( chr => $chr );
     my ( $start, $stop ) = ( $sstart, $sstop );
     my @feat;
     my $count = 0;
     my $mid   = ( $stop + $start ) / 2;
     $dbh = $db->storage->dbh;    #DBI->connect( $connstr, $DBUSER, $DBPASS );
-    my $query = qq{
-select * from (
-  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10)
-   UNION (SELECT * FROM feature where start>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
-  UNION
-  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10)
-   UNION (SELECT * FROM feature where stop>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
-   ) as w
-order by abs((start + stop)/2 - $mid) LIMIT 10};
+    my %fids;
+    for (@dsids) {
+        my $query = qq{
+    select * from (
+      (SELECT * FROM
+             ((SELECT feature_id,start,stop FROM feature where start<=$mid and dataset_id = $_ and chromosome = '$chr' ORDER BY start DESC LIMIT 10)
+        UNION (SELECT feature_id,start,stop FROM feature where start>=$mid and dataset_id = $_ and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
+      UNION
+      (SELECT * FROM
+             ((SELECT feature_id,start,stop FROM feature where stop<=$mid and dataset_id = $_ and chromosome = '$chr' ORDER BY stop DESC LIMIT 10)
+        UNION (SELECT feature_id,start,stop FROM feature where stop>=$mid and dataset_id = $_ and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
+       ) as w
+    order by abs((start + stop)/2 - $mid) LIMIT 10};
+        for my $ids ($dbh->selectcol_arrayref($query)) {
+            for (@{$ids}) {
+                $fids{$_} = 1;
+            }
+        }
+    }
+
     my $new_checkbox_info;
     my %dist;
 
-    my $fids = $dbh->selectcol_arrayref($query);
-    for ( @{$fids} ) {
+    for ( keys %fids ) {
         my $fid = $_;
         my $tmpfeat = $db->resultset('Feature')->find($fid);
         next
@@ -2017,7 +2026,6 @@ qq{<span class="link" title="Click for Feature Information" onclick=update_info_
           . $sstart . "no,"
           . $feat->id . "_"
           . $hsp_id;
-          warn 'nci: ' . $new_checkbox_info;
     }
     else {
         $distance = "No neighboring features found";
@@ -2113,7 +2121,6 @@ sub export_top_hits {
         $sth->execute( $hsp_num . "_" . $dsgid ) || die "unable to execute";
         my ( $qname, $salign, $score );
         while ( my $hsp_info = $sth->fetchrow_hashref() ) { # FIXME: mdb asks "why is this looped?"
-            #print STDERR Dumper $info, "\n";
             $qname  = $hsp_info->{qname};
             $salign = $hsp_info->{salign};
             $score  = $hsp_info->{score};
@@ -2123,7 +2130,6 @@ sub export_top_hits {
             $hsp{$qname}{score} = $score;
         }
     }
-    #print STDERR Dumper \%hsp, "\n";
 
     # Generate top hits file
     open( my $fh, "> $TEMPDIR/$filename-tophits.fasta" );
@@ -2139,7 +2145,6 @@ sub export_to_excel {
     my %opts      = @_;
     my $accn_list = $opts{accn};
     my $filename  = $opts{filename};
-    warn $accn_list;
 
     $cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir  => $TEMPDIR );
     my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
@@ -2196,7 +2201,6 @@ sub export_to_excel {
             $worksheet->write( $i, 8, $score );
         }
         else {
-            warn $accn;
             # there doesn't appear to code that would pass this in
             # if ( $accn =~ tr/_/_/ > 2 ) {
             #     my $accn_with_commas = $accn;
