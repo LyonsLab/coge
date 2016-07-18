@@ -631,7 +631,7 @@ var coge = window.coge = (function(namespace) {
                 email: $('#email').val(),
                 regen_images: $('#regen_images')[0].checked,
                 width: $('#master_width').val(),
-                dagchainer_type: $('#dagchainer_type').filter(':checked').val(),
+                dagchainer_type: $('#dagchainer_type:checked').val(),
                 ks_type: $('#ks_type').val(),
                 assemble: $('#assemble')[0].checked,
                 axis_metric: $('#axis_metric').val(),
