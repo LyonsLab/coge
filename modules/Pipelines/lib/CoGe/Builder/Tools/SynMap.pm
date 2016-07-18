@@ -17,7 +17,7 @@ use POSIX;
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT_OK =
-	  qw( add_jobs algo_lookup check_address_validity defaults gen_org_name generate_pseudo_assembly get_query_link go );
+	  qw( add_jobs algo_lookup check_address_validity defaults gen_org_name generate_pseudo_assembly get_query_link );
 }
 
 sub test {
@@ -1217,7 +1217,7 @@ sub add_jobs {
 	$workflow->log( "Added GEvo links generation" );
 	$workflow->log( "#" x (25) );
 	$workflow->log( "" );
-	
+
 	return; # empty means success
 }
 
@@ -1322,7 +1322,8 @@ sub build {
 			}
 		}
 	}
-
+	my %opts = ( %{ defaults() }, %{ $self->params } );
+	$self->{site_url} = $opts{tinylink} || get_query_link( $self->conf, $self->db, %opts );
 	return 1;
 }
 

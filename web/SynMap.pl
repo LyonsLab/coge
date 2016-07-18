@@ -719,8 +719,7 @@ sub get_genome_info {
     #$html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>}; # redundant
 	$html_dsg_info .= qq{<tr><td>Taxonomy:</td><td>$org_desc</td></tr>};
 	$html_dsg_info .= "<tr><td>Name: <td>" . $dsg->name if $dsg->name;
-	$html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
-	  if $dsg->description;
+	$html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description if $dsg->description;
 	$html_dsg_info .=
 	    "<tr><td>Source:  <td><a href=" 
 	  . $link
@@ -1571,6 +1570,7 @@ sub get_results {
 			else {
 				$warn =
 				  qq{The histogram was not generated no ks or kn data found.};
+				warn "problem reading $hist or is empty";
 			}
 		}
 
