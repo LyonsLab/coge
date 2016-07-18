@@ -214,6 +214,8 @@ sub build {
         $filter_query = 1 unless defined $filter_query;
     }
 
+    return 0 if ! scalar @gids;
+
     my $resp = add_jobs(
         workflow     => $self->workflow,
         db           => $self->db,

@@ -2011,7 +2011,7 @@ sub get_results {
 	##print out all the datafiles created
 	$html .= "<br>";
 	$html .= qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
-        onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Clear Results</span>};
+        onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Hide Results</span>};
 	$html .= qq{</div>};
 	$warn = qq{There was a problem running your analysis.}
 	  . qq{ Please check the log file for details};

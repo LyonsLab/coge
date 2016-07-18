@@ -2542,13 +2542,23 @@ $.extend(System_graph.prototype, {
 			.attr("transform", "translate(" + (self.width + self.margin.right/2) + "," + (self.height/2 - 20) + ") rotate(90)")
 			.text("Memory (GB)");
 	    
-	    // Add a line at 32 load, representing the 32 cores we use.
+	    // Add a line representing the number of cores the server has.
+	    var numCores = 44;
 	    self.svg.append("svg:line")
 	    	.attr("x1", 0)
 	    	.attr("x2", self.width)
-	    	.attr("y1", self.yLoad(32))
-	    	.attr("y2", self.yLoad(32))
+	    	.attr("y1", self.yLoad(numCores))
+	    	.attr("y2", self.yLoad(numCores))
 	    	.attr("stroke", "red");
+	    
+	    // mdb added 7/14/16 -- Add a line representing the size of RAM the server has.
+	    var memSize = 500; // in GB
+	    self.svg.append("svg:line")
+	    	.attr("x1", 0)
+	    	.attr("x2", self.width)
+	    	.attr("y1", self.yLoad(memSize))
+	    	.attr("y2", self.yLoad(memSize))
+	    	.attr("stroke", "orange");	    
 	    
 	    // Add brush selection
 	    self.brush = d3.svg.brush()
