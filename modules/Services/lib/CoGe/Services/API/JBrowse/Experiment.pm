@@ -510,7 +510,30 @@ sub get_start_end_sam {
     return ($pos, $pos + length($seq));
 }
 
-sub find_overlaping {
+sub intersection {
+    my $data1 = shift;
+    my $data2 = shift;
+    my $hits = [];
+    my ($start1, $stop1) = $data1->next();
+    my ($start2, $stop2) = $data2->next();
+    while ($start1 && $start2) {
+        while ($start1 && $stop1 < $start2) {
+            ($start1, $stop1) = $data1->next();
+        }
+        last unless $start1;
+        while ($start2 && $stop2 < $start1) {
+            ($start2, $stop2) = $data2->next();
+        }
+        last unless $start2;
+        if ($stop1 >= $start2) {
+            push @$hits, $data2->data();
+            ($start2, $stop2) = $data2->next();
+        }
+    }
+    return $hits;
+}
+
+sub find_overlapping {
     my $experiments = shift;
     my $type_names = shift;
     my $chr = shift;
@@ -557,7 +580,7 @@ sub find_overlaping {
             $row = $sth->fetchrow_arrayref;
         }
         last unless $row;
-        while ($data_point_start < $row->[0] && $data_point_index < $num_data_points) {
+        while ($data_point_end < $row->[0] && $data_point_index < $num_data_points) {
             $data_point_index++;
             last if $data_point_index == $num_data_points;
             ($data_point_start, $data_point_end) = $get_start_end->($data_points->[$data_point_index]);
@@ -596,7 +619,7 @@ sub _alignments {
     }
 
     my $type_names = $self->param('features');
-    return find_overlaping($experiments, $type_names, $chr, $db, $all ? \&get_start_end_sam : \&get_start_end_fastbit, $all);
+    return find_overlapping($experiments, $type_names, $chr, $db, $all ? \&get_start_end_sam : \&get_start_end_fastbit, $all);
 }
 
 sub markers {
@@ -623,7 +646,7 @@ sub _markers {
     }
 
     my $type_names = $self->param('features');
-    return find_overlaping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
+    return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 }
 
 sub snps {
@@ -651,7 +674,7 @@ sub _snps {
 
 	my $type_names = $self->param('features');
 	if ($type_names) {
-        return find_overlaping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
+        return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 	}
 	elsif ($self->param('snp_type')) {
         my $cmdpath = catfile(CoGe::Accessory::Web::get_defaults()->{BINDIR}, 'snp_search', 'snp_search');

@@ -21,7 +21,8 @@ app->config(
         listen => ["http://localhost:$port/"],
         pid_file => get_defaults->{_HOME_PATH},
         proxy => 1,
-        heartbeat_timeout => 5*60#30, # number of seconds before restarting unresponsive worker (needed for large JBrowse requests)
+        heartbeat_timeout => 5*60,#30, # number of seconds before restarting unresponsive worker (needed for large JBrowse requests)
+		inactivity_timeout => 0, # mdb added 7/20/16 for long-running BAM queries
     }
 );
 #app->log( Mojo::Log->new( path => catdir(get_defaults->{_HOME_PATH}, 'mojo.log'), level => 'debug' ) ); # log in sandbox top-level directory

@@ -46,6 +46,8 @@ define(['dojo/_base/declare',
 		this.browser.subscribe( '/jbrowse/v1/c/tracks/new', 	dojo.hitch( this, 'addTracks' ));
 		this.browser.subscribe( '/jbrowse/v1/c/tracks/replace', dojo.hitch( this, 'replaceTracks' ));
 		this.browser.subscribe( '/jbrowse/v1/c/tracks/delete',  dojo.hitch( this, 'deleteTracks' ));
+
+		setTimeout(function(){dijit.byId('jbrowse').resize();}, 100);
 	},
 
 	// ----------------------------------------------------------------
@@ -754,8 +756,17 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	moveTracks: function( source, nodes, copy, target ) {
-		if (source == target) // dropping in same place dragged from. should only happen in jbrowse track container
+		if (source == target) { // dropping in same place dragged from. should only happen in jbrowse track container
+			if (!source.current)
+				return;
+			var config1 = $('#' + source.current.id.substring(6))[0].config;
+			var config2 = $('#' + source.anchor.id.substring(6))[0].config;
+			if (config1.coge.search_track || config2.coge.search_track) {
+				coge_plugin.info('Not Yet Supported','Currently you cannot find the intersection of search tracks');
+				return;
+			}
 			return;
+		}
 		var target_is_in_selector = target.node.firstChild.config;
 		if (!target_is_in_selector) // dragging a track from the selector onto jbrowse's track container
 			this.browser.publish('/jbrowse/v1/v/tracks/show', nodes.map(function(n){ return source.map[n.id].data; }));

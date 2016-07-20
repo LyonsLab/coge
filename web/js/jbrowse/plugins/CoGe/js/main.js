@@ -217,11 +217,11 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	adjust_nav: function(search_id) {
-		var l = dojo.byId('label_search_' + search_id);
+		var l = dojo.byId('label_search' + search_id);
 		if (l) {
 			var nav = dojo.byId('nav_' + search_id);
 			if (nav) {
-				var track = dojo.byId('track_search_' + search_id);
+				var track = dojo.byId('track_search' + search_id);
 				dojo.style(nav, 'left', dojo.style(l, 'left') + 10);
 				dojo.style(nav, 'top', dojo.style(track, 'top') + 26);
 			}
@@ -584,8 +584,8 @@ return declare( JBrowsePlugin,
        		var search_id = ++coge_plugin.num_searches;
 			config = dojo.clone(config);
 			config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
-			config.track = 'search_' + search_id;
-			config.label = 'search_' + search_id;
+			config.track = 'search' + search_id;
+			config.label = 'search' + search_id;
 			config.original_store = config.store;
 			config.store = store_name;
 			config.coge.search_track = true;
@@ -594,7 +594,7 @@ return declare( JBrowsePlugin,
 			config.coge.type = 'search';
 			browser.publish('/jbrowse/v1/v/tracks/new', [config]);
 			browser.publish('/jbrowse/v1/v/tracks/show', [config]);
-			dojo.place(dojo.byId('track_search_' + search_id), dojo.byId('track_experiment' + eid), 'after');
+			dojo.place(dojo.byId('track_search' + search_id), dojo.byId('track_experiment' + eid), 'after');
 			browser.view.updateTrackList();
 			new SearchNav(search_id, results, browser).go_to(0);
 		});
