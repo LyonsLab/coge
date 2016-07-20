@@ -593,7 +593,8 @@ sub login_cas_saml {
 	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
     $request_ua =
       HTTP::Request->new(
-        POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
+        #POST => 'https://user.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
+        POST => 'https://user.cyverse.org/api/v1/service/coge/add/' . $uname );
     $request_ua->authorization_basic( get_defaults()->{AUTHNAME}, get_defaults()->{AUTHPASS} );
 
     #print STDERR "request uri: " . $request_ua->uri . "\n";
