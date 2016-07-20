@@ -21,6 +21,7 @@ parser.add_argument("--numquerychr", help="Restricts the maximum number of targe
 parser.add_argument("--remove_random_unknown", help="Restricts the maximum number of target chromosomes to use in the analysis.", type=bool)
 parser.add_argument("--syndepth", help="Passes synetic depth setting from SynMap for saving a unique figure.", type=str)
 parser.add_argument("--apiurl", help="URL to CoGe genomes API endpoint (i.e. https://genomevolution.org/coge/api/v1/genomes)", type=str)
+parser.add_argument("--user", help="User requesting job (CoGe username)", type=str)
 args = parser.parse_args()
 
 #Flag for printing debug statements
@@ -56,6 +57,10 @@ import requests
 
 # Library to export data for interactive plotting.
 from json import dump
+
+# Library for Javascript Web Tokens
+import jwt
+from sys import stderr
 
 #PATH TO RUN IN DESKTOP
 #Sorghum/Maize comparison
@@ -142,12 +147,43 @@ def window(seq, n):
 t_api_before = datetime.now()
 
 #retrieves api chromsome lists and length and moves json() object into Python dictionary
-#query_api = requests.get("https://genomevolution.org/coge/api/v1/genomes/" + str(args.query))
-#target_api = requests.get("https://genomevolution.org/coge/api/v1/genomes/" + str(args.target))
-query_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.query))
-target_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.target))
+if args.user == '':
+    query_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.query))
+    target_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.target))
+else:
+    token = jwt.encode({'sub': args.user,
+                        'exp': datetime.utcnow()+timedelta(seconds=60),
+                        'iat': datetime.utcnow()},
+                       'fracbias', algorithm='HS256')
+    get_headers = {'x-coge-jwt': token}
+    query_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.query), headers=get_headers)
+    target_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.target), headers=get_headers)
+
+
 query_api = query_api.json()
 target_api = target_api.json()
+
+try:
+    err1 = query_api["error"]
+    stderr.write("fractionation_bias.py died on genome info fetch error!" + "\n")
+    stderr.write("Error (gid " + str(args.query) + "): " + str(err1) + "\n")
+    try:
+        err2 = target_api["error"]
+        stderr.write("Error (gid " + str(args.target) + "): " + str(err2) + "\n")
+    except KeyError:
+        pass
+    exit()
+except KeyError:
+    pass
+
+try:
+    err3 = target_api["error"]
+    stderr.write("dotplot_dots.py died on genome info fetch error!" + "\n")
+    stderr.write("Error (gid " + str(args.target) + "): " + str(err3) + "\n")
+    exit()
+except KeyError:
+    pass
+
 
 #initializes dictionaries to drop api data into
 target_api_chrs = []

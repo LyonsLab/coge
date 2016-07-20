@@ -7,6 +7,11 @@ use JSON qw(decode_json);
 use CoGe::Accessory::Web qw(get_defaults add_user parse_proxy_response jwt_decode_token);
 use File::Spec::Functions qw(catfile);
 
+###############################################################################
+# Authentication
+#
+# 
+###############################################################################
 sub init {
     my $self = shift;
     return unless $self;
@@ -14,11 +19,13 @@ sub init {
     my $username  = $self->param('username');
     my $token     = $self->param('token');
     my $token2    = $self->req->headers->header('x-iplant-de-jwt'); # mdb added 9/23/15 for DE
+    my $token3    = $self->req->headers->header('x-coge-jwt');      # mdb added 7/20/16 for private data requests from within CoGe
     my $remote_ip = $ENV{REMOTE_ADDR}; #$self->req->env->{HTTP_X_FORWARDED_FOR};
 #    print STDERR "CoGe::Services::Auth::init" .
 #        " username=" . ($username ? $username : '') .
 #        " token=" . ($token ? $token : '') .
 #        " token2=" . ($token2 ? $token2 : '') .
+#        " token3=" . ($token3 ? $token3 : '') .
 #        " remote_ip=" . ($remote_ip ? $remote_ip : '') . "\n";
 
     # Get config
@@ -62,13 +69,18 @@ sub init {
     }
 
     # Otherwise, try to validate user token
-    if ($token || $token2) {
+    if ($token || $token2 || $token3) {
         my ($uname, $fname, $lname, $email);
         if ($token) { # Agave
             ($uname, $fname, $lname, $email) = validate_agave($username, $token);
         }
-        else { # DE JWT
-            ($uname, $fname, $lname, $email) = validate_jwt($token2, $conf);
+        elsif ($token2) { # DE JWT
+            my $de_public_key_path = catfile($conf->{RESOURCEDIR}, $conf->{DE_PUBLIC_KEY});
+            ($uname, $fname, $lname, $email) = validate_jwt($token2, $de_public_key_path);
+        }
+        elsif ($token3) { # CoGe JWT
+            my $coge_secret_path = catfile($conf->{RESOURCEDIR}, $conf->{JWT_COGE_SECRET});
+            ($uname, $fname, $lname, $email) = validate_jwt($token3, $coge_secret_path);
         }
         
         unless ($uname) {
@@ -92,19 +104,18 @@ sub init {
 
 sub validate_jwt {
     my $token = shift;
-    my $conf = shift;
+    my $key_path = shift;
     return unless $token;
     print STDERR "CoGe::Services::Auth::validate_jwt\n";
     
-    # Get path to DE public key file
-    my $de_public_key_path = catfile($conf->{RESOURCEDIR}, $conf->{DE_PUBLIC_KEY});
-    unless ($de_public_key_path) {
-        print STDERR "CoGe::Services::Auth::init: missing DE_PUBLIC_KEY in config file\n";
+    # Get path to JWT key
+    unless ($key_path && -r $key_path) {
+        print STDERR "CoGe::Services::Auth::init: missing JWT key file\n";
         return;
     }
     
     # Decode token and get payload
-    my $claims = jwt_decode_token($token, $de_public_key_path);
+    my $claims = jwt_decode_token($token, $key_path);
     unless ($claims) {
         print STDERR "CoGe::Services::Auth::validate_jwt: JWT token decoding failed\n";
         return;
