@@ -103,8 +103,7 @@ sub log {
     my $message = shift;
     $message =~ /(.*)/xs; # why is this done? doesn't seem to remove anything
     $message = $1;
-    my $logf = $self->logfile;
-    open( OUT, ">>$logf" ) || return;
+    open( OUT, '>>' . $self->logfile ) || return;
     print OUT $message, "\n";
     close OUT;
 }

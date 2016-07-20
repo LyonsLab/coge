@@ -48,6 +48,7 @@ Statistics::Basic
 Statistics::Basic::Mean
 String::ShellQuote
 Switch
+Sys::Load
 Sys::Syslog
 URI
 URI::Escape

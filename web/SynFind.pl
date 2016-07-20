@@ -3,7 +3,7 @@ use v5.10;
 use strict;
 use CoGeX;
 use DBIxProfiler;
-use CoGe::Accessory::Utils qw( commify );
+use CoGe::Accessory::Utils qw( commify html_escape);
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web;
@@ -199,7 +199,6 @@ sub gen_body {
 
     if ( $FORM->param('dsgid') ) {
         $template->param(TARGETS => $FORM->param('dsgid'));
-
         foreach my $item ( $FORM->param('dsgid') ) {
             foreach my $dsgid ( split( /,/, $item ) ) {
                 my $id = get_dsg_for_menu( dsgid => $dsgid );
@@ -421,7 +420,7 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
           . $dsg->version . ")";
     }
 
-    return $html;
+    return html_escape($html);
 }
 
 #sub get_orgs {

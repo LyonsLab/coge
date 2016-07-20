@@ -336,7 +336,7 @@ sub get_experiment_path {
         print STDERR "Storage::get_experiment_path: WARNING, conf file parameter EXPDIR is blank!\n";
     }
 
-    my $path = $expdir . '/' . get_tiered_path($eid) . '/';
+    my $path = catdir($expdir, get_tiered_path($eid));
     unless ( -r $path ) {
         print STDERR "Storage::get_experiment_path: experiment path '$path' doesn't exist!\n";
         return;

@@ -315,11 +315,12 @@ sub get_annotations {
 
     my $html;
     if ($num_annot) {
-        $html .= '<table id="list_annotation_table" class="border-top border-bottom" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        my $num_rows = 0;
+        $html .= '<table id="list_annotation_table" class="dataTable compact hover stripe border-top border-bottom" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
         foreach my $group ( sort keys %groups ) {
             my $first = 1;
             foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
-                $html .= "<tr style='vertical-align:top;'>"
+                $html .= "<tr style='vertical-align:top;' class='" . ($num_rows++ % 2 ? 'odd' : 'even') . "'>"
                   . (
                     $first-- > 0
                     ? "<th align='right' class='title5' rowspan='"
@@ -553,115 +554,226 @@ sub get_list_contents {
 
     return "Access denied\n" unless $USER->has_access_to_list($list);
 
-    my $user_can_edit = $USER->is_admin
-      || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
+    my $user_can_edit = $USER->is_admin || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
 
     my $html;
     my $num_items = 0;
-    my $first     = 1;
 
-    #EL: moved outside of loop; massive speed improvement
     my $genome_count = $list->genomes( count => 1 );
     my $exp_count = $list->experiments( count => 1 );
     my $feat_count = $list->features( count => 1 );
     my $list_count = $list->lists( count => 1 );
 
     if ($genome_count or $exp_count or $feat_count or $list_count) {
-        $html = '<table id="list_contents_table" class="border-top border-bottom" style="border-spacing:0;border-collapse:collapse;">';
-
-        #my $delete_count=0;
+        $html = q|
+        <table id="list_contents_table" class="dataTable compact hover stripe border-top border-bottom" style="margin:0;width:initial;"><thead>
+            <tr>
+                <th id="type_col" class="sorting sorting_asc" onclick="sort_table('type')" style="cursor:pointer;">Type</th>
+                <th id="name_col" class="sorting" onclick="sort_table('name')" style="cursor:pointer;">Name</th>
+                <th id="date_col" class="sorting" onclick="sort_table('date')" style="cursor:pointer;">Date</th>
+                <th>Remove</th
+            </tr>
+        </thead><tbody></tbody></table>
+        <script>
+            var data = [|;
         foreach my $genome ( sort genomecmp $list->genomes ) {
-            $html .= "<tr valign='top'>"
-              . (
-                $first-- > 0
-                ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>"
-                : ''
-              );
-
-            #if ($genome->deleted) {
-            #    $delete_count++;
-            #    next;
-            #}
-
-            my $gid = $genome->id;
-            $html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('GenomeInfo.pl?gid=$gid')">}
-              . $genome->info
-              . "</span></td>";
-            if ($user_can_edit) {
-                $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {item_type: '"
-                  . $node_types->{genome}
-                  . "', item_id: '$gid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
-            }
-            $html .= '</tr>';
+            my $info = $genome->info;
+            $info =~ s/'/\\'/g;
+            my $date = "'" . $genome->date . "'";
+            $date = 'null' if $date eq "'0000-00-00 00:00:00'";
+            $html .= ',' if $num_items;
+            $html .= '[0,' . $genome->id . ",'" . $info . "'," . $date . ']';
             $num_items++;
         }
-
-        #if ($delete_count) {
-        #    $html .= "<tr valign='top'><th></th><td class='data5'><span>$delete_count genomes from this notebook are deleted</span></td>";
-        #    #TODO add functionality that clicking on the "X" will remove the deleted items from the notebook
-        #    $html .= '</tr>';
-        #}
-
-        $first = 1;
         foreach my $experiment ( sort experimentcmp $list->experiments ) {
-            $html .= "<tr valign='top'>"
-              . (
-                $first-- > 0
-                ? "<th align='right' class='title5' rowspan='$exp_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Experiments ($exp_count):</th>"
-                : ''
-              );
-            my $eid = $experiment->id;
-            $html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">}
-              . $experiment->info
-              . "</span></td>";
-            if ($user_can_edit) {
-                $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
-                  . $node_types->{experiment}
-                  . "', item_id: '$eid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
-            }
-            $html .= '</tr>';
+            my $info = $experiment->info;
+            $info =~ s/'/\\'/g;
+            my $date = "'" . $experiment->date . "'";
+            $date = 'null' if $date eq "'0000-00-00 00:00:00'";
+            $html .= ',' if $num_items;
+            $html .= '[1,' . $experiment->id . ",'" . $info . "'," . $date . ']';
             $num_items++;
         }
-
-        $first = 1;
         foreach my $feature ( sort featurecmp $list->features ) {
-            $html .= "<tr valign='top'>"
-              . ( $first-- > 0
-                ? "<th align='right' class='title5' rowspan='$feat_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Features ($feat_count):</th>"
-                : '' );
-            my $fid = $feature->id;
-            $html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">}
-              . $feature->info
-              . "</span></td>";
-            if ($user_can_edit) {
-                $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
-                  . $node_types->{feature}
-                  . "', item_id: '$fid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
-            }
-            $html .= '</tr>';
+            my $info = $feature->info;
+            $info =~ s/'/\\'/g;
+            $html .= ',' if $num_items;
+            $html .= '[2,' . $feature->id . ",'" . $info . "']'";
             $num_items++;
         }
-
-        $first = 1;
         foreach my $list ( sort notebookcmp $list->lists ) {
-            $html .= "<tr valign='top'>"
-              . ( $first-- > 0
-                ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Notebooks ($list_count):</th>"
-                : '' );
-            my $child_id = $list->id;
-            $html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('$PAGE_TITLE.pl?lid=$child_id')">}
-              . $list->info
-              . "</span></td>";
-            if ($user_can_edit) {
-                $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
-                  . $node_types->{list}
-                  . "', item_id: '$child_id'});\" class='link ui-icon ui-icon-closethick'></span></td>";
-            }
-            $html .= '</tr>';
+            my $info = $list->info;
+            $info =~ s/'/\\'/g;
+            $html .= ',' if $num_items;
+            $html .= '[3,' . $list->id . ",'" . $info . "']'";
             $num_items++;
         }
+        $html .= q|];
+        var sort_col = 'type';
+        var sort_mult = -1;
+        function build_table() {
+            var t = $('#list_contents_table tbody');
+            t.empty();
+            var type = -1;
+            var names = ['Genome', 'Experiment', 'Feature', 'Notebook'];
+            var pages = ['GenomeInfo', 'ExperimentView', 'FeatView', 'NotebookView'];
+            var ids = ['gid', 'eid', 'fid', 'nid'];
+            var counts = [| . $genome_count . q|, | . $exp_count . q|, | . $feat_count . q|, | . $list_count . q|];
+            var node_types = ['| . $node_types->{genome} . q|', '| . $node_types->{experiment} . q|', '| . $node_types->{feature} . q|', '| . $node_types->{list} . q|'];
+            var num_rows = 0;
+            data.forEach(function(row){
+                var html;
+                if (sort_col == 'type')
+                    if (row[0] != type) {
+                        type = row[0];
+                        html = '<tr valign="top" class="' + (num_rows % 2 ? 'odd' : 'even') + '"><td align="right" class="title5" rowspan="';
+                        html += counts[type];
+                        html += '" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white">';
+                        html += names[type];
+                        html += 's ';
+                        html += counts[type];
+                        html += ':</td>';
+                    } else
+                        html = '<tr class="' + (num_rows % 2 ? 'odd' : 'even') + '">';
+                else
+                    html = '<tr class="' + (num_rows % 2 ? 'odd' : 'even') + '"><td class="title5">' + names[row[0]] + '</td>';
+                html += '<td class="data5"><span class="link" onclick="window.open(\'' + pages[type] + '.pl?' + ids[type] + '=' + row[1] + '\')">';
+                html += row[2];
+                html += '</span></td><td class="data5">';
+                if (row.length > 3 && row[3])
+                    html += row[3];
+                html += '</td>';|;
+        if ($user_can_edit) {
+            $html .= q|html += '<td style="padding-left:20px;"><span onClick="remove_list_item(this, {lid: | . $lid . q|, item_type: \'' + node_types[type] + '\', item_id: ' + row[1] + '});" class="link ui-icon ui-icon-closethick"></span></td>';|;
+        }
+        $html .= q@html += '</tr>';
+                t.append(html);
+                ++num_rows;
+            });
+        }
+        function case_insensitive_sort(a, b) {
+            var _a = a.toLowerCase();
+            if (_a.startsWith('&reg; '))
+                _a = _a.substr(6);
+            var _b = b.toLowerCase();
+            if (_b.startsWith('&reg; '))
+                _b = _b.substr(6);
+            return _a < _b ? -1 : _a > _b ? 1 : 0;
+        }
+        function sort_table(col) {
+            if (sort_col != col) {
+                $('#' + sort_col + '_col').removeClass(sort_mult == 1 ? 'sorting_asc' : 'sorting_desc');
+                sort_col = col;
+                sort_mult = 1;
+                $('#' + sort_col + '_col').addClass('sorting_asc');
+            } else {
+                var td = $('#' + sort_col + '_col');
+                td.removeClass(sort_mult == 1 ? 'sorting_asc' : 'sorting_desc');
+                sort_mult *= -1;
+                td.addClass(sort_mult == 1 ? 'sorting_asc' : 'sorting_desc');
+            }
+            if (col == 'name')
+                data.sort(function(a, b) {return sort_mult * case_insensitive_sort(a[2], b[2]);});
+            else if (col == 'date')
+                data.sort(function(a, b) {
+                    if (a.length < 4 || !a[3])
+                        return sort_mult * -1;
+                    if (b.length < 4 || !b[3])
+                        return sort_mult * 1;
+                    return sort_mult * (a[3] < b[3] ? -1 : a[3] > b[3] ? 1 : case_insensitive_sort(a[2], b[2]));
+                });
+            else
+                data.sort(function(a, b) {
+                    if (a[0] == b[0])
+                        return case_insensitive_sort(a[2], b[2]);
+                    return sort_mult * (a[0] - b[0]);
+                });
+            build_table();
+        }
+        sort_table(sort_col);
+        build_table();
+        </script>@;
 
-        $html .= '</table>';#'</tbody></table>';
+        # foreach my $genome ( sort genomecmp $list->genomes ) {
+        #     $html .= "<tr valign='top'>"
+        #       . (
+        #         $first-- > 0
+        #         ? "<th align='right' class='title5' rowspan='$genome_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Genomes ($genome_count):</th>"
+        #         : ''
+        #       );
+        #     my $gid = $genome->id;
+        #     $html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('GenomeInfo.pl?gid=$gid')">}
+        #       . $genome->info
+        #       . "</span></td>";
+        #     if ($user_can_edit) {
+        #         $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {item_type: '"
+        #           . $node_types->{genome}
+        #           . "', item_id: '$gid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+        #     }
+        #     $html .= '</tr>';
+        #     $num_items++;
+        # }
+
+        # $first = 1;
+        # foreach my $experiment ( sort experimentcmp $list->experiments ) {
+        #     $html .= "<tr valign='top'>"
+        #       . (
+        #         $first-- > 0
+        #         ? "<th align='right' class='title5' rowspan='$exp_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Experiments ($exp_count):</th>"
+        #         : ''
+        #       );
+        #     my $eid = $experiment->id;
+        #     $html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">}
+        #       . $experiment->info
+        #       . "</span></td>";
+        #     if ($user_can_edit) {
+        #         $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
+        #           . $node_types->{experiment}
+        #           . "', item_id: '$eid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+        #     }
+        #     $html .= '</tr>';
+        #     $num_items++;
+        # }
+
+        # $first = 1;
+        # foreach my $feature ( sort featurecmp $list->features ) {
+        #     $html .= "<tr valign='top'>"
+        #       . ( $first-- > 0
+        #         ? "<th align='right' class='title5' rowspan='$feat_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Features ($feat_count):</th>"
+        #         : '' );
+        #     my $fid = $feature->id;
+        #     $html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">}
+        #       . $feature->info
+        #       . "</span></td>";
+        #     if ($user_can_edit) {
+        #         $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
+        #           . $node_types->{feature}
+        #           . "', item_id: '$fid'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+        #     }
+        #     $html .= '</tr>';
+        #     $num_items++;
+        # }
+
+        # $first = 1;
+        # foreach my $list ( sort notebookcmp $list->lists ) {
+        #     $html .= "<tr valign='top'>"
+        #       . ( $first-- > 0
+        #         ? "<th align='right' class='title5' rowspan='$list_count' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white'>Notebooks ($list_count):</th>"
+        #         : '' );
+        #     my $child_id = $list->id;
+        #     $html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('$PAGE_TITLE.pl?lid=$child_id')">}
+        #       . $list->info
+        #       . "</span></td>";
+        #     if ($user_can_edit) {
+        #         $html .= "<td style='padding-left:20px;'><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '"
+        #           . $node_types->{list}
+        #           . "', item_id: '$child_id'});\" class='link ui-icon ui-icon-closethick'></span></td>";
+        #     }
+        #     $html .= '</tr>';
+        #     $num_items++;
+        # }
+
+        # $html .= '</tbody></table>';
     }
     else {
         $html .= '<table class="border-top border-bottom padded note"><tr><td>This notebook is empty.</tr></td></table>';

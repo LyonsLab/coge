@@ -7,7 +7,7 @@ umask(0);
 use CoGeX;
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
-use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link go );
+use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link );
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -111,7 +111,6 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 %FUNCTIONS = (
-	go                     => \&go,
 	get_orgs               => \&get_orgs,
 	get_genome_info        => \&get_genome_info,
 #	get_previous_analyses  => \&get_previous_analyses,
@@ -199,11 +198,13 @@ sub gen_html {
 sub gen_body {
 	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMap.tmpl' );
 
-	$template->param( MAIN => 1 );
-	#$template->param( EMAIL       => $USER->email )  if $USER->email;
-
-	my $master_width = $FORM->param('w') || 0;
-	$template->param( MWIDTH => $master_width );
+	$template->param(
+		MAIN => 1,
+		API_BASE_URL  => $config->{SERVER} . 'api/v1/', #TODO move into config file or module
+        MWIDTH => $FORM->param('w') || 0,
+        SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
+        USER_NAME => $USER->user_name
+    );
 
 	#set search algorithm on web-page
 	my $b = $FORM->param('b');
@@ -429,7 +430,6 @@ sub gen_body {
 	$template->param( 'SHOW_NON_SYN' => "checked" ) if $spa && $spa =~ /2/;
 	$template->param( 'SPA_FEW_SELECT'  => "selected" ) if $spa && $spa > 0;
 	$template->param( 'SPA_MORE_SELECT' => "selected" ) if $spa && $spa < 0;
-	$template->param( beta => 1 ) if $FORM->param("beta");
 
 	my $file = $FORM->param('file');
 	if ($file) {
@@ -719,8 +719,7 @@ sub get_genome_info {
     #$html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>}; # redundant
 	$html_dsg_info .= qq{<tr><td>Taxonomy:</td><td>$org_desc</td></tr>};
 	$html_dsg_info .= "<tr><td>Name: <td>" . $dsg->name if $dsg->name;
-	$html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description
-	  if $dsg->description;
+	$html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description if $dsg->description;
 	$html_dsg_info .=
 	    "<tr><td>Source:  <td><a href=" 
 	  . $link
@@ -1065,8 +1064,7 @@ sub get_results {
 	my $dsgid1 = $opts{dsgid1};
 	my $dsgid2 = $opts{dsgid2};
 
-	return encode_json( { error => "You must select two genomes." } )
-	  unless ( $dsgid1 && $dsgid2 );
+	return encode_json( { error => "You must select two genomes." } ) unless ( $dsgid1 && $dsgid2 );
 
 	my ($genome1) = $coge->resultset('Genome')->find($dsgid1);
 	my ($genome2) = $coge->resultset('Genome')->find($dsgid2);
@@ -1198,13 +1196,13 @@ sub get_results {
 	############################################################################
 	my ( $org_name1, $title1 ) = gen_org_name(
 		db		  => $coge,
-		dsgid     => $dsgid1,
+		genome_id     => $dsgid1,
 		feat_type => $feat_type1,
 	);
 
 	my ( $org_name2, $title2 ) = gen_org_name(
 		db		  => $coge,
-		dsgid     => $dsgid2,
+		genome_id     => $dsgid2,
 		feat_type => $feat_type2,
 	);
 
@@ -1524,14 +1522,15 @@ sub get_results {
 		$org_name2 .= " (v" . $genome2->version . ")";
 
 		my $out_url = $out;
-		if ($DIR =~ /$URL/) {
+# not sure why this test is done
+#		if ($DIR =~ /$URL/) {
     		$out_url =~ s/$DIR/$URL/;
     		$y_label =~ s/$DIR/$URL/;
     		$x_label =~ s/$DIR/$URL/;
-		}
-		else {
-		    print STDERR "get_results: ERROR !!!!, cannot perform URL substitution: out_url=$out_url DIR=$DIR URL=$URL\n";
-		}
+#		}
+#		else {
+#		    print STDERR "get_results: ERROR !!!!, cannot perform URL substitution: out_url=$out_url DIR=$DIR URL=$URL\n";
+#		}
 
 		$/ = "\n";
 		my $tmp;
@@ -1571,6 +1570,7 @@ sub get_results {
 			else {
 				$warn =
 				  qq{The histogram was not generated no ks or kn data found.};
+				warn "problem reading $hist or is empty";
 			}
 		}
 
@@ -1611,19 +1611,26 @@ sub get_results {
 			if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
 				$query_id      = $dsgid2;
 				$target_id     = $dsgid1;
+				$results -> param( target_genome => html_escape($org_name1))
 			}
 			else {
 				$query_id      = $dsgid1;
 				$target_id     = $dsgid2;
+				$results -> param( target_genome => html_escape($org_name2))
 			}
 			my $all_genes = ($opts{'fb_target_genes'} eq 'true') ? 'False' : 'True';
 			my $rru = $opts{'fb_remove_random_unknown'} ? 'True' : 'False';
 			my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
-			my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
-			if (! -r $output_dir . 'html/' . $fb_img_file) {
-				return encode_json( { error => "The fractionation bias image could not be found." } );
+			#my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
+			#if (! -r $output_dir . 'html/' . $fb_img_file) {
+			#	return encode_json( { error => "The fractionation bias image could not be found." } );
+			#}
+			#$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
+			my $fb_json_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.json';
+			if (! -r $output_dir . $fb_json_file) {
+				return encode_json( { error => "The fractionation bias data could not be found." } );
 			}
-			$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
+			$results->param( frac_bias => $output_url . $fb_json_file );
 			$gff_sort_output_file = _filename_to_link(
 				file => $output_dir . 'gff_sort.txt',
 				msg  => qq{GFF Sort output file},
@@ -2000,12 +2007,11 @@ sub get_results {
 	#$results->param( json     => $json_file );
 	#$results->param( allpairs => $all_json_file );
 	#$results->param( hist     => $hist_json_file );
-	$results->param( beta => 1 ) if $opts{beta};
 
 	##print out all the datafiles created
 	$html .= "<br>";
 	$html .= qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
-        onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Clear Results</span>};
+        onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Hide Results</span>};
 	$html .= qq{</div>};
 	$warn = qq{There was a problem running your analysis.}
 	  . qq{ Please check the log file for details};
@@ -2065,6 +2071,8 @@ sub _filename_to_link {
 	elsif ( $opts{required} ) {
 		$link = q{<span class="alert">} . $opts{msg} . q{ (missing)} . q{</span};
 		warn "missing file: $file";
+		my ($package, $filename, $line) = caller;
+		warn 'called from line: ' . $line;
 	}
 	else {
 

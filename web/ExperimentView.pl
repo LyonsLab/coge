@@ -505,7 +505,7 @@ sub export_experiment_irods {
     return basename($file);
 }
 
-sub generate_export { #TODO replace with ExperimentBuilder.pm
+sub generate_export { #TODO use the API "export_gff" job instead
     my $experiment = shift;
     my $eid = $experiment->id;
 

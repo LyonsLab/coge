@@ -50,7 +50,7 @@ $LIST_TYPE = $coge->resultset('ListType')->find_or_create( { name => 'genome' } 
     send_to_fasta            => \&send_to_fasta,
     send_to_msa              => \&send_to_msa,
     send_to_SynFind          => \&send_to_SynFind,
-	     send_to_blast            => \&send_to_blast,
+	send_to_blast            => \&send_to_blast,
     send_to_GenomeList       => \&send_to_GenomeList,
     send_to_list             => \&send_to_list,
     get_wobble_gc            => \&get_wobble_gc,
@@ -68,7 +68,7 @@ sub gen_html {
     my $template =
       HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
     $template->param( PAGE_TITLE => 'GenomeList',
-		              TITLE      => 'GenomeList',		
+		              TITLE      => 'GenomeList',
     		          PAGE_LINK  => $LINK || '',
     		          SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
 		              HOME       => $P->{SERVER},
@@ -89,8 +89,8 @@ sub cds_wgc_hist {
     my $dsgid = $opts{dsgid};
     my $chr   = $opts{chr};
     my $gstid = $opts{gstid};   #genomic sequence type id
-    my $min   = $opts{min};     #limit results with gc values greater than $min;
-    my $max   = $opts{max};     #limit results with gc values smaller than $max;
+    my $min   = $opts{min};     #limit results with gc values greater than $min
+    my $max   = $opts{max};     #limit results with gc values smaller than $max
     my $hist_type = $opts{hist_type};
     return "Error: No dsid or dsgid passed." unless $dsid || $dsgid;
     my $gc = 0;
@@ -601,9 +601,9 @@ sub generate_table {
         my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
         my $desc = join(
             "; ",
-            map {
-qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>}
-              } split /;\s*/,
+            map { 
+                qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>}
+            } split /;\s*/,
             $dsg->organism->description
         );
 
@@ -615,7 +615,7 @@ qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>
         #        my $file      = $dsg->file_path;
         #        $file =~ s/$COGEDIR/$URL/;
         my $seq_url = api_url_for("genomes/$dsgid/sequence"); #"api/v1/legacy/sequence/$dsgid"; # mdb changed 2/12/16 for hypnotoad
-        $type = $type . "<br><a href='$seq_url'>Fasta</a><br><a href='coge_gff.pl?dsgid=$dsgid;annos=1'>GFF File</a>";
+        $type = $type . "<br><a href='$seq_url'>Fasta</a><br><a onclick='get_gff($dsgid);'>GFF File</a>";
         my ($ds_source) = $dsg->source;
         my $source      = $ds_source->name;
         my $source_link = $ds_source->link;
@@ -919,7 +919,6 @@ sub send_to_xls {
         #$wat*=100;
         #$wgc*=100;
         my $seq_url = url_for(api_url_for("genomes/sequence/$dsgid"));#$P->{SERVER}."api/v1/legacy/sequence/$dsgid"; # mdb changed 2/12/16 for hypnotoad
-        my $GFF_url = $P->{SERVER}."coge_gff.pl?dsgid=$dsgid;annos=1";
         $worksheet->write( $i, 0, $name );
         $worksheet->write( $i, 1, $desc );
         $worksheet->write( $i, 2, $source );
@@ -928,7 +927,7 @@ sub send_to_xls {
         $worksheet->write( $i, 5, $chr_count );
         $worksheet->write( $i, 6, $length );
         $worksheet->write( $i, 7, $seq_url );
-        $worksheet->write( $i, 8, $GFF_url );
+        $worksheet->write( $i, 8, "GenomeInfo.pl?fname=get_gff&gid=$dsgid&annos=1" );
 #        $worksheet->write( $i, 9, $n . '%' );
         $worksheet->write( $i, 9,
             $P->{SERVER} . 'OrganismView.pl?gid=' . $dsgid );

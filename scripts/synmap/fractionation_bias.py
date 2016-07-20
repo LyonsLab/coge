@@ -20,6 +20,7 @@ parser.add_argument("--numtargetchr", help="Restricts the maximum number of targ
 parser.add_argument("--numquerychr", help="Restricts the maximum number of target chromosomes to use in the analysis.", type=int)
 parser.add_argument("--remove_random_unknown", help="Restricts the maximum number of target chromosomes to use in the analysis.", type=bool)
 parser.add_argument("--syndepth", help="Passes synetic depth setting from SynMap for saving a unique figure.", type=str)
+parser.add_argument("--apiurl", help="URL to CoGe genomes API endpoint (i.e. https://genomevolution.org/coge/api/v1/genomes)", type=str)
 args = parser.parse_args()
 
 #Flag for printing debug statements
@@ -52,6 +53,9 @@ from natsort import natsorted
 
 #Library to pull query genome chromosome information from CoGe API
 import requests
+
+# Library to export data for interactive plotting.
+from json import dump
 
 #PATH TO RUN IN DESKTOP
 #Sorghum/Maize comparison
@@ -138,8 +142,10 @@ def window(seq, n):
 t_api_before = datetime.now()
 
 #retrieves api chromsome lists and length and moves json() object into Python dictionary
-query_api = requests.get("https://genomevolution.org/coge/api/v1/genomes/" + str(args.query))
-target_api = requests.get("https://genomevolution.org/coge/api/v1/genomes/" + str(args.target))
+#query_api = requests.get("https://genomevolution.org/coge/api/v1/genomes/" + str(args.query))
+#target_api = requests.get("https://genomevolution.org/coge/api/v1/genomes/" + str(args.target))
+query_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.query))
+target_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.target))
 query_api = query_api.json()
 target_api = target_api.json()
 
@@ -499,13 +505,31 @@ for tchr in output_dict:
 print listofchrgraph
 listofchrgraph = natsorted(listofchrgraph)
 print listofchrgraph
-16911
-##Statistics Output NEEDS FIXING
 
+##Statistics Output NEEDS FIXING
 #for tchr in output_dict:
     #for qchr in output_dict[tchr]:
         #print np.mean(output_dict[tchr][qchr])
         #print np.median_grouped(output_dict[tchr][qchr])
+
+# Output Data for Interactive Plotting (akb added 7/8/16)
+dump_out = args.output+"/fractbias_figure-" + "-TarID" + str(args.target) + "-TarChrNum" + \
+           str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + "-QueryID" + str(args.query) + \
+           "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + \
+           str(args.remove_random_unknown) + "-WindSize" + str(args.windowsize) + ".json"
+dump_data = {}
+ordered_targets = natsorted(output_dict.keys())
+for target in ordered_targets:
+    dump_data[target] = {}
+    ordered_queries = natsorted(output_dict[target].keys())
+    length = []
+    for query in ordered_queries:
+        dump_data[target][query] = []
+        ordered_positions = natsorted(output_dict[target][query].keys())
+        for position in ordered_positions:
+            dump_data[target][query].append(output_dict[target][query][position])
+dump(dump_data, open(dump_out, 'w'))
+
 
 """Plotting"""
 

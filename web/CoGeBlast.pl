@@ -133,7 +133,9 @@ sub gen_body {
     my $form   = $FORM;
     my $featid = $form->param('featid');
     my $fid = $form->param('fid');
-    $featid = ($featid || $fid) ? join( ",", $featid, $fid ) : 0;
+    $featid .= ",$fid" if $fid;
+    $featid =~ s/^,// if $featid;
+    $featid =~ s/,$// if $featid;
     my $chr    = $form->param('chr') || 0;
     my $upstream   = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
@@ -1926,7 +1928,6 @@ qq{INSERT INTO sequence_info (name, type, length) values ('$sname',"subject",'$s
     $dbh->disconnect();
 
 }
-
 sub get_nearby_feats {
     my %opts     = @_;
     my $hsp_id   = $opts{num};
@@ -1953,62 +1954,64 @@ sub get_nearby_feats {
         $chr    = $info->{schr};
     }
     my $dsg = $db->resultset('Genome')->find($dsgid);
-    my $dsids = join( ',', map { $_->id } $dsg->datasets( chr => $chr ) );
+    my @dsids = map { $_->id } $dsg->datasets( chr => $chr );
     my ( $start, $stop ) = ( $sstart, $sstop );
     my @feat;
     my $count = 0;
     my $mid   = ( $stop + $start ) / 2;
     $dbh = $db->storage->dbh;    #DBI->connect( $connstr, $DBUSER, $DBPASS );
-    my $query = qq{
-select * from (
-  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start DESC  LIMIT 10)
-   UNION (SELECT * FROM feature where start>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
-  UNION
-  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop DESC  LIMIT 10)
-   UNION (SELECT * FROM feature where stop>=$mid and dataset_id IN ($dsids) and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
-   ) as w
-order by abs((start + stop)/2 - $mid) LIMIT 10};
-    my $handle = $dbh->prepare($query);
-    $handle->execute();
+    my %fids;
+    for (@dsids) {
+        my $query = qq{
+    select * from (
+      (SELECT * FROM
+             ((SELECT feature_id,start,stop FROM feature where start<=$mid and dataset_id = $_ and chromosome = '$chr' ORDER BY start DESC LIMIT 10)
+        UNION (SELECT feature_id,start,stop FROM feature where start>=$mid and dataset_id = $_ and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
+      UNION
+      (SELECT * FROM
+             ((SELECT feature_id,start,stop FROM feature where stop<=$mid and dataset_id = $_ and chromosome = '$chr' ORDER BY stop DESC LIMIT 10)
+        UNION (SELECT feature_id,start,stop FROM feature where stop>=$mid and dataset_id = $_ and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
+       ) as w
+    order by abs((start + stop)/2 - $mid) LIMIT 10};
+        for my $ids ($dbh->selectcol_arrayref($query)) {
+            for (@{$ids}) {
+                $fids{$_} = 1;
+            }
+        }
+    }
+
     my $new_checkbox_info;
     my %dist;
 
-    while ( my $res = $handle->fetchrow_arrayref() ) {
-        my $fid = $res->[0];
-        my ($tmpfeat) = $db->resultset('Feature')->find($fid);
+    for ( keys %fids ) {
+        my $fid = $_;
+        my $tmpfeat = $db->resultset('Feature')->find($fid);
         next
           unless $tmpfeat->type->name =~ /gene/i
               || $tmpfeat->type->name =~ /rna/i
               || $tmpfeat->type->name =~ /cds/i;
-        my $newmin =
-            abs( $tmpfeat->start - $mid ) < abs( $tmpfeat->stop - $mid )
-          ? abs( $tmpfeat->start - $mid )
-          : abs( $tmpfeat->stop - $mid );
-        $dist{$fid} =
-          { type => $tmpfeat->type->name, dist => $newmin, feat => $tmpfeat };
+        my $newmin = abs($tmpfeat->start - $mid) < abs($tmpfeat->stop - $mid) ? abs($tmpfeat->start - $mid) : abs($tmpfeat->stop - $mid);
+        $dist{$fid} = { dist => $newmin, feat => $tmpfeat };
     }
     my $feat;
     my $min_dist;
-    foreach my $fid ( sort { $dist{$a}{dist} <=> $dist{$b}{dist} } keys %dist )
-    {
-        $min_dist = $dist{$fid}{dist} unless defined $min_dist;
-        $feat     = $dist{$fid}{feat} unless $feat;
+	my @fids = sort keys %dist;
+    my @sorted = sort { $dist{$a}{dist} <=> $dist{$b}{dist} } @fids;
+    for ( @sorted ) {
+        $min_dist = $dist{$_}{dist} unless defined $min_dist;
+        $feat     = $dist{$_}{feat} unless $feat;
         last if $feat->type->name eq "CDS";
-        my $f = $dist{$fid}{feat};
+        my $f = $dist{$_}{feat};
         if ( $f->type->name eq "CDS" ) {
-            $feat = $f
-              unless $feat->stop < $f->start || $feat->start > $f->stop;
+            $feat = $f unless $feat->stop < $f->start || $feat->start > $f->stop;
         }
     }
     if ($feat) {
-        if (   ( $start >= $feat->start && $start <= $feat->stop )
-            || ( $stop >= $feat->start && $stop <= $feat->stop ) )
-        {
+        if (( $start >= $feat->start && $start <= $feat->stop ) || ( $stop >= $feat->start && $stop <= $feat->stop )) {
             $distance = "overlapping";
         }
         else {
-            $distance = abs(
-                ( $stop + $start ) / 2 - ( $feat->stop + $feat->start ) / 2 );
+            $distance = abs( ( $stop + $start ) / 2 - ( $feat->stop + $feat->start ) / 2 );
         }
         ($name) = $feat->names;
         $name =
@@ -2118,7 +2121,6 @@ sub export_top_hits {
         $sth->execute( $hsp_num . "_" . $dsgid ) || die "unable to execute";
         my ( $qname, $salign, $score );
         while ( my $hsp_info = $sth->fetchrow_hashref() ) { # FIXME: mdb asks "why is this looped?"
-            #print STDERR Dumper $info, "\n";
             $qname  = $hsp_info->{qname};
             $salign = $hsp_info->{salign};
             $score  = $hsp_info->{score};
@@ -2128,7 +2130,6 @@ sub export_top_hits {
             $hsp{$qname}{score} = $score;
         }
     }
-    #print STDERR Dumper \%hsp, "\n";
 
     # Generate top hits file
     open( my $fh, "> $TEMPDIR/$filename-tophits.fasta" );
@@ -2200,17 +2201,18 @@ sub export_to_excel {
             $worksheet->write( $i, 8, $score );
         }
         else {
-            if ( $accn =~ tr/_/_/ > 2 ) {
-                my $accn_with_commas = $accn;
-                $accn_with_commas =~ tr/_/,/;
-                ( $hsp_no, $dsgid, $chr, $pos, $featid, $distance ) =
-                  $accn_with_commas =~
-                  /(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
-            }
-            else {
-                ( $featid, $hsp_no, $dsgid ) = $accn =~ /(\d+)_(\d+)_(\d+)/;
-                $distance = "overlapping";
-            }
+            # there doesn't appear to code that would pass this in
+            # if ( $accn =~ tr/_/_/ > 2 ) {
+            #     my $accn_with_commas = $accn;
+            #     $accn_with_commas =~ tr/_/,/;
+            #     ( $hsp_no, $dsgid, $chr, $pos, $featid, $distance ) =
+            #       $accn_with_commas =~
+            #       /(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
+            # }
+            # else {
+                ( $featid, $hsp_no, $dsgid, $distance ) = $accn =~ /(\d+)_(\d+)_(\d+)_(.+)/;
+            #     $distance = "overlapping";
+            # }
             $sth->execute( $hsp_no . "_" . $dsgid ) || die "unable to execute";
             while ( my $info = $sth->fetchrow_hashref() ) {
                 $eval   = $info->{eval};
@@ -2234,8 +2236,7 @@ sub export_to_excel {
             $worksheet->write( $i, 7, $pid );
             $worksheet->write( $i, 8, $score );
             $worksheet->write( $i, 9, $feat->id );
-            $worksheet->write( $i, 10, $P->{SERVER} . "FeatView.pl?accn=$name",
-                $name );
+            $worksheet->write( $i, 10, $P->{SERVER} . "FeatView.pl?accn=$name", $name );
             $worksheet->write( $i, 11, $distance );
         }
 

@@ -1564,7 +1564,7 @@ sub create_bowtie_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     
-    my $cmd = get_command_path('BOWTIE_BUILD', 'bowtie-build');
+    my $cmd = get_command_path('BOWTIE_BUILD', 'bowtie2-build');
     my $BOWTIE_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bowtie_index");
 
     return catdir($BOWTIE_CACHE_DIR, $name), {

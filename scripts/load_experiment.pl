@@ -470,73 +470,23 @@ exit;
 sub max_of_values {
 	my $filepath = shift;
 	my $filetype = shift;
+	my $line_num = 0;
 	my $max = 0;
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     while ( my $line = <$in> ) {
+        $line_num++;
         next if ( $line =~ /^\s*#/ ); # skip comment lines
         chomp $line;
         next unless $line; # skip blank lines
-        # Interpret tokens according to file type
-        my @tok;
-        my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
-        if ($filetype eq 'csv') { # CoGe format, comma-separated
-        	@tok = split( /,/, $line );
-        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
+
+        my ($status, $chr, $start, $stop, $strand, $val1, $val2) = parse_quant_line($file_type, $line, $line_num);
+        next if ($status == 2);
+        return if ($status == 1);
+
+        unless (defined $val1) {
+            die "max_of_values: ERROR: invalid val1";
         }
-        elsif ($filetype eq 'tsv') { # CoGe format, tab-separated
-        	@tok = split( /\s+/, $line );
-        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
-        }
-        elsif ($filetype eq 'wig') {
-     		my ($stepSpan, $stepChr, $line_num);
-            next if ( $line =~ /^track/ ); # ignore "track" line
-            if ( $line =~ /^variableStep/i ) { # handle step definition line
-                if ($line =~ /chrom=(\w+)/i) {
-                    $stepChr = $1;
-                }
-                
-                $stepSpan = 1;
-                if ($line =~ /span=(\d+)/i) {
-                    $stepSpan = $1;
-                }
-                next;
-            }
-            elsif ( $line =~ /^fixedStep/i ) {
-                log_line('fixedStep wiggle format is no currently supported', $line_num, $line);
-                return;
-            }
-            
-            if (not defined $stepSpan or not defined $stepChr) {
-                log_line('missing or invalid wiggle step definition line', $line_num, $line);
-                return;
-            }
-            
-            @tok = split( /\s+/, $line );
-            ( $start, $val1 ) = @tok;
-        }
-        elsif ($filetype eq 'bed') {
-        	my $bedType;
-            # Check for track type for BED files
-            if ( $line =~ /^track/ ) {
-                undef $bedType;
-                if ($line =~ /type=(\w+)/i) {
-                    $bedType = lc($1);
-                }
-                next;
-            }
-        
-            # Handle different BED formats
-            @tok = split( /\s+/, $line );
-            if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
-                ( $chr, $start, $stop, $val1 ) = @tok;
-            }
-            else { # UCSC standard BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
-                ( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
-            }
-        }
-        else { # unknown file type (should never happen)
-        	die "fatal error: unknown file type!";
-        }
+
         if ($val1 > $max) {
 	        $max = $val1;
         }
@@ -547,6 +497,8 @@ sub max_of_values {
  }
 
 # Parses multiple line-based file formats for quant data
+my $bedType; # only used for BED formats
+my ($stepSpan, $stepChr); # only used for WIG format
 sub validate_quant_data_file { #TODO this routine is getting long, break into subroutines
     my %opts = @_;
     my $filepath = $opts{file};
@@ -557,14 +509,13 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     my $count;
     my $hasLabels = 0;
     my $hasVal2   = 0;
-    my $bedType; # only used for BED formats
-    my ($stepSpan, $stepChr); # only used for WIG format
 
     print STDOUT "validate_quant_data_file: $filepath\n";
     my $max;
     if ($normalize) {
     	$max = max_of_values($filepath, $filetype);
     }
+    
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
@@ -574,76 +525,9 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         chomp $line;
         next unless $line; # skip blank lines
         
-        # Interpret tokens according to file type
-        my @tok;
-        my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
-        if ($filetype eq 'csv') { # CoGe format, comma-separated
-        	@tok = split( /,/, $line );
-        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
-        }
-        elsif ($filetype eq 'tsv') { # CoGe format, tab-separated
-        	@tok = split( /\s+/, $line );
-        	( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
-        }
-        elsif ($filetype eq 'wig') {
-            next if ( $line =~ /^track/ ); # ignore "track" line
-            if ( $line =~ /^variableStep/i ) { # handle step definition line
-                if ($line =~ /chrom=(\w+)/i) {
-                    $stepChr = $1;
-                }
-                
-                $stepSpan = 1;
-                if ($line =~ /span=(\d+)/i) {
-                    $stepSpan = $1;
-                }
-                next;
-            }
-            elsif ( $line =~ /^fixedStep/i ) {
-                log_line('fixedStep wiggle format is no currently supported', $line_num, $line);
-                return;
-            }
-            
-            if (not defined $stepSpan or not defined $stepChr) {
-                log_line('missing or invalid wiggle step definition line', $line_num, $line);
-                return;
-            }
-            
-            @tok = split( /\s+/, $line );
-            ( $start, $val1 ) = @tok;
-            $stop = $start + $stepSpan - 1;
-            $chr = $stepChr;
-            $strand = '.'; # determine strand by val1 polarity   
-        }
-        elsif ($filetype eq 'bed') {
-            # Check for track type for BED files
-            if ( $line =~ /^track/ ) {
-                undef $bedType;
-                if ($line =~ /type=(\w+)/i) {
-                    $bedType = lc($1);
-                }
-                next;
-            }
-        
-            # Handle different BED formats
-            @tok = split( /\s+/, $line );
-            if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
-                ( $chr, $start, $stop, $val1 ) = @tok;
-                $strand = '.'; # determine strand by val1 polarity
-            }
-            else { # UCSC standard BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
-                ( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
-                $val2 = $tok[6] if (@tok >= 7); # non-standard CoGe usage
-            }
-            
-            # Adjust coordinates from base-0 to base-1
-            if (defined $start and defined $stop) {
-                $start += 1;
-                $stop += 1;
-            }
-        }
-        else { # unknown file type (should never happen)
-        	die "fatal error: unknown file type!";
-        }
+        my ($status, $chr, $start, $stop, $strand, $val1, $val2, $label) = parse_quant_line($file_type, $line);
+        next if ($status == 2);
+        return if ($status == 1);
 
         # Validate mandatory fields
         if (   not defined $chr
@@ -660,11 +544,11 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
             return;
         }
 
-	# mdb added 2/10/16
-	if ($start =~ /[^\d]/ || $stop =~ /[^\d]/) {
-		log_line('start/stop not integer values', $line_num, $line);
-		return;
-	}
+    	# mdb added 2/10/16
+    	if ($start =~ /[^\d]/ || $stop =~ /[^\d]/) {
+    		log_line('start/stop not integer values', $line_num, $line);
+    		return;
+    	}
 
         # mdb added 2/19/14 for bulk loading based on user request
         if ($allow_negative and $val1 < 0) {
@@ -736,6 +620,84 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     push(@{$format->{columns}}, { name => 'label',  type => 'text' }) if $hasLabels;
 
     return ( $outfile, $format, $count, \%chromosomes );
+}
+
+sub parse_quant_line {
+    my ($filetype, $line, $line_num) = @_;
+    
+    # Interpret tokens according to file type
+    my @tok;
+    my ( $chr, $start, $stop, $strand, $val1, $val2, $label );
+    
+    if ($filetype eq 'csv') { # CoGe format, comma-separated
+        @tok = split( /,/, $line );
+        ( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
+    }
+    elsif ($filetype eq 'tsv') { # CoGe format, tab-separated
+        @tok = split( /\s+/, $line );
+        ( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
+    }
+    elsif ($filetype eq 'wig') {
+        return 2 if ( $line =~ /^track/ ); # ignore "track" line
+        if ( $line =~ /^variableStep/i ) { # handle step definition line
+            if ($line =~ /chrom=(\w+)/i) {
+                $stepChr = $1;
+            }
+            
+            $stepSpan = 1;
+            if ($line =~ /span=(\d+)/i) {
+                $stepSpan = $1;
+            }
+            return 2;
+        }
+        elsif ( $line =~ /^fixedStep/i ) {
+            log_line('fixedStep wiggle format is not currently supported', $line_num, $line);
+            return 1;
+        }
+        
+        if (not defined $stepSpan or not defined $stepChr) {
+            log_line('missing or invalid wiggle step definition line', $line_num, $line);
+            return 1;
+        }
+        
+        @tok = split( /\s+/, $line );
+        ( $start, $val1 ) = @tok;
+        $stop = $start + $stepSpan - 1;
+        $chr = $stepChr;
+        $strand = '.'; # determine strand by val1 polarity   
+    }
+    elsif ($filetype eq 'bed') {
+        # Check for track type for BED files
+        if ( $line =~ /^track/ ) {
+            undef $bedType;
+            if ($line =~ /type=(\w+)/i) {
+                $bedType = lc($1);
+            }
+            return 2;
+        }
+    
+        # Handle different BED formats
+        @tok = split( /\s+/, $line );
+        if (defined $bedType && $bedType eq 'bedgraph') { # UCSC bedGraph: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+            ( $chr, $start, $stop, $val1 ) = @tok;
+            $strand = '.'; # determine strand by val1 polarity
+        }
+        else { # UCSC standard BED: http://genome.ucsc.edu/FAQ/FAQformat.html#format1
+            ( $chr, $start, $stop, $label, $val1, $strand ) = @tok;
+            $val2 = $tok[6] if (@tok >= 7); # non-standard CoGe usage
+        }
+        
+        # Adjust coordinates from base-0 to base-1
+        if (defined $start and defined $stop) {
+            $start += 1;
+            $stop += 1;
+        }
+    }
+    else { # unknown file type (should never happen)
+        die "fatal error: unknown file type!";
+    }
+    
+    return (0, $chr, $start, $stop, $strand, $val1, $val2, $label);
 }
 
 # For VCF format specification v4.1, see http://www.1000genomes.org/node/101

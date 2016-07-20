@@ -620,7 +620,7 @@ function launch(experiment) {
 
                 //Start status update
                 console.log("Launching YZ SynMap Job (ID: " + response.id + ")");
-                window.history.pushState({}, "Title", "SynMap3D.pl" + urlUpdate); // Update URL with all options.
+                window.history.pushState({}, "Title", "SynMap3D.pl" + urlUpdate + ";wid=" + response.id); // Update URL with all options.
                 //final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate; // Add that URL to final_experiment.
                 coge.progress.update(response.id);
             })
