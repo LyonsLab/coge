@@ -355,7 +355,18 @@ sub track_config {
             $labelScale = 0.5;
         }
 
-        push @tracks, {
+        my $style = {
+            featureScale => $featureScale,
+            histScale    => $histScale,
+            labelScale   => $labelScale,
+            showLabels   => JSON::true,
+            className    => '{type}',
+            histCss      => 'background-color:' . _getFeatureColor($eid),
+            featureCss   => 'background-color:' . _getFeatureColor($eid)
+        };
+        $style->{showMismatches} = JSON::true if $e->{data_type} == 3;
+
+        my $config = {
             baseUrl      => "$JBROWSE_API/experiment/$eid/",
             autocomplete => "all",
             track        => "experiment$eid",
@@ -364,18 +375,10 @@ sub track_config {
             type         => $type,
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
-            style => {
-                featureScale => $featureScale,
-                histScale    => $histScale,
-                labelScale   => $labelScale,
-                showLabels   => JSON::true,
-                className    => '{type}',
-                histCss      => 'background-color:' . _getFeatureColor($eid),
-                featureCss   => 'background-color:' . _getFeatureColor($eid)
-            },
+            style => $style,
 
             histograms => {
-            	storeClass => "JBrowse/Store/SeqFeature/REST"
+                storeClass => "JBrowse/Store/SeqFeature/REST"
             },
             coge => {
                 id          => $eid,
@@ -393,6 +396,7 @@ sub track_config {
                 annotations => _annotations('experiment', $eid, $db)
             }
         };
+        push @tracks, $config;
     }
 
     print STDERR 'time3: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
