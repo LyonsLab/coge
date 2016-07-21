@@ -81,7 +81,7 @@ return declare( [ HTMLFeatures ], {
         if (track.config.coge.type == 'notebook')
             return options;
 
-        if (!track.config.coge.search_track)  {
+        if (track.config.coge.type != 'search')  {
 	        options.push({
                 label: 'Find SNPs in Features',
                 onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'SNPs', 'snps');}

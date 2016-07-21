@@ -120,7 +120,7 @@ define([
 			dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: dojo.hitch(this, function() { this.go_to(this.results.hits.length - 1) }), style: { cursor: 'pointer' } }, this.div);
 			browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
 				for (var i=0; i<configs.length; i++)
-					if (configs[i].coge.search_track && configs[i].coge.id == search_id) {
+					if (configs[i].coge.type == 'search' && configs[i].coge.id == search_id) {
 						dojo.destroy(dojo.byId('nav_' + search_id));
 						return;
 					}
@@ -588,7 +588,6 @@ return declare( JBrowsePlugin,
 			config.label = 'search' + search_id;
 			config.original_store = config.store;
 			config.store = store_name;
-			config.coge.search_track = true;
 			config.coge.eid = config.coge.id;
 			config.coge.id = search_id
 			config.coge.type = 'search';
@@ -661,7 +660,6 @@ return declare( JBrowsePlugin,
 					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + config.coge.eid + '\nsearch:' + search + '\nsearch user:' + un;
 					if (config.coge.transform)
 						new_config.coge.annotations += '\ntransform:' + config.coge.transform;
-					delete new_config.coge.search_track;
 					if (new_config.coge.data_type == 1 || new_config.coge.data_type == 4)
 						new_config.style.featureCss = new_config.style.histCss = 'background-color: ' + coge_plugin.calc_color(id);
 					coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [new_config]);

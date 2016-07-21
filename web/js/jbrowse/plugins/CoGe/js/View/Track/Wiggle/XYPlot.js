@@ -718,7 +718,7 @@ var XYPlot = declare( [XYPlotBase], {
 				}
 			]);
 
-		if (!config.coge.search_track && config.coge.type != 'notebook')
+		if (config.coge.type != 'search' && config.coge.type != 'notebook')
 			options.push({
 				label: 'Search',
 				onClick: function(){coge_xyplot._search_track_dialog(track);}
