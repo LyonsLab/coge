@@ -323,6 +323,10 @@ $r->get("/jbrowse/experiment/:eid/snps/#chr"  => { eid => qr/\d+/, chr => qr/\w+
     ->name("jbrowse-experiment-snps")
     ->to("experiment#snps", eid => undef, chr => undef);
 
+$r->get("/jbrowse/experiment/:eid/intersection/:eid2/#chr"  => { eid => qr/\d+/, eid2 => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-intersection")
+    ->to("experiment#intersection", eid => undef, eid2 => undef, chr => undef);
+
 # genome track (all experiments)
 $r->get("/jbrowse/experiment/genome/:gid/stats/global/" => [gid => qr/\d+/])
     ->name("jbrowse-experiment-stats-global")
