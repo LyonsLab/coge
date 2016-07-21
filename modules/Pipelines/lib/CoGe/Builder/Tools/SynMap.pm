@@ -1300,14 +1300,9 @@ sub build {
 	my $self = shift;
 
 	my @genome_ids;
-	my $i = 1;
-	while (1) {
-		if ($self->params->{'genome_id' . $i}) {
-			push @genome_ids, $self->params->{'genome_id' . $i++};
-		}
-		else {
-			last;
-		}
+	my $i;
+	for ($i=1; $self->params->{'genome_id' . $i}; $i++) {
+		push @genome_ids, $self->params->{'genome_id' . $i};
 	}
 	for (my $j=1; $j<$i-1; $j++) {
 		for (my $k=$j+1; $k<$i; $k++) {
