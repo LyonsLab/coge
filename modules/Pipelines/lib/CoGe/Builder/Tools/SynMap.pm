@@ -864,19 +864,22 @@ sub add_jobs {
 		####################################################################
 		# Use dotplot_dots.py to calculate points.
 		####################################################################
-		# Currently commented out until permissions issue is resolved.
-#		if ($ks_type) {
-#			my $api_url = url_for(api_url_for("genomes"));
-#			my $dot_cmd = catfile( $config->{SCRIPTDIR}, "dotplot_dots.py" ).' '.$ks_blocks_file.' '.$api_url;
-#			my $dot_syn = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_synteny.json' );
-#			my $dot_log = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_log.json' );
-#			$workflow->add_job( {
-#					cmd         => $dot_cmd,
-#					inputs      => [ $ks_blocks_file ],
-#					outputs     => [ $dot_syn, $dot_log ],
-#					description => "Extracting coordinates for merge..."
-#				} );
-#		}
+		if ($ks_type) {
+			my $dot_syn = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_synteny.json' );
+			my $dot_log = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_log.json' );
+			$workflow->add_job( {
+					cmd			=>	'python ' . $config->{SCRIPTDIR} . 'dotplot_dots.py',
+					script		=>	undef,
+					args		=>	[
+						[ '--input',	$ks_blocks_file,					0],
+						[ '--apiurl',	url_for(api_url_for("genomes")),	0],
+						[ '--user',	( $user ? $user->name : '""'),		0]
+					],
+					inputs		=>	[ $ks_blocks_file ],
+					outputs		=>	[ $dot_syn, $dot_log ],
+					description	=>	"Extracting coordinates for merge..."
+				});
+		}
 
 		####################################################################
 		# Generate svg dotplot

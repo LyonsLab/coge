@@ -24,6 +24,7 @@ sub build {
 	my ($dir3, $dir4) = sort($xid, $zid);
 	my ($dir5, $dir6) = sort($yid, $zid);
 
+	# Add SynMap Jobs
 	my @genome_ids;
 	my $i = 1;
 	while (1) {
@@ -43,6 +44,7 @@ sub build {
 				workflow => $self->workflow,
 				db       => $self->db,
 				config   => $self->conf,
+				user     => $self->user,
 				%opts
 			);
 			if ($resp) { # an error occurred

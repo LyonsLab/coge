@@ -1,35 +1,44 @@
 #!/usr/bin/env python
 
 __author__ = 'senorrift'
-# Dependencies:
 
+# Dependencies:
+from argparse import ArgumentParser
+from datetime import datetime, timedelta
 from json import dump
+from jwt import encode
 from os import path
 from requests import get
-from sys import argv, stderr
+from sys import stderr
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Use Instructions
-# python dotplot_dots.py <input_file> <genomes_api_url>
+# python dotplot_dots.py --input=<input_file> --apiurl=<genomes_api_url> --user=<requesting_user>
 #
-# 2 *REQUIRED* Command Line Arguments
-# 1st: SynMap Ks Blocks File (NOTE: ends with .aligncoords.gcoords.ks)
-# 2nd: API url to genomes (NOTE: full address, i.e. https://genomevolution.org/coge/api/v1/genomes/)
-#
-# Example
+# 3 *REQUIRED* Command Line Arguments
+# --input  : SynMap Ks Blocks File (NOTE: ends with .aligncoords.gcoords.ks)
+# --apiurl : API url to genomes (NOTE: full address, i.e. https://genomevolution.org/coge/api/v1/genomes/)
+# --user   : Username of requester. If anonymous, submit a blank argument (i.e. --user='')
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
 log = {}
 
-# Assign first arg to input_ksfile, raise error and exit if not specified.
+# Parse arguments
+parser = ArgumentParser()
+parser.add_argument("--input", help="Input *.aligncoords.gcoords.ks file", type=str)
+parser.add_argument("--apiurl", help="URL to CoGe genomes API endpoint (i.e. https://genomevolution.org/coge/api/v1/genomes)", type=str)
+parser.add_argument("--user", help="User requesting job (CoGe username)", type=str)
+args = parser.parse_args()
+
 try:
-    input_ksfile = argv[1]
+    input_ksfile = args.input
     output_dir = path.dirname(input_ksfile).rstrip("/")
-    api_base = argv[2].strip().rstrip('/') + '/'  # removes any white space & trailing slash if present, adds slash
-except IndexError:
-    stderr.write("dotplot_dots.py failed (Error: input or api_url specification)\n")
-    print "dotplot_dots.py failed (Error: input or api_url specification)"
+    api_base = args.apiurl.strip().rstrip('/') + '/'  # removes any white space & trailing slash if present, adds slash
+    user = args.user
+except Exception as e:
+    stderr.write("dotplot_dots.py failed (Error: input or api_url specification)\n" + str(e))
+    print("dotplot_dots.py failed (Error: input or api_url specification)\n" + str(e))
     exit()
 
 # Load input into variable "get_values"
@@ -215,13 +224,37 @@ for chr_sp1 in data["syntenic_points"][sp1_id][sp2_id]:
 data["syntenic_points"][sp1_id][sp2_id] = {sp1_ch: sp2_ch for sp1_ch, sp2_ch in data["syntenic_points"][sp1_id]\
     [sp2_id].iteritems() if len(data["syntenic_points"][sp1_id][sp2_id][sp1_ch]) > 0}
 
-# Populate data["genomes"] with genome information.
-stderr.write("Requesting genome info: " + api_base + sp1_id + "\n")
-sp1_genome_info = get(api_base + sp1_id).json()
-stderr.write("Requesting genome info: " + api_base + sp2_id + "\n")
-sp2_genome_info = get(api_base + sp2_id).json()
-data["genomes"][sp1_id] = sp1_genome_info
-data["genomes"][sp2_id] = sp2_genome_info
+# Get genome information, validating if user is logged in.
+if user == '':
+    # query_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.query))
+    # target_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.target))
+    stderr.write("Requesting genome info: " + api_base + sp1_id + "\n")
+    sp1_genome_info = get(api_base + sp1_id).json()
+    stderr.write("Requesting genome info: " + api_base + sp2_id + "\n")
+    sp2_genome_info = get(api_base + sp2_id).json()
+else:
+    # Build token & header.
+    token = encode({'sub': args.user,
+                    'exp': datetime.utcnow()+timedelta(seconds=60),
+                    'iat': datetime.utcnow()},
+                   'fracbias', algorithm='HS256')
+    get_headers = {'x-coge-jwt': token}
+
+    # Request Species 1 genome info
+    sp1_get = get(api_base + sp1_id, headers=get_headers)
+    if sp1_get.status_code != 200:
+        stderr.write(api_base + sp1_id + " returned status code " + sp1_get.status_code + "\n")
+        exit()
+    else:
+        sp1_genome_info = sp1_get.json()
+
+    # Request Species 2 Genome Info
+    sp2_get = get(api_base + sp2_id, headers=get_headers)
+    if sp1_get.status_code != 200:
+        stderr.write(api_base + sp2_id + " returned status code " + sp1_get.status_code + "\n")
+        exit()
+    else:
+        sp2_genome_info = sp2_get.json()
 
 # Check for genome fetch errors, exit without producing outputs if detected.
 try:
@@ -236,7 +269,6 @@ try:
     exit()
 except KeyError:
     pass
-
 try:
     sp2err = sp2_genome_info["error"]
     stderr.write("dotplot_dots.py died on genome info fetch error!" + "\n")
@@ -244,6 +276,10 @@ try:
     exit()
 except KeyError:
     pass
+
+# Populate data["genomes"] with genome information.
+data["genomes"][sp1_id] = sp1_genome_info
+data["genomes"][sp2_id] = sp2_genome_info
 
 # Dump "data" to JSON.
 output_filename = "%s/%s_%s_synteny.json" % (output_dir, sp1_id, sp2_id)
