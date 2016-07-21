@@ -26,7 +26,7 @@ sub build {
 
 	my $SYN3DIR = $self->conf->{SYN3DIR};
 	my $SCRIPTDIR = catdir( $self->conf->{SCRIPTDIR}, 'synmap' );
-	my $PYTHON = $self->conf->{PYTHON}
+	my $PYTHON = $self->conf->{PYTHON};
 
 	my $MERGER = 'nice ' . $PYTHON . ' ' . catfile($SCRIPTDIR, 'synmerge_3.py');
 
