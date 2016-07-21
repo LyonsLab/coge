@@ -45,6 +45,7 @@ sub add_jobs {
 	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
 	my $DIAGSDIR      = $config->{DIAGSDIR};
 	my $SCRIPTDIR     = catdir( $config->{SCRIPTDIR}, 'synmap' );
+	my $PYTHON        = $config->{PYTHON};
 	my $GEVO_LINKS    = 'nice ' . catfile( $SCRIPTDIR, 'gevo_links.pl' );
 	my $DAG_TOOL      = 'nice ' . catfile( $SCRIPTDIR, 'dag_tools.py' );
 	my $BLAST2BED     = 'nice ' . catfile( $SCRIPTDIR, 'blast2bed.pl' );
@@ -56,8 +57,10 @@ sub add_jobs {
 	my $PROCESS_DUPS  = 'nice ' . catfile( $SCRIPTDIR, 'process_dups.pl' );
 	my $DOTPLOT       = 'nice ' . catfile($config->{BINDIR}, 'dotplot.pl') . " -cf " . $config->{_CONFIG_PATH} . " -tmpl " . catdir($config->{TMPLDIR}, 'widgets');
 	my $SVG_DOTPLOT   = 'nice ' . catfile( $SCRIPTDIR, 'dotplot.py' );
+	my $FRACBIAS      = 'nice ' . $PYTHON . ' ' . catfile( $SCRIPTDIR, 'fractionation_bias.py' );
+	my $DOTPLOTDOTS   = 'nice ' . $PYTHON . ' ' . catfile( $SCRIPTDIR, 'dotplot_dots.py' );
     #$RUN_DAGHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
-	my $RUN_DAGCHAINER = 'nice ' . $config->{PYTHON} . ' ' . $config->{DAGCHAINER};
+	my $RUN_DAGCHAINER = 'nice ' . $PYTHON . ' ' . $config->{DAGCHAINER};
 	my $BLAST2RAW  = 'nice ' . $config->{BLAST2RAW}; #find local duplicates
 	my $FORMATDB   = 'nice ' . get_command_path('FORMATDB');
 	my $BLASTDBDIR = $config->{BLASTDB};
@@ -868,7 +871,7 @@ sub add_jobs {
 			my $dot_syn = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_synteny.json' );
 			my $dot_log = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_log.json' );
 			$workflow->add_job( {
-					cmd			=>	'python ' . $config->{SCRIPTDIR} . 'dotplot_dots.py',
+					cmd			=>	$DOTPLOTDOTS,
 					script		=>	undef,
 					args		=>	[
 						[ '--input',	$ks_blocks_file,					0],
@@ -1177,9 +1180,7 @@ sub add_jobs {
 		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
 		$workflow->add_job(
 			{
-				cmd => 'python '
-				  . $config->{SCRIPTDIR}
-				  . '/synmap/fractionation_bias.py',
+				cmd => $FRACBIAS,
 				script => undef,
 				args   => [
 					[ '--gff',          $gff_job->{outputs}->[0], 0 ],
