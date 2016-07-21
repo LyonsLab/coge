@@ -45,7 +45,7 @@ sub add_jobs {
 	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
 	my $DIAGSDIR      = $config->{DIAGSDIR};
 	my $SCRIPTDIR     = catdir( $config->{SCRIPTDIR}, 'synmap' );
-	my $PYTHON        = $config->{PYTHON};
+	my $PYTHON        = $config->{PYTHON} // 'python';
 	my $GEVO_LINKS    = 'nice ' . catfile( $SCRIPTDIR, 'gevo_links.pl' );
 	my $DAG_TOOL      = 'nice ' . catfile( $SCRIPTDIR, 'dag_tools.py' );
 	my $BLAST2BED     = 'nice ' . catfile( $SCRIPTDIR, 'blast2bed.pl' );
