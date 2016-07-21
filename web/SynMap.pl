@@ -1581,7 +1581,9 @@ sub get_results {
 			$results->param( file_url => $ks_blocks_file_url );
 		}
 		else {
-			$results->param( file_url => $final_dagchainer_file );
+			my $final_dagchainer_url = $final_dagchainer_file;
+			$final_dagchainer_url =~ s/$DIR/$URL/;
+			$results->param( file_url => $final_dagchainer_url );
 		}
 		$results->param( dsgid1 => $dsgid1 );
 		$results->param( dsgid2 => $dsgid2 );
