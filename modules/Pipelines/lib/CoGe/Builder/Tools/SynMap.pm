@@ -1,6 +1,7 @@
 package CoGe::Builder::Tools::SynMap;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw( get_defaults get_command_path api_url_for url_for );
@@ -30,6 +31,7 @@ sub add_jobs {
 	my $workflow = $opts{workflow};
 	my $db       = $opts{db};
 	my $config   = $opts{config};
+	my $user     = $opts{user};
 
 	my $genome_id1 = $opts{genome_id1};
 	my $genome_id2 = $opts{genome_id2};
@@ -1191,8 +1193,9 @@ sub add_jobs {
 					[ '--target',       $target_id,               0 ],
 					[ '--windowsize',   $opts{fb_window_size},    0 ],
 					[ '--allgenes',     $all_genes,               0 ],
-					[ '--output', $output_dir, 0 ],
-					[ '--apiurl', url_for(api_url_for("genomes")), 0]
+					[ '--output',       $output_dir,              0 ],
+					[ '--apiurl',       url_for(api_url_for("genomes")), 0],
+					[ '--user',         ( $user ? $user->name : '""'),   0]
 				],
 				inputs => [
 					$final_dagchainer_file, $condensed,
@@ -1315,6 +1318,7 @@ sub build {
 				workflow => $self->workflow,
 				db       => $self->db,
 				config   => $self->conf,
+				user     => $self->user,
 				%opts
 			);
 			if ($resp) { # an error occurred
@@ -1847,7 +1851,5 @@ sub get_query_link {
 #	;      #remove track file
 #	return 1 if -r $outfile;
 #}
-
-with qw(CoGe::Builder::Buildable);
 
 1;

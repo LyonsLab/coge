@@ -681,9 +681,9 @@ sub parse_saml_response2 {
 # mdb added 9/23/15 - for API authentication with DE
 sub jwt_decode_token {
     my $token = shift;           # JWT token
-    my $public_key_path = shift; # file path to public RSA key
-    print STDERR "Web::jwt_decode_token token=", ($token ? $token : ''), " public_key_path=", ($public_key_path ? $public_key_path : ''), "\n";
-    return unless ($token and $public_key_path);
+    my $key_path = shift; # file path to public RSA key
+    print STDERR "Web::jwt_decode_token token=", ($token ? $token : ''), " key_path=", ($key_path ? $key_path : ''), "\n";
+    return unless ($token and $key_path);
     
     # Parse and decode token parts
     my ($header64, $claims64, $signature64) = split(/\./, $token, 3);
@@ -694,18 +694,27 @@ sub jwt_decode_token {
     my $header = decode_json(decode_base64($header64));
     my $claims = decode_json(decode_base64($claims64));
     
-    # Verify token type
-    unless ($header && 
-            $header->{alg} && uc($header->{alg}) eq 'RS256' &&
-            $header->{typ} && uc($header->{typ}) eq 'JWS')
-    {
+    # Verify token header
+    unless ($header) {
+        print STDERR "Web::jwt_decode_token ERROR: missing header\n";
+        return;
+    }
+    unless ($header->{alg} && (uc($header->{alg}) eq 'RS256' || uc($header->{alg}) eq 'HS256')) {
+        print STDERR "Web::jwt_decode_token ERROR: unsupported algorithm, header=", Dumper $header, "\n";
+        return;
+    }
+    unless ($header->{typ} && (uc($header->{typ}) eq 'JWS' || uc($header->{typ}) eq 'JWT')) {
         print STDERR "Web::jwt_decode_token ERROR: unsupported token type, header=", Dumper $header, "\n";
-        return; 
+        return;
     }
     
     # Verify token timestamp
+    unless ($claims) {
+        print STDERR "Web::jwt_decode_token ERROR: missing claims\n";
+        return;
+    }
     my $current_time = time;
-    unless ($claims && $claims->{exp} && $claims->{iat} && 
+    unless ($claims->{exp} && $claims->{iat} && 
             $current_time > $claims->{iat} &&
             $current_time < $claims->{exp})
     {
@@ -723,11 +732,11 @@ sub jwt_decode_token {
     #print STDERR "header:\n$header\nclaims:\n$claims\nsignature:\n$signature\n";
     
     # Load public key
-    unless (-r $public_key_path) {
-        print STDERR "Web::jwt_decode_token ERROR: cannot read public key file '$public_key_path'\n";
+    unless (-r $key_path) {
+        print STDERR "Web::jwt_decode_token ERROR: cannot read public key file '$key_path'\n";
         return;
     }    
-    my $key_string = read_file($public_key_path);
+    my $key_string = read_file($key_path);
     unless ($key_string) {
         print STDERR "Web::jwt_decode_token ERROR: empty key\n";
         return;
@@ -783,7 +792,7 @@ sub login_cas4 {
 
 sub add_user {
     my ($db, $uname, $fname, $lname, $email) = @_;
-    return unless ($db and $uname and defined $fname and defined $lname and defined $email);
+    return unless ($db and $uname);
     
     # Do we already have this user in the database, if not create
     my ($user) = $db->resultset('User')->search( { user_name => $uname } );
@@ -794,9 +803,9 @@ sub add_user {
         $user = $db->resultset('User')->create(
             {
                 user_name   => $uname,
-                first_name  => $fname,
-                last_name   => $lname,
-                email       => $email,
+                first_name  => $fname // '',
+                last_name   => $lname // '',
+                email       => $email // '',
                 description => "Validated by CyVerse"
             }
         );
