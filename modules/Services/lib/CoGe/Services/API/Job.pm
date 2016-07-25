@@ -70,6 +70,14 @@ sub add {
 sub fetch {
     my $self = shift;
     my $id = $self->stash('id');
+    
+    # Validate input
+    unless ($id) {
+        $self->render(status => 400, json => {
+            error => { Error => "Invalid input"}
+        });
+        return;
+    }
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
