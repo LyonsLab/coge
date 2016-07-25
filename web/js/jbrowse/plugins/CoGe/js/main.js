@@ -676,11 +676,12 @@ return declare( JBrowsePlugin,
 		}
 		var notebooks = [];
 		this._track.config.coge.notebooks.forEach(function(notebook) {
-			if (notebook != 0 && dojo.byId('add to ' + notebook).checked)
+			if (notebook != 0 && dojo.byId('add to ' + notebook) && dojo.byId('add to ' + notebook).checked)
 				notebooks.push(notebook);
 		});
 
 	    var config = this._track.config;
+		var to_marker = dojo.byId('to_marker').checked;
 
 		this._save_as_dialog.hide();
 		coge.progress.init({
@@ -706,13 +707,21 @@ return declare( JBrowsePlugin,
 		       	});
 		       	d.promise.then(function() {
 					var new_config = dojo.clone(config);
-					new_config.key = name;
+					new_config.key = '&reg; ' + name;
 					new_config.track = 'experiment' + id;
 					new_config.label = 'experiment' + id;
 					new_config.store = store_name;
+					new_config.baseUrl = new_config.baseUrl.replace(config.coge.eid, id);
+					if (new_config.histograms && new_config.histograms.baseUrl)
+						new_config.histograms.baseUrl = new_config.histograms.baseUrl.replace(config.coge.eid, id);
+					new_config.coge.onClick = new_config.coge.onClick.replace(config.coge.eid, id);
 					new_config.coge.id = id;
 					new_config.coge.name = name;
 					new_config.coge.type = 'experiment';
+					if (to_marker) {
+						new_config.type = 'CoGe/View/Track/Markers';
+						new_config.coge.data_type = 4;
+					}
 					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + config.coge.eid + '\nsearch:' + search + '\nsearch user:' + un;
 					if (config.coge.transform)
 						new_config.coge.annotations += '\ntransform:' + config.coge.transform;
@@ -764,7 +773,7 @@ return declare( JBrowsePlugin,
 			annotions.push({ type: 'transform', text: config.coge.transform });
 		}
 		var ext = this._ext(config.coge.data_type);
-		if (dojo.byId('to_marker').checked) {
+		if (to_marker) {
 			url += '&gap_max=' + dojo.byId('gap_max').value;
 			ext = '.gff';
 		}
