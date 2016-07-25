@@ -495,68 +495,14 @@ sub query_data {
     $self->render(json => $result);
 }
 
-sub get_start_end_fastbit {
-    my $data_point = shift;
-    my $c1 = index($data_point, ',') + 1;
-    my $c2 = index($data_point, ',', $c1) + 1;
-    my $c3 = index($data_point, ',', $c2);
-    return (int(substr($data_point, $c1, $c2 - $c1 - 1)), int(substr($data_point, $c2, $c3 - $c2)));
-}
-
-sub get_start_end_sam {
-    my $data_point = shift;
-    my (undef, undef, undef, $pos, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/, $data_point);
-    $pos = int($pos);
-    return ($pos, $pos + length($seq));
-}
-
-sub intersection {
-    my $data1 = shift;
-    my $data2 = shift;
-    my $hits = [];
-    my ($start1, $stop1) = $data1->next();
-    my ($start2, $stop2) = $data2->next();
-    while ($start1 && $start2) {
-        while ($start1 && $stop1 < $start2) {
-            ($start1, $stop1) = $data1->next();
-        }
-        last unless $start1;
-        while ($start2 && $stop2 < $start1) {
-            ($start2, $stop2) = $data2->next();
-        }
-        last unless $start2;
-        if ($stop1 >= $start2) {
-            push @$hits, $data2->data();
-            ($start2, $stop2) = $data2->next();
-        }
-    }
-    return $hits;
-}
-
-sub find_overlapping {
-    my $experiments = shift;
-    my $type_names = shift;
-    my $chr = shift;
-    my $db = shift;
-    my $get_start_end = shift;
-    my $all = shift;
-
-    my $data_points;
-    foreach my $experiment (@$experiments) { # this doesn't yet handle multiple experiments (i.e notebooks)
-        $data_points = CoGe::Core::Experiment::query_data(
-            eid => $experiment->id,
-            data_type => $experiment->data_type,
-            chr => $chr,
-            all => $all
-        );
-    }
-
-    my $dbh = $db->storage->dbh;
+# returns a psuedo object with coderefs next() and line()
+sub get_db_data {
+    my ($gid, $type_names, $chr, $dbh) = @_;
 
     my $query = 'SELECT start,stop';
     $query .= ',chromosome' unless $chr;
     $query .= ' FROM feature WHERE dataset_id';
-    my $ids = get_dataset_ids($experiments->[0]->genome_id, $dbh);
+    my $ids = get_dataset_ids($gid, $dbh);
     $query .= (scalar @$ids == 1) ? '=' . $ids->[0] : ' IN(' . join(',', @$ids) . ')';
     $query .= " AND chromosome='" . $chr . "'" if $chr;
     if ($type_names && $type_names ne 'all') {
@@ -569,29 +515,97 @@ sub find_overlapping {
     $query .= 'start,stop';
     my $sth = $dbh->prepare($query);
     $sth->execute();
+    return {
+        sth => $sth,
+        line => sub {
+                my $self = shift;
+                return $self->{row};
+            },
+        next => sub {
+            my $self = shift;
+            my $row = $self->{sth}->fetchrow_arrayref;
+            return undef unless $row;
+            $self->{row} = $row;
+            return $row->[0], $row->[1];
+        }        
+    };
+}
 
+# returns a psuedo object with coderefs next() and line()
+sub get_experiment_data {
+    my ($eid, $data_type, $chr, $all) = @_;
+
+    return {
+        all => $all,
+        data => CoGe::Core::Experiment::query_data(
+                eid => $eid,
+                data_type => $data_type,
+                chr => $chr,
+                all => $all
+            ),
+        data_type => $data_type,
+        index => -1,
+        line => sub {
+                my $self = shift;
+                return $self->{data}[$self->{index}];
+            },
+        next => sub {
+                my $self = shift;
+                $self->{index}++;
+                return undef if $self->{index} == scalar @{$self->{data}};
+                my $data_point = $self->{data}[$self->{index}];
+                if ($self->{data_type} == $DATA_TYPE_ALIGN && $self->{all}) { # sam format
+                    my (undef, undef, undef, $pos, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/, $data_point);
+                    $pos = int($pos);
+                    return ($pos, $pos + length($seq));
+                }
+                my $c1 = index($data_point, ',') + 1;
+                my $c2 = index($data_point, ',', $c1) + 1;
+                my $c3 = index($data_point, ',', $c2);
+                return (int(substr($data_point, $c1, $c2 - $c1 - 1)), int(substr($data_point, $c2, $c3 - $c2)));
+            }
+    };
+}
+
+# pass in two psuedo objects. data points in the first one that overlap those in the second are returned in an array
+sub _intersection {
+    my $data1 = shift;
+    my $data2 = shift;
     my $hits = [];
-    my $row = $sth->fetchrow_arrayref;
-    my $data_point_index = 0;
-    my $num_data_points = scalar @$data_points;
-    while ($row && $data_point_index < $num_data_points) {
-        my ($data_point_start, $data_point_end) = $get_start_end->($data_points->[$data_point_index]);
-        while ($row && $row->[1] < $data_point_start) {
-            $row = $sth->fetchrow_arrayref;
+    my ($start1, $stop1) = $data1->{next}->($data1);
+    my ($start2, $stop2) = $data2->{next}->($data2);
+    while ($start1 && $start2) {
+        while ($start1 && $stop1 < $start2) {
+            ($start1, $stop1) = $data1->{next}->($data1);
         }
-        last unless $row;
-        while ($data_point_end < $row->[0] && $data_point_index < $num_data_points) {
-            $data_point_index++;
-            last if $data_point_index == $num_data_points;
-            ($data_point_start, $data_point_end) = $get_start_end->($data_points->[$data_point_index]);
+        last unless $start1;
+        while ($start2 && $stop2 < $start1) {
+            ($start2, $stop2) = $data2->{next}->($data2);
         }
-        last if $data_point_index == $num_data_points;
-        if ($row->[1] >= $data_point_start) {
-            push @$hits, $data_points->[$data_point_index] if $data_point_end >= $row->[0];
-            $data_point_index++;
+        last unless $start2;
+        if ($stop1 >= $start2) {
+            push @$hits, $data1->{line}->($data1);
+            ($start1, $stop1) = $data1->{next}->($data1);
         }
     }
     return $hits;
+}
+
+sub intersection {
+    my $self = shift;
+    my $eid = $self->stash('eid');
+    my $eid2 = $self->stash('eid2');
+    my $chr = $self->stash('chr');
+
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+    my $experiment = $db->resultset('Experiment')->find($eid);
+    my $experiment2 = $db->resultset('Experiment')->find($eid2);
+    my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, 0);
+    my $data2 = get_experiment_data($experiment2->id, $experiment2->data_type, $chr, 0);
+    my $hits = _intersection($data1, $data2);
+    if ($hits) {
+        $self->render(json => $hits);
+    }
 }
 
 sub alignments {
@@ -608,6 +622,7 @@ sub _alignments {
     my $eid = $self->stash('eid');
     my $chr = $self->stash('chr');
     $chr = undef if $chr eq 'Any' || $chr eq 'All';
+    my $type_names = $self->param('features');
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -617,9 +632,12 @@ sub _alignments {
         $self->render(json => { error => 'User does not have permission to view this experiment' });
         return undef;
     }
-
-    my $type_names = $self->param('features');
-    return find_overlapping($experiments, $type_names, $chr, $db, $all ? \&get_start_end_sam : \&get_start_end_fastbit, $all);
+    
+    my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
+    my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, $all);
+    my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
+    return _intersection($data1, $data2);
+#    return find_overlapping($experiments, $type_names, $chr, $db, $all ? \&get_start_end_sam : \&get_start_end_fastbit, $all);
 }
 
 sub markers {
@@ -635,6 +653,7 @@ sub _markers {
     my $eid = $self->stash('eid');
     my $chr = $self->stash('chr');
     $chr = undef if $chr eq 'Any';
+    my $type_names = $self->param('features');
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -645,8 +664,11 @@ sub _markers {
         return undef;
     }
 
-    my $type_names = $self->param('features');
-    return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
+    my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
+    my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, 0);
+    my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
+    return _intersection($data1, $data2);
+    # return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 }
 
 sub snps {
@@ -674,7 +696,11 @@ sub _snps {
 
 	my $type_names = $self->param('features');
 	if ($type_names) {
-        return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
+        my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
+        my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, 0);
+        my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
+        return _intersection($data1, $data2);
+        # return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 	}
 	elsif ($self->param('snp_type')) {
         my $cmdpath = catfile(CoGe::Accessory::Web::get_defaults()->{BINDIR}, 'snp_search', 'snp_search');

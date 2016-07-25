@@ -178,7 +178,7 @@ define(['dojo/_base/declare',
 	addTracks: function(track_configs) {
 		track_configs.forEach(function(track_config) {
 			if (track_config.coge)
-				if (track_config.coge.search_track)
+				if (track_config.coge.type == 'search')
 					this.tracks_div.insertBefore(this._new_track(track_config), this.tracks_div.firstChild); // insert before Sequence track at top
 				else if (track_config.coge.type != 'notebook')
 					this._add_track_to_notebook(track_config, dojo.byId('notebook0'));
@@ -757,14 +757,15 @@ define(['dojo/_base/declare',
 
 	moveTracks: function( source, nodes, copy, target ) {
 		if (source == target) { // dropping in same place dragged from. should only happen in jbrowse track container
-			if (!source.current)
+			if (!source.current || !copy)
 				return;
-			var config1 = $('#' + source.current.id.substring(6))[0].config;
-			var config2 = $('#' + source.anchor.id.substring(6))[0].config;
-			if (config1.coge.search_track || config2.coge.search_track) {
-				coge_plugin.info('Not Yet Supported','Currently you cannot find the intersection of search tracks');
+			var track1 = $('#' + source.anchor.id.substring(6))[0];
+			var track2 = $('#' + source.current.id.substring(6))[0];
+			if (track1.config.coge.type != 'experiment' || track2.config.coge.type != 'experiment') {
+				coge_plugin.info('Only experiment tracks','Currently you can only find the intersection of experiment tracks');
 				return;
 			}
+			coge_plugin.intersection_dialog(track1, track2);
 			return;
 		}
 		var target_is_in_selector = target.node.firstChild.config;
@@ -1113,7 +1114,7 @@ define(['dojo/_base/declare',
 		track_configs.forEach(function(track_config) {
 			coge_track_list._traverse_tracks(function(container) {
 				if (track_config.coge && container.id == track_config.coge.type + track_config.coge.id)
-					if (container.config.coge.search_track)
+					if (container.config.coge.type == 'search')
 						search_tracks.push(container);
 					else
 						coge_track_list._set_tracks_inactive(container, combined);

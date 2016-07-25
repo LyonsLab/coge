@@ -120,7 +120,7 @@ define([
 			dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: dojo.hitch(this, function() { this.go_to(this.results.hits.length - 1) }), style: { cursor: 'pointer' } }, this.div);
 			browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
 				for (var i=0; i<configs.length; i++)
-					if (configs[i].coge.search_track && configs[i].coge.id == search_id) {
+					if (configs[i].coge.type == 'search' && configs[i].coge.id == search_id) {
 						dojo.destroy(dojo.byId('nav_' + search_id));
 						return;
 					}
@@ -521,6 +521,62 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	intersection: function() {
+		var ref_seq = dojo.byId('coge_ref_seq');
+		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
+		var div = dojo.byId('coge-search-dialog');
+		dojo.empty(div);
+		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		var eid = this._track.config.coge.id;
+		var eid2 = this._track2.config.coge.id;
+		var search = {type: 'intersection', chr: chr, eid: eid, eid2: eid2};
+		this._track.config.coge.search = search;
+		var url = api_base_url + '/experiment/' + eid + '/intersection/' + eid2 + '/' + chr;
+		dojo.xhrGet({
+			url: url,
+			handleAs: 'json',
+			load: dojo.hitch(this, function(data) {
+				if (this._search_dialog)
+					this._search_dialog.hide();
+				if (data.error) {
+					coge_plugin.error('Search', data);
+					return;
+				}
+				if (data.length == 0) {
+					coge_plugin.error('Search', 'no ' + type + ' found');
+					return;
+				}
+				coge_plugin.new_search_track(this._track, data);
+			}),
+			error: dojo.hitch(this, function(data) {
+				if (this._search_dialog)
+					this._search_dialog.hide();
+				coge_plugin.error('Search', data);
+			})
+		});
+	},
+
+	intersection_dialog: function(track1, track2) {
+		this._track = track1;
+		this._track2 = track2;
+		var content = '<div id="coge-search-dialog"><table><tr><td>Chromosome:</td><td>';
+		content += this.build_chromosome_select('Any');
+		content += '</td></tr></table>';
+		content += this.build_buttons('coge_plugin.intersection()', 'coge_plugin._search_dialog.hide()');
+		content += '</div>';
+		coge_plugin._search_dialog = new Dialog({
+				title: "Find Intersection",
+				content: content,
+				onHide: function() {
+					this.destroyRecursive();
+					coge_plugin._search_dialog = null;
+				}
+			});
+		coge_plugin._search_dialog.show();
+	},
+
+	// ----------------------------------------------------------------
+
 	natural_sort: function(a, b) {
 	    var re = /(^-?[0-9]+(\.?[0-9]*)[df]?e?[0-9]?$|^0x[0-9a-f]+$|[0-9]+)/gi,
 	        sre = /(^[ ]*|[ ]*$)/g,
@@ -588,7 +644,6 @@ return declare( JBrowsePlugin,
 			config.label = 'search' + search_id;
 			config.original_store = config.store;
 			config.store = store_name;
-			config.coge.search_track = true;
 			config.coge.eid = config.coge.id;
 			config.coge.id = search_id
 			config.coge.type = 'search';
@@ -661,7 +716,6 @@ return declare( JBrowsePlugin,
 					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + config.coge.eid + '\nsearch:' + search + '\nsearch user:' + un;
 					if (config.coge.transform)
 						new_config.coge.annotations += '\ntransform:' + config.coge.transform;
-					delete new_config.coge.search_track;
 					if (new_config.coge.data_type == 1 || new_config.coge.data_type == 4)
 						new_config.style.featureCss = new_config.style.histCss = 'background-color: ' + coge_plugin.calc_color(id);
 					coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [new_config]);
@@ -889,11 +943,6 @@ return declare( JBrowsePlugin,
 					coge_plugin.error('Search', 'no features found');
 					return;
 				}
-				//dojo.query('.dijitDialogUnderlayWrapper')[0].style.display = 'none';
-				//var div = dojo.byId('coge-search-dialog');
-				//div.style.maxHeight = '500px';
-				//div.style.overflow = 'auto';
-				//dojo.empty(div);
 				var div = dojo.byId('feature_hits')
 				dojo.create('div', { innerHTML: 'Features <span class="glyphicon glyphicon-remove" onclick="dojo.empty(\'feature_hits\');dijit.byId(\'jbrowse\').resize()"></span>' }, div);
 				div = dojo.create('div', { 'class': 'feature_hits' }, div);
@@ -957,7 +1006,9 @@ return declare( JBrowsePlugin,
 				if (search.features != 'all')
 					string += ' in ' + search.features;
 			}
-		} else if (search.type == 'range')
+		} else if (search.type == 'intersection')
+			string = 'intersection ' + search.eid + ' ∩ ' + search.eid2;
+		else if (search.type == 'range')
 			string = 'range: ' + search.gte + ' .. ' + search.lte;
 		else
 			string = search.type; // max or min
