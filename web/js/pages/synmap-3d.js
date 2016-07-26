@@ -28,7 +28,7 @@ function search_genomes (search_term) {
 			spinner.hide();
 		})
 		.fail(function() { // error
-			//TODO
+			spinner.hide();
 		});
 }
 
@@ -45,6 +45,7 @@ function ExperimentDescriptionView(opts) {
     this.x_gid = opts.x_gid;
     this.y_gid = opts.y_gid;
     this.z_gid = opts.z_gid;
+    this.validity = {'x': false, 'y': false, 'z': false};
     this.onError = opts.onError;
     this.title = "Select Genomes";
     this.initialize();
@@ -69,9 +70,76 @@ $.extend(ExperimentDescriptionView.prototype, {
         }
     },
 
+    checkGenome: function(info) {
+        // Checks a genome for chromosomes, length > 0, and CDS.
+        var self = this;
+        if (info.chromosome_count > 0) {
+            var len = 0;
+            var cds = 0;
+            var i = 0;
+            var c = info["chromosomes"].length;
+
+            while (i<c && (len < 1 && cds < 1)) {
+                len += parseInt(info["chromosomes"][i]["length"]);
+                cds += parseInt(info["chromosomes"][i]["CDS_count"]);
+                i+=1;
+            }
+            if (len > 0 && cds > 0) {
+                return true
+            } else {
+                if (self.onError)
+                    self.onError('Genome ' + info["organism"]["name"] + ' (id' + info["id"] + ') has zero length or no CDS. Please select a different genome.');
+                return false
+            }
+        } else{
+            if (self.onError)
+                    self.onError('Genome ' + info["organism"]["name"] + ' (id' + info["id"] + ') has zero length or no CDS. Please select a different genome.');
+            return false;
+        }
+    },
+
+    validateGenome: function(axis, gid, wait_indicator_id, status_indicator_id) {
+        // Validates genomes and handles visual elements.
+        var self = this;
+        self.validity[axis] = false;
+        var wait = $('#' + wait_indicator_id);
+        wait.show();
+        var stat = $('#' + status_indicator_id);
+        stat.attr('src', 'picts/warning.png');
+        var genome_url = API_BASE_URL + 'genomes/';
+        var info = $.getJSON(genome_url + gid);
+        $.when(info).done(function(data, textStatus, jqXHR) {
+            var valid = self.checkGenome(data);
+            if (valid) {
+                stat.attr('src', 'picts/success.png');
+                self.validity[axis] = true;
+                wait.hide();
+                return true
+            } else {
+                stat.attr('src', 'picts/error.png');
+                wait.hide();
+                return false
+            }
+        });
+    },
+
+    validate_on_load: function() {
+        // This function is necessary to permit validation after rendering of template components.
+        var self = this;
+        if (self.x_gid) {
+            self.validateGenome('x', self.x_gid, 'edit_xgenome_busy', 'x_status')
+        }
+        if (self.y_gid) {
+            self.validateGenome('y', self.y_gid, 'edit_ygenome_busy', 'y_status')
+        }
+        if (self.z_gid) {
+            self.validateGenome('z', self.z_gid, 'edit_zgenome_busy', 'z_status')
+        }
+    },
+
     render: function() {
         var self = this;
-        
+
         var edit_xgenome = this.edit_xgenome;
 		var edit_ygenome = this.edit_ygenome;
 		var edit_zgenome = this.edit_zgenome;
@@ -79,14 +147,17 @@ $.extend(ExperimentDescriptionView.prototype, {
         edit_xgenome.unbind().change(function() {
             // Reset gid when item has changed
             self.x_gid = undefined;
+            $('#x_status').attr('src', 'picts/warning.png')
         });
         edit_ygenome.unbind().change(function() {
             // Reset gid when item has changed
             self.y_gid = undefined;
+            $('#y_status').attr('src', 'picts/warning.png')
         });
         edit_zgenome.unbind().change(function() {
             // Reset gid when item has changed
             self.z_gid = undefined;
+            $('#z_status').attr('src', 'picts/warning.png')
         });
 
         edit_xgenome.autocomplete({
@@ -94,6 +165,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             select: function(event, ui) {
                 $(this).val(ui.item.label);
                 self.x_gid = ui.item.value;
+                self.validateGenome('x', self.x_gid, 'edit_xgenome_busy', 'x_status');
                 return false; // Prevent the widget from inserting the value.
             },
 
@@ -107,6 +179,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             select: function(event, ui) {
                 $(this).val(ui.item.label);
                 self.y_gid = ui.item.value;
+                self.validateGenome('y', self.y_gid, 'edit_ygenome_busy', 'y_status');
                 return false; // Prevent the widget from inserting the value.
             },
 
@@ -120,6 +193,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             select: function(event, ui) {
                 $(this).val(ui.item.label);
                 self.z_gid = ui.item.value;
+                self.validateGenome('z', self.z_gid, 'edit_zgenome_busy', 'z_status');
                 return false; // Prevent the widget from inserting the value.
             },
 
@@ -151,9 +225,15 @@ $.extend(ExperimentDescriptionView.prototype, {
         edit_zgenome.click(function() {
 			$(this).autocomplete('search');
         });
+
     },
 
     is_valid: function() {
+        if (!this.validity.x || !this.validity.y || !this.validity.z) {
+            if (this.onError)
+                this.onError('One or more of your genomes are not valid.');
+            return false;
+        }
         var xgenome = this.el.find('#edit_xgenome').val();
 		var ygenome = this.el.find('#edit_ygenome').val();
 		var zgenome = this.el.find('#edit_zgenome').val();
@@ -187,6 +267,7 @@ $.extend(ExperimentDescriptionView.prototype, {
 	    	y_gid: this.y_gid,
 	    	z_gid: this.z_gid
         });
+
         return true;
     }
 });
@@ -599,7 +680,7 @@ function launch(experiment) {
 
     function makeSynmaps() {
         console.log(final_experiment);
-        coge.progress.init({title: "Running Pairwise SynMap Analyses",
+        coge.progress.init({title: "Running SynMap3D Analysis",
                             onSuccess: function(results) {
                                 showVisualizer(final_experiment);
                                 console.log(final_experiment);
@@ -619,7 +700,7 @@ function launch(experiment) {
                 }
 
                 //Start status update
-                console.log("Launching YZ SynMap Job (ID: " + response.id + ")");
+                console.log("Launching SynMap3D Job (ID: " + response.id + ")");
                 window.history.pushState({}, "Title", "SynMap3D.pl" + urlUpdate + ";wid=" + response.id); // Update URL with all options.
                 //final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate; // Add that URL to final_experiment.
                 coge.progress.update(response.id);
@@ -697,14 +778,15 @@ function initialize_wizard(opts) {
     	helpUrl: opts.helpUrl 
     });
 
-    wizard.addStep(new ExperimentDescriptionView({
+    var expView = new ExperimentDescriptionView({
         experiment: current_experiment,
         metadata: opts.metadata,
         x_gid: opts.x_gid,
         y_gid: opts.y_gid,
         z_gid: opts.z_gid,
         onError: wizard.error_help.bind(wizard)
-    }));
+    });
+    wizard.addStep(expView);
 
     wizard.addStep(new OptionsView({
 		experiment: current_experiment,
@@ -729,5 +811,9 @@ function initialize_wizard(opts) {
 
     // Add the wizard to the document
     root.html(wizard.el);
+
+    // Validate pre-loaded genomes after elements are all loaded
+    expView.validate_on_load();
+
     return wizard;
 }
