@@ -186,10 +186,9 @@ function resetCamera(view) {
 }
 
 /* CORE FUNCTION: Launch 2-way comparison in SynMap */
-// TODO: FIX baseURL to load from coge.conf
 function launchSynmap2(comp) {
     // Example URL: https://genomevolution.org/coge/SynMap.pl?dsgid1=25747;dsgid2=28817;ks=1
-    var baseURL = 'https://genomevolution.org/coge/SynMap.pl?';
+    var baseURL = SERVER_URL + 'SynMap.pl?';
     var link;
     switch (comp) {
         case "xy":
@@ -573,8 +572,7 @@ var renderSynMap = function (graph_object, element_id, persistence) {
     /* FUNCTION: Generate GEvo Link */
     function genGevoLink(xDbId, yDbId, zDbId) {
         // https://genomevolution.org/wiki/index.php/Linking_to_GEvo
-        //var linkbase = "http://genomevolution.org/coge/GEvo.pl?";
-        var linkbase = "http://geco.iplantcollaborative.org/asherkhb/coge/GEvo.pl?";
+        var linkbase = SERVER_URL + "GEvo.pl?";
         var seqX = 'fid1=' + xDbId + ';';
         var seqY = 'fid2=' + yDbId + ';';
         var seqZ = 'fid3=' + zDbId + ';';

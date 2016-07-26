@@ -48,6 +48,7 @@ function ExperimentDescriptionView(opts) {
     this.onError = opts.onError;
     this.title = "Select Genomes";
     this.initialize();
+
 }
 
 $.extend(ExperimentDescriptionView.prototype, {
@@ -56,6 +57,7 @@ $.extend(ExperimentDescriptionView.prototype, {
         this.edit_xgenome = this.el.find("#edit_xgenome");
 		this.edit_ygenome = this.el.find("#edit_ygenome");
 		this.edit_zgenome = this.el.find("#edit_zgenome");
+        this.validGenomes = false;
         if (this.metadata) {
             //this.el.find('#edit_name').val(this.metadata.name);
             //this.el.find('#edit_description').val(this.metadata.description);
@@ -71,7 +73,7 @@ $.extend(ExperimentDescriptionView.prototype, {
 
     render: function() {
         var self = this;
-        
+
         var edit_xgenome = this.edit_xgenome;
 		var edit_ygenome = this.edit_ygenome;
 		var edit_zgenome = this.edit_zgenome;
@@ -153,7 +155,99 @@ $.extend(ExperimentDescriptionView.prototype, {
         });
     },
 
+    validateGenomes: function() {
+        // Hide warning image & show progress spinner
+        var that = this;
+        $('#validate_warn').addClass('hidden');
+        var validate_working = $('#validate_working');
+        validate_working.removeClass('hidden');
+
+        // Handles for success & fail images.
+        var validate_success = $('#validate_success');
+        validate_success.addClass('hidden');
+        var validate_error = $('#validate_error');
+        validate_error.addClass('hidden');
+
+        // Check genomes actually exist.
+        var xgenome = this.el.find('#edit_xgenome').val();
+        var ygenome = this.el.find('#edit_ygenome').val();
+        var zgenome = this.el.find('#edit_zgenome').val();
+        if (!xgenome || xgenome === 'Search' || !this.x_gid) {
+            if (this.onError)
+                validate_error.removeClass('hidden');
+                this.onError('Please specify an X-axis genome.');
+                validate_working.addClass('hidden');
+            return false;
+        }
+        if (!ygenome || ygenome === 'Search' || !this.y_gid) {
+            if (this.onError)
+                validate_error.removeClass('hidden');
+                this.onError('Please specify a Y-axis genome.');
+                validate_working.addClass('hidden');
+            return false;
+        }
+        if (!zgenome || zgenome === 'Search' || !this.z_gid) {
+            if (this.onError)
+                validate_error.removeClass('hidden');
+                this.onError('Please specify a Z-axis genome.');
+                validate_working.addClass('hidden');
+            return false;
+        }
+
+        // Check genomes for CDS & length.
+        var genome_url = API_BASE_URL + 'genomes/';
+        var xinfo = $.getJSON(genome_url + this.x_gid);
+        var yinfo = $.getJSON(genome_url + this.y_gid);
+        var zinfo = $.getJSON(genome_url + this.z_gid);
+
+        var checkGenome = function(info) {
+            console.log(info);
+            if (info.chromosome_count > 0) {
+                var len = 0;
+                var cds = 0;
+                for (var i=0, c=info["chromosomes"].length; i<c; i++) {
+                    len += parseInt(info["chromosomes"][i]["length"]);
+                    cds += parseInt(info["chromosomes"][i]["CDS_count"]);
+                }
+                if (len > 0 && cds > 0) {
+                    return true
+                } else {
+                    if (that.onError)
+                        that.onError('Genome ' + info["organism"]["name"] + ' (id' + info["id"] + ') has zero length or no CDS. Please select a different genome.');
+                    return false
+                }
+            } else{
+                if (that.onError)
+                        that.onError('Genome ' + info["organism"]["name"] + ' (id' + info["id"] + ') has zero length or no CDS. Please select a different genome.');
+                return false;
+            }
+        };
+
+        $.when(xinfo, yinfo, zinfo).done( function(d1, d2, d3) {
+            var d1_stat = checkGenome(d1[0]);
+            var d2_stat = checkGenome(d2[0]);
+            var d3_stat = checkGenome(d3[0]);
+            if (d1_stat && d2_stat && d3_stat) {
+                validate_error.addClass('hidden');
+                validate_success.removeClass('hidden');
+                that.validGenomes = true;
+                validate_working.addClass('hidden');
+            } else {
+                that.validGenomes = false;
+                validate_error.removeClass('hidden');
+                validate_working.addClass('hidden');
+            }
+
+        });
+    },
+
     is_valid: function() {
+        if (!this.validGenomes) {
+            if (this.onError)
+                this.onError('Please validate your genomes.');
+            return false;
+        }
+
         var xgenome = this.el.find('#edit_xgenome').val();
 		var ygenome = this.el.find('#edit_ygenome').val();
 		var zgenome = this.el.find('#edit_zgenome').val();
@@ -187,6 +281,7 @@ $.extend(ExperimentDescriptionView.prototype, {
 	    	y_gid: this.y_gid,
 	    	z_gid: this.z_gid
         });
+
         return true;
     }
 });
@@ -599,7 +694,7 @@ function launch(experiment) {
 
     function makeSynmaps() {
         console.log(final_experiment);
-        coge.progress.init({title: "Running Pairwise SynMap Analyses",
+        coge.progress.init({title: "Running SynMap3D Analysis",
                             onSuccess: function(results) {
                                 showVisualizer(final_experiment);
                                 console.log(final_experiment);
@@ -619,7 +714,7 @@ function launch(experiment) {
                 }
 
                 //Start status update
-                console.log("Launching YZ SynMap Job (ID: " + response.id + ")");
+                console.log("Launching SynMap3D Job (ID: " + response.id + ")");
                 window.history.pushState({}, "Title", "SynMap3D.pl" + urlUpdate + ";wid=" + response.id); // Update URL with all options.
                 //final_experiment.page_url = SERVER_URL + PAGE_NAME + urlUpdate; // Add that URL to final_experiment.
                 coge.progress.update(response.id);
@@ -697,14 +792,24 @@ function initialize_wizard(opts) {
     	helpUrl: opts.helpUrl 
     });
 
-    wizard.addStep(new ExperimentDescriptionView({
+    var expView = new ExperimentDescriptionView({
         experiment: current_experiment,
         metadata: opts.metadata,
         x_gid: opts.x_gid,
         y_gid: opts.y_gid,
         z_gid: opts.z_gid,
         onError: wizard.error_help.bind(wizard)
-    }));
+    });
+    wizard.addStep(expView);
+    
+    // wizard.addStep(new ExperimentDescriptionView({
+    //     experiment: current_experiment,
+    //     metadata: opts.metadata,
+    //     x_gid: opts.x_gid,
+    //     y_gid: opts.y_gid,
+    //     z_gid: opts.z_gid,
+    //     onError: wizard.error_help.bind(wizard)
+    // }));
 
     wizard.addStep(new OptionsView({
 		experiment: current_experiment,
@@ -729,5 +834,9 @@ function initialize_wizard(opts) {
 
     // Add the wizard to the document
     root.html(wizard.el);
+
+    // Bind listener to Validate Genomes button
+
+    $("#validateButton").click(expView.validateGenomes.bind(expView));
     return wizard;
 }

@@ -371,12 +371,20 @@
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
 
+        <div>
+            <button class="ui-button ui-corner-all" id="validateButton">Validate Genomes</button>
+            <img id="validate_working" src="picts/ajax-loader.gif" class="hidden"/>
+            <img id="validate_warn" src="picts/warning.png">
+            <img id="validate_success" src="picts/success.png" class="hidden"/>
+            <img id="validate_error" src="picts/error.png" class="hidden"/>
+        </div>
+
     </div>
 </script>
 
 <script id="options-layout-template" type="text/template">
 	<div>
-            <!--<div id="admin-options"></div>-->
+        <!--<div id="admin-options"></div>-->
 	    <div id="general-options"></div>
 	    <div id="advanced-options"></div>
 	</div>
