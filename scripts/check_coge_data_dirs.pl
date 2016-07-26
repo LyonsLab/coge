@@ -36,7 +36,7 @@ foreach my $user ($DB->resultset('User')->all) {
     my $cmd = "ils -l '$data_path' 2>&1";
     my @ils = capture( EXIT_ANY, $cmd );
     if ($EXITVAL) {
-        print STDERR $user->name, "\t", $data_path, "\n";
+        print STDERR $user->name, "\n";
     }
 }
 
