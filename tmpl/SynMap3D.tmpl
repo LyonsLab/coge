@@ -348,6 +348,7 @@
             	size="50" value="<TMPL_VAR NAME='X_GENOME_NAME'>"
             	style="float:left;" />
             <img id="edit_xgenome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+            <img id="x_status" src="picts/warning.png" style="float:left;padding-left:0.2em;" height="16px" width="16px"/>
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
 
@@ -358,6 +359,7 @@
             	size="50" value="<TMPL_VAR NAME='Y_GENOME_NAME'>"
             	style="float:left;" />
             <img id="edit_ygenome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+            <img id="y_status" src="picts/warning.png" style="float:left;padding-left:0.2em;" height="16px" width="16px"/>
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
         </div>
 
@@ -368,15 +370,8 @@
             	size="50" value="<TMPL_VAR NAME='Z_GENOME_NAME'>"
             	style="float:left;" />
             <img id="edit_zgenome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+            <img id="z_status" src="picts/warning.png" style="float:left;padding-left:0.2em;" height="16px" width="16px"/>
             <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
-        </div>
-
-        <div>
-            <button class="ui-button ui-corner-all" id="validateButton">Validate Genomes</button>
-            <img id="validate_working" src="picts/ajax-loader.gif" class="hidden"/>
-            <img id="validate_warn" src="picts/warning.png">
-            <img id="validate_success" src="picts/success.png" class="hidden"/>
-            <img id="validate_error" src="picts/error.png" class="hidden"/>
         </div>
 
     </div>
