@@ -2549,16 +2549,16 @@ $.extend(System_graph.prototype, {
 	    	.attr("x2", self.width)
 	    	.attr("y1", self.yLoad(numCores))
 	    	.attr("y2", self.yLoad(numCores))
-	    	.attr("stroke", "red");
+	    	.attr("stroke", "green");
 	    
 	    // mdb added 7/14/16 -- Add a line representing the size of RAM the server has.
 	    var memSize = 500; // in GB
 	    self.svg.append("svg:line")
 	    	.attr("x1", 0)
 	    	.attr("x2", self.width)
-	    	.attr("y1", self.yLoad(memSize))
-	    	.attr("y2", self.yLoad(memSize))
-	    	.attr("stroke", "orange");	    
+	    	.attr("y1", self.yMemory(memSize))
+	    	.attr("y2", self.yMemory(memSize))
+	    	.attr("stroke", "blue");	    
 	    
 	    // Add brush selection
 	    self.brush = d3.svg.brush()
