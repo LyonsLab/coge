@@ -70,7 +70,6 @@ __PACKAGE__->add_columns(
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
     "genomic_sequence_type_id",
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
-
     # mdb removed 7/29/13, issue #77
     #    "file_path",
     #    {
@@ -80,7 +79,7 @@ __PACKAGE__->add_columns(
     #        size          => 255,
     #    },
     "restricted",
-    { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+    { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
     "message",
     {
         data_type     => "text",
@@ -94,7 +93,9 @@ __PACKAGE__->add_columns(
         is_nullable   => 1,
     },
     "deleted",
-    { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+    { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
+    "certified", # mdb added 7/27/16 COGE-536
+    { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
     "creator_id",
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
     "date",

@@ -28,26 +28,28 @@
     background:none !important;
 }
 .dataTables_info{ font-size: small; }
-@font-face {
-  font-family: 'Glyphicons Halflings';
 
-  src: url('../fonts/glyphicons-halflings-regular.eot');
-  src: url('../fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('../fonts/glyphicons-halflings-regular.woff') format('woff'), url('../fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('../fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+@font-face {
+	font-family: 'Glyphicons Halflings';
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+	src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
 }
 .glyphicon {
-  position: relative;
-  top: 1px;
-  display: inline-block;
-  font-family: 'Glyphicons Halflings';
-  font-style: normal;
-  font-weight: normal;
-  line-height: 1;
-
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	position: relative;
+	top: 1px;
+	display: inline-block;
+	font-family: 'Glyphicons Halflings';
+	font-style: normal;
+	font-weight: normal;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 .glyphicon-eye-open:before {
   content: "\e105";
+}
+.glyphicon-ok:before {
+  content: "\e013";
 }
 </style>
 
@@ -55,10 +57,11 @@
 
 // Export general global vars
 var job_id = "<TMPL_VAR NAME=JOB_ID>",
-    genome_id = "<TMPL_VAR NAME=GID>",
+    GENOME_ID = "<TMPL_VAR NAME=GID>",
     load_id = "<TMPL_VAR NAME=LOAD_ID>",
     default_type = "<TMPL_VAR NAME=DEFAULT_TYPE>",
     irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>",
+    CERTIFIED = "<TMPL_VAR NAME='CERTIFIED'>",
     PAGE_NAME = "<TMPL_VAR NAME=PAGE_NAME>",
     DISCOVERY_ENVIRONMENT = "https://de.iplantcollaborative.org/de/?type=data&folder=",
     newLoad = false;
@@ -98,12 +101,15 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog(genome_id, default_type);
+    init_annotation_dialog(GENOME_ID, default_type);
     
     $("#edit_user").autocomplete({
         source:[],
         focus: function() { return false; },
     });
+    
+    if (CERTIFIED == '1')
+    	$('#certified_box').show();
     
     // Open status dialog
     if (job_id) {
@@ -135,8 +141,16 @@ $(document).ready(function() {
 <div class="dialog_box hidden" id="aa_usage_table" title="Amino Acid Usage Table"></div>
 <div class="dialog_box hidden" id="edit_genome_info" title="Edit Genome Information"></div>
 
-<TMPL_IF NAME='ADMIN_AREA'>
-    <div class="alert">You are a CoGe Admin. Use your power wisely</div><br>
+<div style="font-size:1em;">
+	<span class="coge-pill coge-bg-gray">Genome</span>
+	<span class="bold text coge-green"><TMPL_VAR NAME="GENOME_TITLE"></span>&nbsp;&nbsp;&nbsp;
+	<div id="certified_box" class="hidden inline padded link" title="Click for more info on CoGe-certified genomes..." onclick="window.open('https://genomevolution.org/wiki/index.php/Certified_genomes');">
+		<span class="glyphicon glyphicon-ok coge-certified-icon"></span><span class="coge-certified-text">Certified Genome<span>
+	</div>
+</div><br>
+
+<TMPL_IF NAME='ADMIN_USER'>
+<div class="alert">You are a CoGe Admin. Use your power wisely</div><br>
 </TMPL_IF>
 
 <table style="overflow:hidden;">
@@ -255,19 +269,19 @@ $(document).ready(function() {
 	<table class=small>
 	 <tr>
 	   <td>Do not generate features for ncRNA genes (CDS genes only)</td>
-	   <td><input type=checkbox name="cds_only" id="cds_only"></td>
+	   <td><input type="checkbox" name="cds_only" id="cds_only"></td>
 	 </tr>
 	 <tr>
 	   <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
-	   <td><input type=checkbox name="annos" id="annos" checked></td>
+	   <td><input type="checkbox" name="annos" id="annos" checked></td>
 	 </tr>
 	 <tr>
 	   <td>Ensure that GFF Name tag is unique for each feature</td>
-	   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
+	   <td><input type="checkbox" name="name_unique" id="name_unique" checked></td>
 	 </tr>
 	 <tr>
 	   <td>Do not propagate duplicate annotations to children</td>
-	   <td><input type=checkbox name="upa" id="upa" checked></td>
+	   <td><input type="checkbox" name="upa" id="upa" checked></td>
 	 </tr>
 	 <tr>
 	   <td>For GFF "ID" and "Parent" tags, use unique:
@@ -487,21 +501,27 @@ Are you sure you want to move this genome into your trash?<p>
     </TMPL_LOOP>
 </TMPL_IF>
 
-<TMPL_IF NAME='ADMIN_AREA'>
+<TMPL_IF NAME='POWER_USER'>
     <hr>
     <div class="bold text">Admin Functions</div>
     
     <div class="small padded">
-    	<div>
+		<div class="padded" title="Selecting this option will cause this genome to be shown first in search results">
+		    Mark genome as "certified":
+		    <input type="checkbox" <TMPL_IF NAME='CERTIFIED'>checked</TMPL_IF> onclick="update_certified($(this).is(':checked'));" />
+		</div>
+		<TMPL_IF NAME='ADMIN_USER'>
+    	<div class="padded">
 	        Assign to user:
 	        <input id="edit_user" type="search" placeholder="Search" onkeyup="wait_to_search(search_users, this.value);" size="10" />
 	        <span onClick="update_owner();" class='ui-button ui-corner-all coge-button'>Go</span>
         </div>
-        <div>
+        <div class="padded">
 			<span>Load Log:</span>
 		    <span id="log_button" onclick="toggle_load_log();" class='ui-button ui-corner-all coge-button' style="width:3em; margin-bottom:1em; overflow:auto;">Show</span>
 		    <img id="log_spinner" src="picts/ajax-loader.gif" style="opacity: 0;"/>
 		    <div id="log_contents" class="border hidden padded coge-code" style="border:1px solid gray; color: navy;"></div>
 	    </div>
+	    </TMPL_IF>
 	</div>
 </TMPL_IF>

@@ -27,7 +27,7 @@ function get_gc_content(id, fname) {
         dataType: "html",
         data: {
             fname: fname,
-            dsgid: genome_id,
+            dsgid: GENOME_ID,
             gstid: $("#gstid").val()
         },
         success: function(data) {
@@ -59,7 +59,7 @@ function get_feat_gc(opts){
 
     $.ajax({
         data: {
-                dsgid: genome_id,
+                dsgid: GENOME_ID,
                 fname: 'get_gc_for_feature_type',
                 dsid: dsid,
                 typeid: typeid,
@@ -109,7 +109,7 @@ function chr_list() {
 	    $.ajax({
 	        data: {
 	            fname: 'get_chromosomes',
-	            gid: genome_id
+	            gid: GENOME_ID
 	        },
 	        dataType: "json",
 	        success: function (data) {
@@ -201,11 +201,11 @@ function download_chromosome_sequence(chr) {
     $.ajax({
         data: {
             fname: 'cache_chr_fasta',
-            gid: genome_id,
+            gid: GENOME_ID,
             chr: chr
         },
         success: function(data) {
-        	document.location='get_seq_for_chr.pl?gid=' + genome_id + '&chr=' + chr;
+        	document.location='get_seq_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
         }
     });
 }
@@ -260,7 +260,7 @@ function toggle_load_log() {
 			$.ajax({
 		        data: {
 		            fname: 'get_load_log',
-		            gid: genome_id
+		            gid: GENOME_ID
 		        },
 		        success: function(data) {
 		        	if (data)
@@ -382,7 +382,7 @@ function get_features(selector) {
     $.ajax({
         data: {
             fname: "get_features",
-            dsgid: genome_id,
+            dsgid: GENOME_ID,
             gstid: $("#gstid").val()
         },
         success: function(data) {
@@ -414,7 +414,7 @@ function get_genome_info () {
     $.ajax({
         data: {
             fname: 'get_genome_info',
-            gid: genome_id
+            gid: GENOME_ID
         },
         success : function(data) {
             if (data) {
@@ -428,7 +428,7 @@ function edit_genome_info () {
     $.ajax({
         data: {
             fname: 'edit_genome_info',
-            gid: genome_id
+            gid: GENOME_ID
         },
         success : function(data) {
             if (data) {
@@ -466,7 +466,7 @@ function update_genome_info (){
     $.ajax({
         data: {
             fname: 'update_genome_info',
-            gid: genome_id,
+            gid: GENOME_ID,
             name: name,
             description: description,
             version: version,
@@ -493,7 +493,7 @@ function delete_genome () {
     $.ajax({
         data: {
             fname: 'delete_genome',
-            gid: genome_id,
+            gid: GENOME_ID,
         },
         success : function(rc) {
             if (rc) {
@@ -520,7 +520,7 @@ function show_success() {
 }
 
 function get_gff($chr) {
-    var id = genome_id;
+    var id = GENOME_ID;
     $('#gff_export').dialog('option', 'width', 400).dialog('open');
 
     $('#gff_submit').unbind().click(function(event, ui) {
@@ -592,7 +592,7 @@ function get_tbl() {
         dataType: "json",
         data: {
             fname: "get_tbl",
-            gid: genome_id
+            gid: GENOME_ID
         },
         success: function(json) {
             if (json.error) {
@@ -626,7 +626,7 @@ function get_bed() {
         dataType: "json",
         data: {
             fname: "get_bed",
-            gid: genome_id
+            gid: GENOME_ID
         },
         success: function(json) {
             if (json.error) {
@@ -660,7 +660,7 @@ function export_gff(chr) {
     $('#gff_submit').unbind().click(function() {
 
         // ANALYSIS OPTIONS
-        var id = genome_id;
+        var id = GENOME_ID;
         var id_type = $('#gff_id_type').val(),
             cds = +$('#cds_only')[0].checked,
             annos = +$('#annos')[0].checked,
@@ -748,7 +748,7 @@ function export_to_irods(file_description, fname, data) {
     if (!data)
     	data = {};
     data.fname = fname;
-    data.gid = genome_id;
+    data.gid = GENOME_ID;
     $.ajax({
         dataType: "json",
         data: data,
@@ -780,7 +780,7 @@ function export_fasta_chr(chr) {
     $.ajax({
         data: {
             fname: 'cache_chr_fasta',
-            gid: genome_id,
+            gid: GENOME_ID,
             chr: chr
         },
         success: function(data) {
@@ -798,7 +798,7 @@ function reset_log() {
 }
 
 function reset_load() {
-    window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + genome_id);
+    window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + GENOME_ID);
     $('#load_dialog').dialog('close');
 }
 
@@ -841,7 +841,7 @@ function load_failed(obj) {
 
 function load_succeeded(obj) {
     // Update globals
-    genome_id = obj.genome_id; // for continuing to GenomeInfo
+	GENOME_ID = obj.genome_id; // for continuing to GenomeInfo
 
     // Update dialog
     $('#loading_msg').hide();
@@ -893,7 +893,7 @@ function copy_genome(mask, seq_only) {
         data: {
             fname: 'copy_genome',
             load_id: load_id,
-            gid: genome_id,
+            gid: GENOME_ID,
             mask: mask,
             seq_only: seq_only,
             timestamp: new Date().getTime()
@@ -910,7 +910,7 @@ function copy_genome(mask, seq_only) {
             $('#loading_msg span a').attr('href', data.link).html(data.link);
 
             // Add load_id to browser URL
-            window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + genome_id + "&job_id=" + data.job_id); // Add job_id to browser URL
+            window.history.pushState({}, "Title", PAGE_NAME + "?gid=" + GENOME_ID + "&job_id=" + data.job_id); // Add job_id to browser URL
             update_dialog("api/v1/jobs/" + data.job_id, pageObj.user, "#load_dialog", progress_formatter);
         }
         // TODO: handle error, show in status dialog
@@ -1085,7 +1085,7 @@ function get_load_log(callback) {
 }
 
 function continue_to_view() {
-    window.location.href = "GenomeInfo.pl?gid=" + genome_id;
+    window.location.href = "GenomeInfo.pl?gid=" + GENOME_ID;
 }
 
 function set_annotation_table() {
@@ -1096,7 +1096,7 @@ function get_annotations() {
     $.ajax({
         data: {
             fname: 'get_annotations',
-            gid: genome_id,
+            gid: GENOME_ID,
         },
         success : function(data) {
             $('#genome_annotations').html(data);
@@ -1109,7 +1109,7 @@ function remove_annotation (gaid) {
     $.ajax({
         data: {
             fname: 'remove_annotation',
-            gid: genome_id,
+            gid: GENOME_ID,
             gaid: gaid,
         },
         success : function() {
@@ -1122,7 +1122,7 @@ function get_datasets() {
     $.ajax({
         data: {
             fname: 'get_datasets',
-            gid: genome_id,
+            gid: GENOME_ID,
         },
         success : function(data) {
             $('#datasets').html(data);
@@ -1134,7 +1134,7 @@ function delete_dataset (dsid) {
     $.ajax({
         data: {
             fname: 'delete_dataset',
-            gid: genome_id,
+            gid: GENOME_ID,
             dsid: dsid,
         },
         success : function() {
@@ -1159,7 +1159,7 @@ function open_aa_usage_table(chromosome) {
     $.ajax({
         data: {
             fname: "get_aa_usage",
-            dsgid: genome_id,
+            dsgid: GENOME_ID,
             chr: chromosome
         },
         dataType: "html",
@@ -1190,7 +1190,7 @@ function get_content_dialog(id, request, chromosome) {
     $.ajax({
         data: {
             fname: request,
-            dsgid: genome_id,
+            dsgid: GENOME_ID,
             chr: chromosome,
         },
         dataType: "html",
@@ -1208,7 +1208,7 @@ function get_experiments(e) {
     $.ajax({
         data: {
             fname: 'get_experiments',
-            gid: genome_id
+            gid: GENOME_ID
         },
         success:function(html) {
             experiments
@@ -1221,7 +1221,7 @@ function get_experiments(e) {
     });
 }
 
-function update_owner () {
+function update_owner() {
     var user_name = $('#edit_user').val();
     if (!user_name) {
         alert('Please specify a user.');
@@ -1231,13 +1231,35 @@ function update_owner () {
     $.ajax({
         data: {
             fname: 'update_owner',
-            gid: "<TMPL_VAR NAME='GID'>",
+            gid: GENOME_ID,
             user_name: user_name,
             timestamp: new Date().getTime()
         },
         success : function(data) {
             if (data) {
                 alert(data);
+            }
+        }
+    });
+}
+
+function update_certified(val) {
+    $.ajax({
+        data: {
+            fname: 'update_certified',
+            gid: GENOME_ID,
+            certified: val ? 1 : 0,
+            timestamp: new Date().getTime()
+        },
+        success : function(data) {
+            if (data) { // error
+                alert(data);
+            }
+            else { // success
+	            if (val)
+	            	$('#certified_box').show();
+	            else
+	            	$('#certified_box').hide();
             }
         }
     });

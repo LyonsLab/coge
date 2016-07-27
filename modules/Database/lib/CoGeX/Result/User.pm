@@ -256,7 +256,8 @@ sub has_collaborator {
 =head2 is_admin
 
  Usage     : $self->is_admin
- Purpose   : determine if a user is an admin
+ Purpose   : determine if a user is an admin.  An admin has full owner/editor
+             permission on all items in the system and can view special menus.
  Returns   : 1 if an admin, 0 if not
  Argument  :
  Throws    : None
@@ -267,8 +268,43 @@ sub has_collaborator {
 ################################################## subroutine header end ##
 
 sub is_admin {
-	return shift->admin;
+	return shift->admin == 1;
 }
+
+################################################ subroutine header begin ##
+
+=head2 is_poweruser
+
+ Usage     : $self->is_poweruser
+ Purpose   : determine if a user is a power user.  A power user has special
+             powers in the system, but not as powerful as an admin.
+ Returns   : 1 if a power user, 0 if not
+ Argument  :
+ Throws    : None
+ Comments  :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_poweruser {
+    return shift->admin > 0; # will be 1 for admin, 2 for poweruser
+}
+
+################################################ subroutine header begin ##
+
+=head2 is_public
+
+ Usage     : $self->is_public
+ Purpose   : determine if a user is public (not logged in).
+ Returns   : 1 if public, 0 if logged in
+ Argument  :
+ Throws    : None
+ Comments  :
+
+=cut
+
+################################################## subroutine header end ##
 
 sub is_public {
 	my $self = shift;

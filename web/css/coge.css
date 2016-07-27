@@ -54,7 +54,22 @@ a:hover {
 }
 
 .info {
-  color: gray;
+    color: gray;
+}
+
+.coge-certified-icon {
+    color: white;
+    background-color: #e5c100;
+    font-size: 0.85em;
+    border-radius: 50%;
+    border: 1px solid #b29600;
+    padding: 3px;
+}
+
+.coge-certified-text {
+    font-family: 'Arial';
+    font-size: 0.85em;
+    color: dimgray;   
 }
 
 .highlighted {
@@ -63,6 +78,14 @@ a:hover {
 
 .coge-inlaid {
     text-shadow: 0px 1px 0px lightgray;
+}
+
+.coge-pill {
+    padding-bottom: 1px;
+    padding-right: 5px;
+    padding-left: 5px;
+    border-radius: 15px;
+    color: white;
 }
 
 .indent {
@@ -84,6 +107,22 @@ a:hover {
 
 .coge-green {
     color: #119911;
+}
+
+.coge-bg-green {
+    background-color: #119911;
+}
+
+.coge-bg-gray {
+    background-color: gray;
+}
+
+.coge-gold {
+    color: #e5c100;
+}
+
+.coge-bg-gold {
+    background-color: #e5c100;
 }
 
 .alert {

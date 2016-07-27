@@ -62,6 +62,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     edit_genome_info           => \&edit_genome_info,
     update_genome_info         => \&update_genome_info,
     update_owner               => \&update_owner,
+    update_certified           => \&update_certified,
     search_organisms           => \&search_organisms,
     search_users               => \&search_users,
     delete_genome              => \&delete_genome,
@@ -1150,6 +1151,26 @@ sub update_owner {
     return;
 }
 
+sub update_certified {
+    my %opts      = @_;
+    my $gid       = $opts{gid};
+    my $certified = $opts{certified};
+    return unless ($gid and defined $certified);
+
+    # Poweruser-only function (includes admins)
+    return unless $USER->is_poweruser;
+
+    # Get genome
+    my $genome = $DB->resultset('Genome')->find($gid);
+    return "Error: can't find genome." unless ($genome);
+    
+    # Update "certified" field for given genome
+    $genome->certified($certified);
+    $genome->update();
+    
+    return;
+}
+
 sub get_genome_sources {
     my $genome = shift;
     
@@ -2086,6 +2107,7 @@ sub generate_body {
         LOAD_ID         => $LOAD_ID,
         JOB_ID          => $JOB_ID,
         GID             => $gid,
+        GENOME_TITLE    => $genome->info,
         GENOME_INFO     => get_genome_info( genome => $genome ) || undef,
         GENOME_DATA     => get_genome_info_details( dsgid => $genome->id) || undef,
         LOGON           => ( $USER->user_name ne "public" ),
@@ -2098,15 +2120,17 @@ sub generate_body {
         USER_CAN_ADD    => ( !$genome->restricted or $user_can_edit ), # mdb removed 2/19/14, not sure why it ever existed
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted,
+        CERTIFIED       => int($genome->certified),
         IRODS_HOME      => get_irods_path(),
         USER            => $USER->user_name,
         DOWNLOAD_URL    => url_for(api_url_for("genomes/$gid/sequence")) #$config->{SERVER}."api/v1/legacy/sequence/$gid" # mdb changed 2/12/16 for hypnotoad
     );
 
     if ( $USER->is_admin ) {
-        $template->param(
-            ADMIN_AREA => 1,
-        );
+        $template->param( ADMIN_USER => 1 );
+    }
+    if ( $USER->is_poweruser ) {
+        $template->param( POWER_USER => 1 );
     }
 
     return $template->output;
