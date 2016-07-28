@@ -48,6 +48,7 @@ Core/lib/CoGe/Core/Notebook.pm
 Core/lib/CoGe/Core/Storage.pm
 Core/lib/CoGe/Core/Search.pm
 Core/lib/CoGe/Core/Chromosomes.pm
+Core/lib/CoGe/Core/Favorites.pm
 Database/lib/CoGeX.pm
 Database/lib/CoGeDBI.pm
 Database/lib/DBIxProfiler.pm
