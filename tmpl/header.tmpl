@@ -12,30 +12,6 @@
 
 <TMPL_INCLUDE NAME="header_includes.tmpl">
 
-<style type="text/css">
-	@font-face {
-		font-family: 'Glyphicons Halflings';
-		src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
-		src: url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('./js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
-	}
-	
-	.glyphicon {
-		position: relative;
-		right: 0.5em;
-		display: inline-block;
-		font-family: 'Glyphicons Halflings';
-		font-style: normal;
-		font-weight: normal;
-		line-height: 1;
-		-webkit-font-smoothing: antialiased;
-		-moz-osx-font-smoothing: grayscale;
-	}
-	
-	.glyphicon-search:before {
-		content: "\e003";
-	}
-</style>
-
 <TMPL_VAR NAME="HEAD">
 
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
@@ -204,9 +180,7 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 				    </div>
 				</li>
 				<li>
-				    <button id="header_search_button" class="ui-button ui-corner-all coge-button" type="button" onclick="search();">
-				    	<span style="font-size:1.25em;color:dimgray;" class="glyphicon glyphicon-search"></span>
-				    </button>
+				    <div id="header_search_button" class="glyphicon glyphicon-search ui-button ui-corner-all coge-header-search-button" style="" onclick="search();"></div>
 			    </li>
 			</ul>
 	    </li>

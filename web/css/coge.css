@@ -1,5 +1,6 @@
 @import url(coge-spinner.css);
 @import url(layout.css);
+@import url(glyphicons.css);
 
 .coge-dialog-content {
     height: 12.5em;
@@ -1894,11 +1895,12 @@ div.dataTables_scrollBody {
 	margin-left: 3em;
 }
 
-.coge-header-search button {
+.coge-header-search-button {
 	border-color: #65d022;
-	height: 2em;
-	width: 2em;
-	margin-top: 0.85em;
+	margin-top: 0.5em;
+	font-size: 1.25em;
+	color: dimgray;
+	padding: 0.2em !important;
 }
 
 .coge-header-searchbar {
