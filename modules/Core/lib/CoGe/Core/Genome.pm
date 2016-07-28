@@ -18,8 +18,8 @@ BEGIN {
     @ISA = qw( Exporter );
     @EXPORT = qw( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-        fix_chromosome_id );
-    @EXPORT_OK = qw(genomecmp);
+        fix_chromosome_id);
+    @EXPORT_OK = qw(genomecmp search_genomes);
 }
 
 my @LOCATIONS_PREFETCH = (
@@ -45,10 +45,54 @@ sub genomecmp($$) {
     my $typeb = $b->type ? $b->type->id : 0;
 
     $a->organism->name cmp $b->organism->name
+      || $b->certified  <=> $a->certified
       || versioncmp( $b->version, $a->version )
       || $typea <=> $typeb
       || $namea cmp $nameb
       || $b->id cmp $a->id;
+}
+
+sub search_genomes {
+    my %opts = @_;
+    my $db = $opts{db};
+    my $search_term = $opts{search_term}; # id value, or keyword in name/description
+    my $user = $opts{user}; # optional database user object
+    return unless $db and $search_term;
+    #my $include_deleted = $opts{include_deleted}; # optional boolean flag
+    
+    # Search genomes
+    my $search_term2 = '%' . $search_term . '%';
+    my @genomes = $db->resultset("Genome")->search(
+        \[
+            'genome_id = ? OR name LIKE ? OR description LIKE ?',
+            [ 'genome_id', $search_term  ],
+            [ 'name',        $search_term2 ],
+            [ 'description', $search_term2 ]
+        ]
+    );
+    
+    # Search organisms
+    my @organisms = $db->resultset("Organism")->search(
+        \[
+            'name LIKE ? OR description LIKE ?',
+            [ 'name',        $search_term2 ],
+            [ 'description', $search_term2 ]
+        ]
+    );
+    
+    # Combine matching genomes and organisms, preventing duplicates
+    my %unique;
+    map { $unique{ $_->id } = $_ } @genomes;
+    foreach my $organism (@organisms) {
+        map { $unique{ $_->id } = $_ } $organism->genomes;
+    }
+
+    # Filter response
+    my @filtered = sort genomecmp grep {
+        !$_->restricted || (defined $user && $user->has_access_to_genome($_))
+    } values %unique;
+    
+    return \@filtered;
 }
 
 sub get_wobble_histogram {

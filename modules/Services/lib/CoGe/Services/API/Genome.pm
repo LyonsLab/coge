@@ -4,13 +4,13 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use CoGe::Services::Auth qw(init);
 use CoGe::Services::API::Job;
-use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Genome qw(genomecmp search_genomes);
 use CoGe::Core::Storage qw(get_genome_seq);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGeDBI qw(get_feature_counts);
 use Data::Dumper;
 
-sub search { #TODO move search code into reusable function in CoGe::Core::Genome
+sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
     my $fast = $self->param('fast');
@@ -24,38 +24,9 @@ sub search { #TODO move search code into reusable function in CoGe::Core::Genome
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Search genomes
-    my $search_term2 = '%' . $search_term . '%';
-    my @genomes = $db->resultset("Genome")->search(
-        \[
-            'genome_id = ? OR name LIKE ? OR description LIKE ?',
-            [ 'genome_id', $search_term  ],
-            [ 'name',        $search_term2 ],
-            [ 'description', $search_term2 ]
-        ]
-    );
     
-    # Search organisms
-    my @organisms = $db->resultset("Organism")->search(
-        \[
-            'name LIKE ? OR description LIKE ?',
-            [ 'name',        $search_term2 ],
-            [ 'description', $search_term2 ]
-        ]
-    );
-    
-    # Combine matching genomes and organisms, preventing duplicates
-    my %unique;
-    map { $unique{ $_->id } = $_ } @genomes;
-    foreach my $organism (@organisms) {
-        map { $unique{ $_->id } = $_ } $organism->genomes;
-    }
-
-    # Filter response
-    my @filtered = sort genomecmp grep {
-        !$_->restricted || (defined $user && $user->has_access_to_genome($_))
-    } values %unique;
+    # Search notebooks and filter based on user permissions
+    my $filtered = search_genomes(db => $db, search_term => $search_term, user => $user);
 
     # Format response
     my @result;
@@ -65,7 +36,7 @@ sub search { #TODO move search code into reusable function in CoGe::Core::Genome
             id => int($_->id),
             info => $_->info
           }
-        } @filtered;
+        } @$filtered;
     }
     else {
         @result = map {
@@ -83,6 +54,7 @@ sub search { #TODO move search code into reusable function in CoGe::Core::Genome
                 description => $_->type->description,
             },
             restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+            certified => $_->certified ? Mojo::JSON->true : Mojo::JSON->false,
             chromosome_count => int($_->chromosome_count),
             organism => {
                 id => int($_->organism->id),
@@ -90,7 +62,7 @@ sub search { #TODO move search code into reusable function in CoGe::Core::Genome
                 description => $_->organism->description
             }
           }
-        } @filtered;
+        } @$filtered;
     }
     
     $self->render(json => { genomes => \@result });
