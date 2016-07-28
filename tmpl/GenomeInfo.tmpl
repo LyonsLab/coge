@@ -142,12 +142,16 @@ $(document).ready(function() {
 <div class="dialog_box hidden" id="edit_genome_info" title="Edit Genome Information"></div>
 
 <div style="font-size:1em;">
-	<span class="coge-pill coge-bg-gray">Genome</span>
+	<div class="inline link" title="Favorite this genome">
+		<img src=<TMPL_IF NAME="FAVORITED">"./picts/star-full.png"<TMPL_ELSE>"./picts/star-hollow.png"</TMPL_IF> style="width:1em;height:1em;" onclick="toggle_favorite(this);" />
+	</div>
 	<span class="bold text coge-green"><TMPL_VAR NAME="GENOME_TITLE"></span>&nbsp;&nbsp;&nbsp;
 	<div id="certified_box" class="hidden inline padded link" title="Click for more info on CoGe-certified genomes..." onclick="window.open('https://genomevolution.org/wiki/index.php/Certified_genomes');">
-		<span class="glyphicon glyphicon-ok coge-certified-icon"></span><span class="coge-certified-text">Certified Genome<span>
+		<span class="glyphicon glyphicon-ok coge-certified-icon"></span><span class="coge-small-text">Certified Genome<span>
 	</div>
-</div><br>
+</div>
+
+<br>
 
 <TMPL_IF NAME='ADMIN_USER'>
 <div class="alert">You are a CoGe Admin. Use your power wisely</div><br>

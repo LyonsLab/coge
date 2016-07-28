@@ -11,6 +11,7 @@ use CoGe::Core::Chromosomes;
 use CoGe::Core::Genome;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Storage;
+use CoGe::Core::Favorites;
 use CoGe::Builder::CommonTasks;
 
 use HTML::Template;
@@ -63,6 +64,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     update_genome_info         => \&update_genome_info,
     update_owner               => \&update_owner,
     update_certified           => \&update_certified,
+    toggle_favorite            => \&toggle_favorite,
     search_organisms           => \&search_organisms,
     search_users               => \&search_users,
     delete_genome              => \&delete_genome,
@@ -1171,6 +1173,21 @@ sub update_certified {
     return;
 }
 
+sub toggle_favorite {
+    my %opts   = @_;
+    my $gid = $opts{gid};
+    return unless $gid;
+    return if ($USER->is_public); # must be logged in
+    
+    # Get genome
+    my $genome = $DB->resultset('Genome')->find($gid);
+    return unless $genome;
+    
+    # Toggle favorite
+    my $favorites = CoGe::Core::Favorites->new( user => $USER );
+    return $favorites->toggle($genome);
+}
+
 sub get_genome_sources {
     my $genome = shift;
     
@@ -2101,6 +2118,8 @@ sub generate_body {
     }
 
     $template->param( OID => $genome->organism->id );
+    
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
     $template->param(
         EMBED           => $EMBED,
@@ -2121,6 +2140,7 @@ sub generate_body {
         USER_CAN_DELETE => $user_can_delete,
         DELETED         => $genome->deleted,
         CERTIFIED       => int($genome->certified),
+        FAVORITED       => int($favorites->is_favorite($genome)),
         IRODS_HOME      => get_irods_path(),
         USER            => $USER->user_name,
         DOWNLOAD_URL    => url_for(api_url_for("genomes/$gid/sequence")) #$config->{SERVER}."api/v1/legacy/sequence/$gid" # mdb changed 2/12/16 for hypnotoad

@@ -156,40 +156,50 @@ sub create_notebook {
 # this returns a string on error or 0 otherwise
 sub add_items_to_notebook {
     my %opts = @_;
-    my $db       = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
-    my $user     = $opts{user};     # user object
-    my $notebook = $opts{notebook}; # notebook object
-    my $items    = $opts{item_list}; # array ref to array refs of item_id, item_type
-    return "Missing arguments: $db and $notebook and $user and $items" unless ($db and $notebook and $user and $items);
+    my $db        = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
+    my $user      = $opts{user};      # user object
+    my $notebook  = $opts{notebook};  # notebook object
+    my $item_list = $opts{item_list}; # ref to array refs of item_id, item_type
+    my $items     = $opts{items};     # ref to array of genomes and/or experiments
+    return "Missing arguments: $db and notebook and $user" unless ($db and $notebook and $user);
 
     # Check permissions
     return 'Access denied' unless $user->admin || $user->is_owner_editor(list => $notebook);
 
     # Create connections for each item
-    foreach (@$items) {
-        my ( $item_id, $item_type ) = @$_;
-        return 'Item id or type not specified' unless ($item_id and $item_type);
-        $item_type = $ITEM_TYPE{$item_type} if ($item_type eq 'genome' or $item_type eq 'experiment');
-        return 'Item type not genome or experiment' unless ($item_type eq $ITEM_TYPE{genome} or $item_type eq $ITEM_TYPE{experiment});
-
-        #TODO check access permission on each item
-        if ($item_type eq 'experiment') {
-            my $experiment = $db->resultset('Experiment')->find($item_id);
-            return 'Experiment id ' . $item_id . ' not found' unless $experiment;
-        }
-        elsif ($item_type eq 'genome') {
-            my $genome = $db->resultset('Genome')->find($item_id);
-            return 'Genome id ' . $item_id . ' not found' unless $genome;
-        }
-
-        my $conn = $db->resultset('ListConnector')->find_or_create(
-            {
+    if ($item_list) {
+        foreach (@$item_list) {
+            my ( $item_id, $item_type ) = @$_;
+            return 'Item id or type not specified' unless ($item_id and $item_type);
+            $item_type = $ITEM_TYPE{$item_type} if ($item_type eq 'genome' or $item_type eq 'experiment');
+            return 'Item type not genome or experiment' unless ($item_type eq $ITEM_TYPE{genome} or $item_type eq $ITEM_TYPE{experiment});
+    
+            #TODO check access permission on each item
+            if ($item_type eq 'experiment') {
+                my $experiment = $db->resultset('Experiment')->find($item_id);
+                return 'Experiment id ' . $item_id . ' not found' unless $experiment;
+            }
+            elsif ($item_type eq 'genome') {
+                my $genome = $db->resultset('Genome')->find($item_id);
+                return 'Genome id ' . $item_id . ' not found' unless $genome;
+            }
+    
+            my $conn = $db->resultset('ListConnector')->find_or_create({
                 parent_id   => $notebook->id,
                 child_id    => $item_id,
                 child_type  => $item_type
-            }
-        );
-        return 'Error adding items to notebook' unless $conn;
+            });
+            return 'Error adding items to notebook' unless $conn;
+        }
+    }
+    if ($items) {
+        foreach my $item (@$items) {
+            my $conn = $db->resultset('ListConnector')->find_or_create({
+                parent_id   => $notebook->id,
+                child_id    => $item->id,
+                child_type  => $item->item_type
+            });
+        }
     }
 
     return 0;
@@ -197,30 +207,42 @@ sub add_items_to_notebook {
 
 sub remove_items_from_notebook {
     my %opts = @_;
-    my $db       = $opts{db};
-    my $user     = $opts{user};     # user object
-    my $notebook = $opts{notebook}; # notebook object
-    my $items    = $opts{item_list}; # array ref to array refs of item_id, item_type
-    return "Missing arguments: $db and $notebook and $user and $items" unless ($db and $notebook and $user and $items);
+    my $db        = $opts{db};
+    my $user      = $opts{user};      # user object
+    my $notebook  = $opts{notebook};  # notebook object
+    my $item_list = $opts{item_list}; # ref to array refs of item_id, item_type
+    my $items     = $opts{items};     # ref to array of genomes and/or experiments
+    return "Missing arguments: $db and $notebook and $user" unless ($db and $notebook and $user);
     
     # Check permissions
-    return 'User does not have permission to remove items from this notebook' unless $user->admin || $user->is_owner_editor(list => $notebook);
+    return 'User does not have permission to remove items from this notebook' unless ($user->admin || $user->is_owner_editor(list => $notebook));
 
     # Create connections for each item
-    foreach (@$items) {
-        my ( $item_id, $item_type ) = @$_;
-        return 'Item id or type not specified' unless ( $item_id and $item_type );
-        $item_type = $ITEM_TYPE{$item_type} if ($item_type eq 'genome' or $item_type eq 'experiment');
-
-        #TODO check access permission on each item
-
-        $db->resultset('ListConnector')->search(
-            {
-                parent_id   => $notebook->id,
-                child_id    => $item_id,
-                child_type  => $item_type
-            }
-        )->delete;
+    if ($item_list) {
+        foreach (@$item_list) {
+            my ( $item_id, $item_type ) = @$_;
+            return 'Item id or type not specified' unless ( $item_id and $item_type );
+            $item_type = $ITEM_TYPE{$item_type} if ($item_type eq 'genome' or $item_type eq 'experiment');
+    
+            #TODO check access permission on each item
+    
+            $db->resultset('ListConnector')->search({
+                    parent_id   => $notebook->id,
+                    child_id    => $item_id,
+                    child_type  => $item_type
+            })->delete;
+        }
+    }
+    if ($items) {
+        foreach my $item (@$items) {
+            #TODO check access permission on each item
+    
+            $db->resultset('ListConnector')->search({
+                    parent_id   => $notebook->id,
+                    child_id    => $item->id,
+                    child_type  => $item->item_type
+            })->delete;
+        }
     }
 
     return 0;
