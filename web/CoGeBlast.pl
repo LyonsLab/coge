@@ -548,6 +548,7 @@ sub gen_dsg_menu {
           . $dsg->version . " "
           . $dsg->type->name . " "
           . commify( $dsg->length ) . "nt";
+        $name .= ' -- certified' if $dsg->certified;
 
         push @genomes, [ $dsg->id, $name ];
     }
@@ -556,7 +557,6 @@ sub gen_dsg_menu {
 
     my $dsg_menu = '';
     if (@genomes) {
-
 #$dsg_menu .= 'Genomes for Organism<br>';
 #$dsg_menu .= qq{<select multiple id='dsgid' size='$size' onclick="show_add();" ondblclick="get_dsg_for_menu(['args__dsgid','dsgid'],[add_to_list]);">};
         foreach (@genomes) {
@@ -587,9 +587,7 @@ sub get_dsg_for_menu {
             $db->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
             next unless $USER->has_access_to_genome($dsg);
-            #added by EHL 12/30/2014
             next if $dsg->deleted;
-            ######
 
             $dsgs{ $dsg->id } = $dsg;
         }
@@ -600,9 +598,7 @@ sub get_dsg_for_menu {
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
             my $dsg = $db->resultset('Genome')->find($dsgid);
             next unless $USER->has_access_to_genome($dsg);
-            #added by EHL 12/30/2014
             next if $dsg->deleted;
-            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -620,6 +616,7 @@ sub get_dsg_for_menu {
           . $ds->data_source->name . " "
           . $dsg->type->name . " v"
           . $dsg->version . ")";
+        $html .= ' -- certified' if $dsg->certified;
     }
 
     return $html;

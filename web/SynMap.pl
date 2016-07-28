@@ -541,7 +541,7 @@ sub gen_dsg_menu {
 		else {
 			$name .= $dsg->name . ": " if $dsg->name;
 			$name .=
-			  $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
+			  $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ($dsg->certified ? ',certified' : '') . ")";
 			$org_name = $dsg->organism->name unless $org_name;
 			foreach my $ft (
 				$coge->resultset('FeatureType')->search(
@@ -725,6 +725,9 @@ sub get_genome_info {
 	  . $link
 	  . " target=_new>"
 	  . $ds->data_source->name . "</a>";
+	$html_dsg_info .= 
+	    '&nbsp;&nbsp;'
+	  . HTML::Template->new( filename => $config->{TMPLDIR} . 'widgets/Certified.tmpl' )->output if $dsg->certified;
 
 	#$html_dsg_info .= $dsg->chr_info(summary=>1);
 	$html_dsg_info .= "<tr><td>Dataset: <td>" . $ds->name;
