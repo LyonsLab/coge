@@ -495,16 +495,12 @@ sub update_annotation {
     # Create the type and type group if not already present
     my $group_rs;
     if ($type_group) {
-        $group_rs =
-          $DB->resultset('AnnotationTypeGroup')
-          ->find_or_create( { name => $type_group } );
+        $group_rs = $DB->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
     }
-    my $type_rs = $DB->resultset('AnnotationType')->find_or_create(
-        {
-            name                     => $type,
-            annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
-        }
-    );
+    my $type_rs = $DB->resultset('AnnotationType')->find_or_create({
+        name                     => $type,
+        annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
+    });
 
     # Create the image
     #TODO if image was changed delete previous image
@@ -535,9 +531,7 @@ sub remove_annotation {
     my $list = $DB->resultset('List')->find($lid);
     return 0 if ( $list->locked && !$USER->is_admin );
 
-    my $la =
-      $DB->resultset('ListAnnotation')
-      ->find( { list_annotation_id => $laid } );
+    my $la = $DB->resultset('ListAnnotation')->find( { list_annotation_id => $laid } );
     return 0 unless $la;
     $la->delete();
 
