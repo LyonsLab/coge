@@ -1813,6 +1813,7 @@ sub create_bismark_alignment_job {
         push @$args, ['-2', shift @$fastq, 0];
     }
     else { # single-ended
+        $output_bam =~ s/\.fastq$//; # mdb added 7/29/16 -- remove trailing ".fastq" for cutadapt
         $output_bam .= '_bismark_bt2.bam';
         push @$args, ['', join(' ', @$fastq), 0];
     }
