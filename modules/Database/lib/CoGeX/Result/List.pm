@@ -220,6 +220,10 @@ sub experiments {
         next if ( $restricted and not $experiment->restricted );
         push @experiments, $experiment;
     }
+    
+    if ($count) {
+        return scalar @experiments;
+    }
 
     return wantarray ? @experiments : \@experiments;
 }
