@@ -19,7 +19,7 @@ This object uses the DBIx::Class to define an interface to the C<list> table in 
 
  Eric Lyons
 
-=head1 COPYRIGHT 2012
+=head1 COPYRIGHT
 
 The full text of the license can be found in the
 LICENSE file included with this module.
@@ -140,21 +140,17 @@ sub item_type {
 sub owner {
     my $self = shift;
 
-    foreach ( $self->user_connectors( { role_id => 2 } ) ) {    #FIXME hardcoded
+    foreach ( $self->user_connectors( { role_id => 2 } ) ) { #FIXME hardcoded role ID
         return $_->parent;
     }
 }
 
-sub lists                 # return child lists within this list
+sub lists # return child lists within this list -- DEPRECATED
 {
     my $self       = shift;
     my %opts       = @_;
     my $restricted = $opts{restricted};    # limit result to restricted lists
-    my $count      = $opts{count};         #return count;
-
-    #	if ($count) {
-    #	    return $self->list_connectors->count();
-    #	}
+    my $count      = $opts{count};         # return count;
 
     my @lists;
     foreach my $conn ( $self->list_connectors ) {
@@ -173,12 +169,7 @@ sub features {
     my $self       = shift;
     my %opts       = @_;
     my $restricted = $opts{restricted};    # limit result to restricted features
-    my $count      = $opts{count};         #return count;
-
-    #    if ($count)
-    #      {
-    #	return $self->feature_connectors->count();
-    #      }
+    my $count      = $opts{count};         # return count;
 
     my @features;
     foreach my $conn ( $self->feature_connectors ) {
@@ -196,15 +187,9 @@ sub features {
 sub genomes {
     my $self = shift;
     my %opts = @_;
-    my $restricted =
-      $opts{restricted};    # option to limit result to restricted genomes
-    my $include_deleted =
-      $opts{include_deleted};    # optional flag to include deleted genomes
-    my $count = $opts{count};    #optional flag to return count only
-
-    #	if ($count) {
-    #	    return $self->genome_connectors->count();
-    #	}
+    my $restricted = $opts{restricted};           # option to limit result to restricted genomes
+    my $include_deleted = $opts{include_deleted}; # optional flag to include deleted genomes
+    my $count = $opts{count};                     # optional flag to return count only
 
     my @genomes;
     foreach my $conn ( $self->genome_connectors ) {
@@ -224,13 +209,9 @@ sub genomes {
 sub experiments {
     my $self       = shift;
     my %opts       = @_;
-    my $restricted = $opts{restricted}; # limit result to restricted experiments
+    my $restricted = $opts{restricted};           # limit result to restricted experiments
     my $include_deleted = $opts{include_deleted};
-    my $count           = $opts{count};             #return count;
-
-    #	if ($count) {
-    #	    return $self->experiment_connectors->count();
-    #	}
+    my $count           = $opts{count};           # return count;
 
     my @experiments;
     foreach my $conn ( $self->experiment_connectors ) {
@@ -238,10 +219,6 @@ sub experiments {
         next if ( $experiment->deleted and not $include_deleted );
         next if ( $restricted and not $experiment->restricted );
         push @experiments, $experiment;
-    }
-
-    if ($count) {
-        return scalar @experiments;
     }
 
     return wantarray ? @experiments : \@experiments;
@@ -388,7 +365,7 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub info {
+sub info { 
     my $self = shift;
     my $info = $self->name;
     $info = '&reg; ' . $info if $self->restricted;
@@ -416,7 +393,7 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub info_html {
+sub info_html {  # FIXME deprecate this -- don't want view code in the model
     my $self = shift;
     my $info = $self->info;
     return
@@ -445,7 +422,7 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub data_summary {
+sub data_summary {  # FIXME deprecate this -- don't want view code in the model
     my $self = shift;
     my @stuff;
     my $exps = $self->experiments( count => 1 );
@@ -459,7 +436,7 @@ sub data_summary {
     return join( "; ", @stuff );
 }
 
-sub contents_summary_html {
+sub contents_summary_html { # FIXME deprecate this -- don't want view code in the model
     my $self = shift;
 
     my $html;
