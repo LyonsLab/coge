@@ -58,7 +58,9 @@ sub _create_favorites_notebook {
     my $self = shift;
     
     my $db = $self->user->result_source->schema;
-    return create_notebook(db => $db, user => $self->user, type => 'mixed', name => 'Favorites');
+    return create_notebook(
+        db => $db, user => $self->user, type => 'mixed', name => 'Favorites',
+        descriptoin => 'This notebook contains genomes you have marked as your favorite.  It is created automatically by CoGe.');
 }
 
 sub _get_favorites {
@@ -77,21 +79,8 @@ sub is_favorite {
     my $self = shift;
     my $item = shift; # genome/experiment DBIX object
     
-    #TODO imporove this using generic iterators
-    
-    if (ref $item eq 'CoGeX::Result::Genome') {
-        foreach my $genome ($self->notebook->genomes) {
-            if ($item->id == $genome->id) {
-                return 1;
-            }
-        }
-    }
-    elsif (ref $item eq 'CoGeX::Result::Experiment') {
-        foreach my $experiment ($self->notebook->experiments) {
-            if ($item->id == $experiment->id) {
-                return 1;
-            }
-        }
+    foreach ($self->notebook->child_connectors({ child_id => $item->id, child_type => $item->item_type })) {
+        return 1;
     }
     
     return 0;
