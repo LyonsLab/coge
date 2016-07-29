@@ -554,10 +554,11 @@ sub get_list_contents {
     my $num_items = 0;
 
     my $genome_count = $list->genomes( count => 1 );
-    my $exp_count = $list->experiments( count => 1 );
-    my $feat_count = $list->features( count => 1 );
-    my $list_count = $list->lists( count => 1 );
+    my $exp_count    = $list->experiments( count => 1 );
+    my $feat_count   = $list->features( count => 1 );
+    my $list_count   = $list->lists( count => 1 );
 
+    #FIXME rewrite this to send contents as JSON -- mdb 7/29/16
     if ($genome_count or $exp_count or $feat_count or $list_count) {
         $html = q|
         <table id="list_contents_table" class="dataTable compact hover stripe border-top border-bottom" style="margin:0;width:initial;"><thead>
