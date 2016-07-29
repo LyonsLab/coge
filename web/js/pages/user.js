@@ -19,25 +19,6 @@ $(function() {
 	// Initialize dialog boxes
 	$(".dialog_box").dialog({autoOpen: false, resizable: false});
 
-	// Initialize fileupload plugin
-//	$('#input_upload_file').fileupload({
-//    	dataType: 'json',
-//    	formData: {
-//    		fname: 'upload_image_file',
-//    	},
-//       	add: function(e, data) {
-//			if ( verify_image_file(data.files[0]) ) {
-//				$('#user_image').attr('src', 'picts/ajax-loader-large.gif');
-//				data.submit();
-//			}
-//		},
-//		done: function(e, data) {
-//			if (data.result && data.result.link) {
-//				$('#user_image').attr('src', data.result.link);
-//			}
-//		}
-//	});
-
 	// Initialize dropdown menus
 	$("#create_menu").menu()
 		.position({
@@ -577,19 +558,6 @@ $.extend(ContentPanel.prototype, {
     				return;
     			}
     			//console.log(data);
-//    			if (obj) {
-//    				if (test_timestamp('get_contents', obj.timestamp)) {
-//    					if (sync) { // merge with existing contents
-//    						sync_items(obj.html);
-//    					}
-//    					else { // replace existing contents
-//    						$('#contents_table').html(obj.html);
-//    					}
-//    					timestamps['lastUpdate'] = obj.lastUpdate;
-//    					filter_contents();
-//    				}
-//    			}
-    			
     			if (self.views[typeId].displayType == 'grid') {
     				data = JSON.parse(data);
     			}
@@ -1575,58 +1543,6 @@ function edit_dialog() {
 //	$('#top_panel').slideDown('slow');
 //	var contents_panel_height = $('#contents_table').height() - top_panel_height;
 //	$('#contents_table').animate({ height: contents_panel_height}, 'slow');
-//}
-
-//function show_recent_activity() {
-//	$.ajax({
-//		data: {
-//			fname: 'get_logs',
-//			type: 'recent'
-//		},
-//		success : function(data) {
-//			$('#logs').html(data);
-//			$('#recent').css('font-weight', 'bold');
-//			$('#important').css('font-weight', 'normal');
-//		}
-//	});
-//}
-
-//function show_important_activity() {
-//	$.ajax({
-//		data: {
-//			fname: 'get_logs',
-//			type: 'important'
-//		},
-//		success : function(data) {
-//			if (data) {
-//				$('#logs').html(data);
-//			}
-//			else {
-//				$('#logs').html("<span style='font-style:italic;color:gray;'>None ... click the <img src='picts/star-hollow.png'> icon  in your <a href='History.pl' target='_blank'>History</a> to mark items as important.</span>");
-//			}
-//			$('#recent').css('font-weight', 'normal');
-//			$('#important').css('font-weight', 'bold');
-//		}
-//	});
-//}
-
-//function select_image_file() {
-//	$('#input_upload_file').click();
-//}
-
-//function verify_image_file(file) {
-//	var ext = file.name.split('.').pop();
-//	if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
-//		alert('Error: specified file is not an image');
-//		return 0;
-//	}
-//
-//	if (file.size > 2*1024*1024) {
-//		alert('Error: image file is too large (>2MB)');
-//		return 0;
-//	}
-//
-//	return 1;
 //}
 
 function create_menu() {
