@@ -1,0 +1,109 @@
+@font-face {
+    font-family: 'Glyphicons Halflings';
+    src: url('../js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot');
+    src: url('../js/vendor/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('../js/vendor/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('../js/vendor/bootstrap/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('../js/vendor/bootstrap/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+}
+
+.glyphicon {
+    position: relative;
+    top: 1px;
+    display: inline-block;
+    font-family: 'Glyphicons Halflings';
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.glyphicon-eye-open:before {
+  content: "\e105";
+}
+
+.glyphicon-ok:before {
+  content: "\e013";
+}
+
+.glyphicon-user:before {
+    content: "\e008";
+}
+
+.glyphicon-folder-close:before {
+    content: "\e117";
+}
+
+.glyphicon-folder-open:before {
+    content: "\e118";
+}
+
+.glyphicon-trash:before {
+    content: "\e020";
+}
+
+.glyphicon-arrow-right:before {
+    content: "\e092";
+}
+
+.glyphicon-asterisk:before {
+    content: "\2a";
+}
+
+.glyphicon-plus:before {
+    content: "\2b";
+}
+
+.glyphicon-minus:before {
+    content: "\2212";
+}
+
+.glyphicon-cog:before {
+    content: "\e019";
+}
+
+.glyphicon-search:before {
+    content: "\e003";
+}
+
+.glyphicons-circle-arrow-top:before {
+    content: "\e133";
+}
+
+.glyphicons-circle-arrow-down:before {
+    content: "\e134";
+}
+
+.glyphicon-ban-circle:before {
+  content: "\e090";
+}
+
+.glyphicon-chevron-left:before {
+  content: "\e079";
+}
+
+.glyphicon-chevron-right:before {
+  content: "\e080";
+}
+
+.glyphicon-file:before {
+  content: "\e022";
+}
+
+.glyphicon-folder-open:before {
+  content: "\e118";
+}
+
+.glyphicon-remove:before {
+  content: "\e014";
+}
+
+.glyphicon-step-backward:before {
+  content: "\e069";
+}
+
+.glyphicon-step-forward:before {
+  content: "\e077";
+}
+
+.glyphicon-upload:before {
+  content: "\e027";
+}
