@@ -28,6 +28,7 @@ use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Metadata qw(create_annotations create_image);
+use CoGe::Core::Favorites;
 no warnings 'redefine';
 
 use vars qw(
@@ -1334,6 +1335,23 @@ sub get_contents {
     }
     elsif ( $type eq 'experiment' ) {
         $items = get_experiments_for_user($DB->storage->dbh, $USER->id);
+    }
+    elsif ( $type eq 'favorite' ) {
+#        my $favorites = CoGe::Core::Favorites->new(user => $USER);
+#        foreach ($favorites->notebook->genomes) {
+#            push @$items, {
+#                id   => $_->{id},
+#                name => $_->{name},
+#                description => $_->{description},
+#                version => $_->{version},
+#                restricted => $_->{restricted},
+#                deleted => $_->{deleted},
+#                date => $_->{date},
+#                organsim => $_->organism->name,
+#                #link => (is_uri($_->{link}) ? $_->{link} : undef),
+#            };            
+#        }
+        return '<br><div class="padded info">Coming soon!</div>';
     }
     elsif ( $type eq 'notebook' ) {
         $items = get_lists_for_user($DB->storage->dbh, $USER->id);

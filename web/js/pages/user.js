@@ -50,6 +50,12 @@ $(function() {
 			dataTypes: ['experiment'],
 			operations: ['share', 'organize', 'delete', 'sendto']
 		},
+		favorite: {
+			title: 'Favorites',
+			displayType: 'html',//'grid',
+			dataTypes: ['favorite'],
+			operations: ['share', 'organize', 'delete', 'sendto']
+		},		
 		notebook: {
 			title: 'Notebooks',
 			displayType: 'grid',
