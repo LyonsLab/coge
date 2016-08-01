@@ -8,6 +8,7 @@ use CoGeX;
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
 use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link );
+use CoGe::Core::Genome qw(genomecmp);
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -509,7 +510,7 @@ sub gen_dsg_menu {
 	my $message;
 	my $org_name;
 
-	foreach my $dsg (
+	foreach my $dsg ( sort genomecmp
 		$coge->resultset('Genome')->search(
 			{ organism_id => $oid },
 			{
@@ -539,9 +540,11 @@ sub gen_dsg_menu {
 			}
 		}
 		else {
+			$name .= "&#10004; CERTIFIED " if $dsg->certified;
+		        $name .= "RESTRICTED " if $dsg->restricted;
 			$name .= $dsg->name . ": " if $dsg->name;
 			$name .=
-			  $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ($dsg->certified ? ',certified' : '') . ")";
+			  $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
 			$org_name = $dsg->organism->name unless $org_name;
 			foreach my $ft (
 				$coge->resultset('FeatureType')->search(
@@ -573,12 +576,12 @@ sub gen_dsg_menu {
 	  . qq{<span class="small text">Genomes: </span>}
 	  . qq{<select id="dsgid$num" style="max-width:400px;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
 
-	foreach (
-		sort {
-			     versioncmp( $b->[2]->version, $a->[2]->version )
-			  || $a->[2]->type->id <=> $b->[2]->type->id
-			  || $b->[3] cmp $a->[3]
-		} @dsg_menu
+	foreach ( @dsg_menu
+#		sort {
+#			     versioncmp( $b->[2]->version, $a->[2]->version )
+#			  || $a->[2]->type->id <=> $b->[2]->type->id
+#			  || $b->[3] cmp $a->[3]
+#		} @dsg_menu
 	  )
 	{
 		my ( $numt, $name ) = @$_;
