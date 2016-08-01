@@ -49,7 +49,7 @@ sub genomecmp($$) {
       || versioncmp( $b->version, $a->version )
       || $typea <=> $typeb
       || $namea cmp $nameb
-      || $b->id cmp $a->id;
+      || $a->id cmp $b->id;
 }
 
 sub search_genomes {
