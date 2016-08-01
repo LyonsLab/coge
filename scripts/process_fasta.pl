@@ -68,6 +68,10 @@ my ($seqLength, $numSequences, $numRemoved, $removedLength) = process_fasta_file
 if ($numRemoved && $removedLength) {
     print STDOUT "log: " . commify($numRemoved) . " sequences (", commify($removedLength) , " bp) removed due to size less than ", commify(MIN_CHROMOSOME_SIZE), " bp \n";
 }
+if ($numRemoved == $numSequences) {
+    print STDOUT "log: error: all sequences (contigs) were removed due to being too small.\n";
+    exit(-1);
+}
 
 if ( $seqLength > MAX_SEQUENCE_SIZE ) {
     print STDOUT "log: error: total sequence size exceeds limit of " . units(MAX_SEQUENCE_SIZE) . "\n";
