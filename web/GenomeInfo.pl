@@ -1170,6 +1170,16 @@ sub update_certified {
     $genome->certified($certified);
     $genome->update();
     
+    # Record in log
+    CoGe::Accessory::Web::log_history(
+        db          => $DB,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => ($certified ? 'Certify' : 'Uncertify') . ' genome ' . $genome->info_html,
+        parent_id   => $gid,
+        parent_type => 2 #FIXME magic number
+    );
+    
     return;
 }
 
@@ -1185,7 +1195,19 @@ sub toggle_favorite {
     
     # Toggle favorite
     my $favorites = CoGe::Core::Favorites->new( user => $USER );
-    return $favorites->toggle($genome);
+    my $is_favorited = $favorites->toggle($genome);
+    
+    # Record in log
+    CoGe::Accessory::Web::log_history(
+        db          => $DB,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => ($is_favorited ? 'Favorited' : 'Unfavorited') . ' genome ' . $genome->info_html,
+        parent_id   => $gid,
+        parent_type => 2 #FIXME magic number
+    );
+    
+    return $is_favorited;
 }
 
 sub get_genome_sources {
