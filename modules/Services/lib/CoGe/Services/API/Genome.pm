@@ -115,8 +115,8 @@ sub fetch {
     my $feature_counts = get_feature_counts($db->storage->dbh, $genome->id);
     foreach (@$chromosomes) {
         my $name = $_->{name};
-        $_->{gene_count} = int($feature_counts->{$name}{1}{count});
-        $_->{CDS_count} = int($feature_counts->{$name}{3}{count});
+        $_->{gene_count} = int($feature_counts->{$name}{1}{count} // 0);
+        $_->{CDS_count} = int($feature_counts->{$name}{3}{count} // 0);
     }
     
     # Generate response
