@@ -95,6 +95,7 @@ sub create_notebook {
     my $user    = $opts{user};
     my $name    = $opts{name};
     my $desc    = $opts{desc};
+       $desc    = $opts{description} unless $desc;
     my $type    = $opts{type};    # string type name (or use type_id)
     my $type_id = $opts{type_id}; # type id (or use type)
     my $page    = $opts{page};

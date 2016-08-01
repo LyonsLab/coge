@@ -5,6 +5,7 @@ use warnings;
 use Moose;
 use Data::Dumper;
 use CoGe::Core::Notebook;
+use CoGe::Core::Metadata qw(create_annotations);
 
 # Attributes -------------------------------------------------------------------
 has 'user' => (
@@ -40,6 +41,7 @@ sub _find_favorites_notebook {
     # Search for favorites notebook
     foreach my $notebook ($self->user->lists) {
         if ($notebook->name eq 'Favorites') {
+            #TODO if marked as "deleted" should we undeleted it?
             return $notebook;
         }
     }
@@ -58,9 +60,22 @@ sub _create_favorites_notebook {
     my $self = shift;
     
     my $db = $self->user->result_source->schema;
-    return create_notebook(
-        db => $db, user => $self->user, type => 'mixed', name => 'Favorites',
-        descriptoin => 'This notebook contains genomes you have marked as your favorite.  It is created automatically by CoGe.');
+    my $notebook = create_notebook(
+        db => $db, 
+        user => $self->user, 
+        type => 'mixed', 
+        name => 'Favorites',
+        description => 'This notebook contains genomes you have marked as favorites.  It is created automatically by CoGe.'
+    );
+
+    create_annotations(
+        db => $db, 
+        target => $notebook, 
+        annotations => 'note|Created by CoGe',
+        locked => 1
+    );
+
+    return $notebook;
 }
 
 sub _get_favorites {
