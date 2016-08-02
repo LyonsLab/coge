@@ -21,7 +21,7 @@ sub has_access {
     my $id;
 	for (my $i=1; $id=$self->parameters->{'genome_id' . $i}; $i++) {
 	    my $genome = $self->db->resultset("Genome")->find($id);
-	    return 0 if ($genome->restricted && not $self->user->has_access_to_genome($genome));
+	    return 0 if ($genome->restricted && (!$self->user || !$self->user->has_access_to_genome($genome)));
 	}
     return 1;
 }
