@@ -1337,21 +1337,21 @@ sub get_contents {
         $items = get_experiments_for_user($DB->storage->dbh, $USER->id);
     }
     elsif ( $type eq 'favorite' ) {
-#        my $favorites = CoGe::Core::Favorites->new(user => $USER);
-#        foreach ($favorites->notebook->genomes) {
-#            push @$items, {
-#                id   => $_->{id},
-#                name => $_->{name},
-#                description => $_->{description},
-#                version => $_->{version},
-#                restricted => $_->{restricted},
-#                deleted => $_->{deleted},
-#                date => $_->{date},
-#                organsim => $_->organism->name,
-#                #link => (is_uri($_->{link}) ? $_->{link} : undef),
-#            };            
-#        }
-        return '<br><div class="padded info">Coming soon!</div>';
+        my $favorites = CoGe::Core::Favorites->new(user => $USER);
+        foreach ($favorites->notebook->genomes) {
+            next if ($_->deleted);
+            push @$items, {
+                id   => $_->id,
+                name => $_->name,
+                description => $_->description,
+                version => $_->version,
+                restricted => $_->restricted,
+                deleted => $_->deleted,
+                date => $_->date,
+                organism => $_->organism->name,
+                role_id => 0 # no role
+            };
+        }
     }
     elsif ( $type eq 'notebook' ) {
         $items = get_lists_for_user($DB->storage->dbh, $USER->id);

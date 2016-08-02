@@ -52,9 +52,10 @@ $(function() {
 		},
 		favorite: {
 			title: 'Favorites',
-			displayType: 'html',//'grid',
+			displayType: 'grid',
 			dataTypes: ['favorite'],
-			operations: ['share', 'organize', 'delete', 'sendto']
+			operations: ['share', 'organize', 'delete', 'sendto'],
+			noFilter: true
 		},		
 		notebook: {
 			title: 'Notebooks',
@@ -849,7 +850,7 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     },
     
     getDescription: function() {
-    	if (this.type == 'genome')
+    	if (this.type == 'genome' || this.type == 'favorite')
     		return this._formatGenome();
     	if (this.type == 'experiment')
     		return this._formatExperiment();
