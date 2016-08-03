@@ -2549,7 +2549,8 @@ $.extend(System_graph.prototype, {
 	    	.attr("x2", self.width)
 	    	.attr("y1", self.yLoad(numCores))
 	    	.attr("y2", self.yLoad(numCores))
-	    	.attr("stroke", "green");
+	    	.attr("stroke", "green")
+	    	.attr("opacity", "0.5");
 	    
 	    // mdb added 7/14/16 -- Add a line representing the size of RAM the server has.
 	    var memSize = 500; // in GB
@@ -2558,7 +2559,8 @@ $.extend(System_graph.prototype, {
 	    	.attr("x2", self.width)
 	    	.attr("y1", self.yMemory(memSize))
 	    	.attr("y2", self.yMemory(memSize))
-	    	.attr("stroke", "blue");	    
+	    	.attr("stroke", "blue")
+	    	.attr("opacity", "0.5");
 	    
 	    // Add brush selection
 	    self.brush = d3.svg.brush()
