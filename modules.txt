@@ -46,6 +46,8 @@ Sort::Versions
 Spreadsheet::WriteExcel
 Statistics::Basic
 Statistics::Basic::Mean
+Statistics::Descriptive
+Statistics::R
 String::ShellQuote
 Switch
 Sys::Load
