@@ -14,8 +14,9 @@
 
 echo `date` "Backup started"
 
-ICMD=/usr/local/bin
-DAYS_UNTIL_DELETE=21
+ICMD=/usr/bin
+DAYS_UNTIL_DELETE=14
+MAX_IRODS_BACKUPS=4
 VERSION=$(date '+%Y%m%d')
 LOCAL=/storage/coge/backup
 REMOTE=backup
@@ -44,13 +45,15 @@ then
    echo delete local $LOCAL_DELETIONS
    rm -rf $LOCAL_DELETIONS
 fi
+count=0
 for d in `$ICMD/ils backup | grep 'mysql_' | sed 's/.*\(mysql_.*\)/\1/'`
 do
-   if [ ! -d $LOCAL/$d ];
+   if [ $count -gt $MAX_IRODS_BACKUPS ];
    then
       echo delete IRODS backup/$d
       $ICMD/irm -r backup/$d
    fi
+   count=$[count + 1]
 done
 
 #
