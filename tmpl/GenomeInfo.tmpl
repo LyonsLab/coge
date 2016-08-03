@@ -118,6 +118,7 @@ $(document).ready(function() {
 <div class="dialog_box hidden" id="aa_usage_table" title="Amino Acid Usage Table"></div>
 <div class="dialog_box hidden" id="edit_genome_info" title="Edit Genome Information"></div>
 
+<TMPL_UNLESS NAME="EMBED">
 <div style="font-size:1em;">
 	<div class="inline link" title="Favorite this genome">
 		<img src=<TMPL_IF NAME="FAVORITED">"./picts/star-full.png"<TMPL_ELSE>"./picts/star-hollow.png"</TMPL_IF> style="width:1em;height:1em;" onclick="toggle_favorite(this);" />
@@ -125,13 +126,9 @@ $(document).ready(function() {
 	<span class="bold text coge-green"><TMPL_VAR NAME="GENOME_TITLE"></span>&nbsp;&nbsp;&nbsp;
 	<TMPL_INCLUDE NAME="widgets/Certified.tmpl">
 </div>
+</TMPL_UNLESS>
 
 <br>
-
-<TMPL_IF NAME='ADMIN_USER'>
-<div class="alert">You are a CoGe Admin. Use your power wisely</div><br>
-</TMPL_IF>
-
 <table style="overflow:hidden;">
     <tr class="top">
         <td>
