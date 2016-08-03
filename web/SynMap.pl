@@ -540,25 +540,21 @@ sub gen_dsg_menu {
 			}
 		}
 		else {
-			$name .= "&#10004; CERTIFIED " if $dsg->certified;
-		        $name .= "RESTRICTED " if $dsg->restricted;
+			$name .= "<span title='certified'>&#x2705;</span> " if $dsg->certified;
+		    $name .= "<span title='restricted'>&#x1f512;</span> " if $dsg->restricted;
 			$name .= $dsg->name . ": " if $dsg->name;
-			$name .=
-			  $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
+			$name .= $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
 			$org_name = $dsg->organism->name unless $org_name;
 			foreach my $ft (
 				$coge->resultset('FeatureType')->search(
-					{
-						genome_id            => $dsg->id,
+					{	genome_id            => $dsg->id,
 						'me.feature_type_id' => 3
 					},
-					{
-						join =>
+					{	join =>
 						  { features => { dataset => 'dataset_connectors' } },
 						rows => 1,
 					}
-				)
-			  )
+				))
 			{
 				$has_cds = 1;
 			}
@@ -576,14 +572,7 @@ sub gen_dsg_menu {
 	  . qq{<span class="small text">Genomes: </span>}
 	  . qq{<select id="dsgid$num" style="max-width:400px;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
 
-	foreach ( @dsg_menu
-#		sort {
-#			     versioncmp( $b->[2]->version, $a->[2]->version )
-#			  || $a->[2]->type->id <=> $b->[2]->type->id
-#			  || $b->[3] cmp $a->[3]
-#		} @dsg_menu
-	  )
-	{
+	foreach (@dsg_menu) {
 		my ( $numt, $name ) = @$_;
 		my $selected = " selected" if $dsgid && $numt == $dsgid;
 		$selected = " " unless $selected;
