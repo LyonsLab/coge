@@ -230,7 +230,7 @@ sub get_genomes_for_user {
     # Get user/group genome connections
     my $query = qq{
         SELECT g.genome_id AS id, g.name AS name, g.description AS description, 
-            g.version AS version, g.restricted AS restricted, g.deleted AS deleted, 
+            g.version AS version, g.restricted AS restricted, g.certified AS certified, g.deleted AS deleted, 
             g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id as role_id
         FROM user_connector AS uc 
         JOIN genome AS g ON (uc.child_id=g.genome_id) 
@@ -253,7 +253,7 @@ sub get_genomes_for_user {
     # Get list genome connections
     $query = qq{
         SELECT g.genome_id AS id, g.name AS name, g.description AS description, 
-            g.version AS version, g.restricted AS restricted, g.deleted AS deleted, 
+            g.version AS version, g.restricted AS restricted, g.certified AS certified, g.deleted AS deleted, 
             g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id as role_id
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 

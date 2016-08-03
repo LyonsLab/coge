@@ -865,13 +865,16 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     },
     
     _formatGenome: function() {
+    	var icon = '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/> ';
+    	var certified = '<span class="glyphicon glyphicon-ok coge-certified-icon"></span> <span class="coge-small-text">Certified Genome<span>';
     	var descStr = 
-    		'<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
+    		icon +
     	   	(this.restricted == '1' ? '&reg; '  : '') +
     	   	(this.organism ? this.organism : '') + 
     	   	(this.name ? ' (' + this.name + ')' : '') +
     	   	(this.description ? ': ' + this.description : '') +
-    	   	' (v' + this.version + ', id' + this.id + ')';
+    	   	' (v' + this.version + ', id' + this.id + ')' +
+    	   	(this.certified == '1' ? '&nbsp;&nbsp;' + certified : '');
     	return descStr;
     },
     
