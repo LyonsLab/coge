@@ -47,6 +47,7 @@ GetOptions(
     # Optional Flags
     "allow_all_chr=i" => \$allow_all_chr # Allow non-existent chromosomes
 );
+$allow_all_chr = 1 unless defined $allow_all_chr; # mdb added 8/3/16 -- set default, many users are loading GFFs with contigs not present in the genome
 
 $| = 1;
 print STDOUT "Starting $0 (pid $$)\n", qx/ps -o args $$/;
