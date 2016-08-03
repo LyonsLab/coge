@@ -605,9 +605,11 @@ sub gen_body {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
         MAIN              => 1,
+        EMBED             => $EMBED,
         PAGE_NAME         => $PAGE_TITLE . '.pl',
         USER_NAME         => $USER->name,
         EXPERIMENT_ID     => $eid,
+        EXPERIMENT_TITLE  => $exp->info,
         DEFAULT_TYPE      => 'note',
         ITEMS             => commify($exp->row_count),
         FILE_SIZE         => commify(directory_size(get_experiment_path($exp->id))),
