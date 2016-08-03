@@ -237,7 +237,7 @@ sub get_item_info {
             . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
             . qq{</div></div>};
     }
-    elsif ( $item_type eq 'genome' ) {
+    elsif ( $item_type eq 'genome' || $item_type eq 'favorite' ) {
         my $genome = $DB->resultset('Genome')->find($item_id);
         return unless ( $USER->has_access_to_genome($genome) );
 
@@ -341,6 +341,9 @@ sub get_item_info {
           . qq{<div style="padding-left:20px;">}
           . qq{<a href="} . $log->link . qq{" target=_blank>Open result</a>}
           . qq{</div>}
+    }
+    else {
+        $html = '';
     }
 
     return encode_json( { timestamp => $timestamp, html => $html } );
