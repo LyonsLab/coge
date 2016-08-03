@@ -233,49 +233,6 @@ const USER_ID = '<TMPL_VAR NAME="USER_ID">';
 
 </TMPL_IF> <!-- MAIN -->
 
-<!--
-<TMPL_IF NAME="DO_TOC">
-	<TMPL_LOOP NAME="TOC_ITEM_LOOP">
-		<div style="padding-bottom:3px;padding-left:<TMPL_VAR NAME='TOC_ITEM_INDENT'>px;">
-			<span id="toc_<TMPL_VAR NAME='TOC_ITEM_ID'>" class="link" onclick="toc_select(<TMPL_VAR NAME='TOC_ITEM_ID'>);">
-				<TMPL_VAR NAME="TOC_ITEM_ICON">
-				<span id="toc_label_<TMPL_VAR NAME='TOC_ITEM_ID'>">
-					<TMPL_VAR NAME="TOC_ITEM_INFO">
-				</span>
-			</span>
-			<TMPL_IF NAME="TOC_ITEM_CHILDREN">
-				<img src="picts/arrow-down-icon.png" class="link" style="width:10px;height:10px;" onClick="toc_toggle_children(<TMPL_VAR NAME='TOC_ITEM_ID'>, <TMPL_VAR NAME='TOC_ITEM_CHILDREN'>);"/>
-			</TMPL_IF>
-		</div>
-	</TMPL_LOOP>
-</TMPL_IF>
--->
-
-<!--
-<TMPL_IF NAME="DO_CONTENTS">
-	<TMPL_LOOP NAME="CONTENTS_ITEM_LOOP">
-		<TMPL_IF NAME="CONTENTS_FORMAT_1">
-			<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" class="hidden coge-list-item coge-unselectable <TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
-				<TMPL_VAR NAME="CONTENTS_ITEM_ICON">
-				<span name="info" class="link" <TMPL_IF NAME='CONTENTS_ITEM_LINK'>onclick="window.open('<TMPL_VAR NAME="CONTENTS_ITEM_LINK">');</TMPL_IF>">
-					<TMPL_VAR NAME="CONTENTS_ITEM_INFO">
-				</span>
-			</div>
-		<TMPL_ELSE>
-			<div id="content_<TMPL_VAR NAME='CONTENTS_ITEM_ID'>_<TMPL_VAR NAME='CONTENTS_ITEM_TYPE'>" onmouseover="enter_item(this);" onmouseout="exit_item();" class="hidden coge-list-item coge-highlight coge-unselectable <TMPL_IF NAME='CONTENTS_ITEM_DELETED'>deleted</TMPL_IF> <TMPL_IF NAME='CONTENTS_ITEM_SHARED'>shared</TMPL_IF>">
-				<TMPL_IF NAME="CONTENTS_ITEM_SELECTABLE">
-					<input type="checkbox" style="float:left;margin-right:8px;" onclick="click_item(this.parentNode);" />
-				</TMPL_IF>
-				<span style="display:block;" onclick="select_item(this.parentNode);" ondblclick="open_item('<TMPL_VAR NAME=CONTENTS_ITEM_TYPE>', '<TMPL_VAR NAME=CONTENTS_ITEM_INFO>', '<TMPL_VAR NAME=CONTENTS_ITEM_LINK>');">
-					<TMPL_VAR NAME="CONTENTS_ITEM_ICON">
-					<span name="info"><TMPL_VAR NAME="CONTENTS_ITEM_INFO"></span>
-				</span>
-			</div>
-		</TMPL_IF>
-	</TMPL_LOOP>
-</TMPL_IF>
--->
-
 <TMPL_IF NAME='SHARE_DIALOG'>
 	<script>
 	$(function(){
