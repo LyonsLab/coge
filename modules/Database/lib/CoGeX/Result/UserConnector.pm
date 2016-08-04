@@ -78,7 +78,6 @@ __PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_i
 #			 join =>['child_connectors', 'list_type'],
 #			 prefetch => ['child_connectors','list_type'],
 #			});
-__PACKAGE__->belongs_to("role" 		 	=> "CoGeX::Result::Role", "role_id" );
 
 ################################################ subroutine header begin ##
 
