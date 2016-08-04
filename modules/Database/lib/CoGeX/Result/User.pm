@@ -63,8 +63,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("user_id");
 __PACKAGE__->belongs_to( 'image' => 'CoGeX::Result::Image', 'image_id');
 __PACKAGE__->has_many( 'sessions' => "CoGeX::Result::UserSession", 'user_id' );
-__PACKAGE__->has_many( 'works' => "CoGeX::Result::Work", 'user_id' );
-__PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow", 'user_id' );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log", 'user_id' );
 __PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job", 'user_id' );
 __PACKAGE__->has_many( # all children (groups/genomes/experiments/lists)
@@ -355,15 +353,6 @@ sub has_access_to_genome {
 	return $ids->{$gid};
 }
 
-#old version
-#sub has_access_to_genome {
-#	my $self = shift;
-#	return unless $self->id; # ignore public user
-#	my $genome  = shift;
-#	my $gid = $genome =~ /^\d+$/ ? $genome : $genome->id;
-#	return $self->is_admin || $self->child_connector(id => $gid, type => 'genome');
-#}
-
 # new version caches results
 sub has_access_to_experiment {
 	my ($self, $experiment) = @_;
@@ -377,15 +366,6 @@ sub has_access_to_experiment {
 	my $ids = $self->_experiment_ids();
 	return $ids->{$experiment->id};
 }
-
-#old version
-#sub has_access_to_experiment {
-#	my $self = shift;
-#	return unless $self->id; # ignore public user
-#	my $experiment  = shift;
-#	my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
-#	return $self->is_admin || $self->child_connector(id => $eid, type => 'experiment');
-#}
 
 sub has_access_to_dataset {
 	my ($self, $ds) = @_;
@@ -903,7 +883,6 @@ sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, co
 }
 
 sub children { #FIXME have this use child_by_type_and_id
-
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
@@ -985,7 +964,6 @@ sub children_by_type_and_id {
 	}
 
 #	print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
-
 	return \%children;
 }
 
@@ -1025,7 +1003,6 @@ sub children_by_type_role_id {
 		}
 	}
 	#print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
-
 	return (\%children, \%roles);
 }
 
@@ -1077,7 +1054,6 @@ sub restricted_genomes {
 sub features {
 	my $self = shift;
 	return unless $self->id; # ignore public user
-#	my %opts = @_;
 
 	my %features;
 	foreach my $group ( $self->groups ) {
