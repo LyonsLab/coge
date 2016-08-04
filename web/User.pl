@@ -56,15 +56,11 @@ if (defined $user_id && $USER->is_admin && $user_id != $USER->id) {
 
 $JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
 
-# debug for fileupload:
-# print STDERR $ENV{'REQUEST_METHOD'} . "\n" . $FORM->url . "\n" . Dumper($FORM->Vars) . "\n";	# debug
-# print "data begin\n" . $FORM->param('POSTDATA') . "\ndata end\n" if ($FORM->param('POSTDATA'));
-
 $MAX_SEARCH_RESULTS = 100;
 
 $node_types = CoGeX::node_types();
 
-# Content/toc types
+# Content types
 # note: adding new values is okay, but don't change existing values or 
 # will break running User pages in the field
 %ITEM_TYPE = (
@@ -149,14 +145,7 @@ sub gen_body {
         USER_ID     => $USER->id,
         FULL_NAME   => $USER->display_name || '',
         EMAIL       => $USER->email,
-#        USER_IMAGE  => (
-#            $USER->image_id
-#            ? 'image.pl?id=' . $USER->image_id
-#            : 'picts/smiley_default.png'
-#        ),
         ITEM_TYPE     => encode_json(\%ITEM_TYPE),
-        #TOC            => get_toc(),
-        #CONTENTS       => get_contents( html_only => 1 ),
         ROLES          => get_roles('reader'),
         NOTEBOOK_TYPES => get_notebook_types('mixed')
     );
@@ -808,10 +797,7 @@ sub search_share {
 
     my @results;
 
-# Search for matching users
-# $search_term = '%'.$search_term.'%';
-# foreach ($DB->resultset('User')->search_literal(
-# 		"user_name LIKE '$search_term' OR first_name LIKE '$search_term' OR last_name LIKE '$search_term'"))
+    # Search for matching users
     foreach ( $DB->resultset('User')->all ) {
         next
           unless ( escape($_->user_name) =~ /$search_term/i
@@ -1267,61 +1253,6 @@ sub send_items_to {
     return $url;
 }
 
-#sub get_toc {    # table of contents
-#    my @rows = (
-#    	{  	TOC_ITEM_ID       => $ITEM_TYPE{mine},
-#        	TOC_ITEM_INFO     => 'My Data',
-#        	TOC_ITEM_CHILDREN => 2 # enable dropdown button
-#      	},
-#      	{   TOC_ITEM_ID   => $ITEM_TYPE{genome},
-#	        TOC_ITEM_INFO => 'Genomes',
-#	        TOC_ITEM_ICON => '<img src="picts/dna-icon.png" width="15" height="15"/>',
-#	        TOC_ITEM_INDENT => 20
-#	    },
-#	    {   TOC_ITEM_ID   => $ITEM_TYPE{experiment},
-#	        TOC_ITEM_INFO => 'Experiments',
-#	        TOC_ITEM_ICON => '<img src="picts/testtube-icon.png" width="15" height="15"/>',
-#	        TOC_ITEM_INDENT => 20
-#	    },
-#	    {   TOC_ITEM_ID   => $ITEM_TYPE{notebook},
-#            TOC_ITEM_INFO => 'Notebooks',
-#            #TOC_ITEM_ICON => '<img src="picts/notebook-icon.png" width="15" height="15"/>',
-#            #TOC_ITEM_INDENT => 20
-#        },
-#        {   TOC_ITEM_ID => $ITEM_TYPE{group},
-#            TOC_ITEM_INFO => 'User Groups',
-#            #TOC_ITEM_ICON => '<img src="picts/group-icon.png" width="15" height="15"/>'
-#        },
-#    	{   TOC_ITEM_ID   => $ITEM_TYPE{shared},
-#	        TOC_ITEM_INFO => 'Shared with me'
-#	    },
-#    	{   TOC_ITEM_ID       => $ITEM_TYPE{activity_summary},
-#	        TOC_ITEM_INFO     => 'Activity',
-#	        TOC_ITEM_CHILDREN => 3 # enable dropdown button
-#	    },
-#	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_analyses},
-#	        TOC_ITEM_INFO   => 'Analyses',
-#	        TOC_ITEM_INDENT => 20
-#	    },
-#	    {   TOC_ITEM_ID     => $ITEM_TYPE{activity_loads},
-#            TOC_ITEM_INFO   => 'Data loading',
-#            TOC_ITEM_INDENT => 20
-#        },
-#    	{   TOC_ITEM_ID     => $ITEM_TYPE{activity_viz},
-#	        TOC_ITEM_INFO   => 'Graph',
-#	        TOC_ITEM_INDENT => 20
-#	    },
-#    	{	TOC_ITEM_ID   => $ITEM_TYPE{trash},
-#        	TOC_ITEM_INFO => 'Trash'
-#      	}
-#    );
-#
-#    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-#    $template->param( DO_TOC        => 1,
-#                      TOC_ITEM_LOOP => \@rows );
-#    return $template->output;
-#}
-
 sub get_contents {
     my %opts = @_;
     my $type = $opts{item_type};
@@ -1421,6 +1352,7 @@ sub get_contents {
     return encode_json($items);
 }
 
+#TODO chage this routine to send JSON instead of rendering HTML -- mdb 8/4/16
 sub get_stats {
 	my $type = shift;
 	my $items = shift;
@@ -1700,15 +1632,11 @@ sub search_notebooks
 
     # Perform search
     else {
-
         # Get public lists and user's private lists
         $search_term = '%' . $search_term . '%';
         foreach my $notebook (
-            $DB->resultset("List")->search_literal(
-"locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"
-            )
-          )
-        {
+            $DB->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')")
+        ) {
             next unless $USER->has_access_to_list($notebook);
             push @notebooks, $notebook;
         }
@@ -1720,8 +1648,7 @@ sub search_notebooks
         return encode_json(
             {
                 timestamp => $timestamp,
-                html =>
-"<option>$num_results matches, please refine your search.</option>"
+                html => "<option>$num_results matches, please refine your search.</option>"
             }
         );
     }
@@ -1729,8 +1656,7 @@ sub search_notebooks
     # Build select items out of results
     my $html;
     foreach my $n ( sort notebookcmp @notebooks ) {
-        $html .=
-          "<option value='" . $n->id . "'>" . $n->info . "</option><br>\n";
+        $html .= "<option value='" . $n->id . "'>" . $n->info . "</option><br>\n";
     }
     $html = "<option disabled='disabled'>No matches</option>" unless $html;
 
