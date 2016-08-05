@@ -6,21 +6,10 @@ var concat = Array.prototype.concat;
 var current_experiment = {};
 
 // Supported file types
-var POLY_FILES = [
-    "vcf"
-];
-
-var ALIGN_FILES = [
-    "bam"
-];
-
-var SEQ_FILES = [
-    "fastq", "fq", "sra"
-];
-
-var QUANT_FILES = [
-    "csv", "tsv", "bed", "gff", "gtf"
-];
+var POLY_FILES  = [ "vcf", "gcvf" ];
+var ALIGN_FILES = [ "bam" ];
+var SEQ_FILES   = [ "fastq", "fq", "sra" ];
+var QUANT_FILES = [ "csv", "tsv", "bed", "wig", "gff", "gtf" ];
 
 var SUPPORTED_FILE_TYPES = concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
 
