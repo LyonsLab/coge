@@ -9,11 +9,6 @@ has 'workflow' => (
     isa  => 'CoGe::Accessory::Workflow'
 );
 
-# mdb removed 10/12/15 - no longer needed
-#has 'jex' => (
-#    is => 'ro'
-#);
-
 has 'staging_dir' => (
     is => 'rw'
 );
@@ -58,11 +53,5 @@ has 'outputs' => (
     is => 'rw',
     default => sub { {} } # initialize to empty hash
 );
-
-# mdb removed 10/12/15 - doesn't make sense
-#sub get {
-#    my $self = shift;
-#    return $self->workflow;
-#}
 
 1;
