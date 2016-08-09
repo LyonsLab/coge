@@ -15,8 +15,9 @@
 echo `date` "Backup started"
 
 ICMD=/usr/bin
-DAYS_UNTIL_DELETE=14
-MAX_IRODS_BACKUPS=4
+#DAYS_UNTIL_DELETE=7
+MAX_LOCAL_BACKUPS=1
+MAX_REMOTE_BACKUPS=4
 VERSION=$(date '+%Y%m%d')
 LOCAL=/storage/coge/backup
 REMOTE=backup
@@ -28,29 +29,36 @@ CONFIG=/opt/apache2/coge/coge.conf
 DBPASS=$(grep -P "DBPASS" $CONFIG | awk '{print $2}')
 LOCAL_MYSQL=$LOCAL/mysql_$VERSION
 mkdir -p $LOCAL_MYSQL
-echo `date` "Dumping MySQL databases"
-mysqldump -u root -p$DBPASS wikidb -c | gzip -9 > $LOCAL_MYSQL/wikidb.sql.gz
-mysqlhotcopy -u root -p $DBPASS cogelinks $LOCAL_MYSQL
-mysqlhotcopy --port=3307 -u root -p $DBPASS coge $LOCAL_MYSQL
-echo `date` "Pushing MySQL databases to IRODS"
+echo `date` "Snapshotting MySQL databases"
+#mysqldump -u root -p$DBPASS wikidb -c | gzip -9 > $LOCAL_MYSQL/wikidb.sql.gz
+#mysqlhotcopy -u root -p $DBPASS cogelinks $LOCAL_MYSQL
+#mysqlhotcopy --port=3307 -u root -p $DBPASS coge $LOCAL_MYSQL
+innobackupex --user=root --password=$DBPASS --no-timestamp $LOCAL_MYSQL
+innobackupex --apply-log $LOCAL_MYSQL
+echo `date` "Pushing MySQL database backup to IRODS"
 $ICMD/iput -bfr $LOCAL_MYSQL $REMOTE
 
 #
 # Remove old database backups
 #
-echo `date` "Deleting old backups (local & remote)"
-LOCAL_DELETIONS=`find $LOCAL/mysql_* -maxdepth 1 -type d -mtime +$DAYS_UNTIL_DELETE`
-if [ -n "$LOCAL_DELETIONS" ];
-then
-   echo delete local $LOCAL_DELETIONS
-   rm -rf $LOCAL_DELETIONS
-fi
+echo `date` "Deleting old database backups (local & remote)"
+#LOCAL_DELETIONS=`find $LOCAL/mysql_* -maxdepth 1 -type d -mtime +$DAYS_UNTIL_DELETE`
+count=0
+for d in `ls -td /storage/coge/backup/*/ | grep 'mysql_'` 
+do
+   if [ $count -gt $MAX_LOCAL_BACKUPS ];
+   then
+       echo deleting local $d 
+       rm -rf $d
+    fi
+    count=$[count + 1]
+done
 count=0
 for d in `$ICMD/ils backup | grep 'mysql_' | sed 's/.*\(mysql_.*\)/\1/'`
 do
-   if [ $count -gt $MAX_IRODS_BACKUPS ];
+   if [ $count -gt $MAX_REMOTE_BACKUPS ];
    then
-      echo delete IRODS backup/$d
+      echo deleting IRODS backup/$d
       $ICMD/irm -r backup/$d
    fi
    count=$[count + 1]
@@ -69,14 +77,14 @@ $ICMD/irsync -rs /storage/coge/data/experiments/ i:$REMOTE/experiments
 #
 # Sync JEX database with remote IRODS location
 #
-echo `date` "Syncing JEX db with IRODS"
+echo `date` "Syncing JEX database with IRODS"
 $ICMD/icd
 $ICMD/irsync -rs /opt/Yerba/workflows.db i:$REMOTE/jex
 
 #
 # Sync /etc with remote IRODS location
 #
-echo `date` "Syncing /etc with IRODS"
+echo `date` "Syncing /etc config files with IRODS"
 $ICMD/icd
 $ICMD/irsync -rs /etc i:$REMOTE/etc
 
