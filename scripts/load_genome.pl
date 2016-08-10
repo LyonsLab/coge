@@ -19,7 +19,7 @@ use Benchmark;
 use vars qw($staging_dir $install_dir $fasta_file $irods_files
   $name $description $link $version $type_id $restricted $message $wid
   $organism_id $source_id $source_name $source_desc $user_id $user_name
-  $keep_headers $compress $creator_id $ignore_chr_limit
+  $keep_headers $compress $creator_id $ignore_chr_limit $transcriptome
   $host $port $db $user $pass $config $P );
 
 GetOptions(
@@ -34,6 +34,7 @@ GetOptions(
     "link=s"        => \$link,           # link (JS escaped)
     "version=s"     => \$version,        # genome version (JS escaped)
     "type_id=s"     => \$type_id,        # genomic_sequence_type_id
+    "transcriptome=i" => \$transcriptome,# flag indicating this sequence is a transcriptome
     "restricted=i"  => \$restricted,     # genome restricted flag
     "organism_id=i" => \$organism_id,    # organism ID
     "source_id=i"	=> \$source_id,		 # data source id
@@ -42,7 +43,7 @@ GetOptions(
     "user_id=i"		=> \$user_id,		 # user ID to assign genome
     "user_name=s"   => \$user_name,      # user name to assign genome (alternative to user_id)
     "creator_id=i"	=> \$creator_id,     # user ID to set as genome creator
-    "config=s"      => \$config       # configuration file
+    "config=s"      => \$config          # configuration file
 );
 
 $| = 1;

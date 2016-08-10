@@ -20,6 +20,7 @@ use Sort::Versions;
 use File::Basename qw(basename);
 use File::Path qw(mkpath);
 use File::Spec::Functions;
+use File::Copy;
 use POSIX qw(floor);
 use Data::Dumper;
 
@@ -80,6 +81,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_annotation             => \&get_annotation,
     search_annotation_types    => \&search_annotation_types,
     get_annotation_type_groups => \&get_annotation_type_groups,
+    annotate                   => \&annotate,
     get_bed                    => \&get_bed,
     get_gff                    => \&get_gff,
     get_tbl                    => \&get_tbl,
@@ -2081,6 +2083,40 @@ sub export_to_irods {
     return 0;
 }
 
+sub annotate { #TODO create API "annotate" job instead
+    my %args = @_;
+    my $gid = $args{gid};
+    
+    # Get genome and check permission
+    my $genome = $DB->resultset('Genome')->find($gid);
+    return $ERROR unless $USER->has_access_to_genome($genome);
+
+    # Create workflow
+    my $workflow = $JEX->create_workflow( name => "Annotate genome", init => 1 );
+    my ($staging_dir) = get_workflow_paths($USER->name, $workflow->id);
+    mkpath($staging_dir);
+    
+    my $fasta_file = get_genome_file($gid);
+    my $staged_fasta_file = catfile($staging_dir, basename($fasta_file));
+    copy($fasta_file, $staged_fasta_file);
+    
+    # Add TransDecoder tasks
+    my $task = create_transdecoder_longorfs_job($staged_fasta_file);
+    $workflow->add_job($task);
+    my $transdecoder_dir = $task->{outputs}->[0];
+    my $done_file = $task->{outputs}->[1];
+    
+    $task = create_transdecoder_predict_job($staged_fasta_file, $done_file);
+    $workflow->add_job($task);
+
+    # Submit workflow and block until completion
+    my $response = $JEX->submit_workflow($workflow);
+    say STDERR "GenomeInfo::annotate: wid=" . $response->{id};
+    $JEX->wait_for_completion($response->{id});
+
+    return;
+}
+
 sub generate_html {
     my $template;
 
@@ -2163,6 +2199,7 @@ sub generate_body {
         DELETED         => $genome->deleted,
         CERTIFIED       => int($genome->certified),
         FAVORITED       => int($favorites->is_favorite($genome)),
+        TRANSCRIPTOME   => ($genome->type->name =~ /transcriptome/i) ? 1 : 0,
         IRODS_HOME      => get_irods_path(),
         USER            => $USER->user_name,
         DOWNLOAD_URL    => url_for(api_url_for("genomes/$gid/sequence")) #$config->{SERVER}."api/v1/legacy/sequence/$gid" # mdb changed 2/12/16 for hypnotoad

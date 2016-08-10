@@ -37,6 +37,7 @@ our @EXPORT = qw(
     create_bgzip_job create_tabix_index_job create_sumstats_job
     add_workflow_result create_bowtie2_workflow create_image_job
     add_metadata_to_results_job create_process_fasta_job
+    create_transdecoder_longorfs_job create_transdecoder_predict_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -2257,6 +2258,53 @@ sub create_notebook_job {
     };
 }
 
+sub create_transdecoder_longorfs_job {
+    my $input_file = shift;
+
+    my $cmd = catfile($CONF->{TRANSDECODER}, 'TransDecoder.LongOrfs');
+    
+    my $done_file = $input_file . '.longorfs.done';
+    my $output_path = $input_file . '.transdecoder_dir';
+
+    return {
+        cmd => "$cmd -t $input_file && touch $done_file",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file,
+        ],
+        outputs => [
+            [$output_path, '1'],
+            $done_file
+        ],
+        description => "Running TransDecoder.LongOrfs..."
+    };
+}
+
+sub create_transdecoder_predict_job {
+    my $input_file = shift;
+    my $dependency_file = shift;
+
+    my $cmd = catfile($CONF->{TRANSDECODER}, 'TransDecoder.Predict');
+    
+    my $done_file = $input_file . '.predict.done';
+    my $output_file = $input_file . '.transdecoder.gff3';
+
+    return {
+        cmd => "$cmd -t $input_file && touch $done_file",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file,
+            $dependency_file
+        ],
+        outputs => [
+            $output_file,
+            $done_file
+        ],
+        description => "Running TransDecoder.Predict..."
+    };
+}
 
 sub add_items_to_notebook_job {
     my %opts = @_;

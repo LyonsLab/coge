@@ -11,7 +11,8 @@ use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Accessory::Utils qw(commify units print_fasta);
 
 use vars qw( 
-    $input_fasta_file $output_fasta_file $staging_dir $ignore_chr_limit $keep_headers
+    $input_fasta_file $output_fasta_file $staging_dir $ignore_chr_limit 
+    $keep_headers $keep_all_contigs
 );
   
 use constant MAX_CHROMOSOMES     => 200_000; # max number of chromosomes/contigs
@@ -28,8 +29,10 @@ GetOptions(
     
     # Optional arguments
     "ignore_chr_limit=i"  => \$ignore_chr_limit, # flag to ignore chromosome/contig limit # mdb added 3/9/15 COGE-595
-    "keep_headers=i"      => \$keep_headers      # flag to keep original headers (no parsing)
+    "keep_headers=i"      => \$keep_headers,     # flag to keep original headers (no parsing)
+    "keep_all_contigs=i"  => \$keep_all_contigs  # disable min length check
 );
+$keep_all_contigs = 1; # mdb debug 8/9/16
 
 # Process and verify parameters
 unless ($input_fasta_file) {
@@ -164,7 +167,7 @@ sub process_fasta_file {
             print STDOUT "log: warning: skipping zero-length section '$chr'\n";
             next;
         }
-        if ( length $filteredSeq < MIN_CHROMOSOME_SIZE ) { # mdb added 5/19/16
+        if ( !$keep_all_contigs && length $filteredSeq < MIN_CHROMOSOME_SIZE ) { # mdb added 5/19/16
             #print STDOUT "Skipping section '$chr' less than ", MIN_CHROMOSOME_SIZE, " bp in size\n"; # removed, prints too much text and JEX truncates
             $chrRemoved++;
             $removedLength += length $filteredSeq;

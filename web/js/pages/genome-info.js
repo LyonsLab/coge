@@ -31,7 +31,7 @@ function get_gc_content(id, fname) {
             gstid: $("#gstid").val()
         },
         success: function(data) {
-            elem.fadeOut(function() {;
+            elem.fadeOut(function() {
                 elem.html(data).fadeIn();
             });
         }
@@ -786,6 +786,45 @@ function export_fasta_chr(chr) {
         success: function(data) {
         	var obj = jQuery.parseJSON(data);
         	export_to_irods("this chromosome's FASTA file", "export_fasta_chr", { chr: chr, file: obj.file });
+        }
+    });
+}
+
+function annotate() {
+    // Prevent concurrent executions
+    if ( $("#annotate_dialog").dialog( "isOpen" ) )
+        return;
+
+    // Make sure user is still logged-in
+    if (!check_and_report_login())
+        return;
+
+    // Open status dialog right away
+    $('#annotate_log').html("<br>Annotating genome...<br><br>");
+    $('#annotate_dialog')
+        .unbind()
+        .dialog('open');
+    
+    $.ajax({
+        dataType: "json",
+        data: {
+        	fname: 'annotate',
+        	gid: GENOME_ID
+        },
+        success: function(json) {
+            $('#annotate_log').append('<br><br>File: ' + json.file);
+
+            if (json.error) {
+                $('#annotate_loading_msg').hide();
+                $('#annotate_finished_msg').hide();
+                $('#annotate_error_msg').fadeIn();
+            } 
+            else {
+            	$('#annotate_ok_button').fadeIn();
+                $('#annotate_loading_msg').hide();
+                $('#annotate_finished_msg').fadeIn();
+                $('#annotate_ok_button').fadeIn();
+            }
         }
     });
 }
