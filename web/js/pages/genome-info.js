@@ -800,7 +800,7 @@ function annotate() {
         return;
 
     // Open status dialog right away
-    $('#annotate_log').html("<br>Annotating genome...<br><br>");
+    $('#annotate_log').html("<br><br>Annotating transcriptome using TransDecoder...");
     $('#annotate_dialog')
         .unbind()
         .dialog('open');
@@ -812,18 +812,16 @@ function annotate() {
         	gid: GENOME_ID
         },
         success: function(json) {
-            $('#annotate_log').append('<br><br>File: ' + json.file);
+            //$('#annotate_log').append('<br><br>File: ' + json.file);
 
-            if (json.error) {
-                $('#annotate_loading_msg').hide();
-                $('#annotate_finished_msg').hide();
+            if (!json || json.error) {
+                $('#annotate_loading_msg,#annotate_finished_msg').hide();
                 $('#annotate_error_msg').fadeIn();
             } 
             else {
-            	$('#annotate_ok_button').fadeIn();
                 $('#annotate_loading_msg').hide();
-                $('#annotate_finished_msg').fadeIn();
-                $('#annotate_ok_button').fadeIn();
+                $('#annotate_ok_button,#annotate_finished_msg,#annotate_ok_button').fadeIn();
+                setTimeout(get_datasets, 0);
             }
         }
     });

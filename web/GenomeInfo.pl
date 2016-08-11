@@ -82,6 +82,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     search_annotation_types    => \&search_annotation_types,
     get_annotation_type_groups => \&get_annotation_type_groups,
     annotate                   => \&annotate,
+    get_datasets               => \&get_datasets,
     get_bed                    => \&get_bed,
     get_gff                    => \&get_gff,
     get_tbl                    => \&get_tbl,
@@ -2129,7 +2130,9 @@ sub annotate { #TODO create API "annotate" job instead
     say STDERR "GenomeInfo::annotate: wid=" . $response->{id};
     $JEX->wait_for_completion($response->{id});
 
-    return;
+    return encode_json({
+        status => 'success'
+    });
 }
 
 sub generate_html {

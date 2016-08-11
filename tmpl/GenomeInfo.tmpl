@@ -213,7 +213,7 @@ $(document).ready(function() {
                         <span class='link' onclick="window.open('SynMap.pl?dsgid1=<TMPL_VAR NAME=GID>;dsgid2=<TMPL_VAR NAME=GID>');">SynMap</span>&nbsp|
                         <span class='link' onclick="window.open('CoGeBlast.pl?dsgid=<TMPL_VAR NAME=GID>');">CoGeBlast</span>
                         <TMPL_IF NAME="TRANSCRIPTOME">
-                        &nbsp|&nbsp<span class='link' onclick="annotate();">Annotate (TransDecoder)</span>
+                        &nbsp|&nbsp<span class='link' onclick="annotate();">Annotate</span>
                         </TMPL_IF>
                     </td>
                 </tr>
@@ -325,14 +325,14 @@ Are you sure you want to move this genome into your trash?<p>
     </div>
 </div>
 
-<div id="annotate_dialog" class="hidden dialog_box" title="Annotating ...">
+<div id="annotate_dialog" class="hidden dialog_box" title="Annotate">
     <div id="annotate_log" class="center text ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;">
     </div>
     <br>
     <span id="annotate_loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
     <span id="annotate_finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
     <span id="annotate_error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-    <span id="annotate_ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
+    <span id="annotate_ok_button" onClick="$('#annotate_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
