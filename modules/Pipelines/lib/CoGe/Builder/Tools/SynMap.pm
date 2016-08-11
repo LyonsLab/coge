@@ -78,7 +78,7 @@ sub add_jobs {
 	my ($genome1) = $db->resultset('Genome')->find($genome_id1);
 	my ($genome2) = $db->resultset('Genome')->find($genome_id2);
 
-	# Block large genomic-genomic jobs from running
+	# Block large genomic-genomic jobs from running -- FIXME this is no longer working due to moving into API, mdb 8/11/16
 	if (   ( $feat_type1 == 2 &&
 			$genome1->length > $SEQUENCE_SIZE_LIMIT &&
 			!($genome1->type->name =~ /hard/i) )
