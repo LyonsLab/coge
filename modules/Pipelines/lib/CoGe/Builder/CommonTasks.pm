@@ -2283,6 +2283,7 @@ sub create_transdecoder_longorfs_job {
 
 sub create_transdecoder_predict_job {
     my $input_file = shift;
+    my $input_dir = shift; 
     my $dependency_file = shift;
 
     my $cmd = catfile($CONF->{TRANSDECODER}, 'TransDecoder.Predict');
@@ -2291,7 +2292,7 @@ sub create_transdecoder_predict_job {
     my $output_file = $input_file . '.transdecoder.gff3';
 
     return {
-        cmd => "$cmd -t $input_file && touch $done_file",
+        cmd => "cd $input_dir && $cmd -t $input_file && touch $done_file", # transdecoder won't work unless run from the dir that contains the input dir
         script => undef,
         args => [],
         inputs => [
