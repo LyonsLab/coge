@@ -872,7 +872,7 @@ sub add_jobs {
 		    my $result_path = catdir($config->{DIAGSDIR}, $dir1, $dir2); #TODO move this to top of routine
 		    
 		    # mdb added 8/11/16 COGE-730 - write user-specific info to file
-		    my $config_file = catfile($result_path, 'dotplot_dots.cfg');
+		    my $config_file = catfile($result_path, 'dotplot_dots_' . $workflow->id . '.cfg');
 		    CoGe::Accessory::TDS::write($config_file, {
 		        api_url     => url_for(api_url_for("genomes")),
 		        username    => ( $user ? $user->name : '""'),
