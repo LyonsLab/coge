@@ -9,6 +9,7 @@ use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Utils qw(units);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Core::Storage qw( get_workflow_paths );
+use CoGe::Accessory::TDS qw(write);
 use Data::Dumper;
 #use File::Path qw(mkpath);
 use File::Spec::Functions;
@@ -868,15 +869,26 @@ sub add_jobs {
 		# Use dotplot_dots.py to calculate points.
 		####################################################################
 		if ($ks_type) {
-			my $dot_syn = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_synteny.json' );
-			my $dot_log = catfile( $config->{DIAGSDIR}, $dir1, $dir2, $dir1.'_'.$dir2.'_log.json' );
+		    my $result_path = catdir($config->{DIAGSDIR}, $dir1, $dir2); #TODO move this to top of routine
+		    
+		    # mdb added 8/11/16 COGE-730 - write user-specific info to file
+		    my $config_file = catfile($result_path, 'dotplot_dots.cfg');
+		    CoGe::Accessory::TDS::write($config_file, {
+		        api_url     => url_for(api_url_for("genomes")),
+		        username    => ( $user ? $user->name : '""'),
+		        secret_file => catfile($config->{RESOURCEDIR}, $config->{JWT_COGE_SECRET})
+		    });
+		    
+			my $dot_syn = catfile( $result_path, $dir1.'_'.$dir2.'_synteny.json' );
+			my $dot_log = catfile( $result_path, $dir1.'_'.$dir2.'_log.json' );
 			$workflow->add_job( {
 					cmd			=>	$DOTPLOTDOTS,
 					script		=>	undef,
 					args		=>	[
 						[ '--input',	$ks_blocks_file,					0],
-						[ '--apiurl',	url_for(api_url_for("genomes")),	0],
-						[ '--user',	( $user ? $user->name : '""'),		0]
+#						[ '--apiurl',	url_for(api_url_for("genomes")),	0],
+#						[ '--user',     ( $user ? $user->name : '""'),      0],
+                        [ '--config',   $config_file,                       0]
 					],
 					inputs		=>	[ $ks_blocks_file ],
 					outputs		=>	[ $dot_syn, $dot_log ],
