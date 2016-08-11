@@ -5,7 +5,7 @@ __author__ = 'senorrift'
 # Dependencies:
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
-from json import dump
+from json import dump, load
 from jwt import encode
 from os import path
 from requests import get
@@ -13,12 +13,11 @@ from sys import stderr
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Use Instructions
-# python dotplot_dots.py --input=<input_file> --apiurl=<genomes_api_url> --user=<requesting_user>
+# python dotplot_dots.py --input=<input_file> --config=<path_to_config_file>
 #
 # 3 *REQUIRED* Command Line Arguments
 # --input  : SynMap Ks Blocks File (NOTE: ends with .aligncoords.gcoords.ks)
-# --apiurl : API url to genomes (NOTE: full address, i.e. https://genomevolution.org/coge/api/v1/genomes/)
-# --user   : Username of requester. If anonymous, submit a blank argument (i.e. --user='')
+# --config : Configuration file that includes username, secret and api url
 #
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -27,19 +26,25 @@ log = {}
 # Parse arguments
 parser = ArgumentParser()
 parser.add_argument("--input", help="Input *.aligncoords.gcoords.ks file", type=str)
-parser.add_argument("--apiurl", help="URL to CoGe genomes API endpoint (i.e. https://genomevolution.org/coge/api/v1/genomes)", type=str)
-parser.add_argument("--user", help="User requesting job (CoGe username)", type=str)
+parser.add_argument("--config", help="Configuration file, including CoGe username and JWT secret", type=str)
 args = parser.parse_args()
 
 try:
     input_ksfile = args.input
     output_dir = path.dirname(input_ksfile).rstrip("/")
-    api_base = args.apiurl.strip().rstrip('/') + '/'  # removes any white space & trailing slash if present, adds slash
-    user = args.user
+    #api_base = args.apiurl.strip().rstrip('/') + '/'  # akb removed 2016-8-11 now reads from file
+    # Load config file json data.
+    with open(args.config) as config_file:
+        cg = load(open(args.config))
+    # Set user, api_base, and secret parameters
+    user = cg["username"]
+    api_base = cg["api_url"].strip().rstrip('/') + '/'
+    with open(cg["secret_file"], 'U') as sf:
+        secret = sf.read().strip()
 except Exception as e:
-    stderr.write("dotplot_dots.py failed (Error: input or api_url specification)\n" + str(e))
-    print("dotplot_dots.py failed (Error: input or api_url specification)\n" + str(e))
-    exit()
+    print("dotplot_dots.py failed (Error: error with argument specifications) %s" % str(e))
+    stderr.write("dotplot_dots.py failed (Error: error with argument specifications)\n" + str(e))
+    exit(1)
 
 # Load input into variable "get_values"
 get_values = open(input_ksfile, 'r')
@@ -168,21 +173,23 @@ for line in get_values:
 
 # Reassign Species ID
 if len(sp1_id) > 1 or len(sp2_id) > 1:
-    log["status"] = "failed"
-    log["message"] = "Error: Too many genome IDs"
-    log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
-    dump(log, open(log_out, "wb"))
-    stderr.write("dotplot_dots.py failed (Error: too many genome IDs)\n")
-    print "dotplot_dots.py failed (Error: too many genome IDs)"
-    exit()
+    # AKB removed (2016-8-11) log for failed, just prints error message now. Also exits non-zero
+    # log["status"] = "failed"
+    # log["message"] = "Error: Too many genome IDs"
+    # log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
+    # dump(log, open(log_out, "wb"))
+    print("dotplot_dots.py failed (Error: too many genome IDs. This is likely an input file problem.)")
+    stderr.write("dotplot_dots.py failed (Error: too many genome IDs. This is likely an input file problem.)\n")
+    exit(1)
 elif len(sp1_id) < 1 or len(sp2_id) < 1:
-    log["status"] = "failed"
-    log["message"] = "Error: Too few genome IDs"
-    log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
-    dump(log, open(log_out, "wb"))
-    stderr.write("dotplot_dots.py failed (Error: too few genome IDs)\n")
-    print "dotplot_dots.py failed (Error: too few genome IDs)"
-    exit()
+    # AKB removed (2016-8-11) log for failed, just prints error message now. Also exits non-zero
+    # log["status"] = "failed"
+    # log["message"] = "Error: Too few genome IDs"
+    # log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
+    # dump(log, open(log_out, "wb"))
+    print("dotplot_dots.py failed (Error: too few genome IDs. This is likely an input file problem.)")
+    stderr.write("dotplot_dots.py failed (Error: too few genome IDs. This is likely an input file problem.)\n")
+    exit(1)
 else:
     sp1_id = sp1_id[0]
     sp2_id = sp2_id[0]
@@ -226,54 +233,59 @@ data["syntenic_points"][sp1_id][sp2_id] = {sp1_ch: sp2_ch for sp1_ch, sp2_ch in 
 
 # Get genome information, validating if user is logged in.
 if user == '':
-    # query_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.query))
-    # target_api = requests.get(args.apiurl.rstrip('/') + '/' + str(args.target))
     stderr.write("Requesting genome info: " + api_base + sp1_id + "\n")
     sp1_genome_info = get(api_base + sp1_id).json()
     stderr.write("Requesting genome info: " + api_base + sp2_id + "\n")
     sp2_genome_info = get(api_base + sp2_id).json()
 else:
     # Build token & header.
-    token = encode({'sub': args.user,
+    token = encode({'sub': user,
                     'exp': datetime.utcnow()+timedelta(seconds=60),
                     'iat': datetime.utcnow()},
-                   'fracbias', algorithm='HS256')
+                    secret, algorithm='HS256')
     get_headers = {'x-coge-jwt': token}
 
     # Request Species 1 genome info
     sp1_get = get(api_base + sp1_id, headers=get_headers)
     if sp1_get.status_code != 200:
-        stderr.write(api_base + sp1_id + " returned status code " + sp1_get.status_code + "\n")
-        exit()
+        print(api_base + sp1_id + " returned status code " + str(sp1_get.status_code))
+        stderr.write(api_base + sp1_id + " returned status code " + str(sp1_get.status_code) + "\n")
+        exit(1)
     else:
         sp1_genome_info = sp1_get.json()
 
     # Request Species 2 Genome Info
     sp2_get = get(api_base + sp2_id, headers=get_headers)
     if sp1_get.status_code != 200:
-        stderr.write(api_base + sp2_id + " returned status code " + sp1_get.status_code + "\n")
-        exit()
+        print(api_base + sp2_id + " returned status code " + str(sp1_get.status_code))
+        stderr.write(api_base + sp2_id + " returned status code " + str(sp1_get.status_code) + "\n")
+        exit(1)
     else:
         sp2_genome_info = sp2_get.json()
 
 # Check for genome fetch errors, exit without producing outputs if detected.
 try:
     sp1err = sp1_genome_info["error"]
+    print("dotplot_dots.py died on genome info fetch error!")
+    print("Error (gid " + sp1_id + "): " + str(sp1err))
     stderr.write("dotplot_dots.py died on genome info fetch error!" + "\n")
     stderr.write("Error (gid " + sp1_id + "): " + str(sp1err) + "\n")
     try:
         sp2err = sp2_genome_info["error"]
+        print("Error (gid " + sp2_id + "): " + str(sp2err))
         stderr.write("Error (gid " + sp2_id + "): " + str(sp2err) + "\n")
     except KeyError:
         pass
-    exit()
+    exit(1)
 except KeyError:
     pass
 try:
     sp2err = sp2_genome_info["error"]
+    print("dotplot_dots.py died on genome info fetch error!")
+    print("Error (gid " + sp2_id + "): " + str(sp2err))
     stderr.write("dotplot_dots.py died on genome info fetch error!" + "\n")
     stderr.write("Error (gid " + sp2_id + "): " + str(sp2err) + "\n")
-    exit()
+    exit(1)
 except KeyError:
     pass
 
