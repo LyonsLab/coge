@@ -468,7 +468,8 @@ var coge = window.coge = (function(namespace) {
 	
 							table.append(tr);
 						}
-					);					
+					);
+					$('#ids_panel').scrollTop(0);
 				})
 				.fail(function() {
 					// TODO
