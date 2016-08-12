@@ -7,7 +7,7 @@ umask(0);
 use CoGeX;
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
-use CoGe::Builder::Tools::SynMap qw( algo_lookup check_address_validity gen_org_name generate_pseudo_assembly get_query_link );
+use CoGe::Builder::Tools::SynMap;
 use CoGe::Core::Genome qw(genomecmp);
 use CoGeDBI qw(get_feature_counts);
 use CGI;
@@ -1068,8 +1068,6 @@ sub get_results {
 		error => "Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
 	}) unless ( $genome1 && $genome2 );
 
-	my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
-
 	############################################################################
 	# Initialize Job info
 	############################################################################
@@ -1085,9 +1083,10 @@ sub get_results {
 		basename => $basename,
 		tempdir  => $TEMPDIR
 	);
-	my $path = catdir($DIAGSDIR, $dir1, $dir2, 'html');
-	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
-	$cogeweb->logfile($path);
+	
+	my $result_path = get_result_path($DIAGSDIR, $dsgid1, $dsgid2);
+	my $log_path = get_log_file_path($result_path, $tiny_link);
+	$cogeweb->logfile($log_path);
 
 	############################################################################
 	# Parameters
@@ -1263,8 +1262,8 @@ sub get_results {
 			  . $dsgid2
 			  . ".$feat_type1-$feat_type2."
 			  . $ALGO_LOOKUP->{$blast}{filename},
-			dir => "$DIAGSDIR/$dir1/$dir2",
-		  },
+			dir => $result_path
+		  }
 	);
 
 	foreach my $org_dir ( keys %org_dirs ) {
@@ -1600,8 +1599,7 @@ sub get_results {
 		my $synmap_dictionary_output_file;
 		my $fract_bias_raw_output_file;
 		if ( $opts{frac_bias} =~ /true/i ) {
-			my $output_dir = $config->{DIAGSDIR} . $dir1 . '/' . $dir2 . '/';
-			my $output_url = $output_dir;
+			my $output_url = $result_path;
 			$output_url =~ s/$DIR/$URL/;
 			my $query_id;
 			my $target_id;
@@ -1619,27 +1617,27 @@ sub get_results {
 			my $rru = $opts{'fb_remove_random_unknown'} ? 'True' : 'False';
 			my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
 			#my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
-			#if (! -r $output_dir . 'html/' . $fb_img_file) {
+			#if (! -r catfile($result_path, 'html', $fb_img_file)) {
 			#	return encode_json( { error => "The fractionation bias image could not be found." } );
 			#}
 			#$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
 			my $fb_json_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.json';
-			if (! -r $output_dir . $fb_json_file) {
+			if (! -r catfile($result_path, $fb_json_file)) {
 				return encode_json( { error => "The fractionation bias data could not be found." } );
 			}
 			$results->param( frac_bias => $output_url . $fb_json_file );
 			$gff_sort_output_file = _filename_to_link(
-				file => $output_dir . 'gff_sort.txt',
+				file => catfile($result_path, 'gff_sort.txt'),
 				msg  => qq{GFF Sort output file},
 				required => 1
 			);
 			$synmap_dictionary_output_file = _filename_to_link(
-				file => $output_dir . 'synmap_data_structure.txt',
+				file => catfile($result_path, 'synmap_data_structure.txt'),
 				msg  => qq{SynMap dictionary output file},
 				required => 1
 			);
 			$fract_bias_raw_output_file = _filename_to_link(
-				file => $output_dir . 'fractbias_output.csv',
+				file => catfile($result_path, 'fractbias_output.csv'),
 				msg  => qq{Fractionation Bias raw output file},
 				required => 1
 			);

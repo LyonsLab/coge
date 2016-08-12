@@ -18,8 +18,10 @@ use POSIX;
 
 BEGIN {
 	use Exporter 'import';
-	our @EXPORT_OK =
-	  qw( add_jobs algo_lookup check_address_validity defaults gen_org_name generate_pseudo_assembly get_query_link );
+	our @EXPORT = qw( 
+	   add_jobs algo_lookup check_address_validity defaults gen_org_name 
+	   generate_pseudo_assembly get_query_link get_result_path get_log_file_path
+	);
 }
 
 sub test {
@@ -28,23 +30,31 @@ sub test {
 }
 
 sub add_jobs {
-	my %opts     = @_;
-	my $workflow = $opts{workflow};
-	my $db       = $opts{db};
-	my $config   = $opts{config};
-	my $user     = $opts{user};
-
+	my %opts       = @_;
+	my $workflow   = $opts{workflow};
+	my $db         = $opts{db};
+	my $config     = $opts{config};
+	my $user       = $opts{user};
 	my $genome_id1 = $opts{genome_id1};
 	my $genome_id2 = $opts{genome_id2};
-	my ( $dir1, $dir2 ) = sort ( $genome_id1, $genome_id2 );
 
+    # Setup tiny link
 	my $tiny_link = $opts{tinylink} || get_query_link( $config, $db, @_ );
-	my $path = catdir($config->{DIAGSDIR}, $dir1, $dir2, 'html');
-	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
-	$workflow->logfile($path);
+	unless ($tiny_link) {
+	    print STDERR "CoGe::Builder::Tools::SynMap: ERROR, null tiny link!\n";
+	    $tiny_link = 'tiny_link';
+	}
+	
+	# Setup results paths
+	my $result_path = get_result_path($config->{DIAGSDIR}, $genome_id1, $genome_id2);
+	my $result_path_html = catdir($result_path, 'html');
+	
+	# Set workflow log file path
+	my $log_path = get_log_file_path($result_path, $tiny_link);
+	$workflow->logfile($log_path);
 
+    # Setup tool paths/commands
 	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
-	my $DIAGSDIR      = $config->{DIAGSDIR};
 	my $SCRIPTDIR     = catdir( $config->{SCRIPTDIR}, 'synmap' );
 	my $PYTHON        = $config->{PYTHON} // 'python';
 	my $GEVO_LINKS    = 'nice ' . catfile( $SCRIPTDIR, 'gevo_links.pl' );
@@ -357,8 +367,8 @@ sub add_jobs {
 			basename => $genome_id1 . "_" . $genome_id2
 			  . ".$feat_type1-$feat_type2."
 			  . $ALGO_LOOKUP->{$blast}{filename},
-			dir => "$DIAGSDIR/$dir1/$dir2",
-		},
+			dir => $result_path
+		}
 	);
 
 	foreach my $org_dir ( keys %org_dirs ) {
@@ -869,8 +879,6 @@ sub add_jobs {
 		# Use dotplot_dots.py to calculate points.
 		####################################################################
 		if ($ks_type) {
-		    my $result_path = catdir($config->{DIAGSDIR}, $dir1, $dir2); #TODO move this to top of routine
-		    
 		    # mdb added 8/11/16 COGE-730 - write user-specific info to file
 		    my $config_file = catfile($result_path, 'dotplot_dots_' . $workflow->id . '.cfg');
 		    CoGe::Accessory::TDS::write($config_file, {
@@ -879,8 +887,8 @@ sub add_jobs {
 		        secret_file => catfile($config->{RESOURCEDIR}, $config->{JWT_COGE_SECRET})
 		    });
 		    
-			my $dot_syn = catfile( $result_path, $dir1.'_'.$dir2.'_synteny.json' );
-			my $dot_log = catfile( $result_path, $dir1.'_'.$dir2.'_log.json' );
+			my $dot_syn = catfile( $result_path, 'dotplot_dots_synteny.json' );
+			my $dot_log = catfile( $result_path, 'dotplot_dots_log.json' );
 			$workflow->add_job( {
 					cmd			=>	$DOTPLOTDOTS,
 					script		=>	undef,
@@ -1186,7 +1194,6 @@ sub add_jobs {
 		);
 		$workflow->add_job($gff_job);
 
-		my $output_dir = catdir( $config->{DIAGSDIR}, $dir1, $dir2 );
 		my $all_genes = test($opts{fb_target_genes}) ? 'False' : 'True';
 		my $rru = test($opts{fb_remove_random_unknown}) ? 'True' : 'False';
 		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
@@ -1209,7 +1216,7 @@ sub add_jobs {
 					[ '--target',       $target_id,               0 ],
 					[ '--windowsize',   $opts{fb_window_size},    0 ],
 					[ '--allgenes',     $all_genes,               0 ],
-					[ '--output',       $output_dir,              0 ],
+					[ '--output',       $result_path,              0 ],
 					[ '--apiurl',       url_for(api_url_for("genomes")), 0],
 					[ '--user',         ( $user ? $user->name : '""'),   0]
 				],
@@ -1219,11 +1226,11 @@ sub add_jobs {
 				],
 				outputs => [
 					catfile(
-						catdir($output_dir, 'html'),
+						$result_path_html,
 						'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.png'
 					),
 					catfile(
-						$output_dir,
+						$result_path,
 						'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.json'
 					)
 				],
@@ -1444,6 +1451,17 @@ sub generate_pseudo_assembly {
 
 sub get_name {
 	return 'SynMap';
+}
+
+sub get_result_path {
+    my ($diags_dir, $genome_id1, $genome_id2) = @_;
+    my ($dir1, $dir2) = sort ($genome_id1, $genome_id2); #TODO why isn't this a numeric sort?
+    return catdir($diags_dir, $dir1, $dir2);
+}
+
+sub get_log_file_path {
+    my ($result_path, $tiny_link) = @_;
+    return catfile($result_path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
 }
 
 sub get_query_link {
