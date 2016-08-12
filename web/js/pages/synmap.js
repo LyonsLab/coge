@@ -665,8 +665,22 @@ var coge = window.coge = (function(namespace) {
                 logks: $('#logks')[0].checked,
                 csco: $('#csco').val()
             };
-        }//,
+        },
 
+        onError: function() {
+            var l = document.location.pathname;
+            l = l.substring(0, l.indexOf('/coge/') + 6);
+            var genome_id1 = $('#dsgid1').val();
+            var genome_id2 = $('#dsgid2').val();
+            if (genome_id2 < genome_id1) {
+                var t = genome_id1;
+                genome_id1 = genome_id2;
+                genome_id2 = t;
+            }
+            var tiny_url = coge.progress.url;
+            tiny_url = tiny_url.substring(tiny_url.lastIndexOf('/') + 1);
+            $(".logfile a").attr("href", l + 'data/diags/' + genome_id1 + '/' + genome_id2 + '/' + tiny_url + '.log');
+        }
     };
     return namespace;
 })(coge || {});
