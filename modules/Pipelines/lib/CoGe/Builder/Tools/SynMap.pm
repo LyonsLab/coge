@@ -80,10 +80,10 @@ sub add_jobs {
 	# Block large genomic-genomic jobs from running
 	if (   ( $feat_type1 == 2 &&
 			$genome1->length > $SEQUENCE_SIZE_LIMIT &&
-			!($genome1->type->name =~ /hard/i) )
+			($genome1->type->name =~ /unmasked/i) )
 		&& ( $feat_type2 == 2 &&
 			$genome2->length > $SEQUENCE_SIZE_LIMIT &&
-			!($genome2->type->name =~ /hard/i) ))
+			($genome2->type->name =~ /unmasked/i) ))
 	{
 	    print STDERR 'CoGe::Builder::Tools::SynMap: !!!!!!!!!!! blocking analysis ', 
            $genome1->id, '(', $genome1->length, ',', $genome1->type->name, ')',
