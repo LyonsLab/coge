@@ -62,6 +62,7 @@ sub create_workflow {
     my $workflow = CoGe::Accessory::Workflow->new(
         id      => $id,
         name    => $opts{name},
+        description => $opts{description},
         logfile => $opts{logfile}
     );
 
