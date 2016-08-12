@@ -94,8 +94,10 @@ sub is_favorite {
     my $self = shift;
     my $item = shift; # genome/experiment DBIX object
     
-    foreach ($self->notebook->child_connectors({ child_id => $item->id, child_type => $item->item_type })) {
-        return 1;
+    if ($self->notebook) {
+        foreach ($self->notebook->child_connectors({ child_id => $item->id, child_type => $item->item_type })) {
+            return 1;
+        }
     }
     
     return 0;
