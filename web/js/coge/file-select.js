@@ -418,8 +418,9 @@ var coge = window.coge = (function(namespace) {
 					var p = result.path;
 					if (p.charAt(p.length - 1) == '/')
 						p = p.substring(0, p.length - 1);
-					$('.fileselect-up').css('opacity', p === self.home_path || p === '/iplant/home/shared' ? 0.4 : 1.0);
-					$('.fileselect-up').css('cursor', p === self.home_path || p === '/iplant/home/shared' ? 'default' : 'pointer');
+					var home = self.home_path.substring(0, self.home_path.lastIndexOf('/'));
+					$('.fileselect-up').css('opacity', p === home || p === '/iplant/home/shared' ? 0.4 : 1.0);
+					$('.fileselect-up').css('cursor', p === home || p === '/iplant/home/shared' ? 'default' : 'pointer');
 	
 					self._filenames = [];
 					if (result.items.length == 0)

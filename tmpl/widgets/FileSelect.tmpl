@@ -38,7 +38,9 @@
 			<TMPL_UNLESS NAME='DISABLE_IRODS_GET_ALL'>
 			<span class='link fileselect-getall'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>&nbsp;&nbsp;
 			</TMPL_UNLESS>
+			<TMPL_IF NAME='DIR_SELECT'>
 			<span class='link fileselect-mkdir'><span class='ui-icon ui-icon-plus'></span>Create Directory</span>
+			</TMPL_IF>
 		</div>
 		<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
 	    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
