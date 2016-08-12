@@ -880,26 +880,27 @@ sub add_jobs {
 		####################################################################
 		if ($ks_type) {
 		    # mdb added 8/11/16 COGE-730 - write user-specific info to file
-		    my $config_file = catfile($result_path, 'dotplot_dots_' . $workflow->id . '.cfg');
+		    my $config_file = catfile($result_path, 'dotplot_dots_' . get_tiny_link_key($tiny_link) . '.cfg');
 		    CoGe::Accessory::TDS::write($config_file, {
 		        api_url     => url_for(api_url_for("genomes")),
 		        username    => ( $user ? $user->name : '""'),
 		        secret_file => catfile($config->{RESOURCEDIR}, $config->{JWT_COGE_SECRET})
 		    });
 		    
-			my $dot_syn = catfile( $result_path, 'dotplot_dots_synteny.json' );
-			my $dot_log = catfile( $result_path, 'dotplot_dots_log.json' );
+		    my ($dir1, $dir2) = get_genome_order($genome_id1, $genome_id2);
+			my $output_file = catfile( $result_path, $dir1 . '_' . $dir2 . '_synteny.json' );
+			my $log_file    = catfile( $result_path, $dir1 . '_' . $dir2 . '_log.json' );
 			$workflow->add_job( {
 					cmd			=>	$DOTPLOTDOTS,
 					script		=>	undef,
 					args		=>	[
 						[ '--input',	$ks_blocks_file,					0],
-#						[ '--apiurl',	url_for(api_url_for("genomes")),	0],
-#						[ '--user',     ( $user ? $user->name : '""'),      0],
+						[ '--output',   $output_file,                       0],
+						[ '--log',      $log_file,                          0],
                         [ '--config',   $config_file,                       0]
 					],
 					inputs		=>	[ $ks_blocks_file ],
-					outputs		=>	[ $dot_syn, $dot_log ],
+					outputs		=>	[ $output_file, $log_file ],
 					description	=>	"Extracting coordinates for merge..."
 				});
 		}
@@ -1453,15 +1454,26 @@ sub get_name {
 	return 'SynMap';
 }
 
+sub get_genome_order {
+    my ($genome_id1, $genome_id2) = @_;
+    my ($dir1, $dir2) = sort ( $genome_id1, $genome_id2 ); #TODO why isn't this a numeric sort?
+    return ($dir1, $dir2);
+}
+
 sub get_result_path {
     my ($diags_dir, $genome_id1, $genome_id2) = @_;
-    my ($dir1, $dir2) = sort ($genome_id1, $genome_id2); #TODO why isn't this a numeric sort?
+    my ($dir1, $dir2) = get_genome_order($genome_id1, $genome_id2);
     return catdir($diags_dir, $dir1, $dir2);
+}
+
+sub get_tiny_link_key {
+    my $tiny_link = shift;
+    return substr($tiny_link, rindex($tiny_link, '/') + 1);
 }
 
 sub get_log_file_path {
     my ($result_path, $tiny_link) = @_;
-    return catfile($result_path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
+    return catfile($result_path, get_tiny_link_key($tiny_link) . '.log');
 }
 
 sub get_query_link {
