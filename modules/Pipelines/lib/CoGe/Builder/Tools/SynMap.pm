@@ -424,16 +424,14 @@ sub add_jobs {
 
 		#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
 		push @blastdb_files, $fasta;
-		$workflow->add_job(
-			{
-				cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd,
-				script      => undef,
-				args        => \@blastargs,
-				inputs      => \@blastdb_files,
-				outputs     => [$outfile, $outfile . '.done'],
-				description => "Running genome comparison...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd,
+			script      => undef,
+			args        => \@blastargs,
+			inputs      => \@blastdb_files,
+			outputs     => [$outfile, $outfile . '.done'],
+			description => "Running genome comparison...",
+		});
 	}
 
 	$workflow->log("");
@@ -460,16 +458,14 @@ sub add_jobs {
 
 #   push @bedoutputs, "$raw_blastfile.orig" if ( $raw_blastfile =~ /genomic/ );
 	push @bedoutputs, "$raw_blastfile.new" if ( $raw_blastfile =~ /genomic/ );
-	$workflow->add_job(
-		{
-			cmd         => $BLAST2BED,
-			script      => undef,
-			args        => \@blastargs,
-			inputs      => [$raw_blastfile, $raw_blastfile . '.done'],
-			outputs     => \@bedoutputs,
-			description => "Creating .bed files...",
-		}
-	);
+	$workflow->add_job({
+		cmd         => $BLAST2BED,
+		script      => undef,
+		args        => \@blastargs,
+		inputs      => [$raw_blastfile, $raw_blastfile . '.done'],
+		outputs     => \@bedoutputs,
+		description => "Creating .bed files...",
+	});
 
 	$workflow->log( "" );
 	$workflow->log( "Added .bed files creation" );
@@ -501,16 +497,14 @@ sub add_jobs {
 	push @rawoutputs, $qlocaldups;
 	push @rawoutputs, $slocaldups;
 
-	$workflow->add_job(
-		{
-			cmd         => $BLAST2RAW,
-			script      => undef,
-			args        => \@rawargs,
-			inputs      => [ $raw_blastfile, $query_bed, $subject_bed ],
-			outputs     => \@rawoutputs,
-			description => "Filtering tandem dups...",
-		}
-	);
+	$workflow->add_job({
+		cmd         => $BLAST2RAW,
+		script      => undef,
+		args        => \@rawargs,
+		inputs      => [ $raw_blastfile, $query_bed, $subject_bed ],
+		outputs     => \@rawoutputs,
+		description => "Filtering tandem dups...",
+	});
 
 	$workflow->log( "" );
 	my $msg = "Added Filtering results of tandem ";
@@ -547,22 +541,18 @@ sub add_jobs {
 	push @dagtoolargs, [ '-b', $filtered_blastfile, 1 ];
 	push @dagtoolargs, [ '-c', "", 1 ];
 
-	push @dagtoolargs, [ '--query_dups', $query_dup_file, 1 ]
-	  if $query_dup_file;
-	push @dagtoolargs, [ '--subject_dups', $subject_dup_file, 1 ]
-	  if $subject_dup_file;
+	push @dagtoolargs, [ '--query_dups', $query_dup_file, 1 ] if $query_dup_file;
+	push @dagtoolargs, [ '--subject_dups', $subject_dup_file, 1 ] if $subject_dup_file;
 	push @dagtoolargs, [ '>', $dag_file12_all, 1 ];
 
-	$workflow->add_job(
-		{
-			cmd         => $DAG_TOOL,
-			script      => undef,
-			args        => \@dagtoolargs,
-			inputs      => [$filtered_blastfile],
-			outputs     => [$dag_file12_all],
-			description => "Formatting for DAGChainer...",
-		}
-	);
+	$workflow->add_job({
+		cmd         => $DAG_TOOL,
+		script      => undef,
+		args        => \@dagtoolargs,
+		inputs      => [$filtered_blastfile],
+		outputs     => [$dag_file12_all],
+		description => "Formatting for DAGChainer...",
+	});
 
 	$workflow->log( "" );
 	$workflow->log( "Added convertion of blast file to dagchainer input file" );
@@ -574,7 +564,6 @@ sub add_jobs {
 	my $all_file;
 
 	if ( $dagchainer_type eq "geneorder" ) {
-
 		$workflow->log( "" );
 		$workflow->log("Added convertion of dagchainer input into gene order coordinates");
 
@@ -586,16 +575,14 @@ sub add_jobs {
 		push @geneorderargs, [ "--feature1", $feat_type1,               1 ];
 		push @geneorderargs, [ "--feature2", $feat_type2,               1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $GENE_ORDER,
-				script      => undef,
-				args        => \@geneorderargs,
-				inputs      => [$dag_file12_all],
-				outputs     => [$dag_file12_all_geneorder],
-				description => "Converting to genomic order...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $GENE_ORDER,
+			script      => undef,
+			args        => \@geneorderargs,
+			inputs      => [$dag_file12_all],
+			outputs     => [$dag_file12_all_geneorder],
+			description => "Converting to genomic order...",
+		});
 
 		$all_file = $dag_file12_all_geneorder;
 		$dag_file12 .= ".go";
@@ -674,16 +661,14 @@ sub add_jobs {
 		$merged_dagchainer_file = "$dagchainer_file.merged";
 		push @dagargs, [ "--merge", $merged_dagchainer_file, 1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $RUN_DAGCHAINER,
-				script      => undef,
-				args        => \@dagargs,
-				inputs      => [$dag_file12],
-				outputs     => [$merged_dagchainer_file],
-				description => "Running DAGChainer (with merge)...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $RUN_DAGCHAINER,
+			script      => undef,
+			args        => \@dagargs,
+			inputs      => [$dag_file12],
+			outputs     => [$merged_dagchainer_file],
+			description => "Running DAGChainer (with merge)...",
+		});
 		$post_dagchainer_file = $merged_dagchainer_file;
 		$workflow->log( "" );
 		$workflow->log(
@@ -694,16 +679,14 @@ sub add_jobs {
 	else {
 		push @dagargs, [ ">", $dagchainer_file, 1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $RUN_DAGCHAINER,
-				script      => undef,
-				args        => \@dagargs,
-				inputs      => [$dag_file12],
-				outputs     => [$dagchainer_file],
-				description => "Running DAGChainer...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $RUN_DAGCHAINER,
+			script      => undef,
+			args        => \@dagargs,
+			inputs      => [$dag_file12],
+			outputs     => [$dagchainer_file],
+			description => "Running DAGChainer...",
+		});
 
 		$post_dagchainer_file = $dagchainer_file;
 		$workflow->log( "" );
@@ -723,16 +706,14 @@ sub add_jobs {
 		push @mergeargs, [ '--outfile',      $merged_dagchainer_file, 1 ];
 		push @mergeargs, [ '--max_distance', $Dm,                     1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $RUN_ALIGNMENT,
-				script      => undef,
-				args        => \@mergeargs,
-				inputs      => [$dagchainer_file],
-				outputs     => [$merged_dagchainer_file],
-				description => "Merging Syntenic Blocks...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $RUN_ALIGNMENT,
+			script      => undef,
+			args        => \@mergeargs,
+			inputs      => [$dagchainer_file],
+			outputs     => [$merged_dagchainer_file],
+			description => "Merging Syntenic Blocks...",
+		});
 		$workflow->log( "" );
 		$workflow->log(
 			"Added Merge Syntenic Blocks"
@@ -772,16 +753,14 @@ sub add_jobs {
 		push @depthargs, [ '--depth_ratio_org2', $depth_org_2_ratio, 1 ];
 		push @depthargs, [ '--depth_overlap',    $depth_overlap,     1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $RUN_COVERAGE,
-				script      => undef,
-				args        => \@depthargs,
-				inputs      => [$post_dagchainer_file_w_nearby],
-				outputs     => [$quota_align_coverage],
-				description => "Calculating Syntenic depth...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $RUN_COVERAGE,
+			script      => undef,
+			args        => \@depthargs,
+			inputs      => [$post_dagchainer_file_w_nearby],
+			outputs     => [$quota_align_coverage],
+			description => "Calculating Syntenic depth...",
+		});
 
 		$workflow->log( "" );
 		$workflow->log(
@@ -801,16 +780,14 @@ sub add_jobs {
 		push @positionargs, [ '', "$final_dagchainer_file.gcoords", 1 ];
 		push @positionargs, [ "--positional", '', 1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $GENE_ORDER,
-				script      => undef,
-				args        => \@positionargs,
-				inputs      => [$final_dagchainer_file],
-				outputs     => ["$final_dagchainer_file.gcoords"],
-				description => "Converting to genomic coordinates...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $GENE_ORDER,
+			script      => undef,
+			args        => \@positionargs,
+			inputs      => [$final_dagchainer_file],
+			outputs     => ["$final_dagchainer_file.gcoords"],
+			description => "Converting to genomic coordinates...",
+		});
 
 		$workflow->log( "" );
 		$workflow->log("Added conversion gene order coordinates back to genomic coordinates");
@@ -861,16 +838,14 @@ sub add_jobs {
 		push @ksargs, [ '--dbfile',    $ks_db,                 1 ];
 		push @ksargs, [ '--blockfile', $ks_blocks_file,        1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $KSCALC,
-				script      => undef,
-				args        => \@ksargs,
-				inputs      => [$final_dagchainer_file],
-				outputs     => [ $ks_blocks_file, $ks_db ],
-				description => "Calculating synonymous changes (slow)...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $KSCALC,
+			script      => undef,
+			args        => \@ksargs,
+			inputs      => [$final_dagchainer_file],
+			outputs     => [ $ks_blocks_file, $ks_db ],
+			description => "Calculating synonymous changes (slow)...",
+		});
 
 		$workflow->log( "" );
 		$workflow->log("Added ($ks_type) calculation of syntenic CDS pairs and color dots");
@@ -891,18 +866,18 @@ sub add_jobs {
 			my $output_file = catfile( $result_path, $dir1 . '_' . $dir2 . '_synteny.json' );
 			my $log_file    = catfile( $result_path, $dir1 . '_' . $dir2 . '_log.json' );
 			$workflow->add_job( {
-					cmd			=>	$DOTPLOTDOTS,
-					script		=>	undef,
-					args		=>	[
-						[ '--input',	$ks_blocks_file,					0],
-						[ '--output',   $output_file,                       0],
-						[ '--log',      $log_file,                          0],
-                        [ '--config',   $config_file,                       0]
-					],
-					inputs		=>	[ $ks_blocks_file ],
-					outputs		=>	[ $output_file, $log_file ],
-					description	=>	"Extracting coordinates for merge..."
-				});
+				cmd			=>	$DOTPLOTDOTS,
+				script		=>	undef,
+				args		=>	[
+					[ '--input',	$ks_blocks_file,					0],
+					[ '--output',   $output_file,                       0],
+					[ '--log',      $log_file,                          0],
+                    [ '--config',   $config_file,                       0]
+				],
+				inputs		=>	[ $ks_blocks_file ],
+				outputs		=>	[ $output_file, $log_file ],
+				description	=>	"Extracting coordinates for merge..."
+			});
 		}
 
 		####################################################################
@@ -912,23 +887,19 @@ sub add_jobs {
 		my @svgargs = ();
 		push @svgargs, [ '--dag_file', $ks_blocks_file, 1 ];
 		push @svgargs, [ '--flip', "", 1 ] if $flip;
-		push @svgargs, [ '--xhead', '"' . $org_name1 . '"', 1 ]
-		  if $org_name1;
-		push @svgargs, [ '--yhead', '"' . $org_name2 . '"', 1 ]
-		  if $org_name2;
+		push @svgargs, [ '--xhead', '"' . $org_name1 . '"', 1 ] if $org_name1;
+		push @svgargs, [ '--yhead', '"' . $org_name2 . '"', 1 ] if $org_name2;
 		push @svgargs, [ '--output', $ks_blocks_file, 1 ];
 
 		$svg_file = $ks_blocks_file . ".svg";
-		$workflow->add_job(
-			{
-				cmd         => $SVG_DOTPLOT,
-				script      => undef,
-				args        => \@svgargs,
-				inputs      => [$ks_blocks_file],
-				outputs     => [$svg_file],
-				description => "Generating svg image...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $SVG_DOTPLOT,
+			script      => undef,
+			args        => \@svgargs,
+			inputs      => [$ks_blocks_file],
+			outputs     => [$svg_file],
+			description => "Generating svg image...",
+		});
 
 		$workflow->log( "" );
 		$workflow->log( "Added generation of svg dotplot" );
@@ -943,25 +914,21 @@ sub add_jobs {
 		my @svgargs = ();
 		push @svgargs, [ '--dag_file', $final_dagchainer_file, 1 ];
 		push @svgargs, [ '--flip', "", 1 ] if $flip;
-		push @svgargs, [ '--xhead', '"' . $org_name1 . '"', 1 ]
-		  if $org_name1;
-		push @svgargs, [ '--yhead', '"' . $org_name2 . '"', 1 ]
-		  if $org_name2;
+		push @svgargs, [ '--xhead', '"' . $org_name1 . '"', 1 ] if $org_name1;
+		push @svgargs, [ '--yhead', '"' . $org_name2 . '"', 1 ] if $org_name2;
 		push @svgargs, [ '--output', $final_dagchainer_file, 1 ];
 		push @svgargs, [ '--no-ks', "", 1 ];
 
 		$svg_file = $final_dagchainer_file . ".svg";
 
-		$workflow->add_job(
-			{
-				cmd         => $SVG_DOTPLOT,
-				script      => undef,
-				args        => \@svgargs,
-				inputs      => [$final_dagchainer_file],
-				outputs     => [$svg_file],
-				description => "Generating svg image...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => $SVG_DOTPLOT,
+			script      => undef,
+			args        => \@svgargs,
+			inputs      => [$final_dagchainer_file],
+			outputs     => [$svg_file],
+			description => "Generating svg image...",
+		});
 
 		$workflow->log( "" );
 		$workflow->log( "Added generation of svg dotplot" );
@@ -1060,17 +1027,15 @@ sub add_jobs {
 	push @plotoutputs, $hist     if $ks_db;
 	push @plotoutputs, $spa_file if $assemble;
 
-	$workflow->add_job(
-		{
-			cmd         => $DOTPLOT,
-			script      => undef,
-			args        => \@plotargs,
-			inputs      => \@plotinputs,
-			outputs     => \@plotoutputs,
-			overwrite   => $regen_images,
-			description => "Generating images...",
-		}
-	);
+	$workflow->add_job({
+		cmd         => $DOTPLOT,
+		script      => undef,
+		args        => \@plotargs,
+		inputs      => \@plotinputs,
+		outputs     => \@plotoutputs,
+		overwrite   => $regen_images,
+		description => "Generating images...",
+	});
 
 	#    my $dot_args = [
 	#        [ '-cf', $config->{_CONFIG_PATH}, 0 ],
@@ -1123,16 +1088,14 @@ sub add_jobs {
 		[ '--outfile', $raw_blastfile . ".s.tandems", 1 ],
 	];
 
-	$workflow->add_job(
-		{
-			cmd    => $PROCESS_DUPS,
-			script => undef,
-			args   => $subject_dup_args,
-			inputs => [$slocaldups],       #[$raw_blastfile . ".s.localdups"],
-			outputs     => [ $raw_blastfile . ".s.tandems" ],
-			description => "Processing Subject Tandem Duplicate File...",
-		}
-	);
+	$workflow->add_job({
+		cmd    => $PROCESS_DUPS,
+		script => undef,
+		args   => $subject_dup_args,
+		inputs => [$slocaldups],       #[$raw_blastfile . ".s.localdups"],
+		outputs     => [ $raw_blastfile . ".s.tandems" ],
+		description => "Processing Subject Tandem Duplicate File...",
+	});
 
 	my $query_dup_args = [
 		[ '--config', $config->{_CONFIG_PATH}, 0 ],
@@ -1140,16 +1103,14 @@ sub add_jobs {
 		[ '--outfile', $raw_blastfile . ".q.tandems", 1 ],
 	];
 
-	$workflow->add_job(
-		{
-			cmd    => $PROCESS_DUPS,
-			script => undef,
-			args   => $query_dup_args,
-			inputs => [$qlocaldups],      #[$raw_blastfile . ".q.localdups"],
-			outputs     => [ $raw_blastfile . ".q.tandems" ],
-			description => "Processing Query Tandem Duplicate File...",
-		}
-	);
+	$workflow->add_job({
+		cmd    => $PROCESS_DUPS,
+		script => undef,
+		args   => $query_dup_args,
+		inputs => [$qlocaldups],      #[$raw_blastfile . ".q.localdups"],
+		outputs     => [ $raw_blastfile . ".q.tandems" ],
+		description => "Processing Query Tandem Duplicate File...",
+	});
 	$workflow->log( "" );
 	$workflow->log( "Added Processing of Tandem Duplicate Files" );
 
@@ -1163,16 +1124,14 @@ sub add_jobs {
 		[ '--outfile', $condensed,              1 ],
 	];
 
-	$workflow->add_job(
-		{
-			cmd         => $GEVO_LINKS,
-			script      => undef,
-			args        => $link_args,
-			inputs      => [$final_dagchainer_file],
-			outputs     => [$condensed],
-			description => "Generating GEvo links...",
-		}
-	);
+	$workflow->add_job({
+		cmd         => $GEVO_LINKS,
+		script      => undef,
+		args        => $link_args,
+		inputs      => [$final_dagchainer_file],
+		outputs     => [$condensed],
+		description => "Generating GEvo links...",
+	});
 
 	if ( test($opts{frac_bias}) ) {
 		my $organism_name;
@@ -1198,46 +1157,40 @@ sub add_jobs {
 		my $all_genes = test($opts{fb_target_genes}) ? 'False' : 'True';
 		my $rru = test($opts{fb_remove_random_unknown}) ? 'True' : 'False';
 		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
-		$workflow->add_job(
-			{
-				cmd => $FRACBIAS,
-				script => undef,
-				args   => [
-					[ '--gff',          $gff_job->{outputs}->[0], 0 ],
-					[ '--align',        $final_dagchainer_file,   0 ],
-					[ '--numquerychr',  $opts{fb_numquerychr},    0 ],
-					[ '--numtargetchr', $opts{fb_numtargetchr},   0 ],
-					[
-						'--remove_random_unknown',
-						$rru,
-						0
-					],
-					[ '--query',        $query_id,                0 ],
-					[ '--syndepth',     $syn_depth,               0 ],
-					[ '--target',       $target_id,               0 ],
-					[ '--windowsize',   $opts{fb_window_size},    0 ],
-					[ '--allgenes',     $all_genes,               0 ],
-					[ '--output',       $result_path,              0 ],
-					[ '--apiurl',       url_for(api_url_for("genomes")), 0],
-					[ '--user',         ( $user ? $user->name : '""'),   0]
-				],
-				inputs => [
-					$final_dagchainer_file, $condensed,
-					$gff_job->{outputs}->[0]
-				],
-				outputs => [
-					catfile(
-						$result_path_html,
-						'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.png'
-					),
-					catfile(
-						$result_path,
-						'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.json'
-					)
-				],
-				description => "Running Fractination Bias...",
-			}
-		);
+		$workflow->add_job({
+			cmd => $FRACBIAS,
+			script => undef,
+			args   => [
+				[ '--gff',          $gff_job->{outputs}->[0], 0 ],
+				[ '--align',        $final_dagchainer_file,   0 ],
+				[ '--numquerychr',  $opts{fb_numquerychr},    0 ],
+				[ '--numtargetchr', $opts{fb_numtargetchr},   0 ],
+				[ '--remove_random_unknown', $rru,            0 ],
+				[ '--query',        $query_id,                0 ],
+				[ '--syndepth',     $syn_depth,               0 ],
+				[ '--target',       $target_id,               0 ],
+				[ '--windowsize',   $opts{fb_window_size},    0 ],
+				[ '--allgenes',     $all_genes,               0 ],
+				[ '--output',       $result_path,              0 ],
+				[ '--apiurl',       url_for(api_url_for("genomes")), 0],
+				[ '--user',         ( $user ? $user->name : '""'),   0]
+			],
+			inputs => [
+				$final_dagchainer_file, $condensed,
+				$gff_job->{outputs}->[0]
+			],
+			outputs => [
+				catfile(
+					$result_path_html,
+					'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.png'
+				),
+				catfile(
+					$result_path,
+					'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.json'
+				)
+			],
+			description => "Running Fractination Bias...",
+		});
 	}
 
 	$workflow->log( "" );
@@ -1426,20 +1379,18 @@ sub generate_pseudo_assembly {
 	);
 	my $workflow = $JEX->create_workflow( name => "Generate Pseudo Assembly" );
 
-	$workflow->add_job(
-		{
-			cmd  => catfile( $config->{SCRIPTDIR}, $cmd ),
-			args => [
-				[ "-cfg",    $config->{_CONFIG_PATH}, 1 ],
-				[ "-input",  $input,                  1 ],
-				[ "-output", $output,                 1 ],
-				[ "-flip",   $flip,                   1 ],
-			],
-			inputs  => [ $input, $config->{_CONFIG_PATH} ],
-			outputs => [$output],
-			description => "Generating pseudo assembly"
-		}
-	);
+	$workflow->add_job({
+		cmd  => catfile( $config->{SCRIPTDIR}, $cmd ),
+		args => [
+			[ "-cfg",    $config->{_CONFIG_PATH}, 1 ],
+			[ "-input",  $input,                  1 ],
+			[ "-output", $output,                 1 ],
+			[ "-flip",   $flip,                   1 ],
+		],
+		inputs  => [ $input, $config->{_CONFIG_PATH} ],
+		outputs => [$output],
+		description => "Generating pseudo assembly"
+	});
 
 	my $response = $JEX->submit_workflow($workflow);
 
