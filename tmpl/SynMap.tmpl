@@ -471,7 +471,8 @@ $(function(){
         title: "Running SynMap",
         baseUrl: API_BASE_URL,
         userName: USER_NAME,
-        supportEmail: SUPPORT_EMAIL
+        supportEmail: SUPPORT_EMAIL,
+        onError: coge.synmap.onError
     });
     
     coge.synmap.setup(pageObj);    

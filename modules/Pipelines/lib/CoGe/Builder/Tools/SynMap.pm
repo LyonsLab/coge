@@ -1402,6 +1402,23 @@ sub generate_pseudo_assembly {
 	};
 }
 
+sub get_description {
+	my $self = shift;
+	my ( $org_name1, $title1 ) = gen_org_name(
+		db        => $self->db,
+		genome_id => $self->params->{genome_id1},
+		feat_type => $self->params->{feat_type1}
+	);
+	my ( $org_name2, $title2 ) = gen_org_name(
+		db        => $self->db,
+		genome_id => $self->params->{genome_id2},
+		feat_type => $self->params->{feat_type2}
+	);
+	my $description = "$org_name1 v. $org_name2";
+	$description .= " Ks" if $self->params->{ks_type};
+	return $description;
+}
+
 sub get_name {
 	return 'SynMap';
 }
