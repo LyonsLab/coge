@@ -540,8 +540,8 @@ sub gen_dsg_menu {
 			}
 		}
 		else {
-			$name .= "<span title='certified'>&#x2705;</span> " if $dsg->certified;
-		    $name .= "<span title='restricted'>&#x1f512;</span> " if $dsg->restricted;
+			$name .= "<span title='certified'>&#x2705; CERTIFIED</span> " if $dsg->certified;
+		    $name .= "<span title='restricted'>&#x1f512; RESTRICTED</span> " if $dsg->restricted;
 			$name .= $dsg->name . ": " if $dsg->name;
 			$name .= $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
 			$org_name = $dsg->organism->name unless $org_name;

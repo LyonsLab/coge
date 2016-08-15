@@ -17,7 +17,22 @@ GetOptions(
     "config|cfg=s" => \$CONFIG,
 );
 
-$P        = CoGe::Accessory::Web::get_defaults($CONFIG);
+$P = CoGe::Accessory::Web::get_defaults($CONFIG);
+unless ($P) {
+    print STDERR "Couldn't load config file\n";
+    exit(-1);
+}
+
+unless ($id1 && $id2) {
+    print STDERR "Missing genome IDs\n";
+    exit(-1);    
+}
+
+unless ($input && $output && -e $input) {
+    print STDERR "Missing input/output path\n";
+    exit(-1);      
+}
+
 $TEMPDIR  = $P->{TEMPDIR} . "SynMap";
 $BASE_URL = $P->{SERVER};
 

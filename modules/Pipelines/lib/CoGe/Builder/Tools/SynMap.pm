@@ -91,10 +91,10 @@ sub add_jobs {
 	# Block large genomic-genomic jobs from running -- FIXME this is no longer working due to moving into API, mdb 8/11/16
 	if (   ( $feat_type1 == 2 &&
 			$genome1->length > $SEQUENCE_SIZE_LIMIT &&
-			!($genome1->type->name =~ /hard/i) )
+			($genome1->type->name =~ /unmasked/i) )
 		&& ( $feat_type2 == 2 &&
 			$genome2->length > $SEQUENCE_SIZE_LIMIT &&
-			!($genome2->type->name =~ /hard/i) ))
+			($genome2->type->name =~ /unmasked/i) ))
 	{
 	    print STDERR 'CoGe::Builder::Tools::SynMap: !!!!!!!!!!! blocking analysis ', 
            $genome1->id, '(', $genome1->length, ',', $genome1->type->name, ')',
@@ -854,36 +854,37 @@ sub add_jobs {
 		# Use dotplot_dots.py to calculate points.
 		####################################################################
 		if ($ks_type) {
-		    # mdb added 8/11/16 COGE-730 - write user-specific info to file
-		    my $config_file = catfile($result_path, 'dotplot_dots_' . get_tiny_link_key($tiny_link) . '.cfg');
-		    CoGe::Accessory::TDS::write($config_file, {
-		        api_url     => url_for(api_url_for("genomes")),
-		        username    => ( $user ? $user->name : '""'),
-		        secret_file => catfile($config->{RESOURCEDIR}, $config->{JWT_COGE_SECRET})
-		    });
-		    
-		    my ($dir1, $dir2) = get_genome_order($genome_id1, $genome_id2);
-			my $output_file = catfile( $result_path, $dir1 . '_' . $dir2 . '_synteny.json' );
-			my $log_file    = catfile( $result_path, $dir1 . '_' . $dir2 . '_log.json' );
-			$workflow->add_job( {
-				cmd			=>	$DOTPLOTDOTS,
-				script		=>	undef,
-				args		=>	[
-					[ '--input',	$ks_blocks_file,					0],
-					[ '--output',   $output_file,                       0],
-					[ '--log',      $log_file,                          0],
+            # mdb added 8/11/16 COGE-730 - write user-specific info to file
+            my $config_file = catfile($result_path, 'dotplot_dots_' . get_tiny_link_key($tiny_link) . '.cfg');
+            CoGe::Accessory::TDS::write($config_file, {
+                api_url     => url_for(api_url_for("genomes")),
+                username    => ( $user ? $user->name : '""'),
+                secret_file => catfile($config->{RESOURCEDIR}, $config->{JWT_COGE_SECRET})
+            });
+            
+            my ($dir1, $dir2) = get_genome_order($genome_id1, $genome_id2);
+            my $output_file = catfile( $final_dagchainer_file . '.dotplot_dots_synteny.json' );
+            my $log_file    = catfile( $final_dagchainer_file . '.dotplot_dots_log.json' );
+            $workflow->add_job({
+                cmd         =>  $DOTPLOTDOTS,
+                script      =>  undef,
+                args        =>  [
+                    [ '--gid1',     $dir1,                              0],
+                    [ '--gid2',     $dir2,                              0],
+                    [ '--input',    $ks_blocks_file,                    0],
+                    [ '--output',   $output_file,                       1],
+                    [ '--log',      $log_file,                          1],
                     [ '--config',   $config_file,                       0]
-				],
-				inputs		=>	[ $ks_blocks_file ],
-				outputs		=>	[ $output_file, $log_file ],
-				description	=>	"Extracting coordinates for merge..."
-			});
+                ],
+                inputs      =>  [ $ks_blocks_file ],
+                outputs     =>  [ $output_file, $log_file ],
+                description =>  "Extracting coordinates for merge..."
+            });
 		}
 
 		####################################################################
 		# Generate svg dotplot
 		####################################################################
-
 		my @svgargs = ();
 		push @svgargs, [ '--dag_file', $ks_blocks_file, 1 ];
 		push @svgargs, [ '--flip', "", 1 ] if $flip;
@@ -932,7 +933,6 @@ sub add_jobs {
 
 		$workflow->log( "" );
 		$workflow->log( "Added generation of svg dotplot" );
-
 	}
 
 	############################################################################
@@ -1118,10 +1118,10 @@ sub add_jobs {
 
 	my $link_args = [
 		[ '--config',  $config->{_CONFIG_PATH}, 0 ],
-		[ '--infile',  $final_dagchainer_file,  1 ],
-		[ '--dsgid1',  $genome_id1,             1 ],
-		[ '--dsgid2',  $genome_id2,             1 ],
-		[ '--outfile', $condensed,              1 ],
+		[ '--infile',  $final_dagchainer_file,  0 ],
+		[ '--dsgid1',  $genome_id1,             0 ],
+		[ '--dsgid2',  $genome_id2,             0 ],
+		[ '--outfile', $condensed,              1 ]
 	];
 
 	$workflow->add_job({
@@ -1132,6 +1132,9 @@ sub add_jobs {
 		outputs     => [$condensed],
 		description => "Generating GEvo links...",
 	});
+	
+	$workflow->log( "" );
+    $workflow->log( "Added GEvo links generation" );
 
 	if ( test($opts{frac_bias}) ) {
 		my $organism_name;
@@ -1193,8 +1196,6 @@ sub add_jobs {
 		});
 	}
 
-	$workflow->log( "" );
-	$workflow->log( "Added GEvo links generation" );
 	$workflow->log( "#" x (25) );
 	$workflow->log( "" );
 
