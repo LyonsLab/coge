@@ -28,7 +28,7 @@ use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Metadata qw(create_annotations create_image);
-use CoGe::Core::Favorites;
+#use CoGe::Core::Favorites;
 no warnings 'redefine';
 
 use vars qw(
@@ -226,7 +226,7 @@ sub get_item_info {
             . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
             . qq{</div></div>};
     }
-    elsif ( $item_type eq 'genome' || $item_type eq 'favorite' ) {
+    elsif ( $item_type eq 'genome' ) { #|| $item_type eq 'favorite' ) {
         my $genome = $DB->resultset('Genome')->find($item_id);
         return unless ( $USER->has_access_to_genome($genome) );
 
@@ -1270,23 +1270,23 @@ sub get_contents {
     elsif ( $type eq 'experiment' ) {
         $items = get_experiments_for_user($DB->storage->dbh, $USER->id);
     }
-    elsif ( $type eq 'favorite' ) {
-        my $favorites = CoGe::Core::Favorites->new(user => $USER);
-        foreach ($favorites->notebook->genomes) {
-            next if ($_->deleted);
-            push @$items, {
-                id   => $_->id,
-                name => $_->name,
-                description => $_->description,
-                version => $_->version,
-                restricted => $_->restricted,
-                deleted => $_->deleted,
-                date => $_->date,
-                organism => $_->organism->name,
-                role_id => 0 # no role
-            };
-        }
-    }
+#    elsif ( $type eq 'favorite' ) {
+#        my $favorites = CoGe::Core::Favorites->new(user => $USER);
+#        foreach ($favorites->notebook->genomes) {
+#            next if ($_->deleted);
+#            push @$items, {
+#                id   => $_->id,
+#                name => $_->name,
+#                description => $_->description,
+#                version => $_->version,
+#                restricted => $_->restricted,
+#                deleted => $_->deleted,
+#                date => $_->date,
+#                organism => $_->organism->name,
+#                role_id => 0 # no role
+#            };
+#        }
+#    }
     elsif ( $type eq 'notebook' ) {
         $items = get_lists_for_user($DB->storage->dbh, $USER->id);
     }
