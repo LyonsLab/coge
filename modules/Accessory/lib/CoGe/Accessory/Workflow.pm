@@ -21,8 +21,6 @@ has 'name' => (
 
 has 'description' => (
     is       => 'ro',
-    isa      => 'Str',
-    required => 0,
     default  => "",
 );
 
