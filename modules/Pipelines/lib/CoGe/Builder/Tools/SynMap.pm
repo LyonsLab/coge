@@ -1401,7 +1401,8 @@ sub generate_pseudo_assembly {
 	};
 }
 
-sub get_description {
+sub get_name {
+#	return 'SynMap';
 	my $self = shift;
 	my ( $org_name1, $title1 ) = gen_org_name(
 		db        => $self->db,
@@ -1416,10 +1417,6 @@ sub get_description {
 	my $description = "$org_name1 v. $org_name2";
 	$description .= " Ks" if $self->params->{ks_type};
 	return $description;
-}
-
-sub get_name {
-	return 'SynMap';
 }
 
 sub get_genome_order {

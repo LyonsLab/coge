@@ -19,13 +19,6 @@ has 'name' => (
     default  => "",
 );
 
-has 'description' => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 0,
-    default  => "",
-);
-
 has 'priority' => (
     is       => 'ro',
     isa      => 'Int',

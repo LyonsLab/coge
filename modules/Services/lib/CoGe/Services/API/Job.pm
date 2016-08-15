@@ -48,10 +48,6 @@ sub add {
     
     # Pipeline was submitted successfully
     if ($response->{success}) {
-        my $description = $pipeline->workflow->description;
-        warn $description;
-        $description = $pipeline->workflow->name unless $description;
-        warn $description;
         # Log submission
         CoGe::Accessory::Web::log_history(
             db          => $db,
@@ -59,7 +55,7 @@ sub add {
             parent_type => 7, #FIXME magic number
             user_id     => ($user ? $user->id : 0),
             page        => $pipeline->page,
-            description => $description,
+            description => $pipeline->workflow->name,
             link        => ($response->{site_url} ? $response->{site_url} : '')
         );
         print STDERR "CoGe::Services::API::Job::add submitted workflow ", $pipeline->workflow->id, "\n";
