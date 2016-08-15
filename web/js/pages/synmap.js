@@ -425,32 +425,37 @@ var coge = window.coge = (function(namespace) {
 
         //TODO: Replace helper with state checking
         has_organisms: function() {
-            return ($('#org_id1').val() != "") &&
-                ($('#org_id2').val() != "");
+            return ($('#org_id1').val() != "") && ($('#org_id2').val() != "");
         },
 
-        run_synmap: function(){
+        run_synmap: function() {
             this.populate_page_obj();
 
             //var org_name1 = pageObj.org_name1;
             //var org_name2 = pageObj.org_name2;
-            //feat_type 1 == CDS, 2 == genomic
             var feat_type1 = $('#feat_type1').val();
             var feat_type2 = $('#feat_type2').val();
             var org_length1 = pageObj.org_length1;
             var org_length2 = pageObj.org_length2;
-            //seq_type == 1 is unmasked
             var seq_type1 = pageObj.seq_type1;
             var seq_type2 = pageObj.seq_type2;
-            //check to see if we will allow this run
+            
+            // Block this analysis if the genomes are unmasked, unannotated, and too large
+            // feat_type 1 == CDS, 2 == genomic
+            // seq_type == 1 is unmasked
             var max_size = 50 * 1000 * 1000;
-            if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
+             if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
                 ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1) ) {
-                var message = "You are trying to compare unmasked genomic sequences that are large!  This is a bad idea.  Chances are there will be many repeat sequences that will cause the entire pipeline to take a long time to complete.  This usually means that the analyses will use a lot of RAM and other resources.  As such, these jobs are usually killed before they can complete.  Please contact coge.genome@gmail.com for assistance with your analysis.";
-                    alert(message);
-                    $('#log_text').hide(0);
-                        $('#results').show(0).html("<span class=alert>Analysis Blocked:</span>"+message);
-                        return;
+                var message = "Unfortunately this analysis cannot be performed. "
+      			  + "A comparison of two unmasked and unannotated genomes of "
+    			  + "these sizes requires many days to weeks to finish. "
+    			  + "Please try:  1) select a hard-masked sequence or 2) use at least one annotated genome.";
+                //alert(message);
+                $('#log_text').hide();
+                $('#results').html("<div class='alert'>Analysis Blocked:</div> " 
+                		+ "<div class='info'>" + message + "</div>")
+                		.show();
+                return;
             }
 
             if (!this.has_organisms())
