@@ -965,12 +965,12 @@ sub get_jobs_for_user {
     foreach (@{$workflows}) {
         my($id, $name, $submitted, $completed, $status) = @{$_};
 
-        my $start_time = localtime($submitted)->strftime('%F %I:%M%P');
+        my $start_time = localtime($submitted)->strftime('%F %H:%M');
         my $end_time = "";
         my $diff;
 
         if ($completed) {
-            $end_time = localtime($completed)->strftime('%F %I:%M%P') if $completed;
+            $end_time = localtime($completed)->strftime('%F %H:%M');
             $diff = $completed - $submitted;
         } else {
             $diff = time - $submitted;

@@ -1378,6 +1378,7 @@ sub ftp_get_file { # mdb 8/24/15 copied from LoadExperiment.pl
       if ( $username and $password );
 
     #$request->content_type("text/xml; charset=utf-8"); # mdb removed 3/30/15 COGE-599
+    $ua->timeout(60*5); # mdb added 8/10/16 to prevent hanging
     my $response = $ua->request($request);
     #print STDERR "content: <begin>", $response->content , "<end>\n"; # debug
     if ( $response->is_success() ) {
