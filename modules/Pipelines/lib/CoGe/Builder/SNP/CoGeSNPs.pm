@@ -7,7 +7,6 @@ use warnings;
 use Carp;
 use Data::Dumper qw(Dumper);
 use File::Basename qw(fileparse basename dirname);
-use File::Path qw(mkpath);
 use File::Spec::Functions qw(catfile catdir);
 use Getopt::Long qw(GetOptions);
 use JSON qw(decode_json);

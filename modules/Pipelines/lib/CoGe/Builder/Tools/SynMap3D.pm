@@ -10,7 +10,6 @@ use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Builder::Tools::SynMap qw( add_jobs defaults );
 use CoGe::Core::Storage qw( get_workflow_paths );
 use Data::Dumper;
-#use File::Path qw(mkpath);
 use File::Spec::Functions;
 use JSON qw( encode_json );
 use POSIX;
