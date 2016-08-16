@@ -284,8 +284,10 @@ function overlap_checkboxes() {
             if (accn)
                 accn += ',';
             accn += this.id;
-            if (action == 'xls')
-                accn += '_' + $('#dist' + (i + 1) + this.id.substr(this.id.lastIndexOf('_'))).html();
+            if (action == 'xls') {
+                var t = this.id.split('_');
+                accn += '_' + $('#dist' + t[1] + '_' + t[2]).html();
+            }
         }
     });
     if (!accn) {
