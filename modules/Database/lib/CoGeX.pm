@@ -47,6 +47,17 @@ BEGIN {
     $VERSION = 5.6;
 }
 
+#use constant ADMIN_ROLE  => 1;
+#use constant OWNER_ROLE  => 2;
+#use constant EDITOR_ROLE => 3;
+#use constant READER_ROLE => 4;
+#use constant ROLES => (
+#    { id => ADMIN_ROLE, name => 'Admin',  description => 'Full system privileges' },
+#    { id => OWNER_ROLE, name => 'Owner',  description => 'Full privileges' },
+#    { id => EDITOR_ROLE, name => 'Editor', description => 'Read and write' },
+#    { id => READER_ROLE, name => 'Reader', description => 'Read only' }
+#);
+
 ################################################ subroutine header begin ##
 
 =head2 dbconnect

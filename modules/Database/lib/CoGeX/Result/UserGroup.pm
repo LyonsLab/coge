@@ -77,6 +77,7 @@ __PACKAGE__->add_columns(
     { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("user_group_id");
+__PACKAGE__->belongs_to( 'role' => "CoGeX::Result::Role", 'role_id' );
 __PACKAGE__->belongs_to(
     "creator" => "CoGeX::Result::User", 
     { 'foreign.user_id' => 'self.creator_user_id' }
@@ -268,7 +269,7 @@ sub is_editable {
 
 sub is_owner {
     my $self = shift;
-    return $self->role->name =~ /owner/i;
+    return $self->role_id == CoGeX->OWNER_ROLE; #$self->role->name =~ /owner/i;
 }
 
 sub is_editor {

@@ -58,7 +58,7 @@ __PACKAGE__->add_columns(
 	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("user_connector_id");
-
+__PACKAGE__->belongs_to("role"          => "CoGeX::Result::Role", "role_id" );
 #FIXME hardcoded parent/child types below
 __PACKAGE__->belongs_to("user"			=> "CoGeX::Result::User", 		{ "foreign.user_id" => "self.parent_id" } );
 __PACKAGE__->belongs_to("parent_group" 	=> "CoGeX::Result::UserGroup",  { "foreign.user_group_id" => "self.parent_id" } );
