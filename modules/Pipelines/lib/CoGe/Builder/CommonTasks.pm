@@ -693,7 +693,7 @@ sub create_bigwig_to_wig_job {
     my $cmd = $CONF->{BIGWIGTOWIG} || 'bigWigToWig';
 
     return {
-        cmd => "$cmd $input_file $output_file && touch $done_file",
+        cmd => "mkdir -p $staging_dir && $cmd $input_file $output_file && touch $done_file",
         script => undef,
         args => [],
         inputs => [
