@@ -40,13 +40,18 @@ BEGIN {
     $FASTA_LINE_LEN = 80;
     @ISA     = qw (Exporter);
     @EXPORT = qw( 
-        units commify print_fasta get_unique_id get_link_coords 
+        truthy units commify print_fasta get_unique_id get_link_coords 
         format_time_diff sanitize_name execute directory_size
         trim js_escape html_escape to_filename to_pathname
         is_fastq_file add_fastq_ext detect_paired_end
         to_filename_without_extension is_gzipped to_filename_base
         read_fasta_index
     );
+}
+
+sub truthy {
+    my $value = shift;
+    return (defined $value && ($value =~ /true/i || $value eq '1')) ? 1 : 0;
 }
 
 sub units {
