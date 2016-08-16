@@ -202,7 +202,12 @@ sub search {
 		# warn Dumper $join;
 		my @genomes = $db->resultset("Genome")->search( $search, $join );
 
-		foreach ( sort { $a->id cmp $b->id } @genomes ) {
+		foreach ( sort {
+			my $name_a=lc($a->info);
+			$name_a = substr($name_a, 6) if substr($name_a, 0, 6) eq '&reg; ';
+			my $name_b=lc($b->info); $name_b = substr($name_b, 6) if substr($name_b, 0, 6) eq '&reg; ';
+			return $name_a cmp $name_b;
+		} @genomes ) {
 			if (!$user || $user->has_access_to_genome($_)) {
 				push @results, {
 					'type'          => "genome",
