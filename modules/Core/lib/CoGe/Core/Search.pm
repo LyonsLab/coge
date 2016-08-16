@@ -47,6 +47,7 @@ sub search {
             push @specialTerms, { 'tag' => $splitTerm[0], 'term' => $splitTerm[1] };
         }
     }
+    # warn Dumper \@searchArray;
 
 	#Set the special conditions
 	my $type = "none";    #Specifies a particular field to show
@@ -116,6 +117,8 @@ sub search {
 				]
 			  ];
 		}
+		# warn 'organism';
+		# warn Dumper \@orgArray;
 		my @organisms = $db->resultset("Organism")->search( { -and => [ @orgArray, ], } );
 
 		#if ( $type eq 'none' || $type eq 'organism' ) { # mdb removed 2/18/16 -- wasn't showing organism results unless logged in
@@ -152,6 +155,8 @@ sub search {
 					]
 				  ];
 			}
+			# warn 'user';
+			# warn Dumper \@usrArray;
 			my @users = $db->resultset("User")->search( { -and => [ @usrArray, ], } );
 	
 			foreach ( sort { $a->user_name cmp $b->user_name } @users ) {
@@ -192,6 +197,9 @@ sub search {
 				]
 			};
 		}
+		# warn 'genome';
+		# warn Dumper $search;
+		# warn Dumper $join;
 		my @genomes = $db->resultset("Genome")->search( $search, $join );
 
 		foreach ( sort { $a->id cmp $b->id } @genomes ) {
@@ -207,21 +215,26 @@ sub search {
 		}
 
 		# Perform direct genome search (by genome ID)
-		my @genIDArray;
-		for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-			push @genIDArray, [ -or => [ genome_id => $searchArray[$i] ] ];
-		}
-		my @genomeIDs = $db->resultset("Genome")->search( { -and => [ @genIDArray, @restricted, @deleted, ], } );
+		if (scalar @searchArray) {
+			my @genIDArray;
+			for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+				push @genIDArray, [ -or => [ genome_id => $searchArray[$i] ] ];
+			}
+			# warn Dumper \@genIDArray;
+			# warn Dumper @restricted;
+			# warn Dumper @deleted;
+			my @genomeIDs = $db->resultset("Genome")->search( { -and => [ @genIDArray, @restricted, @deleted, ], } );
 
-		foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
-			if (!$user || $user->has_access_to_genome($_)) {
-				push @results, {
-					'type'          => "genome",
-					'name'          => $_->info,
-					'id'            => int $_->id,
-					'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
-					'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
-				};
+			foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
+				if (!$user || $user->has_access_to_genome($_)) {
+					push @results, {
+						'type'          => "genome",
+						'name'          => $_->info,
+						'id'            => int $_->id,
+						'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
+						'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+					};
+				}
 			}
 		}
 	}
@@ -266,6 +279,9 @@ sub search {
 		    $join = { join => { 'genome' => 'organism' } };
 			$search = { -and => [ @expArray, @restricted, @deleted] };
 		}
+		# warn 'experiment';
+		# warn Dumper $search;
+		# warn Dumper $join;
 		my @experiments = $db->resultset("Experiment")->search( $search, $join );
 
 		foreach ( sort { $a->name cmp $b->name } @experiments ) {
@@ -316,6 +332,9 @@ sub search {
 		else {
 			$search = { -and => [ @noteArray, @restricted, @deleted, ] };
 		}
+		# warn 'notebook';
+		# warn Dumper $search;
+		# warn Dumper $join;
 		my @notebooks = $db->resultset("List")->search( $search, $join );
 
 		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
@@ -351,6 +370,9 @@ sub search {
 					]
 				  ];
 			}
+			# warn 'user group';
+			# warn Dumper \@usrGArray;
+			# warn Dumper \@deleted;
 			my @userGroup = $db->resultset("UserGroup")->search( { -and => [ @usrGArray, @deleted, ], } );
 	
 			foreach ( sort { $a->name cmp $b->name } @userGroup ) {
