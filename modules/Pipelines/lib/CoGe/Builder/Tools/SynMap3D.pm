@@ -66,10 +66,17 @@ sub build {
 	#########################################################################
 	my $workflow = $self->workflow;
 
-	# Input datafiles.
-	my $dot_xy_path = catfile($self->conf->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . "_synteny.json");
-    my $dot_xz_path = catfile($self->conf->{DIAGSDIR}, $dir3, $dir4, $dir3 . '_' . $dir4 . "_synteny.json");
-	my $dot_yz_path = catfile($self->conf->{DIAGSDIR}, $dir5, $dir6, $dir5 . '_' . $dir6 . "_synteny.json");
+	# Input datafiles. TODO: Make this path specification based on the '$final_dagchainer_file' from SynMap.pm
+	# AKB (2016-8-15) changed to reflect new naming conventions.
+	#my $dot_xy_path = catfile($self->conf->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . "_synteny.json");
+    #my $dot_xz_path = catfile($self->conf->{DIAGSDIR}, $dir3, $dir4, $dir3 . '_' . $dir4 . "_synteny.json");
+	#my $dot_yz_path = catfile($self->conf->{DIAGSDIR}, $dir5, $dir6, $dir5 . '_' . $dir6 . "_synteny.json");
+
+	my $opts_name = '.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.dotplot_dots_synteny.json';  # check that this is right. Maybe there needs to be '.gcoords' after 'ma1'? or no '.Dm0.ma1'? Depends on state of final_dagchainer_file at point of assignment...
+	my $dot_xy_path = catfile( $self->conf->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . $opts_name );
+	my $dot_xz_path = catfile( $self->conf->{DIAGSDIR}, $dir3, $dir4, $dir3 . '_' . $dir4 . $opts_name );
+	my $dot_yz_path = catfile( $self->conf->{DIAGSDIR}, $dir5, $dir6, $dir5 . '_' . $dir6 . $opts_name );
+
 
 	# Options.
 	my $sort = $self->params->{sort};
