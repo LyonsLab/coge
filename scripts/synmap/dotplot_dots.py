@@ -7,47 +7,60 @@ from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from json import dump, load
 from jwt import encode
-from os import path
 from requests import get
 from sys import stderr
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Use Instructions
-# python dotplot_dots.py --input=<input_file> --config=<path_to_config_file>
+# python dotplot_dots.py --input=<input_file> --config=<path_to_config_file> --output=<output_filename_including_path> \
+# --log=<log_filename_including_path> --gid1=<id1> --gid2=<id2>
 #
 # 3 *REQUIRED* Command Line Arguments
 # --input  : SynMap Ks Blocks File (NOTE: ends with .aligncoords.gcoords.ks)
 # --config : Configuration file that includes username, secret and api url
-#
+# --gid1   : Genome ID 1
+# --gid2   : Genome ID 2
+# --output : Output filename
+# --log    : Log filename
 # ---------------------------------------------------------------------------------------------------------------------
 
 log = {}
 
 # Parse arguments
 parser = ArgumentParser()
-parser.add_argument("--input", help="Input *.aligncoords.gcoords.ks file", type=str)
-parser.add_argument("--config", help="Configuration file, including CoGe username and JWT secret", type=str)
+parser.add_argument("--input", type=str, required=True, help="Input *.aligncoords.gcoords.ks file")
+parser.add_argument("--config", type=str, required=True, help="Configuration file with username, API URL, and secret")
+parser.add_argument("--gid1", type=str, required=True, help="CoGe Genome ID (1/2)")
+parser.add_argument("--gid2", type=str, required=True, help="CoGe Genome ID (2/2)")
+parser.add_argument("--output", type=str, required=True, help="Output filename")
+parser.add_argument("--log", type=str, required=True, help="Log filename")
 args = parser.parse_args()
 
+# Load config file, assign user and api_base. Exit (non-zero) if unable to open or parse.
 try:
-    input_ksfile = args.input
-    output_dir = path.dirname(input_ksfile).rstrip("/")
-    #api_base = args.apiurl.strip().rstrip('/') + '/'  # akb removed 2016-8-11 now reads from file
-    # Load config file json data.
-    with open(args.config) as config_file:
-        cg = load(open(args.config))
-    # Set user, api_base, and secret parameters
+    config_file = open(args.config)
+    cg = load(config_file)
+    config_file.close()
     user = cg["username"]
     api_base = cg["api_url"].strip().rstrip('/') + '/'
-    with open(cg["secret_file"], 'U') as sf:
-        secret = sf.read().strip()
 except Exception as e:
-    print("dotplot_dots.py failed (Error: error with argument specifications) %s" % str(e))
-    stderr.write("dotplot_dots.py failed (Error: error with argument specifications)\n" + str(e))
+    print("dotplot_dots.py failed (Error: unable to open or parse config file) %s" % str(e))
+    stderr.write("dotplot_dots.py failed (Error: unable to open or parse config file)\n" + str(e))
     exit(1)
 
+# Load secret file, read JWT secret token. Exit (non-zero) if unable to open
+try:
+    sf = open(cg["secret_file"])
+    secret = sf.read().strip()
+    sf.close()
+except Exception as e:
+    print("dotplot_dots.py failed (Error: unable to open secret file) %s" % str(e))
+    stderr.write("dotplot_dots.py failed (Error: unable to open secret file)\n" + str(e))
+    exit(1)
+
+
 # Load input into variable "get_values"
-get_values = open(input_ksfile, 'r')
+get_values = open(args.input, 'r')
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Define Global Variables
@@ -171,65 +184,59 @@ for line in get_values:
         # Append hit (template) to "hits" list
         hits.append(tmpl)
 
-# Reassign Species ID
-if len(sp1_id) > 1 or len(sp2_id) > 1:
-    # AKB removed (2016-8-11) log for failed, just prints error message now. Also exits non-zero
-    # log["status"] = "failed"
-    # log["message"] = "Error: Too many genome IDs"
-    # log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
-    # dump(log, open(log_out, "wb"))
-    print("dotplot_dots.py failed (Error: too many genome IDs. This is likely an input file problem.)")
-    stderr.write("dotplot_dots.py failed (Error: too many genome IDs. This is likely an input file problem.)\n")
-    exit(1)
-elif len(sp1_id) < 1 or len(sp2_id) < 1:
-    # AKB removed (2016-8-11) log for failed, just prints error message now. Also exits non-zero
-    # log["status"] = "failed"
-    # log["message"] = "Error: Too few genome IDs"
-    # log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
-    # dump(log, open(log_out, "wb"))
-    print("dotplot_dots.py failed (Error: too few genome IDs. This is likely an input file problem.)")
-    stderr.write("dotplot_dots.py failed (Error: too few genome IDs. This is likely an input file problem.)\n")
-    exit(1)
-else:
-    sp1_id = sp1_id[0]
-    sp2_id = sp2_id[0]
-    # output_dir = "%s/%s/%s" % (output_dir, str(sp1_id), str(sp2_id))
-
 # ---------------------------------------------------------------------------------------------------------------------
-# Build & Dump Output JSON
+# Build 'data' structure outline & populate 'syntenic_points' component.
 # ---------------------------------------------------------------------------------------------------------------------
 
-# Build basic "data" structure outline.
-data["syntenic_points"] = {sp1_id: {sp2_id: {}}}
-for ch1 in sp1_chromosomes:
-    data["syntenic_points"][sp1_id][sp2_id][ch1] = {}
-    for ch2 in sp2_chromosomes:
-        data["syntenic_points"][sp1_id][sp2_id][ch1][ch2] = []
-data["genomes"] = {}
+if len(hits) < 1:  # If no hits are found, use command line gid's & create data object.
+    sp1_id = args.gid1
+    sp2_id = args.gid2
+    data["syntenic_points"] = {sp1_id: {sp2_id: {}}}
+    data["genomes"] = {}
+else:  # If hits are found, determine IDs from input file & create data object.
+    if len(sp1_id) != 1 or len(sp2_id) != 1:
+        print("dotplot_dots.py failed (Error: wrong number of genome IDs in input file.)")
+        stderr.write("dotplot_dots.py failed (Error: wrong number of genome IDs in input file.)\n")
+        exit(1)
+    else:
+        sp1_id = sp1_id[0]
+        sp2_id = sp2_id[0]
 
-# Populate data["syntenic_points"] with hits.
-for hit in hits:
-    # Entry Structure: [ch1_start, ch1_stop, ch2_start, ch2_stop, [kn, ks]]
-    entry = [hit["sp1_start"],
-             hit["sp1_stop"],
-             hit["sp2_start"],
-             hit["sp2_stop"],
-             {"Kn": hit["Kn"],
-              "Ks": hit["Ks"],
-              str(sp1_id): hit["sp1_info"],
-              str(sp2_id): hit["sp2_info"]
-              }
-             ]
-    data["syntenic_points"][hit["sp1_id"]][hit["sp2_id"]][hit["sp1_ch"]][hit["sp2_ch"]].append(entry)
+    # Build basic "data" structure outline.
+    data["syntenic_points"] = {sp1_id: {sp2_id: {}}}
+    for ch1 in sp1_chromosomes:
+        data["syntenic_points"][sp1_id][sp2_id][ch1] = {}
+        for ch2 in sp2_chromosomes:
+            data["syntenic_points"][sp1_id][sp2_id][ch1][ch2] = []
+    data["genomes"] = {}
 
-# Remove any empty sets.
-# Remove species 2 chromosomes with no matches.
-for chr_sp1 in data["syntenic_points"][sp1_id][sp2_id]:
-    data["syntenic_points"][sp1_id][sp2_id][chr_sp1] = {chr_sp2: hits for chr_sp2, hits in data["syntenic_points"]\
-        [sp1_id][sp2_id][chr_sp1].iteritems() if len(data["syntenic_points"][sp1_id][sp2_id][chr_sp1][chr_sp2]) > 0}
-# Remove species 1 chromosomes with no matches.
-data["syntenic_points"][sp1_id][sp2_id] = {sp1_ch: sp2_ch for sp1_ch, sp2_ch in data["syntenic_points"][sp1_id]\
-    [sp2_id].iteritems() if len(data["syntenic_points"][sp1_id][sp2_id][sp1_ch]) > 0}
+    # Populate data["syntenic_points"] with hits.
+    for hit in hits:
+        # Entry Structure: [ch1_start, ch1_stop, ch2_start, ch2_stop, [kn, ks]]
+        entry = [hit["sp1_start"],
+                 hit["sp1_stop"],
+                 hit["sp2_start"],
+                 hit["sp2_stop"],
+                 {"Kn": hit["Kn"],
+                  "Ks": hit["Ks"],
+                  str(sp1_id): hit["sp1_info"],
+                  str(sp2_id): hit["sp2_info"]
+                  }
+                 ]
+        data["syntenic_points"][hit["sp1_id"]][hit["sp2_id"]][hit["sp1_ch"]][hit["sp2_ch"]].append(entry)
+
+    # Remove any empty sets.
+    # Remove species 2 chromosomes with no matches.
+    for chr_sp1 in data["syntenic_points"][sp1_id][sp2_id]:
+        data["syntenic_points"][sp1_id][sp2_id][chr_sp1] = {chr_sp2: hits for chr_sp2, hits in data["syntenic_points"]\
+            [sp1_id][sp2_id][chr_sp1].iteritems() if len(data["syntenic_points"][sp1_id][sp2_id][chr_sp1][chr_sp2]) > 0}
+    # Remove species 1 chromosomes with no matches.
+    data["syntenic_points"][sp1_id][sp2_id] = {sp1_ch: sp2_ch for sp1_ch, sp2_ch in data["syntenic_points"][sp1_id]\
+        [sp2_id].iteritems() if len(data["syntenic_points"][sp1_id][sp2_id][sp1_ch]) > 0}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Populate 'genomes' component
+# ---------------------------------------------------------------------------------------------------------------------
 
 # Get genome information, validating if user is logged in.
 if user == '':
@@ -293,12 +300,14 @@ except KeyError:
 data["genomes"][sp1_id] = sp1_genome_info
 data["genomes"][sp2_id] = sp2_genome_info
 
-# Dump "data" to JSON.
-output_filename = "%s/%s_%s_synteny.json" % (output_dir, sp1_id, sp2_id)
-dump(data, open(output_filename, 'wb'))
+# ---------------------------------------------------------------------------------------------------------------------
+# Write output files.
+# ---------------------------------------------------------------------------------------------------------------------
 
-# Print concluding message.
+# Write output.
+dump(data, open(args.output, 'wb'))
+
+# Write log
 log["status"] = "complete"
 log["message"] = "%s syntenic pairs identified" % str(len(hits))
-log_out = "%s/%s_%s_log.json" % (output_dir, sp1_id, sp2_id)
-dump(log, open(log_out, "wb"))
+dump(log, open(args.log, "wb"))
