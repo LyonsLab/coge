@@ -6,14 +6,11 @@ with qw(CoGe::Builder::Buildable);
 use CoGe::JEX::Jex;
 use CoGe::JEX::Workflow;
 use CoGe::Accessory::Web qw( get_defaults get_command_path api_url_for url_for );
-<<<<<<< HEAD
-=======
 use CoGe::Accessory::Workflow;
->>>>>>> Set alignment task priorities to run remote
-use CoGe::Accessory::Utils qw(units to_filename);
+use CoGe::Accessory::Utils qw( units to_filename truthy );
+use CoGe::Accessory::TDS qw(write);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Core::Storage qw( get_workflow_paths );
-use CoGe::Accessory::TDS qw(write);
 use Data::Dumper;
 #use File::Path qw(mkpath);
 use File::Spec::Functions;
@@ -22,7 +19,7 @@ use POSIX;
 
 BEGIN {
 	use Exporter 'import';
-	our @EXPORT = qw( 
+	our @EXPORT = qw(
 	   add_jobs algo_lookup check_address_validity defaults gen_org_name 
 	   generate_pseudo_assembly get_query_link get_result_path get_log_file_path
 	);
@@ -73,6 +70,21 @@ sub add_jobs {
 
     # Setup tool paths/commands
 	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
+
+    ############################################################################
+    # Initialization
+    ############################################################################
+	my ( $dir1, $dir2 ) = sort ( $genome_id1, $genome_id2 );
+	my $path = catdir($config->{DIAGSDIR}, $dir1, $dir2, 'html');
+	$path = catfile($path, substr($tiny_link, rindex($tiny_link, '/') + 1) . '.log');
+	$workflow->logfile($path);
+	
+    # Limit the maximum genome size for genomic-genomic
+	my $SEQUENCE_SIZE_LIMIT = 50_000_000; 
+	
+	# Define command lines (all should be nice'd)
+	my $BINDIR        = $config->{BINDIR};
+	my $DIAGSDIR      = $config->{DIAGSDIR};
 	my $SCRIPTDIR     = catdir( $config->{SCRIPTDIR}, 'synmap' );
 	my $PYTHON        = $config->{PYTHON} // 'python';
 	my $GEVO_LINKS    = 'nice ' . catfile( $SCRIPTDIR, 'gevo_links.pl' );
@@ -84,7 +96,7 @@ sub add_jobs {
 	my $RUN_ALIGNMENT = 'nice ' . catfile( $SCRIPTDIR, 'quota_align_merge.pl' );
 	my $RUN_COVERAGE  = 'nice ' . catfile( $SCRIPTDIR, 'quota_align_coverage.pl' );
 	my $PROCESS_DUPS  = 'nice ' . catfile( $SCRIPTDIR, 'process_dups.pl' );
-	my $DOTPLOT       = 'nice ' . catfile($config->{BINDIR}, 'dotplot.pl') . " -cf " . $config->{_CONFIG_PATH} . " -tmpl " . catdir($config->{TMPLDIR}, 'widgets');
+	my $DOTPLOT       = 'nice ' . catfile( $BINDIR, 'dotplot.pl' ) . " -cf " . $config->{_CONFIG_PATH} . " -tmpl " . catdir($config->{TMPLDIR}, 'widgets');
 	my $SVG_DOTPLOT   = 'nice ' . catfile( $SCRIPTDIR, 'dotplot.py' );
 	my $FRACBIAS      = 'nice ' . $PYTHON . ' ' . catfile( $SCRIPTDIR, 'fractionation_bias.py' );
 	my $DOTPLOTDOTS   = 'nice ' . $PYTHON . ' ' . catfile( $SCRIPTDIR, 'dotplot_dots.py' );
@@ -98,7 +110,7 @@ sub add_jobs {
 	my $FASTADIR   = $config->{FASTADIR};
 
 	############################################################################
-	# Fetch organism name and title
+	# Fetch organism and genome
 	############################################################################
 	my $feat_type1 = $opts{feat_type1};
 	my $feat_type2 = $opts{feat_type2};
@@ -127,27 +139,41 @@ sub add_jobs {
 		};
 	}
 
+    # Get organism names
 	#my $basename = $opts{basename};
 	my ( $org_name1, $title1 ) = gen_org_name(
 		db        => $db,
-		genome_id     => $genome_id1,
+		genome_id => $genome_id1,
 		feat_type => $feat_type1
 	);
 	my ( $org_name2, $title2 ) = gen_org_name(
 		db        => $db,
-		genome_id     => $genome_id2,
+		genome_id => $genome_id2,
 		feat_type => $feat_type2
 	);
-
-	my $ks_type = $opts{ks_type};
+	
+    # Determine if certain tasks should be distributed
+    my $priority = $opts{priority};
+    unless (defined $priority) {
+        # Only distribute tasks that are time-consuming
+        if ($genome_id1 eq $genome_id2 ||          # self-alignment
+            $feat_type1 == 2 || $feat_type2 == 2 ) # either genome is unannotated
+        {
+            $priority = $config->{SYNMAP_PRIORITY} // 0;
+        }
+        else { # run locally
+           $priority = 0;
+        }
+    }
+	
 	############################################################################
-	# Parameters
+	# Analysis Parameters
 	############################################################################
-
+	# kn/ks options
+    my $ks_type = $opts{ks_type};
+    
 	# blast options
 	my $blast = $opts{blast};
-
-	# blast2bed options
 
 	# dagchainer options
 	#my $dagchainer_g = $opts{g}; #depreciated -- will be a factor of -D
@@ -171,7 +197,7 @@ sub add_jobs {
 
 	# dotplot options
 	my $regen             = $opts{regen_images};
-	my $regen_images      = test($regen);
+	my $regen_images      = truthy($regen);
 	my $job_title         = $opts{jobtitle};
 	my $width             = $opts{width};
 	my $axis_metric       = $opts{axis_metric};
@@ -180,16 +206,16 @@ sub add_jobs {
 	my $dagchainer_type   = $opts{dagchainer_type};
 	my $color_type        = $opts{color_type};
 	my $merge_algo        = $opts{merge_algo}; #is there a merging function? will non-syntenic dots be shown?
-	my $snsd              = test($opts{show_non_syn_dots});
+	my $snsd              = truthy($opts{show_non_syn_dots});
 
 	#will the axis be flipped?
-	my $flip = test($opts{flip});
+	my $flip = truthy($opts{flip});
 
 	#are axes labeled?
-	my $clabel = test($opts{clabel});
+	my $clabel = truthy($opts{clabel});
 
 	#are random chr skipped
-	my $skip_rand = test($opts{skip_rand});
+	my $skip_rand = truthy($opts{skip_rand});
 
 	#which color scheme for ks/kn dots?
 	my $color_scheme = $opts{color_scheme};
@@ -199,7 +225,7 @@ sub add_jobs {
 	my $fid2 = $opts{fid2};
 
 	#draw a box around identified diagonals?
-	my $box_diags = test($opts{box_diags});
+	my $box_diags = truthy($opts{box_diags});
 
 	#how are the chromosomes to be sorted?
 	my $chr_sort_order = $opts{chr_sort_order};
@@ -209,10 +235,10 @@ sub add_jobs {
 	$codeml_min = undef unless $codeml_min =~ /\d/ && $codeml_min =~ /^-?\d*.?\d*$/;
 	my $codeml_max = $opts{codeml_max};
 	$codeml_max = undef unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
-	my $logks = test($opts{logks});
+	my $logks = truthy($opts{logks});
 
-	my $assemble = test($opts{assemble});
-	$assemble = 2 if $assemble && test($opts{show_non_syn});
+	my $assemble = truthy($opts{assemble});
+	$assemble = 2 if $assemble && truthy($opts{show_non_syn});
 	$assemble *= -1 if $assemble && $opts{spa_ref_genome} < 0;
 
 	#options for finding syntenic depth coverage by quota align (Bao's algo)
@@ -449,10 +475,7 @@ sub add_jobs {
 			push @blastargs, [ "-query", $fasta,   1 ];
 			push @blastargs, [ "-db",    $db,      1 ];
 		}
-<<<<<<< HEAD
 
-=======
->>>>>>> Set alignment task priorities to run remote
 		#push @blastargs, [ ";touch", "$raw_blastfile.done", 1];
 		#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
 		push @blastdb_files, $fasta;
@@ -473,7 +496,7 @@ sub add_jobs {
             inputs      => \@blastdb_files,
             outputs     => [$outfile],
             description => "Running genome comparison...",
-            priority    => 2
+            priority    => $priority  # mdb added 7/21/16 for jex-distribtuion
         });
 	}
 
@@ -684,14 +707,14 @@ sub add_jobs {
 	$dagchainer_file .= ".ma2.dag"        if $dag_merge_enabled;
 
 	my @dagargs = ();
-	push @dagargs, [ "-E", "0.05", 1 ];
+	push @dagargs, [ "-E",   "0.05",        1 ];
 	push @dagargs, [ "-i",   $dag_file12,   1 ];
 	push @dagargs, [ "-D",   $dagchainer_D, 1 ] if defined $dagchainer_D;
 	push @dagargs, [ "-g",   $gap,          1 ] if defined $gap;
 	push @dagargs, [ "-A",   $dagchainer_A, 1 ] if defined $dagchainer_A;
 	push @dagargs, [ "--Dm", $Dm,           1 ] if $dag_merge_enabled;
 	push @dagargs, [ "--m",  $gm,           1 ] if $dag_merge_enabled;
-	push @dagargs, [ "--new_behavior", "", 1 ] if $self_comparision;
+	push @dagargs, [ "--new_behavior", "",  1 ] if $self_comparision;
 
 	###MERGING OF DIAGONALS FUNCTION
 	# --merge $outfile
@@ -720,22 +743,24 @@ sub add_jobs {
 		$workflow->log(
 			"Added DagChainer (merge: enabled,"
 			  . " Maximum distance between two blocks: $Dm genes, "
-			  . " Average distance expected between syntenic blocks: $gm genes)");
+			  . " Average distance expected between syntenic blocks: $gm genes)"
+		);
 	}
 	else {
 		push @dagargs, [ ">", $dagchainer_file, 1 ];
 
-		$workflow->add_job(
-			{
-				cmd         => $RUN_DAGCHAINER,
-				script      => undef,
-				args        => \@dagargs,
-				inputs      => [$dag_file12],
-				outputs     => [$dagchainer_file],
-				priority    => 2,
-				description => "Running DAGChainer...",
-			}
-		);
+		$workflow->add_job({
+			cmd         => './dagchainer_bp/dag_chainer.py',#$RUN_DAGCHAINER, # mdb changed 7/21/16 for jex-distribtuion
+			script      => undef,
+			args        => \@dagargs,
+			inputs      => [
+			    [catdir($BINDIR, 'dagchainer_bp'), 1], # mdb added 7/21/16 for jex-distribtuion
+			    $dag_file12
+			],
+			outputs     => [$dagchainer_file],
+			priority    => $priority, # mdb added 7/21/16 for jex-distribtuion
+			description => "Running DAGChainer...",
+		});
 
 		$post_dagchainer_file = $dagchainer_file;
 		$workflow->log( "" );
@@ -1185,7 +1210,7 @@ sub add_jobs {
 	$workflow->log( "" );
     $workflow->log( "Added GEvo links generation" );
 
-	if ( test($opts{frac_bias}) ) {
+	if ( truthy($opts{frac_bias}) ) {
 		my $organism_name;
 		my $query_id;
 		my $target_id;
@@ -1206,8 +1231,8 @@ sub add_jobs {
 		);
 		$workflow->add_job($gff_job);
 
-		my $all_genes = test($opts{fb_target_genes}) ? 'False' : 'True';
-		my $rru = test($opts{fb_remove_random_unknown}) ? 'True' : 'False';
+		my $all_genes = truthy($opts{fb_target_genes}) ? 'False' : 'True';
+		my $rru = truthy($opts{fb_remove_random_unknown}) ? 'True' : 'False';
 		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
 		my $fb_prefix = $final_dagchainer_file . '_tc' . $opts{fb_numtargetchr} . '_qc' . $opts{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts{fb_window_size};
 		$workflow->add_job({
@@ -1525,8 +1550,8 @@ sub get_query_link {
 		} );
 	}
 
-	my $assemble = test($url_options{assemble});
-	$assemble = 2 if $assemble && test($url_options{show_non_syn});
+	my $assemble = truthy($url_options{assemble});
+	$assemble = 2 if $assemble && truthy($url_options{show_non_syn});
 	$assemble *= -1 if $assemble && $url_options{spa_ref_genome} < 0;
 	my $axis_metric       = $url_options{axis_metric};
 	my $axis_relationship = $url_options{axis_relationship};
@@ -1542,7 +1567,7 @@ sub get_query_link {
 	my $depth_overlap     = $url_options{depth_overlap};
 
 	#options for fractionation bias
-	my $frac_bias       = test($url_options{frac_bias});
+	my $frac_bias       = truthy($url_options{frac_bias});
 	my $fb_window_size  = $url_options{fb_window_size};
 	my $fb_target_genes = $url_options{fb_target_genes};
 	my $fb_numquerychr  = $url_options{fb_numquerychr};
@@ -1554,16 +1579,16 @@ sub get_query_link {
 	#	my $fid2 = $url_options{fid2};
 
 	#will non-syntenic dots be shown?
-	my $snsd = test($url_options{show_non_syn_dots});
+	my $snsd = truthy($url_options{show_non_syn_dots});
 
 	#will the axis be flipped?
-	my $flip = test($url_options{flip});
+	my $flip = truthy($url_options{flip});
 
 	#are axes labeled?
-	my $clabel = test($url_options{clabel});
+	my $clabel = truthy($url_options{clabel});
 
 	#are random chr skipped
-	my $skip_rand = test($url_options{skip_rand});
+	my $skip_rand = truthy($url_options{skip_rand});
 
 	#which color scheme for ks/kn dots?
 	my $color_scheme = $url_options{color_scheme};
@@ -1575,13 +1600,13 @@ sub get_query_link {
 	my $codeml_max = $url_options{codeml_max};
 	$codeml_max = undef
 	  unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
-	my $logks = test($url_options{logks});
+	my $logks = truthy($url_options{logks});
 
 	#how are the chromosomes to be sorted?
 	my $chr_sort_order = $url_options{chr_sort_order};
 
 	#draw a box around identified diagonals?
-	my $box_diags = test($url_options{box_diags});
+	my $box_diags = truthy($url_options{box_diags});
 
 	my ( $org_name1, $titleA ) = gen_org_name(
 		db        => $db,
@@ -1627,10 +1652,10 @@ sub get_query_link {
 	$synmap_link .= ";do=$depth_overlap"       if $depth_overlap;
 	$synmap_link .= ";fb=1"                    if $frac_bias;
 	$synmap_link .= ";fb_ws=$fb_window_size"   if $fb_window_size;
-	$synmap_link .= ";fb_tg=1"                 if test($fb_target_genes);
+	$synmap_link .= ";fb_tg=1"                 if truthy($fb_target_genes);
 	$synmap_link .= ";fb_nqc=$fb_numquerychr"  if $fb_numquerychr;
 	$synmap_link .= ";fb_ntc=$fb_numtargetchr" if $fb_numtargetchr;
-	$synmap_link .= ";fb_rru=" . test($fb_remove_random_unknown);
+	$synmap_link .= ";fb_rru=" . truthy($fb_remove_random_unknown);
 	$synmap_link .= ";flip=1"                  if $flip;
 	$synmap_link .= ";cs=$color_scheme";
 	$synmap_link .= ";cmin=$codeml_min"
