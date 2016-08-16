@@ -47,6 +47,7 @@ BEGIN {
     $VERSION = 5.6;
 }
 
+# mdb added 8/15/16 -- TODO: replace Role.pm and table with these constants below
 #use constant ADMIN_ROLE  => 1;
 #use constant OWNER_ROLE  => 2;
 #use constant EDITOR_ROLE => 3;
