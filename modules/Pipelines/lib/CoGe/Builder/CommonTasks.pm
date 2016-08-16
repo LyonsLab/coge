@@ -38,6 +38,7 @@ our @EXPORT = qw(
     add_workflow_result create_bowtie2_workflow create_image_job
     add_metadata_to_results_job create_process_fasta_job
     create_transdecoder_longorfs_job create_transdecoder_predict_job
+    create_bigwig_to_wig_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -677,6 +678,32 @@ sub create_sort_fasta_job {
             catfile($staging_dir, $output_file)
         ],
         description => 'Sorting FASTA file...'
+    };
+}
+
+sub create_bigwig_to_wig_job {
+    my %opts = @_;
+    my $input_file  = $opts{input_file};
+    my $staging_dir = $opts{staging_dir};
+    
+    my $filename = basename($input_file) . '.wig';
+    my $output_file = catfile($staging_dir, $filename);
+    my $done_file = $output_file . '.done';
+    
+    my $cmd = $CONF->{BIGWIGTOWIG} || 'bigWigToWig';
+
+    return {
+        cmd => "$cmd $input_file $output_file && touch $done_file",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            $done_file
+        ],
+        description => 'Converting BigWig to WIG format...'
     };
 }
 

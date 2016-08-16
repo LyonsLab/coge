@@ -21,7 +21,7 @@ BEGIN {
     );
     
     # Setup supported experiment file types
-    @QUANT_TYPES  = qw(csv tsv bed wig);
+    @QUANT_TYPES  = qw(csv tsv bed wig bw);
     @MARKER_TYPES = qw(gff gtf gff3);
     @OTHER_TYPES  = qw(bam vcf);
     @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES);

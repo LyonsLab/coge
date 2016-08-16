@@ -511,11 +511,14 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     my $hasVal2   = 0;
 
     print STDOUT "validate_quant_data_file: $filepath\n";
+    
+    # Get max value for normalization later on (if enabled)
     my $max;
     if ($normalize) {
     	$max = max_of_values($filepath, $filetype);
     }
     
+    # Parse data file line by line
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );

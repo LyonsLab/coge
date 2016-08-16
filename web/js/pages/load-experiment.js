@@ -9,7 +9,7 @@ var current_experiment = {};
 var POLY_FILES  = [ "vcf", "gcvf" ];
 var ALIGN_FILES = [ "bam" ];
 var SEQ_FILES   = [ "fastq", "fq", "sra" ];
-var QUANT_FILES = [ "csv", "tsv", "bed", "wig", "gff", "gtf" ];
+var QUANT_FILES = [ "csv", "tsv", "bed", "wig", "bw", "gff", "gtf" ];
 
 var SUPPORTED_FILE_TYPES = concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
 
