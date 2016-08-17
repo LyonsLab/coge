@@ -446,29 +446,30 @@ sub add_jobs {
 	my $query_bed   = $raw_blastfile . ".q.bed";
 	my $subject_bed = $raw_blastfile . ".s.bed";
 
-	my @blastargs = ();
-	push @blastargs, [ '-infile',   $raw_blastfile, 1 ];
-	push @blastargs, [ '-outfile1', $query_bed,     1 ];
-	push @blastargs, [ '-outfile2', $subject_bed,   1 ];
+	my $blastargs = [
+	    [ '-infile',   $raw_blastfile, 1 ],
+	    [ '-outfile1', $query_bed,     1 ],
+	    [ '-outfile2', $subject_bed,   1 ]
+	];
 
 	my @bedoutputs = ();
 	push @bedoutputs, $query_bed;
 	push @bedoutputs, $subject_bed;
 	push @bedoutputs, $raw_blastfile if ( $raw_blastfile =~ /genomic/ );
-
 #   push @bedoutputs, "$raw_blastfile.orig" if ( $raw_blastfile =~ /genomic/ );
 	push @bedoutputs, "$raw_blastfile.new" if ( $raw_blastfile =~ /genomic/ );
+	
 	$workflow->add_job({
 		cmd         => $BLAST2BED,
 		script      => undef,
-		args        => \@blastargs,
-		inputs      => [$raw_blastfile, $raw_blastfile . '.done'],
+		args        => $blastargs,
+		inputs      => [ $raw_blastfile, $raw_blastfile . '.done' ],
 		outputs     => \@bedoutputs,
 		description => "Creating BED files...",
 	});
 
 	$workflow->log( "" );
-	$workflow->log( "Added .bed files creation" );
+	$workflow->log( "Added BED files creation" );
 
 	###########################################################################
 	# Converting blast to raw and finding local duplications
@@ -484,8 +485,8 @@ sub add_jobs {
 	$filtered_blastfile .= ".filtered";
 
 	my @rawargs = ();
-	push @rawargs, [ "", $raw_blastfile, 1 ];
-	push @rawargs, [ "--localdups", "", 1 ];
+	push @rawargs, [ "",              $raw_blastfile,      1 ];
+	push @rawargs, [ "--localdups",   "",                  1 ];
 	push @rawargs, [ "--qbed",        $query_bed,          1 ];
 	push @rawargs, [ "--sbed",        $subject_bed,        1 ];
 	push @rawargs, [ "--tandem_Nmax", $dupdist,            1 ];
