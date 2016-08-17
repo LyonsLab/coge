@@ -464,7 +464,7 @@ sub add_jobs {
 		args        => \@blastargs,
 		inputs      => [$raw_blastfile, $raw_blastfile . '.done'],
 		outputs     => \@bedoutputs,
-		description => "Creating .bed files...",
+		description => "Creating BED files...",
 	});
 
 	$workflow->log( "" );
