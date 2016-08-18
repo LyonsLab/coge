@@ -717,6 +717,7 @@ function launch(experiment) {
             if (title.length > 0) {
                 if (testEl.getElementsByTagName('TITLE')[0].text == 'CoGe: Error') makeSynmaps();
             } else {
+                window.history.pushState({}, "Title", "SynMap3D.pl" + urlUpdate); // Update URL with all options.
                 showVisualizer(final_experiment);
             }
         })
