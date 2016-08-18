@@ -108,7 +108,7 @@ sub get {
     }
     
     # Initialize workflow
-    $builder->workflow( $self->jex->create_workflow(name => $builder->get_name, init => ($sharedResult ? 0 : 1) );
+    $builder->workflow( $self->jex->create_workflow(name => $builder->get_name, init => ($sharedResult ? 0 : 1) ) );
     return unless ($builder->workflow && ($sharedResult || $builder->workflow->id));
     
     my ($staging_dir, $result_dir);
@@ -118,6 +118,7 @@ sub get {
         $builder->result_dir($result_dir);
         $builder->workflow->logfile(catfile($result_dir, "debug.log"));
     }
+    #TODO mdb 8/18/16 have the builder determine its own result paths to resolve inconsistency between SynMap and other pipelines
     
     # Get a tiny URL to a status page #TODO simplyify this
     my ($page, $link);
