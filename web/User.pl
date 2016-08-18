@@ -1370,11 +1370,11 @@ sub get_stats {
     	$html .= '<tr class="';
     	$html .= $odd_even ? 'odd' : 'even';
     	$odd_even ^= 1;
-    	$html .= '" style="cursor:pointer;" onclick="document.location=\'SearchResults.pl?s=';
+    	$html .= '" style="cursor:pointer;" onclick="search_metadata(\'';
     	$html .= $type;
-    	$html .= '_metadata_key::';
-    	$html .= $name;
-    	$html .= '\'"><td class="title5" style="padding-right:10px;white-space:nowrap;text-align:right;">';
+    	$html .= "','";
+    	$html .= $name =~ s/\//%2F/gr;
+    	$html .= '\')"><td class="title5" style="padding-right:10px;white-space:nowrap;">';
     	$html .= $name;
     	$html .= '</td><td class="data5">';
     	$html .= $count;

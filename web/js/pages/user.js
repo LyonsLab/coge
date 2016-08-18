@@ -1730,3 +1730,7 @@ function open_item(item_type, title, link) {
 		})
 		.dialog('open');
 }
+
+function search_metadata(type, key) {
+	document.location='SearchResults.pl?s="' + type + '_metadata_key::' + key + '"';
+}

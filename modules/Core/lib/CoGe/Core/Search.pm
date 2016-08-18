@@ -6,6 +6,7 @@ use warnings;
 use CoGeX;
 use CoGeDBI;
 use Data::Dumper;
+use Text::ParseWords;
 
 BEGIN {
     our ( @EXPORT, @ISA, $VERSION );
@@ -16,6 +17,22 @@ BEGIN {
     @EXPORT = qw( search );
 }
 
+sub info_cmp {
+	my $info_a = lc($a->info);
+	my $info_b = lc($b->info);
+	$info_a = substr($info_a, 6) if substr($info_a, 0, 6) eq '&reg; ';
+	$info_b = substr($info_b, 6) if substr($info_b, 0, 6) eq '&reg; ';
+	$info_a cmp $info_b;
+}
+
+sub name_cmp {
+	my $name_a = lc($a->{'name'});
+	my $name_b = lc($b->{'name'});
+	$name_a = substr($name_a, 6) if substr($name_a, 0, 6) eq '&reg; ';
+	$name_b = substr($name_b, 6) if substr($name_b, 0, 6) eq '&reg; ';
+	$name_a cmp $name_b;
+}
+
 sub search {
 	my %opts = @_;
 	
@@ -24,68 +41,61 @@ sub search {
 	my $user		= $opts{user};
 	my $show_users	= $opts{show_users};
 
-    my @searchArray = split( ' ', $search_term );
-    my @specialTerms;
     my @idList;
     my @results;
+    my $metadata_key;
 
-    #Set up the necessary arrays of serch terms and special conditions
-    for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
-        if ( index( $searchArray[$i], "::" ) == -1 ) {
-            if ( index( $searchArray[$i], '!' ) == -1 ) {
-                $searchArray[$i] = { 'like', '%' . $searchArray[$i] . '%' };
-            } else {
-            	my $bang_index = index($searchArray[$i], '!');
-            	my $new_term = substr($searchArray[$i], 0, $bang_index) . substr($searchArray[$i], $bang_index + 1);
-            	$searchArray[$i] = { 'not_like', '%' . $new_term . '%' };
-            }
-        }
-        else {
-            my @splitTerm = split( '::', $searchArray[$i] );
-            splice( @searchArray, $i, 1 );
-            $i--;
-            push @specialTerms, { 'tag' => $splitTerm[0], 'term' => $splitTerm[1] };
-        }
-    }
-    # warn Dumper \@searchArray;
-
-	#Set the special conditions
-	my $type = "none";    #Specifies a particular field to show
-	if ( index($search_term, 'metadata_key') != -1 ) {
-		my $index = index($search_term, ':');
-		$type = substr($search_term, 0, $index);
-		$search_term = substr($search_term, $index + 2);
-	}
+	my $type = "none";
 	my @restricted =
 	  [ -or => [ 'me.restricted' => 0, 'me.restricted' => 1 ] ]; 
 	  #Specifies either restricted(1) OR unrestriced(0) results. Default is all.
 	my @deleted =
 	  [ -or => [ 'me.deleted' => 0, 'me.deleted' => 1 ] ]; 
 	  #Specifies either deleted(1) OR non-deleted(0) results. Default is all.
-	for ( my $i = 0 ; $i < @specialTerms ; $i++ ) {
-		if ( $specialTerms[$i]{tag} eq 'type' ) {
-			$type = $specialTerms[$i]{term};
-		}
-		if ( $specialTerms[$i]{tag} eq 'restricted' ) {
-			@restricted = [ 'me.restricted' => $specialTerms[$i]{term} ];
-			if ( $type eq "none" ) {
-				$type = 'restricted'; 
-				#Sets the "type" so that only fields relevant to restriction are shown. (i.e. there are no restricted users.)
+
+    my @searchArray = parse_line('\s+', 0, $search_term);
+    for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
+    	my $handled = 0;
+        if ( index( $searchArray[$i], "::" ) != -1 ) {
+            my @splitTerm = split( '::', $searchArray[$i] );
+			if ($splitTerm[0] eq 'deleted') {
+				@deleted = [ deleted => $splitTerm[1] ];
+				if ( $type eq "none" ) {
+					$type = 'deleted'; 
+					#Sets the "type" so that only fields relevant to deletion are shown. (i.e. there are no deleted users).
+				}
+				$handled = 1;
 			}
-		}
-		if (
-			$specialTerms[$i]{tag} eq 'deleted'
-			&& (   $specialTerms[$i]{term} eq '0'
-				|| $specialTerms[$i]{term} eq '1' )
-		  )
-		{
-			@deleted = [ deleted => $specialTerms[$i]{term} ];
-			if ( $type eq "none" ) {
-				$type = 'deleted'; 
-				#Sets the "type" so that only fields relevant to deletion are shown. (i.e. there are no deleted users).
+			elsif (index($splitTerm[0], 'metadata_key') != -1) {
+				$type = $splitTerm[0];
+				$metadata_key = $splitTerm[1];
+				$handled = 1;
 			}
-		}
-	}
+			elsif ($splitTerm[0] eq 'restricted') {
+				@restricted = [ 'me.restricted' => $splitTerm[1] ];
+				if ( $type eq "none" ) {
+					$type = 'restricted'; 
+					#Sets the "type" so that only fields relevant to restriction are shown. (i.e. there are no restricted users.)
+				}
+				$handled = 1;
+			}
+			elsif ($splitTerm[0] eq 'type') {
+				$type = $splitTerm[1];
+				$handled = 1;
+			}
+        }
+        if ($handled) {
+            splice( @searchArray, $i, 1 );
+            $i--;
+        }
+        elsif ( index( $searchArray[$i], '!' ) == -1 ) {
+            $searchArray[$i] = { 'like', '%' . $searchArray[$i] . '%' };
+        } else {
+        	my $bang_index = index($searchArray[$i], '!');
+        	my $new_term = substr($searchArray[$i], 0, $bang_index) . substr($searchArray[$i], $bang_index + 1);
+        	$searchArray[$i] = { 'not_like', '%' . $new_term . '%' };
+        }
+    }
 	
 	#only show public data if $user is undefined
 	if (!$user) {
@@ -117,12 +127,10 @@ sub search {
 				]
 			  ];
 		}
-		# warn 'organism';
-		# warn Dumper \@orgArray;
 		my @organisms = $db->resultset("Organism")->search( { -and => [ @orgArray, ], } );
 
 		#if ( $type eq 'none' || $type eq 'organism' ) { # mdb removed 2/18/16 -- wasn't showing organism results unless logged in
-			foreach ( sort { $a->name cmp $b->name } @organisms ) {
+			foreach ( sort { lc($a->name) cmp lc($b->name) } @organisms ) {
 				push @results, { 
 					'type' => "organism", 
 				  	'name' => $_->name, 
@@ -155,11 +163,9 @@ sub search {
 					]
 				  ];
 			}
-			# warn 'user';
-			# warn Dumper \@usrArray;
 			my @users = $db->resultset("User")->search( { -and => [ @usrArray, ], } );
 	
-			foreach ( sort { $a->user_name cmp $b->user_name } @users ) {
+			foreach ( sort { lc($a->user_name) cmp lc($b->user_name) } @users ) {
 				push @results, { 
 					'type' => "user", 
 					'first' => $_->first_name, 
@@ -180,12 +186,12 @@ sub search {
 		|| $type eq 'restricted'
 		|| $type eq 'deleted' )
 	{
-		my $join;
+		my $attributes;
 		my $search;
 		if ($type eq 'genome_metadata_key') {
-			$join = { join => 'genome_annotations' };
+			$attributes = { distinct => 1, join => 'genome_annotations' };
 			my $dbh = $db->storage->dbh;
-			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($metadata_key));
 			$search = { 'genome_annotations.annotation_type_id' => $row[0] };
 		}
 		else {
@@ -197,19 +203,12 @@ sub search {
 				]
 			};
 		}
-		# warn 'genome';
-		# warn Dumper $search;
-		# warn Dumper $join;
-		my @genomes = $db->resultset("Genome")->search( $search, $join );
+		my @genome_results;
+		my @genomes = $db->resultset("Genome")->search( $search, $attributes );
 
-		foreach ( sort {
-			my $name_a=lc($a->info);
-			$name_a = substr($name_a, 6) if substr($name_a, 0, 6) eq '&reg; ';
-			my $name_b=lc($b->info); $name_b = substr($name_b, 6) if substr($name_b, 0, 6) eq '&reg; ';
-			return $name_a cmp $name_b;
-		} @genomes ) {
+		foreach ( @genomes ) {
 			if (!$user || $user->has_access_to_genome($_)) {
-				push @results, {
+				push @genome_results, {
 					'type'          => "genome",
 					'name'          => $_->info,
 					'id'            => int $_->id,
@@ -225,14 +224,11 @@ sub search {
 			for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
 				push @genIDArray, [ -or => [ genome_id => $searchArray[$i] ] ];
 			}
-			# warn Dumper \@genIDArray;
-			# warn Dumper @restricted;
-			# warn Dumper @deleted;
 			my @genomeIDs = $db->resultset("Genome")->search( { -and => [ @genIDArray, @restricted, @deleted, ], } );
 
-			foreach ( sort { $a->id cmp $b->id } @genomeIDs ) {
+			foreach ( @genomeIDs ) {
 				if (!$user || $user->has_access_to_genome($_)) {
-					push @results, {
+					push @genome_results, {
 						'type'          => "genome",
 						'name'          => $_->info,
 						'id'            => int $_->id,
@@ -242,6 +238,7 @@ sub search {
 				}
 			}
 		}
+		push @results, sort name_cmp @genome_results;
 	}
 
 	# Perform experiment search
@@ -272,28 +269,25 @@ sub search {
 				]
 			  ];
 		}
-		my $join;
+		my $attributes;
 		my $search;
 		if ($type eq 'experiment_metadata_key') {
-			$join = { join => [ { 'genome' => 'organism' }, 'experiment_annotations' ] };
+			$attributes = { distinct => 1, join => [ 'experiment_annotations' ] };
 			my $dbh = $db->storage->dbh;
-			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($metadata_key));
 			$search = { 'experiment_annotations.annotation_type_id' => $row[0] };
 		}
 		else {
-		    $join = { join => { 'genome' => 'organism' } };
+		    $attributes = { join => { 'genome' => 'organism' } };
 			$search = { -and => [ @expArray, @restricted, @deleted] };
 		}
-		# warn 'experiment';
-		# warn Dumper $search;
-		# warn Dumper $join;
-		my @experiments = $db->resultset("Experiment")->search( $search, $join );
+		my @experiments = $db->resultset("Experiment")->search( $search, $attributes );
 
-		foreach ( sort { $a->name cmp $b->name } @experiments ) {
+		foreach ( sort info_cmp @experiments ) {
 			if (!$user || $user->has_access_to_experiment($_)) {
 				push @results, {
 					'type'          => "experiment",
-					'name'          => $_->name,
+					'name'          => $_->info,
 					'id'            => int $_->id,
 					'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
 					'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
@@ -326,23 +320,20 @@ sub search {
 				]
 			  ];
 		}
-		my $join;
+		my $attributes;
 		my $search;
 		if ($type eq 'list_metadata_key') {
-			$join = { join => 'list_annotations' };
+			$attributes = { distinct => 1, join => 'list_annotations' };
 			my $dbh = $db->storage->dbh;
-			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($search_term));
+			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($metadata_key));
 			$search = { 'list_annotations.annotation_type_id' => $row[0] };
 		}
 		else {
 			$search = { -and => [ @noteArray, @restricted, @deleted, ] };
 		}
-		# warn 'notebook';
-		# warn Dumper $search;
-		# warn Dumper $join;
-		my @notebooks = $db->resultset("List")->search( $search, $join );
+		my @notebooks = $db->resultset("List")->search( $search, $attributes );
 
-		foreach ( sort { $a->name cmp $b->name } @notebooks ) {
+		foreach ( sort { lc($a->name) cmp lc($b->name) } @notebooks ) {
 			if (!$user || $user->has_access_to_list($_)) {
 				push @results, {
 					'type'          => "notebook",
@@ -375,12 +366,9 @@ sub search {
 					]
 				  ];
 			}
-			# warn 'user group';
-			# warn Dumper \@usrGArray;
-			# warn Dumper \@deleted;
 			my @userGroup = $db->resultset("UserGroup")->search( { -and => [ @usrGArray, @deleted, ], } );
 	
-			foreach ( sort { $a->name cmp $b->name } @userGroup ) {
+			foreach ( sort { lc($a->name) cmp lc($b->name) } @userGroup ) {
 				push @results, {
 					'type'    => "user_group",
 					'name'    => $_->name,
