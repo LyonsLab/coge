@@ -11,6 +11,7 @@ use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url go );
 use CoGe::Core::Notebook qw(notebookcmp);
+use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -778,6 +779,7 @@ sub gen_results_page {
                 my ($chr) = $hsp->subject_name =~ /\|(\S*)/;
                 $chr = $hsp->subject_name unless $chr;
                 $chr =~ s/\s+$//;
+                $chr = fix_chromosome_id($chr); # mdb added 8/18/16 COGE-735
                 my ($ds) = $dsg->datasets( chr => $chr );
                 my ($org) = $set->{organism};
                 next unless $dsg && defined $chr && $ds;
