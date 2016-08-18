@@ -779,10 +779,13 @@ sub gen_results_page {
                 my ($chr) = $hsp->subject_name =~ /\|(\S*)/;
                 $chr = $hsp->subject_name unless $chr;
                 $chr =~ s/\s+$//;
-                $chr = fix_chromosome_id($chr); # mdb added 8/18/16 COGE-735
                 my ($ds) = $dsg->datasets( chr => $chr );
                 my ($org) = $set->{organism};
-                next unless $dsg && defined $chr && $ds;
+                unless ($dsg && defined $chr && $ds) {
+                    print STDERR "CoGeBlast::gen_results_page: ERROR, undefined genome/chr/ds for HSP\n"; 
+                    next;
+                }
+                
                 $hsp_count{$org}++;
                 last if ( $hsp_count{$org} > $resultslimit );
                 my $tt1 = new Benchmark;
