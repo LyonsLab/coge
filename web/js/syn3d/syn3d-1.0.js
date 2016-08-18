@@ -5,6 +5,7 @@
 /*-----------------------------------------------------------------------------------------------------------------
  ~~~~ GLOBAL DECLARATIONS ~~~~
  -----------------------------------------------------------------------------------------------------------------*/
+var MAX_PTS = 100000;
 
 // SynMap Global Variables [note: when adding, make sure to reset in renderSynMap().initialize()]
 var camView = { "x": 0, "y": 0, "z": 120 };
@@ -1191,39 +1192,58 @@ var renderSynMap = function (graph_object, element_id, persistence) {
  -----------------------------------------------------------------------------------------------------------------*/
 
 $(document).ready( function() {
-    //var d; AKB Moved these two variables to global, 5/2/16
-    //var overlay = $("#overlay");
-
-    var persistanceSlide = $("#slide");
-    var persistanceDisplay = $("#slideDisplay");
+    // Show overlay.
     overlay.show();
 
-    // Load data & launch initial visualizations
+    // Initialize jQuery selectors.
+    var persistanceSlide = $("#slide");
+    var persistanceDisplay = $("#slideDisplay");
+
+    // Define paths.
     var graphLoc = DATA_LOC + "/" + final_experiment.graph; // NOTE: This "DATA_LOC is set in SynMap3D.pl, may need modification when moving to production.
     var downloadLoc = DATA_LOC + "/" + final_experiment.download;
     
-    $("#download").html("<form method='get' action='" + downloadLoc + "'><button type='submit' formtarget='_blank'>Download!</button>");
-
+    // Load data, launch visualization OR error message.
     $.when(loadData(graphLoc)).done(function(data) {
         d = data;
-        if ($.isEmptyObject(d)) {
+        if ($.isEmptyObject(d)) { // Empty results case.
             // Hide analysis viewer, show error pane.
             $('#analysis').css("display", "none");
-            $('#error').css("display", "");
+            $('#error_too-many-pts').css("display", "none");
+            $('#error_empty-results').css("display", "");
+
             // End spinny wheel.
             overlay.hide();
-        } else {
-            $('#error').css("display", "");
+        } else if (d.points.length > MAX_PTS) { // Too many points case.
+            // Hide error pane, show analysis viewer.
+            $('#analysis').css("display", "none");
+            $('#error_empty-results').css("display", "none");
+            $('#error_too-many-pts').css("display", "");
+            
+            // Update data download link.
+            $("#error_too-many-pts_download").html("<form method='get' action='" + downloadLoc + "'><button type='submit' formtarget='_blank'>Download!</button>");
+            
+            // End spinny wheel.
+            overlay.hide();
+        } else { // Renderable results case.
+            // Hide error pane, show analysis viewer.
+            $('#error_empty-results').css("display", "none");
+            $('#error_too-many-pts').css("display", "none");
+            $('#analysis').css("display", "");
+
             // Save species names to global variables.
             xsp = d.x[1];
             ysp = d.y[1];
             zsp = d.z[1];
-
+            
             // Update camera view buttons with spp names.
             document.getElementById("xylabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='bluetxt'>" + ysp + "</span>";
             document.getElementById("xzlabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
             document.getElementById("yzlabel").innerHTML = "<span class='bluetxt'>" + ysp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
 
+            // Update data download button.
+            $("#download").html("<form method='get' action='" + downloadLoc + "'><button type='submit' formtarget='_blank'>Download!</button>");
+            
             // Render initial SynMap & Histogram
             renderSynMap(data, "canvas", persistanceSlide.val());
             renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
@@ -1253,11 +1273,6 @@ $(document).ready( function() {
             var colorBySelect = $("#color_by");
             colorBySelect.change( function () {
                 refresh = true;
-                //emptyRenderings();
-                // Draw new SynMap & histogram.
-                //renderSynMap(d, "canvas", persistanceSlide.val());
-                //renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-                //overlay.hide();
             });
 
             /* Monitor mutation ratio coloring option & update visualizations on change. */
@@ -1274,11 +1289,6 @@ $(document).ready( function() {
                 }
                 colorScheme = newVal;
                 refresh = true;
-                // emptyRenderings();
-                // // Draw new SynMap & histogram.
-                // renderSynMap(d, "canvas", persistanceSlide.val());
-                // renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-                // overlay.hide();
             });
 
             /* Report persistence */
@@ -1287,10 +1297,6 @@ $(document).ready( function() {
                 persistanceDisplay.html(persistanceSlide.val());
                 refresh = true;
                 overlay.show();
-                // emptyRenderings();
-                // renderSynMap(d, "canvas", persistanceSlide.val());
-                // renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-                // overlay.hide()
             });
         }
 

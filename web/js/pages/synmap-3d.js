@@ -537,19 +537,14 @@ function getBgColor(slideValue) {
     return colorCodes[slideValue-1];
 }
 
-var visVisible = false;
 function showVisualizer(data) {
-    if (visVisible) {
-        //Refresh function can go here.
-    } else {
-        $.getScript( "js/syn3d/" + synmapRenderer, function( data, textStatus, jqxhr ) {
-            console.log( "Visualizer loaded." );
-            //console.log( data ); // Data returned
-            //console.log( textStatus ); // Success
-            //console.log( jqxhr.status ); // 200
-        }, false);
-        $('#analysis').css("display", "");
-    }
+    $('#chartSvg').remove(); //removes histograms if a old version exists.
+    $.getScript( "js/syn3d/" + synmapRenderer, function( data, textStatus, jqxhr ) {
+        console.log( "Visualizer loaded." );
+        //console.log( data ); // Data returned
+        //console.log( textStatus ); // Success
+        //console.log( jqxhr.status ); // 200
+    }, false);
 }
 
 function launch(experiment) {
@@ -722,6 +717,7 @@ function launch(experiment) {
             if (title.length > 0) {
                 if (testEl.getElementsByTagName('TITLE')[0].text == 'CoGe: Error') makeSynmaps();
             } else {
+                window.history.pushState({}, "Title", "SynMap3D.pl" + urlUpdate); // Update URL with all options.
                 showVisualizer(final_experiment);
             }
         })
