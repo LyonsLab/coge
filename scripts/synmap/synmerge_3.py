@@ -588,7 +588,7 @@ if ratio_cutoff:
 # Sort name extensions, write graph & log filenames.
 name_ext.sort()
 graphName_out = name_base + '_'.join(name_ext) + '_graph.json'
-downloadName_out = name_base + '_'.join(name_ext) + '_data.json'
+downloadName_out = name_base + '_'.join(name_ext) + '_data.txt'
 logName_out = name_base + '_'.join(name_ext) + '_log.json'
 # Add output path to output files.
 graph_out = path.join(args.o, graphName_out)
