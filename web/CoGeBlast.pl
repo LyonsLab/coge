@@ -11,6 +11,7 @@ use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url go );
 use CoGe::Core::Notebook qw(notebookcmp);
+use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -780,7 +781,11 @@ sub gen_results_page {
                 $chr =~ s/\s+$//;
                 my ($ds) = $dsg->datasets( chr => $chr );
                 my ($org) = $set->{organism};
-                next unless $dsg && defined $chr && $ds;
+                unless ($dsg && defined $chr && $ds) {
+                    print STDERR "CoGeBlast::gen_results_page: ERROR, undefined genome/chr/ds for HSP\n"; 
+                    next;
+                }
+                
                 $hsp_count{$org}++;
                 last if ( $hsp_count{$org} > $resultslimit );
                 my $tt1 = new Benchmark;

@@ -1625,7 +1625,7 @@ sub get_results {
 			if (! -r catfile($result_path, $fb_json_file)) {
 				return encode_json( { error => "The fractionation bias data could not be found." } );
 			}
-			$results->param( frac_bias => $output_url . $fb_json_file );
+			$results->param( frac_bias => catfile($output_url, $fb_json_file) );
 			$gff_sort_output_file = _filename_to_link(
 				file => catfile($result_path, 'gff_sort.txt'),
 				msg  => qq{GFF Sort output file},
