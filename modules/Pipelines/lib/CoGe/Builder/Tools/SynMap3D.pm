@@ -99,6 +99,7 @@ sub build {
     }
     my $graph_out = $self->params->{graph_out};
     my $log_out = $self->params->{log_out};
+    my $data_out = $self->params->{download};
 
 	# Build command line arguments.
 	my $merge_ids = ' -xid ' . $xid . ' -yid ' . $yid . ' -zid ' . $zid;
@@ -116,7 +117,7 @@ sub build {
 	$workflow->add_job({
         cmd => $MERGER . $merge_ids . $merge_ins . $merge_opt . $merge_otp,
         inputs => [$dot_xy_path, $dot_xz_path, $dot_yz_path],
-        outputs => [catfile($SYN3DIR, $graph_out), catfile($SYN3DIR, $log_out)],
+        outputs => [catfile($SYN3DIR, $graph_out), catfile($SYN3DIR, $log_out), catfile($SYN3DIR, $data_out)],
         description => "Identifying common points & building graph object..."
     });
 
