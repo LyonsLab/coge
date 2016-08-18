@@ -282,8 +282,8 @@ $.extend(ConfirmationView.prototype, {
 
     render: function() {
         this.renderDescription(this.object.metadata);
-        if (this.dat)
-		this.renderData(this.object.data);
+        if (this.data)
+        	this.renderData(this.object.data);
         if (this.options) 
         	this.renderOptions(this.object.options);
     },
