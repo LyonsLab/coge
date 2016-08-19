@@ -1732,5 +1732,5 @@ function open_item(item_type, title, link) {
 }
 
 function search_metadata(type, key) {
-	document.location='SearchResults.pl?s="' + type + '_metadata_key::' + key + '"';
+	document.location='SearchResults.pl?s=type::' + type + ' "metadata_key::' + key + '"';
 }
