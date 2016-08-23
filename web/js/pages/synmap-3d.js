@@ -584,7 +584,7 @@ function launch(experiment) {
     options_name = buildOptionsName(final_experiment);
     var graph_obj = options_name + '_graph.json';
     var log_obj = options_name + '_log.json';
-    var download_obj = options_name + '_data.json';
+    var download_obj = options_name + '_data.txt';
     final_experiment.download = download_obj;
     final_experiment.graph = graph_obj;
     final_experiment.log = log_obj;
