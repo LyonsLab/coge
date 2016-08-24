@@ -15,7 +15,7 @@ use JSON::XS;
 
 BEGIN {
     use Exporter 'import';
-    our @EXPORT_OK = qw( create_fasta_file get_blast_db get_genomes get_tiny_url go );
+    our @EXPORT_OK = qw( create_fasta_file get_blast_db get_genomes get_tiny_url );
 }
 
 sub add_jobs {
@@ -378,64 +378,64 @@ sub get_tiny_url {
     return $link;
 }
 
-sub go {
-    my %opts = @_;
-    my $db = $opts{db};
-    my $user = $opts{user};
-    my $config = $opts{config};
-    my $JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
-    my $blastable = $opts{blastable};
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $opts{basename},
-        tempdir  => $config->{TEMPDIR} . "CoGeBlast"
-    );
+# sub go {
+#     my %opts = @_;
+#     my $db = $opts{db};
+#     my $user = $opts{user};
+#     my $config = $opts{config};
+#     my $JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+#     my $blastable = $opts{blastable};
+#     my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
+#         basename => $opts{basename},
+#         tempdir  => $config->{TEMPDIR} . "CoGeBlast"
+#     );
 
-    my $tiny_url = get_tiny_url(%opts);
-    my $workflow = $JEX->create_workflow(
-        name    => 'cogeblast-' . ($tiny_url =~ /\/(\w+)$/),
-        id      => 0,
-        logfile => $cogeweb->logfile
-    );
+#     my $tiny_url = get_tiny_url(%opts);
+#     my $workflow = $JEX->create_workflow(
+#         name    => 'cogeblast-' . ($tiny_url =~ /\/(\w+)$/),
+#         id      => 0,
+#         logfile => $cogeweb->logfile
+#     );
 
-    add_jobs(
-        cogeweb => $cogeweb,
-        workflow => $workflow,
-        %opts
-    );
+#     add_jobs(
+#         cogeweb => $cogeweb,
+#         workflow => $workflow,
+#         %opts
+#     );
 
-    my $response = $JEX->submit_workflow($workflow);
+#     my $response = $JEX->submit_workflow($workflow);
 
-    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
-        user_id => $user->id,
-        page    => "GenomeList",
-        url     => $config->{SERVER} . "GenomeList.pl?dsgid=$blastable"
-    );
+#     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+#         user_id => $user->id,
+#         page    => "GenomeList",
+#         url     => $config->{SERVER} . "GenomeList.pl?dsgid=$blastable"
+#     );
 
-    my @dsg_ids = split( /,/, $blastable );
-    my $list_link =
-        qq{<a href="$genomes_url" target_"blank">}
-      . @dsg_ids
-      . ' genome'
-      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
-    my $log_msg = 'Blast ' . length($opts{seq}) . ' characters against ' . $list_link;
+#     my @dsg_ids = split( /,/, $blastable );
+#     my $list_link =
+#         qq{<a href="$genomes_url" target_"blank">}
+#       . @dsg_ids
+#       . ' genome'
+#       . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+#     my $log_msg = 'Blast ' . length($opts{seq}) . ' characters against ' . $list_link;
 
-    my $log = CoGe::Accessory::Web::log_history(
-        db          => $db,
-        user_id     => $user->id,
-        page        => 'CoGeBlast',
-        description => $log_msg,
-        link        => $tiny_url,
-        parent_id   => $response->{id},
-        parent_type => 7 #FIXME magic number
-    ) if $response and $response->{id};
+#     my $log = CoGe::Accessory::Web::log_history(
+#         db          => $db,
+#         user_id     => $user->id,
+#         page        => 'CoGeBlast',
+#         description => $log_msg,
+#         link        => $tiny_url,
+#         parent_id   => $response->{id},
+#         parent_type => 7 #FIXME magic number
+#     ) if $response and $response->{id};
 
-    return encode_json({
-        id => $response->{id},
-        link => $tiny_url,
-        logfile => $config->{TEMPURL} . "CoGeBlast/" . $cogeweb->basefilename . ".log",
-        success => $JEX->is_successful($response) ? JSON::true : JSON::false
-    })
-}
+#     return encode_json({
+#         id => $response->{id},
+#         link => $tiny_url,
+#         logfile => $config->{TEMPURL} . "CoGeBlast/" . $cogeweb->basefilename . ".log",
+#         success => $JEX->is_successful($response) ? JSON::true : JSON::false
+#     })
+# }
 
 with qw(CoGe::Builder::Buildable);
 

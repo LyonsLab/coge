@@ -9,7 +9,7 @@ use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
-use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url go );
+use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url );
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
@@ -69,7 +69,6 @@ $FORMATDB      = get_command_path('FORMATDB');
     blast_param              => \&blast_param,
     database_param           => \&database_param,
     gen_dsg_menu             => \&gen_dsg_menu,
-    blast_search             => \&blast_search,
     generate_feat_info       => \&generate_feat_info,
     get_hsp_info             => \&get_hsp_info,
     generate_overview_image  => \&generate_overview_image,
@@ -201,6 +200,7 @@ sub gen_body {
             SEQUENCE => 'Enter FASTA sequence(s) here'
         );
     }
+    $template->param( PAGE_NAME => $PAGE_NAME );
     $template->param( USER_NAME => $USER->user_name );
 
     #$template->param( REST      => 1 );
@@ -2786,8 +2786,4 @@ sub get_genomes_for_list {
     }
 
     return $genomes;
-}
-
-sub blast_search {
-    go(db => $db, user => $USER, config => $P, @_);
 }

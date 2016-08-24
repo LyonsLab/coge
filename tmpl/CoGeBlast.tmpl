@@ -178,6 +178,8 @@
     <script type="text/javascript" src="js/pages/blast.js"></script>
     <script type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></script>
     <script>
+        const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+        const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
     $(function() {
         $.ajaxSetup({
             type: "POST",

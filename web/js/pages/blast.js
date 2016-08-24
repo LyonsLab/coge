@@ -712,7 +712,6 @@ function blastOff(dialog, results, basename) {
     });
 
     var options = {
-        fname:          'blast_search',
         program:        program,
         expect:         expect,
         job_title:      job_title,
@@ -730,8 +729,8 @@ function blastOff(dialog, results, basename) {
         zthreshold:     zthreshold,
         zmask:          zmask,
         basename:       pageObj.basename,
-        seq:            seq,
-        blastable:      blastable_db,
+        query_seq:      seq,
+        genomes:        blastable_db.split(','),
         fid:            pageObj.fid,
         width:          page_width,
         type:           params.type,
@@ -739,19 +738,19 @@ function blastOff(dialog, results, basename) {
     };
 
     $.ajax({
-        type: "POST",
-        url: "CoGeBlast.pl",
+        type: "PUT",
+        url: 'api/v1/jobs',
         dataType: 'json',
-        data: options,
+        contentType: "application/json",
+        data: JSON.stringify({
+            type: 'blast',
+            requester: {
+                page:      PAGE_NAME,
+                user_name: USER_NAME
+            },
+            parameters: options
+        }),
         success : function(response) {
-            //console.log(data);
-            //if (data.error) {
-            //    validator.html(data.error).fadeIn();
-            //    $('#log_text').slideUp();
-            //} else {
-            //    //blastresults(data.html, data.click_all_links);
-            //}
-
             status_dialog.unbind().on("dialogclose", function() {
                 _results.removeClass('hidden').slideDown();
 
