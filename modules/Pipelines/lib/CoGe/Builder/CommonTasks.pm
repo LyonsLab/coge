@@ -235,9 +235,9 @@ sub create_iget_job {
     my $dest_path = dirname($dest_file);
     #make_path($dest_path) unless (-r $dest_path); # mdb removed 2/9/16 -- for hypnotoad
     my $cmd;
-    $cmd .= "mkdir -p $dest_path ; "; # mdb added 2/9/16 -- for hypnotoad
+    $cmd .= "mkdir -p $dest_path && "; # mdb added 2/9/16 -- for hypnotoad
     irods_set_env(catfile($CONF->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
-    $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1 } ) . ' ; ';
+    $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1 } ) . ' && ';
     $cmd .= "touch $done_file";
 
     return {
