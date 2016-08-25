@@ -111,6 +111,7 @@ sub add_jobs {
             push @$args, [ '', "M=" . $zmask,      1 ] if defined $zmask;
             push @$args, [ '', "O=" . $zgap_start, 1 ] if defined $zgap_start;
             push @$args, [ '', "E=" . $zgap_extension, 1 ] if defined $zgap_extension;
+            push @$args, [ '', '--ambiguous=iupac', 1 ];
             push @$args, [ '',  $dbfasta,    0 ];
             push @$args, [ '>', $outfile,    1 ];
         }

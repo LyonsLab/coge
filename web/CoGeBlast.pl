@@ -707,7 +707,6 @@ sub get_results {
     foreach my $item (@results) {
         next unless -r $item->{file};
         my $outfile = $item->{file};
-
         my $report =
           $outfile =~ /lastz/
           ? new CoGe::Accessory::blastz_report( { file => $outfile } )
