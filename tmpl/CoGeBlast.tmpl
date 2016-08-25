@@ -326,7 +326,7 @@
     <div class="bold text">Protein Specific Parameters</div>
     <TABLE class="ui-corner-all ui-widget-content small">
       <TR>
-        <TD valign="top">Matrix:</TD>
+        <TD valign="top" style="font-weight:normal;">Matrix:</TD>
         <TD>
           <select name="matrix" id="matrix" onChange="update_gapcost(1)">
             <option value="PAM30">PAM30</option>
@@ -340,7 +340,7 @@
       </TR>
       <TMPL_IF NAME="BLAST_PRO_COMP">
       <TR>
-        <TD>Compositional adjustments:</TD>
+        <TD style="font-weight:normal;">Compositional adjustments:</TD>
         <TD>
           <select name="comp_adj" id="comp_adj">
             <option value="0">No adjustment</option>
