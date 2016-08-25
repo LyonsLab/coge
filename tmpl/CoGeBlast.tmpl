@@ -217,9 +217,8 @@
                 seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>, pageObj.seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>);
             }
         }
-
         //TODO - handle js object error when checking for value when it hasn't been instantiated
-        else{
+        else {
             seqObj = new Object();
         }
 
@@ -306,7 +305,7 @@
     <div class="bold text">Nucleotide Specific Parameters</div>
     <TABLE class="ui-corner-all ui-widget-content small">
       <TR>
-        <TD valign="top">Match/Mismatch Scores:</TD>
+        <TD valign="top" style="font-weight:normal;">Match/Mismatch Scores:</TD>
         <TD>
           <select id="match_score" name="match_score" onchange="update_gapcost()">
             <option selected="selected" value="1,-2">1,-2</option>
@@ -361,7 +360,7 @@
     <div class="bold text">Nucleotide Specific Parameters</div>
     <TABLE class='ui-widget-content ui-corner-all small'>
       <TR>
-        <TD valign="top">Match/Mismatch Scores:</TD>
+        <TD valign="top" style="font-weight:normal;">Match/Mismatch Scores:</TD>
         <TD>
           <select id="match_score" name="match_score" onchange="update_gapcost_ncbi()">
             <option selected="selected" value="1,-2">1,-2</option>
@@ -397,7 +396,7 @@
       <TR>
         <TD>Compositional adjustments</TD>
         <TD>
-          <select name=comp_adj id=comp_adj>
+          <select name="comp_adj" id="comp_adj">
             <option value="0">No adjustment</option>
             <option value="1" selected>Composition-based statistics</option>
             <option value="2">Conditional compositional score matrix adjustment</option>
