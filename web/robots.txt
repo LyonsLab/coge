@@ -21,6 +21,7 @@ Disallow: /scripts/
 Disallow: /data/
 Disallow: /bin/
 Disallow: /CodeOn.pl
+Disallow: /GEvo.pl
 Crawl-delay: 10
 
 User-Agent: *

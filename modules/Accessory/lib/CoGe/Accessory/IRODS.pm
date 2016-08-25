@@ -136,7 +136,7 @@ sub irods_chksum {
     my $env_file = _irods_get_env_file();
     return unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file'; ichksum $path";
+    my $cmd = "export irodsEnvFile='$env_file' && ichksum $path";
     #print STDERR "cmd: $cmd\n";
     my @output = `$cmd`;
     my ($chksum) = $output[0] =~ /\s*\S+\s+(\S+)/;
@@ -160,7 +160,7 @@ sub irods_iget {
     my $env_file = _irods_get_env_file();
     return unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file'; iget -fT '$src' '$dest'";
+    my $cmd = "export irodsEnvFile='$env_file' && iget -fT '$src' '$dest'";
     return $cmd if $no_execute;
     #print STDERR "cmd: $cmd\n";
     my @result = `$cmd`;
@@ -179,7 +179,7 @@ sub irods_iput {
     my $env_file = _irods_get_env_file();
     return unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file'; iput -T";
+    my $cmd = "export irodsEnvFile='$env_file' && iput -T";
        $cmd .= " -f " if $overwrite;
        $cmd .= " $src $dest";
 
@@ -205,7 +205,7 @@ sub irods_imeta {
 			next;
 		}
 
-	    my $cmd = "export irodsEnvFile='$env_file'; imeta add -d '" . $dest . "' '" . $k . "' '" . $v . "'";
+	    my $cmd = "export irodsEnvFile='$env_file' && imeta add -d '" . $dest . "' '" . $k . "' '" . $v . "'";
 	    #print STDERR "cmd: $cmd\n";
 	    my @result = `$cmd`;
 	    #print STDERR "@result";
@@ -221,7 +221,7 @@ sub irods_imkdir {
     my $env_file = _irods_get_env_file();
     return 'irods env file missing' unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file'; imkdir '" . $path . "'";
+    my $cmd = "export irodsEnvFile='$env_file' && imkdir '" . $path . "'";
     my @result = `$cmd`;
     return $result[0] if scalar @result;
 }

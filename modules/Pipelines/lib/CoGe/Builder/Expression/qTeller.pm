@@ -6,7 +6,6 @@ use warnings;
 
 use Data::Dumper qw(Dumper);
 use File::Basename qw(fileparse basename dirname);
-use File::Path qw(mkpath);
 use File::Spec::Functions qw(catdir catfile);
 use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);

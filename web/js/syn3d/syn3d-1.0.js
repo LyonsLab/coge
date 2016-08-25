@@ -5,6 +5,7 @@
 /*-----------------------------------------------------------------------------------------------------------------
  ~~~~ GLOBAL DECLARATIONS ~~~~
  -----------------------------------------------------------------------------------------------------------------*/
+var MAX_PTS = 100000;
 
 // SynMap Global Variables [note: when adding, make sure to reset in renderSynMap().initialize()]
 var camView = { "x": 0, "y": 0, "z": 120 };
@@ -1191,100 +1192,114 @@ var renderSynMap = function (graph_object, element_id, persistence) {
  -----------------------------------------------------------------------------------------------------------------*/
 
 $(document).ready( function() {
-    //var d; AKB Moved these two variables to global, 5/2/16
-    //var overlay = $("#overlay");
-
-    var persistanceSlide = $("#slide");
-    var persistanceDisplay = $("#slideDisplay");
+    // Show overlay.
     overlay.show();
 
-    // Load data & launch initial visualizations
+    // Initialize jQuery selectors.
+    var persistanceSlide = $("#slide");
+    var persistanceDisplay = $("#slideDisplay");
+
+    // Define paths.
     var graphLoc = DATA_LOC + "/" + final_experiment.graph; // NOTE: This "DATA_LOC is set in SynMap3D.pl, may need modification when moving to production.
     var downloadLoc = DATA_LOC + "/" + final_experiment.download;
     
-    $("#download").html("<form method='get' action='" + downloadLoc + "'><button type='submit' formtarget='_blank'>Download!</button>");
-
+    // Load data, launch visualization OR error message.
     $.when(loadData(graphLoc)).done(function(data) {
         d = data;
-        // Save species names to global variables.
-        xsp = d.x[1];
-        ysp = d.y[1];
-        zsp = d.z[1];
+        if ($.isEmptyObject(d)) { // Empty results case.
+            // Hide analysis viewer, show error pane.
+            $('#analysis').css("display", "none");
+            $('#error_too-many-pts').css("display", "none");
+            $('#error_empty-results').css("display", "");
 
-        // Update camera view buttons with spp names.
-        document.getElementById("xylabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='bluetxt'>" + ysp + "</span>";
-        document.getElementById("xzlabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
-        document.getElementById("yzlabel").innerHTML = "<span class='bluetxt'>" + ysp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
+            // End spinny wheel.
+            overlay.hide();
+        } else if (d.points.length > MAX_PTS) { // Too many points case.
+            // Hide error pane, show analysis viewer.
+            $('#analysis').css("display", "none");
+            $('#error_empty-results').css("display", "none");
+            $('#error_too-many-pts').css("display", "");
+            
+            // Update data download link.
+            $("#error_too-many-pts_download").html("<form method='get' action='" + downloadLoc + "'><button type='submit' formtarget='_blank'>Download!</button>");
+            
+            // End spinny wheel.
+            overlay.hide();
+        } else { // Renderable results case.
+            // Hide error pane, show analysis viewer.
+            $('#error_empty-results').css("display", "none");
+            $('#error_too-many-pts').css("display", "none");
+            $('#analysis').css("display", "");
 
-        // Render initial SynMap & Histogram
-        renderSynMap(data, "canvas", persistanceSlide.val());
-        renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-        //postTiny("tiny", final_experiment.page_url);
-        postTiny("tiny", final_experiment.tiny_url);
+            // Save species names to global variables.
+            xsp = d.x[1];
+            ysp = d.y[1];
+            zsp = d.z[1];
+            
+            // Update camera view buttons with spp names.
+            document.getElementById("xylabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='bluetxt'>" + ysp + "</span>";
+            document.getElementById("xzlabel").innerHTML = "<span class='redtxt'>" + xsp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
+            document.getElementById("yzlabel").innerHTML = "<span class='bluetxt'>" + ysp + "</span>" + "-" + "<span class='greentxt'>" + zsp + "</span>";
 
-        // Render an instruction pop-up over SynMap
-        var instructor = $("#instruct");
-        var iH = instructor.height();
-        var iW = instructor.width();
-        var canvas = $("#canvas");
-        var cH = canvas.height();
-        var cW = canvas.width();
-        instructor.removeClass("hidden");
-        instructor.css("top", cH/2 - iH/2).css("left", cW/2 - iW/2);
+            // Update data download button.
+            $("#download").html("<form method='get' action='" + downloadLoc + "'><button type='submit' formtarget='_blank'>Download!</button>");
+            
+            // Render initial SynMap & Histogram
+            renderSynMap(data, "canvas", persistanceSlide.val());
+            renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
+            //postTiny("tiny", final_experiment.page_url);
+            postTiny("tiny", final_experiment.tiny_url);
 
-        // Update flat label text.
-        document.getElementById("xlabel").innerHTML = xsp;
-        document.getElementById("ylabel").innerHTML = ysp;
-        document.getElementById("zlabel").innerHTML = zsp;
-        var al = $("#axislabels");
-        al.css("left", 8).css("top", cH - al.height() - 8);
+            // Render an instruction pop-up over SynMap
+            var instructor = $("#instruct");
+            var iH = instructor.height();
+            var iW = instructor.width();
+            var canvas = $("#canvas");
+            var cH = canvas.height();
+            var cW = canvas.width();
+            instructor.removeClass("hidden");
+            instructor.css("top", cH/2 - iH/2).css("left", cW/2 - iW/2);
 
-        // End spinny wheel.
-        overlay.hide();
-    });
+            // Update flat label text.
+            document.getElementById("xlabel").innerHTML = xsp;
+            document.getElementById("ylabel").innerHTML = ysp;
+            document.getElementById("zlabel").innerHTML = zsp;
+            var al = $("#axislabels");
+            al.css("left", 8).css("top", cH - al.height() - 8);
+            // End spinny wheel.
+            overlay.hide();
 
-    /* Monitor mutation ratio coloring option & update visualizations on change. */
-    var colorBySelect = $("#color_by");
-    colorBySelect.change( function () {
-        refresh = true;
-        //emptyRenderings();
-        // Draw new SynMap & histogram.
-        //renderSynMap(d, "canvas", persistanceSlide.val());
-        //renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-        //overlay.hide();
-    });
+            /* Monitor mutation ratio coloring option & update visualizations on change. */
+            var colorBySelect = $("#color_by");
+            colorBySelect.change( function () {
+                refresh = true;
+            });
 
-    /* Monitor mutation ratio coloring option & update visualizations on change. */
-    var colorSchemeSelect = $("#color_scheme");
-    var autoscale = $("#autoscale");
-    colorSchemeSelect.change( function () {
-        //overlay.show();
-        var newVal = colorSchemeSelect.val();
-        // Check for autoscale
-        if (newVal == "Auto") {
-            autoscale.removeClass("hidden");
-        } else {
-            if (!autoscale.hasClass("hidden")) { autoscale.addClass("hidden") }
+            /* Monitor mutation ratio coloring option & update visualizations on change. */
+            var colorSchemeSelect = $("#color_scheme");
+            var autoscale = $("#autoscale");
+            colorSchemeSelect.change( function () {
+                //overlay.show();
+                var newVal = colorSchemeSelect.val();
+                // Check for autoscale
+                if (newVal == "Auto") {
+                    autoscale.removeClass("hidden");
+                } else {
+                    if (!autoscale.hasClass("hidden")) { autoscale.addClass("hidden") }
+                }
+                colorScheme = newVal;
+                refresh = true;
+            });
+
+            /* Report persistence */
+            persistanceDisplay.html(persistanceSlide.val());
+            persistanceSlide.change( function () {
+                persistanceDisplay.html(persistanceSlide.val());
+                refresh = true;
+                overlay.show();
+            });
         }
-        colorScheme = newVal;
-        refresh = true;
-        // emptyRenderings();
-        // // Draw new SynMap & histogram.
-        // renderSynMap(d, "canvas", persistanceSlide.val());
-        // renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-        // overlay.hide();
-    });
 
-    /* Report persistence */
-    persistanceDisplay.html(persistanceSlide.val());
-    persistanceSlide.change( function () {
-        persistanceDisplay.html(persistanceSlide.val());
-        refresh = true;
-        overlay.show();
-        // emptyRenderings();
-        // renderSynMap(d, "canvas", persistanceSlide.val());
-        // renderHistogram(hCurrent[0], histData[hCurrent[1]], persistanceSlide.val());
-        // overlay.hide()
     });
 
 });

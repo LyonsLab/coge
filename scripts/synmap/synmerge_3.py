@@ -406,6 +406,23 @@ def buildAxisTicks(sorted_chrs, relative_genome_size, relative_chromosomes):
     return axis, length
 
 
+def checkData(file_list):
+    """
+    Check Data Objects for Points.
+
+    :param file_list: List of json object's loaded from file
+    :return: True if valid, False if not.
+    """
+    for f in file_list:
+        f_sp = f["syntenic_points"]
+        sp1 = f_sp.keys()[0]
+        sp2 = f_sp[sp1].keys()[0]
+        data = f_sp[sp1][sp2]
+        if len(data) < 1:
+            return False
+    return True
+
+
 def buildDownloadData(dataXY, dataXZ):
     data = {}
     xgid = dataXY[0][0].split("||")[0] # For X data
@@ -528,7 +545,6 @@ min_samples = args.C_ms
 # Parsing
 min_length = args.ml
 min_synteny = args.ms
-# TODO: Kn/Ks Parse
 
 # Kn/Ks Ratio Cutoff
 ratio_cutoff = args.R
@@ -536,8 +552,6 @@ ratio_by = args.Rby
 rcutoff_min = float(args.Rmin)
 rcutoff_max = float(args.Rmax)
 
-#except:
-#ratio_cutoff = args.R
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                 __  ___      _          _____           _       __                                  #
 #                                /  |/  /___ _(_)___     / ___/__________(_)___  / /_                                 #
@@ -553,12 +567,52 @@ X_GID = args.xid
 Y_GID = args.yid
 Z_GID = args.zid
 
+## ----- Build output filenames. ----- ##
+# Filename follows standard: XGID_YGID_ZGID_<options, '_' separated and in alphabetic order>_<filetype>.json
+name_base = "%s_%s_%s_" % (X_GID, Y_GID, Z_GID)
+name_ext = []  # deque([])
+# Sort
+name_ext.append('sort=%s' % sort_method)
+# Parse
+name_ext.append('parse.len=%s' % str(min_length))
+name_ext.append('parse.syn=%s' % str(min_synteny))
+# Cluster
+if remove_unclustered:
+    name_ext.append('cluster.eps=%s' % args.C_eps)
+    name_ext.append('cluster.min=%s' % str(min_samples))
+# Ratio Thinning
+if ratio_cutoff:
+    name_ext.append('ratio.by=%s.%s' % (ratio_by, ratio_cutoff))
+    name_ext.append('ratio.min=%s' % args.Rmin)
+    name_ext.append('ratio.max=%s' % args.Rmax)
+# Sort name extensions, write graph & log filenames.
+name_ext.sort()
+graphName_out = name_base + '_'.join(name_ext) + '_graph.json'
+downloadName_out = name_base + '_'.join(name_ext) + '_data.txt'
+logName_out = name_base + '_'.join(name_ext) + '_log.json'
+# Add output path to output files.
+graph_out = path.join(args.o, graphName_out)
+download_out = path.join(args.o, downloadName_out)
+log_out = path.join(args.o, logName_out)
 
 ## ----- Load data files. ----- ##
 file1 = load(open(args.i1, 'r'))
 file2 = load(open(args.i2, 'r'))
 file3 = load(open(args.i3, 'r'))
 
+## ----- Check files for points, if no results write blank outputs and exit. ----- ##
+if not checkData([file1, file2, file3]):
+    # Print an error message.
+    print("Error: inputs were not valid (one or more pairwise analyses had no syntenic points). "
+          "Writing empty files and exiting...")
+    # Write outputs with no results.
+    dump({}, open(graph_out, 'wb'))
+    with(open(download_out, 'wb')) as dout:
+        dout.write("#Xsp_gid||Xchr1||Xstart||Xstop||Xname||Xstrand||Xtype||Xdb_feature_id1\tYsp_gid||Ychr||Ystart||Ystop||Yname||Ystrand||Ytype||Ydb_feature_id\tZsp_gid||Zchr||Zstart||Zstop||Zname||Zstrand||Ztype||Zdb_feature_id\tXY_kn||XY_ks||XZ_kn||XZ_ks||YZ_kn||YZ_ks\n")
+    dump({"status": "failed", "message": "0 syntenic pairs identified", "execution_time": str(datetime.now() - start)},
+         open(log_out, 'wb'))
+    # Quit.
+    exit(0)
 
 ## ----- Consolidate genome information. ----- ##
 genomes = file1["genomes"].copy()
@@ -871,33 +925,6 @@ log_obj["status"] = "complete"
 log_obj["matches"] = clusters.shape[0]
 log_obj["execution_time"] = str(datetime.now() - start)
 
-# Build output filename.
-# Filename follows standard: XGID_YGID_ZGID_<options, '_' separated and in alphabetic order>_<filetype>.json
-name_base = "%s_%s_%s_" % (X_GID, Y_GID, Z_GID)
-name_ext = []  # deque([])
-# Sort
-name_ext.append('sort=%s' % sort_method)
-# Parse
-name_ext.append('parse.len=%s' % str(min_length))
-name_ext.append('parse.syn=%s' % str(min_synteny))
-# Cluster
-if remove_unclustered:
-    name_ext.append('cluster.eps=%s' % args.C_eps)
-    name_ext.append('cluster.min=%s' % str(min_samples))
-# Ratio Thinning
-if ratio_cutoff:
-    name_ext.append('ratio.by=%s.%s' % (ratio_by, ratio_cutoff))
-    name_ext.append('ratio.min=%s' % args.Rmin)
-    name_ext.append('ratio.max=%s' % args.Rmax)
-# Sort name extensions, write graph & log filenames.
-name_ext.sort()
-graphName_out = name_base + '_'.join(name_ext) + '_graph.json'
-downloadName_out = name_base + '_'.join(name_ext) + '_data.json'
-logName_out = name_base + '_'.join(name_ext) + '_log.json'
-# Add output path to output files.
-graph_out = path.join(args.o, graphName_out)
-download_out = path.join(args.o, downloadName_out)
-log_out = path.join(args.o, logName_out)
 # Write output files.
 # graph
 dump(graph_obj, open(graph_out, 'wb'))

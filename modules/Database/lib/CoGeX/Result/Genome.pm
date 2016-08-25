@@ -314,8 +314,12 @@ sub datasets {
         next if ( $restricted and not $ds->restricted );
 
         if ( defined $chr ) {
-            $datasets{ $ds->id } = $ds
-              if $ds->has_chromosome( chr => $chr );    #$ds_chr eq $chr;
+            if ( $ds->has_chromosome(chr => $chr) ||
+                 $ds->has_chromosome(chr => 'lcl|'.$chr) || # mdb added 8/18/16 for COGE-735
+                 $ds->has_chromosome(chr => 'gi|'.$chr) )   # mdb added 8/18/16 for COGE-735
+            {
+                $datasets{ $ds->id } = $ds;
+            }
         }
         else {
             $datasets{ $ds->id } = $ds;
@@ -407,7 +411,7 @@ sub get_chromosome_length {
 	if ($c->find($name)) {
 		return $c->length;
 	}
-	print STDERR "CoGeX::Result::Genome::get_chromosome_length ERROR, chromosome '$name' not found\n";
+	print STDERR "CoGeX::Result::Genome::get_chromosome_length ERROR, chromosome '$name' not found for genome ", $self->id, "\n";
 	return 0;
 }
 

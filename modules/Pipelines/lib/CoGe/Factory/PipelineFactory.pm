@@ -56,6 +56,8 @@ sub get {
 
     # Select pipeline builder
     my $builder;
+    my $sharedResult = 0; # mdb added 8/18/16 COGE-730 -- prevent SynMap from running separate workflows for same analysis
+    
     if ($message->{type} eq "blast") {
         $builder = CoGe::Builder::Tools::CoGeBlast->new($request);
     }
@@ -85,9 +87,11 @@ sub get {
     }
     elsif ($message->{type} eq "synmap") {
         $builder = CoGe::Builder::Tools::SynMap->new($request);
+        $sharedResult = 1; # mdb added 8/18/16 COGE-730
     }
     elsif ($message->{type} eq "synmap3d") {
         $builder = CoGe::Builder::Tools::SynMap3D->new($request);
+        $sharedResult = 1; # mdb added 8/18/16 COGE-730
     }
     elsif ($message->{type} eq "analyze_expression") {
         $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
@@ -104,12 +108,17 @@ sub get {
     }
     
     # Initialize workflow
-    $builder->workflow( $self->jex->create_workflow(name => $builder->get_name, init => 1) );
-    return unless ($builder->workflow && $builder->workflow->id);
-    my ($staging_dir, $result_dir) = get_workflow_paths(($self->user ? $self->user->name : 'public'), $builder->workflow->id);
-    $builder->staging_dir($staging_dir);
-    $builder->result_dir($result_dir);
-    $builder->workflow->logfile(catfile($result_dir, "debug.log"));
+    $builder->workflow( $self->jex->create_workflow(name => $builder->get_name, init => ($sharedResult ? 0 : 1) ) );
+    return unless ($builder->workflow && ($sharedResult || $builder->workflow->id));
+    
+    my ($staging_dir, $result_dir);
+    unless ($sharedResult) {
+        ($staging_dir, $result_dir) = get_workflow_paths(($self->user ? $self->user->name : 'public'), $builder->workflow->id);
+        $builder->staging_dir($staging_dir);
+        $builder->result_dir($result_dir);
+        $builder->workflow->logfile(catfile($result_dir, "debug.log"));
+    }
+    #TODO mdb 8/18/16 have the builder determine its own result paths to resolve inconsistency between SynMap and other pipelines
     
     # Get a tiny URL to a status page #TODO simplyify this
     my ($page, $link);
@@ -144,10 +153,12 @@ sub get {
     }
     
     # Dump raw workflow to file for debugging -- mdb added 2/17/16
-    make_path($result_dir);
-    open(my $fh, '>', catfile($result_dir, 'workflow.log'));
-    print $fh Dumper $builder->workflow, "\n";
-    close($fh);
+    if ($result_dir) {
+        make_path($result_dir);
+        open(my $fh, '>', catfile($result_dir, 'workflow.log'));
+        print $fh Dumper $builder->workflow, "\n";
+        close($fh);
+    }
     
     return $builder;
 }

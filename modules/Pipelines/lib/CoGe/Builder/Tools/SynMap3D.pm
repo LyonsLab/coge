@@ -10,7 +10,6 @@ use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Builder::Tools::SynMap qw( add_jobs defaults );
 use CoGe::Core::Storage qw( get_workflow_paths );
 use Data::Dumper;
-#use File::Path qw(mkpath);
 use File::Spec::Functions;
 use JSON qw( encode_json );
 use POSIX;
@@ -66,10 +65,17 @@ sub build {
 	#########################################################################
 	my $workflow = $self->workflow;
 
-	# Input datafiles.
-	my $dot_xy_path = catfile($self->conf->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . "_synteny.json");
-    my $dot_xz_path = catfile($self->conf->{DIAGSDIR}, $dir3, $dir4, $dir3 . '_' . $dir4 . "_synteny.json");
-	my $dot_yz_path = catfile($self->conf->{DIAGSDIR}, $dir5, $dir6, $dir5 . '_' . $dir6 . "_synteny.json");
+	# Input datafiles. TODO: Make this path specification based on the '$final_dagchainer_file' from SynMap.pm
+	# AKB (2016-8-15) changed to reflect new naming conventions.
+	#my $dot_xy_path = catfile($self->conf->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . "_synteny.json");
+    #my $dot_xz_path = catfile($self->conf->{DIAGSDIR}, $dir3, $dir4, $dir3 . '_' . $dir4 . "_synteny.json");
+	#my $dot_yz_path = catfile($self->conf->{DIAGSDIR}, $dir5, $dir6, $dir5 . '_' . $dir6 . "_synteny.json");
+
+	my $opts_name = '.CDS-CDS.last.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.Dm0.ma1.gcoords.dotplot_dots_synteny.json';  # check that this is right. Maybe there needs to be '.gcoords' after 'ma1'? or no '.Dm0.ma1'? Depends on state of final_dagchainer_file at point of assignment...
+	my $dot_xy_path = catfile( $self->conf->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . $opts_name );
+	my $dot_xz_path = catfile( $self->conf->{DIAGSDIR}, $dir3, $dir4, $dir3 . '_' . $dir4 . $opts_name );
+	my $dot_yz_path = catfile( $self->conf->{DIAGSDIR}, $dir5, $dir6, $dir5 . '_' . $dir6 . $opts_name );
+
 
 	# Options.
 	my $sort = $self->params->{sort};
@@ -93,6 +99,7 @@ sub build {
     }
     my $graph_out = $self->params->{graph_out};
     my $log_out = $self->params->{log_out};
+    my $data_out = $self->params->{download};
 
 	# Build command line arguments.
 	my $merge_ids = ' -xid ' . $xid . ' -yid ' . $yid . ' -zid ' . $zid;
@@ -110,7 +117,7 @@ sub build {
 	$workflow->add_job({
         cmd => $MERGER . $merge_ids . $merge_ins . $merge_opt . $merge_otp,
         inputs => [$dot_xy_path, $dot_xz_path, $dot_yz_path],
-        outputs => [catfile($SYN3DIR, $graph_out), catfile($SYN3DIR, $log_out)],
+        outputs => [catfile($SYN3DIR, $graph_out), catfile($SYN3DIR, $log_out), catfile($SYN3DIR, $data_out)],
         description => "Identifying common points & building graph object..."
     });
 

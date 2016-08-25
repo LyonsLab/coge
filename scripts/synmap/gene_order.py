@@ -48,7 +48,7 @@ def main(input, output, gid1, gid2, feature1, feature2):
 
     if not input_file:
         logging.error("The input file (" + input + ") was unable to be opened or is empty.")
-        return 1
+        return 0
 
     if genomic:
         genomic_order = order_genes(input_file, feature1, feature2)

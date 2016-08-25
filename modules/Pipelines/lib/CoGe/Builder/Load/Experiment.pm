@@ -232,13 +232,26 @@ sub build {
         # Generate additional metadata for resulting experiments
         my $annotations = CoGe::Core::Metadata::to_annotations($additional_metadata);
         
+        my $input_file = $input_files[0];
+        
+        # Add conversion step for BigWig files
+        if ( $file_type eq 'bw' ) {
+            my $wig_task = create_bigwig_to_wig_job(
+                staging_dir => $self->staging_dir,
+                input_file => $input_file
+            );
+            push @tasks, $wig_task;
+            push @done_files, $wig_task->{outputs}->[1];
+            $input_file = $wig_task->{outputs}->[0];  
+        }
+        
         # Submit workflow to generate experiment
         my $load_task = create_load_experiment_job(
             user => $self->user,
             staging_dir => $self->staging_dir,
             wid => $self->workflow->id,
             gid => $genome->id,
-            input_file => $input_files[0],
+            input_file => $input_file,
             metadata => $metadata,
             annotations => $annotations,
             normalize => $self->params->{normalize} ? $self->params->{normalize_method} : 0
