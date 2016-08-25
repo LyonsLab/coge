@@ -646,19 +646,18 @@ sub get_results {
         tempdir  => $TEMPDIR
     );
 
-    my $seq = $opts{seq};
+    my $seq = $opts{query_seq};
 
-    #this is where the dsgids are stored -- stupid name
-    my $blastable = $opts{blastable};
+    my $genomes = $opts{'genomes[]'};
 
-    my @dsg_ids = split( /,/, $blastable );
+    my @dsg_ids = split( /,/, $genomes );
 
     my $width = $opts{width};
 
     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
         user_id => $USER->id,
         page    => "GenomeList",
-        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
+        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$genomes"
     );
 
 #    my $list_link = qq{<a href="$genomes_url" target_"blank">} . @dsg_ids . ' genome' . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';

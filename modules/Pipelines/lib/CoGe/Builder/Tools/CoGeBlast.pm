@@ -48,7 +48,6 @@ sub add_jobs {
     my $filter_query = $opts{filter_query};
     my $cogeweb      = $opts{cogeweb};
     unless ($cogeweb) {
-        warn 'blast init basefile';
         $cogeweb = CoGe::Accessory::Web::initialize_basefile(
             basename => $opts{basename},
             tempdir  => $config->{TEMPDIR} . "CoGeBlast"
@@ -72,7 +71,6 @@ sub add_jobs {
 
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 
-warn 'blast create fasta';
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq, $cogeweb);
     my $pre_command;
     my $x;
@@ -154,8 +152,6 @@ warn 'blast create fasta';
             make_path($download_path);
             my $filename = sanitize_name("$org.$program");
             my $outfile_link = catfile($download_path, $filename);
-            warn $outfile;
-            warn $outfile_link;
             $workflow->add_job({
                 cmd     => "ln -s $outfile \"$outfile_link\"",
                 inputs  => [$outfile],
@@ -222,6 +218,7 @@ sub build {
     return 0 if ! scalar @gids;
 
     my $resp = add_jobs(
+        basename     => $self->params->{basename},
         blastable    => join(',', @gids),
         config       => $self->conf,
         db           => $self->db,
@@ -245,12 +242,12 @@ sub build {
         zthreshold   => $self->params->{zthreshold},
         zwordsize    => $self->params->{zwordsize}
     );
-    $self->{site_url} = get_tiny_url( %{$self->params} );
+    # $self->{link} = get_tiny_url( %{$self->params} );
+    # $self->{logfile} = $self->workflow->logfile;
     return 1;
 }
 
 sub create_fasta_file {
-    warn 'create fasta';
     my $seq = shift;
     my $cogeweb = shift;
     my %seqs;    #names and lengths

@@ -1092,7 +1092,6 @@ sub reset_settings {
 }
 
 sub initialize_basefile {
-    warn 'init basefile';
     my ( $self, %opts ) = self_or_default(@_);
     my $basename    = $opts{basename};
     my $prog        = $opts{prog};
@@ -1121,7 +1120,6 @@ sub initialize_basefile {
             #SUFFIX=>'.png',
             UNLINK => 1
         );
-        warn $file->filename;
         $self->basefile( $file->filename );
         $self->logfile( $self->basefile . ".log" );
         $self->sqlitefile( $self->basefile . ".sqlite" );
