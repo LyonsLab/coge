@@ -48,11 +48,13 @@ sub add_jobs {
     my $filter_query = $opts{filter_query};
     my $cogeweb      = $opts{cogeweb};
     unless ($cogeweb) {
+        warn 'blast init basefile';
         $cogeweb = CoGe::Accessory::Web::initialize_basefile(
             basename => $opts{basename},
             tempdir  => $config->{TEMPDIR} . "CoGeBlast"
         );
     }
+    $workflow->logfile($cogeweb->logfile);
 
     #blastz params
     my $zwordsize      = $opts{zwordsize};
@@ -70,6 +72,7 @@ sub add_jobs {
 
     CoGe::Accessory::Web::write_log( "process $$", $cogeweb->logfile );
 
+warn 'blast create fasta';
     my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq, $cogeweb);
     my $pre_command;
     my $x;
@@ -151,6 +154,8 @@ sub add_jobs {
             make_path($download_path);
             my $filename = sanitize_name("$org.$program");
             my $outfile_link = catfile($download_path, $filename);
+            warn $outfile;
+            warn $outfile_link;
             $workflow->add_job({
                 cmd     => "ln -s $outfile \"$outfile_link\"",
                 inputs  => [$outfile],
@@ -217,27 +222,35 @@ sub build {
     return 0 if ! scalar @gids;
 
     my $resp = add_jobs(
-        workflow     => $self->workflow,
-        db           => $self->db,
-        user         => $self->user,
-        config       => $self->conf,
         blastable    => join(',', @gids),
-        program      => $program,
+        config       => $self->conf,
+        db           => $self->db,
         expect       => $expect,
-        wordsize     => $wordsize,
-        gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
-        matchscore   => $match_score->[0] . ',' . $match_score->[1],
         filter_query => $filter_query,
-        resultslimit => $self->params->{max_results},
-        seq          => $self->params->{query_seq},
+        gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
+        link_results => 1,
+        matchscore   => $match_score->[0] . ',' . $match_score->[1],
         matrix       => $self->params->{matrix},
         outfmt       => $self->params->{outfmt},
-        link_results => 1
+        program      => $program,
+        resultslimit => $self->params->{max_results},
+        seq          => $self->params->{query_seq},
+        user         => $self->user,
+        wordsize     => $wordsize,
+        workflow     => $self->workflow,
+        zchaining    => $self->params->{zchaining},
+        zgap_extension => $self->params->{zgap_extension},
+        zgap_start   => $self->params->{zgap_start},
+        zmask        => $self->params->{zmask},
+        zthreshold   => $self->params->{zthreshold},
+        zwordsize    => $self->params->{zwordsize}
     );
+    $self->{site_url} = get_tiny_url( %{$self->params} );
     return 1;
 }
 
 sub create_fasta_file {
+    warn 'create fasta';
     my $seq = shift;
     my $cogeweb = shift;
     my %seqs;    #names and lengths
