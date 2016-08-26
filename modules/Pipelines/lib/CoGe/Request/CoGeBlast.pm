@@ -16,10 +16,15 @@ sub is_valid {
 
 sub has_access {
     my $self = shift;
-    return unless defined $self->{user};
     my @gids = get_genomes($self->parameters->{genomes}, $self->parameters->{notebooks}, $self->db);
     for (@gids) {
-        return unless $self->user->has_access_to_genome($self->db->resultset("Genome")->find($_));
+        if ($self->user) {
+           return unless $self->user->has_access_to_genome($self->db->resultset("Genome")->find($_));
+        }
+        else {
+            my @a = $self->db->storage->dbh->selectrow_array('SELECT restricted FROM genome WHERE genome_id=' . $_ );
+            return if $a[0];
+        }
     }
     return 1;
 }

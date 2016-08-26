@@ -149,7 +149,7 @@ sub add_jobs {
         });
 
         if ($opts{link_results}) {
-            my $download_path = get_download_path("jobs", $user->name, $workflow->id);
+            my $download_path = get_download_path("jobs", $user ? $user->name : 'public', $workflow->id);
             make_path($download_path);
             my $filename = sanitize_name("$org.$program");
             my $outfile_link = catfile($download_path, $filename);
@@ -160,7 +160,7 @@ sub add_jobs {
                 description => "Linking output to downloads"
             });
             $workflow->add_job(add_workflow_result(
-                username => $user->name,
+                username => $user ? $user->name : 'public',
                 wid      => $workflow->id,
                 result   => {
                     type => 'url',
