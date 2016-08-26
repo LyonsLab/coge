@@ -722,7 +722,7 @@ sub create_load_vcf_job {
     
     my $desc = 'Single nucleotide polymorphisms' . ($method ? " (determined by $method method)" : '');
 
-    my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
     my $output_path = catdir($staging_dir, "load_vcf");
