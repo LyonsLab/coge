@@ -354,7 +354,21 @@ sub get_genomes {
 }
 
 sub get_name {
-    return 'CoGeBlast';
+	my $self = shift;
+    my @gids = @{$self->params->{genomes}};
+    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+        user_id => $self->user->id,
+        page    => "GenomeList",
+        url     => $self->conf->{SERVER} . "GenomeList.pl?dsgid=" . join(',', @gids)
+    );
+
+    my $list_link =
+        qq{<a href="$genomes_url" target_"blank">}
+      . @gids
+      . ' genome'
+      . ( @gids > 1 ? 's' : '' ) . '</a>';
+    return 'Blast ' . length($self->params->{query_seq}) . ' characters against ' . $list_link;
+    # return 'CoGeBlast';
 }
 
 sub get_tiny_url {
