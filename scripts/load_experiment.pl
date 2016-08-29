@@ -30,6 +30,11 @@ my $MIN_VCF_COLUMNS = 8;
 #my $MAX_VCF_COLUMNS = 10;
 my $MIN_GFF_COLUMNS = 9;
 
+use constant {
+    RC_PARSE_ERROR     => 1,
+    RC_PARSE_SKIP_LINE => 2
+};
+
 GetOptions(
     "staging_dir=s" => \$staging_dir,    # temporary staging path
     "install_dir=s" => \$install_dir,    # final installation path
@@ -212,9 +217,9 @@ if (-s $staged_data_file == 0) {
     print STDOUT "log: error: input file '", basename($staged_data_file), "' is empty\n";
     exit(-1);
 }
-my ($count, $pChromosomes, $format, $detected_tags);
+my ($count, $pChromosomes, $format, $detected_tags, $metadata);
 if ( $data_type == $DATA_TYPE_QUANT ) {
-    ( $staged_data_file, $format, $count, $pChromosomes ) =
+    ( $staged_data_file, $format, $count, $pChromosomes, $metadata ) =
       validate_quant_data_file( file => $staged_data_file, file_type => $file_type, genome_chr => \%genome_chr );
 }
 elsif ( $data_type == $DATA_TYPE_POLY ) {
@@ -450,13 +455,10 @@ open(my $logh, '>', $logtxtfile);
 print $logh "experiment id: " . $experiment->id . "\n";
 close($logh);
 
-# Save workflow_id in experiment data path -- #TODO move into own routine in Storage.pm
-CoGe::Accessory::TDS::write(
-    catfile($storage_path, 'metadata.json'),
-    {
-        workflow_id => int($wid)
-    }
-);
+# Save workflow_id in metadata.json file in experiment data path -- #TODO move into own routine in Storage.pm
+$metadata = {} unless $metadata;
+$metadata->{workflow_id} = int($wid);
+CoGe::Accessory::TDS::write( catfile($storage_path, 'metadata.json'), $metadata );
 
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
@@ -466,12 +468,14 @@ exit;
 
 #-------------------------------------------------------------------------------
 
-#TODO rewrite this to load the file once into memory rather than reading it twice
-sub max_of_values {
+# Parse entire quant data file and determine max and min values
+sub max_and_min_of_values {
 	my $filepath = shift;
 	my $filetype = shift;
 	my $line_num = 0;
 	my $max = 0;
+	my $min = 0;
+	
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     while ( my $line = <$in> ) {
         $line_num++;
@@ -480,26 +484,29 @@ sub max_of_values {
         next unless $line; # skip blank lines
 
         my ($status, $chr, $start, $stop, $strand, $val1, $val2) = parse_quant_line($file_type, $line, $line_num);
-        next if ($status == 2);
-        return if ($status == 1);
+        next if ($status == RC_PARSE_SKIP_LINE);
+        return if ($status == RC_PARSE_ERROR);
 
         unless (defined $val1) {
-            die "max_of_values: ERROR: invalid val1";
+            die "max_and_min_of_values: ERROR: invalid val1";
         }
 
         if ($val1 > $max) {
 	        $max = $val1;
         }
+        if ($val1 < $min) {
+            $min = $val1;
+        }
     }
     close($in);
-    print STDOUT "max=$max\n";
-    return $max;
- }
+    print STDOUT "max_and_min_of_values: max=$max min=$min\n";
+    return ($max, $min);
+}
 
 # Parses multiple line-based file formats for quant data
-my $bedType; # only used for BED formats
+my $bedType;              # only used for BED formats
 my ($stepSpan, $stepChr); # only used for WIG format
-sub validate_quant_data_file { #TODO this routine is getting long, break into subroutines
+sub validate_quant_data_file {
     my %opts = @_;
     my $filepath = $opts{file};
     my $filetype = $opts{file_type};
@@ -513,9 +520,14 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     print STDOUT "validate_quant_data_file: $filepath\n";
     
     # Get max value for normalization later on (if enabled)
-    my $max;
+    my ($md, $max, $min);
     if ($normalize) {
-    	$max = max_of_values($filepath, $filetype);
+    	($max, $min) = max_and_min_of_values($filepath, $filetype);
+    	$md = { # mdb added 8/26/18 COGE-270
+    	    max => $max,
+    	    min => $min,
+    	    normalized => $normalize
+    	};
     }
     
     # Parse data file line by line
@@ -529,8 +541,8 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
         next unless $line; # skip blank lines
         
         my ($status, $chr, $start, $stop, $strand, $val1, $val2, $label) = parse_quant_line($file_type, $line);
-        next if ($status == 2);
-        return if ($status == 1);
+        next if ($status == RC_PARSE_SKIP_LINE);
+        return if ($status == RC_PARSE_ERROR);
 
         # Validate mandatory fields
         if (   not defined $chr
@@ -580,14 +592,18 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
 
         # Build output line
         if ($normalize) {
-	        if ($normalize eq "percentage") {
+	        if ($normalize eq 'percentage') {
 	        	$val1 /= $max;
 	        }
-	        elsif ($normalize eq "log10") {
+	        elsif ($normalize eq 'log10') {
 	        	$val1 = log($val1) / log(10) / $max;
 	        }
-	        else {
+	        elsif ($normalize eq 'loge') {
 	        	$val1 = log($val1) / $max;
+	        }
+	        else {
+	            print STDOUT "log: error: unknown normalization method given: '$normalize'\n";
+                return;
 	        }
         }
         my @fields  = ( $chr, $start, $stop, $strand, $val1 ); # default fields
@@ -622,7 +638,7 @@ sub validate_quant_data_file { #TODO this routine is getting long, break into su
     push(@{$format->{columns}}, { name => 'value2', type => 'double' }) if $hasVal2;
     push(@{$format->{columns}}, { name => 'label',  type => 'text' }) if $hasLabels;
 
-    return ( $outfile, $format, $count, \%chromosomes );
+    return ( $outfile, $format, $count, \%chromosomes, $md );
 }
 
 sub parse_quant_line {
@@ -641,7 +657,9 @@ sub parse_quant_line {
         ( $chr, $start, $stop, $strand, $val1, $val2 ) = @tok;
     }
     elsif ($filetype eq 'wig') {
-        return 2 if ( $line =~ /^track/ ); # ignore "track" line
+        if ( $line =~ /^track/ ) { # ignore "track" line
+            return RC_PARSE_SKIP_LINE;
+        }
         if ( $line =~ /^variableStep/i ) { # handle step definition line
             if ($line =~ /chrom=(\w+)/i) {
                 $stepChr = $1;
@@ -651,16 +669,16 @@ sub parse_quant_line {
             if ($line =~ /span=(\d+)/i) {
                 $stepSpan = $1;
             }
-            return 2;
+            return RC_PARSE_SKIP_LINE;
         }
         elsif ( $line =~ /^fixedStep/i ) {
             log_line('fixedStep wiggle format is not currently supported', $line_num, $line);
-            return 1;
+            return RC_PARSE_ERROR;
         }
         
         if (not defined $stepSpan or not defined $stepChr) {
             log_line('missing or invalid wiggle step definition line', $line_num, $line);
-            return 1;
+            return RC_PARSE_ERROR;
         }
         
         @tok = split( /\s+/, $line );
@@ -676,7 +694,7 @@ sub parse_quant_line {
             if ($line =~ /type=(\w+)/i) {
                 $bedType = lc($1);
             }
-            return 2;
+            return RC_PARSE_SKIP_LINE;
         }
     
         # Handle different BED formats

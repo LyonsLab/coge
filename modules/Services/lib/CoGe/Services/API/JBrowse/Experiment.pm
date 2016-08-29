@@ -8,12 +8,12 @@ use CoGe::Accessory::histogram;
 use CoGe::Accessory::IRODS qw( irods_iput );
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
-use CoGe::Core::Storage qw( get_experiment_path get_upload_path );
+use CoGe::Core::Storage qw( get_experiment_path get_upload_path get_experiment_metadata );
 use CoGeDBI qw( get_dataset_ids feature_type_names_to_id );
 use Data::Dumper;
 use File::Path;
 use File::Spec::Functions;
-use File::Temp qw/ tempfile tempdir /;
+use File::Temp qw( tempfile tempdir );
 use JSON::XS;
 #TODO: use these from Storage.pm instead of redeclaring them
 my $DATA_TYPE_QUANT  = 1; # Quantitative data
@@ -31,12 +31,43 @@ my $QUAL_ENCODING_OFFSET = 33;
 
 my $log10 = log(10);
 
-sub stats_global {
+sub stats_global { # mdb rewritten 8/26/16 COGE-270
     my $self = shift;
+    my $eid  = $self->stash('eid');
+    my $nid  = $self->stash('nid');
+    my $gid  = $self->stash('gid');
 	print STDERR "JBrowse::Experiment::stats_global\n";
+	
+	# Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    
+    # Get experiments
+	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
+	
+	# Determine min/max values from all experiments' metadata
+	my ($globalMax, $globalMin) = (0, 0);
+	foreach my $experiment (@$experiments) {
+	    my ($min, $max);
+	    my $md = get_experiment_metadata();
+	    if (defined $md && defined $md->{max} && defined $md->{min}) {
+	        $min = $md->{min};
+	        $max = $md->{max};
+	    }
+	    else { # legacy default values
+	        $min = -1;
+	        $max = 1;
+	    }
+	    if ($max > $globalMax) {
+	        $globalMax = $max;
+	    }
+	    if ($min < $globalMin) {
+	        $globalMin = $min;
+	    }
+	}
+	
     $self->render(json => {
-		"scoreMin" => -1,
-		"scoreMax" => 1
+		"scoreMin" => $globalMin,
+		"scoreMax" => $globalMax
 	});
 }
 
@@ -162,7 +193,7 @@ sub _get_quant_lines {
     return (\@columns, $lines);
 }
 
-sub data {
+sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
     my $self = shift;
     my $id = int($self->stash('eid'));
     my $chr = $self->stash('chr');

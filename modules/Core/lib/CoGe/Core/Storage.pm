@@ -29,7 +29,7 @@ use strict;
 use warnings;
 
 use CoGe::Accessory::Web qw(get_defaults get_command_path url_for);
-use CoGe::Accessory::TDS qw(read);
+use CoGe::Accessory::TDS qw(read append);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::IRODS qw(irods_iget irods_ils irods_imkdir irods_irm);
@@ -369,10 +369,16 @@ sub get_experiment_files {
     return \@files;
 }
 
+sub get_experiment_metadata {
+    my $eid = shift;
+    my $file_path = get_experiment_path($eid);
+    return CoGe::Accesssory::TDS::read($file_path);
+}
+
 sub get_experiment_data {
     my %opts = @_;
-    my $eid  = $opts{eid};    # required
-    my $data_type = $opts{data_type};   # required
+    my $eid  = $opts{eid};            # required
+    my $data_type = $opts{data_type}; # required
     unless ($eid) {
         print STDERR "Storage::get_experiment_data: experiment id not specified!\n";
         return;
