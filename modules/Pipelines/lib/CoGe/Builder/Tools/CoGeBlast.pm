@@ -53,6 +53,7 @@ sub add_jobs {
             tempdir  => $config->{TEMPDIR} . "CoGeBlast"
         );
     }
+    warn $cogeweb->logfile;
     $workflow->logfile($cogeweb->logfile);
 
     #blastz params
@@ -85,15 +86,20 @@ sub add_jobs {
 
         my $name = $dsg->organism->name;
         my $dbpath = File::Spec->catdir($BLASTDBDIR, $dsgid);
-
-        $workflow->add_job(generate_blastdb_job(
-            config  => $config,
-            title   => $name,
-            out     => $dsgid,
-            fasta   => $dbfasta,
-            type    => "nucl",
-            outdir  => $dbpath,
-        ));
+        my $BLASTDB = $config->{MAKEBLASTDB} || "makeblastdb";
+        my $cmd;
+        $cmd = "mkdir $dbpath && " unless -e $dbpath;
+        $cmd .= "cd $dbpath && " .
+                "$BLASTDB -in $dbfasta -out $dsgid -dbtype nucl -title " . qq{"$name"} . " -logfile db.log && " .
+                "touch done";
+        $workflow->add_job({
+            cmd => $cmd,
+            script  => undef,
+            args    => [],
+            inputs  => undef,
+            outputs => ["$dbpath/done"],
+            description => "Generating blastable database..."
+        });
 
         my $outfile = $cogeweb->basefile . "-$count.$program";
 
@@ -143,7 +149,7 @@ sub add_jobs {
         $workflow->add_job({
             cmd     => "/usr/bin/nice",
             args    => $args,
-            inputs  => [$fasta_file, [$dbpath, 1]],
+            inputs  => [$fasta_file, "$dbpath/done"],
             outputs => [$outfile],
             description => "Blasting sequence against $name"
         });
@@ -272,40 +278,6 @@ sub create_fasta_file {
     print NEW $seq;
     close NEW;
     return $cogeweb->basefile . ".fasta", \%seqs;
-}
-
-sub generate_blastdb_job {
-    my %opts = @_;
-
-    # required arguments
-    my $config = $opts{config};
-    my $title = $opts{title};
-    my $fasta = $opts{fasta};
-    my $type = $opts{type};
-    my $out  = $opts{out};
-    my $outdir = $opts{outdir};
-
-    my $logfile = $opts{logfile} || "db.log";
-    my $BLASTDB = $config->{MAKEBLASTDB} || "makeblastdb";
-
-    my $args = [
-        ["-in", $fasta, 0],
-        ["-out", $out, 0],
-        ["-dbtype", $type, 0],
-        ["-title", qq{"$title"}, 0],
-        ["-logfile", $logfile, 0],
-    ];
-
-    my $base = basename($outdir);
-
-    return {
-        cmd => "mkdir $base && cd $base && $BLASTDB",
-        script  => undef,
-        args    => $args,
-        inputs  => undef,
-        outputs => [[$outdir, 1]],
-        description => "Generating blastable database..."
-    };
 }
 
 sub get_blast_db {

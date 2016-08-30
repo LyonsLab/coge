@@ -776,15 +776,15 @@ function blastOff(dialog, results, basename) {
                     .html("Return to this analysis: ")
                     .append(link);
 
-                var logfile = $("<a></a>")
-                    .attr("href", response.logfile)
-                    .html("Logfile");
+                var logfile = pageObj.tempdir.substring(pageObj.tempdir.indexOf('web') + 4) + '/' + pageObj.basename + '.log';
 
                 status_dialog.find(".dialog-link").html(link_message);
-                status_dialog.find(".dialog-log").html(logfile);
+                status_dialog.find(".dialog-log").html($("<a></a>")
+                    .attr("href", logfile)
+                    .html("Logfile"));
  
                 options.fname = "get_results";
-                options.logfile = response.logfile;
+                options.logfile = logfile;
 
                 update_dialog("jex/status/" + response.id, status_dialog, results, formatter, options);
             } else {
