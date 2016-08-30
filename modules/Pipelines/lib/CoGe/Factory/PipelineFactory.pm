@@ -155,6 +155,7 @@ sub get {
     # Dump raw workflow to file for debugging -- mdb added 2/17/16
     if ($result_dir) {
         make_path($result_dir);
+        `chmod g+rw $result_dir`;
         open(my $fh, '>', catfile($result_dir, 'workflow.log'));
         print $fh Dumper $builder->workflow, "\n";
         close($fh);
