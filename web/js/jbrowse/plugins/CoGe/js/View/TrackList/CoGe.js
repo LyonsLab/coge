@@ -196,7 +196,7 @@ define(['dojo/_base/declare',
 		if (coge.description)
 			html += '<br>' + coge.description;
 		if (coge.type == 'experiment')
-			html += '<br><i>' + (coge.data_type == 4 ? 'Markers' : coge.data_type == 3 ? 'Alignments' : coge.data_type == 2 ? 'Polymorphism Data' : 'Quantitative Data') + '</i>';
+			html += '<br><i>' + (coge.data_type == 4 ? 'Markers' : coge.data_type == 3 ? 'Alignments' : coge.data_type == 2 ? 'Variant Data' : 'Quantitative Data') + '</i>';
 		if (coge.annotations) {
 			var a = coge.annotations.split('\n');
 			html += '<hr><table style="max-width:500px;">';
@@ -369,20 +369,6 @@ define(['dojo/_base/declare',
 		}));
 		menu.addChild(new MenuSeparator());
 		menu.addChild(new MenuItem({
-			label: "Show Quantitative Tracks",
-			onClick: dojo.hitch(this, function() {
-				this._type_filter = 1;
-				this._filter_tracks(this.text_filter_input.value);
-			})
-		}));
-		menu.addChild(new MenuItem({
-			label: "Show Polymorphism Tracks",
-			onClick: dojo.hitch(this, function() {
-				this._type_filter = 2;
-				this._filter_tracks(this.text_filter_input.value);
-			})
-		}));
-		menu.addChild(new MenuItem({
 			label: "Show Alignment Tracks",
 			onClick: dojo.hitch(this, function() {
 				this._type_filter = 3;
@@ -393,6 +379,20 @@ define(['dojo/_base/declare',
 			label: "Show Marker Tracks",
 			onClick: dojo.hitch(this, function() {
 				this._type_filter = 4;
+				this._filter_tracks(this.text_filter_input.value);
+			})
+		}));
+		menu.addChild(new MenuItem({
+			label: "Show Quantitative Tracks",
+			onClick: dojo.hitch(this, function() {
+				this._type_filter = 1;
+				this._filter_tracks(this.text_filter_input.value);
+			})
+		}));
+		menu.addChild(new MenuItem({
+			label: "Show Variant Tracks",
+			onClick: dojo.hitch(this, function() {
+				this._type_filter = 2;
 				this._filter_tracks(this.text_filter_input.value);
 			})
 		}));
@@ -765,7 +765,7 @@ define(['dojo/_base/declare',
 				coge_plugin.info('Only experiment tracks','Currently you can only find the intersection of experiment tracks');
 				return;
 			}
-			coge_plugin.intersection_dialog(track1, track2);
+			coge_plugin.dnd_dialog(track1, track2);
 			return;
 		}
 		var target_is_in_selector = target.node.firstChild.config;
@@ -1215,7 +1215,7 @@ define(['dojo/_base/declare',
 		}
 		var html = Math.min(num_experiments, total_experiments) + ' of ' + total_experiments + ' experiment' + (total_experiments == 1 ? '' : 's') + ' shown<br>';
 		if (this._type_filter) {
-			html += 'showing ' + (this._type_filter === 1 ? 'quantitative' : this._type_filter === 2 ? 'polymorphism' : this._type_filter === 3 ? 'alignment' : 'marker') + ' tracks&nbsp;&nbsp;&nbsp;&nbsp;';
+			html += 'showing ' + (this._type_filter === 1 ? 'quantitative' : this._type_filter === 2 ? 'variant' : this._type_filter === 3 ? 'alignment' : 'marker') + ' tracks&nbsp;&nbsp;&nbsp;&nbsp;';
 			html += '<span class="glyphicon glyphicon-remove" style="color:black;cursor:pointer" onclick="coge_track_list._type_filter=null;coge_track_list._filter_tracks(coge_track_list.text_filter_input.value);"></span>';
 		}
 		else

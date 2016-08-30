@@ -568,7 +568,7 @@ sub get_experiment_data {
 }
 
 # pass in two psuedo objects. data points in the first one that overlap those in the second are returned in an array
-sub _intersection {
+sub _in {
     my $data1 = shift;
     my $data2 = shift;
     my $hits = [];
@@ -585,8 +585,33 @@ sub _intersection {
         last unless $start2;
         if ($stop1 >= $start2) {
             push @$hits, $data1->{line}->($data1);
+        }
+        ($start1, $stop1) = $data1->{next}->($data1);
+    }
+    return $hits;
+}
+
+# pass in two psuedo objects. data points in the first one that don't overlap those in the second are returned in an array
+sub _not_in {
+    my $data1 = shift;
+    my $data2 = shift;
+    my $hits = [];
+    my ($start1, $stop1) = $data1->{next}->($data1);
+    my ($start2, $stop2) = $data2->{next}->($data2);
+    while ($start1 && $start2) {
+        while ($start1 && $stop1 < $start2) {
+            push @$hits, $data1->{line}->($data1);
             ($start1, $stop1) = $data1->{next}->($data1);
         }
+        last unless $start1;
+        while ($start2 && $stop2 < $start1) {
+            ($start2, $stop2) = $data2->{next}->($data2);
+        }
+        last unless $start2;
+        if ($stop1 < $start2) {
+            push @$hits, $data1->{line}->($data1);
+        }
+        ($start1, $stop1) = $data1->{next}->($data1);
     }
     return $hits;
 }
@@ -596,13 +621,14 @@ sub intersection {
     my $eid = $self->stash('eid');
     my $eid2 = $self->stash('eid2');
     my $chr = $self->stash('chr');
+    my $not = $self->param('not');
 
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     my $experiment = $db->resultset('Experiment')->find($eid);
     my $experiment2 = $db->resultset('Experiment')->find($eid2);
     my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, 0);
     my $data2 = get_experiment_data($experiment2->id, $experiment2->data_type, $chr, 0);
-    my $hits = _intersection($data1, $data2);
+    my $hits = $not ? _not_in($data1, $data2) : _in($data1, $data2);
     if ($hits) {
         $self->render(json => $hits);
     }

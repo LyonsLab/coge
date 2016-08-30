@@ -33,7 +33,7 @@ define([
                 onClick: dojo.hitch(this,'hide'),
                 style: { display: 'none'}
             })
-            .placeAt( actionBar);
+            .placeAt(actionBar);
     	},
 	    hide: function() {
 	        this.inherited(arguments);
@@ -336,6 +336,39 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	dnd_dialog: function(track1, track2) {
+		this._track = track1;
+		this._track2 = track2;
+		var content = '<div id="coge-search-dialog"><table><tr><td>Action:</td><td><input id="dnd_in" type="radio" name="action" checked> Find ';
+		content += track1.config.key;
+		content += ' in ';
+		content += track2.config.key;
+		content += '<br><input id="dnd_not_in" type="radio" name="action"> Find ';
+		content += track1.config.key;
+		content += ' not in ';
+		content += track2.config.key;
+		content += '<br><input id="dnd_merge" type="radio" name="action"> Merge ';
+		content += track1.config.key;
+		content += ' and ';
+		content += track2.config.key;
+		content += '</td></tr><tr><td>Chromosome:</td><td>';
+		content += this.build_chromosome_select('Any');
+		content += '</td></tr></table>';
+		content += this.build_buttons('if($(\'#dnd_in\')[0].checked)coge_plugin.intersection(); else if($(\'#dnd_not_in\')[0].checked)coge_plugin.intersection(true)', 'coge_plugin._search_dialog.hide()');
+		content += '</div>';
+		coge_plugin._search_dialog = new Dialog({
+				title: "Find Intersection",
+				content: content,
+				onHide: function() {
+					this.destroyRecursive();
+					coge_plugin._search_dialog = null;
+				}
+			});
+		coge_plugin._search_dialog.show();
+	},
+
+	// ----------------------------------------------------------------
+
 	error: function(title, content) {
 		if (content.responseText) {
 			var error = JSON.parse(content.responseText);
@@ -521,7 +554,7 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	intersection: function() {
+	intersection: function(not) {
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
 		var div = dojo.byId('coge-search-dialog');
@@ -532,6 +565,8 @@ return declare( JBrowsePlugin,
 		var search = {type: 'intersection', chr: chr, eid: eid, eid2: eid2};
 		this._track.config.coge.search = search;
 		var url = api_base_url + '/experiment/' + eid + '/intersection/' + eid2 + '/' + chr;
+		if (not)
+			url += '?not=true';
 		dojo.xhrGet({
 			url: url,
 			handleAs: 'json',
@@ -554,25 +589,6 @@ return declare( JBrowsePlugin,
 				coge_plugin.error('Search', data);
 			})
 		});
-	},
-
-	intersection_dialog: function(track1, track2) {
-		this._track = track1;
-		this._track2 = track2;
-		var content = '<div id="coge-search-dialog"><table><tr><td>Chromosome:</td><td>';
-		content += this.build_chromosome_select('Any');
-		content += '</td></tr></table>';
-		content += this.build_buttons('coge_plugin.intersection()', 'coge_plugin._search_dialog.hide()');
-		content += '</div>';
-		coge_plugin._search_dialog = new Dialog({
-				title: "Find Intersection",
-				content: content,
-				onHide: function() {
-					this.destroyRecursive();
-					coge_plugin._search_dialog = null;
-				}
-			});
-		coge_plugin._search_dialog.show();
 	},
 
 	// ----------------------------------------------------------------
@@ -867,7 +883,7 @@ return declare( JBrowsePlugin,
 		});
 		if (track.config.coge.data_type == 1) {
 			content += '<tr><td>Experiment Type:</td><td><input type="radio" name="exp_type" checked> Quantitative</td></tr>';
-			content += '<tr><td></td><td style="white-space: nowrap;"><input type="radio" name="exp_type" id="to_marker"> Marker - ignore gaps of less than <input id="gap_max" value="3" size="2" /> bp</td></tr>';
+			content += '<tr><td></td><td style="white-space: nowrap;"><input type="radio" name="exp_type" id="to_marker"> Marker - merge adjacent markers within <input id="gap_max" value="100" size="4" /> bp</td></tr>';
 		}
 		content += '</table>';
 		content += this.build_buttons('coge_plugin.save_as_experiment()', 'coge_plugin._save_as_dialog.hide()');
