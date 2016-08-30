@@ -53,7 +53,6 @@ sub add_jobs {
             tempdir  => $config->{TEMPDIR} . "CoGeBlast"
         );
     }
-    warn $cogeweb->logfile;
     $workflow->logfile($cogeweb->logfile);
 
     #blastz params
@@ -103,7 +102,7 @@ sub add_jobs {
 
         my $outfile = $cogeweb->basefile . "-$count.$program";
 
-        my $cmd = $BLAST_PROGS->{$program};
+        $cmd = $BLAST_PROGS->{$program};
         my $args = [
             [ '', '--adjustment=10', 1 ],
             [ '', $BLAST_PROGS->{$program}, 0 ],
@@ -249,8 +248,6 @@ sub build {
         zthreshold   => $self->params->{zthreshold},
         zwordsize    => $self->params->{zwordsize}
     );
-    # $self->{link} = get_tiny_url( %{$self->params} );
-    # $self->{logfile} = $self->workflow->logfile;
     return 1;
 }
 
@@ -349,13 +346,13 @@ sub get_tiny_url {
         basename     => $opts{basename},
         color_hsps   => $opts{color_hsps},
         comp         => $opts{comp},
-        dsgid        => $opts{'genomes[]'},
+        dsgid        => $opts{genomes},
         expect       => $opts{e_value},
         fid          => $opts{fid},
         filter_query => $opts{filter_query},
-        gapcost      => $opts{'gapcost[]'},
+        gapcost      => $opts{gapcost},
         job_title    => $opts{job_title},
-        match_score  => $opts{'match_score[]'},
+        match_score  => $opts{match_score},
         matrix       => $opts{matrix},
         outfmt       => $opts{outfmt},
         program      => $opts{program},
@@ -370,9 +367,7 @@ sub get_tiny_url {
         zwordsize    => $opts{zwordsize}
     );
     my $url = url_for("CoGeBlast.pl", %params);
-    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
-
-    return $link;
+    return CoGe::Accessory::Web::get_tiny_link(url => $url);
 }
 
 # sub go {

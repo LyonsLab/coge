@@ -695,7 +695,7 @@ function blastOff(dialog, results, basename) {
 
     var page_width = ($('#co').width())*(95/100);
     pageObj.image_width = page_width;
-    var blastable_db = $('#genome_choice').getLength(1);
+    var genomes = $('#genome_choice').getLength(1);
 
     var _results = $(results);
 
@@ -719,7 +719,7 @@ function blastOff(dialog, results, basename) {
         fid:            pageObj.fid,
         filter_query:   filter_query,
         gapcost:        gapcost ? gapcost.split(' ') : null,
-        genomes:        blastable_db ? blastable_db.split(',') : null,
+        genomes:        genomes ? genomes.split(',') : null,
         job_title:      job_title,
         match_score:    match_score ? match_score.split(',') : null,
         matrix:         matrix,
@@ -785,6 +785,9 @@ function blastOff(dialog, results, basename) {
  
                 options.fname = "get_results";
                 options.logfile = logfile;
+                options.gapcost = gapcost;
+                options.genomes = genomes;
+                options.match_score = match_score;
 
                 update_dialog("jex/status/" + response.id, status_dialog, results, formatter, options);
             } else {

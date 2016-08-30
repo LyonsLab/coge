@@ -648,7 +648,7 @@ sub get_results {
 
     my $seq = $opts{query_seq};
 
-    my $genomes = $opts{'genomes[]'};
+    my $genomes = $opts{'genomes'};
 
     my @dsg_ids = split( /,/, $genomes );
 
