@@ -25,6 +25,7 @@ from json import dump
 import jwt
 from sys import stderr
 import argparse
+from os import path
 
 t_cp1 = datetime.now()
 print('--> Complete! (' + str(t_cp1-t_start) + ')')
@@ -47,6 +48,7 @@ parser.add_argument("--query",
 parser.add_argument("--output",
                     help="File path to output directory. Specify SynMap directory: 'storage/coge/data/diags' "
                          "file path.")
+parser.add_argument("--prefix", help="Options-based prefix to identify files", type=str)
 parser.add_argument("--allgenes",
                     help="Determines whether all genes in target genome gff or only conserved genes should be used in "
                          "analysis.")
@@ -337,10 +339,11 @@ print('--> Complete! (' + str(t_cp5-t_cp4) + ')')
 print "Calling Syntenic Pairs and Processing Raw SynMap Data"
 
 windanalysis_input_dict = {}
-fract_bias_raw_output_file = args.output + "/fractbias_output-" + "-TarID" + str(args.target) + "-TarChrNum" + \
-                             str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + "-QueryID" + str(args.query) + \
-                             "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + \
-                             str(args.remove_random_unknown) + "-WindSize" + str(args.windowsize) + ".csv"
+# fract_bias_raw_output_file = args.output + "/fractbias_output-" + "-TarID" + str(args.target) + "-TarChrNum" + \
+#                              str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + "-QueryID" + str(args.query) + \
+#                              "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + \
+#                              str(args.remove_random_unknown) + "-WindSize" + str(args.windowsize) + ".csv"
+fract_bias_raw_output_file = path.join(args.output, args.prefix + '.fractbias-genes.csv')
 
 with open(str(fract_bias_raw_output_file), 'w') as csvfile:
     csvfile.write('# Target Species: ' + target_api['organism']['name'] + ' (CoGe ID: ' + str(args.target) + ')\n')
@@ -387,7 +390,6 @@ with open(str(fract_bias_raw_output_file), 'w') as csvfile:
                 rows.extend(syntenic_query_gene_presence_data)
                 rows.extend(syntenic_query_gene_name)
                 writer.writerow(rows)
-
     elif args.allgenes == 'False':
         for tchr in gff_genes_target:
             col0 = chr  # writes Pineapple chr number
@@ -505,17 +507,19 @@ print('--> Complete! (' + str(t_cp7-t_cp6) + ')')
 print("Building & Writing Final Outputs")
 
 # Output Data for Interactive Plotting (AKB added 7/8/16)
-dump_out = args.output + "/fractbias_figure-" + "-TarID" + str(args.target) + "-TarChrNum" + \
-           str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + "-QueryID" + str(args.query) + \
-           "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + \
-           str(args.remove_random_unknown) + "-WindSize" + str(args.windowsize) + ".json"
+# dump_out = args.output + "/fractbias_figure-" + "-TarID" + str(args.target) + "-TarChrNum" + \
+#            str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + "-QueryID" + str(args.query) + \
+#            "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + \
+#            str(args.remove_random_unknown) + "-WindSize" + str(args.windowsize) + ".json"
+dump_out = path.join(args.output, args.prefix + '.fractbias-fig.json')
 dump_data = {}
 
 # Output Data for Downloading (AKB added 8/30/16)
-download_out = args.output + "/fractbias_results-" + "-TarID" + str(args.target) + "-TarChrNum" + \
-               str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + "-QueryID" + str(args.query) + \
-               "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + \
-               str(args.remove_random_unknown) + "-WindSize" + str(args.windowsize) + ".csv"
+# download_out = args.output + "/fractbias_results-" + "-TarID" + str(args.target) + "-TarChrNum" + \
+#                str(args.numtargetchr) + "-SynDep" + str(args.syndepth) + "-QueryID" + str(args.query) + \
+#                "-QueryChrNum" + str(args.numquerychr) + "-AllGene" + str(args.allgenes) + "-RmRnd" + \
+#                str(args.remove_random_unknown) + "-WindSize" + str(args.windowsize) + ".csv"
+download_out = path.join(args.output, args.prefix + '.fractbias-results.csv')
 down_data = {'targets': [], 'x_pos': []}  # [[targets...], [x_pos...], [query1_ys], ... [queryN_ys]]
 for q in query_api_chrs_final:
     down_data[q] = []
