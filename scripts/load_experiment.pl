@@ -456,7 +456,7 @@ print $logh "experiment id: " . $experiment->id . "\n";
 close($logh);
 
 # Save workflow_id in metadata.json file in experiment data path -- #TODO move into own routine in Storage.pm
-$metadata = {} unless $metadata;
+$metadata = {} unless defined $metadata;
 $metadata->{workflow_id} = int($wid);
 CoGe::Accessory::TDS::write( catfile($storage_path, 'metadata.json'), $metadata );
 
@@ -473,8 +473,8 @@ sub max_and_min_of_values {
 	my $filepath = shift;
 	my $filetype = shift;
 	my $line_num = 0;
-	my $max = 0;
-	my $min = 0;
+	my ($max, $min) = (0, 0);
+#	my %perChr;
 	
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     while ( my $line = <$in> ) {
@@ -483,20 +483,18 @@ sub max_and_min_of_values {
         chomp $line;
         next unless $line; # skip blank lines
 
-        my ($status, $chr, $start, $stop, $strand, $val1, $val2) = parse_quant_line($file_type, $line, $line_num);
+        my ($status, $chr, undef, undef, $strand, $val1) = parse_quant_line($file_type, $line, $line_num);
         next if ($status == RC_PARSE_SKIP_LINE);
         return if ($status == RC_PARSE_ERROR);
+        return unless (defined $chr && defined $strand && defined $val1); # error, let calling function handle it
 
-        unless (defined $val1) {
-            die "max_and_min_of_values: ERROR: invalid val1";
-        }
-
-        if ($val1 > $max) {
-	        $max = $val1;
-        }
-        if ($val1 < $min) {
-            $min = $val1;
-        }
+        $val1 *= $strand if ($strand == -1);
+        
+        $max = $val1 if ($val1 > $max);
+        $min = $val1 if ($val1 < $min);
+        
+#        $perChr{$chr}{max} = $max if (!defined($perChr{$chr}{max}) || $val1 > $perChr{$chr}{max});
+#        $perChr{$chr}{min} = $min if (!defined($perChr{$chr}{min}) || $val1 < $perChr{$chr}{min});
     }
     close($in);
     print STDOUT "max_and_min_of_values: max=$max min=$min\n";
@@ -516,19 +514,12 @@ sub validate_quant_data_file {
     my $count;
     my $hasLabels = 0;
     my $hasVal2   = 0;
+    my $md;
 
     print STDOUT "validate_quant_data_file: $filepath\n";
     
-    # Get max value for normalization later on (if enabled)
-    my ($md, $max, $min);
-    if ($normalize) {
-    	($max, $min) = max_and_min_of_values($filepath, $filetype);
-    	$md = { # mdb added 8/26/18 COGE-270
-    	    max => $max,
-    	    min => $min,
-    	    normalized => $normalize
-    	};
-    }
+    # Get min/max values for normalization
+    my ($max, $min) = max_and_min_of_values($filepath, $filetype);
     
     # Parse data file line by line
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
@@ -574,6 +565,7 @@ sub validate_quant_data_file {
             $strand = ($val1 >= 0 ? 1 : -1);
             $val1 = abs($val1);
         }
+        
         if (!$normalize) {
         	if (not defined $val1 or (!$disable_range_check and ($val1 < 0 or $val1 > 1))) {
 	            log_line('value 1 not between 0 and 1', $line_num, $line);
@@ -605,7 +597,23 @@ sub validate_quant_data_file {
 	            print STDOUT "log: error: unknown normalization method given: '$normalize'\n";
                 return;
 	        }
+	        
+	        # Add min/max values to metadata object -- mdb added 8/31/16 COGE-270
+	        $md = {
+                max => 1,
+                min => -1,
+                normalization => $normalize
+            };
         }
+        else {
+            # Add min/max values to metadata object -- mdb added 8/31/16 COGE-270
+            $md = {
+                max => $max,
+                min => $min,
+                normalization => undef
+            };
+        }
+        
         my @fields  = ( $chr, $start, $stop, $strand, $val1 ); # default fields
         if (defined $val2) {
             $hasVal2 = 1;
