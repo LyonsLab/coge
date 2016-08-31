@@ -171,13 +171,13 @@ sub get_list_info {
 			($list->deleted ? 'Undelete' : 'Delete') . qq{</span>};
     }
 
-    if ( !$EMBED and $list->experiments( count => 1 ) ) {
+    if ( $list->experiments( count => 1 ) ) {
         foreach my $gid (
             sort { $a <=> $b }
             map  { $_->genome_id } $list->experiments
           )
         {    # Pick a genome, any genome # TODO show user a list of genomes to choose from
-            my $link = qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid', '_self');};
+            my $link = qq{window.open('GenomeView.pl?embed=$EMBED&gid=$gid&tracks=notebook$lid', '_self');};
             $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="$link">Browse</span>};
             last;
         }
@@ -193,11 +193,8 @@ sub get_list_types {
 
     my @types;
     foreach my $type ( $DB->resultset('ListType')->all() ) {
-        next
-          if ( $type->name =~ /owner/i )
-          ;    # reserve this type for system-created lists
-        my $name =
-          $type->name . ( $type->description ? ": " . $type->description : '' );
+        next if ( $type->name =~ /owner/i ); # reserve this type for system-created lists
+        my $name = $type->name . ( $type->description ? ": " . $type->description : '' );
         my $selected = '';
         $selected = 'selected="selected"' if ( $type->id == $current_type_id );
         push @types,
@@ -216,8 +213,7 @@ sub edit_list_info {
 
     my $desc = ( $list->description ? $list->description : '' );
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         EDIT_LIST_INFO => 1,
         NAME           => $list->name,
