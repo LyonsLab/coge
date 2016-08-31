@@ -49,7 +49,6 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
 	foreach my $experiment (@$experiments) {
 	    my ($min, $max);
 	    my $md = get_experiment_metadata($experiment->id);
-	    print STDERR Dumper $md, "\n";
 	    if (defined $md && defined $md->{max} && defined $md->{min}) {
 	        $min = $md->{min};
 	        $max = $md->{max};
