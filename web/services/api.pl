@@ -341,15 +341,15 @@ $r->get("/jbrowse/experiment/genome/:gid/features/#chr"  => { gid => qr/\d+/, ch
     ->to("experiment#features", gid => undef, chr => undef);
 
 # notebook tracks
-$r->get("/jbrowse/experiment/notebook/:nid/stats/global/" => [nid => qr/\d+/])
+$r->get("/jbrowse/experiment/genome/:gid/notebook/:nid/stats/global/" => { gid => qr/\d+/, nid => qr/\d+/ })
     ->name("jbrowse-experiment-stats-global")
     ->to("experiment#stats_global", nid => undef);
  
-$r->get("/jbrowse/experiment/notebook/:nid/stats/regionFeatureDensities/#chr" => { nid => qr/\d+/, chr => qr/\w+/ })
+$r->get("/jbrowse/experiment/genome/:gid/notebook/:nid/stats/regionFeatureDensities/#chr" => { gid => qr/\d+/, nid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-regionFeatureDensitites")
     ->to("experiment#stats_regionFeatureDensities", nid => undef, chr => undef);
 
-$r->get("/jbrowse/experiment/notebook/:nid/features/#chr"  => { nid => qr/\d+/, chr => qr/\w+/ })
+$r->get("/jbrowse/experiment/genome/:gid/notebook/:nid/features/#chr"  => { gid => qr/\d+/, nid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", nid => undef, chr => undef);
 
