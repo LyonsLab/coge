@@ -339,13 +339,13 @@ return declare( JBrowsePlugin,
 	dnd_dialog: function(track1, track2) {
 		this._track = track1;
 		this._track2 = track2;
-		var content = '<div id="coge-search-dialog"><table><tr><td>Action:</td><td><input id="dnd_in" type="radio" name="action" checked> Find ';
+		var content = '<div id="coge-search-dialog"><table><tr><td>Action:</td><td><input id="dnd_in" type="radio" name="action" checked> Find where ';
 		content += track1.config.key;
-		content += ' in ';
+		content += ' overlaps ';
 		content += track2.config.key;
-		content += '<br><input id="dnd_not_in" type="radio" name="action"> Find ';
+		content += '<br><input id="dnd_not_in" type="radio" name="action"> Find where ';
 		content += track1.config.key;
-		content += ' not in ';
+		content += ' does not overlap ';
 		content += track2.config.key;
 		content += '<br><input id="dnd_merge" type="radio" name="action"> Merge ';
 		content += track1.config.key;
@@ -560,10 +560,10 @@ return declare( JBrowsePlugin,
 		var div = dojo.byId('coge-search-dialog');
 		dojo.empty(div);
 		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		var search = {type: not ? 'does not overlap' : 'overlaps', chr: chr, other: this._track2.config.key};
+		this._track.config.coge.search = search;
 		var eid = this._track.config.coge.id;
 		var eid2 = this._track2.config.coge.id;
-		var search = {type: 'intersection', chr: chr, eid: eid, eid2: eid2};
-		this._track.config.coge.search = search;
 		var url = api_base_url + '/experiment/' + eid + '/intersection/' + eid2 + '/' + chr;
 		if (not)
 			url += '?not=true';
@@ -578,7 +578,7 @@ return declare( JBrowsePlugin,
 					return;
 				}
 				if (data.length == 0) {
-					coge_plugin.error('Search', 'no ' + type + ' found');
+					coge_plugin.error('Search', 'no hits');
 					return;
 				}
 				coge_plugin.new_search_track(this._track, data);
@@ -1019,11 +1019,15 @@ return declare( JBrowsePlugin,
 			string = 'Alignments'
 			if (search.features != 'all')
 				string += ' in ' + search.features;
-		} else if (search.type == 'Markers') {
+		} else if (search.type == 'does not overlap')
+			string = 'does not overlap ' + search.other;
+		else if (search.type == 'Markers') {
 			string = 'Markers'
 			if (search.features != 'all')
 				string += ' in ' + search.features;
-		} else if (search.type == 'SNPs') {
+		} else if (search.type == 'overlaps')
+			string = 'overlaps ' + search.other;
+		else if (search.type == 'SNPs') {
 			if (search.snp_type)
 				string = search.snp_type;
 			else {
@@ -1031,9 +1035,7 @@ return declare( JBrowsePlugin,
 				if (search.features != 'all')
 					string += ' in ' + search.features;
 			}
-		} else if (search.type == 'intersection')
-			string = 'intersection ' + search.eid + ' ∩ ' + search.eid2;
-		else if (search.type == 'range')
+		} else if (search.type == 'range')
 			string = 'range: ' + search.gte + ' .. ' + search.lte;
 		else
 			string = search.type; // max or min
