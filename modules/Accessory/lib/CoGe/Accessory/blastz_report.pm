@@ -48,11 +48,10 @@ sub new
     $self->hsp_count(0);
     $self->hsps([]) unless $self->hsps;
     $self->process_file();
-    unless ($self->file_base())
-      {
-	my ($base) = $self->file =~ /^(.*?)[^\/]*$/;
-	$base = "./".$base unless $base =~ /^\//;
-	$self->file_base($base);
+    unless ($self->file_base) {
+		my ($base) = $self->file =~ /^(.*?)[^\/]*$/;
+		$base = "./".$base unless $base =~ /^\//;
+		$self->file_base($base);
       }
     return $self;
 }
@@ -556,7 +555,7 @@ sub parse_sequences
 		$qi = $len-$i;
 		$qi1 = $qi-1;
 	      }
-#	    print STDERR "i: $i, qi: $qi, qi1: $qi1\n";
+	    #print STDERR "i: $i, qi: $qi, qi1: $qi1\n";
 	    my $gap1 = $hsp->segments->[$i+1]->query_start-$hsp->segments->[$i]->query_end-1 if $hsp->segments->[$i+1];
 	    my $gap2 = $hsp->segments->[$qi1]->subject_start-$hsp->segments->[$qi]->subject_end-1 if $hsp->segments->[$qi1] && $qi1 >= 0;
 #	    print STDERR "\tqgap: ", $hsp->segments->[$i+1]->query_start,"-",$hsp->segments->[$i]->query_end,"::",$gap1,"\n" unless $i+1>$len;
@@ -603,7 +602,7 @@ sub parse_sequences
 	  {
 	    my $chr1 = substr($seq_1, $i, 1);
 	    my $chr2 = substr ($seq_2, $i, 1);
-	    exit unless ($chr1 && $chr2);
+	    last unless ($chr1 && $chr2); # the last used to be an exit!! not sure if this is the right fix but it wasn't working with exit
 	    my $aln = ( $chr1 eq $chr2 ) ? "|" : " ";
 	    $align .= $aln;
 	  }
