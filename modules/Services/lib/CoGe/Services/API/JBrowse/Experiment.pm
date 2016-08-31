@@ -47,6 +47,7 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
 	# Determine min/max values from all experiments' metadata
 	my ($globalMax, $globalMin) = (0, 0);
 	foreach my $experiment (@$experiments) {
+	    # Get range of values for this experiment
 	    my ($min, $max);
 	    my $md = get_experiment_metadata($experiment->id);
 	    if (defined $md && defined $md->{max} && defined $md->{min}) {
@@ -57,6 +58,8 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
 	        $min = -1;
 	        $max = 1;
 	    }
+	    
+	    # Keep track of widest range
 	    if ($max > $globalMax) {
 	        $globalMax = $max;
 	    }
@@ -454,12 +457,7 @@ sub _get_experiments {
             }
         }
         else {
-            if ($user && $user->name) {
-            	warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $e->id . ' for user ' . $user->name;
-            }
-            else {
-                warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $e->id;
-            }
+            warn 'JBrowse::Experiment::_get_experiments access denied to experiment ' . $e->id . ( ($user && $user->name) ? ' for user ' . $user->name : '');
         }
     }
     splice(@experiments, $MAX_EXPERIMENTS);
