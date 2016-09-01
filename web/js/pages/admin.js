@@ -2696,9 +2696,13 @@ $.extend(Query_Counter.prototype, {
 	                		$("#" + self.elementId + "_per_second").html("<span>Queries per Second: " + self.queries_per_second + "</span>");
 	                }
 	        },
+		numberWithCommas: function() {
+			self.total_queries(data.Queries);
+			},
+	
 	        complete: function() {
 	        	self.schedule_update(5000);
-	        }
+		}
 		});
 	}
 });
