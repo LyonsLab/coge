@@ -327,6 +327,8 @@ for c in gff_genes_target:
 # synmap_dictionary_output_file = (args.output + "/synmap_data_structure.txt")
 # with open(synmap_dictionary_output_file, 'w+') as i:
 #     i.write(str(d))
+synmap_dictionary_output_file = path.join(args.output, args.prefix +  ".fractbias-synmap-data.json")
+dump(d, open(synmap_dictionary_output_file, 'wb'))
 
 # Checkpoint & print GFF processing time.
 t_cp5 = datetime.now()
