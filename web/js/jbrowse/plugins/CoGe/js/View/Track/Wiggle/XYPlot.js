@@ -647,6 +647,15 @@ var XYPlot = declare( [XYPlotBase], {
 			options,
 			[
 				{
+					label: 'Autoscale',
+					type: 'dijit/CheckedMenuItem',
+					checked: this.config.autoscale == 'local',
+					onClick: function(event) {
+						track.config.autoscale = this.checked ? 'local' : 'global';
+						track.changed();
+					}
+				},
+				{
 					label: 'Show scores on hover',
 					type: 'dijit/CheckedMenuItem',
 					checked: this.config.showHoverScores,

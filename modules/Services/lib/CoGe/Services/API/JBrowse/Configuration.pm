@@ -365,7 +365,6 @@ sub track_config {
         $style->{showMismatches} = JSON::true if $e->{data_type} == 3;
 
         my $config = {
-            autoscale    => 'local',
             baseUrl      => "$JBROWSE_API/experiment/$eid/",
             autocomplete => "all",
             track        => "experiment$eid",
@@ -405,7 +404,6 @@ sub track_config {
     #
     if ( keys %experiments ) {
         push @tracks, {
-            autoscale    => 'local',
             key     => 'All Experiments',
             baseUrl => "$JBROWSE_API/experiment/genome/$gid/",
             autocomplete => "all",
@@ -432,7 +430,6 @@ sub track_config {
         my $role = $connectors->{1}{$nid};
         $role = $role->{role_id} if $role;
         push @tracks, {
-            autoscale    => 'local',
             key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
             baseUrl => "$JBROWSE_API/experiment/genome/$gid/notebook/$nid",
             query => { gid => $gid },
