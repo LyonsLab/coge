@@ -1635,12 +1635,12 @@ sub get_results {
 			);
 			$fract_bias_raw_output_file = _filename_to_link(
 				file => catfile($result_path, $fb_prefix . '.fractbias-genes.csv'),
-				msg  => qq{Fractionation Bias raw output file},
+				msg  => qq{Fractionation Bias synteny report},
 				required => 1
 			);
 			$fract_bias_results_file = _filename_to_link(
 				file => catfile($result_path, $fb_prefix . '.fractbias-results.csv'),
-				msg  => qq{Fractionation Bias results file},
+				msg  => qq{Fractionation Bias sliding window results},
 				required => 1
 			);
 		}
