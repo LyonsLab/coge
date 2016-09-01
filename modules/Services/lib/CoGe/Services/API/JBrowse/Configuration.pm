@@ -434,7 +434,7 @@ sub track_config {
         push @tracks, {
             autoscale    => 'local',
             key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
-            baseUrl => "$JBROWSE_API/experiment/notebook/$nid",
+            baseUrl => "$JBROWSE_API/experiment/genome/$gid/notebook/$nid",
             query => { gid => $gid },
             autocomplete => "all",
             track        => "notebook$nid",

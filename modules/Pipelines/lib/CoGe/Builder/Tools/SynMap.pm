@@ -1161,6 +1161,7 @@ sub add_jobs {
 		my $all_genes = test($opts{fb_target_genes}) ? 'False' : 'True';
 		my $rru = test($opts{fb_remove_random_unknown}) ? 'True' : 'False';
 		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
+		my $fb_prefix = $final_dagchainer_file . '_tc' . $opts{fb_numtargetchr} . '_qc' . $opts{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts{fb_window_size};
 		$workflow->add_job({
 			cmd => $FRACBIAS,
 			script => undef,
@@ -1175,9 +1176,10 @@ sub add_jobs {
 				[ '--target',       $target_id,               0 ],
 				[ '--windowsize',   $opts{fb_window_size},    0 ],
 				[ '--allgenes',     $all_genes,               0 ],
-				[ '--output',       $result_path,              0 ],
+				[ '--output',       $result_path,             0 ],
+				[ '--prefix',       $fb_prefix,               0 ],
 				[ '--apiurl',       url_for(api_url_for("genomes")), 0],
-				[ '--user',         ( $user ? $user->name : '""'),   0]
+				[ '--user',         ( $user ? $user->name : '""'), 0]
 			],
 			inputs => [
 				$final_dagchainer_file, $condensed,
@@ -1185,12 +1187,16 @@ sub add_jobs {
 			],
 			outputs => [
 				catfile(
-					$result_path_html,
-					'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.png'
+					$result_path,
+					$fb_prefix . '.fractbias-fig.json'
 				),
 				catfile(
 					$result_path,
-					'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{fb_numtargetchr} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{fb_numquerychr} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{fb_window_size} . '.json'
+					$fb_prefix . '.fractbias-genes.csv'
+				),
+				catfile(
+					$result_path,
+					$fb_prefix . '.fractbias-results.csv'
 				)
 			],
 			description => "Running Fractination Bias...",
@@ -1621,243 +1627,5 @@ sub get_query_link {
 
 	return $tiny_link;
 }
-
-# sub go {
-# 	my %opts = @_;
-# 	foreach my $k ( keys %opts ) {
-# 		$opts{$k} =~ s/^\s+//;
-# 		$opts{$k} =~ s/\s+$//;
-# 	}
-# 	my $genome_id1 = $opts{genome_id1};
-# 	my $genome_id2 = $opts{genome_id2};
-# 	return encode_json(
-# 		{
-# 			success => JSON::false,
-# 			error   => "You must select two genomes."
-# 		}
-# 	) unless ( $genome_id1 && $genome_id2 );
-
-# 	my ( $db, $user, $config ) = CoGe::Accessory::Web->init();
-
-# 	my ($genome1) = $db->resultset('Genome')->find($genome_id1);
-# 	my ($genome2) = $db->resultset('Genome')->find($genome_id2);
-
-# 	return encode_json(
-# 		{
-# 			success => JSON::false,
-# 			error   => "The Genome $genome_id1 could not be found."
-# 		}
-# 	) unless $genome1;
-
-# 	return encode_json(
-# 		{
-# 			success => JSON::false,
-# 			error   => "The Genome $genome_id2 could not be found."
-# 		}
-# 	) unless $genome2;
-
-# 	return encode_json(
-# 		{
-# 			success => JSON::false,
-# 			error   => "Genome $genome_id1 primary data is missing."
-# 		}
-# 	) unless -r $genome1->file_path;
-
-# 	return encode_json(
-# 		{
-# 			success => JSON::false,
-# 			error   => "Genome $genome_id2 primary data is missing."
-# 		}
-# 	) unless -r $genome2->file_path;
-
-# 	my $tiny_link = get_query_link( $config, $db, @_ );
-# 	warn "tiny_link is required for logging." unless defined($tiny_link);
-# 	my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-# 	my $workflow_name = "synmap-$tiny_id";
-
-# 	my $JEX = CoGe::Accessory::Jex->new(
-# 		host => $config->{JOBSERVER},
-# 		port => $config->{JOBPORT}
-# 	);
-# 	my $workflow = $JEX->create_workflow( name => $workflow_name );
-# 	$workflow->log_section( "Creating Workflow" );
-# 	$workflow->log( "Link to Regenerate Analysis" );
-# 	$workflow->log( "$tiny_link" );
-# 	$workflow->log( "" );
-# 	$workflow->log( "Created Workflow: $workflow_name" );
-# 	$workflow->log( "" );
-
-# 	my $add_response = add_jobs(
-# 		workflow => $workflow,
-# 		db       => $db,
-# 		config   => $config,
-# 		@_
-# 	);
-# 	if ($add_response) { # an error occurred
-# 	    return encode_json($add_response);
-# 	}
-
-# 	$workflow->log_section( "Running Workflow" );
-
-# 	my $response = $JEX->submit_workflow($workflow);
-# 	unless (defined $response && $response->{id}) {
-#         return encode_json( { 
-#             success => JSON::false,
-#             error => 'The workflow could not be submitted (JEX error)'
-#         } );
-#     }
-
-# 	my $feat_type1 = $opts{feat_type1};
-# 	my $feat_type2 = $opts{feat_type2};
-# 	my ( $org_name1, $title1 ) = gen_org_name(
-# 		db        => $db,
-# 		genome_id     => $genome_id1,
-# 		feat_type => $feat_type1
-# 	);
-# 	my ( $org_name2, $title2 ) = gen_org_name(
-# 		db        => $db,
-# 		genome_id     => $genome_id2,
-# 		feat_type => $feat_type2
-# 	);
-# 	my $log_msg = "$org_name1 v. $org_name2";
-# 	$log_msg .= " Ks" if $opts{ks_type};
-
-# 	CoGe::Accessory::Web::log_history(
-# 		db          => $db,
-# 		user_id     => $user->id,
-# 		description => $log_msg,
-# 		page        => 'SynMap',
-# 		link        => $tiny_link,
-# 		parent_id   => $response->{id},
-# 		parent_type => 7                  #FIXME magic number
-# 	);
-
-# 	my $DIR = $config->{COGEDIR};
-# 	my $URL = $config->{URL};
-# 	my $log = $workflow->logfile;
-# 	$log =~ s/$DIR/$URL/;
-# 	return encode_json(
-# 		{
-# 			link    => $tiny_link,
-# 			log     => $log,
-# 			request => "jex/synmap/status/" . $response->{id}, #FIXME hardcoded
-# 			status  => $response->{status},
-# 			success => ($JEX->is_successful($response) ? JSON::true : JSON::false)
-# 		}
-# 	);
-# }
-
-# FIXME: Currently this feature is disabled.
-# @by Evan Briones
-# @on 3/1/2013
-#sub run_tandem_finder {
-#	my %opts    = @_;
-#	my $infile  = $opts{infile};    #dag file produced by dat_tools.py
-#	my $outfile = $opts{outfile};
-#	while ( -e "$outfile.running" ) {
-#		print STDERR "detecting $outfile.running.  Waiting. . .\n";
-#		sleep 60;
-#	}
-#	unless ( -r $infile && -s $infile ) {
-#		CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
-#		CoGe::Accessory::Web::write_log(
-#"WARNING:   Cannot run tandem finder! DAGChainer input file ($infile) contains no data!",
-#			$cogeweb->logfile
-#		);
-#		return 0;
-#	}
-#	if ( -r $outfile ) {
-#		CoGe::Accessory::Web::write_log(
-#			"run_tandem_filter: file $outfile already exists",
-#			$cogeweb->logfile );
-#		return 1;
-#	}
-#	my $cmd = "$PYTHON $TANDEM_FINDER -i '$infile' > '$outfile'";
-#	system "/usr/bin/touch '$outfile.running'"
-#	  ;    #track that a blast anlaysis is running for this
-#	CoGe::Accessory::Web::write_log( "run_tandem_filter: running\n\t$cmd",
-#		$cogeweb->logfile );
-#	`$cmd`;
-#	system "/bin/rm '$outfile.running'"
-#	  if -r "$outfile.running";    #remove track file
-#	return 1 if -r $outfile;
-#}
-
-#FIXME: Currently this feature is disabled
-# @by Evan Briones
-# @on 3/1/2013
-#sub run_adjust_dagchainer_evals {
-#	my %opts    = @_;
-#	my $infile  = $opts{infile};
-#	my $outfile = $opts{outfile};
-#	my $cvalue  = $opts{cvalue};
-#	$cvalue = 4 unless defined $cvalue;
-#	while ( -e "$outfile.running" ) {
-#		print STDERR "detecting $outfile.running.  Waiting. . .\n";
-#		sleep 60;
-#	}
-#	if ( -r $outfile || -r $outfile . ".gz" ) {
-#		CoGe::Accessory::Web::write_log(
-#			"run_adjust_dagchainer_evals: file $outfile already exists",
-#			$cogeweb->logfile );
-#		return 1;
-#	}
-#	CoGe::Accessory::Web::gunzip( $infile . ".gz" ) if -r $infile . ".gz";
-#	unless ( -r $infile && -s $infile ) {
-#		CoGe::Accessory::Web::write_log(
-#"WARNING:   Cannot adjust dagchainer evals! DAGChainer input file ($infile) contains no data!",
-#			$cogeweb->logfile
-#		);
-#		return 0;
-#	}
-#	my $cmd = "$PYTHON $EVAL_ADJUST -c $cvalue '$infile' > '$outfile'";
-#
-##There is a parameter that can be passed into this to filter repetitive sequences more or less stringently:
-## -c   2 gets rid of more stuff; 10 gets rid of less stuff; default is 4
-##consider making this a parameter than can be adjusted from SynMap -- will need to actually play with this value to see how it works
-##if implemented, this will require re-naming all the files to account for this parameter
-##and updating the auto-SynMap link generator for redoing an analysis
-#
-#	system "/usr/bin/touch '$outfile.running'"
-#	  ;    #track that a blast anlaysis is running for this
-#	CoGe::Accessory::Web::write_log(
-#		"run_adjust_dagchainer_evals: running\n\t$cmd",
-#		$cogeweb->logfile );
-#	`$cmd`;
-#	system "/bin/rm '$outfile.running'" if -r "$outfile.running";
-#	;      #remove track file
-#	return 1 if -r $outfile;
-#
-#}
-
-#FIXME: Currently this feature is disabled
-# @by Evan Briones
-# @on 6/18/2013
-#sub run_find_nearby {
-#	my %opts         = @_;
-#	my $infile       = $opts{infile};
-#	my $dag_all_file = $opts{dag_all_file};
-#	my $outfile      = $opts{outfile};
-#	while ( -e "$outfile.running" ) {
-#		print STDERR "detecting $outfile.running.  Waiting. . .\n";
-#		sleep 60;
-#	}
-#	if ( -r $outfile ) {
-#		CoGe::Accessory::Web::write_log(
-#			"run find_nearby: file $outfile already exists",
-#			$cogeweb->logfile );
-#		return 1;
-#	}
-#	my $cmd =
-#"$PYTHON $FIND_NEARBY --diags='$infile' --all='$dag_all_file' > '$outfile'";
-#	system "/usr/bin/touch '$outfile.running'"
-#	  ;    #track that a blast anlaysis is running for this
-#	CoGe::Accessory::Web::write_log( "run find_nearby: running\n\t$cmd",
-#		$cogeweb->logfile );
-#	`$cmd`;
-#	system "/bin/rm '$outfile.running'" if -r "$outfile.running";
-#	;      #remove track file
-#	return 1 if -r $outfile;
-#}
 
 1;
