@@ -43,7 +43,7 @@ BEGIN {
         units commify print_fasta get_unique_id get_link_coords 
         format_time_diff sanitize_name execute directory_size
         trim js_escape html_escape to_filename to_pathname
-        is_fastq_file add_fastq_ext detect_paired_end
+        is_fastq_file add_fastq_ext detect_paired_end to_number
         to_filename_without_extension is_gzipped to_filename_base
     );
 }
@@ -256,6 +256,12 @@ sub directory_size {
     my $size = 0;
     find(sub { $size += -s if -f $_ }, $path);
     return $size;
+}
+
+# Force string to int/float
+sub to_number {
+    my $s = shift;
+    return $s + 0;    
 }
 
 1;
