@@ -8,7 +8,7 @@
 var MAX_PTS = 100000;
 
 // SynMap Global Variables [note: when adding, make sure to reset in renderSynMap().initialize()]
-var camView = { "x": 0, "y": 0, "z": 120 };
+var camView = { "x": 0, "y": 0, "z": 120, "xr": 0, "yr": 0, "zr": 0 };
 var histData = {"kn": [], "ks": [], "knks": []};
 var pointData = [];
 var colors = {"kn": [], "ks": [], "knks": []};
@@ -18,6 +18,7 @@ var overlay = $("#overlay");
 
 // Updating Variables
 var camUpdate = false;
+var camType = ['P', 'O'];
 var hQueue = ["hKnKs", "hKs", "hKn"];
 var hCurrent = ["hKs", "ks"];
 var gridState = true;
@@ -30,6 +31,7 @@ var redraw = false;
 var refresh = false;
 var needsBrushUpdate = false;
 var vrMode = false;
+
 //var inFullScreen = false;
 
 // Color schemes variables
@@ -178,12 +180,13 @@ function rotateHistogram(direction) {
 
 /* CORE FUNCTION: Reset Camera */
 function resetCamera(view) {
-    camUpdate = true;
-    if (view == 'reset') { camView = { "x": 0, "y": 0, "z": 120 }; }
-    else if (view == 'xy') { camView = { "x": 0, "y": 0, "z": -120 }; }
-    else if (view == 'xz') { camView = { "x": 0, "y": -120, "z": 0 }; }
-    else if (view == 'yz') { camView = { "x": -120, "y": 0, "z": 0 }; }
+    if (view == 'reset') { camView = { "x": 0, "y": 0, "z": 120, "xr": 0, "yr": 0, "zr": 0 }; }
+    else if (view == 'xy') { camView = { "x": 0, "y": 0, "z": 120, "xr": 0, "yr": 0, "zr": 0 }; }
+    else if (view == 'xz') { camView = { "x": 0, "y": 120, "z": 0, "xr": 0, "yr": Math.PI/2, "zr": 0 }; }
+    else if (view == 'yz') { camView = { "x": 120, "y": 0, "z": 0, "xr": - Math.PI/2, "yr": 0, "zr": 0 }; }
     else { console.log("Unrecognized camera reset.")}
+
+    camUpdate = true;
 }
 
 /* CORE FUNCTION: Launch 2-way comparison in SynMap */
@@ -225,6 +228,13 @@ function toggleGrid() {
 /* CORE FUNCTION: Toggle Auto-Rotate */
 function toggleRotate() {
     autoRotate = !autoRotate
+}
+
+/* CORE FUNCTION: Change Camera */
+function toggleCamera() {
+    var swap = camType.shift();
+    camType.push(swap);
+    refresh = true;
 }
 
 /* CORE FUNCTION: Toggle Axis Labels */
@@ -945,15 +955,18 @@ var renderSynMap = function (graph_object, element_id, persistence) {
         renderer.setSize( width, height );
 
         /* Create a three.js camera */
-        camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 );
+        if (camType[0] == 'P') { camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 ); }
+        else if (camType[0] == 'O') {
+            camera = new THREE.OrthographicCamera( width / - 10, width / 10, height / 10, height / - 10, 1, 1000 );
+        }
         camera.position.x = camView.x;
         camera.position.y = camView.y;
         camera.position.z = camView.z;
+        scene.rotation.x = camView.xr;
+        scene.rotation.y = camView.yr;
+        scene.rotation.z = camView.zr;
 
-        /* Apply FlatOrbitControls to camera. */
-        controls = new THREE.FlatOrbitControls( camera );
-
-        /* Add VR Launch */
+        /* Apply controls (& effect for VR) to camera. */
         if ( final_experiment.options.vr && WEBVR.isAvailable() === true ) {
             vrMode = true;
             //controls = new THREE.VRControls( camera );
@@ -1017,16 +1030,25 @@ var renderSynMap = function (graph_object, element_id, persistence) {
 
         /* Camera control */
         if (camUpdate) {
+            controls.reset();
             camera.position.x = camView.x;
             camera.position.y = camView.y;
             camera.position.z = camView.z;
+            scene.rotation.x = camView.xr;
+            scene.rotation.y = camView.yr;
+            scene.rotation.z = camView.zr;
             camUpdate = false;
         } else {
             /* Update camera position record. */
-            camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
+            // camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z,
+            //     "xr": scene.rotation.x, "yr": scene.rotation.y, "zr": scene.rotation.z};
+            camView.x = camera.position.x;
+            camView.y = camera.position.y;
+            camView.z = camera.position.z;
+            camView.xr = scene.rotation.x;
+            camView.yr = scene.rotation.y;
+            camView.zr = scene.rotation.z;
         }
-
-
 
         /* Check for recoloring */
         if (hCurrent[1] != current) {
@@ -1080,8 +1102,8 @@ var renderSynMap = function (graph_object, element_id, persistence) {
             var slide = $("#slide");
             scene = null;
             camera = null;
-            controls = null;
             points = null;
+            controls = null;
             window.removeEventListener( 'resize', onWindowResize, false );
             window.removeEventListener('mousedown', onDocumentMouseDown, false);
             emptyRenderings();

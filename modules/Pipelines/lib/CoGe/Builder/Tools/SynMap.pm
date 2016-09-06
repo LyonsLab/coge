@@ -1186,18 +1186,9 @@ sub add_jobs {
 				$gff_job->{outputs}->[0]
 			],
 			outputs => [
-				catfile(
-					$result_path,
-					$fb_prefix . '.fractbias-fig.json'
-				),
-				catfile(
-					$result_path,
-					$fb_prefix . '.fractbias-genes.csv'
-				),
-				catfile(
-					$result_path,
-					$fb_prefix . '.fractbias-results.csv'
-				)
+				$fb_prefix . '.fractbias-fig.json',
+				$fb_prefix . '.fractbias-genes.csv',
+				$fb_prefix . '.fractbias-results.csv'
 			],
 			description => "Running Fractination Bias...",
 		});

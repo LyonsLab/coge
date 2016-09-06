@@ -6,6 +6,7 @@ use Mojo::JSON;
 use CoGeX;
 use CoGe::Accessory::histogram;
 use CoGe::Accessory::IRODS qw( irods_iput );
+use CoGe::Accessory::Utils qw( to_number );
 use CoGe::Services::Auth qw( init );
 use CoGe::Core::Experiment qw( get_data );
 use CoGe::Core::Storage qw( get_experiment_path get_upload_path get_experiment_metadata );
@@ -69,8 +70,8 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
 	}
 	
     $self->render(json => {
-		"scoreMin" => $globalMin,
-		"scoreMax" => $globalMax
+		"scoreMin" => to_number($globalMin),
+		"scoreMax" => to_number($globalMax)
 	});
 }
 

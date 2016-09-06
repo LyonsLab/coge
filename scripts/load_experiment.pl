@@ -11,7 +11,7 @@ use File::Spec::Functions qw(catdir catfile);
 use URI::Escape::JavaScript qw(unescape);
 use JSON::XS;
 use CoGe::Accessory::Web qw(get_defaults get_command_path);
-use CoGe::Accessory::Utils qw( commify to_pathname );
+use CoGe::Accessory::Utils qw( commify to_pathname to_number );
 use CoGe::Accessory::TDS;
 use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Core::Storage qw(add_workflow_result $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER);
@@ -608,8 +608,8 @@ sub validate_quant_data_file {
         else {
             # Add min/max values to metadata object -- mdb added 8/31/16 COGE-270
             $md = {
-                max => $max,
-                min => $min,
+                max => to_number($max),
+                min => to_number($min),
                 normalization => undef
             };
         }

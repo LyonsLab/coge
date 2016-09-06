@@ -2692,7 +2692,7 @@ $.extend(Query_Counter.prototype, {
 	                		}
 	                		self.total_queries = data.Queries;
 	                        
-	                		$("#" + self.elementId + "_total").html("<span>Total Database Queries: " + self.total_queries + "</span>");
+	                		$("#" + self.elementId + "_total").html("<span>Total Database Queries: " + coge.utils.numberWithCommas(self.total_queries) + "</span>");
 	                		$("#" + self.elementId + "_per_second").html("<span>Queries per Second: " + self.queries_per_second + "</span>");
 	                }
 	        },
