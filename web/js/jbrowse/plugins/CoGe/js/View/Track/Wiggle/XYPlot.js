@@ -8,9 +8,10 @@ define( [
 			'JBrowse/View/Track/Wiggle/XYPlot',
 			'JBrowse/Util',
 			'./_Scale',
-			'CoGe/View/ColorDialog'
+			'CoGe/View/ColorDialog',
+            'JBrowse/Store/LRUCache'
 		],
-		function( declare, array, Color, domConstruct, Dialog, XYPlotBase, Util, Scale, ColorDialog ) {
+		function( declare, array, Color, domConstruct, Dialog, XYPlotBase, Util, Scale, ColorDialog, LRUCache ) {
 
 var XYPlot = declare( [XYPlotBase], {
 	// Load cookie params - mdb added 1/13/14, issue 279
@@ -154,6 +155,20 @@ var XYPlot = declare( [XYPlotBase], {
 
 		return pixelValues;
 	},
+
+	// ----------------------------------------------------------------
+    // utility method that calculates standard deviation from sum and sum of squares
+
+    _calcStdFromSums: function( sum, sumSquares, n ) {
+        if( n == 0 )
+            return 0;
+
+        var variance = sumSquares - sum*sum/n;
+        if (n > 1) {
+            variance /= n-1;
+        }
+        return variance < 0 ? 0 : Math.sqrt(variance);
+    },
 
 	// ----------------------------------------------------------------
 
@@ -487,9 +502,75 @@ var XYPlot = declare( [XYPlotBase], {
 	},
 
 	// ----------------------------------------------------------------
-	// I have no idea why this function is duplicated here,
-	// it's the exact same as in JBrowse's XYPlot,
-	// but removing it breaks the display of the track
+
+    getRegionStats: function( query, successCallback, errorCallback ) {
+        return this._getRegionStats.apply( this, arguments );
+    },
+
+    _getRegionStats: function( query, successCallback, errorCallback ) {
+        var thisB = this;
+        var cache = thisB._regionStatsCache = thisB._regionStatsCache || new LRUCache({
+            name: 'regionStatsCache',
+            maxSize: 1000, // cache stats for up to 1000 different regions
+            sizeFunction: function( stats ) { return 1; },
+            fillCallback: function( query, callback ) {
+                //console.log( '_getRegionStats', query );
+                var s = {
+                    scoreMax: -Infinity,
+                    scoreMin: Infinity,
+                    scoreSum: 0,
+                    scoreSumSquares: 0,
+                    basesCovered: query.end - query.start,
+                    featureCount: 0
+                };
+                thisB.getFeatures( query,
+                                  function( feature ) {
+                                      var score = feature.get('score') || 0;
+										if (thisB.config.coge.transform == 'Log10') {
+											if (score >= 0)
+												score = log10(Math.abs(score)+1);
+											else
+												score = -1*log10(Math.abs(score)+1);
+										}
+										else if (thisB.config.coge.transform == 'Log2') {
+											if (score >= 0)
+												score = log2(Math.abs(score)+1);
+											else
+												score = -1*log2(Math.abs(score)+1);
+										}
+										else if (thisB.config.coge.transform == 'Inflate')
+											score = score > 0 ? 1 : -1;
+                                      s.scoreMax = Math.max( score, s.scoreMax );
+                                      s.scoreMin = Math.min( score, s.scoreMin );
+                                      s.scoreSum += score;
+                                      s.scoreSumSquares += score*score;
+                                      s.featureCount++;
+                                  },
+                                  function() {
+                                      s.scoreMean = s.featureCount ? s.scoreSum / s.featureCount : 0;
+                                      s.scoreStdDev = thisB._calcStdFromSums( s.scoreSum, s.scoreSumSquares, s.featureCount );
+                                      s.featureDensity = s.featureCount / s.basesCovered;
+                                      //console.log( '_getRegionStats done', s );
+                                      callback( s );
+                                  },
+                                  function(error) {
+                                      callback( null, error );
+                                  }
+                                );
+            }
+         });
+
+         cache.get( query,
+                    function( stats, error ) {
+                        if( error )
+                            errorCallback( error );
+                        else
+                            successCallback( stats );
+                    });
+
+    },
+
+	// ----------------------------------------------------------------
 
 	 _getScaling: function( viewArgs, successCallback, errorCallback ) {
 
