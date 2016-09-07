@@ -124,8 +124,9 @@ sub gen_html {
 
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( BODY       => $body );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
-    $template->param( CAS_URL    => $config->{CAS_URL} || '' );
+    $template->param( ADMIN_ONLY => $USER->is_admin,
+                      CAS_URL    => $config->{CAS_URL} || '',
+                      COOKIE_NAME => $config->{COOKIE_NAME} || '' );
 
     my $prebox = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynFind.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );

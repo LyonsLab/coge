@@ -576,7 +576,8 @@ sub gen_html {
             HOME       => $P->{SERVER},
             HELP       => 'ExperimentView',
             WIKI_URL   => $P->{WIKI_URL} || '',
-            CAS_URL    => $P->{CAS_URL} || ''
+            CAS_URL    => $P->{CAS_URL} || '',
+            COOKIE_NAME => $P->{COOKIE_NAME} || ''
         );
     	$template->param( USER     => $USER->display_name || '' );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";

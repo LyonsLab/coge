@@ -191,7 +191,8 @@ sub gen_html {
 		HELP       => 'SynMap',
 		WIKI_URL   => $config->{WIKI_URL} || '',
 		ADMIN_ONLY => $USER->is_admin,
-		CAS_URL    => $config->{CAS_URL} || ''
+		CAS_URL    => $config->{CAS_URL} || '',
+		COOKIE_NAME => $config->{COOKIE_NAME} || ''
 	);
 	return $template->output;
 }
