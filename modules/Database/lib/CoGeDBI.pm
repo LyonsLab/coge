@@ -47,7 +47,7 @@ BEGIN {
         get_feature_counts get_features get_feature_types
         get_feature_names get_feature_annotations get_locations 
         get_total_queries get_dataset_ids feature_type_names_to_id
-        get_features_by_range get_table_count
+        get_features_by_range get_table_count get_uptime
     );
 }
 
@@ -696,6 +696,17 @@ sub get_total_queries {
 	$sth->execute();
 	my $results = $sth->fetchall_hashref("Variable_name");
 	
+	return $results;
+}
+
+sub get_uptime {
+	my $dbh = shift;
+
+	my $query = 'SHOW STATUS WHERE Variable_name="Uptime"';
+	my $sth = $dbh->prepare($query);
+	$sth->execute();
+	my $results = $sth->fetchall_hashref("Variable_name");
+
 	return $results;
 }
 
