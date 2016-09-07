@@ -19,6 +19,7 @@ var overlay = $("#overlay");
 // Updating Variables
 var camUpdate = false;
 var camType = ['P', 'O'];
+var ptShape = ["picts/ball.png", "picts/disk.png"];
 var hQueue = ["hKnKs", "hKs", "hKn"];
 var hCurrent = ["hKs", "ks"];
 var gridState = true;
@@ -240,6 +241,13 @@ function toggleCamera() {
 /* CORE FUNCTION: Toggle Axis Labels */
 function toggleLabels() {
     labelState = !labelState;
+}
+
+/* CORE FUNCTION: Toggle Point Shape */
+function togglePtShape() {
+    var swap = ptShape.shift();
+    ptShape.push(swap);
+    refresh = true;
 }
 
 /* CORE FUNCTION: Empty Renderings */
@@ -708,7 +716,7 @@ var renderSynMap = function (graph_object, element_id, persistence) {
     function drawPoints(points) {
         // Load point image.
         var loader = new THREE.TextureLoader();
-        var sprite = loader.load("picts/ball.png");
+        var sprite = loader.load(ptShape[0]);
         // Define plot geometry & material & color array.
         var plotGeo = new THREE.Geometry();
         //plotGeo.addAttribute(size, new THREE.BufferAttribute( size, 1 ));
