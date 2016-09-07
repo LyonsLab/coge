@@ -1,5 +1,5 @@
 var coge = window.coge = (function (namespace) {
-	var DEFAULT_INTERVAL = 2*1000; // ms
+	var DEFAULT_INTERVAL = 5*1000; // ms
 	
     namespace.logout = {
 
@@ -56,20 +56,23 @@ var coge = window.coge = (function (namespace) {
         isLoggedIn: function() {
         	var cookie = $.cookie(this.loginCookieName);
     		if (!cookie)
-    			return 0;
-    		return 1;
+    			return false;
+    		return true;
         },
         
         checkLogin: function() {
         	var self = this;
-        	console.log('logout.checkLogin');
         	
-        	if (this.isLoggedIn())
+        	// Get login status
+        	var isLoggedIn = this.isLoggedIn();
+        	console.log('logout.checkLogin: logged in = ', isLoggedIn);
+        	if (isLoggedIn)
         		return;
         	
-    		console.log("logout.checkLogin: Session cookie doesn't exist");
+        	// Stop the check timer
     		this.stop();
     		
+    		// Show alert dialog
     		var dialog = $("<div />") // TODO move rendering into separate function
     			.html("Your login session has expired. Please login or continue as a public user.")
     			.dialog({
@@ -87,7 +90,7 @@ var coge = window.coge = (function (namespace) {
 			    			}
 		    			},
 		    			{
-			    			text: "Cancel",
+			    			text: "Continue",
 			    			click: function() {
 			    				window.location.reload(false);
 			    			}
