@@ -2694,11 +2694,13 @@ $.extend(Query_Counter.prototype, {
 	                        
 	                		$("#" + self.elementId + "_total").html("<span>Total Database Queries: " + coge.utils.numberWithCommas(self.total_queries) + "</span>");
 	                		$("#" + self.elementId + "_per_second").html("<span>Queries per Second: " + self.queries_per_second + "</span>");
+	                		$("#" + self.elementId + "_uptime").html("<span>Uptime: " + Math.ceil((data.Uptime)/86400) + " days</span>");
 	                }
 	        },
+	
 	        complete: function() {
 	        	self.schedule_update(5000);
-	        }
+		}
 		});
 	}
 });
