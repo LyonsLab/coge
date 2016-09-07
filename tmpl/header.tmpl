@@ -65,6 +65,14 @@ jQuery(document).ready(function(){
        	if (!e.relatedTarget.closest('.dropdown-menu'))
        	    hideDropdowns();
     });
+    
+    // Add logout detector -- mdb added 9/1/16 COGE-724
+    if (coge.logout) { // coge.logout module will not be present if in embedded mode
+        coge.logout.init({
+            loginCookieName: '<TMPL_VAR NAME="COOKIE_NAME">', // should be set by page to enable logout detection
+            loginCallback: login_cas
+        });
+    }
 });
 
 function browserAlert(){
@@ -74,8 +82,7 @@ function browserAlert(){
 
 //set up the jquery ui button behavior
 function setup_button_states (id) {
-//$(function() {
-         //button effects on events
+    //button effects on events
 	var item;
 
 	if (id) { item='#'+id; }
