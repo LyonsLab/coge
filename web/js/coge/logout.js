@@ -35,14 +35,11 @@ var coge = window.coge = (function (namespace) {
         	if (params.interval)
         		this.interal = params.interval;
         	
-        	// Start logout check timer
-        	if (this.isLoggedIn()) {
-        		this.initLoggedIn = true;
+        	// Start logout check timer if logged in
+        	var isLoggedIn = this.isLoggedIn();
+        	console.log('logout.init: logged in = ' + isLoggedIn)
+        	if (isLoggedIn)
         		this.start();
-        	}
-        	else {
-        		console.log('logout.init: Not logged in currently')
-        	}
         },
         
         start: function() {
@@ -65,7 +62,7 @@ var coge = window.coge = (function (namespace) {
         	
         	// Get login status
         	var isLoggedIn = this.isLoggedIn();
-        	console.log('logout.checkLogin: logged in = ', isLoggedIn);
+        	if (this.debug) console.log('logout.checkLogin: logged in = ', isLoggedIn);
         	if (isLoggedIn)
         		return;
         	
@@ -100,6 +97,10 @@ var coge = window.coge = (function (namespace) {
 	    		        $(".ui-dialog-titlebar-close", ui.dialog | ui).hide();
 	    		    }
         		});
+        },
+        
+        setDebug: function(enable) {
+        	this.debug = enable;
         }
 
     };
