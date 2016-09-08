@@ -18,8 +18,9 @@ var overlay = $("#overlay");
 
 // Updating Variables
 var camUpdate = false;
-var camType = ['P', 'O'];
-var ptShape = ["picts/ball.png", "picts/disk.png"];
+var camType = [['P', 'Show Perspective'], ['O', 'Show Orthographic']];
+var ptShape = [["picts/ball.png", "Show Round"], ["picts/disk.png", "Show Flat"]];
+var pointSize = 8;
 var hQueue = ["hKnKs", "hKs", "hKn"];
 var hCurrent = ["hKs", "ks"];
 var gridState = true;
@@ -235,6 +236,7 @@ function toggleRotate() {
 function toggleCamera() {
     var swap = camType.shift();
     camType.push(swap);
+    $("#camTypeSelect").text(camType[1][1]);
     refresh = true;
 }
 
@@ -247,6 +249,7 @@ function toggleLabels() {
 function togglePtShape() {
     var swap = ptShape.shift();
     ptShape.push(swap);
+    $("#ptShapeSelect").text(ptShape[1][1]);
     refresh = true;
 }
 
@@ -492,7 +495,6 @@ var renderSynMap = function (graph_object, element_id, persistence) {
 
     // Scaling variables.
     var axisWidth = 0.5;
-    var pointSize = 8;
 
     // Raycasting variables.
     var raycaster, intersects, mouse, INTERSECTED;
@@ -716,7 +718,7 @@ var renderSynMap = function (graph_object, element_id, persistence) {
     function drawPoints(points) {
         // Load point image.
         var loader = new THREE.TextureLoader();
-        var sprite = loader.load(ptShape[0]);
+        var sprite = loader.load(ptShape[0][0]);
         // Define plot geometry & material & color array.
         var plotGeo = new THREE.Geometry();
         //plotGeo.addAttribute(size, new THREE.BufferAttribute( size, 1 ));
@@ -963,8 +965,8 @@ var renderSynMap = function (graph_object, element_id, persistence) {
         renderer.setSize( width, height );
 
         /* Create a three.js camera */
-        if (camType[0] == 'P') { camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 ); }
-        else if (camType[0] == 'O') {
+        if (camType[0][0] == 'P') { camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 ); }
+        else if (camType[0][0] == 'O') {
             camera = new THREE.OrthographicCamera( width / - 10, width / 10, height / 10, height / - 10, 1, 1000 );
         }
         camera.position.x = camView.x;
@@ -1298,6 +1300,14 @@ $(document).ready( function() {
             al.css("left", 8).css("top", cH - al.height() - 8);
             // End spinny wheel.
             overlay.hide();
+
+            /* Monitor point size option & update visualizations on change. */
+            var pointSizeSelector = $("#ptSizeSelect");
+            pointSizeSelector.change( function() {
+                //console.log(pointSizeSelector.val());
+                pointSize = pointSizeSelector.val();
+                refresh = true;
+            });
 
             /* Monitor mutation ratio coloring option & update visualizations on change. */
             var colorBySelect = $("#color_by");
