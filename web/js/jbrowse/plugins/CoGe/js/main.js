@@ -354,10 +354,10 @@ return declare( JBrowsePlugin,
 		content += '</td></tr><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr></table>';
-		content += this.build_buttons('if($(\'#dnd_in\')[0].checked)coge_plugin.intersection(); else if($(\'#dnd_not_in\')[0].checked)coge_plugin.intersection(true)', 'coge_plugin._search_dialog.hide()');
+		content += this.build_buttons('if($(\'#dnd_in\')[0].checked)coge_plugin.intersection(); else if($(\'#dnd_not_in\')[0].checked)coge_plugin.intersection(true); else coge_plugin.merge();', 'coge_plugin._search_dialog.hide()');
 		content += '</div>';
 		coge_plugin._search_dialog = new Dialog({
-				title: "Find Intersection",
+				title: "Combine Tracks",
 				content: content,
 				onHide: function() {
 					this.destroyRecursive();
@@ -588,6 +588,53 @@ return declare( JBrowsePlugin,
 					this._search_dialog.hide();
 				coge_plugin.error('Search', data);
 			})
+		});
+	},
+
+	// ----------------------------------------------------------------
+
+	merge: function() {
+		var ref_seq = dojo.byId('coge_ref_seq');
+		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
+		var div = dojo.byId('coge-search-dialog');
+		dojo.empty(div);
+		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		var browser = this.browser;
+		var config = this._track.config;
+		var eid = config.coge.id;
+		var eid2 = this._track2.config.coge.id;
+		var search = {type: 'merge', chr: chr, eids: [eid, eid2], keys: [config.key, this._track2.config.key]};
+		var d = new Deferred();
+		var store_config = {
+			browser: browser,
+			config: config,
+			query: { 'eids': eid2 },
+			refSeq: browser.refSeq,
+			type: config.type
+		};
+		var store_name = browser.addStoreConfig(undefined, store_config);
+		store_config.name = store_name;
+		browser.getStore(store_name, function(store) {
+           d.resolve(true);
+       	});
+       	d.promise.then(function() {
+			config = dojo.clone(config);
+			config.baseUrl = api_base_url + '/experiment/' + eid + '/features/' + chr;
+			config.query = { 'eids': eid2 };
+			config.coge.search = search;
+			config.key = 'Merge: ' + coge_plugin.search_to_string(search);
+			var search_id = ++coge_plugin.num_searches;
+			config.track = 'search' + search_id;
+			config.label = 'search' + search_id;
+			config.coge.eid = config.coge.id;
+			config.coge.id = search_id
+			config.coge.type = 'search';
+			browser.publish('/jbrowse/v1/v/tracks/new', [config]);
+			browser.publish('/jbrowse/v1/v/tracks/show', [config]);
+			dojo.place(dojo.byId('track_search' + search_id), dojo.byId('track_experiment' + eid), 'after');
+			browser.view.updateTrackList();
+			if (coge_plugin._search_dialog)
+				coge_plugin._search_dialog.hide();
 		});
 	},
 
@@ -1002,10 +1049,12 @@ return declare( JBrowsePlugin,
 			params = 'features=' + search.features;
 		else if (search.type == 'Markers')
 			params = 'features=' + search.features;
+		else if (search.type == 'merge')
+			params = 'type=merge&eids=' + search.eids.join(',');
 		else if (search.type == 'range')
 			params = 'type=range&gte=' + search.gte + '&lte=' + search.lte;
 		else
-			params = 'type=' + search.type; // max or min
+			params = 'type=' + search.type;
 		if (!without_chr && search.chr && search.chr != 'Any')
 			params += '&chr=' + search.chr;
 		return params;		
@@ -1025,7 +1074,9 @@ return declare( JBrowsePlugin,
 			string = 'Markers'
 			if (search.features != 'all')
 				string += ' in ' + search.features;
-		} else if (search.type == 'overlaps')
+		} else if (search.type == 'merge')
+			string = 'merge ' + search.keys.join(',');
+		else if (search.type == 'overlaps')
 			string = 'overlaps ' + search.other;
 		else if (search.type == 'SNPs') {
 			if (search.snp_type)
@@ -1038,7 +1089,7 @@ return declare( JBrowsePlugin,
 		} else if (search.type == 'range')
 			string = 'range: ' + search.gte + ' .. ' + search.lte;
 		else
-			string = search.type; // max or min
+			string = search.type;
 		if (!without_chr && search.chr && search.chr != 'Any')
 			string += ', chr=' + search.chr;
 		return string;
