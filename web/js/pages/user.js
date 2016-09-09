@@ -173,9 +173,6 @@ $(function() {
 	// Initiate refresh loop
 	schedule_poll();
 
-	// Initialize add-to-notebook dialog
-	window.setTimeout(search_notebooks, 1000);
-	
 	// Initialize confirm cancel job dialog
     $("#cancel_dialog").dialog({
     	modal: true,
@@ -1278,6 +1275,13 @@ function comment_job(id, comment) {
 function add_to_notebook_dialog() {
 	var selected = contentPanel.grid.getSelectedItems();
 	if (selected.length) {
+		// Initialize add-to-notebook dialog first time only
+		if (!window.init_search_notebooks) {
+			window.setTimeout(search_notebooks, 1000);
+			window.init_search_notebooks++;
+		}
+		
+		// Open dialog window
 		$('#add_to_notebook_dialog').dialog({width:500}).dialog('open');
 	}
 }
