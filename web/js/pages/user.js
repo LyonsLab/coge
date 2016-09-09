@@ -1275,11 +1275,8 @@ function comment_job(id, comment) {
 function add_to_notebook_dialog() {
 	var selected = contentPanel.grid.getSelectedItems();
 	if (selected.length) {
-		// Initialize add-to-notebook dialog first time only
-		if (!window.init_search_notebooks) {
-			window.setTimeout(search_notebooks, 1000);
-			window.init_search_notebooks++;
-		}
+		// Initialize add-to-notebook dialog
+		window.setTimeout(search_notebooks, 1000);
 		
 		// Open dialog window
 		$('#add_to_notebook_dialog').dialog({width:500}).dialog('open');
