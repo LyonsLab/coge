@@ -443,7 +443,7 @@ sub _get_experiments {
         if ($eids) {
             warn $eids;
             foreach my $e (split(/,/, $eids)) {
-                my $experiment = $db->resultset('Experiment')->find($eid);
+                my $experiment = $db->resultset('Experiment')->find($e);
                 push @all_experiments, $experiment if $experiment;
             }
             warn Dumper \@all_experiments;

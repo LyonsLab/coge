@@ -211,6 +211,7 @@ return declare( JBrowsePlugin,
 		JBrowse.afterMilestone('initView', function() {
 			coge_plugin.create_search_button();
 		});
+		this.num_merges = 0;
 		this.num_searches = 0;
 	},
 
@@ -603,14 +604,16 @@ return declare( JBrowsePlugin,
 		var config = this._track.config;
 		var eid = config.coge.id;
 		var eid2 = this._track2.config.coge.id;
-		var search = {type: 'merge', chr: chr, eids: [eid, eid2], keys: [config.key, this._track2.config.key]};
+		var eids = [eid, eid2];
+		var keys = [config.key, this._track2.config.key];
 		var d = new Deferred();
 		var store_config = {
 			browser: browser,
 			config: config,
-			query: { 'eids': eid2 },
 			refSeq: browser.refSeq,
-			type: config.type
+			type: 'JBrowse/Store/SeqFeature/REST',
+			baseUrl: api_base_url + '/experiment/' + eid,
+			query: { 'eids': eid2 }
 		};
 		var store_name = browser.addStoreConfig(undefined, store_config);
 		store_config.name = store_name;
@@ -619,19 +622,20 @@ return declare( JBrowsePlugin,
        	});
        	d.promise.then(function() {
 			config = dojo.clone(config);
-			config.baseUrl = api_base_url + '/experiment/' + eid + '/features/' + chr;
+			config.baseUrl = api_base_url + '/experiment/' + eid;
 			config.query = { 'eids': eid2 };
-			config.coge.search = search;
-			config.key = 'Merge: ' + coge_plugin.search_to_string(search);
-			var search_id = ++coge_plugin.num_searches;
-			config.track = 'search' + search_id;
-			config.label = 'search' + search_id;
-			config.coge.eid = config.coge.id;
-			config.coge.id = search_id
-			config.coge.type = 'search';
+			config.key = 'Merge: ' + keys.join(',');
+			var merge_id = ++coge_plugin.num_merges;
+			config.track = 'merge' + merge_id;
+			config.label = 'merge' + merge_id;
+			config.store = store_name;
+			config.coge.id = merge_id;
+			config.coge.eids = eids;
+			config.coge.keys = keys;
+			config.coge.type = 'merge';
 			browser.publish('/jbrowse/v1/v/tracks/new', [config]);
 			browser.publish('/jbrowse/v1/v/tracks/show', [config]);
-			dojo.place(dojo.byId('track_search' + search_id), dojo.byId('track_experiment' + eid), 'after');
+			dojo.place(dojo.byId('track_merge' + merge_id), dojo.byId('track_experiment' + eid), 'after');
 			browser.view.updateTrackList();
 			if (coge_plugin._search_dialog)
 				coge_plugin._search_dialog.hide();

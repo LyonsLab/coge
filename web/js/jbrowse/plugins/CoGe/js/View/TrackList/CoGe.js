@@ -178,7 +178,7 @@ define(['dojo/_base/declare',
 	addTracks: function(track_configs) {
 		track_configs.forEach(function(track_config) {
 			if (track_config.coge)
-				if (track_config.coge.type == 'search')
+				if (track_config.coge.type == 'merge' || track_config.coge.type == 'search')
 					this.tracks_div.insertBefore(this._new_track(track_config), this.tracks_div.firstChild); // insert before Sequence track at top
 				else if (track_config.coge.type != 'notebook')
 					this._add_track_to_notebook(track_config, dojo.byId('notebook0'));
@@ -189,10 +189,10 @@ define(['dojo/_base/declare',
 
 	_build_tooltip: function(track_config) {
 		var coge = track_config.coge;
-		var html = coge.type == 'search' ? 'Search of Experiment' : this._capitalize(coge.type);
+		var html = coge.type == 'merge' ? 'Merge of Experiments' : coge.type == 'search' ? 'Search of Experiment' : this._capitalize(coge.type);
 		html += ': <b>' + coge.name + '</b>';
 		if (coge.id != 0)
-			html += ' (id ' + (coge.type == 'search' ? coge.eid : coge.id) + ')';
+			html += ' (id ' + (coge.type == 'merge' ? coge.eids : coge.type == 'search' ? coge.eid : coge.id) + ')';
 		if (coge.description)
 			html += '<br>' + coge.description;
 		if (coge.type == 'experiment')
@@ -606,7 +606,7 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	_get_track_color: function(container) {
-		var id = container.config.coge.type == 'search' ? container.config.coge.eid : container.config.coge.id;
+		var id = container.config.coge.type == 'merge' ? 'lightgray' : container.config.coge.type == 'search' ? container.config.coge.eid : container.config.coge.id;
 		var style = container.config.style;
 		var cookie = this.browser.cookie('track-' + container.config.track);
 		if (cookie)
@@ -1110,17 +1110,17 @@ define(['dojo/_base/declare',
 	 */
 
 	setTracksInactive: function(track_configs, combined) {
-		var search_tracks = [];
+		var tmp_tracks = [];
 		track_configs.forEach(function(track_config) {
 			coge_track_list._traverse_tracks(function(container) {
 				if (track_config.coge && container.id == track_config.coge.type + track_config.coge.id)
-					if (container.config.coge.type == 'search')
-						search_tracks.push(container);
+					if (container.config.coge.type == 'merge' || container.config.coge.type == 'search')
+						tmp_tracks.push(container);
 					else
 						coge_track_list._set_tracks_inactive(container, combined);
 			});
 		});
-		search_tracks.forEach(function(container) {
+		tmp_tracks.forEach(function(container) {
 			coge_track_list.browser._deleteTrackConfigs([container.config]);
 			dojo.destroy(container);
 		});
