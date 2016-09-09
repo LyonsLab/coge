@@ -62,7 +62,7 @@ jQuery(document).ready(function(){
 	});
 	
     $('.dropdown-label').mouseleave(function(e){
-       	if (!e.relatedTarget.closest('.dropdown-menu'))
+       	if (e.relatedTarget && !e.relatedTarget.closest('.dropdown-menu'))
        	    hideDropdowns();
     });
     
