@@ -761,10 +761,6 @@ define(['dojo/_base/declare',
 				return;
 			var track1 = $('#' + source.anchor.id.substring(6))[0];
 			var track2 = $('#' + source.current.id.substring(6))[0];
-			if (track1.config.coge.type != 'experiment' || track2.config.coge.type != 'experiment') {
-				coge_plugin.info('Only experiment tracks','Currently you can only find the intersection of experiment tracks');
-				return;
-			}
 			coge_plugin.dnd_dialog(track1, track2);
 			return;
 		}
@@ -889,6 +885,12 @@ define(['dojo/_base/declare',
 		if (coge.type == 'experiment' || coge.type == 'notebook') {
 			dojo.connect(container, "onmouseenter", dojo.hitch(this, function(){this._mouse_enter(track_config, label, container)}));
 			dojo.connect(container, "onmouseleave", dojo.hitch(this, function(){this._mouse_leave(container)}));
+		} else if (coge.type == 'merge') {
+			dojo.connect(container, "onmouseenter", function(){Tooltip.show(track_config.coge.keys.join('<br>'), container)});
+			dojo.connect(container, "onmouseleave", function(){Tooltip.hide(container)});
+		} else if (coge.type == 'search') {
+			dojo.connect(container, "onmouseenter", dojo.hitch(this, function(){Tooltip.show(this._build_tooltip(track_config), container)}));
+			dojo.connect(container, "onmouseleave", function(){Tooltip.hide(container)});
 		}
 		if (coge.collapsible)
 			this._add_expander(container);

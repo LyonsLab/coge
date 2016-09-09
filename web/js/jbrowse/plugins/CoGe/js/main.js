@@ -338,8 +338,32 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	dnd_dialog: function(track1, track2) {
+		if (track1.config.coge.type != 'experiment') {
+			coge_plugin.info('Drag and Drop Error','You can only drag experiment tracks onto other tracks');
+			return;
+		}
+		if (track2.config.coge.type == 'search') {
+			coge_plugin.info('Drag and Drop Error','You cannot drop tracks onto search tracks');
+			return;
+		}
 		this._track = track1;
 		this._track2 = track2;
+		if (track2.config.coge.type == 'merge') {
+			var track;
+			this.browser.view.tracks.forEach(function(t) {
+				if (t.config.key == track2.config.key) {
+					track = t;
+				}
+			});
+			track2.config.key += ',' + track1.config.key;
+			track2.config.coge.eids.push(track1.config.coge.id);
+			track2.config.coge.keys.push(track1.config.key);
+			this.browser.getStore(track2.config.store, function(store){
+				store.config.query['eids'] += ',' + track1.config.coge.id;
+			});
+			track.changed();
+			return;
+		}
 		var content = '<div id="coge-search-dialog"><table><tr><td>Action:</td><td><input id="dnd_in" type="radio" name="action" checked> Find where ';
 		content += track1.config.key;
 		content += ' overlaps ';
@@ -624,8 +648,8 @@ return declare( JBrowsePlugin,
 			config = dojo.clone(config);
 			config.baseUrl = api_base_url + '/experiment/' + eid;
 			config.query = { 'eids': eid2 };
-			config.key = 'Merge: ' + keys.join(',');
 			var merge_id = ++coge_plugin.num_merges;
+			config.key = 'Merge ' + merge_id;
 			config.track = 'merge' + merge_id;
 			config.label = 'merge' + merge_id;
 			config.store = store_name;

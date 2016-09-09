@@ -75,91 +75,91 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
 	});
 }
 
-# sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
-#     my $self     = shift;
-#     my $eid      = $self->stash('eid');
-#     my $nid      = $self->stash('nid');
-#     my $gid      = $self->stash('gid');
-#     my $chr      = $self->stash('chr');
-#     my $start    = $self->param('start');
-#     my $end      = $self->param('end');
-#     my $bpPerBin = $self->param('basesPerBin');
+sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
+    my $self     = shift;
+    my $eid      = $self->stash('eid');
+    my $nid      = $self->stash('nid');
+    my $gid      = $self->stash('gid');
+    my $chr      = $self->stash('chr');
+    my $start    = $self->param('start');
+    my $end      = $self->param('end');
+    my $bpPerBin = $self->param('basesPerBin');
 
-# #	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities eid="
-# #      . ( $eid ? $eid : '' ) . " nid="
-# #      . ( $nid ? $nid : '' ) . " gid="
-# #      . ( $gid ? $gid : '' )
-# #      . " $chr:$start:$end ("
-# #      . ( $end - $start + 1 )
-# #      . ") bpPerBin=$bpPerBin\n";
+#	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities eid="
+#      . ( $eid ? $eid : '' ) . " nid="
+#      . ( $nid ? $nid : '' ) . " gid="
+#      . ( $gid ? $gid : '' )
+#      . " $chr:$start:$end ("
+#      . ( $end - $start + 1 )
+#      . ") bpPerBin=$bpPerBin\n";
 
-#     # Authenticate user and connect to the database
-#     my ($db, $user) = CoGe::Services::Auth::init($self);
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
 
-# 	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
+	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
 
-# 	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
-#     my @bins;
-#     foreach my $exp (@$experiments) {
-#         my $data_type = $exp->data_type;
-# 		if ( !$data_type or $data_type == $DATA_TYPE_QUANT ) {
-# 			next;
-# 		}
-#         my $pData = CoGe::Core::Experiment::get_data(
-#             eid   => $eid,
-#             data_type  => $exp->data_type,
-#             chr   => $chr,
-#             start => $start,
-#             end   => $end
-#         );
-#         if ( $data_type == $DATA_TYPE_POLY || $data_type == $DATA_TYPE_MARKER ) {
-#             # Bin and convert to JSON
-#             foreach my $d (@$pData) {
-#                 my ($s, $e) = ($d->{start}, $d->{stop});
-#                 my $mid = int( ( $s + $e ) / 2 );
-#                 my $b   = int( ( $mid - $start ) / $bpPerBin );
-#                 $b = 0 if ( $b < 0 );
-#                 $bins[$b]++;
-#             }
-#         }
-#         elsif ( $data_type == $DATA_TYPE_ALIGN ) {
-# 	        # Convert SAMTools output into JSON
-# 	        foreach (@$pData) {
-# 	        	chomp;
-# 	        	my (undef, undef, undef, $pos, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
+	# Query range for each experiment and build up json response - #TODO could parallelize this for multiple experiments
+    my @bins;
+    foreach my $exp (@$experiments) {
+        my $data_type = $exp->data_type;
+		if ( !$data_type or $data_type == $DATA_TYPE_QUANT ) {
+			next;
+		}
+        my $pData = CoGe::Core::Experiment::get_data(
+            eid   => $eid,
+            data_type  => $exp->data_type,
+            chr   => $chr,
+            start => $start,
+            end   => $end
+        );
+        if ( $data_type == $DATA_TYPE_POLY || $data_type == $DATA_TYPE_MARKER ) {
+            # Bin and convert to JSON
+            foreach my $d (@$pData) {
+                my ($s, $e) = ($d->{start}, $d->{stop});
+                my $mid = int( ( $s + $e ) / 2 );
+                my $b   = int( ( $mid - $start ) / $bpPerBin );
+                $b = 0 if ( $b < 0 );
+                $bins[$b]++;
+            }
+        }
+        elsif ( $data_type == $DATA_TYPE_ALIGN ) {
+	        # Convert SAMTools output into JSON
+	        foreach (@$pData) {
+	        	chomp;
+	        	my (undef, undef, undef, $pos, undef, undef, undef, undef, undef, $seq, undef, undef) = split(/\t/);
 
-# 	        	my $len = length($seq);
-# 	        	my $s = $pos;
-# 	        	my $e = $pos + $len;
+	        	my $len = length($seq);
+	        	my $s = $pos;
+	        	my $e = $pos + $len;
 
-# 				# Bin results
-#                 my $mid = int( ( $s + $e ) / 2 );
-#                 my $b   = int( ( $mid - $start ) / $bpPerBin );
-#                 $b = 0 if ( $b < 0 );
-#                 $bins[$b]++;
-# 	        }
-#         }
-#         else {
-#         	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities unknown data type for experiment $eid\n";
-#         	next;
-#         }
-#     }
+				# Bin results
+                my $mid = int( ( $s + $e ) / 2 );
+                my $b   = int( ( $mid - $start ) / $bpPerBin );
+                $b = 0 if ( $b < 0 );
+                $bins[$b]++;
+	        }
+        }
+        else {
+        	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities unknown data type for experiment $eid\n";
+        	next;
+        }
+    }
 
-#     my ( $sum, $count );
-#     foreach my $x (@bins) {
-#         $sum += $x;
-#          #$max = $x if ( not defined $max or $x > $max ); # mdb removed 1/14/14 for BAM histograms
-#         $count++;
-#     }
-#     my $mean = 0;
-#     $mean = $sum / $count if ($count);
-#     my $max = $bpPerBin; # mdb added 1/14/14 for BAM histograms
+    my ( $sum, $count );
+    foreach my $x (@bins) {
+        $sum += $x;
+         #$max = $x if ( not defined $max or $x > $max ); # mdb removed 1/14/14 for BAM histograms
+        $count++;
+    }
+    my $mean = 0;
+    $mean = $sum / $count if ($count);
+    my $max = $bpPerBin; # mdb added 1/14/14 for BAM histograms
 
-#     $self->render(json => {
-#         bins => \@bins,
-#         stats => { basesPerBin => $bpPerBin, max => $max, mean => $mean }
-#     });
-# }
+    $self->render(json => {
+        bins => \@bins,
+        stats => { basesPerBin => $bpPerBin, max => $max, mean => $mean }
+    });
+}
 
 sub _transform_line {
     my $line = shift;
