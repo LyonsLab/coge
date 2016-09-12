@@ -95,54 +95,6 @@ sub item_type {
 
 ################################################ subroutine header begin ##
 
-=head2 generate_passwd
-
- Usage     :
- Purpose   : Generates a password based on a hashed string and a salt value.
- Returns   : Hash of password and salt value.
- Argument  : 'passwd' or 'pwd'
- Throws    : None
- Comments  :
-
-See Also   : check_passwd()
-
-=cut
-
-################################################## subroutine header end ##
-
-sub generate_passwd {
-	my $self      = shift;
-	my %opts      = @_;
-	my $pwd       = $opts{passwd} || $opts{pwd};
-	my $crypt_pwd = crypt( $pwd, "12" );
-}
-
-################################################ subroutine header begin ##
-
-=head2 check_passwd
-
- Usage     :
- Purpose   : Checks to see if entered password matches user password.
- Returns   : Result of logic test 'eq' between password has from the database and a hash of the user supplied password.
- Argument  : 'passwd' or 'pwd'
- Throws    : None
- Comments  :
-
-See Also   : generate_passwd()
-
-=cut
-
-################################################## subroutine header end ##
-
-sub check_passwd {
-	my $self = shift;
-	my %opts = @_;
-	my $pwd  = $opts{passwd} || $opts{pwd};
-	return crypt( $pwd, $self->passwd ) eq $self->passwd;
-}
-
-################################################ subroutine header begin ##
-
 =head2 name
 
  Usage     :
@@ -732,6 +684,21 @@ sub genomes {
 	return wantarray ? @genomes : \@genomes;
 }
 
+################################################ subroutine header begin ##
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  :
+ Throws    : None
+ Comments  :
+
+=cut
+
+################################################## subroutine header end ##
+
 sub groups_with_access {
 	my $self = shift;
 	return unless $self->id; # ignore public user
@@ -792,8 +759,23 @@ sub users_with_access {
 	return wantarray ? values %users : [ values %users ];
 }
 
+################################################ subroutine header begin ##
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  :
+ Throws    : None
+ Comments  :
+
+=cut
+
+################################################## subroutine header end ##
+
 # Only call for children of type genome/experiment, not group/list.
-sub child_connector {
+sub child_connector { #TODO replace with CoGeDBI literal query
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
@@ -838,7 +820,7 @@ sub child_connector {
 	}
 }
 
-sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, combine with child_connector
+sub all_child_connectors { #TODO replace with CoGeDBI literal query
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
@@ -882,7 +864,7 @@ sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, co
 	return wantarray ? values %connectors : [ values %connectors ];
 }
 
-sub children { #FIXME have this use child_by_type_and_id
+sub children { #TODO replace with CoGeDBI literal query
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
@@ -926,169 +908,6 @@ sub children { #FIXME have this use child_by_type_and_id
 	}
 
 	return wantarray ? values %children : [ values %children ];
-}
-
-sub children_by_type_and_id {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my %opts = @_;
-
-	# use Time::HiRes qw ( time );
-	# my $start_time = time;
-
-	my %children;
-
-	foreach my $c ($self->child_connectors) {
-		my $child = $c->child;
-		$children{$c->child_type}{$c->child_id} = $child;
-
-		if ($c->child_type == $node_types->{list}) {
-			foreach my $c ($child->child_connectors) {
-				my $child = $c->child;
-				$children{$c->child_type}{$c->child_id} = $child;
-			}
-		}
-		elsif ($c->child_type == $node_types->{group}) {
-			foreach my $c ($child->child_connectors) {
-				my $child = $c->child;
-				$children{$c->child_type}{$c->child_id} = $child;
-
-				if ($c->child_type == $node_types->{list}) {
-					foreach my $c ($child->child_connectors) {
-						my $child = $c->child;
-						$children{$c->child_type}{$c->child_id} = $child;
-					}
-				}
-			}
-		}
-	}
-
-#	print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
-	return \%children;
-}
-
-sub children_by_type_role_id {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-
-	#use Time::HiRes qw ( time ); my $start_time = time;
-	my (%children, %roles);
-
-	foreach my $c ($self->child_connectors) {
-		my $child = $c->child;
-		$children{$c->child_type}{$c->child_id} = $child;
-		$roles{$c->role_id}{$c->child_id} = 1;
-
-		if ($c->child_type == $node_types->{list}) {
-			foreach my $lc ($child->child_connectors) {
-				my $child = $lc->child;
-				$children{$lc->child_type}{$lc->child_id} = $child;
-				$roles{$c->role_id}{$lc->child_id} = 1;
-			}
-		}
-		elsif ($c->child_type == $node_types->{group}) {
-			foreach my $c ($child->child_connectors) {
-				my $child = $c->child;
-				$children{$c->child_type}{$c->child_id} = $child;
-				$roles{$c->role_id}{$c->child_id} = 1;
-
-				if ($c->child_type == $node_types->{list}) {
-					foreach my $lc ($child->child_connectors) {
-						my $child = $lc->child;
-						$children{$lc->child_type}{$lc->child_id} = $child;
-						$roles{$c->role_id}{$lc->child_id} = 1;
-					}
-				}
-			}
-		}
-	}
-	#print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
-	return (\%children, \%roles);
-}
-
-################################################ subroutine header begin ##
-
-=head2 restricted_genomes
-
- Usage     :
- Purpose   : Returns the set of restricted genomes a user has access to
- Returns   : Array of genomes
- Argument  : None
- Throws    : None
- Comments  :
-
-=cut
-
-################################################## subroutine header end ##
-
-sub restricted_genomes {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my %opts = @_;
-	my $include_deleted = $opts{include_deleted};
-
-	my %genomes;
-	foreach my $ug ( $self->groups ) {
-		map {
-			$genomes{ $_->id } = $_ if (!$_->deleted || $include_deleted)
-		} $ug->restricted_genomes;
-	}
-	return wantarray ? values %genomes : [ values %genomes ];
-}
-
-################################################ subroutine header begin ##
-
-=head2 features
-
- Usage     : $self->features
- Purpose   : shows the features to which user has access
- Returns   : wantarray of features objects
- Argument  :
- Throws    : None
- Comments  :
-
-=cut
-
-################################################## subroutine header end ##
-
-sub features {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-
-	my %features;
-	foreach my $group ( $self->groups ) {
-		map { $features{ $_->id } = $_ } $group->features;
-	}
-	return wantarray ? values %features : [ values %features ];
-}
-
-################################################ subroutine header begin ##
-
-=head2 history
-
- Usage     : $self->history
- Purpose   : get the user's history
- Returns   : wantarray or count of history objects
- Argument  :
- Throws    : None
- Comments  :
-
-=cut
-
-################################################## subroutine header end ##
-
-sub history {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my %opts = @_;
-	my $count = $opts{count}; #return count;
-
-	if ($count) {
-	    return $self->logs->count();
-	}
-
-	my @history = $self->logs;
-	return wantarray ? @history : \@history;
 }
 
 ################################################ subroutine header begin ##

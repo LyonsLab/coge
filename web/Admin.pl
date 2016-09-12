@@ -71,8 +71,9 @@ open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
     get_user_table					=> \&get_user_table,
     get_group_table					=> \&get_group_table,
     get_total_table					=> \&get_total_table,
-    gen_tree_json					=> \&gen_tree_json,
+    gen_tree_json					=> \&gen_tree_json, 
     get_total_queries				=> \&get_total_queries,
+ get_uptime		=> \&get_uptime,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -91,7 +92,8 @@ sub gen_html {
                       HELP       => '',
                       WIKI_URL   => $P->{WIKI_URL} || '',
                       CAS_URL    => $P->{CAS_URL} || '',
-                      ADMIN_ONLY => $USER->is_admin );
+                      ADMIN_ONLY => $USER->is_admin,
+                      COOKIE_NAME => $P->{COOKIE_NAME} || '');
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( BODY       => gen_body() );
 	$html .= $template->output;
@@ -1905,8 +1907,9 @@ sub gen_tree_json {
 sub get_total_queries {
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my $results = CoGeDBI::get_total_queries($db->storage->dbh);
-	
-	return encode_json({Queries => $results->{Queries}->{Value}});
+	my $results2 = CoGeDBI::get_uptime($db->storage->dbh);	
+	print STDERR Dumper $results2 ;
+return encode_json({Queries => $results->{Queries}->{Value}, Uptime => $results2->{Uptime}->{Value}});
 }
 
 if ($fh) {

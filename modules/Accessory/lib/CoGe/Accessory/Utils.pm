@@ -43,9 +43,8 @@ BEGIN {
         units commify print_fasta get_unique_id get_link_coords 
         format_time_diff sanitize_name execute directory_size
         trim js_escape html_escape to_filename to_pathname
-        is_fastq_file add_fastq_ext detect_paired_end
+        is_fastq_file add_fastq_ext detect_paired_end to_number
         to_filename_without_extension is_gzipped to_filename_base
-        read_fasta_index
     );
 }
 
@@ -115,25 +114,6 @@ sub print_fasta {
     	print {$fh} substr($$pIn, $ofs, $FASTA_LINE_LEN) . "\n";
     	$ofs += $FASTA_LINE_LEN;
     }
-}
-
-sub read_fasta_index {
-    my $index_file = shift; # samtools .fai file
-    
-    my %contigs;
-    open(my $fh, $index_file) or return;
-    while (<$fh>) {
-        my ($name, $size) = split("\t");
-        unless ($name && $size) {
-            print STDERR "read_fasta_index: error reading index file\n";
-            return;    
-        }
-        
-        $contigs{$name} = $size;
-    }
-    close($fh);
-    
-    return \%contigs;
 }
 
 sub get_unique_id {
@@ -276,6 +256,12 @@ sub directory_size {
     my $size = 0;
     find(sub { $size += -s if -f $_ }, $path);
     return $size;
+}
+
+# Force string to int/float
+sub to_number {
+    my $s = shift;
+    return $s + 0;    
 }
 
 1;

@@ -15,7 +15,7 @@ use JSON::XS;
 
 BEGIN {
     use Exporter 'import';
-    our @EXPORT_OK = qw( create_fasta_file get_blast_db get_genomes get_tiny_url go );
+    our @EXPORT_OK = qw( create_fasta_file get_blast_db get_genomes get_tiny_url );
 }
 
 sub add_jobs {
@@ -53,6 +53,7 @@ sub add_jobs {
             tempdir  => $config->{TEMPDIR} . "CoGeBlast"
         );
     }
+    $workflow->logfile($cogeweb->logfile);
 
     #blastz params
     my $zwordsize      = $opts{zwordsize};
@@ -84,19 +85,24 @@ sub add_jobs {
 
         my $name = $dsg->organism->name;
         my $dbpath = File::Spec->catdir($BLASTDBDIR, $dsgid);
-
-        $workflow->add_job(generate_blastdb_job(
-            config  => $config,
-            title   => $name,
-            out     => $dsgid,
-            fasta   => $dbfasta,
-            type    => "nucl",
-            outdir  => $dbpath,
-        ));
+        my $BLASTDB = $config->{MAKEBLASTDB} || "makeblastdb";
+        my $cmd;
+        $cmd = "mkdir $dbpath && " unless -e $dbpath;
+        $cmd .= "cd $dbpath && " .
+                "$BLASTDB -in $dbfasta -out $dsgid -dbtype nucl -title " . qq{"$name"} . " -logfile db.log && " .
+                "touch done";
+        $workflow->add_job({
+            cmd => $cmd,
+            script  => undef,
+            args    => [],
+            inputs  => undef,
+            outputs => ["$dbpath/done"],
+            description => "Generating blastable database..."
+        });
 
         my $outfile = $cogeweb->basefile . "-$count.$program";
 
-        my $cmd = $BLAST_PROGS->{$program};
+        $cmd = $BLAST_PROGS->{$program};
         my $args = [
             [ '', '--adjustment=10', 1 ],
             [ '', $BLAST_PROGS->{$program}, 0 ],
@@ -110,6 +116,7 @@ sub add_jobs {
             push @$args, [ '', "M=" . $zmask,      1 ] if defined $zmask;
             push @$args, [ '', "O=" . $zgap_start, 1 ] if defined $zgap_start;
             push @$args, [ '', "E=" . $zgap_extension, 1 ] if defined $zgap_extension;
+            push @$args, [ '', '--ambiguous=iupac', 1 ];
             push @$args, [ '',  $dbfasta,    0 ];
             push @$args, [ '>', $outfile,    1 ];
         }
@@ -141,13 +148,13 @@ sub add_jobs {
         $workflow->add_job({
             cmd     => "/usr/bin/nice",
             args    => $args,
-            inputs  => [$fasta_file, [$dbpath, 1]],
+            inputs  => [$fasta_file, "$dbpath/done"],
             outputs => [$outfile],
             description => "Blasting sequence against $name"
         });
 
         if ($opts{link_results}) {
-            my $download_path = get_download_path("jobs", $user->name, $workflow->id);
+            my $download_path = get_download_path("jobs", $user ? $user->name : 'public', $workflow->id);
             make_path($download_path);
             my $filename = sanitize_name("$org.$program");
             my $outfile_link = catfile($download_path, $filename);
@@ -158,7 +165,7 @@ sub add_jobs {
                 description => "Linking output to downloads"
             });
             $workflow->add_job(add_workflow_result(
-                username => $user->name,
+                username => $user ? $user->name : 'public',
                 wid      => $workflow->id,
                 result   => {
                     type => 'url',
@@ -217,22 +224,29 @@ sub build {
     return 0 if ! scalar @gids;
 
     my $resp = add_jobs(
-        workflow     => $self->workflow,
-        db           => $self->db,
-        user         => $self->user,
-        config       => $self->conf,
+        basename     => $self->params->{basename},
         blastable    => join(',', @gids),
-        program      => $program,
+        config       => $self->conf,
+        db           => $self->db,
         expect       => $expect,
-        wordsize     => $wordsize,
-        gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
-        matchscore   => $match_score->[0] . ',' . $match_score->[1],
         filter_query => $filter_query,
-        resultslimit => $self->params->{max_results},
-        seq          => $self->params->{query_seq},
+        gapcost      => $gap_costs->[0] . ' ' . $gap_costs->[1],
+        link_results => 1,
+        matchscore   => $match_score->[0] . ',' . $match_score->[1],
         matrix       => $self->params->{matrix},
         outfmt       => $self->params->{outfmt},
-        link_results => 1
+        program      => $program,
+        resultslimit => $self->params->{max_results},
+        seq          => $self->params->{query_seq},
+        user         => $self->user,
+        wordsize     => $wordsize,
+        workflow     => $self->workflow,
+        zchaining    => $self->params->{zchaining},
+        zgap_extension => $self->params->{zgap_extension},
+        zgap_start   => $self->params->{zgap_start},
+        zmask        => $self->params->{zmask},
+        zthreshold   => $self->params->{zthreshold},
+        zwordsize    => $self->params->{zwordsize}
     );
     return 1;
 }
@@ -261,40 +275,6 @@ sub create_fasta_file {
     print NEW $seq;
     close NEW;
     return $cogeweb->basefile . ".fasta", \%seqs;
-}
-
-sub generate_blastdb_job {
-    my %opts = @_;
-
-    # required arguments
-    my $config = $opts{config};
-    my $title = $opts{title};
-    my $fasta = $opts{fasta};
-    my $type = $opts{type};
-    my $out  = $opts{out};
-    my $outdir = $opts{outdir};
-
-    my $logfile = $opts{logfile} || "db.log";
-    my $BLASTDB = $config->{MAKEBLASTDB} || "makeblastdb";
-
-    my $args = [
-        ["-in", $fasta, 0],
-        ["-out", $out, 0],
-        ["-dbtype", $type, 0],
-        ["-title", qq{"$title"}, 0],
-        ["-logfile", $logfile, 0],
-    ];
-
-    my $base = basename($outdir);
-
-    return {
-        cmd => "mkdir $base && cd $base && $BLASTDB",
-        script  => undef,
-        args    => $args,
-        inputs  => undef,
-        outputs => [[$outdir, 1]],
-        description => "Generating blastable database..."
-    };
 }
 
 sub get_blast_db {
@@ -343,99 +323,113 @@ sub get_genomes {
 }
 
 sub get_name {
+	my $self = shift;
+    if ($self->user) {
+        my @gids = @{$self->params->{genomes}};
+        my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+            user_id => $self->user->id,
+            page    => "GenomeList",
+            url     => $self->conf->{SERVER} . "GenomeList.pl?dsgid=" . join(',', @gids)
+        );
+
+        my $list_link =
+            qq{<a href="$genomes_url" target_"blank">}
+        . @gids
+        . ' genome'
+        . ( @gids > 1 ? 's' : '' ) . '</a>';
+        return 'Blast ' . length($self->params->{query_seq}) . ' characters against ' . $list_link;
+    }
     return 'CoGeBlast';
 }
 
 sub get_tiny_url {
     my %opts = @_;
     my %params = (
-        color_hsps   => $opts{color_hsps},
-        program      => $opts{program},
-        expect       => $opts{expect},
-        job_title    => $opts{job_title},
-        wordsize     => $opts{wordsize},
-        comp         => $opts{comp},
-        matrix       => $opts{matrix},
-        gapcost      => $opts{gapcost},
-        match_score  => $opts{match_score},
-        filter_query => $opts{filter_query},
-        resultslimit => $opts{resultslimit},
         basename     => $opts{basename},
-        zwordsize    => $opts{zwordsize},
-        zgap_start   => $opts{zgap_start},
-        zgap_exten   => $opts{zgap_extension},
-        zchaining    => $opts{zchaining},
-        zthreshold   => $opts{zthreshold},
-        zmask        => $opts{zmask},
-        type         => $opts{type},
-        dsgid        => $opts{blastable},
+        color_hsps   => $opts{color_hsps},
+        comp         => $opts{comp},
+        dsgid        => $opts{genomes},
+        expect       => $opts{e_value},
         fid          => $opts{fid},
-        outfmt       => $opts{outfmt}
+        filter_query => $opts{filter_query},
+        gapcost      => $opts{gapcost},
+        job_title    => $opts{job_title},
+        match_score  => $opts{match_score},
+        matrix       => $opts{matrix},
+        outfmt       => $opts{outfmt},
+        program      => $opts{program},
+        resultslimit => $opts{max_results},
+        type         => $opts{type},
+        wordsize     => $opts{wordsize},
+        zchaining    => $opts{zchaining},
+        zgap_exten   => $opts{zgap_extension},
+        zgap_start   => $opts{zgap_start},
+        zmask        => $opts{zmask},
+        zthreshold   => $opts{zthreshold},
+        zwordsize    => $opts{zwordsize}
     );
     my $url = url_for("CoGeBlast.pl", %params);
-    my $link = CoGe::Accessory::Web::get_tiny_link(url => $url);
-
-    return $link;
+    return CoGe::Accessory::Web::get_tiny_link(url => $url);
 }
 
-sub go {
-    my %opts = @_;
-    my $db = $opts{db};
-    my $user = $opts{user};
-    my $config = $opts{config};
-    my $JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
-    my $blastable = $opts{blastable};
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
-        basename => $opts{basename},
-        tempdir  => $config->{TEMPDIR} . "CoGeBlast"
-    );
+# sub go {
+#     my %opts = @_;
+#     my $db = $opts{db};
+#     my $user = $opts{user};
+#     my $config = $opts{config};
+#     my $JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+#     my $blastable = $opts{blastable};
+#     my $cogeweb = CoGe::Accessory::Web::initialize_basefile(
+#         basename => $opts{basename},
+#         tempdir  => $config->{TEMPDIR} . "CoGeBlast"
+#     );
 
-    my $tiny_url = get_tiny_url(%opts);
-    my $workflow = $JEX->create_workflow(
-        name    => 'cogeblast-' . ($tiny_url =~ /\/(\w+)$/),
-        id      => 0,
-        logfile => $cogeweb->logfile
-    );
+#     my $tiny_url = get_tiny_url(%opts);
+#     my $workflow = $JEX->create_workflow(
+#         name    => 'cogeblast-' . ($tiny_url =~ /\/(\w+)$/),
+#         id      => 0,
+#         logfile => $cogeweb->logfile
+#     );
 
-    add_jobs(
-        cogeweb => $cogeweb,
-        workflow => $workflow,
-        %opts
-    );
+#     add_jobs(
+#         cogeweb => $cogeweb,
+#         workflow => $workflow,
+#         %opts
+#     );
 
-    my $response = $JEX->submit_workflow($workflow);
+#     my $response = $JEX->submit_workflow($workflow);
 
-    my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
-        user_id => $user->id,
-        page    => "GenomeList",
-        url     => $config->{SERVER} . "GenomeList.pl?dsgid=$blastable"
-    );
+#     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
+#         user_id => $user->id,
+#         page    => "GenomeList",
+#         url     => $config->{SERVER} . "GenomeList.pl?dsgid=$blastable"
+#     );
 
-    my @dsg_ids = split( /,/, $blastable );
-    my $list_link =
-        qq{<a href="$genomes_url" target_"blank">}
-      . @dsg_ids
-      . ' genome'
-      . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
-    my $log_msg = 'Blast ' . length($opts{seq}) . ' characters against ' . $list_link;
+#     my @dsg_ids = split( /,/, $blastable );
+#     my $list_link =
+#         qq{<a href="$genomes_url" target_"blank">}
+#       . @dsg_ids
+#       . ' genome'
+#       . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
+#     my $log_msg = 'Blast ' . length($opts{seq}) . ' characters against ' . $list_link;
 
-    my $log = CoGe::Accessory::Web::log_history(
-        db          => $db,
-        user_id     => $user->id,
-        page        => 'CoGeBlast',
-        description => $log_msg,
-        link        => $tiny_url,
-        parent_id   => $response->{id},
-        parent_type => 7 #FIXME magic number
-    ) if $response and $response->{id};
+#     my $log = CoGe::Accessory::Web::log_history(
+#         db          => $db,
+#         user_id     => $user->id,
+#         page        => 'CoGeBlast',
+#         description => $log_msg,
+#         link        => $tiny_url,
+#         parent_id   => $response->{id},
+#         parent_type => 7 #FIXME magic number
+#     ) if $response and $response->{id};
 
-    return encode_json({
-        id => $response->{id},
-        link => $tiny_url,
-        logfile => $config->{TEMPURL} . "CoGeBlast/" . $cogeweb->basefilename . ".log",
-        success => $JEX->is_successful($response) ? JSON::true : JSON::false
-    })
-}
+#     return encode_json({
+#         id => $response->{id},
+#         link => $tiny_url,
+#         logfile => $config->{TEMPURL} . "CoGeBlast/" . $cogeweb->basefilename . ".log",
+#         success => $JEX->is_successful($response) ? JSON::true : JSON::false
+#     })
+# }
 
 with qw(CoGe::Builder::Buildable);
 

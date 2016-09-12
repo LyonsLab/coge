@@ -18,7 +18,7 @@ BEGIN {
     @ISA = qw( Exporter );
     @EXPORT = qw( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-        fix_chromosome_id);
+        fix_chromosome_id read_fasta_index);
     @EXPORT_OK = qw(genomecmp search_genomes);
 }
 
@@ -502,6 +502,26 @@ sub fix_chromosome_id {
     }
 
     return $chr;
+}
+
+sub read_fasta_index {
+    my $index_file = shift; # samtools .fai file
+    
+    my %contigs;
+    open(my $fh, $index_file) or return;
+    while (<$fh>) {
+        my ($name, $size) = split("\t");
+        unless ($name && $size) {
+            print STDERR "read_fasta_index: error reading index file\n";
+            return;    
+        }
+        
+        $name = fix_chromosome_id($name); # mdb added 8/18/16 COGE-735
+        $contigs{$name} = $size;
+    }
+    close($fh);
+    
+    return \%contigs;
 }
 
 1;

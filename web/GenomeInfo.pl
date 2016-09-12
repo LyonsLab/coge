@@ -940,7 +940,7 @@ sub get_genome_info {
         ORGANISM       => $genome->organism->name,
         VERSION        => $genome->version,
         TYPE           => ($genome->type ? $genome->type->info : ''),
-        SOURCE         => get_genome_sources($genome),
+        SOURCE         => get_genome_sources($genome) // '',
         LINK           => $genome->link,
         RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
         USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', sort map { $_->display_name } $USER->users_with_access($genome)) : 'Everyone' ),
@@ -1215,6 +1215,7 @@ sub toggle_favorite {
 
 sub get_genome_sources {
     my $genome = shift;
+    return unless ($genome && $genome->first_dataset);
     
     # mdb removed 7/8/15
     #my %sources = map { $_->name => 1 } $genome->source;
@@ -2157,7 +2158,8 @@ sub generate_html {
             USER       => $USER->display_name || '',
             LOGON      => ( $USER->user_name ne "public" ),
             ADMIN_ONLY => $USER->is_admin,
-            CAS_URL    => $config->{CAS_URL} || ''
+            CAS_URL    => $config->{CAS_URL} || '',
+            COOKIE_NAME => $config->{COOKIE_NAME} || ''
         );
     }
 

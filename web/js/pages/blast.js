@@ -695,7 +695,7 @@ function blastOff(dialog, results, basename) {
 
     var page_width = ($('#co').width())*(95/100);
     pageObj.image_width = page_width;
-    var blastable_db = $('#genome_choice').getLength(1);
+    var genomes = $('#genome_choice').getLength(1);
 
     var _results = $(results);
 
@@ -712,46 +712,45 @@ function blastOff(dialog, results, basename) {
     });
 
     var options = {
-        fname:          'blast_search',
-        program:        program,
-        expect:         expect,
-        job_title:      job_title,
-        wordsize:       word_size,
-        comp:           comp,
-        matrix:         matrix,
-        matchscore:     match_score,
-        gapcost:        gapcost,
-        filter_query:   filter_query,
-        resultslimit:   resultslimit,
-        zwordsize:      zwordsize,
-        zgap_start:     zgap_start,
-        zgap_extension: zgap_extension,
-        zchaining:      zchaining,
-        zthreshold:     zthreshold,
-        zmask:          zmask,
         basename:       pageObj.basename,
-        seq:            seq,
-        blastable:      blastable_db,
-        fid:            pageObj.fid,
-        width:          page_width,
-        type:           params.type,
         color_hsps:     $('#color_by:checked').val(),
+        comp:           comp,
+        e_value:        expect,
+        fid:            pageObj.fid,
+        filter_query:   filter_query,
+        gapcost:        gapcost ? gapcost.split(' ') : null,
+        genomes:        genomes ? genomes.split(',') : null,
+        job_title:      job_title,
+        match_score:    match_score ? match_score.split(',') : null,
+        matrix:         matrix,
+        max_results:    resultslimit,
+        program:        program,
+        query_seq:      seq,
+        type:           params.type,
+        width:          page_width,
+        wordsize:       word_size,
+        zchaining:      zchaining,
+        zgap_extension: zgap_extension,
+        zgap_start:     zgap_start,
+        zmask:          zmask,
+        zthreshold:     zthreshold,
+        zwordsize:      zwordsize
     };
 
     $.ajax({
-        type: "POST",
-        url: "CoGeBlast.pl",
+        type: "PUT",
+        url: 'api/v1/jobs',
         dataType: 'json',
-        data: options,
+        contentType: "application/json",
+        data: JSON.stringify({
+            type: 'blast',
+            requester: {
+                page:      PAGE_NAME,
+                user_name: USER_NAME
+            },
+            parameters: options
+        }),
         success : function(response) {
-            //console.log(data);
-            //if (data.error) {
-            //    validator.html(data.error).fadeIn();
-            //    $('#log_text').slideUp();
-            //} else {
-            //    //blastresults(data.html, data.click_all_links);
-            //}
-
             status_dialog.unbind().on("dialogclose", function() {
                 _results.removeClass('hidden').slideDown();
 
@@ -777,15 +776,18 @@ function blastOff(dialog, results, basename) {
                     .html("Return to this analysis: ")
                     .append(link);
 
-                var logfile = $("<a></a>")
-                    .attr("href", response.logfile)
-                    .html("Logfile");
+                var logfile = pageObj.tempdir.substring(pageObj.tempdir.indexOf('web') + 4) + '/' + pageObj.basename + '.log';
 
                 status_dialog.find(".dialog-link").html(link_message);
-                status_dialog.find(".dialog-log").html(logfile);
+                status_dialog.find(".dialog-log").html($("<a></a>")
+                    .attr("href", logfile)
+                    .html("Logfile"));
  
                 options.fname = "get_results";
-                options.logfile = response.logfile;
+                options.logfile = logfile;
+                options.gapcost = gapcost;
+                options.genomes = genomes;
+                options.match_score = match_score;
 
                 update_dialog("jex/status/" + response.id, status_dialog, results, formatter, options);
             } else {

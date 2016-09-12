@@ -51,14 +51,14 @@ sub add {
         # Log submission
         CoGe::Accessory::Web::log_history(
             db          => $db,
-            parent_id   => $pipeline->workflow->id,
+            parent_id   => $response->{id},
             parent_type => 7, #FIXME magic number
             user_id     => ($user ? $user->id : 0),
             page        => $pipeline->page,
             description => $pipeline->workflow->name,
             link        => ($response->{site_url} ? $response->{site_url} : '')
         );
-        print STDERR "CoGe::Services::API::Job::add submitted workflow ", $pipeline->workflow->id, "\n";
+        print STDERR "CoGe::Services::API::Job::add submitted workflow ", $response->{id}, "\n";
     }
     
     # Convert 'success' to boolean

@@ -471,8 +471,9 @@ sub gen_html {
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     my $body = gen_body();
     $template->param( BODY => $body );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
-    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+    $template->param( ADMIN_ONLY => $USER->is_admin,
+                      CAS_URL    => $P->{CAS_URL} || '',
+                      COOKIE_NAME => $P->{COOKIE_NAME} || '' );
     $html .= $template->output;
 
     #    print STDERR $html;

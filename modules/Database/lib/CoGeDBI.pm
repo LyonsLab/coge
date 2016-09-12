@@ -47,7 +47,7 @@ BEGIN {
         get_feature_counts get_features get_feature_types
         get_feature_names get_feature_annotations get_locations 
         get_total_queries get_dataset_ids feature_type_names_to_id
-        get_features_by_range get_table_count
+        get_features_by_range get_table_count get_uptime
     );
 }
 
@@ -251,6 +251,7 @@ sub get_genomes_for_user {
     #print STDERR Dumper $results1, "\n";
 
     # Get list genome connections
+    # mdb added uc2 join for COGE-629
     $query = qq{
         SELECT g.genome_id AS id, g.name AS name, g.description AS description, 
             g.version AS version, g.restricted AS restricted, g.certified AS certified, g.deleted AS deleted, 
@@ -259,17 +260,20 @@ sub get_genomes_for_user {
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_connector AS lc ON (lc.parent_id=l.list_id)
         JOIN genome AS g ON (lc.child_id=g.genome_id)
+        JOIN user_connector AS uc2 ON (uc2.child_id=g.genome_id)
         JOIN dataset_connector AS dsc ON (dsc.genome_id=g.genome_id) 
         JOIN dataset AS ds ON (ds.dataset_id=dsc.dataset_id) 
         JOIN organism AS o ON (o.organism_id=g.organism_id) 
-        WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
-            AND uc.child_type=1 AND lc.child_type=2
+        WHERE uc.child_type=1 AND ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
+            AND uc2.child_type=2 AND ((uc2.parent_type=5 AND uc2.parent_id=$user_id) OR (uc2.parent_type=6 AND uc2.parent_id IN ($group_str))) AND uc2.role_id IN (2,3,4)
+            AND lc.child_type=2
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $query .= " ORDER BY uc.role_id DESC"; # mdb added 4/28/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
     $sth = $dbh->prepare($query);
     $sth->execute();
     my $results2 = $sth->fetchall_hashref(['id']);
+    #print STDERR "query2: $query\n";
     #print STDERR Dumper $results2, "\n";
     
     Hash::Merge::set_behavior('LEFT_PRECEDENT');
@@ -307,6 +311,7 @@ sub get_experiments_for_user {
     #print STDERR Dumper $results1, "\n";
 
     # Get list experiment connections
+    # mdb added uc2 join for COGE-629
     $query = qq{
         SELECT e.experiment_id AS id, e.name AS name, e.description AS description, 
             e.version AS version, e.restricted AS restricted, e.deleted AS deleted, 
@@ -315,8 +320,10 @@ sub get_experiments_for_user {
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_connector AS lc ON (lc.parent_id=l.list_id)
         JOIN experiment AS e ON (lc.child_id=e.experiment_id)
-        WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
-            AND uc.child_type=1 AND lc.child_type=3 
+        JOIN user_connector AS uc2 ON (uc2.child_id=e.experiment_id)
+        WHERE uc.child_type=1 AND ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
+            AND uc2.child_type=3 AND ((uc2.parent_type=5 AND uc2.parent_id=$user_id) OR (uc2.parent_type=6 AND uc2.parent_id IN ($group_str))) AND uc2.role_id IN (2,3,4)
+            AND lc.child_type=3 
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $query .= " ORDER BY uc.role_id DESC"; # mdb added 3/31/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
@@ -696,6 +703,17 @@ sub get_total_queries {
 	$sth->execute();
 	my $results = $sth->fetchall_hashref("Variable_name");
 	
+	return $results;
+}
+
+sub get_uptime {
+	my $dbh = shift;
+
+	my $query = 'SHOW STATUS WHERE Variable_name="Uptime"';
+	my $sth = $dbh->prepare($query);
+	$sth->execute();
+	my $results = $sth->fetchall_hashref("Variable_name");
+
 	return $results;
 }
 

@@ -235,9 +235,9 @@ sub create_iget_job {
     my $dest_path = dirname($dest_file);
     #make_path($dest_path) unless (-r $dest_path); # mdb removed 2/9/16 -- for hypnotoad
     my $cmd;
-    $cmd .= "mkdir -p $dest_path ; "; # mdb added 2/9/16 -- for hypnotoad
+    $cmd .= "mkdir -p $dest_path && "; # mdb added 2/9/16 -- for hypnotoad
     irods_set_env(catfile($CONF->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
-    $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1 } ) . ' ; ';
+    $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1 } ) . ' && ';
     $cmd .= "touch $done_file";
 
     return {
@@ -722,7 +722,7 @@ sub create_load_vcf_job {
     
     my $desc = 'Single nucleotide polymorphisms' . ($method ? " (determined by $method method)" : '');
 
-    my $cmd = catfile(($CONF->{SCRIPTDIR}, "load_experiment.pl"));
+    my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
     my $output_path = catdir($staging_dir, "load_vcf");
@@ -812,6 +812,7 @@ sub create_load_experiment_job {
             ['-staging_dir', $output_name, 0],
             ['-data_file', $input_file, 0],
             ['-normalize', $normalize, 0],
+            ['-disable_range_check', '', 0], # mdb added 8/26/16 COGE-270 - allow values outside of [-1, 1]
             ['-config', $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [

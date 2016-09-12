@@ -9,8 +9,9 @@ use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
-use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url go );
+use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url );
 use CoGe::Core::Notebook qw(notebookcmp);
+use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -69,7 +70,6 @@ $FORMATDB      = get_command_path('FORMATDB');
     blast_param              => \&blast_param,
     database_param           => \&database_param,
     gen_dsg_menu             => \&gen_dsg_menu,
-    blast_search             => \&blast_search,
     generate_feat_info       => \&generate_feat_info,
     get_hsp_info             => \&get_hsp_info,
     generate_overview_image  => \&generate_overview_image,
@@ -119,8 +119,9 @@ sub gen_html {
                           WIKI_URL   => $P->{WIKI_URL} || '' );
         $template->param( USER => $USER->display_name || '' );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-        $template->param( ADMIN_ONLY => $USER->is_admin );
-        $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+        $template->param( ADMIN_ONLY => $USER->is_admin,
+                          CAS_URL    => $P->{CAS_URL} || '',
+                          COOKIE_NAME => $P->{COOKIE_NAME} || '' );
     }
     
     $template->param( BODY => gen_body() );
@@ -201,6 +202,7 @@ sub gen_body {
             SEQUENCE => 'Enter FASTA sequence(s) here'
         );
     }
+    $template->param( PAGE_NAME => $PAGE_NAME );
     $template->param( USER_NAME => $USER->user_name );
 
     #$template->param( REST      => 1 );
@@ -645,19 +647,18 @@ sub get_results {
         tempdir  => $TEMPDIR
     );
 
-    my $seq = $opts{seq};
+    my $seq = $opts{query_seq};
 
-    #this is where the dsgids are stored -- stupid name
-    my $blastable = $opts{blastable};
+    my $genomes = $opts{'genomes'};
 
-    my @dsg_ids = split( /,/, $blastable );
+    my @dsg_ids = split( /,/, $genomes );
 
     my $width = $opts{width};
 
     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
         user_id => $USER->id,
         page    => "GenomeList",
-        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
+        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$genomes"
     );
 
 #    my $list_link = qq{<a href="$genomes_url" target_"blank">} . @dsg_ids . ' genome' . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
@@ -707,7 +708,6 @@ sub get_results {
     foreach my $item (@results) {
         next unless -r $item->{file};
         my $outfile = $item->{file};
-
         my $report =
           $outfile =~ /lastz/
           ? new CoGe::Accessory::blastz_report( { file => $outfile } )
@@ -780,7 +780,11 @@ sub gen_results_page {
                 $chr =~ s/\s+$//;
                 my ($ds) = $dsg->datasets( chr => $chr );
                 my ($org) = $set->{organism};
-                next unless $dsg && defined $chr && $ds;
+                unless ($dsg && defined $chr && $ds) {
+                    print STDERR "CoGeBlast::gen_results_page: ERROR, undefined genome/chr/ds for HSP\n"; 
+                    next;
+                }
+                
                 $hsp_count{$org}++;
                 last if ( $hsp_count{$org} > $resultslimit );
                 my $tt1 = new Benchmark;
@@ -2786,8 +2790,4 @@ sub get_genomes_for_list {
     }
 
     return $genomes;
-}
-
-sub blast_search {
-    go(db => $db, user => $USER, config => $P, @_);
 }
