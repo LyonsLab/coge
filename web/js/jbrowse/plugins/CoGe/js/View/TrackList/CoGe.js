@@ -71,15 +71,7 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 	// add experiments to notebook in CoGe
 
-	add_to_notebook: function(track_configs, notebook_id, create) {
-		var on_error = function() {
-			if (!create) {
-				var notebook_node = dojo.byId('notebook' + notebook_id);
-				track_configs.forEach(function(item) {
-					dojo.destroy(dojo.query('#' + item.type + item.id, notebook_node)[0]);
-				});
-			}
-		}
+	add_to_notebook: function(track_configs, notebook_id) {
 		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
 		var items = [];
 		track_configs.forEach(function(track_config){
@@ -95,17 +87,15 @@ define(['dojo/_base/declare',
 					coge_plugin.error('Add Notebook Item', data);
 				} else {
 					var n = dojo.byId('notebook' + notebook_id);
-					if (create)
-						track_configs.forEach(function(track_config) {
-							var e = dojo.byId(track_config.coge.type + track_config.coge.id);
-							this._add_track_to_notebook(e.config, n);
-						}, this);
+					track_configs.forEach(function(track_config) {
+						var e = dojo.byId(track_config.coge.type + track_config.coge.id);
+						this._add_track_to_notebook(e.config, n);
+					}, this);
 					if (n.style.display != 'none')
 						this._expand(n);
 				}
 			}),
 			error: function(data) {
-				on_error();
 				coge_plugin.error('Add Notebook Item', data);
 			}
 		});
@@ -123,12 +113,13 @@ define(['dojo/_base/declare',
 		notebooks.sort(function(a, b) { return coge_plugin.natural_sort(a.coge.name, b.coge.name); });
 		for (var i=0; i<notebooks.length; i++)
 			content += '<option value="' + notebooks[i].coge.id + '">' + notebooks[i].coge.name + '</option>';
-		content += '</select></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.onExecute()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._add_dialog.hide()">Cancel</button></div>';
+		content += '</select></td></tr></table>';
+		content += coge_plugin.build_buttons('coge_track_list._add_dialog.onExecute()', 'coge_track_list._add_dialog.hide()');
 		this._add_dialog = new Dialog({
 			title: 'Add experiment ' + track_config.coge.name + ' to Notebook',
 			onExecute: function() {
 				var s=dojo.byId('coge_notebook');
-				coge_track_list._add_to_notebook([track_config],s.options[s.selectedIndex].value,true);
+				coge_track_list._add_to_notebook([track_config], s.options[s.selectedIndex].value);
 				this.onHide();
 			},
 			onHide: function() {
@@ -180,7 +171,12 @@ define(['dojo/_base/declare',
 			if (track_config.coge)
 				if (track_config.coge.type == 'merge' || track_config.coge.type == 'search')
 					this.tracks_div.insertBefore(this._new_track(track_config), this.tracks_div.firstChild); // insert before Sequence track at top
-				else if (track_config.coge.type != 'notebook')
+				else if (track_config.coge.type == 'notebook') {
+					this._track_configs.push(track_config);
+					this._new_notebook_source().insertNodes(false, [track_config]);
+					this._filter_tracks();
+					this._move_track(dojo.byId('notebook' + track_config.coge.id).parentNode);
+				} else
 					this._add_track_to_notebook(track_config, dojo.byId('notebook0'));
 		}, this);
 	},
@@ -229,60 +225,6 @@ define(['dojo/_base/declare',
 			n.style.display = 'none';
 			n = n.nextSibling;
 		}
-	},
-
-	// ----------------------------------------------------------------
-
-	_create_notebook: function() {
-		var self = this;
-		var browser = this.browser;
-		var name = dojo.getAttr('notebook_name', 'value');
-		var description = dojo.getAttr('notebook_description', 'value');
-		var restricted = dojo.getAttr('notebook_restricted', 'checked');
-		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
-		dojo.xhrPut({
-			url: coge_api + '/notebooks?username='+un,
-			postData: JSON.stringify({
-				metadata: {
-					name: name,
-					description: description,
-					restricted: restricted,
-					type: 'experiment'
-				}
-			}),
-			handleAs: 'json',
-			load: function(data) {
-				if (data.error)
-					coge_plugin.error('Create Notebook', data);
-				else {
-			        var d = new Deferred();
-					var config = self._new_notebook_config(data.id, name, description, restricted);
-					var store_config = {
-						browser: browser,
-						refSeq: browser.refSeq,
-						type: 'JBrowse/Store/SeqFeature/REST',
-						baseUrl: config.baseUrl
-					};
-					var store_name = browser.addStoreConfig(undefined, store_config);
-					store_config.name = store_name;
-					browser.getStore(store_name, function(store) {
-			           d.resolve(true);
-			       	});
-			       	d.promise.then(function() {
-						config.store = store_name;
-						self._track_configs.push(config);
-						self._new_notebook_source().insertNodes(false, [config]);
-						self._filter_tracks();
-						dojo.byId('notebook' + config.coge.id).parentNode.scrollIntoView();
-						self._create_notebook_dialog.hide();
-						self.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
-					});
-				}
-			},
-			error: function(data) {
-				coge_plugin.error('Create Notebook', data);
-			}
-		});
 	},
 
 	// ----------------------------------------------------------------
@@ -400,18 +342,7 @@ define(['dojo/_base/declare',
 			menu.addChild(new MenuSeparator());
 			menu.addChild(new MenuItem({
 				label: "Create New Notebook",
-				onClick: dojo.hitch(this, function() {
-					this._create_notebook_dialog = new Dialog({
-						title: 'Create New Notebook',
-						content: '<table><tr><td><label>Name:</label></td><td><input id="notebook_name"></td></tr><tr><td><label>Description:</label></td><td><input id="notebook_description"></td></tr><tr><td><label>Restricted:</label></td><td><input type="checkbox" checked="checked" id="notebook_restricted"></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook()">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._create_notebook_dialog.hide()">Cancel</button></div>',
-						onHide: function() {
-							this.destroyRecursive();
-							coge_track_list._create_notebook_dialog = null;
-						},
-						style: 'width: 300px'
-					});
-					this._create_notebook_dialog.show();
-				})
+				onClick: coge_plugin.create_notebook_dialog.bind(coge_plugin)
 			}));
 		}
 		menu.addChild(new MenuSeparator());
@@ -755,6 +686,30 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
+	_move_track: function(div) {
+		var type = div.firstChild.config.coge.type;
+		var prev = div.previousSibling;
+		while (prev.firstChild.id != 'notebook0' && (type == 'notebook' || prev.firstChild.config.coge.type != 'notebook') && coge_plugin.natural_sort(div.firstChild.config.coge.name, prev.firstChild.config.coge.name) < 0)
+			prev = prev.previousSibling;
+		if (prev != div.previousSibling) {
+			dojo.place(div, prev, 'after');
+			div.scrollIntoView();
+			return;
+		}
+		var next = div.nextSibling;
+		while (next && coge_plugin.natural_sort(div.firstChild.config.coge.name, next.firstChild.config.coge.name) > 0)
+			next = next.nextSibling;
+		if (next != div.nextSibling) {
+			if (next)
+				dojo.place(div, next, 'before');
+			else if (div.nextSibling)
+				dojo.place(div, div.parentNode, 'last');
+		}
+		div.scrollIntoView();
+	},
+
+	// ----------------------------------------------------------------
+
 	moveTracks: function( source, nodes, copy, target ) {
 		if (source == target) { // dropping in same place dragged from. should only happen in jbrowse track container
 			if (!source.current || !copy)
@@ -776,38 +731,8 @@ define(['dojo/_base/declare',
 				target.node.removeChild(n);
 				items.push(node.config);
 			}, this);
-			this._add_to_notebook(items, target.node.firstChild.config.coge.id, true);
+			this._add_to_notebook(items, target.node.firstChild.config.coge.id);
 		}
-	},
-
-	// ----------------------------------------------------------------
-
-	_new_notebook_config: function(id, name, description, restricted) {
-		return {
-			key: (restricted ? '&reg; ' : '') + name,
-			baseUrl: api_base_url + '/experiment/notebook/' + id + '/',
-			autocomplete: 'all',
-			track: 'notebook' + id,
-			label: 'notebook' + id,
-			type: 'CoGe/View/Track/Wiggle/XYPlot',
-			storeClass: 'JBrowse/Store/SeqFeature/REST',
-			style: { featureScale: 0.001 },
-			showHoverScores: 1,
-			coge: {
-				id: id,
-				type: 'notebook',
-				collapsible: true,
-				name: name,
-				description: description,
-				editable: true,
-				experiments: null,
-				onClick: 'NotebookView.pl?embed=1&lid=' + id,
-				menuOptions: [{
-					label: 'NotebookView',
-					action: "function() { window.open( 'NotebookView.pl?lid=" + id + "' ); }"
-				}]
-			}
-		};
 	},
 
 	// ----------------------------------------------------------------
@@ -1009,6 +934,7 @@ define(['dojo/_base/declare',
 					this._menu_track_config.key = key;
 					this._menu_node.innerHTML = this._menu_track_config.key;
 					this._track_changed(old_name, key);
+					this._move_track(this._menu_node.parentNode.parentNode);
 					this._rename_dialog.hide();
 				}
 			}),
@@ -1023,7 +949,8 @@ define(['dojo/_base/declare',
 	rename_dialog: function(type, id, name) {
 		this._rename_dialog = new Dialog({
 			title: 'Rename ' + type,
-			content: '<table><tr><td><label>Name:</label></td><td><input id="name" value=' + JSON.stringify(name) + '></td></tr></table><div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._rename(\'' + type + '\',' + id + ',\'' + name.replace(/'/g, "\\'") + '\')">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="coge_track_list._rename_dialog.hide()">Cancel</button></div>',
+			content: '<table><tr><td><label>Name:</label></td><td><input id="name" value=' + JSON.stringify(name) + '></td></tr></table>' +
+				coge_plugin.build_buttons('coge_track_list._rename(\'' + type + '\',' + id + ',\'' + name.replace(/'/g, "\\'") + '\')', 'coge_track_list._rename_dialog.hide()'),
 			onHide: function() {
 				this.destroyRecursive();
 				coge_track_list._rename_dialog = null;

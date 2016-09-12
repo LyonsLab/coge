@@ -909,6 +909,11 @@ var XYPlot = declare( [XYPlotBase], {
 				label: 'Save Results as New Experiment',
 				onClick: function(){coge_plugin.save_as_experiment_dialog(track)}
 			});
+		if (config.coge.type == 'merge')
+			options.push({
+				label: 'Create New Notebook with Merged Tracks',
+				onClick: function(){coge_plugin.create_notebook_dialog(track)}
+			});
 
 		return options;
 	},

@@ -813,8 +813,6 @@ sub features {
     my $end   = $self->param('end');
     return unless (($eid or $nid or $gid) and defined $chr and defined $start and defined $end);
 
-    $gid = $self->param('gid') if $nid; # need genome id to filter experiments for notebooks
-
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 

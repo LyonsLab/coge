@@ -310,6 +310,90 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	_create_notebook: function() {
+		var self = this;
+		var browser = this.browser;
+		var name = dojo.getAttr('notebook_name', 'value');
+		var description = dojo.getAttr('notebook_description', 'value');
+		var restricted = dojo.getAttr('notebook_restricted', 'checked');
+		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
+		dojo.xhrPut({
+			url: coge_api + '/notebooks?username='+un,
+			postData: JSON.stringify({
+				metadata: {
+					name: name,
+					description: description,
+					restricted: restricted,
+					type: 'experiment'
+				}
+			}),
+			handleAs: 'json',
+			load: function(data) {
+				if (data.error)
+					coge_plugin.error('Create Notebook', data);
+				else {
+					var config = self._new_notebook_config(data.id, name, description, restricted);
+					var store_config = {
+						browser: browser,
+						refSeq: browser.refSeq,
+						type: 'JBrowse/Store/SeqFeature/REST',
+						baseUrl: config.baseUrl
+					};
+					var store_name = browser.addStoreConfig(undefined, store_config);
+					store_config.name = store_name;
+			        var d = new Deferred();
+					browser.getStore(store_name, function(store) {
+			           d.resolve(true);
+			       	});
+			       	d.promise.then(function() {
+						config.store = store_name;
+						self._create_notebook_dialog.hide();
+						self.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
+						if (self._track) {
+							var experiments = [];
+							self._track.config.coge.eids.forEach(function(eid){
+								experiments.push(dojo.byId('experiment' + eid).config);
+							});
+							coge_track_list.add_to_notebook(experiments, config.coge.id);
+						}
+					});
+				}
+			},
+			error: function(data) {
+				coge_plugin.error('Create Notebook', data);
+			}
+		});
+	},
+
+	// ----------------------------------------------------------------
+
+	create_notebook_dialog: function(track) {
+		this._track = track;
+		var content = '<table><tr><td><label>Name:</label></td><td><input id="notebook_name"></td></tr>';
+		content += '<tr><td><label>Description:</label></td><td><input id="notebook_description"></td></tr>';
+		content += '<tr><td><label>Restricted:</label></td><td><input type="checkbox" checked="checked" id="notebook_restricted"></td></tr>';
+		if (track) {
+			content += '<tr><td style="vertical-align:top"><label>Experiments:</label></td><td>';
+			track.config.coge.keys.forEach(function(key){
+				content += key + '<br>';
+			});
+		}
+		content += '</table>';
+		content += this.build_buttons('coge_plugin._create_notebook()', 'coge_plugin._create_notebook_dialog.hide()');
+		this._create_notebook_dialog = new Dialog({
+			title: 'Create New Notebook',
+			content: content,
+			onHide: function() {
+				this.destroyRecursive();
+				coge_plugin._create_notebook_dialog = null;
+			},
+			style: 'width: 300px'
+		});
+		this._create_notebook_dialog.show();
+	},
+
+	// ----------------------------------------------------------------
+
 	create_search_button: function() {
 		var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
@@ -709,6 +793,36 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	_new_notebook_config: function(id, name, description, restricted) {
+		return {
+			key: (restricted ? '&reg; ' : '') + name,
+			baseUrl: api_base_url + '/experiment/genome/' + gid + '/notebook/' + id + '/',
+			autocomplete: 'all',
+			track: 'notebook' + id,
+			label: 'notebook' + id,
+			type: 'CoGe/View/Track/Wiggle/XYPlot',
+			storeClass: 'JBrowse/Store/SeqFeature/REST',
+			style: { featureScale: 0.001 },
+			showHoverScores: 1,
+			coge: {
+				id: id,
+				type: 'notebook',
+				collapsible: true,
+				name: name,
+				description: description,
+				editable: true,
+				experiments: null,
+				onClick: 'NotebookView.pl?embed=1&lid=' + id,
+				menuOptions: [{
+					label: 'NotebookView',
+					action: "function() { window.open( 'NotebookView.pl?lid=" + id + "' ); }"
+				}]
+			}
+		};
+	},
+
+	// ----------------------------------------------------------------
+
 	new_search_track: function(track, data) {
 		var browser = this.browser;
 		var config = track.config;
@@ -765,10 +879,10 @@ return declare( JBrowsePlugin,
 			this.info('Name required', 'Please enter a name', dojo.byId('experiment_name'));
 			return;
 		}
-		var notebooks = [];
-		this._track.config.coge.notebooks.forEach(function(notebook) {
-			if (notebook != 0 && dojo.byId('add to ' + notebook) && dojo.byId('add to ' + notebook).checked)
-				notebooks.push(notebook);
+		var notebook_ids = [];
+		this._track.config.coge.notebooks.forEach(function(notebook_id) {
+			if (notebook_id != 0 && dojo.byId('add to ' + notebook_id) && dojo.byId('add to ' + notebook_id).checked)
+				notebook_ids.push(notebook_id);
 		});
 
 	    var config = this._track.config;
@@ -819,8 +933,8 @@ return declare( JBrowsePlugin,
 					if (new_config.coge.data_type == 1 || new_config.coge.data_type == 4)
 						new_config.style.featureCss = new_config.style.histCss = 'background-color: ' + coge_plugin.calc_color(id);
 					coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [new_config]);
-					notebooks.forEach(function(notebook) {
-						coge_track_list.add_to_notebook([new_config], notebook, true);
+					notebook_ids.forEach(function(notebook_id) {
+						coge_track_list.add_to_notebook([new_config], notebook_id);
 					});
 					coge_plugin.browser.view.updateTrackList();
 					setTimeout(function(){coge_plugin.browser.publish('/jbrowse/v1/v/tracks/show', [new_config]);}, 100);
