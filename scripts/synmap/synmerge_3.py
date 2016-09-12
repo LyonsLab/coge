@@ -239,11 +239,18 @@ def getPointCoords(syntenic_points, relative_chr, absolute_chr, relative_genome,
                 sp2_val = (sp2chr_relative_length * (float(sp2_raw) / sp2chr_length)) + sp2_sum
 
                 try:
-                    Kn = log10(float(hit[4]["Kn"]))
+                    if float(hit[4]["Kn"]) == 0:
+                        Kn = 'ZERO'
+                    else:
+                        Kn = log10(float(hit[4]["Kn"]))
                 except ValueError:
                     Kn = 'NA'
+
                 try:
-                    Ks = log10(float(hit[4]["Ks"]))
+                    if float(hit[4]["Ks"]) == 0:
+                        Ks = 'ZERO'
+                    else:
+                        Ks = log10(float(hit[4]["Ks"]))
                 except ValueError:
                     Ks = 'NA'
 
