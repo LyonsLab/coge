@@ -60,7 +60,8 @@ sub do_search {
 		push @$and, { 'user_connectors.parent_id' => $user->id };		
 		push @$and, { 'user_connectors.role_id' => $role eq 'owner' ? 2 : $role eq 'editor' ? 3 : 4 };		
 	}
-	return $db->resultset($type)->search({ -and => $and }, $attributes);
+	return undef if !@$and;
+	return $db->resultset($type)->search_rs({ -and => $and }, $attributes);
 }
 
 sub info_cmp {
@@ -112,6 +113,7 @@ sub search {
 	my $type = "none";
 
     my @searchArray = parse_line('\s+', 0, $search_term);
+	my @ids;
     for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
     	my $handled = 0;
         if ( index( $searchArray[$i], "::" ) != -1 ) {
@@ -144,8 +146,12 @@ sub search {
         if ($handled) {
             splice( @searchArray, $i, 1 );
             $i--;
+			next;
         }
-        elsif ( index( $searchArray[$i], '!' ) == -1 ) {
+		if ($searchArray[$i] =~ /^\d+$/) {
+			push @ids, $searchArray[$i];
+		}
+        if (index( $searchArray[$i], '!' ) == -1) {
             $searchArray[$i] = { 'like', '%' . $searchArray[$i] . '%' };
         } else {
         	my $bang_index = index($searchArray[$i], '!');
@@ -228,13 +234,19 @@ sub search {
 	# Perform genome search (corresponding to Organism results)
 	if ($type eq 'none' || $type eq 'genome') {
 		my @genome_results;
-		my @genomes = do_search($db, $user, 'Genome', @idList ? { organism_id => { -in => \@idList }} : undef, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
-		push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome');
+		my $rs = do_search($db, $user, 'Genome', @idList ? { organism_id => { -in => \@idList }} : undef, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+		if ($rs) {
+			my @genomes = $rs->all();
+			push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome');
+		}
 
 		# Perform direct genome search (by genome ID)
-		if (scalar @searchArray) {
-			my @genomes = do_search($db, $user, 'Genome', { genome_id => { -in => grep(/d+/, @searchArray) }}, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
-			push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome');
+		if (scalar @ids) {
+			my $rs = do_search($db, $user, 'Genome', { genome_id => { -in => @ids }}, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+			if ($rs) {
+				my @genomes = $rs->all();
+				push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome');
+			}
 		}
 		push @results, sort name_cmp @genome_results;
 	}
@@ -262,9 +274,11 @@ sub search {
 				]
 			  ];
 		}
-		my @experiments = do_search($db, $user, 'Experiment', scalar @expArray ? \@expArray : undef, { join => { 'genome' => 'organism' } }, $deleted, $restricted, $metadata_key, $metadata_value, $role);
-		@experiments = sort info_cmp @experiments;
-		push_results(\@results, \@experiments, 'experiment', $user, 'has_access_to_experiment');
+		my $rs = do_search($db, $user, 'Experiment', scalar @expArray ? \@expArray : undef, { join => { 'genome' => 'organism' } }, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+		if ($rs) {
+			my @experiments = sort info_cmp $rs->all();
+			push_results(\@results, \@experiments, 'experiment', $user, 'has_access_to_experiment');
+		}
 	}
 
 	# Perform notebook search
@@ -286,9 +300,11 @@ sub search {
 				]
 			  ];
 		}
-		my @notebooks = do_search($db, $user, 'List', scalar @noteArray ? \@noteArray : undef, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
-		@notebooks = sort { lc($a->name) cmp lc($b->name) } @notebooks;
-		push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_list');
+		my $rs = do_search($db, $user, 'List', scalar @noteArray ? \@noteArray : undef, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+		if ($rs) {
+			my @notebooks = sort { lc($a->name) cmp lc($b->name) } $rs->all();
+			push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_list');
+		}
 	}
 
 	# Perform user group search
@@ -311,15 +327,16 @@ sub search {
 					]
 				  ];
 			}
-			my @userGroup = do_search($db, $user, 'UserGroup', scalar @usrGArray ? \@usrGArray : undef, undef, $deleted);
-
-			foreach ( sort { lc($a->name) cmp lc($b->name) } @userGroup ) {
-				push @results, {
-					'type'    => "user_group",
-					'name'    => $_->name,
-					'id'      => int  $_->id,
-					'deleted' => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
-				};
+			my $rs = do_search($db, $user, 'UserGroup', scalar @usrGArray ? \@usrGArray : undef, undef, $deleted);
+			if ($rs) {
+				foreach ( sort { lc($a->name) cmp lc($b->name) } $rs->all() ) {
+					push @results, {
+						'type'    => "user_group",
+						'name'    => $_->name,
+						'id'      => int  $_->id,
+						'deleted' => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
+					};
+				}
 			}
 		}
 	}
