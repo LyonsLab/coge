@@ -31,7 +31,7 @@ sub add_join {
 		}
 	}
 	else {
-		$attributes->{'join'} = { join => $new_join };
+		$attributes->{'join'} = $new_join;
 	}
 	$attributes->{'distinct'} = 1;
 	return $attributes;
@@ -41,7 +41,7 @@ sub do_search {
     my ($db, $user, $type, $search, $attributes, $deleted, $restricted, $metadata_key, $metadata_value, $role) = @_;
     
     my $and = [];
-	push @$and,  $search if $search;
+	push @$and, $search if $search;
     push @$and, { 'me.deleted' => $deleted } if defined $deleted;
     push @$and, { 'me.restricted' => $restricted } if defined $restricted;
 	if ($metadata_key || $metadata_value) {
@@ -60,7 +60,6 @@ sub do_search {
 		push @$and, { 'user_connectors.parent_id' => $user->id };		
 		push @$and, { 'user_connectors.role_id' => $role eq 'owner' ? 2 : $role eq 'editor' ? 3 : 4 };		
 	}
-	warn Dumper $attributes;
 	return $db->resultset($type)->search({ -and => $and }, $attributes);
 }
 
@@ -312,7 +311,7 @@ sub search {
 					]
 				  ];
 			}
-			my @userGroup = $db->resultset("UserGroup")->search( build_search(@usrGArray, $deleted) );
+			my @userGroup = do_search($db, $user, 'UserGroup', scalar @usrGArray ? \@usrGArray : undef, undef, $deleted);
 
 			foreach ( sort { lc($a->name) cmp lc($b->name) } @userGroup ) {
 				push @results, {
