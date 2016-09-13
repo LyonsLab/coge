@@ -639,7 +639,7 @@ sub get_results {
 
     my $color_hsps = $opts{color_hsps};
     my $program    = $opts{program};
-    my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
+    my $resultslimit = $opts{max_results} || $RESULTSLIMIT;
     my $basename     = $opts{basename};
 
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
