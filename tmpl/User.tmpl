@@ -155,13 +155,13 @@ div.deleted { display: none; }
 					<ul>
 						<li><span data-type="genome"><img src="picts/dna-icon.png" width="15" height="15"/> Genomes</span></li>
 						<li><span data-type="experiment"><img src="picts/testtube-icon.png" width="15" height="15"/> Experiments</span></li>
-						<!--<li><span data-type="favorite"><img src="picts/star-hollow.png" width="15" height="15"/> Favorites</span></li>-->
+						<li><span data-type="notebook"><img src="picts/notebook-icon.png" width="15" height="15"/> Notebooks</span></li>
 					</ul>
 				</li>
-				<li><span data-type="notebook">Notebooks</span></li>
+				<li><span data-type="shared">Shared with me</span></li>
+				<li><span data-type="favorite">Favorites</span></li>
 				<li><span data-type="metadata">Metadata</span></li>
 				<li><span data-type="group">User Groups</span></li>
-				<li><span data-type="shared">Shared with me</span></li>
 				<li><span data-type="activity">Activity</span>
 					<ul>
 						<li><span data-type="analyses">Analyses</span></li>
@@ -186,6 +186,7 @@ div.deleted { display: none; }
 		<span id="share_button" onClick="share_dialog();" class="share coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
 		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="organize coge-icon coge-disabled glyphicon glyphicon-folder-open item-button invisible" style="margin-right:5px;" title="Add Selected Items to Notebook"></span>
 		<span id="edit_button" onClick="edit_dialog();" class="edit coge-icon coge-disabled glyphicon glyphicon-cog item-button invisible" style="margin-right:5px;" title="Edit Selected Items"></span>
+		<span id="favorite_button" onClick="favorite_items();" class="favorite coge-icon coge-disabled glyphicon glyphicon-star item-button invisible" style="margin-right:5px;" title="Favorite Selected Items"></span>
 		<span id="delete_button" onClick="delete_items();" class="delete coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
 		<span id="send_button" onClick="send_menu();" class="sendto coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
 		<span id="undelete_button" onClick="undelete_items();" class="undelete coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
