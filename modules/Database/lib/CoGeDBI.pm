@@ -31,7 +31,7 @@ use warnings;
 use DBI;
 use Hash::Merge::Simple qw(merge);
 use Data::Dumper;
-use Benchmark;
+#use Time::HiRes qw(time);
 
 BEGIN {
     use vars qw ($VERSION $MAX_FETCH_ROWS @ISA @EXPORT);
@@ -44,10 +44,11 @@ BEGIN {
         get_table get_user_access_table get_experiments get_distinct_feat_types
         get_genomes_for_user get_experiments_for_user get_lists_for_user
         get_groups_for_user get_group_access_table get_datasets
-        get_feature_counts get_features get_feature_types
+        get_feature_counts get_features get_feature_types 
         get_feature_names get_feature_annotations get_locations 
         get_total_queries get_dataset_ids feature_type_names_to_id
         get_features_by_range get_table_count get_uptime
+        get_favorites_for_user
     );
 }
 
@@ -242,12 +243,12 @@ sub get_genomes_for_user {
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $query .= " ORDER BY uc.role_id DESC"; # mdb added 4/28/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
-    #my $t1    = new Benchmark;
+    #my $t1 = time;
     my $sth = $dbh->prepare($query);
     $sth->execute();
     my $results1 = $sth->fetchall_hashref(['id']);
-    #my $t2    = new Benchmark;
-    #print STDERR 'query1: ', timestr( timediff( $t2, $t1 ) ), "\n";
+    #my $t2 = time;
+    #print STDERR 'query1: ', ($t2-$t1)*1000, "\n";
     #print STDERR Dumper $results1, "\n";
 
     # Get list genome connections
@@ -273,11 +274,15 @@ sub get_genomes_for_user {
     $sth = $dbh->prepare($query);
     $sth->execute();
     my $results2 = $sth->fetchall_hashref(['id']);
-    #print STDERR "query2: $query\n";
+    #my $t3 = time;
+    #print STDERR 'query2: ', ($t3-$t2)*1000, "\n";
     #print STDERR Dumper $results2, "\n";
     
     Hash::Merge::set_behavior('LEFT_PRECEDENT');
     my $combined = Hash::Merge::merge($results1, $results2); # order is important here, results1 should overwrite results2
+    #my $t4 = time;
+    #print STDERR 'merge: ', ($t4-$t3)*1000, "\n";
+    
     return [ values $combined ];
 }
 
@@ -367,6 +372,26 @@ sub get_lists_for_user {
     my $results = $sth->fetchall_arrayref({});
     #print STDERR Dumper $results, "\n";
 
+    return $results;
+}
+
+sub get_favorites_for_user {
+    my $dbh = shift;         # database connection handle
+    my $user_id = shift;     # user id
+    return unless $user_id;
+    my $type_ids = shift;     # optional child type id
+    
+    # Get
+    my $query = qq{
+        SELECT lc.child_id AS id
+        FROM list AS l
+        JOIN list_connector AS lc ON (lc.parent_id=l.list_id) 
+        WHERE l.name='Favorites' 
+    };
+    $query .= ' AND lc.child_type IN (' . join(', ', @$type_ids) . ')' if $type_ids;
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_hashref('id');
     return $results;
 }
 
