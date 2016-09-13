@@ -8,7 +8,8 @@ use CoGeX;
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
 use CoGe::Builder::Tools::SynMap;
-use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Genome qw(genomecmp genomecmp2);
+use CoGe::Core::Favorites;
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -511,7 +512,8 @@ sub gen_dsg_menu {
 	my $message;
 	my $org_name;
 
-	foreach my $dsg ( sort genomecmp
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
+	foreach my $dsg ( sort { genomecmp2($a, $b, $favorites) }
 		$coge->resultset('Genome')->search(
 			{ organism_id => $oid },
 			{
@@ -541,6 +543,7 @@ sub gen_dsg_menu {
 			}
 		}
 		else {
+		    $name .= "<span title='certified'>&#11088;</span> " if ($favorites->is_favorite($dsg));
 			$name .= "<span title='certified'>&#x2705; CERTIFIED</span> " if $dsg->certified;
 		    $name .= "<span title='restricted'>&#x1f512; RESTRICTED</span> " if $dsg->restricted;
 			$name .= $dsg->name . ": " if $dsg->name;
