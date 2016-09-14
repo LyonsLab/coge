@@ -119,7 +119,7 @@ define(['dojo/_base/declare',
 			title: 'Add experiment ' + track_config.coge.name + ' to Notebook',
 			onExecute: function() {
 				var s=dojo.byId('coge_notebook');
-				coge_track_list._add_to_notebook([track_config], s.options[s.selectedIndex].value);
+				coge_track_list.add_to_notebook([track_config], s.options[s.selectedIndex].value);
 				this.onHide();
 			},
 			onHide: function() {
@@ -154,13 +154,15 @@ define(['dojo/_base/declare',
 				dojo.place(track, n, 'after');
 			}
 		}
+		if (dojo.byId('track_experiment' + track_config.coge.id)) {
+			var label_node = this._get_label_node(track);
+			track.config.coge.selected = true;
+			dojo.style(label_node, 'background', coge_track_list._get_track_color(track));
+		}
+		if (dojo.byId('track_notebook' + notebook.config.coge.id))
+			dojo.create('div', { className: 'coge-circle', style: { backgroundColor: coge_track_list._get_track_color(track) } }, track, 'first');
 		if (notebook.expanded)
 			track.scrollIntoView();
-		if (dojo.byId('track_notebook' + notebook.config.coge.id))
-			this._traverse_tracks(function(container){
-				if (container.config.coge.type == 'experiment' && container.config.coge.id == track.config.coge.id)
-					dojo.create('div', { className: 'coge-circle', style: { backgroundColor: coge_track_list._get_track_color(container) } }, container, 'first');
-			})
 		this._reload_notebook(notebook.config.coge.id);
 	},
 
@@ -524,6 +526,15 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
+	_get_label_node: function(container) {
+		var label_node = container.firstChild;
+		while (!dojo.hasClass(label_node, 'coge-track-label'))
+			label_node = label_node.nextSibling;
+		return label_node;
+	},
+
+	// ----------------------------------------------------------------
+
 	get_search_config: function(eid) {
 		var n = this.tracks_div.firstChild;
 		while (n && dojo.hasClass(n, 'coge-track')) {
@@ -731,7 +742,7 @@ define(['dojo/_base/declare',
 				target.node.removeChild(n);
 				items.push(node.config);
 			}, this);
-			this._add_to_notebook(items, target.node.firstChild.config.coge.id);
+			this.add_to_notebook(items, target.node.firstChild.config.coge.id);
 		}
 	},
 
@@ -871,7 +882,7 @@ define(['dojo/_base/declare',
 			postData: JSON.stringify({
 				items: [{
 					type: type,
-					id, id
+					id: id
 				}]
 			}),
 			handleAs: 'json',
@@ -971,9 +982,7 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	_set_tracks_active: function(container, combined) {
-		var label_node = container.firstChild;
-		while (!dojo.hasClass(label_node, 'coge-track-label'))
-			label_node = label_node.nextSibling;
+		var label_node = this._get_label_node(container);
 		if (!combined)
 			container.config.coge.selected = true;
 		var type = container.config.coge.type;
@@ -1003,9 +1012,7 @@ define(['dojo/_base/declare',
 				dojo.destroy(container.firstChild);
 			return;
 		}
-		var label_node = container.firstChild;
-		while (!dojo.hasClass(label_node, 'coge-track-label'))
-			label_node = label_node.nextSibling;
+		var label_node = this._get_label_node(container);
 		container.config.coge.selected = false;
 		dojo.style(label_node, 'background', '');
 		if (container.config.coge.type == 'notebook') {
