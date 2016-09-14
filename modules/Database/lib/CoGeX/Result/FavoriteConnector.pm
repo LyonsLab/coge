@@ -55,10 +55,10 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("favorite_connector_id");
 __PACKAGE__->belongs_to("user"			=> "CoGeX::Result::User", 		"user_id" );
-__PACKAGE__->belongs_to("experiment" 	=> "CoGeX::Result::Experiment",	{ "foreign.experiment_id" => "self.child_id" }, { where => { child_type  => $node_types->{experiment} } } );
-__PACKAGE__->belongs_to("genome"     	=> "CoGeX::Result::Genome",     { "foreign.genome_id"     => "self.child_id" }, { where => { child_type  => $node_types->{genome} } } );
-__PACKAGE__->belongs_to("feature"    	=> "CoGeX::Result::Feature",    { "foreign.feature_id"    => "self.child_id" }, { where => { child_type  => $node_types->{feature} } } );
-__PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_id"       => "self.child_id" }, { where => { child_type  => $node_types->{notebook} } } );
+__PACKAGE__->belongs_to("experiment" 	=> "CoGeX::Result::Experiment",	{ "foreign.experiment_id" => "self.child_id" } );
+__PACKAGE__->belongs_to("genome"     	=> "CoGeX::Result::Genome",     { "foreign.genome_id"     => "self.child_id" } );
+__PACKAGE__->belongs_to("feature"    	=> "CoGeX::Result::Feature",    { "foreign.feature_id"    => "self.child_id" } );
+__PACKAGE__->belongs_to("list" 		 	=> "CoGeX::Result::List", 		{ "foreign.list_id"       => "self.child_id" } );
 
 ################################################ subroutine header begin ##
 
@@ -85,6 +85,78 @@ sub debug {
 sub toggle {
     my $self = shift;
         
+}
+
+################################################ subroutine header begin ##
+
+=head2 is_*
+
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  : None
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_list {
+    return shift->child_type() == $node_types->{list};
+}
+
+sub is_genome {
+    return shift->child_type() == $node_types->{genome};
+}
+
+sub is_feature {
+    return shift->child_type() == $node_types->{feature};
+}
+
+sub is_experiment {
+    return shift->child_type() == $node_types->{experiment};
+}
+
+################################################ subroutine header begin ##
+
+=head2 child
+
+ Usage     :
+ Purpose   :
+ Returns   :
+ Argument  : None
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub child {
+    my $self = shift;
+
+    if ($self->is_experiment) {
+        return $self->experiment;
+    }
+    elsif ($self->is_genome) {
+        return $self->genome;
+    }
+    elsif ($self->is_feature) {
+        return $self->feature;
+    }
+    elsif ($self->is_list) {
+        return $self->list;
+    }
+    else {
+        warn "unknown child type " . $self->child_type;
+    }
+
+    return;
 }
 
 1;

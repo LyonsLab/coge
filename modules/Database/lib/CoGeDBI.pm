@@ -229,10 +229,14 @@ sub get_genomes_for_user {
     my $group_str = get_group_str_for_user($dbh, $user_id) || -1; # default to -1 to prevent empty IN clause in query
         
     # Get user/group genome connections
+    # mdb added favorite_connector subquery for COGE-388
     my $query = qq{
         SELECT g.genome_id AS id, g.name AS name, g.description AS description, 
             g.version AS version, g.restricted AS restricted, g.certified AS certified, g.deleted AS deleted, 
-            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id as role_id
+            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id AS role_id, 
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=g.genome_id AND fc.child_type=2)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN genome AS g ON (uc.child_id=g.genome_id) 
         JOIN dataset_connector AS dsc ON (dsc.genome_id=g.genome_id) 
@@ -253,10 +257,14 @@ sub get_genomes_for_user {
 
     # Get list genome connections
     # mdb added uc2 join for COGE-629
+    # mdb added favorite_connector subquery for COGE-388
     $query = qq{
         SELECT g.genome_id AS id, g.name AS name, g.description AS description, 
             g.version AS version, g.restricted AS restricted, g.certified AS certified, g.deleted AS deleted, 
-            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id as role_id
+            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id AS role_id,
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=g.genome_id AND fc.child_type=2)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_connector AS lc ON (lc.parent_id=l.list_id)
@@ -278,6 +286,7 @@ sub get_genomes_for_user {
     #print STDERR 'query2: ', ($t3-$t2)*1000, "\n";
     #print STDERR Dumper $results2, "\n";
     
+    #TODO Replace this merge with SQL UNION of queries above?
     Hash::Merge::set_behavior('LEFT_PRECEDENT');
     my $combined = Hash::Merge::merge($results1, $results2); # order is important here, results1 should overwrite results2
     #my $t4 = time;
@@ -302,7 +311,10 @@ sub get_experiments_for_user {
     my $query = qq{
         SELECT e.experiment_id AS id, e.name AS name, e.description AS description, 
             e.version AS version, e.restricted AS restricted, e.deleted AS deleted, 
-            e.date AS date, uc.role_id as role_id
+            e.date AS date, uc.role_id as role_id,
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=e.experiment_id AND fc.child_type=3)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN experiment AS e ON (uc.child_id=e.experiment_id) 
         WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
@@ -320,7 +332,10 @@ sub get_experiments_for_user {
     $query = qq{
         SELECT e.experiment_id AS id, e.name AS name, e.description AS description, 
             e.version AS version, e.restricted AS restricted, e.deleted AS deleted, 
-            e.date AS date, uc.role_id as role_id
+            e.date AS date, uc.role_id as role_id,
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=e.experiment_id AND fc.child_type=3)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_connector AS lc ON (lc.parent_id=l.list_id)
@@ -358,7 +373,10 @@ sub get_lists_for_user {
     my $query = qq{
         SELECT l.list_id AS id, l.name AS name, l.description AS description, 
             l.restricted AS restricted, l.deleted AS deleted, lt.name AS type_name,
-            l.date AS date, uc.role_id as role_id
+            l.date AS date, uc.role_id as role_id,
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=l.list_id AND fc.child_type=1)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_type AS lt ON (lt.list_type_id=l.list_type_id)
