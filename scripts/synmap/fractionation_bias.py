@@ -487,7 +487,7 @@ for tchr in windanalysis_input_dict:
                 for each in window(windanalysis_input_dict[tchr][qchr],
                                    window_size_int):  # <--- changed from args.windowsize
                     counter += 1
-                    data_output2 = float(sum(each)) / float(window_size)
+                    data_output2 = float(sum(each)) / float(window_size_int)
                     output_dict[tchr][qchr][counter] = round(data_output2 * 100.)
         except KeyError:
             continue
