@@ -65,6 +65,7 @@ __PACKAGE__->belongs_to( 'image' => 'CoGeX::Result::Image', 'image_id');
 __PACKAGE__->has_many( 'sessions' => "CoGeX::Result::UserSession", 'user_id' );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log", 'user_id' );
 __PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job", 'user_id' );
+__PACKAGE__->has_many( 'favorites' => "CoGeX::Result::FavoriteConnector", 'user_id' );
 __PACKAGE__->has_many( # all children (groups/genomes/experiments/lists)
 	'child_connectors' => "CoGeX::Result::UserConnector",
 	{ "foreign.parent_id" => "self.user_id" },
@@ -91,6 +92,21 @@ __PACKAGE__->mk_accessors(qw(_genome_ids _experiment_ids));
 
 sub item_type {
     return $node_types->{user};   
+}
+
+sub get_item {
+    my $self = shift;
+    my $id = shift;
+    my $type = shift; # numeric code or string descriptor
+    
+    if ($type =~ /[^\d]/) {
+        $type = $node_types->{$type};
+        return unless $type;
+    }
+    
+    my ($conn) = $self->child_connectors({ child_id => $id, child_type => $type });
+    return unless $conn;
+    return $conn->child;
 }
 
 ################################################ subroutine header begin ##
