@@ -210,7 +210,7 @@ sub search {
 	if ($type eq 'none' || $type eq 'genome') {
 		my @genome_results;
 
-		my $search = build_search(['me.name', 'me.description', 'genome_id'],  \@query_terms);
+		my $search = build_search(['me.name', 'me.description', 'me.genome_id'],  \@query_terms);
 		my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
 		if ($rs) {
 			my @genomes = $rs->all();
@@ -236,7 +236,7 @@ sub search {
 
     # experiments
 	if ($type eq 'none' || $type eq 'experiment') {
-		my $search = build_search(['me.name', 'me.description', 'experiment_id', 'genome.name', 'genome.description', 'organism.name', 'organism.description'],  \@query_terms);
+		my $search = build_search(['me.name', 'me.description', 'me.experiment_id', 'genome.name', 'genome.description', 'organism.name', 'organism.description'],  \@query_terms);
 		my $rs = do_search($db, $user, 'Experiment', $search, { join => { 'genome' => 'organism' } }, $deleted, $restricted, $metadata_key, $metadata_value, $role);
 		if ($rs) {
 			my @experiments = sort info_cmp $rs->all();
