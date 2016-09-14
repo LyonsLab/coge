@@ -54,21 +54,21 @@ $(function() {
 			title: 'Notebooks',
 			displayType: 'grid',
 			dataTypes: ['notebook'],
-			operations: ['share', 'delete', 'sendto', 'add']
+			operations: ['share', 'favorite', 'delete', 'sendto', 'add']
 		},
 		shared: {
 			title: 'Shared with me',
 			displayType: 'grid',
 			dataTypes: ['genome', 'experiment', 'notebook'],
-			operations: ['share', 'organize', 'favorite', ],
+			operations: ['share', 'organize', 'favorite'],
 			shared: true
 		},
 		favorite: {
 			title: 'Favorites',
 			displayType: 'grid',
-			dataTypes: ['favorite'],
-			operations: ['share', 'organize', 'delete', 'sendto'],
-			noFilter: true
+			dataTypes: ['genome', 'experiment', 'notebook'],
+			operations: ['share', 'organize', 'favorite', 'sendto'],
+			favorite: true
 		},	
 		metadata: {
 			title: 'Metadata',
@@ -326,6 +326,8 @@ $.extend(ContentPanel.prototype, {
 					if (view.shared && data.role_id == '2')
 						return false;
 					if (!view.shared && data.role_id != '2' && !view.deleted)
+						return false;
+					if (view.favorite && data.favorite == '0')
 						return false;
 				}
 				return true;
@@ -869,7 +871,7 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     
     getFlags: function() {
     	if (this.type == 'genome' || this.type == 'experiment' || this.type == 'notebook' || this.type == 'favorite') {
-	    	var flags = '<span style="color:goldenrod;visibility:' + (!this.favorite ? 'hidden' : 'visible') + '">&#9733;</span>&nbsp;';
+	    	var flags = '<span style="color:goldenrod;visibility:' + (this.favorite == '1' ? 'visible' : 'hidden') + '">&#9733;</span>&nbsp;';
     		if (this.restricted == '1')
 	    		flags += '&reg;';
     		return flags;
@@ -1152,48 +1154,52 @@ function update_icons(items) { //TODO move into ContentPanel
 		$('.item-button:not(#add_button)').addClass('coge-disabled');
 }
 
-function get_item_type(obj) {
-	return obj.id.match(/content_\w+_(\w+)/)[1];
-}
+//function get_item_type(obj) {
+//	return obj.id.match(/content_\w+_(\w+)/)[1];
+//}
 
-function sync_items(html) {
-	var content1 = $('#contents_table .coge-list-item');
-	var content2 = $(html).filter('.coge-list-item'); // FIXME: this is slow
-
-	var insertIndex = 0;
-	content2.each(
-		function() {
-			var match = document.getElementById(this.id);
-			if (!match) // item doesn't exist
-				$(this).insertBefore( content1.get(insertIndex) );
-			else { // item exists
-				var src_info = $(this).find('span[name="info"]').html();
-				var dest = $(match).find('span[name="info"]');
-				if (dest.html() !== src_info)
-					dest.html(src_info);
-				insertIndex++;
-			}
-		}
-	);
-}
+//function sync_items(html) {
+//	var content1 = $('#contents_table .coge-list-item');
+//	var content2 = $(html).filter('.coge-list-item'); // FIXME: this is slow
+//
+//	var insertIndex = 0;
+//	content2.each(
+//		function() {
+//			var match = document.getElementById(this.id);
+//			if (!match) // item doesn't exist
+//				$(this).insertBefore( content1.get(insertIndex) );
+//			else { // item exists
+//				var src_info = $(this).find('span[name="info"]').html();
+//				var dest = $(match).find('span[name="info"]');
+//				if (dest.html() !== src_info)
+//					dest.html(src_info);
+//				insertIndex++;
+//			}
+//		}
+//	);
+//}
 
 function favorite_items() {
 	var selected_rows = contentPanel.grid.getSelectedRows();
 	var item_list = contentPanel.grid.getSelectedItemList();
 	if (item_list) {
+		// Optimistically toggle favorite in UI
+		selected_rows.every(function() {
+			var d = this.data();
+			d.favorite = (d.favorite == '0' ? '1' : '0');
+			this.data(d);
+		});
+		contentPanel.grid.redraw();
+		infoPanel.update(null);
+		
+		// Toggle favorite on server
 		$.ajax({
 			data: {
 				fname: 'favorite_items',
 				item_list: item_list
 			},
 			success : function(data) {
-				selected_rows.every(function() {
-					var d = this.data();
-					d.favorite = !d.favorite;
-					this.data(d);
-				});
-				contentPanel.grid.redraw();
-				infoPanel.update(null);
+				// TODO handle error
 			}
 		});
 	}

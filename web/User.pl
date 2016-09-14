@@ -352,21 +352,10 @@ sub favorite_items {
         my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
 
-        my $item_obj;
-        if ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
-            $item_obj = $DB->resultset('List')->find($item_id);
-            return unless $item_obj;
-        }
-        elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
-            $item_obj = $DB->resultset('Genome')->find($item_id);
-            return unless $item_obj;
-        }
-        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
-            $item_obj = $DB->resultset('Experiment')->find($item_id);
-            return unless $item_obj;
-        }
+        my $item_obj = $USER->get_item($item_id, $item_type);
+        next unless $item_obj; #TODO check permissions
         
-        my $favorites = CoGe::Core::Favorites->new( user => $USER );
+        my $favorites = CoGe::Core::Favorites->new(user => $USER);
         my $is_favorited = $favorites->toggle($item_obj);
 
         # Record in log
@@ -1305,54 +1294,14 @@ sub get_contents {
     my $last_update = 0;
     #print STDERR "get_contents $type\n";
     
-    #my $t1    = new Benchmark;
+    #my $t1 = new Benchmark;
     my $items = [];
 
     if ( $type eq 'genome' ) {
         $items = get_genomes_for_user($DB->storage->dbh, $USER->id);
-        
-        # mdb added 9/12/16 COGE-388
-        my $favorites = get_favorites_for_user($DB->storage->dbh, $USER->id, [2]);
-        if ($favorites) {
-            foreach my $item (@$items) {
-                if ($favorites->{$item->{id}}) {
-                    $item->{favorite} = 1;    
-                }
-            }
-        }
     }
     elsif ( $type eq 'experiment' ) {
         $items = get_experiments_for_user($DB->storage->dbh, $USER->id);
-        
-        # mdb added 9/12/16 COGE-388
-        my $favorites = get_favorites_for_user($DB->storage->dbh, $USER->id, [3]);
-        if ($favorites) {
-            foreach my $item (@$items) {
-                if ($favorites->{$item->{id}}) {
-                    $item->{favorite} = 1;    
-                }
-            }
-        }
-    }
-    elsif ( $type eq 'favorite' ) {
-        my $favorites = CoGe::Core::Favorites->new(user => $USER);
-        foreach ($favorites->notebook->children) {
-            next if ($_->deleted);
-            next unless ($_->item_type == 2 || $_->item_type == 3); # only genomes & experiments
-            my $item = {
-                id          => $_->id,
-                name        => $_->name,
-                description => $_->description,
-                version     => $_->version,
-                restricted  => $_->restricted,
-                deleted     => 0,
-                favorite    => 1,
-                date        => $_->date,
-                role_id     => 0 # no role
-            };
-            $item->{organism} = $_->organism->name if ($_->item_type == 2);
-            push @$items, $item;
-        }
     }
     elsif ( $type eq 'notebook' ) {
         $items = get_lists_for_user($DB->storage->dbh, $USER->id);
