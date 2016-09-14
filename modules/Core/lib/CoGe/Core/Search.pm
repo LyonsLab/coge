@@ -50,15 +50,13 @@ sub build_search {
 		}
 		push @search, { ($query_terms->[$i]{"not_like"} ? '-and' : '-or') => \@items };
 	}
-	warn Dumper \@search;
 	return \@search;
 }
 
 sub do_search {
     my ($db, $user, $type, $search, $attributes, $deleted, $restricted, $metadata_key, $metadata_value, $role) = @_;
     
-    my $and = [];
-	push @$and, $search if $search;
+    my $and = $search || [];
     push @$and, { 'me.deleted' => $deleted } if defined $deleted;
     push @$and, { 'me.restricted' => $restricted } if defined $restricted;
 	if ($metadata_key || $metadata_value) {
@@ -130,8 +128,7 @@ sub search {
 	my $type = "none";
 
     my @query_terms = parse_line('\s+', 0, $search_term);
-	my @query_ids;
-    for ( my $i = 0 ; $i < @query_terms ; $i++ ) {
+	for ( my $i = 0 ; $i < @query_terms ; $i++ ) {
     	my $handled = 0;
         if ( index( $query_terms[$i], "::" ) != -1 ) {
             my @splitTerm = split( '::', $query_terms[$i] );
@@ -165,10 +162,7 @@ sub search {
             $i--;
 			next;
         }
-		if ($query_terms[$i] =~ /^\d+$/) {
-			push @query_ids, $query_terms[$i];
-		}
-        if (index( $query_terms[$i], '!' ) == -1) {
+		if (index( $query_terms[$i], '!' ) == -1) {
             $query_terms[$i] = { 'like', '%' . $query_terms[$i] . '%' };
         } else {
         	my $bang_index = index($query_terms[$i], '!');
@@ -216,23 +210,27 @@ sub search {
 	if ($type eq 'none' || $type eq 'genome') {
 		my @genome_results;
 
+		my $search = build_search(['me.name', 'me.description', 'genome_id'],  \@query_terms);
+		my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+		if ($rs) {
+			my @genomes = $rs->all();
+			push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome');
+		}
+
 		# get genomes linked to found organisms
 		if (scalar @organism_ids) {
-			my $rs = do_search($db, $user, 'Genome', @organism_ids ? { organism_id => { -in => \@organism_ids }} : undef, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+			my $search = [ { organism_id => { -in => \@organism_ids }} ];
+			if (scalar @genome_results) {
+				my @genome_ids = map { $_->{'id'} } @genome_results;
+				push $search, { genome_id => { -not_in => \@genome_ids } };
+			}
+			my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
 			if ($rs) {
 				my @genomes = $rs->all();
 				push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome');
 			}
 		}
 
-		# get genomes by id
-		if (scalar @query_ids) {
-			my $rs = do_search($db, $user, 'Genome', { genome_id => { -in => @query_ids }}, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
-			if ($rs) {
-				my @genomes = $rs->all();
-				push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome');
-			}
-		}
 		push @results, sort name_cmp @genome_results;
 	}
 
@@ -248,24 +246,8 @@ sub search {
 
     # notebooks
 	if ($type eq 'none' || $type eq 'notebook') {
-		my @noteArray;
-		for ( my $i = 0 ; $i < @query_terms ; $i++ ) {
-			my $and_or;
-            if ($query_terms[$i]{"not_like"}) {
-                $and_or = "-and";
-            } else {
-                $and_or = "-or";
-            }
-			push @noteArray,
-			  [
-				$and_or => [
-					name        => $query_terms[$i],
-					description => $query_terms[$i],
-					list_id     => $query_terms[$i]
-				]
-			  ];
-		}
-		my $rs = do_search($db, $user, 'List', scalar @noteArray ? \@noteArray : undef, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+		my $search = build_search(['name', 'description', 'list_id'],  \@query_terms);
+		my $rs = do_search($db, $user, 'List', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
 		if ($rs) {
 			my @notebooks = sort { lc($a->name) cmp lc($b->name) } $rs->all();
 			push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_list');
@@ -273,35 +255,17 @@ sub search {
 	}
 
     # user groups
-	if ($show_users) {
-		if ( $type eq 'none' || $type eq 'usergroup' ) {
-			my @usrGArray;
-			for ( my $i = 0 ; $i < @query_terms ; $i++ ) {
-				my $and_or;
-	            if ($query_terms[$i]{"not_like"}) {
-	                $and_or = "-and";
-	            } else {
-	                $and_or = "-or";
-	            }
-				push @usrGArray,
-				  [
-					$and_or => [
-						name          => $query_terms[$i],
-						description   => $query_terms[$i],
-						user_group_id => $query_terms[$i]
-					]
-				  ];
-			}
-			my $rs = do_search($db, $user, 'UserGroup', scalar @usrGArray ? \@usrGArray : undef, undef, $deleted);
-			if ($rs) {
-				foreach ( sort { lc($a->name) cmp lc($b->name) } $rs->all() ) {
-					push @results, {
-						'type'    => "user_group",
-						'name'    => $_->name,
-						'id'      => int  $_->id,
-						'deleted' => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
-					};
-				}
+	if ($show_users && ($type eq 'none' || $type eq 'usergroup')) {
+		my $search = build_search(['name', 'description', 'user_group_id'],  \@query_terms);
+		my $rs = do_search($db, $user, 'UserGroup', $search, undef, $deleted);
+		if ($rs) {
+			foreach ( sort { lc($a->name) cmp lc($b->name) } $rs->all() ) {
+				push @results, {
+					'type'    => "user_group",
+					'name'    => $_->name,
+					'id'      => int  $_->id,
+					'deleted' => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
+				};
 			}
 		}
 	}
