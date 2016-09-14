@@ -129,6 +129,7 @@ sub gen_body {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         MAIN         => 1,
+        EMBED        => $EMBED,
         PAGE_NAME    => $PAGE_TITLE . '.pl',
         NOTEBOOK_ID  => $lid,
         DEFAULT_TYPE => 'note',
