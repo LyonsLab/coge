@@ -536,9 +536,9 @@ sub gen_dsg_menu {
 
         $dsgid = $dsg->id unless $dsgid;
         my $name;
-        $name .= "<span title='favorite'>&#11088;</span> " if ($favorites->is_favorite($dsg));
-        $name .= "<span title='certified'>&#x2705; CERTIFIED</span> " if $dsg->certified;
-        $name .= "<span title='restricted'>&#x1f512; RESTRICTED</span> " if $dsg->restricted; 
+        $name .= "&#11088; " if ($favorites->is_favorite($dsg));
+        $name .= "&#x2705; " if $dsg->certified;
+        $name .= "&#x1f512; " if $dsg->restricted; 
         $name .= join( ", ", map { $_->name } $dsg->source ) . ": ";
 	    $name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
