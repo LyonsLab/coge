@@ -66,7 +66,7 @@ $(function() {
 		favorite: {
 			title: 'Favorites',
 			displayType: 'grid',
-			dataTypes: ['genome', 'experiment', 'notebook'],
+			dataTypes: ['genome', 'experiment', 'notebook', 'favorite'],
 			operations: ['share', 'organize', 'favorite', 'sendto'],
 			favorite: true
 		},	
@@ -281,6 +281,9 @@ function default_info() {
 		case 'shared':
 			return "These are data items that your collaborators shared with you.<br><br>" +
 				"Hover over an item to view additional info. Select one or more items to share with others or add to a notebook.";
+		case 'favorite':
+			return "These are data items that you have marked as your favorites.<br><br>" +
+				   "Hover over an item to view additional info.";
 		case 'metadata':
 			return "Here is a summary of the metadata for your experiments, genomes and notebooks.";
 		case 'mine':
@@ -899,8 +902,6 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     	var certified = '<span class="glyphicon glyphicon-ok coge-certified-icon"></span> <span class="coge-small-text">Certified Genome<span>';
     	var descStr = 
     		icon +
-//    	   	(this.restricted == '1' ? '&reg; '  : '') +
-//    	   	(this.favorite ? '<span style="color:#000">&#11088;</span> ' : '') +
     	   	(this.organism ? this.organism : '') + 
     	   	(this.name ? ' (' + this.name + ')' : '') +
     	   	(this.description ? ': ' + this.description : '') +
@@ -912,7 +913,6 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatExperiment: function() {
     	var descStr = 
     		'<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-//    	   	(this.restricted == '1' ? '&reg; '  : '') +
     	   	this.name +
     	   	(this.description ? ': ' + this.description : '') +
     	   	' (v' + this.version + ', id' + this.id + ')';
@@ -922,7 +922,6 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatNotebook: function() {
     	var descStr =
     		'<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-//    		(this.restricted == '1' ? '&reg; '  : '') +
     		this.name +
     		(this.description ? ': ' + this.description : '') +
     		(this.type_name ? ' (' + this.type_name + ')' : '');

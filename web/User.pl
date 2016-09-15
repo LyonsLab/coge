@@ -1306,6 +1306,17 @@ sub get_contents {
     elsif ( $type eq 'notebook' ) {
         $items = get_lists_for_user($DB->storage->dbh, $USER->id);
     }
+    elsif ( $type eq 'favorite' ) { # for favorites not owned by user (as those will be fetched in the above queries)
+        my $favorites = CoGe::Core::Favorites->new(user => $USER);
+        foreach ($favorites->get(notMine => 1)) {
+            next if ($_->deleted);
+            my $item = $_->to_hash();
+            $item->{deleted}  = '0';
+            $item->{favorite} = '1';
+            $item->{role_id}  = '2'; # fake an ownership role
+            push @$items, $item;
+        }
+    }
     elsif ( $type eq 'metadata' ) {
 		my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
 		$template->param(

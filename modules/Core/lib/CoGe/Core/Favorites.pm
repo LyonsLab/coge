@@ -34,7 +34,17 @@ sub is_favorite {
 
 sub get {
     my $self = shift;
-    my @favorites = map { $_->child } $self->user->favorites();
+    my %opts = @_;
+    my $onlyMine = $opts{onlyMine}; # optional flag to exclude items the user doesn't own
+    my $notMine  = $opts{notMine};  # optional flag to exclude items the user owns
+    my @favorites;
+    foreach ($self->user->favorites()) {
+        my $item = $_->child;
+        next if ($notMine  && $self->user->is_owner(item => $item));
+        next if ($onlyMine && !$self->user->is_owner(item => $item));
+        push @favorites, $item; 
+    }
+    
     return wantarray ? @favorites : \@favorites;
 }
 
