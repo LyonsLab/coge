@@ -143,7 +143,7 @@ sub get_name {
     
     $description .= 'Ks' if $self->params->{ks_type};
     
-	return 'SynMap3D ' . $description;
+	return $description;
 }
 
 1;
