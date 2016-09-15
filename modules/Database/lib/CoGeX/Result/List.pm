@@ -602,4 +602,14 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
       . "</table>";
 }
 
+sub to_hash {
+    my $self = shift;
+    return {
+        id => $self->id,
+        name => $self->name,
+        description => $self->description,
+        restricted => $self->restricted
+    };
+}
+
 1;
