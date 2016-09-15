@@ -47,7 +47,8 @@ function search_stuff(search_term) {
 					html += url;
 					html += obj.id;
 					html += '"';
-				} else
+				} 
+				else
 					html += '<span';
 				if (obj.description) {
 					html += ' title=';
@@ -56,6 +57,12 @@ function search_stuff(search_term) {
 				if (obj.deleted == 1)
 					html += ' style="color:red;"';
 				html += '>';
+				if (obj.favorite)
+					html += '&#11088;&nbsp;&nbsp;';
+				if (obj.certified)
+					html += '&#x2705;&nbsp;&nbsp;';
+				if (obj.restricted)
+					html += '&#x1f512;&nbsp;&nbsp;';
 				html += obj.name;
 				html += url ? '</a>' : '</span>';
 				html += '</td><td>';
