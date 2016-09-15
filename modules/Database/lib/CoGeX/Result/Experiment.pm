@@ -265,7 +265,6 @@ sub notebooks_desc { #FIXME move this view code out of here
         next if ($notebook->deleted);
         my $link = "NotebookView.pl?nid=" . $notebook->id . "&embed=$embed";
         my $desc = "<a href='$link'>" . $notebook->name . '</a>';
-        $desc =~ s/&reg;\s*//;
         push @notebooks, $desc;
     }
     return join(',', @notebooks) || '';
@@ -466,7 +465,7 @@ sub info {
     }
 
     my $info;
-    $info .= "&reg; "                  if $self->restricted;
+    $info .= "&#x1f512; "                  if $self->restricted; #TODO move this into view code
     $info .= $self->name;
     $info .= ": " . $self->description if $self->description;
     $info .= " (v" . $self->version . ", id" . $self->id . "): " . $source;
@@ -507,8 +506,7 @@ sub info_file {
     
     my $restricted = ($self->restricted) ? "yes" : "no";
     my $types = join ",", map($_->name, $self->types);
-    my $genome_name = $self->genome->info;
-    $genome_name =~ s/&reg;\s*//;
+    my $genome_name = $self->genome->info(hideRestrictedSymbol=>1);
 
     my @lines = (
         qq{"Name","} . $self->name . '"',

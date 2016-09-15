@@ -251,7 +251,7 @@ sub notebooks {
 
 sub notebooks_desc {
     my $self = shift;
-    return join(',', map {local $_ = $_->name; s/&reg;\s*//; $_ } $self->notebooks) || '';
+    return join(',', map { $_->name } $self->notebooks) || '';
 }
 
 # mdb: These functions were consolidated for all item types (genome, experiment,
@@ -1273,7 +1273,7 @@ sub info {
     my %opts = @_;
     
     my $info;
-    $info .= "&reg; "                  if ($self->restricted && !$opts{hideRestrictedSymbol});
+    $info .= "&#x1f512; "              if ($self->restricted && !$opts{hideRestrictedSymbol}); #TODO move this into view code
     $info .= $self->organism->name     if $self->organism;
     $info .= " (" . $self->name . ")"  if $self->name;
     $info .= ": " . $self->description if $self->description;
@@ -1316,8 +1316,7 @@ sub info_file {
     my $self = shift;
     
     my $restricted = ($self->restricted) ? "yes" : "no";
-    my $genome_name = $self->genome->info;
-    $genome_name =~ s/&reg;\s*//;
+    my $genome_name = $self->genome->info(hideRestrictedSymbol=>1);
 
     my @lines = (
         qq{"Name","} . $self->name . '"',

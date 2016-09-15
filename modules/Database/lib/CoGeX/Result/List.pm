@@ -372,7 +372,7 @@ See Also   :
 sub info { 
     my $self = shift;
     my $info = $self->name;
-    $info = '&reg; ' . $info if $self->restricted;
+    $info = '&#x1f512; ' . $info if $self->restricted; #TODO move this into view code
     $info .= ': ' . $self->description if $self->description;
     #$info .= ' (' . $self->type->name . ')' if $self->type;
     $info .= ' (id' . $self->id . ')';

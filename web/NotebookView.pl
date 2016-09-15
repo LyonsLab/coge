@@ -677,10 +677,10 @@ sub get_list_contents {
         }
         function case_insensitive_sort(a, b) {
             var _a = a.toLowerCase();
-            if (_a.startsWith('&reg; '))
+            if (_a.startsWith('&#x1f512; '))
                 _a = _a.substr(6);
             var _b = b.toLowerCase();
-            if (_b.startsWith('&reg; '))
+            if (_b.startsWith('&#x1f512; '))
                 _b = _b.substr(6);
             return _a < _b ? -1 : _a > _b ? 1 : 0;
         }

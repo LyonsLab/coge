@@ -494,8 +494,7 @@ sub export_experiment_irods {
             'Restricted'               => $restricted
         );
 
-        my $genome_name = $genome->info;
-        $genome_name =~ s/&reg;\s*//;
+        my $genome_name = $genome->info(hideRestrictedSymbol=>);
 
         $meta{'Name'} = $experiment->name if ($experiment->name);
         $meta{'Description'} = $experiment->description if ($experiment->description);

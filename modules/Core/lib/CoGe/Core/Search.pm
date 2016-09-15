@@ -203,9 +203,8 @@ sub search {
 		my @genomes = $db->resultset("Genome")->search( $search, $join );
 
 		foreach ( sort {
-    			my $name_a=lc($a->info);
-    			$name_a = substr($name_a, 6) if substr($name_a, 0, 6) eq '&reg; ';
-    			my $name_b=lc($b->info); $name_b = substr($name_b, 6) if substr($name_b, 0, 6) eq '&reg; ';
+    			my $name_a = lc($a->info(hideRestrictedSymbol=>1));
+    			my $name_b = lc($b->info(hideRestrictedSymbol=>1)); 
     			return $name_a cmp $name_b;
     		} @genomes ) 
 		{
