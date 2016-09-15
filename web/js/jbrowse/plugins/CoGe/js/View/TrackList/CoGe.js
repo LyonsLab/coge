@@ -960,7 +960,7 @@ define(['dojo/_base/declare',
 	rename_dialog: function(type, id, name) {
 		this._rename_dialog = new Dialog({
 			title: 'Rename ' + type,
-			content: '<table><tr><td><label>Name:</label></td><td><input id="name" value=' + JSON.stringify(name) + '></td></tr></table>' +
+			content: '<table style="width:100%"><tr><td><label>Name:</label></td><td><input id="name" value=' + JSON.stringify(name) + ' style="width:100%"></td></tr></table>' +
 				coge_plugin.build_buttons('coge_track_list._rename(\'' + type + '\',' + id + ',\'' + name.replace(/'/g, "\\'") + '\')', 'coge_track_list._rename_dialog.hide()'),
 			onHide: function() {
 				this.destroyRecursive();
