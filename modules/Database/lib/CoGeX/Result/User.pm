@@ -522,7 +522,6 @@ sub is_role {
 	}
 	
 	if ($item) { # no type given # mdb added 9/14/16 COGE-388
-	    print STDERR "matt !!!!!!!!! ", $item->id, " ", $item->item_type, "\n";
         my $conn = $self->child_connector(id=>$item->id, type_id=>$item->item_type);
         return 1 if ($conn && $conn->role_id == $role_id);
     }
@@ -807,7 +806,7 @@ sub child_connector { #TODO replace with CoGeDBI literal query
 	}
 
 	# Scan user's lists
-	if ($type ne 'list') { # Don't traverse lists within a list
+	if ($type_id ne $node_types->{list}) { # Don't traverse lists within a list
 		foreach my $conn ($self->list_connectors) {
 			my $list = $conn->child;
 			foreach ($list->child_connectors({child_id=>$id, child_type=>$type_id})) {
@@ -825,7 +824,7 @@ sub child_connector { #TODO replace with CoGeDBI literal query
 			return $_;
 		}
 		# Scan group's lists
-		if ($type ne 'list') { # Don't traverse lists within a list
+		if ($type_id ne $node_types->{list}) { # Don't traverse lists within a list
 			foreach my $conn ($group->list_connectors) {
 				my $list = $conn->child;
 				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_id})) {
