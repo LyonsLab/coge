@@ -527,13 +527,14 @@ sub info_file {
 sub to_hash {
     my $self = shift;
     return {
-        id => $self->id,
-        name => $self->name,
+        id          => $self->id,
+        type        => 'experiment',
+        name        => $self->name,
         description => $self->description,
-        version => $self->version,
+        version     => $self->version,
         source_name => $self->source->name,
-        restricted => $self->restricted,
-        data_type => $self->data_type
+        restricted  => $self->restricted,
+        data_type   => $self->data_type
     };
 }
 

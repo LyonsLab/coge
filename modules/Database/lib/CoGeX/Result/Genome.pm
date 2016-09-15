@@ -197,16 +197,18 @@ See Also   :
 sub to_hash {
 	my $self = shift;
 	return {
-		id => $self->id,
-		name => $self->name,
-		description => $self->description,
-		version => $self->version,
-		organism => $self->organism->name,
-		type => $self->genomic_sequence_type->name,
-		restricted => $self->restricted,
-		message => $self->message,
-		link => $self->link,
-		deleted => $self->deleted
+		id            => $self->id,
+		type          => 'genome',
+		name          => $self->name,
+		description   => $self->description,
+		version       => $self->version,
+		organism      => $self->organism->name,
+		sequence_type => $self->genomic_sequence_type->name,
+		restricted    => $self->restricted,
+		message       => $self->message,
+		link          => $self->link,
+		deleted       => $self->deleted,
+		certified     => $self->certified
 	}
 }
 
@@ -1268,8 +1270,10 @@ See Also   :
 
 sub info {
     my $self = shift;
+    my %opts = @_;
+    
     my $info;
-    $info .= "&reg; "                  if $self->restricted;
+    $info .= "&reg; "                  if ($self->restricted && !$opts{hideRestrictedSymbol});
     $info .= $self->organism->name     if $self->organism;
     $info .= " (" . $self->name . ")"  if $self->name;
     $info .= ": " . $self->description if $self->description;

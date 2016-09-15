@@ -605,10 +605,11 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
 sub to_hash {
     my $self = shift;
     return {
-        id => $self->id,
-        name => $self->name,
+        id          => $self->id,
+        type        => 'notebook',
+        name        => $self->name,
         description => $self->description,
-        restricted => $self->restricted
+        restricted  => $self->restricted
     };
 }
 
