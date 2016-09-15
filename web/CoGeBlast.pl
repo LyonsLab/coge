@@ -11,7 +11,7 @@ use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url );
 use CoGe::Core::Notebook qw(notebookcmp);
-use CoGe::Core::Genome qw(fix_chromosome_id);
+use CoGe::Core::Genome qw(fix_chromosome_id genomecmp genomecmp2);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -514,43 +514,38 @@ sub get_orgs {
 }
 
 sub gen_dsg_menu {
-
     #my $t1    = new Benchmark;
     my %opts  = @_;
     my $oid   = $opts{oid};
     my $dsgid = $opts{dsgid};
+    #print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
 
-   #	print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
     my @genomes;
     foreach my $dsg (
-        sort {
-            versioncmp( $b->version, $a->version )
-              || $a->type->id <=> $b->type->id
-        } $db->resultset('Genome')->search(
-            { organism_id => $oid },
-            { prefetch    => ['genomic_sequence_type'] }
-        )
+        sort { genomecmp2($a, $b, $favorites) }
+            $db->resultset('Genome')->search(
+                { organism_id => $oid },
+                { prefetch    => ['genomic_sequence_type'] }
+            )
       )
     {
         next unless $USER->has_access_to_genome($dsg);
-            #added by EHL 12/30/2014
-            next if $dsg->deleted;
-            ######
+        next if $dsg->deleted;
 
         $dsgid = $dsg->id unless $dsgid;
-        my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
-
- #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
- #$name .= ", ";
- #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
-	$name .= " (id ". $dsg->id.") ";
+        my $name;
+        $name .= "<span title='favorite'>&#11088;</span> " if ($favorites->is_favorite($dsg));
+        $name .= "<span title='certified'>&#x2705; CERTIFIED</span> " if $dsg->certified;
+        $name .= "<span title='restricted'>&#x1f512; RESTRICTED</span> " if $dsg->restricted; 
+        $name .= join( ", ", map { $_->name } $dsg->source ) . ": ";
+	    $name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
           . $dsg->type->name . " "
           . commify( $dsg->length ) . "nt";
-        $name .= ' -- certified' if $dsg->certified;
 
         push @genomes, [ $dsg->id, $name ];
     }
