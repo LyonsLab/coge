@@ -875,7 +875,7 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     	if (this.type == 'genome' || this.type == 'experiment' || this.type == 'notebook' || this.type == 'favorite') {
 	    	var flags = '<span style="color:goldenrod;visibility:' + (this.favorite == '1' ? 'visible' : 'hidden') + '">&#9733;</span>&nbsp;';
     		if (this.restricted == '1')
-	    		flags += '&reg;';
+	    		flags += '&#x1f512;&nbsp;';
     		return flags;
     	}
     	return '';
