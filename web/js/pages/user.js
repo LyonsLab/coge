@@ -834,7 +834,6 @@ $.extend(DataGrid.prototype, {
     },
 
     openItem: function(row) {
-    	console.log('DataGrid.openItem');
     	if (row.type == 'group')
     		group_dialog();
     	else if (row.type == 'analyses' || row.type == 'loads')
@@ -843,9 +842,9 @@ $.extend(DataGrid.prototype, {
     		var title = row.getDescription();
     		var link = row.getLink();
     		var flags = row.getFlags();
-    		title = flags + ' ' + title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
+    		title = flags + ' ' + title + "<br><a class='xsmall' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
     		link = link + "&embed=1";
-    		console.log(link);
+    		console.log('DataGrid.openItem: ' + link);
     		var height = $(window).height() * 0.8;
     		var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
     			.dialog({
@@ -990,11 +989,16 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     },
     
     getLink: function() {
-    	if (this.type == 'genome')
+    	var type = this.type;
+    	
+    	if (type == 'favorite') // kludge for DataGrid.openItem()
+    		type = this.item_type;
+    	
+    	if (type == 'genome')
     		return 'GenomeInfo.pl?gid=' + this.id;
-    	else if (this.type == 'experiment')
+    	else if (type == 'experiment')
     		return 'ExperimentView.pl?eid=' + this.id;
-    	else if (this.type == 'notebook')
+    	else if (type == 'notebook')
     		return 'NotebookView.pl?nid=' + this.id;
     	else
     		return this.link;

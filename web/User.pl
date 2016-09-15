@@ -1311,9 +1311,10 @@ sub get_contents {
         foreach ($favorites->get(notMine => 1)) {
             next if ($_->deleted);
             my $item = $_->to_hash();
-            $item->{deleted}  = '0';
-            $item->{favorite} = '1';
-            $item->{role_id}  = '2'; # fake an ownership role
+            $item->{deleted}   = '0';
+            $item->{favorite}  = '1';
+            $item->{role_id}   = '2'; # fake an ownership role
+            $item->{item_type} = $item->{type}; # kludge for DataGrid.openItem()
             push @$items, $item;
         }
     }
@@ -1322,8 +1323,8 @@ sub get_contents {
 		$template->param(
 			METADATA => 1,
 			EXPERIMENT_METADATA_STATS => get_stats('experiment', get_experiments_for_user($DB->storage->dbh, $USER->id)),
-			GENOME_METADATA_STATS => get_stats('genome', get_genomes_for_user($DB->storage->dbh, $USER->id)),
-			NOTEBOOK_METADATA_STATS => get_stats('list', get_lists_for_user($DB->storage->dbh, $USER->id))
+			GENOME_METADATA_STATS     => get_stats('genome', get_genomes_for_user($DB->storage->dbh, $USER->id)),
+			NOTEBOOK_METADATA_STATS   => get_stats('list', get_lists_for_user($DB->storage->dbh, $USER->id))
 		);
 		return $template->output;
     }
