@@ -2158,7 +2158,8 @@ sub generate_html {
             USER       => $USER->display_name || '',
             LOGON      => ( $USER->user_name ne "public" ),
             ADMIN_ONLY => $USER->is_admin,
-            CAS_URL    => $config->{CAS_URL} || ''
+            CAS_URL    => $config->{CAS_URL} || '',
+            COOKIE_NAME => $config->{COOKIE_NAME} || ''
         );
     }
 

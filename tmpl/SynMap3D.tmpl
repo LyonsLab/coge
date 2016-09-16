@@ -287,9 +287,20 @@
             </div>
 
             <div style="padding-bottom: 5px">
+                <label>Toggle Point Style: </label>
+                <button id="ptShapeSelect" type="button" onclick="togglePtShape()">Show Flat</button><br>
+                <label>Adjust Point Size: </label>
+                <input id="ptSizeSelect" type="range" min="2" max="18" step="1" value="8"/> <!--<span id="slideDisplay"></span>--><br>
+            </div>
+
+            <div style="padding-bottom: 5px">
+                <label>Toggle Projection: </label>
+                <button id="camTypeSelect" type="button" onclick="toggleCamera()">Show Orthographic</button>
+            </div>
+
+            <div style="padding-bottom: 5px">
                 <span>Additional Controls</span><br>
                 <button type="button" onclick="resetCamera('reset')">Reset Camera</button>
-                <button type="button" onclick="toggleCamera()">Toggle Projection</button>
                 <button type="button" onclick="toggleRotate()">Toggle Auto-Rotate</button>
                 <button type="button" onclick="toggleGrid()">Toggle Grid</button>
                 <button type="button" onclick="toggleLabels()">Toggle Axis Labels</button><br>

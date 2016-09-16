@@ -2259,16 +2259,24 @@ $.extend(Taxon_tree.prototype, {
 	filter: function(search_text) {
 		var self = this;
 		if (search_text) {
+			$("#loading6").show();
+			$("#not").hide();
 			var find = self.find.call(self, search_text, [self.root]);
 			if(find) {
 				self.update.call(self, self.root, find);
+				$("#loading6").hide();
+				$("#not").hide();
 			} else {
-				// Not found = no change
-				//self.update.call(self, self.root, current.root);
+				// Not found = reset filter
+				if(search_text.length > 2) {
+					$("#loading6").hide();
+					$("#not").show();
+				}
 			}
 		} else {
 			// Empty search text = reset filter
 			self.update.call(self, self.root, self.root);
+			$("#not").hide();
 		}
 	},
 	find: function(search_text, nodes) {	//nodes is expected to be an array
@@ -2347,8 +2355,10 @@ $.extend(Taxon_tree.prototype, {
 });
 
 function filter_tree() {
-	var search_text = $('#tree_filter').val();
-    tree.filter(search_text);
+	if (tree) {
+		var search_text = $('#tree_filter').val();
+		tree.filter(search_text);
+	}
 }
 
 function init_line_graph(index) {
@@ -2694,11 +2704,13 @@ $.extend(Query_Counter.prototype, {
 	                        
 	                		$("#" + self.elementId + "_total").html("<span>Total Database Queries: " + coge.utils.numberWithCommas(self.total_queries) + "</span>");
 	                		$("#" + self.elementId + "_per_second").html("<span>Queries per Second: " + self.queries_per_second + "</span>");
+	                		$("#" + self.elementId + "_uptime").html("<span>Uptime: " + Math.ceil((data.Uptime)/86400) + " days</span>");
 	                }
 	        },
+	
 	        complete: function() {
 	        	self.schedule_update(5000);
-	        }
+		}
 		});
 	}
 });

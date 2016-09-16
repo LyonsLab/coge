@@ -1,5 +1,16 @@
 <TMPL_IF NAME="MAIN">
 <link rel="stylesheet" href="css/dataTables.css" type="text/css">
+
+<TMPL_UNLESS NAME="EMBED">
+<div style="font-size:1em;">
+	<div class="inline link" title="Favorite this notebook">
+		<img src=<TMPL_IF NAME="FAVORITED">"./picts/star-full.png"<TMPL_ELSE>"./picts/star-hollow.png"</TMPL_IF> style="width:1em;height:1em;" onclick="toggle_favorite(this);" />
+	</div>
+	<span class="bold text coge-green"><TMPL_VAR NAME="NOTEBOOK_TITLE"></span>
+</div>
+</TMPL_UNLESS>
+<br>
+
 <table>
 	<tr class="top">
 		<td>
@@ -64,7 +75,7 @@
 -->
 
 <script language="JavaScript">
-const NOTEBOOK_ID = '<TMPL_VAR NAME="NOTEBOOK_ID">';
+const NOTEBOOK_ID   = '<TMPL_VAR NAME="NOTEBOOK_ID">';
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';

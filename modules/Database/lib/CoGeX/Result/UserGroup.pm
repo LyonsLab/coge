@@ -240,6 +240,7 @@ sub owner {
 =cut
 
 ################################################## subroutine header end ##
+
 sub is_editable {
     my $self = shift;
     my $user = shift;
@@ -402,21 +403,6 @@ sub datasets {
     return wantarray ? @ds : \@ds;
 }
 
-################################################ subroutine header begin ##
-
-=head2 restricted_datasets
-
- Usage     : $self->restricted_datasets
- Purpose   : Returns the set of restricted datasets associated with the user group
- Returns   : wantArray of datasets
- Argument  : None
- Throws    : None
- Comments  :
-
-=cut
-
-################################################## subroutine header end ##
-
 sub restricted_datasets {
     my $self = shift;
     my @ds;
@@ -450,22 +436,7 @@ sub info {
     return $info;
 }
 
-################################################ subroutine header begin ##
-
-=head2 info
-
- Usage     : $self->info_html
- Purpose   : generate a string of information about the user group
- Returns   : a string wrapped with a linnk to GroupView
- Argument  : None
- Throws    : None
- Comments  : uses name, description and role
-
-=cut
-
-################################################## subroutine header end ##
-
-sub info_html {
+sub info_html { #TODO move into Core (because it is View code)
     my $self = shift;
     my $info = $self->info;
     $info =
@@ -496,7 +467,7 @@ See Also   : CoGe::Accessory::Annotation
 
 ################################################## subroutine header end ##
 
-sub annotation_pretty_print_html {
+sub annotation_pretty_print_html { #TODO move into Core (because it is view code)
     my $self         = shift;
     my %opts         = @_;
     my $minimal      = $opts{minimal};

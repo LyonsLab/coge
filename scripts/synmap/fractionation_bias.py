@@ -487,7 +487,7 @@ for tchr in windanalysis_input_dict:
                 for each in window(windanalysis_input_dict[tchr][qchr],
                                    window_size_int):  # <--- changed from args.windowsize
                     counter += 1
-                    data_output2 = float(sum(each)) / float(window_size)
+                    data_output2 = float(sum(each)) / float(window_size_int)
                     output_dict[tchr][qchr][counter] = round(data_output2 * 100.)
         except KeyError:
             continue
@@ -528,7 +528,9 @@ for q in query_api_chrs_final:
 
 # Build dump_data and initial down_data objects
 ordered_targets = natsorted(output_dict.keys())
+seen_position = {}
 for target in ordered_targets:
+    seen_position[target] = []
     dump_data[target] = {}
     ordered_queries = natsorted(output_dict[target].keys())
     length = []
@@ -537,20 +539,22 @@ for target in ordered_targets:
         ordered_positions = natsorted(output_dict[target][query].keys())
         for position in ordered_positions:
             dump_data[target][query].append(output_dict[target][query][position])
-            down_data['targets'].append(target)
-            down_data['x_pos'].append(position)
             down_data[query].append(output_dict[target][query][position])
+            if position not in seen_position[target]:
+                down_data['targets'].append(target)
+                down_data['x_pos'].append(position)
+                seen_position[target].append(position)
 
 # Write out plotting object (.json)
 dump(dump_data, open(dump_out, 'wb'))
 
-# Zip download data (redefine down_data to zipped version)
+# Zip download data for writing as columns.
 down_header = ['Target Chr', 'Sliding Window (Count)']
 down_prezip = [down_data['targets'], down_data['x_pos']]
 for q in query_api_chrs_final:
     down_header.append('Query Chr ' + q + ' (%)')
     down_prezip.append(down_data[q])
-down_data = zip(*down_prezip)
+down_data = zip(*down_prezip)  # Redefine down_data to zipped version.
 down_prezip = None  # Free memory.
 
 # Write out downloadable data (.csv)

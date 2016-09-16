@@ -46,7 +46,8 @@ function search_genomes (search_term) {
 		.done(function(response) { // success
 			if (response && response.genomes) {
 				var results = response.genomes.map(function(obj) {
-					var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
+					var label = obj.info.replace(/&#x1f512;/g, "\uD83D\uDD12"); // Lock symbol
+					//TODO add certified and favorite icons
 					return { label: label, value: obj.id };
 				});
 				edit_genome

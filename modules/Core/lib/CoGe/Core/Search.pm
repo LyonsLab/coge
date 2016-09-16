@@ -5,6 +5,7 @@ use warnings;
 
 use CoGeX;
 use CoGeDBI;
+use CoGe::Core::Favorites;
 use Data::Dumper;
 
 BEGIN {
@@ -28,6 +29,9 @@ sub search {
     my @specialTerms;
     my @idList;
     my @results;
+    
+    my $favorites;
+    $favorites = CoGe::Core::Favorites->new(user => $user) if ($user && !$user->is_public);
 
     #Set up the necessary arrays of serch terms and special conditions
     for ( my $i = 0 ; $i < @searchArray ; $i++ ) {
@@ -56,12 +60,8 @@ sub search {
 		$type = substr($search_term, 0, $index);
 		$search_term = substr($search_term, $index + 2);
 	}
-	my @restricted =
-	  [ -or => [ 'me.restricted' => 0, 'me.restricted' => 1 ] ]; 
-	  #Specifies either restricted(1) OR unrestriced(0) results. Default is all.
-	my @deleted =
-	  [ -or => [ 'me.deleted' => 0, 'me.deleted' => 1 ] ]; 
-	  #Specifies either deleted(1) OR non-deleted(0) results. Default is all.
+	my @restricted = [ -or => [ 'me.restricted' => 0, 'me.restricted' => 1 ] ]; #Specifies either restricted(1) OR unrestriced(0) results. Default is all.
+	my @deleted = [ -or => [ 'me.deleted' => 0, 'me.deleted' => 1 ] ];  #Specifies either deleted(1) OR non-deleted(0) results. Default is all.
 	for ( my $i = 0 ; $i < @specialTerms ; $i++ ) {
 		if ( $specialTerms[$i]{tag} eq 'type' ) {
 			$type = $specialTerms[$i]{term};
@@ -93,7 +93,7 @@ sub search {
 		@restricted = [ 'me.restricted' => 0 ];
 	}
 
-    # Perform organism search
+    # Perform organism search -------------------------------------------------
     if (   $type eq 'none'
         || $type eq 'organism'
         || $type eq 'genome'
@@ -134,7 +134,7 @@ sub search {
 		@idList = map { $_->id } @organisms;
 	}
 
-	# Perform user search
+	# Perform user search -----------------------------------------------------
 	if ($show_users) {
 		if ( $type eq 'none' || $type eq 'user' ) {
 			my @usrArray;
@@ -173,7 +173,7 @@ sub search {
 	}
 	
 
-	# Perform genome search (corresponding to Organism results)
+	# Perform genome search (corresponding to Organism results) ---------------
 	if (   $type eq 'none'
 		|| $type eq 'genome'
 		|| $type eq 'genome_metadata_key'
@@ -203,18 +203,20 @@ sub search {
 		my @genomes = $db->resultset("Genome")->search( $search, $join );
 
 		foreach ( sort {
-			my $name_a=lc($a->info);
-			$name_a = substr($name_a, 6) if substr($name_a, 0, 6) eq '&reg; ';
-			my $name_b=lc($b->info); $name_b = substr($name_b, 6) if substr($name_b, 0, 6) eq '&reg; ';
-			return $name_a cmp $name_b;
-		} @genomes ) {
+    			my $name_a = lc($a->info(hideRestrictedSymbol=>1));
+    			my $name_b = lc($b->info(hideRestrictedSymbol=>1)); 
+    			return $name_a cmp $name_b;
+    		} @genomes ) 
+		{
 			if (!$user || $user->has_access_to_genome($_)) {
 				push @results, {
 					'type'          => "genome",
-					'name'          => $_->info,
+					'name'          => $_->info(hideRestrictedSymbol=>1),
 					'id'            => int $_->id,
 					'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
 					'restricted' 	=> $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+					'certified'     => $_->certified ? Mojo::JSON->true : Mojo::JSON->false,
+					'favorite'      => ($favorites ? $favorites->is_favorite($_) : 0) ? Mojo::JSON->true : Mojo::JSON->false
 				};
 			}
 		}
@@ -234,17 +236,19 @@ sub search {
 				if (!$user || $user->has_access_to_genome($_)) {
 					push @results, {
 						'type'          => "genome",
-						'name'          => $_->info,
+						'name'          => $_->info(hideRestrictedSymbol=>1),
 						'id'            => int $_->id,
 						'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
 						'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+						'certified'     => $_->certified ? Mojo::JSON->true : Mojo::JSON->false,
+						'favorite'      => ($favorites ? $favorites->is_favorite($_) : 0) ? Mojo::JSON->true : Mojo::JSON->false
 					};
 				}
 			}
 		}
 	}
 
-	# Perform experiment search
+	# Perform experiment search -----------------------------------------------
 	if (   $type eq 'none'
 		|| $type eq 'experiment'
 		|| $type eq 'experiment_metadata_key'
@@ -297,12 +301,13 @@ sub search {
 					'id'            => int $_->id,
 					'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
 					'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+					'favorite'      => ($favorites ? $favorites->is_favorite($_) : 0) ? Mojo::JSON->true : Mojo::JSON->false
 				};
 			}
 		}
 	}
 
-	# Perform notebook search
+	# Perform notebook search -------------------------------------------------
 	if (   $type eq 'none'
 		|| $type eq 'notebook'
 		|| $type eq 'list_metadata_key'
@@ -350,12 +355,13 @@ sub search {
 					'id'            => int $_->id,
 					'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
 					'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+					'favorite'      => ($favorites ? $favorites->is_favorite($_) : 0) ? Mojo::JSON->true : Mojo::JSON->false
 				};
 			}
 		}
 	}
 
-	# Perform user group search
+	# Perform user group search -----------------------------------------------
 	if ($show_users) {
 		if ( $type eq 'none' || $type eq 'usergroup' || $type eq 'deleted' ) {
 			my @usrGArray;

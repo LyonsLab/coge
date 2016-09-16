@@ -5,6 +5,7 @@ use CGI::Carp 'fatalsToBrowser';
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
+use CoGe::Core::Genome qw(genomecmp genomecmp2);
 use HTML::Template;
 use Data::Dumper;
 #use CGI::Ajax;
@@ -119,7 +120,8 @@ sub gen_html {
                       WIKI_URL   => $P->{WIKI_URL} || '',
     				  ADMIN_ONLY => $USER->is_admin,
                       USER       => $USER->display_name || '',
-                      CAS_URL    => $P->{CAS_URL} || ''
+                      CAS_URL    => $P->{CAS_URL} || '',
+                      COOKIE_NAME => $P->{COOKIE_NAME} || ''
     );
     $template->param( LOGON    => 1 ) unless ($USER->user_name eq "public");
     $template->param( BODY => $body );
@@ -452,16 +454,10 @@ sub get_genomes {
     my @opts;
     
     if ($org) {
+        my $favorites = CoGe::Core::Favorites->new(user => $USER);
+        
         no warnings 'uninitialized'; # disable warnings for undef values in sort
-        foreach my $genome (
-            sort {
-                     versioncmp( $b->version, $a->version )
-                  || $a->type->id <=> $b->type->id
-                  || $a->name cmp $b->name
-                  || $b->id cmp $a->id
-            } $org->genomes
-          )
-        {
+        foreach my $genome (sort { genomecmp2($a, $b, $favorites) } $org->genomes) {
             next if $genome->deleted;
             next unless $USER->has_access_to_genome($genome);
             
@@ -478,8 +474,13 @@ sub get_genomes {
                 $selected_gid = $genome->id;
             }
             
-            my $info = $genome->info;
-            push @opts, qq{<OPTION title="$info" value="}.$genome->id.qq{" $selected>$info</OPTION>};
+            my $option;
+            $option .= "&#11088; "  if ($favorites->is_favorite($genome));
+            $option .= "&#x2705; "  if $genome->certified;
+            $option .= "&#x1f512; " if $genome->restricted;
+            my $info = $genome->info( hideRestrictedSymbol => 1 );
+            $option .= $info;
+            push @opts, qq{<OPTION title="$info" value="}.$genome->id.qq{" $selected>$option</OPTION>};
         }
     }
     my $html;

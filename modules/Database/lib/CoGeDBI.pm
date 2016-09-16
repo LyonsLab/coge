@@ -31,7 +31,7 @@ use warnings;
 use DBI;
 use Hash::Merge::Simple qw(merge);
 use Data::Dumper;
-use Benchmark;
+#use Time::HiRes qw(time);
 
 BEGIN {
     use vars qw ($VERSION $MAX_FETCH_ROWS @ISA @EXPORT);
@@ -44,10 +44,11 @@ BEGIN {
         get_table get_user_access_table get_experiments get_distinct_feat_types
         get_genomes_for_user get_experiments_for_user get_lists_for_user
         get_groups_for_user get_group_access_table get_datasets
-        get_feature_counts get_features get_feature_types
+        get_feature_counts get_features get_feature_types 
         get_feature_names get_feature_annotations get_locations 
         get_total_queries get_dataset_ids feature_type_names_to_id
-        get_features_by_range get_table_count
+        get_features_by_range get_table_count get_uptime
+        get_favorites_for_user
     );
 }
 
@@ -228,10 +229,14 @@ sub get_genomes_for_user {
     my $group_str = get_group_str_for_user($dbh, $user_id) || -1; # default to -1 to prevent empty IN clause in query
         
     # Get user/group genome connections
+    # mdb added favorite_connector subquery for COGE-388
     my $query = qq{
         SELECT g.genome_id AS id, g.name AS name, g.description AS description, 
             g.version AS version, g.restricted AS restricted, g.certified AS certified, g.deleted AS deleted, 
-            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id as role_id
+            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id AS role_id, 
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=g.genome_id AND fc.child_type=2)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN genome AS g ON (uc.child_id=g.genome_id) 
         JOIN dataset_connector AS dsc ON (dsc.genome_id=g.genome_id) 
@@ -242,38 +247,51 @@ sub get_genomes_for_user {
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $query .= " ORDER BY uc.role_id DESC"; # mdb added 4/28/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
-    #my $t1    = new Benchmark;
+    #my $t1 = time;
     my $sth = $dbh->prepare($query);
     $sth->execute();
     my $results1 = $sth->fetchall_hashref(['id']);
-    #my $t2    = new Benchmark;
-    #print STDERR 'query1: ', timestr( timediff( $t2, $t1 ) ), "\n";
+    #my $t2 = time;
+    #print STDERR 'query1: ', ($t2-$t1)*1000, "\n";
     #print STDERR Dumper $results1, "\n";
 
     # Get list genome connections
+    # mdb added uc2 join for COGE-629
+    # mdb added favorite_connector subquery for COGE-388
     $query = qq{
         SELECT g.genome_id AS id, g.name AS name, g.description AS description, 
             g.version AS version, g.restricted AS restricted, g.certified AS certified, g.deleted AS deleted, 
-            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id as role_id
+            g.date AS date, o.name AS organism, ds.date AS dataset_date, uc.role_id AS role_id,
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=g.genome_id AND fc.child_type=2)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_connector AS lc ON (lc.parent_id=l.list_id)
         JOIN genome AS g ON (lc.child_id=g.genome_id)
+        JOIN user_connector AS uc2 ON (uc2.child_id=g.genome_id)
         JOIN dataset_connector AS dsc ON (dsc.genome_id=g.genome_id) 
         JOIN dataset AS ds ON (ds.dataset_id=dsc.dataset_id) 
         JOIN organism AS o ON (o.organism_id=g.organism_id) 
-        WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
-            AND uc.child_type=1 AND lc.child_type=2
+        WHERE uc.child_type=1 AND ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
+            AND uc2.child_type=2 AND ((uc2.parent_type=5 AND uc2.parent_id=$user_id) OR (uc2.parent_type=6 AND uc2.parent_id IN ($group_str))) AND uc2.role_id IN (2,3,4)
+            AND lc.child_type=2
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $query .= " ORDER BY uc.role_id DESC"; # mdb added 4/28/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
     $sth = $dbh->prepare($query);
     $sth->execute();
     my $results2 = $sth->fetchall_hashref(['id']);
+    #my $t3 = time;
+    #print STDERR 'query2: ', ($t3-$t2)*1000, "\n";
     #print STDERR Dumper $results2, "\n";
     
+    #TODO Replace this merge with SQL UNION of queries above?
     Hash::Merge::set_behavior('LEFT_PRECEDENT');
     my $combined = Hash::Merge::merge($results1, $results2); # order is important here, results1 should overwrite results2
+    #my $t4 = time;
+    #print STDERR 'merge: ', ($t4-$t3)*1000, "\n";
+    
     return [ values $combined ];
 }
 
@@ -293,7 +311,10 @@ sub get_experiments_for_user {
     my $query = qq{
         SELECT e.experiment_id AS id, e.name AS name, e.description AS description, 
             e.version AS version, e.restricted AS restricted, e.deleted AS deleted, 
-            e.date AS date, uc.role_id as role_id
+            e.date AS date, uc.role_id as role_id,
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=e.experiment_id AND fc.child_type=3)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN experiment AS e ON (uc.child_id=e.experiment_id) 
         WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
@@ -307,16 +328,22 @@ sub get_experiments_for_user {
     #print STDERR Dumper $results1, "\n";
 
     # Get list experiment connections
+    # mdb added uc2 join for COGE-629
     $query = qq{
         SELECT e.experiment_id AS id, e.name AS name, e.description AS description, 
             e.version AS version, e.restricted AS restricted, e.deleted AS deleted, 
-            e.date AS date, uc.role_id as role_id
+            e.date AS date, uc.role_id as role_id,
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=e.experiment_id AND fc.child_type=3)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_connector AS lc ON (lc.parent_id=l.list_id)
         JOIN experiment AS e ON (lc.child_id=e.experiment_id)
-        WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
-            AND uc.child_type=1 AND lc.child_type=3 
+        JOIN user_connector AS uc2 ON (uc2.child_id=e.experiment_id)
+        WHERE uc.child_type=1 AND ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
+            AND uc2.child_type=3 AND ((uc2.parent_type=5 AND uc2.parent_id=$user_id) OR (uc2.parent_type=6 AND uc2.parent_id IN ($group_str))) AND uc2.role_id IN (2,3,4)
+            AND lc.child_type=3 
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;
     $query .= " ORDER BY uc.role_id DESC"; # mdb added 3/31/16 -- ensure that roles with greater priveleges have precedence if multiple connections to same item
@@ -346,7 +373,10 @@ sub get_lists_for_user {
     my $query = qq{
         SELECT l.list_id AS id, l.name AS name, l.description AS description, 
             l.restricted AS restricted, l.deleted AS deleted, lt.name AS type_name,
-            l.date AS date, uc.role_id as role_id
+            l.date AS date, uc.role_id as role_id,
+            (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=l.list_id AND fc.child_type=1)
+                THEN 1 ELSE 0
+            END) AS favorite
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
         JOIN list_type AS lt ON (lt.list_type_id=l.list_type_id)
@@ -360,6 +390,26 @@ sub get_lists_for_user {
     my $results = $sth->fetchall_arrayref({});
     #print STDERR Dumper $results, "\n";
 
+    return $results;
+}
+
+sub get_favorites_for_user {
+    my $dbh = shift;         # database connection handle
+    my $user_id = shift;     # user id
+    return unless $user_id;
+    my $type_ids = shift;     # optional child type id
+    
+    # Get
+    my $query = qq{
+        SELECT lc.child_id AS id
+        FROM list AS l
+        JOIN list_connector AS lc ON (lc.parent_id=l.list_id) 
+        WHERE l.name='Favorites' 
+    };
+    $query .= ' AND lc.child_type IN (' . join(', ', @$type_ids) . ')' if $type_ids;
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_hashref('id');
     return $results;
 }
 
@@ -696,6 +746,17 @@ sub get_total_queries {
 	$sth->execute();
 	my $results = $sth->fetchall_hashref("Variable_name");
 	
+	return $results;
+}
+
+sub get_uptime {
+	my $dbh = shift;
+
+	my $query = 'SHOW STATUS WHERE Variable_name="Uptime"';
+	my $sth = $dbh->prepare($query);
+	$sth->execute();
+	my $results = $sth->fetchall_hashref("Variable_name");
+
 	return $results;
 }
 

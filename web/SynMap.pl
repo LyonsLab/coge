@@ -8,7 +8,8 @@ use CoGeX;
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
 use CoGe::Builder::Tools::SynMap;
-use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Genome qw(genomecmp genomecmp2);
+use CoGe::Core::Favorites;
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -191,7 +192,8 @@ sub gen_html {
 		HELP       => 'SynMap',
 		WIKI_URL   => $config->{WIKI_URL} || '',
 		ADMIN_ONLY => $USER->is_admin,
-		CAS_URL    => $config->{CAS_URL} || ''
+		CAS_URL    => $config->{CAS_URL} || '',
+		COOKIE_NAME => $config->{COOKIE_NAME} || ''
 	);
 	return $template->output;
 }
@@ -510,7 +512,9 @@ sub gen_dsg_menu {
 	my $message;
 	my $org_name;
 
-	foreach my $dsg ( sort genomecmp
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
+    
+	foreach my $dsg ( sort { genomecmp2($a, $b, $favorites) }
 		$coge->resultset('Genome')->search(
 			{ organism_id => $oid },
 			{
@@ -540,8 +544,9 @@ sub gen_dsg_menu {
 			}
 		}
 		else {
-			$name .= "<span title='certified'>&#x2705; CERTIFIED</span> " if $dsg->certified;
-		    $name .= "<span title='restricted'>&#x1f512; RESTRICTED</span> " if $dsg->restricted;
+		    $name .= "&#11088; " if ($favorites->is_favorite($dsg));
+			$name .= "&#x2705; " if $dsg->certified;
+		    $name .= "&#x1f512; " if $dsg->restricted;
 			$name .= $dsg->name . ": " if $dsg->name;
 			$name .= $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
 			$org_name = $dsg->organism->name unless $org_name;

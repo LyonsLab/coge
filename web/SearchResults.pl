@@ -32,6 +32,7 @@ sub gen_html {
                       WIKI_URL    => $CONF->{WIKI_URL} || '',
                       ADMIN_ONLY  => $USER->is_admin,
                       CAS_URL     => $CONF->{CAS_URL} || '',
+                      COOKIE_NAME => $CONF->{COOKIE_NAME} || '',
                       SEARCH_TERM => $SEARCH_TERM );
 	$template->param( LOGON       => 1 ) unless $USER->user_name eq "public";
 	$template->param( BODY        => gen_body() );

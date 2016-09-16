@@ -1,13 +1,14 @@
 package CoGe::Builder::Tools::SynMap3D;
 
 use Moose;
+with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw( get_defaults );
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Utils qw(units);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
-use CoGe::Builder::Tools::SynMap qw( add_jobs defaults );
+use CoGe::Builder::Tools::SynMap qw( add_jobs defaults gen_org_name );
 use CoGe::Core::Storage qw( get_workflow_paths );
 use Data::Dumper;
 use File::Spec::Functions;
@@ -25,7 +26,7 @@ sub build {
 
 	my $SYN3DIR = $self->conf->{SYN3DIR};
 	my $SCRIPTDIR = catdir( $self->conf->{SCRIPTDIR}, 'synmap' );
-	my $PYTHON = $self->conf->{PYTHON};
+	my $PYTHON = $self->conf->{PYTHON} // 'python';
 
 	my $MERGER = 'nice ' . $PYTHON . ' ' . catfile($SCRIPTDIR, 'synmerge_3.py');
 
@@ -125,9 +126,24 @@ sub build {
 }
 
 sub get_name {
-	return 'SynMap3D';
+    my $self = shift;
+    
+    my $description;
+    foreach my $key (keys $self->params) {
+        next unless $key =~ /^genome_id/;
+        
+        my ($genome_id) = $key =~ /(\d+)$/;
+        my ( $org_name ) = gen_org_name(
+            db        => $self->db,
+            genome_id => $genome_id
+        );
+        
+        $description .= ($description ? 'v. ' : '') . $org_name . ' ';
+    }
+    
+    $description .= 'Ks' if $self->params->{ks_type};
+    
+	return $description;
 }
-
-with qw(CoGe::Builder::Buildable);
 
 1;

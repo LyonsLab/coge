@@ -65,6 +65,7 @@ __PACKAGE__->belongs_to( 'image' => 'CoGeX::Result::Image', 'image_id');
 __PACKAGE__->has_many( 'sessions' => "CoGeX::Result::UserSession", 'user_id' );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log", 'user_id' );
 __PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job", 'user_id' );
+__PACKAGE__->has_many( 'favorites' => "CoGeX::Result::FavoriteConnector", 'user_id' );
 __PACKAGE__->has_many( # all children (groups/genomes/experiments/lists)
 	'child_connectors' => "CoGeX::Result::UserConnector",
 	{ "foreign.parent_id" => "self.user_id" },
@@ -93,52 +94,19 @@ sub item_type {
     return $node_types->{user};   
 }
 
-################################################ subroutine header begin ##
-
-=head2 generate_passwd
-
- Usage     :
- Purpose   : Generates a password based on a hashed string and a salt value.
- Returns   : Hash of password and salt value.
- Argument  : 'passwd' or 'pwd'
- Throws    : None
- Comments  :
-
-See Also   : check_passwd()
-
-=cut
-
-################################################## subroutine header end ##
-
-sub generate_passwd {
-	my $self      = shift;
-	my %opts      = @_;
-	my $pwd       = $opts{passwd} || $opts{pwd};
-	my $crypt_pwd = crypt( $pwd, "12" );
-}
-
-################################################ subroutine header begin ##
-
-=head2 check_passwd
-
- Usage     :
- Purpose   : Checks to see if entered password matches user password.
- Returns   : Result of logic test 'eq' between password has from the database and a hash of the user supplied password.
- Argument  : 'passwd' or 'pwd'
- Throws    : None
- Comments  :
-
-See Also   : generate_passwd()
-
-=cut
-
-################################################## subroutine header end ##
-
-sub check_passwd {
-	my $self = shift;
-	my %opts = @_;
-	my $pwd  = $opts{passwd} || $opts{pwd};
-	return crypt( $pwd, $self->passwd ) eq $self->passwd;
+sub get_item {
+    my $self = shift;
+    my $id = shift;
+    my $type = shift; # numeric code or string descriptor
+    
+    if ($type =~ /[^\d]/) {
+        $type = $node_types->{$type};
+        return unless $type;
+    }
+    
+    my ($conn) = $self->child_connectors({ child_id => $id, child_type => $type });
+    return unless $conn;
+    return $conn->child;
 }
 
 ################################################ subroutine header begin ##
@@ -516,37 +484,33 @@ sub is_role {
 	my $ds   = $opts{ds};
 	my $list = $opts{list};
 	my $experiment = $opts{experiment};
-	return 0 unless $self->id; # not logged in
-	return 0 unless $dsg || $ds || $list || $experiment || $group;
+	my $item = $opts{item};
+	return 0 unless $dsg || $ds || $list || $experiment || $group || $item;
 
     if ($dsg) { # genome
         my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
         my $conn = $self->child_connector(id=>$dsgid, type=>'genome');
-        #return 1 if ($conn && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
-        return 1 if ($conn && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
+        return 1 if ($conn && $conn->role_id == $role_id);
     }
 
 	if ($group) {
 		my $ugid = $group =~ /^\d+$/ ? $group : $group->id;
 		foreach my $conn ($self->group_connectors({child_id => $ugid})) {
-			#return 1 if ($conn->role->name =~ /$role/i); # mdb removed 2/28/14
-			return 1 if ($conn->role_id == $role_id); # mdb added 2/28/14 for performance
+			return 1 if ($conn->role_id == $role_id);
 		}
 	}
 
 	if ($list) {
 		my $lid = $list =~ /^\d+$/ ? $list : $list->id;
 		my $conn = $self->child_connector(id=>$lid, type=>'list');
-		#return 1 if ($conn && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
-		return 1 if ($conn && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
+		return 1 if ($conn && $conn->role_id == $role_id);
 	}
 
 	if ($ds) { # dataset
 		my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
 		foreach my $conn ($self->all_child_connectors(type=>'genome')) {
 			foreach ($conn->child->datasets) {
-				#return 1 if ($_->id == $dsid && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
-				return 1 if ($_->id == $dsid && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
+				return 1 if ($_->id == $dsid && $conn->role_id == $role_id);
 			}
 		}
 	}
@@ -554,9 +518,13 @@ sub is_role {
 	if ($experiment) {
 		my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
 		my $conn = $self->child_connector(id=>$eid, type=>'experiment');
-		#return 1 if ($conn && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
-		return 1 if ($conn && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
+		return 1 if ($conn && $conn->role_id == $role_id);
 	}
+	
+	if ($item) { # no type given # mdb added 9/14/16 COGE-388
+        my $conn = $self->child_connector(id=>$item->id, type_id=>$item->item_type);
+        return 1 if ($conn && $conn->role_id == $role_id);
+    }
 
 	return 0;
 }
@@ -732,6 +700,21 @@ sub genomes {
 	return wantarray ? @genomes : \@genomes;
 }
 
+################################################ subroutine header begin ##
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  :
+ Throws    : None
+ Comments  :
+
+=cut
+
+################################################## subroutine header end ##
+
 sub groups_with_access {
 	my $self = shift;
 	return unless $self->id; # ignore public user
@@ -792,26 +775,42 @@ sub users_with_access {
 	return wantarray ? values %users : [ values %users ];
 }
 
+################################################ subroutine header begin ##
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  :
+ Throws    : None
+ Comments  :
+
+=cut
+
+################################################## subroutine header end ##
+
 # Only call for children of type genome/experiment, not group/list.
-sub child_connector {
+sub child_connector { #TODO replace with CoGeDBI literal query
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
 	my $id = $opts{id};
 	my $type = $opts{type};
-	my $type_num = $node_types->{$type};
+	my $type_id = $opts{type_id};
+	   $type_id = $node_types->{$type} if $type;
 
 	# Scan user's items - assumes there is only one user connector at this level
-	foreach ($self->child_connectors({child_id=>$id, child_type=>$type_num})) {
+	foreach ($self->child_connectors({child_id=>$id, child_type=>$type_id})) {
 		return $_;
 	}
 
 	# Scan user's lists
-	if ($type ne 'list') { # Don't traverse lists within a list
+	if ($type_id ne $node_types->{list}) { # Don't traverse lists within a list
 		foreach my $conn ($self->list_connectors) {
 			my $list = $conn->child;
-			foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
-				next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
+			foreach ($list->child_connectors({child_id=>$id, child_type=>$type_id})) {
+				next if ($_->child_id != $id or $_->child_type != $type_id); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
 				next unless ($conn->role_id == 4); # mdb tempfix 10/16/13 issue 232 -- list can only grant read access
 				return $conn;
 			}
@@ -821,15 +820,15 @@ sub child_connector {
 	# Scan user's groups
 	foreach my $group ($self->groups) { #TODO move this coge into UserGroup.pm::genomes ...?
 		# Scan group's items
-		foreach ($group->child_connectors({child_id=>$id, child_type=>$type_num})) {
+		foreach ($group->child_connectors({child_id=>$id, child_type=>$type_id})) {
 			return $_;
 		}
 		# Scan group's lists
-		if ($type ne 'list') { # Don't traverse lists within a list
+		if ($type_id ne $node_types->{list}) { # Don't traverse lists within a list
 			foreach my $conn ($group->list_connectors) {
 				my $list = $conn->child;
-				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
-					next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
+				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_id})) {
+					next if ($_->child_id != $id or $_->child_type != $type_id); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
 					next unless ($conn->role_id == 4); # mdb tempfix 10/16/13 issue 232 -- list can only grant read access
 					return $conn;
 				}
@@ -838,7 +837,7 @@ sub child_connector {
 	}
 }
 
-sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, combine with child_connector
+sub all_child_connectors { #TODO replace with CoGeDBI literal query
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
@@ -882,7 +881,7 @@ sub all_child_connectors { #FIXME optimize by mimicking child_by_type_and_id, co
 	return wantarray ? values %connectors : [ values %connectors ];
 }
 
-sub children { #FIXME have this use child_by_type_and_id
+sub children { #TODO replace with CoGeDBI literal query
 	my $self = shift;
 	return unless $self->id; # ignore public user
 	my %opts = @_;
@@ -926,169 +925,6 @@ sub children { #FIXME have this use child_by_type_and_id
 	}
 
 	return wantarray ? values %children : [ values %children ];
-}
-
-sub children_by_type_and_id {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my %opts = @_;
-
-	# use Time::HiRes qw ( time );
-	# my $start_time = time;
-
-	my %children;
-
-	foreach my $c ($self->child_connectors) {
-		my $child = $c->child;
-		$children{$c->child_type}{$c->child_id} = $child;
-
-		if ($c->child_type == $node_types->{list}) {
-			foreach my $c ($child->child_connectors) {
-				my $child = $c->child;
-				$children{$c->child_type}{$c->child_id} = $child;
-			}
-		}
-		elsif ($c->child_type == $node_types->{group}) {
-			foreach my $c ($child->child_connectors) {
-				my $child = $c->child;
-				$children{$c->child_type}{$c->child_id} = $child;
-
-				if ($c->child_type == $node_types->{list}) {
-					foreach my $c ($child->child_connectors) {
-						my $child = $c->child;
-						$children{$c->child_type}{$c->child_id} = $child;
-					}
-				}
-			}
-		}
-	}
-
-#	print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
-	return \%children;
-}
-
-sub children_by_type_role_id {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-
-	#use Time::HiRes qw ( time ); my $start_time = time;
-	my (%children, %roles);
-
-	foreach my $c ($self->child_connectors) {
-		my $child = $c->child;
-		$children{$c->child_type}{$c->child_id} = $child;
-		$roles{$c->role_id}{$c->child_id} = 1;
-
-		if ($c->child_type == $node_types->{list}) {
-			foreach my $lc ($child->child_connectors) {
-				my $child = $lc->child;
-				$children{$lc->child_type}{$lc->child_id} = $child;
-				$roles{$c->role_id}{$lc->child_id} = 1;
-			}
-		}
-		elsif ($c->child_type == $node_types->{group}) {
-			foreach my $c ($child->child_connectors) {
-				my $child = $c->child;
-				$children{$c->child_type}{$c->child_id} = $child;
-				$roles{$c->role_id}{$c->child_id} = 1;
-
-				if ($c->child_type == $node_types->{list}) {
-					foreach my $lc ($child->child_connectors) {
-						my $child = $lc->child;
-						$children{$lc->child_type}{$lc->child_id} = $child;
-						$roles{$c->role_id}{$lc->child_id} = 1;
-					}
-				}
-			}
-		}
-	}
-	#print STDERR "children_by_type_and_id: time=" . ((time - $start_time)*1000) . "\n";
-	return (\%children, \%roles);
-}
-
-################################################ subroutine header begin ##
-
-=head2 restricted_genomes
-
- Usage     :
- Purpose   : Returns the set of restricted genomes a user has access to
- Returns   : Array of genomes
- Argument  : None
- Throws    : None
- Comments  :
-
-=cut
-
-################################################## subroutine header end ##
-
-sub restricted_genomes {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my %opts = @_;
-	my $include_deleted = $opts{include_deleted};
-
-	my %genomes;
-	foreach my $ug ( $self->groups ) {
-		map {
-			$genomes{ $_->id } = $_ if (!$_->deleted || $include_deleted)
-		} $ug->restricted_genomes;
-	}
-	return wantarray ? values %genomes : [ values %genomes ];
-}
-
-################################################ subroutine header begin ##
-
-=head2 features
-
- Usage     : $self->features
- Purpose   : shows the features to which user has access
- Returns   : wantarray of features objects
- Argument  :
- Throws    : None
- Comments  :
-
-=cut
-
-################################################## subroutine header end ##
-
-sub features {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-
-	my %features;
-	foreach my $group ( $self->groups ) {
-		map { $features{ $_->id } = $_ } $group->features;
-	}
-	return wantarray ? values %features : [ values %features ];
-}
-
-################################################ subroutine header begin ##
-
-=head2 history
-
- Usage     : $self->history
- Purpose   : get the user's history
- Returns   : wantarray or count of history objects
- Argument  :
- Throws    : None
- Comments  :
-
-=cut
-
-################################################## subroutine header end ##
-
-sub history {
-	my $self = shift;
-	return unless $self->id; # ignore public user
-	my %opts = @_;
-	my $count = $opts{count}; #return count;
-
-	if ($count) {
-	    return $self->logs->count();
-	}
-
-	my @history = $self->logs;
-	return wantarray ? @history : \@history;
 }
 
 ################################################ subroutine header begin ##

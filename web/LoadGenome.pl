@@ -89,8 +89,10 @@ sub generate_html {
         my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
         $link = CoGe::Accessory::Web::get_tiny_link( url => $link );
     
-        $template->param( ADMIN_ONLY => $USER->is_admin );
-        $template->param( CAS_URL    => $CONF->{CAS_URL} || '' );
+        $template->param( ADMIN_ONLY  => $USER->is_admin,
+                          CAS_URL     => $CONF->{CAS_URL} || '',
+                          COOKIE_NAME => $CONF->{COOKIE_NAME} || ''
+        );
     }
     
     $template->param( BODY => generate_body() );
