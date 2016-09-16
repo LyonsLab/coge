@@ -904,11 +904,16 @@ var XYPlot = declare( [XYPlotBase], {
 				label: 'Export Track Data',
 				onClick: function(){coge_plugin.export_dialog(track);}
 			});
-		if (config.coge.search)
+		if (config.coge.search) {
+			options.push({
+				label: 'Convert to Marker Track',
+				onClick: function(){coge_plugin.convert_to_marker_dialog(track)}
+			});
 			options.push({
 				label: 'Save Results as New Experiment',
 				onClick: function(){coge_plugin.save_as_experiment_dialog(track)}
 			});
+		}
 		if (config.coge.type == 'merge') {
 			options.push({
 				label: 'Create New Notebook with Merged Tracks',

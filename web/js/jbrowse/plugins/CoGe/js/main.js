@@ -299,6 +299,13 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	convert_to_marker_dialog: function(track) {
+		track.config.coge.data_type = 4;
+		track.changed();
+	},
+
+	// ----------------------------------------------------------------
+
 	_create_notebook: function() {
 		var self = this;
 		var browser = this.browser;
@@ -798,8 +805,15 @@ return declare( JBrowsePlugin,
 
 	new_search_track: function(track, data) {
 		var browser = this.browser;
-		var config = track.config;
-		var eid = config.coge.id;
+       	var search_id = ++coge_plugin.num_searches;
+		var config = dojo.clone(track.config);
+		config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
+		config.track = 'search' + search_id;
+		config.label = 'search' + search_id;
+		config.original_store = config.store;
+		config.coge.eid = config.coge.id;
+		config.coge.id = search_id
+		config.coge.type = 'search';
 		var results = new SearchResults(data);
         var store_config = {
 			browser: browser,
@@ -809,19 +823,10 @@ return declare( JBrowsePlugin,
 			type: 'CoGe/Store/SeqFeature/Search'
 		};
 		this._new_store(store_config, function(store_name) {
-       		var search_id = ++coge_plugin.num_searches;
-			config = dojo.clone(config);
-			config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
-			config.track = 'search' + search_id;
-			config.label = 'search' + search_id;
-			config.original_store = config.store;
 			config.store = store_name;
-			config.coge.eid = config.coge.id;
-			config.coge.id = search_id
-			config.coge.type = 'search';
 			browser.publish('/jbrowse/v1/v/tracks/new', [config]);
 			browser.publish('/jbrowse/v1/v/tracks/show', [config]);
-			dojo.place(dojo.byId('track_search' + search_id), dojo.byId('track_experiment' + eid), 'after');
+			dojo.place(dojo.byId('track_search' + search_id), dojo.byId('track_experiment' + config.coge.eid), 'after');
 			browser.view.updateTrackList();
 			new SearchNav(search_id, results, browser).go_to(0);
 		});
