@@ -37,7 +37,6 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
     my $eid  = $self->stash('eid');
     my $nid  = $self->stash('nid');
     my $gid  = $self->stash('gid');
-	print STDERR "JBrowse::Experiment::stats_global\n";
 	
 	# Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -85,13 +84,13 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     my $end      = $self->param('end');
     my $bpPerBin = $self->param('basesPerBin');
 
-#	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities eid="
-#      . ( $eid ? $eid : '' ) . " nid="
-#      . ( $nid ? $nid : '' ) . " gid="
-#      . ( $gid ? $gid : '' )
-#      . " $chr:$start:$end ("
-#      . ( $end - $start + 1 )
-#      . ") bpPerBin=$bpPerBin\n";
+	# print STDERR "JBrowse::Experiment::stats_regionFeatureDensities eid="
+    #  . ( $eid ? $eid : '' ) . " nid="
+    #  . ( $nid ? $nid : '' ) . " gid="
+    #  . ( $gid ? $gid : '' )
+    #  . " $chr:$start:$end ("
+    #  . ( $end - $start + 1 )
+    #  . ") bpPerBin=$bpPerBin\n";
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -434,19 +433,12 @@ sub _get_experiments {
 	my $eid = shift;
 	my $gid = shift;
 	my $nid = shift;
-    my $eids = shift;
 
     my @all_experiments;
     if ($eid) {
-        my $experiment = $db->resultset('Experiment')->find($eid);
-        push @all_experiments, $experiment if $experiment;
-        if ($eids) {
-            warn $eids;
-            foreach my $e (split(/,/, $eids)) {
-                my $experiment = $db->resultset('Experiment')->find($e);
-                push @all_experiments, $experiment if $experiment;
-            }
-            warn Dumper \@all_experiments;
+        foreach (split(/,/, $eid)) {
+            my $experiment = $db->resultset('Experiment')->find($_);
+            push @all_experiments, $experiment if $experiment;
         }
     }
     elsif ($nid) {
@@ -655,7 +647,7 @@ sub _not_in {
     return $hits;
 }
 
-sub intersection {
+sub overlaps {
     my $self = shift;
     my $eid = $self->stash('eid');
     my $eid2 = $self->stash('eid2');
@@ -701,7 +693,7 @@ sub _alignments {
     my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
     my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, $all);
     my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
-    return _intersection($data1, $data2);
+    return _in($data1, $data2);
 #    return find_overlapping($experiments, $type_names, $chr, $db, $all ? \&get_start_end_sam : \&get_start_end_fastbit, $all);
 }
 
@@ -732,7 +724,7 @@ sub _markers {
     my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
     my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, 0);
     my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
-    return _intersection($data1, $data2);
+    return _in($data1, $data2);
     # return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 }
 
@@ -764,7 +756,7 @@ sub _snps {
         my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
         my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, 0);
         my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
-        return _intersection($data1, $data2);
+        return _in($data1, $data2);
         # return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 	}
 	elsif ($self->param('snp_type')) {
@@ -805,7 +797,6 @@ sub _snps {
 sub features {
     my $self  = shift;
     my $eid   = $self->stash('eid');
-    my $eids  = $self->param('eids');
     my $nid   = $self->stash('nid');
     my $gid   = $self->stash('gid');
     my $chr   = $self->stash('chr');
@@ -816,7 +807,7 @@ sub features {
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
 
-	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid, $eids);
+	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
 
     if (!@$experiments) {
         return $self->render(json => { features => [] });

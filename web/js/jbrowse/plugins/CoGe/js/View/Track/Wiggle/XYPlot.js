@@ -909,11 +909,35 @@ var XYPlot = declare( [XYPlotBase], {
 				label: 'Save Results as New Experiment',
 				onClick: function(){coge_plugin.save_as_experiment_dialog(track)}
 			});
-		if (config.coge.type == 'merge')
+		if (config.coge.type == 'merge') {
 			options.push({
 				label: 'Create New Notebook with Merged Tracks',
 				onClick: function(){coge_plugin.create_notebook_dialog(track)}
 			});
+			if (config.coge.keys.length > 1) { // can't remove last track
+				var tracks = [];
+				config.coge.keys.forEach(function(key){
+					tracks.push({
+						label: key,
+						onClick: function(event) {
+							var index = config.coge.keys.indexOf(key);
+							config.coge.keys.splice(index, 1);
+							config.coge.eids.splice(index, 1);
+							track.browser.getStore(config.store, function(store){
+								store.baseUrl = store.config.baseUrl = api_base_url + '/experiment/' + config.coge.eids.join(',') + '/';
+							});
+							track.changed();
+							track.makeTrackMenu();
+						}
+					});
+				});
+				options.push({
+					label: 'Remove Track',
+					type: 'dijit/DropDownMenu',
+					children: tracks
+				});
+			}
+		}
 
 		return options;
 	},

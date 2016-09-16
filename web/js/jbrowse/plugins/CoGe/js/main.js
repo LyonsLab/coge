@@ -1,28 +1,17 @@
 var coge_plugin;
-define([
-		   'dojo/_base/declare',
-		   'dojo/_base/array',
-		   'dojo/on',
-		   'dojo/Deferred',
-		   'dijit/Dialog',
-		   'dijit/form/Button',
-		   'JBrowse/View/Dialog/WithActionBar',
-		   'JBrowse/View/ConfirmDialog',
-		   'JBrowse/View/InfoDialog',
-		   'JBrowse/Plugin'
+define(['dojo/_base/declare',
+		'dojo/_base/array',
+		'dojo/on',
+		'dojo/Deferred',
+		'dijit/Dialog',
+		'dijit/form/Button',
+		'JBrowse/View/Dialog/WithActionBar',
+		'JBrowse/View/ConfirmDialog',
+		'JBrowse/View/InfoDialog',
+		'JBrowse/Plugin',
+		'dijit/Tooltip'
 	   ],
-	   function(
-		   declare,
-		   array,
-		   on,
-		   Deferred,
-		   Dialog,
-		   Button,
-		   ActionBarDialog,
-		   ConfirmDialog,
-		   InfoDialog,
-		   JBrowsePlugin
-	   ) {
+	   function(declare, array, on, Deferred, Dialog, Button, ActionBarDialog, ConfirmDialog, InfoDialog, JBrowsePlugin, Tooltip) {
 	var BusyDialog = declare(ActionBarDialog, {
 	    refocus: false,
 	    autofocus: false,
@@ -339,13 +328,7 @@ return declare( JBrowsePlugin,
 						type: 'JBrowse/Store/SeqFeature/REST',
 						baseUrl: config.baseUrl
 					};
-					var store_name = browser.addStoreConfig(undefined, store_config);
-					store_config.name = store_name;
-			        var d = new Deferred();
-					browser.getStore(store_name, function(store) {
-			           d.resolve(true);
-			       	});
-			       	d.promise.then(function() {
+					this._new_store(store_config, function(store_name) {
 						config.store = store_name;
 						self._create_notebook_dialog.hide();
 						self.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
@@ -433,19 +416,20 @@ return declare( JBrowsePlugin,
 		this._track = track1;
 		this._track2 = track2;
 		if (track2.config.coge.type == 'merge') {
-			var track;
-			this.browser.view.tracks.forEach(function(t) {
-				if (t.config.key == track2.config.key) {
-					track = t;
-				}
-			});
-			track2.config.key += ',' + track1.config.key;
+			if (track2.config.coge.eids.includes(track1.config.coge.id)) {
+				this.info('Duplicate Track', track1.config.key + ' is already part of the merged track');
+				return;
+			}
 			track2.config.coge.eids.push(track1.config.coge.id);
 			track2.config.coge.keys.push(track1.config.key);
 			this.browser.getStore(track2.config.store, function(store){
-				store.config.query['eids'] += ',' + track1.config.coge.id;
+				store.baseUrl = store.config.baseUrl = api_base_url + '/experiment/' + track2.config.coge.eids.join(',') + '/';
 			});
-			track.changed();
+			this.browser.view.tracks.forEach(function(track) {
+				if (track.config.key == track2.config.key)
+					track.changed();
+					track.makeTrackMenu();
+			});
 			return;
 		}
 		var content = '<div id="coge-search-dialog"><table><tr><td>Action:</td><td><input id="dnd_in" type="radio" name="action" checked> Find where ';
@@ -666,9 +650,7 @@ return declare( JBrowsePlugin,
 	intersection: function(not) {
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
-		var div = dojo.byId('coge-search-dialog');
-		dojo.empty(div);
-		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		this._start_search('Finding...');
 		var search = {type: not ? 'does not overlap' : 'overlaps', chr: chr, other: this._track2.config.key};
 		this._track.config.coge.search = search;
 		var eid = this._track.config.coge.id;
@@ -703,35 +685,23 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	merge: function() {
-		var ref_seq = dojo.byId('coge_ref_seq');
-		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
-		var div = dojo.byId('coge-search-dialog');
-		dojo.empty(div);
-		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		this._start_search();
 		var browser = this.browser;
 		var config = this._track.config;
 		var eid = config.coge.id;
 		var eid2 = this._track2.config.coge.id;
 		var eids = [eid, eid2];
 		var keys = [config.key, this._track2.config.key];
-		var d = new Deferred();
 		var store_config = {
 			browser: browser,
 			config: config,
 			refSeq: browser.refSeq,
 			type: 'JBrowse/Store/SeqFeature/REST',
-			baseUrl: api_base_url + '/experiment/' + eid,
-			query: { 'eids': eid2 }
+			baseUrl: api_base_url + '/experiment/' + eids.join(','),
 		};
-		var store_name = browser.addStoreConfig(undefined, store_config);
-		store_config.name = store_name;
-		browser.getStore(store_name, function(store) {
-           d.resolve(true);
-       	});
-       	d.promise.then(function() {
+		this._new_store(store_config, function(store_name) {
 			config = dojo.clone(config);
-			config.baseUrl = api_base_url + '/experiment/' + eid;
-			config.query = { 'eids': eid2 };
+			config.baseUrl = api_base_url + '/experiment/' + eids.join(',');
 			var merge_id = ++coge_plugin.num_merges;
 			config.key = 'Merge ' + merge_id;
 			config.track = 'merge' + merge_id;
@@ -743,8 +713,11 @@ return declare( JBrowsePlugin,
 			config.coge.type = 'merge';
 			browser.publish('/jbrowse/v1/v/tracks/new', [config]);
 			browser.publish('/jbrowse/v1/v/tracks/show', [config]);
-			dojo.place(dojo.byId('track_merge' + merge_id), dojo.byId('track_experiment' + eid), 'after');
+			dojo.place(dojo.byId('track_merge' + merge_id), dojo.byId('track_experiment' + eid2), 'after');
 			browser.view.updateTrackList();
+			var label = dojo.byId('label_merge' + merge_id);
+			dojo.connect(label, "onmouseenter", function(){Tooltip.show(keys.join('<br>'), label)});
+			dojo.connect(label, "onmouseleave", function(){Tooltip.hide(label)});
 			if (coge_plugin._search_dialog)
 				coge_plugin._search_dialog.hide();
 		});
@@ -795,7 +768,7 @@ return declare( JBrowsePlugin,
 
 	_new_notebook_config: function(id, name, description, restricted) {
 		return {
-			key: (restricted ? '&reg; ' : '') + name,
+			key: (restricted ? '🔒 ' : '') + name,
 			baseUrl: api_base_url + '/experiment/genome/' + gid + '/notebook/' + id + '/',
 			autocomplete: 'all',
 			track: 'notebook' + id,
@@ -828,20 +801,14 @@ return declare( JBrowsePlugin,
 		var config = track.config;
 		var eid = config.coge.id;
 		var results = new SearchResults(data);
-        var d = new Deferred();
-		var store_config = {
+        var store_config = {
 			browser: browser,
 			config: config,
 			refSeq: browser.refSeq,
 			results: results,
 			type: 'CoGe/Store/SeqFeature/Search'
 		};
-		var store_name = browser.addStoreConfig(undefined, store_config);
-		store_config.name = store_name;
-		browser.getStore(store_name, function(store) {
-           d.resolve(true);
-       	});
-       	d.promise.then(function() {
+		this._new_store(store_config, function(store_name) {
        		var search_id = ++coge_plugin.num_searches;
 			config = dojo.clone(config);
 			config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
@@ -858,6 +825,18 @@ return declare( JBrowsePlugin,
 			browser.view.updateTrackList();
 			new SearchNav(search_id, results, browser).go_to(0);
 		});
+	},
+
+	// ----------------------------------------------------------------
+
+	_new_store: function(store_config, callback) {
+		var store_name = this.browser.addStoreConfig(undefined, store_config);
+		store_config.name = store_name;
+		var d = new Deferred();
+		this.browser.getStore(store_name, function(store) {
+           d.resolve(true);
+       	});
+       	d.promise.then(function() { callback(store_name); } );
 	},
 
 	// ----------------------------------------------------------------
@@ -898,21 +877,15 @@ return declare( JBrowsePlugin,
             			id = results[i].id;
             			break;
             		}
-		        var d = new Deferred();
 				var store_config = {
 					baseUrl: api_base_url + '/experiment/' + id,
 					browser: browser,
 					refSeq: browser.refSeq,
 					type: 'JBrowse/Store/SeqFeature/REST'
 				};
-				var store_name = browser.addStoreConfig(undefined, store_config);
-				store_config.name = store_name;
-				browser.getStore(store_name, function(store) {
-		           d.resolve(true);
-		       	});
-		       	d.promise.then(function() {
+				this._new_store(store_config, function(store_name) {
 					var new_config = dojo.clone(config);
-					new_config.key = '&reg; ' + name;
+					new_config.key = '🔒 ' + name;
 					new_config.track = 'experiment' + id;
 					new_config.label = 'experiment' + id;
 					new_config.store = store_name;
@@ -1096,9 +1069,7 @@ return declare( JBrowsePlugin,
 			return;
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
-		var div = dojo.byId('coge-track-search-dialog');
-		dojo.empty(div);
-		div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		this._start_search();
 		var search = {type: type, chr: chr, features: types};
 		this._track.config.coge.search = search;
 		var eid = this._track.config.coge.id;
@@ -1133,17 +1104,12 @@ return declare( JBrowsePlugin,
 		var types = this.get_checked_values('coge_search_for_features', 'feature types', true);
 		if (!types)
 			return;
-
 		var name = encodeURIComponent(dojo.byId('coge_search_text').value);
 		var url = api_base_url + '/genome/' + gid + '/features?name=' + name + '&features=' + types;
 		var ref_seq = dojo.byId('coge_ref_seq');
 		if (ref_seq.selectedIndex > 0)
 			url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
-
-		var div = dojo.byId('coge-search-dialog');
-		dojo.empty(div);
-		div.innerHTML = '<img src="picts/ajax-loader.gif">';
-
+		this._start_search();
 		dojo.xhrGet({
 			url: url,
 			handleAs: 'json',
@@ -1235,6 +1201,18 @@ return declare( JBrowsePlugin,
 		if (!without_chr && search.chr && search.chr != 'Any')
 			string += ', chr=' + search.chr;
 		return string;
+	},
+
+	// ----------------------------------------------------------------
+
+	_start_search: function(title) {
+		var div = dojo.byId('coge-search-dialog');
+		if (div) {
+			if (title)
+				this._search_dialog.set('title', title);
+			dojo.empty(div);
+			div.innerHTML = '<img src="picts/ajax-loader.gif">';
+		}
 	},
 
 	// ----------------------------------------------------------------

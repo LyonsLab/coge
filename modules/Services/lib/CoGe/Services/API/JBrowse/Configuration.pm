@@ -369,7 +369,7 @@ sub track_config {
             autocomplete => "all",
             track        => "experiment$eid",
             label        => "experiment$eid",
-            key          => ( $e->{restricted} ? '&reg; ' : '' ) . $e->{name},
+            key          => ( $e->{restricted} ? '🔒 ' : '' ) . $e->{name},
             type         => $type,
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
@@ -430,7 +430,7 @@ sub track_config {
         my $role = $connectors->{1}{$nid};
         $role = $role->{role_id} if $role;
         push @tracks, {
-            key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
+            key     => ( $n->{restricted} ? '🔒 ' : '' ) . $n->{name},
             baseUrl => "$JBROWSE_API/experiment/genome/$gid/notebook/$nid",
             autocomplete => "all",
             track        => "notebook$nid",

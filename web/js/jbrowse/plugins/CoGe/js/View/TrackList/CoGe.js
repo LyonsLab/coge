@@ -937,9 +937,9 @@ define(['dojo/_base/declare',
 				else {
 					this._menu_track_config.coge.name = name;
 					var key = this._menu_track_config.key;
-					if (key.length > 6 && key.substring(0, 6) == '&reg; ') {
-						key = '&reg; ' + name;
-						old_name = '&reg; ' + old_name;
+					if (key.length > 2 && key.substring(0, 2) == '🔒 ') {
+						key = '🔒 ' + name;
+						old_name = '🔒 ' + old_name;
 					} else
 						key = name;
 					this._menu_track_config.key = key;
