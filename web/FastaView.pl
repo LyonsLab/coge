@@ -138,8 +138,9 @@ sub gen_html {
             message    => $warning,
         )
     );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
-    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+    $template->param( ADMIN_ONLY  => $USER->is_admin,
+                      CAS_URL     => $P->{CAS_URL} || '',
+                      COOKIE_NAME => $P->{COOKIE_NAME} || '' );
 
     $html .= $template->output;
     return $html;

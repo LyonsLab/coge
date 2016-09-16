@@ -18,6 +18,7 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage;
+use CoGe::Core::Favorites;
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
@@ -42,6 +43,7 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     edit_experiment_info       => \&edit_experiment_info,
     update_experiment_info     => \&update_experiment_info,
     get_sources                => \&get_sources,
+    toggle_favorite            => \&toggle_favorite,
     make_experiment_public     => \&make_experiment_public,
     make_experiment_private    => \&make_experiment_private,
     add_tag_to_experiment      => \&add_tag_to_experiment,
@@ -228,6 +230,33 @@ sub remove_experiment_tag {
     $etc->delete();
 
     return 1;
+}
+
+sub toggle_favorite {
+    my %opts   = @_;
+    my $eid = $opts{eid};
+    return unless $eid;
+    return if ($USER->is_public); # must be logged in
+    
+    # Get genome
+    my $experiment = $coge->resultset('Experiment')->find($eid);
+    return unless $experiment;
+    
+    # Toggle favorite
+    my $favorites = CoGe::Core::Favorites->new( user => $USER );
+    my $is_favorited = $favorites->toggle($experiment);
+    
+    # Record in log
+    CoGe::Accessory::Web::log_history(
+        db          => $coge,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => ($is_favorited ? 'Favorited' : 'Unfavorited') . ' experiment ' . $experiment->info_html,
+        parent_id   => $eid,
+        parent_type => 3 #FIXME magic number
+    );
+    
+    return $is_favorited;
 }
 
 sub get_annotations {
@@ -465,8 +494,7 @@ sub export_experiment_irods {
             'Restricted'               => $restricted
         );
 
-        my $genome_name = $genome->info;
-        $genome_name =~ s/&reg;\s*//;
+        my $genome_name = $genome->info(hideRestrictedSymbol=>);
 
         $meta{'Name'} = $experiment->name if ($experiment->name);
         $meta{'Description'} = $experiment->description if ($experiment->description);
@@ -576,7 +604,8 @@ sub gen_html {
             HOME       => $P->{SERVER},
             HELP       => 'ExperimentView',
             WIKI_URL   => $P->{WIKI_URL} || '',
-            CAS_URL    => $P->{CAS_URL} || ''
+            CAS_URL    => $P->{CAS_URL} || '',
+            COOKIE_NAME => $P->{COOKIE_NAME} || ''
         );
     	$template->param( USER     => $USER->display_name || '' );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -601,6 +630,8 @@ sub gen_body {
     if ($exp->data_type == $DATA_TYPE_POLY && is_popgen_finished($eid)) {
         $popgenUrl = "PopGen.pl?eid=$eid";
     }
+    
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
     $template->param(
@@ -610,6 +641,7 @@ sub gen_body {
         USER_NAME         => $USER->name,
         EXPERIMENT_ID     => $eid,
         EXPERIMENT_TITLE  => $exp->info,
+        FAVORITED         => int($favorites->is_favorite($exp)),
         DEFAULT_TYPE      => 'note',
         ITEMS             => commify($exp->row_count),
         FILE_SIZE         => commify(directory_size(get_experiment_path($exp->id))),

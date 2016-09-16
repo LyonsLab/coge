@@ -62,9 +62,17 @@ jQuery(document).ready(function(){
 	});
 	
     $('.dropdown-label').mouseleave(function(e){
-       	if (!e.relatedTarget.closest('.dropdown-menu'))
+       	if (e.relatedTarget && !e.relatedTarget.closest('.dropdown-menu'))
        	    hideDropdowns();
     });
+    
+    // Add logout detector -- mdb added 9/1/16 COGE-724
+    if (coge.logout) { // coge.logout module will not be present if in embedded mode
+        coge.logout.init({
+            loginCookieName: '<TMPL_VAR NAME="COOKIE_NAME">', // should be set by page to enable logout detection
+            loginCallback: login_cas
+        });
+    }
 });
 
 function browserAlert(){
@@ -74,8 +82,7 @@ function browserAlert(){
 
 //set up the jquery ui button behavior
 function setup_button_states (id) {
-//$(function() {
-         //button effects on events
+    //button effects on events
 	var item;
 
 	if (id) { item='#'+id; }
@@ -217,9 +224,9 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 				<li class="dropdown-item"><a class="dropdown-link" href="http://ask.iplantcollaborative.org/questions/scope%3Aall/sort%3Aactivity-desc/tags%3ACoGe/" target="_blank">Forums</a></li>
 				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
 				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
-				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page" target="_blank">Contact or Cite Us</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page#How_to_cite_CoGe.3F" target="_blank">Cite CoGe</a></li>
 				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
-				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>
+				<!--<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>-->
 			</ul>
 		</li>
 		<li id="tool" class="dropdown coge-header-button noselect">
@@ -231,6 +238,8 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 				<li class="dropdown-item"><a class="dropdown-link" href="SynFind.pl">SynFind</a></li>
 				<li class="dropdown-item"><a class="dropdown-link" href="SynMap.pl">SynMap</a></li>
 				<li class="dropdown-item"><a class="dropdown-link" href="GEvo.pl">GEvo</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="LoadGenome.pl">Load Genome</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="LoadExperiment.pl">Load Experiment</a></li>
 			</ul>
 		</li>
 		<li class="coge-header-button noselect"><div><a href="User.pl">My Data</a></div></li>

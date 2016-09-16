@@ -351,7 +351,7 @@ sub gen_ks_blocks_file {
         block  => \@block,
         header => $block_title
     ) if $block_title;
-    print OUT $output;
+    print OUT $output if $output;
     close OUT;
 }
 

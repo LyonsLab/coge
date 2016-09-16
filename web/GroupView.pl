@@ -54,6 +54,7 @@ sub gen_html {
         				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
         				  ADMIN_ONLY => $USER->is_admin,
         				  CAS_URL    => $P->{CAS_URL} || '',
+        				  COOKIE_NAME => $P->{COOKIE_NAME} || '',
         				  HOME       => $P->{SERVER},
                           HELP       => 'GroupView',
                           WIKI_URL   => $P->{WIKI_URL} || '' );

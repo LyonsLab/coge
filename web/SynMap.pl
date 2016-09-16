@@ -8,7 +8,8 @@ use CoGeX;
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
 use CoGe::Builder::Tools::SynMap;
-use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Genome qw(genomecmp genomecmp2);
+use CoGe::Core::Favorites;
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -191,7 +192,8 @@ sub gen_html {
 		HELP       => 'SynMap',
 		WIKI_URL   => $config->{WIKI_URL} || '',
 		ADMIN_ONLY => $USER->is_admin,
-		CAS_URL    => $config->{CAS_URL} || ''
+		CAS_URL    => $config->{CAS_URL} || '',
+		COOKIE_NAME => $config->{COOKIE_NAME} || ''
 	);
 	return $template->output;
 }
@@ -510,7 +512,9 @@ sub gen_dsg_menu {
 	my $message;
 	my $org_name;
 
-	foreach my $dsg ( sort genomecmp
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
+    
+	foreach my $dsg ( sort { genomecmp2($a, $b, $favorites) }
 		$coge->resultset('Genome')->search(
 			{ organism_id => $oid },
 			{
@@ -540,8 +544,9 @@ sub gen_dsg_menu {
 			}
 		}
 		else {
-			$name .= "<span title='certified'>&#x2705; CERTIFIED</span> " if $dsg->certified;
-		    $name .= "<span title='restricted'>&#x1f512; RESTRICTED</span> " if $dsg->restricted;
+		    $name .= "&#11088; " if ($favorites->is_favorite($dsg));
+			$name .= "&#x2705; " if $dsg->certified;
+		    $name .= "&#x1f512; " if $dsg->restricted;
 			$name .= $dsg->name . ": " if $dsg->name;
 			$name .= $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
 			$org_name = $dsg->organism->name unless $org_name;
@@ -1595,9 +1600,10 @@ sub get_results {
 	    $results->param( chromosomes2 => encode_json($chromosomes2) );
 
 		# fractionation bias
-		my $gff_sort_output_file;
+		# my $gff_sort_output_file;
 		my $synmap_dictionary_output_file;
 		my $fract_bias_raw_output_file;
+		my $fract_bias_results_file;
 		if ( $opts{frac_bias} =~ /true/i ) {
 			my $output_url = $result_path;
 			$output_url =~ s/$DIR/$URL/;
@@ -1616,29 +1622,30 @@ sub get_results {
 			my $all_genes = ($opts{'fb_target_genes'} eq 'true') ? 'False' : 'True';
 			my $rru = $opts{'fb_remove_random_unknown'} ? 'True' : 'False';
 			my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
-			#my $fb_img_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.png';
-			#if (! -r catfile($result_path, 'html', $fb_img_file)) {
-			#	return encode_json( { error => "The fractionation bias image could not be found." } );
-			#}
-			#$results->param( frac_bias => $output_url . 'html/' . $fb_img_file );
-			my $fb_json_file = 'fractbias_figure--TarID' . $target_id . '-TarChrNum' . $opts{'fb_numtargetchr'} . '-SynDep' . $syn_depth . '-QueryID' . $query_id . '-QueryChrNum' . $opts{'fb_numquerychr'} . '-AllGene' . $all_genes . '-RmRnd' . $rru . '-WindSize' . $opts{'fb_window_size'} . '.json';
+			my $fb_prefix = substr($final_dagchainer_file, length($result_path)) . '_tc' . $opts{fb_numtargetchr} . '_qc' . $opts{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts{fb_window_size};
+			my $fb_json_file = $fb_prefix . '.fractbias-fig.json';
 			if (! -r catfile($result_path, $fb_json_file)) {
 				return encode_json( { error => "The fractionation bias data could not be found." } );
 			}
 			$results->param( frac_bias => catfile($output_url, $fb_json_file) );
-			$gff_sort_output_file = _filename_to_link(
-				file => catfile($result_path, 'gff_sort.txt'),
-				msg  => qq{GFF Sort output file},
-				required => 1
-			);
+			# $gff_sort_output_file = _filename_to_link(
+			# 	file => catfile($result_path, 'gff_sort.txt'),
+			# 	msg  => qq{GFF Sort output file},
+			# 	required => 1
+			# );
 			$synmap_dictionary_output_file = _filename_to_link(
-				file => catfile($result_path, 'synmap_data_structure.txt'),
+				file => catfile($result_path, $fb_prefix . '.fractbias-synmap-data.json'),
 				msg  => qq{SynMap dictionary output file},
 				required => 1
 			);
 			$fract_bias_raw_output_file = _filename_to_link(
-				file => catfile($result_path, 'fractbias_output.csv'),
-				msg  => qq{Fractionation Bias raw output file},
+				file => catfile($result_path, $fb_prefix . '.fractbias-genes.csv'),
+				msg  => qq{Fractionation Bias synteny report},
+				required => 1
+			);
+			$fract_bias_results_file = _filename_to_link(
+				file => catfile($result_path, $fb_prefix . '.fractbias-results.csv'),
+				msg  => qq{Fractionation Bias sliding window results},
 				required => 1
 			);
 		}
@@ -1918,16 +1925,23 @@ sub get_results {
 			push @$rows,
 			  {
 				general  => undef,
-				homolog  => $gff_sort_output_file,
+				homolog  => undef,
+				diagonal => undef,
+				result   => $synmap_dictionary_output_file
+			  };
+			push @$rows,
+			  {
+				general  => undef,
+				homolog  => undef, #$gff_sort_output_file,
 				diagonal => undef,
 				result   => $fract_bias_raw_output_file
 			  };
 			push @$rows,
 			  {
 				general  => undef,
-				homolog  => $synmap_dictionary_output_file,
+				homolog  => undef,
 				diagonal => undef,
-				result   => undef
+				result   => $fract_bias_results_file
 			  };
 		}
 		$results->param( files => $rows );

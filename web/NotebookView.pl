@@ -47,6 +47,7 @@ $node_types = $DB->node_types();
     add_list_items             => \&add_list_items,
     add_item_to_list           => \&add_item_to_list,
     remove_list_item           => \&remove_list_item,
+    toggle_favorite            => \&toggle_favorite,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
     get_annotation             => \&get_annotation,
@@ -106,8 +107,9 @@ sub gen_html {
             WIKI_URL   => $P->{WIKI_URL} || ''
         );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-        $template->param( ADMIN_ONLY => $USER->is_admin );
-        $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+        $template->param( ADMIN_ONLY => $USER->is_admin,
+                          CAS_URL    => $P->{CAS_URL} || '',
+                          COOKIE_NAME => $P->{COOKIE_NAME} || '' );
     }
 
     $template->param( BODY => gen_body() );
@@ -121,16 +123,20 @@ sub gen_body {
     my ($list) = $DB->resultset('List')->find($lid);
     return "<br>Notebook id$lid does not exist.<br>" unless ($list);
     return "Access denied\n" unless $USER->has_access_to_list($list);
+    
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         MAIN         => 1,
+        EMBED        => $EMBED,
         PAGE_NAME    => $PAGE_TITLE . '.pl',
         NOTEBOOK_ID  => $lid,
         DEFAULT_TYPE => 'note',
         API_BASE_URL => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
-        USER         => $USER->user_name
+        USER         => $USER->user_name,
+        NOTEBOOK_TITLE => $list->info,
+        FAVORITED      => int($favorites->is_favorite($list)),
     );
     $template->param( LIST_INFO => get_list_info( lid => $lid ) );
     $template->param( LIST_ANNOTATIONS => get_annotations( lid => $lid ) );
@@ -171,13 +177,13 @@ sub get_list_info {
 			($list->deleted ? 'Undelete' : 'Delete') . qq{</span>};
     }
 
-    if ( !$EMBED and $list->experiments( count => 1 ) ) {
+    if ( $list->experiments( count => 1 ) ) {
         foreach my $gid (
             sort { $a <=> $b }
             map  { $_->genome_id } $list->experiments
           )
         {    # Pick a genome, any genome # TODO show user a list of genomes to choose from
-            my $link = qq{window.open('GenomeView.pl?gid=$gid&tracks=notebook$lid', '_self');};
+            my $link = qq{window.open('GenomeView.pl?embed=$EMBED&gid=$gid&tracks=notebook$lid', '_self');};
             $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="$link">Browse</span>};
             last;
         }
@@ -193,11 +199,8 @@ sub get_list_types {
 
     my @types;
     foreach my $type ( $DB->resultset('ListType')->all() ) {
-        next
-          if ( $type->name =~ /owner/i )
-          ;    # reserve this type for system-created lists
-        my $name =
-          $type->name . ( $type->description ? ": " . $type->description : '' );
+        next if ( $type->name =~ /owner/i ); # reserve this type for system-created lists
+        my $name = $type->name . ( $type->description ? ": " . $type->description : '' );
         my $selected = '';
         $selected = 'selected="selected"' if ( $type->id == $current_type_id );
         push @types,
@@ -216,8 +219,7 @@ sub edit_list_info {
 
     my $desc = ( $list->description ? $list->description : '' );
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         EDIT_LIST_INFO => 1,
         NAME           => $list->name,
@@ -283,6 +285,33 @@ sub make_list_private {
     $list->update;
 
     return 1;
+}
+
+sub toggle_favorite {
+    my %opts   = @_;
+    my $nid = $opts{nid};
+    return unless $nid;
+    return if ($USER->is_public); # must be logged in
+    
+    # Get genome
+    my $notebook = $DB->resultset('List')->find($nid);
+    return unless $notebook;
+    
+    # Toggle favorite
+    my $favorites = CoGe::Core::Favorites->new( user => $USER );
+    my $is_favorited = $favorites->toggle($notebook);
+    
+    # Record in log
+    CoGe::Accessory::Web::log_history(
+        db          => $DB,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => ($is_favorited ? 'Favorited' : 'Unfavorited') . ' notebook ' . $notebook->info_html,
+        parent_id   => $nid,
+        parent_type => 1 #FIXME magic number
+    );
+    
+    return $is_favorited;
 }
 
 sub linkify {
@@ -648,10 +677,10 @@ sub get_list_contents {
         }
         function case_insensitive_sort(a, b) {
             var _a = a.toLowerCase();
-            if (_a.startsWith('&reg; '))
+            if (_a.startsWith('&#x1f512; '))
                 _a = _a.substr(6);
             var _b = b.toLowerCase();
-            if (_b.startsWith('&reg; '))
+            if (_b.startsWith('&#x1f512; '))
                 _b = _b.substr(6);
             return _a < _b ? -1 : _a > _b ? 1 : 0;
         }

@@ -42,14 +42,16 @@
 
 <script type="text/javascript">
 	function login_cas() {
-		var redirect_url = '<TMPL_VAR NAME=CAS_URL>' + '/login?service=' + document.location.href; // mdb added 3/25/15 for cas update
+	    var location = document.location.href;
+	    location = location.replace(/&?ticket=([^&]$|[^&]*)/i, ""); // remove existing ticket param -- mdb added 9/7/16 COGE-724
+		var redirect_url = '<TMPL_VAR NAME=CAS_URL>' + '/login?service=' + location; // mdb added 3/25/15 for cas update
 		document.location.href = redirect_url; 
 		return true;
 	}
 
     $(document).ready(function(){
         if ("<TMPL_VAR NAME=USER>".match(/public/i)) { return; }
-        else { $('#logout').show(0); }
+        else { $('#logout').show(); }
     });
 
     // analytics

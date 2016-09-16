@@ -45,7 +45,8 @@ sub gen_html {
             WIKI_URL   => $CONF->{WIKI_URL} || '',
             ADMIN_ONLY => $USER->is_admin,
             CAS_URL    => $CONF->{CAS_URL} || '',
-            NO_DOCTYPE => 1
+            NO_DOCTYPE => 1,
+            COOKIE_NAME => $CONF->{COOKIE_NAME} || ''
         );
         $template->param( LOGON => 1 ) unless ($USER->user_name eq 'public');
     }

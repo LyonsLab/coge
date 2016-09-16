@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use base 'DBIx::Class::Core';
 
-#use CoGeX::ResultSet::Genome;
 use CoGe::Core::Chromosomes;
 use CoGe::Core::Storage qw( get_genome_seq get_genome_file );
 use CoGe::Accessory::Utils qw( commify );
@@ -13,8 +12,6 @@ use Data::Dumper;
 use Text::Wrap;
 use base 'Class::Accessor';
 use Carp;
-
-#use LWP::Simple;
 
 =head1 NAME
 
@@ -31,6 +28,23 @@ This object uses the DBIx::Class to define an interface to the C<genome> table i
  use CoGeX;
 
 =head1 METHODS
+
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+ Daniel Hembry
+ Matt Bomhoff
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
 
 =cut
 
@@ -70,14 +84,6 @@ __PACKAGE__->add_columns(
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
     "genomic_sequence_type_id",
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
-    # mdb removed 7/29/13, issue #77
-    #    "file_path",
-    #    {
-    #        data_type     => "VARCHAR",
-    #        default_value => undef,
-    #        is_nullable   => 0,
-    #        size          => 255,
-    #    },
     "restricted",
     { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
     "message",
@@ -107,10 +113,6 @@ __PACKAGE__->has_many(
     "dataset_connectors" => "CoGeX::Result::DatasetConnector",
     'genome_id'
 );
-#__PACKAGE__->has_many(
-#    "genomic_sequences" => "CoGeX::Result::GenomicSequence",
-#    'genome_id'
-#);
 __PACKAGE__->belongs_to(
     "organism" => "CoGeX::Result::Organism",
     'organism_id'
@@ -195,16 +197,18 @@ See Also   :
 sub to_hash {
 	my $self = shift;
 	return {
-		id => $self->id,
-		name => $self->name,
-		description => $self->description,
-		version => $self->version,
-		organism => $self->organism->to_hash,
-		type => $self->genomic_sequence_type->to_hash,
-		restricted => $self->restricted,
-		message => $self->message,
-		link => $self->link,
-		deleted => $self->deleted
+		id            => $self->id,
+		type          => 'genome',
+		name          => $self->name,
+		description   => $self->description,
+		version       => $self->version,
+		organism      => $self->organism->name,
+		sequence_type => $self->genomic_sequence_type->name,
+		restricted    => $self->restricted,
+		message       => $self->message,
+		link          => $self->link,
+		deleted       => $self->deleted,
+		certified     => $self->certified
 	}
 }
 
@@ -247,7 +251,7 @@ sub notebooks {
 
 sub notebooks_desc {
     my $self = shift;
-    return join(',', map {local $_ = $_->name; s/&reg;\s*//; $_ } $self->notebooks) || '';
+    return join(',', map { $_->name } $self->notebooks) || '';
 }
 
 # mdb: These functions were consolidated for all item types (genome, experiment,
@@ -1266,8 +1270,10 @@ See Also   :
 
 sub info {
     my $self = shift;
+    my %opts = @_;
+    
     my $info;
-    $info .= "&reg; "                  if $self->restricted;
+    $info .= "&#x1f512; "              if ($self->restricted && !$opts{hideRestrictedSymbol}); #TODO move this into view code
     $info .= $self->organism->name     if $self->organism;
     $info .= " (" . $self->name . ")"  if $self->name;
     $info .= ": " . $self->description if $self->description;
@@ -1310,8 +1316,7 @@ sub info_file {
     my $self = shift;
     
     my $restricted = ($self->restricted) ? "yes" : "no";
-    my $genome_name = $self->genome->info;
-    $genome_name =~ s/&reg;\s*//;
+    my $genome_name = $self->genome->info(hideRestrictedSymbol=>1);
 
     my @lines = (
         qq{"Name","} . $self->name . '"',
@@ -1351,23 +1356,5 @@ sub get_date {
     my ($ds) = $self->datasets;
     return $ds ? $ds->date : '';
 }
-
-=head1 AUTHORS
-
- Eric Lyons
- Brent Pedersen
- Daniel Hembry
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-=head1 SEE ALSO
-
-=cut
 
 1;

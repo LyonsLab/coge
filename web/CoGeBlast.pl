@@ -9,9 +9,9 @@ use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
-use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url go );
+use CoGe::Builder::Tools::CoGeBlast qw( create_fasta_file get_blast_db get_tiny_url );
 use CoGe::Core::Notebook qw(notebookcmp);
-use CoGe::Core::Genome qw(fix_chromosome_id);
+use CoGe::Core::Genome qw(fix_chromosome_id genomecmp genomecmp2);
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -70,7 +70,6 @@ $FORMATDB      = get_command_path('FORMATDB');
     blast_param              => \&blast_param,
     database_param           => \&database_param,
     gen_dsg_menu             => \&gen_dsg_menu,
-    blast_search             => \&blast_search,
     generate_feat_info       => \&generate_feat_info,
     get_hsp_info             => \&get_hsp_info,
     generate_overview_image  => \&generate_overview_image,
@@ -120,8 +119,9 @@ sub gen_html {
                           WIKI_URL   => $P->{WIKI_URL} || '' );
         $template->param( USER => $USER->display_name || '' );
         $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-        $template->param( ADMIN_ONLY => $USER->is_admin );
-        $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+        $template->param( ADMIN_ONLY => $USER->is_admin,
+                          CAS_URL    => $P->{CAS_URL} || '',
+                          COOKIE_NAME => $P->{COOKIE_NAME} || '' );
     }
     
     $template->param( BODY => gen_body() );
@@ -202,6 +202,7 @@ sub gen_body {
             SEQUENCE => 'Enter FASTA sequence(s) here'
         );
     }
+    $template->param( PAGE_NAME => $PAGE_NAME );
     $template->param( USER_NAME => $USER->user_name );
 
     #$template->param( REST      => 1 );
@@ -513,43 +514,38 @@ sub get_orgs {
 }
 
 sub gen_dsg_menu {
-
     #my $t1    = new Benchmark;
     my %opts  = @_;
     my $oid   = $opts{oid};
     my $dsgid = $opts{dsgid};
+    #print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
 
-   #	print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
     my @genomes;
     foreach my $dsg (
-        sort {
-            versioncmp( $b->version, $a->version )
-              || $a->type->id <=> $b->type->id
-        } $db->resultset('Genome')->search(
-            { organism_id => $oid },
-            { prefetch    => ['genomic_sequence_type'] }
-        )
+        sort { genomecmp2($a, $b, $favorites) }
+            $db->resultset('Genome')->search(
+                { organism_id => $oid },
+                { prefetch    => ['genomic_sequence_type'] }
+            )
       )
     {
         next unless $USER->has_access_to_genome($dsg);
-            #added by EHL 12/30/2014
-            next if $dsg->deleted;
-            ######
+        next if $dsg->deleted;
 
         $dsgid = $dsg->id unless $dsgid;
-        my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
-
- #$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
- #$name .= ", ";
- #$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
-	$name .= " (id ". $dsg->id.") ";
+        my $name;
+        $name .= "&#11088; " if ($favorites->is_favorite($dsg));
+        $name .= "&#x2705; " if $dsg->certified;
+        $name .= "&#x1f512; " if $dsg->restricted; 
+        $name .= join( ", ", map { $_->name } $dsg->source ) . ": ";
+	    $name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
           . $dsg->type->name . " "
           . commify( $dsg->length ) . "nt";
-        $name .= ' -- certified' if $dsg->certified;
 
         push @genomes, [ $dsg->id, $name ];
     }
@@ -638,7 +634,7 @@ sub get_results {
 
     my $color_hsps = $opts{color_hsps};
     my $program    = $opts{program};
-    my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
+    my $resultslimit = $opts{max_results} || $RESULTSLIMIT;
     my $basename     = $opts{basename};
 
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(
@@ -646,19 +642,18 @@ sub get_results {
         tempdir  => $TEMPDIR
     );
 
-    my $seq = $opts{seq};
+    my $seq = $opts{query_seq};
 
-    #this is where the dsgids are stored -- stupid name
-    my $blastable = $opts{blastable};
+    my $genomes = $opts{'genomes'};
 
-    my @dsg_ids = split( /,/, $blastable );
+    my @dsg_ids = split( /,/, $genomes );
 
     my $width = $opts{width};
 
     my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
         user_id => $USER->id,
         page    => "GenomeList",
-        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$blastable"
+        url     => $P->{SERVER} . "GenomeList.pl?dsgid=$genomes"
     );
 
 #    my $list_link = qq{<a href="$genomes_url" target_"blank">} . @dsg_ids . ' genome' . ( @dsg_ids > 1 ? 's' : '' ) . '</a>';
@@ -708,7 +703,6 @@ sub get_results {
     foreach my $item (@results) {
         next unless -r $item->{file};
         my $outfile = $item->{file};
-
         my $report =
           $outfile =~ /lastz/
           ? new CoGe::Accessory::blastz_report( { file => $outfile } )
@@ -2791,8 +2785,4 @@ sub get_genomes_for_list {
     }
 
     return $genomes;
-}
-
-sub blast_search {
-    go(db => $db, user => $USER, config => $P, @_);
 }

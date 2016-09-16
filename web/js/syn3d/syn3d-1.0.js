@@ -8,7 +8,7 @@
 var MAX_PTS = 100000;
 
 // SynMap Global Variables [note: when adding, make sure to reset in renderSynMap().initialize()]
-var camView = { "x": 0, "y": 0, "z": 120 };
+var camView = { "x": 0, "y": 0, "z": 120, "xr": 0, "yr": 0, "zr": 0 };
 var histData = {"kn": [], "ks": [], "knks": []};
 var pointData = [];
 var colors = {"kn": [], "ks": [], "knks": []};
@@ -18,6 +18,9 @@ var overlay = $("#overlay");
 
 // Updating Variables
 var camUpdate = false;
+var camType = [['P', 'Show Perspective'], ['O', 'Show Orthographic']];
+var ptShape = [["picts/ball.png", "Show Round"], ["picts/disk.png", "Show Flat"]];
+var pointSize = 8;
 var hQueue = ["hKnKs", "hKs", "hKn"];
 var hCurrent = ["hKs", "ks"];
 var gridState = true;
@@ -30,6 +33,7 @@ var redraw = false;
 var refresh = false;
 var needsBrushUpdate = false;
 var vrMode = false;
+
 //var inFullScreen = false;
 
 // Color schemes variables
@@ -149,6 +153,7 @@ function loadData(graph_json) {
 /* CORE FUNCTION: Rotate Histograms */
 function rotateHistogram(direction) {
     var n, c, type;
+    needsBrushUpdate = true;
     if (direction == "R") {
         n = hQueue.pop();
         c = hQueue.pop();
@@ -178,12 +183,13 @@ function rotateHistogram(direction) {
 
 /* CORE FUNCTION: Reset Camera */
 function resetCamera(view) {
-    camUpdate = true;
-    if (view == 'reset') { camView = { "x": 0, "y": 0, "z": 120 }; }
-    else if (view == 'xy') { camView = { "x": 0, "y": 0, "z": -120 }; }
-    else if (view == 'xz') { camView = { "x": 0, "y": -120, "z": 0 }; }
-    else if (view == 'yz') { camView = { "x": -120, "y": 0, "z": 0 }; }
+    if (view == 'reset') { camView = { "x": 0, "y": 0, "z": 120, "xr": 0, "yr": 0, "zr": 0 }; }
+    else if (view == 'xy') { camView = { "x": 0, "y": 0, "z": 120, "xr": 0, "yr": 0, "zr": 0 }; }
+    else if (view == 'xz') { camView = { "x": 0, "y": 120, "z": 0, "xr": 0, "yr": Math.PI/2, "zr": 0 }; }
+    else if (view == 'yz') { camView = { "x": 120, "y": 0, "z": 0, "xr": - Math.PI/2, "yr": 0, "zr": 0 }; }
     else { console.log("Unrecognized camera reset.")}
+
+    camUpdate = true;
 }
 
 /* CORE FUNCTION: Launch 2-way comparison in SynMap */
@@ -227,9 +233,25 @@ function toggleRotate() {
     autoRotate = !autoRotate
 }
 
+/* CORE FUNCTION: Change Camera */
+function toggleCamera() {
+    var swap = camType.shift();
+    camType.push(swap);
+    $("#camTypeSelect").text(camType[1][1]);
+    refresh = true;
+}
+
 /* CORE FUNCTION: Toggle Axis Labels */
 function toggleLabels() {
     labelState = !labelState;
+}
+
+/* CORE FUNCTION: Toggle Point Shape */
+function togglePtShape() {
+    var swap = ptShape.shift();
+    ptShape.push(swap);
+    $("#ptShapeSelect").text(ptShape[1][1]);
+    refresh = true;
 }
 
 /* CORE FUNCTION: Empty Renderings */
@@ -281,6 +303,9 @@ function renderHistogram(element_id, values, persistence) {
     var minVal = Math.min.apply(null, values);
     var maxVal = Math.max.apply(null, values);
 
+    // Reset drawing.
+    dataSubset = [minVal, maxVal];
+
     // Set X scale.
     var x = d3.scale.linear()
         .domain([minVal, maxVal])
@@ -290,12 +315,6 @@ function renderHistogram(element_id, values, persistence) {
     var data = d3.layout.histogram()
         .bins(binCount)
         (values);
-
-    // Scale persistence (didn't work)
-    // var largestBin = _.max(data, function(d) { return d.length }).length;
-    // var persistenceScale = d3.scale.linear()
-    //         .domain([0, 100])
-    //         .range([0, largestBin]);
 
     // Generate function to calculate point colors by colorscheme.
     var calcColor;
@@ -353,7 +372,6 @@ function renderHistogram(element_id, values, persistence) {
             dataSubset = [minVal, maxVal];
             needsBrushUpdate = true;
         }
-        // console.log(dataSubset);
     }
 
     function resizePath(d) {
@@ -474,7 +492,6 @@ var renderSynMap = function (graph_object, element_id, persistence) {
 
     // Scaling variables.
     var axisWidth = 0.5;
-    var pointSize = 8;
 
     // Raycasting variables.
     var raycaster, intersects, mouse, INTERSECTED;
@@ -698,23 +715,27 @@ var renderSynMap = function (graph_object, element_id, persistence) {
     function drawPoints(points) {
         // Load point image.
         var loader = new THREE.TextureLoader();
-        var sprite = loader.load("picts/ball.png");
+        var sprite = loader.load(ptShape[0][0]);
         // Define plot geometry & material & color array.
         var plotGeo = new THREE.Geometry();
         //plotGeo.addAttribute(size, new THREE.BufferAttribute( size, 1 ));
         var plotMat = new THREE.PointsMaterial( {size: pointSize, sizeAttenuation: false, map: sprite,
             vertexColors: THREE.VertexColors, alphaTest: 0.5, transparent: true });
         //var colors = [];
+
         // Empty pointData;
         pointData = [];
 
         //Set up point counter.
         var ptCount = points.length;
+        // Define object to store mutation values for selected points.
         var pointMutData = {"kn": [], "ks": [], "knks": []};
+        // Define indicies that store mutation values for each comparison.
+        var substitution_indexes = {"xy": [6, 7], "xz": [8, 9], "yz": [10, 11]};
 
         // Build points.
         for (var i=0; i<ptCount; i++ ) {
-            // Assign position
+            // Assign point position
             var vertex = new THREE.Vector3();
             vertex.x = points[i][0];
             vertex.y = points[i][1];
@@ -725,52 +746,100 @@ var renderSynMap = function (graph_object, element_id, persistence) {
             var feats = [points[i][3], points[i][4], points[i][5]];
             pointData.push(feats);
 
-            // Get Substitution Data
-            // NOTE: CURRENTLY IMPLEMENTED FOR XY!!!!!!!!!!!!!!!!!!!!!!!!!!
-            var substitution_indexes = {"xy": [6, 7], "xz": [8, 9], "yz": [10, 11]};
+            // Get substitution data from points object.
             var kn, ks;
             if (color_by != "xyz") {
                 kn = points[i][substitution_indexes[color_by][0]];
                 ks = points[i][substitution_indexes[color_by][1]];
-            } else if (color_by == "xyz") {
-                kn = ( parseFloat(points[i][6]) + parseFloat(points[i][8]) + parseFloat(points[i][10]) ) / 3;
-                ks = ( parseFloat(points[i][7]) + parseFloat(points[i][9]) + parseFloat(points[i][11]) ) / 3;
+            } else if (color_by == "xyz") { // Average out values for XYZ comparisons.
+                if (points[i][6] != 'ZERO' && points[i][8] != 'ZERO' && points[i][10] != 'ZERO') {
+                    kn = ( parseFloat(points[i][6]) + parseFloat(points[i][8]) + parseFloat(points[i][10]) ) / 3;
+                } else {
+                    kn = 'ZERO';
+                }
+                if (points[i][7] != 'ZERO' && points[i][9] != 'ZERO' && points[i][11] != 'ZERO') {
+                    ks = ( parseFloat(points[i][7]) + parseFloat(points[i][9]) + parseFloat(points[i][11]) ) / 3;
+                } else {
+                    ks = 'ZERO';
+                }
             } else {
                 console.log("Error: Unrecognized comparison")
             }
 
-            // var kn = points[i][6];
-            // var ks = points[i][7];
-            var knks = Math.log10(Math.pow(10, kn) / Math.pow(10, ks));
+            // Set Kn/Ks, faking to a min or max bin if 0
+            var knks;
+            if (kn == 'ZERO') {
+                knks = 'ZERO';
+            } else if (ks == 'ZERO') {
+                knks = 'INFI';
+            } else {
+                knks = Math.log10(Math.pow(10, kn) / Math.pow(10, ks));
+            }
 
+            // Add Kn values to data objects, with a fake bin for perfect matches.
             if (!isNaN(kn)) {
-                if (!redraw) histData.kn.push(kn);
-                pointMutData.kn.push(kn);
+                if (!redraw) histData.kn.push(parseFloat(kn));
+                pointMutData.kn.push(parseFloat(kn));
+            } else if (kn=='ZERO') {
+                if (!redraw) histData.kn.push(-8.0);
+                pointMutData.kn.push(-8.0);
             } else {
                 pointMutData.kn.push("NULL");
             }
-
+            // Add Ks values to data objects, with a fake bin for perfect matches.
             if (!isNaN(ks)) {
-                if (!redraw) histData.ks.push(ks);
-                pointMutData.ks.push(ks);
+                if (!redraw) histData.ks.push(parseFloat(ks));
+                pointMutData.ks.push(parseFloat(ks));
+            } else if (ks=='ZERO') {
+                if (!redraw) histData.ks.push(-8.0);
+                pointMutData.ks.push(-8.0);
             } else {
                 pointMutData.ks.push("NULL");
             }
-
+            // Add Kn/Ks values to data objects, with a fake bins for zero division.
             if (!isNaN(knks)) {
                 if (!redraw) histData.knks.push(knks);
                 pointMutData.knks.push(knks);
+            } else if (knks=='ZERO') {
+                if (!redraw) histData.knks.push(-8.0);
+                pointMutData.knks.push(-8.0);
+            } else if (knks=='INFI') {
+                if (!redraw) histData.knks.push(8.0);
+                pointMutData.knks.push(8.0);
             } else {
                 pointMutData.knks.push("NULL");
             }
         }
 
-        // Build colors lists.
+        // Adjust fake bins to +/- 0.25 of true minimum/maximium, build colors lists.
         var cList = ["ks", "kn", "knks"];
         for (var s=0; s<cList.length; s++) {
             var c = cList[s];
+
+            // Adjust fake bins from 8/-8 to +/- 0.25 of true max/min (respectively).
+            var fakeMin;
+            var fakeMax;
+            if (!redraw) {
+                var trueMin = Math.min.apply(null, histData[c].filter(function(value) {return value != -8}));
+                var trueMax = Math.max.apply(null, histData[c].filter(function(value) {return value != 8}));
+                fakeMin = trueMin - 0.25;
+                fakeMax = trueMax + 0.25;
+                histData[c] = histData[c].map(function(e) { return e == -8 ? fakeMin : e; });
+                histData[c] = histData[c].map(function(e) { return e == 8 ? fakeMax : e; });
+                pointMutData[c] = pointMutData[c].map(function(f) { return f == -8 ? fakeMin : f; });
+                pointMutData[c] = pointMutData[c].map(function(f) { return f == 8 ? fakeMax : f; });
+            } else {
+                fakeMin = Math.min.apply(null, histData[c]);
+                fakeMax = Math.max.apply(null, histData[c]);
+                pointMutData[c] = pointMutData[c].map(function(f) { return f == -8 ? fakeMin : f; });
+                pointMutData[c] = pointMutData[c].map(function(f) { return f == 8 ? fakeMax : f; });
+            }
+
+            // Store minimum & maximum values
             var minVal = Math.min.apply(null, histData[c]);
             var maxVal = Math.max.apply(null, histData[c]);
+
+            // Generate point coloring functions.
             var calcColor;
             if (colorScheme == 'Auto') {
                 var bins = d3.layout.histogram().bins(100)(histData[c]);
@@ -778,10 +847,7 @@ var renderSynMap = function (graph_object, element_id, persistence) {
             } else {
                 calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
             }
-
-
-            //var calcColor = getPtColorFunc(minVal, maxVal, schemes[colorScheme]);
-
+            // Calculate colors based on point values & color settings.
             for (var j = 0; j < ptCount; j++) {
                 if (pointMutData[c][j] != 'NULL') {
                     colors[c][j] = new THREE.Color(calcColor(pointMutData[c][j]))
@@ -798,20 +864,19 @@ var renderSynMap = function (graph_object, element_id, persistence) {
             var newGeo = new THREE.Geometry();
             var newColors = [];
             var newPointData = [];
-            for (var i=0; i<ptCount; i++) {
-                if (pointMutData[hCurrent[1]][i] >= dataSubset[0] && pointMutData[hCurrent[1]][i] <= dataSubset[1]) {
-                    newGeo.vertices.push(plotGeo.vertices[i]);
-                    newColors.push(colors[hCurrent[1]][i]);
-                    newPointData.push(pointData[i])
+            for (var z=0; z<ptCount; z++) {
+                if (pointMutData[hCurrent[1]][z] >= dataSubset[0] && pointMutData[hCurrent[1]][z] <= dataSubset[1]) {
+                    newGeo.vertices.push(plotGeo.vertices[z]);
+                    newColors.push(colors[hCurrent[1]][z]);
+                    newPointData.push(pointData[z])
                 }
 
             }
             newGeo.colors = newColors;
             pts = new THREE.Points(newGeo, plotMat);
             pointData = newPointData;
-            redraw = false;
         } else {
-            // If not redrawing points from histogram, apply general colors & build pts object.
+            // If not redrawing points from histogram brushing event, apply colors & build pts object for all points.
             plotGeo.colors = colors[hCurrent[1]];
             pts = new THREE.Points(plotGeo, plotMat);
         }
@@ -821,9 +886,11 @@ var renderSynMap = function (graph_object, element_id, persistence) {
         pts.translateY(-graph_object.y[2] / 2);
         pts.translateZ(-graph_object.z[2] / 2);
 
-        // Report point count.
-        //console.log("POINTS RENDERED: " + pts.geometry.vertices.length);
+        // Report point count to counter.
         document.getElementById("pt_ct").innerHTML = pts.geometry.vertices.length;
+
+        redraw = false;
+        // Return points object.
         return pts;
     }
 
@@ -945,15 +1012,18 @@ var renderSynMap = function (graph_object, element_id, persistence) {
         renderer.setSize( width, height );
 
         /* Create a three.js camera */
-        camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 );
+        if (camType[0][0] == 'P') { camera = new THREE.PerspectiveCamera( 75, width / height, 1, 1000 ); }
+        else if (camType[0][0] == 'O') {
+            camera = new THREE.OrthographicCamera( width / - 10, width / 10, height / 10, height / - 10, 1, 1000 );
+        }
         camera.position.x = camView.x;
         camera.position.y = camView.y;
         camera.position.z = camView.z;
+        scene.rotation.x = camView.xr;
+        scene.rotation.y = camView.yr;
+        scene.rotation.z = camView.zr;
 
-        /* Apply FlatOrbitControls to camera. */
-        controls = new THREE.FlatOrbitControls( camera );
-
-        /* Add VR Launch */
+        /* Apply controls (& effect for VR) to camera. */
         if ( final_experiment.options.vr && WEBVR.isAvailable() === true ) {
             vrMode = true;
             //controls = new THREE.VRControls( camera );
@@ -1017,16 +1087,25 @@ var renderSynMap = function (graph_object, element_id, persistence) {
 
         /* Camera control */
         if (camUpdate) {
+            controls.reset();
             camera.position.x = camView.x;
             camera.position.y = camView.y;
             camera.position.z = camView.z;
+            scene.rotation.x = camView.xr;
+            scene.rotation.y = camView.yr;
+            scene.rotation.z = camView.zr;
             camUpdate = false;
         } else {
             /* Update camera position record. */
-            camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z };
+            // camView = { "x": camera.position.x, "y": camera.position.y, "z": camera.position.z,
+            //     "xr": scene.rotation.x, "yr": scene.rotation.y, "zr": scene.rotation.z};
+            camView.x = camera.position.x;
+            camView.y = camera.position.y;
+            camView.z = camera.position.z;
+            camView.xr = scene.rotation.x;
+            camView.yr = scene.rotation.y;
+            camView.zr = scene.rotation.z;
         }
-
-
 
         /* Check for recoloring */
         if (hCurrent[1] != current) {
@@ -1059,7 +1138,8 @@ var renderSynMap = function (graph_object, element_id, persistence) {
 
         /* Check for histogram brushing */
         if (needsBrushUpdate && (dataSubset[0] != dataS[0] || dataSubset[1] != dataS[1])) {
-            if (dataSubset[0] != dataRange[0] || dataSubset[1] != dataRange[1]) { redraw = true; }
+            redraw = true;
+            //if (dataSubset[0] != dataRange[0] || dataSubset[1] != dataRange[1]) { redraw = true; }
             scene.remove(points);
             points = drawPoints(graph_object.points);
             scene.add(points);
@@ -1080,12 +1160,16 @@ var renderSynMap = function (graph_object, element_id, persistence) {
             var slide = $("#slide");
             scene = null;
             camera = null;
-            controls = null;
             points = null;
+            controls = null;
             window.removeEventListener( 'resize', onWindowResize, false );
             window.removeEventListener('mousedown', onDocumentMouseDown, false);
+            histData = {"kn": [], "ks": [], "knks": []};
+            pointData = [];
+            colors = {"kn": [], "ks": [], "knks": []};
             emptyRenderings();
             refresh = false;
+            redraw = false;
             renderSynMap(d, "canvas", slide.val());
             renderHistogram(hCurrent[0], histData[hCurrent[1]], slide.val());
             overlay.hide();
@@ -1268,6 +1352,14 @@ $(document).ready( function() {
             al.css("left", 8).css("top", cH - al.height() - 8);
             // End spinny wheel.
             overlay.hide();
+
+            /* Monitor point size option & update visualizations on change. */
+            var pointSizeSelector = $("#ptSizeSelect");
+            pointSizeSelector.change( function() {
+                //console.log(pointSizeSelector.val());
+                pointSize = pointSizeSelector.val();
+                refresh = true;
+            });
 
             /* Monitor mutation ratio coloring option & update visualizations on change. */
             var colorBySelect = $("#color_by");

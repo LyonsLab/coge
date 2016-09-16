@@ -41,9 +41,9 @@ $ICMD/iput -bfr $LOCAL_MYSQL $REMOTE
 #
 # Remove old database backups
 #
-echo `date` "Deleting old database backups (local & remote)"
+echo `date` "Deleting old LOCAL database backups"
 #LOCAL_DELETIONS=`find $LOCAL/mysql_* -maxdepth 1 -type d -mtime +$DAYS_UNTIL_DELETE`
-count=0
+count=1
 for d in `ls -td /storage/coge/backup/*/ | grep 'mysql_'` 
 do
    if [ $count -gt $MAX_LOCAL_BACKUPS ];
@@ -53,7 +53,9 @@ do
     fi
     count=$[count + 1]
 done
-count=0
+
+echo `date` "Deleting old REMOTE database backups (local & remote)"
+count=1
 for d in `$ICMD/ils backup | grep 'mysql_' | sed 's/.*\(mysql_.*\)/\1/'`
 do
    if [ $count -gt $MAX_REMOTE_BACKUPS ];

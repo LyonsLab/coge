@@ -29,7 +29,7 @@ use strict;
 use warnings;
 
 use CoGe::Accessory::Web qw(get_defaults get_command_path url_for);
-use CoGe::Accessory::TDS qw(read);
+use CoGe::Accessory::TDS qw(read append);
 use CoGe::Accessory::Jex;
 use CoGe::Accessory::Workflow;
 use CoGe::Accessory::IRODS qw(irods_iget irods_ils irods_imkdir irods_irm);
@@ -57,7 +57,7 @@ BEGIN {
       get_genome_file index_genome_file get_genome_seq get_genome_path
       get_genome_cache_path get_workflow_results add_workflow_result
       get_workflow_results_file get_workflow_log_file get_download_path
-      get_experiment_path get_experiment_files
+      get_experiment_path get_experiment_files get_experiment_metadata
       reverse_complement get_irods_file get_irods_path get_popgen_result_path
       is_popgen_finished data_type get_sra_cache_path irods_mkdir irods_rm
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
@@ -369,10 +369,17 @@ sub get_experiment_files {
     return \@files;
 }
 
+sub get_experiment_metadata {
+    my $eid = shift;
+    my $file_path = get_experiment_path($eid);
+    my $metadata_file = catfile($file_path, 'metadata.json');
+    return CoGe::Accessory::TDS::read($metadata_file);
+}
+
 sub get_experiment_data {
     my %opts = @_;
-    my $eid  = $opts{eid};    # required
-    my $data_type = $opts{data_type};   # required
+    my $eid  = $opts{eid};            # required
+    my $data_type = $opts{data_type}; # required
     unless ($eid) {
         print STDERR "Storage::get_experiment_data: experiment id not specified!\n";
         return;
@@ -543,8 +550,9 @@ sub get_workflow_paths {
         my $results_dir = catdir($tmp_path, 'results');
         my @wdir = grep { -d "$results_dir/$_/$workflow_id" } read_dir($results_dir);
         if (@wdir != 1) {
-            warn "Storage::get_workflow_paths ERROR: ambiguous user directory";
-            warn Dumper \@wdir;
+# mdb remopved 9/1/16 -- SynMap/CoGeBlast do not have a proper results dir yet
+#            warn "Storage::get_workflow_paths ERROR: ambiguous user directory";
+#            warn Dumper \@wdir;
             return;
         }
         $user_name = $wdir[0];

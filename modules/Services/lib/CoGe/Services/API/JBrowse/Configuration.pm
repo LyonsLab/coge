@@ -84,10 +84,8 @@ sub track_config {
 	    }
 	}
 
-    # Get server name for constructing URLs
-    my $SERVER_NAME = $conf->{SERVER};#$ENV{SERVER_NAME}; # mdb added 12/11/14 for COGE-568
+    my $SERVER_NAME = $conf->{SERVER};
     my $JBROWSE_API = $SERVER_NAME . 'api/v1/jbrowse'; #TODO move to config file
-    print STDERR "SERVER_NAME = $SERVER_NAME\n", "JBROWSE_API = $JBROWSE_API\n";
 
     # Get genome
     my $genome = $db->resultset('Genome')->find($gid);
@@ -106,7 +104,7 @@ sub track_config {
     #
     push @tracks, {
         chunkSize     => 20000,
-        baseUrl       => "$JBROWSE_API/sequence/$gid/", #"https://$SERVER_NAME/services/JBrowse/service.pl/sequence/$gid/",
+        baseUrl       => "$JBROWSE_API/sequence/$gid/",
         type          => "SequenceTrack",
         storeClass    => "JBrowse/Store/SeqFeature/REST",
         label         => "sequence",
@@ -122,7 +120,7 @@ sub track_config {
     # Add GC content track
     #
     push @tracks, {
-        baseUrl    => "$JBROWSE_API/track/gc/$gid/", #"$SERVER_NAME/coge/services/JBrowse/track/gc/$gid/",
+        baseUrl    => "$JBROWSE_API/track/gc/$gid/",
         type       => "CoGe/View/Track/GC_Content",
         storeClass => "JBrowse/Store/SeqFeature/REST",
         track      => "gc_content",
@@ -157,7 +155,7 @@ sub track_config {
             type         => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
             storeClass   => "JBrowse/Store/SeqFeature/REST",
-            onClick      => "$SERVER_NAME/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end}",
+            onClick      => $SERVER_NAME . 'FeatAnno.pl?dsg=' . $gid . ';chr={chr};start={start};stop={end}',
             maxFeatureScreenDensity => 20,
             maxHeight               => 100000,
             minSubfeatureWidth      => 4,
@@ -190,7 +188,7 @@ sub track_config {
                 type         => "JBrowse/View/Track/HTMLFeatures",
                 storeClass   => "JBrowse/Store/SeqFeature/REST",
                 region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
-                onClick      => "$SERVER_NAME/FeatAnno.pl?dsg=$gid;chr={chr};start={start};stop={end};type=$type_name",
+                onClick      => $SERVER_NAME . 'FeatAnno.pl?dsg=' . $gid . ';chr={chr};start={start};stop={end};type=' . $type_name,
                 maxFeatureScreenDensity => 1000,     #50,
                 maxHeight               => 100000,
                 style                   => {
@@ -235,7 +233,7 @@ sub track_config {
                     type         => "CoGe/View/Track/CoGeFeatures",
                     description  => "note, description",
                     storeClass   => "JBrowse/Store/SeqFeature/REST",
-                    onClick      => "$SERVER_NAME/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end}",
+                    onClick      => $SERVER_NAME . 'FeatAnno.pl?ds=' . $dsid . ';chr={chr};start={start};stop={end}',
                     maxFeatureScreenDensity => 20,
                     maxHeight               => 100000,
                     minSubfeatureWidth      => 4,
@@ -266,7 +264,7 @@ sub track_config {
                         type         => "JBrowse/View/Track/HTMLFeatures",
                         storeClass   => "JBrowse/Store/SeqFeature/REST",
                         region_stats => 1, # see HTMLFeatures.js, force calls to stats/region instead of stats/global
-                        onClick      => "$SERVER_NAME/FeatAnno.pl?ds=$dsid;chr={chr};start={start};stop={end};type=$type_name",
+                        onClick      => $SERVER_NAME . 'FeatAnno.pl?ds=' . $dsid . ';chr={chr};start={start};stop={end};type=' . $type_name,
                         maxFeatureScreenDensity => 1000,     #50,
                         maxHeight               => 100000,
                         style                   => {
@@ -433,7 +431,7 @@ sub track_config {
         $role = $role->{role_id} if $role;
         push @tracks, {
             key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
-            baseUrl => "$JBROWSE_API/experiment/notebook/$nid",
+            baseUrl => "$JBROWSE_API/experiment/genome/$gid/notebook/$nid",
             query => { gid => $gid },
             autocomplete => "all",
             track        => "notebook$nid",

@@ -2271,7 +2271,6 @@ $.extend(Taxon_tree.prototype, {
 				if(search_text.length > 2) {
 					$("#loading6").hide();
 					$("#not").show();
-					self.update.call(self, self.root, self.root);
 				}
 			}
 		} else {

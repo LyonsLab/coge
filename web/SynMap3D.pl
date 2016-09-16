@@ -80,7 +80,8 @@ sub generate_html {
 
             ADMIN_ONLY   => $USER->is_admin,
             USER         => $USER->display_name || '',
-            CAS_URL      => $CONF->{CAS_URL} || ''
+            CAS_URL      => $CONF->{CAS_URL} || '',
+            COOKIE_NAME  => $CONF->{COOKIE_NAME} || ''
         );
         $template->param( LOGON      => 1 ) unless $USER->is_public;
     }
