@@ -94,21 +94,6 @@ sub item_type {
     return $node_types->{user};   
 }
 
-sub get_item {
-    my $self = shift;
-    my $id = shift;
-    my $type = shift; # numeric code or string descriptor
-    
-    if ($type =~ /[^\d]/) {
-        $type = $node_types->{$type};
-        return unless $type;
-    }
-    
-    my ($conn) = $self->child_connectors({ child_id => $id, child_type => $type });
-    return unless $conn;
-    return $conn->child;
-}
-
 ################################################ subroutine header begin ##
 
 =head2 name

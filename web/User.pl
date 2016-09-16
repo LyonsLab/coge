@@ -24,6 +24,7 @@ use CoGeX::ResultSet::Feature;
 use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape commify);
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Jex;
+use CoGe::Core::Item qw(get_item);
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
@@ -352,8 +353,8 @@ sub favorite_items {
         my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
 
-        my $item_obj = $USER->get_item($item_id, $item_type);
-        next unless $item_obj; #TODO check permissions
+        my $item_obj = get_item($DB, $item_id, $item_type);
+        next unless $item_obj;
         
         my $favorites = CoGe::Core::Favorites->new(user => $USER);
         my $is_favorited = $favorites->toggle($item_obj);
@@ -1314,7 +1315,6 @@ sub get_contents {
             $item->{deleted}   = '0';
             $item->{favorite}  = '1';
             $item->{role_id}   = '2'; # fake an ownership role
-            $item->{item_type} = $item->{type}; # kludge for DataGrid.openItem()
             push @$items, $item;
         }
     }
