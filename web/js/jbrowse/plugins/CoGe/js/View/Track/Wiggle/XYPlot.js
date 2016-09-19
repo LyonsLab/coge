@@ -441,6 +441,8 @@ var XYPlot = declare( [XYPlotBase], {
 	// ----------------------------------------------------------------
 
 	_getFeatureColor: function(id) {
+		if (this.config.coge.type == 'search')
+			id = this.config.coge.eid;
 		if (this.config.style.featureColor && this.config.style.featureColor[id])
 			return this.config.style.featureColor[id];
 		 return coge_plugin.calc_color(id);
@@ -904,7 +906,7 @@ var XYPlot = declare( [XYPlotBase], {
 				label: 'Export Track Data',
 				onClick: function(){coge_plugin.export_dialog(track);}
 			});
-		if (config.coge.search) {
+		if (config.coge.search && config.coge.data_type == 1) {
 			options.push({
 				label: 'Convert to Marker Track',
 				onClick: function(){coge_plugin.convert_to_marker_dialog(track)}

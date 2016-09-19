@@ -301,6 +301,15 @@ return declare( JBrowsePlugin,
 
 	convert_to_marker_dialog: function(track) {
 		track.config.coge.data_type = 4;
+		track.config.type = "CoGe/View/Track/Marker";
+		track.makeTrackMenu();
+		this.browser.getStore(track.config.store, function(store) {
+			store.config.results.hits.forEach(function(hit) {
+				hit[1] = hit[0] + 1;
+				hit[4] = hit[3];
+				hit[5] = 'search'
+			});
+		});
 		track.changed();
 	},
 
