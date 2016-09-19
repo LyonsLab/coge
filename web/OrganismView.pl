@@ -554,10 +554,8 @@ sub get_genome_info {
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
 
-
     my $owner = $dsg->owner;
     my $owner_field;
-
     if ($owner) {
         my $username = $owner->display_name;
         $owner_field = qq{<tr><td>Owner:</td><td>$username</td></tr>};
@@ -583,9 +581,11 @@ sub get_genome_info {
 
     $html .= "<tr><td>Tools:</td>"
      . qq{<td>}
-     . qq{<a href="GenomeInfo.pl?gid=$gid"><strong>GenomeInfo</strong></a>}
+     . qq{<a href="GenomeInfo.pl?gid=$gid">GenomeInfo</a>}
      . qq{&nbsp|&nbsp}
-     . qq{<a href='OrganismView.pl?dsgid=$gid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$gid' target=_new>CodeOn</a>}
+     . qq{<a href='OrganismView.pl?dsgid=$gid' target=_new>OrganismView</a>}
+     . qq{&nbsp|&nbsp}
+     . qq{<a href='CodeOn.pl?dsgid=$gid' target=_new>CodeOn</a>}
      . qq{&nbsp|&nbsp}
      . qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$gid;dsgid2=$gid');">SynMap</span>}
      . qq{&nbsp|&nbsp}
@@ -967,9 +967,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     }
     my $gc_args;
     $gc_args = "chr: '$chr'," if defined $chr;
-    $gc_args .= "dsid: $dsid,"
-      if $dsid
-    ; #set a var so that histograms are only calculated for the dataset and not hte genome
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte genome
     $gc_args .= "typeid: ";
     my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
     $feat_list_string .= ";chr=$chr" if defined $chr;
@@ -1195,12 +1193,9 @@ Type: <select id="feat_hist_type">
     $info =~ s/>Per/ selected>Per/ if $hist_type =~ /per/;
     my $gc_args;
     $gc_args = "chr: '$chr'," if defined $chr;
-    $gc_args .= "dsid: $dsid,"
-      if $dsid
-    ; #set a var so that histograms are only calculated for the dataset and not hte genome
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte genome
     $gc_args .= "typeid: '$typeid'";
-    $info .=
-qq{<span class="link" onclick="get_feat_gc({$gc_args})">Regenerate histogram</span>};
+    $info .= qq{<span class="link" onclick="get_feat_gc({$gc_args})">Regenerate histogram</span>};
     $info .= "</div>";
     $info .=
         "<div class = small>Total length: "
