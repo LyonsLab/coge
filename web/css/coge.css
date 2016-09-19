@@ -27,13 +27,13 @@ html {
 }
 
 a, a:visited {
-    color: #007000;
+    color: #007000 !important;
     outline: none;
     text-decoration: none;
 }
 
 a:hover {
-    color: #009900;
+    color: #009900 !important;
     cursor: pointer;
 }
 
