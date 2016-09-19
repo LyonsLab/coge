@@ -12,21 +12,16 @@ has 'user' => (
 );
 
 # Private methods --------------------------------------------------------------
-sub BUILD { # called after constructor
-    my $self = shift;
-    
-    if (!$self->user || $self->user->is_public) {
-        # error
-        return;
-    }
-}
+#sub BUILD { # called after constructor
+#    my $self = shift;
+#}
 
 # Public methods ---------------------------------------------------------------
 sub is_favorite {
     my $self = shift;
     my $item = shift; # genome/experiment/notebook DBIX object
     return unless $item;
-    return unless ($self->user && !$self->user->is_public);
+    return 0 unless ($self->user && !$self->user->is_public);
     
     my ($favorite) = $self->user->favorites({ child_id => $item->id, child_type => $item->item_type });
     return defined($favorite);
@@ -37,7 +32,7 @@ sub get {
     my %opts = @_;
     my $onlyMine = $opts{onlyMine}; # optional flag to exclude items the user doesn't own
     my $notMine  = $opts{notMine};  # optional flag to exclude items the user owns
-    return unless ($self->user && !$self->user->is_public);
+    return 0 unless ($self->user && !$self->user->is_public);
     
     my @favorites;
     foreach ($self->user->favorites()) {
