@@ -86,7 +86,7 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my $template;
 
-    $EMBED = $FORM->param('embed');
+    $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
         $template =
           HTML::Template->new(
@@ -138,6 +138,7 @@ sub gen_body {
         NOTEBOOK_TITLE => $list->info,
         FAVORITED      => int($favorites->is_favorite($list)),
     );
+    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( LIST_INFO => get_list_info( lid => $lid ) );
     $template->param( LIST_ANNOTATIONS => get_annotations( lid => $lid ) );
     $template->param( LIST_CONTENTS => get_list_contents( lid => $lid ) );

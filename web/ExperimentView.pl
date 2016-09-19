@@ -655,6 +655,7 @@ sub gen_body {
         ADMIN_AREA        => $USER->is_admin,
         API_BASE_URL      => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
     );
+    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
     $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
 
