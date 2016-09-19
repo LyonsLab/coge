@@ -15,9 +15,8 @@ has 'user' => (
 sub BUILD { # called after constructor
     my $self = shift;
     
-    if ($self->user->is_public) {
+    if (!$self->user || $self->user->is_public) {
         # error
-        $self->user(undef);
         return;
     }
 }
@@ -27,6 +26,7 @@ sub is_favorite {
     my $self = shift;
     my $item = shift; # genome/experiment/notebook DBIX object
     return unless $item;
+    return unless ($self->user && !$self->user->is_public);
     
     my ($favorite) = $self->user->favorites({ child_id => $item->id, child_type => $item->item_type });
     return defined($favorite);
@@ -37,6 +37,8 @@ sub get {
     my %opts = @_;
     my $onlyMine = $opts{onlyMine}; # optional flag to exclude items the user doesn't own
     my $notMine  = $opts{notMine};  # optional flag to exclude items the user owns
+    return unless ($self->user && !$self->user->is_public);
+    
     my @favorites;
     foreach ($self->user->favorites()) {
         my $item = $_->child;
