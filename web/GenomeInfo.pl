@@ -34,8 +34,6 @@ use vars qw(
 
 $PAGE_TITLE = 'GenomeInfo';
 
-#EL: 10/31/13:  change to a global var
-#my $node_types = CoGeX::node_types();
 $node_types = CoGeX::node_types();
 
 $FORM = new CGI;
@@ -47,7 +45,7 @@ $FORM = new CGI;
 $JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$SECTEMPDIR    = $config->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$SECTEMPDIR = $config->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 $TEMPDIR   = $config->{TEMPDIR} . "/$PAGE_TITLE";
 $TEMPURL   = $config->{TEMPURL} . "/$PAGE_TITLE";
 $HISTOGRAM = $config->{HISTOGRAM};
@@ -2139,7 +2137,7 @@ sub annotate { #TODO create API "annotate" job instead
 sub generate_html {
     my $template;
 
-    $EMBED = $FORM->param('embed');
+    $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
         $template =
           HTML::Template->new(
