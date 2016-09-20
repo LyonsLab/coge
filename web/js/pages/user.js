@@ -841,7 +841,7 @@ $.extend(DataGrid.prototype, {
     	else {
     		var title = row.getDescription();
     		var link = row.getLink();
-    		var flags = row.getFlags();
+    		var flags = row.getFlags({noSpaces: 1});
     		title = flags + ' ' + title + "<br><a class='xsmall' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
     		link = link + "&embed=1";
     		console.log('DataGrid.openItem: ' + link);
@@ -863,19 +863,27 @@ $.extend(DataGrid.prototype, {
 		
 function DataGridRow(data, type) {
 	$.extend(this, data);
-	this.type = type;
-    this.initialize();
+	if (!this.type) // mdb added condition 9/16/18 COGE-388 -- prevent native type (genome,etc) from being set to "favorite"
+		this.type = type;
 }
 
-$.extend(DataGridRow.prototype, { // TODO extend this into separate classes for each type (genome, experiment, etc...)
-	initialize: function() {
-    },
-    
-    getFlags: function() {
-    	if (this.type == 'genome' || this.type == 'experiment' || this.type == 'notebook' || this.type == 'favorite') {
-	    	var flags = '<span style="color:goldenrod;visibility:' + (this.favorite == '1' ? 'visible' : 'hidden') + '">&#9733;</span>&nbsp;';
+$.extend(DataGridRow.prototype, { // TODO consider extending this into separate classes for each type (genome, experiment, etc...)
+    getFlags: function(opts) {
+    	if (this.type == 'genome' || 
+    		this.type == 'experiment' || 
+    		this.type == 'notebook' || 
+    		this.type == 'favorite') 
+    	{
+    		var noSpaces = (opts && opts.noSpaces);
+    		
+    		var flags = '';
+    		if (!noSpaces || this.favorite == '1')
+    			flags = '<span style="color:goldenrod;visibility:' + 
+	    			(this.favorite == '1' ? 'visible' : 'hidden') + 
+	    			'">&#9733;</span>&nbsp;';
     		if (this.restricted == '1')
-	    		flags += '&#x1f512;&nbsp;';
+	    		flags += '&#x1f512;' + '&nbsp;';
+    		
     		return flags;
     	}
     	return '';
@@ -990,9 +998,6 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     
     getLink: function() {
     	var type = this.type;
-    	
-    	if (type == 'favorite') // kludge for DataGrid.openItem()
-    		type = this.item_type;
     	
     	if (type == 'genome')
     		return 'GenomeInfo.pl?gid=' + this.id;
@@ -1156,31 +1161,6 @@ function update_icons(items) { //TODO move into ContentPanel
 	else
 		$('.item-button:not(#add_button)').addClass('coge-disabled');
 }
-
-//function get_item_type(obj) {
-//	return obj.id.match(/content_\w+_(\w+)/)[1];
-//}
-
-//function sync_items(html) {
-//	var content1 = $('#contents_table .coge-list-item');
-//	var content2 = $(html).filter('.coge-list-item'); // FIXME: this is slow
-//
-//	var insertIndex = 0;
-//	content2.each(
-//		function() {
-//			var match = document.getElementById(this.id);
-//			if (!match) // item doesn't exist
-//				$(this).insertBefore( content1.get(insertIndex) );
-//			else { // item exists
-//				var src_info = $(this).find('span[name="info"]').html();
-//				var dest = $(match).find('span[name="info"]');
-//				if (dest.html() !== src_info)
-//					dest.html(src_info);
-//				insertIndex++;
-//			}
-//		}
-//	);
-//}
 
 function favorite_items() {
 	var selected_rows = contentPanel.grid.getSelectedRows();
