@@ -583,13 +583,17 @@ sub get_list_contents {
     my $html;
     my $num_items = 0;
 
-    my $genome_count = $list->genomes( count => 1 );
-    my $exp_count    = $list->experiments( count => 1 );
-    my $feat_count   = $list->features( count => 1 );
-    my $list_count   = $list->lists( count => 1 );
+    my @genomes = grep { $USER->has_access_to_genome($_); } $list->genomes;
+    my @experiments = grep { $USER->has_access_to_experiment($_); } $list->experiments;
+    my @features = $list->features;
+
+    my $genome_count = @genomes;
+    my $exp_count    = @experiments;
+    my $feat_count   = @features;
+    # my $list_count   = $list->lists( count => 1 );
 
     #FIXME rewrite this to send contents as JSON -- mdb 7/29/16
-    if ($genome_count or $exp_count or $feat_count or $list_count) {
+    if ($genome_count or $exp_count or $feat_count) { #} or $list_count) {
         $html = q|
         <table id="list_contents_table" class="dataTable compact hover stripe border-top border-bottom" style="margin:0;width:initial;"><thead>
             <tr>
@@ -601,7 +605,7 @@ sub get_list_contents {
         </thead><tbody></tbody></table>
         <script>
             var data = [|;
-        foreach my $genome ( sort genomecmp $list->genomes ) {
+        foreach my $genome ( sort genomecmp @genomes ) {
             my $info = $genome->info;
             $info =~ s/'/\\'/g;
             my $date = "'" . $genome->date . "'";
@@ -610,7 +614,7 @@ sub get_list_contents {
             $html .= '[0,' . $genome->id . ",'" . $info . "'," . $date . ']';
             $num_items++;
         }
-        foreach my $experiment ( sort experimentcmp $list->experiments ) {
+        foreach my $experiment ( sort experimentcmp @experiments ) {
             my $info = $experiment->info;
             $info =~ s/'/\\'/g;
             my $date = "'" . $experiment->date . "'";
@@ -619,20 +623,20 @@ sub get_list_contents {
             $html .= '[1,' . $experiment->id . ",'" . $info . "'," . $date . ']';
             $num_items++;
         }
-        foreach my $feature ( sort featurecmp $list->features ) {
+        foreach my $feature ( sort featurecmp @features ) {
             my $info = $feature->info;
             $info =~ s/'/\\'/g;
             $html .= ',' if $num_items;
             $html .= '[2,' . $feature->id . ",'" . $info . "']'";
             $num_items++;
         }
-        foreach my $list ( sort notebookcmp $list->lists ) {
-            my $info = $list->info;
-            $info =~ s/'/\\'/g;
-            $html .= ',' if $num_items;
-            $html .= '[3,' . $list->id . ",'" . $info . "']'";
-            $num_items++;
-        }
+        # foreach my $list ( sort notebookcmp $list->lists ) {
+        #     my $info = $list->info;
+        #     $info =~ s/'/\\'/g;
+        #     $html .= ',' if $num_items;
+        #     $html .= '[3,' . $list->id . ",'" . $info . "']'";
+        #     $num_items++;
+        # }
         $html .= q|];
         var sort_col = 'type';
         var sort_mult = -1;
@@ -643,9 +647,9 @@ sub get_list_contents {
             var names = ['Genome', 'Experiment', 'Feature', 'Notebook'];
             var pages = ['GenomeInfo', 'ExperimentView', 'FeatView', 'NotebookView'];
             var ids = ['gid', 'eid', 'fid', 'nid'];
-            var counts = [| . $genome_count . q|, | . $exp_count . q|, | . $feat_count . q|, | . $list_count . q|];
-            var node_types = ['| . $node_types->{genome} . q|', '| . $node_types->{experiment} . q|', '| . $node_types->{feature} . q|', '| . $node_types->{list} . q|'];
-            var num_rows = 0;
+            var counts = [| . $genome_count . q|, | . $exp_count . q|, | . $feat_count . q|];|; # . q|, | . $list_count . q|];
+        $html .= q|var node_types = ['| . $node_types->{genome} . q|', '| . $node_types->{experiment} . q|', '| . $node_types->{feature} . q|'];|; # . q|', '| . $node_types->{list} . q|'];
+        $html .= q|var num_rows = 0;
             data.forEach(function(row){
                 var html;
                 if (sort_col == 'type')
