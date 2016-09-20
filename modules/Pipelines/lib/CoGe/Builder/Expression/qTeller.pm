@@ -13,7 +13,6 @@ use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web qw(get_defaults get_command_path);
-use CoGe::Accessory::Workflow;
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_workflow_results_file);
 use CoGe::Core::Metadata qw(to_annotations tags_to_string);
 use CoGe::Builder::CommonTasks;
