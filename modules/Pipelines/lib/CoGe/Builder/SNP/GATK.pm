@@ -132,18 +132,22 @@ sub create_reorder_sam_job {
     # mdb added 9/20/16 -- Picard expects the filename to end in .fa or .fasta
     my $fasta_name = to_filename($input_fasta);
     my $renamed_fasta = qq[$fasta_name.fa];
+    
+    my $done_file = qq[$output_bam.reorder.done];
 
     my $PICARD = $CONF->{PICARD};
 
     return {
-        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.dict $renamed_fasta.dict && java -jar $PICARD ReorderSam REFERENCE=$renamed_fasta INPUT=$input_bam OUTPUT=$output_bam CREATE_INDEX=true VERBOSITY=ERROR],
+        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.dict $renamed_fasta.dict && java -jar $PICARD ReorderSam REFERENCE=$renamed_fasta INPUT=$input_bam OUTPUT=$output_bam CREATE_INDEX=true VERBOSITY=ERROR && touch $done_file],
         args => [],
         inputs => [
             $input_fasta,
-            $input_bam
+            $input_bam,
+            "$input_bam.addRG.done" # from create_add_readgroups_job
         ],
         outputs => [
-            $output_bam
+            $output_bam,
+            $done_file
         ],
         description => "Reorder bam file ..."
     };
@@ -155,17 +159,20 @@ sub create_add_readgroups_job {
     # Required arguments
     my $input_bam  = $opts->{input_bam};
     my $output_bam = $opts->{output_bam};
+    
+    my $done_file = qq[$output_bam.addRG.done];
 
     my $PICARD = $CONF->{PICARD};
 
     return {
-        cmd => qq[java -jar $PICARD AddOrReplaceReadGroups I=$input_bam O=$output_bam RGID=none RGLB=none RGPL=none RGSM=none RGPU=none],
+        cmd => qq[java -jar $PICARD AddOrReplaceReadGroups I=$input_bam O=$output_bam RGID=none RGLB=none RGPL=none RGSM=none RGPU=none && touch $done_file],
         args => [],
         inputs => [
             $input_bam
         ],
         outputs => [
             $output_bam,
+            $done_file
         ],
         description => "Set read groups in bam file ..."
     };
@@ -194,10 +201,11 @@ sub create_gatk_job {
             ["-I", $input_bam, 0],
             ["-stand_emit_conf", 10, 0],
             ["-stand_call_conf", 30, 0],
-            ["-o", $output_vcf, 0]
+            ["-o", $output_vcf, 1]
         ],
         inputs => [
             $input_bam,
+            "$input_bam.reorder.done", # from create_reorder_sam_job
             $input_fasta,
             $fasta_index,
         ],
