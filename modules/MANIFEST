@@ -52,6 +52,7 @@ Core/lib/CoGe/Core/Favorites.pm
 Database/lib/CoGeX.pm
 Database/lib/CoGeDBI.pm
 Database/lib/DBIxProfiler.pm
+Database/lib/FastBit.pm
 Database/lib/CoGeX/Result/AnnotationTypeGroup.pm
 Database/lib/CoGeX/Result/AnnotationType.pm
 Database/lib/CoGeX/Result/DatasetConnector.pm
