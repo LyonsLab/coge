@@ -16,7 +16,7 @@ use CoGe::Builder::CommonTasks;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(build run);
+our @EXPORT = qw(build);
 our $CONF = CoGe::Accessory::Web::get_defaults();
 
 sub build {

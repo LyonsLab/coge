@@ -18,7 +18,7 @@ use CoGe::Builder::PopGen::SummaryStats qw(build);
 use CoGe::Builder::SNP::CoGeSNPs qw(build);
 use CoGe::Builder::SNP::Samtools qw(build);
 use CoGe::Builder::SNP::Platypus qw(build);
-#use CoGe::Builder::SNP::GATK qw(build);
+use CoGe::Builder::SNP::GATK qw(build);
 use CoGe::Builder::Methylation::Bismark qw(build);
 use CoGe::Builder::Methylation::BWAmeth qw(build);
 use CoGe::Builder::Methylation::Metaplot qw(build);
@@ -152,7 +152,7 @@ sub build {
                 case 'coge'     { $snp_workflow = CoGe::Builder::SNP::CoGeSNPs::build($snp_params); }
                 case 'samtools' { $snp_workflow = CoGe::Builder::SNP::Samtools::build($snp_params); }
                 case 'platypus' { $snp_workflow = CoGe::Builder::SNP::Platypus::build($snp_params); }
-                #case 'gatk'     { $snp_workflow = CoGe::Builder::SNP::GATK::build($snp_params); } # not currently supported
+                case 'gatk'     { $snp_workflow = CoGe::Builder::SNP::GATK::build($snp_params); }
                 else            { die "unknown SNP method"; }
             }
             push @tasks, @{$snp_workflow->{tasks}};

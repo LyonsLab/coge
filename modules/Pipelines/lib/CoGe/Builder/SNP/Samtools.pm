@@ -23,7 +23,7 @@ BEGIN {
 
     $VERSION   = 0.1;
     @ISA       = qw(Exporter);
-    @EXPORT    = qw(run build);
+    @EXPORT    = qw(build);
 }
 
 sub build {
