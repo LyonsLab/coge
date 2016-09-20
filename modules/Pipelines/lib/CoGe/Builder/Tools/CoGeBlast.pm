@@ -2,7 +2,6 @@ package CoGe::Builder::Tools::CoGeBlast;
 
 use Moose;
 
-use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Accessory::Web qw(download_url_for get_command_path url_for);
 use CoGe::Builder::CommonTasks qw(add_workflow_result);

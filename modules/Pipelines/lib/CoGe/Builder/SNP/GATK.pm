@@ -9,7 +9,7 @@ use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(basename);
 
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web;
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
@@ -19,7 +19,7 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(build run);
 our $CONFIG = CoGe::Accessory::Web::get_defaults();
-our $JEX = CoGe::Accessory::Jex->new( host => $CONFIG->{JOBSERVER}, port => $CONFIG->{JOBPORT} );
+our $JEX = CoGe::JEX::Jex->new( host => $CONFIG->{JOBSERVER}, port => $CONFIG->{JOBPORT} );
 
 sub run {
     my %opts = @_;

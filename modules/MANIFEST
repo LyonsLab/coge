@@ -8,8 +8,6 @@ Accessory/lib/CoGe/Accessory/Utils.pm
 Accessory/lib/CoGe/Accessory/TDS.pm
 Accessory/lib/CoGe/Accessory/Web.pm
 Accessory/lib/CoGe/Accessory/IRODS.pm
-Accessory/lib/CoGe/Accessory/Workflow.pm
-Accessory/lib/CoGe/Accessory/Jex.pm
 Accessory/lib/CoGe/Accessory/Annotation.pm
 Accessory/lib/CoGe/Accessory/parse_report/HSP.pm
 Accessory/lib/CoGe/Accessory/blast_report.pm
@@ -144,6 +142,8 @@ Graphics/lib/CoGe/Graphics/Feature/Flag.pm
 Graphics/lib/CoGe/Graphics/Feature/Quant.pm
 Graphics/t/001_load.t
 Graphics/t/002_load.t
+JEX/lib/CoGe/JEX/Workflow.pm
+JEX/lib/CoGe/JEX/Jex.pm
 Pipelines/lib/CoGe/Builder/Buildable.pm
 Pipelines/lib/CoGe/Builder/Common/Alignment.pm
 Pipelines/lib/CoGe/Builder/CommonTasks.pm

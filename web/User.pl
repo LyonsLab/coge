@@ -23,7 +23,7 @@ use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
 use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape commify);
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
 use CoGe::Core::Item qw(get_item);
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
@@ -55,7 +55,7 @@ if (defined $user_id && $USER->is_admin && $user_id != $USER->id) {
     }
 }
 
-$JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
+$JEX = CoGe::JEX::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
 
 $MAX_SEARCH_RESULTS = 100;
 

@@ -3,8 +3,8 @@
 use strict;
 use CGI;
 use CoGeX;
+use CoGe::JEX::Jex;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Chromosomes;
@@ -42,7 +42,7 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
-$JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+$JEX = CoGe::JEX::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $SECTEMPDIR = $config->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
