@@ -39,6 +39,10 @@ return declare( [ HTMLFeatures ], {
         });
         if (track.config.coge.search)
             options.push({
+                label: 'Merge Markers',
+                onClick: function(){coge_plugin.merge_markers_dialog(track)}
+            });
+            options.push({
                 label: 'Save Results as New Experiment',
                 onClick: function(){coge_plugin.save_as_experiment_dialog(track)}
             });

@@ -104,9 +104,10 @@ define(['dojo/_base/declare',
 			dojo.create('span', { className: 'glyphicon glyphicon-step-backward', onclick: dojo.hitch(this, function() { this.go_to(0) }), style: { cursor: 'pointer' } }, this.div);
 			dojo.create('span', { className: 'glyphicon glyphicon-chevron-left', onclick: dojo.hitch(this, function() { if (this.hit > 0) this.go_to(this.hit - 1) }), style: { cursor: 'pointer' } }, this.div);
 			this.num_span = dojo.create('span', { innerHTML: '1', style: { cursor: 'default' } }, this.div);
-			dojo.create('span', { innerHTML: ' of ' + results.hits.length + ' hit' + (results.hits.length != 1 ? 's ' : ' '), style: { cursor: 'default', marginRight: 5 } }, this.div);
+			this.of_span = dojo.create('span', { style: { cursor: 'default', marginRight: 5 } }, this.div);
 			dojo.create('span', { className: 'glyphicon glyphicon-chevron-right', onclick: dojo.hitch(this, function() { if (this.hit < this.results.hits.length - 1) this.go_to(this.hit + 1) }), style: { cursor: 'pointer' } }, this.div);
 			dojo.create('span', { className: 'glyphicon glyphicon-step-forward', onclick: dojo.hitch(this, function() { this.go_to(this.results.hits.length - 1) }), style: { cursor: 'pointer' } }, this.div);
+			this.update();
 			browser.subscribe('/jbrowse/v1/v/tracks/hide', function(configs) {
 				for (var i=0; i<configs.length; i++)
 					if (configs[i].coge.type == 'search' && configs[i].coge.id == search_id) {
@@ -129,6 +130,9 @@ define(['dojo/_base/declare',
 				});
 			else
 				this.browser.view.centerAtBase((hit[0] + hit[1]) / 2, true);
+		},
+		update: function() {
+			this.of_span.innerHTML = ' of ' + this.results.hits.length + ' hit' + (this.results.hits.length != 1 ? 's ' : ' ');
 		}
 	});
 
@@ -169,6 +173,19 @@ define(['dojo/_base/declare',
 					return this.chr[i][0];
 			}
 		},
+		find_closest: function(chr, x) {
+			var l = 0;
+			for (var i=0; i<this.chr.length; i++) {
+				if (this.chr[i][0] == chr)
+					break;
+				l += this.chr[i][1];
+			}
+			var i = l;
+			var chr_end = this.chr[i][1];
+			while (i < this.hits.length && this.hits[i][0] < x)
+				i++;
+			
+		},
 		get_hits: function(chr, start, end) {
 			var b = this.boundaries(chr);
 			if (!b)
@@ -187,6 +204,37 @@ define(['dojo/_base/declare',
 			if (j < i)
 				return null;
 			return [this.hits, i, j];
+		},
+		merge: function(max_gap, search_nav) {
+			if (!this.save_hits) {
+				this.save_hits = this.hits;
+				this.save_chr = this.chr;
+			}
+			this.hits = [];
+			this.chr = [];
+			var chr = 0;
+			var chr_i = this.save_chr[0][1];
+			var start = this.save_hits[0][0];
+			var end = this.save_hits[0][1];
+			var strand = this.save_hits[0][2];
+			for (var i=1; i<this.save_hits.length; i++) {
+				var hit = this.save_hits[i];
+				if (i < chr_i && strand == hit[2] && hit[0] - end <= max_gap)
+					end = hit[1];
+				else {
+					this.hits.push([start, end, strand, null, null, null])
+					if (i == chr_i) {
+						this.chr.push([this.save_chr[chr][0], this.hits.length]);
+						chr_i = this.save_chr[++chr][1];
+					}
+					start = hit[0];
+					end = hit[1];
+					strand = hit[2]
+				}
+			}
+			this.hits.push([start, end, strand, null, null, null]);
+			this.chr.push([this.save_chr[chr][0], this.hits.length]);
+			search_nav.update();
 		}
 	});
 
@@ -202,6 +250,10 @@ return declare( JBrowsePlugin,
 		});
 		this.num_merges = 0;
 		this.num_searches = 0;
+		browser.subscribe('/jbrowse/v1/n/navigate', function(region) {
+			coge_plugin.start = region.start;
+			coge_plugin.end = region.end;
+		});
 	},
 
 	// ----------------------------------------------------------------
@@ -300,17 +352,12 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	convert_to_marker_dialog: function(track) {
-		track.config.coge.data_type = 4;
-		track.config.type = "CoGe/View/Track/Marker";
-		track.makeTrackMenu();
-		this.browser.getStore(track.config.store, function(store) {
-			store.config.results.hits.forEach(function(hit) {
-				hit[1] = hit[0] + 1;
-				hit[4] = hit[3];
-				hit[5] = 'search'
-			});
+		this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track.config] );
+		track.config.coge.results.hits.forEach(function(hit) {
+			hit[1] = hit[0] + 1;
+			hit[3] = hit[4] = hit[5] = null;
 		});
-		track.changed();
+		this.new_search_track(track.config.coge.etrack, null, track.config.coge.results);
 	},
 
 	// ----------------------------------------------------------------
@@ -500,7 +547,7 @@ return declare( JBrowsePlugin,
 
 	export_dialog: function(track) {
 		this._track = track;
-		var content = '<div id="coge-track-export"><table align="center" style="width:100%"><tr><td>Chromosome:</td><td>';
+		var content = '<table align="center" style="width:100%"><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('All');
 		content += '</td></tr>';
 		if (track.config.coge.transform) {
@@ -520,7 +567,6 @@ return declare( JBrowsePlugin,
 		content += this._ext(track.config.coge.data_type);
 		content += '</td></tr><tr><td></td><td></td></tr></table>';
 		content += this.build_buttons('coge_plugin.export_track()', 'coge_plugin._export_dialog.hide()');
-		content += '</div>';
 		this._export_dialog = new Dialog({
 			title: 'Export Track',
 			content: content,
@@ -615,13 +661,12 @@ return declare( JBrowsePlugin,
 
 	features_overlap_search_dialog: function(track, type, api_path) {
 		this._track = track;
-		var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td>';
+		var content = '<table><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features_overlap">';
 		content += this.build_features_checkboxes();
 		content += '</td></tr></table>';
 		content += this.build_buttons("coge_plugin.search_features_overlap('" + type + "','" + api_path + "')", 'coge_plugin._search_dialog.hide()');
-		content += '</div>';
 		this._search_dialog = new Dialog({
 			title: 'Find ' + type + ' in Features',
 			content: content,
@@ -741,6 +786,29 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	_merge_markers: function() {
+		this._track.config.coge.results.merge(dojo.byId('gap_max').value, this._track.config.coge.search_nav);
+		this._track.changed();
+	},
+
+	// ----------------------------------------------------------------
+
+	merge_markers_dialog: function(track) {
+		this._track = track;
+		var content = '<table><tr><td></td><td style="white-space: nowrap;">Merge adjacent markers within <input id="gap_max" value="100" size="4" /> bp <button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin._merge_markers()">Apply</button></td></tr></table>';
+		this._merge_markers_dialog = new Dialog({
+			title: 'Merge Markers',
+			content: content,
+			onHide: function() {
+				this.destroyRecursive();
+				coge_plugin._merge_markers_dialog = null;
+			}
+		});
+		this._merge_markers_dialog.show();
+	},
+
+	// ----------------------------------------------------------------
+
 	natural_sort: function(a, b) {
 	    var re = /(^-?[0-9]+(\.?[0-9]*)[df]?e?[0-9]?$|^0x[0-9a-f]+$|[0-9]+)/gi,
 	        sre = /(^[ ]*|[ ]*$)/g,
@@ -812,18 +880,23 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	new_search_track: function(track, data) {
+	new_search_track: function(track, data, results) {
 		var browser = this.browser;
        	var search_id = ++coge_plugin.num_searches;
 		var config = dojo.clone(track.config);
+		config.coge.etrack = track;
 		config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
 		config.track = 'search' + search_id;
 		config.label = 'search' + search_id;
-		config.original_store = config.store;
 		config.coge.eid = config.coge.id;
 		config.coge.id = search_id
 		config.coge.type = 'search';
-		var results = new SearchResults(data);
+		if (results) {
+			config.type = 'CoGe/View/Track/Markers',
+			config.coge.data_type = 4;
+		} else
+			results = new SearchResults(data);
+		config.coge.results = results;
         var store_config = {
 			browser: browser,
 			config: config,
@@ -837,7 +910,8 @@ return declare( JBrowsePlugin,
 			browser.publish('/jbrowse/v1/v/tracks/show', [config]);
 			dojo.place(dojo.byId('track_search' + search_id), dojo.byId('track_experiment' + config.coge.eid), 'after');
 			browser.view.updateTrackList();
-			new SearchNav(search_id, results, browser).go_to(0);
+			config.coge.search_nav = new SearchNav(search_id, results, browser);
+			config.coge.search_nav.go_to(0);
 		});
 	},
 
@@ -1030,7 +1104,7 @@ return declare( JBrowsePlugin,
 			return;
 		}
 		this._track = track;
-		var content = '<div id="coge-track-search-dialog"><table><tr><tr><td>Chromosome:</td><td>';
+		var content = '<table><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('All');
 		content += '</td></tr>';
 		if (track.config.coge.transform) {
@@ -1063,7 +1137,6 @@ return declare( JBrowsePlugin,
 		}
 		content += '</table>';
 		content += this.build_buttons('coge_plugin.save_as_experiment()', 'coge_plugin._save_as_dialog.hide()');
-		content += '</div>';
 		this._save_as_dialog = new Dialog({
 			title: 'Save Results as New Experiment',
 			content: content,
