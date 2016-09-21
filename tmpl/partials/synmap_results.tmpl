@@ -14,7 +14,7 @@
     </tmpl_if>
 <div id="data">
     <ul>
-        <li class="small"><a href="#results-1">Current Version</a></li>
+        <li class="small"><a href="#results-1">SynMap2</a></li>
         <li class="small"><a href="#results-2">Legacy Version</a></li>
     </ul>
 
@@ -230,7 +230,6 @@ SynMap2 is our updated version of the original SynMap. By taking advantage of mo
         </div>
     </div>
 
-
 <script src="js/vendor/synteny-vis/build/synteny-dotplot-builder.js"></script>
 
 <script>
@@ -238,22 +237,15 @@ $(document).ready(function(){
     if ('<tmpl_var name=frac_bias>') {
         plotFractBias("fractbias", "<tmpl_var name=frac_bias>", "<tmpl_var name=target_genome>")
     }
-
-    var plotted;
-    $("#data").tabs({
-    	select: function(event, ui) {
-            if (ui.index === 1 && !plotted) {
-		    	makeSyntenyDotPlot({
-							element_id: 'main',
-							data_url: '<tmpl_var name=file_url>',
-							genome_x: { name: '<tmpl_var name=xorg_name>', id: '<tmpl_var name=dsgid1>', chromosomes: <tmpl_var name=chromosomes1>}, 
-							genome_y: { name: '<tmpl_var name=yorg_name>', id: '<tmpl_var name=dsgid2>', chromosomes: <tmpl_var name=chromosomes2>}
-						});
-				plotted = true;
-			}
-        }
-    });
-    $("#data").tabs('select',0);
+    $("#data").tabs();
 });
+function show_results() {
+    makeSyntenyDotPlot({
+                element_id: 'main',
+                data_url: '<tmpl_var name=file_url>',
+                genome_x: { name: '<tmpl_var name=xorg_name>', id: '<tmpl_var name=dsgid1>', chromosomes: <tmpl_var name=chromosomes1>}, 
+                genome_y: { name: '<tmpl_var name=yorg_name>', id: '<tmpl_var name=dsgid2>', chromosomes: <tmpl_var name=chromosomes2>}
+            });
+}
 </script>
 </tmpl_if>
