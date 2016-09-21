@@ -5,7 +5,7 @@ use CoGeX;
 use DBIxProfiler;
 use CoGe::Accessory::Utils qw( commify html_escape);
 use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
 use CoGe::Accessory::Web;
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Genome qw(genomecmp2);
@@ -47,7 +47,7 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
-$JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+$JEX = CoGe::JEX::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 
 $ENV{PATH}     = $config->{COGEDIR};
 $TEMPDIR       = $config->{TEMPDIR} . $PAGE_TITLE;

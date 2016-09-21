@@ -6,7 +6,7 @@ use Mojo::Asset::File;
 use Data::Dumper;
 use File::Spec::Functions qw( catfile );
 use CoGe::Services::Auth qw( init );
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
 use CoGe::Core::Storage qw( get_workflow_paths get_workflow_results );
 use CoGe::Factory::RequestFactory;
 use CoGe::Factory::PipelineFactory;
@@ -20,7 +20,7 @@ sub add {
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     
     # Create request and validate the required fields
-    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+    my $jex = CoGe::JEX::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
     my $request_handler = $request_factory->get($payload);
     unless ($request_handler and $request_handler->is_valid) {
@@ -91,7 +91,7 @@ sub fetch {
     # }
 
     # Get job status from JEX
-    my $jex = CoGe::Accessory::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
+    my $jex = CoGe::JEX::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $job_status = $jex->get_job($id);
     unless ($job_status) {
         $self->render(status => 404, json => {

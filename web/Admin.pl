@@ -4,7 +4,7 @@ use strict;
 use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(format_time_diff);
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
 use CoGe::Core::Search;
 use HTML::Template;
 use JSON qw(encode_json);
@@ -33,8 +33,7 @@ $PAGE_NAME  = "$PAGE_TITLE.pl";
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM, page_title => $PAGE_TITLE );
 
-$JEX =
-  CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+$JEX = CoGe::JEX::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 
 $MAX_SEARCH_RESULTS = 400;
 

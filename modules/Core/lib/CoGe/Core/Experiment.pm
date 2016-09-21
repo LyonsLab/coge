@@ -3,7 +3,7 @@ use strict;
 
 use Data::Dumper;
 use Sort::Versions;
-use CoGe::Accessory::FastBit;
+use FastBit;
 use CoGe::Core::Storage qw( $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER get_experiment_path );
 use CoGe::Accessory::Web qw(get_command_path);
 
@@ -114,7 +114,7 @@ sub get_data {
     {
         my $format = get_fastbit_format($eid, $data_type);
         my $columns = join(',', map { $_->{name} } @{$format->{columns}});
-        my $lines = CoGe::Accessory::FastBit::query("select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999", $eid);
+        my $lines = FastBit::query("select $columns where 0.0=0.0 and chr='$chr' and start <= $stop and stop >= $start order by start limit 999999999", $eid);
 	    my @results = map {_parse_fastbit_line($format, $_, $chr)} @{$lines};
 	    return \@results;
     }
@@ -280,11 +280,11 @@ sub query_data {
 	$where .= " and chr='$chr'" if $chr;
 	my $value1;
     if ($type eq 'max') {
-    	$value1 = CoGe::Accessory::FastBit::max($eid, $chr);
+    	$value1 = FastBit::max($eid, $chr);
     	$where .= ' and value1>' . ($value1 - 0.001);
     }
     elsif ($type eq 'min') {
-    	$value1 = CoGe::Accessory::FastBit::min($eid, $chr);
+    	$value1 = FastBit::min($eid, $chr);
     	$where .= ' and value1<' . ($value1 + 0.001);
     }
     elsif ($type eq 'range') {
@@ -295,7 +295,7 @@ sub query_data {
         my $format = get_fastbit_format($eid, $data_type);
         $col = join(',', map { $_->{name} } @{$format->{columns}});
     }
-    my $results = CoGe::Accessory::FastBit::query("select $col where $where order by $order_by limit 999999999", $eid);
+    my $results = FastBit::query("select $col where $where order by $order_by limit 999999999", $eid);
     if ($type eq 'max' || $type eq 'min') {
     	my $value_col = get_fastbit_score_column $data_type;
         my @lines = grep { $value1 == (split(',', $_))[$value_col] } @{$results};

@@ -3,9 +3,9 @@ package CoGe::Builder::Tools::SynMap;
 use Moose;
 with qw(CoGe::Builder::Buildable);
 
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
+use CoGe::JEX::Workflow;
 use CoGe::Accessory::Web qw( get_defaults get_command_path api_url_for url_for );
-use CoGe::Accessory::Workflow;
 use CoGe::Accessory::Utils qw(units);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Core::Storage qw( get_workflow_paths );
@@ -420,7 +420,7 @@ sub add_jobs {
 			push @blastargs, [ "-query", $fasta,   0 ];
 			push @blastargs, [ "-db",    $db,      0 ];
 		}
-		push @blastargs, [ ";touch", "$raw_blastfile.done", 0]; # seriously hacky, JEX should known when a file is finished writing, or provide an option for this
+		push @blastargs, [ ";touch", "$raw_blastfile.done", 0];
 
 		#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
 		push @blastdb_files, $fasta;
@@ -1372,7 +1372,7 @@ sub generate_pseudo_assembly {
 
 	my $cmd = "synmap/order_contigs_to_chromosome.pl";
 
-	my $JEX = CoGe::Accessory::Jex->new(
+	my $JEX = CoGe::JEX::Jex->new(
 		host => $config->{JOBSERVER},
 		port => $config->{JOBPORT}
 	);
