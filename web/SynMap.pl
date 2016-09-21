@@ -450,6 +450,12 @@ sub gen_body {
 	$template->param( 'FID2'      => $fid2 );
 	$template->param( 'PAGE_NAME' => $PAGE_NAME );
 	$template->param( 'TEMPDIR'   => $TEMPDIR );
+    # $template->param(
+	# 	PAGE_TITLE         => $PAGE_TITLE,
+	# 	SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
+    #     SPLASH_CONTENTS    => 'This page allows you to compare synteny between two genomes.'
+	# 	HELP_URL           => 'https://genomevolution.org/wiki/index.php/SynMap'
+	# );
 	return $template->output;
 }
 

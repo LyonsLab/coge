@@ -571,7 +571,7 @@ var coge = window.coge = (function(namespace) {
                     overlay.hide();
                     if (!data.error) {
                         $("#synmap_zoom_box").draggable();
-                        $('#results').html(data.html).slideDown();
+                        $('#results').html(data.html).slideDown(show_results);
                     } else if (on_error)
                         on_error();
                 },
