@@ -174,7 +174,7 @@
             <option value="coge" selected>CoGe Basic</option>
             <option value="samtools">SAMtools</option>
             <option value="platypus">Platypus</option>
-            <!--<option value="gatk" disabled>GATK -- coming soon!</option>-->
+            <option value="gatk">GATK</option>
         </select>
     </div>
 
@@ -240,19 +240,17 @@
 
 <script id="gatk-snp-template" type="text/template">
     <div id="gatk" class="form-field">
-        <label class="col-md-2">GATK:</label>
-        <!--
+        <label class="col-md-2">GATK (<a href="https://software.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php" target="_blank" class="small link">docs</a>):</label>
         <div class="form-group">
             <div class="form-entry">
-                <label>-g:</label>
-                <input type="number" value="5"/>
+                <label>-stand_call_conf:</label>
+                <input id="-stand_call_conf" type="number" value="30"/>
             </div>
             <div class="form-entry">
-                <label>-g:</label>
-                <input type="number" value="5"/>
+                <label>-stand_emit_conf:</label>
+                <input id="-stand_emit_conf" type="number" value="10"/>
             </div>
         </div>
-        -->
     </div>
 </script>
 
