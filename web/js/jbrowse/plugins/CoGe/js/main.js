@@ -155,36 +155,37 @@ define(['dojo/_base/declare',
 				}
 				this.hits[i] = JSON.parse('[' + data[i].substring(index + 2).replace(/,\.,/g, ',"",') + ']');
 			}
-			this.chr[this.chr.length - 1][1] = data.length;
+			this.chr[this.chr.length - 1][1] = data.length - 1;
 		},
 		boundaries: function(chr) {
-			var l = 0;
+			var start = 0;
 			for (var i=0; i<this.chr.length; i++) {
 				if (chr == this.chr[i][0])
-					return [l, l + this.chr[i][1]];
-				l += this.chr[i][1];
+					return [start, this.chr[i][1]];
+				start = this.chr[i][1] + 1;
 			}
 		},
 		chr_at: function(index) {
-			var l = 0;
 			for (var i=0; i<this.chr.length; i++) {
-				l += this.chr[i][1];
-				if (l > index)
+				if (this.chr[i][1] > index)
 					return this.chr[i][0];
 			}
 		},
-		find_closest: function(chr, x) {
-			var l = 0;
-			for (var i=0; i<this.chr.length; i++) {
+		chr_index: function(chr) {
+			for (var i=0; i<this.chr.length; i++)
 				if (this.chr[i][0] == chr)
-					break;
-				l += this.chr[i][1];
-			}
-			var i = l;
-			var chr_end = this.chr[i][1];
-			while (i < this.hits.length && this.hits[i][0] < x)
+					return i;
+			return -1;
+		},
+		find_closest: function(chr, x) {
+			var chr_i = this.chr_index(chr);
+			var start = chr_i == 0 ? 0 : this.chr[chr_i - 1][1] + 1;
+			var end = this.chr[chr_i][1];
+			var i = start;
+			while (i <= end && this.hits[i][0] < x)
 				i++;
-			
+			if (i == start)
+				return i;
 		},
 		get_hits: function(chr, start, end) {
 			var b = this.boundaries(chr);
@@ -233,7 +234,7 @@ define(['dojo/_base/declare',
 				}
 			}
 			this.hits.push([start, end, strand, null, null, null]);
-			this.chr.push([this.save_chr[chr][0], this.hits.length]);
+			this.chr.push([this.save_chr[chr][0], this.hits.length - 1]);
 			search_nav.update();
 		}
 	});
@@ -250,7 +251,7 @@ return declare( JBrowsePlugin,
 		});
 		this.num_merges = 0;
 		this.num_searches = 0;
-		browser.subscribe('/jbrowse/v1/n/navigate', function(region) {
+		this.browser.subscribe('/jbrowse/v1/n/navigate', function(region) {
 			coge_plugin.start = region.start;
 			coge_plugin.end = region.end;
 		});
