@@ -148,28 +148,22 @@ define(['dojo/_base/declare',
 				var index = data[i].indexOf('"', 1);
 				var chr = data[i].substring(1, index);
 				if (chr != current_chr) {
-					if (this.chr.length > 0)
-						this.chr[this.chr.length - 1][1] = i;
-					this.chr.push([chr, 0]);
+					this.chr.push([chr, i]);
 					current_chr = chr;
 				}
 				this.hits[i] = JSON.parse('[' + data[i].substring(index + 2).replace(/,\.,/g, ',"",') + ']');
 			}
-			this.chr[this.chr.length - 1][1] = data.length - 1;
 		},
 		boundaries: function(chr) {
-			var start = 0;
-			for (var i=0; i<this.chr.length; i++) {
+			for (var i=0; i<this.chr.length; i++)
 				if (chr == this.chr[i][0])
-					return [start, this.chr[i][1]];
-				start = this.chr[i][1] + 1;
-			}
+					return [this.chr[i][1], (i < this.chr.length - 1) ? this.chr[i + 1][1] : this.hits.length];
 		},
 		chr_at: function(index) {
-			for (var i=0; i<this.chr.length; i++) {
+			for (var i=0; i<this.chr.length; i++)
 				if (this.chr[i][1] > index)
-					return this.chr[i][0];
-			}
+					return this.chr[i - 1][0];
+			return this.chr[this.chr.length - 1][0];
 		},
 		chr_index: function(chr) {
 			for (var i=0; i<this.chr.length; i++)
@@ -179,10 +173,10 @@ define(['dojo/_base/declare',
 		},
 		find_closest: function(chr, x) {
 			var chr_i = this.chr_index(chr);
-			var start = chr_i == 0 ? 0 : this.chr[chr_i - 1][1] + 1;
-			var end = this.chr[chr_i][1];
+			var start = this.chr[chr_i][1];
+			var end = (chr_i < this.chr.length - 1) ? this.chr[chr_i + 1][1] : this.hits.length;
 			var i = start;
-			while (i <= end && this.hits[i][0] < x)
+			while (i < end && this.hits[i][0] < x)
 				i++;
 			if (i == start)
 				return i;
@@ -212,29 +206,55 @@ define(['dojo/_base/declare',
 				this.save_chr = this.chr;
 			}
 			this.hits = [];
-			this.chr = [];
+			this.chr = [[this.save_chr[0][0], 0]];
 			var chr = 0;
-			var chr_i = this.save_chr[0][1];
-			var start = this.save_hits[0][0];
-			var end = this.save_hits[0][1];
-			var strand = this.save_hits[0][2];
-			for (var i=1; i<this.save_hits.length; i++) {
-				var hit = this.save_hits[i];
-				if (i < chr_i && strand == hit[2] && hit[0] - end <= max_gap)
-					end = hit[1];
-				else {
-					this.hits.push([start, end, strand, null, null, null])
-					if (i == chr_i) {
-						this.chr.push([this.save_chr[chr][0], this.hits.length]);
-						chr_i = this.save_chr[++chr][1];
+			var chr_end = this.save_chr.length > 1 ? this.save_chr[1][1] : this.save_hits.length;
+			var start_f = null;
+			var end_f = null;
+			var start_r = null;
+			var end_r = null;
+			for (var i=0; i<this.save_hits.length; i++) {
+				if (i == chr_end) {
+					if (start_f != null) {
+						this.hits.push([start_f, end_f, 1, null, null, null]);
+						start_f = end_f = null;
 					}
-					start = hit[0];
-					end = hit[1];
-					strand = hit[2]
+					if (start_r != null) {
+						this.hits.push([start_r, end_r, -1, null, null, null]);
+						start_r = end_r = null;
+					}
+					this.chr.push([this.save_chr[++chr][0], this.hits.length]);
+					chr_end = (chr < this.save_chr.length - 1) ? this.save_chr[chr + 1][1] : this.save_hits.length;
 				}
+				var hit = this.save_hits[i];
+				if (hit[2] == 1)
+					if (start_f == null) {
+						start_f = hit[0];
+						end_f = hit[1];
+					} else if (hit[0] - end_f <= max_gap)
+						end_f = hit[1];
+					else {
+						this.hits.push([start_f, end_f, 1, null, null, null]);
+						start_f = hit[0];
+						end_f = hit[1];
+					}
+				else
+					if (start_r == null) {
+						start_r = hit[0];
+						end_r = hit[1];
+					} else if (hit[0] - end_r <= max_gap)
+						end_r = hit[1];
+					else {
+						this.hits.push([start_r, end_r, -1, null, null, null]);
+						start_r = hit[0];
+						end_r = hit[1];
+					}
 			}
-			this.hits.push([start, end, strand, null, null, null]);
-			this.chr.push([this.save_chr[chr][0], this.hits.length - 1]);
+			if (start_f != null)
+				this.hits.push([start_f, end_f, 1, null, null, null]);
+			if (start_r != null) 
+				this.hits.push([start_r, end_r, -1, null, null, null]);
+			this.hits.sort(function(a, b){return a[0] - b[0]});
 			search_nav.update();
 		}
 	});
