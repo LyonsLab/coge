@@ -1334,15 +1334,17 @@ $(document).ready( function() {
             //postTiny("tiny", final_experiment.page_url);
             postTiny("tiny", final_experiment.tiny_url);
 
-            // Render an instruction pop-up over SynMap
-            var instructor = $("#instruct");
-            var iH = instructor.height();
-            var iW = instructor.width();
-            var canvas = $("#canvas");
-            var cH = canvas.height();
-            var cW = canvas.width();
-            instructor.removeClass("hidden");
-            instructor.css("top", cH/2 - iH/2).css("left", cW/2 - iW/2);
+            // If no cookie to hide it, render an instruction pop-up.
+            if (!$.cookie("instruct_synmap3d")) {
+                var instructor = $("#instruct");
+                var iH = instructor.height();
+                var iW = instructor.width();
+                var canvas = $("#canvas");
+                var cH = canvas.height();
+                var cW = canvas.width();
+                instructor.removeClass("hidden");
+                instructor.css("top", cH/2 - iH/2).css("left", cW/2 - iW/2);
+            }
 
             // Update flat label text.
             document.getElementById("xlabel").innerHTML = xsp;
