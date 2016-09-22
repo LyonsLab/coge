@@ -256,6 +256,14 @@ define(['dojo/_base/declare',
 				this.hits.push([start_r, end_r, -1, null, null, null]);
 			this.hits.sort(function(a, b){return a[0] - b[0]});
 			search_nav.update();
+		},
+		unmerge: function(max_gap, search_nav) {
+			if (this.save_hits) {
+				this.hits = this.save_hits;
+				this.chr = this.save_chr;
+				this.save_hits = null;
+				this.save_chr = null;
+			}
 		}
 	});
 
@@ -293,13 +301,14 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	_button(text, onclick) {
+		return '<button data-dojo-type="dijit/form/Button" type="button" onClick="' + onclick + '">' + text + '</button>';
+	},
+
+	// ----------------------------------------------------------------
+
 	build_buttons(ok_onclick, cancel_onclick) {
-		var html = '<div class="dijitDialogPaneActionBar"><button data-dojo-type="dijit/form/Button" type="button" onClick="';
-		html += ok_onclick;
-		html += '">OK</button><button data-dojo-type="dijit/form/Button" type="button" onClick="';
-		html += cancel_onclick;
-		html += '">Cancel</button></div>';
-		return html;
+		return '<div class="dijitDialogPaneActionBar">' + this._button('OK', ok_onclick) + this._button('Cancel', cancel_onclick) + '</div>';
 	},
 
 	// ----------------------------------------------------------------
@@ -339,7 +348,7 @@ return declare( JBrowsePlugin,
 				html += ' checked';
 			html += '> <label>' + f + '</label></div>';
 		});
-		html += '<div><button onClick="coge_plugin.check_all(this.parentNode.parentNode.parentNode,true)">check all</button> <button onClick="coge_plugin.check_all(this.parentNode.parentNode.parentNode,false)">uncheck all</button></div>';
+		html += '<div>' + this._button('check all', 'coge_plugin.check_all(this.parentNode.parentNode.parentNode,true)') + this._button('uncheck all', 'coge_plugin.check_all(this.parentNode.parentNode.parentNode,false)') + '</div>';
 		return html;
 	},
 
@@ -531,7 +540,7 @@ return declare( JBrowsePlugin,
 		content += '</td></tr><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr></table>';
-		content += this.build_buttons('if($(\'#dnd_in\')[0].checked)coge_plugin.intersection(); else if($(\'#dnd_not_in\')[0].checked)coge_plugin.intersection(true); else coge_plugin.merge();', 'coge_plugin._search_dialog.hide()');
+		content += this.build_buttons('if($(\'#dnd_in\')[0].checked)coge_plugin.intersection(); else if($(\'#dnd_not_in\')[0].checked)coge_plugin.intersection(true); else coge_plugin._merge_tracks();', 'coge_plugin._search_dialog.hide()');
 		content += '</div>';
 		coge_plugin._search_dialog = new Dialog({
 				title: "Combine Tracks",
@@ -766,7 +775,40 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	merge: function() {
+	_markers_merge: function() {
+		this._track.config.coge.results.merge(dojo.byId('gap_max').value, this._track.config.coge.search_nav);
+		this._track.changed();
+	},
+
+	// ----------------------------------------------------------------
+
+	_markers_unmerge: function() {
+		this._track.config.coge.results.unmerge(this._track.config.coge.search_nav);
+		this._track.changed();
+	},
+
+	// ----------------------------------------------------------------
+
+	markers_merge_dialog: function(track) {
+		this._track = track;
+		var content = '<table><tr><td></td><td style="white-space: nowrap;">Merge adjacent markers within <input id="gap_max" value="100" size="4" /> bp</td></tr></table>' +
+			'<div class="dijitDialogPaneActionBar">' + this._button('Apply', 'coge_plugin._markers_merge()') + this._button('Revert', 'coge_plugin._markers_unmerge()') + this._button('Done', 'coge_plugin._merge_markers_dialog.hide()') + '</div>';
+		this._merge_markers_dialog = new Dialog({
+			title: 'Merge Markers',
+			content: content,
+			onHide: function() {
+				this.destroyRecursive();
+				dijit._underlay.domNode.style.visibility = '';
+				coge_plugin._merge_markers_dialog = null;
+			}
+		});
+		this._merge_markers_dialog.show();
+		dijit._underlay.domNode.style.visibility = 'hidden';
+	},
+
+	// ----------------------------------------------------------------
+
+	_merge_tracks: function() {
 		this._start_search();
 		var browser = this.browser;
 		var config = this._track.config;
@@ -803,29 +845,6 @@ return declare( JBrowsePlugin,
 			if (coge_plugin._search_dialog)
 				coge_plugin._search_dialog.hide();
 		});
-	},
-
-	// ----------------------------------------------------------------
-
-	_merge_markers: function() {
-		this._track.config.coge.results.merge(dojo.byId('gap_max').value, this._track.config.coge.search_nav);
-		this._track.changed();
-	},
-
-	// ----------------------------------------------------------------
-
-	merge_markers_dialog: function(track) {
-		this._track = track;
-		var content = '<table><tr><td></td><td style="white-space: nowrap;">Merge adjacent markers within <input id="gap_max" value="100" size="4" /> bp <button data-dojo-type="dijit/form/Button" type="button" onClick="coge_plugin._merge_markers()">Apply</button></td></tr></table>';
-		this._merge_markers_dialog = new Dialog({
-			title: 'Merge Markers',
-			content: content,
-			onHide: function() {
-				this.destroyRecursive();
-				coge_plugin._merge_markers_dialog = null;
-			}
-		});
-		this._merge_markers_dialog.show();
 	},
 
 	// ----------------------------------------------------------------
@@ -932,7 +951,7 @@ return declare( JBrowsePlugin,
 			dojo.place(dojo.byId('track_search' + search_id), dojo.byId('track_experiment' + config.coge.eid), 'after');
 			browser.view.updateTrackList();
 			config.coge.search_nav = new SearchNav(search_id, results, browser);
-			config.coge.search_nav.go_to(0);
+			//config.coge.search_nav.go_to(0);
 		});
 	},
 

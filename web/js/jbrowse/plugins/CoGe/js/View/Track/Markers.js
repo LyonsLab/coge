@@ -40,7 +40,7 @@ return declare( [ HTMLFeatures ], {
         if (track.config.coge.search)
             options.push({
                 label: 'Merge Markers',
-                onClick: function(){coge_plugin.merge_markers_dialog(track)}
+                onClick: function(){coge_plugin.markers_merge_dialog(track)}
             });
             options.push({
                 label: 'Save Results as New Experiment',
