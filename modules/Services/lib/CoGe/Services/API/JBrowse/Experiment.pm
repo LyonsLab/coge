@@ -335,40 +335,78 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
             $self->_write('# search: Markers in ' . $type_names . "\n", $fh);
         }
         $self->_write("#seqid\tsource\ttype\tstart\tend\tscore\tstrand\tphase\tattributes\n", $fh);
-        my $markers;
         if (defined $gap_max) {
             my ($columns, $lines) = _get_quant_lines($id, $chr, $data_type, $type, $gte, $lte);
             my $c;
-            my $start;
-            my $stop;
-            my $strand;
-            my $tot_score = 0;
-            my $num = 1;
+            my @chrs;
+            my $markers;
+            my $start_f;
+            my $start_r;
+            my $stop_f;
+            my $stop_r;
             foreach my $line (@{$lines}) {
                 my $tokens = _transform_line($line, $transform);
-                $c = $tokens->[0] if !$c;
-                $start = $tokens->[1] if !$start;
-                $stop = $tokens->[2] if !$stop;
-                $strand = $tokens->[3] if !$strand;
-                if ($c ne $tokens->[0] || $strand ne $tokens->[3] || $tokens->[1] > $stop + $gap_max) {
-                    $self->_write_marker($c, undef, undef, $start, $stop, $tot_score / $num, $strand, undef, undef, $fh);
+                if (!$c) {
                     $c = $tokens->[0];
-                    $start = $tokens->[1];
-                    $stop = $tokens->[2];
-                    $strand = $tokens->[3];
-                    $num = 1;
-                    $tot_score = 0;
+                    $markers = [];
+                    push @chrs, [$c, $markers];
+                }
+                if ($c ne $tokens->[0]) {
+                    if ($start_f) {
+                        push @$markers, [$start_f, $stop_f, 1];
+                        $start_f = $stop_f = undef;
+                    }
+                    if ($start_r) {
+                        push @$markers, [$start_r, $stop_r, -1];
+                        $start_r = $stop_r = undef;
+                    }
+                    $c = $tokens->[0];
+                }
+                if ($tokens->[3] == 1) {
+                    if (!$start_f) {
+                        $start_f = $tokens->[1];
+                        $stop_f = $tokens->[2];
+                    }
+                    elsif ($tokens->[1] > $stop_f + $gap_max) {
+                        push @$markers, [$start_f, $stop_f, 1];
+                        $start_f = $tokens->[1];
+                        $stop_f = $tokens->[2];
+                    }
+                    else {
+                        $stop_f = $tokens->[2];
+                    }
                 }
                 else {
-                    $num++;
-                    $tot_score += $tokens->[4];
-                    $stop = $tokens->[2];
+                    if (!$start_r) {
+                        $start_r = $tokens->[1];
+                        $stop_r = $tokens->[2];
+                    }
+                    elsif ($tokens->[1] > $stop_r + $gap_max) {
+                        push @$markers, [$start_r, $stop_r, -1];
+                        $start_r = $tokens->[1];
+                        $stop_r = $tokens->[2];
+                    }
+                    else {
+                        $stop_r = $tokens->[2];
+                    }
                 }
             }
-            $self->_write_marker($c, undef, undef, $start, $stop, $tot_score / $num, $strand, undef, undef, $fh);
+            if ($start_f) {
+                push @$markers, [$start_f, $stop_f, 1];
+            }
+            if ($start_r) {
+                push @$markers, [$start_r, $stop_r, -1];
+            }
+            foreach $markers (@chrs) {
+                $c = $markers->[0];
+                my @markers = sort { $a->[0] <=> $b->[0] } $markers->[1];
+                foreach (@markers) {
+                    $self->_write_marker($c, undef, undef, $_->[0], $_->[1], 0, $_->[2], undef, undef, $fh);
+                }
+            }
         }
         else {
-            $markers = $self->_markers;
+            my $markers = $self->_markers;
             my $s = (index(@{$markers}[0], ', ') == -1 ? 1 : 2);
             $chr = undef if $chr eq 'All';
             foreach (@{$markers}) {
