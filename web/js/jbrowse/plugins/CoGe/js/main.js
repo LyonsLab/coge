@@ -368,6 +368,28 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	_clone_config: function(config) {
+		var etrack = config.coge.etrack;
+		if (etrack)
+			config.coge.etrack = null;
+		var results = config.coge.results;
+		if (results)
+			config.coge.results = null;
+		var search_nav = config.coge.search_nav;
+		if (search_nav)
+			config.coge.search_nav = null;
+		var config_clone = dojo.clone(config);
+		if (etrack)
+			config.coge.etrack = etrack;
+		if (results)
+			config.coge.results = results;
+		if (search_nav)
+			config.coge.search_nav = search_nav;
+		return config_clone;
+	},
+
+	// ----------------------------------------------------------------
+
 	confirm: function(title, message, on_confirmed) {
 		new ConfirmDialog({
 			title: title,
@@ -421,7 +443,7 @@ return declare( JBrowsePlugin,
 						type: 'JBrowse/Store/SeqFeature/REST',
 						baseUrl: config.baseUrl
 					};
-					this._new_store(store_config, function(store_name) {
+					self._new_store(store_config, function(store_name) {
 						config.store = store_name;
 						self._create_notebook_dialog.hide();
 						self.browser.publish('/jbrowse/v1/v/tracks/new', [config]);
@@ -809,6 +831,7 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	_merge_tracks: function() {
+		var self = this;
 		this._start_search();
 		var browser = this.browser;
 		var config = this._track.config;
@@ -824,7 +847,7 @@ return declare( JBrowsePlugin,
 			baseUrl: api_base_url + '/experiment/' + eids.join(','),
 		};
 		this._new_store(store_config, function(store_name) {
-			config = dojo.clone(config);
+			config = self._clone_config(config);
 			config.baseUrl = api_base_url + '/experiment/' + eids.join(',');
 			var merge_id = ++coge_plugin.num_merges;
 			config.key = 'Merge ' + merge_id;
@@ -923,7 +946,7 @@ return declare( JBrowsePlugin,
 	new_search_track: function(track, data, results) {
 		var browser = this.browser;
        	var search_id = ++coge_plugin.num_searches;
-		var config = dojo.clone(track.config);
+		var config = this._clone_config(track.config);
 		config.coge.etrack = track;
 		config.key = 'Search: ' + config.key + ' (' + coge_plugin.search_to_string(track.config.coge.search) + ')';
 		config.track = 'search' + search_id;
@@ -980,6 +1003,7 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	save_as_experiment: function() {
+		var self = this;
 		var browser = this.browser;
 		var name = dojo.byId('experiment_name').value;
 		if (!name) {
@@ -1011,26 +1035,28 @@ return declare( JBrowsePlugin,
 					refSeq: browser.refSeq,
 					type: 'JBrowse/Store/SeqFeature/REST'
 				};
-				this._new_store(store_config, function(store_name) {
-					var new_config = dojo.clone(config);
+				self._new_store(store_config, function(store_name) {
+					var eid = config.coge.eid;
+					var new_config = self._clone_config(config);
 					new_config.key = '🔒 ' + name;
 					new_config.track = 'experiment' + id;
 					new_config.label = 'experiment' + id;
 					new_config.store = store_name;
-					new_config.baseUrl = new_config.baseUrl.replace(config.coge.eid, id);
+					new_config.baseUrl = new_config.baseUrl.replace(eid, id);
 					if (new_config.histograms && new_config.histograms.baseUrl)
-						new_config.histograms.baseUrl = new_config.histograms.baseUrl.replace(config.coge.eid, id);
-					new_config.coge.onClick = new_config.coge.onClick.replace(config.coge.eid, id);
+						new_config.histograms.baseUrl = new_config.histograms.baseUrl.replace(eid, id);
+					new_config.coge.onClick = new_config.coge.onClick.replace(eid, id);
 					new_config.coge.id = id;
 					new_config.coge.name = name;
+					delete new_config.coge.search;
 					new_config.coge.type = 'experiment';
 					if (to_marker) {
 						new_config.type = 'CoGe/View/Track/Markers';
 						new_config.coge.data_type = 4;
 					}
-					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + config.coge.eid + '\nsearch:' + search + '\nsearch user:' + un;
-					if (config.coge.transform)
-						new_config.coge.annotations += '\ntransform:' + config.coge.transform;
+					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + eid + '\nsearch:' + search + '\nsearch user:' + un;
+					if (new_config.coge.transform)
+						new_config.coge.annotations += '\ntransform:' + new_config.coge.transform;
 					if (new_config.coge.data_type == 1 || new_config.coge.data_type == 4)
 						new_config.style.featureCss = new_config.style.histCss = 'background-color: ' + coge_plugin.calc_color(id);
 					coge_plugin.browser.publish('/jbrowse/v1/v/tracks/new', [new_config]);

@@ -347,28 +347,31 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
             foreach my $line (@{$lines}) {
                 my $tokens = _transform_line($line, $transform);
                 if (!$c) {
+                    warn Dumper $tokens;
                     $c = $tokens->[0];
                     $markers = [];
                     push @chrs, [$c, $markers];
                 }
                 if ($c ne $tokens->[0]) {
                     if ($start_f) {
-                        push @$markers, [$start_f, $stop_f, 1];
+                        push @$markers, [$start_f, $stop_f, '+'];
                         $start_f = $stop_f = undef;
                     }
                     if ($start_r) {
-                        push @$markers, [$start_r, $stop_r, -1];
+                        push @$markers, [$start_r, $stop_r, '-'];
                         $start_r = $stop_r = undef;
                     }
                     $c = $tokens->[0];
+                    $markers = [];
+                    push @chrs, [$c, $markers];
                 }
-                if ($tokens->[3] == 1) {
+                if ($tokens->[3] eq '1') {
                     if (!$start_f) {
                         $start_f = $tokens->[1];
                         $stop_f = $tokens->[2];
                     }
                     elsif ($tokens->[1] > $stop_f + $gap_max) {
-                        push @$markers, [$start_f, $stop_f, 1];
+                        push @$markers, [$start_f, $stop_f, '+'];
                         $start_f = $tokens->[1];
                         $stop_f = $tokens->[2];
                     }
@@ -382,7 +385,7 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
                         $stop_r = $tokens->[2];
                     }
                     elsif ($tokens->[1] > $stop_r + $gap_max) {
-                        push @$markers, [$start_r, $stop_r, -1];
+                        push @$markers, [$start_r, $stop_r, '-'];
                         $start_r = $tokens->[1];
                         $stop_r = $tokens->[2];
                     }
@@ -392,16 +395,18 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
                 }
             }
             if ($start_f) {
-                push @$markers, [$start_f, $stop_f, 1];
+                push @$markers, [$start_f, $stop_f, '+'];
             }
             if ($start_r) {
-                push @$markers, [$start_r, $stop_r, -1];
+                push @$markers, [$start_r, $stop_r, '-'];
             }
-            foreach $markers (@chrs) {
-                $c = $markers->[0];
-                my @markers = sort { $a->[0] <=> $b->[0] } $markers->[1];
-                foreach (@markers) {
-                    $self->_write_marker($c, undef, undef, $_->[0], $_->[1], 0, $_->[2], undef, undef, $fh);
+            foreach (@chrs) {
+                $c = $_->[0];
+                my @m = sort { $a->[0] <=> $b->[0] } @{$_->[1]};
+                foreach my $l (@m) {
+                    my $start = $l->[0];
+                    my $stop = $l->[1];
+                    $self->_write_marker($c, undef, undef, $start, $stop, 0, $l->[2], undef, undef, $fh);
                 }
             }
         }
