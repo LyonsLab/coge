@@ -432,7 +432,9 @@ $.extend(FindSNPView.prototype, {
                 };
             } else if (method === "gatk") {
                 this.data.snp_params = {
-                    method: method
+                    method: method,
+                    '-stand_call_conf': this.el.find("[id='-stand_call_conf']").val(),
+                    '-stand_emit_conf': this.el.find("[id='-stand_emit_conf']").val()
                 };
             }
         }

@@ -6,7 +6,7 @@ requires qw(build);
 
 has 'workflow' => (
     is => 'rw',
-    isa  => 'CoGe::Accessory::Workflow'
+    isa  => 'CoGe::JEX::Workflow'
 );
 
 has 'staging_dir' => (

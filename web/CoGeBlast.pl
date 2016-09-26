@@ -4,7 +4,7 @@ use strict;
 no warnings('redefine');
 
 use CoGeX;
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
 use CoGe::Accessory::Web qw(url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify get_link_coords );
 use CoGe::Accessory::blast_report;
@@ -50,7 +50,7 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
-$JEX         = CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+$JEX           = CoGe::JEX::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 $ENV{PATH}     = $P->{COGEDIR};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};

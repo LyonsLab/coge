@@ -10,7 +10,6 @@ use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
 use CoGe::Accessory::Utils qw(to_filename to_filename_without_extension);
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Accessory::Workflow;
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
 use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::CommonTasks;
