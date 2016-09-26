@@ -55,9 +55,10 @@ sub build_search {
 }
 
 sub do_search {
-    my ($db, $user, $type, $search, $attributes, $deleted, $restricted, $metadata_key, $metadata_value, $role) = @_;
+    my ($db, $user, $type, $search, $attributes, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite, $certified) = @_;
     
     my $and = $search || [];
+    push @$and, { 'me.certified' => $certified } if defined $certified;
     push @$and, { 'me.deleted' => $deleted } if defined $deleted;
     push @$and, { 'me.restricted' => $restricted } if defined $restricted;
 	if ($metadata_key || $metadata_value) {
@@ -75,6 +76,10 @@ sub do_search {
 		$attributes = add_join($attributes, 'user_connectors');
 		push @$and, { 'user_connectors.parent_id' => $user->id };		
 		push @$and, { 'user_connectors.role_id' => $role eq 'owner' ? 2 : $role eq 'editor' ? 3 : 4 };		
+	}
+	if ($favorite) { # only allow searching for favorites, specifying favorite::0 is not allowed
+		$attributes = add_join($attributes, 'favorite_connectors');
+		push @$and, { 'favorite_connectors.user_id' => $user->id };
 	}
 	return undef if !@$and;
 	return $db->resultset($type)->search_rs({ -and => $and }, $attributes);
@@ -99,17 +104,16 @@ sub name_cmp {
 sub push_results {
 	my ($results, $objects, $type, $user, $access_method, $favorites) = @_;
 	foreach ( @$objects ) {
-		if (!$user || $user->$access_method($_)) {
+		if (!$access_method || !$user || $user->$access_method($_)) {
 			my $result = {
 				'type'          => $type,
 				'name'          => $_->info(hideRestrictedSymbol=>1),
 				'id'            => int $_->id,
-				'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
-				'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+				'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false
 			};
-			$result->{'certified'} = $_->certified ? Mojo::JSON->true : Mojo::JSON->false if $type eq 'genome';
-			warn $favorites->is_favorite($_) if $type eq 'notebook';
-			$result->{'favorite'} = ($favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false) if $favorites;
+			$result->{'certified'} = $_->certified ? Mojo::JSON->true : Mojo::JSON->false if $_->can('certified');
+			$result->{'favorite'} = ($favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false) if defined($favorites) && ($type eq 'genome' || $type eq 'experiment' || $type eq 'notebook');
+			$result->{'restricted'} = $_->restricted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('restricted');
 			
 			push @$results, $result;
 		}
@@ -126,10 +130,12 @@ sub search {
 
     my @organism_ids;
     my @results;
+	my $certified;
 	my $deleted;
+	my $favorite;
     my $favorites;
 	$favorites = CoGe::Core::Favorites->new(user => $user) if ($user && !$user->is_public);
-    my $metadata_key;
+	my $metadata_key;
     my $metadata_value;
 	my $restricted;
 	my $role;
@@ -140,8 +146,16 @@ sub search {
     	my $handled = 0;
         if ( index( $query_terms[$i], "::" ) != -1 ) {
             my @splitTerm = split( '::', $query_terms[$i] );
-			if ($splitTerm[0] eq 'deleted') {
+			if ($splitTerm[0] eq 'certified') {
+				$certified = $splitTerm[1];
+				$handled = 1;
+			}
+			elsif ($splitTerm[0] eq 'deleted') {
 				$deleted = $splitTerm[1];
+				$handled = 1;
+			}
+			elsif ($splitTerm[0] eq 'favorite') {
+				$favorite = $splitTerm[1];
 				$handled = 1;
 			}
 			elsif ($splitTerm[0] eq 'metadata_key') {
@@ -204,20 +218,20 @@ sub search {
 		my @genome_results;
 
 		my $search = build_search(['me.name', 'me.description', 'me.genome_id'],  \@query_terms);
-		my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+		my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite, $certified);
 		if ($rs) {
 			my @genomes = $rs->all();
-			push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome');
+			push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
 		}
 
 		# get genomes linked to found organisms
-		if (scalar @organism_ids) {
+		if (@organism_ids) {
 			my $search = [ { organism_id => { -in => \@organism_ids }} ];
-			if (scalar @genome_results) {
+			if (@genome_results) {
 				my @genome_ids = map { $_->{'id'} } @genome_results;
 				push $search, { genome_id => { -not_in => \@genome_ids } };
 			}
-			my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+			my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite, $certified);
 			if ($rs) {
 				my @genomes = $rs->all();
 				push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
@@ -230,7 +244,7 @@ sub search {
     # experiments
 	if ($type eq 'none' || $type eq 'experiment') {
 		my $search = build_search(['me.name', 'me.description', 'me.experiment_id', 'genome.name', 'genome.description', 'organism.name', 'organism.description'],  \@query_terms);
-		my $rs = do_search($db, $user, 'Experiment', $search, { join => { 'genome' => 'organism' } }, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+		my $rs = do_search($db, $user, 'Experiment', $search, { join => { 'genome' => 'organism' } }, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite);
 		if ($rs) {
 			my @experiments = sort info_cmp $rs->all();
 			push_results(\@results, \@experiments, 'experiment', $user, 'has_access_to_experiment', $favorites);
@@ -240,7 +254,7 @@ sub search {
     # notebooks
 	if ($type eq 'none' || $type eq 'notebook') {
 		my $search = build_search(['name', 'description', 'list_id'],  \@query_terms);
-		my $rs = do_search($db, $user, 'List', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
+		my $rs = do_search($db, $user, 'List', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite);
 		if ($rs) {
 			my @notebooks = sort { lc($a->name) cmp lc($b->name) } $rs->all();
 			push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_list', $favorites);
@@ -252,14 +266,8 @@ sub search {
 		my $search = build_search(['name', 'description', 'user_group_id'],  \@query_terms);
 		my $rs = do_search($db, $user, 'UserGroup', $search, undef, $deleted);
 		if ($rs) {
-			foreach ( sort { lc($a->name) cmp lc($b->name) } $rs->all() ) {
-				push @results, {
-					'type'    => "user_group",
-					'name'    => $_->name,
-					'id'      => int  $_->id,
-					'deleted' => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
-				};
-			}
+			my @user_groups = sort info_cmp $rs->all();
+			push_results(\@results, \@user_groups, 'user_group', $user, undef, $favorites);
 		}
 	}
 	return @results;

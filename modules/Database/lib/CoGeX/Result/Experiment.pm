@@ -139,6 +139,11 @@ __PACKAGE__->has_many(    # parent groups
         ]
     }
 );
+__PACKAGE__->has_many(
+    "favorite_connectors" => "CoGeX::Result::FavoriteConnector",
+    { "foreign.child_id" => "self.experiment_id" },
+    { where => [ -and => [ child_type  => $node_types->{experiment} ] ] }
+);
 
 sub item_type {
     return $node_types->{experiment};   

@@ -132,6 +132,11 @@ __PACKAGE__->has_many(    # child lists
     { "foreign.parent_id" => "self.list_id" },
     { where               => { child_type => $node_types->{list} } }
 );
+__PACKAGE__->has_many(
+    "favorite_connectors" => "CoGeX::Result::FavoriteConnector",
+    { "foreign.child_id" => "self.list_id" },
+    { where => [ -and => [ child_type  => $node_types->{list} ] ] }
+);
 
 sub item_type {
     return $node_types->{list};   
