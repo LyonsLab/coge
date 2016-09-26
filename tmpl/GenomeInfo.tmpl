@@ -6,6 +6,8 @@
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <script type="text/javascript" src="js/pages/genome-info.js"></script>
+<script type="text/javascript" src="js/vendor/moment/moment.js"></script>
+<script type="text/javascript" src="js/vendor/moment-timezone-data/index.js"></script>
 
 <style>
 #chr_list_table {
@@ -94,6 +96,14 @@ $(document).ready(function() {
         $('#loading_msg').hide();
         $('#load_dialog').dialog('open');
         update_dialog("api/v1/jobs/" + job_id, pageObj.user, $("#load_dialog"), progress_formatter);
+    }
+    
+    // Change creation timestamp to local time
+    var creation = $('#creation').html();
+    if (creation) {
+    	var localized = coge.utils.timeToLocal(creation);
+    	if (localized != creation)
+    		$('#creation').html(localized);
     }
 });
 
@@ -382,7 +392,7 @@ Are you sure you want to move this genome into your trash?<p>
         <tmpl_if name="creator">
         <tr>
             <td class='title5' style='white-space:nowrap;'>Creation:</td>
-            <td class='data5'><TMPL_VAR NAME="creator"></td>
+            <td class='data5'><TMPL_VAR NAME="CREATOR"> <span id="creation"><TMPL_VAR NAME="CREATION_DATE"></span></td>
         </tr>
         </tmpl_if>
         <tmpl_if name="owner">
