@@ -51,7 +51,7 @@ do
        echo deleting local $d 
        rm -rf $d
     fi
-    count=$[$count + 1]
+    ((count++))
 done
 
 echo `date` "Deleting old REMOTE database backups (local & remote)"
@@ -63,7 +63,7 @@ do
         echo deleting IRODS backup/$d
         $ICMD/irm -r backup/$d
     fi
-    count=$[$count + 1]
+    ((count++))
 done
 
 #
