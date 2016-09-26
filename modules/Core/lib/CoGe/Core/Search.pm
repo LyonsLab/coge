@@ -5,6 +5,7 @@ use warnings;
 
 use CoGeX;
 use CoGeDBI;
+use CoGe::Core::Favorites;
 use Data::Dumper;
 use Text::ParseWords;
 
@@ -82,30 +83,35 @@ sub do_search {
 sub info_cmp {
 	my $info_a = lc($a->info);
 	my $info_b = lc($b->info);
-	$info_a = substr($info_a, 6) if substr($info_a, 0, 6) eq '&reg; ';
-	$info_b = substr($info_b, 6) if substr($info_b, 0, 6) eq '&reg; ';
+	$info_a = substr($info_a, 6) if substr($info_a, 0, 2) eq '🔒 ';
+	$info_b = substr($info_b, 6) if substr($info_b, 0, 2) eq '🔒 ';
 	$info_a cmp $info_b;
 }
 
 sub name_cmp {
 	my $name_a = lc($a->{'name'});
 	my $name_b = lc($b->{'name'});
-	$name_a = substr($name_a, 6) if substr($name_a, 0, 6) eq '&reg; ';
-	$name_b = substr($name_b, 6) if substr($name_b, 0, 6) eq '&reg; ';
+	$name_a = substr($name_a, 6) if substr($name_a, 0, 2) eq '🔒 ';
+	$name_b = substr($name_b, 6) if substr($name_b, 0, 2) eq '🔒 ';
 	$name_a cmp $name_b;
 }
 
 sub push_results {
-	my ($results, $objects, $type, $user, $access_method) = @_;
+	my ($results, $objects, $type, $user, $access_method, $favorites) = @_;
 	foreach ( @$objects ) {
 		if (!$user || $user->$access_method($_)) {
-			push @$results, {
+			my $result = {
 				'type'          => $type,
-				'name'          => $_->info,
+				'name'          => $_->info(hideRestrictedSymbol=>1),
 				'id'            => int $_->id,
 				'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
 				'restricted'    => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
 			};
+			$result->{'certified'} = $_->certified ? Mojo::JSON->true : Mojo::JSON->false if $type eq 'genome';
+			warn $favorites->is_favorite($_) if $type eq 'notebook';
+			$result->{'favorite'} = ($favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false) if $favorites;
+			
+			push @$results, $result;
 		}
 	}
 }
@@ -121,6 +127,8 @@ sub search {
     my @organism_ids;
     my @results;
 	my $deleted;
+    my $favorites;
+	$favorites = CoGe::Core::Favorites->new(user => $user) if ($user && !$user->is_public);
     my $metadata_key;
     my $metadata_value;
 	my $restricted;
@@ -175,24 +183,9 @@ sub search {
 	$restricted = 0 if !$user;
 
     # organisms
-	if (($type eq 'none' || $type eq 'organism' || $type eq 'genome') && scalar @query_terms) {
-        my @orgArray;
-        for ( my $i = 0 ; $i < @query_terms ; $i++ ) {
-            my $and_or;
-            if ($query_terms[$i]{"not_like"}) {
-                $and_or = "-and";
-			} else {
-				$and_or = "-or";
-			}
-			push @orgArray, {
-				$and_or => [
-					name        => $query_terms[$i],
-					description => $query_terms[$i],
-					organism_id => $query_terms[$i]
-				]
-			};
-		}
-		my @organisms = $db->resultset("Organism")->search( { -and => \@orgArray } );
+	if (($type eq 'none' || $type eq 'organism' || $type eq 'genome') && @query_terms) {
+		my $search = build_search(['me.name', 'me.description', 'me.organism_id'],  \@query_terms);
+		my @organisms = $db->resultset("Organism")->search( { -and => $search } );
 		if ($type ne 'genome') {
 			foreach ( sort { lc($a->name) cmp lc($b->name) } @organisms ) {
 				push @results, {
@@ -227,7 +220,7 @@ sub search {
 			my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
 			if ($rs) {
 				my @genomes = $rs->all();
-				push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome');
+				push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
 			}
 		}
 
@@ -240,7 +233,7 @@ sub search {
 		my $rs = do_search($db, $user, 'Experiment', $search, { join => { 'genome' => 'organism' } }, $deleted, $restricted, $metadata_key, $metadata_value, $role);
 		if ($rs) {
 			my @experiments = sort info_cmp $rs->all();
-			push_results(\@results, \@experiments, 'experiment', $user, 'has_access_to_experiment');
+			push_results(\@results, \@experiments, 'experiment', $user, 'has_access_to_experiment', $favorites);
 		}
 	}
 
@@ -250,7 +243,7 @@ sub search {
 		my $rs = do_search($db, $user, 'List', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role);
 		if ($rs) {
 			my @notebooks = sort { lc($a->name) cmp lc($b->name) } $rs->all();
-			push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_list');
+			push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_list', $favorites);
 		}
 	}
 

@@ -911,7 +911,7 @@ function wait_to_search(search_func, search_term) {
 		function() {
 			search_func(pageObj.search_term);
 		},
-		1000
+		500
 	);
 }
 
@@ -2032,6 +2032,7 @@ function init_histogram(element) {
 }
 
 function init_taxon_tree(element) {
+	$("#loading6").show();
 	if (!tree) {
 		$.ajax({
 			data: {
@@ -2039,6 +2040,7 @@ function init_taxon_tree(element) {
 			},
 			success: function(data) {
 				tree = new Taxon_tree(JSON.parse(data), element);
+				$("#loading6").hide();
 			}
 		});
 	}
@@ -2087,6 +2089,7 @@ $.extend(Taxon_tree.prototype, {
 		self.fix.call(self);
 	},
 	fix: function() {
+		//show inital tree
 		var self = this;
 		self.root.x0 = self.height / 2;
 		self.root.y0 = 0;
@@ -2254,21 +2257,31 @@ $.extend(Taxon_tree.prototype, {
 		nodes.forEach(function(d) {
 			d.x0 = d.x;
 			d.y0 = d.y;
+			
 		});
 	},
 	filter: function(search_text) {
 		var self = this;
+		$("#loading6").show();
 		if (search_text) {
 			var find = self.find.call(self, search_text, [self.root]);
 			if(find) {
 				self.update.call(self, self.root, find);
+				$("#not").hide();
+				//does not show $("#loading6").show();
 			} else {
-				// Not found = no change
-				//self.update.call(self, self.root, current.root);
+				// Not found = reset filter
+				//does not show $("#loading6").show();
+				self.update.call(self, self.root, self.root);
+				$("#not").show();
 			}
+			setTimeout(function(){ $("#loading6").hide(); }, 500);
 		} else {
 			// Empty search text = reset filter
 			self.update.call(self, self.root, self.root);
+			//hides the loading6 image
+			$("#loading6").hide();
+			$("#not").hide();
 		}
 	},
 	find: function(search_text, nodes) {	//nodes is expected to be an array
@@ -2347,8 +2360,11 @@ $.extend(Taxon_tree.prototype, {
 });
 
 function filter_tree() {
-	var search_text = $('#tree_filter').val();
-    tree.filter(search_text);
+	//loads the found tree
+	if (tree) {
+		var search_text = $('#tree_filter').val();
+		tree.filter(search_text);
+	}
 }
 
 function init_line_graph(index) {

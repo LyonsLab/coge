@@ -5,8 +5,8 @@
 		<br><br>
 		<TMPL_VAR NAME=SPLASH_CONTENTS>
 		<br><br>
-		See <a href="<TMPL_VAR NAME=HELP_URL>">this article</a> for detailed instructions.
-		Or at any time you can click the <a href="<TMPL_VAR NAME=HELP_URL>">"Need help?"</a> link in the upper right of this page.
+		See <a href="<TMPL_VAR NAME=HELP_URL>" target="_blank">this article</a> for detailed instructions.
+		Or at any time you can click the <a href="<TMPL_VAR NAME=HELP_URL>" target="_blank">"Need help?"</a> link in the upper right of this page.
 	</div>
     <br><br>
     <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) $.cookie('<TMPL_VAR NAME=SPLASH_COOKIE_NAME>','true',{expires:10000});$(this).parent('div').dialog('close');" class="r ui-button ui-corner-all">OK</span>

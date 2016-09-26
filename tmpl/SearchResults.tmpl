@@ -4,7 +4,7 @@ td, th { padding: 0 }
 table { background-color: transparent }
 caption { padding-top: 8px; padding-bottom: 8px; color: #777; text-align: left }
 th { text-align: left }
-.table { width: 100%; max-width: 100%; margin-bottom: 20px }
+.table { width: 100%; max-width: 100%; }
 .table>thead>tr>th, .table>tbody>tr>th, .table>tfoot>tr>th, .table>thead>tr>td, .table>tbody>tr>td, .table>tfoot>tr>td { padding: 8px; line-height: 1.42857143; vertical-align: top; border-top: 1px solid #ddd }
 .table>thead>tr>th { vertical-align: bottom; border-bottom: 2px solid #ddd }
 .table>caption+thead>tr:first-child>th, .table>colgroup+thead>tr:first-child>th, .table>thead:first-child>tr:first-child>th, .table>caption+thead>tr:first-child>td, .table>colgroup+thead>tr:first-child>td, .table>thead:first-child>tr:first-child>td { border-top: 0 }
@@ -49,7 +49,7 @@ const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
 	
 	<div id="masterTable" style="display:none;position:relative;left:20px;padding-top:10px;padding-bottom:10px;" class="collapse result">
 
-		<div id="organism" class="collapse" style="padding-top:10px;">
+		<div id="organism" class="collapse" style="padding-top:10px;margin-bottom:10px;">
 			<span id='orgCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#orgArrow');show_table('#orgList')"></span>
 			<div id="orgArrow" onclick="toggle_arrow('#orgArrow');show_table('#orgList')" style='display:inline;'>
 				<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -57,7 +57,7 @@ const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
 			<table cellspacing="5" class="collapse table table-striped table-hover table-condensed" id='orgList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 		</div>
 	
-		<div id="genome" class="collapse" style="padding-top:10px;">
+		<div id="genome" class="collapse" style="padding-top:10px;margin-bottom:10px;">
 			<span id='genCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#genArrow');show_table('#genList')"></span>
 			<div id="genArrow" onclick="toggle_arrow('#genArrow');show_table('#genList')" style='display:inline;'>
 	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -65,7 +65,7 @@ const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
 	    	<table cellspacing="5" class="collapse table table-striped table-hover table-condensed" id='genList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 		</div>
 	
-		<div id="user" class="collapse" style="padding-top:10px;">
+		<div id="user" class="collapse" style="padding-top:10px;margin-bottom:10px;">
 			<span id='userCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#userArrow');show_table('#userList')"></span>
 			<div id="userArrow" onclick="toggle_arrow('#userArrow');show_table('#userList')" style='display:inline;'>
 	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -73,7 +73,7 @@ const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
 	    	<table cellspacing="5" class="collapse table table-striped table-hover table-condensed" id='userList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 		</div>
 	
-		<div id="user_group" class="collapse" style="padding-top:10px;">
+		<div id="user_group" class="collapse" style="padding-top:10px;margin-bottom:10px;">
 			<span id='usrgroupCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')"></span>
 			<div id="usrGArrow" onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')" style='display:inline;'>
 	    		<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -81,7 +81,7 @@ const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
 	    	<table cellspacing="5" class="collapse table table-striped table-hover table-condensed" id='usrgroupList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 		</div>
 	
-		<div id="notebook" class="collapse" style="padding-top:10px;">
+		<div id="notebook" class="collapse" style="padding-top:10px;margin-bottom:10px;">
 			<span id='noteCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#noteArrow');show_table('#noteList')"></span>
 			<div id="noteArrow" onclick="toggle_arrow('#noteArrow');show_table('#noteList')" style='display:inline;'>
 	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
@@ -89,7 +89,7 @@ const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
 	    	<table cellspacing="5" class="collapse table table-striped table-hover table-condensed" id='noteList' style="border-top:0px solid green; padding-left:20px; padding-bottom:10px;"></table>
 		</div>
 	
-		<div id="experiment" class="collapse" style="padding-top:10px;">
+		<div id="experiment" class="collapse" style="padding-top:10px;margin-bottom:10px;">
 			<span id='expCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#expArrow');show_table('#expList')"></span>
 			<div id="expArrow" onclick="toggle_arrow('#expArrow');show_table('#expList')" style='display:inline;'>
 	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>

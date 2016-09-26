@@ -9,6 +9,7 @@ use Sort::Versions;
 use CoGe::Accessory::TDS qw(write read);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_genome_path);
+use CoGe::Core::Favorites;
 
 BEGIN {
     our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION );
@@ -19,7 +20,7 @@ BEGIN {
     @EXPORT = qw( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
         fix_chromosome_id read_fasta_index);
-    @EXPORT_OK = qw(genomecmp search_genomes);
+    @EXPORT_OK = qw(genomecmp genomecmp2 search_genomes);
 }
 
 my @LOCATIONS_PREFETCH = (
@@ -38,14 +39,22 @@ my @LOCATIONS_PREFETCH = (
 
 sub genomecmp($$) {
     my ($a, $b) = @_;
+    return genomecmp2($a, $b);
+}
 
-    my $namea = $a->name ? $a->name :  "";
-    my $nameb = $b->name ? $b->name :  "";
+sub genomecmp2 {
+    my ($a, $b, $favorites) = @_;
+
+    my $namea = $a->name ? $a->name :  '';
+    my $nameb = $b->name ? $b->name :  '';
     my $typea = $a->type ? $a->type->id : 0;
     my $typeb = $b->type ? $b->type->id : 0;
+    my $favea = $favorites ? $favorites->is_favorite($a) : 0;
+    my $faveb = $favorites ? $favorites->is_favorite($b) : 0;
 
     $a->organism->name cmp $b->organism->name
-      || $b->certified  <=> $a->certified
+      || $faveb <=> $favea
+      || $b->certified <=> $a->certified
       || versioncmp( $b->version, $a->version )
       || $typea <=> $typeb
       || $namea cmp $nameb

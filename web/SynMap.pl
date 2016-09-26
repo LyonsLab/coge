@@ -8,7 +8,8 @@ use CoGeX;
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
 use CoGe::Builder::Tools::SynMap;
-use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Genome qw(genomecmp genomecmp2);
+use CoGe::Core::Favorites;
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -449,6 +450,12 @@ sub gen_body {
 	$template->param( 'FID2'      => $fid2 );
 	$template->param( 'PAGE_NAME' => $PAGE_NAME );
 	$template->param( 'TEMPDIR'   => $TEMPDIR );
+    # $template->param(
+	# 	PAGE_TITLE         => $PAGE_TITLE,
+	# 	SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
+    #     SPLASH_CONTENTS    => 'This page allows you to compare synteny between two genomes.'
+	# 	HELP_URL           => 'https://genomevolution.org/wiki/index.php/SynMap'
+	# );
 	return $template->output;
 }
 
@@ -511,7 +518,9 @@ sub gen_dsg_menu {
 	my $message;
 	my $org_name;
 
-	foreach my $dsg ( sort genomecmp
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
+    
+	foreach my $dsg ( sort { genomecmp2($a, $b, $favorites) }
 		$coge->resultset('Genome')->search(
 			{ organism_id => $oid },
 			{
@@ -541,8 +550,9 @@ sub gen_dsg_menu {
 			}
 		}
 		else {
-			$name .= "<span title='certified'>&#x2705; CERTIFIED</span> " if $dsg->certified;
-		    $name .= "<span title='restricted'>&#x1f512; RESTRICTED</span> " if $dsg->restricted;
+		    $name .= "&#11088; " if ($favorites->is_favorite($dsg));
+			$name .= "&#x2705; " if $dsg->certified;
+		    $name .= "&#x1f512; " if $dsg->restricted;
 			$name .= $dsg->name . ": " if $dsg->name;
 			$name .= $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
 			$org_name = $dsg->organism->name unless $org_name;

@@ -47,7 +47,8 @@ function search_stuff(search_term) {
 					html += url;
 					html += obj.id;
 					html += '"';
-				} else
+				} 
+				else
 					html += '<span';
 				if (obj.description) {
 					html += ' title=';
@@ -56,6 +57,12 @@ function search_stuff(search_term) {
 				if (obj.deleted == 1)
 					html += ' style="color:red;"';
 				html += '>';
+				if (obj.favorite)
+					html += '&#11088;&nbsp;&nbsp;';
+				if (obj.certified)
+					html += '&#x2705;&nbsp;&nbsp;';
+				if (obj.restricted)
+					html += '&#x1f512;&nbsp;&nbsp;';
 				html += obj.name;
 				html += url ? '</a>' : '</span>';
 				html += '</td><td>';
@@ -128,14 +135,15 @@ function search_stuff(search_term) {
 				$('#user').show();
 				$('#userCount').html("Users: " + userCounter);
 				$('#userList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + userList);
-				if(userCounter <= 10) {
-					$( "#userList" ).show();
-					//$( "#userArrow" ).find('img').toggle();
-					$("#userArrow").find('img').attr("src", "picts/arrow-down-icon.png");
-				} else {
+//				if(userCounter <= 10) {
+//					$( "#userList" ).show();
+//					//$( "#userArrow" ).find('img').toggle();
+//					$("#userArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+//				} 
+//				else {
 					$( "#userList" ).hide();
 					$("#userArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-				}
+//				}
 			} else {
 				$('#user').hide();
 			}
@@ -145,14 +153,15 @@ function search_stuff(search_term) {
 				$('#organism').show();
 				$('#orgCount').html("Organisms: " + orgCounter);
 				$('#orgList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + orgList);
-				if(orgCounter <= 10) {
-					$( "#orgList" ).show();
-					//$( "#orgArrow" ).find('img').toggle();
-					$( "#orgArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
-				} else {
+//				if(orgCounter <= 10) {
+//					$( "#orgList" ).show();
+//					//$( "#orgArrow" ).find('img').toggle();
+//					$( "#orgArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+//				} 
+//				else {
 					$( "#orgList" ).hide();
 					$("#orgArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-				}
+//				}
 			} else {
 				$('#organism').hide();
 			}
@@ -162,14 +171,15 @@ function search_stuff(search_term) {
 				$('#genome').show();
 				$('#genCount').html("Genomes: " + genCounter);
 				$('#genList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + genList);
-				if(genCounter <= 10) {
-					$( "#genList" ).show();
-					//$( "#genArrow" ).find('img').toggle();
-					$( "#genArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
-				} else {
+//				if(genCounter <= 10) {
+//					$( "#genList" ).show();
+//					//$( "#genArrow" ).find('img').toggle();
+//					$( "#genArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+//				} 
+//				else {
 					$( "#genList" ).hide();
 					$("#genArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-				}
+//				}
 			} else {
 				$('#genome').hide();
 			}
@@ -179,14 +189,15 @@ function search_stuff(search_term) {
 				$('#experiment').show();
 				$('#expCount').html("Experiments: " + expCounter);
 				$('#expList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + expList);
-				if(expCounter <= 10) {
-					$( "#expList" ).show();
-					//$( "#expArrow" ).find('img').toggle();
-					$( "#expArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
-				} else {
+//				if(expCounter <= 10) {
+//					$( "#expList" ).show();
+//					//$( "#expArrow" ).find('img').toggle();
+//					$( "#expArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+//				} 
+//				else {
 					$( "#expList" ).hide();
 					$("#expArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-				}
+//				}
 			} else {
 				$('#experiment').hide();
 			}
@@ -196,14 +207,15 @@ function search_stuff(search_term) {
 				$('#notebook').show();
 				$('#noteCount').html("Notebooks: " + noteCounter);
 				$('#noteList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + noteList);
-				if(noteCounter <= 10) {
-					$( "#noteList" ).show();
-					//$( "#noteArrow" ).find('img').toggle();
-					$( "#noteArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
-				} else {
+//				if(noteCounter <= 10) {
+//					$( "#noteList" ).show();
+//					//$( "#noteArrow" ).find('img').toggle();
+//					$( "#noteArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+//				} 
+//				else {
 					$( "#noteList" ).hide();
 					$("#noteArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-				}
+//				}
 			} else {
 				$('#notebook').hide();
 			}
@@ -213,14 +225,15 @@ function search_stuff(search_term) {
 				$('#user_group').show();
 				$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
 				$('#usrgroupList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + usrgroupList);
-				if (usrgroupCounter <= 10) {
-					$( "#usrgroupList" ).show();
-					//$( "#usrGArrow" ).find('img').toggle();
-					$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
-				} else {
+//				if (usrgroupCounter <= 10) {
+//					$( "#usrgroupList" ).show();
+//					//$( "#usrGArrow" ).find('img').toggle();
+//					$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
+//				} 
+//				else {
 					$( "#usrgroupList" ).hide();
 					$("#usrGArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-				}
+//				}
 			} else {
 				$('#user_group').hide();
 			}

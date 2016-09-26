@@ -12,8 +12,6 @@ use Getopt::Long qw(GetOptions);
 use JSON qw(decode_json);
 use URI::Escape::JavaScript qw(unescape);
 
-use CoGe::Accessory::Workflow;
-use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw(get_defaults get_command_path get_job schedule_job);
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);

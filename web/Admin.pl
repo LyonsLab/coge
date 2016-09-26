@@ -4,7 +4,7 @@ use strict;
 use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(format_time_diff);
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
 use CoGe::Core::Search;
 use HTML::Template;
 use JSON qw(encode_json);
@@ -33,14 +33,11 @@ $PAGE_NAME  = "$PAGE_TITLE.pl";
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM, page_title => $PAGE_TITLE );
 
-$JEX =
-  CoGe::Accessory::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+$JEX = CoGe::JEX::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
 
 $MAX_SEARCH_RESULTS = 400;
 
 our $node_types = CoGeX::node_types();
-my $filename = '/home/franka1/repos/coge/web/admin_error.log';
-open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
 
 #print STDERR $node_types->{user};
 
@@ -73,7 +70,7 @@ open(my $fh, '>', $filename); #or die "Could not open file '$filename' $!";
     get_total_table					=> \&get_total_table,
     gen_tree_json					=> \&gen_tree_json, 
     get_total_queries				=> \&get_total_queries,
- get_uptime		=> \&get_uptime,
+    get_uptime		                => \&get_uptime,
 );
 
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
@@ -1826,7 +1823,6 @@ sub gen_tree_json {
 				name => $array[0],
 				children => [],
 			};
-			#print $fh "$array[0]\n";
 			shift @array;
 			if (scalar(@array) > 0) {
 				push ($hash->{children}, gen_subtree(\@array));
@@ -1841,11 +1837,9 @@ sub gen_tree_json {
 		my $i;
 		for ($i = scalar(@{$taxonomic_tree{children}} - 1); $i > -1; $i--) {
 			if ((lc $add_tree->{name}) eq (lc @{$taxonomic_tree{children}}[$i]->{name})) {
-				#print $fh "Inconsistency Detected\n";
 				$move_tree = splice(@{$taxonomic_tree{children}}, $i, 1);
 				
 				foreach my $child (@{$move_tree->{children}}) {
-					#print $fh "Moving: $child->{name} to $add_tree->{name}\n";
 					add_to_tree($add_tree, $child);
 				}
 			}
@@ -1908,10 +1902,5 @@ sub get_total_queries {
 	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my $results = CoGeDBI::get_total_queries($db->storage->dbh);
 	my $results2 = CoGeDBI::get_uptime($db->storage->dbh);	
-	print STDERR Dumper $results2 ;
-return encode_json({Queries => $results->{Queries}->{Value}, Uptime => $results2->{Uptime}->{Value}});
-}
-
-if ($fh) {
-	close $fh;
+    return encode_json({Queries => $results->{Queries}->{Value}, Uptime => $results2->{Uptime}->{Value}});
 }

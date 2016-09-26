@@ -35,34 +35,41 @@ $(function() {
 		mine: {
 			title: 'My Data',
 			displayType: 'grid',
-			dataTypes: ['genome', 'experiment'],
-			operations: ['share', 'organize', 'delete', 'sendto']
+			dataTypes: ['genome', 'experiment', 'notebook'],
+			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
 		},
 		genome: {
 			title: 'Genomes',
 			displayType: 'grid',
 			dataTypes: ['genome'],
-			operations: ['share', 'organize', 'delete', 'sendto']
+			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
 		},
 		experiment: {
 			title: 'Experiments',
 			displayType: 'grid',
 			dataTypes: ['experiment'],
-			operations: ['share', 'organize', 'delete', 'sendto']
+			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
 		},
-		favorite: {
-			title: 'Favorites',
-			displayType: 'grid',
-			dataTypes: ['favorite'],
-			operations: ['share', 'organize', 'delete', 'sendto'],
-			noFilter: true
-		},		
 		notebook: {
 			title: 'Notebooks',
 			displayType: 'grid',
 			dataTypes: ['notebook'],
-			operations: ['share', 'delete', 'sendto', 'add']
+			operations: ['share', 'favorite', 'delete', 'sendto', 'add']
 		},
+		shared: {
+			title: 'Shared with me',
+			displayType: 'grid',
+			dataTypes: ['genome', 'experiment', 'notebook'],
+			operations: ['share', 'organize', 'favorite'],
+			shared: true
+		},
+		favorite: {
+			title: 'Favorites',
+			displayType: 'grid',
+			dataTypes: ['genome', 'experiment', 'notebook', 'favorite'],
+			operations: ['share', 'organize', 'favorite', 'sendto'],
+			favorite: true
+		},	
 		metadata: {
 			title: 'Metadata',
 			displayType: 'html',
@@ -74,14 +81,8 @@ $(function() {
 			displayType: 'grid',
 			dataTypes: ['group'],
 			operations: ['edit', 'delete', 'add'],
-			shared: true
-		},
-		shared: {
-			title: 'Shared with me',
-			displayType: 'grid',
-			dataTypes: ['genome', 'experiment', 'notebook'],
-			operations: ['share', 'organize'],
-			shared: true
+			shared: true,
+			flagsColumn: false
 		},
 		activity: {
 			title: 'Activity',
@@ -94,14 +95,16 @@ $(function() {
 			displayType: 'grid',
 			dataTypes: ['analyses'],
 			noFilter: true,
-			defaultSort: [ 1, 'asc' ]
+			defaultSort: [ 1, 'asc' ],
+			flagsColumn: false
 		},
 		loads: {
 			title: 'Data loading',
 			displayType: 'grid',
 			dataTypes: ['loads'],
 			noFilter: true,
-			defaultSort: [ 1, 'asc' ]
+			defaultSort: [ 1, 'asc' ],
+			flagsColumn: false
 		},
 		graph: {
 			title: 'Graph',
@@ -278,6 +281,9 @@ function default_info() {
 		case 'shared':
 			return "These are data items that your collaborators shared with you.<br><br>" +
 				"Hover over an item to view additional info. Select one or more items to share with others or add to a notebook.";
+		case 'favorite':
+			return "These are data items that you have marked as your favorites.<br><br>" +
+				   "Hover over an item to view additional info.";
 		case 'metadata':
 			return "Here is a summary of the metadata for your experiments, genomes and notebooks.";
 		case 'mine':
@@ -323,6 +329,8 @@ $.extend(ContentPanel.prototype, {
 					if (view.shared && data.role_id == '2')
 						return false;
 					if (!view.shared && data.role_id != '2' && !view.deleted)
+						return false;
+					if (view.favorite && data.favorite == '0')
 						return false;
 				}
 				return true;
@@ -415,6 +423,12 @@ $.extend(ContentPanel.prototype, {
         	$('#search_input').hide();
         else
         	$('#search_input').show();
+        
+        // Disable flags column if specified
+        if (view.hasOwnProperty('flagsColumn') && !view.flagsColumn)
+        	this.grid.dataTable.api().column(0).visible(false);
+        else
+        	this.grid.dataTable.api().column(0).visible(true);
         
     	// Render contents
     	var cachedData = this.getData(view.dataTypes);
@@ -604,10 +618,20 @@ $.extend(DataGrid.prototype, {
 			searching: true,
 			dom:       'lrt', // remove unused elements (like search box)
 			sScrollY:  $(window).height() - 245, // this depends on the height of the header/footer
-			"oLanguage": {"sZeroRecords": "", "sEmptyTable": ""},
+			oLanguage: { "sZeroRecords": "", "sEmptyTable": "" },
 			columns: [
-	            { 	title: "Name", 
+	            { 	title: "", 
 	            	targets: 0,
+	            	orderable: false,
+	            	type: "string",
+	            	width: 15,
+	            	data: null, // use full data object
+	            	render: function(data, type, row, meta) {
+	            		return data.getFlags();
+	            	}
+	            },			          
+	            { 	title: "Name", 
+	            	targets: 1,
 	            	type: "string",
 	            	data: null, // use full data object
 	            	render: function(data, type, row, meta) {
@@ -615,7 +639,7 @@ $.extend(DataGrid.prototype, {
 	            	}
 	            },
 	            { 	title: "Date added", 
-	            	targets: 1, 
+	            	targets: 2, 
 	            	type: "relative-date", // this is our own custom type
 	            	data: null, // use full data object
 	            	width: "100px",
@@ -623,7 +647,8 @@ $.extend(DataGrid.prototype, {
 	            		return data.getDate();
 	            	}
 	            }
-			]
+			],
+			order: [[1, 'asc']] // set default sort to "Name" column in ascending order
 		});
 		
 		var dataTableBody = dataTable.children('tbody');
@@ -713,7 +738,7 @@ $.extend(DataGrid.prototype, {
 				return 999999; // sort last
 			var diff = matches[1];
 		    return parseInt(diff);
-		};		
+		};
 		$.fn.dataTable.ext.oSort['relative-date-asc'] = function(x,y) {
 		    return ((x < y) ? 1 : ((x > y) ? -1 : 0));
 		};
@@ -723,7 +748,7 @@ $.extend(DataGrid.prototype, {
     },
     
     reset: function() {
-    	
+    	// TODO
     	return this;
     },
     
@@ -809,17 +834,17 @@ $.extend(DataGrid.prototype, {
     },
 
     openItem: function(row) {
-    	console.log('DataGrid.openItem');
-    	if (row.type == 'group') // kludge
+    	if (row.type == 'group')
     		group_dialog();
     	else if (row.type == 'analyses' || row.type == 'loads')
     		window.open(row.link, '_blank');
     	else {
-    		title = row.getDescription();
-    		link = row.getLink();
-    		title = title + "<br><a class='xsmall' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
+    		var title = row.getDescription();
+    		var link = row.getLink();
+    		var flags = row.getFlags({noSpaces: 1});
+    		title = flags + ' ' + title + "<br><a class='xsmall' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
     		link = link + "&embed=1";
-    		console.log(link);
+    		console.log('DataGrid.openItem: ' + link);
     		var height = $(window).height() * 0.8;
     		var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
     			.dialog({
@@ -838,12 +863,30 @@ $.extend(DataGrid.prototype, {
 		
 function DataGridRow(data, type) {
 	$.extend(this, data);
-	this.type = type;
-    this.initialize();
+	if (!this.type) // mdb added condition 9/16/18 COGE-388 -- prevent native type (genome,etc) from being set to "favorite"
+		this.type = type;
 }
 
-$.extend(DataGridRow.prototype, { // TODO extend this into separate classes for each type (genome, experiment, etc...)
-	initialize: function() {
+$.extend(DataGridRow.prototype, { // TODO consider extending this into separate classes for each type (genome, experiment, etc...)
+    getFlags: function(opts) {
+    	if (this.type == 'genome' || 
+    		this.type == 'experiment' || 
+    		this.type == 'notebook' || 
+    		this.type == 'favorite') 
+    	{
+    		var noSpaces = (opts && opts.noSpaces);
+    		
+    		var flags = '';
+    		if (!noSpaces || this.favorite == '1')
+    			flags = '<span style="color:goldenrod;visibility:' + 
+	    			(this.favorite == '1' ? 'visible' : 'hidden') + 
+	    			'">&#9733;</span>&nbsp;';
+    		if (this.restricted == '1')
+	    		flags += '&#x1f512;' + '&nbsp;';
+    		
+    		return flags;
+    	}
+    	return '';
     },
     
     getDescription: function() {
@@ -866,7 +909,6 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     	var certified = '<span class="glyphicon glyphicon-ok coge-certified-icon"></span> <span class="coge-small-text">Certified Genome<span>';
     	var descStr = 
     		icon +
-    	   	(this.restricted == '1' ? '&reg; '  : '') +
     	   	(this.organism ? this.organism : '') + 
     	   	(this.name ? ' (' + this.name + ')' : '') +
     	   	(this.description ? ': ' + this.description : '') +
@@ -878,7 +920,6 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatExperiment: function() {
     	var descStr = 
     		'<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-    	   	(this.restricted == '1' ? '&reg; '  : '') +
     	   	this.name +
     	   	(this.description ? ': ' + this.description : '') +
     	   	' (v' + this.version + ', id' + this.id + ')';
@@ -888,7 +929,6 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     _formatNotebook: function() {
     	var descStr =
     		'<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
-    		(this.restricted == '1' ? '&reg; '  : '') +
     		this.name +
     		(this.description ? ': ' + this.description : '') +
     		(this.type_name ? ' (' + this.type_name + ')' : '');
@@ -927,8 +967,7 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
         var restart_icon = '<img title="Restart this analysis" class="link" height="15" style="vertical-align:middle;" src="picts/refresh-icon.png" width="15" onclick="restart_job('+this.id+');"/>';
         var comment_icon = '<img title=' + (this.comment && this.comment.length ? JSON.stringify(this.comment) : '"Add comment"') + ' class="link" height="15" style="vertical-align:middle;" src="picts/' + (this.comment && this.comment.length ? 'comment' : 'no-comment') + '-icon.png" width="15" onclick="comment_dialog('+this.id+');" />';
         var icons = star_icon + ' ' + comment_icon + ' ' + (isCancelled ? restart_icon : '') + ' ' + (isRunning ? cancel_icon : '');
-    	var descStr =
-    		icons + ' ' + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + '<span class="highlighted">' + this.comment : '') + '</span>' + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
+    	var descStr = icons + ' ' + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + '<span class="highlighted">' + this.comment : '') + '</span>' + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
     	return descStr;
     },
     
@@ -958,11 +997,13 @@ $.extend(DataGridRow.prototype, { // TODO extend this into separate classes for 
     },
     
     getLink: function() {
-    	if (this.type == 'genome')
+    	var type = this.type;
+    	
+    	if (type == 'genome')
     		return 'GenomeInfo.pl?gid=' + this.id;
-    	else if (this.type == 'experiment')
+    	else if (type == 'experiment')
     		return 'ExperimentView.pl?eid=' + this.id;
-    	else if (this.type == 'notebook')
+    	else if (type == 'notebook')
     		return 'NotebookView.pl?nid=' + this.id;
     	else
     		return this.link;
@@ -1121,29 +1162,30 @@ function update_icons(items) { //TODO move into ContentPanel
 		$('.item-button:not(#add_button)').addClass('coge-disabled');
 }
 
-function get_item_type(obj) {
-	return obj.id.match(/content_\w+_(\w+)/)[1];
-}
-
-function sync_items(html) {
-	var content1 = $('#contents_table .coge-list-item');
-	var content2 = $(html).filter('.coge-list-item'); // FIXME: this is slow
-
-	var insertIndex = 0;
-	content2.each(
-		function() {
-			var match = document.getElementById(this.id);
-			if (!match) // item doesn't exist
-				$(this).insertBefore( content1.get(insertIndex) );
-			else { // item exists
-				var src_info = $(this).find('span[name="info"]').html();
-				var dest = $(match).find('span[name="info"]');
-				if (dest.html() !== src_info)
-					dest.html(src_info);
-				insertIndex++;
+function favorite_items() {
+	var selected_rows = contentPanel.grid.getSelectedRows();
+	var item_list = contentPanel.grid.getSelectedItemList();
+	if (item_list) {
+		// Optimistically toggle favorite in UI
+		selected_rows.every(function() {
+			var d = this.data();
+			d.favorite = (d.favorite == '0' ? '1' : '0');
+			this.data(d);
+		});
+		contentPanel.grid.redraw();
+		infoPanel.update(null);
+		
+		// Toggle favorite on server
+		$.ajax({
+			data: {
+				fname: 'favorite_items',
+				item_list: item_list
+			},
+			success : function(data) {
+				// TODO handle error
 			}
-		}
-	);
+		});
+	}
 }
 
 function delete_items() {

@@ -371,8 +371,10 @@ See Also   :
 
 sub info { 
     my $self = shift;
+    my %opts = @_;
+
     my $info = $self->name;
-    $info = '&reg; ' . $info if $self->restricted;
+    $info = '&#x1f512; ' . $info if $self->restricted && !$opts{hideRestrictedSymbol}; #TODO move this into view code
     $info .= ': ' . $self->description if $self->description;
     #$info .= ' (' . $self->type->name . ')' if $self->type;
     $info .= ' (id' . $self->id . ')';
@@ -600,6 +602,17 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
         "<table cellpadding=0 class='border-top border-bottom'>"
       . $anno_obj->to_String
       . "</table>";
+}
+
+sub to_hash {
+    my $self = shift;
+    return {
+        id          => $self->id,
+        type        => 'notebook',
+        name        => $self->name,
+        description => $self->description,
+        restricted  => $self->restricted
+    };
 }
 
 1;

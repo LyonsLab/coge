@@ -1238,7 +1238,6 @@ function get_content_dialog(id, request, chromosome) {
 }
 
 function get_experiments(e) {
-    e.preventDefault();
     var experiments = $("#experiments");
     experiments.html("Loading experiments... ").append(spinner.clone());
 

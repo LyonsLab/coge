@@ -22,7 +22,6 @@ use Data::Dumper;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::IRODS;
-use CoGe::Accessory::Jex;
 use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Genome qw(genomecmp);
@@ -32,7 +31,7 @@ no warnings 'redefine';
 
 use vars qw(
   $CONF $PAGE_TITLE $TEMPDIR $USER $DB $FORM $LINK $EMBED
-  %FUNCTION $LOAD_ID $WORKFLOW_ID $JEX
+  %FUNCTION $LOAD_ID $WORKFLOW_ID
 );
 
 $PAGE_TITLE = 'SynMap3D';
@@ -42,8 +41,6 @@ $FORM = new CGI;
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
-
-$JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
 
 # Get workflow_id and load_id for previous load if specified.  Otherwise
 # generate a new load_id for data upload.

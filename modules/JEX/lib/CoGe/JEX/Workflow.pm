@@ -1,4 +1,4 @@
-package CoGe::Accessory::Workflow;
+package CoGe::JEX::Workflow;
 use strict;
 use warnings;
 use 5.10.0;

@@ -379,3 +379,15 @@ function send_list_to() {
 		}
 	});
 }
+
+function toggle_favorite(img) {
+	$.ajax({
+		data: {
+			fname: 'toggle_favorite',
+			nid: NOTEBOOK_ID,
+		},
+		success :  function(val) {
+			$(img).attr({ src: (val == '0' ? "picts/star-hollow.png" : "picts/star-full.png") });
+		}
+	});
+}

@@ -27,7 +27,8 @@ function search_genomes (search_term) {
 	coge.services.search_genomes(search_term, { fast: true })
 		.done(function(response) {
 			var results = response.genomes.map(function(obj) {
-				var label = obj.info.replace(/&reg;/g, "\u00ae"); // (R) symbol
+				var label = obj.info.replace(/&#x1f512;/g, "\uD83D\uDD12"); // Lock symbol
+				//TODO add certified and favorite icons
 				return { label: label, value: obj.id };
 			});
 			edit_genome

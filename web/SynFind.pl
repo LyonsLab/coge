@@ -5,9 +5,11 @@ use CoGeX;
 use DBIxProfiler;
 use CoGe::Accessory::Utils qw( commify html_escape);
 use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
 use CoGe::Accessory::Web;
 use CoGe::Core::Notebook qw(notebookcmp);
+use CoGe::Core::Genome qw(genomecmp2);
+use CoGe::Core::Favorites;
 use CGI;
 use JSON::XS;
 use HTML::Template;
@@ -45,7 +47,7 @@ $FORM = new CGI;
     cgi => $FORM
 );
 
-$JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+$JEX = CoGe::JEX::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 
 $ENV{PATH}     = $config->{COGEDIR};
 $TEMPDIR       = $config->{TEMPDIR} . $PAGE_TITLE;
@@ -252,10 +254,8 @@ sub gen_body {
 sub get_orgs { #FIXME: dup'ed in CoGeBlast.pl
     my %opts      = @_;
     my $name_desc = $opts{name_desc};
-    my $html_only =
-      $opts{html_only};    # optional flag to return html instead of JSON
+    my $html_only = $opts{html_only}; # optional flag to return html instead of JSON
     my $timestamp = $opts{timestamp};
-
 #    print STDERR "get_orgs: " . ($name_desc ? $name_desc : '') . "\n";
 
     my $html;
@@ -271,9 +271,7 @@ sub get_orgs { #FIXME: dup'ed in CoGeBlast.pl
         );
 
         my @opts;
-        foreach
-          my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms )
-        {
+        foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms ) {
             push @opts,
                 "<OPTION value=\""
               . $item->id
@@ -283,70 +281,54 @@ sub get_orgs { #FIXME: dup'ed in CoGeBlast.pl
               . "</OPTION>";
         }
 
-#$html .= qq{<FONT class="small" id="org_count">Matching Organisms (} . scalar @opts . qq{)</FONT><BR>};
         if (@opts) {
             if ( @opts <= $MAX_SEARCH_RESULTS ) {
-
-#$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;" onchange="gen_dsg_menu(['args__oid','org_id'],['dsgid']);" ondblclick="add_selected_orgs();">\n};
                 $html .= join( "\n", @opts );
-
-                #$html .= "\n</SELECT>\n";
-                #$html =~ s/OPTION/OPTION SELECTED/;
             }
             else {
-                $html .=
-"<option id='null_org' style='color:gray;' disabled='disabled'>Too many results to display, please refine your search.</option>";
-
-#$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>Too many results to display, please refine your search.</option></SELECT><input type='hidden' id='gstid'>\n};
+                $html .= "<option id='null_org' style='color:gray;' disabled='disabled'>Too many results to display, please refine your search.</option>";
             }
         }
         else {
-            $html .=
-"<option id='null_org' style='color:gray;' disabled='disabled'>No results</option>";
-
-#$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>No results</option></SELECT><input type='hidden' id='gstid'>\n};
+            $html .= "<option id='null_org' style='color:gray;' disabled='disabled'>No results</option>";
         }
     }
     else {
-
-#       $html .= qq{<FONT class="small" id="org_count">Matching Organisms } . '(' . $coge->resultset('Organism')->count() . ')' . qq{</FONT>\n<br>\n};
-#       $html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>Please enter a search term</option></SELECT><input type='hidden' id='gstid'>\n};
-        $html .=
-"<option id='null_org' style='color:gray;' disabled='disabled'>Please enter a search term</option>";
+        $html .= "<option id='null_org' style='color:gray;' disabled='disabled'>Please enter a search term</option>";
     }
 
     return $html if ($html_only);
     return encode_json( { timestamp => $timestamp, html => $html } );
 }
 
-sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
+sub gen_dsg_menu {
     my %opts  = @_;
     my $oid   = $opts{oid};
     my $dsgid = $opts{dsgid};
 
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
     my @genomes;
     foreach my $dsg (
-        sort {
-            versioncmp( $b->version, $a->version )
-              || $a->type->id <=> $b->type->id
-        } $coge->resultset('Genome')->search(
+        sort { genomecmp2($a, $b, $favorites) } $coge->resultset('Genome')->search(
             { organism_id => $oid },
             { prefetch    => ['genomic_sequence_type'] }
         )
       )
     {
         next unless $USER->has_access_to_genome($dsg);
-        #added by EHL 12/30/2014
         next if $dsg->deleted; #skip deleted genomes
-        ######	
-	my $name;
+        
+        my $name;
+        $name .= "&#11088; " if ($favorites->is_favorite($dsg));
+        $name .= "&#x2705; " if $dsg->certified;
+        $name .= "&#x1f512; " if $dsg->restricted;
+        
         my $has_cds = has_cds( $dsg->id );
-        $name .= " NO CDS ANNOTATIONS.  CAN'T BE USED: " unless $has_cds;
-
+        $name .= " NO CDS ANNOTATIONS - CAN'T BE USED: " unless $has_cds;
+        
         $dsgid = $dsg->id unless $dsgid;
-
-	$name .= " (id ". $dsg->id.") ";
+	    $name .= " (id ". $dsg->id.") ";
         $name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
         $name .= "v"
           . $dsg->version . " "
@@ -360,13 +342,11 @@ sub gen_dsg_menu { #FIXME: dup'ed in CoGeBlast.pl
 
     my $dsg_menu = '';
     if (@genomes) {
-
         foreach (@genomes) {
             my ( $numt, $name ) = @$_;
             my $selected = ( $dsgid && $numt == $dsgid ? 'selected' : '' );
             $dsg_menu .= qq{<option value='$numt' $selected>$name</option>};
         }
-
     }
 
     return $dsg_menu;
@@ -377,18 +357,14 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
     my $dsgids = $opts{dsgid};
     my $orgids = $opts{orgid};
     my %dsgs;
-
 #   print STDERR "get_dsg_for_menu: dsgids=" . ($dsgids ? $dsgids : '') . " orgids=" . ($orgids ? $orgids : '') . "\n";
 
     if ($orgids) {
         my @orgids = split( /,/, $orgids );
-        foreach my $dsg (
-            $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
+        foreach my $dsg ( $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
         {
             next unless $USER->has_access_to_genome($dsg);
-	    #added by EHL 12/30/2014
-	    next if $dsg->deleted;
-            ######
+	        next if $dsg->deleted;
             $dsgs{ $dsg->id } = $dsg;
         }
     }
@@ -398,16 +374,14 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
         foreach my $dsgid ( split( /,/, $dsgids ) ) {
             my $dsg = $coge->resultset('Genome')->find($dsgid);
             next unless $USER->has_access_to_genome($dsg);
-            #added by EHL 12/30/2014
             next if $dsg->deleted;
-            ######
             $dsgs{ $dsg->id } = $dsg;
         }
     }
 
     my $html;
     foreach my $dsg ( values %dsgs ) {
-        next unless has_cds( $dsg->id );    #skip if it has no CDS annotations
+        next unless has_cds( $dsg->id ); # skip if it has no CDS annotations
         my ($ds) = $dsg->datasets;
         $html .= ":::" if $html;
         my $org_name = $dsg->organism->name;
@@ -424,116 +398,16 @@ sub get_dsg_for_menu { #FIXME: dup'ed in CoGeBlast.pl
     return html_escape($html);
 }
 
-#sub get_orgs {
-#    my %opts = @_;
-#    my $name = $opts{name};
-#    my $desc = $opts{desc};
-#    $name = "" if $name && $name =~ /^Search$/i;
-#    $desc = "" if $desc && $desc =~ /^Search$/i;
-#    my $html;
-#    my @db;
-#    if ($name) {
-#        @db =
-#          $coge->resultset('Organism')
-#          ->search( { name => { like => "%" . $name . "%" } } );
-#    }
-#    elsif ($desc) {
-#        @db =
-#          $coge->resultset("Organism")
-#          ->search( { description => { like => "%" . $desc . "%" } } );
-#    }
-#    else {
-#        $html .=
-#            qq{<FONT CLASS ="small" id="org_count">Organism count: }
-#          . $coge->resultset('Organism')->count()
-#          . qq{</FONT>\n<BR>\n};
-#        $html .=
-#qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please search</option></SELECT><input type=hidden id=gstid>\n};
-#        return $html;
-#    }
-#    my @opts;
-#    foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @db ) {
-#        push @opts,
-#            "<OPTION value=\""
-#          . $item->id
-#          . "\" id=\"o"
-#          . $item->id . "\">"
-#          . $item->name
-#          . "</OPTION>";
-#    }
-#
-#    $html .=
-#        qq{<FONT CLASS ="small" id="org_count">Organism count: }
-#      . scalar @opts
-#      . qq{</FONT>\n<BR>\n};
-#    unless (@opts) {
-#        $html .= qq{<input type = hidden name="org_id" id="org_id"><br>};
-#        $html .= "No results";
-#        return $html;
-#    }
-#    $html .=
-#qq{<SELECT id="org_id" SIZE="8" MULTIPLE onclick="show_add()" onchange="gen_dsg_menu(['args__oid','org_id'],['org_seq_types']);" ondblclick="add_selected_orgs();">\n};
-#    $html .= join( "\n", @opts );
-#    $html .= "\n</SELECT>\n";
-#    $html =~ s/OPTION/OPTION SELECTED/;
-#    return $html;
-#}
-
-#sub gen_dsg_menu {
-#    my $t1    = new Benchmark;
-#    my %opts  = @_;
-#    my $oid   = $opts{oid};
-#    my $dsgid = $opts{dsgid};
-#    my @dsg_menu;
-#    foreach my $dsg (
-#        sort { versioncmp( $b->version, $a->version ) || $b->id cmp $a->id }
-#        $coge->resultset('Genome')->search(
-#            { organism_id => $oid },
-#            { prefetch    => ['genomic_sequence_type'] }
-#        )
-#      )
-#    {
-#        next if $dsg->deleted;
-#        next unless ( $USER->has_access_to_genome($dsg) );
-#        $dsgid = $dsg->id unless $dsgid;
-#        my $name    = $dsg->info;
-#        my $has_cds = has_cds( $dsg->id );
-#        $name .= " NO CDS ANNOTATIONS.  CAN'T BE USED." unless $has_cds;
-#        push @dsg_menu, [ $dsg->id, $name ];
-#    }
-#    my $size = scalar @dsg_menu;
-#    $size = 5 if $size > 5;
-#
-#    my $dsg_menu = qq{
-#   <select id=dsgid multiple size=$size onclick="show_add();" ondblclick="get_dsg_for_search_menu(['args__dsgid','dsgid'],[add_to_list]);">>
-#};
-#    foreach (@dsg_menu) {
-#        my ( $numt, $name ) = @$_;
-#        my $selected = " selected" if $dsgid && $numt == $dsgid;
-#        $selected = " " unless $selected;
-#        $dsg_menu .= qq{
-#   <OPTION VALUE=$numt $selected>$name</option>
-#};
-#    }
-#    $dsg_menu .= "</select>";
-#    my $t2 = new Benchmark;
-#    my $time = timestr( timediff( $t2, $t1 ) );
-#    return ($dsg_menu);
-#
-#}
-
 sub get_genome_info { #FIXME: dup'ed in CoGeBlast.pl
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
-
-    #   print STDERR "get_genome_info: $dsgid\n";
+    #print STDERR "get_genome_info: $dsgid\n";
     return " " unless $dsgid;
 
     my $dsg = $coge->resultset("Genome")->find($dsgid);
     return "Unable to create genome object for id: $dsgid" unless $dsg;
 
-    my $html = qq{<table class='small'>}
-      ;    # = qq{<div style="overflow:auto; max-height:78px">};
+    my $html = qq{<table class='small'>}; # = qq{<div style="overflow:auto; max-height:78px">};
     $html .= qq{<tr valign='top'><td style='white-space:nowrap'>Name:<td><span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>}
       . $dsg->organism->name
       . "</span>";
@@ -572,44 +446,6 @@ sub get_genome_info { #FIXME: dup'ed in CoGeBlast.pl
 
     return $html;
 }
-
-#sub get_dsg_for_search_menu {
-#    my %opts   = @_;
-#    my $dsgids = $opts{dsgid};
-#    my $orgids = $opts{orgid};
-#    my %dsgs;
-#    if ($orgids) {
-#        my @orgids = split( /,/, $orgids );
-#        foreach my $dsg (
-#            $coge->resultset('Genome')->search( { organism_id => [@orgids] } ) )
-#        {
-#            next if $dsg->deleted;
-#            $dsgs{ $dsg->id } = $dsg;
-#        }
-#    }
-#    if ($dsgids) {
-#        %dsgs = () if ( $dsgs{$dsgids} );
-#        foreach my $dsgid ( split( /,/, $dsgids ) ) {
-#            my $dsg = $coge->resultset('Genome')->find($dsgid);
-#            next unless $dsg;
-#            $dsgs{ $dsg->id } = $dsg;
-#        }
-#    }
-#    my $opts;
-#    foreach my $dsg ( values %dsgs ) {
-#        my ($ds) = $dsg->datasets;
-#        $opts .= ":::" if $opts;
-#        next unless has_cds( $dsg->id );    #skip if it has no CDS annotations
-#        my $item =
-#            $dsg->id . "::"
-#          . $dsg->organism->name . " ("
-#          . $ds->data_source->name . " "
-#          . $dsg->type->name . " v"
-#          . $dsg->version . ")";
-#        $opts .= $item;
-#    }
-#    return $opts;
-#}
 
 sub get_types {
     my %opts = @_;
@@ -1115,12 +951,10 @@ sub go_synfind {
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "#" x (25), $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Link to Regenerate Analysis",
-        $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Link to Regenerate Analysis", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "$tiny_synfind_link", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "",           $cogeweb->logfile );
-    CoGe::Accessory::Web::write_log( "Created Workflow: $workflow_name",
-        $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Created Workflow: $workflow_name", $cogeweb->logfile );
 
     #convert numerical codes for different scoring functions to appropriate types
     if ( $scoring_function eq '2' ) {
@@ -1367,11 +1201,11 @@ sub go_synfind {
             [ '--scoring', $scoring_function,             1 ],
             [ '--qnote',   $target->{dsgid1},             1 ],
             [ '--snote',   $target->{dsgid2},             1 ],
-	#added new commands for synteny_score v0.5.3 Eric Lyons 4/29/2015
+	        #added new commands for synteny_score v0.5.3 Eric Lyons 4/29/2015
             [ '--qbedlift',$target->{bedfile1},           1 ],
             [ '--sbedlift',$target->{bedfile2},           1 ],
             [ '--lift',    $target->{converted_blastfile},1 ],
-	####
+	        ####
             [ '--sqlite',  $target->{synteny_score_db},   1 ],
         ];
 
@@ -1779,8 +1613,7 @@ sub gen_fasta {
         $res = 1;
     }
     else {
-        system "/usr/bin/touch $file.running"
-          ;    #track that a blast anlaysis is running for this
+        system "/usr/bin/touch $file.running"; #track that a blast anlaysis is running for this
         $res =
           generate_fasta( dsgid => $dsgid, file => $file, type => $feat_type )
           unless -r $file;
@@ -1868,8 +1701,7 @@ sub generate_fasta {
     }
     else {
         foreach my $chr ( sort $dsg->get_chromosomes ) {
-
-#		my $title = join ("||",$chr, 1, $ds->last_chromosome_position($chr), "Chr_$chr",1, "genomic", "N/A");
+#		    my $title = join ("||",$chr, 1, $ds->last_chromosome_position($chr), "Chr_$chr",1, "genomic", "N/A");
             my $seq = $dsg->get_genomic_sequence( chr => $chr );
             next unless $seq;
             print OUT ">" . $chr . "\n";
@@ -1878,8 +1710,7 @@ sub generate_fasta {
     }
     close OUT;
     return 1 if -r $file;
-    CoGe::Accessory::Web::write_log( "Error with fasta file creation",
-        $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Error with fasta file creation", $cogeweb->logfile );
     return 0;
 }
 
@@ -1950,13 +1781,11 @@ sub make_bed {
     CoGe::Accessory::Web::write_log( "#BED FILES#", $cogeweb->logfile );
     my $cmd = $DATASETGROUP2BED . " -dsgid $dsgid > $outfile";
     if ( -r $outfile && -s $outfile ) {
-        CoGe::Accessory::Web::write_log( "bed file $outfile already exists",
-            $cogeweb->logfile );
+        CoGe::Accessory::Web::write_log( "bed file $outfile already exists", $cogeweb->logfile );
         CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
         return $outfile;
     }
-    CoGe::Accessory::Web::write_log( "Creating bedfiles: $cmd",
-        $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Creating bedfiles: $cmd", $cogeweb->logfile );
     `$cmd`;
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     return $outfile;
@@ -1986,8 +1815,7 @@ sub blast2bed {
         $PYTHON26 . " "
       . $BLAST2BED
       . " -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
-    CoGe::Accessory::Web::write_log( "Creating bed files: $cmd",
-        $cogeweb->logfile );
+    CoGe::Accessory::Web::write_log( "Creating bed files: $cmd", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
     `$cmd`;
 }

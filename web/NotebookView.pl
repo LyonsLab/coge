@@ -47,6 +47,7 @@ $node_types = $DB->node_types();
     add_list_items             => \&add_list_items,
     add_item_to_list           => \&add_item_to_list,
     remove_list_item           => \&remove_list_item,
+    toggle_favorite            => \&toggle_favorite,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
     get_annotation             => \&get_annotation,
@@ -85,7 +86,7 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my $template;
 
-    $EMBED = $FORM->param('embed');
+    $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
         $template =
           HTML::Template->new(
@@ -122,17 +123,22 @@ sub gen_body {
     my ($list) = $DB->resultset('List')->find($lid);
     return "<br>Notebook id$lid does not exist.<br>" unless ($list);
     return "Access denied\n" unless $USER->has_access_to_list($list);
+    
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         MAIN         => 1,
+        EMBED        => $EMBED,
         PAGE_NAME    => $PAGE_TITLE . '.pl',
         NOTEBOOK_ID  => $lid,
         DEFAULT_TYPE => 'note',
         API_BASE_URL => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
-        USER         => $USER->user_name
+        USER         => $USER->user_name,
+        NOTEBOOK_TITLE => $list->info,
+        FAVORITED      => int($favorites->is_favorite($list)),
     );
+    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( LIST_INFO => get_list_info( lid => $lid ) );
     $template->param( LIST_ANNOTATIONS => get_annotations( lid => $lid ) );
     $template->param( LIST_CONTENTS => get_list_contents( lid => $lid ) );
@@ -280,6 +286,33 @@ sub make_list_private {
     $list->update;
 
     return 1;
+}
+
+sub toggle_favorite {
+    my %opts   = @_;
+    my $nid = $opts{nid};
+    return unless $nid;
+    return if ($USER->is_public); # must be logged in
+    
+    # Get genome
+    my $notebook = $DB->resultset('List')->find($nid);
+    return unless $notebook;
+    
+    # Toggle favorite
+    my $favorites = CoGe::Core::Favorites->new( user => $USER );
+    my $is_favorited = $favorites->toggle($notebook);
+    
+    # Record in log
+    CoGe::Accessory::Web::log_history(
+        db          => $DB,
+        user_id     => $USER->id,
+        page        => $PAGE_TITLE,
+        description => ($is_favorited ? 'Favorited' : 'Unfavorited') . ' notebook ' . $notebook->info_html,
+        parent_id   => $nid,
+        parent_type => 1 #FIXME magic number
+    );
+    
+    return $is_favorited;
 }
 
 sub linkify {
@@ -550,13 +583,17 @@ sub get_list_contents {
     my $html;
     my $num_items = 0;
 
-    my $genome_count = $list->genomes( count => 1 );
-    my $exp_count    = $list->experiments( count => 1 );
-    my $feat_count   = $list->features( count => 1 );
-    my $list_count   = $list->lists( count => 1 );
+    my @genomes = grep { $USER->has_access_to_genome($_); } $list->genomes;
+    my @experiments = grep { $USER->has_access_to_experiment($_); } $list->experiments;
+    my @features = $list->features;
+
+    my $genome_count = @genomes;
+    my $exp_count    = @experiments;
+    my $feat_count   = @features;
+    # my $list_count   = $list->lists( count => 1 );
 
     #FIXME rewrite this to send contents as JSON -- mdb 7/29/16
-    if ($genome_count or $exp_count or $feat_count or $list_count) {
+    if ($genome_count or $exp_count or $feat_count) { #} or $list_count) {
         $html = q|
         <table id="list_contents_table" class="dataTable compact hover stripe border-top border-bottom" style="margin:0;width:initial;"><thead>
             <tr>
@@ -568,7 +605,7 @@ sub get_list_contents {
         </thead><tbody></tbody></table>
         <script>
             var data = [|;
-        foreach my $genome ( sort genomecmp $list->genomes ) {
+        foreach my $genome ( sort genomecmp @genomes ) {
             my $info = $genome->info;
             $info =~ s/'/\\'/g;
             my $date = "'" . $genome->date . "'";
@@ -577,7 +614,7 @@ sub get_list_contents {
             $html .= '[0,' . $genome->id . ",'" . $info . "'," . $date . ']';
             $num_items++;
         }
-        foreach my $experiment ( sort experimentcmp $list->experiments ) {
+        foreach my $experiment ( sort experimentcmp @experiments ) {
             my $info = $experiment->info;
             $info =~ s/'/\\'/g;
             my $date = "'" . $experiment->date . "'";
@@ -586,20 +623,20 @@ sub get_list_contents {
             $html .= '[1,' . $experiment->id . ",'" . $info . "'," . $date . ']';
             $num_items++;
         }
-        foreach my $feature ( sort featurecmp $list->features ) {
+        foreach my $feature ( sort featurecmp @features ) {
             my $info = $feature->info;
             $info =~ s/'/\\'/g;
             $html .= ',' if $num_items;
             $html .= '[2,' . $feature->id . ",'" . $info . "']'";
             $num_items++;
         }
-        foreach my $list ( sort notebookcmp $list->lists ) {
-            my $info = $list->info;
-            $info =~ s/'/\\'/g;
-            $html .= ',' if $num_items;
-            $html .= '[3,' . $list->id . ",'" . $info . "']'";
-            $num_items++;
-        }
+        # foreach my $list ( sort notebookcmp $list->lists ) {
+        #     my $info = $list->info;
+        #     $info =~ s/'/\\'/g;
+        #     $html .= ',' if $num_items;
+        #     $html .= '[3,' . $list->id . ",'" . $info . "']'";
+        #     $num_items++;
+        # }
         $html .= q|];
         var sort_col = 'type';
         var sort_mult = -1;
@@ -610,9 +647,9 @@ sub get_list_contents {
             var names = ['Genome', 'Experiment', 'Feature', 'Notebook'];
             var pages = ['GenomeInfo', 'ExperimentView', 'FeatView', 'NotebookView'];
             var ids = ['gid', 'eid', 'fid', 'nid'];
-            var counts = [| . $genome_count . q|, | . $exp_count . q|, | . $feat_count . q|, | . $list_count . q|];
-            var node_types = ['| . $node_types->{genome} . q|', '| . $node_types->{experiment} . q|', '| . $node_types->{feature} . q|', '| . $node_types->{list} . q|'];
-            var num_rows = 0;
+            var counts = [| . $genome_count . q|, | . $exp_count . q|, | . $feat_count . q|];|; # . q|, | . $list_count . q|];
+        $html .= q|var node_types = ['| . $node_types->{genome} . q|', '| . $node_types->{experiment} . q|', '| . $node_types->{feature} . q|'];|; # . q|', '| . $node_types->{list} . q|'];
+        $html .= q|var num_rows = 0;
             data.forEach(function(row){
                 var html;
                 if (sort_col == 'type')
@@ -645,10 +682,10 @@ sub get_list_contents {
         }
         function case_insensitive_sort(a, b) {
             var _a = a.toLowerCase();
-            if (_a.startsWith('&reg; '))
+            if (_a.startsWith('&#x1f512; '))
                 _a = _a.substr(6);
             var _b = b.toLowerCase();
-            if (_b.startsWith('&reg; '))
+            if (_b.startsWith('&#x1f512; '))
                 _b = _b.substr(6);
             return _a < _b ? -1 : _a > _b ? 1 : 0;
         }

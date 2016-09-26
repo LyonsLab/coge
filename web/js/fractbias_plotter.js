@@ -60,7 +60,7 @@ function plotFractBias(parentdivid, data_json, target_genome) {
             var layout = {
                 title: target_genome + '<br>Target Chromosome: ' + tChr,
                 xaxis: { title: "Window Iteration (Gene Number)" },
-                yaxis: { title: "% Retention<br>(# Syntenic Genes/Window Size" },
+                yaxis: { title: "% Retention<br>(# Syntenic Genes/Window Size)" },
                 annotations: [{
                     text: "Query Chr.",
                     xref: 'paper', x: 1.02, xanchor: 'left',

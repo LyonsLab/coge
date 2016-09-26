@@ -120,9 +120,11 @@ $(document).ready(function() {
 
 <TMPL_UNLESS NAME="EMBED">
 <div style="font-size:1em;">
-	<!--<div class="inline link" title="Favorite this genome">
+    <TMPL_IF NAME="LOGON">
+	<div class="inline link" title="Favorite this genome">
 		<img src=<TMPL_IF NAME="FAVORITED">"./picts/star-full.png"<TMPL_ELSE>"./picts/star-hollow.png"</TMPL_IF> style="width:1em;height:1em;" onclick="toggle_favorite(this);" />
-	</div>-->
+	</div>
+	</TMPL_IF>
 	<span class="bold text coge-green"><TMPL_VAR NAME="GENOME_TITLE"></span>&nbsp;&nbsp;&nbsp;
 	<TMPL_INCLUDE NAME="widgets/Certified.tmpl">
 </div>
@@ -470,7 +472,7 @@ Are you sure you want to move this genome into your trash?<p>
 
 <TMPL_IF NAME='NOEXPERIMENTS'>
     <div id="experiments" class="padded">
-        <a href="#" onclick="get_experiments(window.event);">Click to display all Experiments</a>
+        <a onclick="get_experiments();" ondblclick="get_experiments();">Click to display all Experiments</a>
     </div>
 </TMPL_IF>
 

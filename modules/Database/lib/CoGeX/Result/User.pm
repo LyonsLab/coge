@@ -65,6 +65,7 @@ __PACKAGE__->belongs_to( 'image' => 'CoGeX::Result::Image', 'image_id');
 __PACKAGE__->has_many( 'sessions' => "CoGeX::Result::UserSession", 'user_id' );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log", 'user_id' );
 __PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job", 'user_id' );
+__PACKAGE__->has_many( 'favorites' => "CoGeX::Result::FavoriteConnector", 'user_id' );
 __PACKAGE__->has_many( # all children (groups/genomes/experiments/lists)
 	'child_connectors' => "CoGeX::Result::UserConnector",
 	{ "foreign.parent_id" => "self.user_id" },
@@ -468,37 +469,33 @@ sub is_role {
 	my $ds   = $opts{ds};
 	my $list = $opts{list};
 	my $experiment = $opts{experiment};
-	return 0 unless $self->id; # not logged in
-	return 0 unless $dsg || $ds || $list || $experiment || $group;
+	my $item = $opts{item};
+	return 0 unless $dsg || $ds || $list || $experiment || $group || $item;
 
     if ($dsg) { # genome
         my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
         my $conn = $self->child_connector(id=>$dsgid, type=>'genome');
-        #return 1 if ($conn && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
-        return 1 if ($conn && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
+        return 1 if ($conn && $conn->role_id == $role_id);
     }
 
 	if ($group) {
 		my $ugid = $group =~ /^\d+$/ ? $group : $group->id;
 		foreach my $conn ($self->group_connectors({child_id => $ugid})) {
-			#return 1 if ($conn->role->name =~ /$role/i); # mdb removed 2/28/14
-			return 1 if ($conn->role_id == $role_id); # mdb added 2/28/14 for performance
+			return 1 if ($conn->role_id == $role_id);
 		}
 	}
 
 	if ($list) {
 		my $lid = $list =~ /^\d+$/ ? $list : $list->id;
 		my $conn = $self->child_connector(id=>$lid, type=>'list');
-		#return 1 if ($conn && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
-		return 1 if ($conn && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
+		return 1 if ($conn && $conn->role_id == $role_id);
 	}
 
 	if ($ds) { # dataset
 		my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
 		foreach my $conn ($self->all_child_connectors(type=>'genome')) {
 			foreach ($conn->child->datasets) {
-				#return 1 if ($_->id == $dsid && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
-				return 1 if ($_->id == $dsid && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
+				return 1 if ($_->id == $dsid && $conn->role_id == $role_id);
 			}
 		}
 	}
@@ -506,9 +503,13 @@ sub is_role {
 	if ($experiment) {
 		my $eid = $experiment =~ /^\d+$/ ? $experiment : $experiment->id;
 		my $conn = $self->child_connector(id=>$eid, type=>'experiment');
-		#return 1 if ($conn && $conn->role->name =~ /$role/i); # mdb removed 2/28/14
-		return 1 if ($conn && $conn->role_id == $role_id); # mdb added 2/28/14 for performance
+		return 1 if ($conn && $conn->role_id == $role_id);
 	}
+	
+	if ($item) { # no type given # mdb added 9/14/16 COGE-388
+        my $conn = $self->child_connector(id=>$item->id, type_id=>$item->item_type);
+        return 1 if ($conn && $conn->role_id == $role_id);
+    }
 
 	return 0;
 }
@@ -781,19 +782,20 @@ sub child_connector { #TODO replace with CoGeDBI literal query
 	my %opts = @_;
 	my $id = $opts{id};
 	my $type = $opts{type};
-	my $type_num = $node_types->{$type};
+	my $type_id = $opts{type_id};
+	   $type_id = $node_types->{$type} if $type;
 
 	# Scan user's items - assumes there is only one user connector at this level
-	foreach ($self->child_connectors({child_id=>$id, child_type=>$type_num})) {
+	foreach ($self->child_connectors({child_id=>$id, child_type=>$type_id})) {
 		return $_;
 	}
 
 	# Scan user's lists
-	if ($type ne 'list') { # Don't traverse lists within a list
+	if ($type_id ne $node_types->{list}) { # Don't traverse lists within a list
 		foreach my $conn ($self->list_connectors) {
 			my $list = $conn->child;
-			foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
-				next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
+			foreach ($list->child_connectors({child_id=>$id, child_type=>$type_id})) {
+				next if ($_->child_id != $id or $_->child_type != $type_id); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
 				next unless ($conn->role_id == 4); # mdb tempfix 10/16/13 issue 232 -- list can only grant read access
 				return $conn;
 			}
@@ -803,15 +805,15 @@ sub child_connector { #TODO replace with CoGeDBI literal query
 	# Scan user's groups
 	foreach my $group ($self->groups) { #TODO move this coge into UserGroup.pm::genomes ...?
 		# Scan group's items
-		foreach ($group->child_connectors({child_id=>$id, child_type=>$type_num})) {
+		foreach ($group->child_connectors({child_id=>$id, child_type=>$type_id})) {
 			return $_;
 		}
 		# Scan group's lists
-		if ($type ne 'list') { # Don't traverse lists within a list
+		if ($type_id ne $node_types->{list}) { # Don't traverse lists within a list
 			foreach my $conn ($group->list_connectors) {
 				my $list = $conn->child;
-				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_num})) {
-					next if ($_->child_id != $id or $_->child_type != $type_num); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
+				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_id})) {
+					next if ($_->child_id != $id or $_->child_type != $type_id); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
 					next unless ($conn->role_id == 4); # mdb tempfix 10/16/13 issue 232 -- list can only grant read access
 					return $conn;
 				}

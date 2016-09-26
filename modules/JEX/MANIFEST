@@ -1,0 +1,4 @@
+MANIFEST
+Makefile.PL
+lib/CoGe/JEX/Jex.pm
+lib/CoGe/JEX/Worfklow.pm

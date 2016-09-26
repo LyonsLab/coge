@@ -1,4 +1,4 @@
-package CoGe::Accessory::Jex;
+package CoGe::JEX::Jex;
 
 use v5.10;
 use strict;
@@ -11,7 +11,7 @@ use ZMQ::LibZMQ3;
 use ZMQ::Constants qw/:all/;
 use Switch;
 
-use CoGe::Accessory::Workflow;
+use CoGe::JEX::Workflow;
 
 # Attributes
 has 'host' => (
@@ -54,12 +54,12 @@ sub create_workflow {
         $id = $response->{id};
 
         unless ($id) {
-            print STDERR "CoGe::Accessory::Jex ERROR: Failed to initialize workflow ", ($opts{name} ? "'".$opts{name}."'" : '') , "\n";
+            print STDERR "CoGe::JEX::Jex ERROR: Failed to initialize workflow ", ($opts{name} ? "'".$opts{name}."'" : '') , "\n";
             return;
         }
     }
 
-    my $workflow = CoGe::Accessory::Workflow->new(
+    my $workflow = CoGe::JEX::Workflow->new(
         id      => $id,
         name    => $opts{name},
         logfile => $opts{logfile}

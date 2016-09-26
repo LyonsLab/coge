@@ -30,8 +30,6 @@ use warnings;
 
 use CoGe::Accessory::Web qw(get_defaults get_command_path url_for);
 use CoGe::Accessory::TDS qw(read append);
-use CoGe::Accessory::Jex;
-use CoGe::Accessory::Workflow;
 use CoGe::Accessory::IRODS qw(irods_iget irods_ils irods_imkdir irods_irm);
 use File::Basename;
 use POSIX qw(floor);

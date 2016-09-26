@@ -97,7 +97,7 @@ sub type
 
 ################################################ subroutine header begin ##
 
-=head2 is_list
+=head2 is_*
 
  Usage     :
  Purpose   :
@@ -117,66 +117,15 @@ sub is_list
 	return shift->child_type() == $node_types->{list};
 }
 
-################################################ subroutine header begin ##
-
-=head2 is_genome
-
- Usage     :
- Purpose   :
- Returns   :
- Argument  : None
- Throws    :
- Comments  :
-
-See Also   :
-
-=cut
-
-################################################## subroutine header end ##
-
 sub is_genome
 {
 	return shift->child_type() == $node_types->{genome};
 }
 
-################################################ subroutine header begin ##
-
-=head2 is_feature
-
- Usage     :
- Purpose   :
- Returns   :
- Argument  : None
- Throws    :
- Comments  :
-
-See Also   :
-
-=cut
-
-################################################## subroutine header end ##
-
 sub is_feature
 {
 	return shift->child_type() == $node_types->{feature};
 }
-
-################################################ subroutine header begin ##
-
-=head2 is_experiment
-
- Usage     :
- Purpose   :
- Returns   :
- Argument  : None
- Throws    :
- Comments  :
-
-See Also   :
-
-=cut
-
-################################################## subroutine header end ##
 
 sub is_experiment
 {

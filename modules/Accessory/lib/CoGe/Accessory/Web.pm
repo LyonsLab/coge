@@ -844,6 +844,7 @@ sub log_history {
     $type = 1 if ( $description and $description ne 'page access' );
     $user_id = 0 unless ( defined $user_id );
     $page =~ s/\.pl$//;    # remove trailing .pl extension
+    print STDERR "log_history: $description\n";
     return $db->resultset('Log')->create(
         {
             user_id     => $user_id,

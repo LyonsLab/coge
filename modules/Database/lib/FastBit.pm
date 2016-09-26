@@ -1,8 +1,8 @@
-package CoGe::Accessory::FastBit;
+package FastBit;
 
 =head1 NAME
 
-CoGe::Accessory::FastBit
+FastBit
 
 =head1 SYNOPSIS
 
@@ -66,7 +66,7 @@ sub query {
 
 	my $cmdStatus = $?;
 	if ( $? != 0 ) {
-		warn "CoGe::Accessory::FastBit::query: error $? executing command: $cmd";
+		warn "FastBit::query: error $? executing command: $cmd";
 	}
 	my @lines;
 	foreach (@cmdOut) {
