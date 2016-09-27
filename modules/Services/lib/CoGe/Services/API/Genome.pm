@@ -127,6 +127,7 @@ sub fetch {
         link => $genome->link,
         version => $genome->version,
         restricted => $genome->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        certified => $genome->certified ? Mojo::JSON->true : Mojo::JSON->false,
         organism => {
             id => int($genome->organism->id),
             name => $genome->organism->name,

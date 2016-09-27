@@ -6,7 +6,7 @@ var infoPanel;
 var tocPanel;
 var timestamps = new Array();
 var timers = new Array();
-	
+
 $(function() {
 	// Initialize AJAX
 	$.ajaxSetup({
@@ -1011,11 +1011,17 @@ $.extend(DataGridRow.prototype, { // TODO consider extending this into separate 
     
     getDate: function() {
     	var dateStr = this.date;
+    	
+    	// Handle null date
     	if (!dateStr || dateStr.indexOf('0000') == 0)
     		dateStr = this.dataset_date;
     	if (!dateStr || dateStr.indexOf('0000') == 0)
     		return '&nbsp;'; // return blank (needed for cell to render properly in Safari)
     	
+    	// Convert from database time zone (Tucson) to user's time zone -- mdb added 9/22/16 COGE-196
+    	dateStr = coge.utils.timeToLocal(dateStr);
+    	
+        // Convert date from aboslute into relative form ("yesterday", etc)
     	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
     	dateStr = dateStr.replace(/-/g, '/'); // needed for Firefox & Safari
     	var date = new Date(dateStr);
