@@ -1350,6 +1350,9 @@ sub get_stats {
 	my $type = shift;
 	my $items = shift;
 	return '' if !$items;
+    $items = [ grep { !$_->{'deleted'} } @$items ] if !$USER->is_admin();
+    warn Dumper $items;
+	return '' if !scalar @$items;
 	my $sql = 'select annotation_type.name,count(*) from ' . $type . '_annotation join annotation_type on annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id where ' . $type . '_id in (' .
 		join( ',', map { $_->{'id'} } @$items ) .
 		') group by annotation_type.name';
@@ -1363,11 +1366,11 @@ sub get_stats {
     	$html .= '<tr class="';
     	$html .= $odd_even ? 'odd' : 'even';
     	$odd_even ^= 1;
-    	$html .= '" style="cursor:pointer;" onclick="document.location=\'SearchResults.pl?s=';
-    	$html .= $type;
-    	$html .= '_metadata_key::';
-    	$html .= $name;
-    	$html .= '\'"><td class="title5" style="padding-right:10px;white-space:nowrap;text-align:right;">';
+    	$html .= '" style="cursor:pointer;" onclick="search_metadata(\'';
+    	$html .= $type eq 'list' ? 'notebook' : $type;
+    	$html .= "','";
+    	$html .= $name =~ s/\//%2F/gr;
+    	$html .= '\')"><td class="title5" style="padding-right:10px;white-space:nowrap;">';
     	$html .= $name;
     	$html .= '</td><td class="data5">';
     	$html .= $count;

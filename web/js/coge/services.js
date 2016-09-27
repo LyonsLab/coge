@@ -48,7 +48,7 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		search_global: function(search_term) {
-			return this._ajax("GET", this.baseUrl + "global/search/" + search_term + "/");
+			return this._ajax("GET", this.baseUrl + "global/search/" + encodeURIComponent(search_term) + "/");
 		},
 		
 		search_organisms: function(search_term) {
