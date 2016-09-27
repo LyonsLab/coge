@@ -18,6 +18,7 @@ ${USERS}	/users
 ${GROUPS}	/groups
 ${JOBS}		/jobs
 ${IRODS}	/irods
+${SEARCH}	/global/search
 ${JBROWSE_CONFIG}	/jbrowse/config/tracks
 ${JBROWSE_SEQUENCE}	/jbrowse/sequence
 ${JBROWSE_FEATURE}	/jbrowse/track/annotation
