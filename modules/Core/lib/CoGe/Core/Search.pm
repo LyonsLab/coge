@@ -49,7 +49,7 @@ sub build_search {
 			push @items, $_;
 			push @items, $query_terms->[$i];
 		}
-		push @search, { ($query_terms->[$i]{"not_like"} ? '-and' : '-or') => \@items };
+		push @search, { ($query_terms->[$i]{'not_like'} ? '-and' : '-or') => \@items };
 	}
 	return \@search;
 }
@@ -74,14 +74,19 @@ sub do_search {
 	}
 	if ($role && $user) {
 		$attributes = add_join($attributes, 'user_connectors');
+		push @$and, { 'user_connectors.child_type' => $type eq 'Genome' ? 2 : $type eq 'Experiment' ? 3 : 1 };
+		push @$and, { 'user_connectors.parent_type' => 5 };
 		push @$and, { 'user_connectors.parent_id' => $user->id };		
 		push @$and, { 'user_connectors.role_id' => $role eq 'owner' ? 2 : $role eq 'editor' ? 3 : 4 };		
 	}
 	if ($favorite) { # only allow searching for favorites, specifying favorite::0 is not allowed
 		$attributes = add_join($attributes, 'favorite_connectors');
+		push @$and, { 'favorite_connectors.child_type' => $type eq 'Genome' ? 2 : $type eq 'Experiment' ? 3 : 1 };
 		push @$and, { 'favorite_connectors.user_id' => $user->id };
 	}
-	return undef if !@$and;
+	# my ($sql, @b) = $db->resultset($type)->search_rs({ -and => $and }, $attributes)->as_query();
+	# warn Dumper $sql;
+	# warn Dumper \@b;
 	return $db->resultset($type)->search_rs({ -and => $and }, $attributes);
 }
 
@@ -128,7 +133,6 @@ sub search {
 	my $user		= $opts{user};
 	my $show_users	= $opts{show_users};
 
-    my @organism_ids;
     my @results;
 	my $certified;
 	my $deleted;
@@ -193,58 +197,41 @@ sub search {
         }
     }
 
-	#only show public data if $user is undefined
-	$restricted = 0 if !$user;
+	$deleted = 0 if !defined($deleted); # don't show deleted things by default
+	$restricted = 0 if !$user; #only show public data if $user is undefined
 
     # organisms
-	if (($type eq 'none' || $type eq 'organism' || $type eq 'genome') && @query_terms) {
+	if (($type eq 'none' || $type eq 'organism') && @query_terms && !defined($certified) && !defined($favorite) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role)) {
 		my $search = build_search(['me.name', 'me.description', 'me.organism_id'],  \@query_terms);
 		my @organisms = $db->resultset("Organism")->search( { -and => $search } );
-		if ($type ne 'genome') {
-			foreach ( sort { lc($a->name) cmp lc($b->name) } @organisms ) {
-				push @results, {
-					'type' => "organism",
-					'name' => $_->name,
-					'id' => int $_->id,
-					'description' => $_->description
-				};
-			}
+		foreach ( sort { lc($a->name) cmp lc($b->name) } @organisms ) {
+			push @results, {
+				'type' => 'organism',
+				'name' => $_->name,
+				'id' => int $_->id,
+				'description' => $_->description
+			};
 		}
-		@organism_ids = map { $_->id } @organisms unless $type eq 'organism';
 	}
 
     # genomes
 	if ($type eq 'none' || $type eq 'genome') {
 		my @genome_results;
 
-		my $search = build_search(['me.name', 'me.description', 'me.genome_id'],  \@query_terms);
-		my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite, $certified);
+		my $search = build_search(['me.name', 'me.description', 'me.genome_id', 'organism.name', 'organism.description'],  \@query_terms);
+		my $rs = do_search($db, $user, 'Genome', $search, $search ? { join => 'organism' } : undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite, $certified);
 		if ($rs) {
 			my @genomes = $rs->all();
 			push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
-		}
-
-		# get genomes linked to found organisms
-		if (@organism_ids) {
-			my $search = [ { organism_id => { -in => \@organism_ids }} ];
-			if (@genome_results) {
-				my @genome_ids = map { $_->{'id'} } @genome_results;
-				push $search, { genome_id => { -not_in => \@genome_ids } };
-			}
-			my $rs = do_search($db, $user, 'Genome', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite, $certified);
-			if ($rs) {
-				my @genomes = $rs->all();
-				push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
-			}
 		}
 
 		push @results, sort name_cmp @genome_results;
 	}
 
     # experiments
-	if ($type eq 'none' || $type eq 'experiment') {
+	if (($type eq 'none' || $type eq 'experiment') && !defined($certified)) {
 		my $search = build_search(['me.name', 'me.description', 'me.experiment_id', 'genome.name', 'genome.description', 'organism.name', 'organism.description'],  \@query_terms);
-		my $rs = do_search($db, $user, 'Experiment', $search, { join => { 'genome' => 'organism' } }, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite);
+		my $rs = do_search($db, $user, 'Experiment', $search, $search ? { join => { 'genome' => 'organism' } } : undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite);
 		if ($rs) {
 			my @experiments = sort info_cmp $rs->all();
 			push_results(\@results, \@experiments, 'experiment', $user, 'has_access_to_experiment', $favorites);
@@ -252,7 +239,7 @@ sub search {
 	}
 
     # notebooks
-	if ($type eq 'none' || $type eq 'notebook') {
+	if (($type eq 'none' || $type eq 'notebook') && !defined($certified)) {
 		my $search = build_search(['name', 'description', 'list_id'],  \@query_terms);
 		my $rs = do_search($db, $user, 'List', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite);
 		if ($rs) {
@@ -262,7 +249,7 @@ sub search {
 	}
 
     # user groups
-	if ($show_users && ($type eq 'none' || $type eq 'usergroup')) {
+	if ($show_users && ($type eq 'none' || $type eq 'usergroup') && !defined($certified) && !defined($favorite) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role)) {
 		my $search = build_search(['name', 'description', 'user_group_id'],  \@query_terms);
 		my $rs = do_search($db, $user, 'UserGroup', $search, undef, $deleted);
 		if ($rs) {

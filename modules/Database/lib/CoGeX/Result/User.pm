@@ -87,7 +87,7 @@ __PACKAGE__->has_many( # child lists
 	{ "foreign.parent_id" => "self.user_id" },
 	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{list} ] ] } );
 
-__PACKAGE__->mk_accessors(qw(_genome_ids _experiment_ids));
+__PACKAGE__->mk_accessors(qw(_genome_ids _experiment_ids _list_ids));
 #_genome_ids is a hash_ref of the genome_ids that a user has access to
 
 sub item_type {
@@ -284,11 +284,11 @@ sub has_access_to_list {
 	return 0 if ($self->is_public); # deny public user for restricted list
 
 	my $lid = $list->id;
-	foreach ($self->lists) {
-		return 1 if ($_->id == $lid);
+	unless ( $self->_list_ids)  {
+	    $self->_list_ids({ map{$_->id=>1} $self->lists });
 	}
-
-	return 0;
+	my $ids = $self->_list_ids();
+	return $ids->{$lid};
 }
 
 #new version caches results
