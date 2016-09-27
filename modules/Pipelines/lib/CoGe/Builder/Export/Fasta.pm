@@ -5,8 +5,10 @@ with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
+use CoGe::Accessory::TDS;
 use CoGe::Core::Storage qw(get_genome_file);
-use CoGe::Builder::CommonTasks qw(generate_gff export_to_irods generate_results link_results send_email_job);
+use CoGe::Core::Genome qw(get_irods_metadata);
+use CoGe::Builder::CommonTasks qw(generate_gff export_to_irods generate_results link_results send_email_job create_irods_imeta_job);
 
 use File::Spec::Functions qw(catfile);
 use Data::Dumper;
@@ -33,16 +35,29 @@ sub build {
 
     # Setup tasks to export/download the file
     my @done_files;
-    my $dest_type = $self->params->{dest_type};
-       $dest_type = "http" unless $dest_type;
+    my $dest_type = $self->params->{dest_type} // 'http';
     if ($dest_type eq "irods") { # irods export
+        # Set IRODS destination path
         my $irods_base = $self->params->{dest_path};
         $irods_base = irods_get_base_path($self->user->name) unless $irods_base;
-
         my $irods_dest = catfile($irods_base, $output_file);
-        my $irods_done = catfile($self->staging_dir, "irods.done");
 
+        # Export file task (IRODS iput)
+        my $irods_done = catfile($self->staging_dir, "irods.done");
         $self->workflow->add_job( export_to_irods($genome_file, $irods_dest, $self->params->{overwrite}, $irods_done) );
+        
+        # Set file metadata task (IRODS imeta)
+        my $md = get_irods_metadata($genome);
+        my $md_file = catfile(get_genome_cache_path($genome->id), 'irods_metadata.json');
+        TDS::write($md_file, $md);
+        $self->workflow->add_job(
+            create_irods_imeta_job(
+                dest_file_path => $irods_dest,
+                metadata => $md_file
+            )
+        );
+        
+        #TODO remove legacy generate_results
         my $results_task = generate_results($irods_dest, $dest_type, $self->result_dir, $self->conf, $irods_done);
         $self->workflow->add_job($results_task);
         push @done_files, $results_task->{outputs}->[0];

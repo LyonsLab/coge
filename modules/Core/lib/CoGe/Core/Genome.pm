@@ -19,7 +19,7 @@ BEGIN {
     @ISA = qw( Exporter );
     @EXPORT = qw( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-        fix_chromosome_id read_fasta_index);
+        fix_chromosome_id read_fasta_index get_irods_metadata);
     @EXPORT_OK = qw(genomecmp genomecmp2 search_genomes);
 }
 
@@ -531,6 +531,39 @@ sub read_fasta_index {
     close($fh);
     
     return \%contigs;
+}
+
+sub get_irods_metadata {
+    my $genome = shift;
+    
+    my %md = (
+        'Imported From' => "CoGe: http://genomevolution.org",
+        'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+        'CoGe GenomeInfo Link'   => "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+        'CoGe Genome ID'    => $genome->id,
+        'Organism Name'     => $genome->organism->name,
+        'Organism Taxonomy' => $genome->organism->description,
+        'Version' => $genome->version,
+        'Type'    => $genome->type->info,
+    );
+    
+    my $i = 1;
+    my @sources = $genome->source;
+    foreach my $item (@sources) {
+        my $source = $item->name;
+        $source.= ": ".$item->description if $item->description;
+        my $key = "Source";
+        $key .= $i if scalar @sources > 1;
+        $md{$key} = $source;
+        $md{$key." Link"} = $item->link if $item->link;
+        $i++;
+    }
+    $md{'Genome Link'} = $genome->link if ($genome->link);
+    $md{'Addition Info'} = $genome->message if ($genome->message);
+    $md{'Genome Name'} = $genome->name if ($genome->name);
+    $md{'Genome Description'} = $genome->description if ($genome->description);
+    
+    return \%md;
 }
 
 1;
