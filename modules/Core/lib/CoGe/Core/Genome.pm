@@ -477,22 +477,22 @@ sub fix_chromosome_id {
     return unless defined $chr;
 
     # Fix chromosome identifier
-    $chr =~ s/^lcl\|//;
-    $chr =~ s/^gi\|//;
-    $chr =~ s/chromosome//i;
-    $chr =~ s/^chr//i;
-    $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 chromosome name is 00 (or something like that)
-    $chr =~ s/^0+// unless $chr eq '0';
-    $chr =~ s/^_+//;
-    $chr =~ s/\s+/ /g;
-    $chr =~ s/^\s//;
-    $chr =~ s/\s$//;
-    $chr =~ s/\//_/g; # mdb added 12/17/13 issue 266 - replace '/' with '_'
-    $chr =~ s/\|$//;  # mdb added 3/14/14 issue 332 - remove trailing pipes
-    $chr =~ s/\|/_/g; # mdb added 8/13/15 - convert pipes to underscore
-    $chr =~ s/\(/_/g; # mdb added 2/11/15 COGE-587 - replace '(' with '_'
-    $chr =~ s/\)/_/g; # mdb added 2/11/15 COGE-587 - replace ')' with '_'
-    $chr =~ s/_+/_/g; # mdb added 8/13/15 - convert multiple underscores to single underscore
+    $chr =~ s/^lcl\|//;           # remove leading 'lcl|'
+    $chr =~ s/^gi\|//;            # remove leading 'gi|'
+    $chr =~ s/chromosome//i;      # remove 'chromosome'
+    $chr =~ s/^chr//i;            # remove leading 'chr'
+    $chr = "0" if $chr =~ /^0+$/; # handle chromosome name '00' (or something like that) (EL added 2/13/14)
+    $chr =~ s/^0+// unless $chr eq '0'; # remove leading 0s
+    $chr =~ s/^_+//;              # remove underscores
+    $chr =~ s/\s+/ /g;            # collapse whitespace to single space
+    $chr =~ s/^\s//;              # remove leading whitespace
+    $chr =~ s/\s$//;              # remove trailing whitespace
+    $chr =~ s/\//_/g;             # replace '/' with '_' (mdb added 12/17/13 issue 266)
+    $chr =~ s/\|$//;              # remove trailing pipes (mdb added 3/14/14 issue 332)
+    $chr =~ s/\|/_/g;             # convert pipes to underscore (mdb added 8/13/15)
+    $chr =~ s/\(/_/g;             # replace '(' with '_' (mdb added 2/11/15 COGE-587)
+    $chr =~ s/\)/_/g;             # replace ')' with '_' (mdb added 2/11/15 COGE-587)
+    $chr =~ s/_+/_/g;             # convert multiple underscores to single underscore (mdb added 8/13/15)
     return if ($chr eq '');
 
     # Convert 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed
