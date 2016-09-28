@@ -197,18 +197,6 @@ sub add {
     my $data = $self->req->json;
     #print STDERR "CoGe::Services::Data::Genome::add\n", Dumper $data, "\n";
 
-# mdb removed 9/17/15 -- auth is handled by Job::add below, redundant token validation breaks CAS proxyValidate
-#    # Authenticate user and connect to the database
-#    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-#
-#    # User authentication is required to add experiment
-#    unless (defined $user) {
-#        $self->render(json => {
-#            error => { Auth => "Access denied" }
-#        });
-#        return;
-#    }
-
     # Valid data items # TODO move into request validation
     unless ($data->{source_data} && @{$data->{source_data}}) {
         $self->render(status => 400, json => {
@@ -217,15 +205,24 @@ sub add {
         return;
     }
     
-    # Marshall incoming payload into format expected by Job Submit.
-    # Note: This is kind of a kludge -- is there a better way to do this using
-    # Mojolicious routing?
+    # Alias to Job Submit -- is there a better way to do this using Mojolicious routing?
     my $request = {
         type => 'load_genome',
         parameters => $data
     };
     
     return CoGe::Services::API::Job::add($self, $request);
+}
+
+sub export {
+    my $self = shift;
+    my $data = $self->req->json;
+
+    # Alias to Job Submit -- is there a better way to do this using Mojolicious routing?
+    my $request = {
+        type => 'export_genome',
+        parameters => $data
+    };    
 }
 
 1;
