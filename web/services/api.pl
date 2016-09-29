@@ -78,6 +78,10 @@ $r->get("/genomes/:id/sequence/#chr" => { id => qr/\d+/ }) # can this be merged 
     ->name("genomes-sequence-chr")
     ->to("genome#sequence", namespace => 'CoGe::Services::API', id => undef, chr => undef);   
     
+$r->put("/genomes/:id/export" => { id => qr/\d+/ })
+    ->name("genomes-export")
+    ->to("genome#export", namespace => 'CoGe::Services::API', id => undef);    
+    
 $r->put("/genomes")
     ->name("genomes-add")
     ->to("genome#add", namespace => 'CoGe::Services::API');
