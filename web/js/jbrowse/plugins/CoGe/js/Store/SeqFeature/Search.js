@@ -6,15 +6,36 @@ define([
 	   function( declare, SeqFeatureStore, SimpleFeature ) {
 
 return declare(SeqFeatureStore, {
+	_scoreMax: null,
+	_scoreMin: null,
 
 	constructor: function(args) {
-		// perform any steps to initialize your new store.  
 	},
 
 	getGlobalStats: function(statsCallback, errorCallback) {
+		if (this._scoreMax == null) {
+			var data_type = this.config.config.coge.data_type;
+			if (data_type == 3) {
+				this._scoreMin = -1;
+				this._scoreMax = 1;
+			} else {
+				var hits = this.config.results.hits;
+				var score_index = data_type == 4 ? 4 : data_type == 2 ? 6 : 3;
+				var strand = hits[0][2] == '1' ? 1 : -1;
+				this._scoreMin = this._scoreMax = hits[0][score_index] * strand;
+				for (var i=1; i<hits.length; i++) {
+					strand = hits[i][2] == '1' ? 1 : -1;
+					var score = hits[i][score_index] * strand;
+					if (this._scoreMin > score)
+						this._scoreMin = score;
+					if (this._scoreMax < score)
+						this._scoreMax = score;
+				}
+			}
+		}
 		statsCallback({
-			"scoreMin" : -1,
-			"scoreMax" : 1
+			"scoreMin" : this._scoreMin,
+			"scoreMax" : this._scoreMax
 		});
 	},
 
