@@ -3,12 +3,12 @@ package CoGe::Factory::PipelineFactory;
 use Moose;
 
 use File::Spec::Functions qw(catfile);
-use File::Path qw(make_path);
 use Data::Dumper;
 
 use CoGe::Core::Storage qw(get_workflow_paths);
 use CoGe::Builder::Export::Fasta;
 use CoGe::Builder::Export::Gff;
+use CoGe::Builder::Export::Genome;
 use CoGe::Builder::Export::Experiment;
 use CoGe::Builder::Load::Experiment;
 use CoGe::Builder::Load::BatchExperiment;
@@ -66,6 +66,9 @@ sub get {
     }
     elsif ($message->{type} eq "export_fasta") {
         $builder = CoGe::Builder::Export::Fasta->new($request);
+    }
+    elsif ($message->{type} eq "export_genome") {
+        $builder = CoGe::Builder::Export::Genome->new($request);
     }
     elsif ($message->{type} eq "export_experiment") {
         $builder = CoGe::Builder::Export::Experiment->new($request);
@@ -156,16 +159,17 @@ sub get {
     }
     
     # Construct the workflow
-    my $rc = $builder->build;
+    $builder->pre_build();
+    my $rc = $builder->build();
     unless ($rc) {
         $rc = 'undef' unless defined $rc;
         print STDERR "PipelineFactory::get build failed, rc=$rc\n";
         return;
     }
+    $builder->post_build();
     
     # Dump raw workflow to file for debugging -- mdb added 2/17/16
     if ($result_dir) {
-        make_path($result_dir);
         `chmod g+rw $result_dir`;
         open(my $fh, '>', catfile($result_dir, 'workflow.log'));
         print $fh Dumper $builder->workflow, "\n";
