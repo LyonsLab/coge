@@ -11,7 +11,7 @@ use CoGe::Core::Genome qw(fix_chromosome_id);
 use CoGe::Accessory::Utils qw(commify units print_fasta);
 
 use vars qw( 
-    $input_fasta_file $output_fasta_file $staging_dir $ignore_chr_limit 
+    $input_fasta_file $output_fasta_file $ignore_chr_limit 
     $keep_headers $keep_all_contigs
 );
   
@@ -25,7 +25,6 @@ GetOptions(
     # Required arguments
     "input_fasta_file=s"  => \$input_fasta_file,
     "output_fasta_file=s" => \$output_fasta_file,
-    "staging_dir=s"       => \$staging_dir,
     
     # Optional arguments
     "ignore_chr_limit=i"  => \$ignore_chr_limit, # flag to ignore chromosome/contig limit # mdb added 3/9/15 COGE-595
@@ -47,13 +46,6 @@ unless ($output_fasta_file) {
 }
 $output_fasta_file = unescape($output_fasta_file);
 
-# Setup staging path
-unless ($staging_dir) {
-    print STDOUT "log: error: staging_dir argument is missing\n";
-    exit(-1);
-}
-mkpath($staging_dir, 0, 0777) unless -r $staging_dir;
-
 # Ensure non-zero-length file
 unless ( -s $input_fasta_file > 0 ) {
     print STDOUT "log: error: '$input_fasta_file' is zero-length\n";
@@ -67,7 +59,7 @@ if ( -B $input_fasta_file ) {
 }
 
 # Process/validate the file
-my ($seqLength, $numSequences, $numRemoved, $removedLength) = process_fasta_file( $input_fasta_file, $staging_dir );
+my ($seqLength, $numSequences, $numRemoved, $removedLength) = process_fasta_file( $input_fasta_file, $output_fasta_file );
 if ($numRemoved && $removedLength) {
     print STDOUT "log: " . commify($numRemoved) . " sequences (", commify($removedLength) , " bp) removed due to size less than ", commify(MIN_CHROMOSOME_SIZE), " bp \n";
 }
@@ -97,12 +89,12 @@ exit(0);
 #-------------------------------------------------------------------------------
 
 sub process_fasta_file {
-    my $filepath   = shift;
-    my $target_dir = shift;
-    print STDOUT "process_fasta_file: $filepath\n";
+    my $input_file  = shift;
+    my $output_file = shift;
+    print STDOUT "process_fasta_file: $input_file\n";
     
     my %seq;
-    my $fileSize    = -s $filepath;
+    my $fileSize    = -s $input_file;
     my $lineNum     = 0;
     my $totalLength = 0;
     my $chrRemoved  = 0;
@@ -110,7 +102,7 @@ sub process_fasta_file {
     
     # Open fasta file
     my $in; # file handle
-    unless (open( $in, $filepath )) {
+    unless (open( $in, $input_file )) {
         print STDOUT "log: error: Error opening file for reading: $!\n";
         exit(-1);
     }
@@ -190,7 +182,7 @@ sub process_fasta_file {
 
         # Append sequence to master file
         my $out;
-        unless (open( $out, ">>" . catfile($target_dir, $output_fasta_file) )) {
+        unless (open( $out, ">>$output_fasta_file" )) {
             print STDOUT "log: error: Couldn't open genome.faa\n";
             exit(-1);
         }
@@ -199,7 +191,7 @@ sub process_fasta_file {
         print_fasta($out, $head, \$filteredSeq);
         close($out);
 
-        $seq{$chr} = { size => length $filteredSeq, file => $filepath };
+        $seq{$chr} = { size => length $filteredSeq, file => $input_file };
 
         # Print log message
         my $count = keys %seq;
@@ -209,7 +201,7 @@ sub process_fasta_file {
             goto DONE;
         }
         if ( $count <= MAX_PRINT ) {
-            my $filename = basename($filepath);
+            my $filename = basename($input_file);
             print STDOUT "log: Processed chr '$chr' (", commify(length($filteredSeq)), " bp)\n";
         }
         elsif ( $count == MAX_PRINT + 1 ) {
