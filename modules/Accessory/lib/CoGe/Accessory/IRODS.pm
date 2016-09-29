@@ -43,7 +43,7 @@ BEGIN {
     @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_imkdir irods_iput irods_irm $IRODS_METADATA_PREFIX );
     @EXPORT_OK = qw( irods_get_base_path irods_set_env );
 
-    $IRODS_METADATA_PREFIX = 'ipc-coge-';
+    $IRODS_METADATA_PREFIX = 'coge-'; #'ipc-coge-'; # mdb changed 9/27/16 -- getting error from IRODS that 'ipc' is protected AVU
 }
 
 sub irods_ils {

@@ -38,7 +38,7 @@ our @EXPORT = qw(
     add_workflow_result create_bowtie2_workflow create_image_job
     add_metadata_to_results_job create_process_fasta_job
     create_transdecoder_longorfs_job create_transdecoder_predict_job
-    create_bigwig_to_wig_job
+    create_bigwig_to_wig_job create_irods_imeta_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -203,6 +203,25 @@ sub export_to_irods {
         inputs => [$src],
         outputs => [$done_file]
    };
+}
+
+sub create_irods_imeta_job {
+    my %opts = @_;
+    my $dest_file_path = $opts{dest_file_path};
+    my $metadata_file  = $opts{metadata_file};
+    
+    my $cmd = catdir($CONF->{SCRIPTDIR}, 'irods.pl');
+    
+    return {
+        cmd => $cmd,
+        description => "Generating IRODS metadata for $dest_file_path",
+        args => [
+            ["-cmd", 'metadata', 0],
+            ["-metafile", $metadata_file, 0],
+        ],
+        inputs => [],
+        outputs => []
+    };
 }
 
 sub export_experiment_job {

@@ -2,10 +2,6 @@
   "name": "coge",
   "version": "0.0.0",
   "homepage": "https://github.com/LyonsLab/coge",
-  "authors": [
-    "Evan Briones <erbriones@gmail.com>",
-    "Matt Bomhoff <mbomhoff@email.arizona.edu>"
-  ],
   "license": "MIT",
   "ignore": [
     "**/.*",
@@ -25,6 +21,8 @@
     "datatables": "https://github.com/DataTables/DataTables.git",
     "datatables.buttons": "https://github.com/DataTables/Buttons.git",
     "synteny-vis": "https://github.com/hdc-arizona/synteny-vis.git",
-    "plotly": "https://github.com/plotly/plotly.js.git"
+    "plotly": "https://github.com/plotly/plotly.js.git",
+    "moment-timezone": "~0.5.5",
+    "moment-timezone-data": "http://momentjs.com/downloads/moment-timezone-with-data-2010-2020.js"
   }
 }

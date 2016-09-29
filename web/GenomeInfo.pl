@@ -948,12 +948,13 @@ sub get_genome_info {
     );
 
     my $owner = $genome->owner;
-    my $creator = $genome->creator;
-    my $creation = ($genome->creator_id ? $genome->creator->display_name  . ' ' : '') . $genome->get_date();
+    my $creator = ($genome->creator_id ? $genome->creator->display_name : '');
+    my $creation_date = $genome->get_date();
     my $groups = ($genome->restricted ? join(', ', sort map { $_->name } $USER->groups_with_access($genome)) : undef);
     $template->param( groups_with_access => $groups) if $groups;
     $template->param( OWNER => $owner->display_name ) if $owner;
-    $template->param( CREATOR => $creation ) if $creation;
+    $template->param( CREATOR => $creator ) if $creator;
+    $template->param( CREATION_DATE => $creation_date ) if $creation_date;
     $template->param( GID => $genome->id );
 
     return $template->output;

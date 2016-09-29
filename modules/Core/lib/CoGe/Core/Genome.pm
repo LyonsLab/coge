@@ -10,6 +10,7 @@ use CoGe::Accessory::TDS qw(write read);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_genome_path);
 use CoGe::Core::Favorites;
+use CoGe::Accessory::IRODS qw($IRODS_METADATA_PREFIX);
 
 BEGIN {
     our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION );
@@ -19,7 +20,7 @@ BEGIN {
     @ISA = qw( Exporter );
     @EXPORT = qw( has_statistic get_gc_stats get_noncoding_gc_stats
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
-        fix_chromosome_id read_fasta_index);
+        fix_chromosome_id read_fasta_index get_irods_metadata);
     @EXPORT_OK = qw(genomecmp genomecmp2 search_genomes);
 }
 
@@ -476,22 +477,22 @@ sub fix_chromosome_id {
     return unless defined $chr;
 
     # Fix chromosome identifier
-    $chr =~ s/^lcl\|//;
-    $chr =~ s/^gi\|//;
-    $chr =~ s/chromosome//i;
-    $chr =~ s/^chr//i;
-    $chr = "0" if $chr =~ /^0+$/; #EL added 2/13/14 chromosome name is 00 (or something like that)
-    $chr =~ s/^0+// unless $chr eq '0';
-    $chr =~ s/^_+//;
-    $chr =~ s/\s+/ /g;
-    $chr =~ s/^\s//;
-    $chr =~ s/\s$//;
-    $chr =~ s/\//_/g; # mdb added 12/17/13 issue 266 - replace '/' with '_'
-    $chr =~ s/\|$//;  # mdb added 3/14/14 issue 332 - remove trailing pipes
-    $chr =~ s/\|/_/g; # mdb added 8/13/15 - convert pipes to underscore
-    $chr =~ s/\(/_/g; # mdb added 2/11/15 COGE-587 - replace '(' with '_'
-    $chr =~ s/\)/_/g; # mdb added 2/11/15 COGE-587 - replace ')' with '_'
-    $chr =~ s/_+/_/g; # mdb added 8/13/15 - convert multiple underscores to single underscore
+    $chr =~ s/^lcl\|//;           # remove leading 'lcl|'
+    $chr =~ s/^gi\|//;            # remove leading 'gi|'
+    $chr =~ s/chromosome//i;      # remove 'chromosome'
+    $chr =~ s/^chr//i;            # remove leading 'chr'
+    $chr = "0" if $chr =~ /^0+$/; # handle chromosome name '00' (or something like that) (EL added 2/13/14)
+    $chr =~ s/^0+// unless $chr eq '0'; # remove leading 0s
+    $chr =~ s/^_+//;              # remove underscores
+    $chr =~ s/\s+/ /g;            # collapse whitespace to single space
+    $chr =~ s/^\s//;              # remove leading whitespace
+    $chr =~ s/\s$//;              # remove trailing whitespace
+    $chr =~ s/\//_/g;             # replace '/' with '_' (mdb added 12/17/13 issue 266)
+    $chr =~ s/\|$//;              # remove trailing pipes (mdb added 3/14/14 issue 332)
+    $chr =~ s/\|/_/g;             # convert pipes to underscore (mdb added 8/13/15)
+    $chr =~ s/\(/_/g;             # replace '(' with '_' (mdb added 2/11/15 COGE-587)
+    $chr =~ s/\)/_/g;             # replace ')' with '_' (mdb added 2/11/15 COGE-587)
+    $chr =~ s/_+/_/g;             # convert multiple underscores to single underscore (mdb added 8/13/15)
     return if ($chr eq '');
 
     # Convert 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed
@@ -531,6 +532,40 @@ sub read_fasta_index {
     close($fh);
     
     return \%contigs;
+}
+
+sub get_irods_metadata {
+    my $genome = shift;
+    
+    my %md = (
+        $IRODS_METADATA_PREFIX.'link'              => "http://genomevolution.org",
+        $IRODS_METADATA_PREFIX.'OrganismView-link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
+        $IRODS_METADATA_PREFIX.'GenomeInfo-link'   => "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
+        $IRODS_METADATA_PREFIX.'genome-id'         => $genome->id,
+        $IRODS_METADATA_PREFIX.'genome-organism-name'     => $genome->organism->name,
+        $IRODS_METADATA_PREFIX.'genome-organism-taxonomy' => $genome->organism->description,
+        $IRODS_METADATA_PREFIX.'genome-version'           => $genome->version,
+        $IRODS_METADATA_PREFIX.'genome-sequence-type'     => $genome->type->info,
+    );
+    
+    my $i = 1;
+    my @sources = $genome->source;
+    foreach my $item (@sources) {
+        my $source = $item->name;
+        $source.= ": ".$item->description if $item->description;
+        my $key = "genome-source";
+        $key .= $i if scalar @sources > 1;
+        $md{$IRODS_METADATA_PREFIX.$key} = $source;
+        $md{$IRODS_METADATA_PREFIX.$key."-link"} = $item->link if $item->link;
+        $i++;
+    }
+    
+    $md{$IRODS_METADATA_PREFIX.'genome-link'}            = $genome->link if ($genome->link);
+    $md{$IRODS_METADATA_PREFIX.'genome-additional-info'} = $genome->message if ($genome->message);
+    $md{$IRODS_METADATA_PREFIX.'genome-name'}            = $genome->name if ($genome->name);
+    $md{$IRODS_METADATA_PREFIX.'genome-description'}     = $genome->description if ($genome->description);
+    
+    return \%md;
 }
 
 1;
