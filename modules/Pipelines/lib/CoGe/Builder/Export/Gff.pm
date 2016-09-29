@@ -5,7 +5,8 @@ with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
-use CoGe::Builder::CommonTasks qw(generate_gff export_to_irods generate_results link_results send_email_job);
+use CoGe::Accessory::Web qw(download_url_for);
+use CoGe::Core::Genome qw(get_irods_metadata);
 
 use File::Basename qw(basename);
 use File::Spec::Functions;
@@ -17,7 +18,7 @@ sub get_name {
 
 sub build {
     my $self = shift;
-
+    
     # Verify required parameters and set defaults
     my $dest_type = $self->params->{dest_type};
     $dest_type = "http" unless $dest_type;
@@ -29,47 +30,74 @@ sub build {
     # Get genome
     my $genome = $self->db->resultset("Genome")->find($gid);
     my $genome_name = $self->params->{basename} = sanitize_name($genome->organism->name);
-    $genome_name = 'genome_'.$gid unless $genome_name;
+    
+    # Generate output filename based on params
+    my $param_string = join( "-", map { $_ . ($self->params->{$_} // 0) } qw(annos cds id_type nu upa add_chr) );
+    my $output_file = $genome_name . "_" . $param_string;
+    $output_file .= "_" . $self->params->{chr} if $self->params->{chr};
+    $output_file .= ".gid" . $gid;
+    $output_file .= ".gff";
+    $output_file =~ s/\s+/_/g;
+    $output_file =~ s/\)|\(/_/g;
+       
+    my $cache_dir = catdir($self->conf->{CACHEDIR}, $gid, "gff");
+    $output_file = catfile($cache_dir, $output_file);
 
     # Generate GFF file
-    my @done_files;
-    my ($output, $task) = generate_gff(%{$self->params});
-    $self->workflow->add_job($task);
+    $self->add_task(
+        $self->create_gff(
+            %{$self->params}, 
+            output_file => $output_file
+        )
+    );
 
     if ($dest_type eq "irods") { # irods export
+        # Set IRODS destination path
         my $irods_base = $self->params->{dest_path};
         $irods_base = irods_get_base_path($self->user->name) unless $irods_base;
-        my $irods_dest = catfile($irods_base, basename($output));
+        my $irods_dest = catfile($irods_base, basename($output_file));
         my $irods_done = catfile($self->staging_dir, "irods.done");
 
-        $self->workflow->add_job( export_to_irods($output, $irods_dest, $self->params->{overwrite}, $irods_done) );
-        my $results_task = generate_results($irods_dest, $dest_type, $self->result_dir, $self->conf, $irods_done);
-        $self->workflow->add_job($results_task);
-        push @done_files, $results_task->{outputs}->[0];
+        # Export file task
+        $self->add_task_chain(
+            $self->export_to_irods( 
+                src_file => $output_file, 
+                dest_file => $irods_dest, 
+                overwrite => $self->params->{overwrite} 
+            )
+        );
+        
+        # Set file metadata task
+        my $md = get_irods_metadata($genome);
+        my $md_file = catfile($self->staging_dir, 'irods_metadata.json');
+        CoGe::Accessory::TDS::write($md_file, $md);
+        $self->add_task_chain(
+            $self->create_irods_imeta(
+                dest_file => $irods_dest,
+                metadata_file => $md_file
+            )
+        );
+        
+        # Add to results
+        $self->add_task_chain(
+            $self->add_result(
+                result   => {
+                    type => 'irods',
+                    path => $irods_dest
+                }
+            )
+        );
     } 
     else { # http download
-        my $results_task = link_results($output, $output, $self->result_dir, $self->conf);
-        $self->workflow->add_job($results_task);
-        push @done_files, $results_task->{outputs}->[0];
-    }
-    
-    # Send notification email #TODO move into shared module
-    if ( $self->params->{email} ) {
-        # Build message body
-        my $body = 'GFF export for genome "' . $genome_name . '" (id' . $gid . ') has finished.';
-        $body .= "\nLink: " . $self->site_url if $self->site_url;
-        $body .= "\n\nNote: you received this email because you submitted a job on " .
-            "CoGe (http://genomevolution.org) and selected the option to be emailed " .
-            "when finished.";
-        
-        # Create task
-        $self->workflow->add_job(
-            send_email_job(
-                to => $self->user->email,
-                subject => 'CoGe GFF export done',
-                body => $body,
-                staging_dir => $self->staging_dir,
-                done_files => \@done_files
+        $self->add_task_chain(
+            $self->add_result(
+                result   => {
+                    type => 'url',
+                    path => download_url_for( 
+                        wid => $self->workflow->id,
+                        file => $output_file
+                    )
+                }
             )
         );
     }

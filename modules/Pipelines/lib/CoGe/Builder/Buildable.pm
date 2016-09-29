@@ -2,56 +2,328 @@ package CoGe::Builder::Buildable;
 
 use Moose::Role;
 
+use File::Basename qw(basename dirname);
+use File::Spec::Functions qw(catdir catfile);
+use File::Path qw(make_path);
+use JSON qw(encode_json);
+use URI::Escape::JavaScript qw(escape);
+use Data::Dumper;
+
+use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
+use CoGe::Core::Storage qw(get_workflow_results_file);
+
 requires qw(build);
 
-has 'workflow' => (
-    is => 'rw',
-    isa  => 'CoGe::JEX::Workflow'
-);
+has 'workflow'      => ( is => 'rw', isa  => 'CoGe::JEX::Workflow' );
+has 'staging_dir'   => ( is => 'rw' );
+has 'result_dir'    => ( is => 'rw' );
+has 'params'        => ( is => 'ro', required => 1 );
+has 'requester'     => ( is => 'ro' );
+has 'site_url'      => ( is => 'rw' );
+has 'page'          => ( is => 'rw' );
+has 'db'            => ( is => 'ro', required => 1, isa  => 'CoGeX' );
+has 'user'          => ( is => 'ro', required => 1, isa  => 'CoGeX::Result::User' );
+has 'conf'          => ( is => 'ro', required => 1 );
+has 'outputs'       => ( is => 'rw', default => sub { [] } );
+has 'assets'        => ( is => 'rw', default => sub { [] } );
+has 'errors'        => ( is => 'rw', default => sub { [] } );
 
-has 'staging_dir' => (
-    is => 'rw'
-);
+my $previous_outputs = [];
 
-has 'result_dir' => (
-    is => 'rw'
-);
+sub pre_build {
+    my $self = shift;
+    make_path($self->staging_dir) if $self->staging_dir;
+    make_path($self->result_dir) if $self->result_dir;
+}
 
-has 'params' => (
-    is => 'ro',
-    required => 1
-);
+sub post_build {
+    my $self = shift;
+    
+    # Send notification email
+    if ( $self->params->{email} ) {
+        $self->add_task_chain_all(
+            $self->send_email(
+                to => $self->params->{email},
+                subject => 'CoGe Workflow Notification',
+                body => 'Your workflow finished: ' . $self->get_name() .
+                        ($self->site_url ? "\nLink: " . $self->site_url : '') .
+                        "\n\nNote: you received this email because you submitted a job on " .
+                        "CoGe (http://genomevolution.org) and selected the option to be notified.",
+            )
+        );
+    }
+}
 
-has 'requester' => (
-    is => 'ro'
-);
+sub add_task {
+    my ($self, $task) = @_;
+    return unless $task;
+    
+    push @{$self->outputs}, @{$task->{outputs}};
+    $previous_outputs = $task->{outputs};
+    
+    return $self->workflow->add_job($task);    
+}
 
-has 'site_url' => ( # mdb added 10/12/15
-    is => 'rw'
-);
+sub add_tasks {
+    my ($self, $tasks) = @_;
+    return unless $tasks;
+    
+    $previous_outputs = [];
+    foreach my $task (@$tasks) {
+        push @{$self->outputs}, @{$task->{outputs}};
+        push @$previous_outputs, @{$task->{outputs}};
+        unless ($self->workflow->add_job($task)) {
+            return;    
+        }
+    }
+    
+    return 1;
+}
 
-has 'page' => ( # mdb added 10/12/15
-    is => 'rw'
-);
+sub add_task_chain {
+    my ($self, $task) = @_;
+    
+    # Chain this task to the previous task
+    push @{$task->{inputs}}, @{$previous_outputs} if $previous_outputs;
+    return $self->add_task($task);
+}
 
-has 'db' => (
-    is => 'ro',
-    required => 1
-);
+sub add_task_chain_all {
+    my ($self, $task) = @_;
+    
+    # Chain this task to all previous tasks
+    push @{$task->{inputs}}, @{$self->outputs} if $self->outputs;
+    return $self->add_task($task);
+}
 
-has 'user' => (
-    is => 'ro',
-    required => 1
-);
+sub previous_output {
+    my ($self, $index) = @_;
+ 
+    if ($previous_outputs && @$previous_outputs >= $index) {
+        return $previous_outputs->[$index];    
+    }
+    
+    return;
+}
 
-has 'conf' => (
-    is => 'ro',
-    required => 1
-);
+sub push_asset {
+    my ($self, $name, $value) = @_;
+    return unless $name;
+    push @{$self->assets}, [ $name, $value ];
+}
 
-has 'outputs' => (
-    is => 'rw',
-    default => sub { {} } # initialize to empty hash
-);
+sub pop_asset {
+    my $self =  shift;
+    
+    return pop @{$self->assets};
+    
+#    foreach (reverse @{$self->assets}) {
+#        my ($name, $value) = @{$_};
+#        if ($name eq $match_name) {
+#            return $value;
+#        }
+#    }
+}
+
+sub get_assets {
+    my ($self, $match_name) =  @_;
+    
+    my @outputs;
+    foreach (@{$self->assets}) {
+        my ($name, $value) = @{$_};
+        if ($name eq $match_name) {
+            push @outputs, $value;
+        }
+    }
+    
+    return wantarray ? @outputs : \@outputs;
+}
+
+# Task Library methods ---------------------------------------------------------
+
+sub create_gff {
+    my ($self, %params) = @_;
+    
+    # Build argument list
+    my $args = [
+        ['-gid',     $params{gid},                0],
+        ['-f',       $params{output_file},        0],
+        ['-config',  $self->conf->{_CONFIG_PATH}, 0],
+        ['-cds',     $params{cds} // 0,           0],
+        ['-annos',   $params{annos} // 0,         0],
+        ['-nu',      $params{nu} // 0,            0],
+        ['-id_type', $params{id_type} // 0,       0],
+        ['-upa',     $params{upa} // 0,           0]
+    ];
+    push @$args, ['-chr',     $params{chr},     0] if (defined $params{chr});
+    push @$args, ['-add_chr', $params{add_chr}, 0] if (defined $params{add_chr});
+    
+    return {
+        cmd         => catfile($self->conf->{SCRIPTDIR}, "coge_gff.pl"),
+        args        => $args,
+        outputs     => [ $params{output_file} ],
+        description => "Generating GFF..."
+    };
+}
+
+sub export_to_irods {
+    my ($self, %params) = @_;
+
+    irods_set_env(catfile($self->conf->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
+    my $cmd = irods_iput($params{src_file}, $params{dest_file}, { no_execute => 1, overwrite => ($params{overwrite} // 0) });
+
+    my $done_file = catfile($self->staging_dir, basename($params{src_file})) . '.iput.done';
+
+    return {
+        cmd => qq[$cmd && touch $done_file],
+        description => "Exporting file to IRODS " . $params{dest_file},
+        args => [],
+        inputs => [ $params{src_file} ],
+        outputs => [ $done_file ]
+    };
+}
+
+sub create_irods_imeta {
+    my ($self, %params) = @_;
+    
+    my $done_file = catfile($self->staging_dir, basename($params{dest_file})) . '.imeta.done';
+    
+    my $cmd = catdir($self->conf->{SCRIPTDIR}, 'irods.pl') .
+        " -cmd metadata" .
+        " -dest " . $params{dest_file} . 
+        " -metafile " . $params{metadata_file} .
+        " -env " . catfile($self->conf->{_HOME_PATH}, 'irodsEnv') .
+        " && touch $done_file";
+    
+    return {
+        cmd => $cmd,
+        description => "Generating IRODS metadata for " . $params{dest_file},
+        args => [],
+        inputs => [],
+        outputs => [ $done_file ]
+    };
+}
+
+sub untar {
+    my ($self, %params) = @_;
+    
+    my $input_file = $params{input_file};
+    my $output_path = $params{output_path};
+    my $done_file = "$input_file.untarred";
+    $self->add_asset(data_dir => $output_path);
+
+    my $cmd = get_command_path('TAR');
+
+    return {
+        cmd => "mkdir -p $output_path && $cmd -xf $input_file --directory $output_path && touch $done_file",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file,
+#            $input_file . '.done' # ensure file is done transferring
+        ],
+        outputs => [
+            [$output_path, '1'],
+            $done_file
+        ],
+        description => "Unarchiving " . basename($input_file) . "..."
+    };
+}
+
+sub gunzip {
+    my ($self, %params) = @_;
+    my $input_file = $params{input_file};
+    my $output_file = $input_file;
+    $output_file =~ s/\.gz$//;
+    $self->add_asset(data_file => $output_file);
+
+    my $cmd = get_command_path('GUNZIP');
+    
+    return {
+        cmd => "$cmd -c $input_file > $output_file && touch $output_file.decompressed",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file,
+#            $input_file . '.done' # ensure file is done transferring
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.decompressed"
+        ],
+        description => "Decompressing " . basename($input_file) . "..."
+    };
+}
+
+sub join_files {
+    my ($self, %params) = @_;
+    my $input_files = $params{input_files};
+    my $output_file = $params{output_file};
+    
+    my $cmd = "mkdir -p \$(dirname $output_file) && cat " . join(' ', @$input_files) . ' > ' . $output_file;
+    
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [],
+        inputs => [
+            @$input_files,
+#            @$done_files
+        ],
+        outputs => [
+            $output_file
+        ],
+        description => 'Joining files...'
+    };
+}
+
+sub send_email {
+    my ($self, %params) = @_;
+    my $from    = 'CoGe Support <coge.genome@gmail.com>';
+    my $to      = $params{to};
+    my $subject = $params{subject};
+    my $body    = $params{body};
+    
+    my $done_file = catfile($self->staging_dir, "send_email.done");
+    
+    my $args = [
+        ['-from',      '"'.escape($from).'"',    0],
+        ['-to',        '"'.escape($to).'"',      0],
+        ['-subject',   '"'.escape($subject).'"', 0],
+        ['-body',      '"'.escape($body).'"',    0],
+    ];
+
+    return {
+        cmd => catfile($self->conf->{SCRIPTDIR}, "send_email.pl"),
+        script => undef,
+        args => $args,
+        inputs => [],
+        outputs => [],
+        description => "Sending notification email..."
+    };
+}
+
+sub add_result {
+    my ($self, %params) = @_;
+    my $username = $self->user->name;
+    my $wid      = $self->workflow->id;
+    my $result   = encode_json($params{result});
+    
+    my $result_file = get_workflow_results_file($username, $wid);
+
+    return {
+        cmd  => catfile($self->conf->{SCRIPTDIR}, "add_workflow_result.pl"),
+        args => [
+            ['-user_name', $username,       0],
+            ['-wid',       $wid,            0],
+            ['-result',    "'".$result."'", 0] #TODO pass via temp file instead
+        ],
+        inputs  => [],
+        outputs => [
+#            $result_file,  # force this to run (for case of multiple results)
+        ],
+        description => "Adding workflow result..."
+    };
+}
 
 1;
