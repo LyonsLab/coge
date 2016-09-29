@@ -1017,7 +1017,7 @@ return declare( JBrowsePlugin,
 		});
 
 	    var config = this._track.config;
-		var to_marker = dojo.byId('to_marker').checked;
+		var to_marker = dojo.byId('to_marker') && dojo.byId('to_marker').checked;
 
 		this._save_as_dialog.hide();
 		coge.progress.init({
