@@ -40,7 +40,7 @@ GetOptions(
 
 #$| = 1;
 #open (my $logh, ">", $logfile) or die "Error opening log file";
-$staging_dir //= "."; #/
+#$staging_dir //= "."; #/
 $filename = unescape($filename) if $filename;
 $id = unescape($id) if $id;
 $add_chr = 0 unless $add_chr;
