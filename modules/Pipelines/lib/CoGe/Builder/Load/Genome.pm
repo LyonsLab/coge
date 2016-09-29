@@ -47,14 +47,8 @@ sub build {
     # Build workflow
     #
     
-    # Create tasks to retrieve files #TODO move to Buildable::pre_build
-#    my $upload_dir = get_upload_path($self->user->name, $load_id);
-#    my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data);
-#    $self->add_tasks($data_workflow->{tasks});
-#    push @input_files, @{$data_workflow->{outputs}} if ($data_workflow->{outputs});
-#    push @ncbi_accns, @{$data_workflow->{ncbi}} if ($data_workflow->{ncbi});
-    
-    my $request = { #FIXME better way to do this?
+    # Create tasks to retrieve files #TODO move to pre_build()
+    my $dr = CoGe::Builder::Common::DataRetrieval->new({ #FIXME better way to do this?
         params      => $self->params,
         requester   => $self->requester,
         db          => $self->db,
@@ -64,9 +58,7 @@ sub build {
         staging_dir => $self->staging_dir,
         result_dr   => $self->result_dir,
         outputs     => $self->outputs
-    };
-
-    my $dr = CoGe::Builder::Common::DataRetrieval->new($request);
+    });
     $dr->build();
     
     # Build steps to add genome
@@ -81,69 +73,40 @@ sub build {
     }
     else { # File-based load
         my @input_files = $dr->get_assets('data_file');
+        my $input_dir   = $dr->get_assets('data_dir');
         
-        # Untar/decompress input files
-        my (@decompressed, $doJoin);
-        foreach my $input_file (@input_files) {
-            if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) { # Untar if necessary
-                my $task = $self->untar(
-                    input_file => $input_file, 
-                    output_path => catdir($self->staging_dir, 'untarred')
-                );
-                $self->add_task($task);
-                $input_file = $task->{outputs}->[0] . '/*'; # this is a directory and filespec
-                $doJoin = 1;
-            }
-            elsif ( $input_file =~ /\.gz$/ ) { # Decompress if necessary
-                my $task = $self->gunzip( input_file => $input_file );
-                $self->add_task($task);
-                $input_file = $task->{outputs}->[0];
-            }
-            push @decompressed, $input_file;
-        }
-        
-        my $concatenated_file;
-        if (@decompressed > 1 || $doJoin) {
+        my ($fasta_file) = @input_files; # first file (in case just one);
+        if (@input_files > 1 || $input_dir) {
             # Concatenate all input files into one
-            $concatenated_file = catfile($self->staging_dir, 'concatenated_genome.fasta');
             $self->add_task_chain_all(
                 $self->join_files(
-                    input_files => \@decompressed, # this should work with wildcards from untar task above
-                    output_file => $concatenated_file,
-#                    done_files => \@done_files
+                    input_files => [ @input_files, $input_dir.'/*'], # this should work with wildcards on data dir
+                    output_file => catfile($self->staging_dir, 'concatenated_genome.fasta');,
                 )
             );
-#            push @tasks, $cat_task;
-        }
-        else {
-            $concatenated_file = shift @decompressed; # first and only file
+            $fasta_file = $self->previous_output();
         }
     
         # Sort FASTA by length
         $self->add_task_chain_all(
-            $self->sort_fasta( fasta_file => $concatenated_file )
+            $self->sort_fasta( fasta_file => $fasta_file )
         );
-#        push @tasks, $sort_task;
-        my $sorted_fasta_file = $self->get_asset('sorted_fasta');
         
         # Validate/process/trim FASTA file
         my $processed_fasta_file = catdir($self->staging_dir, 'genome.faa');
         $self->add_task_chain(
             $self->process_fasta(
-                input_file => $sorted_fasta_file,
+                input_file => $self->previous_output(),
                 output_file => $processed_fasta_file,
             )
         );
-#        push @tasks, $process_task;
         
         # Index FASTA file
         $self->add_task_chain(
             create_fasta_index_job(
-                fasta => $processed_fasta_file
+                fasta => $self->previous_output()
             )
         );
-#        push @tasks, $index_task;
-#        my $index_file = $index_task->{outputs}[0];
     
         # Create genome in DB
         $self->add_task_chain(
@@ -153,8 +116,6 @@ sub build {
                 metadata => $metadata
             )
         );
-#        push @tasks, $load_task;
-#        push @done_files, $load_task->{outputs}->[1];
     }
     
     return 1;
@@ -166,8 +127,6 @@ sub sort_fasta {
     my $fasta_file = $params{fasta_file};
     my $filename = basename($fasta_file);
     my $output_file = "$filename.sorted";
-    
-    $self->add_asset(sorted_fasta => catfile($self->staging_dir, $output_file));
     
     my $cmd = $self->conf->{SIZESEQ} || 'sizeseq';
 
