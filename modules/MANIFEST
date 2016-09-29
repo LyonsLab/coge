@@ -146,6 +146,7 @@ JEX/lib/CoGe/JEX/Workflow.pm
 JEX/lib/CoGe/JEX/Jex.pm
 Pipelines/lib/CoGe/Builder/Buildable.pm
 Pipelines/lib/CoGe/Builder/Common/Alignment.pm
+Pipelines/lib/CoGe/Builder/Common/DataRetrieval.pm
 Pipelines/lib/CoGe/Builder/CommonTasks.pm
 Pipelines/lib/CoGe/Builder/Export/Experiment.pm
 Pipelines/lib/CoGe/Builder/Export/Fasta.pm
