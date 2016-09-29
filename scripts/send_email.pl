@@ -39,10 +39,12 @@ $body = unescape($body);
 send_email(from => $from, to => $to, subject => $subject, body => $body);
     
 # Save something in done file -- signals task completion to JEX
-my $done_path = to_pathname($done_file);
-mkpath($done_path);
-open(my $fh, ">>", $done_file);
-say $fh "email sent: from:" . $from . " to:" . $to . " subject:" . $subject;
-close($fh);
+if ($done_file) {
+    my $done_path = to_pathname($done_file);
+    mkpath($done_path);
+    open(my $fh, ">>", $done_file);
+    say $fh "email sent: from:" . $from . " to:" . $to . " subject:" . $subject;
+    close($fh);
+}
 
 exit;
