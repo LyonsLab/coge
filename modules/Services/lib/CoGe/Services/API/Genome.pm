@@ -192,6 +192,22 @@ sub sequence {
     ));
 }
 
+sub export {
+    my $self = shift;
+    my $gid  = $self->stash('id');
+    return unless $gid;
+    my $data = $self->req->json;
+    $data->{gid} = $gid;
+
+    # Alias to Job Submit -- is there a better way to do this using Mojolicious routing?
+    my $request = {
+        type => 'export_genome',
+        parameters => $data
+    };
+    
+    return CoGe::Services::API::Job::add($self, $request);
+}
+
 sub add {
     my $self = shift;
     my $data = $self->req->json;
@@ -212,17 +228,6 @@ sub add {
     };
     
     return CoGe::Services::API::Job::add($self, $request);
-}
-
-sub export {
-    my $self = shift;
-    my $data = $self->req->json;
-
-    # Alias to Job Submit -- is there a better way to do this using Mojolicious routing?
-    my $request = {
-        type => 'export_genome',
-        parameters => $data
-    };    
 }
 
 1;
