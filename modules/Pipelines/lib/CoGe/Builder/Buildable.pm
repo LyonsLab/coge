@@ -99,6 +99,7 @@ sub add_task_chain_all {
 sub previous_output {
     my ($self, $index) = @_;
  
+    $index = 0 unless defined $index;
     if ($previous_outputs && @$previous_outputs >= $index) {
         return $previous_outputs->[$index];    
     }
@@ -106,23 +107,10 @@ sub previous_output {
     return;
 }
 
-sub push_asset {
+sub add_asset {
     my ($self, $name, $value) = @_;
     return unless $name;
     push @{$self->assets}, [ $name, $value ];
-}
-
-sub pop_asset {
-    my $self =  shift;
-    
-    return pop @{$self->assets};
-    
-#    foreach (reverse @{$self->assets}) {
-#        my ($name, $value) = @{$_};
-#        if ($name eq $match_name) {
-#            return $value;
-#        }
-#    }
 }
 
 sub get_assets {
@@ -210,7 +198,6 @@ sub untar {
     my $input_file = $params{input_file};
     my $output_path = $params{output_path};
     my $done_file = "$input_file.untarred";
-    $self->add_asset(data_dir => $output_path);
 
     my $cmd = get_command_path('TAR');
 
@@ -235,7 +222,6 @@ sub gunzip {
     my $input_file = $params{input_file};
     my $output_file = $input_file;
     $output_file =~ s/\.gz$//;
-    $self->add_asset(data_file => $output_file);
 
     my $cmd = get_command_path('GUNZIP');
     

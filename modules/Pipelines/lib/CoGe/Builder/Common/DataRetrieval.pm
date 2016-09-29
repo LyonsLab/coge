@@ -71,20 +71,24 @@ sub build {
         
         my $data_file = $self->previous_output(0);
         if ( $data_file =~ /\.tgz|\.tar\.gz$/ ) { # Untar if necessary
+            my $output_dir = catdir($self->staging_dir, 'untarred');
             $self->add_task_chain(
                 $self->untar(
                     input_file => $data_file, 
-                    output_path => catdir($self->staging_dir, 'untarred')
+                    output_path => $output_dir
                 )
             );
+            $self->add_asset( data_dir => $output_dir );
         }
         elsif ( $data_file =~ /\.gz$/ ) { # Decompress if necessary
             $self->add_task_chain(
                 $self->gunzip( input_file => $data_file )
             );
+            $self->add_asset( data_file => $self->previous_output(0) );
         }
-        
-        $self->add_asset();
+        else {
+            $self->add_asset( data_file => $self->previous_output(0) );
+        }
     }
     
     return 1;
