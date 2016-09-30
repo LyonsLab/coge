@@ -10,6 +10,7 @@ use URI::Escape::JavaScript qw(escape);
 use Data::Dumper;
 
 use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
+use CoGe::Accessory::Web qw(get_command_path);
 use CoGe::Core::Storage qw(get_workflow_results_file);
 
 requires qw(build);
@@ -96,6 +97,12 @@ sub add_task_chain_all {
     return $self->add_task($task);
 }
 
+sub add_output {
+    my ($self, $output) = @_;
+    push @{$self->outputs}, $output;
+    $previous_outputs = [$output];
+}
+
 sub previous_output {
     my ($self, $index) = @_;
  
@@ -113,6 +120,19 @@ sub add_asset {
     push @{$self->assets}, [ $name, $value ];
 }
 
+sub get_asset {
+    my ($self, $match_name) =  @_;
+    
+    foreach (@{$self->assets}) {
+        my ($name, $value) = @{$_};
+        if ($name eq $match_name) {
+            return $value;
+        }
+    }
+    
+    return;
+}
+
 sub get_assets {
     my ($self, $match_name) =  @_;
     
@@ -127,7 +147,7 @@ sub get_assets {
     return wantarray ? @outputs : \@outputs;
 }
 
-# Task Library methods ---------------------------------------------------------
+# Task Library (replaces CommonTasks.pm) --------------------------------------
 
 sub create_gff {
     my ($self, %params) = @_;
@@ -244,9 +264,14 @@ sub gunzip {
 sub join_files {
     my ($self, %params) = @_;
     my $input_files = $params{input_files};
+    my $input_dir   = $params{input_dir};
     my $output_file = $params{output_file};
     
-    my $cmd = "mkdir -p \$(dirname $output_file) && cat " . join(' ', @$input_files) . ' > ' . $output_file;
+    my @files;
+    push @files, @$input_files   if $input_files;
+    push @files, $input_dir.'/*' if $input_dir;
+    
+    my $cmd = "mkdir -p \$(dirname $output_file) && cat " . join(' ', @files) . ' > ' . $output_file;
     
     return {
         cmd => $cmd,

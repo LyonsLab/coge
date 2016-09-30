@@ -73,15 +73,16 @@ sub build {
     }
     else { # File-based load
         my @input_files = $dr->get_assets('data_file');
-        my $input_dir   = $dr->get_assets('data_dir');
+        my $input_dir   = $dr->get_asset('data_dir');
         
         my ($fasta_file) = @input_files; # first file (in case just one);
         if (@input_files > 1 || $input_dir) {
             # Concatenate all input files into one
             $self->add_task_chain_all(
                 $self->join_files(
-                    input_files => [ @input_files, $input_dir.'/*'], # this should work with wildcards on data dir
-                    output_file => catfile($self->staging_dir, 'concatenated_genome.fasta');,
+                    input_files => \@input_files, 
+                    input_dir => $input_dir,
+                    output_file => catfile($self->staging_dir, 'concatenated_genome.fasta'),
                 )
             );
             $fasta_file = $self->previous_output();

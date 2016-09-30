@@ -22,15 +22,7 @@ sub build {
     my $upload_dir = get_upload_path($self->user->name, $load_id);
     foreach my $item (@$data) {
         my $type = lc($item->{type});
-        
-        # Check if the file already exists which will be the case if called via the load page.
-        if ($item->{path}) {
-            my $filepath = catfile($upload_dir, $item->{path});
-            if (-r $filepath) {
-                $self->add_asset(data_file => $filepath);
-                next;
-            }
-        }
+        print STDERR Dumper $item, "\n";
         
         # Check if NCBI accession input
         if ($type eq 'ncbi') {
@@ -39,8 +31,14 @@ sub build {
             next;
         }
         
-        # Create file retrieval task based on source type (IRODS, HTTP, FTP)
-        if ($type eq 'irods') {
+        # Retrieve file based on source type (Upload, IRODS, HTTP, FTP)
+        if ($type eq 'file') { 
+            my $filepath = catfile($upload_dir, $item->{path});
+            if (-r $filepath) {
+                $self->add_output($filepath);
+            }
+        }
+        elsif ($type eq 'irods') {
             my $irods_path = $item->{path};
             $irods_path =~ s/^irods//; # strip of leading "irods" from LoadExperiment page # FIXME remove this in FileSelect
             $self->add_task(
@@ -69,25 +67,26 @@ sub build {
             );
         }
         
-        my $data_file = $self->previous_output(0);
-        if ( $data_file =~ /\.tgz|\.tar\.gz$/ ) { # Untar if necessary
+        # Process input files
+        my $input_file = $self->previous_output();
+        if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) { # Untar if necessary
             my $output_dir = catdir($self->staging_dir, 'untarred');
             $self->add_task_chain(
                 $self->untar(
-                    input_file => $data_file, 
+                    input_file => $input_file, 
                     output_path => $output_dir
                 )
             );
             $self->add_asset( data_dir => $output_dir );
         }
-        elsif ( $data_file =~ /\.gz$/ ) { # Decompress if necessary
+        elsif ( $input_file =~ /\.gz$/ ) { # Decompress if necessary
             $self->add_task_chain(
-                $self->gunzip( input_file => $data_file )
+                $self->gunzip( input_file => $input_file )
             );
-            $self->add_asset( data_file => $self->previous_output(0) );
+            $self->add_asset( data_file => $self->previous_output() );
         }
         else {
-            $self->add_asset( data_file => $self->previous_output(0) );
+            $self->add_asset( data_file => $self->previous_output() );
         }
     }
     
@@ -113,7 +112,8 @@ sub iget {
     return {
         cmd => $cmd,
         args => [],
-        inputs => [],
+        inputs => [
+        ],
         outputs => [ 
             $dest_file,
             $done_file
