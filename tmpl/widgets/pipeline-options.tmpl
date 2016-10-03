@@ -266,9 +266,20 @@
 	    <div id="expression-container" class="form-field hidden">
 	        <label class="col-md-2">Options:</label>
 	        <div class="form-group">
-	            <label>-q:</label>
-	            <input id="-q" type="number" title="base quality threshold (samtools depth)" value="20">
-	        </div>
+                <div class="form-entry" title="Only count reads with base quality greater than this value (samtools depth)">
+                    <label>-q:</label>
+                    <input id="-q" type="number" value="20">
+                </div>
+                <div class="form-entry" title="Use bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates (cufflinks)">
+                    <label>-frag-bias-correct:</label>
+                    <input id="-frag-bias-correct" type="checkbox" checked>
+                </div>
+                <div class="form-entry" title="Use an initial estimation procedure to more accurately weight reads mapping to multiple locations in the genome (cufflinks)">
+                    <label>-multi-read-correct:</label>
+                    <input id="-multi-read-correct" type="checkbox" checked>
+                </div>
+            </div>
+
 	    </div>
 	</div>
 </script>
