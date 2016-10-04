@@ -13,7 +13,7 @@ sub get_name {
 sub build {
     my $self = shift;
     
-    my $request = { #FIXME better way to do this?
+    my $request = { #FIXME better way to do this? See Moose constructors
         params      => $self->params,
         requester   => $self->requester,
         db          => $self->db,
