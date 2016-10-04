@@ -273,15 +273,19 @@ sub generate_additional_metadata {
             push @annotations, qq{note|bowtie2_build};
             push @annotations, 'note|tophat ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-g'));
         }
+        elsif ($alignment_params->{tool} eq 'bowtie2') {
+            push @annotations, qq{note|bowtie2_build};
+            push @annotations, 'note|bowtie2 (default options)';
+        }
         elsif ($alignment_params->{tool} eq 'bismark') {
             push @annotations, qq{note|bismark_genome_preparation};
             push @annotations, 'note|bismark ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-N', '-L'));
         }
         elsif ($alignment_params->{tool} eq 'bwameth') {
             push @annotations, qq{note|bwameth index};
-            push @annotations, 'note|bwameth';
+            push @annotations, 'note|bwameth (default options)';
         }
-        else { # gsnap
+        else { # default to gsnap
             push @annotations, qq{note|gmap_build};
             push @annotations, 'note|gsnap ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-N', '-n', '-Q', '--gap-mode', '--nofails'));
         }
