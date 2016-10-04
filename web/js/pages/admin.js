@@ -2446,7 +2446,7 @@ $.extend(System_graph.prototype, {
 				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;">Zoom Out</button>' +
 				'<div id="' + self.element + '_container" style="height:' + (self.height + 250) + 'px;">' +
 				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 200) + 'px;"></div> </div>'
-		);
+               );
 		if (self.parent) {
 			$('#' + self.element + '_back_button')
 				.prop("disabled", false)
@@ -2647,11 +2647,11 @@ $.extend(System_graph.prototype, {
 	brushed: function() {
 		var self = this;
 		var extent = self.brush.extent();
-		
-		var newJson = [];
-		for (var i = 0; i < self.data.length; i++) {
-			if (extent[0] <= self.data[i].time && extent[1] >= self.data[i].time) {
-				newJson.push(self.data[i]);
+  
+                var newJson = [];
+                for (var i = 0; i < self.data.length; i++) {
+                        if (extent[0] <= self.data[i].time && extent[1] >= self.data[i].time) {
+                                newJson.push(self.data[i]);
 			}
 		}
 		if (newJson.length > 1) {
