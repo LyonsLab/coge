@@ -275,8 +275,11 @@ return declare( JBrowsePlugin,
 	constructor: function( args ) {
 		coge_plugin = this;
 		this.browser = args.browser;
+		var gene = args.browser.config.queryParams.gene;
 		JBrowse.afterMilestone('initView', function() {
 			coge_plugin.create_search_button();
+			if (gene)
+				coge_plugin.search_for_features(gene);
 		});
 		this.num_merges = 0;
 		this.num_searches = 0;
@@ -1258,27 +1261,33 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	search_for_features: function() {
-		var types = this.get_checked_values('coge_search_for_features', 'feature types', true);
+	search_for_features: function(gene) {
+		var types = gene ? "'gene'" : this.get_checked_values('coge_search_for_features', 'feature types', true);
 		if (!types)
 			return;
-		var name = encodeURIComponent(dojo.byId('coge_search_text').value);
+		var name = gene ? gene : encodeURIComponent(dojo.byId('coge_search_text').value);
 		var url = api_base_url + '/genome/' + gid + '/features?name=' + name + '&features=' + types;
 		var ref_seq = dojo.byId('coge_ref_seq');
-		if (ref_seq.selectedIndex > 0)
+		if (ref_seq && ref_seq.selectedIndex > 0)
 			url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
 		this._start_search();
 		dojo.xhrGet({
 			url: url,
 			handleAs: 'json',
 			load: function(data) {
-				coge_plugin._search_dialog.hide();
+				if (coge_plugin._search_dialog)
+					coge_plugin._search_dialog.hide();
 				if (data.error) {
 					coge_plugin.error('Search', data);
 					return;
 				}
 				if (data.length == 0) {
 					coge_plugin.error('Search', 'no features found');
+					return;
+				}
+				if (data.length == 1) {
+					coge_plugin.browser.navigateToLocation(data[0].location);
+					coge_plugin.info('One Feature Found', 'Moved to location of ' + data[0].name);
 					return;
 				}
 				var div = dojo.byId('feature_hits');
@@ -1295,6 +1304,7 @@ return declare( JBrowsePlugin,
 					}, div);
 				});
 				dijit.byId('jbrowse').resize();
+				coge_plugin.info('Multiple Matches Found', 'See the feature list next to the track list');
 			},
 			error: function(data) {
 				coge_plugin.error('Search', data);
