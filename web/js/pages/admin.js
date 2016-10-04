@@ -2443,18 +2443,45 @@ $.extend(System_graph.prototype, {
 		
 		// Clear the element, add the zoom out button and svg container
 		$("#" + this.element).html(
-				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;">Zoom Out</button>' +
-				'<div id="' + self.element + '_container" style="height:' + (self.height + 250) + 'px;">' +
-				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 200) + 'px;"></div> </div>'
-               );
+				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button"  style="float:left;height:25px;width:100px" disabled>Zoom Out</button>' +
+				'<div><button id="' + self.element + '_zoom_button" class="ui-button ui-corner-all coge-button"  style="float:left;height:25px;width:125px" disabled>Zoom 24 Hours</button>' +
+				'<div><button id="' + self.element + '_zoom_week_button" class="ui-button ui-corner-all coge-button"  style="float:left;height:25px;width:100px" disabled>Zoom Week</button>' +
+				'<div><button id="' + self.element + '_zoom_month_button" class="ui-button ui-corner-all coge-button"  style="float:left;height:25px;width:125px" disabled>Zoom Month</button>' +				
+				'<div><br><br><br></div>'+
+				'<div id="' + self.element + '_container" style="height:' + (self.height + 500) + 'px;">' +
+				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 2000) + 'px;"></div> </div>'
+		);
 		if (self.parent) {
 			$('#' + self.element + '_back_button')
 				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_out.call(self);
+					
+			$('#' + self.element + '_zoom_button')
+				.prop("disabled", false)
+			$('#' + self.element + '_zoom_week_button')
+				.prop("disabled", false)
+			$('#' + self.element + '_zoom_month_button')
+				.prop("disabled", false)
+				
 				});
 		} else {
 			$('#' + self.element + '_back_button').prop("disabled", true);
+			$('#' + self.element + '_zoom_button')
+				.prop("disabled", false)
+				.on("click", function() {
+					self.zoom_day.call(self);
+			});
+			$('#' + self.element + '_zoom_week_button')
+				.prop("disabled", false)
+				.on("click", function() {
+					self.zoom_week.call(self);
+			});
+			$('#' + self.element + '_zoom_month_button')
+				.prop("disabled", false)
+				.on("click", function() {
+					self.zoom_month.call(self);
+			});
 		}
 		
 		// Parse the date / time
@@ -2666,6 +2693,79 @@ $.extend(System_graph.prototype, {
 			self = self.parent;
 		}
 		self.initialize();
+	},
+	zoom_day: function() {
+		var self = this;
+
+		var toDay = new Date();
+		
+		var yesterDay = new Date(); // your date object
+		yesterDay.setHours(yesterDay.getHours() - 24);
+		
+		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
+		
+		format(new Date(toDay));
+		format(new Date(yesterDay));
+		
+		var newHours = this.zoom(yesterDay, toDay);
+		
+		if (newHours.length > 1) {
+			var parent = self;
+			self = new System_graph(newHours, self.element, parent);
+			parent.child = self;
+		}
+	},	
+	zoom_week: function() {
+		var self = this;
+
+	 	var toDay = new Date();
+		
+		var sevenDays = new Date(); // your date object
+		sevenDays.setHours(sevenDays.getHours() - 168);
+		
+		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
+		
+		format(new Date(toDay));
+		format(new Date(sevenDays));
+		
+		var newWeek = this.zoom(sevenDays, toDay);
+		
+		if (newWeek.length > 1) {
+			var parent = self;
+			self = new System_graph(newWeek, self.element, parent);
+			parent.child = self;
+		}
+	},
+	zoom_month: function() {
+		var self = this;
+
+	 	var toDay = new Date();
+		
+		var oneMonth = new Date(); // your date object
+		oneMonth.setHours(oneMonth.getHours() - 744);
+		
+		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
+		
+		format(new Date(toDay));
+		format(new Date(oneMonth));
+		
+		var newMonth = this.zoom(oneMonth, toDay);
+		
+		if (newMonth.length > 1) {
+			var parent = self;
+			self = new System_graph(newMonth, self.element, parent);
+			parent.child = self;
+		}
+	},
+	zoom: function(start, end) {
+		var self = this;
+		var newData = [];
+		for (var i = 0; i < self.data.length; i++) {
+			if (start <= self.data[i].time && end >= self.data[i].time) {
+				newData.push(self.data[i]);
+			}
+		}
+		return newData;
 	}
 });
 
