@@ -488,6 +488,7 @@ sub max_and_min_of_values {
         return if ($status == RC_PARSE_ERROR);
         return unless (defined $chr && defined $strand && defined $val1); # error, let calling function handle it
 
+        $strand = $strand =~ /-/ ? -1 : 1;
         $val1 *= $strand if ($strand == -1);
         
         $max = $val1 if ($val1 > $max);

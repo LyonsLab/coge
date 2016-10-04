@@ -43,7 +43,7 @@ sub build {
     }
 
     # Setup paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
+    my ($staging_dir) = get_workflow_paths($user->name, $wid);
 
     # Set metadata for the pipeline being used
     my $annotations = generate_additional_metadata($chipseq_params);
@@ -246,7 +246,7 @@ sub create_homer_findPeaks_job {
             [$input_dir, 1]
         ],
         outputs => [
-            catfile($staging_dir, $output_file),
+            catfile($staging_dir, $output_file)
         ],
         description => "Performing ChIP-seq analysis on $replicate_tag using Homer..."
     };
