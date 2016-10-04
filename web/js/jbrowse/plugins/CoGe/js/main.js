@@ -189,7 +189,7 @@ define(['dojo/_base/declare',
 			var j = b[1];
 			if (this.hits[i][0] > end)
 				return null;
-			while (i < j && this.hits[i][1] < start)
+			while (i < j && this.hits[i][0] < start)
 				++i;
 			if (i == j)
 				return null;
