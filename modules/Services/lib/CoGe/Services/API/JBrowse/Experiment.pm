@@ -343,7 +343,7 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
             my $start;
             my $stop;
             my $strand;
-            my $tot_score = 0;
+            my $total_score = 0;
             my $num = 1;
             foreach my $line (@{$lines}) {
                 my $tokens = _transform_line($line, $transform);
@@ -352,21 +352,21 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
                 $stop = $tokens->[2] if !$stop;
                 $strand = $tokens->[3] if !$strand;
                 if ($c ne $tokens->[0] || $strand ne $tokens->[3] || $tokens->[1] > $stop + $gap_max) {
-                    $self->_write_marker($c, undef, undef, $start, $stop, $tot_score / $num, $strand, undef, undef, $fh);
+                    $self->_write_marker($c, undef, undef, $start, $stop, $total_score / $num, $strand, undef, undef, $fh);
                     $c = $tokens->[0];
                     $start = $tokens->[1];
                     $stop = $tokens->[2];
                     $strand = $tokens->[3];
                     $num = 1;
-                    $tot_score = 0;
+                    $total_score = 0;
                 }
                 else {
                     $num++;
-                    $tot_score += $tokens->[4];
+                    $total_score += $tokens->[4];
                     $stop = $tokens->[2];
                 }
             }
-            $self->_write_marker($c, undef, undef, $start, $stop, $tot_score / $num, $strand, undef, undef, $fh);
+            $self->_write_marker($c, undef, undef, $start, $stop, $total_score / $num, $strand, undef, undef, $fh);
         }
         else {
             $markers = $self->_markers;

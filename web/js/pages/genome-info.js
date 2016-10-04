@@ -128,7 +128,8 @@ function chr_list() {
 	        }
 		});
  }
-(function() {
+
+(function() { //FIXME move into module (mdb 9/27/16)
 	 
 	/*
 	 * Natural Sort algorithm for Javascript - Version 0.7 - Released under MIT license
@@ -195,8 +196,8 @@ function chr_list() {
 	        return naturalSort(a,b) * -1;
 	    }
 	} );
-	 
-	}());
+}());
+
 function download_chromosome_sequence(chr) {
     $.ajax({
         data: {
@@ -337,7 +338,7 @@ function export_features_to_irods(id, feature, isGenome, type) {
     });
 }
 
-function debounce_search(search_func, search_term) {
+function debounce_search(search_func, search_term) { //FIXME why is this a dup of wait_to_search() above? (mdb 9/27/16)
     pageObj.search_term = search_term;
 
     if (pageObj.time) {
@@ -719,7 +720,7 @@ function export_gff(chr) {
     });
 }
 
-function export_to_irods(file_description, fname, data) {
+function export_to_irods(file_description, fname, data) { // FIXME migrate to API (mdb 9/26/16)
     // Prevent concurrent executions
     if ( $("#export_dialog").dialog( "isOpen" ) )
         return;
