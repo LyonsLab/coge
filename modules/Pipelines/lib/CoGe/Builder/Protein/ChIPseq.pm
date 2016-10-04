@@ -201,7 +201,8 @@ sub create_homer_makeTagDirectory_job {
             $fasta
         ],
         outputs => [
-            [catfile($staging_dir, $tag_name), 1]
+            [catfile($staging_dir, $tag_name), 1],
+            catfile($staging_dir, $tag_name, 'tagInfo.txt')
         ],
         description => "Creating tag directory '$tag_name' using Homer..."
     };
