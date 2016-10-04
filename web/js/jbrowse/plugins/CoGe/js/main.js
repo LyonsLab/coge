@@ -257,13 +257,14 @@ define(['dojo/_base/declare',
 			this.hits.sort(function(a, b){return a[0] - b[0]});
 			search_nav.update();
 		},
-		unmerge: function(max_gap, search_nav) {
+		unmerge: function(search_nav) {
 			if (this.save_hits) {
 				this.hits = this.save_hits;
 				this.chr = this.save_chr;
 				this.save_hits = null;
 				this.save_chr = null;
 			}
+			search_nav.update();
 		}
 	});
 
@@ -798,13 +799,16 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	_markers_merge: function() {
-		this._track.config.coge.results.merge(dojo.byId('gap_max').value, this._track.config.coge.search_nav);
+		var gap_max = dojo.byId('gap_max').value;
+		this._track.config.coge.gap_max = gap_max;
+		this._track.config.coge.results.merge(gap_max, this._track.config.coge.search_nav);
 		this._track.changed();
 	},
 
 	// ----------------------------------------------------------------
 
 	_markers_unmerge: function() {
+		delete this._track.config.coge.gap_max;
 		this._track.config.coge.results.unmerge(this._track.config.coge.search_nav);
 		this._track.changed();
 	},
@@ -1108,7 +1112,8 @@ return declare( JBrowsePlugin,
 		if (to_marker) {
 			url += '&gap_max=' + dojo.byId('gap_max').value;
 			ext = '.gff';
-		}
+		} else if (config.coge.gap_max)
+			url += '&gap_max=' + config.coge.gap_max;
 		dojo.xhrGet({
 			url: url,
 			load: function(data) {
