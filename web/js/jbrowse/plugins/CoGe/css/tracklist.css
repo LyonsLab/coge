@@ -66,6 +66,7 @@
 
 .coge-track-label {
 	flex: 2;
+	line-height: 12px;
 	min-height: 16px;
 	overflow: hidden;
 	padding-left: 2px;
@@ -76,7 +77,8 @@
 .coge-tracklist-expand
  {
 	height: 10px;
-	padding: 5px;
+	margin-top: 7px;
+	padding: 0 5px;
 	width: 10px;
 }
 
@@ -88,6 +90,8 @@
 }
 
 .feature_hits {
+	display: flex;
+	flex-direction: column;
 	height: 100%;
 	overflow-x: hidden;
 	overflow-y: auto;
@@ -99,6 +103,8 @@
 	background: #f2f2f2;
 	border-left: black solid 1px;
 	cursor: default;
+	display: flex;
+	flex-direction: column;
 }
 
 #feature_hits div:first-child {

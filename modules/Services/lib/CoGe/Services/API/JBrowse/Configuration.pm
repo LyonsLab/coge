@@ -69,6 +69,7 @@ sub _annotations {
 sub track_config {
     my $self = shift;
     my $gid  = $self->param('gid');
+    my $experiment_ids = $self->param('experiments');
     my $start_time = time; # for performance testing
     
     # Authenticate user and connect to the database
@@ -302,7 +303,12 @@ sub track_config {
     my $connectors = get_user_access_table($db->storage->dbh, $user->id) if $user;
     my $allNotebooks = get_table($db->storage->dbh, 'list');
     my $allNotebookConn = get_table($db->storage->dbh, 'list_connector', ['child_id', 'list_connector_id'], {child_type => 3});
-    foreach my $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
+    my @genome_experiments = get_experiments($db->storage->dbh, $genome->id);
+    if ($experiment_ids) {
+        my @ids = split(/,/, $experiment_ids);
+        @genome_experiments = grep { my $id = $_->{experiment_id}; grep { $id == $_ } @ids; } @genome_experiments;
+    }
+    foreach my $e ( sort experimentcmp @genome_experiments ) { # sort experimentcmp $genome->experiments
         next if ( $e->{deleted} );
         my $eid = $e->{experiment_id};
         my $role = $connectors->{3}{$eid};

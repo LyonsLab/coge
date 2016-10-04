@@ -1017,7 +1017,7 @@ return declare( JBrowsePlugin,
 		});
 
 	    var config = this._track.config;
-		var to_marker = dojo.byId('to_marker').checked;
+		var to_marker = dojo.byId('to_marker') && dojo.byId('to_marker').checked;
 
 		this._save_as_dialog.hide();
 		coge.progress.init({
@@ -1276,7 +1276,8 @@ return declare( JBrowsePlugin,
 					coge_plugin.error('Search', 'no features found');
 					return;
 				}
-				var div = dojo.byId('feature_hits')
+				var div = dojo.byId('feature_hits');
+				dojo.empty(div);
 				dojo.create('div', { innerHTML: 'Features <span class="glyphicon glyphicon-remove" onclick="dojo.empty(\'feature_hits\');dijit.byId(\'jbrowse\').resize()"></span>' }, div);
 				div = dojo.create('div', { 'class': 'feature_hits' }, div);
 				data.forEach(function(hit) {
@@ -1287,7 +1288,6 @@ return declare( JBrowsePlugin,
 							return false;
 						})
 					}, div);
-					dojo.create('br', null, div);
 				});
 				dijit.byId('jbrowse').resize();
 			},

@@ -68,6 +68,8 @@ tr.file {
 	            var track_config_url = apiBaseUrl + '/config/tracks/?gid=' + gid;
 	            if (queryParams['user_id'])
 	            	track_config_url += '&user_id=' + queryParams['user_id'];
+	            if (queryParams['experiments'])
+	            	track_config_url += '&experiments=' + queryParams['experiments'];
 	            var config = {
 	                containerID: id,
 	                browserRoot: 'js/jbrowse/',
