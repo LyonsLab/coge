@@ -810,8 +810,8 @@ $.extend(ChIPSeqView.prototype, {
     	var checkbox = this.el.find("#chipseq");
     	
         var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
-        if (selected != 'gsnap' && selected != 'bowtie2' && selected != 'hisat2') {
-        	this.container.html('<span class="alert indent">Please select one of these aligners above: GSNAP, Bowtie2, or HISAT2</span>').show();
+        if (selected != 'gsnap' && selected != 'bowtie2' && selected != 'tophat' && selected != 'hisat2') {
+        	this.container.html('<span class="alert indent">Please select one of these aligners above: GSNAP, Bowtie2, TopHat2, or HISAT2</span>').show();
         	checkbox.attr('checked', false); // uncheck it
         	return;
         }
