@@ -2718,7 +2718,7 @@ $.extend(System_graph.prototype, {
 	zoom_week: function() {
 		var self = this;
 
-	 	var toDay = new Date();
+		var toDay = new Date();
 		
 		var sevenDays = new Date(); // your date object
 		sevenDays.setHours(sevenDays.getHours() - 168);
