@@ -256,7 +256,7 @@ sub generate_additional_metadata {
     
     if ($trimming_params && $trimming_params->{trimmer}) {
         if ($trimming_params->{trimmer} eq 'cutadapt') {
-            push @annotations, 'note|cutadapt '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '--quality-base', '-m'));
+            push @annotations, 'note|cutadapt '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '-m'));
         }
         elsif ($trimming_params->{trimmer} eq 'trimgalore') {
             push @annotations, 'note|trimgalore '. join(' ', map { $_.' '.$trimming_params->{$_} } ('-q', '--length', '-a'));
