@@ -47,6 +47,20 @@ define(['dojo/_base/declare',
 		this.browser.subscribe( '/jbrowse/v1/c/tracks/replace', dojo.hitch( this, 'replaceTracks' ));
 		this.browser.subscribe( '/jbrowse/v1/c/tracks/delete',  dojo.hitch( this, 'deleteTracks' ));
 
+		var splash = localStorage.getItem('EPIC-CoGe splash');
+		if (!splash || 'yes' == splash)
+			this._help('Welcome to EPIC-CoGe', 'splash.html', function(){localStorage.setItem('EPIC-CoGe splash', dojo.byId('splash').checked ? 'yes' : 'no')});
+
+		this.browser.addGlobalMenuItem('help', new MenuSeparator());
+		this._add_help('Create experiment from search results', 'EPIC_CoGe_Reference#Create_New_Experiment_from_Search_Tracks');
+		this._add_help('Managing experiments', 'EPIC_CoGe_Reference#Managing_Experiments');
+		this._add_help('Managing notebooks', 'EPIC_CoGe_Reference#Managing_Notebooks');
+		this._add_help('Search for features by name', 'EPIC_CoGe_Reference#Feature_Search');
+		this._add_help('Search tracks', 'EPIC_CoGe_Reference#Search_Tracks');
+		this._add_help('Settings', 'EPIC_CoGe_Reference#Settings');
+		this._add_help('Track overlaps', 'EPIC_CoGe_Reference#Track_Overlaps');
+		this._add_help('Videos', 'EPIC-CoGe_Videos');
+
 		setTimeout(function(){dijit.byId('jbrowse').resize();}, 100);
 	},
 
@@ -65,6 +79,15 @@ define(['dojo/_base/declare',
 			else
 				this._expand(container);
 			this._update_tracks_shown();
+		}));
+	},
+
+	// ----------------------------------------------------------------
+
+	_add_help: function(label, page) {
+		this.browser.addGlobalMenuItem('help', new MenuItem({
+			label: label,
+			onClick: function(){ window.open('https://genomevolution.org/wiki/index.php/' + page, '_blank'); }
 		}));
 	},
 
@@ -556,6 +579,15 @@ define(['dojo/_base/declare',
 		if (style && style.featureColor && style.featureColor[id])
 			return style.featureColor[id];
 		return coge_plugin.calc_color(id);
+	},
+
+	// ----------------------------------------------------------------
+
+	_help: function(title, file, hide) {
+		dojo.xhrGet({
+			url: 'js/jbrowse/plugins/CoGe/' + file,
+			load: function(data) { coge_plugin.info(title, data, null, hide); }
+		});
 	},
 
 	// ----------------------------------------------------------------
