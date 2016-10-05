@@ -539,13 +539,15 @@ sub get_irods_metadata {
     
     my %md = (
         $IRODS_METADATA_PREFIX.'link'              => "http://genomevolution.org",
-        $IRODS_METADATA_PREFIX.'OrganismView-link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
-        $IRODS_METADATA_PREFIX.'GenomeInfo-link'   => "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
-        $IRODS_METADATA_PREFIX.'genome-id'         => $genome->id,
+        $IRODS_METADATA_PREFIX.'OrganismView-link' => "http://genomevolution.org/coge/OrganismView.pl?gid=".$genome->id,
+        $IRODS_METADATA_PREFIX.'GenomeInfo-link'   => "http://genomevolution.org/coge/GenomeInfo.pl?gid=".$genome->id,
+        $IRODS_METADATA_PREFIX.'genome-id'                => $genome->id,
         $IRODS_METADATA_PREFIX.'genome-organism-name'     => $genome->organism->name,
         $IRODS_METADATA_PREFIX.'genome-organism-taxonomy' => $genome->organism->description,
         $IRODS_METADATA_PREFIX.'genome-version'           => $genome->version,
         $IRODS_METADATA_PREFIX.'genome-sequence-type'     => $genome->type->info,
+        $IRODS_METADATA_PREFIX.'genome-summary'           => $genome->info,
+        $IRODS_METADATA_PREFIX.'genome-certified'         => $genome->certified ? 'true' : 'false'
     );
     
     my $i = 1;
