@@ -2450,8 +2450,7 @@ $.extend(System_graph.prototype, {
 				'<div><br><br><br></div>'+
 				'<div id="' + self.element + '_container" style="height:' + (self.height + 500) + 'px;">' +
 				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 2000) + 'px;"></div> </div>'
-<<<<<<< HEAD
-				);
+		);
 		if (self.parent) {
 			$('#' + self.element + '_back_button')
 			.prop("disabled", false)
@@ -2467,8 +2466,6 @@ $.extend(System_graph.prototype, {
 		$('#' + self.element + '_zoom_month_button')
 			.prop("disabled", false)
 			});
-=======
-		);
 		if (self.parent) {
 			$('#' + self.element + '_back_button')
 				.prop("disabled", false)
@@ -2483,32 +2480,23 @@ $.extend(System_graph.prototype, {
 				.prop("disabled", false)
 				
 				});
->>>>>>> 715f111ddbfc3ba6744d4b5d701ad3eba100ba57
 		} else {
 			$('#' + self.element + '_back_button').prop("disabled", true);
 			$('#' + self.element + '_zoom_button')
 				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_day.call(self);
-			});
-<<<<<<< HEAD
-
-=======
->>>>>>> 715f111ddbfc3ba6744d4b5d701ad3eba100ba57
+				});
 			$('#' + self.element + '_zoom_week_button')
 				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_week.call(self);
-			});
-<<<<<<< HEAD
-
-=======
->>>>>>> 715f111ddbfc3ba6744d4b5d701ad3eba100ba57
+				});
 			$('#' + self.element + '_zoom_month_button')
 				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_month.call(self);
-			});
+				});
 		}
 		
 		// Parse the date / time
@@ -2701,13 +2689,9 @@ $.extend(System_graph.prototype, {
 	brushed: function() {
 		var self = this;
 		var extent = self.brush.extent();
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 715f111ddbfc3ba6744d4b5d701ad3eba100ba57
-                var newJson = [];
-                for (var i = 0; i < self.data.length; i++) {
+        var newJson = [];
+        for (var i = 0; i < self.data.length; i++) {
                         if (extent[0] <= self.data[i].time && extent[1] >= self.data[i].time) {
                                 newJson.push(self.data[i]);
 			}
@@ -2725,11 +2709,9 @@ $.extend(System_graph.prototype, {
 		}
 		self.initialize();
 	},
-<<<<<<< HEAD
-
 	zoom_day: function() {
 		var self = this;
-		var toDay = new Date();
+	 	var toDay = new Date();
 
 		var yesterDay = new Date(); // your date object
 		yesterDay.setHours(yesterDay.getHours() - 24);
@@ -2739,21 +2721,6 @@ $.extend(System_graph.prototype, {
 		format(new Date(toDay));
 		format(new Date(yesterDay));
 
-=======
-	zoom_day: function() {
-		var self = this;
-
-		var toDay = new Date();
-		
-		var yesterDay = new Date(); // your date object
-		yesterDay.setHours(yesterDay.getHours() - 24);
-		
-		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
-		
-		format(new Date(toDay));
-		format(new Date(yesterDay));
-		
->>>>>>> 715f111ddbfc3ba6744d4b5d701ad3eba100ba57
 		var newHours = this.zoom(yesterDay, toDay);
 		
 		if (newHours.length > 1) {
@@ -2766,30 +2733,17 @@ $.extend(System_graph.prototype, {
 		var self = this;
 
 	 	var toDay = new Date();
-<<<<<<< HEAD
 		var sevenDays = new Date(); // your date object
 
 		sevenDays.setHours(sevenDays.getHours() - 168);
 
-=======
-		
-		var sevenDays = new Date(); // your date object
-		sevenDays.setHours(sevenDays.getHours() - 168);
-		
->>>>>>> 715f111ddbfc3ba6744d4b5d701ad3eba100ba57
 		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
 		
 		format(new Date(toDay));
 		format(new Date(sevenDays));
-<<<<<<< HEAD
 
 		var newWeek = this.zoom(sevenDays, toDay);
 
-=======
-		
-		var newWeek = this.zoom(sevenDays, toDay);
-		
->>>>>>> 715f111ddbfc3ba6744d4b5d701ad3eba100ba57
 		if (newWeek.length > 1) {
 			var parent = self;
 			self = new System_graph(newWeek, self.element, parent);
@@ -2800,19 +2754,6 @@ $.extend(System_graph.prototype, {
 		var self = this;
 
 	 	var toDay = new Date();
-<<<<<<< HEAD
-		var oneMonth = new Date(); // your date object
-
-		oneMonth.setHours(oneMonth.getHours() - 744);
-
-		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
-
-		format(new Date(toDay));
-		format(new Date(oneMonth));
-
-		var newMonth = this.zoom(oneMonth, toDay);		
-
-=======
 		
 		var oneMonth = new Date(); // your date object
 		oneMonth.setHours(oneMonth.getHours() - 744);
@@ -2823,18 +2764,13 @@ $.extend(System_graph.prototype, {
 		format(new Date(oneMonth));
 		
 		var newMonth = this.zoom(oneMonth, toDay);
-		
->>>>>>> 715f111ddbfc3ba6744d4b5d701ad3eba100ba57
+
 		if (newMonth.length > 1) {
 			var parent = self;
 			self = new System_graph(newMonth, self.element, parent);
 			parent.child = self;
 		}
 	},
-<<<<<<< HEAD
-
-=======
->>>>>>> 715f111ddbfc3ba6744d4b5d701ad3eba100ba57
 	zoom: function(start, end) {
 		var self = this;
 		var newData = [];
