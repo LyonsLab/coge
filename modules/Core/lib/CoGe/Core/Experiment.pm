@@ -6,6 +6,7 @@ use Sort::Versions;
 use FastBit;
 use CoGe::Core::Storage qw( $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER get_experiment_path );
 use CoGe::Accessory::Web qw(get_command_path);
+use CoGe::Accessory::IRODS qw($IRODS_METADATA_PREFIX);
 
 our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION, @QUANT_TYPES, @MARKER_TYPES, 
       @OTHER_TYPES, @SUPPORTED_TYPES );
@@ -17,7 +18,7 @@ BEGIN {
     @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @OTHER_TYPES @SUPPORTED_TYPES);
     @EXPORT_OK = qw( 
         delete_experiment detect_data_type download_data experimentcmp get_data 
-        get_fastbit_format get_fastbit_score_column query_data 
+        get_fastbit_format get_fastbit_score_column query_data get_irods_metadata
     );
     
     # Setup supported experiment file types
@@ -302,6 +303,36 @@ sub query_data {
         return \@lines;
     }
     return $results;
+}
+
+sub get_irods_metadata {
+    my $experiment = shift;
+
+    my %md = (
+        $IRODS_METADATA_PREFIX.'link'                      => "http://genomevolution.org",
+        $IRODS_METADATA_PREFIX.'ExperimentView-link'       => "http://genomevolution.org/coge/ExperimentView.pl?eid=".$experiment->id,
+        $IRODS_METADATA_PREFIX.'experiment-id'             => $experiment->id,
+        $IRODS_METADATA_PREFIX.'experiment-name'           => $experiment->name,
+        $IRODS_METADATA_PREFIX.'experiment-description'    => $experiment->description,
+        $IRODS_METADATA_PREFIX.'experiment-version'        => $experiment->version,
+        $IRODS_METADATA_PREFIX.'experiment-data-type'      => $experiment->data_type_desc,
+        $IRODS_METADATA_PREFIX.'experiment-genome-id'      => $experiment->genome->id,
+        $IRODS_METADATA_PREFIX.'experiment-genome-summary' => $experiment->genome->info
+    );
+
+    my $i = 1;
+    my @sources = $experiment->source;
+    foreach my $item (@sources) {
+        my $source = $item->name;
+        $source .= ": ".$item->description if $item->description;
+        my $key = "experiment-source";
+        $key .= $i if scalar @sources > 1;
+        $md{$IRODS_METADATA_PREFIX.$key} = $source;
+        $md{$IRODS_METADATA_PREFIX.$key."-link"} = $item->link if $item->link;
+        $i++;
+    }
+
+    return \%md;
 }
 
 1;
