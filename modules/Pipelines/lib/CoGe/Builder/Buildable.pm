@@ -49,8 +49,15 @@ sub post_build {
                 body => 'Your workflow finished: ' . $self->get_name() .
                         ($self->site_url ? "\nLink: " . $self->site_url : '') .
                         "\n\nNote: you received this email because you submitted a job on " .
-                        "CoGe (http://genomevolution.org) and selected the option to be notified.",
+                        "CoGe (http://genomevolution.org) and selected the option to be notified."
             )
+        );
+    }
+
+    # Send request to callback url
+    if ( $self->params->{callback_url} ) {
+        $self->add_task_chain_all(
+            $self->curl_get( url => $self->params->{callback_url} )
         );
     }
 }
@@ -311,6 +318,23 @@ sub send_email {
         inputs => [],
         outputs => [],
         description => "Sending notification email..."
+    };
+}
+
+sub curl_get {
+    my ($self, %params) = @_;
+    my $url = $params{url};
+
+    my $cmd = get_command_path('CURL');
+    my $output_file = catfile($self->staging_dir, 'curl_output.log');
+
+    return {
+        cmd => "$cmd -s -o $output_file $url",
+        script => undef,
+        args => [],
+        inputs => [],
+        outputs => [ $output_file ],
+        description => "Sending GET request to $url..."
     };
 }
 
