@@ -51,8 +51,13 @@ define( [
             var config = this.config;
 
             return opts.then(function(options) {
+                options.push({ type: 'dijit/MenuSeparator' });
+                if (config.coge.type == 'experiment')
+                    options.push({
+                        label: 'ExperimentView',
+                        onClick: function(){window.open( 'ExperimentView.pl?eid=' + config.coge.id );}
+                    });
                 options.push.apply(options, [
-                    { type: 'dijit/MenuSeparator' },
                     {
                     label: 'Change colors',
                     onClick: function(event) {

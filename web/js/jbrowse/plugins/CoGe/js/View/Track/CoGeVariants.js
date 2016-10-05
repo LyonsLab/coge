@@ -81,6 +81,13 @@ return declare( [ HTMLFeatures ], {
         if (track.config.coge.type == 'notebook')
             return options;
 
+        options.push({ type: 'dijit/MenuSeparator' });
+        if (track.config.coge.type == 'experiment')
+            options.push({
+                label: 'ExperimentView',
+                onClick: function(){window.open( 'ExperimentView.pl?eid=' + track.config.coge.id );}
+            });
+
         if (track.config.coge.type != 'search')  {
 	        options.push({
                 label: 'Find SNPs in Features',

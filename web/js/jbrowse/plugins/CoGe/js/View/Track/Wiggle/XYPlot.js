@@ -720,6 +720,17 @@ var XYPlot = declare( [XYPlotBase], {
 
 		options.push({ type: 'dijit/MenuSeparator' });
 
+		if (config.coge.type == 'experiment')
+			options.push({
+				label: 'ExperimentView',
+				onClick: function(){window.open( 'ExperimentView.pl?eid=' + config.coge.id );}
+			});
+		else if (config.coge.type == 'notebook')
+			options.push({
+				label: 'NotebookView',
+				onClick: function(){window.open( 'NotebookView.pl?nid=' + config.coge.id );}
+			});
+
 		options.push.apply(
 			options,
 			[
