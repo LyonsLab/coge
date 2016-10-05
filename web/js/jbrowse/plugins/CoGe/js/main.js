@@ -949,11 +949,7 @@ return declare( JBrowsePlugin,
 				description: description,
 				editable: true,
 				experiments: null,
-				onClick: 'NotebookView.pl?embed=1&lid=' + id,
-				menuOptions: [{
-					label: 'NotebookView',
-					action: "function() { window.open( 'NotebookView.pl?lid=" + id + "' ); }"
-				}]
+				onClick: 'NotebookView.pl?embed=1&lid=' + id
 			}
 		};
 	},
