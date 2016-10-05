@@ -764,11 +764,11 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	info: function(title, content, focus) {
+	info: function(title, content, focus, hide) {
 		new InfoDialog({
 			title: title,
 			content: content,
-			onHide: function(){this.destroyRecursive(); if(focus)focus.focus();}
+			onHide: function(){if(hide)hide(); this.destroyRecursive(); if(focus)focus.focus();}
 		}).show();
 	},
 
