@@ -29,7 +29,7 @@ our @EXPORT = qw(
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job create_iget_job 
     create_load_annotation_job create_data_retrieval_workflow
-    send_email_job add_items_to_notebook_job create_hisat2_workflow
+    add_items_to_notebook_job create_hisat2_workflow
     export_experiment_job create_cutadapt_workflow
     create_trimgalore_job create_trimgalore_workflow 
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
@@ -2227,40 +2227,41 @@ sub add_metadata_to_results_job {
     };
 }
 
-sub send_email_job {
-    my %opts = @_;
-    my $from = 'CoGe Support <coge.genome@gmail.com>';
-    my $to = $opts{to};
-    my $subject = $opts{subject};
-    my $body = $opts{body};
-    my $done_files = $opts{done_files};
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "send_email.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    my $staging_dir = $opts{staging_dir};
-    my $done_file = catfile($staging_dir, "send_email.done");
-    
-    my $args = [
-        ['-from', '"'.escape($from).'"', 0],
-        ['-to', '"'.escape($to).'"', 0],
-        ['-subject', '"'.escape($subject).'"', 0],
-        ['-body', '"'.escape($body).'"', 0],
-        ['-done_file', '"'.$done_file.'"', 0]
-    ];
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => $args,
-        inputs => [ 
-            @$done_files
-        ],
-        outputs => [ 
-            $done_file
-        ],
-        description => "Sending email..."
-    };
-}
+# mdb removed 10/5/16 -- replaced with Buildable::send_email
+#sub send_email_job {
+#    my %opts = @_;
+#    my $from = 'CoGe Support <coge.genome@gmail.com>';
+#    my $to = $opts{to};
+#    my $subject = $opts{subject};
+#    my $body = $opts{body};
+#    my $done_files = $opts{done_files};
+#
+#    my $cmd = catfile($CONF->{SCRIPTDIR}, "send_email.pl");
+#    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+#
+#    my $staging_dir = $opts{staging_dir};
+#    my $done_file = catfile($staging_dir, "send_email.done");
+#
+#    my $args = [
+#        ['-from', '"'.escape($from).'"', 0],
+#        ['-to', '"'.escape($to).'"', 0],
+#        ['-subject', '"'.escape($subject).'"', 0],
+#        ['-body', '"'.escape($body).'"', 0],
+#        ['-done_file', '"'.$done_file.'"', 0]
+#    ];
+#
+#    return {
+#        cmd => $cmd,
+#        script => undef,
+#        args => $args,
+#        inputs => [
+#            @$done_files
+#        ],
+#        outputs => [
+#            $done_file
+#        ],
+#        description => "Sending email..."
+#    };
+#}
 
 1;

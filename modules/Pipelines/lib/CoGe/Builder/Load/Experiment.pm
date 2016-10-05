@@ -263,48 +263,31 @@ sub build {
     # Create notebook
     if ($self->params->{notebook} || $self->params->{notebook_id}) {
         #TODO add_items_to_notebook_job and create_notebook_job and their respective scripts can be consolidated
-        if ($self->params->{notebook_id}) { # use existing notebook
+        if ($self->params->{notebook_id}) {
+            # use existing notebook
             my $t = add_items_to_notebook_job(
                 notebook_id => $self->params->{notebook_id},
-                user => $self->user, 
-                wid => $self->workflow->id,
+                user        => $self->user,
+                wid         => $self->workflow->id,
                 staging_dir => $self->staging_dir,
-                done_files => \@done_files
+                done_files  => \@done_files
             );
             push @tasks, $t;
             push @done_files, $t->{outputs}->[1];
         }
-        else { # create new notebook
+        else {
+            # create new notebook
             my $t = create_notebook_job(
-                user => $self->user,
-                wid => $self->workflow->id,
-                metadata => $metadata,
+                user        => $self->user,
+                wid         => $self->workflow->id,
+                metadata    => $metadata,
                 staging_dir => $self->staging_dir,
-                done_files => \@done_files
+                done_files  => \@done_files
             );
             push @tasks, $t;
             push @done_files, $t->{outputs}->[1];
         }
     }
-    
-    # Send notification email #TODO move into shared module
-	if ( $self->params->{email} ) {
-	    # Build message body
-	    my $body = 'Experiment "' . $metadata->{name} . '" has finished loading.';
-        $body .= "\nLink: " . $self->site_url if $self->site_url;
-        $body .= "\n\nNote: you received this email because you submitted a job on " .
-            "CoGe (http://genomevolution.org) and selected the option to be emailed " .
-            "when finished.";
-	    
-		# Create task
-		push @tasks, send_email_job(
-			to => $self->user->email,
-			subject => 'CoGe Load Experiment done',
-			body => $body,
-			staging_dir => $self->staging_dir,
-			done_files => \@done_files
-		);
-	}
 
 #    print STDERR Dumper \@tasks, "\n";
     $self->workflow->add_jobs(\@tasks);
