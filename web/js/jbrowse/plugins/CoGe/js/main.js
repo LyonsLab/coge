@@ -287,6 +287,15 @@ return declare( JBrowsePlugin,
 			coge_plugin.start = region.start;
 			coge_plugin.end = region.end;
 		});
+		this.browser.subscribe( '/jbrowse/v1/n/tracks/redraw', function() {
+			if (coge_plugin._new_search_name)
+				coge_plugin.browser.view.tracks.forEach(function(t) {
+					if (t.name == coge_plugin._new_search_name) {
+						delete coge_plugin._new_search_name;
+						coge_plugin.markers_merge_dialog(t);
+					}
+				});
+		});
 	},
 
 	// ----------------------------------------------------------------
@@ -409,6 +418,7 @@ return declare( JBrowsePlugin,
 
 	convert_to_marker_dialog: function(track) {
 		this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track.config] );
+		this._new_search_name = 'search' + (coge_plugin.num_searches + 1);
 		track.config.coge.results.hits.forEach(function(hit) {
 			hit[1] = hit[0] + 1;
 			hit[3] = hit[4] = hit[5] = null;
@@ -939,11 +949,7 @@ return declare( JBrowsePlugin,
 				description: description,
 				editable: true,
 				experiments: null,
-				onClick: 'NotebookView.pl?embed=1&lid=' + id,
-				menuOptions: [{
-					label: 'NotebookView',
-					action: "function() { window.open( 'NotebookView.pl?lid=" + id + "' ); }"
-				}]
+				onClick: 'NotebookView.pl?embed=1&lid=' + id
 			}
 		};
 	},

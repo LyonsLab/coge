@@ -720,12 +720,6 @@ var XYPlot = declare( [XYPlotBase], {
 
 		options.push({ type: 'dijit/MenuSeparator' });
 
-		if (config.coge.menuOptions) {
-			config.coge.menuOptions.forEach( function(e) {
-				options.push(e);
-			});
-		}
-
 		options.push.apply(
 			options,
 			[

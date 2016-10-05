@@ -380,10 +380,6 @@ sub track_config {
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
             style => $style,
-
-            histograms => {
-                storeClass => "JBrowse/Store/SeqFeature/REST"
-            },
             coge => {
                 id          => $eid,
                 type        => 'experiment',
@@ -393,10 +389,6 @@ sub track_config {
                 description => $e->{description},
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
                 onClick     => "ExperimentView.pl?embed=1&eid=$eid",
-                menuOptions => [{
-                    label => 'ExperimentView',
-                    action => "function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
-                }],
                 annotations => _annotations('experiment', $eid, $db)
             }
         };
@@ -454,10 +446,6 @@ sub track_config {
                 editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
                 onClick     => "NotebookView.pl?embed=1&lid=$nid",
-                menuOptions => [{
-                    label => 'NotebookView',
-                    action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
-                }],
                 annotations => _annotations('list', $nid, $db)
             }
         };
