@@ -1584,26 +1584,49 @@ sub create_tophat_workflow {
     my $read_type = $opts{read_type};
     my $encoding = $opts{encoding};
     my $params = $opts{params};
+    my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
 
     my ($index, $bowtie) = create_bowtie_index_job($gid, $fasta);
-    
-    my %tophat = create_tophat_job(
-        staging_dir => $staging_dir,
-        fasta => $fasta,
-        fastq => $fastq,
-        done_files => $done_files,
-        gff => $gff,
-        index_name => $index,
-        index_files => ($bowtie->{outputs}),
-        read_type => $read_type,
-        encoding => $encoding,
-        params => $params,
-    );
+
+    my (@tasks, @bam_files);
+    if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
+        foreach my $file (@$fastq) {
+            my $task = create_tophat_job(
+                staging_dir => $staging_dir,
+                fasta       => $fasta,
+                fastq       => [ $file ],
+                done_files  => $done_files,
+                gff         => $gff,
+                index_name  => $index,
+                index_files => ($bowtie->{outputs}),
+                read_type   => $read_type,
+                encoding    => $encoding,
+                params      => $params,
+            );
+            push @tasks, $task;
+            push @bam_files, $task->{outputs}[0];
+        }
+    }
+    else {
+        my $task = create_tophat_job(
+            staging_dir => $staging_dir,
+            fasta       => $fasta,
+            fastq       => $fastq,
+            done_files  => $done_files,
+            gff         => $gff,
+            index_name  => $index,
+            index_files => ($bowtie->{outputs}),
+            read_type   => $read_type,
+            encoding    => $encoding,
+            params      => $params,
+        );
+        push @tasks, $task;
+        push @bam_files, $task->{outputs}[0];
+    }
 
     # Return the bam output name and jobs required
-    my @tasks = ( $bowtie, \%tophat );
     my %results = (
-        bam_file => $tophat{outputs}->[0]
+        bam_files => \@bam_files
     );
     return \@tasks, \%results;
 }
@@ -1718,6 +1741,9 @@ sub create_tophat_job {
     ];
     push @$inputs, $gff if $gff;
 
+    my ($first_fastq) = @$fastq;
+    my $output_file = to_filename_without_extension($first_fastq) . '.bam';
+
     # Build up command/arguments string
     my $cmd = get_command_path('TOPHAT');
     $cmd = 'nice ' . $cmd; # run at lower priority
@@ -1728,20 +1754,21 @@ sub create_tophat_job {
     $arg_str .= "--phred64_quals " if ($encoding eq '64');
     $arg_str .= "-o . -g $g -p 32 $index_name ";
 
-    return (
+    return {
         cmd => catfile($CONF->{SCRIPTDIR}, 'tophat.pl'), # this script was created because JEX can't handle TopHat's paired-end argument syntax
         script => undef,
         args => [
-            [$read_type, '', 0],
-            ['"'.$arg_str.'"', '', 0],
-            ['', join(' ', @$fastq), 0]
+            ['-read_type', $read_type, 0],
+            ['-cmd_args', shell_quote($arg_str), 0],
+            ['-output', $output_file, 0],
+            ['-files', shell_quote(join(',', @$fastq)), 0]
         ],
         inputs => $inputs,
         outputs => [
-            catfile($staging_dir, "accepted_hits.bam")
+            catfile($staging_dir, $output_file)
         ],
         description => "Aligning sequences with TopHat..."
-    );
+    };
 }
 
 sub create_bismark_workflow {

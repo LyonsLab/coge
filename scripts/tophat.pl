@@ -10,11 +10,21 @@
 use strict;
 use warnings;
 
+use Getopt::Long;
 use CoGe::Accessory::Utils qw(execute detect_paired_end);
 
-my $read_type = shift;  # 'single' or 'paired'
-my $cmd_args = shift;   # tophat executable and all command line arguments except for file lists
-my @files = @ARGV;      # fastq files
+our ($read_type, $cmd_args, $file_list, $output_filename);
+
+GetOptions(
+    "read_type=s"  => \$read_type, # 'single' or 'paired'
+    "cmd_args=s"   => \$cmd_args,  # tophat executable and all command line arguments except for file lists
+    "files=s"      => \$file_list, # comma-separated list of input FASTQ files
+    "output=s"     => \$output_filename, # name of output BAM file (mdb added 10/5/16 for ChIP-seq pipeline)
+);
+
+die unless ($read_type && $cmd_args && $file_list);
+
+my @files = split(',', $file_list);
 
 if ($read_type eq 'paired') {
     my ($m1, $m2) = detect_paired_end(\@files);
@@ -22,9 +32,17 @@ if ($read_type eq 'paired') {
     $cmd_args .= join(',', sort @$m1) . ' ' . join(',', sort @$m2);
 }
 else {
-    $cmd_args .= join(',', @files);
+    $cmd_args .=  join(' ', @files);
 }
 
-print STDOUT "tophat.pl: $cmd_args\n";
+print STDOUT "Running command: $cmd_args\n";
 my $rc = execute($cmd_args);
+
+# Rename output BAM file -- mdb added 10/5/16 for ChIP-seq pipeline
+my $default_output_filename = 'accepted_hits.bam';
+if ($rc == 0 && $output_filename && $output_filename ne $default_output_filename) {
+    print STDOUT "Renaming $default_output_filename to $output_filename\n";
+    rename($default_output_filename, $output_filename);
+}
+
 exit($rc);

@@ -38,7 +38,7 @@ sub build {
     
     # Require 3 data files (input and two replicates)
     if (@$input_files != 3) {
-        print STDERR "CoGe::Builder::Protein::ChIPseq ERROR: 3 input files required\n";
+        print STDERR "CoGe::Builder::Protein::ChIPseq ERROR: 3 input files required\n", Dumper $input_files, "\n";
         return;
     }
 
