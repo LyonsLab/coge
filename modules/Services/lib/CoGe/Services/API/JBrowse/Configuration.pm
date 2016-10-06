@@ -69,6 +69,7 @@ sub _annotations {
 sub track_config {
     my $self = shift;
     my $gid  = $self->param('gid');
+    my $experiment_ids = $self->param('experiments');
     my $start_time = time; # for performance testing
     
     # Authenticate user and connect to the database
@@ -302,7 +303,12 @@ sub track_config {
     my $connectors = get_user_access_table($db->storage->dbh, $user->id) if $user;
     my $allNotebooks = get_table($db->storage->dbh, 'list');
     my $allNotebookConn = get_table($db->storage->dbh, 'list_connector', ['child_id', 'list_connector_id'], {child_type => 3});
-    foreach my $e ( sort experimentcmp get_experiments($db->storage->dbh, $genome->id) ) { # sort experimentcmp $genome->experiments
+    my @genome_experiments = get_experiments($db->storage->dbh, $genome->id);
+    if ($experiment_ids) {
+        my @ids = split(/,/, $experiment_ids);
+        @genome_experiments = grep { my $id = $_->{experiment_id}; grep { $id == $_ } @ids; } @genome_experiments;
+    }
+    foreach my $e ( sort experimentcmp @genome_experiments ) { # sort experimentcmp $genome->experiments
         next if ( $e->{deleted} );
         my $eid = $e->{experiment_id};
         my $role = $connectors->{3}{$eid};
@@ -369,15 +375,11 @@ sub track_config {
             autocomplete => "all",
             track        => "experiment$eid",
             label        => "experiment$eid",
-            key          => ( $e->{restricted} ? '&reg; ' : '' ) . $e->{name},
+            key          => ( $e->{restricted} ? '🔒 ' : '' ) . $e->{name},
             type         => $type,
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
             style => $style,
-
-            histograms => {
-                storeClass => "JBrowse/Store/SeqFeature/REST"
-            },
             coge => {
                 id          => $eid,
                 type        => 'experiment',
@@ -387,10 +389,6 @@ sub track_config {
                 description => $e->{description},
                 notebooks   => ( @notebooks ? \@notebooks : undef ),
                 onClick     => "ExperimentView.pl?embed=1&eid=$eid",
-                menuOptions => [{
-                    label => 'ExperimentView',
-                    action => "function() { window.open( 'ExperimentView.pl?eid=$eid' ); }"
-                }],
                 annotations => _annotations('experiment', $eid, $db)
             }
         };
@@ -430,9 +428,8 @@ sub track_config {
         my $role = $connectors->{1}{$nid};
         $role = $role->{role_id} if $role;
         push @tracks, {
-            key     => ( $n->{restricted} ? '&reg; ' : '' ) . $n->{name},
+            key     => ( $n->{restricted} ? '🔒 ' : '' ) . $n->{name},
             baseUrl => "$JBROWSE_API/experiment/genome/$gid/notebook/$nid",
-            query => { gid => $gid },
             autocomplete => "all",
             track        => "notebook$nid",
             label        => "notebook$nid",
@@ -449,10 +446,6 @@ sub track_config {
                 editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
                 experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
                 onClick     => "NotebookView.pl?embed=1&lid=$nid",
-                menuOptions => [{
-                    label => 'NotebookView',
-                    action => "function() { window.open( 'NotebookView.pl?lid=$nid' ); }"
-                }],
                 annotations => _annotations('list', $nid, $db)
             }
         };

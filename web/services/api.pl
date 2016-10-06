@@ -287,11 +287,11 @@ $r->get("/jbrowse/track/gc/:id/features/#chr" => { id => qr/\d+/ })
     ->to("GCcontent#features", id => undef, chr => undef);  
 
 # JBrowse experiment routes
-$r->get("/jbrowse/experiment/:eid/stats/global/" => [eid => qr/\d+/])
+$r->get("/jbrowse/experiment/:eid/stats/global/" => [eid => qr/[\d,]+/])
     ->name("jbrowse-experiment-stats-global")
     ->to("experiment#stats_global", eid => undef);
-    
-$r->get("/jbrowse/experiment/:eid/stats/regionFeatureDensities/#chr" => { eid => qr/\d+/ })
+
+$r->get("/jbrowse/experiment/:eid/stats/regionFeatureDensities/#chr" => { eid => qr/[\d,]+/ })
     ->name("jbrowse-experiment-regionFeatureDensitites")
     ->to("experiment#stats_regionFeatureDensities", eid => undef, chr => undef);
 
@@ -299,7 +299,7 @@ $r->get("/jbrowse/experiment/:eid/data/#chr"  => { eid => qr/\d+/, chr => qr/\w+
     ->name("jbrowse-experiment-data")
     ->to("experiment#data", eid => undef, chr => undef);
 
-$r->get("/jbrowse/experiment/:eid/features/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
+$r->get("/jbrowse/experiment/:eid/features/#chr"  => { eid => qr/[\d,]+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", eid => undef, chr => undef);
 
@@ -323,9 +323,9 @@ $r->get("/jbrowse/experiment/:eid/snps/#chr"  => { eid => qr/\d+/, chr => qr/\w+
     ->name("jbrowse-experiment-snps")
     ->to("experiment#snps", eid => undef, chr => undef);
 
-$r->get("/jbrowse/experiment/:eid/intersection/:eid2/#chr"  => { eid => qr/\d+/, eid2 => qr/\d+/, chr => qr/\w+/ })
-    ->name("jbrowse-experiment-intersection")
-    ->to("experiment#intersection", eid => undef, eid2 => undef, chr => undef);
+$r->get("/jbrowse/experiment/:eid/overlaps/:eid2/#chr"  => { eid => qr/\d+/, eid2 => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-experiment-overlaps")
+    ->to("experiment#overlaps", eid => undef, eid2 => undef, chr => undef);
 
 # genome track (all experiments)
 $r->get("/jbrowse/experiment/genome/:gid/stats/global/" => [gid => qr/\d+/])

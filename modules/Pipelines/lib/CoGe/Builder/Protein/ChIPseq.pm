@@ -38,12 +38,12 @@ sub build {
     
     # Require 3 data files (input and two replicates)
     if (@$input_files != 3) {
-        print STDERR "CoGe::Builder::Protein::ChIPseq ERROR: 3 input files required\n";
+        print STDERR "CoGe::Builder::Protein::ChIPseq ERROR: 3 input files required\n", Dumper $input_files, "\n";
         return;
     }
 
     # Setup paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
+    my ($staging_dir) = get_workflow_paths($user->name, $wid);
 
     # Set metadata for the pipeline being used
     my $annotations = generate_additional_metadata($chipseq_params);
@@ -247,7 +247,7 @@ sub create_homer_findPeaks_job {
             [$input_dir, 1]
         ],
         outputs => [
-            catfile($staging_dir, $output_file),
+            catfile($staging_dir, $output_file)
         ],
         description => "Performing ChIP-seq analysis on $replicate_tag using Homer..."
     };

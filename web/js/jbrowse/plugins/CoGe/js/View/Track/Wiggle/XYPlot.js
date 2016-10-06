@@ -8,9 +8,10 @@ define( [
 			'JBrowse/View/Track/Wiggle/XYPlot',
 			'JBrowse/Util',
 			'./_Scale',
-			'CoGe/View/ColorDialog'
+			'CoGe/View/ColorDialog',
+            'JBrowse/Store/LRUCache'
 		],
-		function( declare, array, Color, domConstruct, Dialog, XYPlotBase, Util, Scale, ColorDialog ) {
+		function( declare, array, Color, domConstruct, Dialog, XYPlotBase, Util, Scale, ColorDialog, LRUCache ) {
 
 var XYPlot = declare( [XYPlotBase], {
 	// Load cookie params - mdb added 1/13/14, issue 279
@@ -154,6 +155,20 @@ var XYPlot = declare( [XYPlotBase], {
 
 		return pixelValues;
 	},
+
+	// ----------------------------------------------------------------
+    // utility method that calculates standard deviation from sum and sum of squares
+
+    _calcStdFromSums: function( sum, sumSquares, n ) {
+        if( n == 0 )
+            return 0;
+
+        var variance = sumSquares - sum*sum/n;
+        if (n > 1) {
+            variance /= n-1;
+        }
+        return variance < 0 ? 0 : Math.sqrt(variance);
+    },
 
 	// ----------------------------------------------------------------
 
@@ -426,6 +441,8 @@ var XYPlot = declare( [XYPlotBase], {
 	// ----------------------------------------------------------------
 
 	_getFeatureColor: function(id) {
+		if (this.config.coge.type == 'search')
+			id = this.config.coge.eid;
 		if (this.config.style.featureColor && this.config.style.featureColor[id])
 			return this.config.style.featureColor[id];
 		 return coge_plugin.calc_color(id);
@@ -487,9 +504,75 @@ var XYPlot = declare( [XYPlotBase], {
 	},
 
 	// ----------------------------------------------------------------
-	// I have no idea why this function is duplicated here,
-	// it's the exact same as in JBrowse's XYPlot,
-	// but removing it breaks the display of the track
+
+    getRegionStats: function( query, successCallback, errorCallback ) {
+        return this._getRegionStats.apply( this, arguments );
+    },
+
+    _getRegionStats: function( query, successCallback, errorCallback ) {
+        var thisB = this;
+        var cache = thisB._regionStatsCache = thisB._regionStatsCache || new LRUCache({
+            name: 'regionStatsCache',
+            maxSize: 1000, // cache stats for up to 1000 different regions
+            sizeFunction: function( stats ) { return 1; },
+            fillCallback: function( query, callback ) {
+                //console.log( '_getRegionStats', query );
+                var s = {
+                    scoreMax: -Infinity,
+                    scoreMin: Infinity,
+                    scoreSum: 0,
+                    scoreSumSquares: 0,
+                    basesCovered: query.end - query.start,
+                    featureCount: 0
+                };
+                thisB.getFeatures( query,
+                                  function( feature ) {
+                                      var score = feature.get('score') || 0;
+										if (thisB.config.coge.transform == 'Log10') {
+											if (score >= 0)
+												score = log10(Math.abs(score)+1);
+											else
+												score = -1*log10(Math.abs(score)+1);
+										}
+										else if (thisB.config.coge.transform == 'Log2') {
+											if (score >= 0)
+												score = log2(Math.abs(score)+1);
+											else
+												score = -1*log2(Math.abs(score)+1);
+										}
+										else if (thisB.config.coge.transform == 'Inflate')
+											score = score > 0 ? 1 : -1;
+                                      s.scoreMax = Math.max( score, s.scoreMax );
+                                      s.scoreMin = Math.min( score, s.scoreMin );
+                                      s.scoreSum += score;
+                                      s.scoreSumSquares += score*score;
+                                      s.featureCount++;
+                                  },
+                                  function() {
+                                      s.scoreMean = s.featureCount ? s.scoreSum / s.featureCount : 0;
+                                      s.scoreStdDev = thisB._calcStdFromSums( s.scoreSum, s.scoreSumSquares, s.featureCount );
+                                      s.featureDensity = s.featureCount / s.basesCovered;
+                                      //console.log( '_getRegionStats done', s );
+                                      callback( s );
+                                  },
+                                  function(error) {
+                                      callback( null, error );
+                                  }
+                                );
+            }
+         });
+
+         cache.get( query,
+                    function( stats, error ) {
+                        if( error )
+                            errorCallback( error );
+                        else
+                            successCallback( stats );
+                    });
+
+    },
+
+	// ----------------------------------------------------------------
 
 	 _getScaling: function( viewArgs, successCallback, errorCallback ) {
 
@@ -637,15 +720,18 @@ var XYPlot = declare( [XYPlotBase], {
 
 		options.push({ type: 'dijit/MenuSeparator' });
 
-		if (config.coge.menuOptions) {
-			config.coge.menuOptions.forEach( function(e) {
-				options.push(e);
-			});
-		}
-
 		options.push.apply(
 			options,
 			[
+				{
+					label: 'Autoscale',
+					type: 'dijit/CheckedMenuItem',
+					checked: this.config.autoscale == 'local',
+					onClick: function(event) {
+						track.config.autoscale = this.checked ? 'local' : 'global';
+						track.changed();
+					}
+				},
 				{
 					label: 'Show scores on hover',
 					type: 'dijit/CheckedMenuItem',
@@ -814,11 +900,45 @@ var XYPlot = declare( [XYPlotBase], {
 				label: 'Export Track Data',
 				onClick: function(){coge_plugin.export_dialog(track);}
 			});
-		if (config.coge.search)
+		if (config.coge.search && config.coge.data_type == 1) {
+			options.push({
+				label: 'Convert to Marker Track',
+				onClick: function(){coge_plugin.convert_to_marker_dialog(track)}
+			});
 			options.push({
 				label: 'Save Results as New Experiment',
 				onClick: function(){coge_plugin.save_as_experiment_dialog(track)}
 			});
+		}
+		if (config.coge.type == 'merge') {
+			options.push({
+				label: 'Create New Notebook with Merged Tracks',
+				onClick: function(){coge_plugin.create_notebook_dialog(track)}
+			});
+			if (config.coge.keys.length > 1) { // can't remove last track
+				var tracks = [];
+				config.coge.keys.forEach(function(key){
+					tracks.push({
+						label: key,
+						onClick: function(event) {
+							var index = config.coge.keys.indexOf(key);
+							config.coge.keys.splice(index, 1);
+							config.coge.eids.splice(index, 1);
+							track.browser.getStore(config.store, function(store){
+								store.baseUrl = store.config.baseUrl = api_base_url + '/experiment/' + config.coge.eids.join(',') + '/';
+							});
+							track.changed();
+							track.makeTrackMenu();
+						}
+					});
+				});
+				options.push({
+					label: 'Remove Track',
+					type: 'dijit/DropDownMenu',
+					children: tracks
+				});
+			}
+		}
 
 		return options;
 	},
