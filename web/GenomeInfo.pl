@@ -3,8 +3,8 @@
 use strict;
 use CGI;
 use CoGeX;
+use CoGe::JEX::Jex;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Jex;
 use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Chromosomes;
@@ -34,8 +34,6 @@ use vars qw(
 
 $PAGE_TITLE = 'GenomeInfo';
 
-#EL: 10/31/13:  change to a global var
-#my $node_types = CoGeX::node_types();
 $node_types = CoGeX::node_types();
 
 $FORM = new CGI;
@@ -44,10 +42,10 @@ $FORM = new CGI;
     page_title => $PAGE_TITLE
 );
 
-$JEX = CoGe::Accessory::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
+$JEX = CoGe::JEX::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 $JOB_ID  = $FORM->Vars->{'job_id'};
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
-$SECTEMPDIR    = $config->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$SECTEMPDIR = $config->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
 $TEMPDIR   = $config->{TEMPDIR} . "/$PAGE_TITLE";
 $TEMPURL   = $config->{TEMPURL} . "/$PAGE_TITLE";
 $HISTOGRAM = $config->{HISTOGRAM};
@@ -950,12 +948,13 @@ sub get_genome_info {
     );
 
     my $owner = $genome->owner;
-    my $creator = $genome->creator;
-    my $creation = ($genome->creator_id ? $genome->creator->display_name  . ' ' : '') . $genome->get_date();
+    my $creator = ($genome->creator_id ? $genome->creator->display_name : '');
+    my $creation_date = $genome->get_date();
     my $groups = ($genome->restricted ? join(', ', sort map { $_->name } $USER->groups_with_access($genome)) : undef);
     $template->param( groups_with_access => $groups) if $groups;
     $template->param( OWNER => $owner->display_name ) if $owner;
-    $template->param( CREATOR => $creation ) if $creation;
+    $template->param( CREATOR => $creator ) if $creator;
+    $template->param( CREATION_DATE => $creation_date ) if $creation_date;
     $template->param( GID => $genome->id );
 
     return $template->output;
@@ -2139,7 +2138,7 @@ sub annotate { #TODO create API "annotate" job instead
 sub generate_html {
     my $template;
 
-    $EMBED = $FORM->param('embed');
+    $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
         $template =
           HTML::Template->new(

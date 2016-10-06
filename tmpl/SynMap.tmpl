@@ -29,7 +29,7 @@
 </tmpl_if>
 
 <aside class="info">
-    <p><a class="bold" href="http://genomevolution.org/wiki/index.php/SynMap" target="_blank">SynMap</a> generates a syntenic dotplot between
+    <p><a class="bold" href="http://genomevolution.org/wiki/index.php/SynMap2" target="_blank">SynMap</a> generates a syntenic dotplot between
     two organisms and identifies syntenic regions.
 	    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
     </p>
@@ -62,6 +62,7 @@
         <li class="small"><a href="#tab-1">Select Organisms</a></li>
         <li class="small"><a href="#tab-2">Analysis Options</a></li>
         <li class="small"><a href="#tab-3">Display Options</a></li>
+        <div class="r small link" style="font-weight: normal;" onclick="window.open('https://genomevolution.org/wiki/index.php/SynMap2', '_blank')">Need help?</div>
     </ul>
 
     <div id="tab-1">
@@ -424,6 +425,8 @@
     </ul>
     <div id="synmap_link" class="small" style="color:dimgray; padding-left: 5px;"></div>
 </div>
+
+<!--<TMPL_INCLUDE NAME="widgets/Splash.tmpl">-->
 
 <tmpl_include name="/widgets/Overlay.tmpl">
 

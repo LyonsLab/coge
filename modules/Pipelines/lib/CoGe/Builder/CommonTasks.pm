@@ -38,7 +38,7 @@ our @EXPORT = qw(
     add_workflow_result create_bowtie2_workflow create_image_job
     add_metadata_to_results_job create_process_fasta_job
     create_transdecoder_longorfs_job create_transdecoder_predict_job
-    create_bigwig_to_wig_job
+    create_bigwig_to_wig_job create_irods_imeta_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -205,6 +205,25 @@ sub export_to_irods {
    };
 }
 
+sub create_irods_imeta_job {
+    my %opts = @_;
+    my $dest_file_path = $opts{dest_file_path};
+    my $metadata_file  = $opts{metadata_file};
+    
+    my $cmd = catdir($CONF->{SCRIPTDIR}, 'irods.pl');
+    
+    return {
+        cmd => $cmd,
+        description => "Generating IRODS metadata for $dest_file_path",
+        args => [
+            ["-cmd", 'metadata', 0],
+            ["-metafile", $metadata_file, 0],
+        ],
+        inputs => [],
+        outputs => []
+    };
+}
+
 sub export_experiment_job {
     my %args = @_;
     my $eid = $args{eid};
@@ -352,7 +371,7 @@ sub create_fastq_dump_job {
     my $cmd = $CONF->{FASTQ_DUMP} || 'fastq-dump';
 
     return {
-        cmd => "$cmd $accn --outdir $dest_path ; touch $done_file",
+        cmd => "$cmd $accn --outdir $dest_path && touch $done_file",
         script => undef,
         args => [],
         inputs => [],
@@ -472,7 +491,7 @@ sub create_gunzip_job {
     my $cmd = get_command_path('GUNZIP');
 
     return {
-        cmd => "$cmd -c $input_file > $output_file ;  touch $output_file.decompressed",
+        cmd => "$cmd -c $input_file > $output_file && touch $output_file.decompressed",
         script => undef,
         args => [],
         inputs => [
@@ -494,7 +513,7 @@ sub create_bgzip_job {
     my $cmd = get_command_path('BGZIP');
 
     return {
-        cmd => "$cmd -c $input_file > $output_file ;  touch $output_file.done",
+        cmd => "$cmd -c $input_file > $output_file && touch $output_file.done",
         script => undef,
         args => [],
         inputs => [
@@ -516,7 +535,7 @@ sub create_tabix_index_job {
     my $cmd = $CONF->{TABIX} || 'tabix';
 
     return {
-        cmd => "$cmd -p $index_type $input_file ;  touch $output_file.done",
+        cmd => "$cmd -p $index_type $input_file && touch $output_file.done",
         script => undef,
         args => [],
         inputs => [
@@ -1221,7 +1240,7 @@ sub create_trimgalore_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     
     # Create staging dir
-    $cmd = "mkdir -p $staging_dir ; " . $cmd;
+    $cmd = "mkdir -p $staging_dir && " . $cmd;
 
     my $args = [
         ['--output_dir', $staging_dir, 0],
@@ -1256,7 +1275,7 @@ sub create_trimgalore_job {
     }
     my @done_files = map { $_ . '.done' } @outputs;
     foreach (@done_files) {
-        $cmd .= " ; touch $_";
+        $cmd .= " && touch $_";
     }
 
     return {
@@ -1769,9 +1788,9 @@ sub create_bismark_index_job {
     
     my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark_genome_preparation') : 'bismark_genome_preparation';
     my $BISMARK_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bismark_index");
-    $cmd = "mkdir -p $BISMARK_CACHE_DIR ; " .
-           "cp $fasta $BISMARK_CACHE_DIR/$name.fa ; " . # bismark requires fasta file to end in .fa or .fasta, not .faa
-           "nice $cmd $BISMARK_CACHE_DIR ; " .
+    $cmd = "mkdir -p $BISMARK_CACHE_DIR && " .
+           "cp $fasta $BISMARK_CACHE_DIR/$name.fa && " . # bismark requires fasta file to end in .fa or .fasta, not .faa
+           "nice $cmd $BISMARK_CACHE_DIR && " .
            "touch $done_file";
 
     return $BISMARK_CACHE_DIR, (
@@ -1874,7 +1893,8 @@ sub create_bwameth_workflow {
     my $read_type = $opts{read_type};
     my $params = $opts{params};
 
-    my ($index_path, %index_task) = create_bwameth_index_job($gid, $fasta);
+    my ($index_path, $index_task, $done_file) = create_bwameth_index_job($gid, $fasta);
+    push @$done_files, $done_file;
     
     my %align_task = create_bwameth_alignment_job(
         staging_dir => $staging_dir,
@@ -1882,13 +1902,13 @@ sub create_bwameth_workflow {
         fastq => $fastq,
         done_files => $done_files,
         index_path => $index_path,
-        index_files => ($index_task{outputs}),
+        index_files => ($index_task->{outputs}),
         read_type => $read_type,
         params => $params
     );
 
     # Return the bam output name and jobs required
-    my @tasks = ( \%index_task, \%align_task );
+    my @tasks = ( $index_task, \%align_task );
     my %results = (
         bam_file => $align_task{outputs}->[0]
     );
@@ -1905,13 +1925,13 @@ sub create_bwameth_index_job {
     my $cmd = ($CONF->{BWAMETH} ? $CONF->{BWAMETH} : 'bwameth') . ' index';
     my $BWAMETH_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bwameth_index");
     
-    $cmd = "mkdir -p $BWAMETH_CACHE_DIR ; " .
-           "cd $BWAMETH_CACHE_DIR ; " .
-           "cp $fasta . ; " . 
-           "$cmd $name ; " .
+    $cmd = "mkdir -p $BWAMETH_CACHE_DIR && " .
+           "cd $BWAMETH_CACHE_DIR && " .
+           "cp $fasta . && " . 
+           "$cmd $name && " .
            "touch $done_file";
 
-    return $BWAMETH_CACHE_DIR, (
+    return $BWAMETH_CACHE_DIR, {
         cmd => $cmd,
         script => undef,
         args => [],
@@ -1928,7 +1948,8 @@ sub create_bwameth_index_job {
             catfile($BWAMETH_CACHE_DIR, $done_file)
         ],
         description => "Indexing genome sequence with bwameth..."
-    );
+    },
+    catfile($BWAMETH_CACHE_DIR, $done_file);
 }
 
 sub create_bwameth_alignment_job {

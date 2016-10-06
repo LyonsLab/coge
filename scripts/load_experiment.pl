@@ -488,6 +488,7 @@ sub max_and_min_of_values {
         return if ($status == RC_PARSE_ERROR);
         return unless (defined $chr && defined $strand && defined $val1); # error, let calling function handle it
 
+        $strand = $strand =~ /-/ ? -1 : 1;
         $val1 *= $strand if ($strand == -1);
         
         $max = $val1 if ($val1 > $max);
@@ -759,9 +760,10 @@ sub validate_vcf_data_file {
             return;
         }
         
-        # Check for extra columns in GVCF # mdb added 5/4/16
-        if ( @tok > 8 ) {
-            $isGVCF = 1;    
+        # Check for extra genotype columns in GVCF # mdb added 5/4/16
+        if ( !$isGVCF && @tok > 10 ) { 
+            print STDOUT "Detected multisample GVCF file based on ", scalar(@tok), " columns\n";
+            $isGVCF = 1;
         }
 
         # Validate values and set defaults

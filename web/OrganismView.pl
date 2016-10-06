@@ -383,7 +383,7 @@ sub get_org_info {
         foreach my $item ( split( /;/, $organism->description ) ) {
             $item =~ s/^\s+//;
             $item =~ s/\s+$//;
-            $html .= "<a href=OrganismView.pl?org_desc=$item>$item</a>;";
+            $html .= qq{<span class='link' onclick='window.open("OrganismView.pl?org_desc=$item");'>$item</span>;};
             $desc_len += length($item);
             if ( $desc_len > 100 ) {
                 $html .= '<br>';
@@ -393,7 +393,9 @@ sub get_org_info {
     }
     
     $html .= qq{<tr>}
-        . qq{<td>Tools:</td><td><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?oid=$oid' target=_new>CodeOn</a></td>}
+        . qq{<td>Tools:</td><td><span class="link" onclick="window.open('OrganismView.pl?oid=$oid', 'target=_new');">OrganismView</span>}
+        . qq{&nbsp|&nbsp}
+        . qq{<span class="link" onclick="window.open('CodeOn.pl?oid=$oid', 'target=_new')">CodeOn</span></td>}
         . qq{<tr><td>Search:</td><td>};
     my $search_term = $organism->name;
     $html .= qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src="picts/other/NCBI-icon.png" title="NCBI" class="link">&nbsp}
@@ -554,10 +556,8 @@ sub get_genome_info {
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": " . $dsg->type->description if $dsg->type->description;
 
-
     my $owner = $dsg->owner;
     my $owner_field;
-
     if ($owner) {
         my $username = $owner->display_name;
         $owner_field = qq{<tr><td>Owner:</td><td>$username</td></tr>};
@@ -583,13 +583,15 @@ sub get_genome_info {
 
     $html .= "<tr><td>Tools:</td>"
      . qq{<td>}
-     . qq{<a href="GenomeInfo.pl?gid=$gid"><strong>GenomeInfo</strong></a>}
+     . qq{<span class="link" onclick="window.open('GenomeInfo.pl?gid=$gid', '_blank');">GenomeInfo</span>}
      . qq{&nbsp|&nbsp}
-     . qq{<a href='OrganismView.pl?dsgid=$gid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$gid' target=_new>CodeOn</a>}
+     . qq{<span class="link" onclick="window.open('OrganismView.pl?dsgid=$gid', '_blank');">OrganismView</span>}
      . qq{&nbsp|&nbsp}
-     . qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$gid;dsgid2=$gid');">SynMap</span>}
+     . qq{<span class="link" onclick="window.open('CodeOn.pl?dsgid=$gid', '_blank');">CodeOn</span>}
      . qq{&nbsp|&nbsp}
-     . qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$gid');">CoGeBlast</span>}
+     . qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$gid;dsgid2=$gid', '_blank');">SynMap</span>}
+     . qq{&nbsp|&nbsp}
+     . qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$gid', '_blank');">CoGeBlast</span>}
      . qq{&nbsp|&nbsp}
      . qq{<span class="link" onClick="add_genome_to_list($gid);">Add to GenomeList</span>}
      . qq{</td></tr>}
@@ -967,9 +969,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     }
     my $gc_args;
     $gc_args = "chr: '$chr'," if defined $chr;
-    $gc_args .= "dsid: $dsid,"
-      if $dsid
-    ; #set a var so that histograms are only calculated for the dataset and not hte genome
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte genome
     $gc_args .= "typeid: ";
     my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
     $feat_list_string .= ";chr=$chr" if defined $chr;
@@ -1195,12 +1195,9 @@ Type: <select id="feat_hist_type">
     $info =~ s/>Per/ selected>Per/ if $hist_type =~ /per/;
     my $gc_args;
     $gc_args = "chr: '$chr'," if defined $chr;
-    $gc_args .= "dsid: $dsid,"
-      if $dsid
-    ; #set a var so that histograms are only calculated for the dataset and not hte genome
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte genome
     $gc_args .= "typeid: '$typeid'";
-    $info .=
-qq{<span class="link" onclick="get_feat_gc({$gc_args})">Regenerate histogram</span>};
+    $info .= qq{<span class="link" onclick="get_feat_gc({$gc_args})">Regenerate histogram</span>};
     $info .= "</div>";
     $info .=
         "<div class = small>Total length: "

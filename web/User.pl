@@ -23,7 +23,8 @@ use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
 use CoGe::Accessory::Utils qw(format_time_diff js_escape html_escape commify);
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Jex;
+use CoGe::JEX::Jex;
+use CoGe::Core::Item qw(get_item);
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
@@ -54,7 +55,7 @@ if (defined $user_id && $USER->is_admin && $user_id != $USER->id) {
     }
 }
 
-$JEX = CoGe::Accessory::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
+$JEX = CoGe::JEX::Jex->new( host => $CONF->{JOBSERVER}, port => $CONF->{JOBPORT} );
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -352,8 +353,8 @@ sub favorite_items {
         my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
 
-        my $item_obj = $USER->get_item($item_id, $item_type);
-        next unless $item_obj; #TODO check permissions
+        my $item_obj = get_item($DB, $item_id, $item_type);
+        next unless $item_obj;
         
         my $favorites = CoGe::Core::Favorites->new(user => $USER);
         my $is_favorited = $favorites->toggle($item_obj);
@@ -384,7 +385,7 @@ sub delete_items {
 
         #print STDERR "delete $item_id $item_type\n";
         my $item_obj;
-        if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
+        if ( $item_type eq 'group' ) {
             $item_obj = $DB->resultset('UserGroup')->find($item_id);
 		    return unless ( $item_obj and $item_obj->is_editable($USER) );
 		    return if ( $item_obj->locked and !$USER->is_admin );
@@ -393,7 +394,7 @@ sub delete_items {
             $item_obj->update;
 			$type_name = 'user group';
         }
-        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) {
             $item_obj = $DB->resultset('List')->find($item_id);
             return unless $item_obj;
 
@@ -406,7 +407,7 @@ sub delete_items {
                 $type_name = 'notebook';
             }
         }
-        elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
+        elsif ( $item_type eq 'genome' ) {
             $item_obj = $DB->resultset('Genome')->find($item_id);
             return unless $item_obj;
 
@@ -416,7 +417,7 @@ sub delete_items {
                 $type_name = 'genome';
             }
         }
-        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) {
             $item_obj = $DB->resultset('Experiment')->find($item_id);
             return unless $item_obj;
 
@@ -456,7 +457,7 @@ sub undelete_items {
 
         #print STDERR "undelete $item_id $item_type\n";
         my $item_obj;
-        if ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
+        if ( $item_type eq 'group' ) {
             $item_obj = $DB->resultset('UserGroup')->find($item_id);
             return unless $item_obj;
 
@@ -466,7 +467,7 @@ sub undelete_items {
                 $type_name = 'user group';
             }
         }
-        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) {
             $item_obj = $DB->resultset('List')->find($item_id);
             return unless $item_obj;
 
@@ -476,7 +477,7 @@ sub undelete_items {
                 $type_name = 'notebook';
             }
         }
-        elsif ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
+        elsif ( $item_type eq 'genome' ) {
             $item_obj = $DB->resultset('Genome')->find($item_id);
             return unless $item_obj;
 
@@ -486,7 +487,7 @@ sub undelete_items {
                 $type_name = 'genome';
             }
         }
-        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) {
             $item_obj = $DB->resultset('Experiment')->find($item_id);
             return unless $item_obj;
 
@@ -515,39 +516,6 @@ sub undelete_items {
         }
     }
 }
-
-#sub cancel_jobs {
-#    my %opts      = @_;
-#    my $item_list = $opts{item_list};
-#    my @items     = split( ',', $item_list );
-#    return unless @items;
-#
-#    foreach (@items) {
-#        my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
-#        next unless ( $item_id and $item_type );
-#        print STDERR "cancel $item_id $item_type\n";
-#
-#        my $job = $DB->resultset('Job')->find($item_id);
-#	    if ( ( !$job || $job->user_id != $USER->id ) && !$USER->is_admin ) {
-#	        return;
-#	    }
-#
-#	    my $status = $JEX->get_status( $job->id );
-#	    print STDERR "job " . $job->id . " status=$status\n";
-#	    if ( $status =~ /running/i ) {
-#	    	my $res = $JEX->terminate( $job->id );
-#	    	if ( $res->{status} =~ /notfound/i ) {
-#	        	print STDERR "job " . $job->id . " termination error: status=" . $res->status . "\n";
-#	    	}
-#	    	else {
-#	    		$job->update( { status => 3 } );
-#	    	}
-#	        return encode_json( $res );
-#	    }
-#    }
-#
-#	return 1;
-#}
 
 sub cancel_job {
     my %opts      = @_;
@@ -620,7 +588,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         next unless ( $item_id and $item_type );
 
         # print STDERR "get_share $item_id $item_type\n";
-        if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
+        if ( $item_type eq 'genome' ) {
             my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
             map { $userconn{ $_->parent_id } = $_ }
@@ -629,7 +597,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
             $isPublic = 1 if ( not $genome->restricted );
             $isEditable = 0 if ( not $USER->is_owner_editor( dsg => $genome ) );
         }
-        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) {
             my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
             map { $userconn{ $_->id } = $_ }
@@ -639,7 +607,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
             $isEditable = 0
               if ( not $USER->is_owner_editor( experiment => $experiment ) );
         }
-        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) {
             my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
             map { $userconn{ $_->id } = $_ }
@@ -715,8 +683,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         };
     }
 
-    my $template =
-      HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
         SHARE_DIALOG => 1,
         IS_EDITABLE  => $USER->is_admin || $isEditable,
@@ -751,7 +718,7 @@ sub get_group_dialog {
     foreach (@items) {
         my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
-        next unless ( $item_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
+        next unless ( $item_type eq 'group' ); # sanity check
 
         #print STDERR "get_group_dialog $item_id $item_type\n";
         my $group = $DB->resultset('UserGroup')->find($item_id);
@@ -825,7 +792,6 @@ sub search_share {
     return if ( $USER->user_name eq 'public' );
     my $search_term = escape( $opts{search_term} );
     my $timestamp   = $opts{timestamp};
-
     #print STDERR "search_share $search_term $timestamp\n";
 
     my @results;
@@ -837,7 +803,7 @@ sub search_share {
             || escape($_->display_name) =~ /$search_term/i );
         next if ($_->user_name eq $USER->user_name); # mdb added 5/11/16 -- prevent user from sharing with themselves
         my $label = $_->display_name . ' (' . $_->user_name . ')';
-        my $value = $_->id . ':' . 'user'; #$ITEM_TYPE{user};
+        my $value = $_->id . ':' . 'user';
         push @results, { 'label' => $label, 'value' => $value };
     }
 
@@ -845,7 +811,7 @@ sub search_share {
     foreach ( $DB->resultset('UserGroup')->all ) {
         next unless ( escape($_->name) =~ /$search_term/i );
         my $label = $_->name . ' (' . $_->role->name . ' group)';
-        my $value = $_->id . ':' . 'group'; #$ITEM_TYPE{group};
+        my $value = $_->id . ':' . 'group';
         push @results, { 'label' => $label, 'value' => $value };
     }
 
@@ -867,19 +833,19 @@ sub make_items_public {
         next unless ( $item_id and $item_type );
 
         #print STDERR "make_items_public $item_id $item_type\n";
-        if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
+        if ( $item_type eq 'genome' ) {
             my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
             $genome->restricted(!$make_public);
             $genome->update();
         }
-        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) {
             my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
             $experiment->restricted(!$make_public);
             $experiment->update();
         }
-        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) {
             my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
             $notebook->restricted(!$make_public);
@@ -911,17 +877,17 @@ sub add_items_to_user_or_group {
         next unless ( $item_id and $item_type );
 
         # print STDERR "add_items_to_user_or_group $item_id $item_type\n";
-        if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
+        if ( $item_type eq 'genome' ) {
             my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
             push @verified, { id => $item_id, type => $ITEM_TYPE{genome}, type_name => $item_type, info => $genome->info_html };
         }
-        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) {
             my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
             push @verified, { id => $item_id, type => $ITEM_TYPE{experiment}, type_name => $item_type, info => $experiment->info_html };
         }
-        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) {
             my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
             push @verified, { id => $item_id, type => $ITEM_TYPE{notebook}, type_name => $item_type, info => $notebook->info_html };
@@ -977,7 +943,7 @@ sub add_items_to_user_or_group {
             );
         }
     }
-    elsif ( $target_type eq 'group' ) { #$ITEM_TYPE{group} ) {
+    elsif ( $target_type eq 'group' ) {
         my $group = $DB->resultset('UserGroup')->find($target_id);
         return unless $group;
 
@@ -1027,7 +993,7 @@ sub remove_items_from_user_or_group {
         next unless ( $item_id and $item_type );
 
         # print STDERR "remove_item_from_user $item_id $item_type\n";
-        if ( $item_type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
+        if ( $item_type eq 'genome' ) {
             my $genome = $DB->resultset('Genome')->find($item_id);
             next unless ( $USER->has_access_to_genome($genome) );
 
@@ -1043,7 +1009,7 @@ sub remove_items_from_user_or_group {
 
             $conn->delete;
         }
-        elsif ( $item_type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
+        elsif ( $item_type eq 'experiment' ) {
             my $experiment = $DB->resultset('Experiment')->find($item_id);
             next unless $USER->has_access_to_experiment($experiment);
 
@@ -1059,7 +1025,7 @@ sub remove_items_from_user_or_group {
 
             $conn->delete;
         }
-        elsif ( $item_type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
+        elsif ( $item_type eq 'notebook' ) {
             my $notebook = $DB->resultset('List')->find($item_id);
             next unless $USER->has_access_to_list($notebook);
 
@@ -1093,12 +1059,12 @@ sub add_users_to_group {
     my ( $item_id, $item_type ) = $new_item =~ /(\d+)\:(\w+)/;
     return unless ( $item_id and $item_type );
 
-    if ( $item_type eq 'user' ) { #$ITEM_TYPE{user} ) {
+    if ( $item_type eq 'user' ) {
      	my $user = $DB->resultset('User')->find($item_id);
       	return unless $user;
        	$users{$user->id} = $user;
     }
-    elsif ( $item_type eq 'group' ) { #$ITEM_TYPE{group} ) {
+    elsif ( $item_type eq 'group' ) {
       	my $group = $DB->resultset('UserGroup')->find($item_id);
         return unless $group;
         # TODO check that user has visibility of this group (one that they own or belong to)
@@ -1111,7 +1077,7 @@ sub add_users_to_group {
 		my ( $target_id, $target_type ) = $_ =~ /(\d+)_(\w+)/;
 		#print STDERR "add_users_to_group $target_id\n";
 	    next unless ( $target_id and $target_type );
-	    next unless ( $target_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
+	    next unless ( $target_type eq 'group' ); # sanity check
 	    my $target_group = $DB->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
@@ -1175,7 +1141,7 @@ sub remove_user_from_group {
 		my ( $target_id, $target_type ) = $_ =~ /(\d+)_(\w+)/;
 		#print STDERR "remove_user_from_group $target_id\n";
 	    next unless ( $target_id and $target_type );
-	    next unless ( $target_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
+	    next unless ( $target_type eq 'group' ); # sanity check
 	    my $target_group = $DB->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
@@ -1227,7 +1193,7 @@ sub change_group_role {
 		my ( $target_id, $target_type ) = $_ =~ /(\d+)_(\w+)/;
 		#print STDERR "change_group_role $target_id\n";
 	    next unless ( $target_id and $target_type );
-	    next unless ( $target_type eq 'group' ); #$ITEM_TYPE{group} ); # sanity check
+	    next unless ( $target_type eq 'group' ); # sanity check
 	    my $target_group = $DB->resultset('UserGroup')->find($target_id);
 	    next unless ( $target_group and $target_group->is_editable($USER) );
 	    next if ( $target_group->locked && !$USER->is_admin );
@@ -1259,21 +1225,21 @@ sub send_items_to {
     my $num = 1;
     foreach my $type ( keys %fields ) {
         my $name;
-        if ( $type eq 'genome' ) { #$ITEM_TYPE{genome} ) {
+        if ( $type eq 'genome' ) {
             $name = 'dsgid';
         }
-        elsif ( $type eq 'experiment' ) { #$ITEM_TYPE{experiment} ) {
+        elsif ( $type eq 'experiment' ) {
             $name = 'eid';
         }
-        elsif ( $type eq 'notebook' ) { #$ITEM_TYPE{notebook} ) {
+        elsif ( $type eq 'notebook' ) {
             $name = 'nid';
         }
 
-        if ( $format == 1 ) {    # numbered
+        if ( $format == 1 ) { # numbered
             $url .= join( ';',
                 map { $name . ( $num++ ) . '=' . $_ } @{ $fields{$type} } );
         }
-        elsif ( $format == 2 ) {    # list
+        elsif ( $format == 2 ) { # list
             $url .= $name . '=' . join( ',', @{ $fields{$type} } );
         }
         else {
@@ -1314,7 +1280,6 @@ sub get_contents {
             $item->{deleted}   = '0';
             $item->{favorite}  = '1';
             $item->{role_id}   = '2'; # fake an ownership role
-            $item->{item_type} = $item->{type}; # kludge for DataGrid.openItem()
             push @$items, $item;
         }
     }
@@ -1385,6 +1350,9 @@ sub get_stats {
 	my $type = shift;
 	my $items = shift;
 	return '' if !$items;
+    $items = [ grep { !$_->{'deleted'} } @$items ] if !$USER->is_admin();
+    warn Dumper $items;
+	return '' if !scalar @$items;
 	my $sql = 'select annotation_type.name,count(*) from ' . $type . '_annotation join annotation_type on annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id where ' . $type . '_id in (' .
 		join( ',', map { $_->{'id'} } @$items ) .
 		') group by annotation_type.name';
@@ -1398,11 +1366,11 @@ sub get_stats {
     	$html .= '<tr class="';
     	$html .= $odd_even ? 'odd' : 'even';
     	$odd_even ^= 1;
-    	$html .= '" style="cursor:pointer;" onclick="document.location=\'SearchResults.pl?s=';
-    	$html .= $type;
-    	$html .= '_metadata_key::';
-    	$html .= $name;
-    	$html .= '\'"><td class="title5" style="padding-right:10px;white-space:nowrap;text-align:right;">';
+    	$html .= '" style="cursor:pointer;" onclick="search_metadata(\'';
+    	$html .= $type eq 'list' ? 'notebook' : $type;
+    	$html .= "','";
+    	$html .= $name =~ s/\//%2F/gr;
+    	$html .= '\')"><td class="title5" style="padding-right:10px;white-space:nowrap;">';
     	$html .= $name;
     	$html .= '</td><td class="data5">';
     	$html .= $count;
@@ -1708,9 +1676,9 @@ sub add_items_to_notebook {
         my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;
         next unless ( $item_id and $item_type );
         next
-          unless ( $item_type eq 'notebook' #$ITEM_TYPE{notebook}
-            or $item_type eq 'genome' #$ITEM_TYPE{genome}
-            or $item_type eq 'experiment' ); #$ITEM_TYPE{experiment} );
+          unless ( $item_type eq 'notebook'
+            or $item_type eq 'genome'
+            or $item_type eq 'experiment' );
 
         $item_type = $ITEM_TYPE{$item_type};
         #TODO check access permission on each item

@@ -3,9 +3,8 @@ package CoGe::Builder::Tools::SynMap3D;
 use Moose;
 with qw(CoGe::Builder::Buildable);
 
-use CoGe::Accessory::Jex;
 use CoGe::Accessory::Web qw( get_defaults );
-use CoGe::Accessory::Workflow;
+use CoGe::JEX::Workflow;
 use CoGe::Accessory::Utils qw(units);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
 use CoGe::Builder::Tools::SynMap qw( add_jobs defaults gen_org_name );

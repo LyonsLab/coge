@@ -28,3 +28,4 @@ modules/perl
 /.ignorepath
 /.includepath
 bin/get_chr_start/get_chr_start
+experiments

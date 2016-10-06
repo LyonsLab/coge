@@ -432,7 +432,9 @@ $.extend(FindSNPView.prototype, {
                 };
             } else if (method === "gatk") {
                 this.data.snp_params = {
-                    method: method
+                    method: method,
+                    '-stand_call_conf': this.el.find("[id='-stand_call_conf']").val(),
+                    '-stand_emit_conf': this.el.find("[id='-stand_emit_conf']").val()
                 };
             }
         }
@@ -776,7 +778,9 @@ $.extend(ExpressionView.prototype, {
     get_options: function() {
         if (this.enabled) {
             this.data.expression_params = {
-                '-q': this.el.find("[id='-q']").val()
+                '-q': this.el.find("[id='-q']").val(),
+                '-frag-bias-correct' : this.el.find("[id='-frag-bias-correct']").is(":checked"),
+                '-multi-read-correct': this.el.find("[id='-multi-read-correct']").is(":checked")
             };
         }
 

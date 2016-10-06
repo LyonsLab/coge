@@ -37,7 +37,6 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
     my $eid  = $self->stash('eid');
     my $nid  = $self->stash('nid');
     my $gid  = $self->stash('gid');
-	print STDERR "JBrowse::Experiment::stats_global\n";
 	
 	# Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -85,13 +84,13 @@ sub stats_regionFeatureDensities { #FIXME lots of code in common with features()
     my $end      = $self->param('end');
     my $bpPerBin = $self->param('basesPerBin');
 
-#	print STDERR "JBrowse::Experiment::stats_regionFeatureDensities eid="
-#      . ( $eid ? $eid : '' ) . " nid="
-#      . ( $nid ? $nid : '' ) . " gid="
-#      . ( $gid ? $gid : '' )
-#      . " $chr:$start:$end ("
-#      . ( $end - $start + 1 )
-#      . ") bpPerBin=$bpPerBin\n";
+	# print STDERR "JBrowse::Experiment::stats_regionFeatureDensities eid="
+    #  . ( $eid ? $eid : '' ) . " nid="
+    #  . ( $nid ? $nid : '' ) . " gid="
+    #  . ( $gid ? $gid : '' )
+    #  . " $chr:$start:$end ("
+    #  . ( $end - $start + 1 )
+    #  . ") bpPerBin=$bpPerBin\n";
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
@@ -336,40 +335,83 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
             $self->_write('# search: Markers in ' . $type_names . "\n", $fh);
         }
         $self->_write("#seqid\tsource\ttype\tstart\tend\tscore\tstrand\tphase\tattributes\n", $fh);
-        my $markers;
         if (defined $gap_max) {
             my ($columns, $lines) = _get_quant_lines($id, $chr, $data_type, $type, $gte, $lte);
             my $c;
-            my $start;
-            my $stop;
-            my $strand;
-            my $tot_score = 0;
-            my $num = 1;
+            my @chrs;
+            my $markers;
+            my $start_f;
+            my $start_r;
+            my $stop_f;
+            my $stop_r;
             foreach my $line (@{$lines}) {
                 my $tokens = _transform_line($line, $transform);
-                $c = $tokens->[0] if !$c;
-                $start = $tokens->[1] if !$start;
-                $stop = $tokens->[2] if !$stop;
-                $strand = $tokens->[3] if !$strand;
-                if ($c ne $tokens->[0] || $strand ne $tokens->[3] || $tokens->[1] > $stop + $gap_max) {
-                    $self->_write_marker($c, undef, undef, $start, $stop, $tot_score / $num, $strand, undef, undef, $fh);
+                if (!$c) {
+                    warn Dumper $tokens;
                     $c = $tokens->[0];
-                    $start = $tokens->[1];
-                    $stop = $tokens->[2];
-                    $strand = $tokens->[3];
-                    $num = 1;
-                    $tot_score = 0;
+                    $markers = [];
+                    push @chrs, [$c, $markers];
+                }
+                if ($c ne $tokens->[0]) {
+                    if ($start_f) {
+                        push @$markers, [$start_f, $stop_f, '+'];
+                        $start_f = $stop_f = undef;
+                    }
+                    if ($start_r) {
+                        push @$markers, [$start_r, $stop_r, '-'];
+                        $start_r = $stop_r = undef;
+                    }
+                    $c = $tokens->[0];
+                    $markers = [];
+                    push @chrs, [$c, $markers];
+                }
+                if ($tokens->[3] eq '1') {
+                    if (!$start_f) {
+                        $start_f = $tokens->[1];
+                        $stop_f = $tokens->[2];
+                    }
+                    elsif ($tokens->[1] > $stop_f + $gap_max) {
+                        push @$markers, [$start_f, $stop_f, '+'];
+                        $start_f = $tokens->[1];
+                        $stop_f = $tokens->[2];
+                    }
+                    else {
+                        $stop_f = $tokens->[2];
+                    }
                 }
                 else {
-                    $num++;
-                    $tot_score += $tokens->[4];
-                    $stop = $tokens->[2];
+                    if (!$start_r) {
+                        $start_r = $tokens->[1];
+                        $stop_r = $tokens->[2];
+                    }
+                    elsif ($tokens->[1] > $stop_r + $gap_max) {
+                        push @$markers, [$start_r, $stop_r, '-'];
+                        $start_r = $tokens->[1];
+                        $stop_r = $tokens->[2];
+                    }
+                    else {
+                        $stop_r = $tokens->[2];
+                    }
                 }
             }
-            $self->_write_marker($c, undef, undef, $start, $stop, $tot_score / $num, $strand, undef, undef, $fh);
+            if ($start_f) {
+                push @$markers, [$start_f, $stop_f, '+'];
+            }
+            if ($start_r) {
+                push @$markers, [$start_r, $stop_r, '-'];
+            }
+            foreach (@chrs) {
+                $c = $_->[0];
+                my @m = sort { $a->[0] <=> $b->[0] } @{$_->[1]};
+                foreach my $l (@m) {
+                    my $start = $l->[0];
+                    my $stop = $l->[1];
+                    $self->_write_marker($c, undef, undef, $start, $stop, 0, $l->[2], undef, undef, $fh);
+                }
+            }
         }
         else {
-            $markers = $self->_markers;
+            my $markers = $self->_markers;
             my $s = (index(@{$markers}[0], ', ') == -1 ? 1 : 2);
             $chr = undef if $chr eq 'All';
             foreach (@{$markers}) {
@@ -437,8 +479,10 @@ sub _get_experiments {
 
     my @all_experiments;
     if ($eid) {
-        my $experiment = $db->resultset('Experiment')->find($eid);
-        push @all_experiments, $experiment if $experiment;
+        foreach (split(/,/, $eid)) {
+            my $experiment = $db->resultset('Experiment')->find($_);
+            push @all_experiments, $experiment if $experiment;
+        }
     }
     elsif ($nid) {
         my $notebook = $db->resultset('List')->find($nid);
@@ -598,7 +642,7 @@ sub get_experiment_data {
 }
 
 # pass in two psuedo objects. data points in the first one that overlap those in the second are returned in an array
-sub _intersection {
+sub _in {
     my $data1 = shift;
     my $data2 = shift;
     my $hits = [];
@@ -615,24 +659,50 @@ sub _intersection {
         last unless $start2;
         if ($stop1 >= $start2) {
             push @$hits, $data1->{line}->($data1);
-            ($start1, $stop1) = $data1->{next}->($data1);
         }
+        ($start1, $stop1) = $data1->{next}->($data1);
     }
     return $hits;
 }
 
-sub intersection {
+# pass in two psuedo objects. data points in the first one that don't overlap those in the second are returned in an array
+sub _not_in {
+    my $data1 = shift;
+    my $data2 = shift;
+    my $hits = [];
+    my ($start1, $stop1) = $data1->{next}->($data1);
+    my ($start2, $stop2) = $data2->{next}->($data2);
+    while ($start1 && $start2) {
+        while ($start1 && $stop1 < $start2) {
+            push @$hits, $data1->{line}->($data1);
+            ($start1, $stop1) = $data1->{next}->($data1);
+        }
+        last unless $start1;
+        while ($start2 && $stop2 < $start1) {
+            ($start2, $stop2) = $data2->{next}->($data2);
+        }
+        last unless $start2;
+        if ($stop1 < $start2) {
+            push @$hits, $data1->{line}->($data1);
+        }
+        ($start1, $stop1) = $data1->{next}->($data1);
+    }
+    return $hits;
+}
+
+sub overlaps {
     my $self = shift;
     my $eid = $self->stash('eid');
     my $eid2 = $self->stash('eid2');
     my $chr = $self->stash('chr');
+    my $not = $self->param('not');
 
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     my $experiment = $db->resultset('Experiment')->find($eid);
     my $experiment2 = $db->resultset('Experiment')->find($eid2);
     my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, 0);
     my $data2 = get_experiment_data($experiment2->id, $experiment2->data_type, $chr, 0);
-    my $hits = _intersection($data1, $data2);
+    my $hits = $not ? _not_in($data1, $data2) : _in($data1, $data2);
     if ($hits) {
         $self->render(json => $hits);
     }
@@ -666,7 +736,7 @@ sub _alignments {
     my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
     my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, $all);
     my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
-    return _intersection($data1, $data2);
+    return _in($data1, $data2);
 #    return find_overlapping($experiments, $type_names, $chr, $db, $all ? \&get_start_end_sam : \&get_start_end_fastbit, $all);
 }
 
@@ -697,7 +767,7 @@ sub _markers {
     my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
     my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, 0);
     my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
-    return _intersection($data1, $data2);
+    return _in($data1, $data2);
     # return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 }
 
@@ -729,7 +799,7 @@ sub _snps {
         my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
         my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, 0);
         my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
-        return _intersection($data1, $data2);
+        return _in($data1, $data2);
         # return find_overlapping($experiments, $type_names, $chr, $db, \&get_start_end_fastbit);
 	}
 	elsif ($self->param('snp_type')) {
@@ -776,8 +846,6 @@ sub features {
     my $start = $self->param('start');
     my $end   = $self->param('end');
     return unless (($eid or $nid or $gid) and defined $chr and defined $start and defined $end);
-
-    $gid = $self->param('gid') if $nid; # need genome id to filter experiments for notebooks
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);

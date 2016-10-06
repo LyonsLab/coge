@@ -132,6 +132,11 @@ __PACKAGE__->has_many(    # child lists
     { "foreign.parent_id" => "self.list_id" },
     { where               => { child_type => $node_types->{list} } }
 );
+__PACKAGE__->has_many(
+    "favorite_connectors" => "CoGeX::Result::FavoriteConnector",
+    { "foreign.child_id" => "self.list_id" },
+    { where => [ -and => [ child_type  => $node_types->{list} ] ] }
+);
 
 sub item_type {
     return $node_types->{list};   
@@ -371,8 +376,10 @@ See Also   :
 
 sub info { 
     my $self = shift;
+    my %opts = @_;
+
     my $info = $self->name;
-    $info = '&#x1f512; ' . $info if $self->restricted; #TODO move this into view code
+    $info = '&#x1f512; ' . $info if $self->restricted && !$opts{hideRestrictedSymbol}; #TODO move this into view code
     $info .= ': ' . $self->description if $self->description;
     #$info .= ' (' . $self->type->name . ')' if $self->type;
     $info .= ' (id' . $self->id . ')';

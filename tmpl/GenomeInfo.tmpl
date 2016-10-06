@@ -6,6 +6,8 @@
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <script type="text/javascript" src="js/pages/genome-info.js"></script>
+<script type="text/javascript" src="js/vendor/moment/moment.js"></script>
+<script type="text/javascript" src="js/vendor/moment-timezone-data/index.js"></script>
 
 <style>
 #chr_list_table {
@@ -95,6 +97,14 @@ $(document).ready(function() {
         $('#load_dialog').dialog('open');
         update_dialog("api/v1/jobs/" + job_id, pageObj.user, $("#load_dialog"), progress_formatter);
     }
+    
+    // Change creation timestamp to local time
+    var creation = $('#creation').html();
+    if (creation) {
+    	var localized = coge.utils.timeToLocal(creation);
+    	if (localized != creation)
+    		$('#creation').html(localized);
+    }
 });
 
 </script>
@@ -120,9 +130,11 @@ $(document).ready(function() {
 
 <TMPL_UNLESS NAME="EMBED">
 <div style="font-size:1em;">
+    <TMPL_IF NAME="LOGON">
 	<div class="inline link" title="Favorite this genome">
 		<img src=<TMPL_IF NAME="FAVORITED">"./picts/star-full.png"<TMPL_ELSE>"./picts/star-hollow.png"</TMPL_IF> style="width:1em;height:1em;" onclick="toggle_favorite(this);" />
 	</div>
+	</TMPL_IF>
 	<span class="bold text coge-green"><TMPL_VAR NAME="GENOME_TITLE"></span>&nbsp;&nbsp;&nbsp;
 	<TMPL_INCLUDE NAME="widgets/Certified.tmpl">
 </div>
@@ -380,7 +392,7 @@ Are you sure you want to move this genome into your trash?<p>
         <tmpl_if name="creator">
         <tr>
             <td class='title5' style='white-space:nowrap;'>Creation:</td>
-            <td class='data5'><TMPL_VAR NAME="creator"></td>
+            <td class='data5'><TMPL_VAR NAME="CREATOR"> <span id="creation"><TMPL_VAR NAME="CREATION_DATE"></span></td>
         </tr>
         </tmpl_if>
         <tmpl_if name="owner">
@@ -470,7 +482,7 @@ Are you sure you want to move this genome into your trash?<p>
 
 <TMPL_IF NAME='NOEXPERIMENTS'>
     <div id="experiments" class="padded">
-        <a href="#" onclick="get_experiments(window.event);">Click to display all Experiments</a>
+        <a onclick="get_experiments();" ondblclick="get_experiments();">Click to display all Experiments</a>
     </div>
 </TMPL_IF>
 

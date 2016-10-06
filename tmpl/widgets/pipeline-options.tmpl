@@ -158,7 +158,7 @@
                 <option value="coge">CoGe Basic</option>
                 <option value="samtools">SAMtools</option>
                 <option value="platypus">Platypus</option>
-                <!--<option value="gatk" disabled>GATK -- coming soon!</option>-->
+                <option value="gatk">GATK</option>
             </select>
         </div>
 
@@ -174,7 +174,7 @@
             <option value="coge" selected>CoGe Basic</option>
             <option value="samtools">SAMtools</option>
             <option value="platypus">Platypus</option>
-            <!--<option value="gatk" disabled>GATK -- coming soon!</option>-->
+            <option value="gatk">GATK</option>
         </select>
     </div>
 
@@ -240,19 +240,17 @@
 
 <script id="gatk-snp-template" type="text/template">
     <div id="gatk" class="form-field">
-        <label class="col-md-2">GATK:</label>
-        <!--
+        <label class="col-md-2">GATK (<a href="https://software.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php" target="_blank" class="small link">docs</a>):</label>
         <div class="form-group">
             <div class="form-entry">
-                <label>-g:</label>
-                <input type="number" value="5"/>
+                <label>-stand_call_conf:</label>
+                <input id="-stand_call_conf" type="number" value="30"/>
             </div>
             <div class="form-entry">
-                <label>-g:</label>
-                <input type="number" value="5"/>
+                <label>-stand_emit_conf:</label>
+                <input id="-stand_emit_conf" type="number" value="10"/>
             </div>
         </div>
-        -->
     </div>
 </script>
 
@@ -268,9 +266,20 @@
 	    <div id="expression-container" class="form-field hidden">
 	        <label class="col-md-2">Options:</label>
 	        <div class="form-group">
-	            <label>-q:</label>
-	            <input id="-q" type="number" title="base quality threshold (samtools depth)" value="20">
-	        </div>
+                <div class="form-entry" title="Only count reads with base quality greater than this value (samtools depth)">
+                    <label>-q:</label>
+                    <input id="-q" type="number" value="20">
+                </div>
+                <div class="form-entry" title="Use bias detection and correction algorithm which can significantly improve accuracy of transcript abundance estimates (cufflinks)">
+                    <label>-frag-bias-correct:</label>
+                    <input id="-frag-bias-correct" type="checkbox" checked>
+                </div>
+                <div class="form-entry" title="Use an initial estimation procedure to more accurately weight reads mapping to multiple locations in the genome (cufflinks)">
+                    <label>-multi-read-correct:</label>
+                    <input id="-multi-read-correct" type="checkbox" checked>
+                </div>
+            </div>
+
 	    </div>
 	</div>
 </script>

@@ -14,16 +14,16 @@
     </tmpl_if>
 <div id="data">
     <ul>
-        <li class="small"><a href="#results-1">Current Version</a></li>
-        <li class="small"><a href="#results-2">Test Version</a></li>
+        <li class="small"><a href="#results-1">SynMap2</a></li>
+        <li class="small"><a href="#results-2">Legacy Version</a></li>
     </ul>
 
-<div id="results-2">
+<div id="results-1">
     <div class="info padded" style="padding-bottom: 15px;">
     	<div id="main" style="max-height:100%;height:1500px;position:relative;"></div>
     </div>
 </div>
-<div id="results-1">
+<div id="results-2">
     <div class="ui-widget-content ui-corner-all padded" id="synmap_zoom_box"
     style="width: 350px; z-index: 1;">Zoom SynMap:
         <table class="small">
@@ -186,6 +186,50 @@
         </span>
     </li>
 </ul>
+<style>
+#instruct {
+    background-color: #FFFFFF;
+    border-radius: 6px;
+    border: 1px solid #119911;
+    left: 50%;
+    max-width: 600px;
+    padding: 20px;
+    position: fixed;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+#instruct ul {
+    padding-left: 20px;
+    list-style-type: disc;
+}
+</style>
+        <div id="instruct" class="ui-draggable hidden">
+        <span style="font-weight: bold">Welcome to SynMap2!</span><br>
+        SynMap2 is our updated version of the original SynMap. By taking advantage of modern web technology, we have made the dot-plots & histograms fully integrated & interactive, allowing for better data exploration. We hope you enjoy!<br><br>
+            <span style="font-weight: bold">Instructions</span><br>
+            <div style="padding: 6px">
+                Dotplot:<br>
+                <ul>
+                    <li>Zoom: Scroll wheel.</li>
+                    <li>Pan: In 'Controls', select 'Panning' then click & drag.</li>
+                    <li>Select Subset of Points: In 'Controls', select 'Brushing' then click & drag. Histogram will live update to represent values for only that subset.</li>
+                    <li>Select a point: Click on point. A link to GEvo will become available.</li>
+                </ul><br>
+                Histogram:<br>
+                <ul>
+                    <li>Change between Ks, Kn, or Kn/Ks: Use arrows around title. Histogram & dotplot will live update.</li>
+                    <li>Highlight subset range of values: Click & drag. Dots with values outside this range will be dimmed on the dotplot.</li>
+                    <li>Move subset selection: Click on grey area and move around histogram.</li>
+                    <li>Adjust color scheme to separate more/less peaks: Adjust 'Auto-scale peak threshold' under 'Color Options'</li>
+                </ul><br>
+                If you would prefer to revert to the orignal SynMap, select the "Legacy Version" tab at the top of the page. For more help, see the <a target="_blank" href="https://genomevolution.org/wiki/index.php/SynMap2">SynMap Wiki</a>
+            </div><br>
+            <input type="checkbox" /> <span class="small">Don't show this message again</span>
+            <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) $.cookie('instruct_synmap','true', {expires:10000});$(this).parent('div').hide();" class="r ui-button ui-corner-all">OK, got it!</span>
+        </div>
+    </div>
+
 <script src="js/vendor/synteny-vis/build/synteny-dotplot-builder.js"></script>
 
 <script>
@@ -193,22 +237,17 @@ $(document).ready(function(){
     if ('<tmpl_var name=frac_bias>') {
         plotFractBias("fractbias", "<tmpl_var name=frac_bias>", "<tmpl_var name=target_genome>")
     }
-
-    var plotted;
-    $("#data").tabs({
-    	select: function(event, ui) {
-            if (ui.index === 1 && !plotted) {
-		    	makeSyntenyDotPlot({
-							element_id: 'main',
-							data_url: '<tmpl_var name=file_url>',
-							genome_x: { name: '<tmpl_var name=xorg_name>', id: '<tmpl_var name=dsgid1>', chromosomes: <tmpl_var name=chromosomes1>}, 
-							genome_y: { name: '<tmpl_var name=yorg_name>', id: '<tmpl_var name=dsgid2>', chromosomes: <tmpl_var name=chromosomes2>}
-						});
-				plotted = true;
-			}
-        }
-    });
-    $("#data").tabs('select',0);
+    $("#data").tabs();
 });
+function show_results() {
+    makeSyntenyDotPlot({
+                element_id: 'main',
+                data_url: '<tmpl_var name=file_url>',
+                genome_x: { name: '<tmpl_var name=xorg_name>', id: '<tmpl_var name=dsgid1>', chromosomes: <tmpl_var name=chromosomes1>}, 
+                genome_y: { name: '<tmpl_var name=yorg_name>', id: '<tmpl_var name=dsgid2>', chromosomes: <tmpl_var name=chromosomes2>}
+            });
+    if (!$.cookie("instruct_synmap")) { $("#instruct").removeClass('hidden') };
+
+}
 </script>
 </tmpl_if>

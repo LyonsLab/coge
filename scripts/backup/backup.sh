@@ -51,19 +51,19 @@ do
        echo deleting local $d 
        rm -rf $d
     fi
-    count=$[count + 1]
+    ((count++))
 done
 
 echo `date` "Deleting old REMOTE database backups (local & remote)"
 count=1
 for d in `$ICMD/ils backup | grep 'mysql_' | sed 's/.*\(mysql_.*\)/\1/'`
 do
-   if [ $count -gt $MAX_REMOTE_BACKUPS ];
-   then
-      echo deleting IRODS backup/$d
-      $ICMD/irm -r backup/$d
-   fi
-   count=$[count + 1]
+    if [ $count -gt $MAX_REMOTE_BACKUPS ];
+    then
+        echo deleting IRODS backup/$d
+        $ICMD/irm -r backup/$d
+    fi
+    ((count++))
 done
 
 #

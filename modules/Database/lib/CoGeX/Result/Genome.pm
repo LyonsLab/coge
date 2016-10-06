@@ -162,6 +162,11 @@ __PACKAGE__->has_many(
     "experiments" => "CoGeX::Result::Experiment",
     "genome_id"
 );
+__PACKAGE__->has_many(
+    "favorite_connectors" => "CoGeX::Result::FavoriteConnector",
+    { "foreign.child_id" => "self.genome_id" },
+    { where => [ -and => [ child_type  => $node_types->{genome} ] ] }
+);
 
 __PACKAGE__->mk_accessors('_chromosomes');
 

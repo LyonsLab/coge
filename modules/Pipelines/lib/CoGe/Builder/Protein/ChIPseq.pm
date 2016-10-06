@@ -10,7 +10,6 @@ use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
 use CoGe::Accessory::Utils qw(to_filename to_filename_without_extension to_filename_base);
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Accessory::Workflow;
 use CoGe::Core::Storage qw(get_workflow_paths);
 use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::CommonTasks;
@@ -44,7 +43,7 @@ sub build {
     }
 
     # Setup paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
+    my ($staging_dir) = get_workflow_paths($user->name, $wid);
 
     # Set metadata for the pipeline being used
     my $annotations = generate_additional_metadata($chipseq_params);
@@ -202,7 +201,8 @@ sub create_homer_makeTagDirectory_job {
             $fasta
         ],
         outputs => [
-            [catfile($staging_dir, $tag_name), 1]
+            [catfile($staging_dir, $tag_name), 1],
+            catfile($staging_dir, $tag_name, 'tagInfo.txt')
         ],
         description => "Creating tag directory '$tag_name' using Homer..."
     };
@@ -247,7 +247,7 @@ sub create_homer_findPeaks_job {
             [$input_dir, 1]
         ],
         outputs => [
-            catfile($staging_dir, $output_file),
+            catfile($staging_dir, $output_file)
         ],
         description => "Performing ChIP-seq analysis on $replicate_tag using Homer..."
     };

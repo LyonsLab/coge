@@ -20,8 +20,10 @@ Disallow: /diags_perl/
 Disallow: /scripts/
 Disallow: /data/
 Disallow: /bin/
-Disallow: /CodeOn.pl
-Disallow: /GEvo.pl
+Disallow: /coge/CodeOn.pl
+Disallow: /CoGe/CodeOn.pl
+Disallow: /coge/GEvo.pl
+Disallow: /CoGe/GEvo.pl
 Crawl-delay: 10
 
 User-Agent: *

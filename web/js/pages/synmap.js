@@ -485,6 +485,7 @@ var coge = window.coge = (function(namespace) {
         },
 
         submit_assembly: function(e, input, gid1, gid2,flip) {
+        	var self = this;
             e.preventDefault();
 
             var promise = $.ajax({
@@ -495,7 +496,7 @@ var coge = window.coge = (function(namespace) {
                     input: input,
                     gid1: gid1,
                     gid2: gid2,
-    		flip: flip
+                    flip: flip
                 }
             });
 
@@ -507,20 +508,22 @@ var coge = window.coge = (function(namespace) {
                 }
             });
 
-            promise.then(wait_for_assembly)
-                   .then(download_file, report_error);
+            promise.then(function(response) { return self.wait_for_assembly.call(self, response); })
+                   .then(function(url) { self.download_file.call(self, url); }, 
+                		 self.report_error);
         },
 
-        check_status: function(id) {
+        get_job_status: function(id) {
             return $.getJSON("jex/status/" + id);
         },
 
         wait_for_assembly: function(response) {
             var deferred = $.Deferred();
 
-            if (response.success) {
+            if (response && response.success) {
                 this.wait_for_job(response.id, deferred, response.output);
             } else {
+            	console.warn('synmap:wait_for_assembly: error response');
                 deferred.reject(undefined);
             }
 
@@ -528,9 +531,10 @@ var coge = window.coge = (function(namespace) {
         },
 
         wait_for_job: function(id, promise, args) {
-            check_status(id).then(function(response) {
+            this.get_job_status(id).then(function(response) {
                 switch(response.status) {
                     case "Completed":
+                    	console.log(args);
                         promise.resolve(args);
                         break;
                     case "Failed":
@@ -547,12 +551,17 @@ var coge = window.coge = (function(namespace) {
         },
 
         report_error: function() {
-            $("#dialog").html("The pseudo assembly could not be generated");
+            $("#dialog").html("<div class='padded alert'>Error: the pseudo-assembly could not be generated</div>").dialog("open");
         },
 
         download_file: function(url) {
-            $("#dialog").dialog("close");
-            window.open(url, "_self");
+        	console.log('synmap:download_file: ' + url);
+            if (url) {
+            	$("#dialog").dialog("close");
+            	window.open(url, "_self");
+            }
+            else
+            	this.report_error();
         },
 
         get_results: function(on_error) {
@@ -571,7 +580,7 @@ var coge = window.coge = (function(namespace) {
                     overlay.hide();
                     if (!data.error) {
                         $("#synmap_zoom_box").draggable();
-                        $('#results').html(data.html).slideDown();
+                        $('#results').html(data.html).slideDown(show_results);
                     } else if (on_error)
                         on_error();
                 },
