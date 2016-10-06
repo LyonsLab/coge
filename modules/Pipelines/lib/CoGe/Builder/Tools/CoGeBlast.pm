@@ -247,6 +247,11 @@ sub build {
         zthreshold   => $self->params->{zthreshold},
         zwordsize    => $self->params->{zwordsize}
     );
+    my %opts = %{$self->params};
+    $opts{'genomes'} = join(',', @gids);
+    $opts{'gapcost'} = $gap_costs->[0] . ',' . $gap_costs->[1];
+    $opts{'match_score'} = $match_score->[0] . ',' . $match_score->[1];
+	$self->{site_url} = get_tiny_url( %opts );
     return 1;
 }
 
