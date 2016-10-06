@@ -95,7 +95,7 @@ $(function() {
 			displayType: 'grid',
 			dataTypes: ['analyses'],
 			noFilter: true,
-			defaultSort: [ 1, 'asc' ],
+			defaultSort: [ 2, 'desc' ],
 			flagsColumn: false
 		},
 		loads: {
@@ -103,7 +103,7 @@ $(function() {
 			displayType: 'grid',
 			dataTypes: ['loads'],
 			noFilter: true,
-			defaultSort: [ 1, 'asc' ],
+			defaultSort: [ 2, 'desc' ],
 			flagsColumn: false
 		},
 		graph: {
@@ -229,7 +229,7 @@ function poll(sync) {
 	contentPanel
 		.refresh()
 		.done(function() { 
-			contentPanel.render();
+			contentPanel.render(true);
 			schedule_poll(); // schedule next poll
 		});
 	
@@ -410,7 +410,7 @@ $.extend(ContentPanel.prototype, {
     	return this;
     },
     
-    render: function() {
+    render: function(refresh) {
     	console.log('ContentPanel.render ' + this.selectedView);
     	if (!this.selectedView)
     		return;
@@ -431,7 +431,6 @@ $.extend(ContentPanel.prototype, {
         	this.grid.dataTable.api().column(0).visible(true);
         
     	// Render contents
-    	var cachedData = this.getData(view.dataTypes);
     	if (isGrid) {
     		// Save selection and scroll position
     		var items = this.grid.getSelectedItems();
@@ -440,9 +439,9 @@ $.extend(ContentPanel.prototype, {
     		// Swap in grid and update contents
     		this.element.children('.html').hide();
     		this.element.children('.grid').show();
-    		this.grid.update(cachedData);
-    		if (view.defaultSort)
-    			this.grid.dataTable.api().order(view.defaultSort);
+    		this.grid.update(this.getData(view.dataTypes));
+    		if (!refresh)
+    			this.grid.dataTable.api().order(view.defaultSort ? view.defaultSort : [1, 'asc']);
     		this.grid.redraw(); // needed to display column widths properly
     		
     		// Restore selection and scroll position
@@ -451,9 +450,8 @@ $.extend(ContentPanel.prototype, {
     		this.element.find(".dataTables_scrollBody").scrollTop(scrollPos);
     	}
     	else {
-    		var cachedData = this.getData(this.selectedView);
     		this.element.children('.grid').hide();
-    		this.element.children('.html').html(cachedData).show();
+    		this.element.children('.html').html(this.getData(this.selectedView)).show();
     	}
     	
         // Update title with row number
@@ -632,7 +630,7 @@ $.extend(DataGrid.prototype, {
 	            },			          
 	            { 	title: "Name", 
 	            	targets: 1,
-	            	type: "string",
+	            	type: "html",
 	            	data: null, // use full data object
 	            	render: function(data, type, row, meta) {
 	            		return data.getDescription();
@@ -642,13 +640,13 @@ $.extend(DataGrid.prototype, {
 	            	targets: 2, 
 	            	type: "relative-date", // this is our own custom type
 	            	data: null, // use full data object
+					orderSequence: [ 'desc', 'asc' ],
 	            	width: "100px",
 	            	render: function(data, type, row, meta) {
 	            		return data.getDate();
 	            	}
 	            }
-			],
-			order: [[1, 'asc']] // set default sort to "Name" column in ascending order
+			]
 		});
 		
 		var dataTableBody = dataTable.children('tbody');
@@ -732,20 +730,25 @@ $.extend(DataGrid.prototype, {
 		);
 		
 		// Add custom date sort functions
-		$.fn.dataTable.ext.oSort['relative-date-pre'] = function(s) {
-			var matches = s.match(/^\<\!\-\-(\d+)\-\-\>/); // the time difference is hidden in an html comment
-			if (!matches || !matches[1])
-				return 999999; // sort last
-			var diff = matches[1];
-		    return parseInt(diff);
-		};
 		$.fn.dataTable.ext.oSort['relative-date-asc'] = function(x,y) {
+			x = this.time_diff(x);
+			y = this.time_diff(y);
 		    return ((x < y) ? 1 : ((x > y) ? -1 : 0));
-		};
+		}.bind(this);
 		$.fn.dataTable.ext.oSort['relative-date-desc'] = function(x,y) {
+			x = this.time_diff(x);
+			y = this.time_diff(y);
 			return ((x < y) ? -1 : ((x > y) ? 1 : 0));
-		};
+		}.bind(this);
     },
+
+	time_diff: function(s) {
+		var matches = s.match(/^\<\!\-\-(\d+)\-\-\>/); // the time difference is hidden in an html comment
+		if (!matches || !matches[1])
+			return 999999; // sort last
+		var diff = matches[1];
+		return parseInt(diff);
+	},
     
     reset: function() {
     	// TODO
