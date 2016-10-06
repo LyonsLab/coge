@@ -321,6 +321,7 @@ sub send_email {
     };
 }
 
+<<<<<<< HEAD
 sub curl_get {
     my ($self, %params) = @_;
     my $url = $params{url};
@@ -338,6 +339,8 @@ sub curl_get {
     };
 }
 
+=======
+>>>>>>> bbd72e37d80c158df7f3b0bd58d3e25e8070794f
 sub add_result {
     my ($self, %params) = @_;
     my $username = $self->user->name;
