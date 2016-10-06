@@ -28,6 +28,8 @@ use vars qw(
 $PAGE_TITLE = "ExperimentView";
 $ERROR = encode_json( { error => 1 } );
 
+use constant MAX_TITLE_LENGTH => 150;
+
 $FORM = new CGI;
 ( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
@@ -630,7 +632,10 @@ sub gen_body {
     if ($exp->data_type == $DATA_TYPE_POLY && is_popgen_finished($eid)) {
         $popgenUrl = "PopGen.pl?eid=$eid";
     }
-    
+
+    my $title = $exp->info;
+    $title = substr($title, 0, MAX_TITLE_LENGTH) . '...' if (length($title) > MAX_TITLE_LENGTH);
+
     my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
@@ -640,7 +645,7 @@ sub gen_body {
         PAGE_NAME         => $PAGE_TITLE . '.pl',
         USER_NAME         => $USER->name,
         EXPERIMENT_ID     => $eid,
-        EXPERIMENT_TITLE  => $exp->info,
+        EXPERIMENT_TITLE  => $title,
         FAVORITED         => int($favorites->is_favorite($exp)),
         DEFAULT_TYPE      => 'note',
         ITEMS             => commify($exp->row_count),

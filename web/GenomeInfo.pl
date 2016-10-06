@@ -36,6 +36,8 @@ $PAGE_TITLE = 'GenomeInfo';
 
 $node_types = CoGeX::node_types();
 
+use constant MAX_TITLE_LENGTH => 150;
+
 $FORM = new CGI;
 ( $DB, $USER, $config, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
@@ -2195,6 +2197,9 @@ sub generate_body {
     }
 
     $template->param( OID => $genome->organism->id );
+
+    my $title = $genome->info;
+    $title = substr($title, 0, MAX_TITLE_LENGTH) . '...' if (length($title) > MAX_TITLE_LENGTH);
     
     my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
@@ -2203,7 +2208,7 @@ sub generate_body {
         LOAD_ID         => $LOAD_ID,
         JOB_ID          => $JOB_ID,
         GID             => $gid,
-        GENOME_TITLE    => $genome->info,
+        GENOME_TITLE    => $title,
         GENOME_INFO     => get_genome_info( genome => $genome ) || undef,
         GENOME_DATA     => get_genome_info_details( dsgid => $genome->id) || undef,
         LOGON           => ( $USER->user_name ne "public" ),
