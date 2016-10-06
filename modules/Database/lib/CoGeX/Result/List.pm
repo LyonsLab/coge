@@ -493,6 +493,12 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
     $anno_obj->String_end("\n");
     my $anno_type =
       new CoGe::Accessory::Annotation(
+        Type => "<tr><td nowrap='true'><span class='title5'>" . "ID" . "</span>" );
+    $anno_type->Type_delimit(": <td class='data5'>");
+    $anno_type->add_Annot( $self->id . '</td>' );
+    $anno_obj->add_Annot($anno_type);
+    my $anno_type =
+      new CoGe::Accessory::Annotation(
         Type => "<tr><td nowrap='true'><span class='title5'>" . "Name"
           . "</span>" );
     $anno_type->Type_delimit(": <td class='data5'>");
