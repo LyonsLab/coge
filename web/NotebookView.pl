@@ -34,6 +34,7 @@ $TEMPDIR = $P->{TEMPDIR} . "$PAGE_TITLE/";
 $TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
 
 $MAX_SEARCH_RESULTS = 1000;
+use constant MAX_TITLE_LENGTH => 150;
 
 $node_types = $DB->node_types();
 
@@ -88,14 +89,10 @@ sub gen_html {
 
     $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
-        $template =
-          HTML::Template->new(
-            filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
     }
     else {
-        $template =
-          HTML::Template->new(
-            filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param(
             USER       => $USER->display_name || '',
             PAGE_TITLE => $PAGE_TITLE,
@@ -123,7 +120,10 @@ sub gen_body {
     my ($list) = $DB->resultset('List')->find($lid);
     return "<br>Notebook id$lid does not exist.<br>" unless ($list);
     return "Access denied\n" unless $USER->has_access_to_list($list);
-    
+
+    my $title = $list->info;
+    $title = substr($title, 0, MAX_TITLE_LENGTH) . '...' if (length($title) > MAX_TITLE_LENGTH);
+
     my $favorites = CoGe::Core::Favorites->new(user => $USER);
 
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
@@ -135,7 +135,7 @@ sub gen_body {
         DEFAULT_TYPE => 'note',
         API_BASE_URL => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
         USER         => $USER->user_name,
-        NOTEBOOK_TITLE => $list->info,
+        NOTEBOOK_TITLE => $title,
         FAVORITED      => int($favorites->is_favorite($list)),
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
@@ -151,6 +151,7 @@ sub get_list_info {
     my %opts = @_;
     my $lid  = $opts{lid};
     return unless $lid;
+
     my ($list) = $DB->resultset('List')->find($lid);
     return unless $USER->has_access_to_list($list);
 
