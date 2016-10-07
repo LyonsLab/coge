@@ -8,6 +8,7 @@ use Switch;
 use File::Spec::Functions qw(catfile);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
+use CoGe::Accessory::Web qw(url_for);
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
 use CoGe::Core::Experiment qw(detect_data_type);
 use CoGe::Core::Metadata qw(to_annotations);
@@ -32,6 +33,11 @@ sub get_name {
     $info .= " (v" . $metadata->{version} . ")";
     $info .= '"';
     return "Load Experiment " . $info;
+}
+
+sub get_site_url {
+    my $self = shift;
+    return url_for('LoadExperiment.pl', wid => $self->workflow->id);
 }
 
 sub build {

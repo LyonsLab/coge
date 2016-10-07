@@ -24,6 +24,28 @@ BEGIN {
 	);
 }
 
+my ($result_path, $result_path_html);
+
+sub pre_build { # override superclass method for reusable workflow ID, custom site_url, and custom workflow paths
+	my ($self, %params) = @_;
+
+	# Initialize workflow -- NOTE: init => 0 means that a previous identical workflow will be reused when submitted
+    $self->workflow( $params{jex}->create_workflow(name => $self->get_name, init => 0 ) );
+    return unless $self->workflow;
+
+	# Setup results paths
+	$result_path = get_result_path($self->conf->{DIAGSDIR}, $self->params->{genome_id1}, $self->params->{genome_id2});
+	$result_path_html = catdir($result_path, 'html');
+
+	# Set site_url attribute
+	my %opts = ( %{ defaults() }, %{ $self->params } );
+	$self->site_url( $opts{tinylink} || get_query_link( $self->conf, $self->db, %opts ) );
+
+	# Set workflow log file path
+	my $log_path = get_log_file_path($result_path, $self->site_url);
+	$self->workflow->logfile($log_path);
+}
+
 sub test {
 	my $value = shift;
 	return ($value && ($value =~ /true/i || $value eq '1')) ? 1 : 0;
@@ -38,20 +60,12 @@ sub add_jobs {
 	my $genome_id1 = $opts{genome_id1};
 	my $genome_id2 = $opts{genome_id2};
 
-    # Setup tiny link
+	# Setup tiny link
 	my $tiny_link = $opts{tinylink} || get_query_link( $config, $db, @_ );
 	unless ($tiny_link) {
 	    print STDERR "CoGe::Builder::Tools::SynMap: ERROR, null tiny link!\n";
 	    $tiny_link = 'tiny_link';
 	}
-	
-	# Setup results paths
-	my $result_path = get_result_path($config->{DIAGSDIR}, $genome_id1, $genome_id2);
-	my $result_path_html = catdir($result_path, 'html');
-	
-	# Set workflow log file path
-	my $log_path = get_log_file_path($result_path, $tiny_link);
-	$workflow->logfile($log_path);
 
     # Setup tool paths/commands
 	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
@@ -1293,12 +1307,11 @@ sub build {
 				%opts
 			);
 			if ($resp) { # an error occurred
-			   return 0;    
+			   return 0;
 			}
 		}
 	}
-	my %opts = ( %{ defaults() }, %{ $self->params } );
-	$self->{site_url} = $opts{tinylink} || get_query_link( $self->conf, $self->db, %opts );
+
 	return 1;
 }
 

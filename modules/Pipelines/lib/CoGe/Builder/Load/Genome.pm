@@ -9,6 +9,7 @@ use File::Basename qw(basename);
 use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
+use CoGe::Accessory::Web qw(url_for);
 use CoGe::Core::Storage qw(get_upload_path);
 use CoGe::Builder::CommonTasks;
 use CoGe::Builder::Common::DataRetrieval;
@@ -22,6 +23,11 @@ sub get_name {
     $info .= ": " . $metadata->{description} if $metadata->{description};
     $info .= " (v" . $metadata->{version} . ")";
     return "Load Genome \"$info\"";
+}
+
+sub get_site_url {
+    my $self = shift;
+    return url_for('LoadGenome.pl', wid => $self->workflow->id);
 }
 
 sub build {

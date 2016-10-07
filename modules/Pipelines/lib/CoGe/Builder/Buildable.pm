@@ -11,15 +11,13 @@ use Data::Dumper;
 
 use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
 use CoGe::Accessory::Web qw(get_command_path);
-use CoGe::Core::Storage qw(get_workflow_results_file);
+use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
 
 requires qw(build);
 
+# Public attributes
 has 'workflow'      => ( is => 'rw', isa  => 'CoGe::JEX::Workflow' );
-has 'staging_dir'   => ( is => 'rw' );
-has 'result_dir'    => ( is => 'rw' );
 has 'params'        => ( is => 'ro', required => 1 );
-has 'requester'     => ( is => 'ro' );
 has 'site_url'      => ( is => 'rw' );
 has 'page'          => ( is => 'rw' );
 has 'db'            => ( is => 'ro', required => 1, isa  => 'CoGeX' );
@@ -29,18 +27,49 @@ has 'outputs'       => ( is => 'rw', default => sub { [] } );
 has 'assets'        => ( is => 'rw', default => sub { [] } );
 has 'errors'        => ( is => 'rw', default => sub { [] } );
 
+# Private attributes
+has 'staging_dir'   => ( is => 'rw');#, traits => ['Private'] );
+has 'result_dir'    => ( is => 'rw');#, traits => ['Private'] );
+
 my $previous_outputs = [];
 
-sub pre_build {
-    my $self = shift;
-    make_path($self->staging_dir) if $self->staging_dir;
-    make_path($self->result_dir) if $self->result_dir;
+sub get_site_url { # override this or use default in pre_build
+    return '';
+}
+
+sub pre_build { # Default method, SynMap & SynMap3D override this
+    my ($self, %params) = @_;
+
+    # Initialize workflow -- NOTE: init => 1 means that a new workflow will be created right away
+    $self->workflow( $params{jex}->create_workflow(name => $self->get_name, init => 1 ) );
+    return unless ($self->workflow && $self->workflow->id);
+
+    # Setup workflow paths
+    my ($staging_dir, $result_dir) = get_workflow_paths(($self->user ? $self->user->name : 'public'), $self->workflow->id);
+    make_path($staging_dir);
+    make_path($result_dir);
+    $self->staging_dir($staging_dir);
+    $self->result_dir($result_dir);
+    $self->workflow->logfile( catfile($result_dir, "debug.log") );
+
+    # Set "page" and "site_url" attributes
+    my $site_url = $self->get_site_url();
+    if ($params{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
+        my $page = $params{requester}->{page}; # page name used for logging
+        my $url  = $params{requester}->{url};  # used to set site_url with special query params
+        $self->page($page) if $page;
+        unless ($site_url) {
+            $url = $page unless $url;
+            $site_url = url_for($url, wid => $self->workflow->id);
+        }
+    }
+    $self->site_url($site_url) if $site_url;
 }
 
 sub post_build {
     my $self = shift;
     
-    # Send notification email
+    # Add task to send notification email
     if ( $self->params->{email} ) {
         $self->add_task_chain_all(
             $self->send_email(
@@ -54,7 +83,7 @@ sub post_build {
         );
     }
 
-    # Send request to callback url
+    # Add task to send notification to callback url
     if ( $self->params->{callback_url} ) {
         $self->add_task_chain_all(
             $self->curl_get( url => $self->params->{callback_url} )
@@ -156,13 +185,14 @@ sub get_assets {
 
 # Task Library (replaces CommonTasks.pm) --------------------------------------
 
+# Generate GFF file of genome annotations
 sub create_gff {
     my ($self, %params) = @_;
     
     # Build argument list
     my $args = [
         ['-gid',     $params{gid},                0],
-        ['-f',       $params{output_file},        0],
+        ['-f',       $params{output_file},        1],
         ['-config',  $self->conf->{_CONFIG_PATH}, 0],
         ['-cds',     $params{cds} // 0,           0],
         ['-annos',   $params{annos} // 0,         0],
@@ -178,6 +208,36 @@ sub create_gff {
         args        => $args,
         outputs     => [ $params{output_file} ],
         description => "Generating GFF..."
+    };
+}
+
+# Generate BED file of genome annotations
+sub create_bed {
+    my ($self, %params) = @_;
+
+    return {
+        cmd  => catfile($self->conf->{SCRIPTDIR}, "coge2bed.pl"), #FIXME script name makes no sense
+        args => [
+            ['-gid',    $params{gid},                0],
+            ['-f',      $params{output_file},        1],
+            ['-config', $self->conf->{_CONFIG_PATH}, 0]
+        ],
+        outputs => [ $params{output_file} ]
+    };
+}
+
+# Generate TBL file of genome annotations
+sub create_tbl {
+    my ($self, %params) = @_;
+
+    return {
+        cmd     => catfile($self->conf->{SCRIPTDIR}, "export_NCBI_TBL.pl"),
+        args    => [
+            ['-gid',    $params{gid},                0],
+            ['-f',      $params{output_file},        1],
+            ["-config", $self->conf->{_CONFIG_PATH}, 0]
+        ],
+        outputs => [ $params{output_file} ]
     };
 }
 
@@ -212,7 +272,7 @@ sub create_irods_imeta {
     
     return {
         cmd => $cmd,
-        description => "Generating IRODS metadata for " . $params{dest_file},
+        description => "Setting IRODS metadata for " . $params{dest_file},
         args => [],
         inputs => [],
         outputs => [ $done_file ]
@@ -321,7 +381,6 @@ sub send_email {
     };
 }
 
-<<<<<<< HEAD
 sub curl_get {
     my ($self, %params) = @_;
     my $url = $params{url};
@@ -339,8 +398,6 @@ sub curl_get {
     };
 }
 
-=======
->>>>>>> bbd72e37d80c158df7f3b0bd58d3e25e8070794f
 sub add_result {
     my ($self, %params) = @_;
     my $username = $self->user->name;
