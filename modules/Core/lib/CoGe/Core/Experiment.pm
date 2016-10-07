@@ -352,8 +352,6 @@ sub get_irods_metadata {
         $md{$IRODS_METADATA_PREFIX.'experiment-'.$group} = $a->info;
     }
 
-    print STDERR Dumper \%md, "\n";
-
     return \%md;
 }
 
