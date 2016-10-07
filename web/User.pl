@@ -174,7 +174,7 @@ sub get_item_info {
         
         my $creation = ($group->creator_user_id ? $group->creator->display_name  . ' ' : '') . ($group->date ne '0000-00-00 00:00:00' ? $group->date : '');
 
-        $html .=
+        $html =
             '<b>Group id' . $group->id . '</b><br>'
           . '<b>Name:</b> ' . $group->name . '<br>'
           . '<b>Description:</b> ' . $group->description . '<br>'
@@ -198,20 +198,14 @@ sub get_item_info {
 
         my $group_str = join( '<br>',
             sort map { $_->name } $USER->groups_with_access($notebook) );
-        $html .=
-            '<b>Notebook id' . $notebook->id . '</b><br>'
-          . '<b>Name:</b> ' . $notebook->name . '<br>'
-          . '<b>Description:</b> ' . $notebook->description . '<br>'
-          . '<b>Contents:</b>'
-          . '<div style="padding-left:20px;">'
-          . $notebook->contents_summary_html
-          . '</div>'
-          . '<b>Groups with access:</b><br>'
-          . '<div style="padding-left:20px;">'
-          . ( $group_str ? $group_str : 'None' ) . '<br>'
-          . '</div>'
-          . '<b>Users with access:</b><br>'
-          . '<div style="padding-left:20px;">';
+        $html = '<b>Notebook id' . $notebook->id . '</b><br>';
+        $html .= '<b>Name:</b> ' . $notebook->name . '<br>';
+        $html .= '<b>Description:</b> ' . $notebook->description . '<br>' if $notebook->description;
+        $html .= '<b>Contents:</b><div style="padding-left:20px;">';
+        $html .= $notebook->contents_summary_html if $notebook->contents_summary_html;
+        $html .= '</div><b>Groups with access:</b><br><div style="padding-left:20px;">';
+        $html .= ( $group_str ? $group_str : 'None' ) . '<br>';
+        $html .= '</div><b>Users with access:</b><br><div style="padding-left:20px;">';
         if ( $notebook->restricted ) {
             $html .= join( '<br>',
                 sort map { $_->display_name . ' (' . $_->user_name . ')' }
@@ -237,7 +231,7 @@ sub get_item_info {
 
         my $date = ( $genome->datasets ? $genome->datasets()->[0]->date : 'unknown' );
         my $group_str = join( '<br>', sort map { $_->name } $USER->groups_with_access($genome) );
-        $html .=
+        $html =
             '<b>Genome id' . $genome->id . '</b><br>'
           . '<b>Organism: </b>' . $genome->organism->name . '<br>'
           . '<b>Chromosomes: </b>' . commify($genome->chromosome_count) . '<br>'
@@ -284,7 +278,7 @@ sub get_item_info {
         return unless $USER->has_access_to_experiment($experiment);
 
         my $group_str = join( '<br>', sort map { $_->name } $USER->groups_with_access($experiment) );
-        $html .=
+        $html =
             '<b>Experiment id' . $experiment->id . '</b><br>'
           . '<b>Name:</b> ' . $experiment->name . '<br>'
           . '<b>Description:</b> ' . $experiment->description . '<br>'
@@ -325,7 +319,7 @@ sub get_item_info {
         my $log = $DB->resultset('Log')->find($item_id);
         return unless $log;
         
-        $html .=
+        $html =
             '<b>Workflow id' . $log->parent_id . '</b><br>'
           . '<b>Type:</b> ' . $log->page . '<br>'
           . '<b>Description:</b> ' . $log->description . '<br>'

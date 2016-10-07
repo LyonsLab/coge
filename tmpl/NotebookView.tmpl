@@ -65,7 +65,7 @@
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
 
-<div id="list_contents_edit_box" class="dialog_box" title="Add Items to Notebook" style="display:none;"></div>
+<div id="list_contents_edit_box" class="dialog_box" title="Add Items to Notebook" style="display:none;height:auto !important;"></div>
 
 <!--
 <br><br>
@@ -165,7 +165,7 @@ $(document).ready(function() {
 });
 </SCRIPT>
 
-<div id='tabs' style='margin-top: 0.5em'>
+<div id="tabs" style="height: calc(100% - 20px); margin-top: 0.5em;">
 <ul>
  <li class="small"><a href="#tab-1">My Stuff</a></li>
  <li class="small"><a href="#tab-2">Genomes</a></li>
@@ -174,96 +174,56 @@ $(document).ready(function() {
  <!--<li class="small"><a href="#tab-5">Notebooks</a></li>-->
 </ul>
 
-<div id="tab-1">
-	 <table class="small">
-	  <tr align='left'>
-	   <td>
-	    Search:
-	    <input type="textbox" size="53" id="edit_mystuff_search" onkeyup="wait_to_search(search_mystuff, this.value);">
-	    <span class='ui-button ui-corner-all' onclick="search_mystuff();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-	    <img id="wait_mystuff" src="picts/ajax-loader.gif" style="opacity: 0;" />
-	   </td>
-	  </tr>
-	  <tr>
-	   <td>
-	    <select multiple id="select_mystuff_items" size="10" style="min-width:500; max-width: 500px;">
-	    </select>
-	   </td>
-	  </tr>
-	  <tr>
-	   <td><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
-	  </tr>
-	 </table>
-	 <span href="javascript:void(0)" onClick="add_selected_items('select_mystuff_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	<div id="tab-1" style="display: flex; flex-direction: column; height: calc(100% - 60px);">
+		<div>
+		    Search:
+		    <input type="textbox" size="53" id="edit_mystuff_search" onkeyup="wait_to_search(search_mystuff, this.value);">
+	    	<span class='ui-button ui-corner-all' onclick="search_mystuff();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+	    	<img id="wait_mystuff" src="picts/ajax-loader.gif" style="opacity: 0;" />
+	   	</div>
+	    <select multiple id="select_mystuff_items" size="10" style="flex-grow: 1; min-width:500; max-width: 100%; overflow-x: auto;"></select>
+	   	<div style="padding-top:10px;"><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span>
+	     	<span onClick="add_selected_items('select_mystuff_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	   	</div>
 	</div>
 	
-	<div id="tab-2">
-	 <table class="small">
-	  <tr align='left'>
-	   <td>
-	    Search:
-	    <input type="textbox" size="53" id="edit_genome_search" onkeyup="wait_to_search(search_genomes, this.value);">
-	    <span class='ui-button ui-corner-all' onclick="search_genomes();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-	    <img id="wait_genome" src="picts/ajax-loader.gif" style="opacity: 0;" />
-	   </td>
-	  </tr>
-	  <tr>
-	   <td>
-	    <select multiple id="select_genome_items" size="10" style="min-width:500; max-width: 500px;">
-	    </select>
-	   </td>
-	  </tr>
-	  <tr>
-	   <td><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
-	  </tr>
-	 </table>
-	 <span href="javascript:void(0)" onClick="add_selected_items('select_genome_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	<div id="tab-2" style="display: flex; flex-direction: column; height: calc(100% - 60px);">
+		<div>
+	    	Search:
+	    	<input type="textbox" size="53" id="edit_genome_search" onkeyup="wait_to_search(search_genomes, this.value);">
+	    	<span class='ui-button ui-corner-all' onclick="search_genomes();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+	    	<img id="wait_genome" src="picts/ajax-loader.gif" style="opacity: 0;" />
+		</div>
+		<select multiple id="select_genome_items" size="10" style="flex-grow: 1; min-width:500; max-width: 100%; overflow-x: auto;"></select>
+	    <div style="padding-top:10px;"><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span>
+	    	<span onClick="add_selected_items('select_genome_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	   	</div>
 	</div>
 	
-	<div id="tab-3">
-	 <table class="small">
-	  <tr align='left'>
-	   <td>
-	    Search:
-	    <input type="textbox" size="53" id="edit_experiment_search" onkeyup="wait_to_search(search_experiments, this.value);">
-	    <span class='ui-button ui-corner-all' onclick="search_experiments();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-	    <img id="wait_experiment" src="picts/ajax-loader.gif" style="opacity: 0;" />
-	   </td>
-	  </tr>
-	  <tr>
-	   <td>
-	    <select multiple id="select_experiment_items" size="10" style="min-width:500; max-width: 500px;">
-	    </select>
-	   </td>
-	  </tr>
-	  <tr>
-	   <td><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
-	  </tr>
-	 </table>
-	 <span href="javascript:void(0)" onClick="add_selected_items('select_experiment_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	<div id="tab-3" style="display: flex; flex-direction: column; height: calc(100% - 60px);">
+		<div>
+		    Search:
+		    <input type="textbox" size="53" id="edit_experiment_search" onkeyup="wait_to_search(search_experiments, this.value);">
+	    	<span class='ui-button ui-corner-all' onclick="search_experiments();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+	    	<img id="wait_experiment" src="picts/ajax-loader.gif" style="opacity: 0;" />
+	   	</div>
+	    <select multiple id="select_experiment_items" size="10" style="flex-grow: 1; min-width:500; max-width: 100%; overflow-x: auto;"></select>
+	   	<div style="padding-top:10px;"><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span>
+	     	<span onClick="add_selected_items('select_experiment_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	   	</div>
 	</div>
 	
-	<div id="tab-4">
-	 <table class="small">
-	  <tr align='left'>
-	   <td>
-	    Search:
-	    <input type="textbox" size="53" id="edit_feature_search" onkeyup="wait_to_search(search_features, this.value);">
-	    <span class='ui-button ui-corner-all' onclick="search_features();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-	    <img id="wait_feature" src="picts/ajax-loader.gif" style="opacity: 0;" />
-	   </td>
-	  </tr>
-	  <tr>
-	   <td colspan='2'>
-	    <select multiple id="select_feature_items" size="10" style="min-width:500; max-width: 500px;">
-	    </select>
-	   </td>
-	  </tr>
-	  <tr>
-	   <td colspan='2'><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span></td>
-	  </tr>
-	 </table>
-	 <span href="javascript:void(0)" onClick="add_selected_items('select_feature_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	<div id="tab-4" style="display: flex; flex-direction: column; height: calc(100% - 60px);">
+		<div>
+		    Search:
+		    <input type="textbox" size="53" id="edit_feature_search" onkeyup="wait_to_search(search_features, this.value);">
+	    	<span class='ui-button ui-corner-all' onclick="search_features();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+	    	<img id="wait_feature" src="picts/ajax-loader.gif" style="opacity: 0;" />
+	   	</div>
+	    <select multiple id="select_feature_items" size="10" style="flex-grow: 1; min-width:500; max-width: 100%; overflow-x: auto;"></select>
+	   	<div style="padding-top:10px;"><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span>
+	     	<span onClick="add_selected_items('select_feature_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+      	</div>
 	</div>
 	
 	<!--

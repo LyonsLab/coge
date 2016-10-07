@@ -10,8 +10,11 @@ function show_dialog(id, title, html, width, height) {
 	var d = $('#'+id);
 	if (title) { d.dialog("option", "title", title); }
 	if (html) { d.html(html); }
-	if (width) { d.dialog('option', 'width', width); }
-	else { width = d.dialog('option', 'width') };
+	if (width) {
+		d.dialog('option', 'width', width);
+		d.dialog('option', 'minWidth', width);
+	} else
+		width = d.dialog('option', 'width');
 	if (height) { d.dialog('option', 'height', height); }
 	else { height = d.dialog('option', 'height') };
 	var xpos = $(window).width()/2 - width/2;
@@ -102,7 +105,7 @@ function add_list_items (opts) {
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			show_dialog('list_contents_edit_box', '', obj.output, 600);
+			show_dialog('list_contents_edit_box', '', obj.output, 650, '600');
 		},
 	});
 }

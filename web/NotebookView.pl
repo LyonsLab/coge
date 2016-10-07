@@ -12,6 +12,7 @@ use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Notebook qw(notebookcmp delete_notebook undelete_notebook);
 use CoGe::Core::Storage qw(data_type);
+use CoGeDBI qw(get_table_count);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
@@ -628,7 +629,7 @@ sub get_list_contents {
             my $info = $feature->info;
             $info =~ s/'/\\'/g;
             $html .= ',' if $num_items;
-            $html .= '[2,' . $feature->id . ",'" . $info . "']'";
+            $html .= '[2,' . $feature->id . ",'" . $info . "']";
             $num_items++;
         }
         # foreach my $list ( sort notebookcmp $list->lists ) {
@@ -877,13 +878,14 @@ sub search_mystuff {
         }
     }
 
-    $type = $node_types->{feature};
-    foreach my $f ( $USER->features ) {    #(sort featurecmp $USER->features) {
-        if ( !$search_term or $f->info =~ /$search_term/i ) {
-            push @{ $mystuff{$type} }, $f;
-            last if $num_results++ > $MAX_SEARCH_RESULTS;
-        }
-    }
+    # removed because Result/User.pm doesn't have features
+    # $type = $node_types->{feature};
+    # foreach my $f ( $USER->features ) {    #(sort featurecmp $USER->features) {
+    #     if ( !$search_term or $f->info =~ /$search_term/i ) {
+    #         push @{ $mystuff{$type} }, $f;
+    #         last if $num_results++ > $MAX_SEARCH_RESULTS;
+    #     }
+    # }
 
 # mdb: nested notebooks not supported
 #    $type = $node_types->{list};
@@ -1124,7 +1126,7 @@ sub search_features {
     if ( !$search_term ) {
 
         # Get all features
-        $num_results = $DB->resultset("FeatureName")->count;
+        $num_results = get_table_count($DB->storage->dbh, 'feature_name');
         if ( $num_results < $MAX_SEARCH_RESULTS ) {
             @fnames = $DB->resultset("FeatureName")->all;
         }
@@ -1134,8 +1136,7 @@ sub search_features {
     else {
 
         # Fulltext search copied from FeatView.pl
-        push @fnames,
-          $DB->resultset('FeatureName')->search( name => $search_term );
+        push @fnames, $DB->resultset('FeatureName')->search( { name => $search_term } );
         unless (@fnames) {
             push @fnames,
               $DB->resultset('FeatureName')
