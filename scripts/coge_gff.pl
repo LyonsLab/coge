@@ -16,7 +16,7 @@ our ($DEBUG, $db, $user, $pass, $id, $config, $host, $port, $P,
 GetOptions(
     "debug=s"                         => \$DEBUG,
     "gid=i"                           => \$id,
-    "staging_dir=s"                   => \$staging_dir,
+#    "staging_dir=s"                   => \$staging_dir,
     "filename|f=s"                    => \$filename,
     "annos=i"                         => \$annos,
     "cds=i"                           => \$cds,
@@ -50,12 +50,12 @@ if (not $filename) {
     exit(-1);
 }
 
-my $file = catfile($staging_dir, $filename);
-warn $file;
-my $file_temp = $file . ".tmp";
+#my $file = catfile($staging_dir, $filename);
+#warn $file;
+#my $file_temp = $file . ".tmp";
 
 # Check if file already exists
-if (-r $file && !$overwrite) {
+if (-r $filename && !$overwrite) {
     say STDERR "file already exists\n";
     exit;
 }
@@ -89,7 +89,7 @@ my ($genome, $org);
 $genome = $coge->resultset('Genome')->find($id);
 $org = $genome->organism->name . "id";
 
-open(my $fh, ">", $file_temp) or die "Error creating gff file";
+open(my $fh, ">", $filename) or die "Error creating gff file: $filename";
 
 #print STDERR "chr: $chr\n";
 print $fh $genome->gff(
@@ -106,4 +106,5 @@ print $fh $genome->gff(
 );
 
 close($fh);
-exit 1 unless move($file_temp, $file);
+#exit 1 unless move($file_temp, $file);
+exit;
