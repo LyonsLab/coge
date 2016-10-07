@@ -176,7 +176,7 @@ Pipelines/lib/CoGe/Request/ExperimentAnalysis.pm
 Pipelines/lib/CoGe/Factory/PipelineFactory.pm
 Pipelines/lib/CoGe/Factory/RequestFactory.pm
 Services/lib/CoGe/Services/Auth.pm
-Services/lib/CoGe/Services/Routes.pm
+Services/lib/CoGe/Services/Error.pm
 Services/lib/CoGe/Services/API/Experiment.pm
 Services/lib/CoGe/Services/API/Genome.pm
 Services/lib/CoGe/Services/API/Genome2.pm
