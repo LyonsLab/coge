@@ -6,7 +6,7 @@ with qw(CoGe::Builder::Buildable);
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Accessory::Web qw(download_url_for);
-use CoGe::Core::Storage qw(get_download_path);
+use CoGe::Core::Storage qw(get_experiment_cache_path);
 use CoGe::Core::Experiment qw(get_irods_metadata);
 use CoGe::Builder::CommonTasks qw(export_experiment_job export_to_irods);
 use File::Spec::Functions qw(catdir catfile);
@@ -32,7 +32,7 @@ sub build {
        $exp_name = $eid unless $exp_name;
 
     my $output_file = "experiment_$exp_name.tar.gz";
-    my $cache_dir = get_download_path('experiment', $eid);
+    my $cache_dir = get_experiment_cache_path($eid);
     my $cache_file = catfile($cache_dir, $output_file);
 
     # Export experiment
