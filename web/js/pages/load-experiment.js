@@ -1113,8 +1113,7 @@ function load(experiment) {
 	var request = {
 		type: 'load_experiment',
 		requester: {
-			page:      PAGE_NAME,
-			user_name: USER_NAME
+			page: PAGE_NAME
 		},
 		parameters: {
 			genome_id:          experiment.gid,

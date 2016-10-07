@@ -1126,8 +1126,7 @@ return declare( JBrowsePlugin,
 					var request = {
 						type: 'load_experiment',
 						requester: {
-							page: 'jbrowse',
-							user_name: un
+							page: 'jbrowse'
 						},
 						parameters: {
 							additional_metadata: annotions,

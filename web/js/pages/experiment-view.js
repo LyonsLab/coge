@@ -359,8 +359,7 @@ var snpMenu = {
 			type: 'analyze_snps',
 			requester: {
 				page: PAGE_NAME,
-				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID,
-				user_name: USER_NAME
+				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID
 			},
 			parameters: {
 				eid: EXPERIMENT_ID,
@@ -457,8 +456,7 @@ var expressionMenu = {
 			type: 'analyze_expression',
 			requester: {
 				page: PAGE_NAME,
-				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID,
-				user_name: USER_NAME
+				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID
 			},
 			parameters: {
 				eid: EXPERIMENT_ID,
@@ -557,8 +555,7 @@ var metaplotMenu = {
 			type: 'analyze_metaplot',
 			requester: {
 				page: PAGE_NAME,
-				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID,
-				user_name: USER_NAME
+				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID
 			},
 			parameters: {
 				eid: EXPERIMENT_ID,
@@ -657,8 +654,7 @@ var diversityMenu = {
 			type: 'analyze_diversity',
 			requester: {
 				page: PAGE_NAME,
-				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID,
-				user_name: USER_NAME
+				url: PAGE_NAME + "?eid=" + EXPERIMENT_ID
 			},
 			parameters: {
 				eid: EXPERIMENT_ID,
