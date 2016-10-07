@@ -13,7 +13,7 @@ use CoGe::Core::Storage qw(get_genome_file);
 use CoGe::Core::Genome qw(get_irods_metadata);
 
 sub get_name {
-    return "Export FASTA";
+    return "Export FASTA"; #TODO add genome id
 }
 
 sub build {
@@ -24,9 +24,9 @@ sub build {
     return unless $gid;
     my $genome = $self->db->resultset("Genome")->find($gid);
     return unless $genome;
-    my $genome_file = get_genome_file($gid);
 
     # Determine name of exported file
+    my $genome_file = get_genome_file($gid);
     my $genome_name = sanitize_name($genome->organism->name);#escape($genome->organism->name);
        $genome_name = 'genome_'.$gid unless $genome_name;
     my $output_file = $genome_name.'.faa';
