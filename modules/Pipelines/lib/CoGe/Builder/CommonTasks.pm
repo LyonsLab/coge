@@ -14,17 +14,15 @@ use String::ShellQuote qw(shell_quote);
 use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension to_filename_base);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput irods_set_env);
 use CoGe::Accessory::Web qw(get_defaults get_command_path split_url);
-use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path);
+use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path get_genome_cache_path);
 use CoGe::Core::Metadata qw(tags_to_string);
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
-    generate_results link_results generate_bed 
-    generate_tbl export_to_irods generate_gff generate_features copy_and_mask
+    export_to_irods generate_gff generate_features copy_and_mask
     create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
-    create_bam_index_job create_gff_generation_job create_load_experiment_job
-    create_load_batch_job
+    create_bam_index_job create_gff_generation_job create_load_experiment_job create_load_batch_job
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job create_iget_job 
@@ -36,44 +34,45 @@ our @EXPORT = qw(
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
     add_workflow_result create_bowtie2_workflow create_image_job
-    add_metadata_to_results_job
+    add_metadata_to_results_job create_bigwig_to_wig_job
     create_transdecoder_longorfs_job create_transdecoder_predict_job
-    create_bigwig_to_wig_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
 
-sub link_results { #FIXME deprecated, remove soon
-   my ($input, $output, $result_dir, $conf) = @_;
+# mdb removed 10/7/16 -- deprecated
+#sub link_results {
+#   my ($input, $output, $result_dir, $conf) = @_;
+#
+#   return {
+#        cmd     => catfile($CONF->{SCRIPTDIR}, "link_results.pl"),
+#        args    => [
+#            ['-input_files', escape($input), 0],
+#            ['-output_files', escape($output), 0],
+#            ['-result_dir', $result_dir, 0]
+#        ],
+#        inputs  => [$input],
+#        outputs => [catfile($result_dir, basename($output))],
+#        description => "Generating results..."
+#   };
+#}
 
-   return {
-        cmd     => catfile($CONF->{SCRIPTDIR}, "link_results.pl"),
-        args    => [
-            ['-input_files', escape($input), 0],
-            ['-output_files', escape($output), 0],
-            ['-result_dir', $result_dir, 0]
-        ],
-        inputs  => [$input],
-        outputs => [catfile($result_dir, basename($output))],
-        description => "Generating results..."
-   };
-}
-
-sub generate_results { #FIXME deprecated, remove soon
-   my ($input, $type, $result_dir, $conf, $dependency) = @_;
-
-   return {
-        cmd     => catfile($CONF->{SCRIPTDIR}, "generate_results.pl"),
-        args    => [
-            ['-input_files', escape($input), 0],
-            ['-type', $type, 0],
-            ['-result_dir', $result_dir, 0]
-        ],
-        inputs  => [$dependency],
-        outputs => [catfile($result_dir, "1")],
-        description => "Generating results..."
-   };
-}
+# mdb removed 10/7/16 -- deprecated
+#sub generate_results {
+#   my ($input, $type, $result_dir, $conf, $dependency) = @_;
+#
+#   return {
+#        cmd     => catfile($CONF->{SCRIPTDIR}, "generate_results.pl"),
+#        args    => [
+#            ['-input_files', escape($input), 0],
+#            ['-type', $type, 0],
+#            ['-result_dir', $result_dir, 0]
+#        ],
+#        inputs  => [$dependency],
+#        outputs => [catfile($result_dir, "1")],
+#        description => "Generating results..."
+#   };
+#}
 
 sub add_workflow_result {
     my %opts = @_;
@@ -121,36 +120,13 @@ sub copy_and_mask {
     );
 }
 
-sub generate_bed {
-    my %args = @_;
-
-    # Check for a genome or dataset id
-    return unless $args{gid};
-
-    # Generate file name
-    my $basename = $args{basename};
-    my $filename = "$basename" . "_id" . $args{gid} . ".bed";
-    my $path = get_download_path('genome', $args{gid});
-    my $output_file = catfile($path, $filename);
-
-    return $output_file, {
-        cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.pl"),
-        args => [
-            ['-gid', $args{gid}, 0],
-            ['-f', $filename, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 0],
-        ],
-        outputs => [$output_file]
-    };
-}
-
 sub generate_features {
     my %args = @_;
 
     my $filename = $args{basename} . "-gid-" . $args{gid};
     $filename .= "-prot" if $args{protein};
     $filename .= ".fasta";
-    my $path = get_download_path('genome', $args{gid});
+    my $path = get_genome_cache_path($args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
@@ -164,26 +140,6 @@ sub generate_features {
         ],
         outputs => [$output_file]
     );
-}
-
-sub generate_tbl {
-    my %args = @_;
-
-    # Generate filename
-    my $organism = $args{basename};
-    my $filename = $organism . "id" . $args{gid} . "_tbl.txt";
-    my $path = get_download_path('genome', $args{gid});
-    my $output_file = catfile($path, $filename);
-
-    return $output_file, {
-        cmd     => catfile($CONF->{SCRIPTDIR}, "export_NCBI_TBL.pl"),
-        args    => [
-            ['-gid', $args{gid}, 0],
-            ['-f', $filename, 0],
-            ["-config", $CONF->{_CONFIG_PATH}, 0]
-        ],
-        outputs => [$output_file]
-    };
 }
 
 sub export_to_irods {
@@ -390,13 +346,13 @@ sub generate_gff {
     $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
-    my $path = get_download_path('genome', $args{gid});
+    my $path = get_genome_cache_path($args{gid});
     my $output_file = catfile($path, $filename);
     
     # Build argument list
     my $args = [
         ['-gid', $args{gid}, 0],
-        ['-f', $filename, 0],
+        ['-f', $filename, 1],
         ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-cds', $args{cds}, 0],
         ['-annos', $args{annos}, 0],
@@ -407,11 +363,11 @@ sub generate_gff {
     push @$args, ['-chr', $args{chr}, 0] if (defined $args{chr});
     push @$args, ['-add_chr', $args{add_chr}, 0] if (defined $args{add_chr});
     
-    # Return workflow definition
     return $output_file, {
         cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
         script  => undef,
         args    => $args,
+        inputs  => [],
         outputs => [ $output_file ],
         description => "Generating GFF..."
     };
@@ -1130,14 +1086,11 @@ sub create_gff_generation_job {
     my $cmd = catfile($CONF->{SCRIPTDIR}, "coge_gff.pl");
     my $name = sanitize_name($organism_name) . "-1-name-0-0-id-" . $gid . "-1.gff";
 
-    my $inputs = [];
-    #push @{$inputs}, $validated if $validated;
-
     return {
         cmd => $cmd,
         script => undef,
         args => [
-            ['-f', $name, 0],
+            ['-f', $name, 1],
             ['-staging_dir', '.', 0],
             ['-gid', $gid, 0],
             ['-upa', 1, 0],
@@ -1147,9 +1100,9 @@ sub create_gff_generation_job {
             ['-nu', 1, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 0],
         ],
-        inputs => $inputs,
+        inputs => [],
         outputs => [
-            catdir($CONF->{CACHEDIR}, $gid, "gff", $name)
+            catfile(get_genome_cache_path($gid), $name);
         ],
         description => "Generating genome annotations GFF file..."
     };

@@ -7,7 +7,7 @@ use CoGe::Builder::Export::Fasta;
 use CoGe::Builder::Export::Gff;
 
 sub get_name {
-    return "Export Genome";
+    return "Export Genome"; #TODO add genome id and outputs
 }
 
 sub build {
@@ -15,7 +15,6 @@ sub build {
     
     my $request = { #FIXME better way to do this? See Moose constructors
         params      => $self->params,
-        requester   => $self->requester,
         db          => $self->db,
         user        => $self->user,
         conf        => $self->conf,
@@ -25,12 +24,20 @@ sub build {
         outputs     => $self->outputs
     };
 
-    my $fasta = CoGe::Builder::Export::Fasta->new($request);
-    $fasta->build();
-    
-    my $gff = CoGe::Builder::Export::Gff->new($request);
-    $gff->build();
-    
+    my $outputs = $self->params->{output_types};
+    my %outputs;
+    %outputs = map { lc($_) => 1 } @$outputs if $outputs;
+
+    if (!$outputs || $outputs{'fasta'}) {
+        my $fasta = CoGe::Builder::Export::Fasta->new( $request );
+        $fasta->build();
+    }
+
+    if (!$outputs || $outputs{'gff'} || $outputs{'bed'} || $outputs{'tbl'}) {
+        my $gff = CoGe::Builder::Export::Gff->new( $request );
+        $gff->build();
+    }
+
     return 1;
 }
 
