@@ -2447,6 +2447,7 @@ $.extend(System_graph.prototype, {
 				'<div><button id="' + self.element + '_zoom_button" class="ui-button ui-corner-all coge-button" style="float:left;height:25px;width:125px" disabled>Zoom 24 Hours</button>' +
 				'<div><button id="' + self.element + '_zoom_week_button" class="ui-button ui-corner-all coge-button" style="float:left;height:25px;width:100px" disabled>Zoom Week</button>' +
 				'<div><button id="' + self.element + '_zoom_month_button" class="ui-button ui-corner-all coge-button" style="float:left;height:25px;width:125px" disabled>Zoom Month</button>' +
+				'<div><br><br><br></div>'+
 				'<div id="' + self.element + '_container" style="height:' + (self.height + 500) + 'px;">' +
 				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 2000) + 'px;"></div> </div>'
 		);
@@ -2465,17 +2466,17 @@ $.extend(System_graph.prototype, {
 		} else {
 			$('#' + self.element + '_back_button').prop("disabled", true);
 			$('#' + self.element + '_zoom_button')
-				.prop("disabled", false);
+				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_day.call(self);
 			});
 			$('#' + self.element + '_zoom_week_button')
-				.prop("disabled", false);
+				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_week.call(self);
 			});
 			$('#' + self.element + '_zoom_month_button')
-				.prop("disabled", false);
+				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_month.call(self);
 			});	
@@ -2740,7 +2741,7 @@ $.extend(System_graph.prototype, {
 	},
 	zoom: function(start, end) {
 		var self = this;
-		var newData [];
+		var newData = [];
 		for (var i = 0; i < self.data.length; i++) {
 			if (start <= self.data[i].time && end >= self.data[i].time) {
 				newData.push(self.data[i]);
