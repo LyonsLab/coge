@@ -8,8 +8,7 @@ use CoGe::Core::Storage qw( $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $D
 use CoGe::Accessory::Web qw(get_command_path);
 use CoGe::Accessory::IRODS qw($IRODS_METADATA_PREFIX);
 
-our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION, @QUANT_TYPES, @MARKER_TYPES, 
-      @OTHER_TYPES, @SUPPORTED_TYPES );
+our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION, @QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES, @SUPPORTED_TYPES );
 
 BEGIN {
     require Exporter;
@@ -320,6 +319,7 @@ sub get_irods_metadata {
         $IRODS_METADATA_PREFIX.'experiment-genome-summary' => $experiment->genome->info
     );
 
+    # Add sources
     my $i = 1;
     my @sources = $experiment->source;
     foreach my $item (@sources) {
@@ -331,6 +331,28 @@ sub get_irods_metadata {
         $md{$IRODS_METADATA_PREFIX.$key."-link"} = $item->link if $item->link;
         $i++;
     }
+
+    # Add tags
+    $i = 1;
+    my @tags = $experiment->tags;
+    foreach my $tag (@tags) {
+        my $key = $IRODS_METADATA_PREFIX . (scalar(@tags) > 1 ? "experiment-tag-$i" : "experiment-tag");
+        $md{$key} = $tag->name;
+        $i++;
+    }
+
+    # Add custom metadata
+    foreach my $a ( $experiment->annotations ) {
+        my $group = (
+            defined $a->type->group
+            ? $a->type->group->name . ',' . $a->type->name
+            : $a->type->name
+        );
+
+        $md{$IRODS_METADATA_PREFIX.'experiment-'.$group} = $a->info;
+    }
+
+    print STDERR Dumper \%md, "\n";
 
     return \%md;
 }
