@@ -476,7 +476,6 @@ sub export_experiment_irods { #TODO migrate to API
     return $ERROR unless $USER->has_access_to_experiment($experiment);
 
     my ($statusCode, $file) = generate_export($experiment);
-
     unless($statusCode) {
         my $dir = get_irods_home();
         my $dest = File::Spec->catdir($dir, basename($file));
@@ -501,7 +500,7 @@ sub generate_export { #TODO migrate to API
 
     my $conf = $P->{_CONFIG_PATH};
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment_or_genome.pl");
-    my $workdir = get_download_path('experiment', $eid);
+    my $workdir = get_experiment_cache_path($eid);
     my $resdir = $P->{RESOURCEDIR};
 
     my $cmd = "$script -id $eid -type 'experiment' -config $conf -dir $workdir -output $filename";
@@ -521,7 +520,6 @@ sub get_file_urls {
 
     unless($statusCode) {
         my $url = download_url_for(eid => $eid, file => $file);
-        print STDERR "matt: $url\n";
         return encode_json({ filename => basename($file), url => $url });
     };
 
