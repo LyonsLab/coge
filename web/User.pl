@@ -1345,7 +1345,7 @@ sub get_stats {
 	my $items = shift;
 	return '' if !$items;
     $items = [ grep { !$_->{'deleted'} } @$items ] if !$USER->is_admin();
-    warn Dumper $items;
+#    warn Dumper $items;
 	return '' if !scalar @$items;
 	my $sql = 'select annotation_type.name,count(*) from ' . $type . '_annotation join annotation_type on annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id where ' . $type . '_id in (' .
 		join( ',', map { $_->{'id'} } @$items ) .
