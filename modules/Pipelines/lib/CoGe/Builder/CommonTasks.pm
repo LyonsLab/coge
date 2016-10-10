@@ -1102,7 +1102,7 @@ sub create_gff_generation_job {
         ],
         inputs => [],
         outputs => [
-            catfile(get_genome_cache_path($gid), $name);
+            catfile(get_genome_cache_path($gid), $name)
         ],
         description => "Generating genome annotations GFF file..."
     };
