@@ -43,7 +43,6 @@ sub build {
         )
     );
 
-    my @done_files;
     if ($dest_type eq "irods") { # irods export
         # Set IRODS destination path
         my $irods_base = $self->params->{dest_path};
