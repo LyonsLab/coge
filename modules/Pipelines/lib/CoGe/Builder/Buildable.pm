@@ -7,10 +7,11 @@ use File::Spec::Functions qw(catdir catfile);
 use File::Path qw(make_path);
 use JSON qw(encode_json);
 use URI::Escape::JavaScript qw(escape);
+use String::ShellQuote;
 use Data::Dumper;
 
 use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
-use CoGe::Accessory::Web qw(get_command_path);
+use CoGe::Accessory::Web qw(get_command_path get_tiny_link);
 use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
 
 requires qw(build);
@@ -63,7 +64,8 @@ sub pre_build { # Default method, SynMap & SynMap3D override this
             $site_url = url_for($url, wid => $self->workflow->id);
         }
     }
-    $self->site_url($site_url) if $site_url;
+
+    $self->site_url( get_tiny_link(url => $site_url) ) if $site_url;
 }
 
 sub post_build {
@@ -77,12 +79,12 @@ sub post_build {
         #TODO add_items_to_notebook_job and create_notebook_job and their respective scripts can be consolidated
         if ($self->params->{notebook_id}) { # Use existing notebook
             $self->add_task_chain_all(
-                add_items_to_notebook( notebook_id => $self->params->{notebook_id} )
+                $self->add_items_to_notebook( notebook_id => $self->params->{notebook_id} )
             );
         }
         else { # Create new notebook
             $self->add_task_chain_all(
-                create_notebook( metadata => $metadata )
+                $self->create_notebook( metadata => $self->params->{metadata} )
             );
         }
     }
@@ -461,7 +463,7 @@ sub add_items_to_notebook {
     my ($self, %params) = @_;
     my $notebook_id = $params{notebook_id};
 
-    my $result_file = get_workflow_results_file($user->name, $wid);
+    my $result_file = get_workflow_results_file($self->user->name, $self->workflow->id);
 
     my $log_file = catfile($self->staging_dir, 'add_items_to_notebook', 'log.txt');
 
