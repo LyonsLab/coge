@@ -22,7 +22,7 @@ sub build {
     my $upload_dir = get_upload_path($self->user->name, $load_id);
     foreach my $item (@$data) {
         my $type = lc($item->{type});
-        print STDERR Dumper $item, "\n";
+        #print STDERR Dumper $item, "\n";
         
         # Check if NCBI accession input
         if ($type eq 'ncbi') {
