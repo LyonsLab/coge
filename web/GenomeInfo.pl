@@ -3,6 +3,7 @@
 use strict;
 use CGI;
 use CoGeX;
+use CoGeX::Result::Genome qw(ERROR LOADING);
 use CoGe::JEX::Jex;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
@@ -2179,6 +2180,8 @@ sub generate_body {
     my $genome = $DB->resultset('Genome')->find($gid);
     return "Genome id $gid not found" unless ($genome);
     return "Access denied" unless $USER->has_access_to_genome($genome);
+    return "There was an error while loading this genome" if $genome->status == ERROR;
+    return "This genome is still being loaded" if $genome->status == LOADING;
 
     my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
     my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );

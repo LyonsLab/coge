@@ -13,6 +13,17 @@ use Text::Wrap;
 use base 'Class::Accessor';
 use Carp;
 
+use constant ERROR => -1;
+use constant LOADING => 1;
+use constant LOADED => 2;
+
+BEGIN {
+	use Exporter 'import';
+	our @EXPORT = qw( 
+	   ERROR LOADING LOADED
+	);
+}
+
 =head1 NAME
 
 CoGeX::Genome
