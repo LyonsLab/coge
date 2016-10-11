@@ -13,7 +13,7 @@ use URI::Escape::JavaScript qw(unescape);
 use CoGe::Accessory::TDS qw(read);
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web qw(get_defaults get_command_path);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_workflow_results_file);
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_workflow_results_file get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations tags_to_string);
 use CoGe::Builder::CommonTasks;
 
@@ -41,7 +41,7 @@ sub build {
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
     my $gid = $genome->id;
-    my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
+    my $FASTA_CACHE_DIR = get_genome_cache_path($gid);
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
 
     # Check if genome has annotations

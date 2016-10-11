@@ -10,7 +10,7 @@ use File::Spec::Functions qw(catdir catfile);
 
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::CommonTasks;
 
@@ -33,7 +33,7 @@ sub build {
 
     # Setup paths
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
-    my $fasta_cache_dir = catdir($CONF->{CACHEDIR}, $genome->id, "fasta");
+    my $fasta_cache_dir = get_genome_cache_path($genome->id);
     my $fasta_file = get_genome_file($genome->id);
     my $reheader_fasta = to_filename($fasta_file) . ".reheader.faa";
     my $reheader_fasta_path = catfile($fasta_cache_dir, $reheader_fasta);
