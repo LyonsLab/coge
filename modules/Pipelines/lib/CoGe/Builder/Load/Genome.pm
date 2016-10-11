@@ -40,8 +40,7 @@ sub build {
     return unless (defined $data && @$data);
     my $metadata = $self->params->{metadata};
     return unless $metadata;
-    my $load_id = $self->params->{load_id} || get_unique_id();
-    
+
     # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
     $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
 
