@@ -30,7 +30,7 @@ has 'logfile' => (
     default  => "",
 );
 
-has 'jobs' => (
+has 'jobs' => ( #FIXME rename to "task"
     is       => 'rw',
     isa      => 'ArrayRef',
     default  => sub { [] },
@@ -85,7 +85,7 @@ sub add_job {
     return 1;
 }
 
-sub add_jobs {
+sub add_jobs { #FIXME rename to "task"
     my ($self, $jobs) = @_;
     #print STDERR Dumper "Workflow::add_jobs ", $jobs, "\n";
     
@@ -114,6 +114,20 @@ sub log_section{
 	$self->log( shift );
 	$self->log( "#" x (25) );
 	$self->log( "" );
+}
+
+# Returns a list of unique outputs from all tasks # mdb added 10/10/16 for pipelines2
+sub get_outputs {
+    my $self = shift;
+
+    my (@outputs, %seen);
+    foreach my $task (@{$self->jobs}) {
+        foreach my $output (@{$task->{outputs}}) {
+            push @outputs, $output unless ($seen{$output}++);
+        }
+    }
+
+    return wantarray ? @outputs : \@outputs;
 }
 
 __PACKAGE__->meta->make_immutable;

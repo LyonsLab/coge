@@ -26,8 +26,7 @@ our @EXPORT = qw(
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
     create_notebook_job create_bam_sort_job create_iget_job 
-    create_load_annotation_job create_data_retrieval_workflow
-    add_items_to_notebook_job create_hisat2_workflow
+    create_load_annotation_job create_data_retrieval_workflow create_hisat2_workflow
     export_experiment_job create_cutadapt_workflow
     create_trimgalore_job create_trimgalore_workflow 
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
@@ -1183,7 +1182,7 @@ sub create_hisat2_alignment_job {
 	my $args = [
 		['-p', '32', 0],
                 ['--dta-cufflinks', '', 0], # mdb added 8/9/16 for Cufflinks error "BAM record error: found spliced alignment without XS attribute"
-		['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
+		['-x', catfile(get_genome_cache_path($gid), 'hisat2_index', 'genome.reheader'), 0],
 		['-S', $output_file, 0]
     ];
     
@@ -1217,7 +1216,7 @@ sub create_hisat2_index_job {
     my $gid = shift;
     my $fasta = shift;
 
-    my $cache_dir = catdir($CONF->{CACHEDIR}, $gid, "hisat2_index");
+    my $cache_dir = catdir(get_genome_cache_path($gid), "hisat2_index");
 	make_path $cache_dir unless (-d $cache_dir);
     my $name = catfile($cache_dir, 'genome.reheader');
     
@@ -1350,7 +1349,7 @@ sub create_bowtie_index_job {
     my $name = to_filename($fasta);
     
     my $cmd = get_command_path('BOWTIE_BUILD', 'bowtie2-build');
-    my $BOWTIE_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bowtie_index");
+    my $BOWTIE_CACHE_DIR = catdir(get_genome_cache_path($gid), "bowtie_index");
 
     return catdir($BOWTIE_CACHE_DIR, $name), {
         cmd => $cmd,
@@ -1523,7 +1522,7 @@ sub create_bismark_index_job {
     my $done_file = 'bismark_genome_preparation.done';
     
     my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark_genome_preparation') : 'bismark_genome_preparation';
-    my $BISMARK_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bismark_index");
+    my $BISMARK_CACHE_DIR = catdir(get_genome_cache_path($gid), "bismark_index");
     $cmd = "mkdir -p $BISMARK_CACHE_DIR && " .
            "cp $fasta $BISMARK_CACHE_DIR/$name.fa && " . # bismark requires fasta file to end in .fa or .fasta, not .faa
            "nice $cmd $BISMARK_CACHE_DIR && " .
@@ -1659,7 +1658,7 @@ sub create_bwameth_index_job {
     my $done_file = 'bwameth_index.done';
     
     my $cmd = ($CONF->{BWAMETH} ? $CONF->{BWAMETH} : 'bwameth') . ' index';
-    my $BWAMETH_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bwameth_index");
+    my $BWAMETH_CACHE_DIR = catdir(get_genome_cache_path($gid), "bwameth_index");
     
     $cmd = "mkdir -p $BWAMETH_CACHE_DIR && " .
            "cd $BWAMETH_CACHE_DIR && " .
@@ -1797,7 +1796,7 @@ sub create_gmap_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     my $cmd = get_command_path('GMAP_BUILD');
-    my $GMAP_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "gmap_index");
+    my $GMAP_CACHE_DIR = catdir(get_genome_cache_path($gid), "gmap_index");
 
     return {
         cmd => $cmd,
@@ -1998,52 +1997,6 @@ sub create_sumstats_job {
     };
 }
 
-sub create_notebook_job {
-    my %opts = @_;
-    my $user = $opts{user};
-    my $wid = $opts{wid};
-    my $metadata = $opts{metadata};
-    my $annotations = $opts{annotations}; # array ref
-    my $staging_dir = $opts{staging_dir};
-    my $done_files = $opts{done_files};
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "create_notebook.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    my $result_file = get_workflow_results_file($user->name, $wid);
-    
-    my $log_file = catfile($staging_dir, "create_notebook", "log.txt");
-    
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
-    
-    my $args = [
-        ['-uid', $user->id, 0],
-        ['-wid', $wid, 0],
-        ['-name', shell_quote($metadata->{name}), 0],
-        ['-desc', shell_quote($metadata->{description}), 0],
-        ['-type', 2, 0],
-        ['-restricted', $metadata->{restricted}, 0],
-        ['-annotations', qq{"$annotations_str"}, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 0],
-        ['-log', $log_file, 0]
-    ];
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => $args,
-        inputs => [ 
-            @$done_files
-        ],
-        outputs => [ 
-            $result_file,
-            $log_file
-        ],
-        description => "Creating notebook of results..."
-    };
-}
-
 sub create_transdecoder_longorfs_job {
     my $input_file = shift;
 
@@ -2090,44 +2043,6 @@ sub create_transdecoder_predict_job {
             $done_file
         ],
         description => "Running TransDecoder.Predict..."
-    };
-}
-
-sub add_items_to_notebook_job {
-    my %opts = @_;
-    my $user = $opts{user};
-    my $wid = $opts{wid};
-    my $notebook_id = $opts{notebook_id};
-    my $staging_dir = $opts{staging_dir};
-    my $done_files = $opts{done_files};
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "add_items_to_notebook.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    my $result_file = get_workflow_results_file($user->name, $wid);
-    
-    my $log_file = catfile($staging_dir, "add_items_to_notebook", "log.txt");
-    
-    my $args = [
-        ['-uid', $user->id, 0],
-        ['-wid', $wid, 0],
-        ['-notebook_id', $notebook_id, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 0],
-        ['-log', $log_file, 0]
-    ];
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => $args,
-        inputs => [ 
-            @$done_files
-        ],
-        outputs => [ 
-            $result_file,
-            $log_file
-        ],
-        description => "Adding experiment to notebook..."
     };
 }
 

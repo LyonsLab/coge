@@ -68,7 +68,25 @@ sub pre_build { # Default method, SynMap & SynMap3D override this
 
 sub post_build {
     my $self = shift;
-    
+
+    # Capture outputs from legacy pipelines
+    $self->sync_outputs();
+
+    # Add task to add results to notebook
+    if ($self->params->{notebook} || $self->params->{notebook_id}) {
+        #TODO add_items_to_notebook_job and create_notebook_job and their respective scripts can be consolidated
+        if ($self->params->{notebook_id}) { # Use existing notebook
+            $self->add_task_chain_all(
+                add_items_to_notebook( notebook_id => $self->params->{notebook_id} )
+            );
+        }
+        else { # Create new notebook
+            $self->add_task_chain_all(
+                create_notebook( metadata => $metadata )
+            );
+        }
+    }
+
     # Add task to send notification email
     if ( $self->params->{email} ) {
         $self->add_task_chain_all(
@@ -91,6 +109,7 @@ sub post_build {
     }
 }
 
+# Add independent task
 sub add_task {
     my ($self, $task) = @_;
     return unless $task;
@@ -101,30 +120,32 @@ sub add_task {
     return $self->workflow->add_job($task);    
 }
 
-sub add_tasks {
-    my ($self, $tasks) = @_;
-    return unless $tasks;
-    
-    $previous_outputs = [];
-    foreach my $task (@$tasks) {
-        push @{$self->outputs}, @{$task->{outputs}};
-        push @$previous_outputs, @{$task->{outputs}};
-        unless ($self->workflow->add_job($task)) {
-            return;    
-        }
-    }
-    
-    return 1;
-}
+# Add independent tasks
+#sub add_tasks {
+#    my ($self, $tasks) = @_;
+#    return unless $tasks;
+#
+#    $previous_outputs = [];
+#    foreach my $task (@$tasks) {
+#        push @{$self->outputs}, @{$task->{outputs}};
+#        push @$previous_outputs, @{$task->{outputs}};
+#        unless ($self->workflow->add_job($task)) {
+#            return;
+#        }
+#    }
+#
+#    return 1;
+#}
 
+# Chain this task to the previous task assuming add_task*() routines were used
 sub add_task_chain {
     my ($self, $task) = @_;
-    
-    # Chain this task to the previous task
+
     push @{$task->{inputs}}, @{$previous_outputs} if $previous_outputs;
     return $self->add_task($task);
 }
 
+# Chain this task to all previous tasks
 sub add_task_chain_all {
     my ($self, $task) = @_;
     
@@ -150,6 +171,18 @@ sub previous_output {
     return;
 }
 
+# Copies unknown ouputs from workflow into outputs array.  For legacy pipelines that don't use
+# the add_task*() routines in this module.
+sub sync_outputs {
+    my $self = shift;
+
+    my %seen;
+    my @merged = grep( !$seen{$_}++, $self->workflow->get_outputs(), @{$self->outputs});
+    $self->outputs(\@merged);
+}
+
+# Add a pipeline asset.  An asset is a file produced by the pipeline for use by downstream pipelines.
+# The words input and output were purposely avoided.
 sub add_asset {
     my ($self, $name, $value) = @_;
     return unless $name;
@@ -183,7 +216,10 @@ sub get_assets {
     return wantarray ? @outputs : \@outputs;
 }
 
-# Task Library (replaces CommonTasks.pm) --------------------------------------
+
+###############################################################################
+# Task Library (replaces CommonTasks.pm)
+###############################################################################
 
 # Generate GFF file of genome annotations
 sub create_gff {
@@ -418,6 +454,68 @@ sub add_result {
 #            $result_file,  # force this to run (for case of multiple results)
         ],
         description => "Adding workflow result..."
+    };
+}
+
+sub add_items_to_notebook {
+    my ($self, %params) = @_;
+    my $notebook_id = $params{notebook_id};
+
+    my $result_file = get_workflow_results_file($user->name, $wid);
+
+    my $log_file = catfile($self->staging_dir, 'add_items_to_notebook', 'log.txt');
+
+    return {
+        cmd => catfile($self->conf->{SCRIPTDIR}, 'add_items_to_notebook.pl'),
+        script => undef,
+        args => [
+            ['-uid', $self->user->id, 0],
+            ['-wid', $self->workflow->id, 0],
+            ['-notebook_id', $notebook_id, 0],
+            ['-config', $self->conf->{_CONFIG_PATH}, 0],
+            ['-log', $log_file, 0]
+        ],
+        inputs => [],
+        outputs => [
+            $result_file,
+            $log_file
+        ],
+        description => "Adding experiment to notebook..."
+    };
+}
+
+sub create_notebook {
+    my ($self, %params) = @_;
+    my $metadata = $params{metadata};
+    my $annotations = $params{annotations}; # array ref
+
+    my $result_file = get_workflow_results_file($self->user->name, $self->workflow->id);
+
+    my $log_file = catfile($self->staging_dir, 'create_notebook', 'log.txt');
+
+    my $annotations_str = '';
+    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+
+    return {
+        cmd => catfile($self->conf->{SCRIPTDIR}, 'create_notebook.pl'),
+        script => undef,
+        args => [
+            ['-uid', $self->user->id, 0],
+            ['-wid', $self->workflow->id, 0],
+            ['-name', shell_quote($metadata->{name}), 0],
+            ['-desc', shell_quote($metadata->{description}), 0],
+            ['-type', 2, 0],
+            ['-restricted', $metadata->{restricted}, 0],
+            ['-annotations', qq{"$annotations_str"}, 0],
+            ['-config', $self->conf->{_CONFIG_PATH}, 0],
+            ['-log', $log_file, 0]
+        ],
+        inputs => [],
+        outputs => [
+            $result_file,
+            $log_file
+        ],
+        description => "Creating notebook of results..."
     };
 }
 

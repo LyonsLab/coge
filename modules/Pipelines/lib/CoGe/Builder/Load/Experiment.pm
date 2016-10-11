@@ -266,35 +266,6 @@ sub build {
         push @done_files, $load_task->{outputs}->[1];
     }
     
-    # Create notebook
-    if ($self->params->{notebook} || $self->params->{notebook_id}) {
-        #TODO add_items_to_notebook_job and create_notebook_job and their respective scripts can be consolidated
-        if ($self->params->{notebook_id}) {
-            # use existing notebook
-            my $t = add_items_to_notebook_job(
-                notebook_id => $self->params->{notebook_id},
-                user        => $self->user,
-                wid         => $self->workflow->id,
-                staging_dir => $self->staging_dir,
-                done_files  => \@done_files
-            );
-            push @tasks, $t;
-            push @done_files, $t->{outputs}->[1];
-        }
-        else {
-            # create new notebook
-            my $t = create_notebook_job(
-                user        => $self->user,
-                wid         => $self->workflow->id,
-                metadata    => $metadata,
-                staging_dir => $self->staging_dir,
-                done_files  => \@done_files
-            );
-            push @tasks, $t;
-            push @done_files, $t->{outputs}->[1];
-        }
-    }
-
 #    print STDERR Dumper \@tasks, "\n";
     $self->workflow->add_jobs(\@tasks);
     
