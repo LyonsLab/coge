@@ -214,24 +214,6 @@ sub build {
             push @tasks, @{$chipseq_workflow->{tasks}};
             push @done_files, @{$chipseq_workflow->{done_files}};
         }
-        
-        # Add ChIP-seq workflow (if specified)
-        if ( $self->params->{chipseq_params} ) {
-            my $chipseq_params = {
-                user => $self->user,
-                wid => $self->workflow->id,
-                genome => $genome,
-                input_files => $bam_files,
-                metadata => $metadata,
-                additional_metadata => $additional_metadata,
-                read_params => $self->params->{read_params},
-                chipseq_params => $self->params->{chipseq_params},
-            };
-            
-            my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
-            push @tasks, @{$chipseq_workflow->{tasks}};
-            push @done_files, @{$chipseq_workflow->{done_files}};
-        }
     }
     # Else, all other file types
     else {
