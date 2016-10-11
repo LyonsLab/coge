@@ -14,6 +14,14 @@ use File::Spec::Functions;
 use JSON qw( encode_json );
 use POSIX;
 
+sub pre_build { # override superclass method
+	my ($self, %params) = @_;
+
+	# Initialize workflow -- NOTE: init => 0 means that a previous identical workflow will be reused when submitted
+    $self->workflow( $params{jex}->create_workflow(name => $self->get_name, init => 0 ) );
+    return unless $self->workflow;
+}
+
 sub build {
 	my $self = shift;
 	my $xid = $self->params->{genome_id1};

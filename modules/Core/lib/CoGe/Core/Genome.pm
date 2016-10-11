@@ -5,6 +5,7 @@ use warnings;
 
 use File::Spec::Functions;
 use Sort::Versions;
+use Data::Dumper;
 
 use CoGe::Accessory::TDS qw(write read);
 use CoGe::Accessory::Utils;
@@ -539,15 +540,23 @@ sub get_irods_metadata {
     
     my %md = (
         $IRODS_METADATA_PREFIX.'link'              => "http://genomevolution.org",
-        $IRODS_METADATA_PREFIX.'OrganismView-link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
-        $IRODS_METADATA_PREFIX.'GenomeInfo-link'   => "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
-        $IRODS_METADATA_PREFIX.'genome-id'         => $genome->id,
+        $IRODS_METADATA_PREFIX.'OrganismView-link' => "http://genomevolution.org/coge/OrganismView.pl?gid=".$genome->id,
+        $IRODS_METADATA_PREFIX.'GenomeInfo-link'   => "http://genomevolution.org/coge/GenomeInfo.pl?gid=".$genome->id,
+        $IRODS_METADATA_PREFIX.'genome-id'                => $genome->id,
         $IRODS_METADATA_PREFIX.'genome-organism-name'     => $genome->organism->name,
         $IRODS_METADATA_PREFIX.'genome-organism-taxonomy' => $genome->organism->description,
         $IRODS_METADATA_PREFIX.'genome-version'           => $genome->version,
         $IRODS_METADATA_PREFIX.'genome-sequence-type'     => $genome->type->info,
+        $IRODS_METADATA_PREFIX.'genome-summary'           => $genome->info,
+        $IRODS_METADATA_PREFIX.'genome-certified'         => $genome->certified ? 'true' : 'false'
     );
-    
+
+    $md{$IRODS_METADATA_PREFIX.'genome-link'}            = $genome->link if ($genome->link);
+    $md{$IRODS_METADATA_PREFIX.'genome-additional-info'} = $genome->message if ($genome->message);
+    $md{$IRODS_METADATA_PREFIX.'genome-name'}            = $genome->name if ($genome->name);
+    $md{$IRODS_METADATA_PREFIX.'genome-description'}     = $genome->description if ($genome->description);
+
+    # Add sources
     my $i = 1;
     my @sources = $genome->source;
     foreach my $item (@sources) {
@@ -559,12 +568,18 @@ sub get_irods_metadata {
         $md{$IRODS_METADATA_PREFIX.$key."-link"} = $item->link if $item->link;
         $i++;
     }
-    
-    $md{$IRODS_METADATA_PREFIX.'genome-link'}            = $genome->link if ($genome->link);
-    $md{$IRODS_METADATA_PREFIX.'genome-additional-info'} = $genome->message if ($genome->message);
-    $md{$IRODS_METADATA_PREFIX.'genome-name'}            = $genome->name if ($genome->name);
-    $md{$IRODS_METADATA_PREFIX.'genome-description'}     = $genome->description if ($genome->description);
-    
+
+    # Add custom metadata
+    foreach my $a ( $genome->annotations ) {
+        my $group = (
+                defined $a->type->group
+            ? $a->type->group->name.','.$a->type->name
+            : $a->type->name
+        );
+
+        $md{$group} = $a->info;
+    }
+
     return \%md;
 }
 

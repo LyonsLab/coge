@@ -80,8 +80,7 @@ function load(genome) {
 	var request = {
 		type: 'load_genome',
 		requester: {
-			page:      PAGE_NAME,
-			user_name: USER_NAME
+			page: PAGE_NAME
 		},
 		parameters: {
 			organism_id: genome.organism_id,

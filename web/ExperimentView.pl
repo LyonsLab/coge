@@ -19,10 +19,10 @@ use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage;
 use CoGe::Core::Favorites;
+use CoGe::Core::Experiment qw(get_irods_metadata);
 
 use vars qw(
-    $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR
-    $WORKFLOW_ID $LOAD_ID $TEMPDIR
+    $P $PAGE_TITLE $USER $LINK $coge $FORM $EMBED %FUNCTION $ERROR $WORKFLOW_ID $LOAD_ID $TEMPDIR
 );
 
 $PAGE_TITLE = "ExperimentView";
@@ -470,7 +470,7 @@ sub get_irods_home {
     return $dest;
 }
 
-sub export_experiment_irods {
+sub export_experiment_irods { #TODO migrate to API
     my %opts = @_;
     my $eid = $opts{eid};
 
@@ -478,64 +478,20 @@ sub export_experiment_irods {
     return $ERROR unless $USER->has_access_to_experiment($experiment);
 
     my ($statusCode, $file) = generate_export($experiment);
-
     unless($statusCode) {
-        my $genome = $experiment->genome;
-        my @types = $experiment->tags;
-        my @notebooks = $experiment->notebooks;
         my $dir = get_irods_home();
         my $dest = File::Spec->catdir($dir, basename($file));
-        my $restricted = ($experiment->restricted) ? "yes" : "no";
 
-        my %meta = (
-            'Imported From'            => "CoGe: " . $P->{SERVER},
-            'CoGe ExperimentView Link' => $P->{SERVER} . "ExperimentView.pl?eid=$eid",
-            'CoGe GenomeInfo Link'     => $P->{SERVER} . "GenomeInfo.pl?gid=" . $genome->id,
-            'Source'                   => $experiment->source->info,
-            'Version'                  => $experiment->version,
-            'Restricted'               => $restricted
-        );
-
-        my $genome_name = $genome->info(hideRestrictedSymbol=>);
-
-        $meta{'Name'} = $experiment->name if ($experiment->name);
-        $meta{'Description'} = $experiment->description if ($experiment->description);
-        $meta{'Genome'} = $genome_name;
-        $meta{'Source Link'} = $experiment->source->link if $experiment->source->link;
-        $meta{'Rows'} = commify($experiment->row_count);
-
-        my $i = 1;
-        foreach my $type (@types) {
-            my $key = (scalar @types > 1) ? "Experiment Tag $i" : "Experiment Tag";
-            $meta{$key} = $type->name;
-            $i++;
-        }
-
-        $i = 1;
-        foreach my $type (@notebooks) {
-            my $key = (scalar @notebooks > 1) ? "Notebook $i" : "Notebook";
-            $meta{$key} = $type->name;
-            $i++;
-        }
-
-        foreach my $a ( $experiment->annotations ) {
-            my $group = (
-                defined $a->type->group
-                ? $a->type->group->name . ',' . $a->type->name
-                : $a->type->name
-            );
-
-            $meta{$group} = $a->info;
-        }
+        my $md = get_irods_metadata($experiment);
 
         CoGe::Accessory::IRODS::irods_iput($file, $dest);
-        CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
+        CoGe::Accessory::IRODS::irods_imeta($dest, $md);
     }
 
     return basename($file);
 }
 
-sub generate_export { #TODO use the API "export_gff" job instead
+sub generate_export { #TODO migrate to API
     my $experiment = shift;
     my $eid = $experiment->id;
 
@@ -546,7 +502,7 @@ sub generate_export { #TODO use the API "export_gff" job instead
 
     my $conf = $P->{_CONFIG_PATH};
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment_or_genome.pl");
-    my $workdir = get_download_path('experiment', $eid);
+    my $workdir = get_experiment_cache_path($eid);
     my $resdir = $P->{RESOURCEDIR};
 
     my $cmd = "$script -id $eid -type 'experiment' -config $conf -dir $workdir -output $filename";
@@ -566,7 +522,6 @@ sub get_file_urls {
 
     unless($statusCode) {
         my $url = download_url_for(eid => $eid, file => $file);
-        print STDERR "matt: $url\n";
         return encode_json({ filename => basename($file), url => $url });
     };
 
@@ -592,9 +547,7 @@ sub gen_html {
 
     $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
-        $template =
-          HTML::Template->new(
-            filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
     }
     else {
         $template = HTML::Template->new(filename => $P->{TMPLDIR} . 'generic_page.tmpl' );

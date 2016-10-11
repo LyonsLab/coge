@@ -14,66 +14,64 @@ use String::ShellQuote qw(shell_quote);
 use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension to_filename_base);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput irods_set_env);
 use CoGe::Accessory::Web qw(get_defaults get_command_path split_url);
-use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path);
+use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path get_genome_cache_path);
 use CoGe::Core::Metadata qw(tags_to_string);
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
-    generate_results link_results generate_bed 
-    generate_tbl export_to_irods generate_gff generate_features copy_and_mask
+    export_to_irods generate_gff generate_features copy_and_mask
     create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
-    create_bam_index_job create_gff_generation_job create_load_experiment_job
-    create_load_genome_job create_load_genome_from_NCBI_job create_load_batch_job
+    create_bam_index_job create_gff_generation_job create_load_experiment_job create_load_batch_job
     create_validate_fastq_job create_cutadapt_job create_tophat_workflow
     create_gsnap_workflow create_load_bam_job create_gunzip_job
-    create_notebook_job create_bam_sort_job create_iget_job create_untar_job
-    create_load_annotation_job create_data_retrieval_workflow
-    send_email_job add_items_to_notebook_job create_hisat2_workflow
-    export_experiment_job create_cutadapt_workflow create_join_files_job
-    create_trimgalore_job create_trimgalore_workflow create_sort_fasta_job
+    create_notebook_job create_bam_sort_job create_iget_job 
+    create_load_annotation_job create_data_retrieval_workflow create_hisat2_workflow
+    export_experiment_job create_cutadapt_workflow
+    create_trimgalore_job create_trimgalore_workflow 
     create_bismark_alignment_job create_bismark_index_job create_bismark_workflow
     create_bwameth_alignment_job create_bwameth_index_job create_bwameth_workflow
     create_bgzip_job create_tabix_index_job create_sumstats_job
     add_workflow_result create_bowtie2_workflow create_image_job
-    add_metadata_to_results_job create_process_fasta_job
+    add_metadata_to_results_job create_bigwig_to_wig_job
     create_transdecoder_longorfs_job create_transdecoder_predict_job
-    create_bigwig_to_wig_job create_irods_imeta_job
 );
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
 
-sub link_results { #FIXME deprecated, remove soon
-   my ($input, $output, $result_dir, $conf) = @_;
+# mdb removed 10/7/16 -- deprecated
+#sub link_results {
+#   my ($input, $output, $result_dir, $conf) = @_;
+#
+#   return {
+#        cmd     => catfile($CONF->{SCRIPTDIR}, "link_results.pl"),
+#        args    => [
+#            ['-input_files', escape($input), 0],
+#            ['-output_files', escape($output), 0],
+#            ['-result_dir', $result_dir, 0]
+#        ],
+#        inputs  => [$input],
+#        outputs => [catfile($result_dir, basename($output))],
+#        description => "Generating results..."
+#   };
+#}
 
-   return {
-        cmd     => catfile($CONF->{SCRIPTDIR}, "link_results.pl"),
-        args    => [
-            ['-input_files', escape($input), 0],
-            ['-output_files', escape($output), 0],
-            ['-result_dir', $result_dir, 0]
-        ],
-        inputs  => [$input],
-        outputs => [catfile($result_dir, basename($output))],
-        description => "Generating results..."
-   };
-}
-
-sub generate_results { #FIXME deprecated, remove soon
-   my ($input, $type, $result_dir, $conf, $dependency) = @_;
-
-   return {
-        cmd     => catfile($CONF->{SCRIPTDIR}, "generate_results.pl"),
-        args    => [
-            ['-input_files', escape($input), 0],
-            ['-type', $type, 0],
-            ['-result_dir', $result_dir, 0]
-        ],
-        inputs  => [$dependency],
-        outputs => [catfile($result_dir, "1")],
-        description => "Generating results..."
-   };
-}
+# mdb removed 10/7/16 -- deprecated
+#sub generate_results {
+#   my ($input, $type, $result_dir, $conf, $dependency) = @_;
+#
+#   return {
+#        cmd     => catfile($CONF->{SCRIPTDIR}, "generate_results.pl"),
+#        args    => [
+#            ['-input_files', escape($input), 0],
+#            ['-type', $type, 0],
+#            ['-result_dir', $result_dir, 0]
+#        ],
+#        inputs  => [$dependency],
+#        outputs => [catfile($result_dir, "1")],
+#        description => "Generating results..."
+#   };
+#}
 
 sub add_workflow_result {
     my %opts = @_;
@@ -121,36 +119,13 @@ sub copy_and_mask {
     );
 }
 
-sub generate_bed {
-    my %args = @_;
-
-    # Check for a genome or dataset id
-    return unless $args{gid};
-
-    # Generate file name
-    my $basename = $args{basename};
-    my $filename = "$basename" . "_id" . $args{gid} . ".bed";
-    my $path = get_download_path('genome', $args{gid});
-    my $output_file = catfile($path, $filename);
-
-    return $output_file, {
-        cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.pl"),
-        args => [
-            ['-gid', $args{gid}, 0],
-            ['-f', $filename, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 0],
-        ],
-        outputs => [$output_file]
-    };
-}
-
 sub generate_features {
     my %args = @_;
 
     my $filename = $args{basename} . "-gid-" . $args{gid};
     $filename .= "-prot" if $args{protein};
     $filename .= ".fasta";
-    my $path = get_download_path('genome', $args{gid});
+    my $path = get_genome_cache_path($args{gid});
     my $output_file = catfile($path, $filename);
 
     return $output_file, (
@@ -166,61 +141,20 @@ sub generate_features {
     );
 }
 
-sub generate_tbl {
-    my %args = @_;
-
-    # Generate filename
-    my $organism = $args{basename};
-    my $filename = $organism . "id" . $args{gid} . "_tbl.txt";
-    my $path = get_download_path('genome', $args{gid});
-    my $output_file = catfile($path, $filename);
-
-    return $output_file, {
-        cmd     => catfile($CONF->{SCRIPTDIR}, "export_NCBI_TBL.pl"),
-        args    => [
-            ['-gid', $args{gid}, 0],
-            ['-f', $filename, 0],
-            ["-config", $CONF->{_CONFIG_PATH}, 0]
-        ],
-        outputs => [$output_file]
-    };
-}
-
 sub export_to_irods {
     my ($src, $dest, $overwrite, $done_file) = @_;
 
-    $overwrite = 0 unless defined $overwrite;
-
     irods_set_env(catfile($CONF->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
-    my $cmd = irods_iput($src, $dest, { no_execute => 1, overwrite => $overwrite });
+    my $cmd = irods_iput($src, $dest, { no_execute => 1, overwrite => ($overwrite // 0) });
 
     my $filename = basename($done_file);
 
-   return {
-        cmd => qq[$cmd && touch $filename],
-        description => "Exporting file to IRODS",
-        args => [],
-        inputs => [$src],
-        outputs => [$done_file]
-   };
-}
-
-sub create_irods_imeta_job {
-    my %opts = @_;
-    my $dest_file_path = $opts{dest_file_path};
-    my $metadata_file  = $opts{metadata_file};
-    
-    my $cmd = catdir($CONF->{SCRIPTDIR}, 'irods.pl');
-    
     return {
-        cmd => $cmd,
-        description => "Generating IRODS metadata for $dest_file_path",
-        args => [
-            ["-cmd", 'metadata', 0],
-            ["-metafile", $metadata_file, 0],
-        ],
-        inputs => [],
-        outputs => []
+        cmd => qq[$cmd && touch $done_file],
+        description => "Exporting file to IRODS " . $dest,
+        args => [],
+        inputs => [ $src ],
+        outputs => [ $done_file ]
     };
 }
 
@@ -411,13 +345,13 @@ sub generate_gff {
     $filename .= ".gff";
     $filename =~ s/\s+/_/g;
     $filename =~ s/\)|\(/_/g;
-    my $path = get_download_path('genome', $args{gid});
+    my $path = get_genome_cache_path($args{gid});
     my $output_file = catfile($path, $filename);
     
     # Build argument list
     my $args = [
         ['-gid', $args{gid}, 0],
-        ['-f', $filename, 0],
+        ['-f', $filename, 1],
         ['-config', $CONF->{_CONFIG_PATH}, 0],
         ['-cds', $args{cds}, 0],
         ['-annos', $args{annos}, 0],
@@ -428,11 +362,11 @@ sub generate_gff {
     push @$args, ['-chr', $args{chr}, 0] if (defined $args{chr});
     push @$args, ['-add_chr', $args{add_chr}, 0] if (defined $args{add_chr});
     
-    # Return workflow definition
     return $output_file, {
         cmd     => catfile($CONF->{SCRIPTDIR}, "coge_gff.pl"),
         script  => undef,
         args    => $args,
+        inputs  => [],
         outputs => [ $output_file ],
         description => "Generating GFF..."
     };
@@ -457,29 +391,6 @@ sub create_image_job {
             catfile($staging_dir, "$input_file.log")
         ],
         description => "Loading image into database..."
-    };
-}
-
-sub create_untar_job {
-    my $input_file = shift;
-    my $output_path = shift;
-    my $done_file = "$input_file.untarred";
-
-    my $cmd = get_command_path('TAR');
-
-    return {
-        cmd => "mkdir -p $output_path && $cmd -xf $input_file --directory $output_path && touch $done_file",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_file,
-            $input_file . '.done' # ensure file is done transferring
-        ],
-        outputs => [
-            [$output_path, '1'],
-            $done_file
-        ],
-        description => "Unarchiving " . basename($input_file) . "..."
     };
 }
 
@@ -618,85 +529,6 @@ sub create_bam_index_job {
             $input_file . '.bai'
         ],
         description => "Indexing BAM file...",
-    };
-}
-
-sub create_process_fasta_job {
-    my %opts = @_;
-
-    # Required arguments
-    my $input_fasta_file = $opts{input_fasta_file}; # fasta file
-    my $output_fasta_file = $opts{output_fasta_file};
-    my $staging_dir = $opts{staging_dir};
-    
-    my $done_file = $input_fasta_file . '.processed';
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "process_fasta.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    return {
-        cmd => "$cmd -input_fasta_file $input_fasta_file -output_fasta_file $output_fasta_file -staging_dir $staging_dir && touch $done_file",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_fasta_file
-        ],
-        outputs => [
-            catfile($staging_dir, $output_fasta_file),
-            $done_file
-        ],
-        description => "Validating/processing FASTA file...",
-    };
-}
-
-sub create_join_files_job {
-    my %opts = @_;
-    my $input_files = $opts{input_files};
-    my $output_file = $opts{output_file};
-    my $done_files  = $opts{done_files};
-    
-    my $cmd = "mkdir -p \$(dirname $output_file) && cat " . join(' ', @$input_files) . ' > ' . $output_file;
-    
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [],
-        inputs => [
-            #@$input_files,
-            @$done_files
-        ],
-        outputs => [
-            $output_file
-        ],
-        description => 'Joining files...'
-    };
-}
-
-sub create_sort_fasta_job {
-    my %opts = @_;
-    my $fasta_file = $opts{fasta_file};
-    my $staging_dir = $opts{staging_dir};
-    
-    my $filename = basename($fasta_file);
-    my $output_file = "$filename.sorted";
-    
-    my $cmd = $CONF->{SIZESEQ} || 'sizeseq';
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-sequences', $filename, 0],
-            ['-descending', 'Y', 0],
-            ['-outseq', $output_file, 0]
-        ],
-        inputs => [
-            $fasta_file
-        ],
-        outputs => [
-            catfile($staging_dir, $output_file)
-        ],
-        description => 'Sorting FASTA file...'
     };
 }
 
@@ -843,100 +675,6 @@ sub create_load_experiment_job {
             $result_file
         ],
         description => "Loading" . ($name ? " $name" : '') . " experiment..."
-    };
-}
-
-sub create_load_genome_job {
-    my %opts = @_;
-
-    # Required arguments
-    my $user = $opts{user};
-    my $metadata = $opts{metadata};
-    my $staging_dir = $opts{staging_dir};
-    my $wid = $opts{wid};
-    my $organism_id = $opts{organism_id};
-    my $fasta_file = $opts{fasta_file};
-    my $irods_files = $opts{irods_files};
-    my $done_files = $opts{done_files};
-    
-    my $cmd = 'perl ' . catfile($CONF->{SCRIPTDIR}, "load_genome.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-    
-    my $result_file = get_workflow_results_file($user->name, $wid);
-
-    my $irods_str = '';
-    $irods_str = join(',', map { basename($_) } @$irods_files) if ($irods_files && @$irods_files);
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-user_name', $user->name, 0],
-            ['-wid', $wid, 0],
-            ['-name', ($metadata->{name} ? shell_quote($metadata->{name}) : '""'), 0],
-            ['-desc', ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
-            ['-link', ($metadata->{link} ? shell_quote($metadata->{link}) : '""'), 0],
-            ['-version', ($metadata->{version} ? shell_quote($metadata->{version}) :'""'), 0],
-            ['-restricted', ($metadata->{restricted} ? 1 : 0), 0],
-            ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
-            ['-organism_id', $organism_id, 0],
-            ['-type_id', ( $metadata->{type} ? shell_quote($metadata->{type}) : 1 ), 0], # default to "unmasked"
-            ['-staging_dir', $staging_dir, 0],
-            ['-fasta_file', shell_quote($fasta_file), 0],
-            ['-irods_files', shell_quote($irods_str), 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 0]
-        ],
-        inputs => [
-            $fasta_file,
-            @$done_files
-        ],
-        outputs => [
-            catfile($staging_dir, "log.done"),
-            $result_file
-        ],
-        description => "Loading genome ..."
-    };
-}
-
-sub create_load_genome_from_NCBI_job {
-    my %opts = @_;
-
-    # Required arguments
-    my $user = $opts{user};
-    my $metadata = $opts{metadata};
-    my $staging_dir = $opts{staging_dir};
-    my $wid = $opts{wid};
-    my $ncbi_accns = $opts{ncbi_accns};
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "genbank_genome_loader.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-    
-    my $output_path = catdir($staging_dir, "load_genome_from_ncbi");
-    
-    my $result_file = get_workflow_results_file($user->name, $wid);
-
-    my $args = [
-        ['-user_name', $user->name, 0],
-        ['-wid', $wid, 0],
-        ['-staging_dir', "./load_genome_from_ncbi", 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 0],
-        ['-GO', 1, 0]
-    ];
-    foreach (@$ncbi_accns) {
-        push @$args, ['-accn', "'$_'", 0];
-    }
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => $args,
-        inputs => [],
-        outputs => [
-            [$output_path, '1'],
-            catfile($output_path, "log.done"),
-            $result_file
-        ],
-        description => "Importing genome from NCBI ..."
     };
 }
 
@@ -1347,14 +1085,11 @@ sub create_gff_generation_job {
     my $cmd = catfile($CONF->{SCRIPTDIR}, "coge_gff.pl");
     my $name = sanitize_name($organism_name) . "-1-name-0-0-id-" . $gid . "-1.gff";
 
-    my $inputs = [];
-    #push @{$inputs}, $validated if $validated;
-
     return {
         cmd => $cmd,
         script => undef,
         args => [
-            ['-f', $name, 0],
+            ['-f', $name, 1],
             ['-staging_dir', '.', 0],
             ['-gid', $gid, 0],
             ['-upa', 1, 0],
@@ -1364,9 +1099,9 @@ sub create_gff_generation_job {
             ['-nu', 1, 0],
             ['-config', $CONF->{_CONFIG_PATH}, 0],
         ],
-        inputs => $inputs,
+        inputs => [],
         outputs => [
-            catdir($CONF->{CACHEDIR}, $gid, "gff", $name)
+            catfile(get_genome_cache_path($gid), $name)
         ],
         description => "Generating genome annotations GFF file..."
     };
@@ -1447,7 +1182,7 @@ sub create_hisat2_alignment_job {
 	my $args = [
 		['-p', '32', 0],
                 ['--dta-cufflinks', '', 0], # mdb added 8/9/16 for Cufflinks error "BAM record error: found spliced alignment without XS attribute"
-		['-x', catfile($CONF->{CACHEDIR}, $gid, 'hisat2_index', 'genome.reheader'), 0],
+		['-x', catfile(get_genome_cache_path($gid), 'hisat2_index', 'genome.reheader'), 0],
 		['-S', $output_file, 0]
     ];
     
@@ -1481,7 +1216,7 @@ sub create_hisat2_index_job {
     my $gid = shift;
     my $fasta = shift;
 
-    my $cache_dir = catdir($CONF->{CACHEDIR}, $gid, "hisat2_index");
+    my $cache_dir = catdir(get_genome_cache_path($gid), "hisat2_index");
 	make_path $cache_dir unless (-d $cache_dir);
     my $name = catfile($cache_dir, 'genome.reheader');
 
@@ -1638,7 +1373,7 @@ sub create_bowtie_index_job {
     my $name = to_filename($fasta);
     
     my $cmd = get_command_path('BOWTIE_BUILD', 'bowtie2-build');
-    my $BOWTIE_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bowtie_index");
+    my $BOWTIE_CACHE_DIR = catdir(get_genome_cache_path($gid), "bowtie_index");
 
     return catdir($BOWTIE_CACHE_DIR, $name), {
         cmd => $cmd,
@@ -1815,7 +1550,7 @@ sub create_bismark_index_job {
     my $done_file = 'bismark_genome_preparation.done';
     
     my $cmd = $CONF->{BISMARK_DIR} ? catfile($CONF->{BISMARK_DIR}, 'bismark_genome_preparation') : 'bismark_genome_preparation';
-    my $BISMARK_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bismark_index");
+    my $BISMARK_CACHE_DIR = catdir(get_genome_cache_path($gid), "bismark_index");
     $cmd = "mkdir -p $BISMARK_CACHE_DIR && " .
            "cp $fasta $BISMARK_CACHE_DIR/$name.fa && " . # bismark requires fasta file to end in .fa or .fasta, not .faa
            "nice $cmd $BISMARK_CACHE_DIR && " .
@@ -1951,7 +1686,7 @@ sub create_bwameth_index_job {
     my $done_file = 'bwameth_index.done';
     
     my $cmd = ($CONF->{BWAMETH} ? $CONF->{BWAMETH} : 'bwameth') . ' index';
-    my $BWAMETH_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "bwameth_index");
+    my $BWAMETH_CACHE_DIR = catdir(get_genome_cache_path($gid), "bwameth_index");
     
     $cmd = "mkdir -p $BWAMETH_CACHE_DIR && " .
            "cd $BWAMETH_CACHE_DIR && " .
@@ -2089,7 +1824,7 @@ sub create_gmap_index_job {
     my $fasta = shift;
     my $name = to_filename($fasta);
     my $cmd = get_command_path('GMAP_BUILD');
-    my $GMAP_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "gmap_index");
+    my $GMAP_CACHE_DIR = catdir(get_genome_cache_path($gid), "gmap_index");
 
     return {
         cmd => $cmd,
@@ -2290,52 +2025,6 @@ sub create_sumstats_job {
     };
 }
 
-sub create_notebook_job {
-    my %opts = @_;
-    my $user = $opts{user};
-    my $wid = $opts{wid};
-    my $metadata = $opts{metadata};
-    my $annotations = $opts{annotations}; # array ref
-    my $staging_dir = $opts{staging_dir};
-    my $done_files = $opts{done_files};
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "create_notebook.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    my $result_file = get_workflow_results_file($user->name, $wid);
-    
-    my $log_file = catfile($staging_dir, "create_notebook", "log.txt");
-    
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
-    
-    my $args = [
-        ['-uid', $user->id, 0],
-        ['-wid', $wid, 0],
-        ['-name', shell_quote($metadata->{name}), 0],
-        ['-desc', shell_quote($metadata->{description}), 0],
-        ['-type', 2, 0],
-        ['-restricted', $metadata->{restricted}, 0],
-        ['-annotations', qq{"$annotations_str"}, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 0],
-        ['-log', $log_file, 0]
-    ];
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => $args,
-        inputs => [ 
-            @$done_files
-        ],
-        outputs => [ 
-            $result_file,
-            $log_file
-        ],
-        description => "Creating notebook of results..."
-    };
-}
-
 sub create_transdecoder_longorfs_job {
     my $input_file = shift;
 
@@ -2382,44 +2071,6 @@ sub create_transdecoder_predict_job {
             $done_file
         ],
         description => "Running TransDecoder.Predict..."
-    };
-}
-
-sub add_items_to_notebook_job {
-    my %opts = @_;
-    my $user = $opts{user};
-    my $wid = $opts{wid};
-    my $notebook_id = $opts{notebook_id};
-    my $staging_dir = $opts{staging_dir};
-    my $done_files = $opts{done_files};
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "add_items_to_notebook.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    my $result_file = get_workflow_results_file($user->name, $wid);
-    
-    my $log_file = catfile($staging_dir, "add_items_to_notebook", "log.txt");
-    
-    my $args = [
-        ['-uid', $user->id, 0],
-        ['-wid', $wid, 0],
-        ['-notebook_id', $notebook_id, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 0],
-        ['-log', $log_file, 0]
-    ];
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => $args,
-        inputs => [ 
-            @$done_files
-        ],
-        outputs => [ 
-            $result_file,
-            $log_file
-        ],
-        description => "Adding experiment to notebook..."
     };
 }
 
@@ -2472,40 +2123,41 @@ sub add_metadata_to_results_job {
     };
 }
 
-sub send_email_job {
-    my %opts = @_;
-    my $from = 'CoGe Support <coge.genome@gmail.com>';
-    my $to = $opts{to};
-    my $subject = $opts{subject};
-    my $body = $opts{body};
-    my $done_files = $opts{done_files};
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "send_email.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    my $staging_dir = $opts{staging_dir};
-    my $done_file = catfile($staging_dir, "send_email.done");
-    
-    my $args = [
-        ['-from', '"'.escape($from).'"', 0],
-        ['-to', '"'.escape($to).'"', 0],
-        ['-subject', '"'.escape($subject).'"', 0],
-        ['-body', '"'.escape($body).'"', 0],
-        ['-done_file', '"'.$done_file.'"', 0]
-    ];
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => $args,
-        inputs => [ 
-            @$done_files
-        ],
-        outputs => [ 
-            $done_file
-        ],
-        description => "Sending email..."
-    };
-}
+# mdb removed 10/5/16 -- replaced with Buildable::send_email
+#sub send_email_job {
+#    my %opts = @_;
+#    my $from = 'CoGe Support <coge.genome@gmail.com>';
+#    my $to = $opts{to};
+#    my $subject = $opts{subject};
+#    my $body = $opts{body};
+#    my $done_files = $opts{done_files};
+#
+#    my $cmd = catfile($CONF->{SCRIPTDIR}, "send_email.pl");
+#    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
+#
+#    my $staging_dir = $opts{staging_dir};
+#    my $done_file = catfile($staging_dir, "send_email.done");
+#
+#    my $args = [
+#        ['-from', '"'.escape($from).'"', 0],
+#        ['-to', '"'.escape($to).'"', 0],
+#        ['-subject', '"'.escape($subject).'"', 0],
+#        ['-body', '"'.escape($body).'"', 0],
+#        ['-done_file', '"'.$done_file.'"', 0]
+#    ];
+#
+#    return {
+#        cmd => $cmd,
+#        script => undef,
+#        args => $args,
+#        inputs => [
+#            @$done_files
+#        ],
+#        outputs => [
+#            $done_file
+#        ],
+#        description => "Sending email..."
+#    };
+#}
 
 1;

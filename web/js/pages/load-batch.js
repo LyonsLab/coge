@@ -301,8 +301,7 @@ function load(batch) {
 	var request = {
 		type: 'load_batch',
 		requester: {
-			page:      PAGE_NAME,
-			user_name: USER_NAME
+			page: PAGE_NAME
 		},
 		parameters: {
 			genome_id:         batch.gid,

@@ -27,7 +27,7 @@ GetOptions(
     "install_dir=s" => \$install_dir,    # optional, for debug
     "wid=s"         => \$wid,            # workflow id
     "fasta_file=s"  => \$fasta_file,     # pre-processed fasta file to load
-    "irods_files=s" => \$irods_files,    # optional comma-separated list (JS escaped) of files to set metadata
+#    "irods_files=s" => \$irods_files,    # optional comma-separated list (JS escaped) of files to set metadata
     "name=s"        => \$name,           # genome name (JS escaped)
     "desc=s"        => \$description,    # genome description (JS escaped)
     "message=s"		=> \$message,		 # message (JS escaped)
@@ -58,7 +58,7 @@ if (-e $logdonefile) {
 
 # Process and verify parameters
 $fasta_file = unescape($fasta_file) if ($fasta_file);
-$irods_files = unescape($irods_files) if ($irods_files);
+#$irods_files = unescape($irods_files) if ($irods_files);
 $name        = unescape($name) if ($name);
 $description = unescape($description) if ($description);
 $link        = unescape($link) if ($link);
@@ -375,17 +375,17 @@ execute("cp $fasta_file.fai $storage_path/genome.faa.fai");
 #    execute("cp $fasta_file.razf.fai $storage_path/");
 #}
 
-# Update IRODS metadata #FIXME not working anymore, need to separate out into separate task in workflow
-if ($irods_files) {
-	my @irods = split( ',', $irods_files );
-	my %metadata = (
-		$IRODS_METADATA_PREFIX.'link' => $P->{SERVER} . 'GenomeInfo.pl?gid=' . $genome->id
-		#TODO need to add fields that match GenomeInfo.pl
-	);
-	foreach my $file (@irods) {
-		CoGe::Accessory::IRODS::irods_imeta($file, \%metadata);
-	}
-}
+# Update IRODS metadata # mdb removed 9/28/16 -- deprecated
+#if ($irods_files) {
+#	my @irods = split( ',', $irods_files );
+#	my %metadata = (
+#		$IRODS_METADATA_PREFIX.'link' => $P->{SERVER} . 'GenomeInfo.pl?gid=' . $genome->id
+#		#TODO need to add fields that match GenomeInfo.pl
+#	);
+#	foreach my $file (@irods) {
+#		CoGe::Accessory::IRODS::irods_imeta($file, \%metadata);
+#	}
+#}
 
 # Save result
 unless (add_workflow_result($user->name, $wid, 
