@@ -1484,15 +1484,15 @@ sub create_hisat2_index_job {
     my $cache_dir = catdir($CONF->{CACHEDIR}, $gid, "hisat2_index");
 	make_path $cache_dir unless (-d $cache_dir);
     my $name = catfile($cache_dir, 'genome.reheader');
-    
+
+    my $done_file = "$name.done";
+
+    my $cmd = 'nice ' . get_command_path('HISAT2_BUILD', 'hisat2-build') . " -p 32 $fasta $name && touch $done_file";
+
     return {
-        cmd => 'nice ' . get_command_path('HISAT2_BUILD', 'hisat2-build'),
+        cmd => $cmd,
         script => undef,
-        args => [
-        	['-p', '32', 0],
-            ['', $fasta, 0],
-            ['', $name, 0],
-        ],
+        args => [],
         inputs => [ $fasta ],
         outputs => [
             $name . ".1.ht2",
@@ -1502,7 +1502,8 @@ sub create_hisat2_index_job {
             $name . ".5.ht2",
             $name . ".6.ht2",
             $name . ".7.ht2",
-            $name . ".8.ht2"
+            $name . ".8.ht2",
+            $done_file
         ],
         description => "Indexing genome sequence with hisat2-build..."
     };
