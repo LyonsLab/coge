@@ -637,10 +637,14 @@ var coge = window.coge = (function(namespace) {
 					var filelist = result.items;
 					if (!filelist || filelist.length == 0) {
 						alert("Location not found.");
+						$('#ftp_get_button').removeClass('ui-state-disabled');
+						$('#ftp_status').html('');
 						return;
 					}
 					if (filelist.length > self.maxFtpFiles) {
 						alert("Too many files (" + filelist.length + ") at specified location, limit is " + self.maxFtpFiles + ".");
+						$('#ftp_get_button').removeClass('ui-state-disabled');
+						$('#ftp_status').html('');
 						return;
 					}
 

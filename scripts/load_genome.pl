@@ -16,6 +16,9 @@ use URI::Escape::JavaScript qw(unescape);
 use POSIX qw(ceil);
 use Benchmark;
 
+use constant LOADING => 1;
+use constant LOADED => 2;
+
 use vars qw($staging_dir $install_dir $fasta_file $irods_files
   $name $description $link $version $type_id $restricted $message $wid
   $organism_id $source_id $source_name $source_desc $user_id $user_name
@@ -251,6 +254,7 @@ my $genome = $coge->resultset('Genome')->create(
         genomic_sequence_type_id => $type_id,
         creator_id               => $creator->id,
         restricted               => $restricted,
+        status                   => LOADING
     }
 );
 unless ($genome) {
@@ -425,6 +429,8 @@ CoGe::Accessory::TDS::write(
 # Create "log.done" file to indicate completion to JEX
 touch($logdonefile);
 print STDOUT "All done!\n";
+
+$genome->update({status => LOADED});
 
 exit;
 
