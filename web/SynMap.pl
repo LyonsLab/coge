@@ -5,6 +5,7 @@ no warnings 'redefine';
 umask(0);
 
 use CoGeX;
+use CoGeX::Result::Genome qw(ERROR LOADING);
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
 use CoGe::Builder::Tools::SynMap;
@@ -786,6 +787,8 @@ sub get_genome_info {
 	$feattype_menu .= qq{<OPTION VALUE=2 $genomic_selected>genomic</option>};
 	$feattype_menu .= "</select>";
 	$message = "<span class='small alert'>No Coding Sequence in Genome</span>" unless $has_cds;
+	$message = "<span class='small alert'>Genome is still being loaded</span>" if $dsg->status == LOADING;
+	$message = "<span class='small alert'>There was an error while loading this genome</span>" if $dsg->status == ERROR;
 
 	return $html_dsg_info, $feattype_menu, $message, $chr_length, $org_num,
 	  $dsg->organism->name, $dsg->genomic_sequence_type_id;

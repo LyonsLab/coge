@@ -2,6 +2,7 @@
 use v5.10;
 use strict;
 use CoGeX;
+use CoGeX::Result::Genome qw(ERROR LOADING);
 use DBIxProfiler;
 use CoGe::Accessory::Utils qw( commify html_escape);
 use CoGe::Accessory::LogUser;
@@ -326,6 +327,8 @@ sub gen_dsg_menu {
         
         my $has_cds = has_cds( $dsg->id );
         $name .= " NO CDS ANNOTATIONS - CAN'T BE USED: " unless $has_cds;
+        $name .= " Genome is still being loaded - CAN'T BE USED: " if $dsg->status == LOADING;
+        $name .= " There was an error while loading this genome - CAN'T BE USED: " if $dsg->status == ERROR;
         
         $dsgid = $dsg->id unless $dsgid;
 	    $name .= " (id ". $dsg->id.") ";
