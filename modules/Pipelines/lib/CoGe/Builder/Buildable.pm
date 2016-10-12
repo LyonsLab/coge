@@ -11,7 +11,7 @@ use String::ShellQuote;
 use Data::Dumper;
 
 use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
-use CoGe::Accessory::Web qw(get_command_path get_tiny_link);
+use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
 use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
 
 requires qw(build);
