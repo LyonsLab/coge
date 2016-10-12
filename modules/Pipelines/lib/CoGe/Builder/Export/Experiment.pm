@@ -5,8 +5,10 @@ with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
-use CoGe::Core::Storage qw(get_download_path);
-use CoGe::Builder::CommonTasks qw(export_experiment_job export_to_irods generate_results link_results send_email_job);
+use CoGe::Accessory::Web qw(download_url_for);
+use CoGe::Core::Storage qw(get_experiment_cache_path);
+use CoGe::Core::Experiment qw(get_irods_metadata);
+use CoGe::Builder::CommonTasks qw(export_experiment_job export_to_irods);
 use File::Spec::Functions qw(catdir catfile);
 use Data::Dumper;
 
@@ -29,9 +31,9 @@ sub build {
     my $exp_name = sanitize_name($experiment->name);
        $exp_name = $eid unless $exp_name;
 
-    my $filename = "experiment_$exp_name.tar.gz";
-    my $cache_dir = get_download_path('experiment', $eid);
-    my $cache_file = catfile($cache_dir, $filename);
+    my $output_file = "experiment_$exp_name.tar.gz";
+    my $cache_dir = get_experiment_cache_path($eid);
+    my $cache_file = catfile($cache_dir, $output_file);
 
     # Export experiment
     $self->workflow->add_job( 
@@ -41,43 +43,52 @@ sub build {
         )
     );
 
-    my @done_files;
-    if ($dest_type eq "irods") {
-        my $base = $self->params->{dest_path};
-        $base = irods_get_base_path($self->user->name) unless $base;
-        my $dest = catfile($base, $filename);
-        my $irods_done = catfile($self->staging_dir, "irods.done");
+    if ($dest_type eq "irods") { # irods export
+        # Set IRODS destination path
+        my $irods_base = $self->params->{dest_path};
+        $irods_base = irods_get_base_path($self->user->name) unless $irods_base;
+        my $irods_dest = catfile($irods_base, $output_file);
 
-        $self->workflow->add_job( export_to_irods($cache_file, $dest, $self->params->{overwrite}, $irods_done) );
-        #TODO remove legacy generate_results, still used by ExperimentView.pl
-        my $results_task = generate_results($dest, $dest_type, $self->result_dir, $self->conf, $irods_done);
-        $self->workflow->add_job($results_task);
-        push @done_files, $results_task->{outputs}->[0];
+        # Export file task
+        $self->add_task_chain(
+            $self->export_to_irods(
+                src_file => $cache_file,
+                dest_file => catfile($irods_base, $output_file),
+                overwrite => $self->params->{overwrite}
+            )
+        );
+
+        # Set file metadata task
+        my $md = get_irods_metadata($experiment);
+        my $md_file = catfile($self->staging_dir, 'irods_metadata.json');
+        CoGe::Accessory::TDS::write($md_file, $md);
+        $self->add_task_chain(
+            $self->create_irods_imeta(
+                dest_file => $irods_dest,
+                metadata_file => $md_file
+            )
+        );
+
+        # Add to results
+        $self->add_task_chain(
+            $self->add_result(
+                result   => {
+                    type => 'irods',
+                    path => $irods_dest
+                }
+            )
+        );
     } 
-    else {
-        #TODO remove legacy link_results, still used by ExperimentView.pl
-        my $results_task = link_results($cache_file, $cache_file, $self->result_dir, $self->conf);
-        $self->workflow->add_job($results_task);
-        push @done_files, $results_task->{outputs}->[0];
-    }
-    
-    # Send notification email #TODO move into shared module
-    if ( $self->params->{email} ) {
-        # Build message body
-        my $body = 'Export of experiment "' . $exp_name . '" (id' . $eid . ') has finished.';
-        $body .= "\nLink: " . $self->site_url if $self->site_url;
-        $body .= "\n\nNote: you received this email because you submitted a job on " .
-            "CoGe (http://genomevolution.org) and selected the option to be emailed " .
-            "when finished.";
-        
-        # Create task
-        $self->workflow->add_job(
-            send_email_job(
-                to => $self->user->email,
-                subject => 'CoGe experiment export done',
-                body => $body,
-                staging_dir => $self->staging_dir,
-                done_files => \@done_files
+    else { # http download
+        $self->add_task_chain(
+            $self->add_result(
+                result   => {
+                    type => 'url',
+                    path => download_url_for(
+                        eid => $experiment->id,
+                        file => $output_file
+                    )
+                }
             )
         );
     }

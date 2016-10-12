@@ -15,7 +15,7 @@ sub add {
     my $self = shift;
     my $payload = shift || $self->req->json; # allow special payload to be passed in from other controllers
     #warn "CoGe::Services::API::Job::add\n", Dumper $payload;
-    
+
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     
@@ -44,25 +44,29 @@ sub add {
             error => { Error => "Failed to generate pipeline" }
         });
     }
-    my $response = $request_handler->execute($pipeline);
     
-    # Pipeline was submitted successfully
-    if ($response->{success}) {
-        # Log submission
-        CoGe::Accessory::Web::log_history(
-            db          => $db,
-            parent_id   => $response->{id},
-            parent_type => 7, #FIXME magic number
-            user_id     => ($user ? $user->id : 0),
-            page        => $pipeline->page,
-            description => $pipeline->workflow->name,
-            link        => ($response->{site_url} ? $response->{site_url} : '')
-        );
-        print STDERR "CoGe::Services::API::Job::add submitted workflow ", $response->{id}, "\n";
+    # Submit pipeline
+    my $response = $request_handler->execute($pipeline);
+    unless ($response->{success} && $response->{id}) {
+        return $self->render(json => {
+            error => { Error => "JEX returned error on submission" }
+        });
     }
     
+    # Log submission
+    CoGe::Accessory::Web::log_history(
+        db          => $db,
+        parent_id   => $response->{id},
+        parent_type => 7, #FIXME magic number
+        user_id     => ($user ? $user->id : 0),
+        page        => ($pipeline->page ? $pipeline->page : 'API'), # will be 'API' for external API requests
+        description => $pipeline->workflow->name,
+        link        => ($response->{site_url} ? $response->{site_url} : '')
+    );
+    print STDERR "CoGe::Services::API::Job::add submitted workflow ", $response->{id}, "\n";
+    
     # Convert 'success' to boolean
-    $response->{success} = ($response->{success} ? Mojo::JSON->true : Mojo::JSON->false);
+    $response->{success} = Mojo::JSON->true;
 
     return $self->render(status => 201, json => $response);
 }

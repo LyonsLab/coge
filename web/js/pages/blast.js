@@ -745,8 +745,7 @@ function blastOff(dialog, results, basename) {
         data: JSON.stringify({
             type: 'blast',
             requester: {
-                page:      PAGE_NAME,
-                user_name: USER_NAME
+                page: PAGE_NAME
             },
             parameters: options
         }),

@@ -600,8 +600,7 @@ var coge = window.coge = (function(namespace) {
             var request = {
                 type: 'synmap',
                 requester: {
-                    page:      PAGE_NAME,
-                    user_name: USER_NAME
+                    page: PAGE_NAME
                 },
                 parameters: params
             };

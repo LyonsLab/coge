@@ -146,6 +146,7 @@ JEX/lib/CoGe/JEX/Workflow.pm
 JEX/lib/CoGe/JEX/Jex.pm
 Pipelines/lib/CoGe/Builder/Buildable.pm
 Pipelines/lib/CoGe/Builder/Common/Alignment.pm
+Pipelines/lib/CoGe/Builder/Common/DataRetrieval.pm
 Pipelines/lib/CoGe/Builder/CommonTasks.pm
 Pipelines/lib/CoGe/Builder/Export/Experiment.pm
 Pipelines/lib/CoGe/Builder/Export/Fasta.pm
@@ -175,7 +176,7 @@ Pipelines/lib/CoGe/Request/ExperimentAnalysis.pm
 Pipelines/lib/CoGe/Factory/PipelineFactory.pm
 Pipelines/lib/CoGe/Factory/RequestFactory.pm
 Services/lib/CoGe/Services/Auth.pm
-Services/lib/CoGe/Services/Routes.pm
+Services/lib/CoGe/Services/Error.pm
 Services/lib/CoGe/Services/API/Experiment.pm
 Services/lib/CoGe/Services/API/Genome.pm
 Services/lib/CoGe/Services/API/Genome2.pm

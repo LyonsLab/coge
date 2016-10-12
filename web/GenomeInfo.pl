@@ -895,7 +895,7 @@ sub cache_chr_fasta {
     my $gid = $opts{gid};
     my $chr = $opts{chr};
 
-    my $path = get_download_path('genome', $gid);
+    my $path = get_genome_cache_path($gid);
 	mkpath( $path, 0, 0777 ) unless -d $path;
     my $file = catfile($path, $gid . "_" . $chr . ".faa");
 	my %json;
@@ -1306,9 +1306,6 @@ sub get_sequence_types {
 }
 
 sub get_sources {
-
-    #my %opts = @_;
-
     my %unique;
     foreach ( $DB->resultset('DataSource')->all() ) {
         $unique{ $_->name }++;
@@ -1589,7 +1586,7 @@ sub get_aa_usage {
     return $html2; #return $html1, $html2;
 }
 
-sub export_fasta {
+sub export_fasta { #TODO migrate to API
     my %opts    = @_;
     my $gid = $opts{gid};
     #print STDERR "export_fasta $gid\n";
@@ -1600,7 +1597,6 @@ sub export_fasta {
     my $src = $genome->file_path;
     my $dest_filename = "genome_$gid.faa";
     my $dest = get_irods_path() . '/' . $dest_filename;
-
     unless ($src and $dest) {
         print STDERR "GenomeInfo:export_fasta: error, undef src or dest\n";
         return;
@@ -1610,31 +1606,16 @@ sub export_fasta {
     CoGe::Accessory::IRODS::irods_iput($src, $dest);
     #TODO need to check rc of iput and abort if failure occurred
 
-    # Set IRODS metadata for object #TODO need to change these to use Accessory::IRODS::IRODS_METADATA_PREFIX
-    my %meta = get_metadata($genome);
-    my $i = 1;
-    my @sources = $genome->source;
-    foreach my $item (@sources) {
-        my $source = $item->name;
-        $source.= ": ".$item->description if $item->description;
-        my $met_name = "Source";
-        $met_name .= $i if scalar @sources > 1;
-        $meta{$met_name}= $source;
-        $meta{$met_name." Link"} = $item->link if $item->link;
-        $i++;
-    }
-    $meta{'Genome Link'} = $genome->link if ($genome->link);
-    $meta{'Addition Info'} = $genome->message if ($genome->message);
-    $meta{'Genome Name'} = $genome->name if ($genome->name);
-    $meta{'Genome Description'} = $genome->description if ($genome->description);
-    CoGe::Accessory::IRODS::irods_imeta($dest, \%meta);
+    # Set IRODS metadata for object
+    my $md = get_irods_metadata($genome);
+    CoGe::Accessory::IRODS::irods_imeta($dest, $md);
 
 	my %json;
 	$json{file} = $dest_filename;
     return encode_json(\%json);
 }
 
-sub export_fasta_chr {
+sub export_fasta_chr { #TODO migrate to API
     my %args = @_;
     my $dsg = $DB->resultset('Genome')->find($args{gid});
     my $file = $args{file};
@@ -1646,10 +1627,11 @@ sub export_fasta_chr {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    my (%json, %meta);
-    %meta = get_metadata($dsg);
+    my $md = get_irods_metadata($dsg);
+
+    my %json;
     $json{file} = basename($file);
-    $json{error} = export_to_irods( file => $file, meta => \%meta );
+    $json{error} = export_to_irods( file => $file, meta => $md );
     return encode_json(\%json);
 }
 
@@ -1947,22 +1929,7 @@ sub get_tbl {
     return encode_json(\%json);
 }
 
-sub get_metadata {
-    my $genome = shift;
-
-    return (
-        'Imported From' => "CoGe: http://genomevolution.org",
-        'CoGe OrganismView Link' => "http://genomevolution.org/CoGe/OrganismView.pl?gid=".$genome->id,
-        'CoGe GenomeInfo Link'=> "http://genomevolution.org/CoGe/GenomeInfo.pl?gid=".$genome->id,
-        'CoGe Genome ID'   => $genome->id,
-        'Organism Name'    => $genome->organism->name,
-        'Organism Taxonomy'    => $genome->organism->description,
-        'Version'     => $genome->version,
-        'Type'        => $genome->type->info,
-    );
-}
-
-sub export_tbl {
+sub export_tbl { #TODO migrate to API
     return export_file_to_irods("Tbl", \&generate_tbl, @_);
 }
 
@@ -1970,7 +1937,7 @@ sub export_tbl {
 # BED FILE
 #
 
-sub get_bed {
+sub get_bed { #TODO migrate to API
     my %args = @_;
     my $dsg = $DB->resultset('Genome')->find($args{gid});
 
@@ -1994,11 +1961,11 @@ sub get_bed {
     return encode_json(\%json);
 }
 
-sub export_bed {
+sub export_bed { #TODO migrate to API
     return export_file_to_irods("bed file", \&generate_bed, @_);
 }
 
-sub get_gff { #TODO use the API "export_gff" job instead
+sub get_gff { #TODO migrate to API
     my %args = @_;
     
     # Get genome and check permission
@@ -2022,7 +1989,7 @@ sub get_gff { #TODO use the API "export_gff" job instead
     });
 }
 
-sub export_gff {
+sub export_gff { #TODO migrate to API
     return export_file_to_irods("gff", \&generate_gff, @_);
 }
 
@@ -2031,7 +1998,7 @@ sub export_gff {
 # - file_type, used to name workflow
 # - generate_func, function to call to generate file to export
 # %args is also passed to generate_func
-sub export_file_to_irods {
+sub export_file_to_irods { #TODO migrate to API
 	my $file_type = shift;
 	my $generate_func = shift;
     my %args = @_;
@@ -2043,8 +2010,7 @@ sub export_file_to_irods {
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
 
-    my (%json, %meta);
-    %meta = get_metadata($dsg);
+    my $md = get_irods_metadata($dsg);
 
     $args{basename} = sanitize_name($dsg->organism->name);
 
@@ -2056,10 +2022,10 @@ sub export_file_to_irods {
     say STDERR "RESPONSE ID: " . $response->{id};
     my $success = $JEX->wait_for_completion($response->{id});
 
+    my %json;
     $json{file} = basename($output);
-
     if($success) {
-        $json{error} = export_to_irods( file => $output, meta => \%meta );
+        $json{error} = export_to_irods( file => $output, meta => $md );
     } else {
         $json{error} = 1;
     }
@@ -2068,7 +2034,7 @@ sub export_file_to_irods {
 }
 
 #XXX: Add error checking
-sub export_to_irods {
+sub export_to_irods { #TODO migrate to API
     my %args = @_;
     my $file = $args{file};
     my $meta = $args{meta};

@@ -646,8 +646,7 @@ function launch(experiment) {
     var synmap_request = {
         type: 'synmap3d',
         requester: {
-		    page:      PAGE_NAME,
-		    user_name: USER_NAME
+		    page: PAGE_NAME
 	    },
         parameters: {
             genome_id1: xgid,

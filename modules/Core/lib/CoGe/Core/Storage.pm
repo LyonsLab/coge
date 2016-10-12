@@ -53,7 +53,7 @@ BEGIN {
     @EXPORT = qw(
       get_tiered_path get_workflow_paths get_upload_path get_log
       get_genome_file index_genome_file get_genome_seq get_genome_path
-      get_genome_cache_path get_workflow_results add_workflow_result
+      get_genome_cache_path get_experiment_cache_path get_workflow_results add_workflow_result
       get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_metadata
       reverse_complement get_irods_file get_irods_path get_popgen_result_path
@@ -112,10 +112,10 @@ sub get_genome_cache_path {
         return;
     }
     
-    return catdir($cache_dir, $gid, "fasta");
+    return catdir($cache_dir, 'genomes', $gid);
 }
 
-sub get_genome_path {
+sub get_genome_path { #TODO rename to get_genome_data_path
     my $gid = shift;
     return unless $gid;
 
@@ -324,8 +324,20 @@ sub get_genome_seq {
     return $seq;
 }
 
-# FIXME: move to Core::Experiment?
-sub get_experiment_path {
+sub get_experiment_cache_path {
+    my $eid = shift;
+    return unless $eid;
+
+    my $cache_dir = CoGe::Accessory::Web::get_defaults()->{'CACHEDIR'};
+    unless ($cache_dir) {
+        print STDERR "Storage::get_genome_cache_path missing CACHEDIR\n";
+        return;
+    }
+
+    return catdir($cache_dir, 'experiments', $eid);
+}
+
+sub get_experiment_path { #TODO rename to get_experiment_data_path
     my $eid = shift;
     return unless $eid;
 

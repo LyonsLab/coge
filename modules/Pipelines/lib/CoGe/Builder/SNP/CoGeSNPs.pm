@@ -14,7 +14,7 @@ use URI::Escape::JavaScript qw(unescape);
 
 use CoGe::Accessory::Web qw(get_defaults get_command_path get_job schedule_job);
 use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::CommonTasks;
 
@@ -49,7 +49,7 @@ sub build {
     
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
 
-    $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
+    $FASTA_CACHE_DIR = get_genome_cache_path($gid);
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
 
     # Build the workflow's tasks

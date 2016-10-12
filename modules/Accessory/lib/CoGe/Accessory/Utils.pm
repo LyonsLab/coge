@@ -105,14 +105,16 @@ sub print_fasta {
 	my $fh = shift;
 	my $name = shift;	# fasta section name
 	my $pIn = shift; 	# reference to section data
+    my $lineLength = shift; # optional
+       $lineLength = $FASTA_LINE_LEN unless $lineLength;
 
 	my $len = length $$pIn;
 	my $ofs = 0;
 
 	print {$fh} ">$name\n";
     while ($ofs < $len) {
-    	print {$fh} substr($$pIn, $ofs, $FASTA_LINE_LEN) . "\n";
-    	$ofs += $FASTA_LINE_LEN;
+    	print {$fh} substr($$pIn, $ofs, $lineLength) . "\n";
+    	$ofs += $lineLength;
     }
 }
 

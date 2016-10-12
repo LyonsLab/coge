@@ -2,6 +2,7 @@ MANIFEST
 Makefile.PL
 lib/CoGe/Builder/Buildable.pm
 lib/CoGe/Builder/Common/Alignment.pm
+lib/CoGe/Builder/Common/DataRetrieval.pm
 lib/CoGe/Builder/CommonTasks.pm
 lib/CoGe/Builder/Export/Experiment.pm
 lib/CoGe/Builder/Export/Fasta.pm

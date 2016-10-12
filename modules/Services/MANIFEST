@@ -1,6 +1,7 @@
 MANIFEST
 Makefile.PL
 lib/CoGe/Services/Auth.pm
+lib/CoGe/Services/Error.pm
 lib/CoGe/Services/API/Dataset.pm
 lib/CoGe/Services/API/Download.pm
 lib/CoGe/Services/API/Experiment.pm

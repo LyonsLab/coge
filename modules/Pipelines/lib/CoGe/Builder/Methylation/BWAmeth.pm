@@ -9,7 +9,7 @@ use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
 use CoGe::Accessory::Utils qw(to_filename to_filename_without_extension);
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths);
+use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::CommonTasks;
 
@@ -158,7 +158,7 @@ sub create_pileometh_plot_job {
     my $staging_dir = $opts{staging_dir};
     
     my $cmd = $CONF->{PILEOMETH} || 'PileOMeth';
-    my $BWAMETH_CACHE_FILE = catfile($CONF->{CACHEDIR}, $gid, 'bwameth_index', 'genome.faa.reheader.faa');
+    my $BWAMETH_CACHE_FILE = catfile(get_genome_cache_path($gid), 'bwameth_index', 'genome.faa.reheader.faa');
     
     my $output_prefix = 'pileometh';
     
@@ -195,7 +195,7 @@ sub create_pileometh_extraction_job {
     my $ob = $params->{'--OB'} // '0,0,0,0';
     
     my $cmd = $CONF->{PILEOMETH} || 'PileOMeth';
-    my $BWAMETH_CACHE_FILE = catfile($CONF->{CACHEDIR}, $gid, 'bwameth_index', 'genome.faa.reheader.faa');
+    my $BWAMETH_CACHE_FILE = catfile(get_genome_cache_path($gid), 'bwameth_index', 'genome.faa.reheader.faa');
     
     my $output_prefix = to_filename_without_extension($bam_file);
     

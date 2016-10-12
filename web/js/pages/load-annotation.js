@@ -64,8 +64,7 @@ function load(annotation) {
 	var request = {
 		type: 'load_annotation',
 		requester: {
-			page:      PAGE_NAME,
-			user_name: USER_NAME
+			page: PAGE_NAME
 		},
 		parameters: {
 			genome_id:         annotation.gid,

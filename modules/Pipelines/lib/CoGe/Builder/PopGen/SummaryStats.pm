@@ -5,7 +5,7 @@ with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
-use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_popgen_result_path);
+use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_popgen_result_path get_genome_cache_path);
 use CoGe::Builder::CommonTasks;
 use CoGe::Accessory::Utils qw(is_gzipped to_filename);
 
@@ -26,7 +26,7 @@ sub build {
     my $genome = $experiment->genome;
     my $gid = $genome->id;
     my $CONF = CoGe::Accessory::Web::get_defaults();
-    my $FASTA_CACHE_DIR = catdir($CONF->{CACHEDIR}, $gid, "fasta");
+    my $FASTA_CACHE_DIR = get_genome_cache_path($gid);
     die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
     my $fasta_file = get_genome_file($gid);
     my $reheader_fasta = to_filename($fasta_file) . ".reheader.faa";

@@ -10,7 +10,7 @@ use File::Basename;
 use File::Spec::Functions qw(catdir catfile);
 use CoGe::Accessory::Utils qw(to_filename to_filename_without_extension to_filename_base);
 use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Core::Storage qw(get_workflow_paths);
+use CoGe::Core::Storage qw(get_workflow_paths get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::CommonTasks;
 
@@ -182,7 +182,7 @@ sub create_homer_makeTagDirectory_job {
     
     my $tag_name = to_filename_base($bed_file);
     
-    my $fasta = catfile($CONF->{CACHEDIR}, $gid, 'fasta', 'genome.faa.reheader.faa'); #TODO move into function in Storage.pm
+    my $fasta = catfile(get_genome_cache_path($gid), 'genome.faa.reheader.faa'); #TODO move into function in Storage.pm
     
     return {
         cmd => $cmd,
