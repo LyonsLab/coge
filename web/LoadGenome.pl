@@ -180,7 +180,8 @@ sub search_ncbi_nucleotide { #TODO this can be done client-side instead
 
 sub upload_file {
     my %opts      = @_;
-    my $filename  = '' . $FORM->param('input_upload_file');
+    my $upload_file = $FORM->param('input_upload_file');
+    my $filename  = '' . $upload_file;
     my $fh        = $FORM->upload('input_upload_file');
 
     #   print STDERR "upload_file: $filename\n";
@@ -188,7 +189,7 @@ sub upload_file {
     my $size = 0;
     my $path;
     if ($fh) {
-        my $tmpfilename = $FORM->tmpFileName( $FORM->param('input_upload_file') );
+        my $tmpfilename = $FORM->tmpFileName( $upload_file );
         $path = catfile('upload', $filename);
         my $targetpath = catdir($TEMPDIR, 'upload');
         mkpath($targetpath);
