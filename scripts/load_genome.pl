@@ -2,6 +2,7 @@
 
 use strict;
 use CoGeX;
+use CoGeX::Result::Genome qw(ERROR LOADING LOADED);
 use CoGe::Accessory::Web;
 use CoGe::Core::Genome qw(read_fasta_index);
 use CoGe::Core::Storage qw(get_tiered_path add_workflow_result);

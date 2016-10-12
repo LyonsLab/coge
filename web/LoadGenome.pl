@@ -5,7 +5,6 @@
 use strict;
 use CGI;
 use CoGeX;
-use CoGeX::Result::Genome qw(ERROR LOADING);
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_workflow_paths get_upload_path);
