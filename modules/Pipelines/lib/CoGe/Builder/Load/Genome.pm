@@ -92,7 +92,7 @@ sub build {
             $fasta_file = $self->previous_output();
         }
     
-        # Sort FASTA by length
+        # Sort FASTA by length (for trimming in next step)
         $self->add_task_chain_all(
             $self->sort_fasta( fasta_file => $fasta_file )
         );
@@ -106,7 +106,7 @@ sub build {
             )
         );
         
-        # Index FASTA file
+        # Index processed FASTA file
         $self->add_task_chain(
             create_fasta_index_job(
                 fasta => $self->previous_output()
@@ -126,22 +126,48 @@ sub build {
     return 1;
 }
 
+# mdb removed 10/12/16 -- replaced below for COGE-721
+#sub sort_fasta {
+#    my ($self, %params) = @_;
+#
+#    my $fasta_file = $params{fasta_file};
+#    my $filename = basename($fasta_file);
+#    my $output_file = "$filename.sorted";
+#
+#    my $cmd = $self->conf->{SIZESEQ} || 'sizeseq';
+#
+#    return {
+#        cmd => $cmd,
+#        script => undef,
+#        args => [
+#            ['-sequences', $filename, 0],
+#            ['-descending', 'Y', 0],
+#            ['-outseq', $output_file, 0]
+#        ],
+#        inputs => [
+#            $fasta_file
+#        ],
+#        outputs => [
+#            catfile($self->staging_dir, $output_file)
+#        ],
+#        description => 'Sorting FASTA file...'
+#    };
+#}
 sub sort_fasta {
     my ($self, %params) = @_;
-    
+
     my $fasta_file = $params{fasta_file};
     my $filename = basename($fasta_file);
     my $output_file = "$filename.sorted";
-    
-    my $cmd = $self->conf->{SIZESEQ} || 'sizeseq';
+
+    my $cmd = catfile($self->conf->{SCRIPTDIR}, 'sort_fasta.pl');
 
     return {
         cmd => $cmd,
         script => undef,
         args => [
-            ['-sequences', $filename, 0],
-            ['-descending', 'Y', 0],
-            ['-outseq', $output_file, 0]
+            ['',  $fasta_file,  1],
+            ['>', $output_file, 0]
         ],
         inputs => [
             $fasta_file
@@ -162,7 +188,6 @@ sub process_fasta {
     my $done_file = $input_file . '.processed';
     
     my $cmd = catfile($self->conf->{SCRIPTDIR}, "process_fasta.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
 
     return {
         cmd => "$cmd -input_fasta_file $input_file -output_fasta_file $output_file && touch $done_file",
