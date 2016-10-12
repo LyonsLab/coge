@@ -421,9 +421,11 @@ var XYPlot = declare( [XYPlotBase], {
 		var msgDiv = dojo.create(
 			'div', {
 				className: class_ || 'message',
-				innerHTML: message
+				innerHTML: message,
+				style: { 'margin-top': '30px' }
 			}, block.domNode );
-		this.heightUpdate( dojo.position(msgDiv).h, blockIndex );
+		this.heightUpdate( 100, //dojo.position(msgDiv).h,
+			blockIndex );
 	},
 
 	// ----------------------------------------------------------------
@@ -432,9 +434,7 @@ var XYPlot = declare( [XYPlotBase], {
 		this.fillMessage(
 			blockIndex,
 			block,
-			'Too much data to show'
-				+ (scale >= this.browser.view.maxPxPerBp ? '': '; zoom in to see detail')
-				+ '.'
+			'Too much data to show' + (scale >= this.browser.view.maxPxPerBp ? '.': '; zoom in to see detail.')
 		);
 	},
 

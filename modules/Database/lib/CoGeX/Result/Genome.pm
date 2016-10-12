@@ -13,6 +13,17 @@ use Text::Wrap;
 use base 'Class::Accessor';
 use Carp;
 
+use constant ERROR => -1;
+use constant LOADING => 1;
+use constant LOADED => 2;
+
+BEGIN {
+	use Exporter 'import';
+	our @EXPORT = qw( 
+	   ERROR LOADING LOADED
+	);
+}
+
 =head1 NAME
 
 CoGeX::Genome
@@ -106,6 +117,8 @@ __PACKAGE__->add_columns(
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
     "date",
     { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
+    "status",
+    { data_type => "INT", default_value => undef, is_nullable => 1, size => 1 },
 );
 
 __PACKAGE__->set_primary_key("genome_id");
@@ -213,7 +226,8 @@ sub to_hash {
 		message       => $self->message,
 		link          => $self->link,
 		deleted       => $self->deleted,
-		certified     => $self->certified
+		certified     => $self->certified,
+        status        => $self->status
 	}
 }
 

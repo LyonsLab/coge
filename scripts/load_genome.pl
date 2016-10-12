@@ -251,6 +251,7 @@ my $genome = $coge->resultset('Genome')->create(
         genomic_sequence_type_id => $type_id,
         creator_id               => $creator->id,
         restricted               => $restricted,
+        status                   => LOADING
     }
 );
 unless ($genome) {
@@ -263,6 +264,7 @@ print STDOUT "log: Created genome id" . $genome->id . "\n";
 unless ($install_dir) {
     unless ($P) {
         print STDOUT "log: error: can't determine install directory, set 'install_dir' or 'config' params\n";
+        $genome->update({status => ERROR});
         exit(-1);
     }
     $install_dir = $P->{SEQDIR};
@@ -273,6 +275,7 @@ print STDOUT 'Storage path: ', $storage_path, "\n";
 # This is a check for dev server which may be out-of-sync with prod
 if ( -e $storage_path ) {
     print STDOUT "log: error: install path already exists\n";
+    $genome->update({status => ERROR});
     exit(-1);
 }
 
@@ -291,6 +294,7 @@ my $conn = $coge->resultset('UserConnector')->create(
 );
 unless ($conn) {
     print STDOUT "log: error creating user connector\n";
+    $genome->update({status => ERROR});
     exit(-1);
 }
 
@@ -311,6 +315,7 @@ my $dataset = $coge->resultset('Dataset')->create(
 );
 unless ($dataset) {
     print STDOUT "log: error creating dataset\n";
+    $genome->update({status => ERROR});
     exit(-1);
 }
 
@@ -323,6 +328,7 @@ my $dsconn = $coge->resultset('DatasetConnector')->create( {
 } );
 unless ($dsconn) {
     print STDOUT "log: error creating dataset connector\n";
+    $genome->update({status => ERROR});
     exit(-1);
 }
 
@@ -330,6 +336,7 @@ unless ($dsconn) {
 my $sequences = read_fasta_index("$fasta_file.fai"); # assumes indexed FASTA
 unless ($sequences && keys %$sequences) {
     print STDOUT "log: error reading fasta index\n";
+    $genome->update({status => ERROR});
     exit(-1);   
 }
 foreach my $chr ( sort keys %$sequences ) {
@@ -365,6 +372,7 @@ print STDOUT "log: Copying files ...\n";
 mkpath($storage_path);
 unless (-r $storage_path) {
     print STDOUT "log: error: could not create installation path\n";
+    $genome->update({status => ERROR});
     exit(-1);
 }
 
@@ -405,6 +413,7 @@ unless (add_workflow_result($user->name, $wid,
     )
 {
     print STDOUT "log: error: could not add workflow result\n";
+    $genome->update({status => ERROR});
     exit(-1);
 }
 
@@ -426,11 +435,13 @@ CoGe::Accessory::TDS::write(
 touch($logdonefile);
 print STDOUT "All done!\n";
 
+$genome->update({status => LOADED});
+
 exit;
 
 #-------------------------------------------------------------------------------
 
-sub execute { # FIXME move into Util.pm
+sub execute { # FIXME move into Util.pm (instead, remove after converting uses above to perl)
     my $cmd = shift;
     print STDOUT "$cmd\n";
     
