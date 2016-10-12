@@ -41,6 +41,11 @@ sub pre_build { # override superclass method for reusable workflow ID, custom si
 	my %opts = ( %{ defaults() }, %{ $self->params } );
 	$self->site_url( $opts{tinylink} || get_query_link( $self->conf, $self->db, %opts ) );
 
+    if ($params{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
+        my $page = $params{requester}->{page}; # page name used for logging
+        $self->page($page) if $page;
+    }
+
 	# Set workflow log file path
 	my $log_path = get_log_file_path($result_path, $self->site_url);
 	$self->workflow->logfile($log_path);

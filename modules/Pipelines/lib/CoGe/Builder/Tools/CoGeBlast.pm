@@ -251,7 +251,14 @@ sub build {
     $opts{'genomes'} = join(',', @gids);
     $opts{'gapcost'} = $gap_costs->[0] . ',' . $gap_costs->[1];
     $opts{'match_score'} = $match_score->[0] . ',' . $match_score->[1];
+
+    #TODO move into pre_build -- mdb 10/12/16
 	$self->{site_url} = get_tiny_url( %opts );
+    if ($self->params->{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
+        my $page = $self->params->{requester}->{page}; # page name used for logging
+        $self->page($page) if $page;
+    }
+
     return 1;
 }
 
