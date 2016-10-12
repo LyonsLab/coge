@@ -1,14 +1,9 @@
 import json
 import itertools
-import math
 import re
-import random
 import os
 import sys
 import time
-from collections import defaultdict #Counter
-from cgi import parse_qs, escape
-
 import zmq
 
 _defaults = {
@@ -16,7 +11,6 @@ _defaults = {
     'max_attempts' : 30,
     'timeout' : 1000
 }
-
 
 def not_found(environ, start_response):
     """Called if no URL matches."""
@@ -67,13 +61,11 @@ def status(environ, start_response):
     socket = context.socket(zmq.REQ)
     socket.setsockopt(zmq.LINGER, 0)
 
-
     root_dir = os.path.dirname(__file__)
     filepath = os.path.abspath(os.path.join(root_dir, environ['COGE_HOME'], 'coge.conf'))
 
     config = load_config(filepath)
-    host = _defaults['connection'].format(config['JOBSERVER'],
-            config['JOBPORT'])
+    host = _defaults['connection'].format(config['JOBSERVER'], config['JOBPORT'])
 
     socket.connect(host)
     request = {
@@ -90,12 +82,64 @@ def status(environ, start_response):
     socket.send_json(request, zmq.NOBLOCK)
 
     while _defaults['max_attempts'] > counter.next() and not result:
-
         if socket in dict(poller.poll(timeout=_defaults['timeout'])):
             result = socket.recv_json(flags=zmq.NOBLOCK)
         else:
             time.sleep(1)
+            try:
+                socket.send_json(request, zmq.NOBLOCK)
+            except zmq.ZMQError:
+                pass
 
+    socket.close()
+    context.term()
+
+    if not result:
+        result = {"error" : 1}
+
+    return json.dumps(result)
+
+def workflows(environ, start_response): # mdb added 10/12/16
+    start_response('200 OK', [('Content-Type', 'application/json')])
+
+    result = None
+
+    try:
+        args = environ['url_args']
+        status = args['status']
+    except KeyError:
+        return json.dumps({})
+
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.setsockopt(zmq.LINGER, 0)
+
+    root_dir = os.path.dirname(__file__)
+    filepath = os.path.abspath(os.path.join(root_dir, environ['COGE_HOME'], 'coge.conf'))
+
+    config = load_config(filepath)
+    host = _defaults['connection'].format(config['JOBSERVER'], config['JOBPORT'])
+
+    socket.connect(host)
+    request = {
+        'request' : 'workflows',
+        'data' : { }
+    }
+
+    if status:
+        request['data'] = { 'status' : status }
+
+    poller = zmq.Poller()
+    poller.register(socket, zmq.POLLIN)
+    counter = itertools.count()
+
+    socket.send_json(request, zmq.NOBLOCK)
+
+    while _defaults['max_attempts'] > counter.next() and not result:
+        if socket in dict(poller.poll(timeout=_defaults['timeout'])):
+            result = socket.recv_json(flags=zmq.NOBLOCK)
+        else:
+            time.sleep(1)
             try:
                 socket.send_json(request, zmq.NOBLOCK)
             except zmq.ZMQError:
@@ -113,6 +157,7 @@ urls = [
     (r"status/(?P<id>[a-z0-9\-]+)?", status),
     (r"synmap/status/(?P<id>[a-z0-9\-]+)?", status),
     (r"synfind/status/(?P<id>[a-z0-9\-]+)?", status),
+    (r"workflows/(?P<status>[a-z0-9\-]+)?", workflows)
 ]
 
 def application(environ, start_response):
