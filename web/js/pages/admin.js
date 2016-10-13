@@ -1723,7 +1723,7 @@ $.extend(Force.prototype, {
 	})(),
 });
 
-//Tab 5, Summary
+//Tab 5, Reports
 function ReportGrid(params) {
 	this.elementId = params.elementId;
 	this.filter = params.filter;
@@ -1746,17 +1746,18 @@ $.extend(ReportGrid.prototype, {
 		switch (this.selection) {
 			case "user":
 				fname = 'get_user_table';
-				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-					+ '<thead><tr><th>User Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th><th>Groups</th></tr></thead></table>');
+				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
+					+ '<thead><tr><th>User Name</th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Total</th><th>Groups</th></tr></thead>'
+					+ '<tfoot><tr style="font-weight:bold"><td style="text-align:right">Totals:</td><td></td><td></td><td></td><td></td><td></td></tr></tfoot></table>');
 				break;
 			case "group":
 				fname = 'get_group_table';
-				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
 					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th><th>Users</th></tr></thead></table>');
 				break;
 			case "total":
 				fname = 'get_total_table';
-					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
 						+ '<thead><tr><th></th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Users</th><th>Groups</th><th>Total</th></tr></thead></table>');
 				break;
 		}
@@ -1783,10 +1784,24 @@ $.extend(ReportGrid.prototype, {
 						json.data[i].push(total_items);
 					else {
 						json.data[i].push(json.data[i][4]);
-						json.data[i][4] = total_items;
+						json.data[i][4] = total_items > 0 ? total_items : null;
 					}
 				}
 				self.data = json;
+				if (self.selection != "total")
+					self.data.footerCallback = function ( row, data, start, end, display ) {
+						var api = this.api();
+						var add_total = function(col) {
+							var total = api.column(col).data().reduce(function(a, b) { return b ? a + parseInt(b) : a; }, 0 );
+							if (total > 0)
+								$(api.column(col).footer()).html(total);
+						}
+						add_total(1);
+						add_total(2);
+						add_total(3);
+						add_total(4);
+						add_total(5);
+					};
 				$('#' + element + '_table').dataTable(self.data);
 				$('#' + element).show();
 				if (self.selection != "total") {
