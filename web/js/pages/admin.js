@@ -1756,13 +1756,8 @@ $.extend(ReportGrid.prototype, {
 				break;
 			case "total":
 				fname = 'get_total_table';
-				if (this.filter == "none") {
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Users</th><th>Groups</th><th>Total</th></tr></thead></table>');
-				} else {
-					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-						+ '<thead><tr><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th></tr></thead></table>');
-				}
+						+ '<thead><tr><th></th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Users</th><th>Groups</th><th>Total</th></tr></thead></table>');
 				break;
 		}
 		$.ajax({
@@ -1773,28 +1768,22 @@ $.extend(ReportGrid.prototype, {
 			success: function(data) {
 				$('#' + element + '_loading').hide();
 				json = JSON.parse(data);
-				console.log(json);
 				var values = [];
 				var max_value = 0;
 				var min_value = Number.MAX_SAFE_INTEGER;
+				var n = self.selection == 'total' ? 5 : 4;
 				for(var i = 0; i < json.data.length; i++) {
 					var total_items = 0;
-					if (self.selection == "total") {
-						for(var j = 0; j < json.data[i].length; j++) {
+					for(var j = 1; j < n; j++)
+						if (json.data[i][j]) {
 							var num = parseInt(json.data[i][j], 10);
 							total_items += num;
 						}
-					} else {
-						for(var j = 1; j < json.data[i].length - 1; j++) {  // ignores the "name", "users", "groups" columns
-							var num = parseInt(json.data[i][j], 10);
-							total_items += num;
-						}
-					}
-					json.data[i].push(total_items);
-					if (self.selection != 'total') {
-						var t = json.data[i][4];
-						json.data[i][4] = json.data[i][5];
-						json.data[i][5] = t;
+					if (self.selection == 'total')
+						json.data[i].push(total_items);
+					else {
+						json.data[i].push(json.data[i][4]);
+						json.data[i][4] = total_items;
 					}
 				}
 				self.data = json;
@@ -1802,9 +1791,9 @@ $.extend(ReportGrid.prototype, {
 				$('#' + element).show();
 				if (self.selection != "total") {
 					$('#histogram_button').prop('disabled', false);
+					$('#report_filter').prop('disabled', false);
 				}
 				$('#report_type').prop('disabled', false);
-				$('#report_filter').prop('disabled', false);
 			}
 		});
 		

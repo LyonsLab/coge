@@ -23,17 +23,17 @@ no warnings 'redefine';
 $|=1;
 
 use vars qw(
-    $P $PAGE_TITLE $PAGE_NAME $USER $BASEFILE $coge $cogeweb %FUNCTION 
-    $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE $JEX $LINK
+    $config $PAGE_TITLE $PAGE_NAME $user $BASEFILE $db $dbweb %FUNCTION 
+    $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE $JEX $link
 );
 
 $PAGE_TITLE = 'Admin';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
-( $coge, $USER, $P, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM, page_title => $PAGE_TITLE );
+( $db, $user, $config, $link ) = CoGe::Accessory::Web->init( cgi => $FORM, page_title => $PAGE_TITLE );
 
-$JEX = CoGe::JEX::Jex->new( host => $P->{JOBSERVER}, port => $P->{JOBPORT} );
+$JEX = CoGe::JEX::Jex->new( host => $config->{JOBSERVER}, port => $config->{JOBPORT} );
 
 $MAX_SEARCH_RESULTS = 400;
 
@@ -79,37 +79,37 @@ sub gen_html {
 	#print STDERR "HTML\n";
 	my $html;
 	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-	$template->param( USER       => $USER->display_name || '',
+	  HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
+	$template->param( USER       => $user->display_name || '',
 	                  PAGE_TITLE => qq{Admin},
-	                  PAGE_LINK  => $LINK,
-	                  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
+	                  PAGE_LINK  => $link,
+	                  SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
 	                  TITLE      => "GODVIEW",
-	                  HOME       => $P->{SERVER},
+	                  HOME       => $config->{SERVER},
                       HELP       => '',
-                      WIKI_URL   => $P->{WIKI_URL} || '',
-                      CAS_URL    => $P->{CAS_URL} || '',
-                      ADMIN_ONLY => $USER->is_admin,
-                      COOKIE_NAME => $P->{COOKIE_NAME} || '');
-	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
+                      WIKI_URL   => $config->{WIKI_URL} || '',
+                      CAS_URL    => $config->{CAS_URL} || '',
+                      ADMIN_ONLY => $user->is_admin,
+                      COOKIE_NAME => $config->{COOKIE_NAME} || '');
+	$template->param( LOGON      => 1 ) unless $user->user_name eq "public";
 	$template->param( BODY       => gen_body() );
 	$html .= $template->output;
 }
 
 sub gen_body {
 	# Hide this page if the user is not an Admin
-	unless ( $USER->is_admin ) {
+	unless ( $user->is_admin ) {
 		my $template =
-		  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+		  HTML::Template->new( filename => $config->{TMPLDIR} . "Admin.tmpl" );
 		$template->param( ADMIN_ONLY => 1 );
 		return $template->output;
 	}
 
 	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Admin.tmpl' );
+	  HTML::Template->new( filename => $config->{TMPLDIR} . 'Admin.tmpl' );
 	$template->param( 	MAIN 			=> 1,
-						API_BASE_URL  	=> $P->{SERVER} . 'api/v1/',  
-						USER			=> $USER->user_name,	
+						API_BASE_URL  	=> $config->{SERVER} . 'api/v1/',  
+						USER			=> $user->user_name,	
 					);
 
 	#print STDERR $node_types->{user};
@@ -118,7 +118,7 @@ sub gen_body {
 }
 
 sub user_is_admin {
-	return $USER->is_admin;
+	return $user->is_admin;
 }
 
 sub user_info {
@@ -132,10 +132,10 @@ sub user_info {
 
 	my $user;
 	if ( $search_type eq "user" ) {
-		$user = $coge->resultset("User")->find($search_term);
+		$user = $db->resultset("User")->find($search_term);
 	}
 	if ( $search_type eq "group" ) {
-		$user = $coge->resultset("UserGroup")->find($search_term);
+		$user = $db->resultset("UserGroup")->find($search_term);
 	}
 	my @results;
 	my @users;
@@ -157,7 +157,7 @@ sub user_info {
 		# Find notebooks
 		foreach ( $currentUser->child_connectors( { child_type => 1 } ) ) {
 			$child = $_->child;
-			if ($USER->has_access_to_list($child)) {
+			if ($user->has_access_to_list($child)) {
 				push @current,
 				  {
 					'type'          => "notebook",
@@ -173,7 +173,7 @@ sub user_info {
 		# Find genomes
 		foreach ( $currentUser->child_connectors( { child_type => 2 } ) ) {
 			$child = $_->child;
-			if ($USER->has_access_to_genome($child)) {
+			if ($user->has_access_to_genome($child)) {
 				push @current,
 				  {
 					'type'          => "genome",
@@ -189,7 +189,7 @@ sub user_info {
 		# Find experiments
 		foreach ( $currentUser->child_connectors( { child_type => 3 } ) ) {
 			$child = $_->child;
-			if ($USER->has_access_to_experiment($child)) {
+			if ($user->has_access_to_experiment($child)) {
 				push @current,
 				  {
 					'type'          => "experiment",
@@ -259,20 +259,20 @@ sub add_items_to_user_or_group {
 
 		# print STDERR "add_items_to_user_or_group $item_id $item_type\n";
 		if ( $item_type == $node_types->{genome} ) {
-			my $genome = $coge->resultset('Genome')->find($item_id);
+			my $genome = $db->resultset('Genome')->find($item_id);
 			next
-			  unless ( $USER->has_access_to_genome($genome)
-				|| $USER->is_admin );
+			  unless ( $user->has_access_to_genome($genome)
+				|| $user->is_admin );
 			push @verified, $item;
 		}
 		elsif ( $item_type == $node_types->{experiment} ) {
-			my $experiment = $coge->resultset('Experiment')->find($item_id);
-			next unless $USER->has_access_to_experiment($experiment);
+			my $experiment = $db->resultset('Experiment')->find($item_id);
+			next unless $user->has_access_to_experiment($experiment);
 			push @verified, $item;
 		}
 		elsif ( $item_type == $node_types->{notebook} ) {
-			my $notebook = $coge->resultset('List')->find($item_id);
-			next unless $USER->has_access_to_list($notebook);
+			my $notebook = $db->resultset('List')->find($item_id);
+			next unless $user->has_access_to_list($notebook);
 			push @verified, $item;
 		}
 	}
@@ -282,7 +282,7 @@ sub add_items_to_user_or_group {
 	# Assign each item to user/group
 	#TODO verify that user can use specified role (for admin/owner roles)
 	if ( $target_type == $node_types->{user} ) {
-		my $user = $coge->resultset('User')->find($target_id);
+		my $user = $db->resultset('User')->find($target_id);
 
 		#print STDERR "$user\n";
 		return unless $user;
@@ -294,7 +294,7 @@ sub add_items_to_user_or_group {
 
 			# Remove previous connection
 			foreach (
-				$coge->resultset('UserConnector')->search(
+				$db->resultset('UserConnector')->search(
 					{
 						parent_id   => $target_id,
 						parent_type => 5,            # FIXME hardcoded
@@ -308,7 +308,7 @@ sub add_items_to_user_or_group {
 			}
 
 			# Add new connection
-			my $conn = $coge->resultset('UserConnector')->create(
+			my $conn = $db->resultset('UserConnector')->create(
 				{
 					parent_id   => $target_id,
 					parent_type => 5,            # FIXME hardcoded
@@ -322,14 +322,14 @@ sub add_items_to_user_or_group {
 		}
 	}
 	elsif ( $target_type == $node_types->{group} ) {
-		my $group = $coge->resultset('UserGroup')->find($target_id);
+		my $group = $db->resultset('UserGroup')->find($target_id);
 
 		return unless $group;
 
 		foreach (@verified) {
 			my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
 
-			my $conn = $coge->resultset('UserConnector')->find_or_create(
+			my $conn = $db->resultset('UserConnector')->find_or_create(
 				{
 					parent_id   => $target_id,
 					parent_type => 6,                # FIXME hardcoded
@@ -369,10 +369,10 @@ sub remove_items_from_user_or_group {
 		next unless ( $item_id and $item_type );
 
 		if ( $item_type == $node_types->{genome} ) {
-			my $genome = $coge->resultset('Genome')->find($item_id);
-			next unless ( $USER->has_access_to_genome($genome) );
+			my $genome = $db->resultset('Genome')->find($item_id);
+			next unless ( $user->has_access_to_genome($genome) );
 
-			my $conn = $coge->resultset('UserConnector')->find(
+			my $conn = $db->resultset('UserConnector')->find(
 				{
 					parent_id   => $target_id,
 					parent_type => $target_type,
@@ -385,10 +385,10 @@ sub remove_items_from_user_or_group {
 			$conn->delete;
 		}
 		elsif ( $item_type == $node_types->{experiment} ) {
-			my $experiment = $coge->resultset('Experiment')->find($item_id);
-			next unless $USER->has_access_to_experiment($experiment);
+			my $experiment = $db->resultset('Experiment')->find($item_id);
+			next unless $user->has_access_to_experiment($experiment);
 
-			my $conn = $coge->resultset('UserConnector')->find(
+			my $conn = $db->resultset('UserConnector')->find(
 				{
 					parent_id   => $target_id,
 					parent_type => $target_type,               #FIXME hardcoded
@@ -401,10 +401,10 @@ sub remove_items_from_user_or_group {
 			$conn->delete;
 		}
 		elsif ( $item_type == $node_types->{notebook} ) {
-			my $notebook = $coge->resultset('List')->find($item_id);
-			next unless $USER->has_access_to_list($notebook);
+			my $notebook = $db->resultset('List')->find($item_id);
+			next unless $user->has_access_to_list($notebook);
 
-			my $conn = $coge->resultset('UserConnector')->find(
+			my $conn = $db->resultset('UserConnector')->find(
 				{
 					parent_id   => $target_id,
 					parent_type => $target_type,             #FIXME hardcoded
@@ -442,36 +442,36 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 
 		# print STDERR "get_share $item_id $item_type\n";
 		if ( $item_type == $node_types->{genome} ) {
-			my $genome = $coge->resultset('Genome')->find($item_id);
-			next unless ( $USER->has_access_to_genome($genome) );
+			my $genome = $db->resultset('Genome')->find($item_id);
+			next unless ( $user->has_access_to_genome($genome) );
 			map { $userconn{ $_->parent_id } = $_ }
 			  ( $genome->user_connectors, $genome->group_connectors );
 			map { $notebooks{ $_->id } = $_ } $genome->lists;
 			$isPublic = 1 if ( not $genome->restricted );
-			$isEditable = 0 if ( not $USER->is_owner_editor( dsg => $genome ) );
+			$isEditable = 0 if ( not $user->is_owner_editor( dsg => $genome ) );
 		}
 		elsif ( $item_type == $node_types->{experiment} ) {
-			my $experiment = $coge->resultset('Experiment')->find($item_id);
-			next unless $USER->has_access_to_experiment($experiment);
+			my $experiment = $db->resultset('Experiment')->find($item_id);
+			next unless $user->has_access_to_experiment($experiment);
 			map { $userconn{ $_->id } = $_ }
 			  ( $experiment->user_connectors, $experiment->group_connectors );
 			map { $notebooks{ $_->id } = $_ } $experiment->lists;
 			$isPublic = 1 if ( not $experiment->restricted );
 			$isEditable = 0
-			  if ( not $USER->is_owner_editor( experiment => $experiment ) );
+			  if ( not $user->is_owner_editor( experiment => $experiment ) );
 		}
 		elsif ( $item_type == $node_types->{notebook} ) {
-			my $notebook = $coge->resultset('List')->find($item_id);
-			next unless $USER->has_access_to_list($notebook);
+			my $notebook = $db->resultset('List')->find($item_id);
+			next unless $user->has_access_to_list($notebook);
 			map { $userconn{ $_->id } = $_ }
 			  ( $notebook->user_connectors, $notebook->group_connectors );
 			$isPublic = 1 if ( not $notebook->restricted );
 			$isEditable = 0
-			  if ( not $USER->is_owner_editor( list => $notebook ) );
+			  if ( not $user->is_owner_editor( list => $notebook ) );
 		}
 	}
 
-	$isEditable = 1 if ( $USER->is_admin );
+	$isEditable = 1 if ( $user->is_admin );
 
 	my ( %user_rows, %group_rows, %notebook_rows );
 	foreach my $conn ( values %userconn ) {
@@ -490,7 +490,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 				USER_ROLE      => $conn->role->name,
 				USER_DELETE    => $isEditable
 				  && (!$conn->role->is_owner
-					|| $USER->is_admin )   # owner can't be removed unless admin
+					|| $user->is_admin )   # owner can't be removed unless admin
 			};
 		}
 		elsif ( $conn->is_parent_group ) {
@@ -509,8 +509,8 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 				GROUP_ITEM   => $group->id . ':' . $conn->parent_type,
 				GROUP_NAME   => $group->name,
 				GROUP_ROLE   => $group->role->name,
-				GROUP_DELETE => $USER->is_owner_editor( group => $group->id )
-				  || $USER->is_admin,
+				GROUP_DELETE => $user->is_owner_editor( group => $group->id )
+				  || $user->is_admin,
 				GROUP_USER_LOOP => \@users
 			};
 		}
@@ -545,10 +545,10 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 	}
 
 	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+	  HTML::Template->new( filename => $config->{TMPLDIR} . "Admin.tmpl" );
 	$template->param(
 		SHARE_DIALOG => 1,
-		IS_EDITABLE  => $USER->is_admin || $isEditable,
+		IS_EDITABLE  => $user->is_admin || $isEditable,
 		GROUP_LOOP =>
 		  [ sort { $a->{GROUP_NAME} cmp $b->{GROUP_NAME} } values %group_rows ],
 		USER_LOOP => [
@@ -585,9 +585,9 @@ sub get_group_dialog {
         next unless ( $item_id and $item_type );
         next unless ( $item_type == $node_types->{group} ); # sanity check
 
-        my $group = $coge->resultset('UserGroup')->find($item_id);
-        next unless ( $group and $group->is_editable($USER) );
-        next if ( $group->locked and !$USER->is_admin );
+        my $group = $db->resultset('UserGroup')->find($item_id);
+        next unless ( $group and $group->is_editable($user) );
+        next if ( $group->locked and !$user->is_admin );
 
         my $role = $group->role;
         $lowest_role = $role if (!$lowest_role or $role->is_lower($lowest_role));
@@ -632,10 +632,10 @@ sub get_group_dialog {
     }
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "Admin.tmpl" );
+      HTML::Template->new( filename => $config->{TMPLDIR} . "Admin.tmpl" );
 
     # If no editable groups then show error dialog
-    if (!$USER->is_admin) {
+    if (!$user->is_admin) {
         $template->param(
             ERROR_DIALOG => 1,
             ERROR_MESSAGE => "You don't have permission to modify the selected group(s).",
@@ -659,10 +659,10 @@ sub get_roles {
 	my $selected = shift;
 
 	my $html;
-	foreach my $role ( $coge->resultset('Role')->all() ) {
+	foreach my $role ( $db->resultset('Role')->all() ) {
 		next
-		  if ( $role->name =~ /admin/i );   # && !$USER->is_admin); # skip admin
-		next if ( $role->name =~ /owner/i && !$USER->is_admin );    # skip owner
+		  if ( $role->name =~ /admin/i );   # && !$user->is_admin); # skip admin
+		next if ( $role->name =~ /owner/i && !$user->is_admin );    # skip owner
 		my $name = $role->name;
 		$name .= ": " . $role->description if $role->description;
 
@@ -681,7 +681,7 @@ sub get_roles {
 
 sub search_share {
 	my %opts = @_;
-	return if ( $USER->user_name eq 'public' );
+	return if ( $user->user_name eq 'public' );
 	my $search_term = escape( $opts{search_term} );
 	my $timestamp   = $opts{timestamp};
 
@@ -689,9 +689,9 @@ sub search_share {
 
 # Search for matching users
 # $search_term = '%'.$search_term.'%';
-# foreach ($coge->resultset('User')->search_literal(
+# foreach ($db->resultset('User')->search_literal(
 # 		"user_name LIKE '$search_term' OR first_name LIKE '$search_term' OR last_name LIKE '$search_term'"))
-	foreach ( $coge->resultset('User')->all ) {
+	foreach ( $db->resultset('User')->all ) {
 		next
 		  unless ( escape( $_->user_name ) =~ /$search_term/i
 			|| escape( $_->display_name ) =~ /$search_term/i );
@@ -701,7 +701,7 @@ sub search_share {
 	}
 
 	# Search for matching groups
-	foreach ( $coge->resultset('UserGroup')->all ) {
+	foreach ( $db->resultset('UserGroup')->all ) {
 		next unless ( escape( $_->name ) =~ /$search_term/i );
 		my $label = $_->name . ' (' . $_->role->name . ' group)';
 		my $value = $_->id . ':' . $node_types->{group};
@@ -718,7 +718,7 @@ sub usercmp {
 
 sub modify_item {
 	
-	unless ( $USER->is_admin ) {
+	unless ( $user->is_admin ) {
         return 0;
     }
     
@@ -731,9 +731,9 @@ sub modify_item {
     my $item_type = $node_types->{lc($type)}; # mdb added 7/21/15 for newsfeed
     die unless $item_type;
 
-    my $item = $coge->resultset($type)->find($id);
+    my $item = $db->resultset($type)->find($id);
     return 0 unless $item;
-    return 0 unless ( $USER->is_admin or $USER->is_owner( dsg => $id ) );
+    return 0 unless ( $user->is_admin or $user->is_owner( dsg => $id ) );
     
     my $log_message;
     if ($mod eq "delete") {
@@ -748,8 +748,8 @@ sub modify_item {
 
     # Record in log
     CoGe::Accessory::Web::log_history(
-        db          => $coge,
-        user_id     => $USER->id,
+        db          => $db,
+        user_id     => $user->id,
         page        => "Admin",
         description => "$log_message $type " . $item->info_html,
         parent_id   => $id,
@@ -773,12 +773,12 @@ sub add_users_to_group {
     return unless ( $item_id and $item_type );
 
     if ( $item_type == $node_types->{user} ) {
-        my $user = $coge->resultset('User')->find($item_id);
+        my $user = $db->resultset('User')->find($item_id);
         return unless $user;
         $users{$user->id} = $user;
     }
     elsif ( $item_type == $node_types->{group} ) {
-        my $group = $coge->resultset('UserGroup')->find($item_id);
+        my $group = $db->resultset('UserGroup')->find($item_id);
         return unless $group;
         # TODO check that user has visibility of this group (one that they own or belong to)
         map { $users{$_->id} = $_ } $group->users;
@@ -791,14 +791,14 @@ sub add_users_to_group {
         #print STDERR "add_users_to_group $target_id\n";
         next unless ( $target_id and $target_type );
         next unless ( $target_type == $node_types->{group} ); # sanity check
-        my $target_group = $coge->resultset('UserGroup')->find($target_id);
-        next unless ( $target_group and $target_group->is_editable($USER) );
-        next if ( $target_group->locked && !$USER->is_admin );
+        my $target_group = $db->resultset('UserGroup')->find($target_id);
+        next unless ( $target_group and $target_group->is_editable($user) );
+        next if ( $target_group->locked && !$user->is_admin );
 
         # Add users to this target group
         foreach my $user (values %users) {
             # Check for existing user connection to target group
-            my $conn = $coge->resultset('UserConnector')->find(
+            my $conn = $db->resultset('UserConnector')->find(
                 {
                     parent_id   => $user->id,
                     parent_type => 5,                #FIXME hardcoded to "user"
@@ -809,7 +809,7 @@ sub add_users_to_group {
 
             # Create new user connection if one wasn't found
             if (!$conn) {
-                $conn = $coge->resultset('UserConnector')->create(
+                $conn = $db->resultset('UserConnector')->create(
                     {
                         parent_id   => $user->id,
                         parent_type => 5,                #FIXME hardcoded to "user"
@@ -823,8 +823,8 @@ sub add_users_to_group {
 
             # Record in log
             CoGe::Accessory::Web::log_history(
-                db          => $coge,
-                user_id     => $USER->id,
+                db          => $db,
+                user_id     => $user->id,
                 page        => "Admin",
                 description => 'added user ' . $user->info . ' to group ' . $target_group->info_html,
                 parent_id   => $target_id,
@@ -845,7 +845,7 @@ sub remove_user_from_group {
     #print STDERR "remove_user_from_group: $user_id @target_items\n";
 
     # Verify user
-    my $user = $coge->resultset('User')->find($user_id);
+    my $user = $db->resultset('User')->find($user_id);
     return unless $user;
 
     # Remove users from the target groups
@@ -855,12 +855,12 @@ sub remove_user_from_group {
         #print STDERR "remove_user_from_group $target_id\n";
         next unless ( $target_id and $target_type );
         next unless ( $target_type == $node_types->{group} ); # sanity check
-        my $target_group = $coge->resultset('UserGroup')->find($target_id);
-        next unless ( $target_group and $target_group->is_editable($USER) );
-        next if ( $target_group->locked && !$USER->is_admin );
+        my $target_group = $db->resultset('UserGroup')->find($target_id);
+        next unless ( $target_group and $target_group->is_editable($user) );
+        next if ( $target_group->locked && !$user->is_admin );
 
         # Get user connection to target group
-        my $conn = $coge->resultset('UserConnector')->find(
+        my $conn = $db->resultset('UserConnector')->find(
             {
                 parent_id   => $user_id,
                 parent_type => 5,                #FIXME hardcoded to "user"
@@ -876,8 +876,8 @@ sub remove_user_from_group {
 
         # Record in log
         CoGe::Accessory::Web::log_history(
-            db          => $coge,
-            user_id     => $USER->id,
+            db          => $db,
+            user_id     => $user->id,
             page        => "Admin",
             description => 'removed user ' . $user->info . ' from group ' . $target_group->info_html,
             parent_id   => $target_id,
@@ -897,7 +897,7 @@ sub change_group_role {
     #print STDERR "change_group_role: $role_id @target_items\n";
 
     # Verify role
-    my $role = $coge->resultset('Role')->find($role_id);
+    my $role = $db->resultset('Role')->find($role_id);
     return unless $role;
 
     # Change role for the target groups
@@ -907,9 +907,9 @@ sub change_group_role {
         #print STDERR "change_group_role $target_id\n";
         next unless ( $target_id and $target_type );
         next unless ( $target_type == $node_types->{group} ); # sanity check
-        my $target_group = $coge->resultset('UserGroup')->find($target_id);
-        next unless ( $target_group and $target_group->is_editable($USER) );
-        next if ( $target_group->locked && !$USER->is_admin );
+        my $target_group = $db->resultset('UserGroup')->find($target_id);
+        next unless ( $target_group and $target_group->is_editable($user) );
+        next if ( $target_group->locked && !$user->is_admin );
 
         $target_group->role_id($role_id);
         $target_group->update;
@@ -924,8 +924,8 @@ sub get_jobs_for_user {
     my $running_only = $opts{running_only};
     
     my @entries;
-    if ( $USER->is_admin ) {
-        @entries = $coge->resultset('Log')->search(
+    if ( $user->is_admin ) {
+        @entries = $db->resultset('Log')->search(
             #{ description => { 'not like' => 'page access' } },
             {
                 type     => { '!='  => 0 },
@@ -935,9 +935,9 @@ sub get_jobs_for_user {
         );
     }
     else {
-        @entries = $coge->resultset('Log')->search(
+        @entries = $db->resultset('Log')->search(
             {
-                user_id => $USER->id,
+                user_id => $user->id,
                 parent_id  => { "!=" => undef},
 
                 #{ description => { 'not like' => 'page access' } }
@@ -947,7 +947,7 @@ sub get_jobs_for_user {
         );
     }
 
-    my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
+    my %users = map { $_->user_id => $_->name } $db->resultset('User')->all;
     my @workflows = map { $_->parent_id } @entries;
     
     #my $workflows = $JEX->find_workflows(\@workflows, 'running');
@@ -1090,12 +1090,12 @@ sub get_history_for_user {
     $time_range = 24 if ( not defined $time_range or $time_range !~ /[-\d]/ );
     my $include_page_accesses = $opts{include_pages_accesses};
 
-    my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
+    my %users = map { $_->user_id => $_->name } $db->resultset('User')->all;
     
     my @entries;
-	if ( $USER->is_admin ) {
+	if ( $user->is_admin ) {
 		if ( $time_range == 0 ) {
-			@entries = $coge->resultset('Log')->search(
+			@entries = $db->resultset('Log')->search(
 				{ 
 					'time' => { '<' => \$timestamp }, 
 					type => { '!=' => 0 }
@@ -1109,9 +1109,9 @@ sub get_history_for_user {
 	}
 	else {
 		if ( $time_range == 0 or $time_range == -3 ) {
-			@entries = $coge->resultset('Log')->search(
+			@entries = $db->resultset('Log')->search(
 				{
-					user_id => $USER->id,
+					user_id => $user->id,
 					'time' => { '<' => \$timestamp },
 					#{ description => { 'not like' => 'page access' } }
 					type => { '!=' => 0 }
@@ -1146,7 +1146,7 @@ sub toggle_star {
     my %opts   = @_;
     my $log_id = $opts{log_id};
 
-    my $entry = $coge->resultset('Log')->find($log_id);
+    my $entry = $db->resultset('Log')->find($log_id);
     return '' unless $entry;
 
     my $status = $entry->status;
@@ -1163,7 +1163,7 @@ sub update_comment {
 
     # print STDERR "udpate_comment: $log_id $comment\n";
 
-    my $entry = $coge->resultset('Log')->find($log_id);
+    my $entry = $db->resultset('Log')->find($log_id);
     return unless $entry;
 
     $entry->comment($comment);
@@ -1179,11 +1179,11 @@ sub update_history {
     $time_range = 24 if ( not defined $time_range or $time_range !~ /[-\d]/ );
     my $include_page_accesses = $opts{include_pages_accesses};
 
-    my %users = map { $_->user_id => $_->name } $coge->resultset('User')->all;
+    my %users = map { $_->user_id => $_->name } $db->resultset('User')->all;
     my @entries;
-    if ( $USER->is_admin ) {
+    if ( $user->is_admin ) {
         if ( $time_range == 0 ) {
-            @entries = $coge->resultset('Log')->search(
+            @entries = $db->resultset('Log')->search(
                 { 'time' => { '>' => \$timestamp } },
                 { order_by => { -desc => 'time' } }
             );
@@ -1214,7 +1214,7 @@ sub get_user_nodes {
     #print STDERR "get_all_nodes\n";
 
     my %childrenByList;
-    foreach my $conn ( $coge->resultset('ListConnector')->all ) {
+    foreach my $conn ( $db->resultset('ListConnector')->all ) {
     	if($conn->child_type != 4) {
     		my $child = $conn->child;
     		
@@ -1233,7 +1233,7 @@ sub get_user_nodes {
 
     my %childrenByUser;
     foreach my $conn (
-        $coge->resultset('UserConnector')->search(
+        $db->resultset('UserConnector')->search(
             {
                 parent_type => $node_types->{user},
                 -or         => [
@@ -1280,7 +1280,7 @@ sub get_user_nodes {
     }
 
     my @users;
-    foreach my $user ( $coge->resultset('User')->all ) {
+    foreach my $user ( $db->resultset('User')->all ) {
     	my @children = $childrenByUser{ $user->id};
     	my $sub = $children[0];
     	my $size = 1;
@@ -1315,7 +1315,7 @@ sub get_user_nodes {
 sub get_group_nodes {
 	my %childrenByList;
 	# TODO: Only pull from relevant lists
-    foreach my $conn ( $coge->resultset('ListConnector')->all ) {
+    foreach my $conn ( $db->resultset('ListConnector')->all ) {
     	if($conn->child_type != 4) {
     		my $child = $conn->child;
     		
@@ -1334,7 +1334,7 @@ sub get_group_nodes {
 	
 	my %childrenByGroup;
     foreach my $conn (
-        $coge->resultset('UserConnector')->search(
+        $db->resultset('UserConnector')->search(
             {
                 parent_type => $node_types->{group},
                 -or         => [
@@ -1380,7 +1380,7 @@ sub get_group_nodes {
     }
 
     my @groups;
-    foreach my $group ( $coge->resultset('UserGroup')->all ) {
+    foreach my $group ( $db->resultset('UserGroup')->all ) {
     	my @children = $childrenByGroup{ $group->id};
     	my $sub = $children[0];
     	my $size = 1;
@@ -1418,6 +1418,8 @@ sub get_user_table {
     my %query;
     my %operators;
     my $shared = 0;
+	my @data;
+
     if ($filter eq "restricted") {
     	%query = ('restricted', '1');
     } elsif ($filter eq "deleted") {
@@ -1430,10 +1432,30 @@ sub get_user_table {
     } elsif ($filter eq "shared") {
     	%query = ('restricted', '1');
     	$shared = 1;
-    }
-	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
-	my @data;
-	push @data, []; 	#needed to format for dataTables
+    # } else {
+	# 	my $user_rows = $db->storage->dbh->selectall_arrayref('SELECT user_id,first_name,last_name,user_name FROM user JOIN user_connector ON parent_id=user_id WHERE child_type IN (1,2,3,6) GROUP BY user_id ORDER BY first_name,last_name');
+	# 	my %users = map { $_->[0] => $_ } @$user_rows;
+	# 	my @user_ids = map { $_->[0] } @$user_rows;
+	# 	my @a = $db->storage->dbh->selectall_array('SELECT parent_id,count(child_id) FROM user_connector WHERE parent_type=5 AND child_type=2 GROUP BY parent_id');
+	# 	warn Dumper \@a;
+	# 	my %g = map { $_[0] => $_[1] } $db->storage->dbh->selectall_array('SELECT parent_id,count(child_id) FROM user_connector WHERE parent_type=5 AND child_type=2 GROUP BY parent_id');
+	# 	my %e = map { $_[0] => $_[1] } $db->storage->dbh->selectall_array('SELECT parent_id,count(child_id) FROM user_connector WHERE parent_type=5 AND child_type=3 GROUP BY parent_id');
+	# 	my %n = map { $_[0] => $_[1] } $db->storage->dbh->selectall_array('SELECT parent_id,count(child_id) FROM user_connector WHERE parent_type=5 AND child_type=1 GROUP BY parent_id');
+	# 	my %ug = map { $_[0] => $_[1] } $db->storage->dbh->selectall_array('SELECT parent_id,count(child_id) FROM user_connector WHERE parent_type=5 AND child_type=6 GROUP BY parent_id');
+	# 	my @user_data;
+	# 	foreach my $user_id (@user_ids) {
+	# 		my $u = $users{$user_id};
+	# 		push @data, [$u->[1] . ' ' . $u->[2] . ' (' . $u->[3] . ': ' . $user_id . ')', $g{$user_id}, $e{$user_id}, $n{$user_id}, $ug{$user_id}];
+	# 	}
+	# 	return encode_json({
+	# 		data => \@data,
+	# 		bPaginate => 0,
+	# 		columnDefs => [{ 
+	# 			orderSequence => [ "desc", "asc" ], 
+	# 			targets => [1, 2, 3, 4, 5],
+	# 		}]
+	# 	});
+	}
 	
 	my @users = CoGeDBI::get_table($db->storage->dbh, 'user');
 	
@@ -1523,12 +1545,12 @@ sub get_user_table {
 		push @user_data, "$exp_size";
 		push @user_data, "$group_size";
 		
-		push $data[0], \@user_data;
+		push @data, \@user_data;
 	}
 	
 	return encode_json(
 		{
-			data => @data,
+			data => \@data,
 			bPaginate => 0,
 			columnDefs => [{ 
 				orderSequence => [ "desc", "asc" ], 
@@ -1557,7 +1579,6 @@ sub get_group_table {
     	%query = ('restricted', '1');
     	$shared = 1;
     }
-	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @data;
 	push @data, []; 	#needed to format for dataTables
 	
@@ -1644,7 +1665,7 @@ sub get_group_table {
 			}
 		}
 		
-		my $group_obj = $coge->resultset("UserGroup")->find($id);
+		my $group_obj = $db->resultset("UserGroup")->find($id);
 		my @users = $group_obj->users;
 		my $group_size = @users;
 		
@@ -1674,112 +1695,43 @@ sub get_total_table {
 	my %opts       = @_;
     my $filter = $opts{filter};
 
-	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @data;
-	#push @data, []; 	#needed to format for dataTables
+
+	my $total_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome');
+	my $total_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment');
+	my $total_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list');
+	my $total_users = $db->storage->dbh->selectrow_array('SELECT count(*) FROM user');
+	my $total_groups = $db->storage->dbh->selectrow_array('SELECT count(*) FROM user_group');
+	push @data, [undef, $total_genomes, $total_experiments, $total_notebooks, $total_users, $total_groups];
+
+	my $restricted_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome WHERE restricted=1');
+	my $restricted_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment WHERE restricted=1');
+	my $restricted_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list WHERE restricted=1');
+	push @data, ['restricted only', $restricted_genomes, $restricted_experiments, $restricted_notebooks, undef, undef];
 	
-	my @notebooks;
-	my @genomes;
-	my @experiments;
-	my @users;
-	my @groups;
-	my @inner;
+	my $deleted_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome WHERE deleted=1');
+	my $deleted_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment WHERE deleted=1');
+	my $deleted_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list WHERE deleted=1');
+	push @data, ['deleted only', $deleted_genomes, $deleted_experiments, $deleted_notebooks, undef, undef];
 	
-	if ($filter eq "restricted") {
-		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 1});
-		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 1});
-		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 1});
-		
-		my $note_size = keys $notebooks[0];
-		my $gen_size = keys $genomes[0];
-		my $exp_size = keys $experiments[0];
-		@inner = ["$note_size", "$gen_size", "$exp_size"];
-	} elsif ($filter eq "deleted") {
-		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {deleted => 1});
-		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {deleted => 1});
-		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {deleted => 1});
-		
-		my $note_size = keys $notebooks[0];
-		my $gen_size = keys $genomes[0];
-		my $exp_size = keys $experiments[0];
-		@inner = ["$note_size", "$gen_size", "$exp_size"];
-	} elsif ($filter eq "public") {
-		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 0, deleted => 0});
-		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 0, deleted => 0});
-		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 0, deleted => 0});
-		
-		my $note_size = keys $notebooks[0];
-		my $gen_size = keys $genomes[0];
-		my $exp_size = keys $experiments[0];
-		@inner = ["$note_size", "$gen_size", "$exp_size"];
-	} elsif ($filter eq "public (owned)") {
-		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 0, deleted => 0, creator_id => 0}, {restricted => "=", deleted => "=", creator_id => "!="});
-		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 0, deleted => 0, creator_id => 0}, {restricted => "=", deleted => "=", creator_id => "!="});
-		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 0, deleted => 0, creator_id => 0}, {restricted => "=", deleted => "=", creator_id => "!="});
-    	
-    	my $note_size = keys $notebooks[0];
-		my $gen_size = keys $genomes[0];
-		my $exp_size = keys $experiments[0];
-		@inner = ["$note_size", "$gen_size", "$exp_size"];
-    } elsif ($filter eq "shared") {
-    	@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, {restricted => 1});
-		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, {restricted => 1});
-		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, {restricted => 1});
-		my @connectors = CoGeDBI::get_table($db->storage->dbh, 'user_connector', undef, {role_id => 2}, {role_id => "!="});
-		my $connectors = $connectors[0];
-		my $notebooks = $notebooks[0];
-		my $genomes = $genomes[0];
-		my $experiments = $experiments[0];
-		my $note_size = 0;
-		my $gen_size = 0;
-		my $exp_size = 0;
-		
-		foreach my $note_id (keys $notebooks) {
-			foreach my $connect_id (keys $connectors) {
-				if ($connectors->{$connect_id}->{child_id} == $note_id) {
-					$note_size++;
-					last;
-				}
-			}
-		}
-		foreach my $gen_id (keys $genomes) {
-			foreach my $connect_id (keys $connectors) {
-				if ($connectors->{$connect_id}->{child_id} == $gen_id) {
-					$gen_size++;
-					last;
-				}
-			}
-		}
-		foreach my $exp_id (keys $experiments) {
-			foreach my $connect_id (keys $connectors) {
-				if ($connectors->{$connect_id}->{child_id} == $exp_id) {
-					$exp_size++;
-					last;
-				}
-			}
-		}
-    	
-		@inner = ["$note_size", "$gen_size", "$exp_size"];
-    } else {
-		@notebooks = CoGeDBI::get_table($db->storage->dbh, 'list');
-		@genomes = CoGeDBI::get_table($db->storage->dbh, 'genome');
-		@experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment');
-		@users = CoGeDBI::get_table($db->storage->dbh, 'user');
-		@groups = CoGeDBI::get_table($db->storage->dbh, 'user_group');
-		
-		my $note_size = keys $notebooks[0];
-		my $gen_size = keys $genomes[0];
-		my $exp_size = keys $experiments[0];
-		my $user_size = keys $users[0];
-		my $group_size = keys $groups[0];
-		@inner = ["$note_size", "$gen_size", "$exp_size", "$user_size", "$group_size"]; #because formatting
-	}
+	my $public_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome WHERE restricted=0 AND deleted=0');
+	my $public_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment WHERE restricted=0 AND deleted=0');
+	my $public_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list WHERE restricted=0 AND deleted=0');
+	push @data, ['public', $public_genomes, $public_experiments, $public_notebooks, undef, undef];
 	
-	push @data, \@inner;
+	my $owned_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome WHERE restricted=0 AND deleted=0 AND creator_id!=0');
+	my $owned_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment WHERE restricted=0 AND deleted=0 AND creator_id!=0');
+	my $owned_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list WHERE restricted=0 AND deleted=0 AND creator_id!=0');
+	push @data, ['public (owned)', $owned_genomes, $owned_experiments, $owned_notebooks, undef, undef];
 	
+	my $shared_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM (SELECT genome_id FROM genome JOIN user_connector ON genome_id=child_id WHERE restricted AND role_id!=2 GROUP BY genome_id) a');
+	my $shared_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM (SELECT experiment_id FROM experiment JOIN user_connector ON experiment_id=child_id WHERE restricted AND role_id!=2 GROUP BY experiment_id) a');
+	my $shared_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM (SELECT list_id FROM list JOIN user_connector ON list_id=child_id WHERE restricted AND role_id!=2 GROUP BY list_id) a');
+	push @data, ['restricted and shared', $shared_genomes, $shared_experiments, $shared_notebooks, undef, undef];
+
 	return encode_json(
 		{
-			data => @data,
+			data => \@data,
 			bPaginate => 0,
 		}
 	);
@@ -1874,7 +1826,6 @@ sub gen_tree_json {
 	# Main code
 	###
 
-	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my @organism_descriptions = CoGeDBI::get_table($db->storage->dbh, 'organism', undef, {description => "\"%;%\""}, {description => " like "});
 	my $organism_descriptions = $organism_descriptions[0];
 	
@@ -1899,7 +1850,6 @@ sub gen_tree_json {
 #DATABASE TAB
 	
 sub get_total_queries {
-	my ( $db, $user, $conf ) = CoGe::Accessory::Web->init;
 	my $results = CoGeDBI::get_total_queries($db->storage->dbh);
 	my $results2 = CoGeDBI::get_uptime($db->storage->dbh);	
     return encode_json({Queries => $results->{Queries}->{Value}, Uptime => $results2->{Uptime}->{Value}});
