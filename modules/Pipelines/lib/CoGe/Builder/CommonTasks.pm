@@ -802,20 +802,20 @@ sub create_load_bam_job {
         cmd => $cmd,
         script => undef,
         args => [
-            ['-user_name', $user->name, 0],
-            ['-name', ($metadata->{name} ? shell_quote($metadata->{name} . " (BAM alignment)") : '""'), 0],
-            ['-desc', "'" . shell_quote($metadata->{description}) . "'", 0],
-            ['-version', "'" . shell_quote($metadata->{version}) . "'", 0],
-            ['-restricted', "'" . $metadata->{restricted} . "'", 0],
-            ['-gid', $gid, 0],
-            ['-wid', $wid, 0],
-            ['-source_name', "'" . shell_quote($metadata->{source_name}) . "'", 0],
-            ['-tags', qq{"$tags_str"}, 0],
-            ['-annotations', qq["$annotations_str"], 0],
+            ['-user_name',   $user->name, 0],
+            ['-name',        ($metadata->{name} ? shell_quote($metadata->{name} . " (BAM alignment)") : '""'), 0],
+            ['-desc',        shell_quote($metadata->{description}), 0],
+            ['-version',     shell_quote($metadata->{version}), 0],
+            ['-restricted',  shell_quote($metadata->{restricted}), 0],
+            ['-gid',         $gid, 0],
+            ['-wid',         $wid, 0],
+            ['-source_name', shell_quote($metadata->{source_name}), 0],
+            ['-tags',        shell_quote($tags_str), 0],
+            ['-annotations', shell_quote($annotations_str), 0],
             ['-staging_dir', $output_name, 0],
-            ['-file_type', qq["bam"], 0],
-            ['-data_file', $bam_file, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 0]
+            ['-file_type',   'bam', 0],
+            ['-data_file',   $bam_file, 0],
+            ['-config',      $CONF->{_CONFIG_PATH}, 0]
         ],
         inputs => [
             $bam_file
