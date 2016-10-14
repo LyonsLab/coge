@@ -22,7 +22,7 @@ has 'params'        => ( is => 'ro', required => 1 );
 has 'site_url'      => ( is => 'rw' );
 has 'page'          => ( is => 'rw' );
 has 'db'            => ( is => 'ro', required => 1, isa  => 'CoGeX' );
-has 'user'          => ( is => 'ro', required => 1, isa  => 'CoGeX::Result::User' );
+has 'user'          => ( is => 'ro', required => 1, isa  => 'Maybe[CoGeX::Result::User]' ); # mdb changed 10/13/16 -- added "Maybe" to prevent error on undef
 has 'conf'          => ( is => 'ro', required => 1 );
 has 'outputs'       => ( is => 'rw', default => sub { [] } );
 has 'assets'        => ( is => 'rw', default => sub { [] } );
