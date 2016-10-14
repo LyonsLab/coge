@@ -20,6 +20,16 @@ sub pre_build { # override superclass method
 	# Initialize workflow -- NOTE: init => 0 means that a previous identical workflow will be reused when submitted
     $self->workflow( $params{jex}->create_workflow(name => $self->get_name, init => 0 ) );
     return unless $self->workflow;
+
+	# Set site_url attribute
+	my %opts = ( %{ defaults() }, %{ $self->params } );
+	$self->site_url( $opts{tinylink} || get_query_link( $self->conf, $self->db, %opts ) );
+
+    if ($params{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
+        my $page = $params{requester}->{page}; # page name used for logging
+        $self->page($page) if $page;
+    }
+
 }
 
 sub build {
@@ -123,10 +133,18 @@ sub build {
 
 	# Add job to workflow.
 	$workflow->add_job({
+		description => "Identifying common points & building graph object...",
         cmd => $MERGER . $merge_ids . $merge_ins . $merge_opt . $merge_otp,
-        inputs => [$dot_xy_path, $dot_xz_path, $dot_yz_path],
-        outputs => [catfile($SYN3DIR, $graph_out), catfile($SYN3DIR, $log_out), catfile($SYN3DIR, $data_out)],
-        description => "Identifying common points & building graph object..."
+        inputs => [
+			$dot_xy_path,
+			$dot_xz_path,
+			$dot_yz_path
+		],
+        outputs => [
+			catfile($SYN3DIR, $graph_out),
+			catfile($SYN3DIR, $log_out),
+			catfile($SYN3DIR, $data_out)
+		]
     });
 
 	return 1;
