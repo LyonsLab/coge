@@ -368,7 +368,11 @@ sub generate_gff {
         cmd     => './' . $cmd,
         script  => undef,
         args    => $args,
+<<<<<<< HEAD
         inputs  => [
+=======
+        inputs  => [ 
+>>>>>>> 36601a658fc28ce609aeeac99ce439ce77ce70cd
             catfile($CONF->{SCRIPTDIR}, $cmd),
             $CONF->{_CONFIG_PATH}
         ],

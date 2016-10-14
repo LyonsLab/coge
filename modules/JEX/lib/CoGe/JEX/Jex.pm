@@ -79,7 +79,11 @@ sub submit_workflow {
             name     => $workflow->name,
             logfile  => $workflow->logfile,
             priority => 0,#$workflow->priority, # mdb added 6/15/16 for JEX distribution
+<<<<<<< HEAD:modules/JEX/lib/CoGe/JEX/Jex.pm
             tasks     => $workflow->tasks(),
+=======
+            jobs     => $workflow->jobs(),
+>>>>>>> 36601a658fc28ce609aeeac99ce439ce77ce70cd:modules/Accessory/lib/CoGe/Accessory/Jex.pm
         }
     };
     

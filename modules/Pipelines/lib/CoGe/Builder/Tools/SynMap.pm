@@ -47,10 +47,6 @@ sub pre_build { # override superclass method for reusable workflow ID, custom si
 	$self->workflow->logfile($log_path);
 }
 
-sub test {
-	my $value = shift;
-	return ($value && ($value =~ /true/i || $value eq '1')) ? 1 : 0;
-}
 
 sub add_tasks {
 	my %opts       = @_;
@@ -475,7 +471,6 @@ sub add_tasks {
 			push @blastargs, [ "-query", $fasta,   1 ];
 			push @blastargs, [ "-db",    $db,      1 ];
 		}
-
 		#push @blastargs, [ ";touch", "$raw_blastfile.done", 1];
 		#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
 		push @blastdb_files, $fasta;
