@@ -30,7 +30,7 @@ has 'logfile' => (
     default  => "",
 );
 
-has 'jobs' => ( #FIXME rename to "task"
+has 'tasks' => (
     is       => 'rw',
     isa      => 'ArrayRef',
     default  => sub { [] },
@@ -38,9 +38,9 @@ has 'jobs' => ( #FIXME rename to "task"
 );
 
 # Public functions
-sub add_job {
+sub add_task {
     my ( $self, $opts ) = @_;
-    #print STDERR 'Workflow::add_job ', Dumper $opts, "\n";
+    #print STDERR 'Workflow::add_task ', Dumper $opts, "\n";
     my $cmd         = $opts->{cmd};
     my $script      = "" unless defined( $opts->{script} );
     my $args        = $opts->{args} || [];
@@ -54,14 +54,14 @@ sub add_job {
     # Set defaults
     $options //= {}; #/
 
-    # Build job object
+    # Build task object
     if ( defined( $opts->{overwrite} ) && $opts->{overwrite} > 0 ) {
         $overwrite = 1;
     }
     else {
         $overwrite = 0;
     }
-    my $job = {
+    my $task = {
         cmd         => $cmd,
         options     => $options,
         script      => $script,
@@ -73,27 +73,27 @@ sub add_job {
         priority    => $priority
     };
 
-    # mdb added 1/5/15 - prevent duplicate jobs, JEX doesn't handle them correctly
-    foreach (@{$self->jobs}) {
-        if (Compare($_, $job)) {
-            print STDERR "Workflow::add_job warning: skipping duplicate job named '", $job->{description}, "'\n";
+    # mdb added 1/5/15 - prevent duplicate tasks
+    foreach (@{$self->tasks}) {
+        if (Compare($_, $task)) {
+            print STDERR "Workflow::add_task warning: skipping duplicate task named '", $task->{description}, "'\n";
             return 1;
         }
     }
     
-    # Add job to workflow
-    push @{$self->jobs}, $job;
+    # Add task to workflow
+    push @{$self->tasks}, $task;
 
     return 1;
 }
 
-sub add_jobs { #FIXME rename to "task"
-    my ($self, $jobs) = @_;
-    #print STDERR Dumper "Workflow::add_jobs ", $jobs, "\n";
+sub add_tasks {
+    my ($self, $tasks) = @_;
+    #print STDERR Dumper "Workflow::add_tasks ", $tasks, "\n";
     
     my $rc = 1;
-    foreach (@$jobs) {
-        $rc &= $self->add_job($_);
+    foreach (@$tasks) {
+        $rc &= $self->add_task($_);
     }
     
     return $rc;
@@ -123,7 +123,7 @@ sub get_outputs {
     my $self = shift;
 
     my (@outputs, %seen);
-    foreach my $task (@{$self->jobs}) {
+    foreach my $task (@{$self->tasks}) {
         foreach my $output (@{$task->{outputs}}) {
             push @outputs, $output unless ($seen{$output}++);
         }

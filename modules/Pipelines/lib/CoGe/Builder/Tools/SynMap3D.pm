@@ -7,7 +7,7 @@ use CoGe::Accessory::Web qw( get_defaults );
 use CoGe::JEX::Workflow;
 use CoGe::Accessory::Utils qw(units);
 use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
-use CoGe::Builder::Tools::SynMap qw( add_jobs defaults gen_org_name );
+use CoGe::Builder::Tools::SynMap qw( add_tasks defaults gen_org_name );
 use CoGe::Core::Storage qw( get_workflow_paths );
 use Data::Dumper;
 use File::Spec::Functions;
@@ -55,7 +55,7 @@ sub build {
 			$self->params->{genome_id1} = $genome_ids[$j-1];
 			$self->params->{genome_id2} = $genome_ids[$k-1];
 			my %opts = ( %{ defaults() }, %{ $self->params } );
-			my $resp = add_jobs(
+			my $resp = add_tasks(
 				workflow => $self->workflow,
 				db       => $self->db,
 				config   => $self->conf,
@@ -122,7 +122,7 @@ sub build {
     }
 
 	# Add job to workflow.
-	$workflow->add_job({
+	$workflow->add_task({
         cmd => $MERGER . $merge_ids . $merge_ins . $merge_opt . $merge_otp,
         inputs => [$dot_xy_path, $dot_xz_path, $dot_yz_path],
         outputs => [catfile($SYN3DIR, $graph_out), catfile($SYN3DIR, $log_out), catfile($SYN3DIR, $data_out)],

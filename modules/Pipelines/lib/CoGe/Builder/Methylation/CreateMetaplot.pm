@@ -57,7 +57,7 @@ sub build {
     });
     push @tasks, @{$metaplot_workflow->{tasks}};
         
-    $self->workflow->add_jobs(\@tasks);
+    $self->workflow->add_tasks(\@tasks);
     
     return 1;
 }

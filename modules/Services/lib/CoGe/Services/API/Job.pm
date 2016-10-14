@@ -36,7 +36,7 @@ sub add {
         });
     }
 
-    # Create pipeline to execute job
+    # Create pipeline to execute workflow
     my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex, db => $db);
     my $pipeline = $pipeline_factory->get($payload);
     unless ($pipeline && $pipeline->workflow) {
@@ -94,10 +94,10 @@ sub fetch {
     #     return;
     # }
 
-    # Get job status from JEX
+    # Get workflow status from JEX
     my $jex = CoGe::JEX::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $job_status = $jex->get_job($id);
-    unless ($job_status) {
+    my $workflow_status = $jex->get_workflow($id);
+    unless ($workflow_status) {
         $self->render(status => 404, json => {
             error => { Error => "Resource not found" }
         });
@@ -116,7 +116,7 @@ sub fetch {
 
     # Add tasks (if any)
     my @tasks;
-    foreach my $task (@{$job_status->{jobs}}) {
+    foreach my $task (@{$workflow_status->{tasks}}) {
         my $t = {
             started => $task->{started},
             ended => $task->{ended},
@@ -144,7 +144,7 @@ sub fetch {
 
     $self->render(json => {
         id => int($id),
-        status => $job_status->{status},
+        status => $workflow_status->{status},
         tasks => \@tasks,
         results => $results
     });

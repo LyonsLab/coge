@@ -119,7 +119,7 @@ sub add_task {
     push @{$self->outputs}, @{$task->{outputs}};
     $previous_outputs = $task->{outputs};
     
-    return $self->workflow->add_job($task);    
+    return $self->workflow->add_task($task);
 }
 
 # Add independent tasks
@@ -131,7 +131,7 @@ sub add_task {
 #    foreach my $task (@$tasks) {
 #        push @{$self->outputs}, @{$task->{outputs}};
 #        push @$previous_outputs, @{$task->{outputs}};
-#        unless ($self->workflow->add_job($task)) {
+#        unless ($self->workflow->add_task($task)) {
 #            return;
 #        }
 #    }

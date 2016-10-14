@@ -36,7 +36,7 @@ sub build {
     my $cache_file = catfile($cache_dir, $output_file);
 
     # Export experiment
-    $self->workflow->add_job( 
+    $self->workflow->add_task(
         export_experiment_job(
             eid => $eid, 
             output => $cache_file

@@ -249,7 +249,7 @@ sub build {
     }
     
 #    print STDERR Dumper \@tasks, "\n";
-    $self->workflow->add_jobs(\@tasks);
+    $self->workflow->add_tasks(\@tasks);
     
     return 1;
 }

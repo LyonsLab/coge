@@ -17,7 +17,7 @@ BEGIN {
     our @EXPORT_OK = qw( create_fasta_file get_blast_db get_genomes get_tiny_url );
 }
 
-sub add_jobs {
+sub add_tasks {
     my %opts = @_;
     my $workflow = $opts{workflow};
     my $db = $opts{db};
@@ -90,7 +90,7 @@ sub add_jobs {
         $cmd .= "cd $dbpath && " .
                 "$BLASTDB -in $dbfasta -out $dsgid -dbtype nucl -title " . qq{"$name"} . " -logfile db.log && " .
                 "touch done";
-        $workflow->add_job({
+        $workflow->add_task({
             cmd => $cmd,
             script  => undef,
             args    => [],
@@ -144,7 +144,7 @@ sub add_jobs {
             push @$args, [ '>',          $outfile,    1 ];
         }
 
-        $workflow->add_job({
+        $workflow->add_task({
             cmd     => "/usr/bin/nice",
             args    => $args,
             inputs  => [$fasta_file, "$dbpath/done"],
@@ -157,13 +157,13 @@ sub add_jobs {
             make_path($download_path);
             my $filename = sanitize_name("$org.$program");
             my $outfile_link = catfile($download_path, $filename);
-            $workflow->add_job({
+            $workflow->add_task({
                 cmd     => "ln -s $outfile \"$outfile_link\"",
                 inputs  => [$outfile],
                 outputs => [$outfile_link],
                 description => "Linking output to downloads"
             });
-            $workflow->add_job(add_workflow_result(
+            $workflow->add_task(add_workflow_result(
                 username => $user ? $user->name : 'public',
                 wid      => $workflow->id,
                 result   => {
@@ -222,7 +222,7 @@ sub build {
 
     return 0 if ! scalar @gids;
 
-    my $resp = add_jobs(
+    my $resp = add_tasks(
         basename     => $self->params->{basename},
         blastable    => join(',', @gids),
         config       => $self->conf,

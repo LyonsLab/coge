@@ -20,7 +20,7 @@ use POSIX;
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT = qw(
-	   add_jobs algo_lookup check_address_validity defaults gen_org_name 
+	   add_tasks algo_lookup check_address_validity defaults gen_org_name
 	   generate_pseudo_assembly get_query_link get_result_path get_log_file_path
 	);
 }
@@ -52,7 +52,7 @@ sub test {
 	return ($value && ($value =~ /true/i || $value eq '1')) ? 1 : 0;
 }
 
-sub add_jobs {
+sub add_tasks {
 	my %opts       = @_;
 	my $workflow   = $opts{workflow};
 	my $db         = $opts{db};
@@ -301,7 +301,7 @@ sub add_jobs {
 		push @fasta1args, [ "--feature_type", $feat_type1, 1 ];
 		push @fasta1args, [ "--fasta",        $fasta1,     1 ];
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $GEN_FASTA,
 			script      => undef,
 			args        => \@fasta1args,
@@ -329,7 +329,7 @@ sub add_jobs {
 		push @fasta2args, [ "--feature_type", $feat_type2, 1 ];
 		push @fasta2args, [ "--fasta",        $fasta2,     1 ];
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $GEN_FASTA,
 			script      => undef,
 			args        => \@fasta2args,
@@ -364,7 +364,7 @@ sub add_jobs {
 		push @blastdb_files, "$basename" . "in";
 		push @blastdb_files, "$basename" . "hr";
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $FORMATDB,
 			script      => undef,
 			args        => \@blastdbargs,
@@ -380,7 +380,7 @@ sub add_jobs {
 	elsif ( $ALGO_LOOKUP->{$blast}{lastdb} ) { # mdb added 3/17/16 for upgrade to Last v731
 	    my $basedir = "$LASTDBDIR/$genome_id2";
 	    my $basename = "$LASTDBDIR/$genome_id2/$genome_id2-$feat_type2";
-        $workflow->add_job({
+        $workflow->add_task({
             cmd         => "mkdir -p $basedir ; $LASTDB $basename $fasta2",
             script      => undef,
             args        => [],
@@ -489,7 +489,7 @@ sub add_jobs {
 #				description => "Running genome comparison...",
 #			}
 #		);
-	    $workflow->add_job({
+	    $workflow->add_task({
             cmd         => $cmd,
             script      => undef,
             args        => \@blastargs,
@@ -525,7 +525,7 @@ sub add_jobs {
 #   push @bedoutputs, "$raw_blastfile.orig" if ( $raw_blastfile =~ /genomic/ );
 	push @bedoutputs, "$raw_blastfile.new" if ( $raw_blastfile =~ /genomic/ );
 
-	$workflow->add_job(
+	$workflow->add_task(
 		{
 			cmd         => $BLAST2BED,
 			script      => undef,
@@ -566,7 +566,7 @@ sub add_jobs {
 	push @rawoutputs, $qlocaldups;
 	push @rawoutputs, $slocaldups;
 
-	$workflow->add_job({
+	$workflow->add_task({
 		cmd         => $BLAST2RAW,
 		script      => undef,
 		args        => \@rawargs,
@@ -614,7 +614,7 @@ sub add_jobs {
 	push @dagtoolargs, [ '--subject_dups', $subject_dup_file, 1 ] if $subject_dup_file;
 	push @dagtoolargs, [ '>', $dag_file12_all, 1 ];
 
-	$workflow->add_job({
+	$workflow->add_task({
 		cmd         => $DAG_TOOL,
 		script      => undef,
 		args        => \@dagtoolargs,
@@ -644,7 +644,7 @@ sub add_jobs {
 		push @geneorderargs, [ "--feature1", $feat_type1,               1 ];
 		push @geneorderargs, [ "--feature2", $feat_type2,               1 ];
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $GENE_ORDER,
 			script      => undef,
 			args        => \@geneorderargs,
@@ -730,7 +730,7 @@ sub add_jobs {
 		$merged_dagchainer_file = "$dagchainer_file.merged";
 		push @dagargs, [ "--merge", $merged_dagchainer_file, 1 ];
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $RUN_DAGCHAINER,
 			script      => undef,
 			args        => \@dagargs,
@@ -749,7 +749,7 @@ sub add_jobs {
 	else {
 		push @dagargs, [ ">", $dagchainer_file, 1 ];
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => './dagchainer_bp/dag_chainer.py',#$RUN_DAGCHAINER, # mdb changed 7/21/16 for jex-distribtuion
 			script      => undef,
 			args        => \@dagargs,
@@ -780,7 +780,7 @@ sub add_jobs {
 		push @mergeargs, [ '--outfile',      $merged_dagchainer_file, 1 ];
 		push @mergeargs, [ '--max_distance', $Dm,                     1 ];
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $RUN_ALIGNMENT,
 			script      => undef,
 			args        => \@mergeargs,
@@ -827,7 +827,7 @@ sub add_jobs {
 		push @depthargs, [ '--depth_ratio_org2', $depth_org_2_ratio, 1 ];
 		push @depthargs, [ '--depth_overlap',    $depth_overlap,     1 ];
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $RUN_COVERAGE,
 			script      => undef,
 			args        => \@depthargs,
@@ -854,7 +854,7 @@ sub add_jobs {
 		push @positionargs, [ '', "$final_dagchainer_file.gcoords", 1 ];
 		push @positionargs, [ "--positional", '', 1 ];
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $GENE_ORDER,
 			script      => undef,
 			args        => \@positionargs,
@@ -912,7 +912,7 @@ sub add_jobs {
 		push @ksargs, [ '--dbfile',    $ks_db,                 1 ];
 		push @ksargs, [ '--blockfile', $ks_blocks_file,        1 ];
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $KSCALC,
 			script      => undef,
 			args        => \@ksargs,
@@ -939,7 +939,7 @@ sub add_jobs {
             my ($dir1, $dir2) = get_genome_order($genome_id1, $genome_id2);
             my $output_file = catfile( $final_dagchainer_file . '.dotplot_dots_synteny.json' );
             my $log_file    = catfile( $final_dagchainer_file . '.dotplot_dots_log.json' );
-            $workflow->add_job({
+            $workflow->add_task({
                 cmd         =>  $DOTPLOTDOTS,
                 script      =>  undef,
                 args        =>  [
@@ -967,7 +967,7 @@ sub add_jobs {
 		push @svgargs, [ '--output', $ks_blocks_file, 1 ];
 
 		$svg_file = $ks_blocks_file . ".svg";
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $SVG_DOTPLOT,
 			script      => undef,
 			args        => \@svgargs,
@@ -996,7 +996,7 @@ sub add_jobs {
 
 		$svg_file = $final_dagchainer_file . ".svg";
 
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd         => $SVG_DOTPLOT,
 			script      => undef,
 			args        => \@svgargs,
@@ -1101,7 +1101,7 @@ sub add_jobs {
 	push @plotoutputs, $hist     if $ks_db;
 	push @plotoutputs, $spa_file if $assemble;
 
-	$workflow->add_job({
+	$workflow->add_task({
 		cmd         => $DOTPLOT,
 		script      => undef,
 		args        => \@plotargs,
@@ -1162,7 +1162,7 @@ sub add_jobs {
 		[ '--outfile', $raw_blastfile . ".s.tandems", 1 ],
 	];
 
-	$workflow->add_job({
+	$workflow->add_task({
 		cmd    => $PROCESS_DUPS,
 		script => undef,
 		args   => $subject_dup_args,
@@ -1177,7 +1177,7 @@ sub add_jobs {
 		[ '--outfile', $raw_blastfile . ".q.tandems", 1 ],
 	];
 
-	$workflow->add_job({
+	$workflow->add_task({
 		cmd    => $PROCESS_DUPS,
 		script => undef,
 		args   => $query_dup_args,
@@ -1198,7 +1198,7 @@ sub add_jobs {
 		[ '--outfile', $condensed,              1 ]
 	];
 
-	$workflow->add_job({
+	$workflow->add_task({
 		cmd         => $GEVO_LINKS,
 		script      => undef,
 		args        => $link_args,
@@ -1229,13 +1229,13 @@ sub add_jobs {
 			gid           => $target_id,
 			organism_name => $organism_name
 		);
-		$workflow->add_job($gff_job);
+		$workflow->add_task($gff_job);
 
 		my $all_genes = truthy($opts{fb_target_genes}) ? 'False' : 'True';
 		my $rru = truthy($opts{fb_remove_random_unknown}) ? 'True' : 'False';
 		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
 		my $fb_prefix = $final_dagchainer_file . '_tc' . $opts{fb_numtargetchr} . '_qc' . $opts{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts{fb_window_size};
-		$workflow->add_job({
+		$workflow->add_task({
 			cmd => $FRACBIAS,
 			script => undef,
 			args   => [
@@ -1358,7 +1358,7 @@ sub build {
 			$self->params->{genome_id1} = $genome_ids[$j - 1];
 			$self->params->{genome_id2} = $genome_ids[$k - 1];
 			my %opts = ( %{ defaults() }, %{ $self->params } );
-			my $resp = add_jobs(
+			my $resp = add_tasks(
 				workflow => $self->workflow,
 				db       => $self->db,
 				config   => $self->conf,
@@ -1450,7 +1450,7 @@ sub generate_pseudo_assembly {
 	);
 	my $workflow = $JEX->create_workflow( name => "Generate Pseudo Assembly" );
 
-	$workflow->add_job({
+	$workflow->add_task({
 		cmd  => catfile( $config->{SCRIPTDIR}, $cmd ),
 		args => [
 			[ "-cfg",    $config->{_CONFIG_PATH}, 1 ],

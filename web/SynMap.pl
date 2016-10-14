@@ -787,8 +787,8 @@ sub get_genome_info {
 	$feattype_menu .= qq{<OPTION VALUE=2 $genomic_selected>genomic</option>};
 	$feattype_menu .= "</select>";
 	$message = "<span class='small alert'>No Coding Sequence in Genome</span>" unless $has_cds;
-	$message = "<span class='small alert'>Genome is still being loaded</span>" if $dsg->status == LOADING;
-	$message = "<span class='small alert'>There was an error while loading this genome</span>" if $dsg->status == ERROR;
+	$message = "<span class='small alert'>Genome is still being loaded</span>" if $dsg->status eq LOADING;
+	$message = "<span class='small alert'>There was an error while loading this genome</span>" if $dsg->status eq ERROR;
 
 	return $html_dsg_info, $feattype_menu, $message, $chr_length, $org_num,
 	  $dsg->organism->name, $dsg->genomic_sequence_type_id;
@@ -1576,10 +1576,6 @@ sub get_results {
 			}
 			else {
 				$warn = qq{The histogram was not generated no ks or kn data found.};
-<<<<<<< HEAD
-=======
-				warn "problem reading $hist or is empty";
->>>>>>> Fix file addressing in sandboxes
 			}
 		}
 

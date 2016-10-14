@@ -79,7 +79,7 @@ sub submit_workflow {
             name     => $workflow->name,
             logfile  => $workflow->logfile,
             priority => 0,#$workflow->priority, # mdb added 6/15/16 for JEX distribution
-            jobs     => $workflow->jobs(),
+            tasks     => $workflow->tasks(),
         }
     };
     
@@ -140,11 +140,11 @@ sub restart {
 sub get_status {
     my ($self, $id) = @_;
 
-    my $response = $self->get_job($id);
+    my $response = $self->get_workflow($id);
     return $response->{status};
 }
 
-sub get_job {
+sub get_workflow {
     my ($self, $id) = @_;
 
     my $request = {
