@@ -266,7 +266,6 @@ sub create_validate_fastq_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ["", $fastq, 1]
         ],
@@ -290,7 +289,6 @@ sub create_fasta_filter_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ["", $fasta, 1],
             ["", $name . ".filtered.fasta", 0]
@@ -316,7 +314,6 @@ sub create_gff_generation_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ['-f', $name, 0],
             ['-download_dir', '.', 0],
@@ -348,7 +345,6 @@ sub create_cutadapt_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ['-q', 25, 0],
             #['--quality-base=64', '', 0],
@@ -374,7 +370,6 @@ sub create_cufflinks_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ['-u', '', 0],
             ['-b', $fasta, 1],
@@ -404,7 +399,6 @@ sub create_bed_file_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ['mpileup', '', 0],
             ['-D', '', 0],
@@ -434,7 +428,6 @@ sub create_filter_bed_file_job {
 
     return (
         cmd => "perl",
-        script => undef,
         args => [
             [$NORMALIZE_BED, $bed, 0],
             ['>', $name . '.normalized.bed', 0]
@@ -460,7 +453,6 @@ sub create_parse_cufflinks_job {
 
     return (
         cmd => "$cmd $script",
-        script => undef,
         args => [
             ["", $cufflinks, 0],
             ["", $name . ".csv", 0]
@@ -482,7 +474,6 @@ sub create_load_csv_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ['-user_name', $user->name, 0],
             ['-name', qq{"$name (FPKM)"}, 0],
@@ -517,7 +508,6 @@ sub create_load_bam_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ['-user_name', $user->name, 0],
             ['-name', qq{"$name (alignment)"}, 0],
@@ -552,7 +542,6 @@ sub create_load_bed_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ['-user_name', $user->name, 0],
             ['-name', qq{"$name (read depth)"}, 0],
@@ -619,7 +608,6 @@ sub create_notebook_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => $args,
         inputs => $inputs,
         outputs => [],
@@ -661,7 +649,6 @@ sub create_gmap_index_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ["-D", ".", 0],
             ["-d", $name . "-index", 0],
@@ -685,7 +672,6 @@ sub create_gsnap_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         options => {
             "allow-zero-length" => JSON::false,
         },
@@ -720,7 +706,6 @@ sub create_samtools_bam_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ["view", '', 0],
             ["-bS", $samfile, 1],
@@ -744,7 +729,6 @@ sub create_samtools_sort_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ["sort", '', 0],
             ["", $bam, 1],
@@ -791,7 +775,6 @@ sub create_bowtie_index_job {
 
     return catdir(($BOWTIE_CACHE_DIR, $name)), (
         cmd => $cmd,
-        script => undef,
         args => [
             ["", $fasta, 1],
             ["", $name, 0],
@@ -838,7 +821,6 @@ sub create_tophat_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         options => {
             "allow-zero-length" => JSON::false,
         },

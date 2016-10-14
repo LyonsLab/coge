@@ -161,7 +161,6 @@ sub fastq_dump {
 
     return {
         cmd => "$cmd $accn --outdir $dest_path && touch $done_file",
-        script => undef,
         args => [],
         inputs => [],
         outputs => [

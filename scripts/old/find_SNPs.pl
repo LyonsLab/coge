@@ -172,7 +172,6 @@ sub create_fasta_reheader_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ["", $fasta, 1],
             ["", $output, 0]
@@ -195,7 +194,6 @@ sub create_fasta_index_job {
 
     return (
         cmd => $samtools,
-        script => undef,
         args => [
             ['faidx', '', 0],
             ['', $fasta, 1]
@@ -221,7 +219,6 @@ sub create_samtools_job {
 
     return (
         cmd => $samtools,
-        script => undef,
         args => [
             ['mpileup', '', 0],
             ['-f', '', 0],
@@ -253,7 +250,6 @@ sub create_load_experiment_job {
 
     return (
         cmd => $cmd,
-        script => undef,
         args => [
             ['-user_name', $user->name, 0],
             ['-name', '"'.$experiment->name.' (SNPs)'.'"', 0],

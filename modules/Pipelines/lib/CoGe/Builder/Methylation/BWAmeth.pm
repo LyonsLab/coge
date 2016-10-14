@@ -133,7 +133,6 @@ sub create_picard_deduplicate_job {
     
     return {
         cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp ; mv $output_file.tmp $output_file",
-        script => undef,
         args => [
 #            ['MarkDuplicates', '', 0],
 #            ['REMOVE_DUPLICATES=true', '', 0],
@@ -164,7 +163,6 @@ sub create_pileometh_plot_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['mbias', '', 0],
             ['--CHG', '', 0],
@@ -201,7 +199,6 @@ sub create_pileometh_extraction_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['extract', '', 0],
             ['--methylKit', '', 0],
@@ -238,7 +235,6 @@ sub create_pileometh_import_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-u', 'f', 0],
             ['-c', $c, 0],

@@ -155,7 +155,6 @@ sub create_bamToBed_job {
     
     return {
         cmd => "$cmd -i $bam_file > $bed_file ; touch $done_file",
-        script => undef,
         args => [],
         inputs => [
             $bam_file
@@ -186,7 +185,6 @@ sub create_homer_makeTagDirectory_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['', $tag_name, 0],
             ['', $bed_file, 0],
@@ -230,7 +228,6 @@ sub create_homer_findPeaks_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['', $replicate_dir, 0],
             ['-i', $input_dir, 0],
@@ -267,7 +264,6 @@ sub create_convert_homer_to_csv_job {
     
     return {
         cmd => "$cmd $input_file > $output_file ; touch $done_file",
-        script => undef,
         args => [],
         inputs => [
             $input_file

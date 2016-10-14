@@ -138,7 +138,6 @@ sub build {
 #
 #    return {
 #        cmd => $cmd,
-#        script => undef,
 #        args => [
 #            ['-sequences', $filename, 0],
 #            ['-descending', 'Y', 0],
@@ -164,7 +163,6 @@ sub sort_fasta {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['',  $fasta_file,  1],
             ['>', $output_file, 0]
@@ -191,7 +189,6 @@ sub process_fasta {
 
     return {
         cmd => "$cmd -input_fasta_file $input_file -output_fasta_file $output_file && touch $done_file",
-        script => undef,
         args => [],
         inputs => [
             $input_file
@@ -215,7 +212,6 @@ sub load_genome {
 
     return {
         cmd => 'perl ' . catfile($self->conf->{SCRIPTDIR}, "load_genome.pl"),
-        script => undef,
         args => [
             ['-user_name', $self->user->name, 0],
             ['-wid', $self->workflow->id, 0],
@@ -263,7 +259,6 @@ sub load_genome_from_NCBI {
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, "genbank_genome_loader.pl"),
-        script => undef,
         args => $args,
         inputs => [],
         outputs => [

@@ -92,7 +92,6 @@ sub add_tasks {
                 "touch done";
         $workflow->add_task({
             cmd => $cmd,
-            script  => undef,
             args    => [],
             inputs  => undef,
             outputs => ["$dbpath/done"],

@@ -126,7 +126,6 @@ sub create_metaplot_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-o', $output_name, 0],
             ['-gff', $gff_file, 0],

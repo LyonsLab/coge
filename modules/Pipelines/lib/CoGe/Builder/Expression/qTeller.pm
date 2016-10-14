@@ -172,7 +172,6 @@ sub create_cufflinks_job {
 
     return {
         cmd => 'nice ' . get_command_path('CUFFLINKS'),
-        script => undef,
         args => $args,
         inputs => [
             $gff,
@@ -204,7 +203,6 @@ sub create_bed_file_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             #['mpileup', '', 0], # mdb removed 11/4/15 COGE-676
             #['-D', '', 0],      # mdb removed 11/4/15 COGE-676
@@ -236,7 +234,6 @@ sub create_filter_bed_file_job {
 
     return {
         cmd => "perl",
-        script => undef,
         args => [
             [$NORMALIZE_BED, $bed, 0],
             ['>', $name . '.normalized.bed', 0]
@@ -262,7 +259,6 @@ sub create_parse_cufflinks_job {
 
     return {
         cmd => "$cmd $script",
-        script => undef,
         args => [
             ["", $cufflinks, 0],
             ["", $name . ".csv", 0]
@@ -302,7 +298,6 @@ sub create_load_csv_job { #TODO move into CommonTasks.pm
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-user_name', $user->name, 0],
             ['-name', '"'.$metadata->{name}.' (FPKM)'.'"', 0],
@@ -357,7 +352,6 @@ sub create_load_bed_job { #TODO move into CommonTasks.pm
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-user_name', $user->name, 0],
             ['-name', '"'.$metadata->{name}." (read depth)".'"', 0],

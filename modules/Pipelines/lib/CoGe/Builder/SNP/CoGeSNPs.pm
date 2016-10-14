@@ -127,7 +127,6 @@ sub create_samtools_job {
 
     return {
         cmd => $samtools,
-        script => undef,
         args => [
             ['mpileup', '', 0],
             ['-f', '', 0],

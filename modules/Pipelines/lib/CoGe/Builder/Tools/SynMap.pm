@@ -299,7 +299,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $GEN_FASTA,
-			script      => undef,
 			args        => \@fasta1args,
 			inputs      => undef,
 			outputs     => [$fasta1],
@@ -327,7 +326,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $GEN_FASTA,
-			script      => undef,
 			args        => \@fasta2args,
 			inputs      => undef,
 			outputs     => [$fasta2],
@@ -362,7 +360,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $FORMATDB,
-			script      => undef,
 			args        => \@blastdbargs,
 			inputs      => [$fasta2],
 			outputs     => \@blastdb_files,
@@ -378,7 +375,6 @@ sub add_tasks {
 	    my $basename = "$LASTDBDIR/$genome_id2/$genome_id2-$feat_type2";
         $workflow->add_task({
             cmd         => "mkdir -p $basedir ; $LASTDB $basename $fasta2",
-            script      => undef,
             args        => [],
             inputs      => [$fasta2],
             outputs     => [
@@ -477,7 +473,6 @@ sub add_tasks {
 #		$workflow->add_job(
 #			{
 #				cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd,
-#				script      => undef,
 #				args        => \@blastargs,
 #				inputs      => \@blastdb_files,
 #				outputs     => [$outfile, $outfile . '.done'],
@@ -486,7 +481,6 @@ sub add_tasks {
 #		);
 	    $workflow->add_task({
             cmd         => $cmd,
-            script      => undef,
             args        => \@blastargs,
             inputs      => \@blastdb_files,
             outputs     => [$outfile],
@@ -523,7 +517,6 @@ sub add_tasks {
 	$workflow->add_task(
 		{
 			cmd         => $BLAST2BED,
-			script      => undef,
 			args        => $blastargs,
 			inputs      => [$raw_blastfile], #, $raw_blastfile . '.done'],
 			outputs     => \@bedoutputs,
@@ -563,7 +556,6 @@ sub add_tasks {
 
 	$workflow->add_task({
 		cmd         => $BLAST2RAW,
-		script      => undef,
 		args        => \@rawargs,
 		inputs      => [ $raw_blastfile, $query_bed, $subject_bed ],
 		outputs     => \@rawoutputs,
@@ -611,7 +603,6 @@ sub add_tasks {
 
 	$workflow->add_task({
 		cmd         => $DAG_TOOL,
-		script      => undef,
 		args        => \@dagtoolargs,
 		inputs      => [$filtered_blastfile],
 		outputs     => [$dag_file12_all],
@@ -641,7 +632,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $GENE_ORDER,
-			script      => undef,
 			args        => \@geneorderargs,
 			inputs      => [$dag_file12_all],
 			outputs     => [$dag_file12_all_geneorder],
@@ -727,7 +717,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $RUN_DAGCHAINER,
-			script      => undef,
 			args        => \@dagargs,
 			inputs      => [$dag_file12],
 			outputs     => [$merged_dagchainer_file],
@@ -746,7 +735,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => './dagchainer_bp/dag_chainer.py',#$RUN_DAGCHAINER, # mdb changed 7/21/16 for jex-distribtuion
-			script      => undef,
 			args        => \@dagargs,
 			inputs      => [
 			    [catdir($BINDIR, 'dagchainer_bp'), 1], # mdb added 7/21/16 for jex-distribtuion
@@ -777,7 +765,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $RUN_ALIGNMENT,
-			script      => undef,
 			args        => \@mergeargs,
 			inputs      => [$dagchainer_file],
 			outputs     => [$merged_dagchainer_file],
@@ -824,7 +811,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $RUN_COVERAGE,
-			script      => undef,
 			args        => \@depthargs,
 			inputs      => [$post_dagchainer_file_w_nearby],
 			outputs     => [$quota_align_coverage],
@@ -851,7 +837,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $GENE_ORDER,
-			script      => undef,
 			args        => \@positionargs,
 			inputs      => [$final_dagchainer_file],
 			outputs     => ["$final_dagchainer_file.gcoords"],
@@ -909,7 +894,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $KSCALC,
-			script      => undef,
 			args        => \@ksargs,
 			inputs      => [$final_dagchainer_file],
 			outputs     => [ $ks_blocks_file, $ks_db ],
@@ -936,7 +920,6 @@ sub add_tasks {
             my $log_file    = catfile( $final_dagchainer_file . '.dotplot_dots_log.json' );
             $workflow->add_task({
                 cmd         =>  $DOTPLOTDOTS,
-                script      =>  undef,
                 args        =>  [
                     [ '--gid1',     $dir1,                              0],
                     [ '--gid2',     $dir2,                              0],
@@ -964,7 +947,6 @@ sub add_tasks {
 		$svg_file = $ks_blocks_file . ".svg";
 		$workflow->add_task({
 			cmd         => $SVG_DOTPLOT,
-			script      => undef,
 			args        => \@svgargs,
 			inputs      => [$ks_blocks_file],
 			outputs     => [$svg_file],
@@ -993,7 +975,6 @@ sub add_tasks {
 
 		$workflow->add_task({
 			cmd         => $SVG_DOTPLOT,
-			script      => undef,
 			args        => \@svgargs,
 			inputs      => [$final_dagchainer_file],
 			outputs     => [$svg_file],
@@ -1098,7 +1079,6 @@ sub add_tasks {
 
 	$workflow->add_task({
 		cmd         => $DOTPLOT,
-		script      => undef,
 		args        => \@plotargs,
 		inputs      => \@plotinputs,
 		outputs     => \@plotoutputs,
@@ -1137,7 +1117,6 @@ sub add_tasks {
 	#
 	#    $workflow->add_job(
 	#        cmd         => $DOTPLOT_DOTS,
-	#        script      => undef,
 	#        args        => $dot_args,
 	#        inputs      => $dot_inputs,
 	#        outputs     => $dot_outputs,
@@ -1159,7 +1138,6 @@ sub add_tasks {
 
 	$workflow->add_task({
 		cmd    => $PROCESS_DUPS,
-		script => undef,
 		args   => $subject_dup_args,
 		inputs => [$slocaldups],       #[$raw_blastfile . ".s.localdups"],
 		outputs     => [ $raw_blastfile . ".s.tandems" ],
@@ -1174,7 +1152,6 @@ sub add_tasks {
 
 	$workflow->add_task({
 		cmd    => $PROCESS_DUPS,
-		script => undef,
 		args   => $query_dup_args,
 		inputs => [$qlocaldups],      #[$raw_blastfile . ".q.localdups"],
 		outputs     => [ $raw_blastfile . ".q.tandems" ],
@@ -1195,7 +1172,6 @@ sub add_tasks {
 
 	$workflow->add_task({
 		cmd         => $GEVO_LINKS,
-		script      => undef,
 		args        => $link_args,
 		inputs      => [$final_dagchainer_file],
 		outputs     => [$condensed],
@@ -1232,7 +1208,6 @@ sub add_tasks {
 		my $fb_prefix = $final_dagchainer_file . '_tc' . $opts{fb_numtargetchr} . '_qc' . $opts{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts{fb_window_size};
 		$workflow->add_task({
 			cmd => $FRACBIAS,
-			script => undef,
 			args   => [
 				[ '--gff',          $gff_job->{outputs}->[0], 0 ],
 				[ '--align',        $final_dagchainer_file,   0 ],

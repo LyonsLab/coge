@@ -42,7 +42,6 @@ sub add_task {
     my ( $self, $opts ) = @_;
     #print STDERR 'Workflow::add_task ', Dumper $opts, "\n";
     my $cmd         = $opts->{cmd};
-    my $script      = "" unless defined( $opts->{script} );
     my $args        = $opts->{args} || [];
     my $inputs      = $opts->{inputs} || [];
     my $options     = $opts->{options};
@@ -64,7 +63,6 @@ sub add_task {
     my $task = {
         cmd         => $cmd,
         options     => $options,
-        script      => $script,
         args        => $args,
         description => $description,
         overwrite   => $overwrite,

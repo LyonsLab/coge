@@ -157,7 +157,6 @@ sub create_bismark_deduplicate_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => $args,
         inputs => [
             $bam_file
@@ -204,7 +203,6 @@ sub create_extract_methylation_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => $args,
         inputs => [
             $bam_file
@@ -236,7 +234,6 @@ sub create_bismark_import_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-u', 'f', 0],
             ['-c', $min_coverage, 0],

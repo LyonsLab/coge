@@ -195,7 +195,6 @@ sub create_iget_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [],
         inputs => [],
         outputs => [ 
@@ -218,7 +217,6 @@ sub create_ftp_get_job {
     
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, "ftp.pl"),
-        script => undef,
         args => [
             ['-url',       "'".$url."'",       0],
             ['-username',  "'".$username."'",  0],
@@ -306,7 +304,6 @@ sub create_fastq_dump_job {
 
     return {
         cmd => "$cmd $accn --outdir $dest_path && touch $done_file",
-        script => undef,
         args => [],
         inputs => [],
         outputs => [
@@ -366,13 +363,8 @@ sub generate_gff {
     my $cmd = 'coge_gff.pl';
     return $output_file, {
         cmd     => './' . $cmd,
-        script  => undef,
         args    => $args,
-<<<<<<< HEAD
         inputs  => [
-=======
-        inputs  => [ 
->>>>>>> 36601a658fc28ce609aeeac99ce439ce77ce70cd
             catfile($CONF->{SCRIPTDIR}, $cmd),
             $CONF->{_CONFIG_PATH}
         ],
@@ -387,7 +379,6 @@ sub create_image_job {
     
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, 'create_image.pl'),
-        script => undef,
         args => [
             ['', $input_file, 0],
             ['', $CONF->{_CONFIG_PATH}, 0],
@@ -412,7 +403,6 @@ sub create_gunzip_job {
 
     return {
         cmd => "$cmd -c $input_file > $output_file && touch $output_file.decompressed",
-        script => undef,
         args => [],
         inputs => [
             $input_file,
@@ -434,7 +424,6 @@ sub create_bgzip_job {
 
     return {
         cmd => "$cmd -c $input_file > $output_file && touch $output_file.done",
-        script => undef,
         args => [],
         inputs => [
             $input_file
@@ -456,7 +445,6 @@ sub create_tabix_index_job {
 
     return {
         cmd => "$cmd -p $index_type $input_file && touch $output_file.done",
-        script => undef,
         args => [],
         inputs => [
             $input_file,
@@ -482,7 +470,6 @@ sub create_fasta_reheader_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ["", $fasta, 1],
             ["", $reheader_fasta, 0]
@@ -505,7 +492,6 @@ sub create_fasta_index_job {
 
     return {
         cmd => get_command_path('SAMTOOLS'),
-        script => undef,
         args => [
             ["faidx", $fasta, 1],
         ],
@@ -527,7 +513,6 @@ sub create_bam_index_job {
 
     return {
         cmd => get_command_path('SAMTOOLS'),
-        script => undef,
         args => [
             ["index", $input_file, 1],
         ],
@@ -554,7 +539,6 @@ sub create_bigwig_to_wig_job {
 
     return {
         cmd => "mkdir -p $staging_dir && $cmd $input_file $output_file && touch $done_file",
-        script => undef,
         args => [],
         inputs => [
             $input_file
@@ -598,7 +582,6 @@ sub create_load_vcf_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-user_name', qq["$username"], 0],
             ['-name', ($metadata->{name} ? shell_quote($metadata->{name}." (SNPs)") : '""'), 0],
@@ -657,7 +640,6 @@ sub create_load_experiment_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-gid', $gid, 0],
             ['-wid', $wid, 0],
@@ -707,7 +689,6 @@ sub create_load_annotation_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-user_name', $user->name, 0],
             ['-wid', $wid, 0],
@@ -764,7 +745,6 @@ sub create_load_batch_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => $args,
         inputs => [
             @$files
@@ -809,7 +789,6 @@ sub create_load_bam_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-user_name', $user->name, 0],
             ['-name', ($metadata->{name} ? shell_quote($metadata->{name} . " (BAM alignment)") : '""'), 0],
@@ -850,7 +829,6 @@ sub create_validate_fastq_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ["", $fastq, 0] # mdb changed 3/1/16 from 1 to 0, COGE-707
         ],
@@ -897,7 +875,6 @@ sub create_cutadapt_job {
     
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, 'cutadapt.pl'), # this script was created because JEX can't handle Cutadapt's paired-end argument syntax
-        script => undef,
         args => [
             [$read_type, '', 0],
             [$staging_dir, '', 0],
@@ -1027,7 +1004,6 @@ sub create_trimgalore_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [], #$args
         inputs => \@inputs,
         outputs => \@outputs,
@@ -1096,7 +1072,6 @@ sub create_gff_generation_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-f', $name, 1],
             ['-staging_dir', '.', 0],
@@ -1213,7 +1188,6 @@ sub create_hisat2_alignment_job {
 	
 	return {
         cmd => 'nice ' . get_command_path('HISAT2'),
-        script => undef,
         args => $args,
         inputs => [ @$fastq, @$done_files, @$index_files ],
         outputs => [ catfile($staging_dir, $output_file) ],
@@ -1235,7 +1209,6 @@ sub create_hisat2_index_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [],
         inputs => [ $fasta ],
         outputs => [
@@ -1386,7 +1359,6 @@ sub create_bowtie_index_job {
 
     return catdir($BOWTIE_CACHE_DIR, $name), {
         cmd => $cmd,
-        script => undef,
         args => [
             ["", $fasta, 1],
             ["", $name, 0],
@@ -1449,7 +1421,6 @@ sub create_bowtie2_alignment_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [],
         inputs => $inputs,
         outputs => [
@@ -1501,7 +1472,6 @@ sub create_tophat_job {
 
     return {
         cmd => catfile($CONF->{SCRIPTDIR}, 'tophat.pl'), # this script was created because JEX can't handle TopHat's paired-end argument syntax
-        script => undef,
         args => [
             ['-read_type', $read_type, 0],
             ['-cmd_args', shell_quote($arg_str), 0],
@@ -1567,7 +1537,6 @@ sub create_bismark_index_job {
 
     return $BISMARK_CACHE_DIR, (
         cmd => $cmd,
-        script => undef,
         args => [],
         inputs => [
             $fasta
@@ -1643,7 +1612,6 @@ sub create_bismark_alignment_job {
     
     return (
         cmd => $cmd,
-        script => undef,
         args => $args,
         inputs => $inputs,
         outputs => [
@@ -1705,7 +1673,6 @@ sub create_bwameth_index_job {
 
     return $BWAMETH_CACHE_DIR, {
         cmd => $cmd,
-        script => undef,
         args => [],
         inputs => [
             $fasta
@@ -1756,7 +1723,6 @@ sub create_bwameth_alignment_job {
     
     return (
         cmd => $cmd,
-        script => undef,
         args => $args,
         inputs => $inputs,
         outputs => [
@@ -1837,7 +1803,6 @@ sub create_gmap_index_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ["-D", ".", 0],
             ["-d", $name . "-index", 0],
@@ -1862,7 +1827,6 @@ sub create_sam_to_bam_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ["view", '', 0],
             ["-bS", $samfile, 1],
@@ -1888,7 +1852,6 @@ sub create_sam_filter_job {
 
     return {
         cmd => "$cmd $filename $filename.processed",
-        script => undef,
         args => [],
         inputs => [
             $samfile
@@ -1913,7 +1876,6 @@ sub create_bam_sort_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ["sort", '', 0],
             ["", $input_file, 1],
@@ -1982,7 +1944,6 @@ sub create_gsnap_alignment_job {
 
     return {
         cmd => $cmd,
-        script => undef,
 # mdb removed 2/2/15 -- fails on zero-length validation input
 #        options => {
 #            "allow-zero-length" => JSON::false,
@@ -2014,7 +1975,6 @@ sub create_sumstats_job {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-vcf',    $vcf,         0],
             ['-gff',    $gff,         0],
@@ -2044,7 +2004,6 @@ sub create_transdecoder_longorfs_job {
 
     return {
         cmd => "$cmd -t $input_file && touch $done_file",
-        script => undef,
         args => [],
         inputs => [
             $input_file,
@@ -2069,7 +2028,6 @@ sub create_transdecoder_predict_job {
 
     return {
         cmd => "cd $input_dir && $cmd -t $input_file && touch $done_file", # transdecoder won't work unless run from the dir that contains the input dir
-        script => undef,
         args => [],
         inputs => [
             $input_file,
@@ -2120,7 +2078,6 @@ sub add_metadata_to_results_job {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => $args,
         inputs => [ 
             @$done_files
@@ -2157,7 +2114,6 @@ sub add_metadata_to_results_job {
 #
 #    return {
 #        cmd => $cmd,
-#        script => undef,
 #        args => $args,
 #        inputs => [
 #            @$done_files
