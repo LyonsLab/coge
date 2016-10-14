@@ -52,7 +52,7 @@ $(document).ready(function(){
     });
 
     $("#genome_dialog").dialog({
-        title: "Recently Added Genomes",
+        title: "Recently Added Public Genomes",
         width: 550,
         autoOpen: false,
         position: {
@@ -295,11 +295,9 @@ function get_latest_genomes(limit) {
     </ul>
 </div>
 
-<!--
 <div class="error-box" style="margin-top:1em;margin-right:1em;margin-left:1em;">
-Please note: the CyVerse Data Store will be unavailable Tuesday, March 29th 7am-5pm MST, preventing data import into CoGe.
+Please note: CyVerse will be unavailable from 7 PM EDT (4 PM PDT) Thursday, October 13 until 7 PM EDT (4 PM PDT) Friday, October 14, preventing logging into CoGe.
 </div>
--->
 
 <div class="wrapper">
     <div id="intro">
@@ -363,7 +361,7 @@ Please note: the CyVerse Data Store will be unavailable Tuesday, March 29th 7am-
         </div>
 
         <div class="coge-section coge-shadow">
-            <h3>Recently Added Genomes <small>(<a href="#" onclick="show_genomes(window.event)">more</a>)</small></h3>
+            <h3>Recently Added Public Genomes <small>(<a href="#" onclick="show_genomes(window.event)">more</a>)</small></h3>
             <div id="latest-genomes" class="padded">
             </div>
         </div>

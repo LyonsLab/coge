@@ -99,6 +99,7 @@ sub add_jobs { #FIXME rename to "task"
 
 sub log {
 	my $self = shift;
+    return unless ($self->logfile);
     $| = 1;
     my $message = shift;
     $message =~ /(.*)/xs; # why is this done? doesn't seem to remove anything
