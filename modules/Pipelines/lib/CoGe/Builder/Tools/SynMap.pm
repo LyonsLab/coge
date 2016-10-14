@@ -72,6 +72,10 @@ sub add_jobs {
 	    $tiny_link = 'tiny_link';
 	}
 
+    # Setup results paths
+	$result_path = get_result_path($config->{DIAGSDIR}, $genome_id1, $genome_id2);
+	$result_path_html = catdir($result_path, 'html');
+
     # Setup tool paths/commands
 	my $SEQUENCE_SIZE_LIMIT = 50_000_000; # Limit the maximum genome size for genomic-genomic
 	my $SCRIPTDIR     = catdir( $config->{SCRIPTDIR}, 'synmap' );
@@ -1301,9 +1305,9 @@ sub build {
 	}
 	for (my $j=1; $j<$i-1; $j++) {
 		for (my $k=$j+1; $k<$i; $k++) {
-			$self->params->{genome_id1} = $genome_ids[$j - 1];
-			$self->params->{genome_id2} = $genome_ids[$k - 1];
 			my %opts = ( %{ defaults() }, %{ $self->params } );
+            $opts{genome_id1} = $genome_ids[$j - 1];
+			$opts{genome_id2} = $genome_ids[$k - 1];
 			my $resp = add_jobs(
 				workflow => $self->workflow,
 				db       => $self->db,
