@@ -50,17 +50,10 @@ if (not $filename) {
     exit(-1);
 }
 
-<<<<<<< HEAD
 #my $file = catfile($staging_dir, $filename);
 #warn $file;
 #my $file_temp = $file . ".tmp";
-synmap
-=======
-my $file = catfile($staging_dir, $filename);
-print STDERR "output file: $file\n";
-my $file_temp = $file . ".tmp";
 
->>>>>>> Minor tweak to debug message
 # Check if file already exists
 if (-r $filename && !$overwrite) {
     say STDERR "file already exists\n";
