@@ -1438,12 +1438,12 @@ sub get_user_table {
 		$g = _get_counts_by_user 2, 'genome', 'user_connector.role_id=2 AND deleted=1';
 		$e = _get_counts_by_user 3, 'experiment', 'user_connector.role_id=2 AND deleted=1';
 		$n = _get_counts_by_user 1, 'list', 'user_connector.role_id=2 AND deleted=1';
-		$ug = _get_counts_by_user 6, 'user_group', 'user_connector.role_id=2 AND deleted=1';
+		$ug = _get_counts_by_user 6, 'user_group', 'deleted=1';
     } elsif ($filter eq "public") {
 		$g = _get_counts_by_user 2, 'genome', 'user_connector.role_id=2 AND deleted=0 AND restricted=0';
 		$e = _get_counts_by_user 3, 'experiment', 'user_connector.role_id=2 AND deleted=0 AND restricted=0';
 		$n = _get_counts_by_user 1, 'list', 'user_connector.role_id=2 AND deleted=0 AND restricted=0';
-		$ug = _get_counts_by_user 6, 'user_group', 'user_connector.role_id=2 AND deleted=0';
+		$ug = _get_counts_by_user 6, 'user_group', 'deleted=0';
     } elsif ($filter eq "shared") {
 		$g = _get_counts_by_user 2, 'genome', 'deleted=0 AND restricted=1 AND user_connector.role_id!=2';
 		$e = _get_counts_by_user 3, 'experiment', 'deleted=0 AND restricted=1 AND user_connector.role_id!=2';
@@ -1452,7 +1452,7 @@ sub get_user_table {
 		$g = _get_counts_by_user 2, 'genome', 'user_connector.role_id=2 AND deleted=0';
 		$e = _get_counts_by_user 3, 'experiment', 'user_connector.role_id=2 AND deleted=0';
 		$n = _get_counts_by_user 1, 'list', 'user_connector.role_id=2 AND deleted=0';
-		$ug = _get_counts_by_user 6, 'user_group', 'user_connector.role_id=2 AND deleted=0';
+		$ug = _get_counts_by_user 6, 'user_group', 'deleted=0';
 	}
 
 	my @user_data;
