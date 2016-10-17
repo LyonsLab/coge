@@ -1463,7 +1463,7 @@ sub get_user_table {
 		my $num_notebooks = $n->{$user_id};
 		my $num_groups = $ug ? $ug->{$user_id} : undef;
 		if ($num_genomes + $num_experiments + $num_notebooks > 0) {
-			push @data, [$u->[1] . ' ' . $u->[2] . ' (' . $u->[3] . ': ' . $user_id . ')', $num_genomes, $num_experiments, $num_notebooks, $num_groups];
+			push @data, [$u->[1] . ' ' . $u->[2] . ' (' . $u->[3] . ': <a href="User.pl?user_id=' . $user_id . '" target="_blank">' . $user_id . '</a>)', $num_genomes, $num_experiments, $num_notebooks, $num_groups];
 		}
 	}
 	return encode_json({
@@ -1524,7 +1524,7 @@ sub get_group_table {
 		my $num_notebooks = $n->{$group_id};
 		my $num_users = $db->storage->dbh->selectall_arrayref('SELECT count(*) FROM user_connector WHERE child_id=' . $group_id . ' AND parent_type=5 and child_type=6')->[0][0];
 		if ($num_genomes + $num_experiments + $num_notebooks > 0) {
-			push @data, [$group->[1] . ' (' . $group_id . ')', $num_genomes, $num_experiments, $num_notebooks, $num_users];
+			push @data, [$group->[1] . ' (<a href="#" onclick="group_dialog(' . $group_id . ')">' . $group_id . '</a>)', $num_genomes, $num_experiments, $num_notebooks, $num_users];
 		}
 	}
 	return encode_json({

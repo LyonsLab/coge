@@ -1753,7 +1753,7 @@ $.extend(ReportGrid.prototype, {
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
-					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th><th>Users</th></tr></thead>'
+					+ '<thead><tr><th>Group Name</th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Total</th><th>Users</th></tr></thead>'
 					+ '<tfoot><tr style="font-weight:bold"><td style="text-align:right">Totals:</td><td></td><td></td><td></td><td></td><td></td></tr></tfoot></table>');
 				break;
 			case "total":
@@ -2794,3 +2794,17 @@ $.extend(Query_Counter.prototype, {
 		});
 	}
 });
+
+function group_dialog(group_id) {
+	$.ajax({
+		url: 'User.pl',
+		data: {
+			fname: 'get_group_dialog',
+			item_list: group_id + '_group',
+		},
+		success : function(data) {
+			if (data)
+				$('#group_dialog').html(data).dialog({width:500}).dialog('open');
+		}
+	});
+}

@@ -258,7 +258,7 @@ table.dataTable td {
 		<div>
 			<span>Report: </span>
 			<select id="report_type" style="margin-right:20px;" onchange="change_report(this.selectedIndex)">
-				<option value="Total">Total</option>
+				<option value="Total" selected>Total</option>
 				<option value="By User">By User</option>
 				<option value="By Group">By Group</option>
 			</select>
@@ -489,3 +489,5 @@ Admin Functions:<br>
 none at the moment
 -->
 </TMPL_IF>
+
+<div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
