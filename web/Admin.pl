@@ -1416,63 +1416,54 @@ sub _get_counts_by_user {
 	my $child_type = shift;
 	my $join = shift;
 	my $where = shift;
-	my $select = 'SELECT parent_id,count(child_id) FROM user_connector';
-	$select .= ' JOIN ' . $join . ' ON ' . $join . '_id=child_id' if $join;
-	$select .= ' WHERE user_connector.role_id=2 AND parent_type=5 AND child_type=' . $child_type;
-	$select .= ' AND ' . $where if $where;
-	$select .= ' GROUP BY parent_id';
+	my $select = 'SELECT parent_id,count(*) FROM user_connector JOIN ' . $join . ' ON ' . $join . '_id=child_id WHERE parent_type=5 AND child_type=' . $child_type . ' AND ' . $where . ' GROUP BY parent_id';
 	my $rows = $db->storage->dbh->selectall_arrayref($select);
 	my %map = map { $_->[0] => $_->[1] } @$rows;
 	return \%map;
 }
 	
 sub get_user_table {
-	my %opts       = @_;
+	my %opts = @_;
     my $filter = $opts{filter};
-    my %query;
-    my %operators;
-    my $shared = 0;
-	my @data;
+    my @data;
 
 	my $user_rows = $db->storage->dbh->selectall_arrayref('SELECT user_id,first_name,last_name,user_name FROM user ORDER BY first_name,last_name');
-	my %users = map { $_->[0] => $_ } @$user_rows;
-	my @user_ids = map { $_->[0] } @$user_rows;
 	my ($g, $e, $n, $ug);
 
     if ($filter eq "restricted") {
-		$g = _get_counts_by_user 2, 'genome', 'restricted=1';
-		$e = _get_counts_by_user 3, 'experiment', 'restricted=1';
-		$n = _get_counts_by_user 1, 'list', 'restricted=1';
+		$g = _get_counts_by_user 2, 'genome', 'user_connector.role_id=2 AND deleted=0 AND restricted=1';
+		$e = _get_counts_by_user 3, 'experiment', 'user_connector.role_id=2 AND deleted=0 AND restricted=1';
+		$n = _get_counts_by_user 1, 'list', 'user_connector.role_id=2 AND deleted=0 AND restricted=1';
     } elsif ($filter eq "deleted") {
-		$g = _get_counts_by_user 2, 'genome', 'deleted=1';
-		$e = _get_counts_by_user 3, 'experiment', 'deleted=1';
-		$n = _get_counts_by_user 1, 'list', 'deleted=1';
+		$g = _get_counts_by_user 2, 'genome', 'user_connector.role_id=2 AND deleted=1';
+		$e = _get_counts_by_user 3, 'experiment', 'user_connector.role_id=2 AND deleted=1';
+		$n = _get_counts_by_user 1, 'list', 'user_connector.role_id=2 AND deleted=1';
 		$ug = _get_counts_by_user 6, 'user_group', 'deleted=1';
     } elsif ($filter eq "public") {
-		$g = _get_counts_by_user 2, 'genome', 'deleted=0 AND restricted=0';
-		$e = _get_counts_by_user 3, 'experiment', 'deleted=0 AND restricted=0';
-		$n = _get_counts_by_user 1, 'list', 'deleted=0 AND restricted=0';
+		$g = _get_counts_by_user 2, 'genome', 'user_connector.role_id=2 AND deleted=0 AND restricted=0';
+		$e = _get_counts_by_user 3, 'experiment', 'user_connector.role_id=2 AND deleted=0 AND restricted=0';
+		$n = _get_counts_by_user 1, 'list', 'user_connector.role_id=2 AND deleted=0 AND restricted=0';
 		$ug = _get_counts_by_user 6, 'user_group', 'deleted=0';
     } elsif ($filter eq "shared") {
-		$g = _get_counts_by_user 2, 'genome', 'restricted=1 AND role_id!=2';
-		$e = _get_counts_by_user 3, 'experiment', 'restricted=1 AND role_id!=2';
-		$n = _get_counts_by_user 1, 'list', 'restricted=1 AND role_id!=2';
+		$g = _get_counts_by_user 2, 'genome', 'deleted=0 AND restricted=1 AND user_connector.role_id!=2';
+		$e = _get_counts_by_user 3, 'experiment', 'deleted=0 AND restricted=1 AND user_connector.role_id!=2';
+		$n = _get_counts_by_user 1, 'list', 'deleted=0 AND restricted=1 AND user_connector.role_id!=2';
     } else {
-		$g = _get_counts_by_user 2, 'genome', 'deleted=0';
-		$e = _get_counts_by_user 3, 'experiment', 'deleted=0';
-		$n = _get_counts_by_user 1, 'list', 'deleted=0';
+		$g = _get_counts_by_user 2, 'genome', 'user_connector.role_id=2 AND deleted=0';
+		$e = _get_counts_by_user 3, 'experiment', 'user_connector.role_id=2 AND deleted=0';
+		$n = _get_counts_by_user 1, 'list', 'user_connector.role_id=2 AND deleted=0';
 		$ug = _get_counts_by_user 6, 'user_group', 'deleted=0';
 	}
 
 	my @user_data;
-	foreach my $user_id (@user_ids) {
+	foreach my $u (@$user_rows) {
+		my $user_id = $u->[0];
 		my $num_genomes = $g->{$user_id};
 		my $num_experiments = $e->{$user_id};
 		my $num_notebooks = $n->{$user_id};
 		my $num_groups = $ug ? $ug->{$user_id} : undef;
-		if ($num_genomes + $num_experiments + $num_notebooks + $num_groups > 0) {
-			my $u = $users{$user_id};
-			push @data, [$u->[1] . ' ' . $u->[2] . ' (' . $u->[3] . ': ' . $user_id . ')', $num_genomes, $num_experiments, $num_notebooks, $num_groups];
+		if ($num_genomes + $num_experiments + $num_notebooks > 0) {
+			push @data, [$u->[1] . ' ' . $u->[2] . ' (' . $u->[3] . ': <a href="User.pl?user_id=' . $user_id . '" target="_blank">' . $user_id . '</a>)', $num_genomes, $num_experiments, $num_notebooks, $num_groups];
 		}
 	}
 	return encode_json({
@@ -1485,135 +1476,65 @@ sub get_user_table {
 	});
 }
 
+sub _get_counts_by_group {
+	my $child_type = shift;
+	my $join = shift;
+	my $where = shift;
+	my $select = 'SELECT parent_id,count(*) FROM user_connector JOIN ' . $join . ' ON ' . $join . '_id=child_id WHERE parent_type=6 AND child_type=' . $child_type . ' AND ' . $where . ' GROUP BY parent_id';
+	my $rows = $db->storage->dbh->selectall_arrayref($select);
+	my %map = map { $_->[0] => $_->[1] } @$rows;
+	return \%map;
+}
+	
 sub get_group_table {
-	my %opts       = @_;
+	my %opts = @_;
     my $filter = $opts{filter};
-    my %query;
-    my %operators;
-    my $shared = 0;
-    if ($filter eq "restricted") {
-    	%query = ('restricted', '1');
-    } elsif ($filter eq "deleted") {
-    	%query = ('deleted', '1');
-    } elsif ($filter eq "public") {
-    	%query = ('restricted', '0', 'deleted', '0');
-    } elsif ($filter eq "public (owned)") {
-    	%query = ('restricted', '0', 'deleted', '0', 'creator_id', '0');
-    	%operators = ('restricted', '=', 'deleted', '=', 'creator_id', '!=')
-    } elsif ($filter eq "shared") {
-    	%query = ('restricted', '1');
-    	$shared = 1;
-    }
 	my @data;
-	push @data, []; 	#needed to format for dataTables
-	
-	my @groups = CoGeDBI::get_table($db->storage->dbh, 'user_group');
-	my @connectors;
-	if ($shared) { #get connection table if needed
-		@connectors = CoGeDBI::get_table($db->storage->dbh, 'user_connector', undef, {role_id => 2}, {role_id => "!="});
+
+	my $group_rows = $db->storage->dbh->selectall_arrayref('SELECT user_group_id,name FROM user_group ORDER BY name');
+	my ($g, $e, $n);
+
+    if ($filter eq "restricted") {
+		$g = _get_counts_by_group 2, 'genome', 'deleted=0 AND restricted=1';
+		$e = _get_counts_by_group 3, 'experiment', 'deleted=0 AND restricted=1';
+		$n = _get_counts_by_group 1, 'list', 'deleted=0 AND restricted=1';
+    } elsif ($filter eq "deleted") {
+		$g = _get_counts_by_group 2, 'genome', 'deleted=1';
+		$e = _get_counts_by_group 3, 'experiment', 'deleted=1';
+		$n = _get_counts_by_group 1, 'list', 'deleted=1';
+    } elsif ($filter eq "public") {
+		$g = _get_counts_by_group 2, 'genome', 'deleted=0 AND restricted=0';
+		$e = _get_counts_by_group 3, 'experiment', 'deleted=0 AND restricted=0';
+		$n = _get_counts_by_group 1, 'list', 'deleted=0 AND restricted=0';
+    } elsif ($filter eq "shared") {
+		$g = _get_counts_by_group 2, 'genome', 'deleted=0 AND restricted=1';
+		$e = _get_counts_by_group 3, 'experiment', 'deleted=0 AND restricted=1';
+		$n = _get_counts_by_group 1, 'list', 'deleted=0 AND restricted=1';
+    } else {
+		$g = _get_counts_by_group 2, 'genome', 'deleted=0';
+		$e = _get_counts_by_group 3, 'experiment', 'deleted=0';
+		$n = _get_counts_by_group 1, 'list', 'deleted=0';
 	}
-	######TODO: add "shared" functionality
-	
-	keys $groups[0]; # reset the internal iterator so a prior each() doesn't affect the loop
-	while(my($id, $group) = each $groups[0]) {
-		my $table = CoGeDBI::get_group_access_table($db->storage->dbh, $id);
-		
-		my $notebooks = $table->{1};
-		my $note_size = 0;
-		foreach my $note_id (keys %$notebooks) {
-			my @filtered_notebooks;
-			if (keys %query) {
-				my %note_query = %query;
-				$note_query{list_id} = $note_id;
-				if (%operators) {
-					my %note_operators = %operators;
-					$note_operators{list_id} = "=";
-					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query, \%note_operators);
-				} else {
-					@filtered_notebooks = CoGeDBI::get_table($db->storage->dbh, 'list', undef, \%note_query);
-				}
-			} else {
-				$note_size++;
-			}
-			if (scalar(@filtered_notebooks) != 0 && keys $filtered_notebooks[0]) {
-				if ($shared == 0 || $table->{1}->{$note_id}->{role_id} != 2) {
-					$note_size++;
-				}
-			}	
+
+	my @group_data;
+	foreach my $group (@$group_rows) {
+		my $group_id = $group->[0];
+		my $num_genomes = $g->{$group_id};
+		my $num_experiments = $e->{$group_id};
+		my $num_notebooks = $n->{$group_id};
+		my $num_users = $db->storage->dbh->selectall_arrayref('SELECT count(*) FROM user_connector WHERE child_id=' . $group_id . ' AND parent_type=5 and child_type=6')->[0][0];
+		if ($num_genomes + $num_experiments + $num_notebooks > 0) {
+			push @data, [$group->[1] . ' (<a href="#" onclick="group_dialog(' . $group_id . ')">' . $group_id . '</a>)', $num_genomes, $num_experiments, $num_notebooks, $num_users];
 		}
-			
-		my $genomes = $table->{2};
-		my $gen_size = 0;
-		foreach my $gen_id (keys %$genomes) {
-			my @filtered_genomes;
-			if (keys %query) {
-				my %gen_query = %query;
-				$gen_query{genome_id} = $gen_id;
-				if (%operators) {
-					my %gen_operators = %operators;
-					$gen_operators{genome_id} = "=";
-					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query, \%gen_operators);
-				} else {
-					@filtered_genomes = CoGeDBI::get_table($db->storage->dbh, 'genome', undef, \%gen_query);
-				}
-			} else {
-				$gen_size++;
-			}
-			if (scalar(@filtered_genomes) != 0 && keys $filtered_genomes[0]) {
-				if ($shared == 0 || ($table->{2}->{$gen_id}->{role_id} && $table->{2}->{$gen_id}->{role_id} != 2)) {
-					$gen_size++;
-				}
-			}
-		}
-		
-		my $experiments = $table->{3};
-		my $exp_size = 0;
-		foreach my $exp_id (keys %$experiments) {
-			my @filtered_experiments;
-			if (keys %query) {
-				my %exp_query = %query;
-				$exp_query{experiment_id} = $exp_id;
-				if (%operators) {
-					my %exp_operators = %operators;
-					$exp_operators{experiment_id} = "=";
-					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query, \%exp_operators);
-				} else {
-					@filtered_experiments = CoGeDBI::get_table($db->storage->dbh, 'experiment', undef, \%exp_query);
-				}
-			} else {
-				$exp_size++;
-			}
-			if (scalar(@filtered_experiments) != 0 && keys $filtered_experiments[0]) {
-				if ($shared == 0 || ($table->{3}->{$exp_id}->{role_id} && $table->{3}->{$exp_id}->{role_id} != 2)) {
-					$exp_size++;
-				}
-			}
-		}
-		
-		my $group_obj = $db->resultset("UserGroup")->find($id);
-		my @users = $group_obj->users;
-		my $group_size = @users;
-		
-		my @group_data;
-		push @group_data, "${$group}{name} (id: $id)";
-		push @group_data, "$note_size";
-		push @group_data, "$gen_size";
-		push @group_data, "$exp_size";
-		push @group_data, "$group_size";
-		
-		push $data[0], \@group_data;
 	}
-	
-	return encode_json(
-		{
-			data => @data,
-			bPaginate => 0,
-			columnDefs => [{ 
-				orderSequence => [ "desc", "asc" ], 
-				targets => [1, 2, 3, 4, 5],
-			}],
-		}
-	);
+	return encode_json({
+		data => \@data,
+		bPaginate => 0,
+		columnDefs => [{ 
+			orderSequence => [ "desc", "asc" ], 
+			targets => [1, 2, 3, 4, 5],
+		}]
+	});
 }
 
 sub get_total_table {
@@ -1652,9 +1573,9 @@ sub get_total_table {
 	my $owned_groups = $db->storage->dbh->selectrow_array('SELECT count(*) FROM user_group JOIN user_connector ON user_group_id=child_id WHERE deleted=0 AND parent_type=5 AND child_type=6 AND user_connector.role_id=2');
 	push @data, ['public (owned)', $owned_genomes, $owned_experiments, $owned_notebooks, undef, $owned_groups];
 	
-	my $shared_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome JOIN user_connector ON genome_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=2 AND role_id!=2 GROUP BY genome_id');
-	my $shared_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment JOIN user_connector ON experiment_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=3 AND role_id!=2 GROUP BY experiment_id');
-	my $shared_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list JOIN user_connector ON list_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=1 AND role_id!=2 GROUP BY list_id');
+	my $shared_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM (SELECT 1 FROM genome JOIN user_connector ON genome_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=2 AND role_id!=2 GROUP BY genome_id) a');
+	my $shared_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM (SELECT 1 FROM experiment JOIN user_connector ON experiment_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=3 AND role_id!=2 GROUP BY experiment_id) a');
+	my $shared_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM (SELECT 1 FROM list JOIN user_connector ON list_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=1 AND role_id!=2 GROUP BY list_id) a');
 	push @data, ['restricted and shared', $shared_genomes, $shared_experiments, $shared_notebooks, undef, undef];
 
 	return encode_json(

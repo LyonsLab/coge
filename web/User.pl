@@ -726,7 +726,8 @@ sub get_group_dialog {
 		my $role = $group->role;
 		$lowest_role = $role if (!$lowest_role or $role->is_lower($lowest_role));
 		my $creator_id = $group->creator_user_id;
-		my $owner_id = $group->owner->id;
+		my $owner_id;
+        $owner_id = $group->owner->id if $group->owner;
 		foreach my $user ($group->users) {
 			my $uid = $user->id;
 	        $users{$uid} = $user;

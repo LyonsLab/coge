@@ -1739,7 +1739,7 @@ $.extend(ReportGrid.prototype, {
 		var element = this.elementId;
 		var fname;
 		$('#' + element).hide();
-		$('#' + element + '_loading').show();
+		$('#reports_loading').css('visibility', 'visible');
 		$('#report_type').prop('disabled', true);
 		$('#report_filter').prop('disabled', true);
 		$('#histogram_button').prop('disabled', true);
@@ -1753,12 +1753,13 @@ $.extend(ReportGrid.prototype, {
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
-					+ '<thead><tr><th>Group Name</th><th>Notebooks</th><th>Genomes</th><th>Experiments</th><th>Total</th><th>Users</th></tr></thead></table>');
+					+ '<thead><tr><th>Group Name</th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Total</th><th>Users</th></tr></thead>'
+					+ '<tfoot><tr style="font-weight:bold"><td style="text-align:right">Totals:</td><td></td><td></td><td></td><td></td><td></td></tr></tfoot></table>');
 				break;
 			case "total":
 				fname = 'get_total_table';
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
-						+ '<thead><tr><th></th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Users</th><th>Groups</th><th>Total</th></tr></thead></table>');
+						+ '<thead><tr><th></th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Total</th><th>Users</th><th>Groups</th></tr></thead></table>');
 				break;
 		}
 		$.ajax({
@@ -1767,25 +1768,24 @@ $.extend(ReportGrid.prototype, {
 				filter: this.filter,
 			},
 			success: function(data) {
-				$('#' + element + '_loading').hide();
+				$('#reports_loading').css('visibility', 'hidden');
 				json = JSON.parse(data);
 				var values = [];
 				var max_value = 0;
 				var min_value = Number.MAX_SAFE_INTEGER;
-				var n = self.selection == 'total' ? 5 : 4;
-				for(var i = 0; i < json.data.length; i++) {
+				for(var i=0; i<json.data.length; i++) {
 					var total_items = 0;
-					for(var j = 1; j < n; j++)
+					for(var j=1; j<4; j++)
 						if (json.data[i][j]) {
 							var num = parseInt(json.data[i][j], 10);
 							total_items += num;
 						}
-					if (self.selection == 'total')
-						json.data[i].push(total_items);
-					else {
+					if (self.selection == 'total') {
+						json.data[i].push(json.data[i][5]);
+						json.data[i][5] = json.data[i][4];
+					} else
 						json.data[i].push(json.data[i][4]);
-						json.data[i][4] = total_items > 0 ? total_items : null;
-					}
+					json.data[i][4] = total_items > 0 ? total_items : null;
 				}
 				self.data = json;
 				if (self.selection != "total")
@@ -1828,20 +1828,8 @@ function change_report(index) {
 }
 
 function filter_report(index) {
-	switch (index) {
-		case 0: reports_grid.filter = "none";
-			break;
-		case 1: reports_grid.filter = "restricted";
-			break;
-		case 2: reports_grid.filter = "deleted";
-			break;
-		case 3: reports_grid.filter = "public";
-			break;
-		case 4: reports_grid.filter = "public (owned)";
-			break;
-		case 5: reports_grid.filter = "shared";
-			break;
-	}
+	var s = $('#report_filter')[0];
+	reports_grid.filter = s.options[s.selectedIndex].value;
 	reports_grid.initialize();
 }
 
@@ -2806,3 +2794,17 @@ $.extend(Query_Counter.prototype, {
 		});
 	}
 });
+
+function group_dialog(group_id) {
+	$.ajax({
+		url: 'User.pl',
+		data: {
+			fname: 'get_group_dialog',
+			item_list: group_id + '_group',
+		},
+		success : function(data) {
+			if (data)
+				$('#group_dialog').html(data).dialog({width:500}).dialog('open');
+		}
+	});
+}
