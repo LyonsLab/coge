@@ -1636,6 +1636,8 @@ sub get_query_link {
 	$synmap_link .= ";ar=s" if $axis_relationship && $axis_relationship =~ /s/i;
 	$synmap_link .= ";ct=$color_type" if $color_type;
 
+	$synmap_link .= ";vis=$url_options{vis}";  # AKB Added 2016-10-18
+
 	my $tiny_link = CoGe::Accessory::Web::get_tiny_link( url => $synmap_link );
 
 	return $tiny_link;

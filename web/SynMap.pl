@@ -218,13 +218,14 @@ sub gen_body {
 	else {
 		$template->param( $ALGO_LOOKUP->{6}{opt} => "selected" );
 	}
-	my ( $D, $A, $Dm, $gm, $dt, $dupdist, $cscore );
+	my ( $D, $A, $Dm, $gm, $dt, $vis, $dupdist, $cscore ); #AKB Added '$vis' 2016-10-18
 	$D  = $FORM->param('D');
 	$A  = $FORM->param('A');
 	$Dm = $FORM->param('Dm');
 	$gm = $FORM->param('gm');
 	$gm //= 40;    #/
 	$dt     = $FORM->param('dt');
+	$vis = $FORM->param('vis');  #AKB Added 2016-10-18
 	$cscore = $FORM->param('csco');
 	$cscore //= 0;    #/
 	$dupdist = $FORM->param('tdd');
@@ -258,6 +259,16 @@ sub gen_body {
 	$template->param( 'DISPLAY_DAGCHAINER_SETTINGS' => $display_dagchainer_settings );
 	my $mcs = $FORM->param('mcs');
 	$template->param( 'MIN_CHR_SIZE' => $mcs ) if $mcs;
+
+	# Set Visualizer Option
+	# AKB Added 2016-10-18
+	if ($vis =~ /synmap2/i ) {
+		$template->param( 'SYNMAP2_SELECT' => 'checked' );
+	} elsif ($vis =~ /legacy/i ) {
+		$template->param( 'LEGACY_SELECT' => 'checked' );
+	} else {
+		$template->param( 'SYNMAP2_SELECT' => 'checked' );
+	}
 
 	#will the program automatically run?
 	my $autogo = $FORM->param('autogo');

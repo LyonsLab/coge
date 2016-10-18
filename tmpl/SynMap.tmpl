@@ -276,8 +276,23 @@
 
     <div id="tab-3">
         <form id="display-options">
+
+        <!-- AKB Added/Modified 2016-10-18 -->
         <fieldset class="ui-widget-content ui-corner-all coge-section">
-            <legend style="color:#009900">Dotplot options</legend>
+            <legend style="color:#009900">Visualizer Select</legend>
+            <ul>
+                <li>
+                    <label>SynMap2</label>
+                    <input id="visualizer_select" name="visualizer_select" checked="true" type="radio" value="synmap2" onClick="display_legacy_settings();" <TMPL_VAR SYNMAP2_SELECT> >
+                    <label>Legacy Version</label>
+                    <input id="visualizer_select" name="visualizer_select" type="radio" value="legacy" onClick="display_legacy_settings();" <TMPL_VAR LEGACY_SELECT> >
+                    <span class="small">Use legacy version if your genomes have numerous contigs, or if your previous analysis froze.</span>
+                </li>
+            </ul>
+        </fieldset>
+
+        <fieldset class="ui-widget-content ui-corner-all coge-section" id="legacy_opts">
+            <legend style="color:#009900">Legacy options</legend>
             <ul>
                 <li>
                     <label>Regenerate dotplot images?</label>
@@ -451,6 +466,7 @@ const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
 $(function(){
     <tmpl_var name=display_dagchainer_settings>
+    display_legacy_settings();  //AKB Added 2016-10-18
 
     //FIXME: Remove global state
     pageObj = {
@@ -477,7 +493,7 @@ $(function(){
         supportEmail: SUPPORT_EMAIL,
         onError: coge.synmap.onError
     });
-    
-    coge.synmap.setup(pageObj);    
+
+    coge.synmap.setup(pageObj);
 });
 </script>
