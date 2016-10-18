@@ -1558,6 +1558,9 @@ sub get_query_link {
 	#draw a box around identified diagonals?
 	my $box_diags = test($url_options{box_diags});
 
+	#which visualizer is used?
+	my $vis_choice = $url_options{vis};  # AKB Added 2016-10-18
+
 	my ( $org_name1, $titleA ) = gen_org_name(
 		db        => $db,
 		genome_id     => $genome_id1,
@@ -1636,7 +1639,7 @@ sub get_query_link {
 	$synmap_link .= ";ar=s" if $axis_relationship && $axis_relationship =~ /s/i;
 	$synmap_link .= ";ct=$color_type" if $color_type;
 
-	$synmap_link .= ";vis=$url_options{vis}";  # AKB Added 2016-10-18
+	$synmap_link .= ";vis=$vis_choice" if $vis_choice ne 'synmap2';  # AKB Added 2016-10-18
 
 	my $tiny_link = CoGe::Accessory::Web::get_tiny_link( url => $synmap_link );
 
