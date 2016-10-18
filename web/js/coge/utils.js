@@ -55,18 +55,21 @@ var coge = window.coge = (function(ns) {
         
         toPrettyDuration: function(seconds) {
             var fields = [
-                [parseInt((seconds / 86400).toFixed(1), 10), " day"],
-                [parseInt((seconds / 3600).toFixed(1), 10) % 24, " hour"],
-                [parseInt(((seconds / 60) % 60).toFixed(1), 10), " minute"],
-                [(seconds % 60).toFixed(2), " second"]
+                //[parseInt((seconds / 86400).toFixed(1), 10), " day"],
+                [parseInt((seconds / 3600).toFixed(1), 10) % 24, "h"],
+                [parseInt(((seconds / 60) % 60).toFixed(1), 10), "m"],
+                [(seconds % 60).toFixed(1), "s"]
             ];
 
-            return fields.filter(function(item) { return item[0] !== 0; })
-                .map(function(item) {
-                    var word = (item[0] > 1) ? item[1] + "s" : item[1];
-                    return item[0] + word;
-                })
-                .join(", ");
+            return fields.filter(function(f) { return f[0] !== 0 })
+                         .map(function(f) { return f[0] + f[1] })
+                         .join(' ');
+        },
+
+        truncateString: function(s, maxLength) {
+            if (s && s.length > maxLength)
+                return s.substring(0, maxLength) + '...';
+            return s;
         },
 
         log10: function(value) {

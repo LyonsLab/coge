@@ -1678,6 +1678,7 @@ div.dataTables_scrollBody {
 /*
  * Progress dialog component
  */
+
 .progress {
     overflow: hidden;
 }
@@ -1711,7 +1712,23 @@ div.dataTables_scrollBody {
 .progress .link {
     font-size: 0.875em;
 }
- 
+
+.progress table {
+    border-collapse: collapse;
+}
+
+.progress td {
+    padding-top:    0.25em;
+    padding-bottom: 0.25em;
+}
+
+.progress .result {
+    padding-top: 0.5em;
+}
+
+.progress .result img {
+    vertical-align: bottom;
+}
 
 /*
  * Wizard component

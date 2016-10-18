@@ -250,14 +250,11 @@ var coge = window.coge = (function(namespace) {
 	            	return;
 	            }
 	            
-	            // Render tasks
+	            // Render tasks status
 		        if (json.tasks) {
-		            var jobs = json.tasks;
-		            for (var index = 0; index < jobs.length; index++) {
-		                var item = self.formatter(jobs[index]);
-		                if (item)
-		                    results.push(item);
-		            }
+                    var html = self.formatter(json.tasks);
+                    if (html)
+                        results.push(html);
 		        }
 
 		        //FIXME Update when a workflow supports elapsed time
@@ -267,9 +264,7 @@ var coge = window.coge = (function(namespace) {
 		                return a + b.elapsed;
 		            }, 0);
 
-		            var duration = coge.utils.toPrettyDuration(total);
-
-		            workflow_status.append("<br>Finished in " + duration);
+		            workflow_status.append("<br>Finished in " + coge.utils.toPrettyDuration(total));
 		            workflow_status.find('span').addClass('completed');
 		            self.succeeded(json.results);
 		        }
@@ -300,8 +295,7 @@ var coge = window.coge = (function(namespace) {
 		        if (json.results && json.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
 		        	log_content.append("<div class='bold'>Here are the results (click to open):</div>");
 		    	    json.results.forEach(function(result) {
-		    	    	var html = self._format_result(result);
-		    	    	log_content.append(html);
+		    	    	log_content.append( self._format_result(result) );
 		    	    });
 		        }
 		        
@@ -315,67 +309,80 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		_format_result: function(result) {
+		    var formatted = $('<div></div>').addClass('progress result');
+
 			if (result.type === 'experiment') {
 				var url = 'ExperimentView.pl?eid=' + result.id;
-				return "<div><a href='"+url+"'><img src='picts/testtube-icon.png' width='15' height='15'/> Experiment '"+result.name+"'</a></div>";
+				formatted.append("<a href='"+url+"'><img src='picts/testtube-icon.png' width='15' height='15'/> Experiment '"+result.name+"'</a>");
 			}
 			else if (result.type === 'notebook') {
 				var url = 'NotebookView.pl?nid=' + result.id;
-				return "<div><a href='"+url+"'><img src='picts/notebook-icon.png' width='15' height='15'/> Notebook '"+result.name+"'</a></div>";
+				formatted.append("<a href='"+url+"'><img src='picts/notebook-icon.png' width='15' height='15'/> Notebook '"+result.name+"'</a>");
 			}
 			else if (result.type === 'genome') {
 				var url = 'GenomeInfo.pl?gid=' + result.id;
-				return "<div><a href='"+url+"'><img src='picts/dna-icon.png' width='15' height='15'/> Genome '"+result.info+"'</a></div>";
+				formatted.append("<a href='"+url+"'><img src='picts/dna-icon.png' width='15' height='15'/> Genome '"+result.info+"'</a>");
 			}
 			else if (result.type === 'dataset') {
 				var url = 'GenomeInfo.pl?gid=' + result.genome_id;
-				return "<div><a href='"+url+"'> Dataset '"+result.info+"'</a></div>";				
+				formatted.append("<a href='"+url+"'> Dataset '"+result.info+"'</a>");
 			}
 			else if (result.type === 'popgen') {
 				var url = 'PopGen.pl?eid=' + result.experiment_id;
-				return "<div><a href='"+url+"'>"+result.name+"</a></div>";				
+				formatted.append("<a href='"+url+"'>"+result.name+"</a>");
 			}
+			else {
+			    return;
+			}
+
+			return formatted;
 		},
 		
-		_default_formatter: function(item) {
-		    var msg;
-		    var row = $('<li>'+ item.description + ' </li>');
+		_default_formatter: function(tasks) {
+		    const MAX_TASK_DESC_LENGTH = 73;
+		    var table = $('<table></table>').css({ 'width' : '100%' });
 
-		    var job_status = $('<span></span>');
+            tasks.forEach(function(task) {
+                var row = $('<tr><td>' + coge.utils.truncateString(task.description, MAX_TASK_DESC_LENGTH) + '</td></tr>');
 
-		    if (item.status == 'scheduled')
-		        job_status.append(item.status).addClass('down bold');
-		    else if (item.status == 'completed')
-		        job_status.append(item.status).addClass('completed bold');
-		    else if (item.status == 'running')
-		        job_status.append(item.status).addClass('running bold');
-		    else if (item.status == 'skipped')
-		        job_status.append("already generated").addClass('skipped bold');
-		    else if (item.status == 'cancelled')
-		        job_status.append(item.status).addClass('alert bold');
-		    else if (item.status == 'failed')
-		        job_status.append(item.status).addClass('alert bold');
-		    else
-		        return;
+                var status = $('<span></span>');
+                if (task.status == 'scheduled')
+                    status.append(task.status).addClass('down bold');
+                else if (task.status == 'completed')
+                    status.append(task.status).addClass('completed bold');
+                else if (task.status == 'running')
+                    status.append(task.status).addClass('running bold');
+                else if (task.status == 'skipped')
+                    status.append("already generated").addClass('skipped bold');
+                else if (task.status == 'cancelled')
+                    status.append(task.status).addClass('alert bold');
+                else if (task.status == 'failed')
+                    status.append(task.status).addClass('alert bold');
+                else
+                    return;
 
-		    row.append(job_status);
+                var duration = $('<span></span>');
+                if (task.elapsed)
+                    duration.append(' in ' + coge.utils.toPrettyDuration(task.elapsed));
 
-		    if (item.elapsed)
-		        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+                row.append( $('<td></td>').append(status).css({'white-space': 'nowrap', 'text-align' : 'right'}).append(duration) );
 
-		    if (item.log) {
-		        var p = item.log.split("\n");
+                if (task.log) {
+                    var p = task.log.split("\n");
 
-		        var pElements = p.map(function(item) {
-		            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
-		            return $("<div></div>").html(norm);
-		        });
+                    var pElements = p.map(function(task) {
+                        var norm = task.replace(/\\t/g, " ").replace(/\\'/g, "'");
+                        return $("<div></div>").html(norm);
+                    });
 
-		        var log = $("<div></div>").html(pElements).addClass("padded");
-		        row.append(log);
-		    }
+                    var log = $("<div></div>").html(pElements).addClass("padded");
+                    row.append(log);
+                }
 
-		    return row;
+                table.append(row);
+            });
+
+		    return table.html();
 		},
 		
 		_alert: function(string) {
