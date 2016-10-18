@@ -28,8 +28,8 @@ var coge = window.coge = (function(namespace) {
 			this._render_template(template);
 			
 			// Setup resize handler
-			var log = this.container.find(".log");
-		    log.height( $( window ).height() * 0.5 );
+			this.log = this.container.find(".log");
+		    this.log.height( $( window ).height() * 0.5 );
 		    c.dialog({
 		    	modal: true,
 		    	width: '60%',
@@ -38,7 +38,7 @@ var coge = window.coge = (function(namespace) {
 		    		//console.log('resizeStop ' + ui.size.width + ' ' + ui.size.height + ' ' + ui.originalSize.width + ' ' + ui.originalSize.height);
 		    		var widthChange = ui.size.width - ui.originalSize.width;
 		    		var heightChange = ui.size.height - ui.originalSize.height;
-		    		log.css({ width: log.width() + widthChange, height: log.height() + heightChange });
+		    		self.log.css({ width: self.log.width() + widthChange, height: self.log.height() + heightChange });
 		    	}
 		    });
 		    
@@ -69,13 +69,12 @@ var coge = window.coge = (function(namespace) {
 				this.container.dialog({width: opts.width});
 			
 			if (opts && opts.height)
-				this.container.find(".log").height(opts.height);
+				this.log.height(opts.height);
 			
-		    var log = this.container.find('.log');
 		    if (opts && opts.content)
-		    	log.html(opts.content);
+		    	this.log.html(opts.content);
 		    else
-		    	log.html('Initializing ...');
+		    	this.log.html('Initializing ...');
 		    
 		    this.container.dialog('open');
 		    
@@ -121,7 +120,7 @@ var coge = window.coge = (function(namespace) {
 			var errorMsg = string + (error ? ': ' + this._errorToString(error) : '');
 			
 			// Show error message
-		    c.find('.log')
+		    this.log
 		    	.append('<div class="alert">' + errorMsg + '</div><br>')
 		    	.append(
 		    		'<div class="alert">' +
@@ -211,7 +210,7 @@ var coge = window.coge = (function(namespace) {
 		        	self.ajaxError++;
 		            if ('Auth' in json.error) {
 		            	c.find('.msg').html('Login required to continue');
-		            	c.find('.log')
+		            	this.log
 		            		.css({'font-size': '1em'})
 		            		.html("<br>Your session has expired.<br><br>" + 
 		            			"Please log in again by clicking " +
@@ -284,7 +283,7 @@ var coge = window.coge = (function(namespace) {
 		        	setTimeout($.proxy(self.update, self), refresh_interval);
 		            return;
 		        }
-		        else {
+		        else { // running
 		            workflow_status.find('span').addClass('running');
 		            setTimeout($.proxy(self.update, self), refresh_interval);
 		        }
@@ -298,8 +297,13 @@ var coge = window.coge = (function(namespace) {
 		    	    	log_content.append( self._format_result(result) );
 		    	    });
 		        }
-		        
-		        self.container.find('.log').html(log_content);
+
+                // Update log
+		        self.log.html(log_content);
+
+                // Scroll to bottom of log if finished to ensure results are shown
+		        if (current_status == "completed")
+		            self.log.scrollTop(self.log[0].scrollHeight);
 		    };
 			
 		    setTimeout(
