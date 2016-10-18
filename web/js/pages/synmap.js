@@ -87,6 +87,7 @@ function update_params(val) {
     $('#c').val(params[11]);
     merge_select_check();
     depth_algo_check();
+
 }    
 
 function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, org_name, seq_id) {
@@ -215,6 +216,16 @@ function display_dagchainer_settings(params,type) {
     }
 
     set_dagchainer_defaults(params, type);
+}
+
+function display_legacy_settings() {  //AKB Added 2016-10-18
+
+    if ($('#visualizer_select')[0].checked) {
+        $('#legacy_opts').hide(0);
+    } else {
+        $('#legacy_opts').show(0);
+    }
+
 }
 
 function address_validity_check(validity) {
@@ -580,7 +591,8 @@ var coge = window.coge = (function(namespace) {
                     overlay.hide();
                     if (!data.error) {
                         $("#synmap_zoom_box").draggable();
-                        $('#results').html(data.html).slideDown(show_results);
+                        //$('#results').html(data.html).slideDown(show_results);  AKB Replaced 2016-10-18
+                        $('#results').html(data.html).slideDown();
                     } else if (on_error)
                         on_error();
                 },
@@ -676,7 +688,8 @@ var coge = window.coge = (function(namespace) {
                 codeml_min: $('#codeml_min').val(),
                 codeml_max: $('#codeml_max').val(),
                 logks: $('#logks')[0].checked,
-                csco: $('#csco').val()
+                csco: $('#csco').val(),
+                vis: $('#visualizer_select:checked').val()  //AKB Added 2016-10-18
             };
         },
 
