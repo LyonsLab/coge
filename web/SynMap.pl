@@ -2,12 +2,12 @@
 use v5.10;
 use strict;
 no warnings 'redefine';
-umask(0);
+umask(0); # what is this for? (mdb 10/19/16)
 
 use CoGeX;
 use CoGeX::Result::Genome qw(ERROR LOADING);
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
-use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
+use CoGe::Accessory::Utils qw( commify html_escape );
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Core::Genome qw(genomecmp genomecmp2);
 use CoGe::Core::Favorites;
@@ -15,21 +15,21 @@ use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
-use DBIxProfiler;
+#use DBIxProfiler;
 use Data::Dumper;
 use Digest::MD5 qw(md5_hex);
 use HTML::Template;
 use JSON::XS;
 use LWP::UserAgent;
-use Parallel::ForkManager;
-use GD;
+#use Parallel::ForkManager;
+#use GD;
 use File::Path;
 use File::Spec::Functions;
 use Mail::Mailer;
 use Benchmark;
 use DBI;
 use POSIX;
-use Sort::Versions;
+#use Sort::Versions;
 
 our (
 	$config,        $DIR,
@@ -48,7 +48,7 @@ our (
 	%FUNCTIONS,     $SCRIPTDIR,    $LINK
 );
 
-$|     = 1;    # turn off buffering
+$| = 1;    # turn off buffering
 
 $FORM       = new CGI;
 $PAGE_TITLE = "SynMap";
@@ -108,10 +108,6 @@ $SYNTENY_SCORE = $config->{SYNTENY_SCORE};
 $NWALIGN = get_command_path('NWALIGN');
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
-
-#$ajax{read_log}=\&read_log_test;
-#print $pj->build_html( $FORM, \&gen_html );
-#print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 %FUNCTIONS = (
 	get_orgs               => \&get_orgs,
@@ -452,7 +448,7 @@ sub gen_body {
 		$template->param( RESULTS => $results );
 	}
 
-#place to store fids that are passed into SynMap to highlight that pair in the dotplot (if present)
+	#place to store fids that are passed into SynMap to highlight that pair in the dotplot (if present)
 	my $fid1 = 0;
 	$fid1 = $FORM->param('fid1') if $FORM->param('fid1');
 
