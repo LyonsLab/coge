@@ -191,10 +191,6 @@ var coge = window.coge = (function(namespace) {
 				self._debug('update_handler');
 				var c = self.container;
 				
-		        var workflow_status = $("<p></p>");
-		        var log_content = $("<ul></ul>");
-		        var results = [];
-
 		        var refresh_interval = self._refresh_interval();
 		        var retry_interval = 5*1000;
 		        self._debug('refresh=' + refresh_interval + ', retry=' + retry_interval);
@@ -237,8 +233,10 @@ var coge = window.coge = (function(namespace) {
 		        // Render status
 	            var current_status = json.status.toLowerCase();
 	            self._debug('status=' + current_status);
+
+	            var workflow_status = $("<div/>");
 	            workflow_status
-	                .html("Workflow status: ")
+	                .html("Workflow ")
 	                .append( $('<span></span>').html(json.status) )
 	                .addClass('bold');
 
@@ -250,20 +248,21 @@ var coge = window.coge = (function(namespace) {
 	            }
 	            
 	            // Render tasks status
+	            var log_content = $("<div/>");
 		        if (json.tasks) {
                     var html = self.formatter(json.tasks);
                     if (html)
-                        results.push(html);
+                        log_content = $(html);
 		        }
 
-		        //FIXME Update when a workflow supports elapsed time
+                // Render workflow status
 		        if (current_status == "completed") {
 		            var total = json.tasks.reduce(function(a, b) {
 		                if (!b.elapsed) return a;
 		                return a + b.elapsed;
 		            }, 0);
 
-		            workflow_status.append("<br>Finished in " + coge.utils.toPrettyDuration(total));
+		            workflow_status.append(' in ' + coge.utils.toPrettyDuration(total));
 		            workflow_status.find('span').addClass('completed');
 		            self.succeeded(json.results);
 		        }
@@ -288,9 +287,9 @@ var coge = window.coge = (function(namespace) {
 		            setTimeout($.proxy(self.update, self), refresh_interval);
 		        }
 
-		        results.push(workflow_status);
-		        log_content.append(results);
-		        
+		        log_content.append('<br>').append(workflow_status);
+
+		        // Render workflow results
 		        if (json.results && json.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
 		        	log_content.append("<div class='bold'>Here are the results (click to open):</div>");
 		    	    json.results.forEach(function(result) {
@@ -298,7 +297,7 @@ var coge = window.coge = (function(namespace) {
 		    	    });
 		        }
 
-                // Update log
+                // Insert rendered results
 		        self.log.html(log_content);
 
                 // Scroll to bottom of log if finished to ensure results are shown
@@ -311,7 +310,7 @@ var coge = window.coge = (function(namespace) {
 		    	10
 		    );
 		},
-		
+
 		_format_result: function(result) {
 		    var formatted = $('<div></div>').addClass('progress result');
 
@@ -344,10 +343,12 @@ var coge = window.coge = (function(namespace) {
 		
 		_default_formatter: function(tasks) {
 		    const MAX_TASK_DESC_LENGTH = 73;
-		    var table = $('<table></table>').css({ 'width' : '100%' });
+		    console.log(this.container.width());
+		    var table = $('<table></table>');
 
             tasks.forEach(function(task) {
-                var row = $('<tr><td>' + coge.utils.truncateString(task.description, MAX_TASK_DESC_LENGTH) + '</td></tr>');
+                var cell = $('<td>' + coge.utils.truncateString(task.description, MAX_TASK_DESC_LENGTH) + '</td>').css('width', MAX_TASK_DESC_LENGTH+'em');
+                var row = $('<tr></tr>').append(cell);
 
                 var status = $('<span></span>');
                 if (task.status == 'scheduled')
@@ -371,7 +372,7 @@ var coge = window.coge = (function(namespace) {
 
                 row.append( $('<td></td>').append(status).css({'white-space': 'nowrap', 'text-align' : 'right'}).append(duration) );
 
-                if (task.log) {
+                if (task.log) { //FIXME not working
                     var p = task.log.split("\n");
 
                     var pElements = p.map(function(task) {
@@ -409,7 +410,7 @@ var coge = window.coge = (function(namespace) {
 		    this.container.empty()
 		        .hide()
 		        .append(template)
-		        .show();//.slideDown();
+		        .show();
 		}
 	
     };

@@ -1116,19 +1116,6 @@ li {
     text-align: center;
 }
 
-/* Dialog box */
-.completed {
-    color: #009933;
-}
-
-.skipped {
-    color: dimgray;
-}
-
-.running {
-    color: #3366FF;
-}
-
 /* Main Page */
 .welcome {
     color: #119911;
@@ -1385,36 +1372,69 @@ h5 > small {
 }
 
 /*
- * Progress menu
+ * Progress dialog component
  */
 
-.coge-progress-menu .ui-dialog-content {
-    padding: 10px;
+.progress {
+    overflow: hidden;
 }
 
-.coge-progress-status {
-    padding-top: 10px;
+.progress .log {
+    overflow-y: auto;
+    padding: 0.25em;
+    color: dimgray;
+    height: 400px;
+    font-size: 0.875em;
+    border-bottom: 1px solid lightgray;
 }
 
-.coge-progress-status-error {
+.progress .error {
     color: red;
+    font-size: 1em;
 }
 
-.coge-progress-status-complete {
-    color: green;
+.progress li {
+    padding: 0.15em;
 }
 
-.coge-progress-status span,
-.coge-progress-status a,
-.coge-progress-status div {
-    vertical-align: top;
+.progress .link {
+    font-size: 0.875em;
 }
 
-.coge-progress-data {
-    height: 200px;
-    padding: 10px;
-    overflow-y: scroll;
+.progress table {
+    border-collapse: collapse;
+    width: 100%;
 }
+
+.progress td {
+    padding-top:    0.25em;
+    padding-bottom: 0.25em;
+}
+
+.progress .result {
+    padding-top: 0.5em;
+}
+
+.progress .result img {
+    vertical-align: bottom;
+}
+
+.progress .completed {
+    color: #009933;
+}
+
+.progress .skipped {
+    color: dimgray;
+}
+
+.progress .running {
+    color: #3366FF;
+}
+
+/*
+ * ???
+ *
+ */
 
 .toolbar {
     padding: 10px 5px 10px 5px;
@@ -1617,6 +1637,7 @@ div.dataTables_scrollBody {
  * YouTube widget
  *
  */
+
 #youtube-hack {
     position: relative;
 }
@@ -1673,61 +1694,6 @@ div.dataTables_scrollBody {
     color: #bf1e1e;
     background-color: #ed8c8c;
     border-color: #e34a4a;
-}
-
-/*
- * Progress dialog component
- */
-
-.progress {
-    overflow: hidden;
-}
-
-.progress .log {
-    overflow-y: auto;
-    padding: 0.25em;
-    color: dimgray;
-    height: 400px;
-    font-size: 0.875em;
-    border-bottom: 1px solid lightgray;
-}
-
-.progress .msg {
-    
-}
-
-.progress .error {
-    color: red;
-    font-size: 1em;
-}
-
-.progress .ok {
-    
-}
-
-.progress li {
-    padding: 0.15em;
-}
-
-.progress .link {
-    font-size: 0.875em;
-}
-
-.progress table {
-    border-collapse: collapse;
-}
-
-.progress td {
-    padding-top:    0.25em;
-    padding-bottom: 0.25em;
-}
-
-.progress .result {
-    padding-top: 0.5em;
-}
-
-.progress .result img {
-    vertical-align: bottom;
 }
 
 /*
