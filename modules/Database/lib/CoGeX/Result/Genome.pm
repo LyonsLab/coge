@@ -13,9 +13,9 @@ use Text::Wrap;
 use base 'Class::Accessor';
 use Carp;
 
-use constant ERROR => -1;
+use constant ERROR   => -1;
 use constant LOADING => 1;
-use constant LOADED => 2;
+use constant LOADED  => 2;
 
 BEGIN {
 	use Exporter 'import';
@@ -672,6 +672,38 @@ sub create_index {
 sub is_indexed {
     my $self = shift;
     return ( -e $self->file_path . '.fai' );
+}
+
+################################################## subroutine header start ##
+
+=head2 is_*
+
+ Usage     :
+ Purpose   : Convenience routines for checking genome status
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_loading {
+    my $self = shift;
+    return ($self->status && $self->status == LOADING);
+}
+
+sub is_loaded {
+    my $self = shift;
+    return (!$self->status || $self->status == LOADED); # legacy rows will have NULL status
+}
+
+sub is_error {
+    my $self = shift;
+    return ($self->status && $self->status == ERROR);
 }
 
 ################################################## subroutine header start ##
