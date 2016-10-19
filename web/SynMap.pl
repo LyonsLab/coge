@@ -22,7 +22,7 @@ use HTML::Template;
 use JSON::XS;
 use LWP::UserAgent;
 #use Parallel::ForkManager;
-#use GD;
+use GD;
 use File::Path;
 use File::Spec::Functions;
 use Mail::Mailer;
@@ -256,13 +256,11 @@ sub gen_body {
 	my $mcs = $FORM->param('mcs');
 	$template->param( 'MIN_CHR_SIZE' => $mcs ) if $mcs;
 
-	# Set Visualizer Option
-	# AKB Added 2016-10-18
-	if ($vis =~ /synmap2/i ) {
-		$template->param( 'SYNMAP2_SELECT' => 'checked' );
-	} elsif ($vis =~ /legacy/i ) {
+	# Set Visualizer Option # AKB Added 2016-10-18
+	if ($vis && $vis =~ /legacy/i ) {
 		$template->param( 'LEGACY_SELECT' => 'checked' );
-	} else {
+	}
+    else {
 		$template->param( 'SYNMAP2_SELECT' => 'checked' );
 	}
 
@@ -794,8 +792,8 @@ sub get_genome_info {
 	$feattype_menu .= qq{<OPTION VALUE=2 $genomic_selected>genomic</option>};
 	$feattype_menu .= "</select>";
 	$message = "<span class='small alert'>No Coding Sequence in Genome</span>" unless $has_cds;
-	$message = "<span class='small alert'>Genome is still being loaded</span>" if $dsg->status == LOADING;
-	$message = "<span class='small alert'>There was an error while loading this genome</span>" if $dsg->status == ERROR;
+	$message = "<span class='small alert'>Genome is still being loaded</span>" if ($dsg->is_loading());
+	$message = "<span class='small alert'>Genome is in invalid state</span>"   if ($dsg->is_error());
 
 	return $html_dsg_info, $feattype_menu, $message, $chr_length, $org_num,
 	  $dsg->organism->name, $dsg->genomic_sequence_type_id;
