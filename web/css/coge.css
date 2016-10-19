@@ -1419,6 +1419,11 @@ h5 > small {
     vertical-align: bottom;
 }
 
+.progress .header {
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
 .progress .completed {
     color: #009933;
 }
@@ -1457,7 +1462,6 @@ h5 > small {
     padding-left: 5px;
     padding-right: 5px;
 }
-
 
 /*
  * Buttons & Icons

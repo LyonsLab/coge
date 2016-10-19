@@ -287,17 +287,18 @@ var coge = window.coge = (function(namespace) {
 		            setTimeout($.proxy(self.update, self), refresh_interval);
 		        }
 
-		        log_content.append('<br>').append(workflow_status);
+		        //log_content.append('<br>').append(workflow_status); // mdb removed 10/19/16 -- seems redundant
 
 		        // Render workflow results
 		        if (json.results && json.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
-		        	log_content.append("<div class='bold'>Here are the results (click to open):</div>");
+		        	log_content.append("<br><div class='header'>Results (as they are generated)</div>");
 		    	    json.results.forEach(function(result) {
 		    	    	log_content.append( self._format_result(result) );
 		    	    });
 		        }
 
                 // Insert rendered results
+                log_content.append('<br><br>');
 		        self.log.html(log_content);
 
                 // Scroll to bottom of log if finished to ensure results are shown
@@ -346,8 +347,9 @@ var coge = window.coge = (function(namespace) {
 		    var table = $('<table></table>');
 
             tasks.forEach(function(task) {
-                var cell = $('<td>' + coge.utils.truncateString(task.description, MAX_TASK_DESC_LENGTH) + '</td>').css('width', MAX_TASK_DESC_LENGTH+'em');
-                var row = $('<tr></tr>').append(cell);
+                var row = $('<tr></tr>').append(
+                    $('<td>' + coge.utils.truncateString(task.description, MAX_TASK_DESC_LENGTH) + '</td>').css('width', MAX_TASK_DESC_LENGTH+'em')
+                );
 
                 var status = $('<span></span>');
                 if (task.status == 'scheduled')
