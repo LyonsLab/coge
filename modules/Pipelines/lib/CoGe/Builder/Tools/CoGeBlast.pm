@@ -96,7 +96,7 @@ sub add_jobs {
             args    => [],
             inputs  => undef,
             outputs => ["$dbpath/done"],
-            description => "Generating blastable database..."
+            description => "Generating blastable database"
         });
 
         my $outfile = $cogeweb->basefile . "-$count.$program";

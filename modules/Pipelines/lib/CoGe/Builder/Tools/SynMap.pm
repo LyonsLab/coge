@@ -286,7 +286,7 @@ sub add_jobs {
 			args        => \@fasta1args,
 			inputs      => undef,
 			outputs     => [$fasta1],
-			description => "Generating fasta file...",
+			description => "Generating fasta file",
 		});
 
 		$workflow->log( "Added fasta file generation for:" );
@@ -314,7 +314,7 @@ sub add_jobs {
 			args        => \@fasta2args,
 			inputs      => undef,
 			outputs     => [$fasta2],
-			description => "Generating fasta file...",
+			description => "Generating fasta file",
 		});
 
 		$workflow->log( "" );
@@ -349,7 +349,7 @@ sub add_jobs {
 			args        => \@blastdbargs,
 			inputs      => [$fasta2],
 			outputs     => \@blastdb_files,
-			description => "Generating BlastDB...",
+			description => "Generating BlastDB",
 		});
 
 		$workflow->log( "" );
@@ -367,7 +367,7 @@ sub add_jobs {
             outputs     => [
                 $basename . '.prj'
             ],
-            description => "Generating LastDB...",
+            description => "Generating LastDB",
         });
 
         $blastdb = $basename;
@@ -453,7 +453,7 @@ sub add_jobs {
 			args        => \@blastargs,
 			inputs      => \@blastdb_files,
 			outputs     => [$outfile, $outfile . '.done'],
-			description => "Running genome comparison...",
+			description => "Running genome comparison",
 		});
 	}
 
@@ -488,7 +488,7 @@ sub add_jobs {
 		args        => $blastargs,
 		inputs      => [ $raw_blastfile, $raw_blastfile . '.done' ],
 		outputs     => \@bedoutputs,
-		description => "Creating BED files...",
+		description => "Creating BED files",
 	});
 
 	$workflow->log( "" );
@@ -527,7 +527,7 @@ sub add_jobs {
 		args        => \@rawargs,
 		inputs      => [ $raw_blastfile, $query_bed, $subject_bed ],
 		outputs     => \@rawoutputs,
-		description => "Filtering tandem dups...",
+		description => "Filtering tandem dups",
 	});
 
 	$workflow->log( "" );
@@ -575,7 +575,7 @@ sub add_jobs {
 		args        => \@dagtoolargs,
 		inputs      => [$filtered_blastfile],
 		outputs     => [$dag_file12_all],
-		description => "Formatting for DAGChainer...",
+		description => "Formatting for DAGChainer",
 	});
 
 	$workflow->log( "" );
@@ -605,7 +605,7 @@ sub add_jobs {
 			args        => \@geneorderargs,
 			inputs      => [$dag_file12_all],
 			outputs     => [$dag_file12_all_geneorder],
-			description => "Converting to genomic order...",
+			description => "Converting to genomic order",
 		});
 
 		$all_file = $dag_file12_all_geneorder;
@@ -691,7 +691,7 @@ sub add_jobs {
 			args        => \@dagargs,
 			inputs      => [$dag_file12],
 			outputs     => [$merged_dagchainer_file],
-			description => "Running DAGChainer (with merge)...",
+			description => "Running DAGChainer (with merge)",
 		});
 		$post_dagchainer_file = $merged_dagchainer_file;
 		$workflow->log( "" );
@@ -709,7 +709,7 @@ sub add_jobs {
 			args        => \@dagargs,
 			inputs      => [$dag_file12],
 			outputs     => [$dagchainer_file],
-			description => "Running DAGChainer...",
+			description => "Running DAGChainer",
 		});
 
 		$post_dagchainer_file = $dagchainer_file;
@@ -736,7 +736,7 @@ sub add_jobs {
 			args        => \@mergeargs,
 			inputs      => [$dagchainer_file],
 			outputs     => [$merged_dagchainer_file],
-			description => "Merging Syntenic Blocks...",
+			description => "Merging Syntenic Blocks",
 		});
 		$workflow->log( "" );
 		$workflow->log(
@@ -783,7 +783,7 @@ sub add_jobs {
 			args        => \@depthargs,
 			inputs      => [$post_dagchainer_file_w_nearby],
 			outputs     => [$quota_align_coverage],
-			description => "Calculating Syntenic depth...",
+			description => "Calculating Syntenic depth",
 		});
 
 		$workflow->log( "" );
@@ -810,7 +810,7 @@ sub add_jobs {
 			args        => \@positionargs,
 			inputs      => [$final_dagchainer_file],
 			outputs     => ["$final_dagchainer_file.gcoords"],
-			description => "Converting to genomic coordinates...",
+			description => "Converting to genomic coordinates",
 		});
 
 		$workflow->log( "" );
@@ -868,7 +868,7 @@ sub add_jobs {
 			args        => \@ksargs,
 			inputs      => [$final_dagchainer_file],
 			outputs     => [ $ks_blocks_file, $ks_db ],
-			description => "Calculating synonymous changes (slow)...",
+			description => "Calculating synonymous changes (slow)",
 		});
 
 		$workflow->log( "" );
@@ -902,7 +902,7 @@ sub add_jobs {
                 ],
                 inputs      =>  [ $ks_blocks_file ],
                 outputs     =>  [ $output_file, $log_file ],
-                description =>  "Extracting coordinates for merge..."
+                description =>  "Extracting coordinates for merge"
             });
 		}
 
@@ -923,7 +923,7 @@ sub add_jobs {
 			args        => \@svgargs,
 			inputs      => [$ks_blocks_file],
 			outputs     => [$svg_file],
-			description => "Generating svg image...",
+			description => "Generating svg image",
 		});
 
 		$workflow->log( "" );
@@ -952,7 +952,7 @@ sub add_jobs {
 			args        => \@svgargs,
 			inputs      => [$final_dagchainer_file],
 			outputs     => [$svg_file],
-			description => "Generating svg image...",
+			description => "Generating svg image",
 		});
 
 		$workflow->log( "" );
@@ -1058,7 +1058,7 @@ sub add_jobs {
 		inputs      => \@plotinputs,
 		outputs     => \@plotoutputs,
 		overwrite   => $regen_images,
-		description => "Generating images...",
+		description => "Generating images",
 	});
 
 	#    my $dot_args = [
@@ -1096,7 +1096,7 @@ sub add_jobs {
 	#        args        => $dot_args,
 	#        inputs      => $dot_inputs,
 	#        outputs     => $dot_outputs,
-	#        description => "Generating dotplot dots...",
+	#        description => "Generating dotplot dots",
 	#    );
 
 	############################################################################
@@ -1118,7 +1118,7 @@ sub add_jobs {
 		args   => $subject_dup_args,
 		inputs => [$slocaldups],       #[$raw_blastfile . ".s.localdups"],
 		outputs     => [ $raw_blastfile . ".s.tandems" ],
-		description => "Processing Subject Tandem Duplicate File...",
+		description => "Processing Subject Tandem Duplicate File",
 	});
 
 	my $query_dup_args = [
@@ -1133,7 +1133,7 @@ sub add_jobs {
 		args   => $query_dup_args,
 		inputs => [$qlocaldups],      #[$raw_blastfile . ".q.localdups"],
 		outputs     => [ $raw_blastfile . ".q.tandems" ],
-		description => "Processing Query Tandem Duplicate File...",
+		description => "Processing Query Tandem Duplicate File",
 	});
 	$workflow->log( "" );
 	$workflow->log( "Added Processing of Tandem Duplicate Files" );
@@ -1154,7 +1154,7 @@ sub add_jobs {
 		args        => $link_args,
 		inputs      => [$final_dagchainer_file],
 		outputs     => [$condensed],
-		description => "Generating GEvo links...",
+		description => "Generating GEvo links",
 	});
 	
 	$workflow->log( "" );
@@ -1213,7 +1213,7 @@ sub add_jobs {
 				$fb_prefix . '.fractbias-genes.csv',
 				$fb_prefix . '.fractbias-results.csv'
 			],
-			description => "Running Fractination Bias...",
+			description => "Running Fractination Bias",
 		});
 	}
 

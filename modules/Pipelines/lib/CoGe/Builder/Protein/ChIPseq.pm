@@ -164,7 +164,7 @@ sub create_bamToBed_job {
             $bed_file,
             $done_file
         ],
-        description => "Converting $name BAM file to BED format..."
+        description => "Converting $name BAM file to BED format"
     };
 }
 
@@ -204,7 +204,7 @@ sub create_homer_makeTagDirectory_job {
             [catfile($staging_dir, $tag_name), 1],
             catfile($staging_dir, $tag_name, 'tagInfo.txt')
         ],
-        description => "Creating tag directory '$tag_name' using Homer..."
+        description => "Creating tag directory '$tag_name' using Homer"
     };
 }
 
@@ -249,7 +249,7 @@ sub create_homer_findPeaks_job {
         outputs => [
             catfile($staging_dir, $output_file)
         ],
-        description => "Performing ChIP-seq analysis on $replicate_tag using Homer..."
+        description => "Performing ChIP-seq analysis on $replicate_tag using Homer"
     };
 }
 
@@ -276,7 +276,7 @@ sub create_convert_homer_to_csv_job {
             $output_file,
             $done_file
         ],
-        description => "Converting $name to CSV format..."
+        description => "Converting $name to CSV format"
     };
 }
 

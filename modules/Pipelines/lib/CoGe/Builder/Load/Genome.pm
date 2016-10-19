@@ -150,7 +150,7 @@ sub build {
 #        outputs => [
 #            catfile($self->staging_dir, $output_file)
 #        ],
-#        description => 'Sorting FASTA file...'
+#        description => 'Sorting FASTA file'
 #    };
 #}
 sub sort_fasta {
@@ -175,7 +175,7 @@ sub sort_fasta {
         outputs => [
             catfile($self->staging_dir, $output_file)
         ],
-        description => 'Sorting FASTA file...'
+        description => 'Sorting FASTA file'
     };
 }
 
@@ -200,7 +200,7 @@ sub process_fasta {
             $output_file,
             $done_file
         ],
-        description => "Validating/processing FASTA file...",
+        description => "Validating/processing FASTA file",
     };
 }
 
@@ -240,7 +240,7 @@ sub load_genome {
             catfile($self->staging_dir, "log.done"),
 #            $result_file
         ],
-        description => "Loading genome ..."
+        description => "Loading genome"
     };
 }
 
@@ -271,7 +271,7 @@ sub load_genome_from_NCBI {
             catfile($output_path, "log.done"),
 #            $result_file
         ],
-        description => "Importing genome from NCBI ..."
+        description => "Importing genome from NCBI"
     };
 }
 

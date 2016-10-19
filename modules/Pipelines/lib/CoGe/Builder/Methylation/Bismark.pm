@@ -165,7 +165,7 @@ sub create_bismark_deduplicate_job {
         outputs => [
             catfile($staging_dir, $output_file),
         ],
-        description => "Deduplicating PCR artifacts using Bismark..."
+        description => "Deduplicating PCR artifacts using Bismark"
     };
 }
 
@@ -217,7 +217,7 @@ sub create_extract_methylation_job {
             catfile($staging_dir, 'CpG_OB_' . $name . '.txt'),
             catfile($staging_dir, 'CpG_OT_' . $name . '.txt')
         ],
-        description => "Extracting methylation status..."
+        description => "Extracting methylation status"
     };
 }
 
@@ -252,7 +252,7 @@ sub create_bismark_import_job {
         outputs => [
             catfile($staging_dir, $output_file),
         ],
-        description => "Converting $name..."
+        description => "Converting $name"
     };
 }
 

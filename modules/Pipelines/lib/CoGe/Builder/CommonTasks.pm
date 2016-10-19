@@ -91,7 +91,7 @@ sub add_workflow_result {
         ],
         inputs  => [$dependency],
         outputs => [$result_file],
-        description => "Adding workflow result..."
+        description => "Adding workflow result"
     };
 }
 
@@ -100,7 +100,6 @@ sub copy_and_mask {
 
     my $desc = $args{mask} ? "Copying and masking genome" : "Copying genome";
     $desc .= " (no annotations)" if $args{seq_only};
-    $desc .= "...";
 
     my $cmd = "/copy_genome/copy_load_mask_genome.pl";
 
@@ -202,7 +201,7 @@ sub create_iget_job {
             $dest_file,
             $done_file
         ],
-        description => "Fetching $irods_path..."
+        description => "Fetching $irods_path"
     };
 }
 
@@ -229,7 +228,7 @@ sub create_ftp_get_job {
         outputs => [ 
             $output_file
         ],
-        description => "Fetching $url..."
+        description => "Fetching $url"
     };
 }
 
@@ -313,7 +312,7 @@ sub create_fastq_dump_job {
             $output_file,
             $done_file
         ],
-        description => "Fetching $accn from NCBI-SRA..."
+        description => "Fetching $accn from NCBI-SRA"
     };
 }
 
@@ -368,7 +367,7 @@ sub generate_gff {
         args    => $args,
         inputs  => [],
         outputs => [ $output_file ],
-        description => "Generating GFF..."
+        description => "Generating GFF"
     };
 }
 
@@ -390,7 +389,7 @@ sub create_image_job {
         outputs => [
             catfile($staging_dir, "$input_file.log")
         ],
-        description => "Loading image into database..."
+        description => "Loading image into database"
     };
 }
 
@@ -413,7 +412,7 @@ sub create_gunzip_job {
             $output_file,
             "$output_file.decompressed"
         ],
-        description => "Decompressing " . basename($input_file) . "..."
+        description => "Decompressing " . basename($input_file)
     };
 }
 
@@ -434,7 +433,7 @@ sub create_bgzip_job {
             $output_file,
             "$output_file.done"
         ],
-        description => "Compressing " . basename($input_file) . " with bgzip..."
+        description => "Compressing " . basename($input_file) . " with bgzip"
     };
 }
 
@@ -457,7 +456,7 @@ sub create_tabix_index_job {
             $output_file,
             "$output_file.done"
         ],
-        description => "Indexing " . basename($input_file) . "..."
+        description => "Indexing " . basename($input_file)
     };
 }
 
@@ -484,7 +483,7 @@ sub create_fasta_reheader_job {
         outputs => [
             catfile($cache_dir, $reheader_fasta),
         ],
-        description => "Reheader fasta file...",
+        description => "Reheader fasta file",
     };
 }
 
@@ -506,7 +505,7 @@ sub create_fasta_index_job {
         outputs => [
             $fasta . '.fai',
         ],
-        description => "Indexing FASTA file...",
+        description => "Indexing FASTA file",
     };
 }
 
@@ -528,7 +527,7 @@ sub create_bam_index_job {
         outputs => [
             $input_file . '.bai'
         ],
-        description => "Indexing BAM file...",
+        description => "Indexing BAM file",
     };
 }
 
@@ -554,7 +553,7 @@ sub create_bigwig_to_wig_job {
             $output_file,
             $done_file
         ],
-        description => 'Converting BigWig to WIG format...'
+        description => 'Converting BigWig to WIG format'
     };
 }
 
@@ -615,7 +614,7 @@ sub create_load_vcf_job {
             catfile($output_path, "log.done"),
             #$result_file
         ],
-        description => "Loading SNPs as new experiment ..."
+        description => "Loading SNPs as new experiment"
     };
 }
 
@@ -674,7 +673,7 @@ sub create_load_experiment_job {
             catfile($output_path, "log.done"),
             $result_file
         ],
-        description => "Loading" . ($name ? " $name" : '') . " experiment..."
+        description => "Loading" . ($name ? " $name" : '') . " experiment"
     };
 }
 
@@ -720,7 +719,7 @@ sub create_load_annotation_job {
             catfile($output_path, "log.done"),
             $result_file
         ],
-        description => "Loading annotation ..."
+        description => "Loading annotation"
     };
 }
 
@@ -764,7 +763,7 @@ sub create_load_batch_job {
             [$staging_dir, 1],
             catdir($staging_dir, 'log.done')
         ],
-        description => "Loading batch experiments..."
+        description => "Loading batch experiments"
     };
 }
 
@@ -825,7 +824,7 @@ sub create_load_bam_job {
             catfile($output_path, "log.done"),
             $result_file
         ],
-        description => "Loading alignment as new experiment ..."
+        description => "Loading alignment as new experiment"
     };
 }
 
@@ -849,7 +848,7 @@ sub create_validate_fastq_job {
         outputs => [
             "$fastq.validated"
         ],
-        description => "Validating " . basename($fastq) . "..."
+        description => "Validating " . basename($fastq)
     };
 }
 
@@ -898,7 +897,7 @@ sub create_cutadapt_job {
         inputs => \@inputs,
         outputs => \@outputs,
         done_files => \@done_files, # JEX will ignore this
-        description => "Trimming (cutadapt) $name..."
+        description => "Trimming (cutadapt) $name"
     };
 }
 
@@ -1023,7 +1022,7 @@ sub create_trimgalore_job {
         inputs => \@inputs,
         outputs => \@outputs,
         done_files => \@done_files,
-        description => "Trimming (trimgalore) $name..."
+        description => "Trimming (trimgalore) $name"
     };
 }
 
@@ -1103,7 +1102,7 @@ sub create_gff_generation_job {
         outputs => [
             catfile(get_genome_cache_path($gid), $name)
         ],
-        description => "Generating genome annotations GFF file..."
+        description => "Generating genome annotations GFF file"
     };
 }
 
@@ -1208,7 +1207,7 @@ sub create_hisat2_alignment_job {
         args => $args,
         inputs => [ @$fastq, @$done_files, @$index_files ],
         outputs => [ catfile($staging_dir, $output_file) ],
-        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using HISAT2..."
+        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using HISAT2"
 	};
 }
 
@@ -1240,7 +1239,7 @@ sub create_hisat2_index_job {
             $name . ".8.ht2",
             $done_file
         ],
-        description => "Indexing genome sequence with hisat2-build..."
+        description => "Indexing genome sequence with hisat2-build"
     };
 }
 
@@ -1393,7 +1392,7 @@ sub create_bowtie_index_job {
             catfile($BOWTIE_CACHE_DIR, $name . ".rev.1.bt2"),
             catfile($BOWTIE_CACHE_DIR, $name . ".rev.2.bt2")
         ],
-        description => "Indexing genome sequence with Bowtie..."
+        description => "Indexing genome sequence with Bowtie"
     };
 }
 
@@ -1446,7 +1445,7 @@ sub create_bowtie2_alignment_job {
         outputs => [
             catfile($staging_dir, $output_file)
         ],
-        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using Bowtie2..."
+        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using Bowtie2"
     };    
 }
 
@@ -1503,7 +1502,7 @@ sub create_tophat_job {
         outputs => [
             catfile($staging_dir, $output_file)
         ],
-        description => "Aligning sequences with TopHat..."
+        description => "Aligning sequences with TopHat"
     };
 }
 
@@ -1578,7 +1577,7 @@ sub create_bismark_index_job {
             catfile($BISMARK_CACHE_DIR, 'Bisulfite_Genome', 'GA_conversion', 'BS_GA.rev.2.bt2'),
             catfile($BISMARK_CACHE_DIR, $done_file)
         ],
-        description => "Indexing genome sequence with Bismark..."
+        description => "Indexing genome sequence with Bismark"
     );
 }
 
@@ -1640,7 +1639,7 @@ sub create_bismark_alignment_job {
         outputs => [
             $output_bam
         ],
-        description => "Aligning sequences with Bismark..."
+        description => "Aligning sequences with Bismark"
     );
 }
 
@@ -1710,7 +1709,7 @@ sub create_bwameth_index_job {
             catfile($BWAMETH_CACHE_DIR, "$name.bwameth.c2t.sa"),
             catfile($BWAMETH_CACHE_DIR, $done_file)
         ],
-        description => "Indexing genome sequence with bwameth..."
+        description => "Indexing genome sequence with bwameth"
     },
     catfile($BWAMETH_CACHE_DIR, $done_file);
 }
@@ -1753,7 +1752,7 @@ sub create_bwameth_alignment_job {
         outputs => [
             catfile($staging_dir, 'alignment.bam')
         ],
-        description => "Aligning sequences with bwameth..."
+        description => "Aligning sequences with bwameth"
     );
 }
 
@@ -1840,7 +1839,7 @@ sub create_gmap_index_job {
         outputs => [
             [catdir($GMAP_CACHE_DIR, $name . "-index"), 1]
         ],
-        description => "Indexing genome sequence with GMAP..."
+        description => "Indexing genome sequence with GMAP"
     };
 }
 
@@ -1865,7 +1864,7 @@ sub create_sam_to_bam_job {
         outputs => [
             catfile($staging_dir, $filename . ".bam")
         ],
-        description => "Generating BAM file..."
+        description => "Generating BAM file"
     };
 }
 
@@ -1887,7 +1886,7 @@ sub create_sam_filter_job {
         outputs => [
             catfile($staging_dir, $filename . ".processed")
         ],
-        description => "Filtering SAM file..."
+        description => "Filtering SAM file"
     };
 }
 
@@ -1916,7 +1915,7 @@ sub create_bam_sort_job {
         outputs => [
             catfile($staging_dir, $filename . "-sorted.bam")
         ],
-        description => "Sorting BAM file..."
+        description => "Sorting BAM file"
     };
 }
 
@@ -1987,7 +1986,7 @@ sub create_gsnap_alignment_job {
         outputs => [
             catfile($staging_dir, $output_file)
         ],
-        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq)  . " with GSNAP..."
+        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq)  . " with GSNAP"
     };
 }
 
@@ -2021,7 +2020,7 @@ sub create_sumstats_job {
         outputs => [
             catfile($output_path, "sumstats.done"),
         ],
-        description => "Calculating summary statistics ..."
+        description => "Calculating summary statistics"
     };
 }
 
@@ -2044,7 +2043,7 @@ sub create_transdecoder_longorfs_job {
             [$output_path, '1'],
             $done_file
         ],
-        description => "Running TransDecoder.LongOrfs..."
+        description => "Running TransDecoder.LongOrfs"
     };
 }
 
@@ -2070,7 +2069,7 @@ sub create_transdecoder_predict_job {
             $output_file,
             $done_file
         ],
-        description => "Running TransDecoder.Predict..."
+        description => "Running TransDecoder.Predict"
     };
 }
 
@@ -2119,45 +2118,8 @@ sub add_metadata_to_results_job {
         outputs => [ 
             $log_file
         ],
-        description => "Adding metadata to results..."
+        description => "Adding metadata to results"
     };
 }
-
-# mdb removed 10/5/16 -- replaced with Buildable::send_email
-#sub send_email_job {
-#    my %opts = @_;
-#    my $from = 'CoGe Support <coge.genome@gmail.com>';
-#    my $to = $opts{to};
-#    my $subject = $opts{subject};
-#    my $body = $opts{body};
-#    my $done_files = $opts{done_files};
-#
-#    my $cmd = catfile($CONF->{SCRIPTDIR}, "send_email.pl");
-#    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-#
-#    my $staging_dir = $opts{staging_dir};
-#    my $done_file = catfile($staging_dir, "send_email.done");
-#
-#    my $args = [
-#        ['-from', '"'.escape($from).'"', 0],
-#        ['-to', '"'.escape($to).'"', 0],
-#        ['-subject', '"'.escape($subject).'"', 0],
-#        ['-body', '"'.escape($body).'"', 0],
-#        ['-done_file', '"'.$done_file.'"', 0]
-#    ];
-#
-#    return {
-#        cmd => $cmd,
-#        script => undef,
-#        args => $args,
-#        inputs => [
-#            @$done_files
-#        ],
-#        outputs => [
-#            $done_file
-#        ],
-#        description => "Sending email..."
-#    };
-#}
 
 1;
