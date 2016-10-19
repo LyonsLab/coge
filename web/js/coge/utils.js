@@ -67,7 +67,6 @@ var coge = window.coge = (function(ns) {
         },
 
         truncateString: function(s, maxLength) {
-            console.log(s);
             if (s && maxLength > 0 && s.length > maxLength)
                 return s.substring(0, maxLength-3) + '...';
             return s;
