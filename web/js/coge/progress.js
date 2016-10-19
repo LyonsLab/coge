@@ -343,7 +343,6 @@ var coge = window.coge = (function(namespace) {
 		
 		_default_formatter: function(tasks) {
 		    const MAX_TASK_DESC_LENGTH = 73;
-		    console.log(this.container.width());
 		    var table = $('<table></table>');
 
             tasks.forEach(function(task) {
