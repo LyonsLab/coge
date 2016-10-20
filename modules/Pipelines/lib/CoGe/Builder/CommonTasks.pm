@@ -1440,7 +1440,7 @@ sub create_bowtie2_alignment_job {
     my $output_file = to_filename_without_extension($first_fastq) . '.sam';
     $cmd .= " -S $output_file";
 
-    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq);
+    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 
     return {
         cmd => $cmd,
