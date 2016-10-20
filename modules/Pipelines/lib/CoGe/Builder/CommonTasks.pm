@@ -1422,6 +1422,7 @@ sub create_bowtie2_alignment_job {
     my $cmd = $CONF->{BOWTIE2} || 'bowtie2';
     $cmd = 'nice ' . $cmd; # run at lower priority
     $cmd .= ' -p 32 ';
+    $cmd .= ' --phred64 ' if ($encoding eq '64'); # default is --phred33
     $cmd .= " -x $index_name ";
 
     if ($read_type eq 'paired') {
