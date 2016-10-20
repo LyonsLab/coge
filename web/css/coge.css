@@ -1768,6 +1768,7 @@ div.dataTables_scrollBody {
 .header .active {
     color: #119911;
     font-size: larger;
+    text-decoration: underline;
 }
 
 .wizard .step .required:after {
