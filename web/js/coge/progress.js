@@ -380,12 +380,14 @@ var coge = window.coge = (function(namespace) {
 		_default_formatter: function(tasks) {
 		    var self = this;
 
-		    const MAX_TASK_DESC_LENGTH = 73;
-		    var table = $('<table></table>');
+            var max_col2_width = 170;
+            var max_col1_width = self.container.width() - max_col2_width;
+		    var table = $('<table></table>').css('width', '100%');
 
             tasks.forEach(function(task) {
                 var row = $('<tr></tr>').append(
-                    $('<td>' + coge.utils.truncateString(task.description, MAX_TASK_DESC_LENGTH) + '</td>').css('width', MAX_TASK_DESC_LENGTH+'em')
+                    $('<td>' + task.description + '</td>')
+                        .css({'width': max_col1_width, 'max-width': max_col1_width, 'white-space': 'nowrap', 'overflow': 'hidden', 'text-overflow': 'ellipsis'})
                 );
 
                 var status = self._format_status(task.status);
@@ -394,7 +396,7 @@ var coge = window.coge = (function(namespace) {
                 if (task.elapsed)
                     duration.append(' in ' + coge.utils.toPrettyDuration(task.elapsed));
 
-                row.append( $('<td></td>').append(status).css({'white-space': 'nowrap', 'text-align' : 'right'}).append(duration) );
+                row.append( $('<td></td>').append(status).css({'width': max_col2_width, 'max-width': max_col2_width, 'white-space': 'nowrap', 'text-align' : 'right'}).append(duration) );
 
                 table.append(row);
 
