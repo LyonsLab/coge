@@ -399,7 +399,7 @@ var coge = window.coge = (function(namespace) {
                 table.append(row);
 
                 if (task.log) {
-                    var cell = $('<td></td>');
+                    var cell = $('<td></td>').attr('colspan', 2);
 
                     var p = task.log.split("\n");
                     p.forEach(function(line) {
