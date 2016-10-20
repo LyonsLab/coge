@@ -45,7 +45,7 @@ sub gen_html {
     if ($EMBED) {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
     }
-    else {  
+    else {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( USER       => $USER->display_name || '',
                           TITLE      => qq{GroupView},
@@ -135,12 +135,11 @@ sub get_group_info {
       $group->annotation_pretty_print_html;   #(allow_delete => $user_can_edit);
     if ($user_can_edit) {
         $html .= qq{<div class="coge-buttonset">};
-        $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_group_info($ugid);">Edit Info</span>};
-        $html .=
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="modify_users($ugid);">Modify Users</span>};
-
-#$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Notebook</span>};
+        $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_group_info($ugid);">Edit Info</span>};
+        unless ($EMBED) {
+            $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="modify_users($ugid);">Modify Users</span>};
+        }
+        #$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Notebook</span>};
         $html .=
 			qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_group();">} .
 			($group->deleted ? 'Undelete' : 'Delete') . qq{</span>};

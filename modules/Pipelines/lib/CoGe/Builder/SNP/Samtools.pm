@@ -118,7 +118,7 @@ sub create_find_snps_job {
             $alignment
         ],
         outputs => [ $snps ],
-        description => "Identifying SNPs using SAMtools method ..."
+        description => "Identifying SNPs using SAMtools method"
     };
 }
 
@@ -147,7 +147,7 @@ sub create_filter_snps_job {
         cmd => qq[$bcf_command | $vcf_command > $output],
         inputs  => [ $snps ],
         outputs => [ $filtered_snps ],
-        description => "Filtering SNPs ..."
+        description => "Filtering SNPs"
     };
 }
 

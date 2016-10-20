@@ -122,23 +122,6 @@ sub add_task {
     return $self->workflow->add_job($task);    
 }
 
-# Add independent tasks
-#sub add_tasks {
-#    my ($self, $tasks) = @_;
-#    return unless $tasks;
-#
-#    $previous_outputs = [];
-#    foreach my $task (@$tasks) {
-#        push @{$self->outputs}, @{$task->{outputs}};
-#        push @$previous_outputs, @{$task->{outputs}};
-#        unless ($self->workflow->add_job($task)) {
-#            return;
-#        }
-#    }
-#
-#    return 1;
-#}
-
 # Chain this task to the previous task assuming add_task*() routines were used
 sub add_task_chain {
     my ($self, $task) = @_;
@@ -245,7 +228,7 @@ sub create_gff {
         cmd         => catfile($self->conf->{SCRIPTDIR}, "coge_gff.pl"),
         args        => $args,
         outputs     => [ $params{output_file} ],
-        description => "Generating GFF..."
+        description => "Generating GFF"
     };
 }
 
@@ -338,7 +321,7 @@ sub untar {
             [$output_path, '1'],
             $done_file
         ],
-        description => "Unarchiving " . basename($input_file) . "..."
+        description => "Unarchiving " . basename($input_file)
     };
 }
 
@@ -362,7 +345,7 @@ sub gunzip {
             $output_file,
             "$output_file.decompressed"
         ],
-        description => "Decompressing " . basename($input_file) . "..."
+        description => "Decompressing " . basename($input_file)
     };
 }
 
@@ -376,7 +359,7 @@ sub join_files {
     push @files, @$input_files   if $input_files;
     push @files, $input_dir.'/*' if $input_dir;
     
-    my $cmd = "mkdir -p \$(dirname $output_file) && cat " . join(' ', @files) . ' > ' . $output_file;
+    my $cmd = "mkdir -p \$(dirname $output_file) && cat " . join(' ', shell_quote(@files)) . ' > ' . $output_file;
     
     return {
         cmd => $cmd,
@@ -389,7 +372,7 @@ sub join_files {
         outputs => [
             $output_file
         ],
-        description => 'Joining files...'
+        description => 'Joining files'
     };
 }
 
@@ -415,7 +398,7 @@ sub send_email {
         args => $args,
         inputs => [],
         outputs => [],
-        description => "Sending notification email..."
+        description => "Sending notification email"
     };
 }
 
@@ -432,7 +415,7 @@ sub curl_get {
         args => [],
         inputs => [],
         outputs => [ $output_file ],
-        description => "Sending GET request to $url..."
+        description => "Sending GET request to $url"
     };
 }
 
@@ -455,7 +438,7 @@ sub add_result {
         outputs => [
 #            $result_file,  # force this to run (for case of multiple results)
         ],
-        description => "Adding workflow result..."
+        description => "Adding workflow result"
     };
 }
 
@@ -482,7 +465,7 @@ sub add_items_to_notebook {
             $result_file,
             $log_file
         ],
-        description => "Adding experiment to notebook..."
+        description => "Adding experiment to notebook"
     };
 }
 
@@ -517,7 +500,7 @@ sub create_notebook {
             $result_file,
             $log_file
         ],
-        description => "Creating notebook of results..."
+        description => "Creating notebook of results"
     };
 }
 

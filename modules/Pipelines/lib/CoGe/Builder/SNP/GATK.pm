@@ -119,7 +119,7 @@ sub create_fasta_dict_job {
         outputs => [
             catfile($cache_dir, $fasta_dict),
         ],
-        description => "Generate fasta dictionary ..."
+        description => "Generate fasta dictionary"
     };
 }
 
@@ -151,7 +151,7 @@ sub create_reorder_sam_job {
             $output_bam,
             $done_file
         ],
-        description => "Reorder bam file ..."
+        description => "Reorder bam file"
     };
 }
 
@@ -176,7 +176,7 @@ sub create_add_readgroups_job {
             $output_bam,
             $done_file
         ],
-        description => "Set read groups in bam file ..."
+        description => "Set read groups in bam file"
     };
 }
 
@@ -217,7 +217,7 @@ sub create_gatk_job {
         outputs => [
             $output_vcf,
         ],
-        description => "Identifying SNPs using GATK method ..."
+        description => "Identifying SNPs using GATK method"
     };
 }
 

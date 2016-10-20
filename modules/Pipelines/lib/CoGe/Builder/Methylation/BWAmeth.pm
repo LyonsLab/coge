@@ -147,7 +147,7 @@ sub create_picard_deduplicate_job {
         outputs => [
             $output_file
         ],
-        description => "Deduplicating PCR artifacts using Picard..."
+        description => "Deduplicating PCR artifacts using Picard"
     };
 }
 
@@ -180,7 +180,7 @@ sub create_pileometh_plot_job {
             catfile($staging_dir, $output_prefix . '_OB.svg'),
             catfile($staging_dir, $output_prefix . '_OT.svg')
         ],
-        description => "Plotting methylation bias with PileOMeth..."
+        description => "Plotting methylation bias with PileOMeth"
     };
 }
 
@@ -221,7 +221,7 @@ sub create_pileometh_extraction_job {
             catfile($staging_dir, $output_prefix . '_CHH.methylKit'),
             catfile($staging_dir, $output_prefix . '_CHG.methylKit')
         ],
-        description => "Extracting methylation calls with PileOMeth..."
+        description => "Extracting methylation calls with PileOMeth"
     };
 }
 
@@ -250,7 +250,7 @@ sub create_pileometh_import_job {
         outputs => [
             $output_file
         ],
-        description => "Converting $name..."
+        description => "Converting $name"
     };
 }
 

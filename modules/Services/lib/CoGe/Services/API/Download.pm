@@ -18,7 +18,7 @@ sub get {
     my $gid = $self->param('gid');
     my $eid = $self->param('eid');
     my $wid = $self->param('wid');
-    my $attachment = $self->param('attachment') || 1;
+    my $attachment = $self->param('attachment') // 1;
     print STDERR "CoGe::Services::Download ", Dumper { gid => $gid, eid => $eid, wid => $wid, filename => $filename }, "\n";
     
     # Validate inputs

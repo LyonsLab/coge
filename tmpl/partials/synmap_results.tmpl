@@ -186,6 +186,7 @@
         </span>
     </li>
 </ul>
+
 <style>
 #instruct {
     background-color: #FFFFFF;
@@ -204,7 +205,7 @@
     list-style-type: disc;
 }
 </style>
-        <div id="instruct" class="ui-draggable hidden">
+    <div id="instruct" class="ui-draggable hidden">
         <span style="font-weight: bold">Welcome to SynMap2!</span><br>
         SynMap2 is our updated version of the original SynMap. By taking advantage of modern web technology, we have made the dot-plots & histograms fully integrated & interactive, allowing for better data exploration. We hope you enjoy!<br><br>
             <span style="font-weight: bold">Instructions</span><br>
@@ -233,21 +234,49 @@
 <script src="js/vendor/synteny-vis/build/synteny-dotplot-builder.js"></script>
 
 <script>
-$(document).ready(function(){
-    if ('<tmpl_var name=frac_bias>') {
-        plotFractBias("fractbias", "<tmpl_var name=frac_bias>", "<tmpl_var name=target_genome>")
-    }
-    $("#data").tabs();
-});
-function show_results() {
+// AKB & MDB reworked 2016-10-18
+var start_index;
+var sm2_load = false;
+
+function show_vis2() {
+    console.log("Making dotplot...");
     makeSyntenyDotPlot({
                 element_id: 'main',
-                data_url: '<tmpl_var name=file_url>',
-                genome_x: { name: '<tmpl_var name=xorg_name>', id: '<tmpl_var name=dsgid1>', chromosomes: <tmpl_var name=chromosomes1>}, 
-                genome_y: { name: '<tmpl_var name=yorg_name>', id: '<tmpl_var name=dsgid2>', chromosomes: <tmpl_var name=chromosomes2>}
+                data_url: '<TMPL_VAR NAME=file_url>',
+                genome_x: { name: '<TMPL_VAR NAME=xorg_name>', id: '<TMPL_VAR NAME=dsgid1>', chromosomes: <TMPL_VAR NAME=chromosomes1>},
+                genome_y: { name: '<TMPL_VAR NAME=yorg_name>', id: '<TMPL_VAR NAME=dsgid2>', chromosomes: <TMPL_VAR NAME=chromosomes2>}
             });
     if (!$.cookie("instruct_synmap")) { $("#instruct").removeClass('hidden') };
-
+    sm2_load = true;
 }
+
+function on_tab_swap(tab_id) {
+    if (tab_id == 0 && !sm2_load)
+        show_vis2()
+}
+
+function show_results() {
+    if ('<TMPL_VAR NAME="frac_bias">') {
+        plotFractBias("fractbias", "<TMPL_VAR NAME='frac_bias'>", "<TMPL_VAR NAME='target_genome'>")
+    }
+
+    var v2Vis = $('#visualizer_select')[0].checked;
+    var start_index = 1; // tab for old viewer
+    if (v2Vis)
+        start_index = 0;
+
+    // NOTE: If we update JQuery UI past 1.9 this needs to be changed to "active"
+    $("#data").tabs({
+        selected: start_index,
+        select: function(event, ui) { on_tab_swap(ui.index) }
+    });
+
+    if (v2Vis)
+        show_vis2();
+}
+
+$(function() {
+    $("#data").tabs(); // render tabs immediately
+});
 </script>
 </tmpl_if>

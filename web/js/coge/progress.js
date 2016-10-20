@@ -28,8 +28,8 @@ var coge = window.coge = (function(namespace) {
 			this._render_template(template);
 			
 			// Setup resize handler
-			var log = this.container.find(".log");
-		    log.height( $( window ).height() * 0.5 );
+			this.log = this.container.find(".log");
+		    this.log.height( $( window ).height() * 0.5 );
 		    c.dialog({
 		    	modal: true,
 		    	width: '60%',
@@ -38,7 +38,7 @@ var coge = window.coge = (function(namespace) {
 		    		//console.log('resizeStop ' + ui.size.width + ' ' + ui.size.height + ' ' + ui.originalSize.width + ' ' + ui.originalSize.height);
 		    		var widthChange = ui.size.width - ui.originalSize.width;
 		    		var heightChange = ui.size.height - ui.originalSize.height;
-		    		log.css({ width: log.width() + widthChange, height: log.height() + heightChange });
+		    		self.log.css({ width: self.log.width() + widthChange, height: self.log.height() + heightChange });
 		    	}
 		    });
 		    
@@ -55,27 +55,28 @@ var coge = window.coge = (function(namespace) {
 		_reset_log: function() {
 			var c = this.container;
 			c.find('.log,.progress-link').html('');
-			c.find('.msg').show('');
-		    c.find('.ok,.error,.finished,.done,.cancel,.logfile,.buttons').hide();
+			c.find('.status').show('');
+		    c.find('.ok,.cancel,.logfile,.buttons').hide();
 		},
 			
 		begin: function(opts) {
 			this._reset_log();
-			
-			if (opts && opts.title)
+
+			if (!opts) opts = {};
+
+			if (opts.title)
 				this.container.dialog({title: opts.title});
 			
-			if (opts && opts.width)
+			if (opts.width)
 				this.container.dialog({width: opts.width});
 			
-			if (opts && opts.height)
-				this.container.find(".log").height(opts.height);
+			if (opts.height)
+				this.log.height(opts.height);
 			
-		    var log = this.container.find('.log');
-		    if (opts && opts.content)
-		    	log.html(opts.content);
+		    if (opts.content)
+		    	this.log.html(opts.content);
 		    else
-		    	log.html('Initializing ...');
+		    	this.log.html('Initializing ...');
 		    
 		    this.container.dialog('open');
 		    
@@ -86,43 +87,43 @@ var coge = window.coge = (function(namespace) {
 			this.container.dialog('close');
 		},
 		
-		succeeded: function(results) {
+		succeeded: function(response) {
 			var c = this.container;
 			
 		    // Update dialog
-		    c.find('.msg,.progress-link,.error,.cancel').hide();
-		    c.find('.finished').fadeIn();
-		    	
+            c.find('.progress-link').hide();
+
 		    // Show user-specified button template
 		    if (this.buttonTemplate) {
 		    	var template = $($("#"+this.buttonTemplate).html());
-		    	c.find('.buttons').html(template).fadeIn();
+		    	c.find('.buttons').html(template).show();
 		    }
 		    else { // default buttons
-		    	c.find('.ok').fadeIn();
+		    	c.find('.ok').show();
 		    }
+
+            // Compute total duration of all tasks // FIXME replace with workflow elapsed time since this miscalculates concurrent tasks
+            var totalDuration = response.tasks.reduce(function(a, b) {
+                if (!b.elapsed) return a;
+                return a + b.elapsed;
+            }, 0);
+
+		    this._set_status(response.status).append('<span class="info">' +
+		        (totalDuration ? ' in ' + coge.utils.toPrettyDuration(totalDuration) : '') + '</span>');
 		    
 		    // User callback
 		    if (this.onSuccess)
-		    	this.onSuccess(results);
+		    	this.onSuccess(response.results);
 		},
 		
-		_errorToString: function(error) {
-			var string = '';
-			for (key in error) {
-				string += error[key];
-			}
-			return string;
-		},
-
 		failed: function(string, error) {
 			var c = this.container;
 			
 			var errorMsg = string + (error ? ': ' + this._errorToString(error) : '');
 			
 			// Show error message
-		    c.find('.log')
-		    	.append('<div class="alert">' + errorMsg + '</div><br>')
+		    this.log
+		    	.append('<div class="alert">' + (errorMsg ? errorMsg : '') + '</div><br>')
 		    	.append(
 		    		'<div class="alert">' +
 			        'The CoGe Support Team has been notified of this error but please ' +
@@ -133,15 +134,16 @@ var coge = window.coge = (function(namespace) {
 		    	);
 
 		    // Show link to log file
-		    var logfile = coge.services.download_url({wid: this.job_id}); //this.baseUrl + 'downloads/?username=' + this.userName + '&' + 'wid=' + this.job_id;
+		    var logfile = coge.services.download_url({ wid: this.job_id, attachment: 0 });
 		    $(".logfile a").attr("href", logfile);
-		    $('.logfile').fadeIn();
+		    $('.logfile').show();
 
 		    // Update dialog
-		    c.find('.msg,.progress-link,.buttons').hide();
-		    c.find('.error,.cancel').fadeIn();
+		    c.find('.progress-link,.buttons').hide();
+		    this._set_status('Failed');
+		    c.find('.cancel').show();
 
-// FIXME restore this email reporting
+// FIXME restore email reporting
 //		    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
 //		        $.ajax({
 //		            data: {
@@ -155,6 +157,21 @@ var coge = window.coge = (function(namespace) {
 		    // User callback
 		    if (this.onError)
 		    	this.onError();
+		},
+
+		cancelled: function(response) {
+		    // Update dialog
+		    this.container.find('.progress-link,.buttons').hide();
+		    this._set_status(response.status);
+		    this.container.find('.cancel').show();
+		},
+
+        _errorToString: function(error) {
+			var string = '';
+			for (key in error) {
+				string += error[key];
+			}
+			return string;
 		},
 		
 		_refresh_interval: function() {
@@ -188,14 +205,10 @@ var coge = window.coge = (function(namespace) {
 				self.container.find('.progress-link').html('Link: <a href="'+url+'">'+url+'</a>').show();
 			}
 			
-			var update_handler = function(json) {
+			var update_handler = function(response) {
 				self._debug('update_handler');
 				var c = self.container;
 				
-		        var workflow_status = $("<p></p>");
-		        var log_content = $("<ul></ul>");
-		        var results = [];
-
 		        var refresh_interval = self._refresh_interval();
 		        var retry_interval = 5*1000;
 		        self._debug('refresh=' + refresh_interval + ', retry=' + retry_interval);
@@ -207,11 +220,11 @@ var coge = window.coge = (function(namespace) {
 		        }
 
 		        // Handle error
-		        if (!json || json.error) {
+		        if (!response || response.error) {
 		        	self.ajaxError++;
-		            if ('Auth' in json.error) {
+		            if ('Auth' in response.error) {
 		            	c.find('.msg').html('Login required to continue');
-		            	c.find('.log')
+		            	this.log
 		            		.css({'font-size': '1em'})
 		            		.html("<br>Your session has expired.<br><br>" + 
 		            			"Please log in again by clicking " +
@@ -229,19 +242,15 @@ var coge = window.coge = (function(namespace) {
 		        self._alert();
 
 		        // Retry on missing status (probably won't ever happen)
-		        if (!json.status) {
+		        if (!response.status) {
 		        	self._error('Error: missing status, retrying ...');
 		        	setTimeout($.proxy(self.update, self), retry_interval);
 		            return;
 		        }
 		        
 		        // Render status
-	            var current_status = json.status.toLowerCase();
+	            var current_status = response.status.toLowerCase();
 	            self._debug('status=' + current_status);
-	            workflow_status
-	                .html("Workflow status: ")
-	                .append( $('<span></span>').html(json.status) )
-	                .addClass('bold');
 
 	            // Retry on JEX error status -- mdb added 6/30/15
 	            if (current_status == "error") {
@@ -250,62 +259,60 @@ var coge = window.coge = (function(namespace) {
 	            	return;
 	            }
 	            
-	            // Render tasks
-		        if (json.tasks) {
-		            var jobs = json.tasks;
-		            for (var index = 0; index < jobs.length; index++) {
-		                var item = self.formatter(jobs[index]);
-		                if (item)
-		                    results.push(item);
-		            }
+	            // Render tasks status
+	            var log_content = $("<div/>");
+		        if (response.tasks) {
+                    var html = self.formatter(response.tasks);
+                    if (html)
+                        log_content = $(html);
 		        }
 
-		        //FIXME Update when a workflow supports elapsed time
-		        if (current_status == "completed") {
-		            var total = json.tasks.reduce(function(a, b) {
-		                if (!b.elapsed) return a;
-		                return a + b.elapsed;
-		            }, 0);
+                // Handle workflow status
+                switch (current_status.toLowerCase()) {
+                    case 'completed' :
+                        self.succeeded(response);
+                        break;
+                    case 'failed' :
+                    case 'terminated' :
+                        if (response.results && response.results.length)
+		                    self.logfile = response.results[0].path;
+		                self.failed(response);
+		                break;
+                    case 'cancelled' :
+                    case 'stopped' :
+                        self.cancelled(response);
+                        break;
+                    case 'notfound' :
+                        self._error('Error: status is "notfound"');
+		        	    self.log.html('Error: status is "not found" ... retrying');
+		        	    setTimeout($.proxy(self.update, self), refresh_interval);
+		        	    return;
+                    case 'running' :
+                        setTimeout($.proxy(self.update, self), refresh_interval);
+		                self._set_status( $('<span><img class="top" src="picts/ajax-loader.gif"/>&nbsp;&nbsp;</span>') ).append( self._format_status(response.status) );
+                        break;
+                    default :
+                        self._error('Error: status is invalid');
+		        	    self.log.html('Error: status is invalid ... retrying');
+		        	    setTimeout($.proxy(self.update, self), refresh_interval);
+		        	    return;
+                }
 
-		            var duration = coge.utils.toPrettyDuration(total);
-
-		            workflow_status.append("<br>Finished in " + duration);
-		            workflow_status.find('span').addClass('completed');
-		            self.succeeded(json.results);
-		        }
-		        else if (current_status == "failed"
-		                //|| current_status == "error" // mdb removed 6/30/15 -- now handled first (see above code)
-		                || current_status == "terminated"
-		                || current_status == "cancelled")
-		        {
-		            workflow_status.find('span').addClass('alert');
-
-		            if (json.results && json.results.length)
-		                self.logfile = json.results[0].path;
-		            self.failed();
-		        }
-		        else if (current_status == "notfound") {
-		        	self._error('Error: status is "notfound"');
-		        	setTimeout($.proxy(self.update, self), refresh_interval);
-		            return;
-		        }
-		        else {
-		            workflow_status.find('span').addClass('running');
-		            setTimeout($.proxy(self.update, self), refresh_interval);
-		        }
-
-		        results.push(workflow_status);
-		        log_content.append(results);
-		        
-		        if (json.results && json.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
-		        	log_content.append("<div class='bold'>Here are the results (click to open):</div>");
-		    	    json.results.forEach(function(result) {
-		    	    	var html = self._format_result(result);
-		    	    	log_content.append(html);
+		        // Render workflow results
+		        if (response.results && response.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
+		        	log_content.append("<br><div class='header'>Results (as they are generated)</div>");
+		    	    response.results.forEach(function(result) {
+		    	    	log_content.append( self._format_result(result) );
 		    	    });
 		        }
-		        
-		        self.container.find('.log').html(log_content);
+
+                // Insert rendered log
+                log_content.append('<br><br>');
+		        self.log.html(log_content);
+
+                // Scroll to bottom of log if finished to ensure results are shown
+		        if (current_status == "completed")
+		            self.log.scrollTop(self.log[0].scrollHeight);
 		    };
 			
 		    setTimeout(
@@ -313,69 +320,98 @@ var coge = window.coge = (function(namespace) {
 		    	10
 		    );
 		},
-		
+
 		_format_result: function(result) {
+		    var formatted = $('<div></div>').addClass('progress result');
+
 			if (result.type === 'experiment') {
 				var url = 'ExperimentView.pl?eid=' + result.id;
-				return "<div><a href='"+url+"'><img src='picts/testtube-icon.png' width='15' height='15'/> Experiment '"+result.name+"'</a></div>";
+				formatted.append("<a href='"+url+"'><img src='picts/testtube-icon.png' width='15' height='15'/> Experiment '"+result.name+"'</a>");
 			}
 			else if (result.type === 'notebook') {
 				var url = 'NotebookView.pl?nid=' + result.id;
-				return "<div><a href='"+url+"'><img src='picts/notebook-icon.png' width='15' height='15'/> Notebook '"+result.name+"'</a></div>";
+				formatted.append("<a href='"+url+"'><img src='picts/notebook-icon.png' width='15' height='15'/> Notebook '"+result.name+"'</a>");
 			}
 			else if (result.type === 'genome') {
 				var url = 'GenomeInfo.pl?gid=' + result.id;
-				return "<div><a href='"+url+"'><img src='picts/dna-icon.png' width='15' height='15'/> Genome '"+result.info+"'</a></div>";
+				formatted.append("<a href='"+url+"'><img src='picts/dna-icon.png' width='15' height='15'/> Genome '"+result.info+"'</a>");
 			}
 			else if (result.type === 'dataset') {
 				var url = 'GenomeInfo.pl?gid=' + result.genome_id;
-				return "<div><a href='"+url+"'> Dataset '"+result.info+"'</a></div>";				
+				formatted.append("<a href='"+url+"'> Dataset '"+result.info+"'</a>");
 			}
 			else if (result.type === 'popgen') {
 				var url = 'PopGen.pl?eid=' + result.experiment_id;
-				return "<div><a href='"+url+"'>"+result.name+"</a></div>";				
+				formatted.append("<a href='"+url+"'>"+result.name+"</a>");
 			}
+			else {
+			    return;
+			}
+
+			return formatted;
 		},
-		
-		_default_formatter: function(item) {
-		    var msg;
-		    var row = $('<li>'+ item.description + ' </li>');
 
-		    var job_status = $('<span></span>');
-
-		    if (item.status == 'scheduled')
-		        job_status.append(item.status).addClass('down bold');
-		    else if (item.status == 'completed')
-		        job_status.append(item.status).addClass('completed bold');
-		    else if (item.status == 'running')
-		        job_status.append(item.status).addClass('running bold');
-		    else if (item.status == 'skipped')
-		        job_status.append("already generated").addClass('skipped bold');
-		    else if (item.status == 'cancelled')
-		        job_status.append(item.status).addClass('alert bold');
-		    else if (item.status == 'failed')
-		        job_status.append(item.status).addClass('alert bold');
-		    else
+		_set_status: function(status) {
+		    if (typeof status === 'string' || status instanceof String) {
+                status = this._format_status(status);
+		    }
+		    else if (!status instanceof jQuery)
 		        return;
 
-		    row.append(job_status);
+		    return this.container.find('.status').html(status).show();
+		},
 
-		    if (item.elapsed)
-		        row.append(" in " + coge.utils.toPrettyDuration(item.elapsed));
+		_format_status: function(status) {
+            var el = $('<span></span>');
 
-		    if (item.log) {
-		        var p = item.log.split("\n");
+            switch (status.toLowerCase()) {
+                case 'scheduled' : el.append(status).addClass('down bold');                 break;
+                case 'completed' : el.append(status).addClass('completed bold');            break;
+                case 'running'   : el.append(status).addClass('running bold');              break;
+                case 'skipped'   : el.append("already generated").addClass('skipped bold'); break;
+                case 'cancelled' :
+                case 'stopped'   :
+                case 'failed'    : el.append(status).addClass('alert bold');                break;
+            }
 
-		        var pElements = p.map(function(item) {
-		            var norm = item.replace(/\\t/g, " ").replace(/\\'/g, "'");
-		            return $("<div></div>").html(norm);
-		        });
+            return el;
+		},
+		
+		_default_formatter: function(tasks) {
+		    var self = this;
 
-		        var log = $("<div></div>").html(pElements).addClass("padded");
-		        row.append(log);
-		    }
+		    const MAX_TASK_DESC_LENGTH = 73;
+		    var table = $('<table></table>');
 
-		    return row;
+            tasks.forEach(function(task) {
+                var row = $('<tr></tr>').append(
+                    $('<td>' + coge.utils.truncateString(task.description, MAX_TASK_DESC_LENGTH) + '</td>').css('width', MAX_TASK_DESC_LENGTH+'em')
+                );
+
+                var status = self._format_status(task.status);
+
+                var duration = $('<span></span>');
+                if (task.elapsed)
+                    duration.append(' in ' + coge.utils.toPrettyDuration(task.elapsed));
+
+                row.append( $('<td></td>').append(status).css({'white-space': 'nowrap', 'text-align' : 'right'}).append(duration) );
+
+                table.append(row);
+
+                if (task.log) {
+                    var cell = $('<td></td>').attr('colspan', 2);
+
+                    var p = task.log.split("\n");
+                    p.forEach(function(line) {
+                        var norm = line.replace(/\\t/g, " ").replace(/\\'/g, "'");
+                        cell.append('<div>'+norm+'</div>').addClass("indent");
+                    });
+
+                    table.append($('<tr></tr>').append(cell));
+                }
+            });
+
+		    return table.html();
 		},
 		
 		_alert: function(string) {
@@ -398,7 +434,7 @@ var coge = window.coge = (function(namespace) {
 		    this.container.empty()
 		        .hide()
 		        .append(template)
-		        .show();//.slideDown();
+		        .show();
 		}
 	
     };

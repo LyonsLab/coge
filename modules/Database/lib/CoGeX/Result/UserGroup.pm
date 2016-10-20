@@ -510,9 +510,8 @@ sub annotation_pretty_print_html { #TODO move into Core (because it is view code
             : ''
           )
     );
-    $anno_type->add_Annot(
-"<span style='color:red;font-style:italic;'>Note: this group is locked and cannot be edited.</span>"
-    ) if ( $self->locked );
+    $anno_type->add_Annot("<span style='color:red;font-style:italic;'>Note: this group is locked and cannot be edited.</span>")
+        if ( $self->locked );
     $anno_obj->add_Annot($anno_type);
 
     $anno_type =
@@ -523,8 +522,7 @@ sub annotation_pretty_print_html { #TODO move into Core (because it is view code
     $anno_type->Type_delimit(": <td class=\"data5\">");
     $anno_type->Val_delimit("<br>");
     foreach my $user ( sort { $a->info cmp $b->info } $self->users ) {
-        my $user_info = $user->info
-          ; #qq{<span class="link" onclick="window.open('User.pl?uid=} . $user->id . qq{');">} . $user->info . '</span>';
+        my $user_info = $user->info; #qq{<span class="link" onclick="window.open('User.pl?uid=} . $user->id . qq{');">} . $user->info . '</span>';
         my @special_roles = ();
         if ( $user->id == $self->creator_user_id ) {
             push @special_roles, '<b>creator</b>';
@@ -544,24 +542,24 @@ sub annotation_pretty_print_html { #TODO move into Core (because it is view code
     my @lists = $self->lists;
     foreach my $list (@lists) {
         $lists{ $list->id } = $list;
-        my $items = $self->_process_list(
-            list      => $list,
-            anno_type => $anno_type,
-            anno_obj  => $anno_obj
-        );
-        foreach my $exp ( @{ $items->{experiments} } ) {
-            $experiments{ $exp->id } = $exp;
-        }
-        foreach my $genome ( @{ $items->{genomes} } ) {
-            $genomes{ $genome->id } = $genome;
-        }
-        foreach my $item ( @{ $items->{lists} } ) {
-            $lists{ $item->id } = $item;
-            my $data = $self->_process_list( list => $item );
-            map { $genomes{ $_->id }     = $_ } @{ $data->{genomes} };
-            map { $experiments{ $_->id } = $_ } @{ $data->{experiments} };
-            map { $lists{ $_->id }       = $_ } @{ $data->{lists} };
-        }
+#        my $items = $self->_process_list(
+#            list      => $list,
+#            anno_type => $anno_type,
+#            anno_obj  => $anno_obj
+#        );
+#        foreach my $exp ( @{ $items->{experiments} } ) {
+#            $experiments{ $exp->id } = $exp;
+#        }
+#        foreach my $genome ( @{ $items->{genomes} } ) {
+#            $genomes{ $genome->id } = $genome;
+#        }
+#        foreach my $item ( @{ $items->{lists} } ) {
+#            $lists{ $item->id } = $item;
+#            my $data = $self->_process_list( list => $item );
+#            map { $genomes{ $_->id }     = $_ } @{ $data->{genomes} };
+#            map { $experiments{ $_->id } = $_ } @{ $data->{experiments} };
+#            map { $lists{ $_->id }       = $_ } @{ $data->{lists} };
+#        }
     }
     if ( values %lists ) {
         $anno_type =
@@ -639,11 +637,11 @@ sub _process_list {
 
     my %experiments = map { $_->id, $_ } $list->experiments;
     my %genomes     = map { $_->id, $_ } $list->genomes;
-    my %lists       = map { $_->id, $_ } $list->lists;
+#    my %lists       = map { $_->id, $_ } $list->lists;
     return {
         experiments => [ $list->experiments ],
         genomes     => [ $list->genomes ],
-        lists       => [ $list->lists ]
+#        lists       => [ $list->lists ]
     };
 }
 

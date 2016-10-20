@@ -118,7 +118,7 @@ sub iget {
             $dest_file,
             $done_file
         ],
-        description => "Fetching $irods_path..."
+        description => "Fetching $irods_path"
     };
 }
 
@@ -144,7 +144,7 @@ sub ftp_get {
         outputs => [ 
             $output_file
         ],
-        description => "Fetching $url..."
+        description => "Fetching $url"
     };
 }
 
@@ -168,7 +168,7 @@ sub fastq_dump {
             $output_file,
             $done_file
         ],
-        description => "Fetching $accn from NCBI-SRA..."
+        description => "Fetching $accn from NCBI-SRA"
     };
 }
 

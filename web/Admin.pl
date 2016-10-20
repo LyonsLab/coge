@@ -23,7 +23,7 @@ no warnings 'redefine';
 $|=1;
 
 use vars qw(
-    $config $PAGE_TITLE $PAGE_NAME $user $BASEFILE $db $dbweb %FUNCTION 
+    $config $PAGE_TITLE $PAGE_NAME $user $BASEFILE $db %FUNCTION
     $FORM $MAX_SEARCH_RESULTS %ITEM_TYPE $JEX $link
 );
 
@@ -918,10 +918,10 @@ sub change_group_role {
     return get_group_dialog( item_list => $opts{target_items} );
 }
 
-#Jobs tab
 sub get_jobs_for_user {
     my %opts = @_;
     my $running_only = $opts{running_only};
+	return encode_json({ error => 'Not logged in' }) if ($user->is_public);
     
     my @entries;
     if ( $user->is_admin ) {

@@ -182,7 +182,7 @@ sub create_cufflinks_job {
         outputs => [
             catfile($staging_dir, "genes.fpkm_tracking")
         ],
-        description => "Measuring FPKM using cufflinks..."
+        description => "Measuring FPKM using cufflinks"
     };
 }
 
@@ -222,7 +222,7 @@ sub create_bed_file_job {
         outputs => [
             catfile($staging_dir, $name . ".bed")
         ],
-        description => "Measuring read depth..."
+        description => "Measuring read depth"
     };
 }
 
@@ -247,7 +247,7 @@ sub create_filter_bed_file_job {
         outputs => [
             catfile($staging_dir, $name . ".normalized.bed")
         ],
-        description => "Normalizing read depth..."
+        description => "Normalizing read depth"
     };
 }
 
@@ -273,7 +273,7 @@ sub create_parse_cufflinks_job {
         outputs => [
             catfile($staging_dir, $name . ".csv")
         ],
-        description => "Processing FPKM results ..."
+        description => "Processing FPKM results"
     };
 }
 
@@ -328,7 +328,7 @@ sub create_load_csv_job { #TODO move into CommonTasks.pm
             catfile($staging_dir, "load_csv/log.done"),
             $result_file
         ],
-        description => "Loading FPKM results as new experiment..."
+        description => "Loading FPKM results as new experiment"
     };
 }
 
@@ -383,7 +383,7 @@ sub create_load_bed_job { #TODO move into CommonTasks.pm
             catfile($staging_dir, "load_bed/log.done"),
             $result_file
         ],
-        description => "Loading read depth measurements as new experiment..."
+        description => "Loading read depth measurements as new experiment"
     };
 }
 

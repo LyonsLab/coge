@@ -148,7 +148,7 @@ sub create_metaplot_job {
             catfile($staging_dir, "$output_name.tab"),
             catfile($staging_dir, "$output_name.png")
         ],
-        description => "Generating metaplot..."
+        description => "Generating metaplot"
     };
 }
 

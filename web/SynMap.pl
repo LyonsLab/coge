@@ -2,12 +2,12 @@
 use v5.10;
 use strict;
 no warnings 'redefine';
-umask(0);
+umask(0); # what is this for? (mdb 10/19/16)
 
 use CoGeX;
 use CoGeX::Result::Genome qw(ERROR LOADING);
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
-use CoGe::Accessory::Utils qw( commify sanitize_name html_escape );
+use CoGe::Accessory::Utils qw( commify html_escape );
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Core::Genome qw(genomecmp genomecmp2);
 use CoGe::Core::Favorites;
@@ -15,13 +15,13 @@ use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
-use DBIxProfiler;
+#use DBIxProfiler;
 use Data::Dumper;
 use Digest::MD5 qw(md5_hex);
 use HTML::Template;
 use JSON::XS;
 use LWP::UserAgent;
-use Parallel::ForkManager;
+#use Parallel::ForkManager;
 use GD;
 use File::Path;
 use File::Spec::Functions;
@@ -29,7 +29,7 @@ use Mail::Mailer;
 use Benchmark;
 use DBI;
 use POSIX;
-use Sort::Versions;
+#use Sort::Versions;
 
 our (
 	$config,        $DIR,
@@ -48,7 +48,7 @@ our (
 	%FUNCTIONS,     $SCRIPTDIR,    $LINK
 );
 
-$|     = 1;    # turn off buffering
+$| = 1;    # turn off buffering
 
 $FORM       = new CGI;
 $PAGE_TITLE = "SynMap";
@@ -108,10 +108,6 @@ $SYNTENY_SCORE = $config->{SYNTENY_SCORE};
 $NWALIGN = get_command_path('NWALIGN');
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
-
-#$ajax{read_log}=\&read_log_test;
-#print $pj->build_html( $FORM, \&gen_html );
-#print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 %FUNCTIONS = (
 	get_orgs               => \&get_orgs,
@@ -218,13 +214,14 @@ sub gen_body {
 	else {
 		$template->param( $ALGO_LOOKUP->{6}{opt} => "selected" );
 	}
-	my ( $D, $A, $Dm, $gm, $dt, $dupdist, $cscore );
+	my ( $D, $A, $Dm, $gm, $dt, $vis, $dupdist, $cscore ); #AKB Added '$vis' 2016-10-18
 	$D  = $FORM->param('D');
 	$A  = $FORM->param('A');
 	$Dm = $FORM->param('Dm');
 	$gm = $FORM->param('gm');
 	$gm //= 40;    #/
 	$dt     = $FORM->param('dt');
+	$vis = $FORM->param('vis');  #AKB Added 2016-10-18
 	$cscore = $FORM->param('csco');
 	$cscore //= 0;    #/
 	$dupdist = $FORM->param('tdd');
@@ -258,6 +255,14 @@ sub gen_body {
 	$template->param( 'DISPLAY_DAGCHAINER_SETTINGS' => $display_dagchainer_settings );
 	my $mcs = $FORM->param('mcs');
 	$template->param( 'MIN_CHR_SIZE' => $mcs ) if $mcs;
+
+	# Set Visualizer Option # AKB Added 2016-10-18
+	if ($vis && $vis =~ /legacy/i ) {
+		$template->param( 'LEGACY_SELECT' => 'checked' );
+	}
+    else {
+		$template->param( 'SYNMAP2_SELECT' => 'checked' );
+	}
 
 	#will the program automatically run?
 	my $autogo = $FORM->param('autogo');
@@ -441,7 +446,7 @@ sub gen_body {
 		$template->param( RESULTS => $results );
 	}
 
-#place to store fids that are passed into SynMap to highlight that pair in the dotplot (if present)
+	#place to store fids that are passed into SynMap to highlight that pair in the dotplot (if present)
 	my $fid1 = 0;
 	$fid1 = $FORM->param('fid1') if $FORM->param('fid1');
 
@@ -787,8 +792,8 @@ sub get_genome_info {
 	$feattype_menu .= qq{<OPTION VALUE=2 $genomic_selected>genomic</option>};
 	$feattype_menu .= "</select>";
 	$message = "<span class='small alert'>No Coding Sequence in Genome</span>" unless $has_cds;
-	$message = "<span class='small alert'>Genome is still being loaded</span>" if $dsg->status == LOADING;
-	$message = "<span class='small alert'>There was an error while loading this genome</span>" if $dsg->status == ERROR;
+	$message = "<span class='small alert'>Genome is still being loaded</span>" if ($dsg->is_loading());
+	$message = "<span class='small alert'>Genome is in invalid state</span>"   if ($dsg->is_error());
 
 	return $html_dsg_info, $feattype_menu, $message, $chr_length, $org_num,
 	  $dsg->organism->name, $dsg->genomic_sequence_type_id;

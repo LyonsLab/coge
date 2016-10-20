@@ -144,7 +144,7 @@ sub create_samtools_job {
         outputs => [
             catfile($staging_dir, $output_name)
         ],
-        description => "Identifying SNPs using the CoGe method ..."
+        description => "Identifying SNPs using the CoGe method"
     };
 }
 

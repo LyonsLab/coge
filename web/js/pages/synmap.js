@@ -87,6 +87,7 @@ function update_params(val) {
     $('#c').val(params[11]);
     merge_select_check();
     depth_algo_check();
+
 }    
 
 function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, org_name, seq_id) {
@@ -215,6 +216,16 @@ function display_dagchainer_settings(params,type) {
     }
 
     set_dagchainer_defaults(params, type);
+}
+
+function display_legacy_settings() {  //AKB Added 2016-10-18
+
+    if ($('#visualizer_select')[0].checked) {
+        $('#legacy_opts').hide(0);
+    } else {
+        $('#legacy_opts').show(0);
+    }
+
 }
 
 function address_validity_check(validity) {
@@ -429,6 +440,8 @@ var coge = window.coge = (function(namespace) {
         },
 
         run_synmap: function() {
+            var self = this;
+
             this.populate_page_obj();
 
             //var org_name1 = pageObj.org_name1;
@@ -471,17 +484,21 @@ var coge = window.coge = (function(namespace) {
             	return;
             }
 
-            //TODO Scale polling time linearly with long running jobs
-            var duration = pageObj.waittime;
-
             $('#results').hide();
 
-//            if ($('#regen_images')[0].checked) {
+            // If user checked "Regenerate Images" then force the workflow to be re-executed.
+            var regenerate = $('#regen_images')[0].checked;
+            if (regenerate) {
                 this.go();
-//                return;
-//            }
+                return;
+            }
 
-//            this.get_results();
+            // If results already exist for this analysis then show them without re-executing the workflow.
+            this.get_results().done(function(data) {
+                if (data.error) {
+                    self.go(); // Results don't exist, re-execute the workflow
+                }
+            });
         },
 
         submit_assembly: function(e, input, gid1, gid2,flip) {
@@ -509,8 +526,7 @@ var coge = window.coge = (function(namespace) {
             });
 
             promise.then(function(response) { return self.wait_for_assembly.call(self, response); })
-                   .then(function(url) { self.download_file.call(self, url); }, 
-                		 self.report_error);
+                   .then(function(url) { self.download_file.call(self, url); }, self.report_error);
         },
 
         get_job_status: function(id) {
@@ -565,7 +581,9 @@ var coge = window.coge = (function(namespace) {
         },
 
         get_results: function(on_error) {
-            var overlay = $("#overlay").show();
+            var self = this;
+
+            var spinner = $("#overlay").show();
             coge.progress.onReset = coge.progress.saveOnReset;
 
             var params = this.get_params();
@@ -577,15 +595,19 @@ var coge = window.coge = (function(namespace) {
                 dataType: "json",
                 success: function(data) {
                     $('.box').css("float", "left");
-                    overlay.hide();
+                    spinner.hide();
                     if (!data.error) {
                         $("#synmap_zoom_box").draggable();
-                        $('#results').html(data.html).slideDown(show_results);
-                    } else if (on_error)
+                        $('#results')
+                            .html(data.html) // insert rendered synmap_results.tmpl into page
+                            .slideDown(show_results);
+                    }
+                    else if (on_error) {
                         on_error();
+                    }
                 },
                 error: function() {
-                    overlay.hide();
+                    spinner.hide();
                 }
             });
         },
@@ -676,7 +698,8 @@ var coge = window.coge = (function(namespace) {
                 codeml_min: $('#codeml_min').val(),
                 codeml_max: $('#codeml_max').val(),
                 logks: $('#logks')[0].checked,
-                csco: $('#csco').val()
+                csco: $('#csco').val(),
+                vis: $('#visualizer_select:checked').val()  //AKB Added 2016-10-18
             };
         },
 

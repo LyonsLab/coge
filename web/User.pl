@@ -186,10 +186,14 @@ sub get_item_info {
                 '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
               . $_->display_name . ' (' . $_->user_name . ')' . '<br>';
         }
+
+        my $info = $group->info;
+        my $view_link = qq{open_item('$item_type','$info','GroupView.pl?ugid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="group_dialog();" title="Edit metadata and membership">Edit group</span><br>}
+            . qq{<span class="link" onclick="group_dialog();" title="Edit membership">Edit membership</span><br>}
+            . qq{<span class="link" onclick="$view_link" title="View contents">View contents</span><br>}
             . qq{</div></div>};        
     }
     elsif ( $item_type eq 'notebook' ) {
