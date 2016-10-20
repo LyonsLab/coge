@@ -109,8 +109,8 @@ var coge = window.coge = (function(namespace) {
 		// 	return this._ajax("DELETE", this.baseUrl + "irods/rm", null, { path: path });
 		// },
 		
-		ftp_list: function(url) {
-			return this._ajax("GET", this.baseUrl + "ftp/list/", null, { url: url });
+		ftp_list: function(url, dirs) {
+			return this._ajax("GET", this.baseUrl + "ftp/list/", null, { url: url, dirs: dirs });
 		},
 		
 		_ajax: function(type, url, data, opts) { //, success, error) {

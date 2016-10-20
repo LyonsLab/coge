@@ -22,6 +22,7 @@ $FORM = new CGI;
 my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'widgets/FileSelect.tmpl' );
 $template->param(
     DIR_SELECT => 1,
-    DISABLE_IRODS_GET_ALL => 1
+    DISABLE_IRODS_GET_ALL => 1,
+    DISABLE_FTP_GET_ALL => 1
 );
 print $FORM->header, $template->output;

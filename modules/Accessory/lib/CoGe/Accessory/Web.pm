@@ -1304,20 +1304,19 @@ sub ftp_get_path { # mdb 8/24/15 copied from LoadExperiment.pl
 
     my @files;
 
-    print STDERR Dumper head($url);
-    my ($content_type, $size) = head($url);
+    my ($content_type, $size) = LWP::Simple::head($url);
     if ($content_type && $content_type eq 'text/ftp-dir-listing') { # directory
         my $listing = get($url);
         my $dir     = parse_dir($listing);
-        #print STDERR Dumper $dir, "\n";
         foreach (@$dir) {
             my ( $filename, $filetype, $filesize, $filetime, $filemode ) = @$_;
-            if ( $filetype eq 'f' ) {
-                push @files, { name => $filename, url => $url . $filename };
+            if ( $opts{dirs} || $filetype eq 'f' ) {
+                push @files, { mode => $filemode, name => $filename, size => $filesize, time => $filetime, type => $filetype, url => $url . $filename };
             }
         }
     }
     elsif ($size) { # a single file
+        $url = chop $url if substr($url, -1) eq '/';
         my ($filename) = $url =~ /([^\/]+?)(?:\?|$)/;
         push @files, { name => $filename, url => $url };
     }

@@ -8,7 +8,6 @@
     font-size: 1em !important;
 }
 </style>
-
 <TMPL_UNLESS NAME='DIR_SELECT'>
 <script id="fileselect-template" type="text/template">
 	<div>
@@ -45,27 +44,33 @@
 		<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
 	    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
 	    	<table id="ids_table" class="small" style="width:100%;"></table>
-	    	<!-- <ul id="fileselect_menu" class="coge-menu hidden ui-menu ui-widget ui-widget-content ui-corner-all" style="white-space: nowrap; position: absolute; display: none;" role="listbox" aria-activedescendant="ui-active-menuitem">
-				<li class="ui-menu-item" role="menuitem"><a class="ui-corner-all" tabindex="-1"></a></li>
-			</ul> -->
-		</ul>
 	    </div>
 	  </div>
 		
 <TMPL_UNLESS NAME='DIR_SELECT'>
-	  <div id="fileselect-tab-2" class="small" style="height:200px;">
+	  <div id="fileselect-tab-2" class="small">
 	  	Enter the location of the file or directory to retrieve.<br><br>
 	    URL: <input id="input_url" size="60" style="color:gray;"/>
-	    <span id="ftp_get_button" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Get </span><br>
-	    <div class="link" onclick="$(this).hide(); $('#ftp_login').fadeIn();" style="padding-top:5px;">Login (optional)...</div>
-	    <div id="ftp_login" style="display:none;padding-top:5px;">
+	    <span class="link" onclick="$(this).hide(); $('#ftp_login').fadeIn();" style="padding-top:5px;">Login (optional)...</span>
+	    <span id="ftp_login" style="display:none;padding-top:5px;">
 	    	Username: <input id="input_username" size="15" style="color:gray;"/>
 	    	Password: <input id="input_password" size="15" style="color:gray;"/>
-	    </div>
-	    <br>
-	    <div id="ftp_status" class="note"></div>
-	    <br>
-	    <span class="note">Note: FTP/HTTP transfers, including login information, are not secure (encrypted).</span>
+	    </span>
+	    <span id="ftp_get_button" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'> Go </span><br><br>
+	    <div id="ftp_list_head" style="display:none;white-space:nowrap;border-bottom:1px solid gray;">
+				<span id="ftp_status" style="float:right;"></span>
+				<input class="ftpselect-filter" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;" />
+				<span class='link ftpselect-home'><span class='ui-icon ui-icon-home'></span>Home</span>&nbsp;&nbsp;
+				<span class='link ftpselect-up'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>&nbsp;&nbsp;
+				<span class='link ftpselect-refresh'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>&nbsp;&nbsp;
+				<TMPL_UNLESS NAME='DISABLE_FTP_GET_ALL'>
+				<span class='link ftpselect-getall'><span class='ui-icon ui-icon-transferthick-e-w'></span>Get All Files</span>&nbsp;&nbsp;
+				</TMPL_UNLESS>
+			</div>
+			<div id="ftp_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
+			<div id="ftp_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
+				<table id="ftp_table" class="small" style="width:100%;"></table>
+			</div>
 	  </div>
 
 	  <div id="fileselect-tab-3" class="small" style="height:200px;">

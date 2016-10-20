@@ -8,9 +8,8 @@ use Data::Dumper;
 
 sub list {
     my $self = shift;
-    #my $url = $self->stash('url');
     my $url = $self->param('url');
-    print STDERR "FTP::list ", $url, "\n";
+    my $dirs = $self->param('dirs');
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
@@ -20,7 +19,7 @@ sub list {
     }
 
     # Fetch directory listing
-    my $files = ftp_get_path(url => $url);
+    my $files = ftp_get_path(url => $url, dirs => $dirs);
     unless ($files) {
         $self->render(json => { error => { FTP => 'Not found' } });
         return;
