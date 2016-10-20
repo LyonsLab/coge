@@ -1423,7 +1423,7 @@ sub create_bowtie2_alignment_job {
     $cmd = 'nice ' . $cmd; # run at lower priority
     $cmd .= ' -p 32 ';
     $cmd .= " -x $index_name ";
-    
+
     if ($read_type eq 'paired') {
         my ($m1, $m2) = detect_paired_end(\@$fastq);
         die "error: invalid paired-end files: m1: @$m1 -- m2: @$m2" unless (@$m1 and @$m2);
@@ -1436,7 +1436,9 @@ sub create_bowtie2_alignment_job {
     my ($first_fastq) = @$fastq;
     my $output_file = to_filename_without_extension($first_fastq) . '.sam';
     $cmd .= " -S $output_file";
-    
+
+    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq);
+
     return {
         cmd => $cmd,
         script => undef,
@@ -1445,7 +1447,7 @@ sub create_bowtie2_alignment_job {
         outputs => [
             catfile($staging_dir, $output_file)
         ],
-        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using Bowtie2"
+        description => "Aligning $desc using Bowtie2"
     };    
 }
 
