@@ -1200,6 +1200,8 @@ sub create_hisat2_alignment_job {
     	push $args, ['-1', join(',', sort @$m1), 0];
     	push $args, ['-2', join(',', sort @$m2), 0];
 	}
+
+    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 	
 	return {
         cmd => 'nice ' . get_command_path('HISAT2'),
@@ -1207,7 +1209,7 @@ sub create_hisat2_alignment_job {
         args => $args,
         inputs => [ @$fastq, @$done_files, @$index_files ],
         outputs => [ catfile($staging_dir, $output_file) ],
-        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq) . " using HISAT2"
+        description => "Aligning $desc using HISAT2"
 	};
 }
 
@@ -1973,6 +1975,8 @@ sub create_gsnap_alignment_job {
     
     push @$args, [">", $output_file, 1];
 
+    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
+
     return {
         cmd => $cmd,
         script => undef,
@@ -1989,7 +1993,7 @@ sub create_gsnap_alignment_job {
         outputs => [
             catfile($staging_dir, $output_file)
         ],
-        description => "Aligning " . join(', ', map { to_filename_base($_) } @$fastq)  . " with GSNAP"
+        description => "Aligning $desc with GSNAP"
     };
 }
 
