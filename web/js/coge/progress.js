@@ -61,6 +61,7 @@ var coge = window.coge = (function(namespace) {
 			
 		begin: function(opts) {
 			this._reset_log();
+
 			if (!opts) opts = {};
 
 			if (opts.title)
@@ -156,6 +157,13 @@ var coge = window.coge = (function(namespace) {
 		    // User callback
 		    if (this.onError)
 		    	this.onError();
+		},
+
+		cancelled: function(response) {
+		    // Update dialog
+		    this.container.find('.progress-link,.buttons').hide();
+		    this._set_status(response.status);
+		    this.container.find('.cancel').show();
 		},
 
         _errorToString: function(error) {
@@ -259,28 +267,36 @@ var coge = window.coge = (function(namespace) {
                         log_content = $(html);
 		        }
 
-                // Render workflow status
-		        if (current_status == "completed") {
-		            self.succeeded(response);
-		        }
-		        else if (current_status == "failed"
-		                || current_status == "terminated"
-		                || current_status == "cancelled")
-		        {
-		            if (response.results && response.results.length)
-		                self.logfile = response.results[0].path;
-		            self.failed(response);
-		        }
-		        else if (current_status == "notfound") {
-		        	self._error('Error: status is "notfound"');
-		        	self.log.html('Error: status is "not found" ... retrying');
-		        	setTimeout($.proxy(self.update, self), refresh_interval);
-		            return;
-		        }
-		        else { // running
-		            setTimeout($.proxy(self.update, self), refresh_interval);
-		            self._set_status( $('<span><img class="top" src="picts/ajax-loader.gif"/>&nbsp;&nbsp;</span>') ).append( self._format_status(response.status) );
-		        }
+                // Handle workflow status
+                switch (current_status.toLowerCase()) {
+                    case 'completed' :
+                        self.succeeded(response);
+                        break;
+                    case 'failed' :
+                    case 'terminated' :
+                        if (response.results && response.results.length)
+		                    self.logfile = response.results[0].path;
+		                self.failed(response);
+		                break;
+                    case 'cancelled' :
+                    case 'stopped' :
+                        self.cancelled(response);
+                        break;
+                    case 'notfound' :
+                        self._error('Error: status is "notfound"');
+		        	    self.log.html('Error: status is "not found" ... retrying');
+		        	    setTimeout($.proxy(self.update, self), refresh_interval);
+		        	    return;
+                    case 'running' :
+                        setTimeout($.proxy(self.update, self), refresh_interval);
+		                self._set_status( $('<span><img class="top" src="picts/ajax-loader.gif"/>&nbsp;&nbsp;</span>') ).append( self._format_status(response.status) );
+                        break;
+                    default :
+                        self._error('Error: status is invalid');
+		        	    self.log.html('Error: status is invalid ... retrying');
+		        	    setTimeout($.proxy(self.update, self), refresh_interval);
+		        	    return;
+                }
 
 		        // Render workflow results
 		        if (response.results && response.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
@@ -349,12 +365,13 @@ var coge = window.coge = (function(namespace) {
             var el = $('<span></span>');
 
             switch (status.toLowerCase()) {
-                case 'scheduled': el.append(status).addClass('down bold');                 break;
-                case 'completed': el.append(status).addClass('completed bold');            break;
-                case 'running':   el.append(status).addClass('running bold');              break;
-                case 'skipped':   el.append("already generated").addClass('skipped bold'); break;
-                case 'cancelled': el.append(status).addClass('alert bold');                break;
-                case 'failed':    el.append(status).addClass('alert bold');                break;
+                case 'scheduled' : el.append(status).addClass('down bold');                 break;
+                case 'completed' : el.append(status).addClass('completed bold');            break;
+                case 'running'   : el.append(status).addClass('running bold');              break;
+                case 'skipped'   : el.append("already generated").addClass('skipped bold'); break;
+                case 'cancelled' :
+                case 'stopped'   :
+                case 'failed'    : el.append(status).addClass('alert bold');                break;
             }
 
             return el;
@@ -379,19 +396,19 @@ var coge = window.coge = (function(namespace) {
 
                 row.append( $('<td></td>').append(status).css({'white-space': 'nowrap', 'text-align' : 'right'}).append(duration) );
 
-                if (task.log) { //FIXME not working
-                    var p = task.log.split("\n");
+                table.append(row);
 
-                    var pElements = p.map(function(task) {
-                        var norm = task.replace(/\\t/g, " ").replace(/\\'/g, "'");
-                        return $("<div></div>").html(norm);
+                if (task.log) {
+                    var cell = $('<td></td>');
+
+                    var p = task.log.split("\n");
+                    p.forEach(function(line) {
+                        var norm = line.replace(/\\t/g, " ").replace(/\\'/g, "'");
+                        cell.append('<div>'+norm+'</div>').addClass("indent");
                     });
 
-                    var log = $("<div></div>").html(pElements).addClass("padded");
-                    row.append(log);
+                    table.append($('<tr></tr>').append(cell));
                 }
-
-                table.append(row);
             });
 
 		    return table.html();
