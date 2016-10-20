@@ -359,7 +359,7 @@ sub join_files {
     push @files, @$input_files   if $input_files;
     push @files, $input_dir.'/*' if $input_dir;
     
-    my $cmd = "mkdir -p \$(dirname $output_file) && cat " . join(' ', @files) . ' > ' . $output_file;
+    my $cmd = "mkdir -p \$(dirname $output_file) && cat " . join(' ', shell_quote(@files)) . ' > ' . $output_file;
     
     return {
         cmd => $cmd,
