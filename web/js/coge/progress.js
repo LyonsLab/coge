@@ -55,23 +55,24 @@ var coge = window.coge = (function(namespace) {
 		_reset_log: function() {
 			var c = this.container;
 			c.find('.log,.progress-link').html('');
-			c.find('.msg').show('');
-		    c.find('.ok,.error,.finished,.done,.cancel,.logfile,.buttons').hide();
+			c.find('.status').show('');
+		    c.find('.ok,.cancel,.logfile,.buttons').hide();
 		},
 			
 		begin: function(opts) {
 			this._reset_log();
-			
-			if (opts && opts.title)
+			if (!opts) opts = {};
+
+			if (opts.title)
 				this.container.dialog({title: opts.title});
 			
-			if (opts && opts.width)
+			if (opts.width)
 				this.container.dialog({width: opts.width});
 			
-			if (opts && opts.height)
+			if (opts.height)
 				this.log.height(opts.height);
 			
-		    if (opts && opts.content)
+		    if (opts.content)
 		    	this.log.html(opts.content);
 		    else
 		    	this.log.html('Initializing ...');
@@ -85,35 +86,35 @@ var coge = window.coge = (function(namespace) {
 			this.container.dialog('close');
 		},
 		
-		succeeded: function(results) {
+		succeeded: function(response) {
 			var c = this.container;
 			
 		    // Update dialog
-		    c.find('.msg,.progress-link,.error,.cancel').hide();
-		    c.find('.finished').fadeIn();
-		    	
+            c.find('.progress-link').hide();
+
 		    // Show user-specified button template
 		    if (this.buttonTemplate) {
 		    	var template = $($("#"+this.buttonTemplate).html());
-		    	c.find('.buttons').html(template).fadeIn();
+		    	c.find('.buttons').html(template).show();
 		    }
 		    else { // default buttons
-		    	c.find('.ok').fadeIn();
+		    	c.find('.ok').show();
 		    }
+
+            // Compute total duration of all tasks // FIXME replace with workflow elapsed time since this miscalculates concurrent tasks
+            var totalDuration = response.tasks.reduce(function(a, b) {
+                if (!b.elapsed) return a;
+                return a + b.elapsed;
+            }, 0);
+
+		    this._set_status(response.status).append('<span class="info">' +
+		        (totalDuration ? ' in ' + coge.utils.toPrettyDuration(totalDuration) : '') + '</span>');
 		    
 		    // User callback
 		    if (this.onSuccess)
-		    	this.onSuccess(results);
+		    	this.onSuccess(response.results);
 		},
 		
-		_errorToString: function(error) {
-			var string = '';
-			for (key in error) {
-				string += error[key];
-			}
-			return string;
-		},
-
 		failed: function(string, error) {
 			var c = this.container;
 			
@@ -121,7 +122,7 @@ var coge = window.coge = (function(namespace) {
 			
 			// Show error message
 		    this.log
-		    	.append('<div class="alert">' + errorMsg + '</div><br>')
+		    	.append('<div class="alert">' + (errorMsg ? errorMsg : '') + '</div><br>')
 		    	.append(
 		    		'<div class="alert">' +
 			        'The CoGe Support Team has been notified of this error but please ' +
@@ -132,15 +133,16 @@ var coge = window.coge = (function(namespace) {
 		    	);
 
 		    // Show link to log file
-		    var logfile = coge.services.download_url({wid: this.job_id}); //this.baseUrl + 'downloads/?username=' + this.userName + '&' + 'wid=' + this.job_id;
+		    var logfile = coge.services.download_url({ wid: this.job_id, attachment: 0 });
 		    $(".logfile a").attr("href", logfile);
-		    $('.logfile').fadeIn();
+		    $('.logfile').show();
 
 		    // Update dialog
-		    c.find('.msg,.progress-link,.buttons').hide();
-		    c.find('.error,.cancel').fadeIn();
+		    c.find('.progress-link,.buttons').hide();
+		    this._set_status('Failed');
+		    c.find('.cancel').show();
 
-// FIXME restore this email reporting
+// FIXME restore email reporting
 //		    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
 //		        $.ajax({
 //		            data: {
@@ -154,6 +156,14 @@ var coge = window.coge = (function(namespace) {
 		    // User callback
 		    if (this.onError)
 		    	this.onError();
+		},
+
+        _errorToString: function(error) {
+			var string = '';
+			for (key in error) {
+				string += error[key];
+			}
+			return string;
 		},
 		
 		_refresh_interval: function() {
@@ -187,7 +197,7 @@ var coge = window.coge = (function(namespace) {
 				self.container.find('.progress-link').html('Link: <a href="'+url+'">'+url+'</a>').show();
 			}
 			
-			var update_handler = function(json) {
+			var update_handler = function(response) {
 				self._debug('update_handler');
 				var c = self.container;
 				
@@ -202,9 +212,9 @@ var coge = window.coge = (function(namespace) {
 		        }
 
 		        // Handle error
-		        if (!json || json.error) {
+		        if (!response || response.error) {
 		        	self.ajaxError++;
-		            if ('Auth' in json.error) {
+		            if ('Auth' in response.error) {
 		            	c.find('.msg').html('Login required to continue');
 		            	this.log
 		            		.css({'font-size': '1em'})
@@ -224,21 +234,15 @@ var coge = window.coge = (function(namespace) {
 		        self._alert();
 
 		        // Retry on missing status (probably won't ever happen)
-		        if (!json.status) {
+		        if (!response.status) {
 		        	self._error('Error: missing status, retrying ...');
 		        	setTimeout($.proxy(self.update, self), retry_interval);
 		            return;
 		        }
 		        
 		        // Render status
-	            var current_status = json.status.toLowerCase();
+	            var current_status = response.status.toLowerCase();
 	            self._debug('status=' + current_status);
-
-	            var workflow_status = $("<div/>");
-	            workflow_status
-	                .html("Workflow ")
-	                .append( $('<span></span>').html(json.status) )
-	                .addClass('bold');
 
 	            // Retry on JEX error status -- mdb added 6/30/15
 	            if (current_status == "error") {
@@ -249,55 +253,44 @@ var coge = window.coge = (function(namespace) {
 	            
 	            // Render tasks status
 	            var log_content = $("<div/>");
-		        if (json.tasks) {
-                    var html = self.formatter(json.tasks);
+		        if (response.tasks) {
+                    var html = self.formatter(response.tasks);
                     if (html)
                         log_content = $(html);
 		        }
 
                 // Render workflow status
 		        if (current_status == "completed") {
-		            var total = json.tasks.reduce(function(a, b) {
-		                if (!b.elapsed) return a;
-		                return a + b.elapsed;
-		            }, 0);
-
-		            workflow_status.append(' in ' + coge.utils.toPrettyDuration(total));
-		            workflow_status.find('span').addClass('completed');
-		            self.succeeded(json.results);
+		            self.succeeded(response);
 		        }
 		        else if (current_status == "failed"
-		                //|| current_status == "error" // mdb removed 6/30/15 -- now handled first (see above code)
 		                || current_status == "terminated"
 		                || current_status == "cancelled")
 		        {
-		            workflow_status.find('span').addClass('alert');
-
-		            if (json.results && json.results.length)
-		                self.logfile = json.results[0].path;
-		            self.failed();
+		            if (response.results && response.results.length)
+		                self.logfile = response.results[0].path;
+		            self.failed(response);
 		        }
 		        else if (current_status == "notfound") {
 		        	self._error('Error: status is "notfound"');
+		        	self.log.html('Error: status is "not found" ... retrying');
 		        	setTimeout($.proxy(self.update, self), refresh_interval);
 		            return;
 		        }
 		        else { // running
-		            workflow_status.find('span').addClass('running');
 		            setTimeout($.proxy(self.update, self), refresh_interval);
+		            self._set_status( $('<span><img class="top" src="picts/ajax-loader.gif"/>&nbsp;&nbsp;</span>') ).append( self._format_status(response.status) );
 		        }
 
-		        //log_content.append('<br>').append(workflow_status); // mdb removed 10/19/16 -- seems redundant
-
 		        // Render workflow results
-		        if (json.results && json.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
+		        if (response.results && response.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
 		        	log_content.append("<br><div class='header'>Results (as they are generated)</div>");
-		    	    json.results.forEach(function(result) {
+		    	    response.results.forEach(function(result) {
 		    	    	log_content.append( self._format_result(result) );
 		    	    });
 		        }
 
-                // Insert rendered results
+                // Insert rendered log
                 log_content.append('<br><br>');
 		        self.log.html(log_content);
 
@@ -341,8 +334,35 @@ var coge = window.coge = (function(namespace) {
 
 			return formatted;
 		},
+
+		_set_status: function(status) {
+		    if (typeof status === 'string' || status instanceof String) {
+                status = this._format_status(status);
+		    }
+		    else if (!status instanceof jQuery)
+		        return;
+
+		    return this.container.find('.status').html(status).show();
+		},
+
+		_format_status: function(status) {
+            var el = $('<span></span>');
+
+            switch (status.toLowerCase()) {
+                case 'scheduled': el.append(status).addClass('down bold');                 break;
+                case 'completed': el.append(status).addClass('completed bold');            break;
+                case 'running':   el.append(status).addClass('running bold');              break;
+                case 'skipped':   el.append("already generated").addClass('skipped bold'); break;
+                case 'cancelled': el.append(status).addClass('alert bold');                break;
+                case 'failed':    el.append(status).addClass('alert bold');                break;
+            }
+
+            return el;
+		},
 		
 		_default_formatter: function(tasks) {
+		    var self = this;
+
 		    const MAX_TASK_DESC_LENGTH = 73;
 		    var table = $('<table></table>');
 
@@ -351,21 +371,7 @@ var coge = window.coge = (function(namespace) {
                     $('<td>' + coge.utils.truncateString(task.description, MAX_TASK_DESC_LENGTH) + '</td>').css('width', MAX_TASK_DESC_LENGTH+'em')
                 );
 
-                var status = $('<span></span>');
-                if (task.status == 'scheduled')
-                    status.append(task.status).addClass('down bold');
-                else if (task.status == 'completed')
-                    status.append(task.status).addClass('completed bold');
-                else if (task.status == 'running')
-                    status.append(task.status).addClass('running bold');
-                else if (task.status == 'skipped')
-                    status.append("already generated").addClass('skipped bold');
-                else if (task.status == 'cancelled')
-                    status.append(task.status).addClass('alert bold');
-                else if (task.status == 'failed')
-                    status.append(task.status).addClass('alert bold');
-                else
-                    return;
+                var status = self._format_status(task.status);
 
                 var duration = $('<span></span>');
                 if (task.elapsed)

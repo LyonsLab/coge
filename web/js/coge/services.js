@@ -28,8 +28,8 @@ var coge = window.coge = (function(namespace) {
 			var eid = opts.eid;
 			var wid = opts.wid;
 			var filename = opts.filename;
-//			var username = opts.username;
-			
+			var attachment = opts.attachment;
+
 		    var params = '';
 		    if (gid)
 		        params += "gid=" + gid;
@@ -37,9 +37,9 @@ var coge = window.coge = (function(namespace) {
 		        params += "eid=" + eid;
 		    else if (wid)
 		        params += "wid=" + wid;
-		    
-//		    if (username)
-//		        params += "&username=" + username;
+
+		    if (attachment != null)
+		        params += "&attachment=" + attachment;
 		    
 		    if (filename)
 		    	params += "&filename=" + filename;
