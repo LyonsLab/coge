@@ -39,7 +39,10 @@ In order for CoGe to function properly JavaScript must be enabled in your browse
 <script>
 jQuery(document).ready(function(){
     pageObj = new Object();
-    if (jQuery.browser.msie) {browserAlert()};
+
+    // Display alert if Internet Explorer
+    //if (jQuery.browser.msie) {browserAlert()}; // mdb removed 10/20/16
+
     setup_button_states();
 
     // Show indicator if not on main site
