@@ -1477,10 +1477,10 @@ h5 > small {
 }
 
 .coge-button {
-    padding: 0.125em 1em ; /* 2/16 = 0.125 */
+    /*padding: 0.125em 1em;*/ /* 2/16 = 0.125 */
     font-weight: 600;
     font-size: 0.875em;
-    line-height: 1.5;
+    line-height: 1.0;
     border: 1px solid #7adf39;
     background: #9ce76d;
     vertical-align: middle;
