@@ -67,7 +67,7 @@ class FtpSelect {
 				self.table.empty();
 				self.items.forEach(function(item) {
 					if (item.type == 'f')
-						self.table.row($('<span><span class="ui-icon ui-icon-document"></span>' + item.name + '</span>').click(function(){ self.on_file_click(item, self.options.username, self.options.password); return false; }));
+						self.table.row($('<span><span class="ui-icon ui-icon-document"></span>' + item.name + '</span>').click(function(){ self.on_file_click(item, self.options.username, self.options.password); return false; }), item.size, item.time);
 					else
 						self.table.row($('<span><span class="ui-icon ui-icon-folder-collapsed"></span>' + item.name + '/</span>').click(function(){ self.go(item.url); return false; }));
 				});
@@ -236,8 +236,8 @@ var coge = window.coge = (function(namespace) {
 						obj.parent().hide();
 				});
 			});
-			self.container.find('.fileselect-filter').bind('search', function() {
-				var search_term = self.container.find('.fileselect-filter').val();
+			self.container.find('.ftpselect-filter').bind('search', function() {
+				var search_term = self.container.find('.ftpselect-filter').val();
 				if (!search_term.length)
 					self.container.find('#ftp_table tr td:nth-child(1)').each(function() {
 						$(this).parent().show();
