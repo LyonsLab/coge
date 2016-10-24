@@ -68,6 +68,7 @@ our $node_types = CoGeX::node_types();
     get_user_table					=> \&get_user_table,
     get_group_table					=> \&get_group_table,
     get_total_table					=> \&get_total_table,
+    get_jobs_table					=> \&get_jobs_table,
     gen_tree_json					=> \&gen_tree_json, 
     get_total_queries				=> \&get_total_queries,
     get_uptime		                => \&get_uptime,
@@ -1416,7 +1417,7 @@ sub _get_counts_by_user {
 	my $child_type = shift;
 	my $join = shift;
 	my $where = shift;
-	my $select = 'SELECT parent_id,count(*) FROM user_connector JOIN ' . $join . ' ON ' . $join . '_id=child_id WHERE parent_type=5 AND child_type=' . $child_type . ' AND ' . $where . ' GROUP BY parent_id';
+	my $select = 'SELECT parent_id,FORMAT(COUNT(*), 0) FROM user_connector JOIN ' . $join . ' ON ' . $join . '_id=child_id WHERE parent_type=5 AND child_type=' . $child_type . ' AND ' . $where . ' GROUP BY parent_id';
 	my $rows = $db->storage->dbh->selectall_arrayref($select);
 	my %map = map { $_->[0] => $_->[1] } @$rows;
 	return \%map;
@@ -1480,7 +1481,7 @@ sub _get_counts_by_group {
 	my $child_type = shift;
 	my $join = shift;
 	my $where = shift;
-	my $select = 'SELECT parent_id,count(*) FROM user_connector JOIN ' . $join . ' ON ' . $join . '_id=child_id WHERE parent_type=6 AND child_type=' . $child_type . ' AND ' . $where . ' GROUP BY parent_id';
+	my $select = 'SELECT parent_id,FORMAT(COUNT(*), 0) FROM user_connector JOIN ' . $join . ' ON ' . $join . '_id=child_id WHERE parent_type=6 AND child_type=' . $child_type . ' AND ' . $where . ' GROUP BY parent_id';
 	my $rows = $db->storage->dbh->selectall_arrayref($select);
 	my %map = map { $_->[0] => $_->[1] } @$rows;
 	return \%map;
@@ -1522,7 +1523,7 @@ sub get_group_table {
 		my $num_genomes = $g->{$group_id};
 		my $num_experiments = $e->{$group_id};
 		my $num_notebooks = $n->{$group_id};
-		my $num_users = $db->storage->dbh->selectall_arrayref('SELECT count(*) FROM user_connector WHERE child_id=' . $group_id . ' AND parent_type=5 and child_type=6')->[0][0];
+		my $num_users = $db->storage->dbh->selectall_arrayref('SELECT FORMAT(COUNT(*), 0) FROM user_connector WHERE child_id=' . $group_id . ' AND parent_type=5 and child_type=6')->[0][0];
 		if ($num_genomes + $num_experiments + $num_notebooks > 0) {
 			push @data, [$group->[1] . ' (<a href="#" onclick="group_dialog(' . $group_id . ')">' . $group_id . '</a>)', $num_genomes, $num_experiments, $num_notebooks, $num_users];
 		}
@@ -1538,49 +1539,57 @@ sub get_group_table {
 }
 
 sub get_total_table {
-	my %opts       = @_;
-    my $filter = $opts{filter};
-
 	my @data;
 
-	my $total_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome WHERE deleted=0');
-	my $total_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment WHERE deleted=0');
-	my $total_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list WHERE deleted=0');
-	my $total_users = $db->storage->dbh->selectrow_array('SELECT count(*) FROM user');
-	my $total_groups = $db->storage->dbh->selectrow_array('SELECT count(*) FROM user_group WHERE deleted=0');
+	my $total_genomes = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM genome WHERE deleted=0');
+	my $total_experiments = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM experiment WHERE deleted=0');
+	my $total_notebooks = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM list WHERE deleted=0');
+	my $total_users = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM user');
+	my $total_groups = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM user_group WHERE deleted=0');
 	push @data, [undef, $total_genomes, $total_experiments, $total_notebooks, $total_users, $total_groups];
 
-	my $restricted_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome WHERE restricted=1');
-	my $restricted_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment WHERE restricted=1');
-	my $restricted_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list WHERE restricted=1');
+	my $restricted_genomes = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM genome WHERE restricted=1');
+	my $restricted_experiments = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM experiment WHERE restricted=1');
+	my $restricted_notebooks = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM list WHERE restricted=1');
 	push @data, ['restricted', $restricted_genomes, $restricted_experiments, $restricted_notebooks, undef, undef];
 	
-	my $deleted_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome WHERE deleted=1');
-	my $deleted_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment WHERE deleted=1');
-	my $deleted_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list WHERE deleted=1');
-	my $deleted_groups = $db->storage->dbh->selectrow_array('SELECT count(*) FROM user_group WHERE deleted=1');
+	my $deleted_genomes = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM genome WHERE deleted=1');
+	my $deleted_experiments = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM experiment WHERE deleted=1');
+	my $deleted_notebooks = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM list WHERE deleted=1');
+	my $deleted_groups = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM user_group WHERE deleted=1');
 	push @data, ['deleted', $deleted_genomes, $deleted_experiments, $deleted_notebooks, undef, $deleted_groups];
 	
-	my $public_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome WHERE restricted=0 AND deleted=0');
-	my $public_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment WHERE restricted=0 AND deleted=0');
-	my $public_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list WHERE restricted=0 AND deleted=0');
-	my $public_groups = $db->storage->dbh->selectrow_array('SELECT count(*) FROM user_group WHERE deleted=0');
+	my $public_genomes = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM genome WHERE restricted=0 AND deleted=0');
+	my $public_experiments = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM experiment WHERE restricted=0 AND deleted=0');
+	my $public_notebooks = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM list WHERE restricted=0 AND deleted=0');
+	my $public_groups = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM user_group WHERE deleted=0');
 	push @data, ['public', $public_genomes, $public_experiments, $public_notebooks, undef, $public_groups];
 	
-	my $owned_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM genome JOIN user_connector ON genome_id=child_id WHERE restricted=0 AND deleted=0 AND parent_type=5 AND child_type=2 AND role_id=2');
-	my $owned_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM experiment JOIN user_connector ON experiment_id=child_id WHERE restricted=0 AND deleted=0 AND parent_type=5 AND child_type=3 AND role_id=2');
-	my $owned_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM list JOIN user_connector ON list_id=child_id WHERE restricted=0 AND deleted=0 AND parent_type=5 AND child_type=1 AND role_id=2');
-	my $owned_groups = $db->storage->dbh->selectrow_array('SELECT count(*) FROM user_group JOIN user_connector ON user_group_id=child_id WHERE deleted=0 AND parent_type=5 AND child_type=6 AND user_connector.role_id=2');
+	my $owned_genomes = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM genome JOIN user_connector ON genome_id=child_id WHERE restricted=0 AND deleted=0 AND parent_type=5 AND child_type=2 AND role_id=2');
+	my $owned_experiments = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM experiment JOIN user_connector ON experiment_id=child_id WHERE restricted=0 AND deleted=0 AND parent_type=5 AND child_type=3 AND role_id=2');
+	my $owned_notebooks = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM list JOIN user_connector ON list_id=child_id WHERE restricted=0 AND deleted=0 AND parent_type=5 AND child_type=1 AND role_id=2');
+	my $owned_groups = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM user_group JOIN user_connector ON user_group_id=child_id WHERE deleted=0 AND parent_type=5 AND child_type=6 AND user_connector.role_id=2');
 	push @data, ['public (owned)', $owned_genomes, $owned_experiments, $owned_notebooks, undef, $owned_groups];
 	
-	my $shared_genomes = $db->storage->dbh->selectrow_array('SELECT count(*) FROM (SELECT 1 FROM genome JOIN user_connector ON genome_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=2 AND role_id!=2 GROUP BY genome_id) a');
-	my $shared_experiments = $db->storage->dbh->selectrow_array('SELECT count(*) FROM (SELECT 1 FROM experiment JOIN user_connector ON experiment_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=3 AND role_id!=2 GROUP BY experiment_id) a');
-	my $shared_notebooks = $db->storage->dbh->selectrow_array('SELECT count(*) FROM (SELECT 1 FROM list JOIN user_connector ON list_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=1 AND role_id!=2 GROUP BY list_id) a');
+	my $shared_genomes = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM (SELECT 1 FROM genome JOIN user_connector ON genome_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=2 AND role_id!=2 GROUP BY genome_id) a');
+	my $shared_experiments = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM (SELECT 1 FROM experiment JOIN user_connector ON experiment_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=3 AND role_id!=2 GROUP BY experiment_id) a');
+	my $shared_notebooks = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM (SELECT 1 FROM list JOIN user_connector ON list_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=1 AND role_id!=2 GROUP BY list_id) a');
 	push @data, ['restricted and shared', $shared_genomes, $shared_experiments, $shared_notebooks, undef, undef];
 
 	return encode_json(
 		{
 			data => \@data,
+			bPaginate => 0,
+		}
+	);
+}
+
+sub get_jobs_table {
+	my $data = $db->storage->dbh->selectall_arrayref("SELECT page,FORMAT(COUNT(*), 0) FROM log WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY page");
+
+	return encode_json(
+		{
+			data => $data,
 			bPaginate => 0,
 		}
 	);

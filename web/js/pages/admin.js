@@ -1744,16 +1744,22 @@ $.extend(ReportGrid.prototype, {
 		$('#report_filter').prop('disabled', true);
 		$('#histogram_button').prop('disabled', true);
 		switch (this.selection) {
-			case "user":
-				fname = 'get_user_table';
-				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
-					+ '<thead><tr><th>User Name</th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Total</th><th>Groups</th></tr></thead>'
-					+ '<tfoot><tr style="font-weight:bold"><td style="text-align:right">Totals:</td><td></td><td></td><td></td><td></td><td></td></tr></tfoot></table>');
-				break;
 			case "group":
 				fname = 'get_group_table';
 				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
 					+ '<thead><tr><th>Group Name</th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Total</th><th>Users</th></tr></thead>'
+					+ '<tfoot><tr style="font-weight:bold"><td style="text-align:right">Totals:</td><td></td><td></td><td></td><td></td><td></td></tr></tfoot></table>');
+				break;
+			case "jobs":
+				fname = 'get_jobs_table';
+				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
+					+ '<thead><tr><th>Job</th><th>Times Run</th></tr></thead>'
+					+ '<tfoot><tr style="font-weight:bold"><td style="text-align:right">Total:</td><td></td></tr></tfoot></table>');
+				break;
+			case "user":
+				fname = 'get_user_table';
+				$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
+					+ '<thead><tr><th>User Name</th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Total</th><th>Groups</th></tr></thead>'
 					+ '<tfoot><tr style="font-weight:bold"><td style="text-align:right">Totals:</td><td></td><td></td><td></td><td></td><td></td></tr></tfoot></table>');
 				break;
 			case "total":
@@ -1769,32 +1775,36 @@ $.extend(ReportGrid.prototype, {
 			},
 			success: function(data) {
 				$('#reports_loading').css('visibility', 'hidden');
-				json = JSON.parse(data);
-				var values = [];
-				var max_value = 0;
-				var min_value = Number.MAX_SAFE_INTEGER;
-				for(var i=0; i<json.data.length; i++) {
-					var total_items = 0;
-					for(var j=1; j<4; j++)
-						if (json.data[i][j]) {
-							var num = parseInt(json.data[i][j], 10);
-							total_items += num;
-						}
-					if (self.selection == 'total') {
-						json.data[i].push(json.data[i][5]);
-						json.data[i][5] = json.data[i][4];
-					} else
-						json.data[i].push(json.data[i][4]);
-					json.data[i][4] = total_items > 0 ? total_items : null;
-				}
+				var json = JSON.parse(data);
+				if (self.selection != 'jobs')
+					for (var i=0; i<json.data.length; i++) {
+						var total_items = 0;
+						for(var j=1; j<4; j++)
+							if (json.data[i][j]) {
+								var num = parseInt(json.data[i][j], 10);
+								total_items += num;
+							}
+						if (self.selection == 'total') {
+							json.data[i].push(json.data[i][5]);
+							json.data[i][5] = json.data[i][4];
+						} else
+							json.data[i].push(json.data[i][4]);
+						json.data[i][4] = total_items > 0 ? total_items : null;
+					}
 				self.data = json;
-				if (self.selection != "total")
+				if (self.selection == 'jobs') {
+					self.data.footerCallback = function ( row, data, start, end, display ) {
+						var api = this.api();
+						var total = api.column(1).data().reduce(function(a, b) { return b ? a + parseInt(b) : a; }, 0 );
+						$(api.column(1).footer()).html(total.toLocaleString());
+					};
+				} else if (self.selection != 'total')
 					self.data.footerCallback = function ( row, data, start, end, display ) {
 						var api = this.api();
 						var add_total = function(col) {
 							var total = api.column(col).data().reduce(function(a, b) { return b ? a + parseInt(b) : a; }, 0 );
 							if (total > 0)
-								$(api.column(col).footer()).html(total);
+								$(api.column(col).footer()).html(total.toLocaleString());
 						}
 						add_total(1);
 						add_total(2);
@@ -1804,7 +1814,7 @@ $.extend(ReportGrid.prototype, {
 					};
 				$('#' + element + '_table').dataTable(self.data);
 				$('#' + element).show();
-				if (self.selection != "total") {
+				if (self.selection == 'user' || self.selection == 'group') {
 					$('#histogram_button').prop('disabled', false);
 					$('#report_filter').prop('disabled', false);
 				}
@@ -1822,6 +1832,8 @@ function change_report(index) {
 		case 1: reports_grid.selection = "user";
 			break;
 		case 2: reports_grid.selection = "group";
+			break;
+		case 3: reports_grid.selection = "jobs";
 			break;
 	}
 	reports_grid.initialize();
