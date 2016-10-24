@@ -48,11 +48,12 @@ class Table {
 }
 // TODO: generalize this for use with irods, add toolbar construction here, remove from template
 class FtpSelect {
-    constructor(table, path_div, on_file_click, options) {
+    constructor(table, path_div, toolbar, on_file_click, options) {
 		this.table = new Table(table, {
 			hover: [function() { $(this).css({"cursor":"pointer", "background-color":"greenyellow"}); }, function() { $(this).css("background-color", "white"); }]
 		});
 		this.path_div = path_div;
+		this.toolbar = toolbar;
         this.on_file_click = on_file_click;
         this.options = options || {};
     }
@@ -65,25 +66,30 @@ class FtpSelect {
 		});
 	}
 	go(url) {
-        if (!url.endsWith('/'))
-            url += '/';
         this.url = url;
-		$('#ftp_list_head').css('display', 'block');
-		this.path_div.html(url);
+		if (this.path_div)
+			this.path_div.html(url);
         this.table.busy();
         let self = this;
-        coge.services.ftp_list(url, true).done(function(result) {
-			let error = false;
+		let full_url = this.options.username ? 'ftp://' + this.options.username + ':' + this.options.password + '@' + url.substring(6) : url;
+        coge.services.ftp_list(full_url, true).done(function(result) {
+			self.table.empty();
             self.items = result.items;
             if (!self.items || self.items.length == 0) {
+				if (self.toolbar)
+					self.toolbar.css('display', 'none');
+				if (self.path_div)
+					self.path_div.empty();
                 alert("Location not found.");
-                error = true;;
-            } else if (self.items.length == 1 && !self.items[0].name) {
-                self.on_file_click(self.items[0], self.options.username, self.options.password);
-                error = true;
-            }
-			if (!error) {
-				self.table.empty();
+			} else if (self.items.length == 1 && !self.items[0].type) {
+				if (self.toolbar)
+					self.toolbar.css('display', 'none');
+				if (self.path_div)
+					self.path_div.empty();
+				self.on_file_click(self.items[0], self.options.username, self.options.password);
+			} else {
+				if (self.toolbar)
+					self.toolbar.css('display', 'block');
 				self.items.forEach(function(item) {
 					if (item.type == 'f')
 						self.table.row($('<span><span class="ui-icon ui-icon-document"></span>' + item.name + '</span>').click(function(){ self.on_file_click(item, self.options.username, self.options.password); return false; }), item.size, item.time);
@@ -228,7 +234,7 @@ var coge = window.coge = (function(namespace) {
 					self.container.find('#ftp_get_button').addClass('ui-state-disabled');
 				}
 			});
-			self._ftp_select = new FtpSelect(self.container.find('#ftp_table'), self.container.find('#ftp_current_path'), this._add_ftp_file.bind(this), {
+			self._ftp_select = new FtpSelect(self.container.find('#ftp_table'), self.container.find('#ftp_current_path'), self.container.find('#ftp_list_head'), this._add_ftp_file.bind(this), {
 				on_go: function() {
 					$('#ftp_get_button').removeClass('ui-state-disabled');
 					$('.ftpselect-filter').val('');

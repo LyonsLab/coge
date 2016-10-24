@@ -1316,7 +1316,7 @@ sub ftp_get_path { # mdb 8/24/15 copied from LoadExperiment.pl
         }
     }
     elsif ($size) { # a single file
-        $url = chop $url if substr($url, -1) eq '/';
+        $url = substr($url, 0, -1) if substr($url, -1) eq '/';
         my ($filename) = $url =~ /([^\/]+?)(?:\?|$)/;
         push @files, { name => $filename, url => $url };
     }
