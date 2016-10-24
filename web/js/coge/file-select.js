@@ -17,6 +17,15 @@ class Table {
 	empty() {
 		this.table.empty();
 	}
+	filter(text, col) {
+		text = text.toLowerCase();
+		this.rows().forEach(function(row){
+			if ($(row.children[col]).text().toLowerCase().indexOf(text) >= 0)
+				$(row).show();
+			else
+				$(row).hide();
+		});
+	}
 	row(...cells) {
 		let row = $('<tr></tr>').appendTo(this.table);
 		if (this.options.hover)
@@ -28,7 +37,16 @@ class Table {
 				$('<td></td>').html(cell).appendTo($(row));
 		});
 	}
+	rows() {
+		return Array.from(this.table[0].firstChild.children);
+	}
+	show_all_rows() {
+		this.rows().forEach(function(row){
+			$(row).show();
+		});
+	}
 }
+// TODO: generalize this for use with irods, add toolbar construction here, remove from template
 class FtpSelect {
     constructor(table, path_div, on_file_click, options) {
 		this.table = new Table(table, {
@@ -40,12 +58,13 @@ class FtpSelect {
     }
 	click_all_files() {
 		let self = this;
-		this.items.forEach(function(item){
-			if (item.type == 'f')
+		let rows = this.table.rows();
+		this.items.forEach(function(item,index) {
+			if (item.type == 'f' && $(rows[index]).is(":visible"))
 				self.on_file_click(item, self.options.username, self.options.password);
 		});
 	}
-    go(url) {
+	go(url) {
         if (!url.endsWith('/'))
             url += '/';
         this.url = url;
@@ -212,6 +231,7 @@ var coge = window.coge = (function(namespace) {
 			self._ftp_select = new FtpSelect(self.container.find('#ftp_table'), self.container.find('#ftp_current_path'), this._add_ftp_file.bind(this), {
 				on_go: function() {
 					$('#ftp_get_button').removeClass('ui-state-disabled');
+					$('.ftpselect-filter').val('');
 				}
 			});
 			self.container.find('.ftpselect-getall').click(function() {
@@ -227,21 +247,13 @@ var coge = window.coge = (function(namespace) {
 				self._ftp_select.go_up();
 			});
 			self.container.find('.ftpselect-filter').unbind().bind('keyup', function() {
-				var search_term = self.container.find('.ftpselect-filter').val();
-				self.container.find('#ftp_table tr td:nth-child(1)').each(function() {
-					var obj = $(this);
-					if (obj.text().toLowerCase().indexOf(search_term.toLowerCase()) >= 0)
-						obj.parent().show();
-					else
-						obj.parent().hide();
-				});
+				let search_term = self.container.find('.ftpselect-filter').val();
+				self._ftp_select.table.filter(search_term, 0);
 			});
 			self.container.find('.ftpselect-filter').bind('search', function() {
-				var search_term = self.container.find('.ftpselect-filter').val();
+				let search_term = self.container.find('.ftpselect-filter').val();
 				if (!search_term.length)
-					self.container.find('#ftp_table tr td:nth-child(1)').each(function() {
-						$(this).parent().show();
-					});
+					self._ftp_select.table.show_all_rows();
 			});
 
 			self.container.find('#input_accn').bind('keyup focus click', function() {
@@ -632,9 +644,10 @@ var coge = window.coge = (function(namespace) {
 					}
 	
 					var count = 0;
+					let rows = Array.from($('#ids_table')[0].firstChild.children);
 					result.items.forEach(
-						function(obj) {
-							if (obj.type == 'file') {
+						function(obj, index) {
+							if (obj.type == 'file' && $(rows[index]).is(":visible")) {
 								setTimeout(
 									function() {
 										if ( self._add_file_to_list(obj.name, 'irods://'+obj.path) ) {
