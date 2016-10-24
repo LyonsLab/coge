@@ -879,35 +879,19 @@ sub get_chr_info {
     
     # Generate html for launch & seq retrieval buttons
     $gid = 0 unless defined $gid;
-    my $viewer;
+    my ($viewer, $seq_grab);
     if ( defined $chr ) {
-        $viewer .= qq{<div class="coge-table-header">Genome Viewer</div>}
-         . qq{<table class="small ui-corner-all ui-widget-content">}
-         . qq{<tr><td nowrap>Start: </td>}
-         . qq{<td><input type="text" size=10 value="20000" id="x">}
-         #. qq{<tr><td >Zoom level:<td><input type = "text" size=10 value ="6" id = "z">}
-         . qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_viewer()">}
-         . qq{<span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>}
-         . qq{</table>};
-    }
-    my $seq_grab;
-    if ( defined $chr ) {
-        $seq_grab .= qq{<div class="coge-table-header">Genomic Sequence Retrieval</div>}
-         . qq{<table class=\"small ui-corner-all ui-widget-content padded\">}
-         . qq{<tr><td>Start: }
-         . qq{<td><input type="text" size=10 value="1" id="start">}
-         . qq{End: <input type="text" size=10 value="100000" id="stop">}
-         . qq{<tr><td colspan=2>}
-         . qq{<span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left' onClick="launch_seqview()">}
-         . qq{<span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>}
-         . qq{</table>};
+        $viewer .=
+           qq{Start: <input type="text" size=10 value="20000" id="x">}
+         #. qq{Zoom level: <input type = "text" size=10 value ="6" id = "z">}
+         . qq{&nbsp;<span class='ui-button ui-corner-all coge-button' onClick="launch_viewer()">Launch Genome Viewer</span>};
+
+        $seq_grab .=
+           qq{Start: <input type="text" size=10 value="1" id="start">}
+         . qq{&nbsp;End: <input type="text" size=10 value="100000" id="stop">}
+         . qq{&nbsp;<span class='ui-button ui-corner-all coge-button' onClick="launch_seqview()">Get Sequence</span>};
     }
 
-#    print STDERR Dumper {
-#        chr_info => $html,
-#        viewer => $viewer,
-#        seqview => $seq_grab
-#    }, "\n";
     return $html, $viewer, $seq_grab if ($output eq 'html');
     return encode_json({
         chr_info => $html,
