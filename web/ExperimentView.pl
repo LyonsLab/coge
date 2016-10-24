@@ -325,7 +325,7 @@ sub get_annotations {
     }
 
     if ($user_can_edit) {
-        $html .= qq{<div class="padded"><span onClick="add_annotation_dialog();" class='ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left'><span class="ui-icon ui-icon-plus"></span>Add</span></div>};
+        $html .= qq{<div class="padded"><span onClick="add_annotation_dialog();" class='ui-button ui-corner-all coge-button'>Add</span></div>};
     }
 
     return $html;
