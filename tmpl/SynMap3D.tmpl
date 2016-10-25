@@ -240,7 +240,7 @@
                 For more help, see the <a target="_blank" href="https://genomevolution.org/wiki/index.php/SynMap3D">SynMap3D Wiki</a>
             </div><br>
             <input type="checkbox" /> <span class="small">Don't show this message again</span>
-            <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) $.cookie('instruct_synmap3d','true', {expires:10000});$(this).parent('div').hide();" class="r ui-button ui-corner-all">OK, got it!</span>
+            <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) Cookies.set('instruct_synmap3d','true', {expires:10000});$(this).parent('div').hide();" class="r ui-button ui-corner-all">OK, got it!</span>
 
 
         </div>
