@@ -58,6 +58,10 @@ a:hover {
     color: gray;
 }
 
+.coge-nowrap {
+    white-space: nowrap;
+}
+
 .coge-certified-icon {
     color: white;
     background-color: #e5c100;
@@ -1056,6 +1060,10 @@ li {
     padding-top: 0.625em;
 }
 
+.coge-padded-bottom {
+    padding-bottom: 0.625em;
+}
+
 .coge-padded-left {
     padding-left: 0.625em;
 }
@@ -1473,85 +1481,90 @@ h5 > small {
 }
 
 .coge-buttonset .ui-button {
-    margin-left: 5px;
+    margin-right: 5px;
 }
 
 .coge-button {
-    /*padding: 0.125em 1em;*/ /* 2/16 = 0.125 */
     font-weight: 600;
     font-size: 0.875em;
     line-height: 1.0;
-    border: 1px solid #7adf39;
+    border: 1px solid #9ce76d;
     background: #9ce76d;
     vertical-align: middle;
     min-height: 1em;
 }
 
 .coge-button-sm {
-    padding: 0.125em 0.75em ; /* 2/16 = 0.125 */
     font-weight: 600;
     font-size: 0.75em;
-    line-height: 1.5;
-    border: 1px solid #7adf39;
+    line-height: 1.0;
+    border: 1px solid #9ce76d;
     background: #9ce76d;
     vertical-align: middle;
-    min-height: 1em;
+    min-height: 0.75em;
 }
 
 .coge-button-lg {
-    font-size: 1em; /* 20/16 = 1.25 */
     font-weight: 600;
-    padding: 0.125em 1.125em ; /* 2/16 = 0.125 18/16 = 1.125 */
-    line-height: 1.5;
-    border: 1px solid #7adf39;
+    font-size: 1em;
+    line-height: 1.0;
+    border: 1px solid #9ce76d;
     background: #9ce76d;
     vertical-align: middle;
     min-height: 1em;
 }
 
 .coge-button-left {
-    padding-left: 2em;
+    padding-left: 0.5em;
 }
 
 .coge-button-right {
-    padding-right: 2em;
+    padding-right: 0.5em;
 }
 
 .coge-button.ui-state-hover,
 .coge-button-lg.ui-state-hover,
 .coge-button-sm.ui-state-hover {
-    border-color: #55ae1c;
-    background: #65d022;
+    border: 1px solid #65d022 !important;
+    background: #65d022 !important;
     outline: none;
+    color: black;
+    font-weight: 600;
 }
 
 .coge-button.ui-state-active,
 .coge-button-lg.ui-state-active,
 .coge-button-sm.ui-state-active {
-    border-color: #55ae1c;
-    background: #65d022;
+    border: 1px solid #9ce76d !important;
+    background: #9ce76d !important;
     outline: none;
+    color: black !important;
+    font-weight: 600 !important;
 }
 
 .ui-button-go {
     background: #ff7979;
-    border-color: #ff6666;
+    border: 1px solid #ff7979;
 }
 
 .coge-button.ui-button-go.ui-state-hover,
 .coge-button-lg.ui-button-go.ui-state-hover,
 .coge-button-sm.ui-button-go.ui-state-hover {
-    border-color: #ff1818;
-    background: #ff5252;
+    border: 1px solid #ff5252 !important;
+    background: #ff5252 !important;
     outline: none;
+    color: black;
+    font-weight: 600;
 }
 
 .coge-button.ui-button-go.ui-state-active,
 .coge-button-lg.ui-button-go.ui-state-active,
 .coge-button-sm.ui-button-go.ui-state-active {
-    border-color: #ff1818;
-    background: #ff5252;
+    border: 1px solid #ff7979 !important;
+    background: #ff7979 !important;
     outline: none;
+    color: black;
+    font-weight: 600;
 }
 
 .coge-icon {
