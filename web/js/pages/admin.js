@@ -29,7 +29,7 @@ $(function () {
 	
 	$( "#tabs" ).tabs({
 		select: function(event, ui) {
-            current_tab = ui.index;
+            current_tab = ui.newTab.index();
             schedule_update(5000);
         },
 		show: function(event, ui) {
