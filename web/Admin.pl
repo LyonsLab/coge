@@ -69,6 +69,7 @@ our $node_types = CoGeX::node_types();
     get_group_table					=> \&get_group_table,
     get_total_table					=> \&get_total_table,
     get_jobs_table					=> \&get_jobs_table,
+    get_user_jobs_table				=> \&get_user_jobs_table,
     gen_tree_json					=> \&gen_tree_json, 
     get_total_queries				=> \&get_total_queries,
     get_uptime		                => \&get_uptime,
@@ -1576,23 +1577,53 @@ sub get_total_table {
 	my $shared_notebooks = $db->storage->dbh->selectrow_array('SELECT FORMAT(COUNT(*), 0) FROM (SELECT 1 FROM list JOIN user_connector ON list_id=child_id WHERE deleted=0 AND restricted=1 AND parent_type=5 AND child_type=1 AND role_id!=2 GROUP BY list_id) a');
 	push @data, ['restricted and shared', $shared_genomes, $shared_experiments, $shared_notebooks, undef, undef];
 
-	return encode_json(
-		{
-			data => \@data,
-			bPaginate => 0,
-		}
-	);
+	return encode_json({
+		data => \@data,
+		bPaginate => 0,
+	});
 }
 
 sub get_jobs_table {
-	my $data = $db->storage->dbh->selectall_arrayref("SELECT page,FORMAT(COUNT(*), 0) FROM log WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY page");
+	return encode_json({
+		data => $db->storage->dbh->selectall_arrayref(
+			"SELECT page,FORMAT(COUNT(*), 0) FROM log WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY page"
+		),
+		bPaginate => 0
+	});
+}
 
-	return encode_json(
-		{
-			data => $data,
-			bPaginate => 0,
-		}
+sub add_row {
+	my ($user_name, $counts) = @_;
+	my @jobs = ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D');
+	my @row;
+	push @row, $user_name;
+	foreach (@jobs) {
+		push @row, $counts->{$_};
+	}
+	return \@row;
+}
+
+sub get_user_jobs_table {
+	my @data;
+	my %counts;
+	my $user_jobs = $db->storage->dbh->selectall_arrayref(
+		"SELECT user_name,page,FORMAT(COUNT(*), 0) FROM user JOIN log ON user.user_id=log.user_id WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY user_name,page"
 	);
+	my $user_name;
+	foreach (@$user_jobs) {
+		if ($user_name ne $_->[0]) {
+			push @data, add_row($user_name, \%counts);
+			$user_name = $_->[0];
+			%counts = ();
+		}
+		$counts{$_->[1]} = $_->[2];
+	}
+	push @data, add_row($user_name, \%counts) if $user_name;
+
+	return encode_json({
+		data => \@data,
+		bPaginate => 0
+	});
 }
 
 ####

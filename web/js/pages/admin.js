@@ -1738,6 +1738,7 @@ $.extend(ReportGrid.prototype, {
 		var self = this;
 		var element = this.elementId;
 		var fname;
+		let jobs = ['API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D'];
 		$('#' + element).hide();
 		$('#reports_loading').css('visibility', 'visible');
 		$('#report_type').prop('disabled', true);
@@ -1762,6 +1763,19 @@ $.extend(ReportGrid.prototype, {
 					+ '<thead><tr><th>User Name</th><th>Genomes</th><th>Experiments</th><th>Notebooks</th><th>Total</th><th>Groups</th></tr></thead>'
 					+ '<tfoot><tr style="font-weight:bold"><td style="text-align:right">Totals:</td><td></td><td></td><td></td><td></td><td></td></tr></tfoot></table>');
 				break;
+			case "user jobs":
+				fname = 'get_user_jobs_table';
+				let html = '<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe"><thead><tr><th>User Name</th>';
+				jobs.forEach(function(job){
+					html += '<th>' + job + '</th>';
+				});
+				html += '<th>Total</th></tr></thead><tfoot><tr style="font-weight:bold"><td style="text-align:right">Total:</td>';
+				jobs.forEach(function(job){
+					html += '<td></td>';
+				});
+				html += '<td></td></tr></tfoot></table>';
+				$('#' + element).html(html);
+				break;
 			case "total":
 				fname = 'get_total_table';
 					$('#' + element).html('<table id="' + element + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border stripe">'
@@ -1778,8 +1792,9 @@ $.extend(ReportGrid.prototype, {
 				var json = JSON.parse(data);
 				if (self.selection != 'jobs')
 					for (var i=0; i<json.data.length; i++) {
+						let num_cols = self.selection == 'user jobs' ? jobs.length : 3;
 						var total_items = 0;
-						for(var j=1; j<4; j++)
+						for(var j=1; j<=num_cols; j++)
 							if (json.data[i][j]) {
 								var num = parseInt(json.data[i][j], 10);
 								total_items += num;
@@ -1788,33 +1803,27 @@ $.extend(ReportGrid.prototype, {
 							json.data[i].push(json.data[i][5]);
 							json.data[i][5] = json.data[i][4];
 						} else
-							json.data[i].push(json.data[i][4]);
-						json.data[i][4] = total_items > 0 ? total_items : null;
+							json.data[i].push(json.data[i][num_cols + 1]);
+						json.data[i][num_cols + 1] = total_items > 0 ? total_items : null;
 					}
 				self.data = json;
-				if (self.selection == 'jobs') {
-					self.data.footerCallback = function ( row, data, start, end, display ) {
-						var api = this.api();
-						var total = api.column(1).data().reduce(function(a, b) { return b ? a + parseInt(b) : a; }, 0 );
-						$(api.column(1).footer()).html(total.toLocaleString());
-					};
-				} else if (self.selection != 'total')
+				if (self.selection != 'total')
 					self.data.footerCallback = function ( row, data, start, end, display ) {
 						var api = this.api();
 						var add_total = function(col) {
-							var total = api.column(col).data().reduce(function(a, b) { return b ? a + parseInt(b) : a; }, 0 );
+							var total = api.column(col).data().reduce(function(a, b) { return b ? typeof b === 'number' ? a + b : a + parseInt(b.replace(',', '')) : a; }, 0 );
 							if (total > 0)
 								$(api.column(col).footer()).html(total.toLocaleString());
 						}
-						add_total(1);
-						add_total(2);
-						add_total(3);
-						add_total(4);
-						add_total(5);
+						let num_cols = self.selection == 'jobs' ? 1 : self.selection == 'user jobs' ? jobs.length + 1 : 5;
+						for (let i=1; i<=num_cols; i++)
+							add_total(i);
 					};
-				$('#' + element + '_table').dataTable(self.data);
+				self.data.scrollY = window.innerHeight - 350;
+				self.data.scrollCollapse = true;
 				$('#' + element).show();
-				if (self.selection == 'user' || self.selection == 'group') {
+				$('#' + element + '_table').dataTable(self.data);
+				if (self.selection == 'user' || self.selection == 'group' || self.selection == 'user jobs') {
 					$('#histogram_button').prop('disabled', false);
 					$('#report_filter').prop('disabled', false);
 				}
@@ -1825,17 +1834,17 @@ $.extend(ReportGrid.prototype, {
 	}
 });
 
-function change_report(index) {
-	switch (index) {
-		case 0: reports_grid.selection = "total";
-			break;
-		case 1: reports_grid.selection = "user";
-			break;
-		case 2: reports_grid.selection = "group";
-			break;
-		case 3: reports_grid.selection = "jobs";
-			break;
-	}
+function change_report(report) {
+	if (report == 'Data Summary')
+		reports_grid.selection = 'total';
+	else if (report == 'Jobs Summary')
+		reports_grid.selection = 'jobs';
+	else if (report == 'Groups')
+		reports_grid.selection = 'group';
+	else if (report == 'Users Data')
+		reports_grid.selection = 'user';
+	else if (report == 'Users Jobs')
+		reports_grid.selection = 'user jobs';
 	reports_grid.initialize();
 }
 

@@ -257,11 +257,12 @@ table.dataTable td {
 	<div class="small" id="tabs-5">
 		<div>
 			<span>Report: </span>
-			<select id="report_type" style="margin-right:20px;" onchange="change_report(this.selectedIndex)">
-				<option value="Total" selected>Total</option>
-				<option value="By User">By User</option>
-				<option value="By Group">By Group</option>
-				<option value="Jobs">Jobs</option>
+			<select id="report_type" style="margin-right:20px;" onchange="change_report(this.options[this.selectedIndex].value)">
+				<option value="Data Summary" selected>Data Summary</option>
+				<option value="Jobs Summary">Jobs Summary</option>
+				<option value="Users Data">Users Data</option>
+				<option value="Users Jobs">Users Jobs</option>
+				<option value="Groups">Groups</option>
 			</select>
 			<span>Filter: </span>
 			<select id="report_filter" style="margin-right:20px;" onchange="filter_report(this.selectedIndex)">
