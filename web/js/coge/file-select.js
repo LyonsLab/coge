@@ -12,7 +12,7 @@ class Table {
 	}
 	busy() {
 		this.table.empty();
-		this.row('<img src="picts/ajax-loader.gif" style="width:16px;"/>');
+		this.row(['<img src="picts/ajax-loader.gif" style="width:16px;"/>']);
 	}
 	empty() {
 		this.table.empty();
@@ -26,8 +26,8 @@ class Table {
 				$(row).hide();
 		});
 	}
-	row(...cells) {
-		let row = $('<tr></tr>').appendTo(this.table);
+	row(cells, attributes) {
+		let row = $('<tr></tr>', attributes).appendTo(this.table);
 		if (this.options.hover)
 			row.hover(this.options.hover[0], this.options.hover[1]);
 		cells.forEach(function(cell) {
@@ -92,9 +92,9 @@ class FtpSelect {
 					self.toolbar.css('display', 'block');
 				self.items.forEach(function(item) {
 					if (item.type == 'f')
-						self.table.row($('<span><span class="ui-icon ui-icon-document"></span>' + item.name + '</span>').click(function(){ self.on_file_click(item, self.options.username, self.options.password); return false; }), item.size, item.time);
+						self.table.row([$('<span><span class="ui-icon ui-icon-document"></span>' + item.name + '</span>'), item.size, item.time], { click: function(){self.on_file_click(item, self.options.username, self.options.password); return false;} });
 					else
-						self.table.row($('<span><span class="ui-icon ui-icon-folder-collapsed"></span>' + item.name + '/</span>').click(function(){ self.go(item.url); return false; }));
+						self.table.row([$('<span><span class="ui-icon ui-icon-folder-collapsed"></span>' + item.name + '/</span>')], { click: function(){self.go(item.url); return false;} });
 				});
 			}
 			if (self.options.on_go)
