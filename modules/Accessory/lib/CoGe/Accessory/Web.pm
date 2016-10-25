@@ -1311,6 +1311,7 @@ sub ftp_get_path { # mdb 8/24/15 copied from LoadExperiment.pl
         foreach (@$dir) {
             my ( $filename, $filetype, $filesize, $filetime, $filemode ) = @$_;
             if ( $opts{dirs} || $filetype eq 'f' ) {
+                $url .= '/' if substr($url, -1) ne '/';
                 push @files, { mode => $filemode, name => $filename, size => $filesize, time => strftime('%F.%R', localtime($filetime)), type => $filetype, url => $url . $filename };
             }
         }
