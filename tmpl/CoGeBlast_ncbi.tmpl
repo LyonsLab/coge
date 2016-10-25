@@ -12,14 +12,14 @@
             <table class="ui-widget-content ui-corner-all small">
             <tr>
                 <td valign="top">
-                <label><input id="ncbi_radio" type="radio" name="ncbiblast" value="ncbi_blast_type_n" checked="" onClick="get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi');">Nucleotide Sequence</label>
+                <label><input id="ncbi_radio" type="radio" name="ncbiblast" value="ncbi_blast_type_n" checked="" onClick="get_seq('ncbi_radio'); blast_param_on_select('ncbi_radio','ncbi');">Nucleotide Sequence</label>
                 <select name='ncbi_blasttype' id='ncbi_blast_type_n' onChange="blast_param_on_select('ncbi_radio','ncbi')">
                     <option value="blastn">blastn</option>
                     <option value="blastx">blastx</option>
                     <option value="tblastx">tblastx</option>
                 </select>
                 <br>
-                <label><input id="ncbi_radio" type="radio" name="ncbiblast" value="ncbi_blast_type_p" onClick="get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi')">Protein Sequence</label>
+                <label><input id="ncbi_radio" type="radio" name="ncbiblast" value="ncbi_blast_type_p" onClick="get_seq('ncbi_radio'); blast_param_on_select('ncbi_radio','ncbi')">Protein Sequence</label>
                 <select name="ncbi_blasttype" id="ncbi_blast_type_p" onChange="blast_param_on_select('ncbi_radio','ncbi')">
                     <option value="blastp">blastp</option>
                     <option value="tblastn">tblastn</option>
