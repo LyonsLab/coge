@@ -244,9 +244,9 @@ function search_bar(div_id){
 	side(s) of the name.-->
        <TR>
          <TD nowrap>
-          Annotation:
-         <tD nowrap>
-          <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="50" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
+          Annotation:</TD>
+         <TD nowrap>
+          <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="50" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/></TD></TR>
 <!--	Add wildcard to <select id="feat_anno_wild" >
 	<option>neither</option>
 	<option>left</option>
@@ -256,16 +256,17 @@ function search_bar(div_id){
 	side(s) of the annotation.
 	<tr><td><td><span class=small>Note: wildcards may slow search substantially</span>-->
         <TR>
-	 <tD nowrap>
+	 <td nowrap>
           Type:
-         <TD><div id=search_type><TMPL_VAR NAME=FEAT_TYPE></div>
+         <TD><div id=search_type><TMPL_VAR NAME=FEAT_TYPE></div></TD></TR>
         <TR>
-	 <tD valign="top" nowrap>
+	 <td valign="top" nowrap>
           Organism:
          <TD>
          Name: <input type="text" size=11 onFocus="search_bar('org_name')" style="font-style:italic" value="Search" name="org_name" id="org_name" onKeyUp='timing("org_name");'><br>
 	 Description: <input type="text" size=11 value="Search" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'>
-	  <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
+	  <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV></TD></TR>
+    <tr><td>&nbsp;</td></tr>
         <tr>
 	<td><span class="ui-button ui-button-go ui-corner-all coge-button-lg" onclick="search_chain(1)">Search</span>
 	<td align=right><span class="ui-button ui-corner-all coge-button-lg" onclick="$('#feat_list').dialog('open');">Feature List</span>
@@ -306,12 +307,13 @@ function search_bar(div_id){
               <SELECT id="featlist_choice" SIZE="10" MULTIPLE onchange="get_anno(['args__featlist_choice','featlist_choice'],[show_anno])">
               <option id=blank value=null>No Feature Selected</option>
               </SELECT>
- <br>
-    <span class="ui-button ui-corner-all" id=send onClick="$('#featlist_choice').sortSelect();">Sort List Alphabetically</span><br><br>
-    <span class="ui-button ui-corner-all" id=send onClick="send_to_FeatList()">Create Feature List</span><br><br>
-    <span class="ui-button ui-corner-all" id=add_all onClick="$('#add_all').hide();$('#add_all_search').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >'); cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">Add All Features</SPAN><br><br>
-      <span class="ui-button ui-corner-all" id=remove onClick="$('#'+$('#featlist_choice').val()).remove();counting();">Remove</span><br><br>
-    <span class="ui-button ui-corner-all" id=clear onClick="clear_feat_list()">Clear</span><br>
+    <br><br>
+    <span class="ui-button ui-corner-all coge-button-sm" id="send" onClick="$('#featlist_choice').sortSelect();">Sort List Alphabetically</span><br><br>
+    <span class="ui-button ui-corner-all coge-button-sm" id="send" onClick="send_to_FeatList()">Create Feature List</span><br><br>
+    <span class="ui-button ui-corner-all coge-button-sm" id="add_all" onClick="$('#add_all').hide();$('#add_all_search').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >'); cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">Add All Features</SPAN><br><br>
+    <span class="ui-button ui-corner-all coge-button-sm" id="remove" onClick="$('#'+$('#featlist_choice').val()).remove();counting();">Remove</span><br><br>
+    <span class="ui-button ui-corner-all coge-button-sm" id="clear" onClick="clear_feat_list()">Clear</span>
+    <br><br>
 
-    <div id=add_all_search></div>
+    <div id="add_all_search"></div>
 </div>
