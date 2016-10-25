@@ -166,6 +166,10 @@ div.panel {
   padding: 5px;
 }
 
+select {
+    font-size: 0.85em !important;
+}
+
 .noselect {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
