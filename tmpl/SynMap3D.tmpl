@@ -374,7 +374,6 @@
     <div style="clear:both"></div>
 </div><br>
 
-
 <div id="wizard-container"></div>
 
 <!-- Step Templates-->
@@ -533,7 +532,6 @@
 	</div>	
 </script>
 
-
 <script id="confirm-template" type="text/template">
     <div class="step info">
         <h3>Genomes</h3>
@@ -544,16 +542,10 @@
 </script>
 
 <!-- Alignment Templates -->
-
-
 <TMPL_INCLUDE NAME="widgets/Splash.tmpl">
-
-<TMPL_INCLUDE NAME='widgets/pipeline-options.tmpl'> 
-
+<TMPL_INCLUDE NAME='widgets/pipeline-options.tmpl'>
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
-
 <TMPL_INCLUDE NAME="widgets/FileSelect.tmpl">
-
 <TMPL_INCLUDE NAME="widgets/Wizard.tmpl">
 
 <script type="text/javascript">
@@ -661,13 +653,11 @@ $(function() {
 <script type="text/javascript" src="js/syn3d/three-77.min.js"></script>
 <script type="text/javascript" src="js/syn3d/threex.domevent.js"></script>
 <script type="text/javascript" src="js/syn3d/modified_FlatOrbitControls.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+<script type="text/javascript" src="js/syn3d/WebVR_modified.js"></script>
+<script type="text/javascript" src="js/syn3d/VREffect_modified.js"></script>
+<script type="text/javascript" src="js/vendor/d3/d3.min.js"></script>
 <script type="text/javascript" src="js/vendor/d3-tip/index.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/lodash/3.10.1/lodash.min.js"></script>
-
-<script src="js/syn3d/WebVR_modified.js"></script>
-<script src="js/syn3d/VREffect_modified.js"></script>
-
+<script type="text/javascript" src="js/vendor/lodash/dist/lodash.min.js"></script>
 
 <!-- CoGe Utilities -->
 <script type="text/javascript" src="js/coge/utils.js"></script>
@@ -676,7 +666,5 @@ $(function() {
 <script type="text/javascript" src="js/coge/wizard.js"></script>
 <script type="text/javascript" src="js/coge/file-select.js"></script>
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
-
-
 
 </TMPL_IF> <!-- MAIN -->
