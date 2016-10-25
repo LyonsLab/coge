@@ -227,7 +227,7 @@
                 If you would prefer to revert to the orignal SynMap, select the "Legacy Version" tab at the top of the page. For more help, see the <a target="_blank" href="https://genomevolution.org/wiki/index.php/SynMap2">SynMap Wiki</a>
             </div><br>
             <input type="checkbox" /> <span class="small">Don't show this message again</span>
-            <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) $.cookie('instruct_synmap','true', {expires:10000});$(this).parent('div').hide();" class="r ui-button ui-corner-all">OK, got it!</span>
+            <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) Cookies.set('instruct_synmap','true', {expires:10000});$(this).parent('div').hide();" class="r ui-button ui-corner-all">OK, got it!</span>
         </div>
     </div>
 
@@ -246,7 +246,7 @@ function show_vis2() {
                 genome_x: { name: '<TMPL_VAR NAME=xorg_name>', id: '<TMPL_VAR NAME=dsgid1>', chromosomes: <TMPL_VAR NAME=chromosomes1>},
                 genome_y: { name: '<TMPL_VAR NAME=yorg_name>', id: '<TMPL_VAR NAME=dsgid2>', chromosomes: <TMPL_VAR NAME=chromosomes2>}
             });
-    if (!$.cookie("instruct_synmap")) { $("#instruct").removeClass('hidden') };
+    if (!Cookies.get("instruct_synmap")) { $("#instruct").removeClass('hidden') };
     sm2_load = true;
 }
 

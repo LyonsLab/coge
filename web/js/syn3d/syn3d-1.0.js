@@ -1335,7 +1335,7 @@ $(document).ready( function() {
             postTiny("tiny", final_experiment.tiny_url);
 
             // If no cookie to hide it, render an instruction pop-up.
-            if (!$.cookie("instruct_synmap3d")) {
+            if (!Cookies.get("instruct_synmap3d")) {
                 var instructor = $("#instruct");
                 var iH = instructor.height();
                 var iW = instructor.width();
