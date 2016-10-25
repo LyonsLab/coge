@@ -57,6 +57,10 @@ class FtpSelect {
         this.on_file_click = on_file_click;
         this.options = options || {};
     }
+	at_top() {
+		let index = this.url.indexOf('/', 6);
+		return index == -1 || index == this.url.length - 1;
+	}
 	click_all_files() {
 		let self = this;
 		let rows = this.table.rows();
@@ -67,6 +71,8 @@ class FtpSelect {
 	}
 	go(url) {
         this.url = url;
+		if (this.options.on_go_start)
+			this.options.on_go_start();
 		if (this.path_div)
 			this.path_div.html(url);
         this.table.busy();
@@ -97,15 +103,17 @@ class FtpSelect {
 						self.table.row([$('<span><span class="ui-icon ui-icon-folder-collapsed"></span>' + item.name + '/</span>')], { click: function(){self.go(item.url); return false;} });
 				});
 			}
-			if (self.options.on_go)
-				self.options.on_go();
+			if (self.options.on_go_finish)
+				self.options.on_go_finish();
         });
     }
 	go_home() {
-		this.go(this.url.substring(0, this.url.indexOf('/', 6) + 1));
+		if (!this.at_top())
+			this.go(this.url.substring(0, this.url.indexOf('/', 6) + 1));
 	}
 	go_up() {
-		this.go(this.url.substring(0, this.url.lastIndexOf('/', this.url.length - 2) + 1));
+		if (!this.at_top())
+			this.go(this.url.substring(0, this.url.lastIndexOf('/', this.url.length - 2) + 1));
 	}
 	refresh() {
 		this.go(this.url);
@@ -158,7 +166,7 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		render: function() {
-			var self = this;
+			let self = this;
 			
 			// Set default tab
 			self.container.tabs({selected: self.defaultTab});
@@ -216,41 +224,72 @@ var coge = window.coge = (function(namespace) {
 						$(this).parent().show();
 					});
 			});
-			
+
+			let fetch_start = function() {
+				self.container.find('#ftp_get_button').addClass('ui-state-disabled');
+				self.container.find('.ftpselect-getall').addClass('ui-state-disabled');
+				self.container.find('.ftpselect-home').addClass('ui-state-disabled');
+				self.container.find('.ftpselect-refresh').addClass('ui-state-disabled');
+				self.container.find('.ftpselect-up').addClass('ui-state-disabled');
+				self.container.find('#input_url').prop('disabled', true);
+			};
+			let fetch_finish = function() {
+				self.container.find('#ftp_get_button').removeClass('ui-state-disabled');
+				self.container.find('.ftpselect-getall').removeClass('ui-state-disabled');
+				self.container.find('.ftpselect-home').removeClass('ui-state-disabled');
+				self.container.find('.ftpselect-refresh').removeClass('ui-state-disabled');
+				self.container.find('.ftpselect-up').removeClass('ui-state-disabled');
+				self.container.find('#input_url').prop('disabled', false);
+			}
 			self.container.find('#ftp_get_button').bind('click', function() {
-				self._load_from_ftp();
+				if (!$(this).hasClass('ui-state-disabled')) {
+					fetch_start();
+					self._load_from_ftp();
+				}
 			});
 			self.container.find('#input_url').bind('keyup focus click', function() {
-	        	var button = self.container.find("#ftp_get_button"),
-	        		disabled = !self.container.find("#input_url").val();
-
-	        	button.toggleClass("ui-state-disabled", disabled);
+	        	self.container.find("#ftp_get_button").toggleClass("ui-state-disabled", !self.container.find("#input_url").val());
 	        });
 			self.container.find('#input_url').bind('keyup focus click', function() {
-				if ( self.container.find('#input_url').val() ) {
-					self.container.find('#ftp_get_button').removeClass('ui-state-disabled');
-				}
-				else {
-					self.container.find('#ftp_get_button').addClass('ui-state-disabled');
-				}
+	        	self.container.find("#ftp_get_button").toggleClass("ui-state-disabled", !self.container.find("#input_url").val());
 			});
 			self._ftp_select = new FtpSelect(self.container.find('#ftp_table'), self.container.find('#ftp_current_path'), self.container.find('#ftp_list_head'), this._add_ftp_file.bind(this), {
-				on_go: function() {
-					$('#ftp_get_button').removeClass('ui-state-disabled');
+				on_go_start: function() {
+					fetch_start();
+				},
+				on_go_finish: function() {
 					$('.ftpselect-filter').val('');
+					fetch_finish();
+					if (self._ftp_select.at_top()) {
+						self.container.find('.ftpselect-home').addClass('ui-state-disabled');
+						self.container.find('.ftpselect-up').addClass('ui-state-disabled');
+					} else {
+						self.container.find('.ftpselect-home').removeClass('ui-state-disabled');
+						self.container.find('.ftpselect-up').removeClass('ui-state-disabled');
+					}
 				}
 			});
 			self.container.find('.ftpselect-getall').click(function() {
-				self._ftp_select.click_all_files();
+				if (!$(this).hasClass('ui-state-disabled'))
+					self._ftp_select.click_all_files();
 			});
 			self.container.find('.ftpselect-home').click(function() {
-				self._ftp_select.go_home();
+				if (!$(this).hasClass('ui-state-disabled')) {
+					fetch_start();
+					self._ftp_select.go_home();
+				}
 			});
 			self.container.find('.ftpselect-refresh').click(function() {
-				self._ftp_select.refresh();
+				if (!$(this).hasClass('ui-state-disabled')) {
+					fetch_start();
+					self._ftp_select.refresh();
+				}
 			});
 			self.container.find('.ftpselect-up').click(function() {
-				self._ftp_select.go_up();
+				if (!$(this).hasClass('ui-state-disabled')) {
+					fetch_start();
+					self._ftp_select.go_up();
+				}
 			});
 			self.container.find('.ftpselect-filter').unbind().bind('keyup', function() {
 				let search_term = self.container.find('.ftpselect-filter').val();
