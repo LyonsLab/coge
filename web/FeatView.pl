@@ -82,7 +82,7 @@ sub get_types {
       $coge->resultset('Feature')->search( $search,, { join => 'feature_names' } );
 
     if (@opts) {
-        $html .= "<font class=small>Type count: " . scalar @opts . "</font>\n<BR>\n";
+        $html .= "<font class='small info'>[" . scalar @opts . "]</font>\n<BR>\n";
         $html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['args__accn','accn_select','args__type','Type_name', 'args__dsid','dsid', 'args__gstid','args__$gstid'],[show_anno])" >\n};
         $html .= join( "\n", @opts );
         $html .= "\n</SELECT>\n";
@@ -190,9 +190,8 @@ sub cogesearch {
           . "Search results over 10000, please refine your search.\n";
     }
     $html .=
-      "<font class=small>Name count: " . scalar @opts . "</font>\n<BR>\n";
-    $html .=
-qq{<SELECT id="accn_select" SIZE="10" MULTIPLE onChange="source_search_chain(); " >\n};
+      "<font class='small info'>[" . scalar @opts . "]</font>\n<BR>\n";
+    $html .= qq{<SELECT id="accn_select" SIZE="10" MULTIPLE onChange="source_search_chain();">\n}; # 'Matches' select
     $html .= join( "\n", @opts );
     $html .= "\n</SELECT>\n";
     $html =~ s/<OPTION/<OPTION SELECTED/;
@@ -403,27 +402,27 @@ sub get_anno {
         my $x      = $feat->start;
         my $z      = 4;
         my $gid    = $dsg->id;
-        $anno .= qq{<div class="coge-buttonset"><span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?fid=$featid&gstid=$gstid');">Get Sequence</span>};
-        $anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$fid;gstid=$gstid');">CoGeBlast</span>};
+        $anno .= qq{<div class="coge-buttonset"><span class="ui-button ui-corner-all coge-button" onClick="window.open('FastaView.pl?fid=$featid&gstid=$gstid');">Get Sequence</span>};
+        $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="window.open('CoGeBlast.pl?featid=$fid;gstid=$gstid');">CoGeBlast</span>};
         my ($a, $b) = get_link_coords($feat->start, $feat->stop);
-        $anno .= #qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>}; # mdb removed 11/20/13 issue 254
-            qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?gid=$gid&loc=$chr:$a..$b');">Genome Browser</span>}; # mdb added 11/20/13 issue 254
-        $anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('SynFind.pl?fid=$featid');">SynFind</span>};
+        $anno .= #qq{<span class="ui-button ui-corner-all coge-button" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>}; # mdb removed 11/20/13 issue 254
+            qq{<span class="ui-button ui-corner-all coge-button" onClick="window.open('GenomeView.pl?gid=$gid&loc=$chr:$a..$b');">Genome Browser</span>}; # mdb added 11/20/13 issue 254
+        $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="window.open('SynFind.pl?fid=$featid');">SynFind</span>};
 
         #$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
-        $anno .= qq{<span class="ui-button ui-corner-all" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></div>}
+        $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></div>}
           if $accn;
 
         eval {
             $anno .= join "\n<hr>\n",
-            $feat->annotation_pretty_print_html( gstid => $gstid );
+            '<div class="padded">' . $feat->annotation_pretty_print_html( gstid => $gstid ) . '</div>';
         };
 
         if ( $feat->type->name eq "CDS" ) {
             $anno .= qq{<div class="coge-buttonset">};
-            $anno .= qq{<span class="ui-button ui-corner-all" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_table']); \$('#codon_table').dialog('option', 'width', 600).dialog('open');">Codon Usage</span>};
-            $anno .= qq{<span class="ui-button ui-corner-all" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['aa_table']);\$('#aa_table').dialog('open');">Amino Acid Usage</span>};
-            $anno .= qq{<span class="ui-button ui-corner-all" onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_alignment']); \$('#codon_aa_alignment').dialog('option', 'width', 650).dialog('open');">Codon/AA alignment</span></div>};
+            $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_table']); \$('#codon_table').dialog('option', 'width', 600).dialog('open');">Codon Usage</span>};
+            $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['aa_table']);\$('#aa_table').dialog('open');">Amino Acid Usage</span>};
+            $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_alignment']); \$('#codon_aa_alignment').dialog('option', 'width', 650).dialog('open');">Codon/AA alignment</span></div>};
         }
     }
     $anno = "<h4 class=\"annotation\">No annotations for this entry</h4>" unless $anno;
@@ -605,7 +604,7 @@ sub get_data_source_info_for_accn {
         }
     }
     
-    my $html = qq{<SELECT name="dsid" id="dsid" MULTIPLE SIZE="10" onChange="get_types_chain();">};
+    my $html = qq{<SELECT name="dsid" id="dsid" MULTIPLE SIZE="10" onChange="get_types_chain();">}; # 'Genomes' select
     my $count = 0;
     foreach my $title (
         sort { $sources{$b}{v} <=> $sources{$a}{v} || $a cmp $b }
@@ -621,7 +620,7 @@ sub get_data_source_info_for_accn {
     }
     $html .= qq{</SELECT>\n};
     
-    return ("<font class='small'>Dataset count: " . $count . "</font>\n<BR>\n" . $html );
+    return ("<font class='small info'>[" . $count . "]</font>\n<BR>\n" . $html );
 }
 
 sub get_orgs {
@@ -666,7 +665,7 @@ sub get_orgs {
     unshift( @opts, "<OPTION value=\"all\" id=\"all\">All Listed Organisms</OPTION>" );
     my $size = scalar @opts;
     $size = 8 if $size > 8;
-    $html .= qq{<SELECT id="org_id" SIZE="$size" MULTIPLE >\n};
+    $html .= qq{<SELECT id="org_id" SIZE="$size" MULTIPLE>\n};
     $html .= join( "\n", @opts );
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
