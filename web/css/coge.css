@@ -130,6 +130,22 @@ a:hover {
     background-color: #e5c100;
 }
 
+.coge-gray {
+    color: gray;
+}
+
+.coge-bg-gray {
+    color: gray;
+}
+
+.coge-white {
+    color: white;
+}
+
+.coge-bg-white {
+    background-color: white;
+}
+
 .alert {
   color: red;
 }
@@ -1097,6 +1113,14 @@ li {
 
 .coge-button-border {
     border: 1px solid lightgray;
+}
+
+.coge-border {
+    border: 1px solid lightgray;
+}
+
+.coge-border-top {
+    border-top: 1px solid lightgray;
 }
 
 .coge-border-bottom {

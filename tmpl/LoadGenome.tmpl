@@ -6,8 +6,9 @@
 
 <link rel="stylesheet" type="text/css" href="js/vendor/jstree/dist/themes/default/style.min.css"/>
 <style type="text/css">
-.jstree li a ins { display:none !important; }
-.jstree.jstree-focused { background:white; }
+.jstree i.jstree-themeicon { display:none !important; } /* remove folder icon from each node */
+.jstree-clicked { background: #c4efaa !important; }
+.jstree-hovered { background: #e4f9d6 !important; }
 </style>
 
 <div id="wizard-container"></div>
@@ -133,31 +134,30 @@
 </div>
 
 <div id="create_new_organism_dialog" class="hidden dialog_box" title="Create New Organism">
-	<div class ="small info" style="padding-top:10px;">
+    <div class ="small text" style="padding-top:10px;">
 		Please select an organism from NCBI's Taxonomy database.  If your organism does not exist,
 		find the nearest relative and modify the name and description fields accordingly.
 	</div>
 	<div style="padding-top:10px;">
     	<span class="small">Search NCBI:</span>
-    	<input type="textbox" size="45" spellcheck="false" onkeyup="coge.utils.wait_to_search(search_ncbi_taxonomy, this);" />
+    	<input type="textbox" size="50" spellcheck="false" onkeyup="coge.utils.wait_to_search(search_ncbi_taxonomy, this);" />
 	    <img id="wait_ncbi" src="picts/ajax-loader.gif" style="opacity: 0;" />
 	</div>
-	<div id="tax_empty" class="hidden small" style="font-style:italic;color:gray;margin-top:15px;margin-left:20px;">No matches</div>
-	<div id="tax_tree" class="hidden small" style="border:1px solid lightgray;margin-top:5px;max-height:200px;max-width:415px;overflow-y:auto">
-	</div>
+	<div id="tax_empty" class="hidden small note" style="margin-top:15px;margin-left:20px;">No matches</div>
+	<div id="tax_tree" class="hidden small coge-border" style="margin-top:5px;max-height:18em;width:37em;max-width:37em;overflow:auto;"></div>
 	<div id="edit_organism_info" class="hidden" style="padding-top:15px;">
 		<span class="small">You have selected:</span><br>
-		<table style="color:gray;">
+		<table class="coge-gray">
 			<tr>
-				<td class="small" style="font-weight:bold;">Name</td>
+				<td class="small bold">Name</td>
 				<td>
-					<input id="edit_organism_name" type="textbox" size="54" spellcheck="false" style="color:gray;background-color:white;" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');" />
+					<input id="edit_organism_name" type="textbox" size="54" spellcheck="false" class="coge-bg-white" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');" />
 				</td>
 			</tr>
 			<tr>
-				<td class="small" style="font-weight:bold;">Description</td>
+				<td class="small bold">Description</td>
 				<td>
-					<textarea id="edit_organism_desc" rows="5" cols="57" spellcheck="false" style="color:gray;resize:none;border:1px solid lightgray;" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');"></textarea>
+					<textarea id="edit_organism_desc" rows="5" cols="53" spellcheck="false" class="coge-border no-resize" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');"></textarea>
 				</td>
 			</tr>
 		</table>
@@ -186,11 +186,8 @@
 </div>
 
 <TMPL_INCLUDE NAME="widgets/Splash.tmpl">
-
 <TMPL_INCLUDE NAME="widgets/FileSelect.tmpl">
-
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
-
 <TMPL_INCLUDE NAME="widgets/Wizard.tmpl">
 
 <TMPL_IF NAME='ADMIN_AREA'>
