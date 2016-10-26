@@ -70,6 +70,7 @@ our $node_types = CoGeX::node_types();
     get_total_table					=> \&get_total_table,
     get_jobs_table					=> \&get_jobs_table,
     get_user_jobs_table				=> \&get_user_jobs_table,
+    get_user_jobs				    => \&get_user_jobs,
     gen_tree_json					=> \&gen_tree_json, 
     get_total_queries				=> \&get_total_queries,
     get_uptime		                => \&get_uptime,
@@ -1593,10 +1594,10 @@ sub get_jobs_table {
 }
 
 sub add_row {
-	my ($user_name, $counts) = @_;
+	my ($user_id, $user_name, $counts) = @_;
 	my @jobs = ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D');
 	my @row;
-	push @row, $user_name;
+	push @row, '<a href="#" onclick="user_job_plot(' . $user_id . ',\'' . $user_name . '\')">' . $user_name . '</a>';
 	foreach (@jobs) {
 		push @row, $counts->{$_};
 	}
@@ -1607,23 +1608,54 @@ sub get_user_jobs_table {
 	my @data;
 	my %counts;
 	my $user_jobs = $db->storage->dbh->selectall_arrayref(
-		"SELECT user_name,page,FORMAT(COUNT(*), 0) FROM user JOIN log ON user.user_id=log.user_id WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY user_name,page"
+		"SELECT user.user_id,user_name,page,FORMAT(COUNT(*), 0) FROM user JOIN log ON user.user_id=log.user_id WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY user_id,page"
 	);
+	my $user_id;
 	my $user_name;
 	foreach (@$user_jobs) {
-		if ($user_name ne $_->[0]) {
-			push @data, add_row($user_name, \%counts);
-			$user_name = $_->[0];
+		if ($user_id != $_->[0]) {
+			push @data, add_row($user_id, $user_name, \%counts);
+			$user_id = $_->[0];
+			$user_name = $_->[1];
 			%counts = ();
 		}
-		$counts{$_->[1]} = $_->[2];
+		$counts{$_->[2]} = $_->[3];
 	}
-	push @data, add_row($user_name, \%counts) if $user_name;
+	push @data, add_row($user_id, $user_name, \%counts) if $user_name;
 
 	return encode_json({
 		data => \@data,
 		bPaginate => 0
 	});
+}
+
+sub get_user_jobs {
+	my %opts = @_;
+    my $user_id = $opts{user_id};
+	my $user_jobs = $db->storage->dbh->selectall_arrayref("SELECT DATE(time),page,COUNT(*) FROM log WHERE user_id=" . $user_id . " AND type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY DATE(time),page");
+	my %jobs;
+	foreach (@$user_jobs) {
+		my $job = $jobs{$_->[1]};
+		if ($job) {
+			push @$job, [$_->[0], $_->[2]];
+		}
+		else {
+			$jobs{$_->[1]} = [[$_->[0], $_->[2]]];
+		}
+	}
+	my @data;
+	foreach my $name (keys %jobs) {
+		my $job = $jobs{$name};
+		my @x;
+		my @y;
+		foreach my $run (@$job) {
+			push @x, $run->[0];
+			push @y, $run->[1];
+		}
+		push @data, { name => $name, x => \@x, y => \@y, type => 'bar' };
+	}
+
+	return encode_json(\@data);
 }
 
 ####

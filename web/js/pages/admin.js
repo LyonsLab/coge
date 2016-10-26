@@ -1834,6 +1834,28 @@ $.extend(ReportGrid.prototype, {
 	}
 });
 
+function user_job_plot(user_id, user_name) {
+	var $dialog = $('<div id="plot" style="overflow:hidden"><img src="picts/ajax-loader.gif" style="width:16px;"/></div>')
+    .dialog({
+        height: 500,
+        width: 1000,
+        title: 'Jobs run by ' + user_name,
+		close: function() {
+			$dialog.dialog('destroy').remove();
+		}
+	});
+	$.ajax({
+		data: {
+			fname: 'get_user_jobs',
+			user_id: user_id
+		},
+		success: function(data) {
+			$('#plot').empty();
+			Plotly.newPlot('plot', JSON.parse(data));
+		}
+	});
+}
+
 function change_report(report) {
 	if (report == 'Data Summary')
 		reports_grid.selection = 'total';
