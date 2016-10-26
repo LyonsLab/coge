@@ -1796,7 +1796,7 @@ $.extend(ReportGrid.prototype, {
 						var total_items = 0;
 						for(var j=1; j<=num_cols; j++)
 							if (json.data[i][j]) {
-								var num = parseInt(json.data[i][j], 10);
+								var num = parseInt(json.data[i][j].replace(',', ''));
 								total_items += num;
 							}
 						if (self.selection == 'total') {

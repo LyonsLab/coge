@@ -1607,6 +1607,14 @@ sub add_row {
 sub get_user_jobs_table {
 	my @data;
 	my %counts;
+	my $public_jobs = $db->storage->dbh->selectall_arrayref(
+		"SELECT page,FORMAT(COUNT(*), 0) FROM log WHERE type != 0 AND user_id = 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY page"
+	);
+	foreach (@$public_jobs) {
+		$counts{$_->[0]} = $_->[1];
+	}
+	push @data, add_row(0, ' public', \%counts);
+	%counts = ();
 	my $user_jobs = $db->storage->dbh->selectall_arrayref(
 		"SELECT user.user_id,user_name,page,FORMAT(COUNT(*), 0) FROM user JOIN log ON user.user_id=log.user_id WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY user_id,page"
 	);
