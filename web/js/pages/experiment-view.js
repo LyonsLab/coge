@@ -279,7 +279,7 @@ var snpMenu = {
         
     	this.dialog.dialog({ 
     		title: "Select SNP Analysis Options",
-    		width: '35em',
+    		width: '32em',
     		autoOpen: false,
     		buttons: [
     	        {
@@ -501,7 +501,7 @@ var metaplotMenu = {
         
     	this.dialog.dialog({ 
     		title: "Select Metaplot Analysis Options",
-    		width: '30em',
+    		width: '20em',
     		autoOpen: false,
     		buttons: [
     	        {
