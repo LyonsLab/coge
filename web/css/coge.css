@@ -1642,6 +1642,11 @@ h5 > small {
     user-select: none;
 }
 
+/* Table of Contents panel */
+.coge-side-menu {
+    white-space: nowrap;
+}
+
 .coge-side-menu ul, li { margin: 0; padding: 0; }
 .coge-side-menu ul li span { 
     display: block;
@@ -1659,7 +1664,29 @@ h5 > small {
     color: green;
 }
 
-/* 
+/* Dropdown menu */
+.coge-dropdown-menu {
+    z-index: 100;
+}
+
+.coge-dropdown-menu ul {
+    white-space:nowrap;
+}
+
+.coge-dropdown-menu li {
+    padding: 3px;
+    font-size: 0.85em;
+}
+
+.coge-dropdown-menu li:hover {
+    background-color: greenyellow;
+}
+
+.coge-dropdown-menu li a:hover {
+    color: green;
+}
+
+/*
  * DataTables customizations 
  *
  */
