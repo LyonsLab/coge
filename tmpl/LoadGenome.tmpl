@@ -22,7 +22,7 @@
 		    <input class="col-md-6" id="edit_organism" type="search" placeholder="Search"
 		    	title="Enter the organism associated with the new genome. Start typing to narrow down the list of organisms to choose from." spellcheck="false" size="50" value="<TMPL_VAR NAME='ORGANISM_NAME'>" />
 		    	<img id="edit_organism_busy" src="picts/ajax-loader.gif" style="visibility:hidden;" />
-		    	<span id="new_organism_button" title="Add a new organism" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input(['edit_organism_name'], 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>
+		    	<span id="new_organism_button" title="Add a new organism" class='ui-button ui-corner-all coge-button'>New</span>
 		    	&nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
 		</div>
 
@@ -36,7 +36,7 @@
 	        <label class="col-md-2">Type:</label>
         	<select id="select_type" class="col-md-6"></select>
             <div class="col-md-2">
-                <span id="new_type_button" title="Add a new sequence type" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input(['edit_type_name'], 'create_type_button');" class='ui-button ui-corner-all coge-button'>New</span>
+                <span id="new_type_button" title="Add a new sequence type" class='ui-button ui-corner-all coge-button'>New</span>
                 &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
             </div>
         </div>
@@ -45,7 +45,7 @@
             <label class="col-md-2">Source:</label>
             <input id="edit_source" type="search" class="col-md-6" placeholder="Search" title="Enter the source for the data for the new experiment. Start typing to select an exisisting source or click 'New' to add a source." size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
             <div class="col-md-2">
-                <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input(['edit_source_name'], 'create_source_button');" class='ui-button ui-corner-all'>New</span>
+                <span id="new_source_button" title="Add a new source" class='ui-button ui-corner-all coge-button'>New</span>
                 &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
             </div>
         </div>
@@ -284,6 +284,20 @@ $(function() {
     			genome_id = results[0].id;
     	},
     	buttonTemplate: 'progress-buttons-custom' // replaces default buttons
+    });
+
+    // Set button handlers
+    $('#new_organism_button').click(function() {
+        $('#create_new_organism_dialog').dialog('open');
+        activate_on_input(['edit_organism_name'], 'create_organism_button');
+    });
+    $('#new_source_button').click(function() {
+        $('#create_new_source_dialog').dialog('open');
+        activate_on_input(['edit_source_name'], 'create_source_button');
+    });
+    $('#new_type_button').click(function() {
+        $('#create_new_type_dialog').dialog('open');
+        activate_on_input(['edit_type_name'], 'create_type_button');
     });
 
 	// Open status dialog
