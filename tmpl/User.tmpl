@@ -438,31 +438,54 @@ $(function(){
 	<br>
 	<table style="table-layout:fixed;width:100%;">
 		<tr>
-			<td style="vertical-align:top">
+			<td id="experiment_metadata" style="vertical-align:top">
 				<div>
 					<div class="bold text padded">Experiments</div>
 					<span onclick="upload_metadata_dialog('Experiment');" class="ui-button ui-corner-all coge-button">Upload</span>
 				</div>
 				<br>
-				<TMPL_VAR NAME="EXPERIMENT_METADATA_STATS">
 			</td>
-			<td style="vertical-align:top">
+			<td id="genome_metadata" style="vertical-align:top">
 				<div>
 					<div class="bold text padded">Genomes</div>
 					<span onclick="upload_metadata_dialog('Genome');" class="ui-button ui-corner-all coge-button">Upload</span>
 				</div>
 				<br>
-				<TMPL_VAR NAME="GENOME_METADATA_STATS">
 			</td>
-			<td style="vertical-align:top">
+			<td id="notebook_metadata" style="vertical-align:top">
 				<div>
 					<div class="bold text padded">Notebooks</div>
 					<span onclick="upload_metadata_dialog('Notebook');" class="ui-button ui-corner-all coge-button">Upload</span>
 				</div>
 				<br>
-				<TMPL_VAR NAME="NOTEBOOK_METADATA_STATS">
 			</td>
 		</tr>
 	</table>
 	<br>
+	<script>
+		let experiment_stats = <TMPL_VAR NAME="EXPERIMENT_METADATA_STATS">;
+		let genome_stats = <TMPL_VAR NAME="GENOME_METADATA_STATS">;
+		let notebook_stats = <TMPL_VAR NAME="NOTEBOOK_METADATA_STATS">;
+		function build_table(type, div, rows) {
+			if (!rows)
+				return;
+			let table = $('<table class="border-top border-bottom"></table>').appendTo(div);
+			let odd_even = 1;
+			rows.forEach(function(row){
+				$('<tr></tr>')
+					.addClass(odd_even ? 'odd' : 'even')
+					.css('cursor', 'pointer')
+					.click(function(){
+						search_metadata(type, encodeURIComponent(row[0]));
+					})
+					.appendTo(table)
+					.append($('<td class="title5" style="padding-right:10px;white-space:nowrap;">' + row[0] + '</td>'))
+					.append($('<td class="data5">' + row[1] + '</td>'));
+				odd_even ^= 1;
+			});
+		}
+		build_table('experiment', $('#experiment_metadata'), experiment_stats);
+		build_table('genome', $('#genome_metadata'), genome_stats);
+		build_table('notebook', $('#notebook_metadata'), notebook_stats);
+	</script>
 </TMPL_IF>

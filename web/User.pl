@@ -1344,13 +1344,11 @@ sub get_contents {
     return encode_json($items);
 }
 
-#TODO chage this routine to send JSON instead of rendering HTML -- mdb 8/4/16
 sub get_stats {
 	my $type = shift;
 	my $items = shift;
 	return '' if !$items;
     $items = [ grep { !$_->{'deleted'} } @$items ] if !$USER->is_admin();
-#    warn Dumper $items;
 	return '' if !scalar @$items;
 	my $sql = 'select annotation_type.name,count(*) from ' . $type . '_annotation join annotation_type on annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id where ' . $type . '_id in (' .
 		join( ',', map { $_->{'id'} } @$items ) .
@@ -1359,23 +1357,12 @@ sub get_stats {
     $sth->execute();
     my ($name, $count);
     $sth->bind_columns(\$name, \$count);
-	my $html = '<table class="border-top border-bottom">';
-	my $odd_even = 1;
+    my @rows;
     while (my $row = $sth->fetch) {
-    	$html .= '<tr class="';
-    	$html .= $odd_even ? 'odd' : 'even';
-    	$odd_even ^= 1;
-    	$html .= '" style="cursor:pointer;" onclick="search_metadata(\'';
-    	$html .= $type eq 'list' ? 'notebook' : $type;
-    	$html .= "','";
-    	$html .= $name =~ s/\//%2F/gr;
-    	$html .= '\')"><td class="title5" style="padding-right:10px;white-space:nowrap;">';
-    	$html .= $name;
-    	$html .= '</td><td class="data5">';
-    	$html .= $count;
-    	$html .= '</td></tr>';
+        push @rows, [$name, $count];
     }
-    return $html . '</table>';
+    my $num_rows = @rows;
+    return $num_rows ? encode_json(\@rows) : 'null';
 }
 
 sub get_jobs {
