@@ -908,7 +908,7 @@ body .ui-tooltip {
 	color: #333333;
 }
 .ui-widget-content a {
-	color: #333333;
+	color: #007000; /*#333333;*/
 }
 .ui-widget-header {
 	border: 1px solid #dddddd;
@@ -936,12 +936,13 @@ html .ui-button.ui-state-disabled:active {
 	font-weight: normal;
 	color: #454545;
 }
+/*
 .ui-state-default a,
 .ui-state-default a:link,
 .ui-state-default a:visited,
 a.ui-button,
 a:link.ui-button,
-a:visited.ui-button,
+a:visited.ui-button,*/
 .ui-button {
 	color: #454545;
 	text-decoration: none;
