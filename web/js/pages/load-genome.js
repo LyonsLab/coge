@@ -224,7 +224,6 @@ function search_ncbi_taxonomy(search_term) {
 }
 
 function build_taxonomy_tree(items) {
-    console.log(items);
 	if (items) {
 		var tree = $("#tax_tree");
 
