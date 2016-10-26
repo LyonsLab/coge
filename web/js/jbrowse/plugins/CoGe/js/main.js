@@ -576,7 +576,7 @@ return declare( JBrowsePlugin,
 		content += '</td></tr><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr></table>';
-		content += this.build_buttons('if($(\'#dnd_in\')[0].checked)coge_plugin.intersection(); else if($(\'#dnd_not_in\')[0].checked)coge_plugin.intersection(true); else coge_plugin._merge_tracks();', 'coge_plugin._search_dialog.hide()');
+		content += this.build_buttons('if($(\'#dnd_in\')[0].checked)coge_plugin.overlaps(); else if($(\'#dnd_not_in\')[0].checked)coge_plugin.overlaps(true); else coge_plugin._merge_tracks();', 'coge_plugin._search_dialog.hide()');
 		content += '</div>';
 		coge_plugin._search_dialog = new Dialog({
 				title: "Combine Tracks",
@@ -774,43 +774,6 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	intersection: function(not) {
-		var ref_seq = dojo.byId('coge_ref_seq');
-		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
-		this._start_search('Finding...');
-		var search = {type: not ? 'does not overlap' : 'overlaps', chr: chr, other: this._track2.config.key};
-		this._track.config.coge.search = search;
-		var eid = this._track.config.coge.id;
-		var eid2 = this._track2.config.coge.id;
-		var url = api_base_url + '/experiment/' + eid + '/intersection/' + eid2 + '/' + chr;
-		if (not)
-			url += '?not=true';
-		dojo.xhrGet({
-			url: url,
-			handleAs: 'json',
-			load: dojo.hitch(this, function(data) {
-				if (this._search_dialog)
-					this._search_dialog.hide();
-				if (data.error) {
-					coge_plugin.error('Search', data);
-					return;
-				}
-				if (data.length == 0) {
-					coge_plugin.error('Search', 'no hits');
-					return;
-				}
-				coge_plugin.new_search_track(this._track, data);
-			}),
-			error: dojo.hitch(this, function(data) {
-				if (this._search_dialog)
-					this._search_dialog.hide();
-				coge_plugin.error('Search', data);
-			})
-		});
-	},
-
-	// ----------------------------------------------------------------
-
 	_markers_merge: function() {
 		var gap_max = dojo.byId('gap_max').value;
 		this._track.config.coge.gap_max = gap_max;
@@ -1001,6 +964,43 @@ return declare( JBrowsePlugin,
            d.resolve(true);
        	});
        	d.promise.then(function() { callback(store_name); } );
+	},
+
+	// ----------------------------------------------------------------
+
+	overlaps: function(not) {
+		var ref_seq = dojo.byId('coge_ref_seq');
+		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
+		this._start_search('Finding...');
+		var search = {type: not ? 'does not overlap' : 'overlaps', chr: chr, other: this._track2.config.key};
+		this._track.config.coge.search = search;
+		var eid = this._track.config.coge.id;
+		var eid2 = this._track2.config.coge.id;
+		var url = api_base_url + '/experiment/' + eid + '/overlaps/' + eid2 + '/' + chr;
+		if (not)
+			url += '?not=true';
+		dojo.xhrGet({
+			url: url,
+			handleAs: 'json',
+			load: dojo.hitch(this, function(data) {
+				if (this._search_dialog)
+					this._search_dialog.hide();
+				if (data.error) {
+					coge_plugin.error('Search', data);
+					return;
+				}
+				if (data.length == 0) {
+					coge_plugin.error('Search', 'no hits');
+					return;
+				}
+				coge_plugin.new_search_track(this._track, data);
+			}),
+			error: dojo.hitch(this, function(data) {
+				if (this._search_dialog)
+					this._search_dialog.hide();
+				coge_plugin.error('Search', data);
+			})
+		});
 	},
 
 	// ----------------------------------------------------------------
