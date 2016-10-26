@@ -32,7 +32,7 @@ $(document).ready(function() {
         cache: false,
     });
 
-    $(".dialog_box").dialog({autoOpen: 0, width: 450});
+    $(".dialog_box").dialog({autoOpen: 0});
 
     $("#edit_tag_name").autocomplete({
         source: function() { get_experiment_tags(); },
@@ -181,7 +181,7 @@ $(document).ready(function() {
     <td><textarea id="edit_tag_description" rows="5" cols="50"></textarea></td>
    </tr>
   </table>
-  <span onClick="add_tag_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>
+  <span onClick="add_tag_to_experiment();" class='ui-button ui-corner-all coge-button r'>Add</span>
 </div>
 
 <div id="find_snps_dialog" class="dialog_box hidden" title="Find SNPs">
@@ -253,7 +253,7 @@ $(document).ready(function() {
 	 </tr>
 	</table>
 	<br>
-	<span onClick="update_experiment_info();" class='ui-button ui-corner-all coge-button'>Update</span>
+	<span onClick="update_experiment_info();" class='ui-button ui-corner-all coge-button r'>Update</span>
 </TMPL_IF>
 
 <TMPL_IF NAME='ADMIN_AREA'>
