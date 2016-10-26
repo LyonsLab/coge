@@ -31,7 +31,7 @@ function edit_list_info () {
 		},
 		success : function(data) {
 			var obj = jQuery.parseJSON(data);
-			show_dialog('list_info_edit_box', '', obj.output, 450);
+			show_dialog('list_info_edit_box', '', obj.output, '31em');
 		},
 	});
 }

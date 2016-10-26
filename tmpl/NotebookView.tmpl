@@ -48,7 +48,7 @@
 			<TMPL_VAR NAME="LIST_CONTENTS">
 		</div>
 	</div>
-	<div class='small' style="padding-left:5px;">
+	<div class='small padded'>
 		Send contents to:
 		<select name="checked_action" id="checked_action">
 			<option value="send_to_genomelist">GenomeList (genomes only)</option>
@@ -68,11 +68,11 @@
 	</div>
 </TMPL_IF>
 
-<div id="list_info_edit_box" class="dialog_box" title="Edit Notebook Info" style="display:none;"></div>
+<div id="list_info_edit_box" class="dialog_box hidden" title="Edit Notebook Info"></div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
 
-<div id="list_contents_edit_box" class="dialog_box" title="Add Items to Notebook" style="display:none;height:auto !important;"></div>
+<div id="list_contents_edit_box" class="dialog_box hidden" title="Add Items to Notebook" style="height:auto !important;"></div>
 
 <!--
 <br><br>
@@ -152,7 +152,7 @@ $(function() {
  <tr>
 </table>
 <br>
-<span onClick="update_list_info();" class='ui-button ui-corner-all'>Update</span>
+<span onClick="update_list_info();" class='ui-button ui-corner-all coge-button'>Update</span>
 </TMPL_IF> <!-- EDIT_LIST_INFO -->
 
 <TMPL_IF NAME='ADD_LIST_ITEMS'>
@@ -180,13 +180,13 @@ $(document).ready(function() {
 	<div id="tab-1" style="display: flex; flex-direction: column; height: calc(100% - 60px);">
 		<div>
 		    Search:
-		    <input type="textbox" size="53" id="edit_mystuff_search" onkeyup="wait_to_search(search_mystuff, this.value);">
-	    	<span class='ui-button ui-corner-all' onclick="search_mystuff();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+		    <input type="textbox" size="50" id="edit_mystuff_search" onkeyup="wait_to_search(search_mystuff, this.value);">
+	    	<span class='ui-button ui-corner-all coge-button' onclick="search_mystuff();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
 	    	<img id="wait_mystuff" src="picts/ajax-loader.gif" style="opacity: 0;" />
 	   	</div>
-	    <select multiple id="select_mystuff_items" size="10" style="flex-grow: 1; min-width:500; max-width: 100%; overflow-x: auto;"></select>
-	   	<div style="padding-top:10px;"><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span>
-	     	<span onClick="add_selected_items('select_mystuff_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	    <select multiple id="select_mystuff_items" size="10" style="flex-grow: 1; min-width:500; max-width: 100%; margin-top: 10px; overflow-x: auto;"></select>
+	   	<div style="padding-top:15px;"><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span>
+	     	<span onClick="add_selected_items('select_mystuff_items');" class='ui-button ui-corner-all coge-button'>Add Selected Items</span>
 	   	</div>
 	</div>
 	
@@ -194,12 +194,12 @@ $(document).ready(function() {
 		<div>
 	    	Search:
 	    	<input type="textbox" size="53" id="edit_genome_search" onkeyup="wait_to_search(search_genomes, this.value);">
-	    	<span class='ui-button ui-corner-all' onclick="search_genomes();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+	    	<span class='ui-button ui-corner-all coge-button' onclick="search_genomes();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
 	    	<img id="wait_genome" src="picts/ajax-loader.gif" style="opacity: 0;" />
 		</div>
 		<select multiple id="select_genome_items" size="10" style="flex-grow: 1; min-width:500; max-width: 100%; overflow-x: auto;"></select>
 	    <div style="padding-top:10px;"><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span>
-	    	<span onClick="add_selected_items('select_genome_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	    	<span onClick="add_selected_items('select_genome_items');" class='ui-button ui-corner-all coge-button'>Add Selected Items</span>
 	   	</div>
 	</div>
 	
@@ -207,12 +207,12 @@ $(document).ready(function() {
 		<div>
 		    Search:
 		    <input type="textbox" size="53" id="edit_experiment_search" onkeyup="wait_to_search(search_experiments, this.value);">
-	    	<span class='ui-button ui-corner-all' onclick="search_experiments();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+	    	<span class='ui-button ui-corner-all coge-button' onclick="search_experiments();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
 	    	<img id="wait_experiment" src="picts/ajax-loader.gif" style="opacity: 0;" />
 	   	</div>
 	    <select multiple id="select_experiment_items" size="10" style="flex-grow: 1; min-width:500; max-width: 100%; overflow-x: auto;"></select>
 	   	<div style="padding-top:10px;"><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span>
-	     	<span onClick="add_selected_items('select_experiment_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	     	<span onClick="add_selected_items('select_experiment_items');" class='ui-button ui-corner-all coge-button'>Add Selected Items</span>
 	   	</div>
 	</div>
 	
@@ -220,12 +220,12 @@ $(document).ready(function() {
 		<div>
 		    Search:
 		    <input type="textbox" size="53" id="edit_feature_search" onkeyup="wait_to_search(search_features, this.value);">
-	    	<span class='ui-button ui-corner-all' onclick="search_features();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+	    	<span class='ui-button ui-corner-all coge-button' onclick="search_features();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
 	    	<img id="wait_feature" src="picts/ajax-loader.gif" style="opacity: 0;" />
 	   	</div>
 	    <select multiple id="select_feature_items" size="10" style="flex-grow: 1; min-width:500; max-width: 100%; overflow-x: auto;"></select>
 	   	<div style="padding-top:10px;"><span style="font-style:italic;color:gray;float:right;">Hold down SHIFT or CTRL to select multiple items</span>
-	     	<span onClick="add_selected_items('select_feature_items');" class='ui-button ui-corner-all'>Add Selected Items</span>
+	     	<span onClick="add_selected_items('select_feature_items');" class='ui-button ui-corner-all coge-button'>Add Selected Items</span>
       	</div>
 	</div>
 	
