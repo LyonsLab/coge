@@ -1413,7 +1413,7 @@ h5 > small {
 
 .progress .log {
     overflow-y: auto;
-    padding: 0.25em;
+    padding: 0.5em 1.5em 0 1.5em;
     margin-left:-16px;
     margin-right:-16px;
     color: dimgray;
