@@ -20,12 +20,14 @@
 </style>
 
 <tmpl_if name=results>
-    <section id="results" class="ui-widget-content ui-corner-all">
+    <div id="results">
         <tmpl_var name=results>
-    </section>
+    </div>
+    <br>
 <tmpl_else>
-    <section id="results" class="hidden ui-widget-content ui-corner-all">
-    </section>
+    <div id="results">
+    </div>
+    <br>
 </tmpl_if>
 
 <aside class="info">
