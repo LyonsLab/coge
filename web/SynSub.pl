@@ -163,13 +163,13 @@ sub gen_body {
     $template->param( 'ORG2_GC_WOBBLE' => $org2_percent_gc_wobble );
     my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;ks=1;autogo=1";
     $synmap_link =
-qq{<a href='$synmap_link' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>SynMap</a>};
+qq{<a href='$synmap_link' class='coge-button' style='color: #000000' target=_new_synmap>SynMap</a>};
     my $synsub_link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;ct=";
     $synsub_link =
         qq{<a href='$synsub_link} . 'rain'
-      . qq{' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>Rainbown SynSub</a>}
+      . qq{' class='coge-button' style='color: #000000' target=_new_synmap>Rainbown SynSub</a>}
       . qq{<a href='$synsub_link} . 'RYB'
-      . qq{' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>RYB SynSub</a>};
+      . qq{' class='coge-button' style='color: #000000' target=_new_synmap>RYB SynSub</a>};
 
     $template->param( LINKS => $synmap_link . $synsub_link );
     my $html;

@@ -884,12 +884,12 @@ sub get_chr_info {
         $viewer .=
            qq{Start: <input type="text" size=10 value="20000" id="x">}
          #. qq{Zoom level: <input type = "text" size=10 value ="6" id = "z">}
-         . qq{&nbsp;<span class='ui-button ui-corner-all coge-button' onClick="launch_viewer()">Launch Genome Viewer</span>};
+         . qq{&nbsp;<span class='coge-button coge-button-sm' onClick="launch_viewer()">Launch Genome Viewer</span>};
 
         $seq_grab .=
            qq{Start: <input type="text" size=10 value="1" id="start">}
          . qq{&nbsp;End: <input type="text" size=10 value="100000" id="stop">}
-         . qq{&nbsp;<span class='ui-button ui-corner-all coge-button' onClick="launch_seqview()">Get Sequence</span>};
+         . qq{&nbsp;<span class='coge-button coge-button-sm' onClick="launch_seqview()">Get Sequence</span>};
     }
 
     return $html, $viewer, $seq_grab if ($output eq 'html');

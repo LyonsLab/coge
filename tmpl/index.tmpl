@@ -129,18 +129,18 @@ function cross_fade(selector, image, delay) {
         paused = true;
 
     var run_button = $("<div></div>")
-            .addClass("coge-button-border ui-icon")
+            .addClass("coge-border ui-icon")
             .addClass("ui-icon ui-icon-pause")
             .css("margin", "0 2%")
             .on("click", $.proxy(pause, this));
 
     var next_button = $("<div></div>")
-            .addClass("coge-button-border ui-icon")
+            .addClass("coge-border ui-icon")
             .addClass("ui-icon-arrowthick-1-e")
             .on("click", $.proxy(next, this));
 
     var prev_button = $("<div></div>")
-            .addClass("coge-button-border ui-icon")
+            .addClass("coge-border ui-icon")
             .addClass("ui-icon-arrowthick-1-w")
             .on("click", $.proxy(previous, this));
 
@@ -385,7 +385,7 @@ Please note: CyVerse will be unavailable from 7 PM EDT (4 PM PDT) Thursday, Octo
 <div id="genome_dialog" style="display: none;" class="coge-section">
     <label for="limit">Number returned:</label>
     <input id="limit" class="backbox" type="textbox" size="3" value="10">
-    <span class='ui-button ui-corner-all coge-button' onClick="show_genomes(window.event)">Go</span>
+    <span class='coge-button' onClick="show_genomes(window.event)">Go</span>
     <br>
     <br>
     <div id="genomes-list" style="max-height: 500px;" class="coge-scroll coge-striped-even"></div>

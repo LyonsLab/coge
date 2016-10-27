@@ -400,7 +400,7 @@ sub find_feats {
         push @dsids, map { $_->id } $dsg->datasets;
         $gstid = $dsg->type->id;
     }
-    my $link = qq{<span class='ui-button ui-corner-all coge-button' " onClick="featlist('FeatList.pl?};
+    my $link = qq{<span class='coge-button' " onClick="featlist('FeatList.pl?};
     my %type;
     $link .=
         "start=$start;stop=$stop;chr=$chr;dsid=$dsid;dsgid=$dsgid;gstid=$gstid"

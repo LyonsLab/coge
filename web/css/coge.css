@@ -1111,10 +1111,6 @@ li {
     display: block;
 }
 
-.coge-button-border {
-    border: 1px solid lightgray;
-}
-
 .coge-border {
     border: 1px solid lightgray;
 }
@@ -1508,91 +1504,55 @@ h5 > small {
     padding: 5px;
 }
 
-.coge-buttonset .ui-button {
+.coge-buttonset .coge-button {
     margin-right: 5px;
 }
 
 .coge-button {
+    display: inline-block;
     font-weight: 600;
     font-size: 0.875em;
     line-height: 1.0;
-    border: 1px solid #9ce76d;
     background: #9ce76d;
+    border-radius: 3px;
     vertical-align: middle;
+    text-align: center;
     min-height: 1em;
+    padding: .5em 1em;
+	margin-right: .1em;
+	cursor: pointer;
+	user-select: none;
+	white-space: nowrap
+}
+
+.coge-button-danger {
+    background: #ff7979;
 }
 
 .coge-button-sm {
-    font-weight: 600;
     font-size: 0.75em;
-    line-height: 1.0;
-    border: 1px solid #9ce76d;
-    background: #9ce76d;
-    vertical-align: middle;
-    min-height: 0.75em;
+    white-space: nowrap
 }
 
 .coge-button-lg {
-    font-weight: 600;
     font-size: 1em;
-    line-height: 1.0;
-    border: 1px solid #9ce76d;
-    background: #9ce76d;
-    vertical-align: middle;
-    min-height: 1em;
+    white-space: nowrap
 }
 
-.coge-button-left {
+.coge-button-left { /* for left-side icons */
     padding-left: 0.5em;
 }
 
-.coge-button-right {
+.coge-button-right { /* for right-side icons */
     padding-right: 0.5em;
 }
 
-.coge-button.ui-state-hover,
-.coge-button-lg.ui-state-hover,
-.coge-button-sm.ui-state-hover {
-    border: 1px solid #65d022 !important;
-    background: #65d022 !important;
-    outline: none;
-    color: black;
-    font-weight: 600;
+.coge-button:hover {
+    background: #65d022;
 }
 
-.coge-button.ui-state-active,
-.coge-button-lg.ui-state-active,
-.coge-button-sm.ui-state-active {
-    border: 1px solid #9ce76d !important;
-    background: #9ce76d !important;
-    outline: none;
-    color: black !important;
-    font-weight: 600 !important;
-}
-
-.ui-button-go {
-    background: #ff7979;
-    border: 1px solid #ff7979;
-}
-
-.coge-button.ui-button-go.ui-state-hover,
-.coge-button-lg.ui-button-go.ui-state-hover,
-.coge-button-sm.ui-button-go.ui-state-hover {
-    border: 1px solid #ff5252 !important;
-    background: #ff5252 !important;
-    outline: none;
-    color: black;
-    font-weight: 600;
-}
-
-.coge-button.ui-button-go.ui-state-active,
-.coge-button-lg.ui-button-go.ui-state-active,
-.coge-button-sm.ui-button-go.ui-state-active {
-    border: 1px solid #ff7979 !important;
-    background: #ff7979 !important;
-    outline: none;
-    color: black;
-    font-weight: 600;
+.coge-button.coge-button-danger:hover {
+    background: #ff5252;
 }
 
 .coge-icon {
@@ -1955,7 +1915,7 @@ div.dataTables_scrollBody {
 	border-color: #65d022;
 	margin-top: 0.5em;
 	font-size: 1.25em;
-	color: dimgray;
+	color: gray;
 	padding: 0.2em !important;
 }
 

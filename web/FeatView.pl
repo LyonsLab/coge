@@ -402,15 +402,15 @@ sub get_anno {
         my $x      = $feat->start;
         my $z      = 4;
         my $gid    = $dsg->id;
-        $anno .= qq{<div class="coge-buttonset"><span class="ui-button ui-corner-all coge-button" onClick="window.open('FastaView.pl?fid=$featid&gstid=$gstid');">Get Sequence</span>};
-        $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="window.open('CoGeBlast.pl?featid=$fid;gstid=$gstid');">CoGeBlast</span>};
+        $anno .= qq{<div class="coge-buttonset"><span class="coge-button" onClick="window.open('FastaView.pl?fid=$featid&gstid=$gstid');">Get Sequence</span>};
+        $anno .= qq{<span class="coge-button" onClick="window.open('CoGeBlast.pl?featid=$fid;gstid=$gstid');">CoGeBlast</span>};
         my ($a, $b) = get_link_coords($feat->start, $feat->stop);
-        $anno .= #qq{<span class="ui-button ui-corner-all coge-button" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>}; # mdb removed 11/20/13 issue 254
-            qq{<span class="ui-button ui-corner-all coge-button" onClick="window.open('GenomeView.pl?gid=$gid&loc=$chr:$a..$b');">Genome Browser</span>}; # mdb added 11/20/13 issue 254
-        $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="window.open('SynFind.pl?fid=$featid');">SynFind</span>};
+        $anno .= #qq{<span class="coge-button" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>}; # mdb removed 11/20/13 issue 254
+            qq{<span class="coge-button" onClick="window.open('GenomeView.pl?gid=$gid&loc=$chr:$a..$b');">Genome Browser</span>}; # mdb added 11/20/13 issue 254
+        $anno .= qq{<span class="coge-button" onClick="window.open('SynFind.pl?fid=$featid');">SynFind</span>};
 
         #$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
-        $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></div>}
+        $anno .= qq{<span class="coge-button" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></div>}
           if $accn;
 
         eval {
@@ -420,9 +420,9 @@ sub get_anno {
 
         if ( $feat->type->name eq "CDS" ) {
             $anno .= qq{<div class="coge-buttonset">};
-            $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_table']); \$('#codon_table').dialog('option', 'width', 600).dialog('open');">Codon Usage</span>};
-            $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['aa_table']);\$('#aa_table').dialog('open');">Amino Acid Usage</span>};
-            $anno .= qq{<span class="ui-button ui-corner-all coge-button" onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_alignment']); \$('#codon_aa_alignment').dialog('option', 'width', 650).dialog('open');">Codon/AA alignment</span></div>};
+            $anno .= qq{<span class="coge-button" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_table']); \$('#codon_table').dialog('option', 'width', 600).dialog('open');">Codon Usage</span>};
+            $anno .= qq{<span class="coge-button" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['aa_table']);\$('#aa_table').dialog('open');">Amino Acid Usage</span>};
+            $anno .= qq{<span class="coge-button" onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_alignment']); \$('#codon_aa_alignment').dialog('option', 'width', 650).dialog('open');">Codon/AA alignment</span></div>};
         }
     }
     $anno = "<h4 class=\"annotation\">No annotations for this entry</h4>" unless $anno;

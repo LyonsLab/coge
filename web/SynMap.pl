@@ -1987,7 +1987,7 @@ sub get_results {
 			$seq2 =~ s/\n/\|\|/g;
 			$html .= qq{
             <br>
-            <span class="ui-button ui-corner-all" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
+            <span class="coge-button" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
             };
 
 			my $grimm_data = {
@@ -2033,8 +2033,7 @@ sub get_results {
 
 	##print out all the datafiles created
 	$html .= "<br>";
-	$html .= qq{<span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all"
-        onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Hide Results</span>};
+	$html .= qq{<span id="clear" style="font-size: 0.8em" class="coge-button" onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Hide Results</span>};
 	$html .= qq{</div>};
 	$warn = qq{There was a problem running your analysis.}
 	  . qq{ Please check the log file for details};

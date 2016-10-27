@@ -268,8 +268,8 @@ function search_bar(div_id){
 	  <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV></TD></TR>
     <tr><td>&nbsp;</td></tr>
         <tr>
-	<td><span class="ui-button ui-button-go ui-corner-all coge-button-lg" onclick="search_chain(1)">Search</span>
-	<td align=right><span class="ui-button ui-corner-all coge-button-lg" onclick="$('#feat_list').dialog('open');">Feature List</span>
+	<td><span class="coge-button coge-button-lg" onclick="search_chain(1)">Search</span>
+	<td align=right><span class="coge-button coge-button-lg" onclick="$('#feat_list').dialog('open');">Feature List</span>
 </TABLE>
 
 <div id="data_table" class="coge-result hidden">
@@ -298,21 +298,21 @@ function search_bar(div_id){
 
 <div id="anno" class="coge-result"><TMPL_VAR NAME="FID_ANNO"></div>
 
-<div class="dialog" id="codon_table" title="Codon Usage Table"></div>
-<div class="dialog" id="aa_table" title="Amino Acid Usage Table"></div>
-<div class="dialog" id="codon_aa_alignment" title="Amino Acid Usage Table"></div>
+<div class="dialog hidden" id="codon_table" title="Codon Usage Table"></div>
+<div class="dialog hidden" id="aa_table" title="Amino Acid Usage Table"></div>
+<div class="dialog hidden" id="codon_aa_alignment" title="Amino Acid Usage Table"></div>
 
-<div class="dialog" title="Feature List" id="feat_list">
+<div class="dialog hidden" title="Feature List" id="feat_list">
     <span class="small count">Feature Count: 0</span><br>
               <SELECT id="featlist_choice" SIZE="10" MULTIPLE onchange="get_anno(['args__featlist_choice','featlist_choice'],[show_anno])">
               <option id=blank value=null>No Feature Selected</option>
               </SELECT>
     <br><br>
-    <span class="ui-button ui-corner-all coge-button-sm" id="send" onClick="$('#featlist_choice').sortSelect();">Sort List Alphabetically</span><br><br>
-    <span class="ui-button ui-corner-all coge-button-sm" id="send" onClick="send_to_FeatList()">Create Feature List</span><br><br>
-    <span class="ui-button ui-corner-all coge-button-sm" id="add_all" onClick="$('#add_all').hide();$('#add_all_search').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >'); cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">Add All Features</SPAN><br><br>
-    <span class="ui-button ui-corner-all coge-button-sm" id="remove" onClick="$('#'+$('#featlist_choice').val()).remove();counting();">Remove</span><br><br>
-    <span class="ui-button ui-corner-all coge-button-sm" id="clear" onClick="clear_feat_list()">Clear</span>
+    <span class="coge-button coge-button-sm" id="send" onClick="$('#featlist_choice').sortSelect();">Sort List Alphabetically</span><br><br>
+    <span class="coge-button coge-button-sm" id="send" onClick="send_to_FeatList()">Create Feature List</span><br><br>
+    <span class="coge-button coge-button-sm" id="add_all" onClick="$('#add_all').hide();$('#add_all_search').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >'); cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">Add All Features</SPAN><br><br>
+    <span class="coge-button coge-button-sm" id="remove" onClick="$('#'+$('#featlist_choice').val()).remove();counting();">Remove</span><br><br>
+    <span class="coge-button coge-button-sm" id="clear" onClick="clear_feat_list()">Clear</span>
     <br><br>
 
     <div id="add_all_search"></div>

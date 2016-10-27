@@ -226,17 +226,17 @@ function post_to_mafft() {
   <DIV id="dynamic_button">
   <TABLE>
    <TR>
-   <td><span class='ui-button ui-corner-all'id="prot_button" onclick="update_seqs(1)">Protein Sequence</span>
-   <td><span class='ui-button ui-corner-all'id="dna_button" onclick="update_seqs(0)">DNA Sequence</span>
-   <td><span class='ui-button ui-corner-all'id="prot_text_button" onclick="update_seqs(1,1)">Download</span>
-   <td><span class='ui-button ui-corner-all'id="dna_text_button" onclick="update_seqs(0,1)"> Download</span>
-   <td><span class='ui-button ui-corner-all'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span>
+   <td><span class='coge-button'id="prot_button" onclick="update_seqs(1)">Protein Sequence</span>
+   <td><span class='coge-button'id="dna_button" onclick="update_seqs(0)">DNA Sequence</span>
+   <td><span class='coge-button'id="prot_text_button" onclick="update_seqs(1,1)">Download</span>
+   <td><span class='coge-button'id="dna_text_button" onclick="update_seqs(0,1)"> Download</span>
+   <td><span class='coge-button'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span>
  </TR>
   </TABLE>
 <span id=add_seq class=small>
   Add Upstream (5'): <INPUT type="text" id="upstream" value= "<TMPL_VAR NAME="UP">" size=6>
   Add Downstream (3'): <INPUT type="text" id="downstream" value="<TMPL_VAR NAME="DOWN">" size=6>
-  <span class='ui-button ui-corner-all'id="dna_text_button" onclick="update_seqs(0)">Add Seq</span>
+  <span class='coge-button'id="dna_text_button" onclick="update_seqs(0)">Add Seq</span>
   </span><br>
 <span class=small>
   <input type="checkbox" name="name_only" id="name_only" value=0 onclick="update_seqs(0);"/>Only use feature names in header.&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
@@ -249,29 +249,29 @@ function post_to_mafft() {
 <!-- ALL SEQUENCES -->
     <table class="ui-widget-content ui-corner-all">
     <tr align=top>
-    <td><span onClick="gen_url()" class='ui-button ui-corner-all'>CyVerse Semantic Web</span>
+    <td><span onClick="gen_url()" class='coge-button'>CyVerse Semantic Web</span>
 
 <div id="pipelineButton"></div>
 
     <td> Send sequence(s) to the <a href = "http://sswap.info/wiki" target =_sswap>CyVerse/SSWAP</a> semantic discovery service
     <tr align=top>
-    <td><span onClick="post_to_target();" class='ui-button ui-corner-all'>TARGeT</span>
+    <td><span onClick="post_to_target();" class='coge-button'>TARGeT</span>
     <td><span class="link" onclick ="window.open('http://target.iplantcollaborative.org/');"> Tree Analysis of Related Genes and Transposons</span><br>
     <tr align=top>
-    <td><span onClick="post_to_phylogeny_fr();" class='ui-button ui-corner-all'>Phylogeny.fr</span>
+    <td><span onClick="post_to_phylogeny_fr();" class='coge-button'>Phylogeny.fr</span>
     <td>One click phylogeny at <a href="http://www.phylogeny.fr" target=_new>Phylogeny.fr</a><br>
     <tr>
-    <td><span onclick="post_to_mafft();" class='ui-button ui-corner-all'>MATTF</span></td>
+    <td><span onclick="post_to_mafft();" class='coge-button'>MATTF</span></td>
     <td>Run <a href="http://mafft.cbrc.jp/alignment/server/index.html">MAFFT</a> on the sequence(s)</td>
     <tr id="genfam" class="hidden">
-    <td><span onclick="post_to_genfam();" class='ui-button ui-corner-all'>Send to GenFam</span>
+    <td><span onclick="post_to_genfam();" class='coge-button'>Send to GenFam</span>
     </table>
 <!-- PROTEIN SEQUENCES ONLY -->
   <div class="prot_option">
    <table>
     <tr align=top>
-    <td><span onClick="post_to_prosite();" class='ui-button ui-corner-all'>ProSite</span>
-    <td>Scan for protein domains at <span class=link onclick="window.open('http://www.expasy.ch/prosite/')">ProSite</span>.
+    <td><span onClick="post_to_prosite();" class='coge-button'>ProSite</span>
+    <td>Scan for protein domains at <span class='link' onclick="window.open('http://www.expasy.ch/prosite/')">ProSite</span>.
   </table>
    </div>
  </DIV>

@@ -14,23 +14,23 @@
 </table>
 <div class="panel coge-buttonset">
     <TMPL_IF name="editable">
-        <span class="ui-button ui-corner-all coge-button" onclick="edit_experiment_info();">
+        <span class="coge-button" onclick="edit_experiment_info();">
             Edit Info
         </span>
-        <span class="ui-button ui-corner-all coge-button" onclick="$('#experiment_tag_edit_box').dialog('open');">
+        <span class="coge-button" onclick="$('#experiment_tag_edit_box').dialog('open');">
             Add Tag
         </span>
         <TMPL_IF name="restricted">
-        <span class="ui-button ui-corner-all coge-button" onclick="make_experiment_public();">
+        <span class="coge-button" onclick="make_experiment_public();">
             Make Public
         </span>
         <TMPL_ELSE>
-        <span class="ui-button ui-corner-all coge-button" onclick="make_experiment_private();">
+        <span class="coge-button" onclick="make_experiment_private();">
             Make Private
         </span>
         </TMPL_IF>
     </TMPL_IF>
-    <a style="color: inherit;" class="ui-button ui-corner-all coge-button" href="<tmpl_var name=genome_view_url>">
+    <a style="color: inherit;" class="coge-button" href="<tmpl_var name=genome_view_url>">
         Browse
     </a>
 </div>

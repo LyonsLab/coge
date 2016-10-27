@@ -22,7 +22,7 @@ $(function() {
     <div class="col-md-12">
         <div class="small padded middle">
             <input type="search" placeholder="Search" spellcheck="false" style="font-size:1.25em;" size="50" value="<TMPL_VAR NAME=ORG_SEARCH>" name="org_search" id="org_search" onkeyup='search_organisms("org_search");'>
-            <span class='ui-button ui-corner-all coge-button' onClick="search_organisms('org_search');">
+            <span class='coge-button' onClick="search_organisms('org_search');">
                 <span class="ui-icon ui-icon-arrowrefresh-1-w"></span>
             </span>
             <img id="busy" src="picts/ajax-loader.gif" style="opacity:0;"/>
@@ -132,16 +132,16 @@ $(function() {
 	<div class="small info">Genomes: <span id="genomelist_count" class="bold">0<span></div>
 	<div>
 	    <div class="r">
-			<span class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="remove_selected_genomes();">Remove</span><br>
-			<span class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="clear_genome_list()">Clear</span><br>
-			<span class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="$('#genomelist').sortSelect()">Sort</span><br>
+			<span class="coge-button coge-button-sm" style="margin-top:0.5em;" onClick="remove_selected_genomes();">Remove</span><br>
+			<span class="coge-button coge-button-sm" style="margin-top:0.5em;" onClick="clear_genome_list()">Clear</span><br>
+			<span class="coge-button coge-button-sm" style="margin-top:0.5em;" onClick="$('#genomelist').sortSelect()">Sort</span><br>
 		</div>
     	<select id="genomelist" MULTIPLE size="10" style="width:29em">
         	<option id="genomelist_blank" value="null">No Genome Selected</option>
         </select>
     </div>
     <div>
-		<div class="ui-button ui-corner-all coge-button-sm" style="margin-top:0.5em;" onClick="send_to_genomelist()">Send to GenomeList</div>
+		<div class="coge-button coge-button-sm" style="margin-top:0.5em;" onClick="send_to_genomelist()">Send to GenomeList</div>
 	</div>
 </div>
 
@@ -149,19 +149,19 @@ $(function() {
     <table class="small">
      <tr>
        <td>Do not generate features for ncRNA genes (CDS genes only)</td>
-       <td><input type=checkbox name="cds_only" id="cds_only"></td>
+       <td><input type="checkbox" name="cds_only" id="cds_only"></td>
      </tr>
      <tr>
        <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
-       <td><input type=checkbox name="annos" id="annos" checked></td>
+       <td><input type="checkbox" name="annos" id="annos" checked></td>
      </tr>
      <tr>
        <td>Ensure that GFF Name tag is unique for each feature</td>
-       <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
+       <td><input type="checkbox" name="name_unique" id="name_unique" checked></td>
      </tr>
      <tr>
        <td>Do not propagate duplicate annotations to children</td>
-       <td><input type=checkbox name="upa" id="upa" checked></td>
+       <td><input type="checkbox" name="upa" id="upa" checked></td>
      </tr>
      <tr>
        <td>For GFF "ID" and "Parent" tags, use unique:
@@ -172,6 +172,6 @@ $(function() {
          </select>
      </tr>
     </table>
-    <span class="ui-button ui-corner-all coge-button" onClick="export_gff()">Export GFF File</span><br><br>
+    <span class="coge-button" onClick="export_gff()">Export GFF File</span><br><br>
     <span class="small" id="export_gff_link"></span>
 </div>
