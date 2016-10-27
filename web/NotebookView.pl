@@ -610,6 +610,7 @@ sub get_list_contents {
         foreach my $genome ( sort genomecmp @genomes ) {
             my $info = $genome->info;
             $info =~ s/'/\\'/g;
+            $info =~ s/\n/<br>/g;
             my $date = "'" . $genome->date . "'";
             $date = 'null' if $date eq "'0000-00-00 00:00:00'";
             $html .= ',' if $num_items;
@@ -619,6 +620,7 @@ sub get_list_contents {
         foreach my $experiment ( sort experimentcmp @experiments ) {
             my $info = $experiment->info;
             $info =~ s/'/\\'/g;
+            $info =~ s/\n/<br>/g;
             my $date = "'" . $experiment->date . "'";
             $date = 'null' if $date eq "'0000-00-00 00:00:00'";
             $html .= ',' if $num_items;
@@ -628,6 +630,7 @@ sub get_list_contents {
         foreach my $feature ( sort featurecmp @features ) {
             my $info = $feature->info;
             $info =~ s/'/\\'/g;
+            $info =~ s/\n/<br>/g;
             $html .= ',' if $num_items;
             $html .= '[2,' . $feature->id . ",'" . $info . "']";
             $num_items++;
