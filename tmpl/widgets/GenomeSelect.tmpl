@@ -91,20 +91,20 @@ function org_search(desc_search){
 
 function update_buttons(remove) {
 	if (remove && $('#genome_choice').val()) {
-		$('#remove').show();
-		$('#add').hide();
+		$('#remove').removeClass('ui-state-disabled');
+		$('#add').addClass('ui-state-disabled');
 		return;
 	}
 	else {
-		$('#remove').hide();
-		$('#add').show();
+		$('#remove').addClass('ui-state-disabled');
+		$('#add').removeClass('ui-state-disabled');
 	}
 
 	if ($('#org_id').val() && $('#dsgid').val()) {
 		$('#genome_info_button').removeClass('ui-state-disabled');
 		$('#org_seq_types').show();
 		$('#add').removeClass('ui-state-disabled');
-		$('#add').show();
+		$('#add').removeClass('ui-state-disabled');
 	}
 	else {
 		$('#genome_info_button').addClass('ui-state-disabled');
@@ -377,21 +377,16 @@ function import_lists() {
                   	</select>
                   </div>
                     <div class="padded">
-                        <span id="genome_info_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all coge-button-sm coge-button-left'>
+                        <span id="genome_info_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'>
                             <span class="ui-icon ui-icon-info"></span>Genome Info
                         </span>
-                        <span id="add_all_listed_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all coge-button-sm coge-button-left'>
+                        <span id="add_all_listed_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'>
                             <span class="ui-icon ui-icon-plusthick"></span>Add all
                         </span>
+                        <span id="add" href="javascript:void(0)" onClick="add_selected_orgs();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'>
+                            <span class="ui-icon ui-icon-plus"></span>Add
+                        </span>
                     </div>
-                </td>
-                <td valign="middle" align="middle">
-                    <span id="remove" href="javascript:void(0)" onClick="remove_selected_orgs();" style="display:none;" class='ui-button ui-button-icon-left ui-corner-all coge-button-left coge-button coge-nowrap'>
-                        <span class="ui-icon ui-icon-minus"></span>Remove
-                    </span>
-                    <span id="add" href="javascript:void(0)" onClick="add_selected_orgs();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all coge-button coge-button-left coge-nowrap'>
-                        <span class="ui-icon ui-icon-plus"></span>Add
-                    </span>
                 </td>
                 <td>
                   <span class="small info">Selected Genomes
@@ -403,17 +398,20 @@ function import_lists() {
                     </select>
                   </div>
                   <div class="padded">
-                    <span id="import" name="import" onClick="search_lists();" class='ui-button ui-button-icon-left ui-corner-all coge-button-sm coge-button-left coge-nowrap'>
+                    <span id="remove" href="javascript:void(0)" onClick="remove_selected_orgs();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'>
+                        <span class="ui-icon ui-icon-minus"></span>Remove
+                    </span>
+                    <span id="clear" name="clear" onClick="clear_org_list();" class='ui-state-disabled ui-button ui-corner-all coge-button-sm'>
+                        <span class="ui-icon ui-icon-minusthick"></span>Remove all
+                    </span>
+                    <span id="save" name="save" class='ui-button ui-corner-all coge-button-sm' onclick="save_org_list();">
+                        <span class="ui-icon ui-icon-disk"></span>Save
+                    </span>
+                    <span id="import" name="import" onClick="search_lists();" class='ui-button ui-button-cornerall coge-button-sm'>
                         <span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Import List
                     </span>
                     <TMPL_IF NAME="SAVE_ORG_LIST">
-                    <span id="save" name="save" class='ui-button ui-button-icon-left ui-corner-all coge-button-sm coge-button-left coge-nowrap' onclick="save_org_list();">
-                        <span class="ui-icon ui-icon-disk"></span>Save
-                    </span>
                     </TMPL_IF>
-                    <span id="clear" name="clear" onClick="clear_org_list();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all coge-button-sm coge-button-left coge-nowrap'>
-                        <span class="ui-icon ui-icon-minusthick"></span>Clear
-                    </span>
                   </div>
                 </td>
               </tr>
