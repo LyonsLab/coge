@@ -6,12 +6,13 @@
 	<table class="small">
 		<tr align='left'>
 			<td>
-				<span style="float:right;">
-					<input type="textbox" size="53" id="notebook_search_input" onkeyup="wait_to_search(search_notebooks, this.value);" />
+				<br>
+				<div style="float:right;">
+					Search: <input type="textbox" size="49" id="notebook_search_input" onkeyup="wait_to_search(search_notebooks, this.value);" />
 					<span class='coge-button' onclick="search_notebooks();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
 					<img id="wait_notebook" src="picts/ajax-loader.gif" style="opacity: 0;" />
-				</span>
-				<span style="float:left;font-weight:bold;">Notebooks</span>
+				</div>
+				<div style="float:left;font-weight:bold;">Notebooks</div>
 			</td>
 		</tr>
 		<tr>
@@ -22,7 +23,7 @@
 		</tr>
 	</table>
 	<br>
-	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='coge-button'>Add Items</span>
+	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='coge-button r'>Add Items</span>
 </div>
 
 <div id="create_group_dialog" class="dialog_box hidden" title="Create New Group">
@@ -35,8 +36,7 @@
 		</tr>
 		<tr>
 			<td>Name:</td>
-			<td><input id="edit_group_name" type="textbox" size="53" value="" /></td>
-			<td><span class="glyphicon glyphicon-asterisk" style="color: red; font-size: 0.75em;"></span></td>
+			<td class="nowrap"><input id="edit_group_name" type="textbox" size="48" value="" />&nbsp;&nbsp;<span class="glyphicon glyphicon-asterisk" style="color: red;"></span></td>
 		</tr>
 		<tr>
 			<td>Description:</td>
@@ -63,8 +63,7 @@
         </tr>
 		<tr>
 			<td>Name:</td>
-			<td><input id="edit_notebook_name" type="textbox" size="53" value="" /></td>
-			<td><span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span></td>
+			<td class="nowrap"><input id="edit_notebook_name" type="textbox" size="48" value="" />&nbsp;&nbsp;<span style="color: red;" class="glyphicon glyphicon-asterisk"></span></td>
 		</tr>
 		<tr>
 			<td>Description:</td>
@@ -84,14 +83,14 @@
 </div>
 
 <div id="upload_metadata_dialog" class="dialog_box hidden" title="Upload Metadata">
-	<table class="small">
+	<table class="small padded">
 		<tr>
 			<td colspan="2" style="padding-bottom: 10px;">
-				Select the tab delimited file containing the metadata. The first row must contain the names for the columns. The first column of the following rows must contain a comma delimited list of IDs indicating to which object(s) (experiment, genome or notebook) the metadata for that row will be added.
+				<br>Select the tab delimited file containing the metadata. The first row must contain the names for the columns. The first column of the following rows must contain a comma delimited list of IDs indicating to which object(s) (experiment, genome or notebook) the metadata for that row will be added.<br><br>
 			</td>
 		</tr>
 		<tr>
-			<td><input id="metadata_file" name="metadata_file" type="file" required/></td>
+			<td class="center"><input id="metadata_file" name="metadata_file" type="file" required/><br><br></td>
 		</tr>
 	</table>
 </div>
@@ -105,7 +104,7 @@
 </div>
 
 <div id="comment_dialog" class="dialog_box hidden" title="Add comment to analysis">
-	<p>Comment:<br><input type='text' size="54" maxlength="255" spellcheck="false"/></p>
+	<p>Comment:<br><input type='text' size="45" maxlength="255" spellcheck="false"/></p>
 </div>
 
 
@@ -404,8 +403,8 @@ $(function(){
 	<br>
 	<TMPL_IF NAME='NUM_ANALYSES'>
 		<div>
-			<div class="bold text">Total analyses run: <TMPL_VAR NAME="NUM_ANALYSES"></div>
-			<table class="small text indent">
+			<div class="bold text">Total analyses run: <TMPL_VAR NAME="NUM_ANALYSES"></div><br>
+			<table class="text indent">
 				<tr>
 					<td class="right">CoGeBlast</td>
 					<td class="indent"><TMPL_VAR NAME="NUM_COGEBLAST"></td>

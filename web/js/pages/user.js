@@ -194,19 +194,27 @@ $(function() {
     $("#comment_dialog").dialog({
     	width: 400,
     	modal: true,
-    	buttons: {
-    		OK: function() {
-    			var log_id = $(this).data("log_id");
-    			var comment = $(this).find("input").first().val();
-    			contentPanel.setRowData('analyses', log_id, {comment: comment});
-    			contentPanel.grid.redraw();
-    			comment_job( log_id, comment );
-    			$(this).dialog("close");
-    		},
-    		Cancel: function() {
-    			$(this).dialog("close");
+    	buttons: [
+    	    {
+    	        text: "OK",
+    	        "class": 'coge-button',
+                click: function() {
+                    var log_id = $(this).data("log_id");
+                    var comment = $(this).find("input").first().val();
+                    contentPanel.setRowData('analyses', log_id, {comment: comment});
+                    contentPanel.grid.redraw();
+                    comment_job( log_id, comment );
+                    $(this).dialog("close");
+                }
+            },
+            {
+                text: "Cancel",
+                "class": 'coge-button',
+                click: function() {
+                    $(this).dialog("close");
+                }
     		}
-    	}
+    	]
     });
 });
 
@@ -1624,13 +1632,13 @@ function create_menu() {
 
 function create_group_dialog() {
 	$('#edit_group_name,#edit_group_desc').val('');
-	$('#create_group_dialog').dialog({width:'28em'}).dialog('open');
+	$('#create_group_dialog').dialog({width:'30em'}).dialog('open');
 	$('#create_menu').hide();
 }
 
 function create_notebook_dialog() {
 	$('#edit_notebook_name,#edit_notebook_desc').val('');
-	$('#create_notebook_dialog').dialog({width:'28em'}).dialog('open');
+	$('#create_notebook_dialog').dialog({width:'30em'}).dialog('open');
 	$('#create_menu').hide();
 }
 
