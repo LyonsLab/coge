@@ -615,7 +615,7 @@ $.extend(DataGrid.prototype, {
 			info:      false,
 			searching: true,
 			dom:       'lrt', // remove unused elements (like search box)
-			sScrollY:  $(window).height() - 245, // this depends on the height of the header/footer
+			sScrollY:  $(window).height() - 210, // this depends on the height of the header/footer and should be passed in as an argument
 			oLanguage: { "sZeroRecords": "", "sEmptyTable": "" },
 			columns: [
 	            { 	title: "", 
