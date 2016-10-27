@@ -94,7 +94,7 @@ sub gen_body {
 sub get_admin_functions {
     my $ugid = $FORM->param('ugid');
     my $html =
-qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="dialog_set_group_creator($ugid);">Set Group Creator</span>};
+qq{<span style="font-size: .75em" class='coge-button' onClick="dialog_set_group_creator($ugid);">Set Group Creator</span>};
     return $html;
 }
 
@@ -135,13 +135,13 @@ sub get_group_info {
       $group->annotation_pretty_print_html;   #(allow_delete => $user_can_edit);
     if ($user_can_edit) {
         $html .= qq{<div class="coge-buttonset">};
-        $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="edit_group_info($ugid);">Edit Info</span>};
+        $html .= qq{<span style="font-size: .75em" class='coge-button' onClick="edit_group_info($ugid);">Edit Info</span>};
         unless ($EMBED) {
-            $html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="modify_users($ugid);">Modify Users</span>};
+            $html .= qq{<span style="font-size: .75em" class='coge-button' onClick="modify_users($ugid);">Modify Users</span>};
         }
-        #$html .= qq{<span style="font-size: .75em" class='ui-button ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Notebook</span>};
+        #$html .= qq{<span style="font-size: .75em" class='coge-button' onClick="add_lists({ugid: '$ugid'});">Add Notebook</span>};
         $html .=
-			qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_group();">} .
+			qq{<span style="font-size: .75em" class='coge-button coge-button-danger' onClick="delete_group();">} .
 			($group->deleted ? 'Undelete' : 'Delete') . qq{</span>};
         $html .= qq{</div>};
     }

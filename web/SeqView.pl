@@ -400,12 +400,11 @@ sub find_feats {
         push @dsids, map { $_->id } $dsg->datasets;
         $gstid = $dsg->type->id;
     }
-    my $link =
-qq{<span class='ui-button ui-corner-all' " onClick="featlist('FeatList.pl?};
+    my $link = qq{<span class='coge-button' " onClick="featlist('FeatList.pl?};
     my %type;
     $link .=
         "start=$start;stop=$stop;chr=$chr;dsid=$dsid;dsgid=$dsgid;gstid=$gstid"
-      . qq{')">Extract Features:};
+      . qq{')">Extract Features};
     foreach my $ft (
         $coge->resultset('FeatureType')->search(
             {
@@ -424,7 +423,7 @@ qq{<span class='ui-button ui-corner-all' " onClick="featlist('FeatList.pl?};
     }
     $type{All} = 0;
 
-    my $type = qq{<SELECT ID="feature_type">};
+    my $type = qq{<span class="small">Type: </span><SELECT ID="feature_type">};
     $type .= join( "\n",
         map { "<OPTION value=" . $type{$_} . ">" . $_ . "</option>" }
         sort keys %type )

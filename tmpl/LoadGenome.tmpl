@@ -3,9 +3,12 @@
 </TMPL_IF>
 
 <TMPL_IF NAME='MAIN'>
+
+<link rel="stylesheet" type="text/css" href="js/vendor/jstree/dist/themes/default/style.min.css"/>
 <style type="text/css">
-.jstree li a ins { display:none !important; }
-.jstree.jstree-focused { background:white; }
+.jstree i.jstree-themeicon { display:none !important; } /* remove folder icon from each node */
+.jstree-clicked { background: #c4efaa !important; }
+.jstree-hovered { background: #e4f9d6 !important; }
 </style>
 
 <div id="wizard-container"></div>
@@ -19,7 +22,7 @@
 		    <input class="col-md-6" id="edit_organism" type="search" placeholder="Search"
 		    	title="Enter the organism associated with the new genome. Start typing to narrow down the list of organisms to choose from." spellcheck="false" size="50" value="<TMPL_VAR NAME='ORGANISM_NAME'>" />
 		    	<img id="edit_organism_busy" src="picts/ajax-loader.gif" style="visibility:hidden;" />
-		    	<span id="new_organism_button" title="Add a new organism" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input(['edit_organism_name'], 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>
+		    	<span id="new_organism_button" title="Add a new organism" class='coge-button coge-button-sm'>New</span>
 		    	&nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
 		</div>
 
@@ -33,7 +36,7 @@
 	        <label class="col-md-2">Type:</label>
         	<select id="select_type" class="col-md-6"></select>
             <div class="col-md-2">
-                <span id="new_type_button" title="Add a new sequence type" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input(['edit_type_name'], 'create_type_button');" class='ui-button ui-corner-all coge-button'>New</span>
+                <span id="new_type_button" title="Add a new sequence type" class='coge-button coge-button-sm'>New</span>
                 &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
             </div>
         </div>
@@ -42,7 +45,7 @@
             <label class="col-md-2">Source:</label>
             <input id="edit_source" type="search" class="col-md-6" placeholder="Search" title="Enter the source for the data for the new experiment. Start typing to select an exisisting source or click 'New' to add a source." size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
             <div class="col-md-2">
-                <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input(['edit_source_name'], 'create_source_button');" class='ui-button ui-corner-all'>New</span>
+                <span id="new_source_button" title="Add a new source" class='coge-button coge-button-sm'>New</span>
                 &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
             </div>
         </div>
@@ -101,7 +104,7 @@
 
 <script id="progress-buttons-custom" type="text/template">
     <div class="r inline">
-        <span id="finish_actions" onClick="handle_action($(this).parent().find('select').val());" class="ui-button ui-corner-all coge-button r">GO</span>
+        <span id="finish_actions" onClick="handle_action($(this).parent().find('select').val());" class="coge-button r">GO</span>
         <span class="text">Next Step:</span>
         <span style="padding-right:0.5em;">
             <select>
@@ -127,41 +130,40 @@
     </tr>
   </table>
   <br>
-  <span id="create_type_button" onClick="create_sequence_type();" class="ui-state-disabled ui-button ui-corner-all coge-button r">Create new type</span>
+  <span id="create_type_button" onClick="create_sequence_type();" class="ui-state-disabled coge-button r">Create new type</span>
 </div>
 
 <div id="create_new_organism_dialog" class="hidden dialog_box" title="Create New Organism">
-	<div class ="small info" style="padding-top:10px;">
+    <div class ="small text" style="padding-top:10px;">
 		Please select an organism from NCBI's Taxonomy database.  If your organism does not exist,
 		find the nearest relative and modify the name and description fields accordingly.
 	</div>
 	<div style="padding-top:10px;">
     	<span class="small">Search NCBI:</span>
-    	<input type="textbox" size="45" spellcheck="false" onkeyup="coge.utils.wait_to_search(search_ncbi_taxonomy, this);" />
+    	<input type="textbox" size="50" spellcheck="false" onkeyup="coge.utils.wait_to_search(search_ncbi_taxonomy, this);" />
 	    <img id="wait_ncbi" src="picts/ajax-loader.gif" style="opacity: 0;" />
 	</div>
-	<div id="tax_empty" class="hidden small" style="font-style:italic;color:gray;margin-top:15px;margin-left:20px;">No matches</div>
-	<div id="tax_tree" class="hidden small" style="border:1px solid lightgray;margin-top:5px;max-height:200px;max-width:415px;overflow-y:auto">
-	</div>
+	<div id="tax_empty" class="hidden small note" style="margin-top:15px;margin-left:20px;">No matches</div>
+	<div id="tax_tree" class="hidden small coge-border" style="margin-top:5px;max-height:18em;width:37em;max-width:37em;overflow:auto;"></div>
 	<div id="edit_organism_info" class="hidden" style="padding-top:15px;">
 		<span class="small">You have selected:</span><br>
-		<table style="color:gray;">
+		<table class="coge-gray">
 			<tr>
-				<td class="small" style="font-weight:bold;">Name</td>
+				<td class="small bold">Name</td>
 				<td>
-					<input id="edit_organism_name" type="textbox" size="54" spellcheck="false" style="color:gray;background-color:white;" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');" />
+					<input id="edit_organism_name" type="textbox" size="54" spellcheck="false" class="coge-bg-white" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');" />
 				</td>
 			</tr>
 			<tr>
-				<td class="small" style="font-weight:bold;">Description</td>
+				<td class="small bold">Description</td>
 				<td>
-					<textarea id="edit_organism_desc" rows="5" cols="57" spellcheck="false" style="color:gray;resize:none;border:1px solid lightgray;" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');"></textarea>
+					<textarea id="edit_organism_desc" rows="5" cols="53" spellcheck="false" class="coge-border no-resize" onkeyup="activate_on_input(['edit_organism_name', 'edit_organism_desc'], 'create_organism_button');"></textarea>
 				</td>
 			</tr>
 		</table>
 	</div>
   <br>
-  <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled ui-button ui-corner-all coge-button r">Create</span>
+  <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled coge-button r">Create</span>
 </div>
 
 <div id="create_new_source_dialog" class="hidden dialog_box" title="Create New Source">
@@ -180,15 +182,12 @@
     </tr>
   </table>
   <br>
-  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all coge-button r">Create</span>
+  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled coge-button r">Create</span>
 </div>
 
 <TMPL_INCLUDE NAME="widgets/Splash.tmpl">
-
 <TMPL_INCLUDE NAME="widgets/FileSelect.tmpl">
-
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
-
 <TMPL_INCLUDE NAME="widgets/Wizard.tmpl">
 
 <TMPL_IF NAME='ADMIN_AREA'>
@@ -287,6 +286,20 @@ $(function() {
     	buttonTemplate: 'progress-buttons-custom' // replaces default buttons
     });
 
+    // Set button handlers
+    $('#new_organism_button').click(function() {
+        $('#create_new_organism_dialog').dialog('open');
+        activate_on_input(['edit_organism_name'], 'create_organism_button');
+    });
+    $('#new_source_button').click(function() {
+        $('#create_new_source_dialog').dialog('open');
+        activate_on_input(['edit_source_name'], 'create_source_button');
+    });
+    $('#new_type_button').click(function() {
+        $('#create_new_type_dialog').dialog('open');
+        activate_on_input(['edit_type_name'], 'create_type_button');
+    });
+
 	// Open status dialog
     if (WORKFLOW_ID) {
     	coge.progress.begin();
@@ -301,5 +314,5 @@ $(function() {
 <script type="text/javascript" src="js/coge/wizard.js"></script>
 <script type="text/javascript" src="js/coge/file-select.js"></script>
 <script type="text/javascript" src="js/jquery.fileupload.js"></script>
-<script type="text/javascript" src="js/jstree/jquery.jstree.js"></script>
+<script type="text/javascript" src="js/vendor/jstree/dist/jstree.min.js"></script>
 </TMPL_IF> <!-- MAIN -->

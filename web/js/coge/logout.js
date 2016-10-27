@@ -4,8 +4,8 @@ var coge = window.coge = (function (namespace) {
     namespace.logout = {
 
         init: function(params) {
-        	if (!$.cookie) {
-        		console.error('logout.init: jQuery cookie plugin is not loaded!');
+        	if (!Cookies) {
+        		console.error('logout.init: Cookies module is not loaded!');
         		return;
         	}
         	
@@ -51,7 +51,7 @@ var coge = window.coge = (function (namespace) {
         },
         
         isLoggedIn: function() {
-        	var cookie = $.cookie(this.loginCookieName);
+        	var cookie = Cookies.get(this.loginCookieName);
     		if (!cookie)
     			return false;
     		return true;

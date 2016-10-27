@@ -120,7 +120,7 @@ function feature_checkboxes(){
 
 <TMPL_IF NAME=MAIN>
 
-<span id=go style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="loading([],['results']); prepare_run()">Run CoGe Align!</span>
+<span id=go style="font-size: 1em" class='coge-button coge-button-danger coge-button-lg' onClick="loading([],['results']); prepare_run()">Run CoGe Align!</span>
 <div id=tabs>
 <!-- set up tabs -->
 <ul>
@@ -209,13 +209,13 @@ Generate codon alignment using protein sequences?
 </TMPL_IF>
 
 <TMPL_IF NAME=FEATURE_SELECT>
-<span class='ui-button ui-corner-all ' onclick="$('#select_feats').dialog('open')">Open Feature Selection Box</span>
+<span class='coge-button' onclick="$('#select_feats').dialog('open')">Open Feature Selection Box</span>
 <div class="backbox dialog" id="select_feats" title="Select features:"><div class=small>
  <TMPL_LOOP NAME=FEATS>
   <input type=checkbox id=<TMPL_VAR NAME=ID>><TMPL_VAR NAME=NAME><br>
  </TMPL_LOOP>
 </div>
-Send Checked Features to <span class='ui-button ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>FeatList</span><br>
-<span class='ui-button ui-corner-all' onclick="$('#select_feats :checkbox').attr('checked', false);">Uncheck All</span>
+Send Checked Features to <span class='coge-button' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>FeatList</span><br>
+<span class='coge-button coge-button-sm' onclick="$('#select_feats :checkbox').attr('checked', false);">Uncheck All</span>
 </div>
 </TMPL_IF>

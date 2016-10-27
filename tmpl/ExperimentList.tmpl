@@ -221,16 +221,16 @@ function save_display_settings() {
 <form id='experiment_list'>
  <table class="ui-widget-content ui-corner-all small" id="show_columns">
   <tr>
-   <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameDescD">>Name:Description</TD>
-   <td><input class = "display" type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="TypeD">>Type</TD>
-   <td><input class = "display" type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="AnnotationD">>Annotation</TD>
-   <td><input class = "display" type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="SourceD">>Source</TD>
-   <td><input class = "display" type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="VerD">>Version</TD>
+   <td><input class="display" type=checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameDescD">>Name:Description</TD>
+   <td><input class="display" type=checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="TypeD">>Type</TD>
+   <td><input class="display" type=checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="AnnotationD">>Annotation</TD>
+   <td><input class="display" type=checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="SourceD">>Source</TD>
+   <td><input class="display" type=checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="VerD">>Version</TD>
   </tr>
   <TMPL_IF NAME="SAVE_DISPLAY">
   <tr>
    <td>
-    <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
+    <span href="javascript:void(0);" class='coge-button' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
    </td>
   </tr>
   </TMPL_IF>
@@ -246,7 +246,7 @@ function save_display_settings() {
 	</select>
 	<!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
 	<span id='filter_count' style="margin-left:20px;margin-right:100px;"></span>
-	<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
+	<span href='#' id="table_opts" class='coge-button'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
 	</div>
 
 	<TABLE id='experiment_table' class="ui-widget-content ui-corner-all">
@@ -271,7 +271,7 @@ function save_display_settings() {
 	     <TD><TMPL_VAR NAME=ANNOTATION></TD>
 	     <TD><TMPL_VAR NAME=SOURCE></TD>
 	     <TD align="center"><TMPL_VAR NAME=VER></TD>
-         <TD><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="delete_row(<TMPL_VAR NAME=DSGID>)"></span></span></TD>
+         <TD><span class='coge-button'><span class="ui-icon ui-icon-trash" onclick="delete_row(<TMPL_VAR NAME=DSGID>)"></span></span></TD>
 	   </TR>
 	  </TMPL_LOOP>
 	 </tbody>
@@ -281,12 +281,12 @@ function save_display_settings() {
 	<input type=button value="Uncheck All" onclick="$('#experiment_table :checkbox').attr('checked', false);">-->
 
 	<!-- TODO - consider putting onClick declarations in javascript for simplicity -->
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#experiment_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#experiment_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#experiment_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#experiment_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
+	<span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#experiment_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
+	<span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#experiment_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
+	<span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#experiment_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
+	<span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#experiment_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
 	<TMPL_IF NAME=SAVE_DATA>
-	<!--<span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>-->
+	<!--<span href="javascript:void(0);" id="history_dialog_button" class='coge-button'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>-->
 	</TMPL_IF>
 	<div class='small'>
 	 Send selected experiments to:
@@ -296,7 +296,7 @@ function save_display_settings() {
       <option value="send_to_ExperimentList">ExperimentList</option>
       <option value="send_to_list">New List</option>
      </select>
-     <span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="experiment_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>
+     <span class='coge-button coge-button-sm' onclick="experiment_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>
     </div>
 
 	<br>

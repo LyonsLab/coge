@@ -280,11 +280,11 @@ $(function(){
 	      </td>
         <td valign="top">
           <TMPL_IF NAME=FEATURE>
-          <span class='ui-button ui-corner-all' onClick="generate_feat_info(['args__<TMPL_VAR NAME=FEATID>'],['feature_info']); $('#feature_info').dialog('open');">Get Feature Info</span>
+          <span class='coge-button' onClick="generate_feat_info(['args__<TMPL_VAR NAME=FEATID>'],['feature_info']); $('#feature_info').dialog('open');">Get Feature Info</span>
           </TMPL_IF>
         </td>
         <td valign="top">
-          <span class='ui-button ui-corner-all'  onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">Calculate GC Content</span>
+          <span class='coge-button'  onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">Calculate GC Content</span>
           <div id="gc_info" class="small" style="display:none;margin-top:5px;"></div>
         </td>
       </tr>
@@ -344,18 +344,18 @@ $(function(){
      <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" value= "<TMPL_VAR NAME="ADDDOWN">" size=6>
    </td>
   </TMPL_IF>
-<td><span class='ui-button ui-button-icon-left ui-corner-all' id = "add_to" onClick="redefine(myObj.rc);"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Redefine Sequence</span>
+<td><span class='coge-button' id = "add_to" onClick="redefine(myObj.rc);">Redefine Sequence</span>
    <TMPL_IF NAME="FEATURE">
    <TD align>
-   <span class='ui-button ui-button-icon-left ui-corner-all' id="reset" onClick="reset_updown();get_sequence();"><span class="ui-icon ui-icon-refresh"></span>Reset</span>
+   <span class='coge-button' id="reset" onClick="reset_updown();get_sequence();"><span class="ui-icon ui-icon-refresh"></span>Reset</span>
    </TMPL_IF>
  </TABLE>
 <table>
      <TR>
-     <TD align=right valign="top">
-     <span class='ui-button ui-corner-all' id="blast_button" style="float: left" onClick="blastSeq()">CoGeBlast</span>
-     <span class='ui-button ui-corner-all' id="trna_button" style="float: left" onClick="AragornSeq()">Scan for tRNAs</span>
-     <span class='ui-button ui-corner-all' id="rnafold_button" style="float: left" onClick="RNAFold()">RNA Fold</span>
+     <TD>
+     <span class='coge-button' id="blast_button" onClick="blastSeq()">CoGeBlast</span>
+     <span class='coge-button' id="trna_button" onClick="AragornSeq()">Scan for tRNAs</span>
+     <span class='coge-button' id="rnafold_button" onClick="RNAFold()">RNA Fold</span>
     </TD>
    </TR>
      <tr>

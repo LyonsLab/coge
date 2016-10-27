@@ -615,7 +615,7 @@ $.extend(DataGrid.prototype, {
 			info:      false,
 			searching: true,
 			dom:       'lrt', // remove unused elements (like search box)
-			sScrollY:  $(window).height() - 245, // this depends on the height of the header/footer
+			sScrollY:  $(window).height() - 210, // this depends on the height of the header/footer and should be passed in as an argument
 			oLanguage: { "sZeroRecords": "", "sEmptyTable": "" },
 			columns: [
 	            { 	title: "", 
@@ -845,15 +845,19 @@ $.extend(DataGrid.prototype, {
     		var title = row.getDescription();
     		var link = row.getLink();
     		var flags = row.getFlags({noSpaces: 1});
-    		title = flags + ' ' + title + "<br><a class='xsmall' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
+    		title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
     		link = link + "&embed=1";
     		console.log('DataGrid.openItem: ' + link);
     		var height = $(window).height() * 0.8;
     		var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
     			.dialog({
-    				title: title,
+    				//title: title,
     				width: '80%',
-    				height: height
+    				height: height,
+                    open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
+                        console.log('matt!!!!!!!!!!!')
+                        $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
+                    }
     			})
     			.dialog('open');
     	}

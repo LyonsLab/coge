@@ -58,6 +58,10 @@ a:hover {
     color: gray;
 }
 
+.coge-nowrap {
+    white-space: nowrap;
+}
+
 .coge-certified-icon {
     color: white;
     background-color: #e5c100;
@@ -126,6 +130,22 @@ a:hover {
     background-color: #e5c100;
 }
 
+.coge-gray {
+    color: gray;
+}
+
+.coge-bg-gray {
+    color: gray;
+}
+
+.coge-white {
+    color: white;
+}
+
+.coge-bg-white {
+    background-color: white;
+}
+
 .alert {
   color: red;
 }
@@ -160,6 +180,10 @@ div.footer {
 
 div.panel {
   padding: 5px;
+}
+
+select {
+    font-size: 0.85em !important;
 }
 
 .noselect {
@@ -1056,6 +1080,10 @@ li {
     padding-top: 0.625em;
 }
 
+.coge-padded-bottom {
+    padding-bottom: 0.625em;
+}
+
 .coge-padded-left {
     padding-left: 0.625em;
 }
@@ -1083,8 +1111,12 @@ li {
     display: block;
 }
 
-.coge-button-border {
+.coge-border {
     border: 1px solid lightgray;
+}
+
+.coge-border-top {
+    border-top: 1px solid lightgray;
 }
 
 .coge-border-bottom {
@@ -1472,86 +1504,55 @@ h5 > small {
     padding: 5px;
 }
 
-.coge-buttonset .ui-button {
-    margin-left: 5px;
+.coge-buttonset .coge-button {
+    margin-right: 5px;
 }
 
 .coge-button {
-    padding: 0.125em 1em ; /* 2/16 = 0.125 */
+    display: inline-block;
     font-weight: 600;
     font-size: 0.875em;
-    line-height: 1.5;
-    border: 1px solid #7adf39;
+    line-height: 1.0;
     background: #9ce76d;
+    border-radius: 3px;
     vertical-align: middle;
+    text-align: center;
     min-height: 1em;
+    padding: .5em 1em;
+	margin-right: .1em;
+	cursor: pointer;
+	user-select: none;
+	white-space: nowrap
+}
+
+.coge-button-danger {
+    background: #ff7979;
 }
 
 .coge-button-sm {
-    padding: 0.125em 0.75em ; /* 2/16 = 0.125 */
-    font-weight: 600;
     font-size: 0.75em;
-    line-height: 1.5;
-    border: 1px solid #7adf39;
-    background: #9ce76d;
-    vertical-align: middle;
-    min-height: 1em;
+    white-space: nowrap
 }
 
 .coge-button-lg {
-    font-size: 1em; /* 20/16 = 1.25 */
-    font-weight: 600;
-    padding: 0.125em 1.125em ; /* 2/16 = 0.125 18/16 = 1.125 */
-    line-height: 1.5;
-    border: 1px solid #7adf39;
-    background: #9ce76d;
-    vertical-align: middle;
-    min-height: 1em;
+    font-size: 1em;
+    white-space: nowrap
 }
 
-.coge-button-left {
-    padding-left: 2em;
+.coge-button-left { /* for left-side icons */
+    padding-left: 0.5em;
 }
 
-.coge-button-right {
-    padding-right: 2em;
+.coge-button-right { /* for right-side icons */
+    padding-right: 0.5em;
 }
 
-.coge-button.ui-state-hover,
-.coge-button-lg.ui-state-hover,
-.coge-button-sm.ui-state-hover {
-    border-color: #55ae1c;
+.coge-button:hover {
     background: #65d022;
-    outline: none;
 }
 
-.coge-button.ui-state-active,
-.coge-button-lg.ui-state-active,
-.coge-button-sm.ui-state-active {
-    border-color: #55ae1c;
-    background: #65d022;
-    outline: none;
-}
-
-.ui-button-go {
-    background: #ff7979;
-    border-color: #ff6666;
-}
-
-.coge-button.ui-button-go.ui-state-hover,
-.coge-button-lg.ui-button-go.ui-state-hover,
-.coge-button-sm.ui-button-go.ui-state-hover {
-    border-color: #ff1818;
+.coge-button.coge-button-danger:hover {
     background: #ff5252;
-    outline: none;
-}
-
-.coge-button.ui-button-go.ui-state-active,
-.coge-button-lg.ui-button-go.ui-state-active,
-.coge-button-sm.ui-button-go.ui-state-active {
-    border-color: #ff1818;
-    background: #ff5252;
-    outline: none;
 }
 
 .coge-icon {
@@ -1601,6 +1602,11 @@ h5 > small {
     user-select: none;
 }
 
+/* Table of Contents panel */
+.coge-side-menu {
+    white-space: nowrap;
+}
+
 .coge-side-menu ul, li { margin: 0; padding: 0; }
 .coge-side-menu ul li span { 
     display: block;
@@ -1618,7 +1624,29 @@ h5 > small {
     color: green;
 }
 
-/* 
+/* Dropdown menu */
+.coge-dropdown-menu {
+    z-index: 100;
+}
+
+.coge-dropdown-menu ul {
+    white-space:nowrap;
+}
+
+.coge-dropdown-menu li {
+    padding: 3px;
+    font-size: 0.85em;
+}
+
+.coge-dropdown-menu li:hover {
+    background-color: greenyellow;
+}
+
+.coge-dropdown-menu li a:hover {
+    color: green;
+}
+
+/*
  * DataTables customizations 
  *
  */
@@ -1887,7 +1915,7 @@ div.dataTables_scrollBody {
 	border-color: #65d022;
 	margin-top: 0.5em;
 	font-size: 1.25em;
-	color: dimgray;
+	color: gray;
 	padding: 0.2em !important;
 }
 

@@ -20,12 +20,14 @@
 </style>
 
 <tmpl_if name=results>
-    <section id="results" class="ui-widget-content ui-corner-all">
+    <div id="results">
         <tmpl_var name=results>
-    </section>
+    </div>
+    <br>
 <tmpl_else>
-    <section id="results" class="hidden ui-widget-content ui-corner-all">
-    </section>
+    <div id="results">
+    </div>
+    <br>
 </tmpl_if>
 
 <aside class="info">
@@ -386,7 +388,7 @@
                 <li>
                     <label>Job Title: </label>
                     <input type="text" name="jobtitle" id="jobtitle" />
-                    <span class="ui-button ui-corner-all coge-button-sm" onClick="fill_jobtitle()">Use Org Names</span>
+                    <span class="coge-button coge-button-sm" onClick="fill_jobtitle()">Use Org Names</span>
                 </li>
             </ul>
         </fieldset>
@@ -394,7 +396,7 @@
     </div> <!-- close tab-3 -->
 </section> <!--close tabs section-->
 <div style="padding: 15px 0 5px 0;">
-    <span class="ui-button ui-button-go ui-corner-all coge-button-lg" id="synmap_go" >Generate SynMap</span>
+    <span class="coge-button coge-button-danger coge-button-lg" id="synmap_go" >Generate SynMap</span>
 </div>
 </tmpl_if>
 
@@ -414,7 +416,7 @@
     <ul id="dialog_error" class="horizontal padded hidden">
         <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
         <li id="dialog_log" class="small"></li>
-        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go coge-button r">
+        <li id="cancel_button" class="coge-button coge-button-danger r">
             <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 Close
             </span>
@@ -426,7 +428,7 @@
             <span>Finished!</span>
             <img src="picts/thumbs_up.png">
         </li>
-        <li id="ok_button" class="ui-button ui-corner-all coge-button r">
+        <li id="ok_button" class="coge-button r">
             <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 OK
             </span>
@@ -447,8 +449,6 @@
 <TMPL_INCLUDE NAME="widgets/Overlay.tmpl">
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
 
-<link href="js/vendor/bioplot/dist/bioplot.min.css" rel="stylesheet" />
-
 <!-- Load scripts last for speed -->
 <script src="js/pages/synmap.js"></script>
 <script src="js/coge/services.js"></script>
@@ -456,8 +456,6 @@
 <script src="js/coge/utils.js"></script>
 <script src="js/coge/colors.js"</script>
 <script src="js/vendor/d3/d3.min.js"></script>
-<script src="js/vendor/jdot/dist/jdot.js"></script>
-<script src="js/vendor/bioplot/dist/bioplot.js"></script>
 <script src="js/xhairs.js"></script>
 <script>
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';

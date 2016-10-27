@@ -22,7 +22,7 @@ function edit_experiment_info() {
         },
         success : function(data) {
             var obj = jQuery.parseJSON(data);
-            $("#experiment_info_edit_box").html(obj.output).dialog('open');
+            $("#experiment_info_edit_box").html(obj.output).dialog('open').dialog({width: '32em'});
         }
     });
 }
@@ -113,7 +113,7 @@ function add_experiment_type () {
                         $("#edit_tag_name").autocomplete('close');
                     }
             });
-            $("#experiment_tag_edit_box").html(data).dialog('open');
+            $("#experiment_tag_edit_box").html(data).dialog('open').dialog({'width': '32em'});
         }
     });
 }
@@ -279,7 +279,7 @@ var snpMenu = {
         
     	this.dialog.dialog({ 
     		title: "Select SNP Analysis Options",
-    		width: '35em',
+    		width: '32em',
     		autoOpen: false,
     		buttons: [
     	        {
@@ -501,7 +501,7 @@ var metaplotMenu = {
         
     	this.dialog.dialog({ 
     		title: "Select Metaplot Analysis Options",
-    		width: '30em',
+    		width: '20em',
     		autoOpen: false,
     		buttons: [
     	        {

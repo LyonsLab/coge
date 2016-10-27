@@ -112,7 +112,7 @@
 </div>
 
 <tmpl_if name="frac_bias">
-    <script type="text/javascript" src="js/plotly-1.14.1.min.js"></script>
+    <script type="text/javascript" src="js/vendor/plotly/dist/plotly.min.js"></script>
     <script type="text/javascript" src="js/fractbias_plotter.js"></script>
     <div class="padded">
         <!--<div class="small link ui-widget-content ui-corner-all padded" style="float:left" onclick="window.open('<tmpl_var name=frac_bias>')">-->
@@ -128,11 +128,10 @@
 
 <ul class="padded">
     <li>
-        <div class="ui-widget-content ui-corner-all padded">
         <table id="files" class="small">
             <th colspan="4">
                 Links and Downloads <span class="link small" onClick="$(this).hide(); $('#files tbody').fadeIn();">
-                click here to see more...</span>
+                click for more...</span>
             </th>
             <tbody class="hidden small">
                 <tmpl_loop name="files">
@@ -146,11 +145,10 @@
                 </td>
             </tbody>
         </table>
-        </div>
     </li>
     <tmpl_if name=synsub>
     <li>
-        <span  class='ui-button ui-corner-all'
+        <span  class='coge-button'
             onclick="window.open('<tmpl_var name=synsub>')">
             Generate Substitution Matrix of Syntelogs
         </span>
@@ -160,29 +158,30 @@
     <tmpl_if name=grimm>
     <li>
         <br>
-        <span class="ui-button ui-corner-all" id="grimm_link"
+        <span class="coge-button" id="grimm_link"
         onclick="post_to_grimm('<tmpl_var name=seq1>','<tmpl_var name=seq2>')">
             Rearrangement Analysis
         </span>
         <a class="small" href="<tmpl_var name=grimm_link>" target=_new>(Powered by GRIMM!)</a>
     </li>
     </tmpl_if>
-    <li>
-        <span>Send genomes to SynMap3D:</span>
+    <li class="small padded">
+        <span>Send to SynMap3D:</span>
         <a href="<tmpl_var name=syn3dlink>" target=_blank>
             <tmpl_var name=syn3dlink>
         </a>
     </li>
-    <li>
+    <li class="small padded">
         <span>Regenerate this analysis:</span>
         <a href="<tmpl_var name=link>" target=_new_synmap>
             <tmpl_var name=link>
         </a>
     </li>
     <li>
-        <span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all coge-button"
+        <br>
+        <span id="clear" style="font-size: 0.8em" class="coge-button"
             onClick="$('#results').hide(); $(this).hide(); $('#intro').fadeIn();" >
-            Clear Results
+            Hide Results
         </span>
     </li>
 </ul>
@@ -227,7 +226,7 @@
                 If you would prefer to revert to the orignal SynMap, select the "Legacy Version" tab at the top of the page. For more help, see the <a target="_blank" href="https://genomevolution.org/wiki/index.php/SynMap2">SynMap Wiki</a>
             </div><br>
             <input type="checkbox" /> <span class="small">Don't show this message again</span>
-            <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) $.cookie('instruct_synmap','true', {expires:10000});$(this).parent('div').hide();" class="r ui-button ui-corner-all">OK, got it!</span>
+            <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) Cookies.set('instruct_synmap','true', {expires:10000});$(this).parent('div').hide();" class="r coge-button">OK, got it!</span>
         </div>
     </div>
 
@@ -246,7 +245,7 @@ function show_vis2() {
                 genome_x: { name: '<TMPL_VAR NAME=xorg_name>', id: '<TMPL_VAR NAME=dsgid1>', chromosomes: <TMPL_VAR NAME=chromosomes1>},
                 genome_y: { name: '<TMPL_VAR NAME=yorg_name>', id: '<TMPL_VAR NAME=dsgid2>', chromosomes: <TMPL_VAR NAME=chromosomes2>}
             });
-    if (!$.cookie("instruct_synmap")) { $("#instruct").removeClass('hidden') };
+    if (!Cookies.get("instruct_synmap")) { $("#instruct").removeClass('hidden') };
     sm2_load = true;
 }
 
@@ -268,7 +267,7 @@ function show_results() {
     // NOTE: If we update JQuery UI past 1.9 this needs to be changed to "active"
     $("#data").tabs({
         selected: start_index,
-        select: function(event, ui) { on_tab_swap(ui.index) }
+        select: function(event, ui) { on_tab_swap(ui.newTab.index()) }
     });
 
     if (v2Vis)

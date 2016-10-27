@@ -1411,6 +1411,11 @@ var ScoringMixin = {
 
     // Tightly coupled to matrix/match scoring for picking the gapcost select
     _select_gapcost: function($element) {
+        if (!$element || !$element.val()) {
+            console.warn('blast:_select_gapcost: null input');
+            return;
+        }
+
         var matchPattern = /[,]/g;
         var val = $element.val().replace(matchPattern, "");
 
@@ -1530,14 +1535,14 @@ $.extend(Ncbi.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         var promise = blast_param_on_select('ncbi_radio', 'ncbi');
 
         // Set the options after the parameters have been returned
-	if (promise)
-        promise.always(function() {
-            switch (self.params['program']) {
-                case 'blastn': self.update_nucleotide(); break;
-                default: self.update_default(); break;
-            }
-        })
-    }
+        if (promise)
+            promise.always(function() {
+                switch (self.params['program']) {
+                    case 'blastn': self.update_nucleotide(); break;
+                    default: self.update_default(); break;
+                }
+            })
+        }
 });
 
 function Blast(selector, params) {
@@ -1658,16 +1663,16 @@ $.extend(Blast.prototype, TypeSelectorMixin, ScoringMixin, ProteinMixin, {
         var promise = blast_param_on_select('coge_radio', 'coge');
 
         // Set the options after the parameters have been returned
-	if (promise) 
-        promise.always(function() {
-            switch (self.params['program']) {
-                case 'lastz': self.update_blastz(); break;
-                case 'tblastx': self.update_protein(); break;
-                case 'tblastn': self.update_protein(); break;
-                default: self.update_default(); break;
-            }
-        })
-    }
+        if (promise)
+            promise.always(function() {
+                switch (self.params['program']) {
+                    case 'lastz': self.update_blastz(); break;
+                    case 'tblastx': self.update_protein(); break;
+                    case 'tblastn': self.update_protein(); break;
+                    default: self.update_default(); break;
+                }
+            })
+        }
 });
 
 function getParamsFromUrl() {
@@ -1762,5 +1767,74 @@ function toggle_display(button_obj, target_id) {
     else {
         $(button_obj).html('hide');
         $('#'+target_id).slideDown('fast');
+    }
+}
+
+var initialized = false;
+function select_tab(event, ui) {
+    var button = $("#run_blast");
+    var index = (ui.newTab ? ui.newTab.index() : 0);
+    switch(index) {
+        case 0:
+            adjust_blast_types();
+            button.unbind().click(run_coge_blast).html("Run CoGe BLAST");
+
+            if (!initialized) {
+                var queryParams = getParamsFromUrl();
+
+                var analysis = new Blast("#coge-params", {
+                    type: queryParams['type'],
+                    color: queryParams['color_hsps'],
+                    match_score: queryParams['match_score'],
+                    matrix_score: queryParams['matrix'],
+                    evalue: queryParams['expect'],
+                    wordsize: queryParams['wordsize'],
+                    limit: queryParams['resultslimit'],
+                    gapcost: queryParams['gapcost'],
+                    filtered: queryParams['filter_query'],
+                    composition: queryParams['comp'],
+                    blastz_wordsize: queryParams['zwordsize'],
+                    blastz_gap_start: queryParams['zgap_start'],
+                    blastz_gap_extension: queryParams['zgap_exten'],
+                    blastz_chaining: queryParams['zchaining'],
+                    blastz_threshold: queryParams['zthreshold'],
+                    blastz_mask: queryParams['zmask'],
+                    program: queryParams['program']
+                });
+
+                analysis.update_display();
+                initialized = true;
+            }
+            break;
+        case 1:
+            adjust_blast_types(1);
+            blast_param_on_select('ncbi_radio','ncbi');
+            button.unbind().click(function() {
+                select_blast();
+                ga('send', 'event', 'cogeblast', 'run', 'ncbi');
+            }).html("Run NCBI Blast");
+
+            if (!initialized) {
+                var queryParams = getParamsFromUrl();
+
+                var analysis = new Ncbi("#ncbi-params", {
+                    type: queryParams['type'],
+                    match_score: queryParams['match_score'],
+                    matrix_score: queryParams['matrix'],
+                    evalue: queryParams['expect'],
+                    wordsize: queryParams['word_size'],
+                    limit: queryParams['resultslimit'],
+                    gapcost: queryParams['gapcost'],
+                    filter: queryParams['filter'],
+                    composition: queryParams['comp'],
+                    database: queryParams['database'],
+                    job: queryParams['job'],
+                    program: queryParams['program']
+                });
+
+                analysis.update_display();
+                initialized = true;
+            }
+            break;
     }
 }

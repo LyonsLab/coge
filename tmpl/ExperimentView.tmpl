@@ -32,7 +32,7 @@ $(document).ready(function() {
         cache: false,
     });
 
-    $(".dialog_box").dialog({autoOpen: 0, width: 450});
+    $(".dialog_box").dialog({autoOpen: 0});
 
     $("#edit_tag_name").autocomplete({
         source: function() { get_experiment_tags(); },
@@ -181,7 +181,7 @@ $(document).ready(function() {
     <td><textarea id="edit_tag_description" rows="5" cols="50"></textarea></td>
    </tr>
   </table>
-  <span onClick="add_tag_to_experiment();" class='ui-button ui-corner-all coge-button'>Add</span>
+  <span onClick="add_tag_to_experiment();" class='coge-button r'>Add</span>
 </div>
 
 <div id="find_snps_dialog" class="dialog_box hidden" title="Find SNPs">
@@ -203,7 +203,7 @@ $(document).ready(function() {
 		</tr>
 	</table>
 	<br><br>
-	<span onClick="find_snps();" class='ui-button ui-corner-all coge-button'>Identify SNPs</span>
+	<span onClick="find_snps();" class='coge-button'>Identify SNPs</span>
 </div>
 
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
@@ -253,7 +253,7 @@ $(document).ready(function() {
 	 </tr>
 	</table>
 	<br>
-	<span onClick="update_experiment_info();" class='ui-button ui-corner-all coge-button'>Update</span>
+	<span onClick="update_experiment_info();" class='coge-button r'>Update</span>
 </TMPL_IF>
 
 <TMPL_IF NAME='ADMIN_AREA'>
@@ -261,7 +261,7 @@ $(document).ready(function() {
 	<div class="bold text padded">Admin Functions</div>
 	<div class="small padded">
 		<span>Load Log:</span>
-	    <span id="log_button" onclick="toggle_load_log();" class='ui-button ui-corner-all coge-button' style="width:3em; margin-bottom:1em; overflow:auto;">Show</span>
+	    <span id="log_button" onclick="toggle_load_log();" class='coge-button' style="width:3em; margin-bottom:1em; overflow:auto;">Show</span>
 	    <img id="log_spinner" src="picts/ajax-loader.gif" style="opacity: 0;"/>
 	    <div id="log_contents" class="border hidden padded coge-code" style="border:1px solid gray; color: navy;"></div>
 	</div>

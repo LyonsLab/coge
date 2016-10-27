@@ -23,7 +23,7 @@ function edit_list_info () {
 		},
 		success : function(data) {
 			var obj = JSON.parse(data);
-			show_dialog('list_info_edit_box', '', obj.output, 450);
+			show_dialog('list_info_edit_box', '', obj.output, '31em');
 		},
 	});
 }
@@ -399,7 +399,7 @@ class Contents {
 		this.sort('type');
 		this.build();
 		if (json.user_can_edit)
-			div.append($('<div class="padded"><span class="ui-button ui-button-icon-left ui-corner-all" onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span></div>'));
+			div.append($('<div class="padded"><span class="coge-button" onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span></div>'));
 	}
 	build() {
 		this.tbody.empty();

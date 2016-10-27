@@ -29,7 +29,7 @@ $(function () {
 	
 	$( "#tabs" ).tabs({
 		select: function(event, ui) {
-            current_tab = ui.index;
+            current_tab = ui.newTab.index();
             schedule_update(5000);
         },
 		show: function(event, ui) {
@@ -1898,7 +1898,7 @@ $.extend(Histogram.prototype, {
 	initialize: function() {
 		var self = this;
 		$("#" + this.element).html(
-			'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;">Zoom Out</button>' +
+			'<div><button id="' + self.element + '_back_button" class="coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;">Zoom Out</button>' +
 			'<span style="margin-right:40px;">Data: ' + $('#report_type').val() + ', Filter: ' + $('#report_filter').val() + '</span></div>'
 		);
 		$('#' + this.element + '_back_button').on("click", function() {
@@ -2478,10 +2478,10 @@ $.extend(System_graph.prototype, {
 		
 		// Clear the element, add the zoom out button and svg container
 		$("#" + this.element).html(
-				'<div><button id="' + self.element + '_back_button" class="ui-button ui-corner-all coge-button" style="float:left;height:25px;width:100px" disabled>Zoom Out</button>' +
-				'<div><button id="' + self.element + '_zoom_button" class="ui-button ui-corner-all coge-button" style="float:left;height:25px;width:125px" disabled>Zoom 24 Hours</button>' +
-				'<div><button id="' + self.element + '_zoom_week_button" class="ui-button ui-corner-all coge-button" style="float:left;height:25px;width:100px" disabled>Zoom Week</button>' +
-				'<div><button id="' + self.element + '_zoom_month_button" class="ui-button ui-corner-all coge-button" style="float:left;height:25px;width:125px" disabled>Zoom Month</button>' +
+				'<div><button id="' + self.element + '_back_button" class="coge-button" style="float:left;height:25px;width:100px" disabled>Zoom Out</button>' +
+				'<div><button id="' + self.element + '_zoom_button" class="coge-button" style="float:left;height:25px;width:125px" disabled>Zoom 24 Hours</button>' +
+				'<div><button id="' + self.element + '_zoom_week_button" class="coge-button" style="float:left;height:25px;width:100px" disabled>Zoom Week</button>' +
+				'<div><button id="' + self.element + '_zoom_month_button" class="coge-button" style="float:left;height:25px;width:125px" disabled>Zoom Month</button>' +
 				'<div><br><br><br></div>'+
 				'<div id="' + self.element + '_container" style="height:' + (self.height + 500) + 'px;">' +
 				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 2000) + 'px;"></div> </div>'

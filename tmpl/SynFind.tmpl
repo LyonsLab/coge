@@ -55,7 +55,7 @@
             </td>
         </tr>
         <tr>
-            <td><span class="ui-button ui-corner-all coge-button" onclick="search_chain(1)">Search</span></td>
+            <td><span class="coge-button" onclick="search_chain(1)">Search</span></td>
         </tr>
     </table>
 
@@ -132,7 +132,7 @@
 
 </div> <!--close all tabs-->
 <div class="padded">
-    <span id="run_synfind_button" class='ui-button ui-button-go ui-corner-all coge-button-lg'>Run SynFind</span><BR><br>
+    <span id="run_synfind_button" class='coge-button coge-button-danger coge-button-lg'>Run SynFind</span><BR><br>
 </div>
 
 </TMPL_IF>
@@ -149,7 +149,7 @@
     <ul class="dialog-error horizontal padded hidden">
         <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
         <li class="dialog-log small"></li>
-        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go r coge-button">
+        <li id="cancel_button" class="r coge-button coge-button-danger">
             <span onClick="$('#status_dialog').dialog('close');" >
                 Close
             </span>
@@ -161,7 +161,7 @@
             <span>Finished!</span>
             <img src="picts/thumbs_up.png">
         </li>
-        <li id="ok_button" class="ui-button ui-corner-all r coge-button">
+        <li id="ok_button" class="r coge-button">
             <span onClick="$('#status_dialog').dialog('close');" >
                 OK
             </span>

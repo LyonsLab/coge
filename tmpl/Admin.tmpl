@@ -12,19 +12,13 @@
 <script type="text/javascript" src="js/coge/services.js"></script>
 <!--<script src="js/coge/colors.js"</script>-->
 <script lanaguage="javascript" type="text/javascript" src="js/pages/admin.js"></script>
-<SCRIPT type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
-<SCRIPT type="text/javascript" src="./js/jstree/jquery.jstree.js"></SCRIPT>
-<script src="js/vendor/d3/d3.min.js"></script>
+<script type="text/javascript" src="js/jquery.fileupload.js"></script>
+<script type "text/javascript" src="js/vendor/d3/d3.min.js"></script>
 <script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
 <link rel="stylesheet" type="text/css" href="css/dataTables.css"/>
 
 <style type="text/css">
-.jstree li a ins { display:none !important; }
-.jstree.jstree-focused { background:white; }
-
-
 circle.node {
   cursor: pointer;
   stroke: #3182bd;
@@ -204,7 +198,7 @@ table.dataTable td {
 				Please wait ... <img src="picts/ajax-loader.gif"/>
 			</div>-->
 				<div class="coge-buttonset">
-			    	<span id="ok_button" style="float:right;" class="ui-button ui-corner-all coge-button">Ok</span>
+			    	<span id="ok_button" style="float:right;" class="coge-button">Ok</span>
 			</div>
 		</div>
 		
@@ -223,8 +217,8 @@ table.dataTable td {
 			<img id='jobs_loading' style="padding-left:1em" src="picts/ajax-loader.gif" />
 		</div>
 		<div style="padding-top:1em">
-			<span id="jobs_cancel" class="ui-button ui-corner-all">Cancel selected job</span>
-			<span id="jobs_restart" class="ui-button ui-button-go ui-corner-all">Restart selected job</span>
+			<span id="jobs_cancel" class="coge-button">Cancel selected job</span>
+			<span id="jobs_restart" class="coge-button coge-button-danger">Restart selected job</span>
 		</div>
 		<div id="jobs" style="padding-top:1em;max-width:95%;height:70%;"></div>
 	</div>
@@ -272,7 +266,7 @@ table.dataTable td {
 				<option value="public">Public</options>
 				<option value="shared">Restricted but Shared</option>
 			</select>
-			<button id="histogram_button" class="ui-button ui-corner-all coge-button" style="margin-right:20px;" onclick="init_histogram('histogram')">Histogram</button>
+			<button id="histogram_button" class="coge-button" style="margin-right:20px;" onclick="init_histogram('histogram')">Histogram</button>
 			<img id="reports_loading"  src="picts/ajax-loader.gif" style="visiblity:hidden;" />
 		</div>
 		<div id="reports"></div>
@@ -390,7 +384,7 @@ $(function(){
 			<span style="color:dimgray">Enter names or groups:</span><br>
 			<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:20em;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_share, this.value);" />
 			<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>
-			<span href="javascript:void(0)" onClick="edit_access(<TMPL_VAR NAME=ITEM_ID>, <TMPL_VAR NAME=ITEM_TYPE>);" class='ui-button ui-corner-all coge-button'>Add</span>
+			<span href="javascript:void(0)" onClick="edit_access(<TMPL_VAR NAME=ITEM_ID>, <TMPL_VAR NAME=ITEM_TYPE>);" class='coge-button'>Add</span>
 			<div style="padding-top:20px;">
 				<input type="checkbox" id="restrict_checkbox">
 				<span> Make Public</span>
@@ -454,7 +448,7 @@ $(function(){
 		<TMPL_IF NAME="IS_EDITABLE">
 			<span style="color:dimgray">Enter names or groups:</span><br>
 			<input id="group_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_group, this.value);" />
-			<span href="javascript:void(0)" onClick="add_users_to_group('<TMPL_VAR NAME=ITEM_ID>', '<TMPL_VAR NAME=ITEM_TYPE>');" class='ui-button ui-corner-all coge-button'>Add</span>
+			<span href="javascript:void(0)" onClick="add_users_to_group('<TMPL_VAR NAME=ITEM_ID>', '<TMPL_VAR NAME=ITEM_TYPE>');" class='coge-button'>Add</span>
 		<TMPL_ELSE>
 			<span style="color:dimgray">
 				You don't have permission to modify this group.
@@ -476,7 +470,7 @@ $(function(){
 	<TMPL_VAR NAME='ERROR_MESSAGE'>
 	<br>
 	<br>
-	<span style="font-size:.75em;" class='ui-button ui-corner-all coge-button' onClick="$(this.parentNode.parentNode).dialog('close');">&nbsp&nbsp;OK&nbsp&nbsp;</span>
+	<span style="font-size:.75em;" class='coge-button' onClick="$(this.parentNode.parentNode).dialog('close');">&nbsp&nbsp;OK&nbsp&nbsp;</span>
 </div>
 </TMPL_IF>
 

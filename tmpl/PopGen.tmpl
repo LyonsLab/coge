@@ -384,8 +384,8 @@ $(document).ready(ready);
 		<select id="types" onchange="set_chromosomes();chromosome_changed();"></select>
 		<select id="chromosomes" onchange="chromosome_changed();"></select>
 		<div id="colvis" style="display:inline-block;vertical-align:middle;"></div>
-		    <span onclick="export_dialog()" class="ui-button ui-corner-all coge-button">Export...</span>
-		    <span onclick="plot_dialog();" class="ui-button ui-corner-all coge-button">Plot...</span>
+		    <span onclick="export_dialog()" class="coge-button">Export...</span>
+		    <span onclick="plot_dialog();" class="coge-button">Plot...</span>
 		</div>
 	</div>
 	<style>
@@ -401,7 +401,7 @@ $(document).ready(ready);
 		Select columns to export
 		<div id="export_columns">
 		</div>
-		<span onclick="do_export()" class="r ui-button ui-corner-all coge-button">Export</span>
+		<span onclick="do_export()" class="r coge-button">Export</span>
 		</div>
 	<div id="plot_dialog" class="dialog_box hidden" title="Plot" style="display:none">
 	<div style="height:100%;display:flex;flex-flow:column;">

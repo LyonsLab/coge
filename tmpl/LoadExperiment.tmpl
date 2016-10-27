@@ -3,15 +3,11 @@
 </TMPL_IF>
 
 <TMPL_IF NAME='MAIN'>
-<style type="text/css">
-.jstree li a ins { display:none !important; }
-.jstree.jstree-focused { background:white; }
-</style>
 
 <div id="wizard-container"></div>
 
 <!-- DIALOGS -->
-<div id="create_new_source_dialog" class="dialog_box" title="Create New Source" style="display:none;">
+<div id="create_new_source_dialog" class="dialog_box hidden" title="Create New Source">
     <table class="small">
         <tr>
             <td>Name:</td>
@@ -27,7 +23,7 @@
         </tr>
     </table>
     <br>
-    <span id="create_source_button" onClick="create_source();" class="ui-state-disabled ui-button ui-corner-all">Create</span>
+    <span id="create_source_button" onClick="create_source();" class="ui-state-disabled coge-button coge-button-sm r">Create</span>
 </div>
 
 <!-- Step Templates-->
@@ -55,7 +51,7 @@
             <label class="col-md-2">Source:</label>
                 <input id="edit_source" type="search" class="col-md-6" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
                 <div class="col-md-2">
-                    <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all'>New</span>
+                    <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open').dialog({'width': '32em'}); activate_on_input('edit_source_name', 'create_source_button');" class='coge-button coge-button-sm'>New</span>
                     &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
                 </div>
         </div>

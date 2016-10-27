@@ -25,12 +25,14 @@ We have detected that your browser currently has JavaScript disabled.
 In order for CoGe to function properly JavaScript must be enabled in your browser.
 </noscript>
 
-<div id="logout_dialog" class="hidden dialog_box" title="Log out of CoGe">
+<div id="logout_dialog" class="hidden dialog_box" title="Log Out of CoGe">
     <div style="text-align:center;padding:30px;">
         <div class="info">Would you like to log out of all CyVerse applications?</div>
         <br><br>
-        <span onClick="location.href='index.pl?logout_coge=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of CoGe only</span>
-        <span onClick="location.href='index.pl?logout_all=1';" style="font-size:0.75em;margin:15px;padding:5px;" class='ui-button ui-corner-all'>Log out of all CyVerse services</span>
+		<div>
+			<span onClick="location.href='index.pl?logout_coge=1';" class='coge-button'>Log out of CoGe only</span>&nbsp;&nbsp;&nbsp;&nbsp;
+			<span onClick="location.href='index.pl?logout_all=1';" class='coge-button'>Log out of all CyVerse services</span>
+		</div>
     </div>
 </div>
 
@@ -39,7 +41,10 @@ In order for CoGe to function properly JavaScript must be enabled in your browse
 <script>
 jQuery(document).ready(function(){
     pageObj = new Object();
-    if (jQuery.browser.msie) {browserAlert()};
+
+    // Display alert if Internet Explorer
+    //if (jQuery.browser.msie) {browserAlert()}; // mdb removed 10/20/16
+
     setup_button_states();
 
     // Show indicator if not on main site
@@ -187,7 +192,7 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 				    </div>
 				</li>
 				<li>
-				    <div id="header_search_button" class="glyphicon glyphicon-search ui-button ui-corner-all coge-header-search-button" style="" onclick="search();"></div>
+				    <div id="header_search_button" class="glyphicon glyphicon-search coge-button coge-header-search-button" style="" onclick="search();"></div>
 			    </li>
 			</ul>
 	    </li>
@@ -207,7 +212,7 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 		        <TMPL_IF NAME="ADMIN_ONLY">
 		            <li class="dropdown-item"><a class="dropdown-link" href="Admin.pl">Admin</a></li>
 		        </TMPL_IF>
-                <li class="dropdown-item"><a class="dropdown-link" onclick="$('#logout_dialog').dialog({modal: true, width: 500}).dialog('open');">Logout</a></li>
+                <li class="dropdown-item"><a class="dropdown-link" onclick="$('#logout_dialog').dialog({modal: true, width: '33em'}).dialog('open');">Logout</a></li>
             </ul>
         </li>
         </TMPL_IF>
