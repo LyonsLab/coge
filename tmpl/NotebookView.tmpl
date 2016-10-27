@@ -42,10 +42,10 @@
 <br>
 
 <TMPL_IF NAME="LIST_CONTENTS">
+	<style>#list_contents tr { vertical-align: baseline; }</style>
 	<div style="padding-left:5px;">
 		<span class="bold text">Contents</span><br>
 		<div id="list_contents">
-			<TMPL_VAR NAME="LIST_CONTENTS">
 		</div>
 	</div>
 	<div class='small padded'>
@@ -286,6 +286,7 @@ function update_owner () {
         }
     });
 }
+set_contents(<TMPL_VAR NAME="LIST_CONTENTS">);
 </script>
 
 <br>
