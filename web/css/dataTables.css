@@ -82,7 +82,7 @@ table.dataTable {
   table.dataTable.hover tbody tr.even:hover, table.dataTable.display tbody tr:hover,
   table.dataTable.display tbody tr.odd:hover,
   table.dataTable.display tbody tr.even:hover {
-    background-color: greenyellow; }
+    background-color: #c4efaa; }
     table.dataTable.hover tbody tr:hover.selected,
     table.dataTable.hover tbody tr.odd:hover.selected,
     table.dataTable.hover tbody tr.even:hover.selected, table.dataTable.display tbody tr:hover.selected,
