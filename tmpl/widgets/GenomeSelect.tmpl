@@ -429,7 +429,7 @@ function import_lists() {
     <table class="small">
       <tr>
         <td colspan='2'>
-          Search: <input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_lists, this.value);">
+          <br>Search: <input type="textbox" size="45" id="edit_list_search" onkeyup="wait_to_search(search_lists, this.value);">
           <span class='ui-button ui-corner-all coge-button' onclick="search_lists(<TMPL_VAR NAME=LID>, $('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
           <img id="wait_list" src="picts/ajax-loader.gif" style="opacity: 0;" />
         </td>
@@ -447,7 +447,7 @@ function import_lists() {
         <td colspan='2' style='color:gray;'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
       </tr>
     </table>
-    <div class="padded"><span href="javascript:void(0)" onClick="import_lists();" class='ui-button ui-corner-all coge-button-sm'>Add Selected Items</span></div>
+    <div class="padded"><span href="javascript:void(0)" onClick="import_lists();" class='ui-button ui-corner-all coge-button-sm r'>Add Selected Items</span></div>
   </div>
 
   <div id="genome_info_popup" class="hidden dialog_box" title="Genome Information">
