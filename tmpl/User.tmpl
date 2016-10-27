@@ -312,7 +312,7 @@ const USER_ID = '<TMPL_VAR NAME="USER_ID">';
 		<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
 			<TMPL_IF NAME="IS_EDITABLE">
 				<span style="color:dimgray">Enter user or group names:</span><br>
-				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:20em;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_share, this.value);" />
+				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:18em;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_share, this.value);" />
 				<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>&nbsp;
 				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='coge-button'>Add</span>
 				<TMPL_IF NAME="IS_RESTRICTED">
@@ -376,11 +376,11 @@ $(function(){
 	</div>
 	<br>
 	<span class="small" style="font-weight:bold;color:dimgray;">Add Member</span>
-	<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
+	<div class="small border-top" style="padding:20px;padding-left:30px;">
 		<TMPL_IF NAME="IS_EDITABLE">
 			<span style="color:dimgray">Enter names or groups:</span><br>
 			<input id="group_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_group, this.value);" />
-			<span href="javascript:void(0)" onClick="add_users_to_group();" class='coge-button'>Add</span>
+			<span href="javascript:void(0)" onClick="add_users_to_group();" class='coge-button coge-button-sm'>Add</span>
 		<TMPL_ELSE>
 			<span style="color:dimgray">
 				You don't have permission to modify this group.

@@ -798,8 +798,8 @@ sub search_share {
     # Search for matching users
     foreach ( $DB->resultset('User')->all ) {
         next
-          unless ( escape($_->user_name) =~ /$search_term/i
-            || escape($_->display_name) =~ /$search_term/i );
+          unless ($search_term && ( escape($_->user_name) =~ /$search_term/i
+            || escape($_->display_name) =~ /$search_term/i ));
         next if ($_->user_name eq $USER->user_name); # mdb added 5/11/16 -- prevent user from sharing with themselves
         my $label = $_->display_name . ' (' . $_->user_name . ')';
         my $value = $_->id . ':' . 'user';
@@ -808,7 +808,7 @@ sub search_share {
 
     # Search for matching groups
     foreach ( $DB->resultset('UserGroup')->all ) {
-        next unless ( escape($_->name) =~ /$search_term/i );
+        next unless ( $search_term && $_->name && escape($_->name) =~ /$search_term/i );
         my $label = $_->name . ' (' . $_->role->name . ' group)';
         my $value = $_->id . ':' . 'group';
         push @results, { 'label' => $label, 'value' => $value };

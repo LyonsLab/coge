@@ -855,7 +855,6 @@ $.extend(DataGrid.prototype, {
     				width: '80%',
     				height: height,
                     open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
-                        console.log('matt!!!!!!!!!!!')
                         $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
                     }
     			})
@@ -1363,7 +1362,7 @@ function wait_to_search (search_func, search_term) {
 }
 
 function search_notebooks () {
-	var search_term = $('#notebook_search_input').attr('value');
+	var search_term = $('#notebook_search_input').val();
 
 	$("#wait_notebook").animate({opacity:1});
 	$("#notebook_select").html("<option disabled='disabled'>Searching...</option>");
@@ -1477,7 +1476,7 @@ function add_items_to_user_or_group() {
 }
 
 function search_share () {
-	var search_term = $('#share_input').attr('value');
+	var search_term = $('#share_input').val();
 
 	//$("#wait_notebook").animate({opacity:1});
 
@@ -1498,7 +1497,7 @@ function search_share () {
 }
 
 function search_group () { // FIXME dup of above routine but for group dialog
-	var search_term = $('#group_input').attr('value');
+	var search_term = $('#group_input').val();
 
 	$.ajax({
 		data: {
