@@ -825,9 +825,9 @@ function rand ()
     <div id="error-box" class="alert-box alert-box-warn hidden">A genome or dataset was omitted because you lack access to it or it has been marked deleted.</div>
 
 	<input name="num_seqs" id="num_seqs" type="hidden" readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
-	<span class='ui-button ui-corner-all ui-button-icon-left coge-button-sm coge-button-left' onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
+	<span class='coge-button coge-button-sm' onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
 
-	<span class='r ui-button ui-corner-all ui-button-icon-left coge-button-sm coge-button-left' onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
+	<span class='r coge-button coge-button-sm' onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
 	<span class="r small" style="margin-right:1em;">Merge Previous GEvo Analysis (paste in URL): <input name=previous_url id=previous_url type="textbox" size="20" value="<TMPL_VAR NAME='PANEL_URL'>"/></span>
 	<br><br>
 	
@@ -1329,8 +1329,8 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 </div>
 <tr><td>
 <TMPL_IF NAME=SAVE_SETTINGS>
-<span class='ui-button ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="<TMPL_VAR NAME="SAVE_SETTINGS">"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
-<span class='ui-button ui-corner-all ui-button-icon-left' id="ResetSettings" onclick="reset_settings_gevo([],[]); window.location.reload()"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Reset Settings </span>
+<span class='coge-button' id="SaveSettings" onclick="<TMPL_VAR NAME="SAVE_SETTINGS">"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
+<span class='coge-button' id="ResetSettings" onclick="reset_settings_gevo([],[]); window.location.reload()"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Reset Settings </span>
 </TMPL_IF>
 </table>
 </div> <!--end div for tabs-3 div -->
@@ -1338,7 +1338,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 
 
 <div class="padded">
-  <span id="go" class='ui-button ui-button-go ui-corner-all go_run coge-button-lg' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo</span>
+  <span id="go" class='go_run coge-button coge-button-danger coge-button-lg' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo</span>
 </div>
 </form>
 </TMPL_IF>
@@ -1467,7 +1467,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 	<table>
 	<tr><td>
 	<div id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</div>
-	   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-corner-all ui-button-toggle coge-button" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
+	   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button-toggle coge-button coge-button-sm" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
 	   <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM">" style="display: none;">
 	 <TR align=left>
 	  <Td>

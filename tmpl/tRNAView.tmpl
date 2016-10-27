@@ -142,14 +142,14 @@ function adjust_search_opt(num){
 <div id=genome_opt>
 <DIV id="blah">Organism Name: <input type="text" size=11 onFocus="search_bar('org_text')" style="font-style:italic" value="Search" name="org_text" id="org_text" onKeyUp='timing();'></DIV>
 <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-<span class='ui-button ui-corner-all' onClick="run_search()">Run Scan</span>
+<span class='coge-button' onClick="run_search()">Run Scan</span>
 </div>
 
 <div id=input_opt style="display:none">
 Enter Sequence in FASTA Format:<br>
 <textarea id="fasta_seqs" class="backbox" rows="15" cols="80" wrap="off" type=textarea><TMPL_VAR NAME=SEQ></textarea>
 <br>
-<span class='ui-button ui-corner-all' onClick="run_search(1)">Run Scan</span>
+<span class='coge-button' onClick="run_search(1)">Run Scan</span>
 
 </div>
 

@@ -148,7 +148,7 @@
     </li>
     <tmpl_if name=synsub>
     <li>
-        <span  class='ui-button ui-corner-all'
+        <span  class='coge-button'
             onclick="window.open('<tmpl_var name=synsub>')">
             Generate Substitution Matrix of Syntelogs
         </span>
@@ -158,7 +158,7 @@
     <tmpl_if name=grimm>
     <li>
         <br>
-        <span class="ui-button ui-corner-all" id="grimm_link"
+        <span class="coge-button" id="grimm_link"
         onclick="post_to_grimm('<tmpl_var name=seq1>','<tmpl_var name=seq2>')">
             Rearrangement Analysis
         </span>
@@ -179,7 +179,7 @@
     </li>
     <li>
         <br>
-        <span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all coge-button"
+        <span id="clear" style="font-size: 0.8em" class="coge-button"
             onClick="$('#results').hide(); $(this).hide(); $('#intro').fadeIn();" >
             Hide Results
         </span>
@@ -226,7 +226,7 @@
                 If you would prefer to revert to the orignal SynMap, select the "Legacy Version" tab at the top of the page. For more help, see the <a target="_blank" href="https://genomevolution.org/wiki/index.php/SynMap2">SynMap Wiki</a>
             </div><br>
             <input type="checkbox" /> <span class="small">Don't show this message again</span>
-            <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) Cookies.set('instruct_synmap','true', {expires:10000});$(this).parent('div').hide();" class="r ui-button ui-corner-all">OK, got it!</span>
+            <span onClick="if ($(this).siblings('input:checkbox').prop('checked')) Cookies.set('instruct_synmap','true', {expires:10000});$(this).parent('div').hide();" class="r coge-button">OK, got it!</span>
         </div>
     </div>
 

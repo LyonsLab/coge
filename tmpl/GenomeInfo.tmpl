@@ -118,7 +118,7 @@ $(document).ready(function() {
 			<tbody></tbody>
 		</table>
 		<span onclick="export_chr_file()" class="r ui-button ui-corner-all coge-button" style="margin-left:10px;margin-top:10px;">Send to CyVerse</span>
-		<span onclick="download_chr_file()" class="r ui-button ui-corner-all coge-button" style="margin-top:10px;">Download</span>
+		<span onclick="download_chr_file()" class="r coge-button" style="margin-top:10px;">Download</span>
 	</div>
 </div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
@@ -149,16 +149,16 @@ $(document).ready(function() {
 
             <div class="panel">
                 <TMPL_IF NAME='USER_CAN_EDIT'>
-                    <span class='ui-button ui-corner-all coge-button' onClick="edit_genome_info();">Edit Info</span>
+                    <span class='coge-button' onClick="edit_genome_info();">Edit Info</span>
                 </TMPL_IF>
                 <TMPL_IF NAME='USER_CAN_DELETE'>
                     <TMPL_IF NAME='DELETED'>
-                        <span class='ui-button ui-corner-all ui-button-go coge-button' onClick="delete_genome();">Undelete</span>
+                        <span class='coge-button' onClick="delete_genome();">Undelete</span>
                     <TMPL_ELSE>
-                        <span class='ui-button ui-corner-all ui-button-go coge-button' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
+                        <span class='coge-button coge-button-danger' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
                     </TMPL_IF>
                 </TMPL_IF>
-                <span class='ui-button ui-corner-all coge-button' onclick='location.href="GenomeView.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>"'>Browse</span>
+                <span class='coge-button' onclick='location.href="GenomeView.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>"'>Browse</span>
             </div>
 
             <TMPL_IF NAME="GENOME_ANNOTATIONS">
@@ -178,7 +178,7 @@ $(document).ready(function() {
             </TMPL_IF>
             <TMPL_IF NAME='USER_CAN_EDIT'>
                 <div class="panel">
-                    <span class='ui-button ui-corner-all coge-button' onclick="location.href='LoadAnnotation.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>'">Load Gene Annotation</span>
+                    <span class='coge-button' onclick="location.href='LoadAnnotation.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>'">Load Gene Annotation</span>
                 </div>
             </TMPL_IF>
         </td>
@@ -246,7 +246,7 @@ $(document).ready(function() {
 </TMPL_IF>
 <TMPL_IF NAME='USER_CAN_ADD'>
     <div class="panel">
-        <span class='ui-button ui-corner-all coge-button' onclick="location.href='LoadExperiment.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>'">Load Experiment</span>
+        <span class='coge-button' onclick="location.href='LoadExperiment.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>'">Load Experiment</span>
     </div>
 </TMPL_IF>
 <br><br>
@@ -283,15 +283,15 @@ $(document).ready(function() {
 	     </select>
 	 </tr>
 	</table>
-	<span id="gff_submit" class="ui-button ui-corner-all coge-button" style="margin-top:1em;" onClick="$('#gff_export').dialog('close');">Export GFF File</span>
+	<span id="gff_submit" class="coge-button" style="margin-top:1em;" onClick="$('#gff_export').dialog('close');">Export GFF File</span>
 	<br><br><span class="small" id="export_gff_link"></span>
 </div>
 
 <div id="genome_delete_box" class="dialog_box hidden" title="Delete genome?" align='center'>
 Are you sure you want to move this genome into your trash?<p>
  <div>
-  <span style="font-size:.75em" class='ui-button ui-corner-all ui-button-go coge-button' onClick="delete_genome();">Yes</span>
-  <span style="font-size:.75em" class='ui-button ui-corner-all coge-button' onClick="$('#genome_delete_box').dialog('close');">No</span>
+  <span style="font-size:.75em" class='coge-button coge-button-danger' onClick="delete_genome();">Yes</span>
+  <span style="font-size:.75em" class='coge-button' onClick="$('#genome_delete_box').dialog('close');">No</span>
  </div>
 </div>
 
@@ -305,9 +305,9 @@ Are you sure you want to move this genome into your trash?<p>
     </div>
     <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
     <input id="new_genome_id" type="hidden" />
-    <span id="ok_button" onClick="$('#status_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
-    <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Go to new genome</span>
-    <span id="cancel_button" onClick="$('#status_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+    <span id="ok_button" onClick="$('#status_dialog').dialog('close');" style="float:right;" class="hidden coge-button">OK</span>
+    <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden coge-button">Go to new genome</span>
+    <span id="cancel_button" onClick="$('#status_dialog').dialog('close');" style="float:right;" class="hidden coge-button coge-button-danger">Cancel</span>
 </div>
 
 <div id="export_dialog" class="hidden dialog_box" title="Exporting ...">
@@ -317,7 +317,7 @@ Are you sure you want to move this genome into your trash?<p>
     <span id="export_loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
     <span id="export_finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
     <span id="export_error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-    <span id="export_ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
+    <span id="export_ok_button" onClick="$('#export_dialog').dialog('close');" style="float:right;" class="hidden coge-button">OK</span>
 </div>
 
 <div id="load_dialog" class="hidden dialog_box" title="Copying Genome">
@@ -331,9 +331,9 @@ Are you sure you want to move this genome into your trash?<p>
     <div class="coge-buttonset">
         <span id="finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
         <span id="error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-        <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
-        <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden ui-button ui-corner-all coge-button">Continue to new copy</span>
-        <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden ui-button ui-corner-all ui-button-go coge-button">Cancel</span>
+        <span id="ok_button" onClick="reset_load();" style="float:right;" class="hidden coge-button">OK</span>
+        <span id="finish_button" onClick="continue_to_view();" style="float:right;" class="hidden coge-button">Continue to new copy</span>
+        <span id="cancel_button" onClick="reset_load();" style="float:right;" class="hidden coge-button coge-button-danger">Cancel</span>
     </div>
 </div>
 
@@ -344,7 +344,7 @@ Are you sure you want to move this genome into your trash?<p>
     <span id="annotate_loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
     <span id="annotate_finished_msg" class="hidden">Finished! <img src="picts/thumbs_up.png"></span>
     <span id="annotate_error_msg" class="hidden">An error occurred <img style="vertical-align:text-top" src="picts/thumbs_down.png"></span>
-    <span id="annotate_ok_button" onClick="$('#annotate_dialog').dialog('close');" style="float:right;" class="hidden ui-button ui-corner-all coge-button">OK</span>
+    <span id="annotate_ok_button" onClick="$('#annotate_dialog').dialog('close');" style="float:right;" class="hidden coge-button">OK</span>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
@@ -432,7 +432,7 @@ Are you sure you want to move this genome into your trash?<p>
         <td>Organism:</td>
         <td>
           <input id="edit_organism" type="search" onkeyup="debounce_search(search_organisms, this.value);" size="50" value="<TMPL_VAR NAME='ORGANISM'>"/>
-          <!--<span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all coge-button'>New</span>-->
+          <!--<span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='coge-button'>New</span>-->
         </td>
       </tr>
       <tr>
@@ -443,14 +443,14 @@ Are you sure you want to move this genome into your trash?<p>
         <td>Type:</td>
         <td>
           <select id="select_type" style="width:230px;" value="<TMPL_VAR NAME='TYPES'>"></select>
-          <!-- <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all coge-button'>New</span> -->
+          <!-- <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='coge-button'>New</span> -->
         </td>
       </tr>
       <tr>
         <td>Source:</td>
         <td>
           <input id="edit_source" type="search" size="50" value="<TMPL_VAR NAME='SOURCE'>"/>
-          <!-- <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='ui-button ui-corner-all coge-button'>New</span> -->
+          <!-- <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='coge-button'>New</span> -->
         </td>
       </tr>
       <tr>
@@ -471,7 +471,7 @@ Are you sure you want to move this genome into your trash?<p>
       </tr>
     </table>
     <br>
-    <span onClick="update_genome_info();" class='ui-button ui-corner-all coge-button r'>Update</span>
+    <span onClick="update_genome_info();" class='coge-button r'>Update</span>
 </TMPL_IF>
 
 <TMPL_IF NAME='DO_EXPERIMENTS'>
@@ -515,11 +515,11 @@ Are you sure you want to move this genome into your trash?<p>
     	<div class="padded">
 	        Assign to user:
 	        <input id="edit_user" type="search" placeholder="Search" onkeyup="wait_to_search(search_users, this.value);" size="10" />
-	        <span onClick="update_owner();" class='ui-button ui-corner-all coge-button'>Go</span>
+	        <span onClick="update_owner();" class='coge-button'>Go</span>
         </div>
         <div class="padded">
 			<span>Load Log:</span>
-		    <span id="log_button" onclick="toggle_load_log();" class='ui-button ui-corner-all coge-button' style="width:3em; margin-bottom:1em; overflow:auto;">Show</span>
+		    <span id="log_button" onclick="toggle_load_log();" class='coge-button' style="width:3em; margin-bottom:1em; overflow:auto;">Show</span>
 		    <img id="log_spinner" src="picts/ajax-loader.gif" style="opacity: 0;"/>
 		    <div id="log_contents" class="border hidden padded coge-code" style="border:1px solid gray; color: navy;"></div>
 	    </div>

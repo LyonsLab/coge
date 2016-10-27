@@ -388,7 +388,7 @@
                 <li>
                     <label>Job Title: </label>
                     <input type="text" name="jobtitle" id="jobtitle" />
-                    <span class="ui-button ui-corner-all coge-button-sm" onClick="fill_jobtitle()">Use Org Names</span>
+                    <span class="coge-button coge-button-sm" onClick="fill_jobtitle()">Use Org Names</span>
                 </li>
             </ul>
         </fieldset>
@@ -396,7 +396,7 @@
     </div> <!-- close tab-3 -->
 </section> <!--close tabs section-->
 <div style="padding: 15px 0 5px 0;">
-    <span class="ui-button ui-button-go ui-corner-all coge-button-lg" id="synmap_go" >Generate SynMap</span>
+    <span class="coge-button coge-button-danger coge-button-lg" id="synmap_go" >Generate SynMap</span>
 </div>
 </tmpl_if>
 
@@ -416,7 +416,7 @@
     <ul id="dialog_error" class="horizontal padded hidden">
         <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
         <li id="dialog_log" class="small"></li>
-        <li id="cancel_button" class="ui-button ui-corner-all ui-button-go coge-button r">
+        <li id="cancel_button" class="coge-button coge-button-danger r">
             <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 Close
             </span>
@@ -428,7 +428,7 @@
             <span>Finished!</span>
             <img src="picts/thumbs_up.png">
         </li>
-        <li id="ok_button" class="ui-button ui-corner-all coge-button r">
+        <li id="ok_button" class="coge-button r">
             <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
                 OK
             </span>

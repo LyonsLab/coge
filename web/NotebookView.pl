@@ -164,19 +164,19 @@ sub get_list_info {
 
     $html .= qq{<div class="panel">};
     if ($user_can_edit) {
-        $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="edit_list_info();">Edit Info</span>};
+        $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="edit_list_info();">Edit Info</span>};
 
         if ( $list->restricted ) {
-            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_list_public();">Make Public</span>};
+            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_list_public();">Make Public</span>};
         }
         else {
-            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="make_list_private();">Make Private</span>};
+            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_list_private();">Make Private</span>};
         }
     }
 
     if ( $user_can_delete ) {
         $html .=
-			qq{<span class='ui-button ui-button-go ui-corner-all coge-button' style="margin-right:5px;" onClick="delete_list();">} .
+			qq{<span class='coge-button coge-button-danger' style="margin-right:5px;" onClick="delete_list();">} .
 			($list->deleted ? 'Undelete' : 'Delete') . qq{</span>};
     }
 
@@ -187,7 +187,7 @@ sub get_list_info {
           )
         {    # Pick a genome, any genome # TODO show user a list of genomes to choose from
             my $link = qq{window.open('GenomeView.pl?embed=$EMBED&gid=$gid&tracks=notebook$lid', '_self');};
-            $html .= qq{<span class='ui-button ui-corner-all coge-button' style="margin-right:5px;" onClick="$link">Browse</span>};
+            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="$link">Browse</span>};
             last;
         }
     }
@@ -400,7 +400,7 @@ sub get_annotations {
     }
 
     if ($user_can_edit) {
-        $html .= qq{<div class="panel"><span onClick="add_annotation_dialog();" class='ui-button ui-corner-all coge-button'>Add</span></div>};
+        $html .= qq{<div class="panel"><span onClick="add_annotation_dialog();" class='coge-button'>Add</span></div>};
     }
 
     return $html;
@@ -733,7 +733,7 @@ sub get_list_contents {
     }
 
     if ($user_can_edit) {
-        $html .= qq{<div class="padded"><span class='ui-button ui-corner-all coge-button' onClick="add_list_items();">Add</span></div>};
+        $html .= qq{<div class="padded"><span class='coge-button' onClick="add_list_items();">Add</span></div>};
     }
 
     return unless ( $num_items or $user_can_edit );

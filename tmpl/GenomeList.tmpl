@@ -517,7 +517,7 @@ function get_gff(genome_id) {
 </SCRIPT>
 
 <div style='padding-top:10px;'>
- <span id='link_hidden' class='ui-button ui-corner-all ui-button-icon-right' onclick="$('#link_hidden').hide(); $('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
+ <span id='link_hidden' class='coge-button' onclick="$('#link_hidden').hide(); $('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
  <span id='link_shown' style='display:none;' class='small infobox'>
  Use this link to return to this page at any time: <span class='link' onclick=window.open('<TMPL_VAR NAME="LINK">');><b><TMPL_VAR NAME="LINK"></b></span>
  </span>
@@ -542,7 +542,7 @@ function get_gff(genome_id) {
 	   </select>
 	   <span id='filter_count' style="margin-left:20px;"></span>
 	  </td>
-      <td align="right"><span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span></td>
+      <td align="right"><span href='#' id="table_opts" class='coge-button'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span></td>
       </tr>
 	</table>
 
@@ -602,7 +602,7 @@ function get_gff(genome_id) {
 	     <TD align='left' id="codon_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_codon_usage({dsgid:<TMPL_VAR NAME=DSGID>, divid: 'codon_usage_<TMPL_VAR NAME=COUNT>'})">Codon Usage</TD>
 	     <TD align='right' id="cds_gc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_gc_hist({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'cds_gc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
 	     <TD align='right' id="cds_wgc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_wgc_hist({dsgid: '<TMPL_VAR NAME=DSGID>' ,divid: 'cds_wgc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
-             <TD><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="delete_row(<TMPL_VAR NAME=DSGID>)"></span></span></TD>
+             <TD><span class='coge-button'><span class="ui-icon ui-icon-trash" onclick="delete_row(<TMPL_VAR NAME=DSGID>)"></span></span></TD>
 	   </TR>
 	  </TMPL_LOOP>
 	 </tbody>
@@ -612,10 +612,10 @@ function get_gff(genome_id) {
 	<tr>
 	 <td>
   	  <!-- TODO - consider putting onClick declarations in javascript for simplicity -->
-	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
-	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
-	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
-	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
+	  <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#genome_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
+	  <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#genome_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
+	  <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#genome_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
+	  <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#genome_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
 	 </TD>
 	 <td align='right'></span>
 	 </td>
@@ -634,7 +634,7 @@ function get_gff(genome_id) {
 	   <option value="send_to_GenomeList">GenomeList</option>
 	   <option value="send_to_list">Create Notebook</option>
 	  </select>
-	<span class='ui-button ui-corner-all ui-button-icon-right  ui-button-go' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>
+	<span class='coge-button coge-button-sm' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>
 	 </div>
 
 	 <br>
@@ -665,7 +665,7 @@ function get_gff(genome_id) {
 
 	      <TMPL_IF NAME="SAVE_DISPLAY">
 	<TR><td colspan=3>
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
+	<span href="javascript:void(0);" class='coge-button' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
 	      </TMPL_IF>
 	   </table>
 	</div>
@@ -698,8 +698,8 @@ function get_gff(genome_id) {
   <td><input type=text id=dsg_link size=50 value="$link"></td>
  </tr>
 </table>
-<span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
-<span class="ui-button ui-corner-all" onClick="update_genome_info('$dsgid')">Update</span>
+<span href="javascript:void(0);" id="history_dialog_button" class='coge-button'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
+<span class="coge-button" onClick="update_genome_info('$dsgid')">Update</span>
 </TMPL_IF>
 
 <TMPL_IF NAME=LIST_LIST>
