@@ -128,11 +128,10 @@
 
 <ul class="padded">
     <li>
-        <div class="ui-widget-content ui-corner-all padded">
         <table id="files" class="small">
             <th colspan="4">
                 Links and Downloads <span class="link small" onClick="$(this).hide(); $('#files tbody').fadeIn();">
-                click here to see more...</span>
+                click for more...</span>
             </th>
             <tbody class="hidden small">
                 <tmpl_loop name="files">
@@ -146,7 +145,6 @@
                 </td>
             </tbody>
         </table>
-        </div>
     </li>
     <tmpl_if name=synsub>
     <li>
@@ -167,22 +165,23 @@
         <a class="small" href="<tmpl_var name=grimm_link>" target=_new>(Powered by GRIMM!)</a>
     </li>
     </tmpl_if>
-    <li>
-        <span>Send genomes to SynMap3D:</span>
+    <li class="small padded">
+        <span>Send to SynMap3D:</span>
         <a href="<tmpl_var name=syn3dlink>" target=_blank>
             <tmpl_var name=syn3dlink>
         </a>
     </li>
-    <li>
+    <li class="small padded">
         <span>Regenerate this analysis:</span>
         <a href="<tmpl_var name=link>" target=_new_synmap>
             <tmpl_var name=link>
         </a>
     </li>
     <li>
+        <br>
         <span id="clear" style="font-size: 0.8em" class="ui-button ui-corner-all coge-button"
             onClick="$('#results').hide(); $(this).hide(); $('#intro').fadeIn();" >
-            Clear Results
+            Hide Results
         </span>
     </li>
 </ul>
