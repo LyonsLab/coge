@@ -211,6 +211,7 @@
 	cursor: pointer;
 	/* support: IE10, see #8844 */
 	list-style-image: url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+	font-size: 0.85em; /* mdb added 10/27/16 */
 }
 .ui-menu .ui-menu-item-wrapper {
 	position: relative;
