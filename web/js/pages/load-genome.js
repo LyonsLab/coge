@@ -429,10 +429,11 @@ $.extend(GenomeDescriptionView.prototype, {
         var self = this;
         var edit_organism = this.edit_organism;
 
-        edit_organism.unbind().change(function() {
-            // Reset organism_id when item has changed
-            self.organism_id = undefined;
-        });
+// mdb removed 10/17/16 -- broken autocomplete when updated to jQuery 3.1.1
+//        edit_organism.unbind().change(function() {
+//            // Reset organism_id when item has changed
+//            self.organism_id = undefined;
+//        });
 
         edit_organism.autocomplete({
             source:[],
@@ -465,7 +466,7 @@ $.extend(GenomeDescriptionView.prototype, {
         var restricted = this.el.find('#restricted').is(':checked');
         var organism = this.el.find('#edit_organism').val();
 
-        if (!organism || organism === 'Search' || !this.organism_id) {
+        if (!organism || !this.organism_id) {
         	if (this.onError)
             	this.onError('Please specify an organism.');
             return false;
