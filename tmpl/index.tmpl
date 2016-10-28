@@ -286,7 +286,7 @@ function get_latest_genomes(limit) {
 
 <TMPL_IF NAME="INTRO">
 <div id="stats">
-    <ul class="horizontal small bold center info" style="font-size:1em;">
+    <ul class="horizontal bold center info" style="font-size:1.1em;">
         <li>Organisms: <span style="color:green"><TMPL_VAR NAME="ORG_COUNT"></span></li>
         <li>Genomes: <span style="color:green"><TMPL_VAR NAME="GEN_COUNT"></span></li>
         <li>Features: <span style="color:green"><TMPL_VAR NAME="FEAT_COUNT"></span></li>
@@ -301,9 +301,9 @@ Please note: CyVerse will be unavailable from 7 PM EDT (4 PM PDT) Thursday, Octo
 
 <div class="wrapper">
     <div id="intro">
-        <div class="coge-section coge-shadow">
+        <div class="coge-section-lg">
             <h3>New to CoGe?</h3>
-            <div class="padded text">
+            <div class="text">
             CoGe is a platform for performing Comparative Genomics research.  It provides an open-ended network of interconnected tools to manage, analyze, and visualize next-gen data.
             </div>
             <br>
@@ -326,7 +326,7 @@ Please note: CyVerse will be unavailable from 7 PM EDT (4 PM PDT) Thursday, Octo
             </ul>
         </div>
 
-        <div class="coge-section coge-shadow">
+        <div class="coge-section-lg text">
             <h3>Tools</h3>
             <TMPL_LOOP NAME="ACTIONS">
                 <div class="coge-summary">
@@ -343,10 +343,9 @@ Please note: CyVerse will be unavailable from 7 PM EDT (4 PM PDT) Thursday, Octo
             </TMPL_LOOP>
         </div>
 
-        <div class="coge-section coge-shadow">
+        <div class="coge-section-lg">
             <h3>What do you want to do?</h3>
             <div id="info" class="r hidden">
-            
             </div>
             <div>
 	            <p><a href="SynMap.pl">Compare two genomes</a></p>
@@ -360,21 +359,22 @@ Please note: CyVerse will be unavailable from 7 PM EDT (4 PM PDT) Thursday, Octo
             </div>
         </div>
 
-        <div class="coge-section coge-shadow">
+        <div class="coge-section-lg">
             <h3>Recently Added Public Genomes <small>(<a href="#" onclick="show_genomes(window.event)">more</a>)</small></h3>
-            <div id="latest-genomes" class="padded">
+            <div id="latest-genomes" class="padded small">
             </div>
         </div>
     </div>
 
     <div id="highlights">
-        <div id="wikifeed" class="coge-section coge-shadow">
+        <div id="wikifeed" class="coge-section-lg text">
             <h3>Latest News</h3>
         </div>
-        <div class="coge-section coge-shadow">
+        <div class="coge-section-lg">
+            <h3>Usage</h3>
 	    	<iframe src="https://www.google.com/maps/d/embed?mid=zTAag14VR8dY.krU3JWBs4l5E" width="100%" height="250" frameborder="0" style="border:0"></iframe>
 	    </div>
-        <div class="coge-section coge-shadow">
+        <div class="coge-section-lg">
             <h3>Tutorials</h3>
             <div id="crossfade"></div>
         </div>

@@ -1296,7 +1296,21 @@ h5 > small {
     font-size: 0.85em;
     padding: 0 0.375em 0.625em;
     border-radius: 5px;
-    background: #f5f5f5;
+    background: #f0f0f0;
+}
+
+.coge-section-lg {
+    padding-bottom: .5em;
+}
+
+.coge-section-lg h3 {
+    background-color: #BCED91;
+    border-radius: 3px;
+    padding: 0.25em 0.5em 0.5em 0.5em;
+}
+
+.coge-section-lg div {
+    padding: 0 0.5em 0 0.5em;
 }
 
 .coge-summary {
