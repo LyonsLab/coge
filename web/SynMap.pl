@@ -587,7 +587,7 @@ sub gen_dsg_menu {
 	my $dsg_menu =
 	    qq{<div class="coge-padded-top inline bottom">}
 	  . qq{<span class="small text">Genomes: </span>}
-	  . qq{<select id="dsgid$num" style="max-width:400px;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
+	  . qq{<select id="dsgid$num" style="max-width:400px;height:2em;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
 
 	foreach (@dsg_menu) {
 		my ( $numt, $name ) = @$_;
@@ -787,7 +787,7 @@ sub get_genome_info {
 	$cds_selected     = "selected" if $feattype eq 1 || $feattype eq "CDS";
 	$genomic_selected = "selected" if $feattype eq 2 || $feattype eq "genomic";
 
-	my $feattype_menu = qq{<select id="feat_type$org_num" name ="feat_type$org_num">#};
+	my $feattype_menu = qq{<select id="feat_type$org_num" name="feat_type$org_num" style="height:2em;">#};
 	$feattype_menu .= qq{<OPTION VALUE=1 $cds_selected>CDS</option>} if $has_cds;
 	$feattype_menu .= qq{<OPTION VALUE=2 $genomic_selected>genomic</option>};
 	$feattype_menu .= "</select>";
