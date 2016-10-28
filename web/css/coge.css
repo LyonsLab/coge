@@ -26,6 +26,10 @@ html {
     height: 100%;
 }
 
+select {
+    background-color: white;
+}
+
 a, a:visited {
     color: #007000;
     outline: none;
