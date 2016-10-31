@@ -1821,7 +1821,7 @@ $.extend(ReportGrid.prototype, {
 				self.data.scrollCollapse = true;
 				$('#' + element).show();
 				$('#' + element + '_table').dataTable(self.data);
-				if (self.selection == 'user' || self.selection == 'group' || self.selection == 'user jobs') {
+				if (self.selection == 'user' || self.selection == 'group') {
 					$('#histogram_button').prop('disabled', false);
 					$('#report_filter').prop('disabled', false);
 				}
