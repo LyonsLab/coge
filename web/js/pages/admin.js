@@ -28,11 +28,9 @@ $(function () {
     });
 	
 	$( "#tabs" ).tabs({
-		select: function(event, ui) {
+		activate: function(event, ui) {
             current_tab = ui.newTab.index();
             schedule_update(5000);
-        },
-		show: function(event, ui) {
 			//Remember that current_tab is 0-indexed but #tabs is 1-indexed.
 			if (current_tab == 1 && !jobs_grid) {
 				init_jobs_grid();

@@ -971,7 +971,21 @@ sub features {
 	        else { # else return list reads with qual and seq
     	        foreach (@$pData) {
     	        	chomp;
-    	        	my ($qname, $flag, undef, $pos, $mapq, $cigar, undef, undef, undef, $seq, $qual, undef) = split(/\t/);
+                    my @fields = split(/\t/);
+    	        	my $qname = $fields[0];
+                    my $flag = $fields[1];
+                    my $pos = $fields[3];
+                    my $mapq = $fields[4];
+                    my $cigar = $fields[5];
+                    my $seq = $fields[9];
+                    my $qual = $fields[10];
+                    my $md;
+                    for (my $i=11; $i<@fields; $i++) {
+                        if (substr($fields[$i], 0, 3) eq 'MD:') {
+                            $md = substr($fields[$i], 5);
+                            last;
+                        }
+                    }
 
     	        	my $len = length($seq);
     	        	my $start = $pos;
@@ -981,16 +995,17 @@ sub features {
     	        	$qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
 
                     push(@results, { 
-                        "uniqueID" => "$qname", 
-                        "name"     => "$qname", 
+                        uniqueID => $qname, 
+                        "name"     => $qname, 
                         "start"    => $start, 
                         "end"      => $end, 
                         "strand"   => $strand, 
                         "score"    => $mapq, 
-                        "seq"      => "$seq", 
-                        "qual"     => "$qual", 
+                        "seq"      => $seq, 
+                        "qual"     => $qual, 
                         "Seq length" => $len, 
-                        "CIGAR"    => "$cigar" 
+                        "cigar"    => $cigar,
+                        "md"       => $md
                     });      	        	
     	        }
 	        }
