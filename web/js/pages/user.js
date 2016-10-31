@@ -1707,8 +1707,15 @@ function upload_metadata_dialog(type) {
 		width:'28em'
 	}).dialog('open');
 	$('#metadata_file').fileupload({
+		submit: function(e,data) {
+			if ('text/plain' != data.files[0].type) {
+				alert('The file must be a plain text file.');
+				return false;
+			}
+			return true;
+		},
 		done: function(e,data) {
-			alert(data);
+			alert(data.result);
 			$('#upload_metadata_dialog').dialog('close');
 		},
 		formData: {

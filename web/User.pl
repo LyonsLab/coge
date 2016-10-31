@@ -1545,6 +1545,7 @@ sub upload_metadata {
     my $line = shift @lines;
     chomp $line;
     my @headers = split(/\t/, $line);
+    return "File doesn't seem to be tab delimited." if scalar @headers < 2;
     foreach (@lines) {
 		chomp $_;
 		next if !$_;
