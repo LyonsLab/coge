@@ -37,13 +37,13 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
     my $eid  = $self->stash('eid');
     my $nid  = $self->stash('nid');
     my $gid  = $self->stash('gid');
-	
+
 	# Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-    
+
     # Get experiments
 	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
-	
+
 	# Determine min/max values from all experiments' metadata
 	my ($globalMax, $globalMin) = (0, 0);
 	foreach my $experiment (@$experiments) {
@@ -58,7 +58,7 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
 	        $min = -1;
 	        $max = 1;
 	    }
-	    
+
 	    # Keep track of widest range
 	    if ($max > $globalMax) {
 	        $globalMax = $max;
@@ -67,7 +67,7 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
 	        $globalMin = $min;
 	    }
 	}
-	
+
     $self->render(json => {
 		"scoreMin" => to_number($globalMin),
 		"scoreMax" => to_number($globalMax)
@@ -455,7 +455,7 @@ sub _write_marker {
     $self->_write($phase || '.', $fh);
     $self->_write("\t", $fh);
     $self->_write($group || '.', $fh);
-    $self->_write("\n", $fh);    
+    $self->_write("\n", $fh);
 }
 
 sub _write {
@@ -601,7 +601,7 @@ sub get_db_data {
             return undef unless $row;
             $self->{row} = $row;
             return $row->[0], $row->[1];
-        }        
+        }
     };
 }
 
@@ -732,7 +732,7 @@ sub _alignments {
         $self->render(json => { error => 'User does not have permission to view this experiment' });
         return undef;
     }
-    
+
     my $experiment = $experiments->[0]; # this doesn't yet handle multiple experiments (i.e notebooks)
     my $data1 = get_experiment_data($experiment->id, $experiment->data_type, $chr, $all);
     my $data2 = get_db_data($experiment->genome_id, $type_names, $chr, $db->storage->dbh);
@@ -946,11 +946,11 @@ sub features {
                     if (!defined $start || ($pos-$stop > 1) || $lastCount != $count) {
                         if (defined $start) {
                             $stop++;
-                            push(@results, { 
-                                "id"    => $eid, 
-                                "start" => $start, 
-                                "end"   => $stop, 
-                                "score" => $lastCount 
+                            push(@results, {
+                                "id"    => $eid,
+                                "start" => $start,
+                                "end"   => $stop,
+                                "score" => $lastCount
                             });
                         }
                         $start = $pos;
@@ -960,12 +960,12 @@ sub features {
                 }
                 if (defined $start and $start != $stop) { # do last interval
                     $stop++;
-                    push(@results, { 
-                        "id"    => $eid, 
-                        "start" => $start, 
-                        "end"   => $stop, 
-                        "score" => $lastCount 
-                    });    
+                    push(@results, {
+                        "id"    => $eid,
+                        "start" => $start,
+                        "end"   => $stop,
+                        "score" => $lastCount
+                    });
                 }
 	        }
 	        else { # else return list reads with qual and seq
@@ -994,19 +994,19 @@ sub features {
     	        	#TODO reverse complement sequence if neg strand?
     	        	$qual = join(' ', map { $_ - $QUAL_ENCODING_OFFSET } unpack("C*", $qual));
 
-                    push(@results, { 
-                        uniqueID => $qname, 
-                        "name"     => $qname, 
-                        "start"    => $start, 
-                        "end"      => $end, 
-                        "strand"   => $strand, 
-                        "score"    => $mapq, 
-                        "seq"      => $seq, 
-                        "qual"     => $qual, 
-                        "Seq length" => $len, 
+                    push(@results, {
+                        uniqueID => $qname,
+                        "name"     => $qname,
+                        "start"    => $start,
+                        "end"      => $end,
+                        "strand"   => $strand,
+                        "score"    => $mapq,
+                        "seq"      => $seq,
+                        "qual"     => $qual,
+                        "Seq length" => $len, #is this used?
                         "cigar"    => $cigar,
                         "md"       => $md
-                    });      	        	
+                    });
     	        }
 	        }
         }
