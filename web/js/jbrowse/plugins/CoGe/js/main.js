@@ -277,9 +277,9 @@ return declare( JBrowsePlugin,
 		this.browser = args.browser;
 		var gene = args.browser.config.queryParams.gene;
 		JBrowse.afterMilestone('initView', function() {
-			coge_plugin.create_search_button();
+			coge_plugin.create_find_features_button();
 			if (gene)
-				coge_plugin.search_for_features(gene);
+				coge_plugin.find_features(gene);
 		});
 		this.num_merges = 0;
 		this.num_searches = 0;
@@ -428,6 +428,18 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	create_find_features_button: function() {
+		new Button({
+			label: 'Find Features',
+			onClick: function(event) {
+				coge_plugin.find_features_dialog();
+				dojo.stopEvent(event);
+			},
+		}, dojo.create('button', null, this.browser.navbox));
+	},
+
+	// ----------------------------------------------------------------
+
 	_create_notebook: function() {
 		var self = this;
 		var browser = this.browser;
@@ -502,18 +514,6 @@ return declare( JBrowsePlugin,
 			style: 'width: 300px'
 		});
 		this._create_notebook_dialog.show();
-	},
-
-	// ----------------------------------------------------------------
-
-	create_search_button: function() {
-		new Button({
-			label: 'Find Features',
-			onClick: function(event) {
-				coge_plugin.find_features_dialog();
-				dojo.stopEvent(event);
-			},
-		}, dojo.create('button', null, this.browser.navbox));
 	},
 
 	// ----------------------------------------------------------------
@@ -710,13 +710,70 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	find_features: function(gene) {
+		var types = gene ? "'gene'" : this.get_checked_values('coge_find_features', 'feature types', true);
+		if (!types)
+			return;
+		var name = gene ? gene : encodeURIComponent(dojo.byId('coge_search_text').value);
+		if (!name) {
+			coge_plugin.error('Find Features', 'Please enter the name to search.');
+			return
+		}
+		var url = api_base_url + '/genome/' + gid + '/features?name=' + name + '&features=' + types;
+		var ref_seq = dojo.byId('coge_ref_seq');
+		if (ref_seq && ref_seq.selectedIndex > 0)
+			url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
+		this._start_search();
+		dojo.xhrGet({
+			url: url,
+			handleAs: 'json',
+			load: function(data) {
+				if (coge_plugin._search_dialog)
+					coge_plugin._search_dialog.hide();
+				if (data.error) {
+					coge_plugin.error('Search', data);
+					return;
+				}
+				if (data.length == 0) {
+					coge_plugin.error('Search', 'no features found');
+					return;
+				}
+				if (data.length == 1) {
+					coge_plugin.browser.navigateToLocation(data[0].location);
+					coge_plugin.info('One Feature Found', 'Moved to location of ' + data[0].name);
+					return;
+				}
+				var div = dojo.byId('feature_hits');
+				dojo.empty(div);
+				dojo.create('div', { innerHTML: 'Features <span class="glyphicon glyphicon-remove" onclick="dojo.empty(\'feature_hits\');dijit.byId(\'jbrowse\').resize()"></span>' }, div);
+				div = dojo.create('div', { 'class': 'feature_hits' }, div);
+				data.forEach(function(hit) {
+					dojo.create('a', {
+						innerHTML: hit.name,
+						onclick: dojo.hitch(hit, function() {
+							coge_plugin.browser.navigateToLocation(this.location);
+							return false;
+						})
+					}, div);
+				});
+				dijit.byId('jbrowse').resize();
+				coge_plugin.info('Multiple Matches Found', 'See the feature list next to the track list');
+			},
+			error: function(data) {
+				coge_plugin.error('Search', data);
+			}
+		})
+	},
+
+	// ----------------------------------------------------------------
+
 	find_features_dialog: function() {
 		var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
-		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_for_features">';
-		content += this.build_features_checkboxes('coge_search_for_features');
+		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_find_features">';
+		content += this.build_features_checkboxes('coge_find_features');
 		content += '</td></tr></table>';
-		content += this.build_buttons('coge_plugin.search_for_features()', 'coge_plugin._search_dialog.hide()');
+		content += this.build_buttons('coge_plugin.find_features()', 'coge_plugin._search_dialog.hide()');
 		content += '</div>';
 		coge_plugin._search_dialog = new Dialog({
 			title: "Search",
@@ -1268,59 +1325,6 @@ return declare( JBrowsePlugin,
 				coge_plugin.error('Search', data);
 			})
 		});
-	},
-
-	// ----------------------------------------------------------------
-
-	search_for_features: function(gene) {
-		var types = gene ? "'gene'" : this.get_checked_values('coge_search_for_features', 'feature types', true);
-		if (!types)
-			return;
-		var name = gene ? gene : encodeURIComponent(dojo.byId('coge_search_text').value);
-		var url = api_base_url + '/genome/' + gid + '/features?name=' + name + '&features=' + types;
-		var ref_seq = dojo.byId('coge_ref_seq');
-		if (ref_seq && ref_seq.selectedIndex > 0)
-			url += '&chr=' + ref_seq.options[ref_seq.selectedIndex].innerHTML;
-		this._start_search();
-		dojo.xhrGet({
-			url: url,
-			handleAs: 'json',
-			load: function(data) {
-				if (coge_plugin._search_dialog)
-					coge_plugin._search_dialog.hide();
-				if (data.error) {
-					coge_plugin.error('Search', data);
-					return;
-				}
-				if (data.length == 0) {
-					coge_plugin.error('Search', 'no features found');
-					return;
-				}
-				if (data.length == 1) {
-					coge_plugin.browser.navigateToLocation(data[0].location);
-					coge_plugin.info('One Feature Found', 'Moved to location of ' + data[0].name);
-					return;
-				}
-				var div = dojo.byId('feature_hits');
-				dojo.empty(div);
-				dojo.create('div', { innerHTML: 'Features <span class="glyphicon glyphicon-remove" onclick="dojo.empty(\'feature_hits\');dijit.byId(\'jbrowse\').resize()"></span>' }, div);
-				div = dojo.create('div', { 'class': 'feature_hits' }, div);
-				data.forEach(function(hit) {
-					dojo.create('a', {
-						innerHTML: hit.name,
-						onclick: dojo.hitch(hit, function() {
-							coge_plugin.browser.navigateToLocation(this.location);
-							return false;
-						})
-					}, div);
-				});
-				dijit.byId('jbrowse').resize();
-				coge_plugin.info('Multiple Matches Found', 'See the feature list next to the track list');
-			},
-			error: function(data) {
-				coge_plugin.error('Search', data);
-			}
-		})
 	},
 
 	// ----------------------------------------------------------------
