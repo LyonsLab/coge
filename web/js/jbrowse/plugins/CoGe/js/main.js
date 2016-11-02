@@ -252,7 +252,7 @@ define(['dojo/_base/declare',
 			}
 			if (start_f != null)
 				this.hits.push([start_f, end_f, 1, null, null, null]);
-			if (start_r != null) 
+			if (start_r != null)
 				this.hits.push([start_r, end_r, -1, null, null, null]);
 			this.hits.sort(function(a, b){return a[0] - b[0]});
 			search_nav.update();
@@ -348,7 +348,7 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	build_features_checkboxes: function() {
+	build_features_checkboxes: function(id) {
 		var html = '';
 		var features = this.browser.config.tracks.reduce(function(accum, current) {
 			if (current.coge.type && current.coge.type == 'features' && accum.indexOf(current.coge.id) < 0)
@@ -361,7 +361,7 @@ return declare( JBrowsePlugin,
 				html += ' checked';
 			html += '> <label>' + f + '</label></div>';
 		});
-		html += '<div>' + this._button('check all', 'coge_plugin.check_all(this.parentNode.parentNode.parentNode,true)') + this._button('uncheck all', 'coge_plugin.check_all(this.parentNode.parentNode.parentNode,false)') + '</div>';
+		html += '<div>' + this._button('check all', 'coge_plugin.check_all(\'' + id + '\',true)') + this._button('uncheck all', 'coge_plugin.check_all(\'' + id + '\',false)') + '</div>';
 		return html;
 	},
 
@@ -373,8 +373,8 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	check_all: function(element, value) {
-		var cb = element.getElementsByTagName('INPUT');
+	check_all: function(id, value) {
+		var cb = dojo.byId(id).getElementsByTagName('INPUT');
 		for (var i=0; i<cb.length; i++)
 			cb[i].checked = value;
 	},
@@ -507,25 +507,10 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	create_search_button: function() {
-		var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td>';
-		content += this.build_chromosome_select('Any');
-		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_for_features">';
-		content += this.build_features_checkboxes();
-		content += '</td></tr></table>';
-		content += this.build_buttons('coge_plugin.search_for_features()', 'coge_plugin._search_dialog.hide()');
-		content += '</div>';
 		new Button({
 			label: 'Find Features',
 			onClick: function(event) {
-				coge_plugin._search_dialog = new Dialog({
-					title: "Search",
-					content: content,
-					onHide: function() {
-						this.destroyRecursive();
-						coge_plugin._search_dialog = null;
-					}
-				});
-				coge_plugin._search_dialog.show();
+				coge_plugin.find_features_dialog();
 				dojo.stopEvent(event);
 			},
 		}, dojo.create('button', null, this.browser.navbox));
@@ -725,12 +710,33 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
+	find_features_dialog: function() {
+		var content = '<div id="coge-search-dialog"><table><tr><td>Name:</td><td><input id="coge_search_text"></td></tr><tr><td>Chromosome:</td><td>';
+		content += this.build_chromosome_select('Any');
+		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_for_features">';
+		content += this.build_features_checkboxes('coge_search_for_features');
+		content += '</td></tr></table>';
+		content += this.build_buttons('coge_plugin.search_for_features()', 'coge_plugin._search_dialog.hide()');
+		content += '</div>';
+		coge_plugin._search_dialog = new Dialog({
+			title: "Search",
+			content: content,
+			onHide: function() {
+				this.destroyRecursive();
+				coge_plugin._search_dialog = null;
+			}
+		});
+		coge_plugin._search_dialog.show();
+	},
+
+	// ----------------------------------------------------------------
+
 	features_overlap_search_dialog: function(track, type, api_path) {
 		this._track = track;
 		var content = '<table><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features_overlap">';
-		content += this.build_features_checkboxes();
+		content += this.build_features_checkboxes('coge_search_features_overlap');
 		content += '</td></tr></table>';
 		content += this.build_buttons("coge_plugin.search_features_overlap('" + type + "','" + api_path + "')", 'coge_plugin._search_dialog.hide()');
 		this._search_dialog = new Dialog({
@@ -1010,7 +1016,7 @@ return declare( JBrowsePlugin,
 			title: title,
 			content: prompt + ' <input id="prompt_value" />',
 			onHide: function(){this.destroyRecursive()}
-		}).show(on_ok);	
+		}).show(on_ok);
 	},
 
 	// ----------------------------------------------------------------
@@ -1084,7 +1090,7 @@ return declare( JBrowsePlugin,
         coge.progress.begin();
 		var load_id = this.unique_id(32);
 	    newLoad = true;
-	    
+
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var search = this.search_to_string(config.coge.search);
 		var description = 'Results from search: ' + search;
@@ -1151,8 +1157,8 @@ return declare( JBrowsePlugin,
 								type: 'file'
 							}]
 						}
-					};		
-				    coge.services.submit_job(request) 
+					};
+				    coge.services.submit_job(request)
 				    	.done(function(response) {
 				    		if (!response) {
 				    			coge.progress.failed("Error: empty response from server");
@@ -1338,7 +1344,7 @@ return declare( JBrowsePlugin,
 			params = 'type=' + search.type;
 		if (!without_chr && search.chr && search.chr != 'Any')
 			params += '&chr=' + search.chr;
-		return params;		
+		return params;
 	},
 
 	// ----------------------------------------------------------------
