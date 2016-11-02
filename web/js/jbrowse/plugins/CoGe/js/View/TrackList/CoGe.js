@@ -11,19 +11,20 @@ define(['dojo/_base/declare',
 		'dijit/form/DropDownButton',
 		'dijit/Menu',
 		'dijit/MenuItem',
+		'dijit/CheckedMenuItem',
 		'dijit/MenuSeparator',
 		'dojo/Deferred',
 		'dijit/Dialog',
 		'dijit/Tooltip'
 	   ],
-	   function( declare, dom, domGeom, aspect, ContentPane, DndSource, DropDownButton, Menu, MenuItem, MenuSeparator, Deferred, Dialog, Tooltip ) {
+	   function( declare, dom, domGeom, aspect, ContentPane, DndSource, DropDownButton, Menu, MenuItem, CheckedMenuItem, MenuSeparator, Deferred, Dialog, Tooltip ) {
     return declare( 'JBrowse.View.TrackList.CoGe', null,
 
 	/** @lends JBrowse.View.TrackList.CoGe.prototype */
 	{
 	/**
 	 * CoGe drag-and-drop track selector.
-	 * 
+	 *
 	 * @constructs
 	 */
 	constructor: function( args ) {
@@ -36,7 +37,7 @@ define(['dojo/_base/declare',
 
 		// maximum tracks that can be added via "+" button
 		this.maxTracksToAdd = 20;
-		
+
 		// subscribe to drop events for tracks being DND'ed
 		this.browser.subscribe( '/dnd/drop', dojo.hitch( this, 'moveTracks' ));
 
@@ -365,6 +366,25 @@ define(['dojo/_base/declare',
 		}));
 		if (un != 'public') {
 			menu.addChild(new MenuSeparator());
+			menu.addChild(new CheckedMenuItem({
+				checked: true,
+				label: "Show My Tracks",
+				onClick: dojo.hitch(this, function() {
+				})
+			}));
+			menu.addChild(new CheckedMenuItem({
+				checked: true,
+				label: "Show Shared Tracks",
+				onClick: dojo.hitch(this, function() {
+				})
+			}));
+			menu.addChild(new CheckedMenuItem({
+				checked: true,
+				label: "Show Public Tracks",
+				onClick: dojo.hitch(this, function() {
+				})
+			}));
+			menu.addChild(new MenuSeparator());
 			menu.addChild(new MenuItem({
 				label: "Create New Notebook",
 				onClick: coge_plugin.create_notebook_dialog.bind(coge_plugin)
@@ -382,7 +402,7 @@ define(['dojo/_base/declare',
 				localStorage.setItem("track-selector-side", region == 'right' ? 'left' : 'right');
 				root.set('region', region == 'right' ? 'left' : 'right');
 				parent.addChild(root);
-				
+
 			}
 		}));
 		var btn = new DropDownButton({ dropDown: menu }, menu_button);
@@ -406,7 +426,7 @@ define(['dojo/_base/declare',
 		aspect.after(cp, "resize", function(size) { dojo.byId('track_pane').style.width=size.w - dojo.position('feature_hits').w + 'px'; }, true);
 
 		dojo.create('div', { id: 'feature_hits' }, root);
-	
+
 		var pane = dojo.create('div', { id: 'track_pane' }, root);
 		this._create_text_filter(pane);
 		this._update_text_filter_control();
@@ -502,6 +522,27 @@ define(['dojo/_base/declare',
 		while (n) {
 			n.style.display = '';
 			n = n.nextSibling;
+		}
+	},
+
+	// ----------------------------------------------------------------
+owner
+Shared
+public
+	_filter_track: function(container, text) {
+		if (text) {
+			var t = container.lastChild.title ? container.lastChild.title : container.lastChild.innerHTML;
+			if (t.toLowerCase().indexOf(text) == -1)
+				return false;
+		}
+		if (this._type_filter && this._type_filter != container.config.coge.data_type)
+			return false;
+		let role = container.config.coge.role;
+		if (role) {
+			if (role == 2 && !this._show_my_tracks)
+				return false;
+			if (!this._show_shared_tracks)
+				return false;
 		}
 	},
 
@@ -636,7 +677,7 @@ define(['dojo/_base/declare',
 
 	_in_notebook(container)
 	{
-		return container.parentNode.firstChild.lastChild.innerHTML != 'All Experiments';    	
+		return container.parentNode.firstChild.lastChild.innerHTML != 'All Experiments';
 	},
 
 	// ----------------------------------------------------------------
@@ -692,7 +733,7 @@ define(['dojo/_base/declare',
 				}));
 			}
 			if (track_config.coge.notebooks && this._in_notebook(container)) {
-				var notebook_node = container.parentNode.firstChild;                	
+				var notebook_node = container.parentNode.firstChild;
 				var notebook_name = notebook_node.lastChild.innerHTML;
 				menu.addChild(new MenuItem({
 					label: 'Remove from Notebook',
@@ -814,12 +855,12 @@ define(['dojo/_base/declare',
 			// 	var experiments = Array.prototype.slice.call(div.childNodes, 0);
 			// 	experiments.shift();
 			// 	experiments.sort(
-			// 	    function( a,b ) {  
+			// 	    function( a,b ) {
 			// 	        return coge_plugin.natural_sort(a.config.coge.name, b.config.coge.name);
 			// 	    }
 			// 	).forEach(
-			// 	    function(a, idx) { 
-			// 	        div.insertBefore(a, div.childNodes[idx]);  
+			// 	    function(a, idx) {
+			// 	        div.insertBefore(a, div.childNodes[idx]);
 			// 	});
 			// },
 			selfAccept: false
@@ -1111,7 +1152,7 @@ define(['dojo/_base/declare',
 	 */
 	toggle: function() {
 	},
-	
+
 	// ----------------------------------------------------------------
 
 	_track_changed: function(key, new_key) {
