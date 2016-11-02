@@ -705,7 +705,7 @@ var coge = window.coge = (function(namespace) {
 
         onError: function() {
             var l = document.location.pathname;
-            l = l.substring(0, l.indexOf('/coge/') + 6);
+            l = l.substr(0, l.indexOf('/coge/') + 6);
             var genome_id1 = $('#dsgid1').val();
             var genome_id2 = $('#dsgid2').val();
             if (genome_id2 < genome_id1) {
@@ -714,7 +714,7 @@ var coge = window.coge = (function(namespace) {
                 genome_id2 = t;
             }
             var tiny_url = coge.progress.url;
-            tiny_url = tiny_url.substring(tiny_url.lastIndexOf('/') + 1);
+            tiny_url = tiny_url.substr(tiny_url.lastIndexOf('/') + 1);
             $(".logfile a").attr("href", l + 'data/diags/' + genome_id1 + '/' + genome_id2 + '/' + tiny_url + '.log');
         }
     };
