@@ -91,16 +91,20 @@ sub post_build {
 
     # Add task to send notification email
     if ( $self->params->{email} ) {
-        $self->add_task_chain_all(
-            $self->send_email(
-                to => $self->params->{email},
-                subject => 'CoGe Workflow Notification',
-                body => 'Your workflow finished: ' . $self->get_name() .
-                        ($self->site_url ? "\nLink: " . $self->site_url : '') .
-                        "\n\nNote: you received this email because you submitted a job on " .
+        my $email = $self->params->{email};
+        $email = $self->user->email if ((!$email || length($email) < 3) && $self->user && $self->user->email);
+        if ($email && length($email) >= 3) {
+            $self->add_task_chain_all(
+                $self->send_email(
+                    to      => $email,
+                    subject => 'CoGe Workflow Notification',
+                    body    => 'Your workflow finished: '.$self->get_name().
+                        ($self->site_url ? "\nLink: ".$self->site_url : '').
+                        "\n\nNote: you received this email because you submitted a job on ".
                         "CoGe (http://genomevolution.org) and selected the option to be notified."
-            )
-        );
+                )
+            );
+        }
     }
 
     # Add task to send notification to callback url
