@@ -68,6 +68,7 @@ sub search_genomes {
     my $db = $opts{db};
     my $search_term = $opts{search_term}; # id value, or keyword in name/description
     my $user = $opts{user}; # optional database user object
+    my $sort = $opts{sort}; # optional boolean flag to sort results (not sorted by default for performance)
     return unless $db and $search_term;
     #my $include_deleted = $opts{include_deleted}; # optional boolean flag
     
@@ -102,6 +103,13 @@ sub search_genomes {
     my @filtered = sort genomecmp grep {
         !$_->restricted || (defined $user && $user->has_access_to_genome($_))
     } values %unique;
+
+    # Sort
+    if ($sort) {
+        my $favorites;
+        $favorites = CoGe::Core::Favorites->new(user => $user) if $user;
+        @filtered = sort { genomecmp2($a, $b, $favorites) } @filtered;
+    }
     
     return \@filtered;
 }
