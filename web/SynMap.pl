@@ -490,7 +490,7 @@ sub gen_org_menu {
 		my $org = $dsg->organism;
 		$oid = $org->id;
 
-		my ( $dsg_info, $feattype_menu, $message ) = get_genome_info(
+		my ( $dsg_info, $feattype_menu, $message, $total_length, undef, undef, $seq_type ) = get_genome_info(
 			dsgid    => $dsgid,
 			org_num  => $num,
 			feattype => $feattype_param
@@ -499,7 +499,10 @@ sub gen_org_menu {
 		$template->param(
 			DSG_INFO       => $dsg_info,
 			FEATTYPE_MENU  => $feattype_menu,
-			GENOME_MESSAGE => $message
+			GENOME_MESSAGE => $message,
+			 # mdb added 11/3/16 COGE-768 -- set values needed for block check because handle_dsg_info() doesn't get called when gid's passed in URL
+			ORG_LENGTH     => $total_length,
+			SEQ_TYPE       => $seq_type
 		);
 	}
 	else {
