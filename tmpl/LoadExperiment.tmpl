@@ -201,7 +201,7 @@
 <script id="quant-template" type="text/template">
 	<div class="form-section">
 	    Please verify that your data file is formatted according to the requirements documented here:
-	    <a href="<TMPL_VAR NAME=HELP_URL>#CSV_File_Format">Quantitative File Formats</a>.
+	    <a href="<TMPL_VAR NAME=HELP_URL>#CSV_File_Format" target="_blank">Quantitative File Formats</a>.
 	</div>
 	<div class="form-section">
 	    <h4>Normalizing Data Options</h4>
@@ -356,7 +356,10 @@
         <div class="form-field">
             <label class="col-md-2">GSNAP: (<a href="http://research-pub.gene.com/gmap/" target="_blank" class="small link">docs</a>)</label>
             <div class="form-group">
-	            <div class="form-entry" title="Look for novel splicing (0=no (default), 1=yes)">
+                <div class="note" style="padding-bottom: 1em;">
+                    These parameters are set for RNAseq data, not the GSNAP defaults.  Please consult the GSNAP docs for DNAseq data.
+                </div>
+	            <div class="form-entry" title="Look for novel splicing (0=no for DNAseq, 1=yes for RNAseq)">
 		            <label>-N:</label>
 		            <input id="-N" type="number" value="1"/>
 		        </div>

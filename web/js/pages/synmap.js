@@ -446,28 +446,29 @@ var coge = window.coge = (function(namespace) {
 
             //var org_name1 = pageObj.org_name1;
             //var org_name2 = pageObj.org_name2;
-            var feat_type1 = $('#feat_type1').val();
-            var feat_type2 = $('#feat_type2').val();
-            var org_length1 = pageObj.org_length1;
-            var org_length2 = pageObj.org_length2;
-            var seq_type1 = pageObj.seq_type1;
-            var seq_type2 = pageObj.seq_type2;
+            var feat_type1  = $('#feat_type1').val();
+            var feat_type2  = $('#feat_type2').val();
+            var org_length1 = $('#org_length1').html() || pageObj.org_length1;
+            var org_length2 = $('#org_length2').html() || pageObj.org_length2;
+            var seq_type1   = $('#seq_type1').html() || pageObj.seq_type1;
+            var seq_type2   = $('#seq_type2').html() || pageObj.seq_type2;
             
             // Block this analysis if the genomes are unmasked, unannotated, and too large
-            // feat_type 1 == CDS, 2 == genomic
-            // seq_type == 1 is unmasked
+            // feat_type 1 == CDS, 2 == genomic, seq_type == 1 is unmasked
             var max_size = 50 * 1000 * 1000;
-             if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
-                ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1) ) {
+            console.log('Block check: ' + org_length1 + ' ' + feat_type1 + ' ' + seq_type1 + ' ' + org_length2 + ' ' + feat_type2 + ' ' + seq_type2);
+            if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
+                ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1))
+            {
                 var message = "Unfortunately this analysis cannot be performed. "
       			  + "A comparison of two unmasked and unannotated genomes of "
     			  + "these sizes requires many days to weeks to finish. "
     			  + "Please try:  1) select a hard-masked sequence or 2) use at least one annotated genome.";
-                //alert(message);
                 $('#log_text').hide();
                 $('#results').html("<div class='alert'>Analysis Blocked:</div> " 
-                		+ "<div class='info'>" + message + "</div>")
+                		+ "<div class='text'>" + message + "</div>")
                 		.show();
+                window.scrollTo(0,0); // scroll to top of window to make error message visible
                 return;
             }
 
@@ -705,7 +706,7 @@ var coge = window.coge = (function(namespace) {
 
         onError: function() {
             var l = document.location.pathname;
-            l = l.substring(0, l.indexOf('/coge/') + 6);
+            l = l.substr(0, l.indexOf('/coge/') + 6);
             var genome_id1 = $('#dsgid1').val();
             var genome_id2 = $('#dsgid2').val();
             if (genome_id2 < genome_id1) {
@@ -714,7 +715,7 @@ var coge = window.coge = (function(namespace) {
                 genome_id2 = t;
             }
             var tiny_url = coge.progress.url;
-            tiny_url = tiny_url.substring(tiny_url.lastIndexOf('/') + 1);
+            tiny_url = tiny_url.substr(tiny_url.lastIndexOf('/') + 1);
             $(".logfile a").attr("href", l + 'data/diags/' + genome_id1 + '/' + genome_id2 + '/' + tiny_url + '.log');
         }
     };

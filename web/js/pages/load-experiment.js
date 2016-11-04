@@ -42,7 +42,7 @@ function search_genomes (search_term) {
 	var spinner = $('#edit_genome_busy');
 	spinner.show();
 	
-	coge.services.search_genomes(search_term, { fast: true })
+	coge.services.search_genomes(search_term, { fast: true, sort: true })
 		.done(function(response) { // success
 			if (response && response.genomes) {
 				var results = response.genomes.map(function(obj) {
