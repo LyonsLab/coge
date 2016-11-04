@@ -1814,7 +1814,7 @@ function select_tab(event, ui) {
             button.unbind().click(function() {
                 select_blast();
                 ga('send', 'event', 'cogeblast', 'run', 'ncbi');
-            }).html("Run NCBI Blast");
+            }).html("Run NCBI BLAST");
 
             if (!initialized) {
                 var queryParams = getParamsFromUrl();
