@@ -5,9 +5,6 @@
 #chromosomes_chosen {
 	white-space: nowrap;
 }
-.glyphicon {
-	font-size: 1.8em;
-}
 </style>
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script> <!-- FIXME cdn -->
 <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.1.0/js/dataTables.buttons.min.js"></script> <!-- FIXME cdn -->
@@ -298,7 +295,8 @@ function plot(chromosome, cols, e, w, h) {
 function plot_dialog() {
 	offset = 0;
 	$('#arrows').css('display', 'none');
-    $('#plot_dialog').dialog('destroy');
+	if ($('#plot_dialog').hasClass("ui-dialog-content"))
+    	$('#plot_dialog').dialog('destroy');
 	$('#plot_dialog').dialog({
 		autoOpen: true,
 		open: function() {
@@ -376,16 +374,16 @@ function size_sort(a, b) {
 $(document).ready(ready);
 </script>
 
-<div id="busy" class="spinner" style="display:block;text-align:center;margin-top:20%;"></div>
+<div id="busy" class="spinner center" style="display:block;margin-top:20%;"></div>
 
 <div id="results" class="hidden" style="margin-left:14px;margin-top:20px;">
 	<div>
 	    View:
 		<select id="types" onchange="set_chromosomes();chromosome_changed();"></select>
 		<select id="chromosomes" onchange="chromosome_changed();"></select>
-		<div id="colvis" style="display:inline-block;vertical-align:middle;"></div>
-		    <span onclick="export_dialog()" class="coge-button">Export...</span>
-		    <span onclick="plot_dialog();" class="coge-button">Plot...</span>
+		<div id="colvis" class="inline middle"></div>
+		    <span onclick="export_dialog()" class="coge-button">Export</span>
+		    <span onclick="plot_dialog();" class="coge-button">Plot</span>
 		</div>
 	</div>
 	<style>
@@ -403,11 +401,11 @@ $(document).ready(ready);
 		</div>
 		<span onclick="do_export()" class="r coge-button">Export</span>
 		</div>
-	<div id="plot_dialog" class="dialog_box hidden" title="Plot" style="display:none">
+	<div id="plot_dialog" class="dialog_box hidden" title="Plot">
 	<div style="height:100%;display:flex;flex-flow:column;">
 		<div style="flex: 0 1 auto;">
 			<select id="plot_columns" multiple onchange="$('#plot_busy').show();setTimeout(do_plot, 10)" style="width:100%;"></select>
-			<div id="plot_busy" class="spinner" style="display:none;text-align:center;"></div>
+			<div id="plot_busy" class="hidden center spinner"></div>
 		</div>
 		<div id="plot" style="flex: 1 1 auto;"></div>
 		<div id="arrows" style="flex: 0 1 auto;">
@@ -418,7 +416,7 @@ $(document).ready(ready);
 	</div>
 </div>
 
-<div id="noresults" class="hidden large info" style="text-align:center;margin-top:20%;">
+<div id="noresults" class="hidden large info center" style="margin-top:20%;">
 	No results to display.<br><br>
 	Please check that the GVCF file loaded as <a href="ExperimentView.pl?eid=<TMPL_VAR NAME=EID>">Experiment #<TMPL_VAR NAME=EID></a> conforms to the format described <a href="https://genomevolution.org/wiki/index.php/Popgen">here</a>.
 </div>
