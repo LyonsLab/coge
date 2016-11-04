@@ -4,6 +4,7 @@
  * Requires coge.utils, coge.services
  * 
  */
+const SPINNER_HTML = '<img src="picts/ajax-loader-medium.gif">';
 
 class Table {
 	constructor(table, options) {
@@ -12,7 +13,7 @@ class Table {
 	}
 	busy() {
 		this.table.empty();
-		this.row(['<img src="picts/ajax-loader.gif" style="width:16px;"/>']);
+		this.row([ SPINNER_HTML ]);
 	}
 	empty() {
 		this.table.empty();
@@ -32,9 +33,9 @@ class Table {
 			row.hover(this.options.hover[0], this.options.hover[1]);
 		cells.forEach(function(cell) {
 			if (typeof cell === 'object')
-				cell.appendTo($('<td></td>').appendTo($(row)));
+				cell.appendTo($('<td style="height:1.5em;"></td>').appendTo($(row)));
 			else
-				$('<td></td>').html(cell).appendTo($(row));
+				$('<td style="height:1.5em;"></td>').html(cell).appendTo($(row));
 		});
 	}
 	rows() {
@@ -382,7 +383,7 @@ var coge = window.coge = (function(namespace) {
 				var tr = $('<tr class="note middle" style="height:1em;"><td style="padding-right:15px;">' +
 						   '<span class="text">Name:</span> ' + filename +
 						   '</td>' + '</tr>');
-				var td = $('<td style="float:right;"><img src="picts/ajax-loader.gif"/></td>');
+				var td = $('<td style="float:right;">'+SPINNER_HTML+'</td>');
 				$(tr).append(td).fadeIn();
 
 				if (self.fileSelectSingle)
@@ -527,11 +528,8 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		_irods_busy: function(busy) {
-			var status = this.container.find('#ids_status');
-			if (typeof busy === 'undefined' || busy) 
-				status.html('<img src="picts/ajax-loader.gif"/>').show();
-			else
-				status.html('<img src="picts/ajax-loader.gif"/>').hide();
+			if (typeof busy === 'undefined' || busy)
+				this.container.find('#ids_table').html('<tr><td>'+SPINNER_HTML+'</td></tr>').show();
 			return this;
 		},
 		
@@ -549,8 +547,7 @@ var coge = window.coge = (function(namespace) {
 
 			coge.services.irods_list(path)
 				.done(function(result) { //TODO move out into named function
-					self._irods_busy(false)
-						._clear_filter();
+					self._clear_filter();
 					
 					var table = self.container.find('#ids_table');
 	
@@ -609,7 +606,8 @@ var coge = window.coge = (function(namespace) {
 								icon = '<span class="ui-icon ui-icon-link"></span>';
 							else // assume file type
 								icon = '<span class="ui-icon ui-icon-document"></span>';
-							tr = $('<tr class="'+ obj.type +'" style="white-space:nowrap;user-select:none;-webkit-user-select:none;-moz-user-select:none;"><td>' 
+							tr = $('<tr class="'+ obj.type +'" style="white-space:nowrap;user-select:none;-webkit-user-select:none;-moz-user-select:none;">'
+							        + '<td style="height:1.5em;">'
 									+ icon
 									+ decodeURIComponent(obj.name) + '</td><td>'
 									+ (obj.size ? decodeURIComponent(obj.size) : '') + '</td><td>' 
@@ -673,14 +671,10 @@ var coge = window.coge = (function(namespace) {
 		_irods_get_all_files: function(path) {
 			var self = this;
 			
-			self._irods_busy();
-			
 			path = self._resolve_path(path);
 			
 			coge.services.irods_list(path) 
 				.done(function(result) {
-					self._irods_busy(false);
-					
 					if (!result || !result.items)
 						return;
 					if (result.items.length > self.maxIrodsTransferFiles) {
@@ -716,7 +710,6 @@ var coge = window.coge = (function(namespace) {
 			get_dirname(function(path){
 				path = $('#ids_current_path').html() + '/' + path;
 				coge.services.irods_mkdir(path).done(function(result) {
-					self._irods_busy(false);
 					if (result.error)
 						alert(result.error.Error);
 					else
@@ -729,7 +722,6 @@ var coge = window.coge = (function(namespace) {
 		// 	var self = this;
 		// 	this._confirm('Delete File', 'Really delete file ' + obj.name + '?', function() {
 		// 		coge.services.irods_rm(obj.path).done(function(result) {
-		// 			self._irods_busy(false);
 		// 			if (result.error)
 		// 				alert(result.error.Error);
 		// 			else
@@ -742,7 +734,6 @@ var coge = window.coge = (function(namespace) {
 		// 	var self = this;
 		// 	this._confirm('Delete Directory', 'Really delete directory ' + obj.name + ' and everything in it?', function() {
 		// 		coge.services.irods_rm(obj.path).done(function(result) {
-		// 			self._irods_busy(false);
 		// 			if (result.error)
 		// 				alert(result.error.Error);
 		// 			else
@@ -799,13 +790,13 @@ var coge = window.coge = (function(namespace) {
 				return;
 			}
 
-			$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Contacting host...');
+			$('#ftp_status').html(SPINNER_HTML+' Contacting host...');
 
 			coge.services.ftp_list(url)
 				.done(function(result) {
 					var filelist = result.items;
 					self.filecount = filelist.length;
-					$('#ftp_status').html('<img src="picts/ajax-loader.gif"/> Retrieving '+self.filecount+' file');
+					$('#ftp_status').html(SPINNER_HTML+' Retrieving '+self.filecount+' file');
 
 					var count = 0;
 					filelist.forEach(
@@ -836,7 +827,7 @@ var coge = window.coge = (function(namespace) {
 			var accn = $('#input_accn').val();
 
 			$('#ncbi_get_button').addClass('ui-state-disabled');
-			$('#ncbi_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI Nucleotide DB...');
+			$('#ncbi_status').html(SPINNER_HTML+'< Contacting NCBI Nucleotide DB...');
 
 			$.ajax({
 				data: {
@@ -873,7 +864,7 @@ var coge = window.coge = (function(namespace) {
 				return;
 			}
 
-			$('#sra_status').html('<img src="picts/ajax-loader.gif"/> Contacting NCBI SRA...');
+			$('#sra_status').html(SPINNER_HTML+' Contacting NCBI SRA...');
 			
 		    var entrez = new Entrez({ database: 'sra' });
 		    entrez.search(accn).then(function(id) {

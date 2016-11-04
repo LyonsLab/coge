@@ -25,9 +25,9 @@
 </TMPL_UNLESS>
 	
 	  <div id="fileselect-tab-1" class="small">
-		<div style="white-space:nowrap;border-bottom:1px solid gray;">
+		<div class="nowrap coge-border-bottom" style="min-height:1.6em;">
 			<span id="ids_status" style="float:right;"></span>
-			<input class="fileselect-filter" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;" />
+			<input class="fileselect-filter r" type="search" placeholder="Search" size="25" style="margin-right:15px;min-height:1em;" />
 			<span class='link fileselect-home'><span class='ui-icon ui-icon-home'></span>Home</span>&nbsp;&nbsp;
 			<TMPL_UNLESS NAME='DIR_SELECT'>
 			<span class='link fileselect-shared'><span class='ui-icon ui-icon-folder-collapsed'></span>Community Data</span>&nbsp;&nbsp;
@@ -42,7 +42,7 @@
 			</TMPL_IF>
 		</div>
 		<div id="ids_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
-	    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
+	    <div id="ids_panel" style="overflow-y:auto;overflow-x:auto;height:154px;padding-top:4px;">
 	    	<table id="ids_table" class="small" style="width:100%;"></table>
 	    </div>
 	  </div>
@@ -57,9 +57,9 @@
 	    	Password: <input id="input_password" size="15" style="color:gray;"/>
 	    </span>
 	    <span id="ftp_get_button" class='ui-state-disabled coge-button coge-button-sm' style="margin-bottom:3px"> Go </span><br><br>
-	    <div id="ftp_list_head" style="display:none;white-space:nowrap;border-bottom:1px solid gray;">
+	    <div id="ftp_list_head" class="hidden nowrap coge-border-bottom" style="min-height:1.6em;">
 				<span id="ftp_status" style="float:right;"></span>
-				<input class="ftpselect-filter" type="search" placeholder="Search" size="25" style="float:right;margin-right:15px;" />
+				<input class="ftpselect-filter r" type="search" placeholder="Search" size="25" style="margin-right:15px;" />
 				<span class='link ftpselect-home'><span class='ui-icon ui-icon-home'></span>Home</span>&nbsp;&nbsp;
 				<span class='link ftpselect-up'><span class='ui-icon ui-icon-arrowreturnthick-1-n'></span>Go Up</span>&nbsp;&nbsp;
 				<span class='link ftpselect-refresh'><span class='ui-icon ui-icon-refresh'></span>Refresh</span>&nbsp;&nbsp;
@@ -68,7 +68,7 @@
 				</TMPL_UNLESS>
 			</div>
 			<div id="ftp_current_path" style="word-wrap:break-word; font-weight:bold; padding-top:10px;"></div>
-			<div id="ftp_panel" style="overflow-y:auto;overflow-x:auto;height:154px;">
+			<div id="ftp_panel" style="overflow-y:auto;overflow-x:auto;height:154px;padding-top:4px;">
 				<table id="ftp_table" class="small" style="width:100%;"></table>
 			</div>
 	  </div>
