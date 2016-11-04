@@ -768,8 +768,8 @@ function blastOff(dialog, results, basename) {
                 pageObj.engine = "<span class=\"alert\">The job engine has failed.</span><br>Please use the link below to use the previous version of SynMap.";
 
                 var link = $("<a></a>")
-                    .attr("href", response.link)
-                    .html(response.link);
+                    .attr("href", response.site_url)
+                    .html(response.site_url);
 
                 var link_message = $("<span></span>")
                     .html("Return to this analysis: ")
