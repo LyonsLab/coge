@@ -32,7 +32,6 @@ function update_gapcost_ncbi(pro) {
     }
 }
 
-
 function animate_params (html,version,pro){
     if(version === "coge_radio") {
         $("#coge-params").find('#pro_or_nu_param').hide(0).html(html).toggle();
@@ -1267,12 +1266,15 @@ function get_seq(which_type) {
 }
 
 function blast_param_on_select(which_type, val) {
-    var promise,
-        wordsize = $("#word_size");
+    var promise, wordsize = $("#word_size");
 
     radio = get_radio(which_type, val);
     program = $('#'+radio).val();
     database_param(program);
+
+    // mdb added 11/4/16 -- kludge: default to blastn not working after update to jQuery 3.1.1
+    if (!program)
+        $('#coge_blast_type_n').val('blastn');
 
     $('#blast_parameters').hide();
     $('#blastz_parameters').hide();
