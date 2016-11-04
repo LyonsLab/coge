@@ -1939,7 +1939,7 @@ div.dataTables_scrollBody {
 
 .coge-header-search-button {
 	border-color: #65d022;
-	margin-top: 0.5em;
+	margin-top: 0.55em;
 	font-size: 1.25em;
 	color: gray;
 	padding: 0.2em !important;
@@ -1958,7 +1958,7 @@ div.dataTables_scrollBody {
 }
 
 .coge-header-menu {
-    padding-top: 0.90em;
+    padding-top: 1em; /*0.90em;*/
 }
 
 .coge-user-image {
@@ -2042,7 +2042,10 @@ div.dataTables_scrollBody {
 	min-width: 6em;
 	font-size: 14px;
 	background-color: #f5f5f5;
-	border: 1px solid rgba(0, 0, 0, .15);
+	/*border: 1px solid rgba(0, 0, 0, .15);*/
+	border-left: 1px solid rgba(0, 0, 0, .15);
+	border-right: 1px solid rgba(0, 0, 0, .15);
+	border-bottom: 1px solid rgba(0, 0, 0, .15);
 	border-radius: 4px;
 }
 
