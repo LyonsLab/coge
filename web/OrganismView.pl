@@ -882,14 +882,14 @@ sub get_chr_info {
     my ($viewer, $seq_grab);
     if ( defined $chr ) {
         $viewer .=
-           qq{Start: <input type="text" size=10 value="20000" id="x">}
-         #. qq{Zoom level: <input type = "text" size=10 value ="6" id = "z">}
-         . qq{&nbsp;<span class='coge-button coge-button-sm' onClick="launch_viewer()">Launch Genome Viewer</span>};
+           qq{<span class='coge-button coge-button-sm' style="width:11em;" onClick="launch_viewer()">Launch Genome Viewer</span>}
+         . qq{&nbsp;<span class="small text">Start: <input type="small text" size=10 value="20000" id="x"></span>};
+         #. qq{Zoom level: <input type = "text" size=10 value ="6" id = "z">};
 
         $seq_grab .=
-           qq{Start: <input type="text" size=10 value="1" id="start">}
-         . qq{&nbsp;End: <input type="text" size=10 value="100000" id="stop">}
-         . qq{&nbsp;<span class='coge-button coge-button-sm' onClick="launch_seqview()">Get Sequence</span>};
+           qq{<span class='coge-button coge-button-sm' style="width:11em;" onClick="launch_seqview()">Get Sequence</span>}
+         . qq{&nbsp;<span class="small text">Start: <input type="text" size=10 value="1" id="start"></span>}
+         . qq{&nbsp;<span class="small text">End: <input type="text" size=10 value="100000" id="stop"></span>};
     }
 
     return $html, $viewer, $seq_grab if ($output eq 'html');
