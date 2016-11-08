@@ -877,7 +877,7 @@ sub create_sam_to_bam_job {
         outputs => [
             catfile($staging_dir, $filename . ".bam")
         ],
-        description => "Generating BAM file"
+        description => "Converting SAM file to BAM"
     };
 }
 

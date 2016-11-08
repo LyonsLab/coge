@@ -607,7 +607,9 @@ $.extend(AlignmentView.prototype, {
         else if (aligner === "bowtie2") {
         	this.data = {
         		alignment_params: {
-        			tool: "bowtie2"
+        			tool: "bowtie2",
+        			'presets': this.el.find("[id='presets']").val(),
+        			'--rg-id':    this.el.find("[id='--rg-id']").val(),
         		}
         	}
         }

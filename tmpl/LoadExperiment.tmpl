@@ -402,8 +402,21 @@
 	<div id="bowtie2">
 		<div class="form-field">
 			<label class="col-md-2">Bowtie2: (<a href="http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml" target="_blank" class="small link">docs</a>)</label>
-			<div>
-			Default options
+			<div class="form-group">
+				<div class="form-entry" title="Use end-to-end preset settings to prioritize speed and sensitivity.  Default is 'sensitive'.">
+					<label>Presets:</label>
+					<select id="presets">
+                        <option value="--very-fast">very-fast</option>
+                        <option value="--fast">fast</option>
+                        <option value="--sensitive" selected="selected">sensitive (default)</option>
+                        <option value="--very-sensitive">very-sensitive</option>
+                    </select>
+				</div>
+				<div class="form-entry" title="Set read group ID in header.  Leave blank to ignore.">
+					<label>Read group (--rg-id):</label>
+					<input id="--rg-id" type="text"/>
+					<span class="note">(optional)</span>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -413,7 +426,7 @@
 <div id="tophat">
     <div class="form-field" title="Instructs TopHat2 to allow up to this many alignments to the reference for a given read, and choose the alignments based on their alignment scores if there are more than this number.">
         <label class="col-md-2">TopHat2: (<a href="http://ccb.jhu.edu/software/tophat/manual.shtml" target="_blank" class="small link">docs</a>)</label>
-        <div>
+        <div title="Maximum number of multiple hits reported.  Use '1' to report only the best hit.">
             <label>-g:</label>
             <input id="-g" type="number" value="1"/>
         </div>
@@ -435,7 +448,7 @@
 <script id="bismark-template" type="text/template">
 	<div id="bismark">
 	    <div class="form-field">
-			<label class="col-md-2">Bismark: (<a href="http://www.bioinformatics.babraham.ac.uk/projects/bismark/"_blank" class="small link">docs</a>)</label>
+			<label class="col-md-2">Bismark: (<a href="http://www.bioinformatics.babraham.ac.uk/projects/bismark/" target="_blank" class="small link">docs</a>)</label>
 			<div class="form-group">
 				<div class="form-entry" title="Number of mismatches allowed in the bowtie2 alignment seed region (only 0 or 1 allowed).">
 					<label>-N</label>

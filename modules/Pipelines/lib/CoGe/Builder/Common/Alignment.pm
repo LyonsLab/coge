@@ -7,11 +7,12 @@ use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
 use Clone qw(clone);
 use File::Basename qw(basename dirname);
+use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_upload_path get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations);
-use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end to_filename_base);
+use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end to_filename_base to_filename_without_extension);
 use CoGe::Builder::CommonTasks;
 
 our $CONF = CoGe::Accessory::Web::get_defaults();
@@ -184,6 +185,9 @@ sub build {
     elsif ($alignment_params->{tool} eq 'bwameth') {
         ($alignment_tasks, $alignment_results) = create_bwameth_workflow(%params);
     }
+    elsif ($alignment_params->{tool} eq 'bwa') {
+        ($alignment_tasks, $alignment_results) = create_bwa_workflow(%params);
+    }
     else { # GSNAP is the default
         ($alignment_tasks, $alignment_results) = create_gsnap_workflow(%params);
     }
@@ -276,8 +280,9 @@ sub generate_additional_metadata {
             push @annotations, 'note|tophat ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-g'));
         }
         elsif ($alignment_params->{tool} eq 'bowtie2') {
+            my $rg = $alignment_params->{'--rg-id'};
             push @annotations, qq{note|bowtie2_build};
-            push @annotations, 'note|bowtie2 (default options)';
+            push @annotations, 'note|bowtie2 ' . $alignment_params->{'presets'} . ($rg ? " --rg-id $rg" : '');
         }
         elsif ($alignment_params->{tool} eq 'bismark') {
             push @annotations, qq{note|bismark_genome_preparation};
@@ -692,6 +697,9 @@ sub create_bowtie2_workflow {
     my $read_type = $opts{read_type};
     my $encoding = $opts{encoding};
     my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
+    my $params = $opts{params};
+    my $presets = $params->{presets} // '--sensitive';
+    my $read_group = $params->{'--rg-id'} // '';
 
     my @tasks;
 
@@ -711,7 +719,9 @@ sub create_bowtie2_workflow {
                 index_name => $index_path,
                 index_files => $index_task->{outputs},
                 read_type => $read_type,
-                encoding => $encoding
+                encoding => $encoding,
+                presets => $presets,
+                read_group => $read_group
             );
             push @tasks, $task;
             push @sam_files, $task->{outputs}[0];
@@ -726,7 +736,9 @@ sub create_bowtie2_workflow {
             index_name => $index_path,
             index_files => $index_task->{outputs},
             read_type => $read_type,
-            encoding => $encoding
+            encoding => $encoding,
+            presets => $presets,
+            read_group => $read_group
         );
         push @tasks, $task;
         push @sam_files, $task->{outputs}[0];
@@ -845,6 +857,8 @@ sub create_bowtie2_alignment_job {
     my $index_files = $opts{index_files};
     my $read_type   = $opts{read_type} // 'single';
     my $encoding    = $opts{encoding};
+    my $presets     = $opts{presets} // '--sensitive';
+    my $read_group  = $opts{read_group} // '';
 
     # Setup input dependencies
     my $inputs = [
@@ -853,13 +867,14 @@ sub create_bowtie2_alignment_job {
         @$done_files,
         @$index_files
     ];
-    print STDERR Dumper $inputs, "\n";
 
     # Build up command/arguments string
     my $cmd = $CONF->{BOWTIE2} || 'bowtie2';
     $cmd = 'nice ' . $cmd; # run at lower priority
-    $cmd .= ' -p 32 ';
-    $cmd .= ' --phred64 ' if ($encoding eq '64'); # default is --phred33
+    $cmd .= ' -p 32';
+    $cmd .= ' ' . shell_quote($presets);
+    $cmd .= ' --rg-id ' . shell_quote($read_group) if $read_group;
+    $cmd .= ' --phred64' if ($encoding eq '64'); # default is --phred33
     $cmd .= " -x $index_name ";
 
     if ($read_type eq 'paired') {
@@ -1253,7 +1268,6 @@ sub create_gsnap_workflow {
         push @tasks, $bam_task;
         push @{$results{bam_files}}, $bam_task->{outputs}->[0];
     }
-    print STDERR Dumper \@tasks, "\n";
 
     return (\@tasks, \%results);
 }
@@ -1353,6 +1367,129 @@ sub create_gsnap_alignment_job {
             catfile($staging_dir, $output_file)
         ],
         description => "Aligning $desc with GSNAP"
+    };
+}
+
+sub create_bwa_workflow {
+    my %opts = @_;
+    my $fasta        = $opts{fasta};
+    my $fastq        = $opts{fastq};
+    my $done_files   = $opts{done_files};
+    my $gid          = $opts{gid};
+    my $encoding     = $opts{encoding};
+    my $read_type    = $opts{read_type} // 'single';
+    my $staging_dir  = $opts{staging_dir};
+    my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
+
+    my @tasks;
+
+    # Add index task
+    my $index_task = create_bwa_index_job($gid, $fasta);
+    push @tasks, $index_task;
+
+    # Add one or more alignment tasks
+    my @sam_files;
+    if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
+        foreach my $file (@$fastq) {
+            my $task = create_bwa_alignment_job(
+                fastq => [ $file ],
+                done_files => $done_files,
+                gid => $gid,
+                index_files => $index_task->{outputs},
+                encoding => $encoding,
+                read_type => $read_type,
+                staging_dir => $staging_dir
+            );
+            push @tasks, $task;
+            push @sam_files, $task->{outputs}->[0];
+        }
+    }
+    else { # standard Bowtie run (all fastq's at once)
+        my $task = create_bwa_alignment_job(
+            fastq => $fastq,
+            done_files => $done_files,
+            gid => $gid,
+            index_files => $index_task->{outputs},
+            encoding => $encoding,
+            read_type => $read_type,
+            staging_dir => $staging_dir
+        );
+        push @tasks, $task;
+        push @sam_files, $task->{outputs}->[0];
+    }
+
+    # Add one or more sam-to-bam tasks
+    my %results;
+    foreach my $file (@sam_files) {
+        my $task = create_sam_to_bam_job($file, $staging_dir);
+        push @tasks, $task;
+        push @{$results{bam_files}}, $task->{outputs}->[0];
+    }
+
+    return (\@tasks, \%results);
+}
+
+sub create_bwa_alignment_job {
+    my %opts = @_;
+    my $fastq       = $opts{fastq};
+    my $done_files  = $opts{done_files};
+    my $gid         = $opts{gid};
+    my $index_files = $opts{index_files};
+    #my $encoding    = $opts{encoding};
+    #my $read_type   = $opts{read_type};
+    my $staging_dir = $opts{staging_dir};
+
+    my ($first_fastq) = @$fastq;
+    my $output_file = to_filename_without_extension($first_fastq) . '.sam';
+
+    my $index_path = catfile(get_genome_cache_path($gid), 'bwa_index', 'genome.reheader');
+
+    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
+
+	return {
+        cmd => 'nice ' . get_command_path('BWA', 'bwa') . ' mem',
+        args => [
+            ['-t', '32',                    0],
+            ['',   $index_path,             0],
+            ['',   join(' ', sort @$fastq), 0],
+            ['>',  $output_file,            1]
+        ],
+        inputs => [
+            @$fastq,
+            @$done_files,
+            @$index_files
+        ],
+        outputs => [
+            catfile($staging_dir, $output_file)
+        ],
+        description => "Aligning $desc using BWA-MEM"
+	};
+}
+
+sub create_bwa_index_job {
+    my $gid = shift;
+    my $fasta = shift;
+
+    my $cache_dir = catdir(get_genome_cache_path($gid), "bwa_index");
+	make_path($cache_dir) unless (-d $cache_dir);
+    my $name = catfile($cache_dir, 'genome.reheader');
+    my $done_file = "$name.done";
+
+    my $cmd = 'nice ' . get_command_path('BWA', 'bwa') . " index $fasta -p $name && touch $done_file";
+
+    return {
+        cmd => $cmd,
+        args => [],
+        inputs => [ $fasta ],
+        outputs => [
+            $name . ".amb",
+            $name . ".ann",
+            $name . ".bwt",
+            $name . ".pac",
+            $name . ".sa",
+            $done_file
+        ],
+        description => "Indexing genome sequence with BWA"
     };
 }
 
