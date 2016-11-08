@@ -553,6 +553,7 @@ $.extend(AlignmentView.prototype, {
         this.container = this.el.find("#align-container");
         this.templates = {
             gsnap:   $($("#gsnap-template").html()),
+            bwa:     $($("#bwa-template").html()),
             bowtie2: $($("#bowtie2-template").html()),
             tophat:  $($("#tophat-template").html()),
             hisat2:  $($("#hisat2-template").html()),
@@ -603,6 +604,15 @@ $.extend(AlignmentView.prototype, {
             if (this.el.find("[id='--max-mismatches-chk']").is(":checked")) {
             	this.data.alignment_params['--max-mismatches'] = this.el.find("[id='--max-mismatches']").val();
             }
+        }
+        else if (aligner === "bwa") {
+            this.data = {
+        		alignment_params: {
+        			tool: "bwa",
+        			'-M': this.el.find("[id='-M']").is(":checked"),
+        			'-R': this.el.find("[id='-R']").val(),
+        		}
+        	}
         }
         else if (aligner === "bowtie2") {
         	this.data = {
@@ -812,7 +822,7 @@ $.extend(ChIPSeqView.prototype, {
     	var checkbox = this.el.find("#chipseq");
     	
         var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
-        if (selected != 'gsnap' && selected != 'bowtie2' && selected != 'tophat' && selected != 'hisat2') {
+        if (selected != 'gsnap' && selected != 'bwa' && selected != 'bowtie2' && selected != 'tophat' && selected != 'hisat2') {
         	this.container.html('<span class="alert indent">Please select one of these aligners above: GSNAP, Bowtie2, TopHat2, or HISAT2</span>').show();
         	checkbox.attr('checked', false); // uncheck it
         	return;

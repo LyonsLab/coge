@@ -339,6 +339,7 @@
 	        <label class="col-md-2">Aligner:</label>
 	        <select id="alignment">
 	            <option value="gsnap" selected>GSNAP</option>
+				<option value="bwa">BWA-MEM</option>
 	            <option value="bowtie2">Bowtie2</option>
 	            <option value="tophat">TopHat2</option>
 	            <option value="hisat2">HISAT2</option>
@@ -396,6 +397,25 @@
             </div>
         </div>
     </div>
+</script>
+
+<script id="bwa-template" type="text/template">
+	<div id="bwa">
+		<div class="form-field">
+			<label class="col-md-2">BWA-MEM: (<a href="http://bio-bwa.sourceforge.net/" target="_blank" class="small link">docs</a>)</label>
+			<div class="form-group">
+				<div class="form-entry" title="Mark shorter split hits as secondary">
+                    <label>-M:</label>
+                    <input id="-M" type="checkbox"/>
+                </div>
+				<div class="form-entry" title="Set read group line in header (such as '@RG\tID:foo\tSM:bar').  Leave blank to ignore.">
+					<label>Read group (-R):</label>
+					<input id="-R" type="text"/>
+					<span class="note">(optional)</span>
+				</div>
+			</div>
+		</div>
+	</div>
 </script>
 
 <script id="bowtie2-template" type="text/template">
