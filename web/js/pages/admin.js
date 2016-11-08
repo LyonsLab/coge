@@ -1896,7 +1896,7 @@ $.extend(Histogram.prototype, {
 	initialize: function() {
 		var self = this;
 		$("#" + this.element).html(
-			'<div><button id="' + self.element + '_back_button" class="coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;">Zoom Out</button>' +
+			'<div><div id="' + self.element + '_back_button" class="coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;">Zoom Out</div>' +
 			'<span style="margin-right:40px;">Data: ' + $('#report_type').val() + ', Filter: ' + $('#report_filter').val() + '</span></div>'
 		);
 		$('#' + this.element + '_back_button').on("click", function() {
@@ -2476,40 +2476,31 @@ $.extend(System_graph.prototype, {
 		
 		// Clear the element, add the zoom out button and svg container
 		$("#" + this.element).html(
-				'<div><button id="' + self.element + '_back_button" class="coge-button" style="float:left;height:25px;width:100px" disabled>Zoom Out</button>' +
-				'<div><button id="' + self.element + '_zoom_button" class="coge-button" style="float:left;height:25px;width:125px" disabled>Zoom 24 Hours</button>' +
-				'<div><button id="' + self.element + '_zoom_week_button" class="coge-button" style="float:left;height:25px;width:100px" disabled>Zoom Week</button>' +
-				'<div><button id="' + self.element + '_zoom_month_button" class="coge-button" style="float:left;height:25px;width:125px" disabled>Zoom Month</button>' +
-				'<div><br><br><br></div>'+
-				'<div id="' + self.element + '_container" style="height:' + (self.height + 500) + 'px;">' +
-				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 2000) + 'px;"></div> </div>'
+		        '<div class="inline">' +
+				'<div id="' + self.element + '_back_button" class="coge-button" style="width:7em;">Zoom Out</div>' +
+				'<div id="' + self.element + '_zoom_button" class="coge-button" style="width:7em;">Zoom 24 Hours</div>' +
+				'<div id="' + self.element + '_zoom_week_button" class="coge-button" style="width:7em;">Zoom Week</div>' +
+				'<div id="' + self.element + '_zoom_month_button" class="coge-button" style="width:7em;">Zoom Month</div>' +
+				'</div>' +
+				'<div><br><br></div>'+
+				'<div id="' + self.element + '_container" style="height:' + (self.height+100) + 'px;">' +
+				'<div id="' + self.element + '_graph" style="float:left;"></div></div>'
 		);
 		if (self.parent) {
 			$('#' + self.element + '_back_button')
-				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_out.call(self);
-			$('#' + self.element + '_zoom_button')
-				.prop("disabled", false)
-			$('#' + self.element + '_zoom_week_button')
-				.prop("disabled", false)
-			$('#' + self.element + '_zoom_month_button')
-				.prop("disabled", false)
 				});
 		} else {
-			$('#' + self.element + '_back_button').prop("disabled", true);
 			$('#' + self.element + '_zoom_button')
-				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_day.call(self);
 			});
 			$('#' + self.element + '_zoom_week_button')
-				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_week.call(self);
 			});
 			$('#' + self.element + '_zoom_month_button')
-				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_month.call(self);
 			});	
