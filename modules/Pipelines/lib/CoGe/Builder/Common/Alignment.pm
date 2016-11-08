@@ -1458,7 +1458,7 @@ sub create_bwa_index_job {
     };
 }
 
-sub generate_additional_metadata {
+sub generate_additional_metadata { #TODO redo arg capture in a more automated fashion
     my ($read_params, $trimming_params, $alignment_params) = @_;
     my @annotations;
 
@@ -1497,9 +1497,11 @@ sub generate_additional_metadata {
             push @annotations, 'note|bwameth (default options)';
         }
         elsif ($alignment_params->{tool} eq 'bwa') {
-            my $args_str = join(' ', map { $alignment_params->{$_} ? $_.' '.$alignment_params->{$_} : '' } ('-M', '-R'));
+            my $M = $alignment_params->{'-M'};
+            my $R = $alignment_params->{'-R'};
+            my $args_str = ($M ? '-M' : '') . ($R ? " -R $R" : '');
             push @annotations, qq{note|bwa index};
-            push @annotations, 'note|bwa mem ' . ($args_str =~ /\S+/ ? $args_str : ' (default options)');
+            push @annotations, 'note|bwa mem ' . ($args_str ? $args_str : ' (default options)');
         }
         else { # default to gsnap
             push @annotations, qq{note|gmap_build};
