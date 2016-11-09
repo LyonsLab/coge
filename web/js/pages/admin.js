@@ -2456,14 +2456,14 @@ function init_system_load2() {
 	});
 }
 
-var System_graph = function(json, element, parent) {
+var System_graph = function(data, element, parent) {
 	var self = this;
 	this.parent = parent;
 	this.child = null;
 	this.margin = {top: 30, right: 80, bottom: 30, left: 50},
 	this.width = $(window).width()*.75 - this.margin.left - this.margin.right,
 	this.height = $(window).height()*.5 - this.margin.top - this.margin.bottom;
-	this.data = json;
+	this.data = data;
 	this.element = element;
 	this.initialize();
 }
@@ -2476,48 +2476,46 @@ $.extend(System_graph.prototype, {
 		$("#" + this.element).html(
 		        '<div class="inline">' +
 				'<div id="' + self.element + '_back_button" class="coge-button" style="width:7em;">Zoom Out</div>' +
-				'<div id="' + self.element + '_zoom_button" class="coge-button" style="width:7em;">Zoom 24 Hours</div>' +
-				'<div id="' + self.element + '_zoom_week_button" class="coge-button" style="width:7em;">Zoom Week</div>' +
 				'<div id="' + self.element + '_zoom_month_button" class="coge-button" style="width:7em;">Zoom Month</div>' +
+				'<div id="' + self.element + '_zoom_week_button" class="coge-button" style="width:7em;">Zoom Week</div>' +
+				'<div id="' + self.element + '_zoom_button" class="coge-button" style="width:7em;">Zoom Day</div>' +
 				'</div>' +
 				'<div><br><br></div>'+
 				'<div id="' + self.element + '_container" style="height:' + (self.height+100) + 'px;">' +
 				'<div id="' + self.element + '_graph" style="float:left;"></div></div>'
 		);
+
+		// Register button events
 		if (self.parent) {
 			$('#' + self.element + '_back_button')
 				.on("click", function() {
 					self.zoom_out.call(self);
 				});
-		} else {
-			$('#' + self.element + '_zoom_button')
-				.on("click", function() {
-					self.zoom_day.call(self);
-			});
-			$('#' + self.element + '_zoom_week_button')
-				.on("click", function() {
-					self.zoom_week.call(self);
-			});
-			$('#' + self.element + '_zoom_month_button')
-				.on("click", function() {
-					self.zoom_month.call(self);
-			});	
 		}
-		
+        $('#' + self.element + '_zoom_button')
+            .on("click", function() {
+                self.zoom_hours.call(self, 24); // past day
+        });
+        $('#' + self.element + '_zoom_week_button')
+            .on("click", function() {
+                self.zoom_hours.call(self, 7*24); // past week
+        });
+        $('#' + self.element + '_zoom_month_button')
+            .on("click", function() {
+                self.zoom_hours.call(self, 30*24); // past month
+        });
+
 		// Parse the date / time
 		self.timeFormat = d3.time.format("%H:%M:%S %m/%d/%Y");
 		
 		// Format the data
 		self.data.forEach(function(d) {
-			if (Object.prototype.toString.call(d.time) !== "[object Date]") {
+			if (Object.prototype.toString.call(d.time) !== "[object Date]")
 				d.time = self.timeFormat.parse(d.time);
-			}
-			if (d.load) {
+			if (d.load)
 				d.load = +d.load;
-			}
-	        if (d.memory) {
+	        if (d.memory)
 	        	d.memory = +d.memory;
-	        }
 	    });
 
 		// Set the ranges
@@ -2543,11 +2541,9 @@ $.extend(System_graph.prototype, {
 		self.valueline2 = d3.svg.line()
 	    	.x(function(d) { return self.x(d.time); })
 	    	.y(function(d) { 
-	    		if (d.memory) {
+	    		if (d.memory)
 	    			return self.yMemory(d.memory); 
-	    		} else {
-	    			return self.yMemory(0);
-	    		}
+	    		return self.yMemory(0);
 	    	});
 		    
 		// Adds the svg canvas
@@ -2655,23 +2651,19 @@ $.extend(System_graph.prototype, {
 		
 		for (var i = 0; i < self.data.length; i++) {
 			if (self.data[i].load) {
-				if (self.data[i].load < minLoad) {
+				if (self.data[i].load < minLoad)
 					minLoad = self.data[i].load;
-				}
-				if (self.data[i].load > maxLoad) {
+				if (self.data[i].load > maxLoad)
 					maxLoad = self.data[i].load;
-				}
 				loadTotal += self.data[i].load;
 				loadCount++;
 			}
 			
 			if (self.data[i].memory) {
-				if (self.data[i].memory < minMem) {
+				if (self.data[i].memory < minMem)
 					minMem = self.data[i].memory;
-				}
-				if (self.data[i].memory > maxMem) {
+				if (self.data[i].memory > maxMem)
 					maxMem = self.data[i].memory;
-				}
 				memTotal += self.data[i].memory;
 				memCount++;
 			}
@@ -2691,83 +2683,49 @@ $.extend(System_graph.prototype, {
 				"</div>"
 		);
 	},
+	root_node: function() { // return the root node (zoomed out all the way)
+	    var self = this;
+        while (self.parent) {
+			self = self.parent;
+		}
+		return self;
+	},
 	brushed: function() {
 		var self = this;
 		var extent = self.brush.extent();
 		
-		var newJson = this.zoom(extent[0], extent[1]);
-	
+		var newJson = this.extract_data(extent[0], extent[1]);
 		if (newJson.length > 1) {
 			var parent = self;
 			self = new System_graph(newJson, self.element, parent);
 			parent.child = self;
 		}
 	},
-	zoom_out: function() {
-		var self = this;
-		while(self.parent) {
-			self = self.parent;
-		}
+	zoom_out: function() { // zoom out as far as possible
+		var self = this.root_node();
 		self.initialize();
 	},
-	zoom_day: function() {
-		var self = this;
-		var toDay = new Date();
-		var yesterDay = new Date();
-		yesterDay.setHours(yesterDay.getHours() - 24);
+	zoom_hours: function(hours) { // zoom to past number of hours
+		var self = this.root_node();
+
+		var now = new Date();
+		var start = new Date();
+		start.setHours(start.getHours() - hours);
 		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
-		format(new Date(toDay));
-		format(new Date(yesterDay));
-		
-		var newHours = this.zoom(yesterDay, toDay);
-		
+
+		var newHours = self.extract_data(start, now);
 		if (newHours.length > 1) {
 			var parent = self;
 			self = new System_graph(newHours, self.element, parent);
 			parent.child = self;
 		}
 	},
-	zoom_week: function() {
-		var self = this;
-		var toDay = new Date();
-		var sevenDays = new Date();
-		sevenDays.setHours(sevenDays.getHours() - 168);
-		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
-		format(new Date(toDay));
-		format(new Date(sevenDays));
-		
-		var newWeek = this.zoom(sevenDays, toDay);
-		
-		if (newWeek.length > 1) {
-			var parent = self;
-			self = new System_graph(newWeek, self.element, parent);
-			parent.child = self;
-		}
-	},
-	zoom_month: function() {
-		var self = this;
-		var toDay = new Date();
-		var oneMonth = new Date();
-		oneMonth.setHours(oneMonth.getHours() - 744);
-		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
-		format(new Date(toDay));
-		format(new Date(oneMonth));
-		
-		var newMonth = this.zoom(oneMonth, toDay);
-		
-		if (newMonth.length > 1) {
-			var parent = self;
-			self = new System_graph(newMonth, self.element, parent);
-			parent.child = self;
-		}
-	},
-	zoom: function(start, end) {
+	extract_data: function(start, end) { // extract range of data values
 		var self = this;
 		var newData = [];
 		for (var i = 0; i < self.data.length; i++) {
-			if (start <= self.data[i].time && end >= self.data[i].time) {
+			if (start <= self.data[i].time && end >= self.data[i].time)
 				newData.push(self.data[i]);
-			}
 		}
 		return newData;
 	}	
