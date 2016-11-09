@@ -2674,12 +2674,12 @@ $.extend(System_graph.prototype, {
 				"<div>Average Load: " + avgLoad + "</div>" +
 				"<div>Min Load: " + minLoad + "</div>" +
 				"<div>Max Load: " + maxLoad + "</div>" +
-				"<div>-------------------------</div>" +
+				"<div><hr></div>" +
 				"<div>Average Memory: " + avgMem + "</div>" +
 				"<div>Min Memory: " + minMem + "</div>" +
 				"<div>Max Memory: " + maxMem + "</div>" +
-				"<div>-------------------------</div>" +
-				"<div># of Data Points: " + self.data.length + "</div>" +
+				"<div><hr></div>" +
+				"<div>Total Data Points: " + self.data.length + "</div>" +
 				"</div>"
 		);
 	},
