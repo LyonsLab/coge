@@ -11,13 +11,12 @@ define(['dojo/_base/declare',
 		'dijit/form/DropDownButton',
 		'dijit/Menu',
 		'dijit/MenuItem',
-		'dijit/CheckedMenuItem',
 		'dijit/MenuSeparator',
 		'dojo/Deferred',
 		'dijit/Dialog',
 		'dijit/Tooltip'
 	   ],
-	   function( declare, dom, domGeom, aspect, ContentPane, DndSource, DropDownButton, Menu, MenuItem, CheckedMenuItem, MenuSeparator, Deferred, Dialog, Tooltip ) {
+	   function( declare, dom, domGeom, aspect, ContentPane, DndSource, DropDownButton, Menu, MenuItem, MenuSeparator, Deferred, Dialog, Tooltip ) {
     return declare( 'JBrowse.View.TrackList.CoGe', null,
 
 	/** @lends JBrowse.View.TrackList.CoGe.prototype */
@@ -365,31 +364,25 @@ define(['dojo/_base/declare',
 			})
 		}));
 		if (un != 'public') {
-			this._show_my_tracks = true;
-			this._show_shared_tracks = true;
-			this._show_public_tracks = true;
 			menu.addChild(new MenuSeparator());
-			menu.addChild(new CheckedMenuItem({
-				checked: true,
+			menu.addChild(new MenuItem({
 				label: "Show My Tracks",
 				onClick: dojo.hitch(this, function() {
-					this._show_my_tracks ^= true;
+					this._show = 'my';
 					this._filter_tracks(this.text_filter_input.value);
 				})
 			}));
-			menu.addChild(new CheckedMenuItem({
-				checked: true,
+			menu.addChild(new MenuItem({
 				label: "Show Shared Tracks",
 				onClick: dojo.hitch(this, function() {
-					this._show_shared_tracks ^= true;
+					this._show = 'shared';
 					this._filter_tracks(this.text_filter_input.value);
 				})
 			}));
-			menu.addChild(new CheckedMenuItem({
-				checked: true,
+			menu.addChild(new MenuItem({
 				label: "Show Public Tracks",
 				onClick: dojo.hitch(this, function() {
-					this._show_public_tracks ^= true;
+					this._show = 'public';
 					this._filter_tracks(this.text_filter_input.value);
 				})
 			}));
@@ -435,7 +428,7 @@ define(['dojo/_base/declare',
 
 		dojo.create('div', { id: 'feature_hits' }, root);
 
-		var pane = dojo.create('div', { id: 'track_pane' }, root);
+		var pane = dojo.create('div', { id: 'track_pane', style: 'width:250px;' }, root);
 		this._create_text_filter(pane);
 		this._update_text_filter_control();
 		var scroller = dojo.create('div', { style: 'height:100%;overflow-x:hidden;overflow-y:auto;' }, pane);
@@ -543,11 +536,14 @@ define(['dojo/_base/declare',
 		}
 		if (this._type_filter && this._type_filter != container.config.coge.data_type)
 			return false;
-		let role = container.config.coge.role;
-		if (role) {
-			if (role == 2 && !this._show_my_tracks)
+		if (this._show) {
+			if (container.config.coge.type != 'experiment')
 				return false;
-			if (!this._show_shared_tracks)
+			if (this._show == 'my' && container.config.coge.role != 2)
+				return false;
+			if (this._show == 'shared' && !(container.config.coge.role == 3 || container.config.coge.role == 4))
+				return false;
+			if (this._show == 'public' && (container.config.coge.restricted || container.config.coge.role))
 				return false;
 		}
 		return true;
@@ -560,10 +556,10 @@ define(['dojo/_base/declare',
 			text = text.toLowerCase();
 		else
 			text = null;
-		if (text || this._type_filter || !this._show_my_tracks || !this._show_public_tracks || !this._show_shared_tracks) {
+		if (text || this._type_filter || this._show) {
 			var already_shown = {};
 			this._traverse_tracks(function(container) {
-				if (this._filter_track(container, text)) {
+				if (coge_track_list._filter_track(container, text)) {
 					if (!already_shown[container.id]) {
 						container.style.display = '';
 						already_shown[container.id] = true;
@@ -571,7 +567,7 @@ define(['dojo/_base/declare',
 						container.style.display = 'none';
 				} else
 					container.style.display = 'none';
-			}.bind(this));
+			});
 		} else { // show all
 			var expanded = true;
 			this._traverse_tracks(function(container) {
@@ -1220,9 +1216,13 @@ define(['dojo/_base/declare',
 			}
 		}
 		var html = Math.min(num_experiments, total_experiments) + ' of ' + total_experiments + ' experiment' + (total_experiments == 1 ? '' : 's') + ' shown<br>';
-		if (this._type_filter) {
-			html += 'showing ' + (this._type_filter === 1 ? 'quantitative' : this._type_filter === 2 ? 'variant' : this._type_filter === 3 ? 'alignment' : 'marker') + ' tracks&nbsp;&nbsp;&nbsp;&nbsp;';
-			html += '<span class="glyphicon glyphicon-remove" style="color:black;cursor:pointer" onclick="coge_track_list._type_filter=null;coge_track_list._filter_tracks(coge_track_list.text_filter_input.value);"></span>';
+		if (this._type_filter || this._show) {
+			html += 'showing ';
+			if (this._show)
+				html += this._show + ' ';
+			if (this._type_filter)
+				html += (this._type_filter === 1 ? 'quantitative' : this._type_filter === 2 ? 'variant' : this._type_filter === 3 ? 'alignment' : 'marker');
+			html += ' tracks&nbsp;&nbsp;&nbsp;&nbsp;<span class="glyphicon glyphicon-remove" style="color:black;cursor:pointer" onclick="coge_track_list._type_filter=null;coge_track_list._show=null;coge_track_list._filter_tracks(coge_track_list.text_filter_input.value);"></span>';
 		}
 		else
 			html += num_notebooks + ' of ' + total_notebooks + ' notebook' + (total_notebooks == 1 ? '' : 's') + ' shown';
