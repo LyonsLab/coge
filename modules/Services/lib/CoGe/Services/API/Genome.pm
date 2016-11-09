@@ -14,7 +14,9 @@ sub search {
     my $self = shift;
     my $search_term = $self->stash('term');
     my $fast = $self->param('fast');
-    $fast = (defined $fast && ($fast eq '1' || $fast eq 'true'));
+    $fast = (defined $fast && ($fast eq '1' || $fast eq 'true')); # default to false
+    my $sort = $self->param('sort');
+    $sort = (defined $sort && ($sort eq '1' || $sort eq 'true')); # default to false
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
@@ -26,7 +28,7 @@ sub search {
     my ($db, $user) = CoGe::Services::Auth::init($self);
     
     # Search notebooks and filter based on user permissions
-    my $filtered = search_genomes(db => $db, search_term => $search_term, user => $user);
+    my $filtered = search_genomes(db => $db, search_term => $search_term, user => $user, sort => $sort);
 
     # Format response
     my @result;

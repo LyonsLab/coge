@@ -42,7 +42,7 @@ function search_genomes (search_term) {
 	var spinner = $('#edit_genome_busy');
 	spinner.show();
 	
-	coge.services.search_genomes(search_term, { fast: true })
+	coge.services.search_genomes(search_term, { fast: true, sort: true })
 		.done(function(response) { // success
 			if (response && response.genomes) {
 				var results = response.genomes.map(function(obj) {
@@ -553,6 +553,7 @@ $.extend(AlignmentView.prototype, {
         this.container = this.el.find("#align-container");
         this.templates = {
             gsnap:   $($("#gsnap-template").html()),
+            bwa:     $($("#bwa-template").html()),
             bowtie2: $($("#bowtie2-template").html()),
             tophat:  $($("#tophat-template").html()),
             hisat2:  $($("#hisat2-template").html()),
@@ -604,10 +605,21 @@ $.extend(AlignmentView.prototype, {
             	this.data.alignment_params['--max-mismatches'] = this.el.find("[id='--max-mismatches']").val();
             }
         }
+        else if (aligner === "bwa") {
+            this.data = {
+        		alignment_params: {
+        			tool: "bwa",
+        			'-M': this.el.find("[id='-M']").is(":checked"),
+        			'-R': this.el.find("[id='-R']").val(),
+        		}
+        	}
+        }
         else if (aligner === "bowtie2") {
         	this.data = {
         		alignment_params: {
-        			tool: "bowtie2"
+        			tool: "bowtie2",
+        			'presets': this.el.find("[id='presets']").val(),
+        			'--rg-id':    this.el.find("[id='--rg-id']").val(),
         		}
         	}
         }
@@ -810,7 +822,7 @@ $.extend(ChIPSeqView.prototype, {
     	var checkbox = this.el.find("#chipseq");
     	
         var selected = $("#alignment").val(); // FIXME pass alignment in as argument to constructor
-        if (selected != 'gsnap' && selected != 'bowtie2' && selected != 'tophat' && selected != 'hisat2') {
+        if (selected != 'gsnap' && selected != 'bwa' && selected != 'bowtie2' && selected != 'tophat' && selected != 'hisat2') {
         	this.container.html('<span class="alert indent">Please select one of these aligners above: GSNAP, Bowtie2, TopHat2, or HISAT2</span>').show();
         	checkbox.attr('checked', false); // uncheck it
         	return;

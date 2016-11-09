@@ -19,7 +19,8 @@ ICMD=/usr/bin
 MAX_LOCAL_BACKUPS=1
 MAX_REMOTE_BACKUPS=4
 VERSION=$(date '+%Y%m%d')
-LOCAL=/storage/coge/backup
+#LOCAL=/storage/coge/backup
+LOCAL=/mnt/nfs/geco/backup
 REMOTE=backup
 CONFIG=/opt/apache2/coge/coge.conf
 

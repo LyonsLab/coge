@@ -128,20 +128,17 @@ function cross_fade(selector, image, delay) {
         fade_time = 1500
         paused = true;
 
-    var run_button = $("<div></div>")
-            .addClass("coge-border ui-icon")
-            .addClass("ui-icon ui-icon-pause")
+    var run_button = $("<span>&#9208</span>")
+            .addClass('link')
             .css("margin", "0 2%")
             .on("click", $.proxy(pause, this));
 
-    var next_button = $("<div></div>")
-            .addClass("coge-border ui-icon")
-            .addClass("ui-icon-arrowthick-1-e")
+    var next_button = $("<span>&#x23ED;</span>")
+            .addClass('link')
             .on("click", $.proxy(next, this));
 
-    var prev_button = $("<div></div>")
-            .addClass("coge-border ui-icon")
-            .addClass("ui-icon-arrowthick-1-w")
+    var prev_button = $("<span>&#x23EE;</span>")
+            .addClass('link')
             .on("click", $.proxy(previous, this));
 
     var controls = $("<div></div>")
@@ -223,8 +220,7 @@ function cross_fade(selector, image, delay) {
 
     function resume() {
         run_button
-            .removeClass("ui-icon-play")
-            .addClass("ui-icon-pause")
+            .html('&#9208')
             .unbind()
             .on("click", $.proxy(pause, this));
 
@@ -236,8 +232,7 @@ function cross_fade(selector, image, delay) {
     function pause() {
         paused = true;
         run_button
-            .removeClass("ui-icon-pause")
-            .addClass("ui-icon-play")
+            .html('&#x23E9')
             .unbind()
             .on("click", $.proxy(resume, this));
 
@@ -349,7 +344,7 @@ Please note: CyVerse will be unavailable from 7 PM EDT (4 PM PDT) Thursday, Octo
             </div>
             <div>
 	            <p><a href="SynMap.pl">Compare two genomes</a></p>
-                <p><a href="SynMap3D.pl">Compare three genomes <span style="color:blue">(beta)</span></a></p>
+                <p><a href="SynMap3D.pl">Compare three genomes</a></p>
 	            <p><a href="OrganismView.pl">Browse genomes</a></p>
 	            <p><a href="LoadGenome.pl">Load a new genome</a></p>
 	            <p><a href="LoadExperiment.pl">Load experimental data</a></p>

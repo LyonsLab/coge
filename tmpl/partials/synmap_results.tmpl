@@ -266,7 +266,7 @@ function show_results() {
 
     // NOTE: If we update JQuery UI past 1.9 this needs to be changed to "active"
     $("#data").tabs({
-        selected: start_index,
+        active: start_index,
         select: function(event, ui) { on_tab_swap(ui.newTab.index()) }
     });
 

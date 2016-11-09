@@ -82,7 +82,7 @@ function feature_checkboxes(){
 		if (this.checked == true) accn = accn + this.id + ",";
 	});
 	if (accn == ",") {
-		alert("Danger Will Robinson!\n1D-10T error!  You have not selected any features.");
+		alert("You have not selected any features.");
 		return;
 	}
 
@@ -267,7 +267,7 @@ function check_type (type) {
   $('#feat_table tr').each(function() {
   if (type == $('td:eq(2)',this).html())
    {
-     $('td:eq(0) input:checkbox', this).attr('checked', true);
+     $('td:eq(0) input:checkbox', this).prop('checked', true);
    }
  });
 }
@@ -388,15 +388,11 @@ Filter:
   </tbody>
  </TABLE>
  </form>
- <!--<input type=button value="Check All" onclick="$('#feat_table :checkbox').attr('checked', true);">
- <input type=button value="Uncheck All" onclick="$('#feat_table :checkbox').attr('checked', false);">-->
-
- <!-- TODO - consider putting onClick declarations in javascript for simplicity -->
  <div class='small coge-padded'>
- <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#feat_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
- <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#feat_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
- <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#feat_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
- <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#feat_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
+ <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#feat_table tr :checkbox').prop('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
+ <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#feat_table tr :checkbox').prop('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
+ <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#feat_table tr :visible :checkbox').prop('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
+ <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="$('#feat_table tr :visible :checkbox').prop('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
  <span href="javascript:void(0);" class='coge-button coge-button-sm' onclick="check_type()"><span class="ui-icon ui-icon-check"></span>Check Features of type:</span><TMPL_VAR NAME="FEAT_TYPES">
 <!--
  <TMPL_IF NAME=SAVE_DATA>
@@ -419,7 +415,7 @@ Filter:
   <option value="send_to_SynFind">SynFind</option>
   <option value="send_to_list">New List</option>
  </select>
- <span class='coge-button coge-button-sm' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id="retrieve_message" class="alert"></span>
+ <span class='coge-button coge-button-sm padded' onclick="feature_checkboxes();">Go</span><span id="retrieve_message" class="alert"></span>
 </div>
 
 <br>

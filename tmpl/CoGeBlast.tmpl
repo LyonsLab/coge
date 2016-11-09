@@ -117,8 +117,8 @@
 
   <div id='tabs' class="hidden" style='margin-top: 0.5em; display: inline-block;'>
     <ul>
-      <li class='small'><a href="#tab-1">CoGe Blast</a></li>
-      <li class='small'><a href="#tab-2">NCBI Blast</a></li>
+      <li class='small'><a href="#tab-1">CoGe</a></li>
+      <li class='small'><a href="#tab-2">NCBI</a></li>
     </ul>
     <div id="tab-1">
       <TMPL_INCLUDE NAME='CoGeBlast_coge.tmpl'>
@@ -128,8 +128,7 @@
     </div>
     <div style="padding: 0 1.4em 1em; box-sizing: border-box;">
         <div class="bold text">Query Sequence(s)</div>
-        <textarea id="seq_box" name="seq_box" style='width: 100%; color:gray;' class="ui-corner-all ui-widget-content coge-section" spellcheck='false' wrap="off" cols="80"
-        placeholder="<TMPL_VAR NAME="SEQUENCE">" rows="15"></textarea>
+        <textarea id="seq_box" name="seq_box" style='width:100%;color:gray;font-size:0.85em;' class="ui-corner-all ui-widget-content coge-section" spellcheck='false' wrap="off" cols="80" placeholder="<TMPL_VAR NAME="SEQUENCE">" rows="15"></textarea>
     </div>
   </div> <!-- tabs -->
 

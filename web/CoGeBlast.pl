@@ -144,7 +144,8 @@ sub gen_body {
     my $dsgid      = $form->param('dsgid') || 0;
     my $gid        = $form->param('gid');
     $dsgid = $gid if $gid;    # alias
-    my $lid   = $form->param('lid')   || 0;
+    my $lid   = $form->param('lid');
+       $lid   = $form->param('nid') unless defined $lid;
     my $rc    = $form->param('rc')    || 0;
     my $seq   = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;

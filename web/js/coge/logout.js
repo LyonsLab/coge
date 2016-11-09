@@ -71,7 +71,7 @@ var coge = window.coge = (function (namespace) {
     		
     		// Show alert dialog
     		var dialog = $("<div />") // TODO move rendering into separate function
-    			.html("Your login session has expired. Please login or continue as a public user.")
+    			.html("<div style='padding:1em'>Your login session has expired. Please login or continue as a public user.</div>")
     			.dialog({
     				title: "Your session has expired ...",
 	    			dialogClass: "no-close",

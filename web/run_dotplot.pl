@@ -9,11 +9,10 @@ use CoGe::Accessory::Web;
 no warnings 'redefine';
 
 umask(0);
-our ($CONFIG, $DATE, $DEBUG, $DIR, $URL, $FORM, $coge, $DATADIR, $DIAGSDIR,
-     $DOTPLOT);
+our ($CONFIG, $DATE, $DEBUG, $DIR, $URL, $FORM, $coge, $DATADIR, $DIAGSDIR, $DOTPLOT);
 
-$DEBUG  = 0;
-$FORM   = new CGI;
+$DEBUG = 0;
+$FORM  = new CGI;
 
 ( $coge, undef, $CONFIG ) = CoGe::Accessory::Web->init(cgi => $FORM);
 
@@ -30,7 +29,6 @@ my $chr1         = $FORM->param('chr1');
 my $chr2         = $FORM->param('chr2');
 my $basename     = $FORM->param('base');
 my $url_only     = $FORM->param('link');
-my $square       = $FORM->param('square');
 my $flip         = $FORM->param('flip');
 my $regen        = $FORM->param('regen');
 my $width        = $FORM->param('width') || 600;
@@ -50,34 +48,20 @@ my $fid2         = $FORM->param('fid2');
 $box_diags = 1 if $box_diags && $box_diags eq "true";
 $grid = 1 unless defined $grid;
 $DEBUG = 1 if $FORM->param('debug');
-exit
-  unless ( $dsgid1 && $dsgid2 && defined $chr1 && defined $chr2 && $basename );
+unless ( $dsgid1 && $dsgid2 && defined $chr1 && defined $chr2 && $basename ) {
+    print STDERR "run_dootplot: Missing required parameters\n", Dumper [ $dsgid1, $dsgid2, $chr1, $chr2, $basename ];
+    exit;
+}
+
 my ( $md51, $md52, $mask1, $mask2, $type1, $type2, $blast, $params ) =
-  $basename =~
-  /(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag\.?a?l?l?_(.*)/;
+  $basename =~ /(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag\.?a?l?l?_(.*)/;
 
 my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
 my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
-exit unless $dsg1 && $dsg2;
-
-# my $name1 = $dsg1->organism->name;
-# $name1  =~ s/\///g;
-# $name1 =~ s/\s+/_/g;
-# $name1 =~ s/\(//g;
-# $name1 =~ s/\)//g;
-# $name1 =~ s/://g;
-# $name1 =~ s/;//g;
-# $name1 =~ s/'//g;
-# $name1 =~ s/"//g;
-# my $name2 = $dsg2->organism->name;
-# $name2  =~ s/\///g;
-# $name2 =~ s/\s+/_/g;
-# $name2 =~ s/\(//g;
-# $name2 =~ s/\)//g;
-# $name2 =~ s/://g;
-# $name2 =~ s/;//g;
-# $name2 =~ s/'//g;
-# $name2 =~ s/"//g;
+unless ($dsg1 && $dsg2) {
+    print STDERR "run_dootplot: Genome not found\n";
+    exit;
+}
 
 my ( $dir1, $dir2 ) = sort ( $dsgid1, $dsgid2 );
 my $dir      = "$DIAGSDIR/$dir1/$dir2";
@@ -129,8 +113,7 @@ my $res = generate_dotplot(
 );
 if ($res) {
     $res =~ s/$DIR/$URL/;
-
-    #    print STDERR $res,"\n";
+    #print STDERR $res,"\n";
     print $res if $url_only;
     print qq{Content-Type: text/html
 
@@ -141,7 +124,6 @@ $res
 </head>
 </html>
 };
-
     #print $file;
 }
 
@@ -204,8 +186,7 @@ sub generate_dotplot {
         return $outfile;
     }
 
-    $cmd .=
-qq{ -d $dag -a "$coords" -b "$outfile" -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 "$qchr" -chr2 "$schr" -flip $flip -grid 1 -sa 1};
+    $cmd .= qq{ -d $dag -a "$coords" -b "$outfile" -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 "$qchr" -chr2 "$schr" -flip $flip -grid 1 -sa 1};
     $cmd .= qq{ -fid1 $fid1}       if $fid1;
     $cmd .= qq{ -fid2 $fid2}       if $fid2;
     $cmd .= qq { -am $metric}      if $metric;
@@ -214,9 +195,8 @@ qq{ -d $dag -a "$coords" -b "$outfile" -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt
     $cmd .= qq{ -bd 1}             if $box_diags;
     $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
     print STDERR "Running: ", $cmd, "\n" if $DEBUG;
-    my $x;
-    ( $x, $cmd ) = CoGe::Accessory::Web::check_taint($cmd);
 
+    ( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd);
     #($cmd) = $cmd =~ /(.*)/;
     `$cmd` if $cmd;
     print STDERR $cmd,     "\n";
