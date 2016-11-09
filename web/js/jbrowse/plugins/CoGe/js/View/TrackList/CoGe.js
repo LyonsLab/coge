@@ -365,23 +365,32 @@ define(['dojo/_base/declare',
 			})
 		}));
 		if (un != 'public') {
+			this._show_my_tracks = true;
+			this._show_shared_tracks = true;
+			this._show_public_tracks = true;
 			menu.addChild(new MenuSeparator());
 			menu.addChild(new CheckedMenuItem({
 				checked: true,
 				label: "Show My Tracks",
 				onClick: dojo.hitch(this, function() {
+					this._show_my_tracks ^= true;
+					this._filter_tracks(this.text_filter_input.value);
 				})
 			}));
 			menu.addChild(new CheckedMenuItem({
 				checked: true,
 				label: "Show Shared Tracks",
 				onClick: dojo.hitch(this, function() {
+					this._show_shared_tracks ^= true;
+					this._filter_tracks(this.text_filter_input.value);
 				})
 			}));
 			menu.addChild(new CheckedMenuItem({
 				checked: true,
 				label: "Show Public Tracks",
 				onClick: dojo.hitch(this, function() {
+					this._show_public_tracks ^= true;
+					this._filter_tracks(this.text_filter_input.value);
 				})
 			}));
 			menu.addChild(new MenuSeparator());
@@ -402,7 +411,6 @@ define(['dojo/_base/declare',
 				localStorage.setItem("track-selector-side", region == 'right' ? 'left' : 'right');
 				root.set('region', region == 'right' ? 'left' : 'right');
 				parent.addChild(root);
-
 			}
 		}));
 		var btn = new DropDownButton({ dropDown: menu }, menu_button);
@@ -441,10 +449,10 @@ define(['dojo/_base/declare',
 		}, this);
 
 		var feature_groups = this._track_configs.filter(function(fg) {
-			return (fg.coge.type && fg.coge.type == 'feature_group');
+			return fg.coge.type && fg.coge.type == 'feature_group';
 		});
 		var features = this._track_configs.filter(function(f) {
-			return (f.coge.type && f.coge.type == 'features');
+			return f.coge.type && f.coge.type == 'features';
 		});
 		feature_groups.forEach(function(fg) {
 			var d = dojo.create('div', null, this.tracks_div);
@@ -526,9 +534,7 @@ define(['dojo/_base/declare',
 	},
 
 	// ----------------------------------------------------------------
-owner
-Shared
-public
+
 	_filter_track: function(container, text) {
 		if (text) {
 			var t = container.lastChild.title ? container.lastChild.title : container.lastChild.innerHTML;
@@ -544,38 +550,29 @@ public
 			if (!this._show_shared_tracks)
 				return false;
 		}
+		return true;
 	},
 
 	// ----------------------------------------------------------------
 
 	_filter_tracks: function(text) {
-		var type_filter = this._type_filter;
-		if (text && /\S/.test(text)) { // filter on text
+		if (text && /\S/.test(text))
 			text = text.toLowerCase();
+		else
+			text = null;
+		if (text || this._type_filter || !this._show_my_tracks || !this._show_public_tracks || !this._show_shared_tracks) {
 			var already_shown = {};
 			this._traverse_tracks(function(container) {
-				var t = container.lastChild.title ? container.lastChild.title : container.lastChild.innerHTML;
-				if (t.toLowerCase().indexOf(text) != -1) {
+				if (this._filter_track(container, text)) {
 					if (!already_shown[container.id]) {
-						if (!type_filter || type_filter === container.config.coge.data_type) {
-							container.style.display = '';
-							already_shown[container.id] = true;
-						}
+						container.style.display = '';
+						already_shown[container.id] = true;
 					} else
 						container.style.display = 'none';
 				} else
 					container.style.display = 'none';
-			});
-		} else if (type_filter) {
-			var already_shown = {};
-			this._traverse_tracks(function(container) {
-				if (!already_shown[container.id] && type_filter === container.config.coge.data_type) {
-					container.style.display = '';
-					already_shown[container.id] = true;
-				} else
-					container.style.display = 'none';
-			});
-		} else { // empty string, show all
+			}.bind(this));
+		} else { // show all
 			var expanded = true;
 			this._traverse_tracks(function(container) {
 				if (container.config.coge.collapsible) {

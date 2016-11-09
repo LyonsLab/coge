@@ -743,9 +743,10 @@ return declare( JBrowsePlugin,
 					coge_plugin.info('One Feature Found', 'Moved to location of ' + data[0].name);
 					return;
 				}
+				var w = dojo.byId('track_pane').offsetWidth + 1;
 				var div = dojo.byId('feature_hits');
 				dojo.empty(div);
-				dojo.create('div', { innerHTML: 'Features <span class="glyphicon glyphicon-remove" onclick="dojo.empty(\'feature_hits\');dijit.byId(\'jbrowse\').resize()"></span>' }, div);
+				dojo.create('div', { innerHTML: 'Features <span class="glyphicon glyphicon-remove" onclick="dojo.empty(\'feature_hits\');dojo.style(\'coge\',\'width\',\'' + w + 'px\');dijit.byId(\'jbrowse\').resize();"></span>' }, div);
 				div = dojo.create('div', { 'class': 'feature_hits' }, div);
 				data.forEach(function(hit) {
 					dojo.create('a', {
@@ -756,6 +757,7 @@ return declare( JBrowsePlugin,
 						})
 					}, div);
 				});
+				dojo.style('coge', 'width', (div.offsetWidth + w) + 'px');
 				dijit.byId('jbrowse').resize();
 				coge_plugin.info('Multiple Matches Found', 'See the feature list next to the track list');
 			},
