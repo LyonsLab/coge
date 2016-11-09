@@ -55,12 +55,9 @@ $.extend(Entrez.prototype, {
     	}).then(function(xml) {
     		if (self.debug) console.log(xml);
     		if (xml) {
-    			$xml = $(xml);
-//    			var expXml = $xml.find("Item[Name='ExpXml']").text();
-//    			var $expXml = $($.parseXML(expXml));
-//    			var title = $expXml.find("Title").text();
+    			var $xml = $(xml);
     			var runs = $xml.find("Item[Name='Runs']").text();
-    			var $runs = $($.parseXML(runs));
+    			var $runs = $($.parseXML('<runs>'+runs+'</runs>')); // mdb added "runs" parent element, COGE-778
     			var $run = $runs.find("Run");
     			var accn = $run.attr("acc");
     			var size = $run.attr("total_bases");
