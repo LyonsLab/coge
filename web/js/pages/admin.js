@@ -991,7 +991,6 @@ $.extend(JobGrid.prototype, {
 			$.ajax({
 				dataType: 'json',
 			    data: {
-			        jquery_ajax: 1,
 			        fname: 'get_jobs',
 			        time_range: 0,
 			        running_only: self.running_only,
@@ -1179,7 +1178,6 @@ $.extend(HistGrid.prototype, {
 			$.ajax({
 				dataType: 'json',
 			    data: {
-			        jquery_ajax: 1,
 			        fname: 'get_history',
 			        time_range: 0,
 			    },
@@ -1230,7 +1228,6 @@ $.extend(HistGrid.prototype, {
 		$.ajax({
 			dataType: 'json',
 		    data: {
-		        jquery_ajax: 1,
 		        fname: 'get_history',
 		        time_range: 0,
 		        timestamp: self.oldest_timestamp,
@@ -1263,13 +1260,12 @@ $.extend(HistGrid.prototype, {
 					$.ajax({
 						dataType: 'json',
 						data: {
-							jquery_ajax: 1,
 							fname: 'update_history',
 							timestamp: self.last_update,
 							time_range: 0,
 						},
 						success: function(data) {
-							console.log(data);
+							//console.log(data);
 							if(data.new_rows[0]) {
 								self.table.rows.add(data.new_rows).draw(false);
 								self.last_update = data.new_rows[0][0];
@@ -1300,7 +1296,6 @@ function get_history() {
 		$.ajax({
 			dataType: 'json',
 			data: {
-				jquery_ajax: 1,
 				fname: 'get_history_for_user',
 				time_range: 0,
 			},
@@ -1325,7 +1320,6 @@ function update_history() {
 	$.ajax({
 		dataType: 'json',
 		data: {
-			jquery_ajax: 1,
 			fname: 'update_history',
 			timestamp: last_hist_update,
 			time_range: 0,
@@ -1366,7 +1360,6 @@ function updateHistFilter() {
 function toggle_star(img) {
 	$.ajax({
 		data: {
-			jquery_ajax: 1,
 			fname: 'toggle_star',
 			log_id: img.id,
 		},
