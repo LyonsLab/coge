@@ -6,6 +6,7 @@ with qw(CoGe::Builder::Buildable);
 use Data::Dumper qw(Dumper);
 use File::Basename qw(basename dirname);
 use File::Spec::Functions qw(catfile catdir);
+use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Accessory::Web qw(split_url);
@@ -135,10 +136,10 @@ sub ftp_get {
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, "ftp.pl"),
         args => [
-            ['-url',       "'".$url."'",       0], #FIXME use shell_quote
-            ['-username',  "'".$username."'",  0], #FIXME use shell_quote
-            ["-password",  "'".$password."'",  0], #FIXME use shell_quote
-            ["-dest_path", $dest_path,         0]
+            ['-url',       shell_quote($url),      0],
+            ['-username',  shell_quote($username), 0],
+            ["-password",  shell_quote($password), 0],
+            ["-dest_path", $dest_path,             0]
         ],
         inputs => [],
         outputs => [ 
@@ -160,7 +161,7 @@ sub fastq_dump {
     my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
 
     return {
-        cmd => "$cmd $accn --outdir $dest_path && touch $done_file",
+        cmd => "$cmd --outdir $dest_path " . shell_quote($accn) . " && touch $done_file",
         script => undef,
         args => [],
         inputs => [],
