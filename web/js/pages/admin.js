@@ -26,7 +26,8 @@ $(function () {
     	baseUrl: API_BASE_URL,
     	userName: USER_NAME
     });
-	
+
+	// Initialize tabs
 	$( "#tabs" ).tabs({
 		activate: function(event, ui) {
             current_tab = ui.newTab.index();
@@ -62,20 +63,15 @@ $(function () {
 				}
 			}
 		}
-    });
-	
-	$( "#tabs" ).show();
-	
-	timestamps['idle'] = new Date().getTime();
+    }).show();
 	
 	// Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
     $("#job_search_bar").keyup(function (e) {
         Slick.GlobalEditorLock.cancelCurrentEdit();
 
-        if (e.which == 27) { // Clear on Esc
+        if (e.which == 27) // Clear on Esc
             this.value = "";
-        }
         update_filter();
     });
     $("#show_select,#job_search_type").change(function(e) {
@@ -84,6 +80,7 @@ $(function () {
     $("#histogram").dialog({autoOpen: false, width: 500, height: 500});
     
     //Setup idle timer
+    timestamps['idle'] = new Date().getTime();
     $(document).mousemove(function() {
 		var currentTime = new Date().getTime();
 		var idleTime = currentTime - timestamps['idle'];
@@ -101,16 +98,12 @@ $(function () {
 			fname: 'user_is_admin',
 		},
 		success: function(data) {
-			if (data == 1) {
-				user_is_admin = true;
-			} else {
-				uesr_is_admin = false;
-			}
+			user_is_admin = (data == 1);
 		}
 	});
 });
 
-//Initialize the Jobs tab
+//Initialize the Jobs tab -- TODO move this code into an object similar to code for other tabs (mdb 11/9/16)
 function init_jobs_grid() {
 	jobs_grid = new JobGrid({
 		elementId: "jobs",
@@ -162,8 +155,6 @@ function search_stuff (search_term) {
 					return;
 				}
 				
-				console.log
-
 				var userCounter = 0, orgCounter = 0, genCounter = 0, expCounter = 0, noteCounter = 0, usrgroupCounter = 0;
 				var userList = "", orgList = "", genList = "", expList = "", noteList = "", usrgroupList = "";
 
@@ -498,7 +489,6 @@ function refresh_data() {
 }
 
 function user_info(userID, search_type) {
-
 	var search_term = userID;
 	$("#loading2").show();
 	timestamps['user_info'] = new Date().getTime();
@@ -510,10 +500,7 @@ function user_info(userID, search_type) {
 			timestamp: timestamps['user_info']
 		},
 		success : function(data) {
-			//console.log("Ajax success");
 			var obj = jQuery.parseJSON(data);
-        	//console.log(obj);
-        		
         	var htmlBlock = "";
 
         	//for each user
@@ -913,7 +900,10 @@ function wait_to_search(search_func, search_term) {
 	);
 }
 
-//The following javascript deals with Tab2, the Jobs tab
+/*
+ * Jobs Tab (tab #2)
+ */
+
 function JobGrid(params) {
 	this.elementId = params.elementId;
 	//this.filter = params.filter;
@@ -929,8 +919,7 @@ function JobGrid(params) {
 	var element = $('#' + this.elementId);
 	this.width = element.outerWidth();
 	this.height = Math.max(400, $(window).height() - 450); //element.outerWidth(); // mdb changed 2/8/16
-	console.log("grid height = " + this.height);
-	
+
 	this.initialize();
 }
 
@@ -996,7 +985,7 @@ $.extend(JobGrid.prototype, {
 			        running_only: self.running_only,
 			    },
 			    success: function(data) {
-			    	console.log(data)
+			    	//console.log(data)
 			    	self.data = data.data;
 			    	self.table
 				    	.clear()
@@ -1009,16 +998,17 @@ $.extend(JobGrid.prototype, {
 			    complete: function(data) {
 			    	self.flag = false;
 
-			    	$('#' + self.elementId + '_table tbody').off( 'click' );
-					$('#' + self.elementId + '_table tbody').on( 'click', 'tr', function () {
-				        if ( $(this).hasClass('selected') ) {
-				            $(this).removeClass('selected');
-				        }
-				        else {
-				            self.table.$('tr.selected').removeClass('selected');
-				            $(this).addClass('selected');
-				        }
-				    } );
+			    	$('#' + self.elementId + '_table tbody')
+			    	    .off( 'click' )
+					    .on( 'click', 'tr', function () {
+                            if ( $(this).hasClass('selected') ) {
+                                $(this).removeClass('selected');
+                            }
+                            else {
+                                self.table.$('tr.selected').removeClass('selected');
+                                $(this).addClass('selected');
+                            }
+                        } );
 			    	
 			    	self.schedule_update(10*1000);
 			    }
@@ -1083,33 +1073,25 @@ $.extend(JobGrid.prototype, {
 function schedule_update(delay) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME && delay !== undefined) {
-		if (current_tab == 1 && jobs_grid) {
+		if (current_tab == 1 && jobs_grid)
 			jobs_grid.update(delay);
-		}
-		if (current_tab == 2 && hist_grid) {
+		if (current_tab == 2 && hist_grid)
 			hist_grid.update(delay);
-		}
-		if (current_tab == 8 && query_counter) {
+		if (current_tab == 8 && query_counter)
 			query_counter.update(delay);
-		}
 		return;
 	}	
 }
 
 function cancel_update() {
-	if (jobs_grid) {
+	if (jobs_grid)
 		clearTimeout(jobs_grid.timers['update']);
-	}
-	if (hist_grid) {
+	if (hist_grid)
 		clearTimeout(hist_grid.timers['update']);
-	}
-	if (query_counter) {
+	if (query_counter)
 		clearTimeout(query_counter.timers['update']);
-	}
 }
 
-
-//The following Javascript deals with Tab3, the History page
 function HistGrid(params) {
 	this.elementId = params.elementId;
 	this.schedule_update = params.schedule_update;
@@ -1123,7 +1105,7 @@ function HistGrid(params) {
 	this.oldest_timestamp;
 	
 	this.width = $('#' + this.elementId).outerWidth();
-	this.height = $('#' + this.elementId).outerHeight() - 100;
+	this.height = Math.max(400, $(window).height() - 370); //this.height = $('#' + this.elementId).outerHeight() - 100; // mdb changed 11/9/16
 	
 	this.initialize();
 }
@@ -1133,13 +1115,15 @@ $.extend(HistGrid.prototype, {
 		var self = this;
 		$('#' + self.elementId).hide();
 		$('#' + self.elementId + '_loading').show();
-		$('#' + this.elementId).html('<table id="' + this.elementId + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-				+ '<thead><tr><th>Date/Time</th><th>User</th><th>Page</th><th>Description</th><th>Link</th><th>Comments</th></tr></thead></table>');
+		$('#' + this.elementId).html('<table id="' + this.elementId + '_table"'
+		      + ' cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+			  + '<thead><tr><th>Date/Time</th><th>User</th><th>Page</th><th>Description</th><th>Link</th><th>Comments</th></tr></thead></table>');
+
 		$('#' + self.elementId + '_update_checkbox').change(function(e) {
     		self.toggle_updating.call(self);
     	});
 		
-		//Setup table formatting
+		//Setup table format
 		self.table = $('#' + self.elementId + '_table').DataTable({
     		columnDefs: [
     		             { 
@@ -1182,14 +1166,13 @@ $.extend(HistGrid.prototype, {
 			        time_range: 0,
 			    },
 			    success: function(data) {
-			    	console.log(data)
+			    	//console.log(data)
 			    	self.data = data.data;
 			    	self.table
 				    	.clear()
 				    	.rows.add(self.data)
 				    	.draw();
-			    	//console.log(self.data[0][0])
-			    	
+
 			    	//Record most recent timestamp
 			    	if (!self.last_update)
 			    		self.last_update = self.data[0][0];
@@ -1223,7 +1206,7 @@ $.extend(HistGrid.prototype, {
 			});
 		}
 	},
-	get_more_data: function() {
+	get_more_data: function() { // TODO combine this with get_data() above -- mdb 11/9/16
 		var self = this;
 		$.ajax({
 			dataType: 'json',
@@ -1253,7 +1236,7 @@ $.extend(HistGrid.prototype, {
 	update: function(delay) {
 		var self = this;
 		if (self.updating) {
-			console.log("Updating hist");
+			console.log("Updating history");
 			self.cancel_update();
 			self.timers['update'] = window.setTimeout(
 				function() {
@@ -1283,93 +1266,10 @@ $.extend(HistGrid.prototype, {
 	toggle_updating: function() {
 		var self = this;
 		self.updating = !self.updating;
-		if (self.updating) {
+		if (self.updating)
 			self.schedule_update(5000);
-		}
 	}
 });
-/*var hist_flag = false;
-function get_history() {
-	if(!hist_flag) {
-		hist_flag = true;
-		$("#loading3").show();
-		$.ajax({
-			dataType: 'json',
-			data: {
-				fname: 'get_history_for_user',
-				time_range: 0,
-			},
-			success : function(data) {
-				hist.load(data);
-				hist_entries = data.length;
-				last_hist_update = data[0].date_time;
-				updateHistFilter();
-				
-				hist_init = true;
-				$("#loading3").hide();
-			},
-		    complete: function(data) {
-		    	hist_flag = false;
-		    	schedule_update(5000);
-		    }
-		});
-	}
-}
-
-function update_history() {
-	$.ajax({
-		dataType: 'json',
-		data: {
-			fname: 'update_history',
-			timestamp: last_hist_update,
-			time_range: 0,
-		},
-		success: function(data) {
-			if(data[0]) {
-				hist.insert(data);
-				last_hist_update = data[0].date_time;
-			}
-		},
-		complete: function(data) {
-			schedule_update(5000);
-	    }
-	})
-}
-
-function toggle_hist_updater() {
-	hist_updating = !hist_updating;
-	if (hist_updating && hist_init) {
-		schedule_update(5000);
-	}
-}
-
-function requiredFieldValidator(value) {
-	return {valid: true, msg: null};
-}
-
-function updateHistFilter() {
-	hist.dataView.setFilterArgs({
-		show: $('#hist_show_select').val(),
-		searchType: $('#hist_search_type').val(),
-		searchString: $('#hist_search_input').val().toLowerCase()
-	});
-    hist.filter();
-    $('#hist_filter_count').html('Showing ' + hist.dataView.getLength() + ' of ' + hist_entries + ' results');
-}
-
-function toggle_star(img) {
-	$.ajax({
-		data: {
-			fname: 'toggle_star',
-			log_id: img.id,
-		},
-		success :  function(val) {
-			if (val == 0) { $(img).attr({src:"picts/star-hollow.png"}); }
-			else { $(img).attr({src:"picts/star-full.png"}); }
-		}
-	});
-}*/
-
 
 //Tab 4, the User Graph
 var colors = [
@@ -1380,7 +1280,6 @@ var colors = [
         	{ name: 'user',       link: '',                       color: 'DeepSkyBlue', show: 1 },
         	{ name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
 ];
-
 var user_force,
 	group_force;
 
@@ -2758,7 +2657,7 @@ $.extend(Query_Counter.prototype, {
 	                		var data = JSON.parse(data);
 	                		if (self.total_queries) {
 	                			var delta = data.Queries - self.total_queries;
-	                			console.log(delta);
+	                			//console.log(delta);
 	                			self.queries_per_second = delta/5;
 	                		}
 	                		self.total_queries = data.Queries;
