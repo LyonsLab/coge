@@ -33,7 +33,7 @@ sub build {
         }
         
         # Retrieve file based on source type (Upload, IRODS, HTTP, FTP)
-        if ($type eq 'file') { 
+        if ($type eq 'file') {  # upload
             my $filepath = catfile($upload_dir, $item->{path});
             if (-r $filepath) {
                 $self->add_output($filepath);
@@ -106,7 +106,8 @@ sub iget {
     
     my $cmd;
     $cmd .= "mkdir -p $dest_path && "; # mdb added 2/9/16 -- for hypnotoad
-    irods_set_env(catfile($self->conf->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
+    my $irodsEnvFile = catfile($self->conf->{_HOME_PATH}, 'irodsEnv');
+    irods_set_env($irodsEnvFile); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
     $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1 } ) . ' && ';
     $cmd .= "touch $done_file";
 
@@ -114,6 +115,7 @@ sub iget {
         cmd => $cmd,
         args => [],
         inputs => [
+            $irodsEnvFile # mdb added 11/10/16 -- attempt to fix stuck tasks, COGE-729
         ],
         outputs => [ 
             $dest_file,
@@ -132,7 +134,9 @@ sub ftp_get {
     
     my ($filename, $path) = split_url($url);
     my $output_file = catfile($dest_path, $path, $filename);
-    
+
+    my $cmd = catfile($self->conf->{SCRIPTDIR}, "ftp.pl");
+
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, "ftp.pl"),
         args => [
@@ -141,7 +145,9 @@ sub ftp_get {
             ["-password",  shell_quote($password), 0],
             ["-dest_path", $dest_path,             0]
         ],
-        inputs => [],
+        inputs => [
+            $cmd # mdb added 11/10/16 -- attempt to fix stuck tasks, COGE-729
+        ],
         outputs => [ 
             $output_file
         ],
