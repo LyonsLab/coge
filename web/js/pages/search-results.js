@@ -40,8 +40,10 @@ function search_stuff(search_term) {
 			if (!obj || !obj.results)
 				return;
 
-			function add_item(html, url, obj) {
-				html += '<tr><td>';
+			function add_item(url, obj, num, genome) {
+				let html = '<tr class="';
+				html += num % 2 ? 'odd' : 'even';
+				html += '"><td>';
 				if (url) {
 					html += '<a target="_blank" href="';
 					html += url;
@@ -65,6 +67,8 @@ function search_stuff(search_term) {
 					html += '&#x1f512;&nbsp;&nbsp;';
 				html += obj.name;
 				html += url ? '</a>' : '</span>';
+				if (genome)
+					html += '</td><td><span class="coge-button" onclick="window.open(&quot;GenomeView.pl?embed=0&amp;gid=' + obj.id + '&quot;)">Browse</span>';
 				html += '</td><td>';
 				html += obj.id;
 				html += '</td></tr>';
@@ -76,51 +80,18 @@ function search_stuff(search_term) {
 
 			for (var i = 0; i < obj.results.length; i++) {
 				var o = obj.results[i];
-				// if (o.type == "user") {
-				// 	userList += "<tr><td>";
-				// 	userList += o.first + " " + o.last;
-				// 	if (user_is_admin)
-				// 		userList += ", " + o.email;
-				// 	userList += " (" + o.username + ", id" + o.id + ") ";
-				// 	userList += "<button onclick=\"search_user(" + o.id + ",'user')\">Show Data</button>";
-				// 	userList += "</td></tr>";
-				// 	userCounter++;
-				// }
 
-				if (o.type == "organism") {
-					orgList = add_item(orgList, 'OrganismView.pl?oid=', o);
-					orgCounter++;
-				}
-
-				if (o.type == "genome") {
-					if (o.deleted != 1 || user_is_admin) {
-						genList = add_item(genList, 'GenomeInfo.pl?gid=', o);
-						genCounter++;
-					}
-				}
-
-				if (o.type == "experiment") {
-					if (o.deleted != 1 || user_is_admin) {
-						expList = add_item(expList, 'ExperimentView.pl?eid=', o);
-						expCounter++;
-					}
-				}
-
-				if (o.type == "notebook") {
-					if (o.deleted != 1 || user_is_admin) {
-						noteList = add_item(noteList, 'NotebookView.pl?lid=', o);
-						noteCounter++;
-					}
-				}
-						
-				if (o.type == "user_group") {
-					if (o.deleted != 1 || user_is_admin) {
-						usrgroupList = add_item(usrgroupList, null, o);
-						usrgroupCounter++;
-					}
-				}
+				if (o.type == "organism")
+					orgList += add_item('OrganismView.pl?oid=', o, orgCounter++);
+				else if (o.type == "genome")
+					genList += add_item('GenomeInfo.pl?gid=', o, genCounter++, true);
+				else if (o.type == "experiment")
+					expList += add_item('ExperimentView.pl?eid=', o, expCounter++);
+				else if (o.type == "notebook")
+					noteList += add_item('NotebookView.pl?lid=', o, noteCounter++);	
+				else if (o.type == "user_group")
+					usrgroupList += add_item(null, o, usrgroupCounter++);
 			}
-			
 
 			//Populate the html with the results
 			$("#loading").show();
@@ -134,7 +105,7 @@ function search_stuff(search_term) {
 			if(userCounter > 0) {
 				$('#user').show();
 				$('#userCount').html("Users: " + userCounter);
-				$('#userList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + userList);
+				$('#userList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + userList + '</tbody>');
 //				if(userCounter <= 10) {
 //					$( "#userList" ).show();
 //					//$( "#userArrow" ).find('img').toggle();
@@ -152,7 +123,7 @@ function search_stuff(search_term) {
 			if(orgCounter > 0) {
 				$('#organism').show();
 				$('#orgCount').html("Organisms: " + orgCounter);
-				$('#orgList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + orgList);
+				$('#orgList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + orgList + '</tbody>');
 //				if(orgCounter <= 10) {
 //					$( "#orgList" ).show();
 //					//$( "#orgArrow" ).find('img').toggle();
@@ -170,7 +141,7 @@ function search_stuff(search_term) {
 			if(genCounter > 0) {
 				$('#genome').show();
 				$('#genCount').html("Genomes: " + genCounter);
-				$('#genList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + genList);
+				$('#genList').html('<thead><tr><th>name</th><th>EPIC-CoGe</th><th>id</th></tr></thead><tbody>' + genList + '</tbody>');
 //				if(genCounter <= 10) {
 //					$( "#genList" ).show();
 //					//$( "#genArrow" ).find('img').toggle();
@@ -188,7 +159,7 @@ function search_stuff(search_term) {
 			if(expCounter > 0) {
 				$('#experiment').show();
 				$('#expCount').html("Experiments: " + expCounter);
-				$('#expList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + expList);
+				$('#expList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + expList + '</tbody>');
 //				if(expCounter <= 10) {
 //					$( "#expList" ).show();
 //					//$( "#expArrow" ).find('img').toggle();
@@ -206,7 +177,7 @@ function search_stuff(search_term) {
 			if(noteCounter > 0) {
 				$('#notebook').show();
 				$('#noteCount').html("Notebooks: " + noteCounter);
-				$('#noteList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + noteList);
+				$('#noteList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + noteList + '</tbody>');
 //				if(noteCounter <= 10) {
 //					$( "#noteList" ).show();
 //					//$( "#noteArrow" ).find('img').toggle();
@@ -224,7 +195,7 @@ function search_stuff(search_term) {
 			if(usrgroupCounter > 0) {
 				$('#user_group').show();
 				$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
-				$('#usrgroupList').html('<tr><th>name</th><th style="width:100px;">id</th></tr>' + usrgroupList);
+				$('#usrgroupList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + usrgroupList + '</tbody>');
 //				if (usrgroupCounter <= 10) {
 //					$( "#usrgroupList" ).show();
 //					//$( "#usrGArrow" ).find('img').toggle();
