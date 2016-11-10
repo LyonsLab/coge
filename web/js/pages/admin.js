@@ -26,7 +26,8 @@ $(function () {
     	baseUrl: API_BASE_URL,
     	userName: USER_NAME
     });
-	
+
+	// Initialize tabs
 	$( "#tabs" ).tabs({
 		activate: function(event, ui) {
             current_tab = ui.newTab.index();
@@ -62,20 +63,15 @@ $(function () {
 				}
 			}
 		}
-    });
-	
-	$( "#tabs" ).show();
-	
-	timestamps['idle'] = new Date().getTime();
+    }).show();
 	
 	// Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, width: 500});
     $("#job_search_bar").keyup(function (e) {
         Slick.GlobalEditorLock.cancelCurrentEdit();
 
-        if (e.which == 27) { // Clear on Esc
+        if (e.which == 27) // Clear on Esc
             this.value = "";
-        }
         update_filter();
     });
     $("#show_select,#job_search_type").change(function(e) {
@@ -84,6 +80,7 @@ $(function () {
     $("#histogram").dialog({autoOpen: false, width: 500, height: 500});
     
     //Setup idle timer
+    timestamps['idle'] = new Date().getTime();
     $(document).mousemove(function() {
 		var currentTime = new Date().getTime();
 		var idleTime = currentTime - timestamps['idle'];
@@ -101,16 +98,12 @@ $(function () {
 			fname: 'user_is_admin',
 		},
 		success: function(data) {
-			if (data == 1) {
-				user_is_admin = true;
-			} else {
-				uesr_is_admin = false;
-			}
+			user_is_admin = (data == 1);
 		}
 	});
 });
 
-//Initialize the Jobs tab
+//Initialize the Jobs tab -- TODO move this code into an object similar to code for other tabs (mdb 11/9/16)
 function init_jobs_grid() {
 	jobs_grid = new JobGrid({
 		elementId: "jobs",
@@ -162,8 +155,6 @@ function search_stuff (search_term) {
 					return;
 				}
 				
-				console.log
-
 				var userCounter = 0, orgCounter = 0, genCounter = 0, expCounter = 0, noteCounter = 0, usrgroupCounter = 0;
 				var userList = "", orgList = "", genList = "", expList = "", noteList = "", usrgroupList = "";
 
@@ -498,7 +489,6 @@ function refresh_data() {
 }
 
 function user_info(userID, search_type) {
-
 	var search_term = userID;
 	$("#loading2").show();
 	timestamps['user_info'] = new Date().getTime();
@@ -510,10 +500,7 @@ function user_info(userID, search_type) {
 			timestamp: timestamps['user_info']
 		},
 		success : function(data) {
-			//console.log("Ajax success");
 			var obj = jQuery.parseJSON(data);
-        	//console.log(obj);
-        		
         	var htmlBlock = "";
 
         	//for each user
@@ -913,7 +900,10 @@ function wait_to_search(search_func, search_term) {
 	);
 }
 
-//The following javascript deals with Tab2, the Jobs tab
+/*
+ * Jobs Tab (tab #2)
+ */
+
 function JobGrid(params) {
 	this.elementId = params.elementId;
 	//this.filter = params.filter;
@@ -929,8 +919,7 @@ function JobGrid(params) {
 	var element = $('#' + this.elementId);
 	this.width = element.outerWidth();
 	this.height = Math.max(400, $(window).height() - 450); //element.outerWidth(); // mdb changed 2/8/16
-	console.log("grid height = " + this.height);
-	
+
 	this.initialize();
 }
 
@@ -991,13 +980,12 @@ $.extend(JobGrid.prototype, {
 			$.ajax({
 				dataType: 'json',
 			    data: {
-			        jquery_ajax: 1,
 			        fname: 'get_jobs',
 			        time_range: 0,
 			        running_only: self.running_only,
 			    },
 			    success: function(data) {
-			    	console.log(data)
+			    	//console.log(data)
 			    	self.data = data.data;
 			    	self.table
 				    	.clear()
@@ -1010,16 +998,17 @@ $.extend(JobGrid.prototype, {
 			    complete: function(data) {
 			    	self.flag = false;
 
-			    	$('#' + self.elementId + '_table tbody').off( 'click' );
-					$('#' + self.elementId + '_table tbody').on( 'click', 'tr', function () {
-				        if ( $(this).hasClass('selected') ) {
-				            $(this).removeClass('selected');
-				        }
-				        else {
-				            self.table.$('tr.selected').removeClass('selected');
-				            $(this).addClass('selected');
-				        }
-				    } );
+			    	$('#' + self.elementId + '_table tbody')
+			    	    .off( 'click' )
+					    .on( 'click', 'tr', function () {
+                            if ( $(this).hasClass('selected') ) {
+                                $(this).removeClass('selected');
+                            }
+                            else {
+                                self.table.$('tr.selected').removeClass('selected');
+                                $(this).addClass('selected');
+                            }
+                        } );
 			    	
 			    	self.schedule_update(10*1000);
 			    }
@@ -1084,33 +1073,25 @@ $.extend(JobGrid.prototype, {
 function schedule_update(delay) {
 	var idleTime = new Date().getTime() - timestamps['idle'];
 	if (idleTime < IDLE_TIME && delay !== undefined) {
-		if (current_tab == 1 && jobs_grid) {
+		if (current_tab == 1 && jobs_grid)
 			jobs_grid.update(delay);
-		}
-		if (current_tab == 2 && hist_grid) {
+		if (current_tab == 2 && hist_grid)
 			hist_grid.update(delay);
-		}
-		if (current_tab == 8 && query_counter) {
+		if (current_tab == 8 && query_counter)
 			query_counter.update(delay);
-		}
 		return;
 	}	
 }
 
 function cancel_update() {
-	if (jobs_grid) {
+	if (jobs_grid)
 		clearTimeout(jobs_grid.timers['update']);
-	}
-	if (hist_grid) {
+	if (hist_grid)
 		clearTimeout(hist_grid.timers['update']);
-	}
-	if (query_counter) {
+	if (query_counter)
 		clearTimeout(query_counter.timers['update']);
-	}
 }
 
-
-//The following Javascript deals with Tab3, the History page
 function HistGrid(params) {
 	this.elementId = params.elementId;
 	this.schedule_update = params.schedule_update;
@@ -1124,7 +1105,7 @@ function HistGrid(params) {
 	this.oldest_timestamp;
 	
 	this.width = $('#' + this.elementId).outerWidth();
-	this.height = $('#' + this.elementId).outerHeight() - 100;
+	this.height = Math.max(400, $(window).height() - 370); //this.height = $('#' + this.elementId).outerHeight() - 100; // mdb changed 11/9/16
 	
 	this.initialize();
 }
@@ -1134,13 +1115,15 @@ $.extend(HistGrid.prototype, {
 		var self = this;
 		$('#' + self.elementId).hide();
 		$('#' + self.elementId + '_loading').show();
-		$('#' + this.elementId).html('<table id="' + this.elementId + '_table" cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
-				+ '<thead><tr><th>Date/Time</th><th>User</th><th>Page</th><th>Description</th><th>Link</th><th>Comments</th></tr></thead></table>');
+		$('#' + this.elementId).html('<table id="' + this.elementId + '_table"'
+		      + ' cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border">'
+			  + '<thead><tr><th>Date/Time</th><th>User</th><th>Page</th><th>Description</th><th>Link</th><th>Comments</th></tr></thead></table>');
+
 		$('#' + self.elementId + '_update_checkbox').change(function(e) {
     		self.toggle_updating.call(self);
     	});
 		
-		//Setup table formatting
+		//Setup table format
 		self.table = $('#' + self.elementId + '_table').DataTable({
     		columnDefs: [
     		             { 
@@ -1172,67 +1155,62 @@ $.extend(HistGrid.prototype, {
 	},
 	get_data: function() {
 		var self = this;
-		if(!self.flag) {
+		if (!self.flag) {
 			self.flag = true;
 			self.cancel_update();
 			
 			$.ajax({
 				dataType: 'json',
 			    data: {
-			        jquery_ajax: 1,
 			        fname: 'get_history',
 			        time_range: 0,
 			    },
 			    success: function(data) {
-			    	console.log(data)
+			    	//console.log(data)
 			    	self.data = data.data;
 			    	self.table
 				    	.clear()
 				    	.rows.add(self.data)
 				    	.draw();
-			    	console.log(self.data[0][0])
-			    	
+
 			    	//Record most recent timestamp
-			    	if (!self.last_update) {
+			    	if (!self.last_update)
 			    		self.last_update = self.data[0][0];
-			    	}
-			    	
+
 			    	//Record oldest timestamp
 			    	self.oldest_timestamp = self.data[self.data.length - 1][0];
-			    	console.log(self.oldest_timestamp);
+			    	//console.log(self.oldest_timestamp);
 					
 			    	$('#' + self.elementId + '_loading').hide();
 					$('#' + self.elementId).show();
-					
 
 					//Populate remaining pages
-					if (self.data.length > 0) {
+					if (self.data.length > 0)
 						self.get_more_data();
-					}
 			    },
 			    complete: function(data) {
 			    	self.flag = false;
 
-			    	$('#' + self.elementId + '_table tbody').off( 'click' );
-					$('#' + self.elementId + '_table tbody').on( 'click', 'tr', function () {
-				        if ( $(this).hasClass('selected') ) {
-				            $(this).removeClass('selected');
-				        }
-				        else {
-				            self.table.$('tr.selected').removeClass('selected');
-				            $(this).addClass('selected');
-				        }
-				    } );
+			    	$('#' + self.elementId + '_table tbody')
+			    	    .off('click')
+					    .on('click', 'tr', function () {
+                            if ( $(this).hasClass('selected') ) {
+                                $(this).removeClass('selected');
+                            }
+                            else {
+                                self.table.$('tr.selected').removeClass('selected');
+                                $(this).addClass('selected');
+                            }
+                        } );
 			    }
 			});
 		}
 	},
-	get_more_data: function() {
+	get_more_data: function() { // TODO combine this with get_data() above -- mdb 11/9/16
 		var self = this;
 		$.ajax({
 			dataType: 'json',
 		    data: {
-		        jquery_ajax: 1,
 		        fname: 'get_history',
 		        time_range: 0,
 		        timestamp: self.oldest_timestamp,
@@ -1258,20 +1236,19 @@ $.extend(HistGrid.prototype, {
 	update: function(delay) {
 		var self = this;
 		if (self.updating) {
-			console.log("Updating hist");
+			console.log("Updating history");
 			self.cancel_update();
 			self.timers['update'] = window.setTimeout(
 				function() {
 					$.ajax({
 						dataType: 'json',
 						data: {
-							jquery_ajax: 1,
 							fname: 'update_history',
 							timestamp: self.last_update,
 							time_range: 0,
 						},
 						success: function(data) {
-							console.log(data);
+							//console.log(data);
 							if(data.new_rows[0]) {
 								self.table.rows.add(data.new_rows).draw(false);
 								self.last_update = data.new_rows[0][0];
@@ -1289,96 +1266,10 @@ $.extend(HistGrid.prototype, {
 	toggle_updating: function() {
 		var self = this;
 		self.updating = !self.updating;
-		if (self.updating) {
+		if (self.updating)
 			self.schedule_update(5000);
-		}
 	}
 });
-/*var hist_flag = false;
-function get_history() {
-	if(!hist_flag) {
-		hist_flag = true;
-		$("#loading3").show();
-		$.ajax({
-			dataType: 'json',
-			data: {
-				jquery_ajax: 1,
-				fname: 'get_history_for_user',
-				time_range: 0,
-			},
-			success : function(data) {
-				hist.load(data);
-				hist_entries = data.length;
-				last_hist_update = data[0].date_time;
-				updateHistFilter();
-				
-				hist_init = true;
-				$("#loading3").hide();
-			},
-		    complete: function(data) {
-		    	hist_flag = false;
-		    	schedule_update(5000);
-		    }
-		});
-	}
-}
-
-function update_history() {
-	$.ajax({
-		dataType: 'json',
-		data: {
-			jquery_ajax: 1,
-			fname: 'update_history',
-			timestamp: last_hist_update,
-			time_range: 0,
-		},
-		success: function(data) {
-			if(data[0]) {
-				hist.insert(data);
-				last_hist_update = data[0].date_time;
-			}
-		},
-		complete: function(data) {
-			schedule_update(5000);
-	    }
-	})
-}
-
-function toggle_hist_updater() {
-	hist_updating = !hist_updating;
-	if (hist_updating && hist_init) {
-		schedule_update(5000);
-	}
-}
-
-function requiredFieldValidator(value) {
-	return {valid: true, msg: null};
-}
-
-function updateHistFilter() {
-	hist.dataView.setFilterArgs({
-		show: $('#hist_show_select').val(),
-		searchType: $('#hist_search_type').val(),
-		searchString: $('#hist_search_input').val().toLowerCase()
-	});
-    hist.filter();
-    $('#hist_filter_count').html('Showing ' + hist.dataView.getLength() + ' of ' + hist_entries + ' results');
-}
-
-function toggle_star(img) {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'toggle_star',
-			log_id: img.id,
-		},
-		success :  function(val) {
-			if (val == 0) { $(img).attr({src:"picts/star-hollow.png"}); }
-			else { $(img).attr({src:"picts/star-full.png"}); }
-		}
-	});
-}*/
-
 
 //Tab 4, the User Graph
 var colors = [
@@ -1389,7 +1280,6 @@ var colors = [
         	{ name: 'user',       link: '',                       color: 'DeepSkyBlue', show: 1 },
         	{ name: 'group',      link: 'GroupView.pl?ugid=',     color: 'Turquoise',   show: 1 },
 ];
-
 var user_force,
 	group_force;
 
@@ -1896,7 +1786,7 @@ $.extend(Histogram.prototype, {
 	initialize: function() {
 		var self = this;
 		$("#" + this.element).html(
-			'<div><button id="' + self.element + '_back_button" class="coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;">Zoom Out</button>' +
+			'<div><div id="' + self.element + '_back_button" class="coge-button" style="margin-right:' + (this.width/2 - 150) + 'px;">Zoom Out</div>' +
 			'<span style="margin-right:40px;">Data: ' + $('#report_type').val() + ', Filter: ' + $('#report_filter').val() + '</span></div>'
 		);
 		$('#' + this.element + '_back_button').on("click", function() {
@@ -2458,14 +2348,14 @@ function init_system_load2() {
 	});
 }
 
-var System_graph = function(json, element, parent) {
+var System_graph = function(data, element, parent) {
 	var self = this;
 	this.parent = parent;
 	this.child = null;
 	this.margin = {top: 30, right: 80, bottom: 30, left: 50},
 	this.width = $(window).width()*.75 - this.margin.left - this.margin.right,
 	this.height = $(window).height()*.5 - this.margin.top - this.margin.bottom;
-	this.data = json;
+	this.data = data;
 	this.element = element;
 	this.initialize();
 }
@@ -2476,59 +2366,48 @@ $.extend(System_graph.prototype, {
 		
 		// Clear the element, add the zoom out button and svg container
 		$("#" + this.element).html(
-				'<div><button id="' + self.element + '_back_button" class="coge-button" style="float:left;height:25px;width:100px" disabled>Zoom Out</button>' +
-				'<div><button id="' + self.element + '_zoom_button" class="coge-button" style="float:left;height:25px;width:125px" disabled>Zoom 24 Hours</button>' +
-				'<div><button id="' + self.element + '_zoom_week_button" class="coge-button" style="float:left;height:25px;width:100px" disabled>Zoom Week</button>' +
-				'<div><button id="' + self.element + '_zoom_month_button" class="coge-button" style="float:left;height:25px;width:125px" disabled>Zoom Month</button>' +
-				'<div><br><br><br></div>'+
-				'<div id="' + self.element + '_container" style="height:' + (self.height + 500) + 'px;">' +
-				'<div id="' + self.element + '_graph" style="float:left;width:' + (self.width + 2000) + 'px;"></div> </div>'
+		        '<div class="inline">' +
+				'<div id="' + self.element + '_back_button" class="coge-button" style="width:7em;">Zoom Out</div>' +
+				'<div id="' + self.element + '_zoom_month_button" class="coge-button" style="width:7em;">Zoom Month</div>' +
+				'<div id="' + self.element + '_zoom_week_button" class="coge-button" style="width:7em;">Zoom Week</div>' +
+				'<div id="' + self.element + '_zoom_button" class="coge-button" style="width:7em;">Zoom Day</div>' +
+				'</div>' +
+				'<div><br><br></div>'+
+				'<div id="' + self.element + '_container" style="height:' + (self.height+100) + 'px;">' +
+				'<div id="' + self.element + '_graph" style="float:left;"></div></div>'
 		);
+
+		// Register button events
 		if (self.parent) {
 			$('#' + self.element + '_back_button')
-				.prop("disabled", false)
 				.on("click", function() {
 					self.zoom_out.call(self);
-			$('#' + self.element + '_zoom_button')
-				.prop("disabled", false)
-			$('#' + self.element + '_zoom_week_button')
-				.prop("disabled", false)
-			$('#' + self.element + '_zoom_month_button')
-				.prop("disabled", false)
 				});
-		} else {
-			$('#' + self.element + '_back_button').prop("disabled", true);
-			$('#' + self.element + '_zoom_button')
-				.prop("disabled", false)
-				.on("click", function() {
-					self.zoom_day.call(self);
-			});
-			$('#' + self.element + '_zoom_week_button')
-				.prop("disabled", false)
-				.on("click", function() {
-					self.zoom_week.call(self);
-			});
-			$('#' + self.element + '_zoom_month_button')
-				.prop("disabled", false)
-				.on("click", function() {
-					self.zoom_month.call(self);
-			});	
 		}
-		
+        $('#' + self.element + '_zoom_button')
+            .on("click", function() {
+                self.zoom_hours.call(self, 24); // past day
+        });
+        $('#' + self.element + '_zoom_week_button')
+            .on("click", function() {
+                self.zoom_hours.call(self, 7*24); // past week
+        });
+        $('#' + self.element + '_zoom_month_button')
+            .on("click", function() {
+                self.zoom_hours.call(self, 30*24); // past month
+        });
+
 		// Parse the date / time
 		self.timeFormat = d3.time.format("%H:%M:%S %m/%d/%Y");
 		
 		// Format the data
 		self.data.forEach(function(d) {
-			if (Object.prototype.toString.call(d.time) !== "[object Date]") {
+			if (Object.prototype.toString.call(d.time) !== "[object Date]")
 				d.time = self.timeFormat.parse(d.time);
-			}
-			if (d.load) {
+			if (d.load)
 				d.load = +d.load;
-			}
-	        if (d.memory) {
+	        if (d.memory)
 	        	d.memory = +d.memory;
-	        }
 	    });
 
 		// Set the ranges
@@ -2554,11 +2433,9 @@ $.extend(System_graph.prototype, {
 		self.valueline2 = d3.svg.line()
 	    	.x(function(d) { return self.x(d.time); })
 	    	.y(function(d) { 
-	    		if (d.memory) {
+	    		if (d.memory)
 	    			return self.yMemory(d.memory); 
-	    		} else {
-	    			return self.yMemory(0);
-	    		}
+	    		return self.yMemory(0);
 	    	});
 		    
 		// Adds the svg canvas
@@ -2666,23 +2543,19 @@ $.extend(System_graph.prototype, {
 		
 		for (var i = 0; i < self.data.length; i++) {
 			if (self.data[i].load) {
-				if (self.data[i].load < minLoad) {
+				if (self.data[i].load < minLoad)
 					minLoad = self.data[i].load;
-				}
-				if (self.data[i].load > maxLoad) {
+				if (self.data[i].load > maxLoad)
 					maxLoad = self.data[i].load;
-				}
 				loadTotal += self.data[i].load;
 				loadCount++;
 			}
 			
 			if (self.data[i].memory) {
-				if (self.data[i].memory < minMem) {
+				if (self.data[i].memory < minMem)
 					minMem = self.data[i].memory;
-				}
-				if (self.data[i].memory > maxMem) {
+				if (self.data[i].memory > maxMem)
 					maxMem = self.data[i].memory;
-				}
 				memTotal += self.data[i].memory;
 				memCount++;
 			}
@@ -2693,92 +2566,58 @@ $.extend(System_graph.prototype, {
 				"<div>Average Load: " + avgLoad + "</div>" +
 				"<div>Min Load: " + minLoad + "</div>" +
 				"<div>Max Load: " + maxLoad + "</div>" +
-				"<div>-------------------------</div>" +
+				"<div><hr></div>" +
 				"<div>Average Memory: " + avgMem + "</div>" +
 				"<div>Min Memory: " + minMem + "</div>" +
 				"<div>Max Memory: " + maxMem + "</div>" +
-				"<div>-------------------------</div>" +
-				"<div># of Data Points: " + self.data.length + "</div>" +
+				"<div><hr></div>" +
+				"<div>Total Data Points: " + self.data.length + "</div>" +
 				"</div>"
 		);
+	},
+	root_node: function() { // return the root node (zoomed out all the way)
+	    var self = this;
+        while (self.parent) {
+			self = self.parent;
+		}
+		return self;
 	},
 	brushed: function() {
 		var self = this;
 		var extent = self.brush.extent();
 		
-		var newJson = this.zoom(extent[0], extent[1]);
-	
+		var newJson = this.extract_data(extent[0], extent[1]);
 		if (newJson.length > 1) {
 			var parent = self;
 			self = new System_graph(newJson, self.element, parent);
 			parent.child = self;
 		}
 	},
-	zoom_out: function() {
-		var self = this;
-		while(self.parent) {
-			self = self.parent;
-		}
+	zoom_out: function() { // zoom out as far as possible
+		var self = this.root_node();
 		self.initialize();
 	},
-	zoom_day: function() {
-		var self = this;
-		var toDay = new Date();
-		var yesterDay = new Date();
-		yesterDay.setHours(yesterDay.getHours() - 24);
+	zoom_hours: function(hours) { // zoom to past number of hours
+		var self = this.root_node();
+
+		var now = new Date();
+		var start = new Date();
+		start.setHours(start.getHours() - hours);
 		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
-		format(new Date(toDay));
-		format(new Date(yesterDay));
-		
-		var newHours = this.zoom(yesterDay, toDay);
-		
+
+		var newHours = self.extract_data(start, now);
 		if (newHours.length > 1) {
 			var parent = self;
 			self = new System_graph(newHours, self.element, parent);
 			parent.child = self;
 		}
 	},
-	zoom_week: function() {
-		var self = this;
-		var toDay = new Date();
-		var sevenDays = new Date();
-		sevenDays.setHours(sevenDays.getHours() - 168);
-		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
-		format(new Date(toDay));
-		format(new Date(sevenDays));
-		
-		var newWeek = this.zoom(sevenDays, toDay);
-		
-		if (newWeek.length > 1) {
-			var parent = self;
-			self = new System_graph(newWeek, self.element, parent);
-			parent.child = self;
-		}
-	},
-	zoom_month: function() {
-		var self = this;
-		var toDay = new Date();
-		var oneMonth = new Date();
-		oneMonth.setHours(oneMonth.getHours() - 744);
-		var format = d3.time.format("%H:%M:%S %m/%d/%Y");
-		format(new Date(toDay));
-		format(new Date(oneMonth));
-		
-		var newMonth = this.zoom(oneMonth, toDay);
-		
-		if (newMonth.length > 1) {
-			var parent = self;
-			self = new System_graph(newMonth, self.element, parent);
-			parent.child = self;
-		}
-	},
-	zoom: function(start, end) {
+	extract_data: function(start, end) { // extract range of data values
 		var self = this;
 		var newData = [];
 		for (var i = 0; i < self.data.length; i++) {
-			if (start <= self.data[i].time && end >= self.data[i].time) {
+			if (start <= self.data[i].time && end >= self.data[i].time)
 				newData.push(self.data[i]);
-			}
 		}
 		return newData;
 	}	
@@ -2818,7 +2657,7 @@ $.extend(Query_Counter.prototype, {
 	                		var data = JSON.parse(data);
 	                		if (self.total_queries) {
 	                			var delta = data.Queries - self.total_queries;
-	                			console.log(delta);
+	                			//console.log(delta);
 	                			self.queries_per_second = delta/5;
 	                		}
 	                		self.total_queries = data.Queries;
