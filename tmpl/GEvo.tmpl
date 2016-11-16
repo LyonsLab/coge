@@ -264,7 +264,8 @@ $(document).ready(function(){
 
     // close the dialog box when the run a new analysis.
     jQuery('.go_run').click(function(){
-        $('#results_info').dialog('close');
+        if ($('#results_info').dialog('instance') && $('#results_info').dialog('isOpen'))
+            $('#results_info').dialog('close');
         jQuery('html, body').animate({scrollTop: 0}, 2000);
     });
 
