@@ -25,7 +25,7 @@ sub add_jobs {
     my $config = $opts{config};
 
     my $BLASTDBDIR   = $config->{BLASTDB};
-    my $MAX_PROC     = $config->{COGE_BLAST_MAX_PROC};
+    my $MAX_PROC     = $config->{COGE_BLAST_MAX_PROC} // 8;
     my $BLAST_PROGS  = {
         blast_legacy => get_command_path('BLAST') . " -a $MAX_PROC",
         tblastn      => get_command_path('TBLASTN') . " -num_threads $MAX_PROC",
