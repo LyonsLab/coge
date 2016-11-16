@@ -167,15 +167,33 @@ sub actions {
             NAME       => "GEvo",
             DESC       => qq{Compare sequences and genomic regions to discover patterns of genome evolution.<br><a href ="GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">Example</a>},
         },
+        # {
+    	#     NAME       => "FeatView",
+    	#     ID         => 8,
+    	#     LOGO       => "picts/FeatView.svg",
+    	#     ACTION     => qq{<a href="./FeatView.pl">FeatView</a>},
+    	#     LINK       => qq{./FeatView.pl},
+    	#     SCREENSHOT => "picts/preview/FeatView.png",
+    	#     DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
+    	# },
         {
-    	    NAME       => "FeatView",
+    	    NAME       => "Load Genome",
     	    ID         => 8,
-    	    LOGO       => "picts/FeatView.svg",
-    	    ACTION     => qq{<a href="./FeatView.pl">FeatView</a>},
-    	    LINK       => qq{./FeatView.pl},
-    	    SCREENSHOT => "picts/preview/FeatView.png",
-    	    DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
+    	    LOGO       => "picts/LoadGenome.svg",
+    	    ACTION     => qq{<a href="./LoadGenome.pl">Load Genome</a>},
+    	    LINK       => qq{./LoadGenome.pl},
+    	    SCREENSHOT => "picts/preview/LoadGenome.png",
+    	    DESC       => qq{Load a Genome},
     	},
+        {
+    	    NAME       => "Load Experiment",
+    	    ID         => 8,
+    	    LOGO       => "picts/LoadExperiment.svg",
+    	    ACTION     => qq{<a href="./LoadExperiment.pl">Load Experiment</a>},
+    	    LINK       => qq{./LoadExperiment.pl},
+    	    SCREENSHOT => "picts/preview/LoadExperiment.png",
+    	    DESC       => qq{Load an Experiment},
+    	}
     );
     return \@actions;
 }
