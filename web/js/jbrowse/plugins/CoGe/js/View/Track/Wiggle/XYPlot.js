@@ -90,18 +90,14 @@ var XYPlot = declare( [XYPlotBase], {
 				sum_f.forEach( function(x,l) {
 					var avg = sum_f[l]/count_f[l];
 					for( var j = Math.round(l); j < l+width[l]; j++ ) {
-						var label = '<div style="background-color:gray;">' +
-							nbspPad(avg.toPrecision(6).toString(), 11)
-							+ 'Average (+)' + '</div>';
+						var label = '<div style="background-color:gray;">' + nbspPad(avg.toPrecision(6).toString(), 11) + 'Average (+)' + '</div>';
 						pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
 					}
 				});
 				sum_r.forEach( function(x,l) {
 					var avg = sum_r[l]/count_r[l];
 					for( var j = Math.round(l); j < l+width[l]; j++ ) {
-						var label = '<div style="background-color:gray;">' +
-							nbspPad(avg.toPrecision(6).toString(), 11)
-							+ 'Average (-)' + '</div>';
+						var label = '<div style="background-color:gray;">' + nbspPad(avg.toPrecision(6).toString(), 11) + 'Average (-)' + '</div>';
 						pixelValues[j] = j in pixelValues ? pixelValues[j] + label : label;
 					}
 				});
