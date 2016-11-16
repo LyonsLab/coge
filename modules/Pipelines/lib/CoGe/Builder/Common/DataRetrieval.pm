@@ -6,6 +6,7 @@ with qw(CoGe::Builder::Buildable);
 use Data::Dumper qw(Dumper);
 use File::Basename qw(basename dirname);
 use File::Spec::Functions qw(catfile catdir);
+use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Accessory::Web qw(split_url);
@@ -32,7 +33,7 @@ sub build {
         }
         
         # Retrieve file based on source type (Upload, IRODS, HTTP, FTP)
-        if ($type eq 'file') { 
+        if ($type eq 'file') {  # upload
             my $filepath = catfile($upload_dir, $item->{path});
             if (-r $filepath) {
                 $self->add_output($filepath);
@@ -105,7 +106,8 @@ sub iget {
     
     my $cmd;
     $cmd .= "mkdir -p $dest_path && "; # mdb added 2/9/16 -- for hypnotoad
-    irods_set_env(catfile($self->conf->{_HOME_PATH}, 'irodsEnv')); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
+    my $irodsEnvFile = catfile($self->conf->{_HOME_PATH}, 'irodsEnv');
+    irods_set_env($irodsEnvFile); # mdb added 2/9/16 -- for hypnotoad, use www-data's irodsEnvFile
     $cmd .= irods_iget( $irods_path, $dest_path, { no_execute => 1 } ) . ' && ';
     $cmd .= "touch $done_file";
 
@@ -113,6 +115,7 @@ sub iget {
         cmd => $cmd,
         args => [],
         inputs => [
+            $irodsEnvFile # mdb added 11/10/16 -- attempt to fix stuck tasks, COGE-729
         ],
         outputs => [ 
             $dest_file,
@@ -131,16 +134,20 @@ sub ftp_get {
     
     my ($filename, $path) = split_url($url);
     my $output_file = catfile($dest_path, $path, $filename);
-    
+
+    my $cmd = catfile($self->conf->{SCRIPTDIR}, "ftp.pl");
+
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, "ftp.pl"),
         args => [
-            ['-url',       "'".$url."'",       0], #FIXME use shell_quote
-            ['-username',  "'".$username."'",  0], #FIXME use shell_quote
-            ["-password",  "'".$password."'",  0], #FIXME use shell_quote
-            ["-dest_path", $dest_path,         0]
+            ['-url',       shell_quote($url),      0],
+            ['-username',  shell_quote($username), 0],
+            ["-password",  shell_quote($password), 0],
+            ["-dest_path", $dest_path,             0]
         ],
-        inputs => [],
+        inputs => [
+            $cmd # mdb added 11/10/16 -- attempt to fix stuck tasks, COGE-729
+        ],
         outputs => [ 
             $output_file
         ],
@@ -160,7 +167,7 @@ sub fastq_dump {
     my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
 
     return {
-        cmd => "$cmd $accn --outdir $dest_path && touch $done_file",
+        cmd => "$cmd --outdir $dest_path " . shell_quote($accn) . " && touch $done_file",
         script => undef,
         args => [],
         inputs => [],

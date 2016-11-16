@@ -5,6 +5,7 @@
  * 
  */
 const SPINNER_HTML = '<img src="picts/ajax-loader-medium.gif">';
+const SPINNER_SMALL_HTML = '<img src="picts/ajax-loader.gif">';
 
 class Table {
 	constructor(table, options) {
@@ -790,7 +791,7 @@ var coge = window.coge = (function(namespace) {
 				return;
 			}
 
-			$('#ftp_status').html(SPINNER_HTML+' Contacting host...');
+			$('#ftp_status').html(SPINNER_SMALL_HTML+' Contacting host...');
 
 			coge.services.ftp_list(url)
 				.done(function(result) {
@@ -827,7 +828,7 @@ var coge = window.coge = (function(namespace) {
 			var accn = $('#input_accn').val();
 
 			$('#ncbi_get_button').addClass('ui-state-disabled');
-			$('#ncbi_status').html(SPINNER_HTML+'< Contacting NCBI Nucleotide DB...');
+			$('#ncbi_status').html(SPINNER_SMALL_HTML+'< Contacting NCBI Nucleotide DB...');
 
 			$.ajax({
 				data: {
@@ -864,9 +865,10 @@ var coge = window.coge = (function(namespace) {
 				return;
 			}
 
-			$('#sra_status').html(SPINNER_HTML+' Contacting NCBI SRA...');
+			$('#sra_status').html(SPINNER_SMALL_HTML+' Contacting NCBI SRA...');
 			
 		    var entrez = new Entrez({ database: 'sra' });
+		    entrez.debug = 1;
 		    entrez.search(accn).then(function(id) {
 		    	if (id) {
 		    		entrez.fetch(id).then(function(result) {
