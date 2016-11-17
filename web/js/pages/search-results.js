@@ -40,7 +40,7 @@ function search_stuff(search_term) {
 			if (!obj || !obj.results)
 				return;
 
-			function add_item(url, obj, num, genome) {
+			function add_item(url, obj, num) {
 				let html = '<tr class="';
 				html += num % 2 ? 'odd' : 'even';
 				html += '"><td>';
@@ -67,8 +67,10 @@ function search_stuff(search_term) {
 					html += '&#x1f512;&nbsp;&nbsp;';
 				html += obj.name;
 				html += url ? '</a>' : '</span>';
-				if (genome)
+				if (obj.type == 'genome')
 					html += '</td><td><span class="coge-button" onclick="window.open(&quot;GenomeView.pl?embed=0&amp;gid=' + obj.id + '&quot;)">Browse</span>';
+				else if (obj.type == 'feature')
+					html += '</td><td>' + obj.feature_type;
 				html += '</td><td>';
 				html += obj.id;
 				html += '</td></tr>';
@@ -84,7 +86,7 @@ function search_stuff(search_term) {
 				if (o.type == "organism")
 					orgList += add_item('OrganismView.pl?oid=', o, orgCounter++);
 				else if (o.type == "genome")
-					genList += add_item('GenomeInfo.pl?gid=', o, genCounter++, true);
+					genList += add_item('GenomeInfo.pl?gid=', o, genCounter++);
 				else if (o.type == "experiment")
 					expList += add_item('ExperimentView.pl?eid=', o, expCounter++);
 				else if (o.type == "feature")
@@ -179,7 +181,7 @@ function search_stuff(search_term) {
 			if(featureCounter > 0) {
 				$('#feature').show();
 				$('#featureCount').html("Features: " + featureCounter);
-				$('#featureList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + featureList + '</tbody>');
+				$('#featureList').html('<thead><tr><th>name</th><th>type</th><th>id</th></tr></thead><tbody>' + featureList + '</tbody>');
 //				if(featureCounter <= 10) {
 //					$( "#featureList" ).show();
 //					//$( "#featureArrow" ).find('img').toggle();
