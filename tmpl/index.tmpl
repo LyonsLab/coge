@@ -244,24 +244,19 @@ function cross_fade(selector, image, delay) {
 }
 
 function load_latest(container, content) {
-    var i,
-        entry,
-        name,
-        wrapper,
-        added;
+    var i, entry, name, wrapper, added;
 
     for(i = 0; i < content.length; i++) {
         wrapper = $("<div></div>");
 
-        if (content[i].added === null) {
+        if (content[i].added === null)
             added = "Unknown"
-        } else {
+        else
             added = new Date(content[i].added).toDateString();
-        }
 
         entry = $("<h4></h4>")
             .html(added)
-            .css("width", "10em")
+            .css({"width": "10em", "color": "green"})
             .addClass("inline");
 
         name = $("<a></a>", { href: content[i].url, text: content[i].organism });
