@@ -244,24 +244,19 @@ function cross_fade(selector, image, delay) {
 }
 
 function load_latest(container, content) {
-    var i,
-        entry,
-        name,
-        wrapper,
-        added;
+    var i, entry, name, wrapper, added;
 
     for(i = 0; i < content.length; i++) {
         wrapper = $("<div></div>");
 
-        if (content[i].added === null) {
+        if (content[i].added === null)
             added = "Unknown"
-        } else {
+        else
             added = new Date(content[i].added).toDateString();
-        }
 
         entry = $("<h4></h4>")
             .html(added)
-            .css("width", "10em")
+            .css({"width": "10em", "color": "green"})
             .addClass("inline");
 
         name = $("<a></a>", { href: content[i].url, text: content[i].organism });
@@ -286,7 +281,7 @@ function get_latest_genomes(limit) {
         <li>Genomes: <span style="color:green"><TMPL_VAR NAME="GEN_COUNT"></span></li>
         <li>Features: <span style="color:green"><TMPL_VAR NAME="FEAT_COUNT"></span></li>
         <!--<li>Annotations: <span style="color:green"><TMPL_VAR NAME="ANNOT_COUNT"></span></li>-->
-        <li>Experiments: <span style="color:green"><TMPL_VAR NAME="EXP_COUNT"> (<TMPL_VAR NAME="QUANT_COUNT"> values)</span></li>
+        <li>Experiments: <span style="color:green"><TMPL_VAR NAME="EXP_COUNT"></span></li>
     </ul>
 </div>
 
@@ -336,22 +331,6 @@ Please note: CyVerse will be unavailable from 7 PM EDT (4 PM PDT) Thursday, Octo
                     </div>
                 </div>
             </TMPL_LOOP>
-        </div>
-
-        <div class="coge-section-lg">
-            <h3>What do you want to do?</h3>
-            <div id="info" class="r hidden">
-            </div>
-            <div>
-	            <p><a href="SynMap.pl">Compare two genomes</a></p>
-                <p><a href="SynMap3D.pl">Compare three genomes</a></p>
-	            <p><a href="OrganismView.pl">Browse genomes</a></p>
-	            <p><a href="LoadGenome.pl">Load a new genome</a></p>
-	            <p><a href="LoadExperiment.pl">Load experimental data</a></p>
-	            <p><a href="LoadExperiment.pl">Run the RNA-seq pipeline</a></p>
-	            <p><a href="CoGeBlast.pl">Blast against CoGe's genomes</a></p>
-	            <p><a href="User.pl">Browse & share data you've loaded</a></p>
-            </div>
         </div>
 
         <div class="coge-section-lg">
