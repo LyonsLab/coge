@@ -75,8 +75,8 @@ function search_stuff(search_term) {
 				return html;
 			}
 			
-			var userCounter = 0, orgCounter = 0, genCounter = 0, expCounter = 0, noteCounter = 0, usrgroupCounter = 0;
-			var userList = "", orgList = "", genList = "", expList = "", noteList = "", usrgroupList = "";
+			var userCounter = 0, orgCounter = 0, genCounter = 0, expCounter = 0, featureCounter = 0, noteCounter = 0, usrgroupCounter = 0;
+			var userList = "", orgList = "", genList = "", expList = "", featureList = "", noteList = "", usrgroupList = "";
 
 			for (var i = 0; i < obj.results.length; i++) {
 				var o = obj.results[i];
@@ -87,6 +87,8 @@ function search_stuff(search_term) {
 					genList += add_item('GenomeInfo.pl?gid=', o, genCounter++, true);
 				else if (o.type == "experiment")
 					expList += add_item('ExperimentView.pl?eid=', o, expCounter++);
+				else if (o.type == "feature")
+					featureList += add_item('FeatView.pl?fid=', o, featureCounter++);
 				else if (o.type == "notebook")
 					noteList += add_item('NotebookView.pl?lid=', o, noteCounter++);	
 				else if (o.type == "user_group")
@@ -98,7 +100,7 @@ function search_stuff(search_term) {
 			$('masterTable').css('display', 'block');
 			$(".result").fadeIn( 'fast');
 			
-			if (userCounter + orgCounter + genCounter + expCounter + noteCounter + usrgroupCounter == 0)
+			if (userCounter + orgCounter + genCounter + expCounter + featureCounter + noteCounter + usrgroupCounter == 0)
 				$('#noresult').html('No matching results found').show();
 			
 			//user
@@ -171,6 +173,24 @@ function search_stuff(search_term) {
 //				}
 			} else {
 				$('#experiment').hide();
+			}
+			
+			//feature
+			if(featureCounter > 0) {
+				$('#feature').show();
+				$('#featureCount').html("Features: " + featureCounter);
+				$('#featureList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + featureList + '</tbody>');
+//				if(featureCounter <= 10) {
+//					$( "#featureList" ).show();
+//					//$( "#featureArrow" ).find('img').toggle();
+//					$( "#featureArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
+//				} 
+//				else {
+					$( "#featureList" ).hide();
+					$("#featureArrow").find('img').attr("src", "picts/arrow-right-icon.png");
+//				}
+			} else {
+				$('#feature').hide();
 			}
 			
 			//notebook

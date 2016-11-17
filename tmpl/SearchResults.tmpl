@@ -61,6 +61,14 @@ const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
 	        </div>
 	        <table cellspacing="5" class="dt-cell hover compact row-border stripe dataTable no-footer" id='expList'></table>
 		</div>
+	
+		<div id="feature" class="collapse" style="padding-top:10px;margin-bottom:10px;">
+			<span id='featureCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#featureArrow');show_table('#featureList')"></span>
+			<div id="featureArrow" onclick="toggle_arrow('#featureArrow');show_table('#featureList')" style='display:inline;'>
+	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	        </div>
+	        <table cellspacing="5" class="dt-cell hover compact row-border stripe dataTable no-footer" id='featureList'></table>
+		</div>
 		
 	</div>
 </div>
