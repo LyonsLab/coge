@@ -147,7 +147,7 @@ sub actions {
             ACTION     => qq{<a href="./SynMap3D.pl">SynMap3D</a>},
             LINK       => qq{./SynMap3D.pl},
             SCREENSHOT => "picts/preview/SynMap.png",
-            DESC       => qq{Compare any three genomes to identify regions of synteny.<br><a href="SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1">Example</a>},
+            DESC       => qq{Compare any three genomes to identify regions of synteny.<br><a href="https://genomevolution.org/coge/SynMap3D.pl?x_gid=25571;y_gid=11691;z_gid=9642;min_syn=1;min_len=10000;sort=name">Example</a>},
         },
         {
             NAME       => "SynFind",
