@@ -410,7 +410,7 @@ sub get_anno {
         $anno .= qq{<span class="coge-button" onClick="window.open('SynFind.pl?fid=$featid');">SynFind</span>};
 
         #$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
-        $anno .= qq{<span class="coge-button" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></div>}
+        $anno .= qq{<span class="coge-button" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 'auto').dialog('open');">Add to list</span></div>}
           if $accn;
 
         eval {
