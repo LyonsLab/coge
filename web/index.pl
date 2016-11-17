@@ -120,7 +120,7 @@ sub actions {
             ACTION     => qq{<a href="./GenomeView.pl">GenomeView</a>},
             LINK       => qq{./GenomeView.pl},
             SCREENSHOT => "picts/preview/GenomeView.png",
-            DESC       => qq{Visualize genomes using a dynamic, interactive genome browser.<br><a href="GenomeView.pl?gid=16911">Example</a>},
+            DESC       => qq{Visualize genomes and experiments using a dynamic, interactive genome browser.<br><a href="GenomeView.pl?gid=16911">Example</a>},
         },
         {
             NAME       => "CoGeBlast",
@@ -177,22 +177,22 @@ sub actions {
     	#     DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
     	# },
         {
-    	    NAME       => "Load Genome",
+    	    NAME       => "Load a Genome",
     	    ID         => 8,
     	    LOGO       => "picts/LoadGenome.svg",
     	    ACTION     => qq{<a href="./LoadGenome.pl">Load Genome</a>},
     	    LINK       => qq{./LoadGenome.pl},
     	    SCREENSHOT => "picts/preview/LoadGenome.png",
-    	    DESC       => qq{Load a Genome},
+    	    DESC       => qq{Load your own genome from NCBI or a FASTA file.},
     	},
         {
-    	    NAME       => "Load Experiment",
+    	    NAME       => 'FlowGe (previously "Load Experiment")',
     	    ID         => 8,
     	    LOGO       => "picts/LoadExperiment.svg",
     	    ACTION     => qq{<a href="./LoadExperiment.pl">Load Experiment</a>},
     	    LINK       => qq{./LoadExperiment.pl},
     	    SCREENSHOT => "picts/preview/LoadExperiment.png",
-    	    DESC       => qq{Load an Experiment},
+    	    DESC       => qq{Load experimental data from various standard input formats (such as BED, WIG, BAM, and FASTQ) and run downstream analyses including read mapping, expression measurement, and SNP identification.},
     	}
     );
     return \@actions;
