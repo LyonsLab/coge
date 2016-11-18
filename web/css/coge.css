@@ -1816,13 +1816,12 @@ div.dataTables_scrollBody {
     line-height: 2.5em;
     height: 2.5em;
     margin-left: 1em;
-    margin-bottom: 1.5em;
+    margin-bottom: 1em;
 }
 
 .header .active {
     color: #119911;
     font-size: larger;
-    text-decoration: underline;
 }
 
 .wizard .step .required:after {
