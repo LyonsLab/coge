@@ -76,8 +76,8 @@ function search_stuff(search_term) {
 				return html;
 			}
 			
-			var user_count = 0, org_count = 0, gen_count = 0, exp_count = 0, feature_count = 0, note_count = 0, usr_group_count = 0;
-			var user_list = "", org_list = "", gen_list = "", exp_list = "", feature_list = "", note_list = "", usr_group_list = "";
+			var org_count = 0, gen_count = 0, exp_count = 0, feature_count = 0, note_count = 0, user_group_count = 0;
+			var org_list = "", gen_list = "", exp_list = "", feature_list = "", note_list = "", user_group_list = "";
 
 			for (var i = 0; i < obj.results.length; i++) {
 				var o = obj.results[i];
@@ -93,7 +93,7 @@ function search_stuff(search_term) {
 				else if (o.type == "notebook")
 					note_list += add_item('NotebookView.pl?lid=', o, note_count++);	
 				else if (o.type == "user_group")
-					usr_group_list += add_item(null, o, usr_group_count++);
+					user_group_list += add_item(null, o, user_group_count++);
 			}
 
 			//Populate the html with the results
@@ -101,14 +101,14 @@ function search_stuff(search_term) {
 			$('masterTable').css('display', 'block');
 			$(".result").fadeIn( 'fast');
 			
-			if (user_count + org_count + gen_count + exp_count + feature_count + note_count + usr_group_count == 0)
+			if (org_count + gen_count + exp_count + feature_count + note_count + user_group_count == 0)
 				$('#noresult').html('No matching results found').show();
 
-			function setup_results(type, count, cols, rows) {
+			function setup_results(type, icon, count, cols, rows) {
 				var div = $('#' + type.replace(' ', '_'));
 				if (count > 0) {
 					div.show();
-					div.children().first().children().first().html(type + 's: ' + count);
+					div.children().first().children().first().html('<img src="picts/' + icon + '" style="width:15px" /> ' + type + 's: ' + count);
 					var table = div.find('table');
 					var tr = $('<tr></tr>').appendTo($('<thead></thead>').appendTo(table));
 					cols.forEach(function(col) {
@@ -117,13 +117,12 @@ function search_stuff(search_term) {
 					table.append($('<tbody>' + rows + '</tbody>'));
 				}
 			}
-			setup_results('Experiment', exp_count, ['name', 'id'], exp_list);
-			setup_results('Feature', feature_count, ['name', 'type', 'genome', 'id'], feature_list);
-			setup_results('Genome', gen_count, ['name', 'EPIC-CoGe', 'id'], gen_list);
-			setup_results('Notebook', note_count, ['name', 'id'], note_list);
-			setup_results('Organism', org_count, ['name', 'id'], org_list);
-			setup_results('User', user_count, ['name', 'id'], user_list);
-			setup_results('User Group', usr_group_count, ['name', 'id'], usr_group_list);
+			setup_results('Experiment', 'testtube-icon.png', exp_count, ['name', 'id'], exp_list);
+			setup_results('Feature', 'feature-icon.png', feature_count, ['name', 'type', 'genome', 'id'], feature_list);
+			setup_results('Genome', 'dna-icon.png', gen_count, ['name', 'EPIC-CoGe', 'id'], gen_list);
+			setup_results('Notebook', 'notebook-icon.png', note_count, ['name', 'id'], note_list);
+			setup_results('Organism', 'Organism.svg', org_count, ['name', 'id'], org_list);
+			setup_results('User Group', 'group-icon.png', user_group_count, ['name', 'id'], user_group_list);
 			
 			$("#loading").hide();
 			$("#masterTable").show();
