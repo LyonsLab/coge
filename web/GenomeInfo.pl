@@ -10,6 +10,7 @@ use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
 use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
 use CoGe::Core::Chromosomes;
 use CoGe::Core::Genome;
+use CoGe::Core::Metadata;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Storage;
 use CoGe::Core::Favorites;

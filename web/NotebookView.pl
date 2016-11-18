@@ -8,6 +8,7 @@ use Sort::Versions;
 use List::Util qw(first);
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Core::Metadata;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Notebook qw(notebookcmp delete_notebook undelete_notebook);
