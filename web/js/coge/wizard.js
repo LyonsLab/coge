@@ -153,7 +153,7 @@ function DataView(experiment, opts) {
     this.experiment = experiment || {};
     this.onError = opts.onError;
     this.supportedFileTypes = opts.supportedFileTypes;
-    this.title = "Data";
+    this.title = "Select Data";
     this.files = [];
     this.initialize();
 }
@@ -169,7 +169,7 @@ $.extend(DataView.prototype, {
         
         if (this.supportedFileTypes)
         	this.FILE_TYPE_PATTERNS = new RegExp("(:?" + this.supportedFileTypes.join("|") + ")$");
-        
+
         coge.fileSelect.init({
         	container: this.selector_container,
         	fileTable: this.file_table,
@@ -227,7 +227,7 @@ $.extend(DataView.prototype, {
         var selector = this.file_selector.clone();
         this.selector_container.empty();
         selector.appendTo(this.selector_container);
-        
+
         coge.fileSelect.render();
     },
 
@@ -268,7 +268,7 @@ $.extend(DataView.prototype, {
 function ConfirmationView(object) { // object is an experiment or genome
     this.object = object;
     this.initialize();
-    this.title = "Review and Submit";
+    this.title = "Review & Submit";
 }
 
 $.extend(ConfirmationView.prototype, {
