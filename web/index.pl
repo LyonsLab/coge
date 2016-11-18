@@ -89,12 +89,7 @@ sub generate_body {
         GEN_COUNT => commify( $DB->resultset('Genome')->search( { deleted => 0 } )->count() ),
         FEAT_COUNT => commify( get_table_count($DB->storage->dbh, 'feature') ),
         ANNOT_COUNT => commify( get_table_count($DB->storage->dbh, 'feature_annotation') ),
-        EXP_COUNT => commify( $DB->resultset('Experiment')->search( { deleted => 0 } )->count() ),
-        QUANT_COUNT => commify(
-            units(
-                $DB->resultset('Experiment')->search( { deleted => 0 } )->get_column('row_count')->sum
-            )
-        )
+        EXP_COUNT => commify( $DB->resultset('Experiment')->search( { deleted => 0 } )->count() )
     );
 
     $tmpl->param( wikifeed => $CONF->{WIKI_URL}."/CoGepedia:Current_events" ) if $CONF->{WIKI_URL};

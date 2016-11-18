@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.2" width="39.6mm" height="35.45mm" viewBox="0 0 3960 3545" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke-width="28.222" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:ooo="http://xml.openoffice.org/svg/export" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:presentation="http://sun.com/xmlns/staroffice/presentation" xmlns:smil="http://www.w3.org/2001/SMIL20/" xmlns:anim="urn:oasis:names:tc:opendocument:xmlns:animation:1.0" xml:space="preserve">
+<svg version="1.2" width="48.92mm" height="43.28mm" viewBox="1 108 4892 4328" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke-width="28.222" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:ooo="http://xml.openoffice.org/svg/export" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:presentation="http://sun.com/xmlns/staroffice/presentation" xmlns:smil="http://www.w3.org/2001/SMIL20/" xmlns:anim="urn:oasis:names:tc:opendocument:xmlns:animation:1.0" xml:space="preserve">
  <defs class="ClipPathGroup">
   <clipPath id="presentation_clip_path" clipPathUnits="userSpaceOnUse">
-   <rect x="0" y="0" width="3960" height="3545"/>
+   <rect x="1" y="108" width="4892" height="4328"/>
   </clipPath>
   <clipPath id="presentation_clip_path_shrink" clipPathUnits="userSpaceOnUse">
-   <rect x="3" y="3" width="3953" height="3538"/>
+   <rect x="5" y="112" width="4883" height="4320"/>
   </clipPath>
  </defs>
  <defs class="TextShapeIndex">
-  <g ooo:slide="id1" ooo:id-list="id3 id4 id5 id6 id7 id8 id9 id10"/>
+  <g ooo:slide="id1" ooo:id-list="id3 id4 id5 id6 id7 id8 id9 id10 id11 id12 id13 id14 id15 id16 id17 id18"/>
  </defs>
  <defs class="EmbeddedBulletChars">
   <g id="bullet-char-template(57356)" transform="scale(0.00048828125,-0.00048828125)">
@@ -45,63 +45,97 @@
   </g>
  </defs>
  <defs class="TextEmbeddedBitmaps"/>
- <g>
-  <g id="id2" class="Master_Slide">
-   <g id="bg-id2" class="Background"/>
-   <g id="bo-id2" class="BackgroundObjects"/>
-  </g>
- </g>
  <g class="SlideGroup">
   <g>
    <g id="container-id1">
     <g id="id1" class="Slide" clip-path="url(#presentation_clip_path)">
      <g class="Page">
-      <g class="com.sun.star.drawing.OpenBezierShape">
+      <g class="com.sun.star.drawing.PolyPolygonShape">
        <g id="id3">
-        <rect class="BoundingBox" stroke="none" fill="none" x="1" y="87" width="3903" height="3461"/>
-        <path fill="none" stroke="rgb(68,146,45)" stroke-width="235" stroke-linejoin="round" d="M 214,205 C 58,295 121,3271 209,3367 295,3465 3679,3439 3785,3348"/>
+        <rect class="BoundingBox" stroke="none" fill="none" x="1" y="109" width="4881" height="4328"/>
        </g>
       </g>
-      <g class="com.sun.star.drawing.OpenFreeHandShape">
+      <g class="com.sun.star.drawing.OpenBezierShape">
        <g id="id4">
-        <rect class="BoundingBox" stroke="none" fill="none" x="383" y="2687" width="601" height="497"/>
-        <path fill="none" stroke="rgb(68,146,45)" stroke-width="159" stroke-linejoin="round" d="M 463,3103 C 529,3091 573,3037 622,2995 677,2948 731,2906 788,2865 826,2837 850,2797 893,2775 L 903,2767"/>
+        <rect class="BoundingBox" stroke="none" fill="none" x="2" y="109" width="4880" height="4327"/>
+        <path fill="none" stroke="rgb(68,146,45)" stroke-width="294" stroke-linejoin="round" d="M 270,256 C 74,369 153,4089 263,4209 371,4332 4602,4300 4734,4186"/>
        </g>
       </g>
-      <g class="com.sun.star.drawing.OpenFreeHandShape">
+      <g class="com.sun.star.drawing.PolyPolygonShape">
        <g id="id5">
-        <rect class="BoundingBox" stroke="none" fill="none" x="831" y="2286" width="594" height="595"/>
-        <path fill="none" stroke="rgb(68,146,45)" stroke-width="159" stroke-linejoin="round" d="M 911,2366 C 953,2413 1006,2449 1048,2497 1084,2538 1123,2582 1146,2634 1166,2678 1190,2724 1225,2760 1256,2792 1305,2781 1344,2800 L 1344,2800"/>
+        <rect class="BoundingBox" stroke="none" fill="none" x="478" y="3359" width="754" height="623"/>
        </g>
       </g>
-      <g class="com.sun.star.drawing.OpenFreeHandShape">
+      <g class="com.sun.star.drawing.OpenBezierShape">
        <g id="id6">
-        <rect class="BoundingBox" stroke="none" fill="none" x="1333" y="1983" width="533" height="446"/>
-        <path fill="none" stroke="rgb(68,146,45)" stroke-width="159" stroke-linejoin="round" d="M 1413,2348 C 1454,2332 1488,2300 1514,2265 1546,2223 1596,2199 1644,2179 1689,2160 1696,2109 1745,2099 L 1781,2067 1785,2063"/>
+        <rect class="BoundingBox" stroke="none" fill="none" x="479" y="3359" width="752" height="622"/>
+        <path fill="none" stroke="rgb(68,146,45)" stroke-width="199" stroke-linejoin="round" d="M 579,3880 C 662,3865 717,3797 778,3745 847,3686 915,3633 986,3582 1034,3547 1064,3497 1117,3469 L 1130,3459"/>
        </g>
       </g>
-      <g class="com.sun.star.drawing.OpenFreeHandShape">
+      <g class="com.sun.star.drawing.PolyPolygonShape">
        <g id="id7">
-        <rect class="BoundingBox" stroke="none" fill="none" x="1712" y="1654" width="602" height="544"/>
-        <path fill="none" stroke="rgb(68,146,45)" stroke-width="159" stroke-linejoin="round" d="M 1792,1734 C 1853,1775 1909,1825 1966,1872 2011,1908 2047,1955 2092,1994 2132,2028 2183,2050 2211,2099 L 2233,2117"/>
+        <rect class="BoundingBox" stroke="none" fill="none" x="1039" y="2858" width="744" height="746"/>
        </g>
       </g>
-      <g class="com.sun.star.drawing.OpenFreeHandShape">
+      <g class="com.sun.star.drawing.OpenBezierShape">
        <g id="id8">
-        <rect class="BoundingBox" stroke="none" fill="none" x="2196" y="1083" width="754" height="693"/>
-        <path fill="none" stroke="rgb(68,146,45)" stroke-width="159" stroke-linejoin="round" d="M 2276,1695 C 2316,1664 2358,1632 2388,1593 2424,1546 2467,1502 2508,1460 2543,1424 2589,1406 2627,1373 2661,1343 2708,1324 2742,1294 2780,1261 2807,1215 2847,1182 L 2869,1163"/>
+        <rect class="BoundingBox" stroke="none" fill="none" x="1039" y="2858" width="743" height="744"/>
+        <path fill="none" stroke="rgb(68,146,45)" stroke-width="199" stroke-linejoin="round" d="M 1139,2958 C 1192,3017 1258,3062 1311,3122 1356,3173 1404,3228 1433,3294 1458,3349 1488,3406 1532,3451 1571,3491 1632,3478 1681,3501"/>
        </g>
       </g>
-      <g class="com.sun.star.drawing.OpenFreeHandShape">
+      <g class="com.sun.star.drawing.PolyPolygonShape">
        <g id="id9">
-        <rect class="BoundingBox" stroke="none" fill="none" x="2745" y="690" width="638" height="489"/>
-        <path fill="none" stroke="rgb(68,146,45)" stroke-width="159" stroke-linejoin="round" d="M 2825,770 C 2881,786 2924,828 2974,856 3033,889 3090,927 3151,961 3197,987 3246,1018 3273,1070 L 3302,1098"/>
+        <rect class="BoundingBox" stroke="none" fill="none" x="1666" y="2479" width="668" height="559"/>
        </g>
       </g>
-      <g class="com.sun.star.drawing.OpenFreeHandShape">
+      <g class="com.sun.star.drawing.OpenBezierShape">
        <g id="id10">
-        <rect class="BoundingBox" stroke="none" fill="none" x="3136" y="86" width="778" height="609"/>
-        <path fill="none" stroke="rgb(68,146,45)" stroke-width="159" stroke-linejoin="round" d="M 3216,614 C 3300,556 3385,499 3465,437 3530,387 3601,342 3674,300 3729,268 3783,238 3833,199 L 3794,184 3757,170 3747,166"/>
+        <rect class="BoundingBox" stroke="none" fill="none" x="1666" y="2479" width="667" height="558"/>
+        <path fill="none" stroke="rgb(68,146,45)" stroke-width="199" stroke-linejoin="round" d="M 1766,2936 C 1817,2916 1860,2876 1893,2832 1933,2780 1995,2749 2055,2724 2112,2701 2121,2637 2182,2624 L 2227,2584 2232,2579"/>
+       </g>
+      </g>
+      <g class="com.sun.star.drawing.PolyPolygonShape">
+       <g id="id11">
+        <rect class="BoundingBox" stroke="none" fill="none" x="2139" y="2067" width="755" height="683"/>
+       </g>
+      </g>
+      <g class="com.sun.star.drawing.OpenBezierShape">
+       <g id="id12">
+        <rect class="BoundingBox" stroke="none" fill="none" x="2140" y="2068" width="753" height="681"/>
+        <path fill="none" stroke="rgb(68,146,45)" stroke-width="199" stroke-linejoin="round" d="M 2240,2168 C 2316,2219 2387,2282 2458,2341 2514,2386 2559,2445 2616,2494 2666,2536 2730,2564 2765,2625 L 2792,2648"/>
+       </g>
+      </g>
+      <g class="com.sun.star.drawing.PolyPolygonShape">
+       <g id="id13">
+        <rect class="BoundingBox" stroke="none" fill="none" x="2745" y="1354" width="945" height="868"/>
+       </g>
+      </g>
+      <g class="com.sun.star.drawing.OpenBezierShape">
+       <g id="id14">
+        <rect class="BoundingBox" stroke="none" fill="none" x="2745" y="1354" width="943" height="867"/>
+        <path fill="none" stroke="rgb(68,146,45)" stroke-width="199" stroke-linejoin="round" d="M 2845,2120 C 2895,2081 2948,2041 2985,1992 3030,1933 3084,1878 3135,1826 3179,1781 3237,1758 3284,1717 3327,1679 3386,1656 3428,1618 3476,1577 3510,1519 3560,1478 L 3587,1454"/>
+       </g>
+      </g>
+      <g class="com.sun.star.drawing.PolyPolygonShape">
+       <g id="id15">
+        <rect class="BoundingBox" stroke="none" fill="none" x="3431" y="863" width="799" height="613"/>
+       </g>
+      </g>
+      <g class="com.sun.star.drawing.OpenBezierShape">
+       <g id="id16">
+        <rect class="BoundingBox" stroke="none" fill="none" x="3431" y="863" width="798" height="612"/>
+        <path fill="none" stroke="rgb(68,146,45)" stroke-width="199" stroke-linejoin="round" d="M 3531,963 C 3601,983 3655,1036 3718,1071 3791,1112 3863,1160 3939,1202 3997,1235 4058,1274 4092,1339 L 4128,1374"/>
+       </g>
+      </g>
+      <g class="com.sun.star.drawing.PolyPolygonShape">
+       <g id="id17">
+        <rect class="BoundingBox" stroke="none" fill="none" x="3920" y="108" width="974" height="763"/>
+       </g>
+      </g>
+      <g class="com.sun.star.drawing.OpenBezierShape">
+       <g id="id18">
+        <rect class="BoundingBox" stroke="none" fill="none" x="3920" y="408" width="499" height="461"/>
+        <path fill="none" stroke="rgb(68,146,45)" stroke-width="199" stroke-linejoin="round" d="M 4020,768 C 4061,734 4102,701 4140,665 4172,636 4206,610 4241,586 4268,567 4294,550 4318,527 L 4299,519 4281,510 4277,508"/>
        </g>
       </g>
      </g>
