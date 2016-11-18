@@ -139,7 +139,7 @@ function search_stuff(search_term) {
 
 function toggle_results(div, table) {
 	div = $(div);
-	var img = div.find('img');
+	var img = div.children().last();
 	if (img.attr('src') == 'picts/arrow-right-icon.png') {
         img.attr('src', 'picts/arrow-down-icon.png');
 		if (!$.fn.dataTable.isDataTable(table))
