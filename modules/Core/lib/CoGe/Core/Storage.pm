@@ -694,7 +694,7 @@ sub is_popgen_finished {
 }
 
 sub get_sra_cache_path {
-    my $data_dir = CoGe::Accessory::Web::get_defaults()->{'DATADIR'};
+    my $data_dir = CoGe::Accessory::Web::get_defaults()->{'CACHEDIR'};
     unless ($data_dir) {
         print STDERR "Storage::get_sra_cache_path missing DATADIR\n";
         return;
