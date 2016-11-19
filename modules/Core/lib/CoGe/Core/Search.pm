@@ -250,16 +250,30 @@ sub search {
 	if (($type eq 'none' || $type eq 'feature') && !defined($certified) && !defined($deleted) && !defined($favorite) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role)) {
 		my @features;
 		foreach (@search_terms) {
-			push @features, $db->resultset('FeatureName')->search(undef, { join => { 'feature' => 'feature_type' } })->search_literal( 'MATCH(me.name) AGAINST (?)', $_ );
+			push @features, $db->resultset('FeatureName')->search(undef, { distinct => 1, join => {
+                'feature' => [ 'feature_type', {
+                    'dataset' =>
+                      { 'dataset_connectors' => { 'genome' => 'organism' } }
+                }]
+			}})->search_literal( 'MATCH(me.name) AGAINST (?)', $_ );
 		}
 		if (@features) {
 			@features = sort { lc($a->name) cmp lc($b->name) } @features;
 			foreach (@features) {
-					push @results, {
-					'type'          => 'feature',
-					'name'          => $_->info(hideRestrictedSymbol=>1),
-					'id'            => int $_->feature_id,
-					'feature_type'  => $_->feature->feature_type->name
+				my $feature = $_->feature;
+				my $organism = $feature->organism;
+				my $info;
+				if ($organism) {
+					my $dataset = $feature->dataset;
+					my $first_genome = $dataset->first_genome;
+					$info = $organism->name . ' (' . $dataset->source->name . ', v' . $first_genome->version . ', ' .  $first_genome->genomic_sequence_type->name . ')';
+				}
+				push @results, {
+					type         => 'feature',
+					name         => $_->name,
+					id           => int $_->feature_id,
+					feature_type => $feature->feature_type->name,
+					genome       => $info || ''
 				}
 			}
 		}

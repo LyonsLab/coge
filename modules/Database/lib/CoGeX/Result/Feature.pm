@@ -182,7 +182,7 @@ See Also   : org()
 sub organism {
 	my $self = shift;
 	my ($dsg) = $self->dataset->genomes();
-	return $dsg->organism;
+	return $dsg ? $dsg->organism : undef;
 }
 
 ################################################ subroutine header begin ##
@@ -1989,10 +1989,12 @@ See Also   :
 sub info {
 	my $self = shift;
 	my ($info) = $self->name . ' (' . $self->type->name . ')';
-	$info .= ': ' . $self->organism->name .
-	         ' (' . $self->dataset->source->name .
-	         ', v' . $self->dataset->first_genome->version .
-	         ', ' .  $self->dataset->first_genome->genomic_sequence_type->name . ')';
+	if ($self->organism) {
+		$info .= ': ' . $self->organism->name .
+				' (' . $self->dataset->source->name .
+				', v' . $self->dataset->first_genome->version .
+				', ' .  $self->dataset->first_genome->genomic_sequence_type->name . ')';
+	}
 	return $info;
 }
 

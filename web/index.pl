@@ -72,18 +72,6 @@ sub generate_body {
     my $tmpl = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'index.tmpl' );
 
     $tmpl->param(
-        ACTIONS => [
-            map {
-                {
-                    ACTION => $_->{NAME},
-                    DESC   => $_->{DESC},
-                    LINK   => $_->{LINK},
-                    LOGO   => $_->{LOGO}
-                }
-            } sort { $a->{ID} <=> $b->{ID} } @{ actions() }
-        ]
-    );
-    $tmpl->param(
         INTRO => 1,
         ORG_COUNT => commify( $DB->resultset('Organism')->count() ),
         GEN_COUNT => commify( $DB->resultset('Genome')->search( { deleted => 0 } )->count() ),
@@ -100,102 +88,6 @@ sub generate_body {
     $tmpl->param( wikifeed => $CONF->{WIKI_URL}."/CoGepedia:Current_events" ) if $CONF->{WIKI_URL};
 
     return $tmpl->output;
-}
-
-sub actions {
-    my @actions = (
-        {
-            NAME       => "OrganismView",
-            ID         => 1,
-            LOGO       => "picts/OrganismView.svg",
-            ACTION     => qq{<a href="./OrganismView.pl">OrganismView</a>},
-            LINK       => qq{./OrganismView.pl},
-            SCREENSHOT => "picts/preview/OrganismView.png",
-            DESC       => qq{Search for organisms and get an overview of their genomic make-up.<br><a href="OrganismView.pl?org_name=W3110">Example</a>},
-        },
-        {
-            NAME       => "EPIC-CoGe",
-            ID         => 2,
-            LOGO       => "picts/GenomeView.svg",
-            ACTION     => qq{<a href="./GenomeView.pl">GenomeView</a>},
-            LINK       => qq{./GenomeView.pl},
-            SCREENSHOT => "picts/preview/GenomeView.png",
-            DESC       => qq{Visualize genomes and experiments using a dynamic, interactive genome browser.<br><a href="GenomeView.pl?gid=16911">Example</a>},
-        },
-        {
-            NAME       => "CoGeBlast",
-            ID         => 3,
-            LOGO       => "picts/CoGeBlast.svg",
-            ACTION     => qq{<a href="./CoGeBlast.pl">CoGeBlast</a>},
-            LINK       => qq{./CoGeBlast.pl},
-            SCREENSHOT => "picts/preview/Blast.png",
-            DESC       => qq{Blast sequences against any number of organisms in CoGe.<br><a href="CoGeBlast.pl?dsgid=3068;fid=40603528">Example</a>},
-        },
-        {
-            NAME       => "SynMap",
-            ID         => 4,
-            LOGO       => "picts/SynMap.svg",
-            ACTION     => qq{<a href="./SynMap.pl">SynMap</a>},
-            LINK       => qq{./SynMap.pl},
-            SCREENSHOT => "picts/preview/SynMap.png",
-            DESC       => qq{Compare any two genomes to identify regions of synteny.<br><a href="SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1">Example</a>},
-        },
-        {
-            NAME       => "SynMap3D",
-            ID         => 5,
-            LOGO       => "picts/SynMap3d.svg",
-            ACTION     => qq{<a href="./SynMap3D.pl">SynMap3D</a>},
-            LINK       => qq{./SynMap3D.pl},
-            SCREENSHOT => "picts/preview/SynMap.png",
-            DESC       => qq{Compare any three genomes to identify regions of synteny.<br><a href="https://genomevolution.org/coge/SynMap3D.pl?x_gid=25571;y_gid=11691;z_gid=9642;min_syn=1;min_len=10000;sort=name">Example</a>},
-        },
-        {
-            NAME       => "SynFind",
-            ID         => 6,
-            LOGO       => "picts/SynFind.svg",
-            ACTION     => qq{<a href="./SynFind.pl">SynFind</a>},
-            LINK       => qq{./SynFind.pl},
-            SCREENSHOT => "picts/preview/SynMap.png",
-            DESC       => qq{Search CoGe's annotation database for homologs.<br><a href="SynFind.pl?dsgid=3068;fid=40603528;run=1">Example</a>},
-        },
-    	{
-            ID         => 7,
-            LOGO       => "picts/GEvo.svg",
-            ACTION     => qq{<a href="./GEvo.pl">GEvo</a>},
-            LINK       => qq{./GEvo.pl},
-            SCREENSHOT => "picts/preview/GEvo.png",
-            NAME       => "GEvo",
-            DESC       => qq{Compare sequences and genomic regions to discover patterns of genome evolution.<br><a href ="GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">Example</a>},
-        },
-        # {
-    	#     NAME       => "FeatView",
-    	#     ID         => 8,
-    	#     LOGO       => "picts/FeatView.svg",
-    	#     ACTION     => qq{<a href="./FeatView.pl">FeatView</a>},
-    	#     LINK       => qq{./FeatView.pl},
-    	#     SCREENSHOT => "picts/preview/FeatView.png",
-    	#     DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
-    	# },
-        {
-    	    NAME       => "Load a Genome",
-    	    ID         => 8,
-    	    LOGO       => "picts/LoadGenome.svg",
-    	    ACTION     => qq{<a href="./LoadGenome.pl">Load Genome</a>},
-    	    LINK       => qq{./LoadGenome.pl},
-    	    SCREENSHOT => "picts/preview/LoadGenome.png",
-    	    DESC       => qq{Load your own genome from NCBI or a FASTA file.},
-    	},
-        {
-    	    NAME       => 'FlowGe (previously "Load Experiment")',
-    	    ID         => 8,
-    	    LOGO       => "picts/LoadExperiment.svg",
-    	    ACTION     => qq{<a href="./LoadExperiment.pl">Load Experiment</a>},
-    	    LINK       => qq{./LoadExperiment.pl},
-    	    SCREENSHOT => "picts/preview/LoadExperiment.png",
-    	    DESC       => qq{Load experimental data from various standard input formats (such as BED, WIG, BAM, and FASTQ) and run downstream analyses including read mapping, expression measurement, and SNP identification.},
-    	}
-    );
-    return \@actions;
 }
 
 sub get_latest_genomes {
