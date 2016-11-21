@@ -27,20 +27,14 @@
 </div>
 
 <div id="create_group_dialog" class="dialog_box hidden" title="Create New Group">
-	<table class="small">
-		<tr>
-			<td colspan="2" style="padding-bottom: 10px;">
-				<span style="color: red;">
-				<span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
-			</td>
-		</tr>
+	<table class="small" style="padding-top:1em;">
 		<tr>
 			<td>Name:</td>
-			<td class="nowrap"><input id="edit_group_name" type="textbox" size="48" value="" />&nbsp;&nbsp;<span class="glyphicon glyphicon-asterisk" style="color: red;"></span></td>
+			<td class="nowrap"><input id="edit_group_name" type="textbox" size="40" value="" />&nbsp;&nbsp;<span class="small alert">Required</span></td>
 		</tr>
 		<tr>
 			<td>Description:</td>
-			<td><textarea id="edit_group_desc" rows="5" cols="50"></textarea></td>
+			<td><textarea id="edit_group_desc" rows="5" cols="50" placeholder="Optional"></textarea></td>
 		</tr>
 		<tr>
 			<td>Role:</td>
@@ -55,19 +49,14 @@
 </div>
 
 <div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
-	<table class="small">
-		<tr>
-            <td colspan="2" style="padding-bottom: 10px;">
-                <span style="color: red;"><span class="glyphicon glyphicon-asterisk"></span> denotes a required field</span>
-            </td>
-        </tr>
+	<table class="small" style="padding-top:1em;">
 		<tr>
 			<td>Name:</td>
-			<td class="nowrap"><input id="edit_notebook_name" type="textbox" size="48" value="" />&nbsp;&nbsp;<span style="color: red;" class="glyphicon glyphicon-asterisk"></span></td>
+			<td class="nowrap"><input id="edit_notebook_name" type="textbox" size="40" value="" />&nbsp;&nbsp;<span class="small alert">Required</span></td>
 		</tr>
 		<tr>
 			<td>Description:</td>
-			<td><textarea id="edit_notebook_desc" rows="5" cols="50"></textarea></td>
+			<td><textarea id="edit_notebook_desc" rows="5" cols="50" placeholder="Optional"></textarea></td>
 		</tr>
 		<tr>
 			<td>Type:</td>
