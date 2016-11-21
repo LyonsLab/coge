@@ -1225,7 +1225,7 @@ sub send_items_to {
     foreach my $type ( keys %fields ) {
         my $name;
         if ( $type eq 'genome' ) {
-            $name = 'dsgid';
+            $name = 'gid';
         }
         elsif ( $type eq 'experiment' ) {
             $name = 'eid';

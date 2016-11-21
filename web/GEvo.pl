@@ -234,12 +234,13 @@ sub gen_body {
         $display_order = $index unless $display_order;
         $draccn = $form->param( "accn" . $i ) if $form->param( "accn" . $i );
         $pos    = $form->param( "x" . $i )    if $form->param( "x" . $i );
-        $chr = $form->param( "chr" . $i ) if defined $form->param( "chr" . $i );
-        $fid = $form->param( "fid" . $i ) if $form->param( "fid" . $i );
+        $chr = $form->param( "chr" . $i )     if defined $form->param( "chr" . $i );
+        $fid = $form->param( "fid" . $i )     if $form->param( "fid" . $i );
         $dsid  = $form->param( 'dsid' . $i )  if $form->param( 'dsid' . $i );
         $dsgid = $form->param( 'dsgid' . $i ) if $form->param( 'dsgid' . $i );
+        $dsgid = $form->param( 'gid' . $i )   if $form->param( 'gid' . $i );
         $gstid = $form->param( 'gstid' . $i ) if $form->param( 'gstid' . $i );
-        $mask = $form->param( 'mask' . $i ) if ( $form->param( 'mask' . $i ) );
+        $mask = $form->param( 'mask' . $i )   if ( $form->param( 'mask' . $i ) );
         $mask = undef if $mask && $mask eq "--None--";
         $mask = "non-cds"
           if $form->param( 'maskncs' . $i );    #backwards compatibility

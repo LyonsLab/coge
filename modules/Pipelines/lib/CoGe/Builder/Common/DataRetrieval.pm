@@ -167,7 +167,7 @@ sub fastq_dump {
     my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
 
     return {
-        cmd => "$cmd --outdir $dest_path " . shell_quote($accn) . " && touch $done_file",
+        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch $done_file",
         script => undef,
         args => [],
         inputs => [],

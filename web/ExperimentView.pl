@@ -19,6 +19,7 @@ use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage;
 use CoGe::Core::Favorites;
+use CoGe::Core::Metadata;
 use CoGe::Core::Experiment qw(get_irods_metadata);
 
 use vars qw(

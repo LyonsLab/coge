@@ -297,7 +297,7 @@ sub create_fastq_dump_job {
     my $cmd = $CONF->{FASTQ_DUMP} || 'fastq-dump';
 
     return {
-        cmd => "$cmd $accn --outdir $dest_path && touch $done_file",
+        cmd => "mkdir -p $dest_path && $cmd $accn --outdir $dest_path && touch $done_file",
         script => undef,
         args => [],
         inputs => [],
