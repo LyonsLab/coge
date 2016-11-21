@@ -1,66 +1,74 @@
 <link rel="stylesheet" href="css/dataTables.css" type="text/css">
+<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" src="js/coge/services.js"></script>
 <script type="text/javascript" src="js/pages/search-results.js"></script>
 <script type="text/javascript">
-// Page constants
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
 const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
 </script>
-
 <div>
-	<div id="loading" class="spinner hidden" style="display:flex;justify-content:center;align-items:center;margin-top:40%;"></div>
+	<div id="loading" class="spinner hidden" style="display:flex;justify-content:center;align-items:center;margin-top:40px;"></div>
 	<div id="noresult" class="note hidden"></div>
-	
 	<div id="masterTable" style="display:none;" class="collapse result">
-
-		<div id="organism" class="collapse" style="padding-top:10px;margin-bottom:10px;">
-			<span id='orgCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#orgArrow');show_table('#orgList')"></span>
-			<div id="orgArrow" onclick="toggle_arrow('#orgArrow');show_table('#orgList')" style='display:inline;'>
-				<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-			</div>
-			<table cellspacing="5" class="dt-cell hover compact row-border stripe dataTable no-footer" id='orgList'></table>
-		</div>
-	
-		<div id="genome" class="collapse" style="padding-top:10px;margin-bottom:10px;">
-			<span id='genCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#genArrow');show_table('#genList')"></span>
-			<div id="genArrow" onclick="toggle_arrow('#genArrow');show_table('#genList')" style='display:inline;'>
-	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-	    	</div>
-	    	<table cellspacing="5" class="dt-cell hover compact row-border stripe dataTable no-footer" id='genList'></table>
-		</div>
-	
-		<div id="user" class="collapse" style="padding-top:10px;margin-bottom:10px;">
-			<span id='userCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#userArrow');show_table('#userList')"></span>
-			<div id="userArrow" onclick="toggle_arrow('#userArrow');show_table('#userList')" style='display:inline;'>
-	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-	    	</div>
-	    	<table cellspacing="5" class="dt-cell hover compact row-border stripe dataTable no-footer" id='userList'></table>
-		</div>
-	
-		<div id="user_group" class="collapse" style="padding-top:10px;margin-bottom:10px;">
-			<span id='usrgroupCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')"></span>
-			<div id="usrGArrow" onclick="toggle_arrow('#usrGArrow');show_table('#usrgroupList')" style='display:inline;'>
-	    		<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-	    	</div>
-	    	<table cellspacing="5" class="dt-cell hover compact row-border stripe dataTable no-footer" id='usrgroupList'></table>
-		</div>
-	
-		<div id="notebook" class="collapse" style="padding-top:10px;margin-bottom:10px;">
-			<span id='noteCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#noteArrow');show_table('#noteList')"></span>
-			<div id="noteArrow" onclick="toggle_arrow('#noteArrow');show_table('#noteList')" style='display:inline;'>
-	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-	    	</div>
-	    	<table cellspacing="5" class="dt-cell hover compact row-border stripe dataTable no-footer" id='noteList'></table>
-		</div>
-	
-		<div id="experiment" class="collapse" style="padding-top:10px;margin-bottom:10px;">
-			<span id='expCount' class='coge-table-header' style='color:119911;cursor:pointer;' onclick="toggle_arrow('#expArrow');show_table('#expList')"></span>
-			<div id="expArrow" onclick="toggle_arrow('#expArrow');show_table('#expList')" style='display:inline;'>
+		<div id="Experiment" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
+			<div onclick="toggle_results(this,$('#exp_table'))">
+				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
 	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
 	        </div>
-	        <table cellspacing="5" class="dt-cell hover compact row-border stripe dataTable no-footer" id='expList'></table>
+			<div style="display:none">
+		        <table class="dataTable display compact dt-cell" id='exp_table'></table>
+			</div>
 		</div>
-		
+	
+		<div id="Feature" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
+			<div onclick="toggle_results(this,$('#feature_table'))">
+				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
+	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	        </div>
+			<div style="display:none">
+		        <table class="dataTable display compact dt-cell" id='feature_table'></table>
+			</div>
+		</div>	
+	
+		<div id="Genome" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
+			<div onclick="toggle_results(this,$('#gen_table'))">
+				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
+	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	    	</div>
+			<div style="display:none">
+		    	<table class="dataTable display compact dt-cell" id='gen_table'></table>
+			</div>
+		</div>
+	
+		<div id="Notebook" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
+			<div onclick="toggle_results(this,$('#note_table'))">
+				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
+	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	    	</div>
+			<div style="display:none">
+		    	<table class="dataTable display compact dt-cell" id='note_table'></table>
+			</div>
+		</div>
+	
+		<div id="Organism" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
+			<div onclick="toggle_results(this,$('#org_table'))">
+				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
+				<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+			</div>
+			<div style="display:none">
+				<table class="dataTable display compact dt-cell" id="org_table"></table>
+			</div>
+		</div>
+	
+		<div id="User_Group" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
+			<div onclick="toggle_results(this,$('#user_group_table'))">
+				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
+	    		<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
+	    	</div>
+			<div style="display:none">
+		    	<table class="dataTable display compact dt-cell" id='user_group_table'></table>
+			</div>
+		</div>
 	</div>
 </div>

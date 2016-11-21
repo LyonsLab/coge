@@ -363,7 +363,6 @@ sub track_config {
             featureScale => $featureScale,
             histScale    => $histScale,
             labelScale   => $labelScale,
-            showLabels   => JSON::true,
             className    => '{type}',
             histCss      => 'background-color:' . _getFeatureColor($eid),
             featureCss   => 'background-color:' . _getFeatureColor($eid)
@@ -393,6 +392,7 @@ sub track_config {
             type         => $type,
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
+            showLabels   => JSON::false,
             style => $style,
             coge => $coge
         };

@@ -138,7 +138,7 @@ sub ftp_get {
     my $cmd = catfile($self->conf->{SCRIPTDIR}, "ftp.pl");
 
     return {
-        cmd => catfile($self->conf->{SCRIPTDIR}, "ftp.pl"),
+        cmd => $cmd,
         args => [
             ['-url',       shell_quote($url),      0],
             ['-username',  shell_quote($username), 0],
@@ -167,7 +167,7 @@ sub fastq_dump {
     my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
 
     return {
-        cmd => "$cmd --outdir $dest_path " . shell_quote($accn) . " && touch $done_file",
+        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch $done_file",
         script => undef,
         args => [],
         inputs => [],

@@ -60,13 +60,14 @@ sub gen_body {
 
     # Get specified genome and verify permissions
 	my $gid = $FORM->param('gid');
-	my $genome = $DB->resultset('Genome')->find($gid);
-	return 'Genome not found' unless $genome;
-    return 'Access denied' unless ( $USER->has_access_to_genome($genome) );
-
-    # Configure page
-	$template->param( GENOME_INFO => $genome->info ) unless $EMBED;
+    if ($gid) {
+    	my $genome = $DB->resultset('Genome')->find($gid);
+	    return 'Genome not found' unless $genome;
+        return 'Access denied' unless ( $USER->has_access_to_genome($genome) );
+    	$template->param( GENOME_INFO => $genome->info ) unless $EMBED;
+    }
 	$template->param( GENOME_ID => $gid,
+                      EMBED => $EMBED ? 1 : 0,
 	                  HEIGHT => ($EMBED ? '99%' : '80%'),
 	                  WIDTH => ($EMBED ? '99%' : '100%'),
 	                  API_BASE_URL => $CONF->{SERVER} . 'api/v1/jbrowse', # mdb added base URL, 2/3/15 COGE-289

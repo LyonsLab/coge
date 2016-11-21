@@ -1,17 +1,14 @@
 /*global document,$,alert,window,JSON */
 
-var concat = Array.prototype.concat;
-
 // Global experiment data
 var current_experiment = {};
 
-// Supported file types
+// Supported input file types
 var POLY_FILES  = [ "vcf", "gcvf" ];
 var ALIGN_FILES = [ "bam" ];
 var SEQ_FILES   = [ "fastq", "fq", "sra" ];
 var QUANT_FILES = [ "csv", "tsv", "bed", "wig", "bw", "gff", "gtf" ];
-
-var SUPPORTED_FILE_TYPES = concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
+var SUPPORTED_FILE_TYPES = Array.prototype.concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
 
 function create_source() {
     var name = $('#edit_source_name').val();
@@ -96,6 +93,15 @@ function search_notebooks (search_term) {
 		});
 }
 
+function activate_on_input(elements, target) {
+	if (elements) {
+		elements.forEach(function(e) {
+			if ($('#'+e).val())
+				$('#'+target).removeClass('ui-state-disabled');
+		});
+	}
+}
+
 function render_template(template, container) {
     container.empty()
     .hide()
@@ -106,10 +112,10 @@ function render_template(template, container) {
 function ExperimentDescriptionView(opts) {
     this.experiment = opts.experiment;
     this.metadata = opts.metadata;
-    this.gid = opts.gid;
+    //this.gid = opts.gid;
     this.onError = opts.onError;
     this.sources = undefined;
-    this.title = "Describe your experiment";
+    this.title = "Describe experiment";
     this.initialize();
 }
 
@@ -119,18 +125,6 @@ $.extend(ExperimentDescriptionView.prototype, {
         this.edit_source = this.el.find("#edit_source");
         this.edit_genome = this.el.find("#edit_genome");
         this.get_sources();
-
-        if (this.metadata) {
-            this.el.find('#edit_name').val(this.metadata.name);
-            this.el.find('#edit_description').val(this.metadata.description);
-            this.el.find('#edit_version').val(this.metadata.version);
-            this.edit_source.val(this.metadata.source_name);
-
-            if (!this.metadata.restricted)
-                this.el.find('#restricted').removeAttr('checked');
-
-            this.el.find('#edit_genome').val(this.metadata.genome);
-        }
     },
 
     get_sources: function() {
@@ -152,6 +146,33 @@ $.extend(ExperimentDescriptionView.prototype, {
 
     render: function() {
         var self = this;
+
+        this.isSRA = (this.experiment.data && this.experiment.data[0].file_type == 'sra');
+        this.el.find('#edit_name,#edit_description,#edit_version,#edit_source').prop('disabled', (this.isSRA ? true : false));
+
+        // Set experiment metadata if from SRA
+		if (this.isSRA) {
+           this.metadata = {
+                name: 'blah',
+                description: '',
+                version: '1',
+                restricted: 0,
+                source_name: 'NCBI-SRA'
+            };
+        }
+
+        if (this.metadata) {
+            this.el.find('#edit_name').val(this.metadata.name);
+            this.el.find('#edit_description').val(this.metadata.description);
+            this.el.find('#edit_version').val(this.metadata.version);
+            this.edit_source.val(this.metadata.source_name);
+
+            if (!this.metadata.restricted)
+                this.el.find('#restricted').removeAttr('checked');
+
+            /*this.el.find('#edit_genome').val(this.metadata.genome);*/
+        }
+
         var edit_genome = this.edit_genome;
 
         edit_genome.unbind().change(function() {
@@ -196,19 +217,20 @@ $.extend(ExperimentDescriptionView.prototype, {
         }
         
         if (!version) {
-        	if (this.onError)
-            	this.onError('Please specify an experiment version.');
-            return false;
+//        	if (this.onError)
+//            	this.onError('Please specify an experiment version.');
+//            return false;
+            version = "1";
         }
 
         var source = $('#edit_source').val();
-        if (!source || source === 'Search') {
+        if (!source) {
         	if (this.onError)
             	this.onError('Please specify a data source.');
             return false;
         }
 
-        if (!genome || genome === 'Search' || !this.gid) {
+        if (!genome || !this.gid) {
         	if (this.onError)
             	this.onError('Please specify a genome.');
             return false;
@@ -223,7 +245,6 @@ $.extend(ExperimentDescriptionView.prototype, {
                 source_name: coge.utils.removeSpecialChars(source),
                 genome: genome,
             },
-
             gid: this.gid
         });
 
@@ -959,7 +980,7 @@ $.extend(GeneralOptionsView.prototype, {
         this.data.email = this.el.find("#email").is(":checked");
 
         if (this.data.notebook && this.data.notebook_type === "existing" && 
-        		(!notebook || notebook === 'Search' || !this.notebook_id)) 
+        		(!notebook || !this.notebook_id))
         {
         	if (this.onError)
             	this.onError('Please specify a notebook.');
@@ -976,7 +997,7 @@ $.extend(GeneralOptionsView.prototype, {
     render: function() {
         var self = this;
 
-        // jQuery Events
+        // Events
         this.el.find("#notebook").unbind().change(this.toggleNotebook.bind(this));
         this.el.find("[name=notebook]").unbind().click(function() {
         	var option = $(this).val();
@@ -987,7 +1008,7 @@ $.extend(GeneralOptionsView.prototype, {
             self.notebook_id = undefined;
         });
 
-        // jQuery UI
+        // Setup "source" autocomplete
         this.edit_notebook.autocomplete({
             source:[],
             select: function(event, ui) {
@@ -1050,14 +1071,17 @@ function OptionsView(opts) {
     this.experiment = opts.experiment;
     this.admin = opts.admin;
     this.onError = opts.onError;
-    this.title = "Options";
+    this.title = "Select Options";
     this.initialize();
 }
 
 $.extend(OptionsView.prototype, {
     initialize: function() {
         this.admin_view = new AdminOptionsView();
-        this.general_view = new GeneralOptionsView({onError: this.onError});
+        this.general_view = new GeneralOptionsView({
+            experiment: this.experiment,
+            onError: this.onError
+         });
         this.layout_view = new LayoutView({
             template: "#options-layout-template",
             layout: {
@@ -1067,7 +1091,7 @@ $.extend(OptionsView.prototype, {
         });
 
         if (this.admin)
-            this.layout_view.updateLayout({"#admin-options": this.admin_view});
+            this.layout_view.updateLayout({ "#admin-options": this.admin_view });
 
         this.el = this.layout_view.el;
         
@@ -1182,31 +1206,37 @@ function reset_load() {
 }
 
 function initialize_wizard(opts) {
-    current_experiment = {};
-    var root = $("#wizard-container");
+    current_experiment = {
+        gid: opts.gid
+    };
+
+    // Create wizard and add steps
     var wizard = new Wizard({ 
     	onCompleted: load, 
-    	data: current_experiment, 
-    	helpUrl: opts.helpUrl 
+    	data: current_experiment,
+    	helpUrl: opts.helpUrl
     });
+    wizard.addStep(new DataView( current_experiment, {
+        supportedFileTypes: SUPPORTED_FILE_TYPES,
+        onError: wizard.error_help.bind(wizard)
+    }));
+    wizard.addStep(new OptionsView({
+        experiment: current_experiment,
+        admin: opts.admin,
+        onError: wizard.error_help
+    }));
     wizard.addStep(new ExperimentDescriptionView({
         experiment: current_experiment,
         metadata: opts.metadata,
-        gid: opts.gid,
         onError: wizard.error_help.bind(wizard)
     }));
-    wizard.addStep(new DataView(current_experiment, { supportedFileTypes: SUPPORTED_FILE_TYPES, onError: wizard.error_help.bind(wizard) }));
-    wizard.addStep(new OptionsView({experiment: current_experiment, admin: opts.admin, onError: wizard.error_help }));
     wizard.addStep(new ConfirmationView(current_experiment));
 
-    // mdb debug 12/4/15
-//    current_experiment.data = [ { file_type: 'fastq' } ];
-//    wizard.move(2);
-    
     // Render all the wizard sub views
     wizard.render();
     
     // Add the wizard to the document
+    var root = $("#wizard-container");
     root.html(wizard.el);
     
     return wizard;

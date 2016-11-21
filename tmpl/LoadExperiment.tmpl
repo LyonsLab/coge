@@ -4,6 +4,10 @@
 
 <TMPL_IF NAME='MAIN'>
 
+<style>
+.ui-autocomplete { max-height: 15em; max-width: 50em; overflow-y: scroll; overflow-x: scroll; }
+</style>
+
 <div id="wizard-container"></div>
 
 <!-- DIALOGS -->
@@ -11,7 +15,7 @@
     <table class="small">
         <tr>
             <td>Name:</td>
-            <td><input id="edit_source_name" type="textbox" size="53" onkeyup="activate_on_input('edit_source_name', 'create_source_button');" /></td>
+            <td><input id="edit_source_name" type="textbox" size="53" onkeyup="activate_on_input(['edit_source_name'], 'create_source_button');" /></td>
         </tr>
         <tr>
             <td>Description:</td>
@@ -30,6 +34,10 @@
 <script id="description-template" type="text/template">
     <div class="step">
 
+        <div class="form-field indent note">
+            Metadata fields Name, Description, Version, and Source are automatically imported from SRA and cannot be modified.
+        </div><br>
+
         <div class="form-field" title="Enter a unique name for the new experiment">
             <label class="col-md-2">Name:</label>
             <input id="edit_name" type="textbox" class="col-md-8" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
@@ -38,42 +46,51 @@
 
         <div class="form-field" title="Enter a description for the new experiment">
             <label class="col-md-2">Description:</label>
-            <textarea id="edit_description" class="col-md-8 no-resize" rows="5" cols="50" ><TMPL_VAR NAME='DESC'></textarea>
+            <textarea id="edit_description" class="col-md-8 no-resize" rows="5" cols="50" placeholder="Optional"><TMPL_VAR NAME='DESC'></textarea>
         </div>
 
         <div class="form-field" title="Enter whatever version info you would like for the new experiment. Note: the system will automatically prepend a 'v' to whatever you enter.">
             <label class="col-md-2">Version:</label>
             <input id="edit_version" type="textbox" class="col-md-2" size="10" value="<TMPL_VAR NAME='NAME'>" spellcheck="false" />
-            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
+            &nbsp;&nbsp;<span class="small note">defaults to "1"</span>
         </div>
 
         <div class="form-field"  title="Enter the source for the data for the new experiment. Start typing to select an exisisting source or click 'New' to add a source.">
             <label class="col-md-2">Source:</label>
                 <input id="edit_source" type="search" class="col-md-6" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
                 <div class="col-md-2">
-                    <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open').dialog({'width': '32em'}); activate_on_input('edit_source_name', 'create_source_button');" class='coge-button coge-button-sm'>New</span>
+                    <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open').dialog({'width': '32em'}); activate_on_input(['edit_source_name'], 'create_source_button');" class='coge-button coge-button-sm'>New</span>
                     &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
                 </div>
         </div>
 
-        <div class="form-field" title="Leave unchecked to make the new experiment public, or check the box to make the new experiment private to the current user. Note: restricted experiments can be shared with other users on the Profile page.">
+        <!--<div class="form-field" title="Leave unchecked to make the new experiment public, or check the box to make the new experiment private to the current user. Note: restricted experiments can be shared with other users on the Profile page.">
             <label class="col-md-2">Restricted?</label>
             <input id="restricted" type="checkbox" checked>
-        </div>
+        </div>-->
 
-        <div class="form-field" title="Enter the genome associated with the new experiment. Start typing to narrow down the list of genomes to choose from.">
-            <label class="col-md-2">Genome:</label>
-            <input class="col-md-6" id="edit_genome" type="search" placeholder="Search" spellcheck="false"
-            	size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" 
-            	style="float:left;" />
-            <img id="edit_genome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
-            <span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
-        </div>
+		<div class="form-field" title="Enter the genome associated with the new experiment. Begin typing to narrow down the list of genomes to choose from.">
+			<label class="col-md-2">Genome:</label>
+			<input class="col-md-6" id="edit_genome" type="search" placeholder="Search" spellcheck="false" size="50" value="<TMPL_VAR NAME='GENOME_NAME'>" style="float:left;" />
+			<img id="edit_genome_busy" src="picts/ajax-loader.gif" style="float:left;" class="hidden" />
+			<span style="color: red; font-size: 0.75em" class="col-md-2 glyphicon glyphicon-asterisk"></span>
+		</div>
     </div>
 </script>
 
 <script id="data-template" type="text/template">
     <div class="step">
+		<div class="padded info">
+			Select data to import from a variety of sources:
+			<ul class="indent">
+				<li>&#8226 CyVerse Data Store: ideal (very fast) for importing large files (>2GB)</li>
+				<li>&#8226 FTP/HTTP: enables transfer from public repositories such as Ensembl</li>
+				<li>&#8226 Upload: select small files (less than a few GB) from your computer</li>
+				<li>&#8226 SRA (Short Read Archive): retrieve read data using an NCBI SRA accession number</li>
+			</ul>
+			<br>
+			For information on supported input file types as well as a full user guide, click the "Need Help" link in the upper right corner.
+		</div><br>
         <div id="selector_container"></div><br>
         <div id="files" class="hidden coge-padded">
             Selected file(s):<br>
@@ -137,7 +154,7 @@
 <script id="general-options-template" type="text/template">
 	<div class="form-section">
 	    <h4>General Options</h4>
-	
+
 	    <div class="form-field">
 	        <label class="col-md-2">Add results to notebook:</label>
 	        <input id="notebook" type="checkbox" style="float:left;margin-right:10px;">
@@ -540,14 +557,6 @@ $(function() {
     // Configure dialogs
     $(".dialog_box").dialog({autoOpen: false, minWidth: 400});
     
-    // Initialize wizard
-    wizard = initialize_wizard({ 
-    	admin: IS_ADMIN,
-    	helpUrl: HELP_URL,
-    	gid: GENOME_ID,
-    	debug: true
-    });
-    
     // Initialize CoGe web services
     coge.services.init({
     	baseUrl: API_BASE_URL,
@@ -562,6 +571,14 @@ $(function() {
     	userName: USER_NAME,
     	supportEmail: SUPPORT_EMAIL,
     	onReset: reset_load
+    });
+
+	// Initialize wizard
+    wizard = initialize_wizard({
+    	admin: IS_ADMIN,
+    	helpUrl: HELP_URL,
+    	gid: GENOME_ID,
+    	debug: true
     });
     
     // Open status dialog

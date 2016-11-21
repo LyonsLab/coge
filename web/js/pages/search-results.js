@@ -34,13 +34,12 @@ function search_stuff(search_term) {
 	
 	coge.services.search_global(search_term)
 		.done(function(response) {
-			//console.log(response);
 			var obj = response;
 			
 			if (!obj || !obj.results)
 				return;
 
-			function add_item(url, obj, num, genome) {
+			function add_item(url, obj, num) {
 				let html = '<tr class="';
 				html += num % 2 ? 'odd' : 'even';
 				html += '"><td>';
@@ -67,30 +66,34 @@ function search_stuff(search_term) {
 					html += '&#x1f512;&nbsp;&nbsp;';
 				html += obj.name;
 				html += url ? '</a>' : '</span>';
-				if (genome)
+				if (obj.type == 'genome')
 					html += '</td><td><span class="coge-button" onclick="window.open(&quot;GenomeView.pl?embed=0&amp;gid=' + obj.id + '&quot;)">Browse</span>';
+				else if (obj.type == 'feature')
+					html += '</td><td>' + obj.feature_type + '</td><td>' + obj.genome;
 				html += '</td><td>';
 				html += obj.id;
 				html += '</td></tr>';
 				return html;
 			}
 			
-			var userCounter = 0, orgCounter = 0, genCounter = 0, expCounter = 0, noteCounter = 0, usrgroupCounter = 0;
-			var userList = "", orgList = "", genList = "", expList = "", noteList = "", usrgroupList = "";
+			var org_count = 0, gen_count = 0, exp_count = 0, feature_count = 0, note_count = 0, user_group_count = 0;
+			var org_list = "", gen_list = "", exp_list = "", feature_list = "", note_list = "", user_group_list = "";
 
 			for (var i = 0; i < obj.results.length; i++) {
 				var o = obj.results[i];
 
 				if (o.type == "organism")
-					orgList += add_item('OrganismView.pl?oid=', o, orgCounter++);
+					org_list += add_item('OrganismView.pl?oid=', o, org_count++);
 				else if (o.type == "genome")
-					genList += add_item('GenomeInfo.pl?gid=', o, genCounter++, true);
+					gen_list += add_item('GenomeInfo.pl?gid=', o, gen_count++);
 				else if (o.type == "experiment")
-					expList += add_item('ExperimentView.pl?eid=', o, expCounter++);
+					exp_list += add_item('ExperimentView.pl?eid=', o, exp_count++);
+				else if (o.type == "feature")
+					feature_list += add_item('FeatView.pl?fid=', o, feature_count++);
 				else if (o.type == "notebook")
-					noteList += add_item('NotebookView.pl?lid=', o, noteCounter++);	
+					note_list += add_item('NotebookView.pl?lid=', o, note_count++);	
 				else if (o.type == "user_group")
-					usrgroupList += add_item(null, o, usrgroupCounter++);
+					user_group_list += add_item(null, o, user_group_count++);
 			}
 
 			//Populate the html with the results
@@ -98,116 +101,28 @@ function search_stuff(search_term) {
 			$('masterTable').css('display', 'block');
 			$(".result").fadeIn( 'fast');
 			
-			if (userCounter + orgCounter + genCounter + expCounter + noteCounter + usrgroupCounter == 0)
+			if (org_count + gen_count + exp_count + feature_count + note_count + user_group_count == 0)
 				$('#noresult').html('No matching results found').show();
-			
-			//user
-			if(userCounter > 0) {
-				$('#user').show();
-				$('#userCount').html("Users: " + userCounter);
-				$('#userList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + userList + '</tbody>');
-//				if(userCounter <= 10) {
-//					$( "#userList" ).show();
-//					//$( "#userArrow" ).find('img').toggle();
-//					$("#userArrow").find('img').attr("src", "picts/arrow-down-icon.png");
-//				} 
-//				else {
-					$( "#userList" ).hide();
-					$("#userArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-//				}
-			} else {
-				$('#user').hide();
+
+			function setup_results(type, icon, count, cols, rows) {
+				var div = $('#' + type.replace(' ', '_'));
+				if (count > 0) {
+					div.show();
+					div.children().first().children().first().html('<img src="picts/' + icon + '" style="width:15px" /> ' + type + 's: ' + count);
+					var table = div.find('table');
+					var tr = $('<tr></tr>').appendTo($('<thead></thead>').appendTo(table));
+					cols.forEach(function(col) {
+						tr.append($('<th>' + col + '</th>'))
+					});
+					table.append($('<tbody>' + rows + '</tbody>'));
+				}
 			}
-			
-			//organism
-			if(orgCounter > 0) {
-				$('#organism').show();
-				$('#orgCount').html("Organisms: " + orgCounter);
-				$('#orgList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + orgList + '</tbody>');
-//				if(orgCounter <= 10) {
-//					$( "#orgList" ).show();
-//					//$( "#orgArrow" ).find('img').toggle();
-//					$( "#orgArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
-//				} 
-//				else {
-					$( "#orgList" ).hide();
-					$("#orgArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-//				}
-			} else {
-				$('#organism').hide();
-			}
-			
-			//genome
-			if(genCounter > 0) {
-				$('#genome').show();
-				$('#genCount').html("Genomes: " + genCounter);
-				$('#genList').html('<thead><tr><th>name</th><th>EPIC-CoGe</th><th>id</th></tr></thead><tbody>' + genList + '</tbody>');
-//				if(genCounter <= 10) {
-//					$( "#genList" ).show();
-//					//$( "#genArrow" ).find('img').toggle();
-//					$( "#genArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
-//				} 
-//				else {
-					$( "#genList" ).hide();
-					$("#genArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-//				}
-			} else {
-				$('#genome').hide();
-			}
-			
-			//experiment
-			if(expCounter > 0) {
-				$('#experiment').show();
-				$('#expCount').html("Experiments: " + expCounter);
-				$('#expList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + expList + '</tbody>');
-//				if(expCounter <= 10) {
-//					$( "#expList" ).show();
-//					//$( "#expArrow" ).find('img').toggle();
-//					$( "#expArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
-//				} 
-//				else {
-					$( "#expList" ).hide();
-					$("#expArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-//				}
-			} else {
-				$('#experiment').hide();
-			}
-			
-			//notebook
-			if(noteCounter > 0) {
-				$('#notebook').show();
-				$('#noteCount').html("Notebooks: " + noteCounter);
-				$('#noteList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + noteList + '</tbody>');
-//				if(noteCounter <= 10) {
-//					$( "#noteList" ).show();
-//					//$( "#noteArrow" ).find('img').toggle();
-//					$( "#noteArrow" ).find('img').attr("src", "picts/arrow-down-icon.png");
-//				} 
-//				else {
-					$( "#noteList" ).hide();
-					$("#noteArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-//				}
-			} else {
-				$('#notebook').hide();
-			}
-			
-			//user group
-			if(usrgroupCounter > 0) {
-				$('#user_group').show();
-				$('#usrgroupCount').html("User Groups: " + usrgroupCounter);
-				$('#usrgroupList').html('<thead><tr><th>name</th><th>id</th></tr></thead><tbody>' + usrgroupList + '</tbody>');
-//				if (usrgroupCounter <= 10) {
-//					$( "#usrgroupList" ).show();
-//					//$( "#usrGArrow" ).find('img').toggle();
-//					$("#usrGArrow").find('img').attr("src", "picts/arrow-down-icon.png");
-//				} 
-//				else {
-					$( "#usrgroupList" ).hide();
-					$("#usrGArrow").find('img').attr("src", "picts/arrow-right-icon.png");
-//				}
-			} else {
-				$('#user_group').hide();
-			}
+			setup_results('Experiment', 'testtube-icon.png', exp_count, ['name', 'id'], exp_list);
+			setup_results('Feature', 'feature-icon.png', feature_count, ['name', 'type', 'genome', 'id'], feature_list);
+			setup_results('Genome', 'dna-icon.png', gen_count, ['name', 'EPIC-CoGe', 'id'], gen_list);
+			setup_results('Notebook', 'notebook-icon.png', note_count, ['name', 'id'], note_list);
+			setup_results('Organism', 'Organism.svg', org_count, ['name', 'id'], org_list);
+			setup_results('User Group', 'group-icon.png', user_group_count, ['name', 'id'], user_group_list);
 			
 			$("#loading").hide();
 			$("#masterTable").show();
@@ -220,19 +135,16 @@ function search_stuff(search_term) {
 			$("#loading").hide();
 			$("#masterTable").html("An error occured. Please reload the page and try again.");
 		});
-	
-	//previous_search = search_term;
 }
 
-function toggle_arrow(id) {
-	if ( $(id).find('img').attr('src') == "picts/arrow-right-icon.png" ) {
-        $(id).find('img').attr("src", "picts/arrow-down-icon.png");
-    }
-	else {
-		$(id).find('img').attr("src", "picts/arrow-right-icon.png");
-	}
-}
-
-function show_table(id) {
-	$(id).fadeToggle('fast');	
+function toggle_results(div, table) {
+	div = $(div);
+	var img = div.children().last();
+	if (img.attr('src') == 'picts/arrow-right-icon.png') {
+        img.attr('src', 'picts/arrow-down-icon.png');
+		if (!$.fn.dataTable.isDataTable(table))
+			table.DataTable({info: false, lengthChange: false, paging: false});
+    } else
+		img.attr('src', 'picts/arrow-right-icon.png');
+	div.next().fadeToggle('fast');
 }

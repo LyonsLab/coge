@@ -55,7 +55,7 @@ var coge = window.coge = (function(namespace) {
 		_reset_log: function() {
 			var c = this.container;
 			c.find('.log,.progress-link').html('');
-			c.find('.status').show('');
+			c.find('.status').html('').show();
 		    c.find('.ok,.cancel,.logfile,.buttons').hide();
 		},
 			
