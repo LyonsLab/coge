@@ -248,33 +248,27 @@ sub search {
 
     # features
 	if (($type eq 'none' || $type eq 'feature') && !defined($certified) && !defined($deleted) && !defined($favorite) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role)) {
-		my @features;
-		foreach (@search_terms) {
-			push @features, $db->resultset('FeatureName')->search(undef, { distinct => 1, join => {
-                'feature' => [ 'feature_type', {
-                    'dataset' =>
-                      { 'dataset_connectors' => { 'genome' => 'organism' } }
-                }]
-			}})->search_literal( 'MATCH(me.name) AGAINST (?)', $_ );
-		}
-		if (@features) {
-			@features = sort { lc($a->name) cmp lc($b->name) } @features;
-			foreach (@features) {
-				my $feature = $_->feature;
-				my $organism = $feature->organism;
-				my $info;
-				if ($organism) {
-					my $dataset = $feature->dataset;
-					my $first_genome = $dataset->first_genome;
-					$info = $organism->name . ' (' . $dataset->source->name . ', v' . $first_genome->version . ', ' .  $first_genome->genomic_sequence_type->name . ')';
-				}
-				push @results, {
-					type         => 'feature',
-					name         => $_->name,
-					id           => int $_->feature_id,
-					feature_type => $feature->feature_type->name,
-					genome       => $info || ''
-				}
+		my $sql = 'SELECT feature_name.name,feature.feature_id,feature_type.name,organism.name,data_source.name,genome.version,genomic_sequence_type.name ' .
+			'FROM feature_name ' .
+				'JOIN feature USING(feature_id) ' .
+				'JOIN feature_type USING(feature_type_id) ' .
+				'JOIN dataset USING(dataset_id) ' .
+				'JOIN data_source USING(data_source_id) ' .
+				'JOIN dataset_connector USING(dataset_id) ' .
+				'JOIN genome ON dataset_connector.genome_id=genome.genome_id AND !genome.deleted ' .
+				'JOIN organism USING(organism_id) ' .
+				'JOIN genomic_sequence_type USING(genomic_sequence_type_id) ' .
+			'WHERE MATCH(feature_name.name) AGAINST (\'' . (join ',', @search_terms) . '\') ' .
+			'GROUP BY feature_name.name,feature.feature_id';
+			warn $sql;
+		my $rows = $db->storage->dbh->selectall_arrayref($sql);
+		foreach (@$rows) {
+			push @results, {
+				type         => 'feature',
+				name         => $_->[0],
+				id           => int $_->[1],
+				feature_type => $_->[2],
+				genome       => $_->[3] ? $_->[3] . ' (' . $_->[4] . ', ' . $_->[5] . ', ' .  $_->[6] . ')' : ''
 			}
 		}
 	}
