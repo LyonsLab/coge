@@ -101,9 +101,9 @@ sub generate_body {
 #    }
     
     # Set genome IDs if specified.
-    my $x_gid = $FORM->param('x_gid');
-    my $y_gid = $FORM->param('y_gid');
-    my $z_gid = $FORM->param('z_gid');
+    my $x_gid = $FORM->param('x_gid') || $FORM->param('gid1');
+    my $y_gid = $FORM->param('y_gid') || $FORM->param('gid2');
+    my $z_gid = $FORM->param('z_gid') || $FORM->param('gid3');
     if ($x_gid) {
         my $genome = $DB->resultset('Genome')->find($x_gid);
         if ($genome && $USER->has_access_to_genome($genome)) { # check permission
