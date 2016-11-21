@@ -11,6 +11,10 @@
 .jstree-hovered { background: #e4f9d6 !important; }
 </style>
 
+<style>
+.ui-autocomplete { max-height: 15em; max-width: 50em; overflow-y: scroll; overflow-x: scroll; }
+</style>
+
 <div id="wizard-container"></div>
 
 <!-- Step Templates -->
@@ -86,7 +90,7 @@
             <span id="select_file_type" class="hidden" style="padding-left:15px;vertical-align:5px;">
                 File type:
                 <select id="file_type_selector">
-                    <option value="fasta">FASTA, FA, FAA</option>
+                    <option value="fasta,faa,fa">FASTA, FAA, FA</option>
                 </select>
             </span>
         </div>
@@ -202,8 +206,8 @@ $(document).ready(function() {
 });
 </script>
 <br><br><hr>
-<span class="bold text">Admin Functions</span><br>
-<table class="padded small ui-widget-content ui-corner-all">
+<div class="bold text">Admin Functions</div>
+<table class="padded small">
   <tr>
     <td>Assign to user</td>
     <td>

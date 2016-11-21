@@ -194,9 +194,18 @@ $.extend(DataView.prototype, {
         	    		self.el.find("#file_type_selector").val('sra');
         	    }
         	    else {
+        	        var ft_sel = self.el.find("#file_type_selector");
 	        	    var file_type = self.autodetect_file_type(files[0].name);
-	        	    if (file_type)
-	        	    	self.el.find("#file_type_selector").val(file_type);
+	        	    if (file_type) {
+	        	        // mdb changed 11/21/16 -- add support for file types with more than one possible ext (such as FASTA, FAA, FA and FASTQ, FQ)
+	        	        ft_sel.find("option").each(function() {
+                            var val = $(this).val();
+                            val.split(',').forEach(function(type) {
+                                if (file_type == type)
+                                    ft_sel.val(val);
+                            });
+	        	        });
+                    }
 	        	    self.el.find("#select_file_type").show();
         	    }
         	},
