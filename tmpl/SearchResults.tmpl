@@ -12,62 +12,62 @@ const SEARCH_TERM	= '<TMPL_VAR NAME="SEARCH_TERM">';
 	<div id="noresult" class="note hidden"></div>
 	<div id="masterTable" style="display:none;" class="collapse result">
 		<div id="Experiment" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
-			<div onclick="toggle_results(this,$('#exp_table'))">
+			<span onclick="toggle_results(this,$('#exp_table'))">
 				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
 	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-	        </div>
+	        </span>
 			<div style="display:none">
-		        <table class="dataTable display compact dt-cell" id='exp_table'></table>
+		        <table class="dataTable display compact dt-cell" id='exp_table' style="width:100%"></table>
 			</div>
 		</div>
 	
 		<div id="Feature" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
-			<div onclick="toggle_results(this,$('#feature_table'))">
+			<span onclick="toggle_results(this,$('#feature_table'))">
 				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
 	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-	        </div>
+	        </span>
 			<div style="display:none">
-		        <table class="dataTable display compact dt-cell" id='feature_table'></table>
+		        <table class="dataTable display compact dt-cell" id='feature_table' style="width:100%"></table>
 			</div>
 		</div>	
 	
 		<div id="Genome" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
-			<div onclick="toggle_results(this,$('#gen_table'))">
+			<span onclick="toggle_results(this,$('#gen_table'))">
 				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
 	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-	    	</div>
+	    	</span>
 			<div style="display:none">
-		    	<table class="dataTable display compact dt-cell" id='gen_table'></table>
+		    	<table class="dataTable display compact dt-cell" id='gen_table' style="width:100%"></table>
 			</div>
 		</div>
 	
 		<div id="Notebook" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
-			<div onclick="toggle_results(this,$('#note_table'))">
+			<span onclick="toggle_results(this,$('#note_table'))">
 				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
 	        	<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-	    	</div>
+	    	</span>
 			<div style="display:none">
-		    	<table class="dataTable display compact dt-cell" id='note_table'></table>
+		    	<table class="dataTable display compact dt-cell" id='note_table' style="width:100%"></table>
 			</div>
 		</div>
 	
 		<div id="Organism" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
-			<div onclick="toggle_results(this,$('#org_table'))">
+			<span onclick="toggle_results(this,$('#org_table'))">
 				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
 				<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-			</div>
+			</span>
 			<div style="display:none">
-				<table class="dataTable display compact dt-cell" id="org_table"></table>
+				<table class="dataTable display compact dt-cell" id="org_table" style="width:100%"></table>
 			</div>
 		</div>
 	
 		<div id="User_Group" class="collapse" style="display:none;padding-top:10px;margin-bottom:10px;">
-			<div onclick="toggle_results(this,$('#user_group_table'))">
+			<span onclick="toggle_results(this,$('#user_group_table'))">
 				<span class='coge-table-header' style='color:119911;cursor:pointer;'></span>
 	    		<img src="picts/arrow-right-icon.png" class="link" style="width:10px;height:10px;"/>
-	    	</div>
+	    	</span>
 			<div style="display:none">
-		    	<table class="dataTable display compact dt-cell" id='user_group_table'></table>
+		    	<table class="dataTable display compact dt-cell" id='user_group_table' style="width:100%"></table>
 			</div>
 		</div>
 	</div>

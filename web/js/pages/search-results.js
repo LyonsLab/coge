@@ -143,7 +143,7 @@ function toggle_results(div, table) {
 	if (img.attr('src') == 'picts/arrow-right-icon.png') {
         img.attr('src', 'picts/arrow-down-icon.png');
 		if (!$.fn.dataTable.isDataTable(table))
-			table.DataTable({info: false, lengthChange: false, paging: false});
+			table.DataTable({info: false, lengthChange: false, oLanguage: { sSearch: 'Filter:' }, paging: false});
     } else
 		img.attr('src', 'picts/arrow-right-icon.png');
 	div.next().fadeToggle('fast');
