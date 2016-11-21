@@ -1902,6 +1902,7 @@ div.dataTables_scrollBody {
 
 @media (min-width: 981px) {
 	.coge-header {
+        font-size: 16px;
 		height: 3.1em;
 		padding: 2px;
 		margin-bottom: 1em;
@@ -1945,6 +1946,7 @@ div.dataTables_scrollBody {
 }
 
 .coge-header-searchbar {
+    line-height: 1.125;
 	margin-right: 0.25em;
 	margin-top: 0.75em;
 }
@@ -1954,6 +1956,7 @@ div.dataTables_scrollBody {
 	/*height: 3em;*/
 	font-size:	1.2em;
 	font-family: helvetica;
+    padding: 1px;
 }
 
 .coge-header-menu {
