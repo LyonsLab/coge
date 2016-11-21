@@ -201,9 +201,10 @@ sub gen_body {
     );
     $prefs = {} unless $prefs;
 
-    if ( $FORM->param('dsgid') ) {
-        $template->param(TARGETS => $FORM->param('dsgid'));
-        foreach my $item ( $FORM->param('dsgid') ) {
+    my $gid = $FORM->param('dsgid') || $FORM->param('gid');
+    if ($gid) {
+        $template->param(TARGETS => $gid);
+        foreach my $item ($gid) {
             foreach my $dsgid ( split( /,/, $item ) ) {
                 my $id = get_dsg_for_menu( dsgid => $dsgid );
                 $doc_ready .= qq{add_to_list('$id');};
