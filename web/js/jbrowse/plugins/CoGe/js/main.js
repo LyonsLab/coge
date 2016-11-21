@@ -200,7 +200,7 @@ define(['dojo/_base/declare',
 				return null;
 			return [this.hits, i, j];
 		},
-		merge: function(max_gap, search_nav) {
+		merge: function(max_gap, search_nav, keep_strands) {
 			if (!this.save_hits) {
 				this.save_hits = this.hits;
 				this.save_chr = this.chr;
@@ -227,7 +227,7 @@ define(['dojo/_base/declare',
 					chr_end = (chr < this.save_chr.length - 1) ? this.save_chr[chr + 1][1] : this.save_hits.length;
 				}
 				var hit = this.save_hits[i];
-				if (hit[2] == 1)
+				if (hit[2] == 1 || !keep_strands)
 					if (start_f == null) {
 						start_f = hit[0];
 						end_f = hit[1];
@@ -840,7 +840,7 @@ return declare( JBrowsePlugin,
 	_markers_merge: function() {
 		var gap_max = dojo.byId('gap_max').value;
 		this._track.config.coge.gap_max = gap_max;
-		this._track.config.coge.results.merge(gap_max, this._track.config.coge.search_nav);
+		this._track.config.coge.results.merge(gap_max, this._track.config.coge.search_nav, dojo.byId('keep_strands').checked);
 		this._track.changed();
 	},
 
@@ -856,7 +856,7 @@ return declare( JBrowsePlugin,
 
 	markers_merge_dialog: function(track) {
 		this._track = track;
-		var content = '<table><tr><td></td><td style="white-space: nowrap;">Merge adjacent markers within <input id="gap_max" value="100" size="4" /> bp</td></tr></table>' +
+		var content = '<table><tr><td style="white-space: nowrap;">Merge adjacent markers within <input id="gap_max" value="100" size="4" /> bp</td></tr><tr><td><input id="keep_strands" type="checkbox" checked> Keep strands seperate</td></tr></table>' +
 			'<div class="dijitDialogPaneActionBar">' + this._button('Apply', 'coge_plugin._markers_merge()') + this._button('Revert', 'coge_plugin._markers_unmerge()') + this._button('Done', 'coge_plugin._merge_markers_dialog.hide()') + '</div>';
 		this._merge_markers_dialog = new Dialog({
 			title: 'Merge Markers',
