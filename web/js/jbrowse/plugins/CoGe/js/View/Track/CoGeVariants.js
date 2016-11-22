@@ -89,6 +89,10 @@ return declare( [ HTMLFeatures ], {
             });
 
         if (track.config.coge.type != 'search')  {
+            options.push({
+                label: 'Find Data that Overlaps Features',
+                onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'Alignments');}
+            });
 	        options.push({
                 label: 'Find SNPs in Features',
                 onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'SNPs', 'snps');}

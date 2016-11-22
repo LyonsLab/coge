@@ -97,8 +97,8 @@ define( [
 
                 if (track.config.coge.type != 'search')  {
                     options.push({
-                        label: 'Find Alignments in Features',
-                        onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'Alignments', 'alignments');}
+                        label: 'Find Data that Overlaps Features',
+                        onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'Alignments');}
                     });
                 }
                 options.push({

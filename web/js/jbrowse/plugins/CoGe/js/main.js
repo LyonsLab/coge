@@ -788,16 +788,17 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	features_overlap_search_dialog: function(track, type, api_path) {
+	features_overlap_search_dialog: function(track, type) {
 		this._track = track;
-		var content = '<table><tr><td>Chromosome:</td><td>';
+		var content = '<div id="coge-search-dialog"><table><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features_overlap">';
 		content += this.build_features_checkboxes('coge_search_features_overlap');
 		content += '</td></tr></table>';
-		content += this.build_buttons("coge_plugin.search_features_overlap('" + type + "','" + api_path + "')", 'coge_plugin._search_dialog.hide()');
+		content += this.build_buttons("coge_plugin.search_features_overlap()", 'coge_plugin._search_dialog.hide()');
+		content += '</div>';
 		this._search_dialog = new Dialog({
-			title: 'Find ' + type + ' in Features',
+			title: 'Find Data that Overlaps Features',
 			content: content,
 			onHide: function() {
 				this.destroyRecursive();
@@ -1037,9 +1038,9 @@ return declare( JBrowsePlugin,
 		this._start_search('Finding...');
 		var search = {type: not ? 'does not overlap' : 'overlaps', chr: chr, other: this._track2.config.key};
 		this._track.config.coge.search = search;
-		var eid = this._track.config.coge.id;
+		var eid1 = this._track.config.coge.id;
 		var eid2 = this._track2.config.coge.id;
-		var url = api_base_url + '/experiment/' + eid + '/overlaps/' + eid2 + '/' + chr;
+		var url = api_base_url + '/search/overlaps?type1=experiment&type2=experiment&eid1=' + eid1 + '&eid2=' + eid2 + '&chr=' + chr;
 		if (not)
 			url += '?not=true';
 		dojo.xhrGet({
@@ -1292,17 +1293,17 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	search_features_overlap: function(type, api_path) {
+	search_features_overlap: function() {
 		var types = this.get_checked_values('coge_search_features_overlap', 'feature types', true);
 		if (!types)
 			return;
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
 		this._start_search();
-		var search = {type: type, chr: chr, features: types};
+		var search = {type: 'overlaps', chr: chr, other: types};
 		this._track.config.coge.search = search;
 		var eid = this._track.config.coge.id;
-		var url = api_base_url + '/experiment/' + eid + '/' + api_path + '/' + chr + '?features=' + search.features;
+		var url = api_base_url + '/search/overlaps?type1=experiment&eid1=' + eid + '&type2=features&gid2=' + gid + '&features2=' + search.other + '&chr=' + chr;
 		dojo.xhrGet({
 			url: url,
 			handleAs: 'json',
@@ -1332,16 +1333,11 @@ return declare( JBrowsePlugin,
 	search_to_params: function(search, without_chr) {
 		var params;
 		if (search.type == 'SNPs')
-			if (search.snp_type)
-				params = 'snp_type=' + search.snp_type;
-			else
-				params = 'features=' + search.features;
-		else if (search.type == 'Alignments')
-			params = 'features=' + search.features;
-		else if (search.type == 'Markers')
-			params = 'features=' + search.features;
+			params = 'snp_type=' + search.snp_type;
 		else if (search.type == 'merge')
 			params = 'type=merge&eids=' + search.eids.join(',');
+		else if (search.type == 'overlaps')
+			params = 'type=overlaps&other=' + search.other;
 		else if (search.type == 'range')
 			params = 'type=range&gte=' + search.gte + '&lte=' + search.lte;
 		else
@@ -1355,17 +1351,9 @@ return declare( JBrowsePlugin,
 
 	search_to_string: function(search, without_chr) {
 		var string;
-		if (search.type == 'Alignments') {
-			string = 'Alignments'
-			if (search.features != 'all')
-				string += ' in ' + search.features;
-		} else if (search.type == 'does not overlap')
+		if (search.type == 'does not overlap')
 			string = 'does not overlap ' + search.other;
-		else if (search.type == 'Markers') {
-			string = 'Markers'
-			if (search.features != 'all')
-				string += ' in ' + search.features;
-		} else if (search.type == 'merge')
+		else if (search.type == 'merge')
 			string = 'merge ' + search.keys.join(',');
 		else if (search.type == 'overlaps')
 			string = 'overlaps ' + search.other;
