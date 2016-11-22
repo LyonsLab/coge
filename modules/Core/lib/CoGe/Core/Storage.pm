@@ -45,7 +45,7 @@ use POSIX qw(ceil);
 
 BEGIN {
     use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $DATA_TYPE_QUANT 
-                 $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER);
+                 $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER $DATA_TYPE_SEQUENCE);
     require Exporter;
 
     $VERSION = 0.1;
@@ -58,14 +58,15 @@ BEGIN {
       get_experiment_path get_experiment_files get_experiment_metadata
       reverse_complement get_irods_file get_irods_path get_popgen_result_path
       is_popgen_finished data_type get_sra_cache_path irods_mkdir irods_rm
-      $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER
+      $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER $DATA_TYPE_SEQUENCE
     );
 
     # Experiment Data Types -- move to CoGe::Core::Experiment?
-    $DATA_TYPE_QUANT  = 1; # Quantitative data
-    $DATA_TYPE_POLY   = 2; # Polymorphism data
-    $DATA_TYPE_ALIGN  = 3; # Alignments
-    $DATA_TYPE_MARKER = 4; # Markers
+    $DATA_TYPE_QUANT  = 1;   # Quantitative data
+    $DATA_TYPE_POLY   = 2;   # Polymorphism data
+    $DATA_TYPE_ALIGN  = 3;   # Alignments
+    $DATA_TYPE_MARKER = 4;   # Markers
+    $DATA_TYPE_SEQUENCE = 5; # Sequence data (FASTQ)
 }
 
 ################################################ subroutine header begin ##

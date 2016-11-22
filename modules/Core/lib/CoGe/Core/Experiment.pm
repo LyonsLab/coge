@@ -4,27 +4,29 @@ use strict;
 use Data::Dumper;
 use Sort::Versions;
 use FastBit;
-use CoGe::Core::Storage qw( $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER get_experiment_path );
+use CoGe::Core::Storage qw( $DATA_TYPE_QUANT $DATA_TYPE_ALIGN $DATA_TYPE_POLY $DATA_TYPE_MARKER $DATA_TYPE_SEQUENCE get_experiment_path );
 use CoGe::Accessory::Web qw(get_command_path);
 use CoGe::Accessory::IRODS qw($IRODS_METADATA_PREFIX);
 
-our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION, @QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES, @SUPPORTED_TYPES );
+our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION, @QUANT_TYPES, @MARKER_TYPES, @POLYMORPHISM_TYPES, @ALIGNMENT_TYPES, @SEQUENCE_TYPES, @SUPPORTED_TYPES );
 
 BEGIN {
     require Exporter;
     $VERSION = 0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @OTHER_TYPES @SUPPORTED_TYPES);
+    @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @POLYMORPHISM_TYPES @ALIGNMENT_TYPES @SEQUENCE_TYPES @SUPPORTED_TYPES);
     @EXPORT_OK = qw( 
         delete_experiment detect_data_type download_data experimentcmp get_data 
         get_fastbit_format get_fastbit_score_column query_data get_irods_metadata
     );
     
     # Setup supported experiment file types
-    @QUANT_TYPES  = qw(csv tsv bed wig bw);
-    @MARKER_TYPES = qw(gff gtf gff3);
-    @OTHER_TYPES  = qw(bam vcf);
-    @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @OTHER_TYPES);
+    @QUANT_TYPES        = qw(csv tsv bed wig bw);
+    @MARKER_TYPES       = qw(gff gtf gff3);
+    @POLYMORPHISM_TYPES = qw(vcf gvcf); # mdb added 11/22/16
+    @ALIGNMENT_TYPES    = qw(bam);      # mdb added 11/22/16
+    @SEQUENCE_TYPES     = qw(fastq fq); # mdb added 11/22/16
+    @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @POLYMORPHISM_TYPES, @ALIGNMENT_TYPES, @SEQUENCE_TYPES);
 }
 
 sub experimentcmp($$) { # for sorting DBI-X objects or DBI hashes
@@ -62,29 +64,34 @@ sub detect_data_type {
     my $filepath = shift;
     #print STDOUT "detect_data_type: $filepath\n";
 
+    # Try to determine type based on file extension
     if (!$filetype or $filetype eq 'autodetect') {
-        # Try to determine type based on file extension
-        #print STDOUT "log: Detecting file type\n";
+        $filepath =~ s/\.gz$//; # remove extension for compressed files -- mdb added 11/22/16
+
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
-    
+
     $filetype = lc($filetype);
 
     if ( grep { $_ eq $filetype } @QUANT_TYPES ) {
         print STDOUT "log: Detected a quantitative file ($filetype)\n";
         return ($filetype, $DATA_TYPE_QUANT);
     }
-    elsif ( $filetype eq 'bam' ) {
+    elsif ( grep { $_ eq $filetype } @ALIGNMENT_TYPES) {
         print STDOUT "log: Detected an alignment file ($filetype)\n";
         return ($filetype, $DATA_TYPE_ALIGN);
     }
-    elsif ( $filetype eq 'vcf' ) {
+    elsif ( grep { $_ eq $filetype } @POLYMORPHISM_TYPES ) {
         print STDOUT "log: Detected a polymorphism file ($filetype)\n";
         return ($filetype, $DATA_TYPE_POLY);
     }
     elsif ( grep { $_ eq $filetype } @MARKER_TYPES ) {
         print STDOUT "log: Detected a marker file ($filetype)\n";
         return ($filetype, $DATA_TYPE_MARKER);
+    }
+    elsif ( grep { $_ eq $filetype } @SEQUENCE_TYPES ) {
+        print STDOUT "log: Detected a sequence file ($filetype)\n";
+        return ($filetype, $DATA_TYPE_SEQUENCE);
     }
     else {
         print STDOUT "detect_data_type: unknown file ext '$filetype'\n";
