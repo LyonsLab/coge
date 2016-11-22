@@ -38,6 +38,7 @@ has 'user' => (
 );
 
 has 'jex' => (
+    isa => 'CoGe::JEX::Jex',
     is => 'ro',
     required => 1
 );
