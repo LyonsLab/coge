@@ -812,7 +812,7 @@ qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open 
     return $info;
 }
 
-sub get_chr_length_hist {
+sub get_chr_length_hist { #TODO use API Genome Fetch
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
     return "error", " " unless $dsgid;
@@ -868,7 +868,7 @@ sub get_chr_length_hist {
     return $info . "<br>" . $hist_img;
 }
 
-sub get_chromosomes {
+sub get_chromosomes { #TODO use API Genome Fetch
     my %opts  = @_;
     my $gid = $opts{gid};
 #    my $rs = $DB->resultset('GenomicSequence')->search({genome_id=>$gid},{
@@ -891,12 +891,12 @@ sub get_chromosomes {
 	return $html;	
 }
 
-sub cache_chr_fasta {
+sub cache_chr_fasta { #FIXME remove this, use API genome/sequence
     my %opts  = @_;
     my $gid = $opts{gid};
     my $chr = $opts{chr};
 
-    my $path = get_genome_cache_path($gid);
+    my $path = catfile($config->{SECTEMPDIR}, "downloads/genome", $gid);
 	mkpath( $path, 0, 0777 ) unless -d $path;
     my $file = catfile($path, $gid . "_" . $chr . ".faa");
 	my %json;
