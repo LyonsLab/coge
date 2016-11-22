@@ -198,7 +198,7 @@ function chr_list() {
 	} );
 }());
 
-function download_chromosome_sequence(chr) {
+function download_chromosome_sequence(chr) { // FIXME use API genome/sequence (mdb 11/22/16)
     $.ajax({
         data: {
             fname: 'cache_chr_fasta',
