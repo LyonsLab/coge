@@ -1,13 +1,14 @@
 package CoGe::Services::API::Experiment;
 
 use Mojo::Base 'Mojolicious::Controller';
+use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Experiment qw( delete_experiment );
 use CoGe::Services::Auth;
-use CoGe::Services::Data::Job;
+use CoGe::Services::API::Job;
 
 sub search {
     my $self = shift;
@@ -119,7 +120,14 @@ sub fetch {
 
 sub add {
     my $self = shift;
-    my $data = $self->req->json;
+    my $data = $self->req->body; #$self->req->json; # mdb replaced 11/22/16 -- req->json hides JSON errors, doing conversion manually prints them to STDERR
+    unless ($data) {
+        $self->render(status => 400, json => {
+            error => { Error => "No request body specified" }
+        });
+        return;
+    }
+    $data = decode_json($data);
 
 # mdb removed 9/17/15 -- auth is handled by Job::add below, redundant token validation breaks CAS proxyValidate
 #    # Authenticate user and connect to the database
@@ -138,6 +146,7 @@ sub add {
         $self->render(status => 400, json => {
             error => { Error => "No data items specified" }
         });
+        warn Dumper $data->{source_data};
         return;
     }
     
@@ -149,7 +158,7 @@ sub add {
         parameters => $data
     };
     
-    return CoGe::Services::Data::Job::add($self, $request);
+    return CoGe::Services::API::Job::add($self, $request);
 }
 
 sub remove {
