@@ -185,9 +185,16 @@ sub sequence {
     }
 
     # Force browser to download whole genome as attachment
+    my $format;
+    my $genome_name = sanitize_name($genome->organism->name);
+    $genome_name = 'genome_'.$gid unless $genome_name;
     if ( (!defined($chr) || $chr eq '') ) {
-        my $genome_name = sanitize_name($genome->organism->name);
-        $genome_name = 'genome_'.$gid unless $genome_name;
+        $self->res->headers->content_disposition("attachment; filename=$genome_name.faa;");
+    }
+    elsif (defined($chr) && !defined($start) && !defined($stop)) {
+        $genome_name .= '_' . $chr;
+        $stop = $genome->get_chromosome_length($chr);
+        $format = 'fasta';
         $self->res->headers->content_disposition("attachment; filename=$genome_name.faa;");
     }
 
@@ -197,7 +204,8 @@ sub sequence {
         chr   => $chr,
         start => $start,
         stop  => $stop,
-        strand => $strand
+        strand => $strand,
+        format => $format
     ));
 }
 
