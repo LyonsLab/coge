@@ -284,6 +284,16 @@ select {
   background-color:mistyrose;
 }
 
+.info-box {
+  border:1px solid lightgray;
+  text-align:center;
+  padding:5px;
+  margin-left:auto;
+  margin-right:auto;
+  color:dimgray;
+  background-color:#CCFFCC;
+}
+
 /* mdb removed 4/30/13 - conflict with jbrowse, doesn't appear to be used anyway */
 /* .container{
   border: 1px solid red;
