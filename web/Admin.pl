@@ -923,47 +923,41 @@ sub change_group_role {
 
 sub get_jobs_for_user {
     my %opts = @_;
-    my $running_only = $opts{running_only};
+    my $running_only = $opts{running_only}; #FIXME use "status=running" instead
+	my $status 		 = $opts{status}; # running, completed, failed, etc...
+	my $name         = $opts{name};   # SynMap, CoGeBlast, LoadGenome, etc...
+
 	return encode_json({ error => 'Not logged in' }) if ($user->is_public);
-    
-    my @entries;
-    if ( $user->is_admin ) {
-        @entries = $db->resultset('Log')->search(
-            #{ description => { 'not like' => 'page access' } },
-            {
-                type     => { '!='  => 0 },
-                parent_id  => { "!=" => undef}
-            },
-            { order_by => { -desc => 'time' } },
-        );
-    }
-    else {
-        @entries = $db->resultset('Log')->search(
-            {
-                user_id => $user->id,
-                parent_id  => { "!=" => undef},
 
-                #{ description => { 'not like' => 'page access' } }
-                type => { '!=' => 0 }
-            },
-            { order_by => { -desc => 'time' } },
-        );
-    }
+	# Get workflows from DB
+	my %name_clause = ();
+	%name_clause = (page => $name) if $name;
+	my %user_clause = ();
+	%user_clause = (user => $user->id) if (!$user->is_admin);
+	my @entries = $db->resultset('Log')->search(
+		{
+			parent_id => { "!=" => undef},
+			type      => { '!=' => 0 },
+			%name_clause,
+			%user_clause
+		},
+		{ order_by => { -desc => 'time' } }
+	);
 
-    my %users = map { $_->user_id => $_->name } $db->resultset('User')->all;
-    my @workflows = map { $_->parent_id } @entries;
-    
-    #my $workflows = $JEX->find_workflows(\@workflows, 'running');
+	# Get workflows from JEX
     my $workflows;
-    if ($running_only) {
+    if ($running_only) { # Get all running workflows
     	$workflows = $JEX->find_workflows(undef, 'running');
-    } else {
+    }
+	elsif ($status) { # Get workflows with given status
+		$workflows = $JEX->find_workflows(undef, $status);
+	}
+	else { # Get only workflows from DB query
+		my @workflows = map { $_->parent_id } @entries;
     	$workflows = $JEX->find_workflows(\@workflows);
     }
 
-    my @job_items;
     my %workflow_results;
-
     foreach (@{$workflows}) {
         my($id, $name, $submitted, $completed, $status) = @{$_};
 
@@ -974,7 +968,8 @@ sub get_jobs_for_user {
         if ($completed) {
             $end_time = localtime($completed)->strftime('%F %H:%M');
             $diff = $completed - $submitted;
-        } else {
+        }
+		else {
             $diff = time - $submitted;
         }
 
@@ -986,42 +981,37 @@ sub get_jobs_for_user {
         };
     }
 
-    my $index = 1;
+	# Intersect DB log with JEX workflows
+	my %user_names = map { $_->user_id => $_->name } $db->resultset('User')->all;
+	my @job_items;
     foreach (@entries) {
         my $entry = $workflow_results{$_->parent_id};
+        next unless $entry; # a log entry must correspond to a workflow
 
-        # A log entry must correspond to a workflow
-        next unless $entry;
-        
-        # [ID, Started, Completed, Elapsed, User, Tool, Link. Status]
+        # [ID, Started, Completed, Elapsed, User, Tool, Link, Status]
         push @job_items, [
             $_->parent_id,
-            #int($index++),
             $entry->{started},
             $entry->{completed},
             $entry->{elapsed},
-            $users{$_->user_id} || "public",
+            $user_names{$_->user_id} || "public",
             $_->page,
             $_->link,
             $entry->{status},
         ];
     }
-    my @filtered;
 
-    # Filter repeated entries
+    # Remove repeated entries
+	my @filtered;
     foreach (reverse @job_items) {
     	my @job = @$_;
-        #my $wid = $_->{parent_id};
         my $wid = $job[0];
-        #say STDERR $wid;
         next if (defined $wid and defined $workflow_results{$wid}{seen});
         $workflow_results{$wid}{seen}++ if (defined $wid);
-
-		#shift @job;
         unshift @filtered, \@job;
     }
 
-    return encode_json({ 
+    return encode_json({ # formatted for DataTables
     	data => \@filtered,
     	#bPaginate => 0,
 		columnDefs => [{ 
