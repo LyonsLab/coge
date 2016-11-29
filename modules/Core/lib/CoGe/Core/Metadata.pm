@@ -58,7 +58,7 @@ sub create_annotations {
         if ($group_name) {
             $group = $db->resultset('AnnotationTypeGroup')->find({ name => $group });
             if (!$group) {
-                $group = $db->resultset('AnnotationTypeGroup')->create({ name => $group }); # null description
+                $group = $db->resultset('AnnotationTypeGroup')->create({ name => $group_name }); # null description
             }
             unless ($group) {
                 print STDERR "CoGe::Core::Metadata: error creating annotation type group\n";
