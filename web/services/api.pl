@@ -299,10 +299,6 @@ $r->get("/jbrowse/experiment/:eid/stats/regionFeatureDensities/#chr" => { eid =>
     ->name("jbrowse-experiment-regionFeatureDensitites")
     ->to("experiment#stats_regionFeatureDensities", eid => undef, chr => undef);
 
-$r->get("/jbrowse/experiment/:eid/data/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
-    ->name("jbrowse-experiment-data")
-    ->to("experiment#data", eid => undef, chr => undef);
-
 $r->get("/jbrowse/experiment/:eid/features/#chr"  => { eid => qr/[\d,]+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", eid => undef, chr => undef);
@@ -310,14 +306,6 @@ $r->get("/jbrowse/experiment/:eid/features/#chr"  => { eid => qr/[\d,]+/, chr =>
 $r->get("/jbrowse/experiment/:eid/histogram/#chr" => { eid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-histogram")
     ->to("experiment#histogram", eid => undef, chr => undef);
-    
-$r->get("/jbrowse/experiment/:eid/query/" => [eid => qr/\d+/])
-    ->name("jbrowse-experiment-query")
-    ->to("experiment#query_data", eid => undef);
-
-$r->get("/jbrowse/experiment/:eid/snps/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
-    ->name("jbrowse-experiment-snps")
-    ->to("experiment#snps", eid => undef, chr => undef);
 
 # JBrowse genome track (all experiments)
 $r->get("/jbrowse/experiment/genome/:gid/stats/global/" => [gid => qr/\d+/])
@@ -355,9 +343,21 @@ $r->get("/jbrowse/genome/:gid/features/"  => [gid => qr/\d+/])
     ->to("genome#features", gid => undef);
 
 # JBrowse search routes
+$r->get("/jbrowse/search/data/:eid/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-search-data")
+    ->to("search#data", eid => undef, chr => undef);
+
 $r->get("/jbrowse/search/overlaps")
     ->name("jbrowse-search-overlaps")
     ->to("search#overlaps");
+    
+$r->get("/jbrowse/search/query/:eid" => [eid => qr/\d+/])
+    ->name("jbrowse-search-query")
+    ->to("experiment#query_data", eid => undef);
+
+$r->get("/jbrowse/search/snps/:eid/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-search-snps")
+    ->to("search#snps", eid => undef, chr => undef);
 
 # Not found
 $r->any("*" => sub {

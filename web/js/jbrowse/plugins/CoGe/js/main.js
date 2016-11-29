@@ -668,7 +668,7 @@ return declare( JBrowsePlugin,
 			return;
 		}
 		var ref_seq = dojo.byId('coge_ref_seq');
-		var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&filename=' + filename;
+		var url = api_base_url + '/search/data/' + this._track.config.coge.id + '/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&filename=' + filename;
 		if (dojo.byId('search') && dojo.byId('search').checked)
 			url += '&' + this.search_to_params(this._track.config.coge.search, true);
 		if (dojo.byId('transform') && dojo.byId('transform').checked)
@@ -1152,7 +1152,7 @@ return declare( JBrowsePlugin,
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var search = this.search_to_string(config.coge.search);
 		var description = 'Results from search: ' + search;
-		var url = api_base_url + '/experiment/' + config.coge.eid + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id;
+		var url = api_base_url + '/search/data/' + config.coge.eid + '/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id;
 		url += '&' + this.search_to_params(config.coge.search, true);
 		var annotions = [
 			{

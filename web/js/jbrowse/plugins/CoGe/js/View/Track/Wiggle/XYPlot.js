@@ -643,7 +643,7 @@ var XYPlot = declare( [XYPlotBase], {
 		div.innerHTML = '<img src="picts/ajax-loader.gif">';
 		this._track.config.coge.search = search;
 		dojo.xhrGet({
-			url: api_base_url + '/experiment/' + this._track.config.coge.id + '/query?' + coge_plugin.search_to_params(search),
+			url: api_base_url + '/search/query/' + this._track.config.coge.id + '?' + coge_plugin.search_to_params(search),
 			handleAs: 'json',
 			load: dojo.hitch(this, function(data) {
 				if (this._search_dialog)
@@ -812,8 +812,12 @@ var XYPlot = declare( [XYPlotBase], {
 			]);
 
 		if (config.coge.type != 'search' && config.coge.type != 'notebook')
+            options.push({
+                label: 'Find Data that Overlaps Features',
+                onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'Data');}
+            });
 			options.push({
-				label: 'Search',
+				label: 'Search Experiment Data',
 				onClick: function(){coge_xyplot._search_track_dialog(track);}
 			});
 

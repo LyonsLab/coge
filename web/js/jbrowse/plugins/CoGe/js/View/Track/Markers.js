@@ -37,7 +37,7 @@ return declare( [ HTMLFeatures ], {
 
         if (track.config.coge.type != 'search')  {
             options.push({
-                label: 'Find Markers in Features',
+                label: 'Find Data that Overlaps Features',
                 onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'Markers', 'markers');}
             });
         }

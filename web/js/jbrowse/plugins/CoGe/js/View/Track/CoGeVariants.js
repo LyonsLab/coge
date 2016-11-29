@@ -47,7 +47,7 @@ return declare( [ HTMLFeatures ], {
         var search = {type: 'SNPs', chr: chr, snp_type: types};
         this._track.config.coge.search = search;
         var eid = this._track.config.coge.id;
-        var url = api_base_url + '/experiment/' + eid + '/snps/' + chr + '?snp_type=' + types.replace(new RegExp('>', 'g'), '-');
+        var url = api_base_url + '/search/snps/' + eid + '/' + chr + '?snp_type=' + types.replace(new RegExp('>', 'g'), '-');
         dojo.xhrGet({
             url: url,
             handleAs: 'json',
@@ -91,11 +91,7 @@ return declare( [ HTMLFeatures ], {
         if (track.config.coge.type != 'search')  {
             options.push({
                 label: 'Find Data that Overlaps Features',
-                onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'Alignments');}
-            });
-	        options.push({
-                label: 'Find SNPs in Features',
-                onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'SNPs', 'snps');}
+                onClick: function(){coge_plugin.features_overlap_search_dialog(track, 'SNPs');}
             });
             options.push({
                 label: 'Find types of SNPs',
