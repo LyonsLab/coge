@@ -118,7 +118,7 @@ function ExperimentDescriptionView(opts) {
     //this.gid = opts.gid;
     this.onError = opts.onError;
     this.sources = undefined;
-    this.title = "Describe experiment";
+    this.title = "Describe Experiment";
     this.initialize();
 }
 
