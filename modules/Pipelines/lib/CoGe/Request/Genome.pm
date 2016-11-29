@@ -3,27 +3,44 @@ package CoGe::Request::Genome;
 use Moose;
 with qw(CoGe::Request::Request);
 
-use CoGe::Request::Request;
-use JSON;
-
 sub is_valid {
     my $self = shift;
 
-    # Verify that the genome exists
     my $gid = $self->parameters->{gid} || $self->parameters->{genome_id};
-    return unless $gid;
+    unless ($gid) {
+        warn "Request::Genome::is_valid: Missing gid/genome_id parameter";
+        return;
+    }
+
     my $genome = $self->db->resultset("Genome")->find($gid);
-    return defined $genome ? 1 : 0;
+    unless ($genome) {
+        warn "Request::Genome::is_valid: Genome $gid not found";
+        return;
+    }
+
+    return 1;
 }
 
 sub has_access {
     my $self = shift;
-    return unless defined $self->{user};
+    unless (defined $self->{user}) {
+        warn "Request::Genome::has_access: Missing user";
+        return;
+    }
 
     my $gid = $self->parameters->{gid} || $self->parameters->{genome_id};
-    return unless $gid;
+    unless ($gid) {
+        warn "Request::Genome::has_access: Missing gid/genome_id parameter";
+        return;
+    }
+
     my $genome = $self->db->resultset("Genome")->find($gid);
-    return $self->user->has_access_to_genome($genome);
+    unless ($self->user->has_access_to_genome($genome)) {
+        warn "Request::Genome::has_access: Access denied to genome $gid";
+        return;
+    }
+
+    return 1;
 }
 
 1;

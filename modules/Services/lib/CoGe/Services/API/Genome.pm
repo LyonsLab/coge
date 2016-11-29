@@ -6,6 +6,7 @@ use CoGe::Services::Auth qw(init);
 use CoGe::Services::API::Job;
 use CoGe::Core::Genome qw(genomecmp search_genomes);
 use CoGe::Core::Storage qw(get_genome_seq);
+use CoGe::Core::Favorites;
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGeDBI qw(get_feature_counts);
 use Data::Dumper;
@@ -30,13 +31,19 @@ sub search {
     # Search notebooks and filter based on user permissions
     my $filtered = search_genomes(db => $db, search_term => $search_term, user => $user, sort => $sort);
 
+    # Get user's favorites
+    my $favorites = CoGe::Core::Favorites->new(user => $user);
+
     # Format response
     my @result;
     if ($fast) {
         @result = map {
           {
             id => int($_->id),
-            info => $_->info
+            info => $_->info,
+            certified  => $_->certified ? Mojo::JSON->true : Mojo::JSON->false,
+            restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+            favorited  => $favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false
           }
         } @$filtered;
     }

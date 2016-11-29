@@ -12,18 +12,18 @@ if (gid)
 </SCRIPT>
 
 <TMPL_UNLESS NAME="EMBED">
-<div>
+<div style="padding-bottom:0.5em;">
 <TMPL_IF NAME="GENOME_INFO">
-  <span id="genome_link">
-    <span class="link" style="font-size:1.25em" onclick="window.open('GenomeInfo.pl?gid='+gid);"><TMPL_VAR NAME="GENOME_INFO"></span>
+  <div id="genome_link" class="top">
+    <span class="link" style="font-size:1.25em" onclick="window.open('GenomeInfo.pl?gid='+gid);"><TMPL_VAR NAME="GENOME_INFO"></span>&nbsp;&nbsp;
     <button onclick="dojo.byId('genome_link').style.display='none';dojo.byId('change_genome').style.display='';">change</button>
-  </span>
+  </div>
   <span id="change_genome" style="display:none;">
 <TMPL_ELSE>
   <span id="change_genome">
 </TMPL_IF>
     Genome:
-    <input type="search" placeholder="Search" spellcheck="false" style="width:1000px;" />
+    <input type="search" placeholder="Search" spellcheck="false" size="85" />
     <img id="spinner" src="picts/ajax-loader.gif" style="visibility:hidden;" />
 <TMPL_IF NAME="GENOME_INFO">
     <button onclick="dojo.byId('change_genome').style.display='none';dojo.byId('genome_link').style.display='';">cancel</button>

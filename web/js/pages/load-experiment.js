@@ -43,8 +43,11 @@ function search_genomes (search_term) {
 		.done(function(response) { // success
 			if (response && response.genomes) {
 				var results = response.genomes.map(function(obj) {
-					var label = obj.info.replace(/&#x1f512;/g, "\uD83D\uDD12"); // Lock symbol
-					//TODO add certified and favorite icons
+					var label = obj.info.replace(/&#x1f512;/g, "\uD83D\uDD12"); // Lock symbol // TODO make client-side like certified & favorite
+					if (obj.certified)
+					    label = '\u2705 ' + label;
+                    if (obj.favorited)
+					    label = '\u2B50 ' + label;
 					return { label: label, value: obj.id };
 				});
 				edit_genome
