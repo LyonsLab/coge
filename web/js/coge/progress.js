@@ -44,6 +44,8 @@ var coge = window.coge = (function(namespace) {
 		    
 		    // Setup button handlers
 		    c.find('.cancel,.ok').click( $.proxy(self.reset, self) );
+
+		    self.initialized = 1; // set flag to detect that this function was called
 		},
 		
 		reset: function() {
@@ -60,6 +62,11 @@ var coge = window.coge = (function(namespace) {
 		},
 			
 		begin: function(opts) {
+			if (!this.initialized) {
+			    this._error('begin() called before init()');
+			    return;
+			}
+
 			this._reset_log();
 
 			if (!opts) opts = {};
@@ -81,6 +88,8 @@ var coge = window.coge = (function(namespace) {
 		    this.container.dialog('open');
 		    
 		    this.startTime = new Date().getTime();
+
+		    this.begin = 1; // set flag to detect that this function was called in proper order
 		},
 		
 		end: function() {
@@ -195,6 +204,11 @@ var coge = window.coge = (function(namespace) {
 		
 		update: function(job_id, url) {
 			var self = this;
+
+			if (!self.begin) {
+			    self._error('update() called before begin()');
+			    return;
+			}
 			
 			self._debug("update");
 			
