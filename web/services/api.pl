@@ -353,7 +353,7 @@ $r->get("/jbrowse/search/overlaps")
     
 $r->get("/jbrowse/search/query/:eid" => [eid => qr/\d+/])
     ->name("jbrowse-search-query")
-    ->to("experiment#query_data", eid => undef);
+    ->to("search#query_data", eid => undef);
 
 $r->get("/jbrowse/search/snps/:eid/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-search-snps")
