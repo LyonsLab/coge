@@ -1,7 +1,6 @@
 <TMPL_INCLUDE NAME="widgets/JBrowse.tmpl">
 
 <SCRIPT type="text/javascript">
-var un='<TMPL_VAR NAME="USER_NAME">';
 var gid='<TMPL_VAR NAME=GENOME_ID>';
 if (gid)
   $(function() { 
@@ -71,7 +70,7 @@ change_genome.click(function() {
   $(this).autocomplete('search');
 });
 coge.services.init({
-  userName: un
+  userName: USER_NAME
 });
 </script>
 </TMPL_UNLESS>

@@ -101,7 +101,7 @@ define(['dojo/_base/declare',
 			items.push({type: track_config.coge.type, id: track_config.coge.id});
 		});
 		dojo.xhrPost({
-			url: coge_api + '/notebooks/' + notebook_id + '/items/add?username='+un,
+			url: coge_api + '/notebooks/' + notebook_id + '/items/add?username=' + USER_NAME,
 			postData: JSON.stringify({ items: items }),
 			handleAs: 'json',
 			load: dojo.hitch(this, function(data) {
@@ -363,7 +363,7 @@ define(['dojo/_base/declare',
 				this._filter_tracks(this.text_filter_input.value);
 			})
 		}));
-		if (un != 'public') {
+		if (USER_NAME != 'public') {
 			menu.addChild(new MenuSeparator());
 			menu.addChild(new MenuItem({
 				label: "Show My Tracks",
@@ -944,7 +944,7 @@ define(['dojo/_base/declare',
 	_remove_from_notebook: function(type, id, notebook_id) {
 		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
 		dojo.xhrPost({
-			url: coge_api + '/notebooks/' + notebook_id + '/items/remove?username='+un,
+			url: coge_api + '/notebooks/' + notebook_id + '/items/remove?username=' + USER_NAME,
 			postData: JSON.stringify({
 				items: [{
 					type: type,
@@ -990,7 +990,7 @@ define(['dojo/_base/declare',
 			return;
 		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
 		dojo.xhrPost({
-			url: coge_api + '/' + type + 's/' + id + '?username='+un,
+			url: coge_api + '/' + type + 's/' + id + '?username=' + USER_NAME,
 			postData: JSON.stringify({
 				metadata: {
 					name: name

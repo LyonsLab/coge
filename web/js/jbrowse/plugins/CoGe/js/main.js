@@ -448,7 +448,7 @@ return declare( JBrowsePlugin,
 		var restricted = dojo.getAttr('notebook_restricted', 'checked');
 		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
 		dojo.xhrPut({
-			url: coge_api + '/notebooks?username='+un,
+			url: coge_api + '/notebooks?username=' + USER_NAME,
 			postData: JSON.stringify({
 				metadata: {
 					name: name,
@@ -668,7 +668,7 @@ return declare( JBrowsePlugin,
 			return;
 		}
 		var ref_seq = dojo.byId('coge_ref_seq');
-		var url = api_base_url + '/search/data/' + this._track.config.coge.id + '/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&filename=' + filename;
+		var url = api_base_url + '/search/data/' + this._track.config.coge.id + '/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + USER_NAME + '&filename=' + filename;
 		if (dojo.byId('search') && dojo.byId('search').checked)
 			url += '&' + this.search_to_params(this._track.config.coge.search, true);
 		if (dojo.byId('transform') && dojo.byId('transform').checked)
@@ -1131,7 +1131,7 @@ return declare( JBrowsePlugin,
 						new_config.type = 'CoGe/View/Track/Markers';
 						new_config.coge.data_type = 4;
 					}
-					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + eid + '\nsearch:' + search + '\nsearch user:' + un;
+					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + eid + '\nsearch:' + search + '\nsearch user:' + USER_NAME;
 					if (new_config.coge.transform)
 						new_config.coge.annotations += '\ntransform:' + new_config.coge.transform;
 					if (new_config.coge.data_type == 1 || new_config.coge.data_type == 4)
@@ -1152,7 +1152,7 @@ return declare( JBrowsePlugin,
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var search = this.search_to_string(config.coge.search);
 		var description = 'Results from search: ' + search;
-		var url = api_base_url + '/search/data/' + config.coge.eid + '/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id;
+		var url = api_base_url + '/search/data/' + config.coge.eid + '/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + USER_NAME + '&load_id=' + load_id;
 		url += '&' + this.search_to_params(config.coge.search, true);
 		var annotions = [
 			{
@@ -1173,7 +1173,7 @@ return declare( JBrowsePlugin,
 			},
 			{
 				type: 'search user',
-				text: un
+				text: USER_NAME
 			}
 		];
 		if (config.coge.transform) {
@@ -1242,7 +1242,7 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	save_as_experiment_dialog: function(track) {
-		if (un == 'public') {
+		if (USER_NAME == 'public') {
 			this.info('Login Required', 'Please log in to CoGe before creating experiments');
 			return;
 		}
