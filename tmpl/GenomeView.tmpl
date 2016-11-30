@@ -29,12 +29,18 @@ if (gid)
 </TMPL_IF>
   </span>
 </div>
+<style>
+ul.ui-autocomplete {
+  max-height: 80%;
+  overflow: auto;
+}
+</style>
 <script>
 var change_genome = $('#change_genome input');
 function search_genomes(search_term) {
 	change_genome.autocomplete("close");
   $('#spinner').css('visibility', 'visible');
-	coge.services.search_genomes(search_term, { fast: true })
+	coge.services.search_genomes(search_term, { fast: true, sort: true })
 		.done(function(response) { // success
 			if (response && response.genomes) {
 				var results = response.genomes.map(function(obj) {
