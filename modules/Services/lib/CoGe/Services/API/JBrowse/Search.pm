@@ -41,18 +41,6 @@ sub _can_view {
 	return 1;
 }
 
-sub _get_data {
-	my ($self, $num, $db) = @_;
-	my $type = $self->param('type' . $num);
-	if ($type eq 'experiment') {
-		my $experiment = $db->resultset('Experiment')->find($self->param('eid' . $num));
-		return _get_experiment_data($experiment->id, $experiment->data_type, $self->param('chr'), 0);
-	}
-	if ($type eq 'features') {
-		return _get_db_data($self->param('gid' . $num), $self->param('features' . $num), $self->param('chr'), $db->storage->dbh);
-	}
-}
-
 sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
     my $self = shift;
     my $id = int($self->stash('eid'));
@@ -287,6 +275,18 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
     }
 }
 
+sub _get_data {
+	my ($self, $num, $db) = @_;
+	my $type = $self->param('type' . $num);
+	if ($type eq 'experiment') {
+		my $experiment = $db->resultset('Experiment')->find($self->param('eid' . $num));
+		return _get_experiment_data($experiment->id, $experiment->data_type, $self->param('chr'), 0);
+	}
+	if ($type eq 'features') {
+		return _get_db_data($self->param('gid' . $num), $self->param('features' . $num), $self->param('chr'), $db->storage->dbh);
+	}
+}
+
 # returns a psuedo object with coderefs next() and line()
 sub _get_db_data {
 	my ($gid, $type_names, $chr, $dbh) = @_;
@@ -301,7 +301,9 @@ sub _get_db_data {
 		my $type_ids = feature_type_names_to_id($type_names, $dbh);
 		$query .= ' AND feature_type_id';
 		$query .= (index($type_ids, ',') == -1) ? '=' . $type_ids : ' IN(' . $type_ids . ')';
-	}
+	} else {
+        $query .= ' AND feature_type_id!=4'; # ignore chromosomes
+    }
 	$query .= ' ORDER BY ';
 	$query .= 'chromosome,' unless $chr;
 	$query .= 'start,stop';

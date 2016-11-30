@@ -46,7 +46,7 @@ my $r = app->routes->namespaces(["CoGe::Services::API::JBrowse", "CoGe::Services
 # Global Search routes
 $r->get("/global/search/#term")
     ->name("global-search")
-    ->to("search#search", term => undef);
+    ->to("search#search", namespace => 'CoGe::Services::API', term => undef);
 
 # Organism routes
 $r->get("/organisms/search/#term")
@@ -345,19 +345,19 @@ $r->get("/jbrowse/genome/:gid/features/"  => [gid => qr/\d+/])
 # JBrowse search routes
 $r->get("/jbrowse/search/data/:eid/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-search-data")
-    ->to("search#data", eid => undef, chr => undef);
+    ->to("search#data", namespace => 'CoGe::Services::API::JBrowse', eid => undef, chr => undef);
 
 $r->get("/jbrowse/search/overlaps")
     ->name("jbrowse-search-overlaps")
-    ->to("search#overlaps");
+    ->to("search#overlaps", namespace => 'CoGe::Services::API::JBrowse');
     
 $r->get("/jbrowse/search/query/:eid" => [eid => qr/\d+/])
     ->name("jbrowse-search-query")
-    ->to("search#query_data", eid => undef);
+    ->to("search#query_data", namespace => 'CoGe::Services::API::JBrowse', eid => undef);
 
 $r->get("/jbrowse/search/snps/:eid/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-search-snps")
-    ->to("search#snps", eid => undef, chr => undef);
+    ->to("search#snps", namespace => 'CoGe::Services::API::JBrowse', eid => undef, chr => undef);
 
 # Not found
 $r->any("*" => sub {

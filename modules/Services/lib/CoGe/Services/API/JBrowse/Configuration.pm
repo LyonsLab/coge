@@ -150,8 +150,8 @@ sub track_config {
         push @tracks, {
             baseUrl      => "$JBROWSE_API/track/annotation/$gid/",
             autocomplete => "all",
-            track        => "features",
-            label        => "features",
+            track        => "feature_group0",
+            label        => "feature_group0",
             key          => "Features: all",
             type         => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
@@ -228,8 +228,8 @@ sub track_config {
                 push @tracks, {
                     baseUrl      => "$JBROWSE_API/track/annotation/$gid/datasets/$dsid",
                     autocomplete => "all",
-                    track        => "features_ds".$dsid,
-                    label        => "features_ds".$dsid,
+                    track        => "feature_group".$dsid,
+                    label        => "feature_group".$dsid,
                     key          => "Features: ".$dsname,
                     type         => "CoGe/View/Track/CoGeFeatures",
                     description  => "note, description",
@@ -259,8 +259,8 @@ sub track_config {
                     push @tracks, {
                         baseUrl => "$JBROWSE_API/track/annotation/$gid/types/$type_name/",
                         autocomplete => "all",
-                        track        => 'features_ds'.$dsid.'_'.$type_name,
-                        label        => 'features_ds'.$dsid.'_'.$type_name,
+                        track        => 'features'.$dsid.'_'.$type_name,
+                        label        => 'features'.$dsid.'_'.$type_name,
                         key          => $type_name,
                         type         => "JBrowse/View/Track/HTMLFeatures",
                         storeClass   => "JBrowse/Store/SeqFeature/REST",
