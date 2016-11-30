@@ -554,10 +554,12 @@ return declare( JBrowsePlugin,
 		content += track1.config.key;
 		content += ' does not overlap ';
 		content += track2.config.key;
-		content += '<br><input id="dnd_merge" type="radio" name="action"> Merge ';
-		content += track1.config.key;
-		content += ' and ';
-		content += track2.config.key;
+		if (!track1.config.coge.type.startsWith('feature') && !track2.config.coge.type.startsWith('feature')) {
+			content += '<br><input id="dnd_merge" type="radio" name="action"> Merge ';
+			content += track1.config.key;
+			content += ' and ';
+			content += track2.config.key;
+		}
 		content += '</td></tr><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr></table>';
@@ -811,7 +813,7 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	get_checked_values: function(id, description, quote) {
-		var checkboxes = document.getElementById(id).getElementsByTagName('INPUT');
+		var checkboxes = document.querySelectorAll('#' + id + ' input[type="checkbox" i]');
 		var values = [];
 		for (var i=0; i<checkboxes.length; i++)
 			if (checkboxes[i].checked)
@@ -1038,11 +1040,19 @@ return declare( JBrowsePlugin,
 		this._start_search('Finding...');
 		var search = {type: not ? 'does not overlap' : 'overlaps', chr: chr, other: this._track2.config.key};
 		this._track.config.coge.search = search;
-		var eid1 = this._track.config.coge.id;
-		var eid2 = this._track2.config.coge.id;
-		var url = api_base_url + '/search/overlaps?type1=experiment&type2=experiment&eid1=' + eid1 + '&eid2=' + eid2 + '&chr=' + chr;
+		var url = api_base_url + '/search/overlaps?chr=' + chr;
+		for (var i=1; i<=2; i++) {
+			var track = i == 1 ? this._track : this._track2;
+			var type = track.config.coge.type;
+			if (type == 'experiment')
+				url += '&type' + i + '=experiment&eid' + i + '=' + track.config.coge.id;
+			else if (type == 'features')
+				url += '&type' + i + '=features&features' + i + '=\'' + track.config.coge.id + '\'&gid' + i + '=' + gid;
+			else if (type == 'feature_group')
+				url += '&type' + i + '=features&features' + i + '=all&gid' + i + '=' + gid;
+		}
 		if (not)
-			url += '?not=true';
+			url += '&not=true';
 		dojo.xhrGet({
 			url: url,
 			handleAs: 'json',
