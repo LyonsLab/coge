@@ -2,6 +2,7 @@ package CoGe::Services::API::Job;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::Asset::File;
+use Mojo::JSON qw(decode_json);
 #use IO::Compress::Gzip 'gzip';
 use Data::Dumper;
 use File::Spec::Functions qw( catfile );
@@ -13,8 +14,16 @@ use CoGe::Factory::PipelineFactory;
 
 sub add {
     my $self = shift;
-    my $payload = shift || $self->req->json; # allow special payload to be passed in from other controllers
-    #warn "CoGe::Services::API::Job::add\n", Dumper $payload;
+    my $payload = shift; # allow special payload to be passed in from other controllers
+    my $json = $self->req->body; #$self->req->json; # mdb replaced 11/30/16 -- req->json hides JSON errors, doing conversion manually prints them to STDERR
+    warn "CoGe::Services::API::Job::add\n", Dumper $payload, Dumper $json;
+    unless ($payload || $json) {
+        $self->render(status => 400, json => {
+            error => { Error => "No request body specified" }
+        });
+        return;
+    }
+    $payload = decode_json($json) if !$payload;
 
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
