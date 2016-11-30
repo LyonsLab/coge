@@ -194,5 +194,6 @@ Services/lib/CoGe/Services/API/FTP.pm
 Services/lib/CoGe/Services/API/JBrowse/Annotation.pm
 Services/lib/CoGe/Services/API/JBrowse/Configuration.pm
 Services/lib/CoGe/Services/API/JBrowse/Experiment.pm
+Services/lib/CoGe/Services/API/JBrowse/Search.pm
 Services/lib/CoGe/Services/API/JBrowse/Sequence.pm
 Services/lib/CoGe/Services/API/JBrowse/GCcontent.pm
