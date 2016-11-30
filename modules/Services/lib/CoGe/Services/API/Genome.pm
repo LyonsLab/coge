@@ -220,7 +220,14 @@ sub export {
 
 sub add {
     my $self = shift;
-    my $data = $self->req->json;
+    my $data = $self->req->body; #$self->req->json; # mdb replaced 11/30/16 -- req->json hides JSON errors, doing conversion manually prints them to STDERR
+    unless ($data) {
+        $self->render(status => 400, json => {
+            error => { Error => "No request body specified" }
+        });
+        return;
+    }
+    $data = decode_json($data);
     #print STDERR "CoGe::Services::Data::Genome::add\n", Dumper $data, "\n";
 
     # Valid data items # TODO move into request validation
