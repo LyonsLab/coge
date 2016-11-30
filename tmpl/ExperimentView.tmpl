@@ -32,7 +32,8 @@ $(document).ready(function() {
         cache: false,
     });
 
-    $(".dialog_box").dialog({autoOpen: 0});
+    $(".dialog_box").dialog({ autoOpen: 0 });
+    $("#experiment_tag_edit_box").dialog({ width: '32em' });
 
     $("#edit_tag_name").autocomplete({
         source: function() { get_experiment_tags(); },
