@@ -152,6 +152,10 @@ $.extend(ExperimentDescriptionView.prototype, {
 
         this.isSRA = (this.experiment.data && this.experiment.data[0].file_type == 'sra');
         this.el.find('#edit_name,#edit_description,#edit_version,#edit_source').prop('disabled', (this.isSRA ? true : false));
+        if (this.isSRA)
+            this.el.find('#sra_message').show();
+        else
+            this.el.find('#sra_message').hide();
 
         // Set experiment metadata if from SRA
 		if (this.isSRA) {
