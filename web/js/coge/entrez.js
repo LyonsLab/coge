@@ -104,7 +104,7 @@ class SRA extends Entrez {
             return;
         }
 
-        var accn_type = accn.substring(0, 3);
+        var accn_type = accn.toUpperCase().substring(0, 3);
         switch (accn_type) {
             case 'PRJ' :
             case 'SRP' :
