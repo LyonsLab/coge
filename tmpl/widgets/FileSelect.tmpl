@@ -22,7 +22,7 @@ table {
 	    <li class="small"><a href="#fileselect-tab-4">GenBank</a></li>
 	    </TMPL_IF>
 	    <TMPL_IF NAME='ENABLE_SRA'>
-	    <li class="small"><a href="#fileselect-tab-4">SRA</a></li>
+	    <li class="small"><a href="#fileselect-tab-4">NCBI-SRA</a></li>
 	    </TMPL_IF>
 	  </ul>
 </TMPL_UNLESS>
@@ -99,7 +99,7 @@ table {
 
 	  <TMPL_IF NAME='ENABLE_SRA'>
 	  <div id="fileselect-tab-4" class="small" style="height:200px;">
-		<div>Enter the NCBI Short Read Archive (SRA) accession number(s) that begin with the prefix SRR:<br><br></div>
+		<div>Enter the NCBI Short Read Archive (SRA) accession number(s) that begin with the prefix SRR/SRX:<br><br></div>
 		<div style="width:25em;">
 			<textarea id="input_accn" spellcheck="false" placeholder="For example, SRR292240" class="no-resize info" style="width:100%;height:10em;"></textarea>
 			<div>
@@ -111,7 +111,8 @@ table {
 	  </TMPL_IF>
 	</div>
 </script>
-</TMPL_UNLESS>	  
+</TMPL_UNLESS>
+
 <div id="dirname_dialog" title="Create new directory" style="display:none">
   <form>
     <fieldset>
