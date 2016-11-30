@@ -361,7 +361,7 @@ function GenomeDescriptionView(opts) {
     this.organism_id = opts.organism_id;
     this.onError = opts.onError;
     this.sources = undefined;
-    this.title = "Describe genome";
+    this.title = "Describe Genome";
     this.initialize();
 }
 
