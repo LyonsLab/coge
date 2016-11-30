@@ -880,7 +880,7 @@ var coge = window.coge = (function(namespace) {
                 // Search SRA for accession and fetch corresponding records
                 if (sra.type(accn) == sra.SRA_ACCN_TYPE_EXPERIMENT) {
                     sra.esearch(accn).then(function(ids) {
-                        if (ids) {
+                        if (ids && ids.length) {
                             $(ids).each(function(index, id) {
                                 sra.esummary(id).then(function(xml) {
                                     var item = sra.extract(xml);
@@ -893,23 +893,24 @@ var coge = window.coge = (function(namespace) {
                             });
                         }
                         else {
-                            console.warn('SRA.queryExperiment: Item not found: ' + accn);
+                            self._sra_status('Item not found: ' + accn);
                         }
                     });
                 }
-                else if (sra.type(accn) == sra.SRA_ACCN_TYPE_PROJECT) {
-                    sra.esearch(accn).then(function(ids) {
-                        if (ids) {
-                            sra.esummary(ids[0]).then(function(xml) {
-                                var item = sra.extract(xml);
-                                var title = (item.title ? item.title : accn);
-                                if (self._add_file_to_list(title, 'sra://'+accn))
-                                    self._finish_file_in_list('sra', 'sra://'+accn, accn, ids.length + ' items');
-                                self._sra_status('');
-                            });
-                        }
-                    });
-                }
+// mdb removed 11/30/16 -- postponed until backend pipeline is finished
+//                else if (sra.type(accn) == sra.SRA_ACCN_TYPE_PROJECT) {
+//                    sra.esearch(accn).then(function(ids) {
+//                        if (ids) {
+//                            sra.esummary(ids[0]).then(function(xml) {
+//                                var item = sra.extract(xml);
+//                                var title = (item.title ? item.title : accn);
+//                                if (self._add_file_to_list(title, 'sra://'+accn))
+//                                    self._finish_file_in_list('sra', 'sra://'+accn, accn, ids.length + ' items');
+//                                self._sra_status('');
+//                            });
+//                        }
+//                    });
+//                }
                 else {
                     self._sra_error('Unsupported accession type: ' + accn);
                     return;
@@ -918,15 +919,15 @@ var coge = window.coge = (function(namespace) {
 		},
 
 		_sra_error: function(text) {
-		    $('#sra_status').html(text).addClass('alert');
+		    $('#sra_status').html(text).removeClass('note').addClass('alert');
 		},
 
 		_sra_status: function(text) {
-		    $('#sra_status').html(text).addClass('note');
+		    $('#sra_status').html(text).removeClass('alert').addClass('note');
 		},
 
 		_sra_busy: function() {
-		    $('#sra_status').html(SPINNER_SMALL_HTML+' Contacting NCBI SRA...').addClass('note');
+		    $('#sra_status').html(SPINNER_SMALL_HTML+' Contacting NCBI-SRA...').removeClass('alert').addClass('note');
 		},
 
 		_confirm: function(title, question, on_ok) {
