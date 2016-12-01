@@ -39,35 +39,11 @@ __PACKAGE__->add_columns(
 			 "experiment_type_id",
 			 { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
 			 "name",
-			 { data_type => "VARCHAR", is_nullable => 0, size => 255 },
-			 "description",
-			 { data_type => "TEXT", is_nullable => 1 },
+			 { data_type => "VARCHAR", is_nullable => 0, size => 255 }
 			);
 __PACKAGE__->set_primary_key("experiment_type_id");
 
 __PACKAGE__->has_many('experiment_type_connectors'=>"CoGeX::Result::ExperimentTypeConnector","experiment_type_id");
-
-################################################ subroutine header begin ##
-
-=head2 desc
-
- Usage     :
- Purpose   : alias for $self->description
- Returns   :
- Argument  :
- Throws    :
- Comments  :
-
-See Also   :
-
-=cut
-
-################################################## subroutine header end ##
-
-sub desc
-  {
-    return shift->description(@_);
-  }
 
 ################################################ subroutine header begin ##
 

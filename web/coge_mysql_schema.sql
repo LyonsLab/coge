@@ -171,10 +171,8 @@ DROP TABLE IF EXISTS `experiment_type`;
 CREATE TABLE `experiment_type` (
   `experiment_type_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
-  `description` text,
   PRIMARY KEY (`experiment_type_id`),
-  FULLTEXT KEY `name` (`name`),
-  FULLTEXT KEY `description` (`description`)
+  FULLTEXT KEY `name` (`name`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

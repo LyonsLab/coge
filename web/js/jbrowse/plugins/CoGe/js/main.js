@@ -296,8 +296,133 @@ return declare( JBrowsePlugin,
 					}
 				});
 		});
-	},
+		this.browser.navigateToLocation = function( location ) {
+    this.afterMilestone( 'initView', dojo.hitch( this, function() {
 
+        // regularize the ref seq name we were passed
+        var ref = location.ref ? this.findReferenceSequence( location.ref.name || location.ref )
+                               : this.refSeq;
+        if( !ref ) return;
+        location.ref = ref.name;
+
+        if( 'ref' in location && !( 'start' in location && 'end' in location ) ) {
+            // see if we have a stored location for this ref seq in a
+            // cookie, and go there if we do
+            var oldLoc;
+            try {
+                oldLoc = coge_plugin.parseLocString(
+                    dojo.fromJson(
+                        this.cookie("location")
+                    )[location.ref].l
+                );
+                oldLoc.ref = location.ref; // force the refseq name; older cookies don't have it
+            } catch (x) {}
+            if( oldLoc ) {
+                location = oldLoc;
+            } else {
+                // if we don't have a previous location, just go to
+                // the middle 80% of that refseq,
+                // based on range that can be viewed (start to end)
+                // rather than total length, in case start != 0 || end != length
+                // this.navigateToLocation({ref: ref.name, start: ref.end*0.1, end: ref.end*0.9 });
+                // var visibleLength = ref.end - ref.start;
+                // location.start = ref.start + (visibleLength * 0.1);
+                // location.end   = ref.start + (visibleLength * 0.9);
+				var currentLoc = coge_plugin.parseLocString(
+                    dojo.fromJson(
+                        this.cookie("location")
+                    )[coge_plugin.browser.refSeq.name].l
+                );
+				location.start = 0;
+				location.end = currentLoc.end - currentLoc.start;
+            }
+        }
+
+        // clamp the start and end to the size of the ref seq
+        location.start = Math.max( 0, location.start || 0 );
+        location.end   = Math.max( location.start,
+                                   Math.min( ref.end, location.end || ref.end )
+                                 );
+
+        // if it's the same sequence, just go there
+        if( location.ref == this.refSeq.name) {
+            this.view.setLocation( this.refSeq,
+                                   location.start,
+                                   location.end
+                                 );
+            this._updateLocationCookies( location );
+        }
+        // if different, we need to poke some other things before going there
+        else {
+            // record names of open tracks and re-open on new refseq
+            var curTracks = this.view.visibleTrackNames();
+
+            this.refSeq = this.allRefs[location.ref];
+            this.clearStores();
+
+            this.view.setLocation( this.refSeq,
+                                   location.start,
+                                   location.end );
+            this._updateLocationCookies( location );
+
+            this.showTracks( curTracks );
+        }
+    }));
+};
+	},
+parseLocString: function( locstring ) {
+        var inloc = locstring;
+        if( typeof locstring != 'string' )
+            return null;
+
+        locstring = dojo.trim( locstring );
+
+        // any extra stuff in parens?
+        var extra = (locstring.match(/\(([^\)]+)\)$/)||[])[1];
+
+        // parses a number from a locstring that's a coordinate, and
+        // converts it from 1-based to interbase coordinates
+        var parseCoord = function( coord ) {
+            coord = (coord+'').replace(/\D/g,'');
+            var num = parseInt( coord, 10 );
+            return typeof num == 'number' && !isNaN(num) ? num : null;
+        };
+
+        var location = {};
+        var tokens;
+
+        if( locstring.indexOf(':') != -1 ) {
+            tokens = locstring.split(':',2);
+            location.ref = dojo.trim( tokens[0] );
+            locstring = tokens[1];
+        }
+
+        tokens = locstring.match( /^\s*([\d,]+)\s*\.\.+\s*([\d,]+)/ );
+        if( tokens ) { // range of two numbers?
+            location.start = parseCoord( tokens[1] )-1;
+            location.end = parseCoord( tokens[2] );
+
+            // reverse the numbers if necessary
+            if( location.start > location.end ) {
+                var t = location.start+1;
+                location.start = location.end - 1;
+                location.end = t;
+            }
+        }
+        else { // one number?
+            tokens = locstring.match( /^\s*([\d,]+)\b/ );
+            if( tokens ) {
+                location.end = location.start = parseCoord( tokens[1] )-1;
+            }
+            else // got nothin
+                return null;
+        }
+
+        if( extra )
+            location.extra = extra;
+
+        return location;
+    },
 	// ----------------------------------------------------------------
 
 	adjust_nav: function(search_id) {

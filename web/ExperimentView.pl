@@ -51,7 +51,6 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     make_experiment_private    => \&make_experiment_private,
     add_tag_to_experiment      => \&add_tag_to_experiment,
     get_experiment_tags        => \&get_experiment_tags,
-    get_tag_description        => \&get_tag_description,
     remove_experiment_tag      => \&remove_experiment_tag,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
@@ -163,9 +162,8 @@ sub add_tag_to_experiment {
     return 0 unless $eid;
     my $name = $opts{name};
     return 0 unless $name;
-    my $description = $opts{description};
 
-    my $type = $coge->resultset('ExperimentType')->find( { name => $name, description => $description } );
+    my $type = $coge->resultset('ExperimentType')->find( { name => $name } );
 
     if ($type) {
         # If type exists, check if already assigned to this experiment
@@ -177,7 +175,7 @@ sub add_tag_to_experiment {
         # Create type if it doesn't already exist
         $type =
           $coge->resultset('ExperimentType')
-          ->create( { name => $name, description => $description } );
+          ->create( { name => $name } );
     }
 
     # Create connection
@@ -203,15 +201,6 @@ sub get_experiment_tags {
     }
 
     return encode_json( [ sort keys %unique ] );
-}
-
-sub get_tag_description {
-    my %opts = @_;
-    my $name = $opts{name};
-    return unless ($name);
-
-    my $type = $coge->resultset('ExperimentType')->find( { name => $name } );
-    return $type->description if ($type);
 }
 
 sub linkify {
@@ -636,7 +625,6 @@ sub _get_experiment_info {
     foreach my $tag ( $exp->tags ) {
        $tags .= '<span class="coge-tag">';
        $tags .= $tag->name;
-       $tags .= ": " . $tag->description if $tag->description;
        if ($allow_edit) {
            $tags .=
                "<span onClick=\"remove_experiment_tag({eid: '"

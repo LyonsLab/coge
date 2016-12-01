@@ -36,8 +36,7 @@ $(document).ready(function() {
     $("#experiment_tag_edit_box").dialog({ width: '32em' });
 
     $("#edit_tag_name").autocomplete({
-        source: function() { get_experiment_tags(); },
-        select: function(event, ui) { get_type_description( ui.item.label ); }
+        source: function() { get_experiment_tags(); }
     });
 
     set_annotation_table();
@@ -174,12 +173,8 @@ $(document).ready(function() {
 <div id="experiment_tag_edit_box" class="dialog_box hidden" title="Add Experiment Tag">
   <table class="small">
    <tr>
-    <td>Name:</td>
+    <td>Tag:</td>
     <td><input id="edit_tag_name" size="53" value=""></td>
-   </tr>
-   <tr valign="top">
-    <td>Description:</td>
-    <td><textarea id="edit_tag_description" rows="5" cols="50"></textarea></td>
    </tr>
   </table>
   <span onClick="add_tag_to_experiment();" class='coge-button r'>Add</span>

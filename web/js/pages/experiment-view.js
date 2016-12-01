@@ -100,35 +100,15 @@ function make_experiment_private () {
     });
 }
 
-function add_experiment_type () {
-    $.ajax({
-        data: {
-            fname: 'add_experiment_tag',
-            eid: EXPERIMENT_ID
-        },
-        success : function(data) {
-            $("#experiment_tag_edit_box").dialog({
-                beforeClose:
-                    function() {
-                        $("#edit_tag_name").autocomplete('close');
-                    }
-            });
-            $("#experiment_tag_edit_box").html(data).dialog('open');
-        }
-    });
-}
-
 function add_tag_to_experiment () {
     var name = $('#edit_tag_name').val();
-    var description = $('#edit_tag_description').val();
 
     if (name) {
         $.ajax({
             data: {
                 fname: 'add_tag_to_experiment',
                 eid: EXPERIMENT_ID,
-                name: name,
-                description: description
+                name: name
             },
             success : function(val) {
                 get_experiment_info();
@@ -716,20 +696,6 @@ function check_and_report_login() {
     return true;
 }
 
-function remove_experiment_type (opts) {
-    etid = opts.etid;
-    $.ajax({
-        data: {
-            fname: 'remove_experiment_type',
-            eid: EXPERIMENT_ID,
-            etid: etid,
-        },
-        success : function(val) {
-            get_experiment_info();
-        },
-    });
-}
-
 function remove_experiment_tag (opts) {
     etid = opts.etid;
     $.ajax({
@@ -778,18 +744,6 @@ function get_experiment_tags () {
         success : function(val) {
             var items = jQuery.parseJSON(val);
             $("#edit_tag_name").autocomplete("option", "source", items).autocomplete("search");
-        },
-    });
-}
-
-function get_tag_description (name) {
-    $.ajax({
-        data: {
-            fname: 'get_tag_description',
-            name: name
-        },
-        success : function(data) {
-            $("#edit_tag_description").html(data);
         },
     });
 }
