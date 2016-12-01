@@ -102,8 +102,7 @@ sub fetch {
     # Format types
     my @types = map {
         {
-            name => $_->name,
-            description => $_->description
+            name => $_->name
         }
     } $experiment->types;
 

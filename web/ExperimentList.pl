@@ -198,7 +198,7 @@ sub generate_table {
         # Build sub-table of types
         my %types;
         foreach ( $exp->types ) {
-            my $key = $_->name . ( $_->desc ? ': ' . $_->desc : '' );
+            my $key = $_->name;
             $types{$key}++;
         }
         my $type_tbl = join( '<br>', sort keys %types );
