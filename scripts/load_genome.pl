@@ -346,6 +346,11 @@ foreach my $chr ( sort keys %$sequences ) {
 	# Must add a feature of type chromosome to the dataset so the dataset
 	# "knows" its chromosomes
     my $feat_type = $coge->resultset('FeatureType')->find_or_create( { name => 'chromosome' } );
+    unless ($feat_type) {
+        print STDOUT "log: error creating feature type\n";
+        exit(-1);
+    }
+
     my $feat = $coge->resultset('Feature')->find_or_create({
         dataset_id      => $dataset->id,
         feature_type_id => $feat_type->id,
@@ -354,10 +359,19 @@ foreach my $chr ( sort keys %$sequences ) {
         chromosome      => $chr,
         strand          => 1
     });
+    unless ($feat) {
+        print STDOUT "log: error creating feature\n";
+        exit(-1);
+    }
+
     my $feat_name = $coge->resultset('FeatureName')->find_or_create({ 
         name => "chromosome $chr", 
         feature_id => $feat->id 
     });
+    unless ($feat_name) {
+        print STDOUT "log: error creating feature name\n";
+        exit(-1);
+    }
 
     my $loc = $coge->resultset('Location')->find_or_create({
         feature_id => $feat->id,
@@ -366,6 +380,10 @@ foreach my $chr ( sort keys %$sequences ) {
         strand     => 1,
         chromosome => $chr
     });
+    unless ($loc) {
+        print STDOUT "log: error creating location\n";
+        exit(-1);
+    }
 }
 
 # Copy files from staging directory to installation directory
