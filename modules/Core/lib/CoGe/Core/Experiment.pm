@@ -321,8 +321,8 @@ sub get_irods_metadata {
         $IRODS_METADATA_PREFIX.'experiment-name'           => $experiment->name,
         $IRODS_METADATA_PREFIX.'experiment-version'        => $experiment->version,
         $IRODS_METADATA_PREFIX.'experiment-data-type'      => $experiment->data_type_desc,
-        $IRODS_METADATA_PREFIX.'experiment-genome-id'      => $experiment->genome->id,
-        $IRODS_METADATA_PREFIX.'experiment-genome-summary' => $experiment->genome->info
+        $IRODS_METADATA_PREFIX.'-genome-id'      => $experiment->genome->id,
+        $IRODS_METADATA_PREFIX.'-genome-summary' => $experiment->genome->info(hideRestrictedSymbol => 1)
     );
     $md{$IRODS_METADATA_PREFIX.'experiment-description'} = $experiment->description if $experiment->description;
 

@@ -555,7 +555,7 @@ sub get_irods_metadata {
         $IRODS_METADATA_PREFIX.'genome-organism-taxonomy' => $genome->organism->description,
         $IRODS_METADATA_PREFIX.'genome-version'           => $genome->version,
         $IRODS_METADATA_PREFIX.'genome-sequence-type'     => $genome->type->info,
-        $IRODS_METADATA_PREFIX.'genome-summary'           => $genome->info,
+        $IRODS_METADATA_PREFIX.'genome-summary'           => $genome->info(hideRestrictedSymbol => 1),
         $IRODS_METADATA_PREFIX.'genome-certified'         => $genome->certified ? 'true' : 'false'
     );
 
@@ -585,7 +585,7 @@ sub get_irods_metadata {
             : $a->type->name
         );
 
-        $md{$group} = $a->info;
+        $md{$group} = $a->info(hideRestrictedSymbol => 1);
     }
 
     return \%md;
