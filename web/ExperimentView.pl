@@ -191,16 +191,9 @@ sub add_tag_to_experiment {
 
 #FIXME: Types should be more generic and be referred to as TAGS
 sub get_experiment_tags {
-    #my %opts = @_;
-
-    my %unique;
-
-    my $rs = $coge->resultset('ExperimentType');
-    while ( my $et = $rs->next ) {
-        $unique{ $et->name }++;
-    }
-
-    return encode_json( [ sort keys %unique ] );
+    my $tags = $coge->storage->dbh->selectall_arrayref('SELECT DISTINCT name FROM experiment_type ORDER BY name');
+    my @a = map { $_->[0] } @$tags;
+    return encode_json(\@a);
 }
 
 sub linkify {
