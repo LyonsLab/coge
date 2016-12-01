@@ -72,94 +72,22 @@ sub generate_body {
     my $tmpl = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'index.tmpl' );
 
     $tmpl->param(
-        ACTIONS => [
-            map {
-                {
-                    ACTION => $_->{NAME},
-                    DESC   => $_->{DESC},
-                    LINK   => $_->{LINK},
-                    LOGO   => $_->{LOGO}
-                }
-            } sort { $a->{ID} <=> $b->{ID} } @{ actions() }
-        ]
-    );
-    $tmpl->param(
         INTRO => 1,
         ORG_COUNT => commify( $DB->resultset('Organism')->count() ),
         GEN_COUNT => commify( $DB->resultset('Genome')->search( { deleted => 0 } )->count() ),
         FEAT_COUNT => commify( get_table_count($DB->storage->dbh, 'feature') ),
         ANNOT_COUNT => commify( get_table_count($DB->storage->dbh, 'feature_annotation') ),
         EXP_COUNT => commify( $DB->resultset('Experiment')->search( { deleted => 0 } )->count() ),
-        QUANT_COUNT => commify(
-            units(
-                $DB->resultset('Experiment')->search( { deleted => 0 } )->get_column('row_count')->sum
-            )
-        )
+#        QUANT_COUNT => commify(
+#            units(
+#                $DB->resultset('Experiment')->search( { deleted => 0 } )->get_column('row_count')->sum
+#            )
+#        )
     );
 
     $tmpl->param( wikifeed => $CONF->{WIKI_URL}."/CoGepedia:Current_events" ) if $CONF->{WIKI_URL};
 
     return $tmpl->output;
-}
-
-sub actions {
-    my @actions = (
-        {
-            ID         => 5,
-            LOGO       => "picts/GEvo.svg",
-            ACTION     => qq{<a href="./GEvo.pl">GEvo</a>},
-            LINK       => qq{./GEvo.pl},
-            SCREENSHOT => "picts/preview/GEvo.png",
-            NAME       => "GEvo",
-            DESC       => qq{Compare sequences and genomic regions to discover patterns of genome evolution.<br><a href ="GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">Example</a>},
-        },
-        {
-            NAME       => "OrganismView",
-            ID         => 1,
-            LOGO       => "picts/OrganismView.svg",
-            ACTION     => qq{<a href="./OrganismView.pl">OrganismView</a>},
-            LINK       => qq{./OrganismView.pl},
-            SCREENSHOT => "picts/preview/OrganismView.png",
-            DESC       => qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser.<br><a href="OrganismView.pl?org_name=W3110">Example</a>},
-        },
-        {
-            NAME       => "CoGeBlast",
-            ID         => 2,
-            LOGO       => "picts/CoGeBlast.svg",
-            ACTION     => qq{<a href="./CoGeBlast.pl">CoGeBlast</a>},
-            LINK       => qq{./CoGeBlast.pl},
-            SCREENSHOT => "picts/preview/Blast.png",
-            DESC       => qq{Blast sequences against any number of organisms in CoGe.<br><a href="CoGeBlast.pl?dsgid=3068;fid=40603528">Example</a>},
-        },
-        {
-            NAME       => "SynMap",
-            ID         => 3,
-            LOGO       => "picts/SynMap-inverse.svg",
-            ACTION     => qq{<a href="./SynMap.pl">SynMap</a>},
-            LINK       => qq{./SynMap.pl},
-            SCREENSHOT => "picts/preview/SynMap.png",
-            DESC       => qq{Compare any two genomes to identify regions of synteny.<br><a href="SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1">Example</a>},
-        },
-        {
-            NAME       => "SynFind",
-            ID         => 4,
-            LOGO       => "picts/SynFind.svg",
-            ACTION     => qq{<a href="./SynFind.pl">SynFind</a>},
-            LINK       => qq{./SynFind.pl},
-            SCREENSHOT => "picts/preview/SynMap.png",
-            DESC       => qq{Search CoGe's annotation database for homologs.<br><a href="SynFind.pl?dsgid=3068;fid=40603528;run=1">Example</a>},
-        },
-    	{
-    	    NAME       => "FeatView",
-    	    ID         => 6,
-    	    LOGO       => "picts/FeatView.svg",
-    	    ACTION     => qq{<a href="./FeatView.pl">FeatView</a>},
-    	    LINK       => qq{./FeatView.pl},
-    	    SCREENSHOT => "picts/preview/FeatView.png",
-    	    DESC       => qq{Search for a gene by name across all genomes in CoGe.<br><a href="FeatView.pl?fid=306206343&gstid=1">Example</a>},
-    	},
-    );
-    return \@actions;
 }
 
 sub get_latest_genomes {

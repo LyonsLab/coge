@@ -153,7 +153,7 @@ function DataView(experiment, opts) {
     this.experiment = experiment || {};
     this.onError = opts.onError;
     this.supportedFileTypes = opts.supportedFileTypes;
-    this.title = "Data";
+    this.title = "Select Data";
     this.files = [];
     this.initialize();
 }
@@ -169,7 +169,7 @@ $.extend(DataView.prototype, {
         
         if (this.supportedFileTypes)
         	this.FILE_TYPE_PATTERNS = new RegExp("(:?" + this.supportedFileTypes.join("|") + ")$");
-        
+
         coge.fileSelect.init({
         	container: this.selector_container,
         	fileTable: this.file_table,
@@ -194,9 +194,18 @@ $.extend(DataView.prototype, {
         	    		self.el.find("#file_type_selector").val('sra');
         	    }
         	    else {
+        	        var ft_sel = self.el.find("#file_type_selector");
 	        	    var file_type = self.autodetect_file_type(files[0].name);
-	        	    if (file_type)
-	        	    	self.el.find("#file_type_selector").val(file_type);
+	        	    if (file_type) {
+	        	        // mdb changed 11/21/16 -- add support for file types with more than one possible ext (such as FASTA, FAA, FA and FASTQ, FQ)
+	        	        ft_sel.find("option").each(function() {
+                            var val = $(this).val();
+                            val.split(',').forEach(function(type) {
+                                if (file_type == type)
+                                    ft_sel.val(val);
+                            });
+	        	        });
+                    }
 	        	    self.el.find("#select_file_type").show();
         	    }
         	},
@@ -227,7 +236,7 @@ $.extend(DataView.prototype, {
         var selector = this.file_selector.clone();
         this.selector_container.empty();
         selector.appendTo(this.selector_container);
-        
+
         coge.fileSelect.render();
     },
 
@@ -268,7 +277,7 @@ $.extend(DataView.prototype, {
 function ConfirmationView(object) { // object is an experiment or genome
     this.object = object;
     this.initialize();
-    this.title = "Review and Submit";
+    this.title = "Review & Submit";
 }
 
 $.extend(ConfirmationView.prototype, {

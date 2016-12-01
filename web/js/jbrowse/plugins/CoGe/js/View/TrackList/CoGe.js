@@ -23,7 +23,7 @@ define(['dojo/_base/declare',
 	{
 	/**
 	 * CoGe drag-and-drop track selector.
-	 * 
+	 *
 	 * @constructs
 	 */
 	constructor: function( args ) {
@@ -36,7 +36,7 @@ define(['dojo/_base/declare',
 
 		// maximum tracks that can be added via "+" button
 		this.maxTracksToAdd = 20;
-		
+
 		// subscribe to drop events for tracks being DND'ed
 		this.browser.subscribe( '/dnd/drop', dojo.hitch( this, 'moveTracks' ));
 
@@ -101,7 +101,7 @@ define(['dojo/_base/declare',
 			items.push({type: track_config.coge.type, id: track_config.coge.id});
 		});
 		dojo.xhrPost({
-			url: coge_api + '/notebooks/' + notebook_id + '/items/add?username='+un,
+			url: coge_api + '/notebooks/' + notebook_id + '/items/add?username=' + USER_NAME,
 			postData: JSON.stringify({ items: items }),
 			handleAs: 'json',
 			load: dojo.hitch(this, function(data) {
@@ -363,7 +363,29 @@ define(['dojo/_base/declare',
 				this._filter_tracks(this.text_filter_input.value);
 			})
 		}));
-		if (un != 'public') {
+		if (USER_NAME != 'public') {
+			menu.addChild(new MenuSeparator());
+			menu.addChild(new MenuItem({
+				label: "Show My Tracks",
+				onClick: dojo.hitch(this, function() {
+					this._show = 'my';
+					this._filter_tracks(this.text_filter_input.value);
+				})
+			}));
+			menu.addChild(new MenuItem({
+				label: "Show Shared Tracks",
+				onClick: dojo.hitch(this, function() {
+					this._show = 'shared';
+					this._filter_tracks(this.text_filter_input.value);
+				})
+			}));
+			menu.addChild(new MenuItem({
+				label: "Show Public Tracks",
+				onClick: dojo.hitch(this, function() {
+					this._show = 'public';
+					this._filter_tracks(this.text_filter_input.value);
+				})
+			}));
 			menu.addChild(new MenuSeparator());
 			menu.addChild(new MenuItem({
 				label: "Create New Notebook",
@@ -382,7 +404,6 @@ define(['dojo/_base/declare',
 				localStorage.setItem("track-selector-side", region == 'right' ? 'left' : 'right');
 				root.set('region', region == 'right' ? 'left' : 'right');
 				parent.addChild(root);
-				
 			}
 		}));
 		var btn = new DropDownButton({ dropDown: menu }, menu_button);
@@ -406,8 +427,8 @@ define(['dojo/_base/declare',
 		aspect.after(cp, "resize", function(size) { dojo.byId('track_pane').style.width=size.w - dojo.position('feature_hits').w + 'px'; }, true);
 
 		dojo.create('div', { id: 'feature_hits' }, root);
-	
-		var pane = dojo.create('div', { id: 'track_pane' }, root);
+
+		var pane = dojo.create('div', { id: 'track_pane', style: 'width:250px;' }, root);
 		this._create_text_filter(pane);
 		this._update_text_filter_control();
 		var scroller = dojo.create('div', { style: 'height:100%;overflow-x:hidden;overflow-y:auto;' }, pane);
@@ -421,10 +442,10 @@ define(['dojo/_base/declare',
 		}, this);
 
 		var feature_groups = this._track_configs.filter(function(fg) {
-			return (fg.coge.type && fg.coge.type == 'feature_group');
+			return fg.coge.type && fg.coge.type == 'feature_group';
 		});
 		var features = this._track_configs.filter(function(f) {
-			return (f.coge.type && f.coge.type == 'features');
+			return f.coge.type && f.coge.type == 'features';
 		});
 		feature_groups.forEach(function(fg) {
 			var d = dojo.create('div', null, this.tracks_div);
@@ -507,34 +528,47 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
+	_filter_track: function(container, text) {
+		if (text) {
+			var t = container.lastChild.title ? container.lastChild.title : container.lastChild.innerHTML;
+			if (t.toLowerCase().indexOf(text) == -1)
+				return false;
+		}
+		if (this._type_filter && this._type_filter != container.config.coge.data_type)
+			return false;
+		if (this._show) {
+			if (container.config.coge.type != 'experiment')
+				return false;
+			if (this._show == 'my' && container.config.coge.role != 2)
+				return false;
+			if (this._show == 'shared' && !(container.config.coge.role == 3 || container.config.coge.role == 4))
+				return false;
+			if (this._show == 'public' && (container.config.coge.restricted || container.config.coge.role))
+				return false;
+		}
+		return true;
+	},
+
+	// ----------------------------------------------------------------
+
 	_filter_tracks: function(text) {
-		var type_filter = this._type_filter;
-		if (text && /\S/.test(text)) { // filter on text
+		if (text && /\S/.test(text))
 			text = text.toLowerCase();
+		else
+			text = null;
+		if (text || this._type_filter || this._show) {
 			var already_shown = {};
 			this._traverse_tracks(function(container) {
-				var t = container.lastChild.title ? container.lastChild.title : container.lastChild.innerHTML;
-				if (t.toLowerCase().indexOf(text) != -1) {
+				if (coge_track_list._filter_track(container, text)) {
 					if (!already_shown[container.id]) {
-						if (!type_filter || type_filter === container.config.coge.data_type) {
-							container.style.display = '';
-							already_shown[container.id] = true;
-						}
+						container.style.display = '';
+						already_shown[container.id] = true;
 					} else
 						container.style.display = 'none';
 				} else
 					container.style.display = 'none';
 			});
-		} else if (type_filter) {
-			var already_shown = {};
-			this._traverse_tracks(function(container) {
-				if (!already_shown[container.id] && type_filter === container.config.coge.data_type) {
-					container.style.display = '';
-					already_shown[container.id] = true;
-				} else
-					container.style.display = 'none';
-			});
-		} else { // empty string, show all
+		} else { // show all
 			var expanded = true;
 			this._traverse_tracks(function(container) {
 				if (container.config.coge.collapsible) {
@@ -636,7 +670,7 @@ define(['dojo/_base/declare',
 
 	_in_notebook(container)
 	{
-		return container.parentNode.firstChild.lastChild.innerHTML != 'All Experiments';    	
+		return container.parentNode.firstChild.lastChild.innerHTML != 'All Experiments';
 	},
 
 	// ----------------------------------------------------------------
@@ -692,7 +726,7 @@ define(['dojo/_base/declare',
 				}));
 			}
 			if (track_config.coge.notebooks && this._in_notebook(container)) {
-				var notebook_node = container.parentNode.firstChild;                	
+				var notebook_node = container.parentNode.firstChild;
 				var notebook_name = notebook_node.lastChild.innerHTML;
 				menu.addChild(new MenuItem({
 					label: 'Remove from Notebook',
@@ -814,12 +848,12 @@ define(['dojo/_base/declare',
 			// 	var experiments = Array.prototype.slice.call(div.childNodes, 0);
 			// 	experiments.shift();
 			// 	experiments.sort(
-			// 	    function( a,b ) {  
+			// 	    function( a,b ) {
 			// 	        return coge_plugin.natural_sort(a.config.coge.name, b.config.coge.name);
 			// 	    }
 			// 	).forEach(
-			// 	    function(a, idx) { 
-			// 	        div.insertBefore(a, div.childNodes[idx]);  
+			// 	    function(a, idx) {
+			// 	        div.insertBefore(a, div.childNodes[idx]);
 			// 	});
 			// },
 			selfAccept: false
@@ -910,7 +944,7 @@ define(['dojo/_base/declare',
 	_remove_from_notebook: function(type, id, notebook_id) {
 		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
 		dojo.xhrPost({
-			url: coge_api + '/notebooks/' + notebook_id + '/items/remove?username='+un,
+			url: coge_api + '/notebooks/' + notebook_id + '/items/remove?username=' + USER_NAME,
 			postData: JSON.stringify({
 				items: [{
 					type: type,
@@ -956,7 +990,7 @@ define(['dojo/_base/declare',
 			return;
 		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
 		dojo.xhrPost({
-			url: coge_api + '/' + type + 's/' + id + '?username='+un,
+			url: coge_api + '/' + type + 's/' + id + '?username=' + USER_NAME,
 			postData: JSON.stringify({
 				metadata: {
 					name: name
@@ -1111,7 +1145,7 @@ define(['dojo/_base/declare',
 	 */
 	toggle: function() {
 	},
-	
+
 	// ----------------------------------------------------------------
 
 	_track_changed: function(key, new_key) {
@@ -1182,9 +1216,13 @@ define(['dojo/_base/declare',
 			}
 		}
 		var html = Math.min(num_experiments, total_experiments) + ' of ' + total_experiments + ' experiment' + (total_experiments == 1 ? '' : 's') + ' shown<br>';
-		if (this._type_filter) {
-			html += 'showing ' + (this._type_filter === 1 ? 'quantitative' : this._type_filter === 2 ? 'variant' : this._type_filter === 3 ? 'alignment' : 'marker') + ' tracks&nbsp;&nbsp;&nbsp;&nbsp;';
-			html += '<span class="glyphicon glyphicon-remove" style="color:black;cursor:pointer" onclick="coge_track_list._type_filter=null;coge_track_list._filter_tracks(coge_track_list.text_filter_input.value);"></span>';
+		if (this._type_filter || this._show) {
+			html += 'showing ';
+			if (this._show)
+				html += this._show + ' ';
+			if (this._type_filter)
+				html += (this._type_filter === 1 ? 'quantitative' : this._type_filter === 2 ? 'variant' : this._type_filter === 3 ? 'alignment' : 'marker');
+			html += ' tracks&nbsp;&nbsp;&nbsp;&nbsp;<span class="glyphicon glyphicon-remove" style="color:black;cursor:pointer" onclick="coge_track_list._type_filter=null;coge_track_list._show=null;coge_track_list._filter_tracks(coge_track_list.text_filter_input.value);"></span>';
 		}
 		else
 			html += num_notebooks + ' of ' + total_notebooks + ' notebook' + (total_notebooks == 1 ? '' : 's') + ' shown';

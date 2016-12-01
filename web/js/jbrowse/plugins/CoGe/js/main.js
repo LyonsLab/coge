@@ -200,7 +200,7 @@ define(['dojo/_base/declare',
 				return null;
 			return [this.hits, i, j];
 		},
-		merge: function(max_gap, search_nav) {
+		merge: function(max_gap, search_nav, keep_strands) {
 			if (!this.save_hits) {
 				this.save_hits = this.hits;
 				this.save_chr = this.chr;
@@ -227,7 +227,7 @@ define(['dojo/_base/declare',
 					chr_end = (chr < this.save_chr.length - 1) ? this.save_chr[chr + 1][1] : this.save_hits.length;
 				}
 				var hit = this.save_hits[i];
-				if (hit[2] == 1)
+				if (hit[2] == 1 || !keep_strands)
 					if (start_f == null) {
 						start_f = hit[0];
 						end_f = hit[1];
@@ -448,7 +448,7 @@ return declare( JBrowsePlugin,
 		var restricted = dojo.getAttr('notebook_restricted', 'checked');
 		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
 		dojo.xhrPut({
-			url: coge_api + '/notebooks?username='+un,
+			url: coge_api + '/notebooks?username=' + USER_NAME,
 			postData: JSON.stringify({
 				metadata: {
 					name: name,
@@ -554,10 +554,12 @@ return declare( JBrowsePlugin,
 		content += track1.config.key;
 		content += ' does not overlap ';
 		content += track2.config.key;
-		content += '<br><input id="dnd_merge" type="radio" name="action"> Merge ';
-		content += track1.config.key;
-		content += ' and ';
-		content += track2.config.key;
+		if (!track1.config.coge.type.startsWith('feature') && !track2.config.coge.type.startsWith('feature')) {
+			content += '<br><input id="dnd_merge" type="radio" name="action"> Merge ';
+			content += track1.config.key;
+			content += ' and ';
+			content += track2.config.key;
+		}
 		content += '</td></tr><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr></table>';
@@ -668,7 +670,7 @@ return declare( JBrowsePlugin,
 			return;
 		}
 		var ref_seq = dojo.byId('coge_ref_seq');
-		var url = api_base_url + '/experiment/' + this._track.config.coge.id + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&filename=' + filename;
+		var url = api_base_url + '/search/data/' + this._track.config.coge.id + '/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + USER_NAME + '&filename=' + filename;
 		if (dojo.byId('search') && dojo.byId('search').checked)
 			url += '&' + this.search_to_params(this._track.config.coge.search, true);
 		if (dojo.byId('transform') && dojo.byId('transform').checked)
@@ -788,16 +790,17 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	features_overlap_search_dialog: function(track, type, api_path) {
+	features_overlap_search_dialog: function(track, type) {
 		this._track = track;
-		var content = '<table><tr><td>Chromosome:</td><td>';
+		var content = '<div id="coge-search-dialog"><table><tr><td>Chromosome:</td><td>';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr><tr><td style="vertical-align:top;">Features:</td><td id="coge_search_features_overlap">';
 		content += this.build_features_checkboxes('coge_search_features_overlap');
 		content += '</td></tr></table>';
-		content += this.build_buttons("coge_plugin.search_features_overlap('" + type + "','" + api_path + "')", 'coge_plugin._search_dialog.hide()');
+		content += this.build_buttons("coge_plugin.search_features_overlap()", 'coge_plugin._search_dialog.hide()');
+		content += '</div>';
 		this._search_dialog = new Dialog({
-			title: 'Find ' + type + ' in Features',
+			title: 'Find Data that Overlaps Features',
 			content: content,
 			onHide: function() {
 				this.destroyRecursive();
@@ -810,7 +813,7 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	get_checked_values: function(id, description, quote) {
-		var checkboxes = document.getElementById(id).getElementsByTagName('INPUT');
+		var checkboxes = document.querySelectorAll('#' + id + ' input[type="checkbox" i]');
 		var values = [];
 		for (var i=0; i<checkboxes.length; i++)
 			if (checkboxes[i].checked)
@@ -840,7 +843,7 @@ return declare( JBrowsePlugin,
 	_markers_merge: function() {
 		var gap_max = dojo.byId('gap_max').value;
 		this._track.config.coge.gap_max = gap_max;
-		this._track.config.coge.results.merge(gap_max, this._track.config.coge.search_nav);
+		this._track.config.coge.results.merge(gap_max, this._track.config.coge.search_nav, dojo.byId('keep_strands').checked);
 		this._track.changed();
 	},
 
@@ -856,7 +859,7 @@ return declare( JBrowsePlugin,
 
 	markers_merge_dialog: function(track) {
 		this._track = track;
-		var content = '<table><tr><td></td><td style="white-space: nowrap;">Merge adjacent markers within <input id="gap_max" value="100" size="4" /> bp</td></tr></table>' +
+		var content = '<table><tr><td style="white-space: nowrap;">Merge adjacent markers within <input id="gap_max" value="100" size="4" /> bp</td></tr><tr><td><input id="keep_strands" type="checkbox" checked> Keep strands seperate</td></tr></table>' +
 			'<div class="dijitDialogPaneActionBar">' + this._button('Apply', 'coge_plugin._markers_merge()') + this._button('Revert', 'coge_plugin._markers_unmerge()') + this._button('Done', 'coge_plugin._merge_markers_dialog.hide()') + '</div>';
 		this._merge_markers_dialog = new Dialog({
 			title: 'Merge Markers',
@@ -1037,11 +1040,19 @@ return declare( JBrowsePlugin,
 		this._start_search('Finding...');
 		var search = {type: not ? 'does not overlap' : 'overlaps', chr: chr, other: this._track2.config.key};
 		this._track.config.coge.search = search;
-		var eid = this._track.config.coge.id;
-		var eid2 = this._track2.config.coge.id;
-		var url = api_base_url + '/experiment/' + eid + '/overlaps/' + eid2 + '/' + chr;
+		var url = api_base_url + '/search/overlaps?chr=' + chr;
+		for (var i=1; i<=2; i++) {
+			var track = i == 1 ? this._track : this._track2;
+			var type = track.config.coge.type;
+			if (type == 'experiment')
+				url += '&type' + i + '=experiment&eid' + i + '=' + track.config.coge.id;
+			else if (type == 'features')
+				url += '&type' + i + '=features&features' + i + '=\'' + track.config.coge.id + '\'&gid' + i + '=' + gid;
+			else if (type == 'feature_group')
+				url += '&type' + i + '=features&features' + i + '=all&gid' + i + '=' + gid;
+		}
 		if (not)
-			url += '?not=true';
+			url += '&not=true';
 		dojo.xhrGet({
 			url: url,
 			handleAs: 'json',
@@ -1130,7 +1141,7 @@ return declare( JBrowsePlugin,
 						new_config.type = 'CoGe/View/Track/Markers';
 						new_config.coge.data_type = 4;
 					}
-					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + eid + '\nsearch:' + search + '\nsearch user:' + un;
+					new_config.coge.annotations = 'original experiment name:' + config.coge.name + '\noriginal experiment id:' + eid + '\nsearch:' + search + '\nsearch user:' + USER_NAME;
 					if (new_config.coge.transform)
 						new_config.coge.annotations += '\ntransform:' + new_config.coge.transform;
 					if (new_config.coge.data_type == 1 || new_config.coge.data_type == 4)
@@ -1151,7 +1162,7 @@ return declare( JBrowsePlugin,
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var search = this.search_to_string(config.coge.search);
 		var description = 'Results from search: ' + search;
-		var url = api_base_url + '/experiment/' + config.coge.eid + '/data/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + un + '&load_id=' + load_id;
+		var url = api_base_url + '/search/data/' + config.coge.eid + '/' + ref_seq.options[ref_seq.selectedIndex].innerHTML + '?username=' + USER_NAME + '&load_id=' + load_id;
 		url += '&' + this.search_to_params(config.coge.search, true);
 		var annotions = [
 			{
@@ -1172,7 +1183,7 @@ return declare( JBrowsePlugin,
 			},
 			{
 				type: 'search user',
-				text: un
+				text: USER_NAME
 			}
 		];
 		if (config.coge.transform) {
@@ -1241,7 +1252,7 @@ return declare( JBrowsePlugin,
 	// ----------------------------------------------------------------
 
 	save_as_experiment_dialog: function(track) {
-		if (un == 'public') {
+		if (USER_NAME == 'public') {
 			this.info('Login Required', 'Please log in to CoGe before creating experiments');
 			return;
 		}
@@ -1292,17 +1303,17 @@ return declare( JBrowsePlugin,
 
 	// ----------------------------------------------------------------
 
-	search_features_overlap: function(type, api_path) {
+	search_features_overlap: function() {
 		var types = this.get_checked_values('coge_search_features_overlap', 'feature types', true);
 		if (!types)
 			return;
 		var ref_seq = dojo.byId('coge_ref_seq');
 		var chr = ref_seq.options[ref_seq.selectedIndex].innerHTML;
 		this._start_search();
-		var search = {type: type, chr: chr, features: types};
+		var search = {type: 'overlaps', chr: chr, other: types};
 		this._track.config.coge.search = search;
 		var eid = this._track.config.coge.id;
-		var url = api_base_url + '/experiment/' + eid + '/' + api_path + '/' + chr + '?features=' + search.features;
+		var url = api_base_url + '/search/overlaps?type1=experiment&eid1=' + eid + '&type2=features&gid2=' + gid + '&features2=' + search.other + '&chr=' + chr;
 		dojo.xhrGet({
 			url: url,
 			handleAs: 'json',
@@ -1332,16 +1343,11 @@ return declare( JBrowsePlugin,
 	search_to_params: function(search, without_chr) {
 		var params;
 		if (search.type == 'SNPs')
-			if (search.snp_type)
-				params = 'snp_type=' + search.snp_type;
-			else
-				params = 'features=' + search.features;
-		else if (search.type == 'Alignments')
-			params = 'features=' + search.features;
-		else if (search.type == 'Markers')
-			params = 'features=' + search.features;
+			params = 'snp_type=' + search.snp_type;
 		else if (search.type == 'merge')
 			params = 'type=merge&eids=' + search.eids.join(',');
+		else if (search.type == 'overlaps')
+			params = 'type=overlaps&other=' + search.other;
 		else if (search.type == 'range')
 			params = 'type=range&gte=' + search.gte + '&lte=' + search.lte;
 		else
@@ -1355,17 +1361,9 @@ return declare( JBrowsePlugin,
 
 	search_to_string: function(search, without_chr) {
 		var string;
-		if (search.type == 'Alignments') {
-			string = 'Alignments'
-			if (search.features != 'all')
-				string += ' in ' + search.features;
-		} else if (search.type == 'does not overlap')
+		if (search.type == 'does not overlap')
 			string = 'does not overlap ' + search.other;
-		else if (search.type == 'Markers') {
-			string = 'Markers'
-			if (search.features != 'all')
-				string += ' in ' + search.features;
-		} else if (search.type == 'merge')
+		else if (search.type == 'merge')
 			string = 'merge ' + search.keys.join(',');
 		else if (search.type == 'overlaps')
 			string = 'overlaps ' + search.other;

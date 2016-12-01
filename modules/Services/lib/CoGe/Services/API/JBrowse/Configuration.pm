@@ -71,7 +71,7 @@ sub track_config {
     my $gid  = $self->param('gid');
     my $experiment_ids = $self->param('experiments');
     my $start_time = time; # for performance testing
-    
+
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
 
@@ -150,8 +150,8 @@ sub track_config {
         push @tracks, {
             baseUrl      => "$JBROWSE_API/track/annotation/$gid/",
             autocomplete => "all",
-            track        => "features",
-            label        => "features",
+            track        => "feature_group0",
+            label        => "feature_group0",
             key          => "Features: all",
             type         => "CoGe/View/Track/CoGeFeatures",
             description  => "note, description",
@@ -175,7 +175,7 @@ sub track_config {
                 collapsible => 1
             }
         };
-        
+
         print STDERR 'time1a: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
         # Add a track for each feature type
@@ -211,7 +211,7 @@ sub track_config {
             };
         }
     }
-    
+
     print STDERR 'time1b: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
 
     #
@@ -228,8 +228,8 @@ sub track_config {
                 push @tracks, {
                     baseUrl      => "$JBROWSE_API/track/annotation/$gid/datasets/$dsid",
                     autocomplete => "all",
-                    track        => "features_ds".$dsid,
-                    label        => "features_ds".$dsid,
+                    track        => "feature_group".$dsid,
+                    label        => "feature_group".$dsid,
                     key          => "Features: ".$dsname,
                     type         => "CoGe/View/Track/CoGeFeatures",
                     description  => "note, description",
@@ -259,8 +259,8 @@ sub track_config {
                     push @tracks, {
                         baseUrl => "$JBROWSE_API/track/annotation/$gid/types/$type_name/",
                         autocomplete => "all",
-                        track        => 'features_ds'.$dsid.'_'.$type_name,
-                        label        => 'features_ds'.$dsid.'_'.$type_name,
+                        track        => 'features'.$dsid.'_'.$type_name,
+                        label        => 'features'.$dsid.'_'.$type_name,
                         key          => $type_name,
                         type         => "JBrowse/View/Track/HTMLFeatures",
                         storeClass   => "JBrowse/Store/SeqFeature/REST",
@@ -363,13 +363,26 @@ sub track_config {
             featureScale => $featureScale,
             histScale    => $histScale,
             labelScale   => $labelScale,
-            showLabels   => JSON::true,
             className    => '{type}',
             histCss      => 'background-color:' . _getFeatureColor($eid),
             featureCss   => 'background-color:' . _getFeatureColor($eid)
         };
         $style->{showMismatches} = JSON::true if $e->{data_type} == 3;
 
+        my $coge = {
+            id          => $eid,
+            type        => 'experiment',
+            data_type   => $e->{data_type} ? $e->{data_type} : 1,
+            editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
+            name        => $e->{name},
+            description => $e->{description},
+            notebooks   => ( @notebooks ? \@notebooks : undef ),
+            onClick     => "ExperimentView.pl?embed=1&eid=$eid",
+            annotations => _annotations('experiment', $eid, $db)
+        };
+        $coge->{editable} = 1 if (($user && $user->admin) || ($role && ($role == 2 || $role == 3)));
+        $coge->{restricted} = 1 if $e->{restricted};
+        $coge->{role} = $role if $role;
         my $config = {
             baseUrl      => "$JBROWSE_API/experiment/$eid/",
             autocomplete => "all",
@@ -379,18 +392,9 @@ sub track_config {
             type         => $type,
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             region_feature_densities => 1, # enable histograms in store
+            showLabels   => JSON::false,
             style => $style,
-            coge => {
-                id          => $eid,
-                type        => 'experiment',
-                data_type   => $e->{data_type} ? $e->{data_type} : 1,
-                editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
-                name        => $e->{name},
-                description => $e->{description},
-                notebooks   => ( @notebooks ? \@notebooks : undef ),
-                onClick     => "ExperimentView.pl?embed=1&eid=$eid",
-                annotations => _annotations('experiment', $eid, $db)
-            }
+            coge => $coge
         };
         push @tracks, $config;
     }
@@ -415,7 +419,7 @@ sub track_config {
                 type        => 'notebook',
                 collapsible => 1,
                 name        => 'All Experiments',
-                description => '',
+                description => ''
             }
         };
     }
@@ -427,6 +431,19 @@ sub track_config {
         my $nid = $n->{list_id};
         my $role = $connectors->{1}{$nid};
         $role = $role->{role_id} if $role;
+        my $coge = {
+            id      => $nid,
+            type    => 'notebook',
+            collapsible => 1,
+            name        => $n->{name},
+            description => $n->{description},
+            experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
+            onClick     => "NotebookView.pl?embed=1&lid=$nid",
+            annotations => _annotations('list', $nid, $db)
+        };
+        $coge->{editable} = 1 if (($user && $user->admin) || ($role && ($role == 2 || $role == 3)));
+        $coge->{restricted} = 1 if $n->{restricted};
+        $coge->{role} = $role if $role;
         push @tracks, {
             key     => ( $n->{restricted} ? '🔒 ' : '' ) . $n->{name},
             baseUrl => "$JBROWSE_API/experiment/genome/$gid/notebook/$nid",
@@ -437,17 +454,7 @@ sub track_config {
             storeClass   => "JBrowse/Store/SeqFeature/REST",
             style        => { featureScale => 0.001 },
             showHoverScores => 1,
-            coge            => {
-                id      => $nid,
-                type    => 'notebook',
-                collapsible => 1,
-                name        => $n->{name},
-                description => $n->{description},
-                editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
-                experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
-                onClick     => "NotebookView.pl?embed=1&lid=$nid",
-                annotations => _annotations('list', $nid, $db)
-            }
+            coge            => $coge
         };
     }
 

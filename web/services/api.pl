@@ -46,7 +46,7 @@ my $r = app->routes->namespaces(["CoGe::Services::API::JBrowse", "CoGe::Services
 # Global Search routes
 $r->get("/global/search/#term")
     ->name("global-search")
-    ->to("search#search", term => undef);
+    ->to("search#search", namespace => 'CoGe::Services::API', term => undef);
 
 # Organism routes
 $r->get("/organisms/search/#term")
@@ -299,10 +299,6 @@ $r->get("/jbrowse/experiment/:eid/stats/regionFeatureDensities/#chr" => { eid =>
     ->name("jbrowse-experiment-regionFeatureDensitites")
     ->to("experiment#stats_regionFeatureDensities", eid => undef, chr => undef);
 
-$r->get("/jbrowse/experiment/:eid/data/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
-    ->name("jbrowse-experiment-data")
-    ->to("experiment#data", eid => undef, chr => undef);
-
 $r->get("/jbrowse/experiment/:eid/features/#chr"  => { eid => qr/[\d,]+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", eid => undef, chr => undef);
@@ -310,28 +306,8 @@ $r->get("/jbrowse/experiment/:eid/features/#chr"  => { eid => qr/[\d,]+/, chr =>
 $r->get("/jbrowse/experiment/:eid/histogram/#chr" => { eid => qr/\d+/, chr => qr/\w+/ })
     ->name("jbrowse-experiment-histogram")
     ->to("experiment#histogram", eid => undef, chr => undef);
-    
-$r->get("/jbrowse/experiment/:eid/query/" => [eid => qr/\d+/])
-    ->name("jbrowse-experiment-query")
-    ->to("experiment#query_data", eid => undef);
 
-$r->get("/jbrowse/experiment/:eid/alignments/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
-    ->name("jbrowse-experiment-alignments")
-    ->to("experiment#alignments", eid => undef, chr => undef);
-
-$r->get("/jbrowse/experiment/:eid/markers/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
-    ->name("jbrowse-experiment-markers")
-    ->to("experiment#markers", eid => undef, chr => undef);
-
-$r->get("/jbrowse/experiment/:eid/snps/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
-    ->name("jbrowse-experiment-snps")
-    ->to("experiment#snps", eid => undef, chr => undef);
-
-$r->get("/jbrowse/experiment/:eid/overlaps/:eid2/#chr"  => { eid => qr/\d+/, eid2 => qr/\d+/, chr => qr/\w+/ })
-    ->name("jbrowse-experiment-overlaps")
-    ->to("experiment#overlaps", eid => undef, eid2 => undef, chr => undef);
-
-# genome track (all experiments)
+# JBrowse genome track (all experiments)
 $r->get("/jbrowse/experiment/genome/:gid/stats/global/" => [gid => qr/\d+/])
     ->name("jbrowse-experiment-stats-global")
     ->to("experiment#stats_global", gid => undef);
@@ -344,7 +320,7 @@ $r->get("/jbrowse/experiment/genome/:gid/features/#chr"  => { gid => qr/\d+/, ch
     ->name("jbrowse-experiment-features")
     ->to("experiment#features", gid => undef, chr => undef);
 
-# notebook tracks
+# JBrowse notebook tracks
 $r->get("/jbrowse/experiment/genome/:gid/notebook/:nid/stats/global/" => { gid => qr/\d+/, nid => qr/\d+/ })
     ->name("jbrowse-experiment-stats-global")
     ->to("experiment#stats_global", nid => undef);
@@ -365,6 +341,23 @@ $r->get("/jbrowse/genome/:gid/genes/"  => [gid => qr/\d+/])
 $r->get("/jbrowse/genome/:gid/features/"  => [gid => qr/\d+/])
     ->name("jbrowse-genome-features")
     ->to("genome#features", gid => undef);
+
+# JBrowse search routes
+$r->get("/jbrowse/search/data/:eid/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-search-data")
+    ->to("search#data", namespace => 'CoGe::Services::API::JBrowse', eid => undef, chr => undef);
+
+$r->get("/jbrowse/search/overlaps")
+    ->name("jbrowse-search-overlaps")
+    ->to("search#overlaps", namespace => 'CoGe::Services::API::JBrowse');
+    
+$r->get("/jbrowse/search/query/:eid" => [eid => qr/\d+/])
+    ->name("jbrowse-search-query")
+    ->to("search#query_data", namespace => 'CoGe::Services::API::JBrowse', eid => undef);
+
+$r->get("/jbrowse/search/snps/:eid/#chr"  => { eid => qr/\d+/, chr => qr/\w+/ })
+    ->name("jbrowse-search-snps")
+    ->to("search#snps", namespace => 'CoGe::Services::API::JBrowse', eid => undef, chr => undef);
 
 # Not found
 $r->any("*" => sub {

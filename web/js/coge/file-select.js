@@ -158,6 +158,8 @@ var coge = window.coge = (function(namespace) {
 			// 	console.error('FileSelect widget error: loadId not defined!');
 			// 	return;
 			// }
+
+			self.initialized = true;
 		},
 		
 		resize: function(event, ui) {
@@ -169,27 +171,21 @@ var coge = window.coge = (function(namespace) {
 		
 		render: function() {
 			let self = this;
-			
+
 			// Set default tab
 			self.container.tabs({selected: self.defaultTab});
-			
-			self.container.resizable({
+
+            // Make resizable by dragging bottom border
+            self.container.resizable({
 				handles: 's',
 				ghost: true,
 				stop: self.resize.bind(self)
 			});
-			
+
 			// Initialize irods view
-			self._irods_get_path();
-			
-			// Setup file list event handlers
-			self.selectedFiles.forEach(function(file) {
-				file.tr.find(".ui-icon-closethick")
-					.unbind()
-					.click(self._cancel_callback.bind(self, file));
-			});
-			
-			// Setup menu event handlers
+            self._irods_get_path(self.irods_path);
+
+            // Setup menu event handlers
 			self.container.find('.fileselect-home').click(function() {
 				self._irods_get_path();
 			});
@@ -304,23 +300,31 @@ var coge = window.coge = (function(namespace) {
 			});
 
 			self.container.find('#input_accn').bind('keyup focus click', function() {
-				if ( self.container.find('#input_accn').val() && self.container.find('#input_accn').val().length >= 6 ) {
+				if ( self.container.find('#input_accn').val() && self.container.find('#input_accn').val().length > 0 ) {
 					self.container.find('#ncbi_get_button,#sra_get_button').removeClass('ui-state-disabled');
 				}
 				else {
 					self.container.find('#ncbi_get_button,#sra_get_button').addClass('ui-state-disabled');
 				}
 			});
-			
+
 			self.container.find('#ncbi_get_button').bind('click', function() {
 				self._load_from_ncbi();
 			});
-			
+
 			self.container.find('#sra_get_button').bind('click', function() {
 				self._load_from_sra();
 			});
 
-			if (self.container.find('#input_upload_file').length)
+			// Setup file list event handlers
+			self.selectedFiles.forEach(function(file) {
+				file.tr.find(".ui-icon-closethick")
+					.unbind()
+					.click(self._cancel_callback.bind(self, file));
+			});
+
+			// Setup file upload
+			if (self.container.find('#input_upload_file').length) {
 				self.container.find('#input_upload_file').fileupload({
 			    	dataType: 'json',
 			    	add:
@@ -343,6 +347,7 @@ var coge = window.coge = (function(namespace) {
 							self._finish_file_in_list('file', 'file://'+data.result.filename, data.result.path, data.result.size);
 						}
 				});
+            }
 		},
 		
 		get_selected_files: function() {
@@ -545,6 +550,7 @@ var coge = window.coge = (function(namespace) {
 			self._irods_busy();
 
 			path = self._resolve_path(path);
+			self.irods_path = path;
 
 			coge.services.irods_list(path)
 				.done(function(result) { //TODO move out into named function
@@ -858,35 +864,70 @@ var coge = window.coge = (function(namespace) {
 		
 		_load_from_sra: function() {
 			var self = this;
-			
-			var accn = $('#input_accn').val();
-			if (!(accn && accn.toLowerCase().startsWith('srr'))) {
-				$('#sra_status').html('Please enter an SRR accession (starts with "SRR")');
-				return;
-			}
 
-			$('#sra_status').html(SPINNER_SMALL_HTML+' Contacting NCBI SRA...');
-			
-		    var entrez = new Entrez({ database: 'sra' });
-		    entrez.debug = 1;
-		    entrez.search(accn).then(function(id) {
-		    	if (id) {
-		    		entrez.fetch(id).then(function(result) {
-		    			if (result) {
-		    				if (self._add_file_to_list(result.accn, 'sra://'+result.accn)) {
-								self._finish_file_in_list('sra', 'sra://'+result.accn, result.accn, result.size);
-							}
-							$('#sra_status').html('');
-		    			}
-		    			else {
-		    				$('#sra_status').html('Item not found');
-		    			}
-		    		});
-		    	}
-		    	else {
-		    		$('#sra_status').html('Item not found');
-		    	}
-		    });
+			// A list of space-separated SRA accession numbers
+			var accn_list = $('#input_accn').val();
+			if (!accn_list) return;
+            accn_list.replace(/[^0-9a-z]/gi, ''); // remove all non-alphanumeric chars (except for underscore)
+
+            // Setup Entrez
+            var sra = new SRA();
+            self._sra_busy();
+
+            accn_list.split(/\s+/).forEach(function (accn) {
+                if (!accn) return;
+
+                // Search SRA for accession and fetch corresponding records
+                if (sra.type(accn) == sra.SRA_ACCN_TYPE_EXPERIMENT) {
+                    sra.esearch(accn).then(function(ids) {
+                        if (ids && ids.length) {
+                            $(ids).each(function(index, id) {
+                                sra.esummary(id).then(function(xml) {
+                                    var item = sra.extract(xml);
+                                    item.runs.each(function(index, item) {
+                                        if (self._add_file_to_list(item.accn, 'sra://'+item.accn))
+                                            self._finish_file_in_list('sra', 'sra://'+item.accn, item.accn, item.size);
+                                        self._sra_status('');
+                                    });
+                                });
+                            });
+                        }
+                        else {
+                            self._sra_status('Item not found: ' + accn);
+                        }
+                    });
+                }
+// mdb removed 11/30/16 -- postponed until backend pipeline is finished
+//                else if (sra.type(accn) == sra.SRA_ACCN_TYPE_PROJECT) {
+//                    sra.esearch(accn).then(function(ids) {
+//                        if (ids) {
+//                            sra.esummary(ids[0]).then(function(xml) {
+//                                var item = sra.extract(xml);
+//                                var title = (item.title ? item.title : accn);
+//                                if (self._add_file_to_list(title, 'sra://'+accn))
+//                                    self._finish_file_in_list('sra', 'sra://'+accn, accn, ids.length + ' items');
+//                                self._sra_status('');
+//                            });
+//                        }
+//                    });
+//                }
+                else {
+                    self._sra_error('Unsupported accession type: ' + accn);
+                    return;
+                }
+            });
+		},
+
+		_sra_error: function(text) {
+		    $('#sra_status').html(text).removeClass('note').addClass('alert');
+		},
+
+		_sra_status: function(text) {
+		    $('#sra_status').html(text).removeClass('alert').addClass('note');
+		},
+
+		_sra_busy: function() {
+		    $('#sra_status').html(SPINNER_SMALL_HTML+' Contacting NCBI-SRA...').removeClass('alert').addClass('note');
 		},
 
 		_confirm: function(title, question, on_ok) {

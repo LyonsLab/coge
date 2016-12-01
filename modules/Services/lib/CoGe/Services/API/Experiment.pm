@@ -7,6 +7,7 @@ use Data::Dumper;
 use CoGeX;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Experiment qw( delete_experiment );
+use CoGe::Core::Favorites;
 use CoGe::Services::Auth;
 use CoGe::Services::API::Job;
 
@@ -39,12 +40,17 @@ sub search {
          !$_->restricted || (defined $user && $user->has_access_to_experiment($_))
     } @experiments;
 
+    # Get user's favorites
+    my $favorites = CoGe::Core::Favorites->new(user => $user);
+
     # Format response
     my @result = map {
       {
         id => int($_->id),
         name => $_->name,
         description => $_->description,
+        restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+        favorited  => $favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false
       }
     } @filtered;
 

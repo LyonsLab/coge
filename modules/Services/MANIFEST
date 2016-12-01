@@ -22,4 +22,5 @@ lib/CoGe/Services/API/JBrowse/Configuration.pm
 lib/CoGe/Services/API/JBrowse/Experiment.pm
 lib/CoGe/Services/API/JBrowse/GCcontent.pm
 lib/CoGe/Services/API/JBrowse/Genome.pm
+lib/CoGe/Services/API/JBrowse/Search.pm
 lib/CoGe/Services/API/JBrowse/Sequence.pm

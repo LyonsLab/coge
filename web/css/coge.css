@@ -1826,13 +1826,12 @@ div.dataTables_scrollBody {
     line-height: 2.5em;
     height: 2.5em;
     margin-left: 1em;
-    margin-bottom: 1.5em;
+    margin-bottom: 1em;
 }
 
 .header .active {
     color: #119911;
     font-size: larger;
-    text-decoration: underline;
 }
 
 .wizard .step .required:after {
@@ -1913,6 +1912,7 @@ div.dataTables_scrollBody {
 
 @media (min-width: 981px) {
 	.coge-header {
+        font-size: 16px;
 		height: 3.1em;
 		padding: 2px;
 		margin-bottom: 1em;
@@ -1956,6 +1956,7 @@ div.dataTables_scrollBody {
 }
 
 .coge-header-searchbar {
+    line-height: 1.125;
 	margin-right: 0.25em;
 	margin-top: 0.75em;
 }
@@ -1965,6 +1966,7 @@ div.dataTables_scrollBody {
 	/*height: 3em;*/
 	font-size:	1.2em;
 	font-family: helvetica;
+    padding: 1px;
 }
 
 .coge-header-menu {
@@ -2056,7 +2058,8 @@ div.dataTables_scrollBody {
 	border-left: 1px solid rgba(0, 0, 0, .15);
 	border-right: 1px solid rgba(0, 0, 0, .15);
 	border-bottom: 1px solid rgba(0, 0, 0, .15);
-	border-radius: 4px;
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
 }
 
 .dropdown-item {

@@ -138,7 +138,7 @@ sub ftp_get {
     my $cmd = catfile($self->conf->{SCRIPTDIR}, "ftp.pl");
 
     return {
-        cmd => catfile($self->conf->{SCRIPTDIR}, "ftp.pl"),
+        cmd => $cmd,
         args => [
             ['-url',       shell_quote($url),      0],
             ['-username',  shell_quote($username), 0],

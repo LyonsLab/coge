@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<svg version="1.2" baseProfile="tiny" width="41.08mm" height="21.94mm" viewBox="69329 71699 4108 2194" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke-width="28.222" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:ooo="http://xml.openoffice.org/svg/export" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve">
+<svg version="1.2" baseProfile="tiny" width="32.2mm" height="30.29mm" viewBox="82549 51261 3220 3029" preserveAspectRatio="xMidYMid" fill-rule="evenodd" stroke-width="28.222" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" xmlns:ooo="http://xml.openoffice.org/svg/export" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve">
  <defs class="ClipPathGroup">
   <clipPath id="presentation_clip_path" clipPathUnits="userSpaceOnUse">
-   <rect x="69329" y="71699" width="4108" height="2194"/>
+   <rect x="82549" y="51261" width="3220" height="3029"/>
   </clipPath>
  </defs>
  <defs class="TextShapeIndex">
-  <g ooo:slide="id1" ooo:id-list="id3 id4 id5 id6 id7 id8 id9 id10 id11"/>
+  <g ooo:slide="id1" ooo:id-list="id3 id4 id5 id6 id7 id8 id9 id10 id11 id12"/>
  </defs>
  <defs class="EmbeddedBulletChars">
   <g id="bullet-char-template(57356)" transform="scale(0.00048828125,-0.00048828125)">
@@ -43,49 +43,54 @@
   <g>
    <g id="id1" class="Slide" clip-path="url(#presentation_clip_path)">
     <g class="Page">
-     <g class="com.sun.star.drawing.OpenBezierShape">
+     <g class="com.sun.star.drawing.ClosedBezierShape">
       <g id="id3">
-       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 71360,73486 C 71352,73109 71329,72396 71321,72058 71156,71611 70937,71901 70105,72018 70011,72168 69713,73093 69423,73368 70570,73322 71047,72788 71297,73423"/>
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 84255,52870 C 84159,52840 84053,52857 83973,52937 83826,53086 83808,53300 84021,53403 84138,53459 84276,53459 84369,53367 84454,53284 84519,53144 84452,53030 84406,52951 84333,52895 84255,52870 Z"/>
       </g>
      </g>
-     <g class="com.sun.star.drawing.OpenBezierShape">
+     <g class="com.sun.star.drawing.ClosedBezierShape">
       <g id="id4">
-       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 71331,72070 C 71625,71578 71923,71869 72582,71978 72660,72214 73108,73194 73343,73382 72566,73400 71672,72731 71413,73445"/>
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 84255,51369 C 84159,51339 84053,51356 83973,51436 83826,51585 83808,51799 84021,51902 84138,51958 84276,51958 84369,51866 84454,51783 84519,51643 84452,51529 84406,51450 84333,51394 84255,51369 Z"/>
       </g>
      </g>
-     <g class="com.sun.star.drawing.OpenBezierShape">
+     <g class="com.sun.star.drawing.ClosedBezierShape">
       <g id="id5">
-       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 69423,73366 C 69455,73458 69564,73707 69573,73735"/>
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 83036,53515 C 82940,53485 82834,53502 82754,53582 82608,53731 82589,53945 82802,54048 82919,54104 83057,54104 83151,54012 83235,53929 83300,53789 83233,53675 83187,53596 83115,53540 83036,53515 Z"/>
       </g>
      </g>
      <g class="com.sun.star.drawing.OpenBezierShape">
       <g id="id6">
-       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 73146,73759 C 73185,73673 73241,73547 73280,73445"/>
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 83360,53064 C 83251,52828 83487,52420 83722,52388"/>
       </g>
      </g>
      <g class="com.sun.star.drawing.OpenBezierShape">
       <g id="id7">
-       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 73240,73770 C 72894,73813 72190,73751 71697,73679 71570,73660 71579,73799 71368,73799 71156,73799 71138,73674 71007,73696 70478,73783 69809,73813 69470,73790"/>
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 84961,53095 C 85134,52875 84946,52482 84631,52404"/>
       </g>
      </g>
      <g class="com.sun.star.drawing.OpenBezierShape">
       <g id="id8">
-       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 70234,72448 C 70546,72454 70728,72117 70999,72293"/>
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 83824,53944 C 83938,54139 84412,54146 84552,53967"/>
       </g>
      </g>
-     <g class="com.sun.star.drawing.OpenBezierShape">
+     <g class="com.sun.star.drawing.ClosedBezierShape">
       <g id="id9">
-       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 70220,72837 C 70458,72844 70643,72560 70896,72720"/>
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 85451,53625 C 85354,53595 85248,53612 85168,53692 85021,53841 85002,54055 85216,54158 85333,54214 85471,54214 85565,54122 85650,54039 85714,53899 85647,53785 85601,53706 85530,53650 85451,53625 Z"/>
       </g>
      </g>
      <g class="com.sun.star.drawing.OpenBezierShape">
       <g id="id10">
-       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 72441,72379 C 72282,72387 71989,72101 71693,72284"/>
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 83314,53628 C 83502,53549 83722,53455 83879,53376"/>
       </g>
      </g>
      <g class="com.sun.star.drawing.OpenBezierShape">
       <g id="id11">
-       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 72499,72814 C 72334,72791 71981,72507 71781,72714"/>
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 85055,53706 C 84929,53611 84584,53407 84474,53313"/>
+      </g>
+     </g>
+     <g class="com.sun.star.drawing.OpenBezierShape">
+      <g id="id12">
+       <path fill="none" stroke="rgb(68,146,45)" stroke-width="188" stroke-linejoin="round" d="M 84193,52812 C 84193,52624 84175,52239 84177,51996"/>
       </g>
      </g>
     </g>

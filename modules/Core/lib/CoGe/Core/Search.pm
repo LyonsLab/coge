@@ -6,6 +6,7 @@ use warnings;
 use CoGeX;
 use CoGeDBI;
 use CoGe::Core::Favorites;
+use CoGe::Core::Feature qw( search_features );
 use Data::Dumper;
 use Text::ParseWords;
 
@@ -79,7 +80,7 @@ sub do_search {
 		push @$and, { 'user_connectors.parent_id' => $user->id };		
 		push @$and, { 'user_connectors.role_id' => $role eq 'owner' ? 2 : $role eq 'editor' ? 3 : 4 };		
 	}
-	if ($favorite) { # only allow searching for favorites, specifying favorite::0 is not allowed
+	if ($favorite && $user) { # only allow searching for favorites, specifying favorite::0 is not allowed
 		$attributes = add_join($attributes, 'favorite_connectors');
 		push @$and, { 'favorite_connectors.child_type' => $type eq 'Genome' ? 2 : $type eq 'Experiment' ? 3 : 1 };
 		push @$and, { 'favorite_connectors.user_id' => $user->id };
@@ -98,14 +99,6 @@ sub info_cmp {
 	$info_a cmp $info_b;
 }
 
-sub name_cmp {
-	my $name_a = lc($a->{'name'});
-	my $name_b = lc($b->{'name'});
-	$name_a = substr($name_a, 6) if substr($name_a, 0, 2) eq '🔒 ';
-	$name_b = substr($name_b, 6) if substr($name_b, 0, 2) eq '🔒 ';
-	$name_a cmp $name_b;
-}
-
 sub push_results {
 	my ($results, $objects, $type, $user, $access_method, $favorites) = @_;
 	foreach ( @$objects ) {
@@ -113,10 +106,10 @@ sub push_results {
 			my $result = {
 				'type'          => $type,
 				'name'          => $_->info(hideRestrictedSymbol=>1),
-				'id'            => int $_->id,
-				'deleted'       => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false
+				'id'            => int $_->id
 			};
 			$result->{'certified'} = $_->certified ? Mojo::JSON->true : Mojo::JSON->false if $_->can('certified');
+			$result->{'deleted'} = $_->deleted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('deleted');
 			$result->{'favorite'} = ($favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false) if defined($favorites) && ($type eq 'genome' || $type eq 'experiment' || $type eq 'notebook');
 			$result->{'restricted'} = $_->restricted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('restricted');
 			
@@ -139,12 +132,14 @@ sub search {
 	my $favorite;
     my $favorites;
 	$favorites = CoGe::Core::Favorites->new(user => $user) if ($user && !$user->is_public);
+	my $feature_type;
 	my $metadata_key;
     my $metadata_value;
 	my $restricted;
 	my $role;
 	my $type = "none";
 
+	my @search_terms;
     my @query_terms = parse_line('\s+', 0, $search_term);
 	for ( my $i = 0 ; $i < @query_terms ; $i++ ) {
     	my $handled = 0;
@@ -160,6 +155,10 @@ sub search {
 			}
 			elsif ($splitTerm[0] eq 'favorite') {
 				$favorite = $splitTerm[1];
+				$handled = 1;
+			}
+			elsif ($splitTerm[0] eq 'feature_type') {
+				$feature_type = $splitTerm[1];
 				$handled = 1;
 			}
 			elsif ($splitTerm[0] eq 'metadata_key') {
@@ -188,6 +187,7 @@ sub search {
             $i--;
 			next;
         }
+		push @search_terms, $query_terms[$i];
 		if (index( $query_terms[$i], '!' ) == -1) {
             $query_terms[$i] = { 'like', '%' . $query_terms[$i] . '%' };
         } else {
@@ -197,11 +197,8 @@ sub search {
         }
     }
 
-	$deleted = 0 if !defined($deleted); # don't show deleted things by default
-	$restricted = 0 if !$user; #only show public data if $user is undefined
-
     # organisms
-	if (($type eq 'none' || $type eq 'organism') && @query_terms && !defined($certified) && !defined($favorite) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role)) {
+	if (($type eq 'none' || $type eq 'organism') && @query_terms && !defined($certified) && !defined($deleted) && !defined($favorite) && !defined($feature_type) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role)) {
 		my $search = build_search(['me.name', 'me.description', 'me.organism_id'],  \@query_terms);
 		my @organisms = $db->resultset("Organism")->search( { -and => $search } );
 		foreach ( sort { lc($a->name) cmp lc($b->name) } @organisms ) {
@@ -215,23 +212,19 @@ sub search {
 	}
 
     # genomes
-	if ($type eq 'none' || $type eq 'genome') {
-		my @genome_results;
-
+	if (($type eq 'none' || $type eq 'genome') && !defined($feature_type)) {
 		my $search = build_search(['me.name', 'me.description', 'me.genome_id', 'organism.name', 'organism.description'],  \@query_terms);
-		my $rs = do_search($db, $user, 'Genome', $search, $search ? { join => 'organism' } : undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite, $certified);
+		my $rs = do_search($db, $user, 'Genome', $search, $search ? { join => 'organism' } : undef, $deleted || 0, $user ? $restricted : 0, $metadata_key, $metadata_value, $role, $favorite, $certified);
 		if ($rs) {
-			my @genomes = $rs->all();
-			push_results(\@genome_results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
+			my @genomes = sort info_cmp $rs->all();
+			push_results(\@results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
 		}
-
-		push @results, sort name_cmp @genome_results;
 	}
 
     # experiments
-	if (($type eq 'none' || $type eq 'experiment') && !defined($certified)) {
+	if (($type eq 'none' || $type eq 'experiment') && !defined($certified) && !defined($feature_type)) {
 		my $search = build_search(['me.name', 'me.description', 'me.experiment_id', 'genome.name', 'genome.description', 'organism.name', 'organism.description'],  \@query_terms);
-		my $rs = do_search($db, $user, 'Experiment', $search, $search ? { join => { 'genome' => 'organism' } } : undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite);
+		my $rs = do_search($db, $user, 'Experiment', $search, $search ? { join => { 'genome' => 'organism' } } : undef, $deleted || 0, $user ? $restricted : 0, $metadata_key, $metadata_value, $role, $favorite);
 		if ($rs) {
 			my @experiments = sort info_cmp $rs->all();
 			push_results(\@results, \@experiments, 'experiment', $user, 'has_access_to_experiment', $favorites);
@@ -239,9 +232,9 @@ sub search {
 	}
 
     # notebooks
-	if (($type eq 'none' || $type eq 'notebook') && !defined($certified)) {
+	if (($type eq 'none' || $type eq 'notebook') && !defined($certified) && !defined($feature_type)) {
 		my $search = build_search(['name', 'description', 'list_id'],  \@query_terms);
-		my $rs = do_search($db, $user, 'List', $search, undef, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite);
+		my $rs = do_search($db, $user, 'List', $search, undef, $deleted || 0, $user ? $restricted : 0, $metadata_key, $metadata_value, $role, $favorite);
 		if ($rs) {
 			my @notebooks = sort { lc($a->name) cmp lc($b->name) } $rs->all();
 			push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_list', $favorites);
@@ -249,14 +242,46 @@ sub search {
 	}
 
     # user groups
-	if ($show_users && ($type eq 'none' || $type eq 'usergroup') && !defined($certified) && !defined($favorite) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role)) {
+	if ($show_users && ($type eq 'none' || $type eq 'usergroup') && !defined($certified) && !defined($favorite) && !defined($feature_type) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role)) {
 		my $search = build_search(['name', 'description', 'user_group_id'],  \@query_terms);
-		my $rs = do_search($db, $user, 'UserGroup', $search, undef, $deleted);
+		my $rs = do_search($db, $user, 'UserGroup', $search, undef, $deleted || 0);
 		if ($rs) {
 			my @user_groups = sort info_cmp $rs->all();
 			push_results(\@results, \@user_groups, 'user_group', $user, undef, $favorites);
 		}
 	}
+
+    # features
+	if (($type eq 'none' || $type eq 'feature') && !defined($certified) && !defined($deleted) && !defined($favorite) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role)) {
+		my $dbh = $db->storage->dbh;
+		my $sql = 'SELECT feature_name.name,feature.feature_id,' . ($feature_type ? "'" . $feature_type . "'" : 'feature_type.name') . ',organism.name,data_source.name,genome.version,genomic_sequence_type.name ' .
+			'FROM feature_name ' .
+				'JOIN feature USING(feature_id) ';
+		$sql .= 'JOIN feature_type USING(feature_type_id) ' unless $feature_type;
+		$sql .= 'JOIN dataset USING(dataset_id) ' .
+				'JOIN data_source USING(data_source_id) ' .
+				'JOIN dataset_connector USING(dataset_id) ' .
+				'JOIN genome ON dataset_connector.genome_id=genome.genome_id AND !genome.deleted ' .
+				'JOIN organism USING(organism_id) ' .
+				'JOIN genomic_sequence_type USING(genomic_sequence_type_id) ' .
+			'WHERE MATCH(feature_name.name) AGAINST (\'' . (join ',', @search_terms) . '\') ';
+		if ($feature_type) {
+			my @row = $dbh->selectrow_array('SELECT feature_type_id FROM feature_type WHERE name=\'' . $feature_type . '\'');
+			$sql .= 'AND feature.feature_type_id=' . $row[0] . ' ';
+		}
+		$sql .= 'GROUP BY feature_name.name,feature.feature_id';
+		my $rows = $dbh->selectall_arrayref($sql);
+		foreach (@$rows) {
+			push @results, {
+				type         => 'feature',
+				name         => $_->[0],
+				id           => int $_->[1],
+				feature_type => $_->[2],
+				genome       => $_->[3] ? $_->[3] . ' (' . $_->[4] . ', ' . $_->[5] . ', ' .  $_->[6] . ')' : ''
+			}
+		}
+	}
+
 	return @results;
 }
 

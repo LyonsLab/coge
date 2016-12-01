@@ -113,7 +113,7 @@ function add_experiment_type () {
                         $("#edit_tag_name").autocomplete('close');
                     }
             });
-            $("#experiment_tag_edit_box").html(data).dialog('open').dialog({'width': '32em'});
+            $("#experiment_tag_edit_box").html(data).dialog('open');
         }
     });
 }

@@ -415,9 +415,10 @@ class Contents {
 				if (row[0] != type) {
 					type = row[0];
 					let c = this.counts[row[0]];
-					tr.append($('<td align="right" class="title5" rowspan="' + c + '" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white">' + names[type] + 's ' + c + ':</td>'));
+					tr.append($('<td align="right" class="title5" rowspan="' + c + '" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white">' + names[type] + 's (' + c + ')</td>'));
 				}
-			} else
+			}
+			else
 				tr.append($('<td class="title5">' + names[row[0]] + '</td>'));
 			tr.append($('<td class="data5"><span class="link" onclick="window.open(\'' + pages[type] + '.pl?' + ids[type] + '=' + row[1] + '\')">' + row[2] + '</span></td>'));
 			let td = $('<td class="data5"></td>').appendTo(tr);
@@ -462,6 +463,7 @@ class Contents {
 		this.build();
 	}
 }
+
 var contents;
 function set_contents(json) {
 	if (json.counts[0] + json.counts[1] + json.counts[2] == 0) {

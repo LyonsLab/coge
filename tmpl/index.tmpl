@@ -244,24 +244,19 @@ function cross_fade(selector, image, delay) {
 }
 
 function load_latest(container, content) {
-    var i,
-        entry,
-        name,
-        wrapper,
-        added;
+    var i, entry, name, wrapper, added;
 
     for(i = 0; i < content.length; i++) {
         wrapper = $("<div></div>");
 
-        if (content[i].added === null) {
+        if (content[i].added === null)
             added = "Unknown"
-        } else {
+        else
             added = new Date(content[i].added).toDateString();
-        }
 
         entry = $("<h4></h4>")
             .html(added)
-            .css("width", "10em")
+            .css({"width": "10em", "color": "green"})
             .addClass("inline");
 
         name = $("<a></a>", { href: content[i].url, text: content[i].organism });
@@ -292,7 +287,7 @@ Please note:  CoGe maintenance for November 10th has been completed.
         <li>Genomes: <span style="color:green"><TMPL_VAR NAME="GEN_COUNT"></span></li>
         <li>Features: <span style="color:green"><TMPL_VAR NAME="FEAT_COUNT"></span></li>
         <!--<li>Annotations: <span style="color:green"><TMPL_VAR NAME="ANNOT_COUNT"></span></li>-->
-        <li>Experiments: <span style="color:green"><TMPL_VAR NAME="EXP_COUNT"> (<TMPL_VAR NAME="QUANT_COUNT"> values)</span></li>
+        <li>Experiments: <span style="color:green"><TMPL_VAR NAME="EXP_COUNT"></span></li>
     </ul>
 </div>
 
@@ -323,39 +318,95 @@ Please note:  CoGe maintenance for November 10th has been completed.
             </ul>
         </div>
 
-        <div class="coge-section-lg text">
+        <div id="tools" class="coge-section-lg text">
             <h3>Tools</h3>
-            <TMPL_LOOP NAME="ACTIONS">
-                <div class="coge-summary">
-                    <a href="<tmpl_var name=LINK>" class="l">
-                        <img src="<tmpl_var name=LOGO>">
-                    </a>
-                    <div class="coge-summary-body">
-                        <h4 class="coge-summary-heading">
-                            <a href="<tmpl_var name=LINK>"><TMPL_VAR NAME="ACTION"></a>
-                        </h4>
-                        <TMPL_VAR NAME="DESC">
-                    </div>
-                </div>
-            </TMPL_LOOP>
         </div>
-
-        <div class="coge-section-lg">
-            <h3>What do you want to do?</h3>
-            <div id="info" class="r hidden">
-            </div>
-            <div>
-	            <p><a href="SynMap.pl">Compare two genomes</a></p>
-                <p><a href="SynMap3D.pl">Compare three genomes</a></p>
-	            <p><a href="OrganismView.pl">Browse genomes</a></p>
-	            <p><a href="LoadGenome.pl">Load a new genome</a></p>
-	            <p><a href="LoadExperiment.pl">Load experimental data</a></p>
-	            <p><a href="LoadExperiment.pl">Run the RNA-seq pipeline</a></p>
-	            <p><a href="CoGeBlast.pl">Blast against CoGe's genomes</a></p>
-	            <p><a href="User.pl">Browse & share data you've loaded</a></p>
-            </div>
-        </div>
-
+<script>
+    [
+        {
+            name: 'OrganismView',
+            description: 'Search for organisms and get an overview of their genomic make-up.',
+            docs: 'OrganismView',
+            example: 'OrganismView.pl?org_name=W3110',
+            img: 'picts/OrganismView.svg',
+            url: 'OrganismView.pl'
+        },
+        {
+            name: 'EPIC-CoGe',
+            description: 'Visualize genomes and experiments using a dynamic, interactive genome browser.',
+            docs: 'EPIC-CoGe',
+            example: 'GenomeView.pl?gid=16911',
+            img: 'picts/GenomeView.svg',
+            url: 'GenomeView.pl'
+        },
+        {
+            name: 'CoGeBlast',
+            description: 'Blast sequences against any number of organisms in CoGe.',
+            docs: 'CoGeBlast',
+            example: 'CoGeBlast.pl?dsgid=3068;fid=40603528',
+            img: 'picts/CoGeBlast.svg',
+            url: 'CoGeBlast.pl'
+        },
+        {
+            name: 'SynMap',
+            description: 'Compare any two genomes to identify regions of synteny.',
+            docs: 'SynMap',
+            example: 'SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1',
+            img: 'picts/SynMap.svg',
+            url: 'SynMap.pl'
+        },
+        {
+            name: 'SynMap3D',
+            description: 'Compare any three genomes to identify regions of synteny.',
+            docs: 'SynMap3D',
+            example: 'SynMap3D.pl?x_gid=25571;y_gid=11691;z_gid=9642;min_syn=1;min_len=10000;sort=name',
+            img: 'picts/SynMap3d.svg',
+            url: 'SynMap3D.pl'
+        },
+        {
+            name: 'SynFind',
+            description: 'Search CoGe\'s annotation database for homologs.',
+            example: 'SynFind.pl?dsgid=3068;fid=40603528;run=1',
+            img: 'picts/SynFind.svg',
+            url: 'SynFind.pl'
+        },
+    	{
+            name: 'GEvo',
+            description: 'Compare sequences and genomic regions to discover patterns of genome evolution.',
+            docs: 'SynFind',
+            example: 'GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1',
+            img: 'picts/GEvo.svg',
+            url: 'GEvo.pl'
+        },
+        {
+    	    name: 'Load Genome',
+    	    description: 'Load your own genome from NCBI or a FASTA file.',
+            docs: 'LoadGenome',
+    	    img: 'picts/LoadGenome.svg',
+            url: 'LoadGenome.pl'
+    	},
+        {
+    	    name: 'Load Experiment',
+    	    description: 'Load experimental data from various standard input formats (such as BED, WIG, BAM, and FASTQ) and run downstream analyses including read mapping, expression measurement, and SNP identification.',
+            docs: 'LoadExperiment',
+    	    img: 'picts/LoadExperiment.svg',
+            url: 'LoadExperiment.pl'
+    	}
+    ].forEach(function(tool) {
+        var div = $('<div class="coge-summary"></div>').appendTo($('#tools'));
+        $('<a href="' + tool.url + '" class="l"><img src="' + tool.img + '"></a>').appendTo(div);
+        var body = $('<div class="coge-summary-body"></div>').appendTo(div);
+        $('<h4 class="coge-summary-heading"><a href="' + tool.url + '">' + tool.name + '</a></h4>').appendTo(body);
+        $('<div style="padding-left:0">' + tool.description + '</div>').appendTo(body);
+        if (tool.example) {
+            $('<a href="' + tool.example + '">Example</a>').appendTo(body);
+            if (tool.docs)
+                body.append(document.createTextNode(' - '));
+        }
+        if (tool.docs)
+            $('<a href="https://genomevolution.org/wiki/index.php/' + tool.docs + '" target="_blank">Documentation</a>').appendTo(body);
+    });
+</script>
         <div class="coge-section-lg">
             <h3>Recently Added Public Genomes <small>(<a href="#" onclick="show_genomes(window.event)">more</a>)</small></h3>
             <div id="latest-genomes" class="padded small">
