@@ -198,7 +198,6 @@ var XYPlot = declare( [XYPlotBase], {
 	 * @private
 	 */
 	_drawFeatures: function( scale, leftBase, rightBase, block, canvas, features, featureRects, dataScale ) {
-		//console.log('_drawFeatures');
 		var config = this.config;
 		var context = canvas.getContext('2d');
 		var canvasHeight = canvas.height;
@@ -224,7 +223,8 @@ var XYPlot = declare( [XYPlotBase], {
 			}, this );
 		}
 
-		// Note: transform cases below can be consolidated/optimized
+		if (!config.coge.max)
+			config.coge.max = Math.max(dataScale.max, Math.abs(dataScale.min));
 		if (config.coge.transform == 'Average') {
 			var sum_f = [];
 			var sum_r = [];
@@ -317,30 +317,6 @@ var XYPlot = declare( [XYPlotBase], {
 				}
 			});
 		}
-		else if (config.coge.transform == 'Inflate') {
-			// sort features by score
-			var sorted = [];
-			dojo.forEach( features, function(f,i) {
-				sorted.push({ feature: f, featureRect: featureRects[i] });
-			});
-			sorted.sort( sortByScore );
-
-			dojo.forEach( sorted, function(pair,i) {
-				var f = pair.feature;
-				var fRect = pair.featureRect;
-				var score = ( f.get('score') > 0 ? 1 : -1 );
-
-				fRect.t = toY( score );
-				if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all
-					var id = f.get('id');
-					context.fillStyle = this._getFeatureColor(id);
-					if (fRect.t <= originY) // bar goes upward
-						context.fillRect( fRect.l, fRect.t, fRect.w, originY-fRect.t+1);
-					else // downward
-						context.fillRect( fRect.l, originY, fRect.w, fRect.t-originY+1 );
-				}
-			}, this );
-		}
 		else {
 			// sort features by score
 			var sorted = [];
@@ -354,7 +330,9 @@ var XYPlot = declare( [XYPlotBase], {
 				var fRect = pair.featureRect;
 				var score = f.get('score');
 
-				if (config.coge.transform == 'Log10') {
+				if (config.coge.transform == 'Inflate')
+					score = score > 0 ? dataScale.max : dataScale.min;
+				else if (config.coge.transform == 'Log10') {
 					if (score >= 0)
 						score = log10(Math.abs(score)+1);
 					else
@@ -366,6 +344,8 @@ var XYPlot = declare( [XYPlotBase], {
 					else
 						score = -1*log2(Math.abs(score)+1);
 				}
+				else if (config.coge.transform == 'Normalize')
+					score /= config.coge.max;
 
 				fRect.t = toY( score );
 				if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all
@@ -467,6 +447,15 @@ var XYPlot = declare( [XYPlotBase], {
 			return name;
 		}
 	},
+ 
+	// ----------------------------------------------------------------
+
+   getGlobalStats: function( successCallback, errorCallback ) {
+		if (this.config.coge.transform == 'Normalize')
+			successCallback({ scoreMin: -1, scoreMax: 1 });
+		else
+	        this.store.getGlobalStats( successCallback, errorCallback );
+    },
 
 	// ----------------------------------------------------------------
 
@@ -689,6 +678,13 @@ var XYPlot = declare( [XYPlotBase], {
 
 	// ----------------------------------------------------------------
 
+	_setTransform: function(track, transform) {
+		this.config.coge.transform = transform;
+		track.changed();
+	},
+
+	// ----------------------------------------------------------------
+
 	_showPixelValue: function( scoreDisplay, score ) {
 		var scoreType = typeof score;
 		if( scoreType == 'number' ) {
@@ -860,6 +856,13 @@ var XYPlot = declare( [XYPlotBase], {
 										config.coge.transform = 'Log2';
 										track.changed();
 									}
+								},
+								{   label: 'Normalize',
+									onClick: function(event) {
+										config.coge.transform = 'Normalize';
+
+										track.changed();
+									}
 								}
 							]
 						}
@@ -882,6 +885,12 @@ var XYPlot = declare( [XYPlotBase], {
 										track.changed();
 									}
 								},
+								{   label: 'Inflate',
+									onClick: function(event) {
+										config.coge.transform = 'Inflate';
+										track.changed();
+									}
+								},
 								{   label: 'Log10',
 									onClick: function(event) {
 										config.coge.transform = 'Log10';
@@ -894,9 +903,9 @@ var XYPlot = declare( [XYPlotBase], {
 										track.changed();
 									}
 								},
-								{   label: 'Inflate',
+								{   label: 'Normalize',
 									onClick: function(event) {
-										config.coge.transform = 'Inflate';
+										config.coge.transform = 'Normalize';
 										track.changed();
 									}
 								}
