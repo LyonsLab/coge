@@ -92,7 +92,6 @@ define(['dojo/_base/declare',
 	},
 
 	// ----------------------------------------------------------------
-	// add experiments to notebook in CoGe
 
 	add_to_notebook: function(track_configs, notebook_id) {
 		var coge_api = api_base_url.substring(0, api_base_url.length - 8);
@@ -161,7 +160,7 @@ define(['dojo/_base/declare',
 		if (notebook.config.coge.id != 0) {
 			if (!notebook.config.coge.experiments)
 				notebook.config.coge.experiments = [];
-			notebook.config.coge.experiments.push({id:track.config.coge.id, name:track.config.coge.name, type:track.config.coge.data_type})
+			notebook.config.coge.experiments.push({id:track.config.coge.id, name:track.config.coge.name})
 		}
 		if (!notebook.expanded)
 			track.style.display = 'none';
@@ -844,18 +843,6 @@ define(['dojo/_base/declare',
 				return {node: this._new_track(track_config, track_config.coge.type == 'experiment'), data: track_config, type: ["track", track_config.coge.type]};
 			}),
 			delay: 2,
-			// onDrop: function(source, nodes, copy) {
-			// 	var experiments = Array.prototype.slice.call(div.childNodes, 0);
-			// 	experiments.shift();
-			// 	experiments.sort(
-			// 	    function( a,b ) {
-			// 	        return coge_plugin.natural_sort(a.config.coge.name, b.config.coge.name);
-			// 	    }
-			// 	).forEach(
-			// 	    function(a, idx) {
-			// 	        div.insertBefore(a, div.childNodes[idx]);
-			// 	});
-			// },
 			selfAccept: false
 		});
 	},

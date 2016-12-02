@@ -328,8 +328,7 @@ sub track_config {
             push @{ $expByNotebook{$nid} },
               {
                 id   => $eid,
-                name => $e->{name},
-                type => $expTypeToName{ $e->{data_type} }
+                name => $e->{name}
               };
         }
         push @notebooks, 0;    # add fake "all experiments" notebook
@@ -372,7 +371,7 @@ sub track_config {
         my $coge = {
             id          => $eid,
             type        => 'experiment',
-            data_type   => $e->{data_type} ? $e->{data_type} : 1,
+            data_type   => $e->{data_type} || 1,
             editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
             name        => $e->{name},
             description => $e->{description},

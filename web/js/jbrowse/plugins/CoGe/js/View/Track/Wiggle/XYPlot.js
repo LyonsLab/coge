@@ -223,8 +223,6 @@ var XYPlot = declare( [XYPlotBase], {
 			}, this );
 		}
 
-		if (!config.coge.max)
-			config.coge.max = Math.max(dataScale.max, Math.abs(dataScale.min));
 		if (config.coge.transform == 'Average') {
 			var sum_f = [];
 			var sum_r = [];
@@ -451,9 +449,16 @@ var XYPlot = declare( [XYPlotBase], {
 	// ----------------------------------------------------------------
 
    getGlobalStats: function( successCallback, errorCallback ) {
-		if (this.config.coge.transform == 'Normalize')
-			successCallback({ scoreMin: -1, scoreMax: 1 });
-		else
+		if (this.config.coge.transform == 'Normalize') {
+			if (!this.config.coge.max) {
+				var coge = this.config.coge;
+				this.store.getGlobalStats( function(stats) {
+					coge.max = Math.max(stats.scoreMax, Math.abs(stats.scoreMin));
+					successCallback({ scoreMin: -1, scoreMax: 1 });
+				}, errorCallback);
+			} else
+				successCallback({ scoreMin: -1, scoreMax: 1 });
+		} else
 	        this.store.getGlobalStats( successCallback, errorCallback );
     },
 
@@ -769,7 +774,7 @@ var XYPlot = declare( [XYPlotBase], {
 							track.colorDialog = new ColorDialog({
 								title: "Change colors",
 								style: { width: '230px', },
-								items: track.config.coge.experiments || [track.config.coge],
+								items: track.config.coge.experiments || [{id: track.config.coge.id, name: track.config.coge.name}],
 								featureColor: track.config.style.featureColor,
 								callback: function(id, color) {
 									var curColor = track.config.style.featureColor[id];
