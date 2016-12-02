@@ -1519,8 +1519,15 @@ sub get_results {
 		$warn .= qq{Unable to display the x-axis.} unless -r $x_label;
 	}
 
+	my $final_dagchainer_file_gevolinks = $final_dagchainer_file . ".gevolinks"; # mdb added 12/2/16 COGE-794
+	my $final_dagchainer_file_condensed = $final_dagchainer_file_gevolinks . ".condensed";
+
 	my $problem;
-	if ( -r "$out.html" ) {
+	if ( -r "$out.html" &&
+	     -r $final_dagchainer_file &&           # mdb added 12/2/16 COGE-794
+		 -r $final_dagchainer_file_gevolinks && # mdb added 12/2/16 COGE-794
+		 -r $final_dagchainer_file_condensed )  # mdb added 12/2/16 COGE-794
+	{
 		#Dotplot
 		$/ = "\n";
 		open( IN, "$out.html" )
@@ -1663,12 +1670,11 @@ sub get_results {
 			);
 		}
 
-		my $final_dagchainer_file_condensed = $final_dagchainer_file . ".condensed";
 		my $qa_file = $merged_dagchainer_file;
 		$qa_file =~ s/\.ma\d$/\.qa/ if $qa_file;
-		my $qa_merged_file = $qa_file . ".merged" if $qa_file;
-		my $qa_coverage_tmp = $quota_align_coverage . ".tmp" if $quota_align_coverage;
-		my $qa_coverage_qa = $quota_align_coverage . ".qa" if $quota_align_coverage;
+#		my $qa_merged_file = $qa_file . ".merged" if $qa_file;
+#		my $qa_coverage_tmp = $quota_align_coverage . ".tmp" if $quota_align_coverage;
+#		my $qa_coverage_qa = $quota_align_coverage . ".qa" if $quota_align_coverage;
 
 		########################################################################
 		# Compress Results
@@ -1826,7 +1832,7 @@ sub get_results {
 		);
 
 		my $final_url = _filename_to_link(
-			file => $final_dagchainer_file,
+			file => $final_dagchainer_file_gevolinks,
 			msg  => qq{Final syntenic gene-set output with GEvo links}
 		);
 
