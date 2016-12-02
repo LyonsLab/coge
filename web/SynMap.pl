@@ -1385,10 +1385,6 @@ sub get_results {
 	############################################################################
 	# Run quota align merge
 	############################################################################
-	my (
-		$find_nearby_time,    $gen_ks_db_time, $dotplot_time,
-		$add_gevo_links_time, $final_results_files
-	);
 
 	#id 1 is to specify quota align as a merge algo
 	if ( $merge_algo == 1 ) {
