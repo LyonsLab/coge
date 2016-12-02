@@ -112,13 +112,15 @@ var coge = window.coge = (function(namespace) {
 		    }
 
             // Compute total duration of all tasks // FIXME replace with workflow elapsed time since this miscalculates concurrent tasks
-            var totalDuration = response.tasks.reduce(function(a, b) {
-                if (!b.elapsed) return a;
-                return a + b.elapsed;
-            }, 0);
+			if (response.tasks) {
+				var totalDuration = response.tasks.reduce(function(a, b) {
+					if (!b.elapsed) return a;
+					return a + b.elapsed;
+				}, 0);
 
-		    this._set_status(response.status).append('<span class="info">' +
-		        (totalDuration ? ' in ' + coge.utils.toPrettyDuration(totalDuration) : '') + '</span>');
+				this._set_status(response.status).append('<span class="info">' +
+					(totalDuration ? ' in ' + coge.utils.toPrettyDuration(totalDuration) : '') + '</span>');
+			}
 		    
 		    // User callback
 		    if (this.onSuccess)
