@@ -1357,7 +1357,6 @@ sub get_results {
 
 	#this is for using dagchainer's merge function
 	my $dag_merge_enabled = ( $merge_algo == 2 ) ? 1 : 0;
-	my $self_comparision = ( $dsgid1 eq $dsgid2 ) ? 1 : 0;
 
 	#length of a gap (average distance expected between two syntenic genes)
 	my $gap = defined( $opts{g} ) ? $opts{g} : floor( $dagchainer_D / 2 );
@@ -1397,6 +1396,7 @@ sub get_results {
 
 	#add pairs that were skipped by dagchainer
 	$post_dagchainer_file_w_nearby = $post_dagchainer_file;
+
 	############################################################################
 	# Run quota align coverage
 	############################################################################
