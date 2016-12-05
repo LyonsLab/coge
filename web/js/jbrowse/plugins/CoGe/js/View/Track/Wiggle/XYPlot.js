@@ -736,7 +736,7 @@ var XYPlot = declare( [XYPlotBase], {
 					type: 'dijit/CheckedMenuItem',
 					checked: this.config.autoscale == 'local',
 					onClick: function(event) {
-						track.config.autoscale = this.checked ? 'local' : 'global';
+						config.autoscale = this.checked ? 'local' : 'global';
 						track.changed();
 					}
 				},
@@ -745,7 +745,7 @@ var XYPlot = declare( [XYPlotBase], {
 					type: 'dijit/CheckedMenuItem',
 					checked: this.config.showHoverScores,
 					onClick: function(event) {
-						track.config.showHoverScores = this.checked;
+						config.showHoverScores = this.checked;
 						track.changed();
 					}
 				},
@@ -754,7 +754,7 @@ var XYPlot = declare( [XYPlotBase], {
 					type: 'dijit/CheckedMenuItem',
 					checked: this.config.showLabels,
 					onClick: function(event) {
-						track.config.showLabels = this.checked;
+						config.showLabels = this.checked;
 						track.changed();
 					}
 				},
@@ -763,34 +763,32 @@ var XYPlot = declare( [XYPlotBase], {
 					type: 'dijit/CheckedMenuItem',
 					checked: this.config.showBackground,
 					onClick: function(event) {
-						track.config.showBackground = this.checked;
+						config.showBackground = this.checked;
 						track.changed();
 					}
 				},
 				{
 					label: 'Change colors',
 					onClick: function(event) {
-						if (!track.colorDialog) {
-							track.colorDialog = new ColorDialog({
+						if (!track._color_dialog) {
+							track._color_dialog = new ColorDialog({
 								title: "Change colors",
 								style: { width: '230px', },
-								items: track.config.coge.experiments || [{id: track.config.coge.id, name: track.config.coge.name}],
-								featureColor: track.config.style.featureColor,
+								track: track,
+								items: config.coge.experiments || [{value: config.coge.id, label: config.coge.name}],
+								featureColor: dojo.byId(config.track).config.style.featureColor,
 								callback: function(id, color) {
-									var curColor = track.config.style.featureColor[id];
+									var curColor = config.style.featureColor[id];
 									if (!curColor || curColor != color) {
-										// Save color choice
-										track.config.style.featureColor[id] = color;
-										track.updateUserStyles({ featureColor : track.config.style.featureColor });
-										// Repaint track
+										config.style.featureColor[id] = color;
+										track.updateUserStyles({ featureColor : config.style.featureColor });
 										track.changed();
-										//FIXME TrackList should update itself
-										track.browser.publish('/jbrowse/v1/c/tracks/show', [track.config]);
-										}
+										coge_track_list.setTrackColor(config.track, id, color);
 									}
-								});
+								}
+							});
 						}
-						track.colorDialog.show();
+						track._color_dialog.show();
 					}
 				},
 				{ // mdb added 11/6/15 COGE-678
@@ -798,7 +796,6 @@ var XYPlot = declare( [XYPlotBase], {
 					type: 'dijit/CheckedMenuItem',
 					checked: this.config.disableZoomLimit,
 					onClick: function(event) {
-						var config = track.config;
 						config.disableZoomLimit = this.checked;
 						if (config.disableZoomLimit) {
 							config.savedFeatureScale = config.style.featureScale;

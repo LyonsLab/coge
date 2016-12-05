@@ -327,8 +327,8 @@ sub track_config {
             $notebooks{$nid} = $n;
             push @{ $expByNotebook{$nid} },
               {
-                id   => $eid,
-                name => $e->{name}
+                value => $eid,
+                label => $e->{name}
               };
         }
         push @notebooks, 0;    # add fake "all experiments" notebook

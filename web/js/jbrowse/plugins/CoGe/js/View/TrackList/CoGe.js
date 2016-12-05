@@ -110,7 +110,7 @@ define(['dojo/_base/declare',
 				} else {
 					var n = dojo.byId('notebook' + notebook_id);
 					track_configs.forEach(function(track_config) {
-						var e = dojo.byId(track_config.coge.type + track_config.coge.id);
+						var e = dojo.byId(track_config.track);
 						this._add_track_to_notebook(e.config, n);
 					}, this);
 					if (n.style.display != 'none')
@@ -160,7 +160,7 @@ define(['dojo/_base/declare',
 		if (notebook.config.coge.id != 0) {
 			if (!notebook.config.coge.experiments)
 				notebook.config.coge.experiments = [];
-			notebook.config.coge.experiments.push({id:track.config.coge.id, name:track.config.coge.name})
+			notebook.config.coge.experiments.push({value:track.config.coge.id, label:track.config.coge.name})
 		}
 		if (!notebook.expanded)
 			track.style.display = 'none';
@@ -179,10 +179,10 @@ define(['dojo/_base/declare',
 		if (dojo.byId('track_experiment' + track_config.coge.id)) {
 			var label_node = this._get_label_node(track);
 			track.config.coge.selected = true;
-			dojo.style(label_node, 'background', coge_track_list._get_track_color(track));
+			dojo.style(label_node, 'background', this._get_track_color(track.config, track_config.coge.id));
 		}
 		if (dojo.byId('track_notebook' + notebook.config.coge.id))
-			dojo.create('div', { className: 'coge-circle', style: { backgroundColor: coge_track_list._get_track_color(track) } }, track, 'first');
+			dojo.create('div', { className: 'coge-circle', style: { backgroundColor: this._get_track_color(notebook.config, track_config.coge.id) } }, track, 'first');
 		if (notebook.expanded)
 			track.scrollIntoView();
 		this._reload_notebook(notebook.config.coge.id);
@@ -603,14 +603,14 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	_get_track_color: function(container) {
-		var id = container.config.coge.type == 'merge' ? 'lightgray' : container.config.coge.type == 'search' ? container.config.coge.eid : container.config.coge.id;
-		var style = container.config.style;
-		var cookie = this.browser.cookie('track-' + container.config.track);
+	_get_track_color: function(config, id) {
+		if (config.coge.type == 'merge' || config.coge.type == 'search')
+			return 'lightgray';
+		var cookie = this.browser.cookie('track-style-' + config.track);
 		if (cookie)
-			style = dojo.fromJson(cookie);
-		if (style && style.featureColor && style.featureColor[id])
-			return style.featureColor[id];
+			config.style = dojo.fromJson(cookie);
+		if (config.style && config.style.featureColor && config.style.featureColor[id])
+			return config.style.featureColor[id];
 		return coge_plugin.calc_color(id);
 	},
 
@@ -853,7 +853,7 @@ define(['dojo/_base/declare',
 		var coge = track_config.coge;
 		var container = dojo.create( 'div', {
 			className: 'coge-track',
-			id: coge.type + coge.id,
+			id: track_config.track,
 		});
 		container.config = track_config;
 		var label = dojo.create('div', {
@@ -1028,31 +1028,39 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	replaceTracks: function( track_configs ) { // mdb: unused now
+	replaceTracks: function(track_configs) { // mdb: unused now, but required to be here
 		console.log('replaceTracks');
 	},
 
 	// ----------------------------------------------------------------
 
-	_set_tracks_active: function(container, combined) {
+	setTrackColor: function(container_id, experiment_id, color) {
+		var container = dojo.byId(container_id);
+		if (!container.config.style.featureColor)
+			container.config.style.featureColor = {};
+		container.config.style.featureColor[experiment_id] = color;
+		this.setTracksActive([container.config]);
+	},
+
+	// ----------------------------------------------------------------
+
+	_set_tracks_active: function(container) {
 		var label_node = this._get_label_node(container);
-		if (!combined)
-			container.config.coge.selected = true;
+		container.config.coge.selected = true;
 		var type = container.config.coge.type;
 		if (type == 'experiment') {
-			if (combined)
-				dojo.create('div', { className: 'coge-circle', style: { backgroundColor: coge_track_list._get_track_color(container) } }, container, 'first');
-			else
-				dojo.style(label_node, 'background', coge_track_list._get_track_color(container));
+			dojo.style(label_node, 'background', this._get_track_color(container.config, container.config.coge.id));
 		} else if (type == 'notebook') {
 			dojo.style(label_node, 'background', 'lightgray');
 			var experiment = container.nextSibling;
 			while (experiment) {
-				this.setTracksActive([experiment.config], true);
+				if (dojo.hasClass(experiment.firstChild, 'coge-circle'))
+					dojo.destroy(experiment.firstChild);
+				dojo.create('div', { className: 'coge-circle', style: { backgroundColor: this._get_track_color(container.config, experiment.config.coge.id) } }, experiment, 'first');
 				experiment = experiment.nextSibling;
 			}
 		} else if (type == 'search')
-			dojo.style(label_node, 'background', coge_track_list._get_track_color(container));
+			dojo.style(label_node, 'background', this._get_track_color(container.config, container.config.coge.id));
 		else
 			dojo.style(label_node, 'background', 'lightgray');
 	},
@@ -1083,11 +1091,11 @@ define(['dojo/_base/declare',
 	 * are turned on.
 	 */
 
-	setTracksActive: function(track_configs, combined) {
+	setTracksActive: function(track_configs) {
 		track_configs.forEach(function(track_config) {
 			coge_track_list._traverse_tracks(function(container) {
-				if (track_config.coge && container.id == track_config.coge.type + track_config.coge.id)
-					coge_track_list._set_tracks_active(container, combined);
+				if (container.id == track_config.track)
+					coge_track_list._set_tracks_active(container);
 			});
 		});
 	},
@@ -1102,7 +1110,7 @@ define(['dojo/_base/declare',
 		var tmp_tracks = [];
 		track_configs.forEach(function(track_config) {
 			coge_track_list._traverse_tracks(function(container) {
-				if (track_config.coge && container.id == track_config.coge.type + track_config.coge.id)
+				if (container.id == track_config.track)
 					if (container.config.coge.type == 'merge' || container.config.coge.type == 'search')
 						tmp_tracks.push(container);
 					else

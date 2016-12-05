@@ -1,16 +1,17 @@
 define([
            'dojo/_base/declare',
+           'dojo/dom-construct',
            'dijit/focus',
            'JBrowse/View/Dialog/WithActionBar',
            'dojo/on',
            'dojo/store/Memory',
-           'dijit/form/ComboBox',
+           'dijit/form/Select',
            'dijit/form/Button',
            'dijit/ColorPalette',
            'dijit/form/CheckBox',
            'dijit/registry'
        ],
-       function( declare, focus, ActionBarDialog, on, Memory, ComboBox, dijitButton, ColorPalette, CheckBox, registry ) {
+       function( declare, domConstruct, focus, ActionBarDialog, on, Memory, Select, dijitButton, ColorPalette, CheckBox, registry ) {
 
 return declare( ActionBarDialog,
 
@@ -23,83 +24,66 @@ return declare( ActionBarDialog,
     autofocus: false,
 
     constructor: function( args ) {
-        //this.message = args.message || 'Select a color ...';
+        this.track = args.track;
         this.items = args.items;
         this.featureColor = args.featureColor;
         this.callback = args.callback || function() {};
     },
 
     _fillActionBar: function( actionBar ) {
-        var thisB = this;
-        var firstItem = thisB.items[0];
-
-        this.itemBox = new ComboBox({
-            //id: "itemSelect",
-            //value: firstItem.name,
-            item: firstItem,
-            store: new Memory({
-                data: thisB.items
-            }),
-            style: {
-            	'margin-bottom': '10px'
-            },
-            onChange: function() {
-            	var itemId = thisB.itemBox.item.id;
-            	//console.log('comboxbox change: ', itemId);
-            	if (thisB.featureColor[itemId]) {
-            		thisB.palette.set('value', thisB.featureColor[itemId]);
-            	}
-            	else {
-            		registry.byNode(thisB.defaultCB.domNode).set('value', true);
-            	}
-            }
-        }).placeAt(actionBar);
+        var self = this;
+ 
+        if (this.items.length == 1)
+            domConstruct.place(domConstruct.toDom('<div style="margin-bottom:10px">' + this.items[0].label + '</div>'), actionBar);
+        else
+            this._select = new Select({
+                options: this.items,
+                style: { 'margin-bottom': '10px' },
+                onChange: function() {
+                    var item_id = self._select.value;
+                    if (self.featureColor[item_id])
+                        self.palette.set('value', self.featureColor[item_id]);
+                    else
+                        registry.byNode(self.defaultCB.domNode).set('value', true);
+                }
+            }).placeAt(actionBar);
 
         this.palette = new ColorPalette({
             palette: "7x10",
-            value: firstItem.featureColor,
-            onChange: function(val) {
-            	//console.log('palette change: '+val);
+            value: self.featureColor[self.items[0].value],
+            style: { 'margin-bottom': '10px' },
+			onChange: function(val) {
             	if (val) {
-            		registry.byNode(thisB.defaultCB.domNode).set('value', false);
-            		thisB.callback(thisB.itemBox.item.id, val);
-                	//thisB.hide();
+                    if (self.defaultCB)
+                		registry.byNode(self.defaultCB.domNode).set('value', false);
+            		self.callback(self._select ? self._select.value : self.items[0].value, val);
             	}
             }
         }).placeAt(actionBar);
 
 		this.defaultCB = new CheckBox({
-			//id: "defaultCB",
-			checked: !firstItem.featureColor,
-			style: {
-				'margin-top': '10px',
-			},
+			checked: !self.featureColor[self.items[0].value],
 			onChange: function(b) {
-				//console.log('checkbox change: '+b);
 				if (b) {
-					thisB.palette.set('value', null);
-					thisB.callback(thisB.itemBox.item.id, null);
+					self.palette.set('value', null);
+					self.callback(self._select ? self._select.value : self.items[0].value, null);
 				}
 			}
 		}).placeAt(actionBar);
 
 		actionBar.appendChild(
-			dojo.create("label",
-					{ 'for': 'defaultCB',
-					  innerHTML: ' Default',
-					}
-			)
+			dojo.create("label", { 'for': 'defaultCB', innerHTML: ' Default', })
 		);
+    },
+
+    onHide: function() {
+        this.destroyRecursive();
+        this.track._color_dialog = null;
     },
 
     show: function( ) {
         this.inherited( arguments );
         focus.focus( this.closeButtonNode );
     },
-
-    _getFeatureColor: function(id) {
-    	return '#' + ((((id * 1234321) % 0x1000000) | 0x444444) & 0xe7e7e7 ).toString(16); //FIXME: dup'ed in CoGe.js
-    }
-
 });
 });
