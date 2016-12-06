@@ -1,5 +1,6 @@
 <script src="js/coge/wikifeed.js"></script>
 <script src="js/coge/utils.js"></script>
+<script src="js/vendor/plotly/dist/plotly.min.js"></script>
 <script language="javascript">
 $(document).ready(function(){
     var feed = new wikifeed("<tmpl_var name=wikifeed>", $("#wikifeed"));
@@ -67,6 +68,8 @@ $(document).ready(function(){
     });
 
     get_latest_genomes(5).then(load_latest.bind(undefined, $("#latest-genomes")));
+
+    plotResults("tmp/usage_data.csv", "usage-map");
 });
 
 function show_genomes(e) {
@@ -272,6 +275,95 @@ function load_latest(container, content) {
 function get_latest_genomes(limit) {
     return $.getJSON("index.pl?fname=get_latest_genomes&limit="  + limit);
 }
+
+function plotResults(dataset, divID) {
+
+    // Parses CSV data.
+    function unpack(rows, key) {
+        return rows.map(function(row) { return row[key]; })
+    }
+
+    // Create a trace, given a header and global maximum.
+    function makeTrace(rows, max, header) {
+        return {
+            type: 'choropleth',
+            locationmode: 'country names',
+            locations: unpack(rows, 'Country'),
+            z: unpack(rows, header),
+            zmin: 0,
+            zmax: max,
+            // hoverinfo: 'text',            // Use these two options if you want to change the text displayed on hover.
+            // text: <array of hover text>,
+            colorscale: [
+                [0, '#E7F4E7'],          //0
+                [1. / 10000, '#CFEACF'], //10
+                [1. / 1000, '#B7E0B7'],  //100
+                [1. / 100, '#9FD69F'],   //1000
+                [1. / 10, '#88CC88'],    //10000
+                [1., '#119911']          //100000
+            ],
+            showscale: false,
+            visible: header == 'All'
+        };
+    }
+
+    // Define buttons to change time period.
+    var selectorOptions = [{
+            method: 'restyle',
+            args: ['visible', [true, false, false, false]],
+            label: "All"
+        }, {
+            method: 'restyle',
+            args: ['visible', [false, true, false, false]],
+            label: "1 Year"
+        }, {
+            method: 'restyle',
+            args: ['visible', [false, false, true, false]],
+            label: "1 Month"
+        }, {
+            method: 'restyle',
+            args: ['visible', [false, false, false, true]],
+            label: "1 Week"
+        }
+    ];
+
+    // Create plot.
+    Plotly.d3.csv(dataset, function(err, rows) {
+        // Calculate maximum sessions.
+        var maximum = Math.max.apply(null, unpack(rows, "All").map(function(x) { return parseInt(x) }));
+        // Create traces for each time period.
+        var all_trace = makeTrace(rows, maximum, "All");
+        var year_trace = makeTrace(rows, maximum, "Year");
+        var month_trace = makeTrace(rows, maximum, "Month");
+        var day_trace = makeTrace(rows, maximum, "Week");
+        // Define data.
+        var data = [all_trace, year_trace, month_trace, day_trace];
+        // Define layout.
+        var layout = {
+            //showlegend: false,
+            autosize: false,
+            height: $(document).height() * 0.20,
+            margin: {t: 0, b: 0, l: 0, r: 0, pad: 0},
+            geo: {
+                scope: 'world',
+                projection: {
+                    type: 'natural earth'
+                },
+                showland: true,
+                showcountries: true,
+                landcolor: 'rgb(217, 217, 217)',
+                subunitwidth: 1,
+                countrywidth: 1,
+                subunitcolor: 'rgb(255,255,255)',
+                countrycolor: '#7c7c7c'
+            },
+            updatemenus: [ {y: 1, yanchor: 'top', x: 0, xanchor: 'left', buttons: selectorOptions} ]
+        };
+        // Plot.
+        Plotly.plot(divID, data, layout, {showLink: false, displayModeBar: false});
+    });
+}
+
 </SCRIPT>
 
 <!--
@@ -420,7 +512,8 @@ Please note:  CoGe maintenance for November 10th has been completed.
         </div>
         <div class="coge-section-lg">
             <h3>Usage</h3>
-	    	<iframe src="https://www.google.com/maps/d/embed?mid=zTAag14VR8dY.krU3JWBs4l5E" width="100%" height="250" frameborder="0" style="border:0"></iframe>
+	    	<!--<iframe src="https://www.google.com/maps/d/embed?mid=zTAag14VR8dY.krU3JWBs4l5E" width="100%" height="250" frameborder="0" style="border:0"></iframe>-->
+            <div id="usage-map" style="text-align: center; margin-left: auto; margin-right: auto;"></div>
 	    </div>
         <div class="coge-section-lg">
             <h3>Tutorials</h3>
