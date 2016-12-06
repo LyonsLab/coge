@@ -768,7 +768,7 @@ var XYPlot = declare( [XYPlotBase], {
 					}
 				},
 				{
-					label: 'Change colors',
+					label: config.coge.type == 'notebook' ? 'Change colors' : 'Change color',
 					onClick: function(event) {
 						if (!track._color_dialog) {
 							track._color_dialog = new ColorDialog({

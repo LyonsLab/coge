@@ -8,10 +8,10 @@ define([
            'dijit/form/Select',
            'dijit/form/Button',
            'dijit/ColorPalette',
-           'dijit/form/CheckBox',
+           'dijit/form/Button',
            'dijit/registry'
        ],
-       function( declare, domConstruct, focus, ActionBarDialog, on, Memory, Select, dijitButton, ColorPalette, CheckBox, registry ) {
+       function( declare, domConstruct, focus, ActionBarDialog, on, Memory, Select, dijitButton, ColorPalette, Button, registry ) {
 
 return declare( ActionBarDialog,
 
@@ -41,42 +41,31 @@ return declare( ActionBarDialog,
                 style: { 'margin-bottom': '10px' },
                 onChange: function() {
                     var item_id = self._select.value;
-                    if (self.featureColor[item_id])
+                    if (self.featureColor && self.featureColor[item_id])
                         self.palette.set('value', self.featureColor[item_id]);
-                    else
-                        registry.byNode(self.defaultCB.domNode).set('value', true);
+                    self._setColor(self._getColor(item_id));
                 }
             }).placeAt(actionBar);
 
-        this.color = domConstruct.toDom('<div id="color" style="background:' + this._getColor(self._getId()) + ';margin-bottom:10px;">&nbsp;</div>');
+        this.color = domConstruct.toDom('<div id="color" style="background:' + this._getColor(this._getId()) + ';margin-bottom:10px;">&nbsp;</div>');
         domConstruct.place(this.color, actionBar);
 
         this.palette = new ColorPalette({
             palette: "7x10",
-            value: this.featureColor ? this.featureColor[self._getId()] : null,
+            value: this.featureColor && this.featureColor[this._getId()] ? this.featureColor[this._getId()] : null,
             style: { 'margin-bottom': '10px' },
 			onChange: function(val) {
-            	if (val) {
-                    if (self.defaultCB)
-                		registry.byNode(self.defaultCB.domNode).set('value', false);
-                    self._setColor(val);
-            	}
+                self._setColor(val);
             }
         }).placeAt(actionBar);
 
-		this.defaultCB = new CheckBox({
-			checked: !this.featureColor || !this.featureColor[this.items[0].value],
-			onChange: function(b) {
-				if (b) {
-					self.palette.set('value', null);
-                    self._setColor(null);
-				}
+		new Button({
+            label: 'set to default',
+			onClick: function() {
+                self.palette.set('value', null);
+                self._setColor(null);
 			}
 		}).placeAt(actionBar);
-
-		actionBar.appendChild(
-			dojo.create("label", { 'for': 'defaultCB', innerHTML: ' Default', })
-		);
     },
 
     _getColor: function(id) {
