@@ -604,11 +604,13 @@ define(['dojo/_base/declare',
 	// ----------------------------------------------------------------
 
 	_get_track_color: function(config, id) {
-		if (config.coge.type == 'merge' || config.coge.type == 'search')
+		if (config.coge.type == 'merge')
 			return 'lightgray';
 		var cookie = this.browser.cookie('track-style-' + config.track);
 		if (cookie)
 			config.style = dojo.fromJson(cookie);
+		if (config.coge.type == 'search')
+			id = config.coge.eid;
 		if (config.style && config.style.featureColor && config.style.featureColor[id])
 			return config.style.featureColor[id];
 		return coge_plugin.calc_color(id);
