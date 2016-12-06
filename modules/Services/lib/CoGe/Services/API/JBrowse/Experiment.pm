@@ -28,6 +28,7 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
     my $gid  = $self->stash('gid');
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $exp_max = {};
 
     # Get experiments
 	my $experiments = _get_experiments($db, $user, $eid, $gid, $nid);
@@ -54,11 +55,13 @@ sub stats_global { # mdb rewritten 8/26/16 COGE-270
 	    if ($min < $globalMin) {
 	        $globalMin = $min;
 	    }
+        $exp_max->{$experiment->id} = $max;
 	}
 
     $self->render(json => {
-		"scoreMin" => to_number($globalMin),
-		"scoreMax" => to_number($globalMax)
+		scoreMin => to_number($globalMin),
+		scoreMax => to_number($globalMax),
+        exp_max => $exp_max
 	});
 }
 

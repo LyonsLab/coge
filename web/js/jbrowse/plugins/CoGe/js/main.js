@@ -671,21 +671,23 @@ parseLocString: function( locstring ) {
 			});
 			return;
 		}
-		var content = '<div id="coge-search-dialog"><table><tr><td>Action:</td><td><input id="dnd_in" type="radio" name="action" checked> Find where ';
+		var content = '<div id="coge-search-dialog"><table><tr><td>Action:</td><td><input id="dnd_in" type="radio" name="action" checked> Find where <span style="background:#eee;padding:2px;">';
 		content += track1.config.key;
-		content += ' overlaps ';
+		content += '</span> overlaps <span style="background:#eee;padding:2px;">';
 		content += track2.config.key;
-		content += '<br><input id="dnd_not_in" type="radio" name="action"> Find where ';
+		content += '</span><div style="padding-top:8px;"><input id="dnd_not_in" type="radio" name="action"> Find where <span style="background:#eee;padding:2px;">';
 		content += track1.config.key;
-		content += ' does not overlap ';
+		content += '</span> does not overlap <span style="background:#eee;padding:2px;">';
 		content += track2.config.key;
+		content += '</span></div>'
 		if (!track1.config.coge.type.startsWith('feature') && !track2.config.coge.type.startsWith('feature')) {
-			content += '<br><input id="dnd_merge" type="radio" name="action"> Merge ';
+			content += '<div style="padding-top:8px;"><input id="dnd_merge" type="radio" name="action"> Merge <span style="background:#eee;padding:2px;">';
 			content += track1.config.key;
-			content += ' and ';
+			content += '</span> and <span style="background:#eee;padding:2px;">';
 			content += track2.config.key;
+			content += '</span></div>'
 		}
-		content += '</td></tr><tr><td>Chromosome:</td><td>';
+		content += '</td></tr><tr><td style="padding-top:5px;">Chromosome:</td><td style="padding-top:5px;">';
 		content += this.build_chromosome_select('Any');
 		content += '</td></tr></table>';
 		content += this.build_buttons('if($(\'#dnd_in\')[0].checked)coge_plugin.overlaps(); else if($(\'#dnd_not_in\')[0].checked)coge_plugin.overlaps(true); else coge_plugin._merge_tracks();', 'coge_plugin._search_dialog.hide()');

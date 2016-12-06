@@ -343,7 +343,7 @@ var XYPlot = declare( [XYPlotBase], {
 						score = -1*log2(Math.abs(score)+1);
 				}
 				else if (config.coge.transform == 'Normalize')
-					score /= config.coge.max;
+					score /= config.coge.stats.exp_max[f.get('id')];
 
 				fRect.t = toY( score );
 				if( fRect.t <= canvasHeight ) { // if the rectangle is visible at all
@@ -450,10 +450,10 @@ var XYPlot = declare( [XYPlotBase], {
 
    getGlobalStats: function( successCallback, errorCallback ) {
 		if (this.config.coge.transform == 'Normalize') {
-			if (!this.config.coge.max) {
+			if (!this.config.coge.stats) {
 				var coge = this.config.coge;
 				this.store.getGlobalStats( function(stats) {
-					coge.max = Math.max(stats.scoreMax, Math.abs(stats.scoreMin));
+					coge.stats = stats;
 					successCallback({ scoreMin: -1, scoreMax: 1 });
 				}, errorCallback);
 			} else
