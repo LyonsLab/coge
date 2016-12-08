@@ -128,11 +128,31 @@ function add_button_states (ids) {
     }
 }
 
+function advanced_search() {
+	var url = "SearchResults.pl?s=" + $('#header_search_token').val();
+	var type = $('#search_type').val();
+	if (type != 'any')
+		url += ' type::' + type;
+	var certified = $('#search_certified').val();
+	if (certified != 'any')
+		url += ' certified::' + (certified == 'yes' ? '1' : '0');
+	var deleted = $('#search_deleted').val();
+	if (deleted == 'yes')
+		url += ' deleted::1';
+	var favorite = $('#search_favorite').val();
+	if (favorite != 'any')
+		url += ' favorite::' + (favorite == 'yes' ? '1' : '0');
+	var restricted = $('#search_restricted').val();
+	if (restricted != 'any')
+		url += ' restricted::' + (restricted == 'yes' ? '1' : '0');
+	var role = $('#search_role').val();
+	if (role != 'any')
+		url += ' role::' + role;
+	window.location.href = url;
+}
+
 function search() {
-	var token = $('#header_search_token').val();
-	console.log(token);
-	//window.location.href = "api/v1/global/search/" + token;
-	window.location.href = "SearchResults.pl?s=" + token;
+	window.location.href = "SearchResults.pl?s=" + $('#header_search_token').val();
 }
 
 function searchKey(event) {
@@ -189,11 +209,68 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 				<li>
 					<div class="coge-header-searchbar">
 				    	<input id="header_search_token" type="text" class="text" placeholder="Search database" value="<TMPL_VAR NAME='SEARCH_TERM'>" spellcheck="false" onkeypress="searchKey(event)">
+						<div id="coge-advanced-search" class="text">
+							<table>
+								<tr><td>type:</td><td>
+									<select id="search_type">
+										<option>any</option>
+										<option>experiment</option>
+										<option>feature</option>
+										<option>genome</option>
+										<option>notebook</option>
+										<option>organism</option>
+										<option value="usergroup">user group</option>
+									</select>
+								</td></tr>
+								<tr><td>certified:</td><td>
+									<select id="search_certified">
+										<option>any</option>
+										<option>yes</option>
+										<option>no</option>
+									</select>
+								</td></tr>
+								<tr><td>deleted:</td><td>
+									<select id="search_deleted">
+										<option>no</option>
+										<option>yes</option>
+									</select>
+								</td></tr>
+								<tr><td>favorite:</td><td>
+									<select id="search_favorite">
+										<option>any</option>
+										<option>yes</option>
+										<option>no</option>
+									</select>
+								</td></tr>
+								<tr><td>restricted:</td><td>
+									<select id="search_restricted">
+										<option>any</option>
+										<option>yes</option>
+										<option>no</option>
+									</select>
+								</td></tr>
+								<tr><td>role:</td><td>
+									<select id="search_role">
+										<option>any</option>
+										<option>owner</option>
+										<option>editor</option>
+										<option>reader</option>
+									</select>
+								</td></tr>
+							</table>
+							<div>
+								<button onclick="$('#coge-advanced-search').slideUp();$('#advanced_search').show();">cancel</button>
+								<button onclick="advanced_search();" style="float:right;">search</button>
+							</div>
+						</div>
 				    </div>
 				</li>
 				<li>
 				    <div id="header_search_button" class="glyphicon glyphicon-search coge-button coge-header-search-button" style="" onclick="search();"></div>
 			    </li>
+				<!--<li id="advanced_search">
+					<a onclick="$('#coge-advanced-search').slideDown();$('#advanced_search').hide();">advanced</a>
+				</li>-->
 			</ul>
 	    </li>
 	</ul>
