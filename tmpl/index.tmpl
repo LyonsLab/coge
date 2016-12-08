@@ -285,15 +285,22 @@ function plotResults(dataset, divID) {
 
     // Create a trace, given a header and global maximum.
     function makeTrace(rows, max, header) {
+        var c = unpack(rows, 'Country');
+        var z = unpack(rows, header);
+        var t = [];
+        for (var i=0; i < c.length; i++) {
+            t.push("<b>" + c[i] + "</b><br>" + z[i] + " sessions");
+        }
+
         return {
             type: 'choropleth',
             locationmode: 'country names',
-            locations: unpack(rows, 'Country'),
-            z: unpack(rows, header),
+            locations: c,
+            z: z,
             zmin: 0,
             zmax: max,
-            // hoverinfo: 'text',            // Use these two options if you want to change the text displayed on hover.
-            // text: <array of hover text>,
+            hoverinfo: 'text',
+            text: t,
             colorscale: [
                 [0, '#E7F4E7'],          //0
                 [1. / 10000, '#CFEACF'], //10
@@ -311,7 +318,7 @@ function plotResults(dataset, divID) {
     var selectorOptions = [{
             method: 'restyle',
             args: ['visible', [true, false, false, false]],
-            label: "All"
+            label: "All Time"
         }, {
             method: 'restyle',
             args: ['visible', [false, true, false, false]],
@@ -341,8 +348,9 @@ function plotResults(dataset, divID) {
         // Define layout.
         var layout = {
             //showlegend: false,
-            autosize: false,
-            height: $(document).height() * 0.20,
+            //autosize: true,
+            width: $(window).width() * 0.45,
+            height: ($(window).width() * 0.45) * (1/2),
             margin: {t: 0, b: 0, l: 0, r: 0, pad: 0},
             geo: {
                 scope: 'world',
@@ -361,7 +369,14 @@ function plotResults(dataset, divID) {
         };
         // Plot.
         Plotly.plot(divID, data, layout, {showLink: false, displayModeBar: false});
+
     });
+
+    // Event listener for resize events.
+    window.addEventListener('resize', function() {
+        Plotly.relayout(divID, {width: $(window).width() * 0.45, height: ($(window).width() * 0.45) * (1/2)});
+    });
+
 }
 
 </SCRIPT>
