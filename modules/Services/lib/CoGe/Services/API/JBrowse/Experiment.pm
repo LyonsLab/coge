@@ -291,7 +291,8 @@ sub features {
         }
         elsif ( $data_type == $DATA_TYPE_MARKER ) {
             foreach my $d (@$pData) {
-                my ($name) = $d->{attr} =~ /ID\=([\w\.\-]+)\;/; # mdb added 4/24/14 for Amanda
+                warn $d->{attr};
+                my ($name) = $d->{attr} =~ /ID\=([\w\.\+\-\,\:\%]+)\;/; # mdb added 4/24/14 for Amanda
                 my %result = (
                     uniqueID => $d->{start} . '_' . $d->{stop},
                     type     => $d->{type},
