@@ -16,7 +16,7 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA = qw( Exporter );
-    @EXPORT = qw( search );
+    @EXPORT = qw( parse_query search );
 }
 
 sub add_join {
@@ -39,64 +39,79 @@ sub add_join {
 	return $attributes;
 }
 
-sub build_search {
-	my ($columns, $query_terms) = @_;
-	return undef unless @$query_terms;
+sub build_conditions {
+	my ($columns, $terms) = @_;
+	return [] unless $terms;
 
-	my @search;
-	for ( my $i = 0 ; $i < @$query_terms ; $i++ ) {
+	my @conditions;
+	foreach (@$terms) {
+		my %expr;
+        my $index = index($_, '!');
+		if ($index == -1) {
+            $expr{'like'} = '%' . $_ . '%';
+        } else {
+        	$expr{'not_like'} = '%' . substr($_, 0, $index) . substr($_, $index + 1) . '%';
+        }
 		my @items;
-		for (@$columns) {
+		foreach (@$columns) {
 			push @items, $_;
-			push @items, $query_terms->[$i];
+			push @items, \%expr;
 		}
-		push @search, { ($query_terms->[$i]{'not_like'} ? '-and' : '-or') => \@items };
+		push @conditions, { ($expr{'not_like'} ? '-and' : '-or') => \@items };
 	}
-	return \@search;
+	return \@conditions;
+}
+
+sub contains_none_of {
+	my ($query, $keys) = @_;
+	foreach (@$keys) {
+		return 0 if exists $query->{$_}; 
+	}
+	return 1;
 }
 
 sub do_search {
-    my ($db, $user, $type, $search, $attributes, $deleted, $restricted, $metadata_key, $metadata_value, $role, $favorite, $certified, $tag) = @_;
-    
-    my $and = $search || [];
-    push @$and, { 'me.certified' => $certified } if defined $certified;
-    push @$and, { 'me.deleted' => $deleted } if defined $deleted;
-    push @$and, { 'me.restricted' => $restricted } if defined $restricted;
+    my ($type, $conditions, $attributes, $query, $db, $user) = @_;
+
+	push @$conditions, { 'me.certified' => $query->{'certified'} } if exists $query->{'certified'};
+    push @$conditions, { 'me.deleted' => exists $query->{'deleted'} ? $query->{'deleted'} : 0 }; # don't search for deleted items by default
+    push @$conditions, { 'me.restricted' => $query->{'restricted'} } if exists $query->{'restricted'};
+	my $metadata_key = $query->{'metadata_key'};
+	my $metadata_value = $query->{'metadata_value'};
 	if ($metadata_key || $metadata_value) {
 		$attributes = add_join($attributes, lc($type) . '_annotations');
 		if ($metadata_key) {
 			my $dbh = $db->storage->dbh;
 			my @row = $dbh->selectrow_array('SELECT annotation_type_id FROM annotation_type WHERE name=' . $dbh->quote($metadata_key));
-			push @$and, { lc($type) . '_annotations.annotation_type_id' => $row[0] };
+			push @$conditions, { lc($type) . '_annotations.annotation_type_id' => $row[0] };
 		}
 		if ($metadata_value) {
-			push @$and, { 'annotation' => $metadata_value };
+			push @$conditions, { 'annotation' => $metadata_value };
 		}
 	}
-	if ($tag) {
+	if ($query->{'tag'}) {
 		$attributes = add_join($attributes, 'experiment_type_connectors');
-		if ($tag) {
-			my $dbh = $db->storage->dbh;
-			my @row = $dbh->selectrow_array('SELECT experiment_type_id FROM experiment_type WHERE name=' . $dbh->quote($tag));
-			push @$and, { 'experiment_type_connectors.experiment_type_id' => $row[0] };
-		}
+		my $dbh = $db->storage->dbh;
+		my @row = $dbh->selectrow_array('SELECT experiment_type_id FROM experiment_type WHERE name=' . $dbh->quote($query->{'tag'}));
+		push @$conditions, { 'experiment_type_connectors.experiment_type_id' => $row[0] };
 	}
+	my $role = $query->{'role'};
 	if ($role && $user) {
 		$attributes = add_join($attributes, 'user_connectors');
-		push @$and, { 'user_connectors.child_type' => $type eq 'Genome' ? 2 : $type eq 'Experiment' ? 3 : 1 };
-		push @$and, { 'user_connectors.parent_type' => 5 };
-		push @$and, { 'user_connectors.parent_id' => $user->id };		
-		push @$and, { 'user_connectors.role_id' => $role eq 'owner' ? 2 : $role eq 'editor' ? 3 : 4 };		
+		push @$conditions, { 'user_connectors.child_type' => $type eq 'Genome' ? 2 : $type eq 'Experiment' ? 3 : 1 };
+		push @$conditions, { 'user_connectors.parent_type' => 5 };
+		push @$conditions, { 'user_connectors.parent_id' => $user->id };		
+		push @$conditions, { 'user_connectors.role_id' => $role eq 'owner' ? 2 : $role eq 'editor' ? 3 : 4 };		
 	}
-	if ($favorite && $user) { # only allow searching for favorites, specifying favorite::0 is not allowed
+	if (exists $query->{'favorite'} && $user && !$user->is_public) { # only allow searching for favorites, specifying favorite::0 is not allowed
 		$attributes = add_join($attributes, 'favorite_connectors');
-		push @$and, { 'favorite_connectors.child_type' => $type eq 'Genome' ? 2 : $type eq 'Experiment' ? 3 : 1 };
-		push @$and, { 'favorite_connectors.user_id' => $user->id };
+		push @$conditions, { 'favorite_connectors.child_type' => $type eq 'Genome' ? 2 : $type eq 'Experiment' ? 3 : 1 };
+		push @$conditions, { 'favorite_connectors.user_id' => $user->id };
 	}
-	# my ($sql, @b) = $db->resultset($type)->search_rs({ -and => $and }, $attributes)->as_query();
+	# my ($sql, @b) = $db->resultset($type)->search_rs({ -and => $conditions }, $attributes)->as_query();
 	# warn Dumper $sql;
 	# warn Dumper \@b;
-	return $db->resultset($type)->search_rs({ -and => $and }, $attributes);
+	return $db->resultset($type)->search_rs({ -and => $conditions }, $attributes);
 }
 
 sub info_cmp {
@@ -107,9 +122,27 @@ sub info_cmp {
 	$info_a cmp $info_b;
 }
 
+sub parse_query {
+	my $search_text = shift;
+	my $query = {};
+	my @search_terms;
+	foreach (parse_line('\s+', 0, $search_text)) {
+		next if !$_;
+		my $index = index($_, '::');
+		if ($index != -1) {
+			$query->{substr($_, 0, $index)} = substr($_, $index + 2);
+		}
+		else {
+			push @search_terms, $_;
+		}
+    }
+	$query->{'search_terms'} = \@search_terms if @search_terms;
+	return $query;
+}
+
 sub push_results {
 	my ($results, $objects, $type, $user, $access_method, $favorites) = @_;
-	foreach ( @$objects ) {
+	foreach (@$objects) {
 		if (!$access_method || !$user || $user->$access_method($_)) {
 			my $result = {
 				'type'          => $type,
@@ -118,9 +151,8 @@ sub push_results {
 			};
 			$result->{'certified'} = $_->certified ? Mojo::JSON->true : Mojo::JSON->false if $_->can('certified');
 			$result->{'deleted'} = $_->deleted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('deleted');
-			$result->{'favorite'} = ($favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false) if defined($favorites) && ($type eq 'genome' || $type eq 'experiment' || $type eq 'notebook');
+			$result->{'favorite'} = ($favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false) if defined $favorites;
 			$result->{'restricted'} = $_->restricted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('restricted');
-			
 			push @$results, $result;
 		}
 	}
@@ -134,86 +166,17 @@ sub search {
 	my $user		= $opts{user};
 	my $show_users	= $opts{show_users};
 
-    my @results;
-	my $certified;
-	my $deleted;
-	my $favorite;
-    my $favorites;
-	$favorites = CoGe::Core::Favorites->new(user => $user) if ($user && !$user->is_public);
-	my $feature_type;
-	my $metadata_key;
-    my $metadata_value;
-	my $restricted;
-	my $role;
-	my $tag;
-	my $type = "none";
+	my $query = parse_query($search_term, $user);
+	my $type = $query->{'type'};
 
-	my @search_terms;
-    my @query_terms = parse_line('\s+', 0, $search_term);
-	for ( my $i = 0 ; $i < @query_terms ; $i++ ) {
-    	my $handled = 0;
-        if ( index( $query_terms[$i], "::" ) != -1 ) {
-            my @splitTerm = split( '::', $query_terms[$i] );
-			if ($splitTerm[0] eq 'certified') {
-				$certified = $splitTerm[1];
-				$handled = 1;
-			}
-			elsif ($splitTerm[0] eq 'deleted') {
-				$deleted = $splitTerm[1];
-				$handled = 1;
-			}
-			elsif ($splitTerm[0] eq 'favorite') {
-				$favorite = $splitTerm[1];
-				$handled = 1;
-			}
-			elsif ($splitTerm[0] eq 'feature_type') {
-				$feature_type = $splitTerm[1];
-				$handled = 1;
-			}
-			elsif ($splitTerm[0] eq 'metadata_key') {
-				$metadata_key = $splitTerm[1];
-				$handled = 1;
-			}
-			elsif ($splitTerm[0] eq 'metadata_value') {
-				$metadata_value = $splitTerm[1];
-				$handled = 1;
-			}
-			elsif ($splitTerm[0] eq 'restricted') {
-				$restricted = $splitTerm[1];
-				$handled = 1;
-			}
-			elsif ($splitTerm[0] eq 'role') {
-				$role = $splitTerm[1];
-				$handled = 1;
-			}
-			elsif ($splitTerm[0] eq 'tag') {
-				$tag = $splitTerm[1];
-				$handled = 1;
-			}
-			elsif ($splitTerm[0] eq 'type') {
-				$type = $splitTerm[1];
-				$handled = 1;
-			}
-        }
-        if ($handled) {
-            splice( @query_terms, $i, 1 );
-            $i--;
-			next;
-        }
-		push @search_terms, $query_terms[$i];
-		if (index( $query_terms[$i], '!' ) == -1) {
-            $query_terms[$i] = { 'like', '%' . $query_terms[$i] . '%' };
-        } else {
-        	my $bang_index = index($query_terms[$i], '!');
-        	my $new_term = substr($query_terms[$i], 0, $bang_index) . substr($query_terms[$i], $bang_index + 1);
-        	$query_terms[$i] = { 'not_like', '%' . $new_term . '%' };
-        }
-    }
+    my @results;
+    my $favorites;
+	$favorites = CoGe::Core::Favorites->new(user => $user) if ($user && !$user->is_public && (!$type || $type eq 'genome' || $type eq 'experiment' || $type eq 'notebook'));
 
     # organisms
-	if (($type eq 'none' || $type eq 'organism') && @query_terms && !defined($certified) && !defined($deleted) && !defined($favorite) && !defined($feature_type) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role) && !defined($tag)) {
-		my $search = build_search(['me.name', 'me.description', 'me.organism_id'],  \@query_terms);
-		my @organisms = $db->resultset("Organism")->search( { -and => $search } );
+	if ((!$type || $type eq 'organism') && $query->{'search_terms'} && contains_none_of($query, ['certified', 'deleted', 'favorite', 'feature_type', 'restricted', 'metadata_key', 'metadata_value', 'role', 'tag'])) {
+		my $conditions = build_conditions(['me.name', 'me.description', 'me.organism_id'],  $query->{'search_terms'});
+		my @organisms = $db->resultset("Organism")->search( { -and => $conditions } );
 		foreach ( sort { lc($a->name) cmp lc($b->name) } @organisms ) {
 			push @results, {
 				'type' => 'organism',
@@ -225,9 +188,9 @@ sub search {
 	}
 
     # genomes
-	if (($type eq 'none' || $type eq 'genome') && !defined($feature_type) && !defined($tag)) {
-		my $search = build_search(['me.name', 'me.description', 'me.genome_id', 'organism.name', 'organism.description'],  \@query_terms);
-		my $rs = do_search($db, $user, 'Genome', $search, $search ? { join => 'organism' } : undef, $deleted || 0, $user ? $restricted : 0, $metadata_key, $metadata_value, $role, $favorite, $certified);
+	if ((!$type || $type eq 'genome') && contains_none_of($query, ['feature_type', 'tag'])) {
+		my $conditions = build_conditions(['me.name', 'me.description', 'me.genome_id', 'organism.name', 'organism.description'],  $query->{'search_terms'});
+		my $rs = do_search('Genome', $conditions, $conditions ? { join => 'organism' } : undef, $query, $db, $user);
 		if ($rs) {
 			my @genomes = sort info_cmp $rs->all();
 			push_results(\@results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
@@ -235,9 +198,9 @@ sub search {
 	}
 
     # experiments
-	if (($type eq 'none' || $type eq 'experiment') && !defined($certified) && !defined($feature_type)) {
-		my $search = build_search(['me.name', 'me.description', 'me.experiment_id', 'genome.name', 'genome.description', 'organism.name', 'organism.description'],  \@query_terms);
-		my $rs = do_search($db, $user, 'Experiment', $search, $search ? { join => { 'genome' => 'organism' } } : undef, $deleted || 0, $user ? $restricted : 0, $metadata_key, $metadata_value, $role, $favorite, undef, $tag);
+	if ((!$type || $type eq 'experiment') && contains_none_of($query, ['certified', 'feature_type'])) {
+		my $conditions = build_conditions(['me.name', 'me.description', 'me.experiment_id', 'genome.name', 'genome.description', 'organism.name', 'organism.description'],  $query->{'search_terms'});
+		my $rs = do_search('Experiment', $conditions, $conditions ? { join => { 'genome' => 'organism' } } : undef, $query, $db, $user);
 		if ($rs) {
 			my @experiments = sort info_cmp $rs->all();
 			push_results(\@results, \@experiments, 'experiment', $user, 'has_access_to_experiment', $favorites);
@@ -245,9 +208,9 @@ sub search {
 	}
 
     # notebooks
-	if (($type eq 'none' || $type eq 'notebook') && !defined($certified) && !defined($feature_type) && !defined($tag)) {
-		my $search = build_search(['name', 'description', 'list_id'],  \@query_terms);
-		my $rs = do_search($db, $user, 'List', $search, undef, $deleted || 0, $user ? $restricted : 0, $metadata_key, $metadata_value, $role, $favorite);
+	if ((!$type || $type eq 'notebook') && contains_none_of($query, ['certified', 'feature_type', 'tag'])) {
+		my $conditions = build_conditions(['name', 'description', 'list_id'],  $query->{'search_terms'});
+		my $rs = do_search('List', $conditions, undef, $query, $db, $user);
 		if ($rs) {
 			my @notebooks = sort { lc($a->name) cmp lc($b->name) } $rs->all();
 			push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_list', $favorites);
@@ -255,9 +218,9 @@ sub search {
 	}
 
     # user groups
-	if ($show_users && ($type eq 'none' || $type eq 'usergroup') && !defined($certified) && !defined($favorite) && !defined($feature_type) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role) && !defined($tag)) {
-		my $search = build_search(['name', 'description', 'user_group_id'],  \@query_terms);
-		my $rs = do_search($db, $user, 'UserGroup', $search, undef, $deleted || 0);
+	if ($show_users && (!$type || $type eq 'usergroup') && contains_none_of($query, ['certified', 'favorite', 'feature_type', 'restricted', 'metadata_key', 'metadata_value', 'role', 'tag'])) {
+		my $conditions = build_conditions(['name', 'description', 'user_group_id'],  $query->{'search_terms'});
+		my $rs = do_search('UserGroup', $conditions, undef, $query, $db, $user);
 		if ($rs) {
 			my @user_groups = sort info_cmp $rs->all();
 			push_results(\@results, \@user_groups, 'user_group', $user, undef, $favorites);
@@ -265,8 +228,9 @@ sub search {
 	}
 
     # features
-	if (($type eq 'none' || $type eq 'feature') && !defined($certified) && !defined($deleted) && !defined($favorite) && !defined($restricted) && !defined($metadata_key) && !defined($metadata_value) && !defined($role) && !defined($tag)) {
+	if ((!$type || $type eq 'feature') && $query->{'search_terms'} && contains_none_of($query, ['certified', 'deleted', 'favorite', 'restricted', 'metadata_key', 'metadata_value', 'role', 'tag'])) {
 		my $dbh = $db->storage->dbh;
+		my $feature_type = $query->{'feature_type'};
 		my $sql = 'SELECT feature_name.name,feature.feature_id,' . ($feature_type ? "'" . $feature_type . "'" : 'feature_type.name') . ',organism.name,data_source.name,genome.version,genomic_sequence_type.name ' .
 			'FROM feature_name ' .
 				'JOIN feature USING(feature_id) ';
@@ -277,7 +241,7 @@ sub search {
 				'JOIN genome ON dataset_connector.genome_id=genome.genome_id AND !genome.deleted ' .
 				'JOIN organism USING(organism_id) ' .
 				'JOIN genomic_sequence_type USING(genomic_sequence_type_id) ' .
-			'WHERE MATCH(feature_name.name) AGAINST (\'' . (join ',', @search_terms) . '\') ';
+			'WHERE MATCH(feature_name.name) AGAINST (\'' . (join ',', @{$query->{'search_terms'}}) . '\') ';
 		if ($feature_type) {
 			my @row = $dbh->selectrow_array('SELECT feature_type_id FROM feature_type WHERE name=\'' . $feature_type . '\'');
 			$sql .= 'AND feature.feature_type_id=' . $row[0] . ' ';
