@@ -7,6 +7,7 @@ use warnings;
 use File::Basename;
 use File::Slurp;
 use Data::Dumper;
+use Text::Unidecode qw(unidecode);
 
 use CoGeX;
 
@@ -16,8 +17,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotations export_annotations to_annotations 
-                  tags_to_string create_image );
+    @EXPORT = qw( create_annotations export_annotations to_annotations tags_to_string create_image );
 }
 
 sub create_annotations {
@@ -219,7 +219,9 @@ sub to_annotations {
     foreach my $md (@$md_array) {
         next unless ($md->{type} && $md->{text}); # minimum required fields
         
-        my @fields = map { $md->{$_} || '' } ('link', 'type_group', 'type', 'text');
+        my @fields = map { unidecode($_) } # mdb added unidecode 12/9/16 COGE-693 - handle UTF-8 unicode chars from NCBI-SRA
+                     map { $md->{$_} || '' } ('link', 'type_group', 'type', 'text');
+
         shift @fields unless $fields[0]; # remove undefined link
         shift @fields unless $fields[0]; # remove undefined type_group
         
