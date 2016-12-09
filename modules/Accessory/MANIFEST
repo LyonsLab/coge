@@ -10,6 +10,7 @@ lib/CoGe/Accessory/GBlite.pm
 lib/CoGe/Accessory/Storage.pm
 lib/CoGe/Accessory/Utils.pm
 lib/CoGe/Accessory/TDS.pm
+lib/CoGe/Accessory/Entrez.pm
 lib/CoGe/Accessory/Web.pm
 lib/CoGe/Accessory/Notebook.pm
 lib/CoGe/Accessory/Metadata.pm
