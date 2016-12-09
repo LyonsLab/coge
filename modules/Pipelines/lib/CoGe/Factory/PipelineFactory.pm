@@ -11,6 +11,7 @@ use CoGe::Builder::Export::Gff;
 use CoGe::Builder::Export::Genome;
 use CoGe::Builder::Export::Experiment;
 use CoGe::Builder::Load::Experiment;
+use CoGe::Builder::Load::SRA;
 use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
@@ -72,6 +73,9 @@ sub get {
     }
     elsif ($message->{type} eq "load_experiment") {
         $builder = CoGe::Builder::Load::Experiment->new($request);
+    }
+    elsif ($message->{type} eq "load_sra") {
+        $builder = CoGe::Builder::Load::SRA->new($request);
     }
     elsif ($message->{type} eq "load_batch") {
         $builder = CoGe::Builder::Load::BatchExperiment->new($request);

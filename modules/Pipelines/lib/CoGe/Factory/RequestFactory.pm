@@ -45,6 +45,7 @@ sub get {
         $type eq "export_fasta" ||
         $type eq "export_genome" ||
         $type eq "load_experiment" ||
+        $type eq "load_sra" ||
         $type eq "load_batch" ||
         $type eq "load_annotation")
     {
