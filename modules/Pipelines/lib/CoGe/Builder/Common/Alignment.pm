@@ -3,6 +3,7 @@ package CoGe::Builder::Common::Alignment;
 use strict;
 use warnings;
 
+use Switch;
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
 use Clone qw(clone);
@@ -41,7 +42,7 @@ sub build {
     my $trimming_params  = $params->{trimming_params};
     my $alignment_params = $params->{alignment_params};
     my $chipseq_params   = $params->{chipseq_params};
-    
+
     my @tasks;
     
     my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
@@ -157,42 +158,32 @@ sub build {
     
     my ($alignment_tasks, $alignment_results);
     $alignment_params = {} unless $alignment_params;
-    
-    if ($alignment_params->{tool} eq 'hisat2') {
-        ($alignment_tasks, $alignment_results) = create_hisat2_workflow(%params);
-    }
-    elsif ($alignment_params->{tool} eq 'bowtie2') {
-        ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params);
-    }
-    elsif ($alignment_params->{tool} eq 'tophat') {
-        # Generate gff if genome annotated
-        my $gff_file;
-        if ( $genome->has_gene_features ) {
-            my $gff_task = create_gff_generation_job(
-                gid => $gid,
-                organism_name => $genome->organism->name,
-                #validated => "$fastq.validated"
-            );
-            $gff_file = $gff_task->{outputs}->[0];
-            push @tasks, $gff_task;
+
+    switch( _get_aligner($alignment_params) ) {
+        case 'hisat2'  { ($alignment_tasks, $alignment_results) = create_hisat2_workflow(%params) }
+        case 'bowtie2' { ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params) }
+        case 'tophat'  {
+            # Generate gff if genome annotated
+            my $gff_file;
+            if ( $genome->has_gene_features ) {
+                my $gff_task = create_gff_generation_job(
+                    gid => $gid,
+                    organism_name => $genome->organism->name,
+                    #validated => "$fastq.validated"
+                );
+                $gff_file = $gff_task->{outputs}->[0];
+                push @tasks, $gff_task;
+            }
+
+            $params{gff} = $gff_file;
+            ($alignment_tasks, $alignment_results) = create_tophat_workflow(%params);
         }
-        
-        $params{gff} = $gff_file;
-        ($alignment_tasks, $alignment_results) = create_tophat_workflow(%params);
+        case 'bismark' { ($alignment_tasks, $alignment_results) = create_bismark_workflow(%params) }
+        case 'bwameth' { ($alignment_tasks, $alignment_results) = create_bwameth_workflow(%params) }
+        case 'bwa'     { ($alignment_tasks, $alignment_results) = create_bwa_workflow(%params) }
+        case 'gsnap'   { ($alignment_tasks, $alignment_results) = create_gsnap_workflow(%params) }
     }
-    elsif ($alignment_params->{tool} eq 'bismark') {
-        ($alignment_tasks, $alignment_results) = create_bismark_workflow(%params);
-    }
-    elsif ($alignment_params->{tool} eq 'bwameth') {
-        ($alignment_tasks, $alignment_results) = create_bwameth_workflow(%params);
-    }
-    elsif ($alignment_params->{tool} eq 'bwa') {
-        ($alignment_tasks, $alignment_results) = create_bwa_workflow(%params);
-    }
-    else { # GSNAP is the default
-        ($alignment_tasks, $alignment_results) = create_gsnap_workflow(%params);
-    }
-    
+
     unless (@$alignment_tasks && $alignment_results) {
         print STDERR "CoGe::Builder::Common::Alignment ERROR: Invalid alignment workflow\n";
         return { error => 'Invalid alignment workflow' };
@@ -1174,6 +1165,7 @@ sub create_gsnap_workflow {
     my $fasta = $opts{fasta};
     my $fastq = $opts{fastq};
     my $done_files = $opts{done_files};
+    my $read_type  = $opts{read_type} // 'single';
     my $params = $opts{params} // {};
     my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
 
@@ -1192,6 +1184,7 @@ sub create_gsnap_workflow {
                 done_files => $done_files,
                 gmap => $gmap_task->{outputs}->[0]->[0],
                 staging_dir => $staging_dir,
+                read_type => $read_type,
                 params => $params
             );
             push @tasks, $gsnap_task;
@@ -1204,6 +1197,7 @@ sub create_gsnap_workflow {
             done_files => $done_files,
             gmap => $gmap_task->{outputs}->[0]->[0],
             staging_dir => $staging_dir,
+            read_type => $read_type,
             params => $params,
         );
         push @tasks, $gsnap_task;
@@ -1261,9 +1255,9 @@ sub create_gsnap_alignment_job {
     my $staging_dir = $opts{staging_dir};
 
     # Optional arguments
+    my $read_type = $opts{read_type} // "single";
     my $params = $opts{params};
-    my $read_type = $params->{read_type} // "single"; #/
-    my $gapmode = $params->{'--gap-mode'} // "none"; #/
+    my $gapmode = $params->{'--gap-mode'} // "none";
     my $Q = $params->{'-Q'} // 1; #/
     my $n = $params->{'-n'} // 5; #/
     my $N = $params->{'-N'} // 1; #/
@@ -1460,8 +1454,8 @@ sub create_bwa_index_job {
 
 sub generate_additional_metadata { #TODO redo arg capture in a more automated fashion
     my ($read_params, $trimming_params, $alignment_params) = @_;
-    my @annotations;
 
+    my @annotations;
     push @annotations, qq{https://genomevolution.org/wiki/index.php?title=LoadExperiment||note|Generated by CoGe's NGS Analysis Pipeline};
 
     if ($trimming_params && $trimming_params->{trimmer}) {
@@ -1473,43 +1467,53 @@ sub generate_additional_metadata { #TODO redo arg capture in a more automated fa
         }
     }
 
-    if ($alignment_params && $alignment_params->{tool}) {
-        if ($alignment_params->{tool} eq 'hisat2') {
+    switch( _get_aligner($alignment_params) ) {
+        case 'hisat2'  {
             push @annotations, qq{note|hisat2_build};
             my $params = ($read_params->{encoding} eq '64' ? '--phred64' : '--phred33');
             push @annotations, 'note|hisat2 ' . $params;
         }
-        elsif ($alignment_params->{tool} eq 'tophat') {
-            push @annotations, qq{note|bowtie2_build};
-            push @annotations, 'note|tophat ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-g'));
-        }
-        elsif ($alignment_params->{tool} eq 'bowtie2') {
+        case 'bowtie2' {
             my $rg = $alignment_params->{'--rg-id'};
             push @annotations, qq{note|bowtie2_build};
             push @annotations, 'note|bowtie2 ' . $alignment_params->{'presets'} . ($rg ? " --rg-id $rg" : '');
         }
-        elsif ($alignment_params->{tool} eq 'bismark') {
+        case 'tophat'  {
+            push @annotations, qq{note|bowtie2_build};
+            push @annotations, 'note|tophat ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-g'));
+        }
+        case 'bismark' {
             push @annotations, qq{note|bismark_genome_preparation};
             push @annotations, 'note|bismark ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-N', '-L'));
         }
-        elsif ($alignment_params->{tool} eq 'bwameth') {
+        case 'bwameth' {
             push @annotations, qq{note|bwameth index};
             push @annotations, 'note|bwameth (default options)';
         }
-        elsif ($alignment_params->{tool} eq 'bwa') {
+        case 'bwa'     {
             my $M = $alignment_params->{'-M'};
             my $R = $alignment_params->{'-R'};
             my $args_str = ($M ? '-M' : '') . ($R ? " -R $R" : '');
             push @annotations, qq{note|bwa index};
             push @annotations, 'note|bwa mem ' . ($args_str ? $args_str : ' (default options)');
         }
-        else { # default to gsnap
+        case 'gsnap'   {
             push @annotations, qq{note|gmap_build};
             push @annotations, 'note|gsnap ' . join(' ', map { $_.' '.$alignment_params->{$_} } ('-N', '-n', '-Q', '--gap-mode', '--nofails'));
         }
     }
 
     return \@annotations;
+}
+
+sub _get_aligner {
+    my $alignment_params = shift;
+
+    if ($alignment_params && $alignment_params->{tool}) {
+        return lc($alignment_params->{tool});
+    }
+
+    return 'gsnap'; # default aligner if not specified
 }
 
 1;
