@@ -2019,6 +2019,7 @@ div.dataTables_scrollBody {
     padding: 0 10px 10px 10px;
     position: absolute;
     top: 54px;
+    z-index: 100;
 }
 
 #coge-advanced-search > div {
@@ -2028,7 +2029,8 @@ div.dataTables_scrollBody {
 }
 
 #coge-advanced-search input {
-    width: inherit;
+    font-size: initial;
+    width: initial;
 }
 
 .coge-login-button {

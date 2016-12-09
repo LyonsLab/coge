@@ -3,14 +3,16 @@ use strict;
 use warnings;
 use CGI;
 use CoGe::Accessory::Web;
+use CoGe::Core::Search qw( parse_query );
+use JSON qw( encode_json );
 
-use vars qw($CONF $USER $DB %FUNCTION $FORM $SEARCH_TERM $LINK $PAGE_TITLE $PAGE_NAME);
+use vars qw($CONF $USER $DB %FUNCTION $FORM $SEARCH_TEXT $LINK $PAGE_TITLE $PAGE_NAME);
 
 $PAGE_TITLE = 'Search';
 $PAGE_NAME  = 'SearchResults.pl';
 
 $FORM = new CGI;
-$SEARCH_TERM = $FORM->param('s');
+$SEARCH_TEXT = $FORM->param('s');
 
 ( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init( cgi => $FORM, page_title => $PAGE_TITLE );
 
@@ -33,7 +35,7 @@ sub gen_html {
                       ADMIN_ONLY  => $USER->is_admin,
                       CAS_URL     => $CONF->{CAS_URL} || '',
                       COOKIE_NAME => $CONF->{COOKIE_NAME} || '',
-                      SEARCH_TERM => $SEARCH_TERM );
+                      SEARCH_TEXT => $SEARCH_TEXT );
 	$template->param( LOGON       => 1 ) unless $USER->user_name eq "public";
 	$template->param( BODY        => gen_body() );
 	
@@ -44,7 +46,8 @@ sub gen_body {
 	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'SearchResults.tmpl' );
 	$template->param( API_BASE_URL => $CONF->{SERVER} . 'api/v1/',
 	                  USER_NAME   => $USER->user_name,
-	                  SEARCH_TERM => $SEARCH_TERM );
+	                  SEARCH_TEXT => $SEARCH_TEXT,
+					  QUERY       => encode_json(parse_query($SEARCH_TEXT)));
 	
 	return $template->output;
 }

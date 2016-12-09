@@ -17,7 +17,7 @@ $(function () {
 			user_is_admin = data == 1;
 		}
 	}).done(function() {
-		search_stuff(SEARCH_TERM);
+		search_stuff(SEARCH_TEXT);
 	});
 });
 

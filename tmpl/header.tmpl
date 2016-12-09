@@ -118,41 +118,49 @@ function setup_button_states (id) {
 
 //add button behavior to new buttons, takes in array
 function add_button_states (ids) {
-    if(!ids) return;
-
-    if(!(ids instanceof Array)) ids = [ids]; //check if ids is an array, if not, make it one
-
-    for(var i=0; i<ids.length; i++)
-    {
-         setup_button_states(ids[i]);
-    }
-}
-
-function advanced_search() {
-	var url = "SearchResults.pl?s=" + $('#header_search_token').val();
-	var type = $('#search_type').val();
-	if (type != 'any')
-		url += ' type::' + type;
-	var certified = $('#search_certified').val();
-	if (certified != 'any')
-		url += ' certified::' + (certified == 'yes' ? '1' : '0');
-	var deleted = $('#search_deleted').val();
-	if (deleted == 'yes')
-		url += ' deleted::1';
-	var favorite = $('#search_favorite').val();
-	if (favorite != 'any')
-		url += ' favorite::' + (favorite == 'yes' ? '1' : '0');
-	var restricted = $('#search_restricted').val();
-	if (restricted != 'any')
-		url += ' restricted::' + (restricted == 'yes' ? '1' : '0');
-	var role = $('#search_role').val();
-	if (role != 'any')
-		url += ' role::' + role;
-	window.location.href = url;
+    if (!ids)
+		return;
+    if (!(ids instanceof Array))
+		ids = [ids]; //check if ids is an array, if not, make it one
+    for (var i=0; i<ids.length; i++)
+        setup_button_states(ids[i]);
 }
 
 function search() {
-	window.location.href = "SearchResults.pl?s=" + $('#header_search_token').val();
+	var text = $('#header_search_text').val();
+	if ($('#coge-advanced-search').css('display') == 'block') {
+		var terms = [];
+		if (text)
+			terms.push(text);
+		var type = $('#search_type').val();
+		if (type != 'any')
+			terms.push('type::' + type);
+		var certified = $('#search_certified').val();
+		if (certified != 'any')
+			terms.push('certified::' + (certified == 'yes' ? '1' : '0'));
+		var deleted = $('#search_deleted').val();
+		if (deleted == 'yes')
+			terms.push('deleted::1');
+		var favorite = $('#search_favorite').val();
+		if (favorite != 'any')
+			terms.push('favorite::1');
+		var restricted = $('#search_restricted').val();
+		if (restricted != 'any')
+			terms.push('restricted::' + (restricted == 'yes' ? '1' : '0'));
+		var role = $('#search_role').val();
+		if (role != 'any')
+			terms.push('role::' + role);
+		var tag = $('#search_tag').val();
+		if (tag)
+			terms.push('tag::' + tag);
+		if (terms.length)
+			window.location.href = 'SearchResults.pl?s=' + terms.join(' ');
+		else
+			alert('Search not specified');
+	} else if (text)
+		window.location.href = "SearchResults.pl?s=" + text;
+	else
+		alert('Search not specified');
 }
 
 function searchKey(event) {
@@ -208,7 +216,7 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 			<ul class="coge-header-search">
 				<li>
 					<div class="coge-header-searchbar">
-				    	<input id="header_search_token" type="text" class="text" placeholder="Search database" value="<TMPL_VAR NAME='SEARCH_TERM'>" spellcheck="false" onkeypress="searchKey(event)">
+				    	<input id="header_search_text" type="text" class="text" placeholder="Search database" value="<TMPL_VAR NAME='SEARCH_TEXT'>" spellcheck="false" onkeypress="searchKey(event)">
 						<div id="coge-advanced-search" class="text">
 							<table>
 								<tr><td>type:</td><td>
@@ -219,7 +227,6 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 										<option>genome</option>
 										<option>notebook</option>
 										<option>organism</option>
-										<option value="usergroup">user group</option>
 									</select>
 								</td></tr>
 								<tr><td>certified:</td><td>
@@ -239,8 +246,16 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 									<select id="search_favorite">
 										<option>any</option>
 										<option>yes</option>
-										<option>no</option>
 									</select>
+								</td></tr>
+								<tr><td>feature type:</td><td>
+									<input id="search_feature_type" />
+								</td></tr>
+								<tr><td>metadata key:</td><td>
+									<input id="search_metadata_key" />
+								</td></tr>
+								<tr><td>metadata value:</td><td>
+									<input id="search_metadata_value" />
 								</td></tr>
 								<tr><td>restricted:</td><td>
 									<select id="search_restricted">
@@ -257,10 +272,13 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 										<option>reader</option>
 									</select>
 								</td></tr>
+								<tr><td>tag:</td><td>
+									<input id="search_tag" />
+								</td></tr>
 							</table>
 							<div>
 								<button onclick="$('#coge-advanced-search').slideUp();$('#advanced_search').show();">cancel</button>
-								<button onclick="advanced_search();" style="float:right;">search</button>
+								<button onclick="search();" style="float:right;">search</button>
 							</div>
 						</div>
 				    </div>
@@ -268,9 +286,9 @@ Please note:  the CyVerse Data Store will be unavailable Tuesday, December 16th 
 				<li>
 				    <div id="header_search_button" class="glyphicon glyphicon-search coge-button coge-header-search-button" style="" onclick="search();"></div>
 			    </li>
-				<!--<li id="advanced_search">
+				<li id="advanced_search">
 					<a onclick="$('#coge-advanced-search').slideDown();$('#advanced_search').hide();">advanced</a>
-				</li>-->
+				</li>
 			</ul>
 	    </li>
 	</ul>
