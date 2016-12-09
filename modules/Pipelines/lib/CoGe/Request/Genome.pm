@@ -24,7 +24,7 @@ sub is_valid {
 sub has_access {
     my $self = shift;
     unless (defined $self->{user}) {
-        warn "Request::Genome::has_access: Missing user";
+        warn "Request::Genome::has_access: User not defined";
         return;
     }
 
