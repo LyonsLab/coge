@@ -12,8 +12,7 @@ use File::Path;
 
 $|++;
 
-use vars
-  qw($FORM $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $coge $FASTADIR $URL $DIR $USER $COOKIE_NAME);
+use vars qw($FORM $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $coge $FASTADIR $URL $DIR $USER $COOKIE_NAME);
 
 $FORM = new CGI;
 $P    = CoGe::Accessory::Web::get_defaults();
@@ -126,9 +125,24 @@ foreach my $feat (@feats) {
         my $seq;
         if ($prot) {
             my (@seqs) = $feat->protein_sequence( dsgid => $dsg->id );
-            next unless scalar @seqs;
-            next if scalar @seqs > 1;    #didn't find the correct reading frame;
-            next unless $seqs[0] =~ /[^x]/i;
+            unless (scalar @seqs) {
+                my $msg = "Skipping feature $name (id=" . $feat->id . ") due to no seqs";
+                warn $msg;
+                print '# ', $msg, "\n";
+                next;
+            }
+            if (scalar @seqs > 1) { # couldn't find the single correct reading frame
+                my $msg = "Skipping feature $name (id=" . $feat->id . ") due to incorrect reading frame";
+                warn $msg;
+                print '# ', $msg, "\n";
+                next;
+            }
+            unless ($seqs[0] =~ /[^x]/i) {
+                my $msg = "Skipping feature $name (id=" . $feat->id . ") due to X's in seq";
+                warn $msg;
+                print '# ', $msg, "\n";
+                next;
+            }
             $seq = $seqs[0];
         }
         else {
