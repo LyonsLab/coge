@@ -26,6 +26,7 @@ GD::Graph::Data
 GD::Graph::bars
 GD::Graph::histogram
 GD::Simple
+Hash::Flatten
 Hash::Merge::Simple
 HTML::Template
 HTTP::Request
@@ -52,6 +53,7 @@ String::ShellQuote
 Switch
 Sys::Load
 Sys::Syslog
+Text::Unidecode
 URI
 URI::Escape
 URI::Escape::JavaScript
