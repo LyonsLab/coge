@@ -142,7 +142,7 @@ sub generate_body {
     return $template->output;
 }
 
-sub search_ncbi_nucleotide { #TODO this can be done client-side instead
+sub search_ncbi_nucleotide { #TODO this can be done client-side instead, see Entrez.js
     my %opts      = @_;
     my $accn      = $opts{accn};
     my $timestamp = $opts{timestamp};
