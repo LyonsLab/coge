@@ -686,7 +686,7 @@ sub get_genome_info {
 	my $org_num  = $opts{org_num};
 	my $feattype = $opts{feattype};
 	$feattype = 1 unless defined $feattype;
-	return ( "<div class='small note indent'>No matching results found</div>",
+	return ( "<div class='small note indent'>This organism has no publicly available data.</div>",
 		" ", " ", '', $org_num, '', '' )
 	  unless ( $dsgid && $dsgid =~ /\d+/ );
 
