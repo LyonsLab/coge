@@ -7,7 +7,11 @@ lib/CoGe/Builder/CommonTasks.pm
 lib/CoGe/Builder/Export/Experiment.pm
 lib/CoGe/Builder/Export/Fasta.pm
 lib/CoGe/Builder/Export/Gff.pm
+lib/CoGe/Builder/Load/Annotation.pm
+lib/CoGe/Builder/Load/BatchExperiment.pm
 lib/CoGe/Builder/Load/Experiment.pm
+lib/CoGe/Builder/Load/Genome.pm
+lib/CoGe/Builder/Load/SRA.pm
 lib/CoGe/Builder/SNP/IdentifySNPs.pm
 lib/CoGe/Builder/SNP/CoGeSNPs.pm
 lib/CoGe/Builder/SNP/GATK.pm

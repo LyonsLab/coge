@@ -6,6 +6,7 @@ Accessory/lib/CoGe/Accessory/GBlite.pm
 Accessory/lib/CoGe/Accessory/Storage.pm
 Accessory/lib/CoGe/Accessory/Utils.pm
 Accessory/lib/CoGe/Accessory/TDS.pm
+Accessory/lib/CoGe/Accessory/Entrez.pm
 Accessory/lib/CoGe/Accessory/Web.pm
 Accessory/lib/CoGe/Accessory/IRODS.pm
 Accessory/lib/CoGe/Accessory/Annotation.pm
@@ -155,6 +156,7 @@ Pipelines/lib/CoGe/Builder/Load/Experiment.pm
 Pipelines/lib/CoGe/Builder/Load/BatchExperiment.pm
 Pipelines/lib/CoGe/Builder/Load/Genome.pm
 Pipelines/lib/CoGe/Builder/Load/Annotation.pm
+Pipelines/lib/CoGe/Builder/Load/SNP.pm
 Pipelines/lib/CoGe/Builder/SNP/IdentifySNPs.pm
 Pipelines/lib/CoGe/Builder/SNP/CoGeSNPs.pm
 Pipelines/lib/CoGe/Builder/SNP/GATK.pm
