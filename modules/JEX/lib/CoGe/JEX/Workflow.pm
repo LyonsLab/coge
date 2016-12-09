@@ -73,7 +73,7 @@ sub add_job {
 
     # mdb added 1/5/15 - prevent duplicate jobs, JEX doesn't handle them correctly
     foreach (@{$self->jobs}) {
-        if (Compare($_, $job)) {
+        if (Compare($_, $job, { ignore_hash_keys => ['inputs'] })) {
             print STDERR "Workflow::add_job warning: skipping duplicate job named '", $job->{description}, "'\n";
             return 1;
         }
