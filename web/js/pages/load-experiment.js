@@ -1151,10 +1151,17 @@ $.extend(OptionsView.prototype, {
 function load(experiment) {
 	coge.progress.begin();
     newLoad = true;
-    
+
+    // Set job type based on data
+//    console.log(experiment);
+//    var job_type = 'load_experiment';
+//    if (experiment.data[0].type == 'sra') {
+//        job_type = 'load_sra';
+//    }
+
 	// Convert request into format for job service
 	var request = {
-		type: 'load_experiment',
+		type: job_type,
 		requester: {
 			page: PAGE_NAME
 		},
