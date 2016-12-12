@@ -47,7 +47,7 @@ sub build {
     my $gid = $self->params->{genome_id};
     return unless $gid;
     my $data = $self->params->{source_data};
-    return unless (defined $data && @$data);
+    return unless (defined $data && ref($data) eq 'ARRAY' && @$data);
     my $metadata = $self->params->{metadata};
     return unless $metadata;
     my $additional_metadata = $self->params->{additional_metadata}; # optional
@@ -248,7 +248,13 @@ sub build {
         push @done_files, $load_task->{outputs}->[1];
     }
     
-#    print STDERR Dumper \@tasks, "\n";
+    # Add pipeline input dependencies to tasks -- temporary kludge for SRA.pm, mdb 12/7/16
+    if ($self->inputs && @{$self->inputs}) {
+        foreach my $task (@tasks) {
+            push @{$task->{inputs}}, @{$self->inputs};
+        }
+    }
+
     $self->workflow->add_jobs(\@tasks);
     
     return 1;

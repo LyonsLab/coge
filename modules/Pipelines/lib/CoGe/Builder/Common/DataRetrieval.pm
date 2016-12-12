@@ -155,28 +155,4 @@ sub ftp_get {
     };
 }
 
-sub fastq_dump {
-    my ($self, %params) = @_;
-    my $accn = $params{accn};
-    my $dest_path = $params{dest_path};
-    return unless $accn;
-    
-    my $output_file = catfile($dest_path, $accn . '.fastq');
-    my $done_file = "$output_file.done";
-    
-    my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
-
-    return {
-        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch $done_file",
-        script => undef,
-        args => [],
-        inputs => [],
-        outputs => [
-            $output_file,
-            $done_file
-        ],
-        description => "Fetching $accn from NCBI-SRA"
-    };
-}
-
 1;

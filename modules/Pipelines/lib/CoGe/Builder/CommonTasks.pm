@@ -232,7 +232,7 @@ sub create_data_retrieval_workflow {
     
     my (@tasks, @outputs, @ncbi);
     foreach my $item (@$data) {
-        my $type = lc($item->{type});
+        my $type = lc($item->{type} // '');
         
         # Check if the file already exists which will be the case if called
         # via the load page.
