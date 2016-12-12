@@ -200,7 +200,7 @@ function search() {
 }
 
 function updateAdvancedSearch() {
-	if (!QUERY)
+	if (typeof QUERY == 'undefined')
 		return;
 	['certified', 'deleted', 'favorite', 'restricted', 'role'].forEach(function(opt) {
 		if (QUERY[opt])
