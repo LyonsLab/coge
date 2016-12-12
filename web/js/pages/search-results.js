@@ -23,12 +23,12 @@ $(function () {
 
 function search_stuff(search_term) {
 	if (!search_term || search_term.length <= 2) {
-		$("#noresult").html('Please specify a search term longer than 2 characters').show();
+		$("#msg").html('Please specify a search term longer than 2 characters').show();
 		$("#loading").hide();
 		return;
 	}
 	
-	$("#noresult").hide();
+	$("#msg").hide();
 	$('masterTable').css('display', 'none');
 	$("#loading").show();
 	
@@ -36,8 +36,10 @@ function search_stuff(search_term) {
 		.done(function(response) {
 			var obj = response;
 			
-			if (!obj || !obj.results)
+			if (!obj || !obj.results) {
+				$("#loading").hide();
 				return;
+			}
 
 			function add_item(url, obj, num) {
 				let html = '<tr class="';
@@ -96,14 +98,16 @@ function search_stuff(search_term) {
 					user_group_list += add_item(null, o, user_group_count++);
 			}
 
-			//Populate the html with the results
-			$("#loading").show();
+			var total = org_count + gen_count + exp_count + feature_count + note_count + user_group_count;
+			if (total == 0) {
+				$("#loading").hide();
+				$('#msg').html('No matching results found').show();
+				return;
+			}
+
 			$('masterTable').css('display', 'block');
 			$(".result").fadeIn( 'fast');
 			
-			if (org_count + gen_count + exp_count + feature_count + note_count + user_group_count == 0)
-				$('#noresult').html('No matching results found').show();
-
 			function setup_results(type, icon, count, cols, rows) {
 				var div = $('#' + type.replace(' ', '_'));
 				if (count > 0) {
