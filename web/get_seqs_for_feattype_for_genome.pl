@@ -12,8 +12,7 @@ use File::Path;
 
 $|++;
 
-use vars
-  qw($FORM $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $coge $FASTADIR $URL $DIR $USER $COOKIE_NAME);
+use vars qw($FORM $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $coge $FASTADIR $URL $DIR $USER $COOKIE_NAME);
 
 $FORM = new CGI;
 $P    = CoGe::Accessory::Web::get_defaults();
@@ -119,24 +118,43 @@ foreach my $feat (@feats) {
             last unless $name =~ /\s/;
         }
         $name =~ s/\s+/_/g;
+
         my $title = join( "||",
             $org,              $chr,      $feat->start,
             $feat->stop,       $name,     $feat->strand,
             $feat->type->name, $feat->id, $count );
-        my $seq;
+        $title = ">" . $title;
+
         if ($prot) {
             my (@seqs) = $feat->protein_sequence( dsgid => $dsg->id );
-            next unless scalar @seqs;
-            next if scalar @seqs > 1;    #didn't find the correct reading frame;
-            next unless $seqs[0] =~ /[^x]/i;
-            $seq = $seqs[0];
+            unless (scalar @seqs) {
+                my $msg = "Skipping feature $name (id=" . $feat->id . ") due to no seqs";
+                warn $msg;
+                print '# ', $msg, "\n";
+                next;
+            }
+
+# mdb removed 12/9/16 -- print all returned reading frames
+#            if (scalar @seqs > 1) { # couldn't find the single correct reading frame
+#                my $msg = "Skipping feature $name (id=" . $feat->id . ") due to incorrect reading frame";
+#                warn $msg;
+#                print '# ', $msg, "\n";
+#                next;
+#            }
+#            unless ($seqs[0] =~ /[^x]/i) {
+#                my $msg = "Skipping feature $name (id=" . $feat->id . ") due to X's in seq";
+#                warn $msg;
+#                print '# ', $msg, "\n";
+#                next;
+#            }
+
+            for (my $i = 0; $i < @seqs; $i++) {
+                print $title, "||frame$i\n", $seqs[$i], "\n";
+            }
         }
         else {
-            $seq = $feat->genomic_sequence;
+            print $title, "\n", $feat->genomic_sequence, "\n";
         }
-        $title = ">" . $title . "\n";
-
-        print $title, $seq, "\n";
 
         $count++;
     }};

@@ -1357,7 +1357,6 @@ sub get_results {
 
 	#this is for using dagchainer's merge function
 	my $dag_merge_enabled = ( $merge_algo == 2 ) ? 1 : 0;
-	my $self_comparision = ( $dsgid1 eq $dsgid2 ) ? 1 : 0;
 
 	#length of a gap (average distance expected between two syntenic genes)
 	my $gap = defined( $opts{g} ) ? $opts{g} : floor( $dagchainer_D / 2 );
@@ -1385,10 +1384,6 @@ sub get_results {
 	############################################################################
 	# Run quota align merge
 	############################################################################
-	my (
-		$find_nearby_time,    $gen_ks_db_time, $dotplot_time,
-		$add_gevo_links_time, $final_results_files
-	);
 
 	#id 1 is to specify quota align as a merge algo
 	if ( $merge_algo == 1 ) {
@@ -1401,6 +1396,7 @@ sub get_results {
 
 	#add pairs that were skipped by dagchainer
 	$post_dagchainer_file_w_nearby = $post_dagchainer_file;
+
 	############################################################################
 	# Run quota align coverage
 	############################################################################
@@ -1523,8 +1519,15 @@ sub get_results {
 		$warn .= qq{Unable to display the x-axis.} unless -r $x_label;
 	}
 
+	my $final_dagchainer_file_gevolinks = $final_dagchainer_file . ".gevolinks"; # mdb added 12/2/16 COGE-794
+	my $final_dagchainer_file_condensed = $final_dagchainer_file_gevolinks . ".condensed";
+
 	my $problem;
-	if ( -r "$out.html" ) {
+	if ( -r "$out.html" &&
+	     -r $final_dagchainer_file &&           # mdb added 12/2/16 COGE-794
+		 -r $final_dagchainer_file_gevolinks && # mdb added 12/2/16 COGE-794
+		 -r $final_dagchainer_file_condensed )  # mdb added 12/2/16 COGE-794
+	{
 		#Dotplot
 		$/ = "\n";
 		open( IN, "$out.html" )
@@ -1667,12 +1670,11 @@ sub get_results {
 			);
 		}
 
-		my $final_dagchainer_file_condensed = $final_dagchainer_file . ".condensed";
 		my $qa_file = $merged_dagchainer_file;
 		$qa_file =~ s/\.ma\d$/\.qa/ if $qa_file;
-		my $qa_merged_file = $qa_file . ".merged" if $qa_file;
-		my $qa_coverage_tmp = $quota_align_coverage . ".tmp" if $quota_align_coverage;
-		my $qa_coverage_qa = $quota_align_coverage . ".qa" if $quota_align_coverage;
+#		my $qa_merged_file = $qa_file . ".merged" if $qa_file;
+#		my $qa_coverage_tmp = $quota_align_coverage . ".tmp" if $quota_align_coverage;
+#		my $qa_coverage_qa = $quota_align_coverage . ".qa" if $quota_align_coverage;
 
 		########################################################################
 		# Compress Results
@@ -1830,7 +1832,7 @@ sub get_results {
 		);
 
 		my $final_url = _filename_to_link(
-			file => $final_dagchainer_file,
+			file => $final_dagchainer_file_gevolinks,
 			msg  => qq{Final syntenic gene-set output with GEvo links}
 		);
 

@@ -1138,14 +1138,15 @@ sub add_jobs {
 	$workflow->log( "" );
 	$workflow->log( "Added Processing of Tandem Duplicate Files" );
 
-	my $condensed = "$final_dagchainer_file.condensed";
+	my $gevolinks = "$final_dagchainer_file.gevolinks"; # mdb added 12/2/16 COGE-794
+	my $condensed = "$gevolinks.condensed";
 
 	my $link_args = [
 		[ '--config',  $config->{_CONFIG_PATH}, 0 ],
 		[ '--infile',  $final_dagchainer_file,  0 ],
 		[ '--dsgid1',  $genome_id1,             0 ],
 		[ '--dsgid2',  $genome_id2,             0 ],
-		[ '--outfile', $condensed,              1 ]
+		[ '--outfile', $gevolinks,  1 ] #[ '--outfile', $condensed, 1 ] # mdb changed 12/2/16 COGE-794
 	];
 
 	$workflow->add_job({
@@ -1153,8 +1154,8 @@ sub add_jobs {
 		script      => undef,
 		args        => $link_args,
 		inputs      => [$final_dagchainer_file],
-		outputs     => [$condensed],
-		description => "Generating GEvo links",
+		outputs     => [$gevolinks, $condensed],
+		description => "Generating GEvo links to condensed file",
 	});
 	
 	$workflow->log( "" );

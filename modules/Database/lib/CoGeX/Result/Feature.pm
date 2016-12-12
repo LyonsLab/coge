@@ -817,7 +817,7 @@ qq{<span class="data5 link" onclick = "window.open('OrganismView.pl?oid=}
 	my $html = '<table cellpadding=0 class="ui-widget-content ui-corner-all">';
 	$html .= $anno_obj->to_String;
 	if (scalar @{$metadata->Values()}) {
-		$html .= '<tr><td colspan="2" style="border-top:0.5px solid grey;padding-left:5px;padding-top:5px;font-size:small">Metadata</td></tr>';
+		$html .= '<tr><td colspan="2" class="coge-border-top small text" style="padding-top:5px;">Additional Metadata</td></tr>';
 		$html .= $metadata->to_String;
 	}
 	$html .= '</table>';
@@ -1249,7 +1249,7 @@ sub protein_sequence {
 	my $found = 0;
 	my @seqs;
 
-#let's test to see if the first sequence contains no stop codons (except at end).  If that is true, return it
+	#let's test to see if the first sequence contains no stop codons (except at end).  If that is true, return it
 	my $test_seq = $seqs->{1};
 	$test_seq =~ s/\*$//;    #trim trailing stop codon if present;
 	return $test_seq unless $test_seq =~ /\*/;
@@ -1264,11 +1264,10 @@ sub protein_sequence {
 		}
 	}
 	unless ($found) {
-
-#okay, perhaps the stop position wasn't added or the start M was masked.  Let's see if we have one and only one sequence with no stops
+		#okay, perhaps the stop position wasn't added or the start M was masked.  Let's see if we have one and only one sequence with no stops
 		my $count = 0;
 		foreach my $seq (@seqs) {
-			$seq =~ s/\*$//;    #trim trailling stops if present
+			$seq =~ s/\*$//;    #trim trailing stops if present
 			unless ( $seq =~ /\*/ ) {
 				$count++;
 				$found = $seq;

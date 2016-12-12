@@ -54,11 +54,14 @@ sub generate_links {
     my $dsgid2  = $opts{dsgid2};
     $/ = "\n";
 
+    #
+    # Condense hits and add GEvo links to input file
+    #
+
     open( IN,  $infile );
-    open( OUT, ">$infile.tmp" );
+    open( OUT, ">$outfile" );
     my %condensed;
     my %names;
-    my $previously_generated = 0;
 
     while (<IN>) {
         chomp;
@@ -66,9 +69,7 @@ sub generate_links {
             print OUT $_, "\n";
             next;
         }
-        if (/GEvo/) {
-            $previously_generated = 1;
-        }
+
         s/^\s+//;
         next unless $_;
         my @line  = split /\t/;
@@ -105,25 +106,22 @@ sub generate_links {
             $names{$fid2} = $feat2[3];
         }
 
-#   accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
+        #accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
         print OUT $_;
         print OUT "\t", $link;
         print OUT "\n";
     }
     close IN;
     close OUT;
-    if ($previously_generated) {
-        `/bin/rm $infile.tmp` if -r "$infile.tmp";
-    }
-    else {
-        my $cmd = "/bin/mv $infile.tmp $outfile";
-        `$cmd`;
-    }
 
-    if ( keys %condensed
-        && !( -r "$outfile" || -r "$outfile.gz" ) )
+    #
+    # Generate file of condensed hits
+    #
+
+    if ( #keys %condensed &&
+        !( -r "$outfile.condensed" || -r "$outfile.condensed.gz" ) )
     {
-        open( OUT, ">$outfile" );
+        open( OUT, ">$outfile.condensed" );
         print OUT
             join( "\t",
             qw(COUNT GEVO MASKED_GEVO FASTA_LINK GENE_LIST GENE_NAMES) ),
@@ -133,8 +131,7 @@ sub generate_links {
         foreach my $id2 ( keys %condensed ) {
             foreach my $id2 ( keys %{ $condensed{$id1} } ) {
                 foreach my $id3 ( keys %{ $condensed{$id2} } ) {
-                    next
-                      if $id1 eq $id2;
+                    next if $id1 eq $id2;
                     $condensed{$id1}{$id3} = 1;
                     $condensed{$id3}{$id1} = 1;
                 }
@@ -144,8 +141,7 @@ sub generate_links {
         my %seen;
         foreach my $id1 (
             sort {
-                scalar( keys %{ $condensed{$b} } ) <=>
-                  scalar( keys %{ $condensed{$a} } )
+                scalar( keys %{ $condensed{$b} } ) <=> scalar( keys %{ $condensed{$a} } )
             } keys %condensed
           )
         {
@@ -180,7 +176,7 @@ sub generate_links {
             print OUT join( "\t",
                 $count, $gevo_link, $gevo_link2, $fasta_link, $featlist_link,
                 @names ),
-              "\n";
+                "\n";
         }
     }
     close OUT;
