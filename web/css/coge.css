@@ -1959,6 +1959,7 @@ div.dataTables_scrollBody {
     line-height: 1.125;
 	margin-right: 0.25em;
 	margin-top: 0.75em;
+    position: relative;
 }
 
 .coge-header-search input {
@@ -2016,9 +2017,9 @@ div.dataTables_scrollBody {
     border-left: 1px solid lightgray;
     border-right: 1px solid lightgray;
     display: none;
+    margin-top: 12px;
     padding: 0 10px 10px 10px;
     position: absolute;
-    top: 54px;
     z-index: 100;
 }
 

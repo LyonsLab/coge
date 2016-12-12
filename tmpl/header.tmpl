@@ -78,6 +78,8 @@ jQuery(document).ready(function(){
             loginCallback: login_cas
         });
     }
+
+	updateAdvancedSearch();
 });
 
 function browserAlert(){
@@ -130,8 +132,27 @@ function search() {
 	var text = $('#header_search_text').val();
 	if ($('#coge-advanced-search').css('display') == 'block') {
 		var terms = [];
-		if (text)
-			terms.push(text);
+		if (text) {
+			var index = text.indexOf('::');
+			while (index != -1) {
+				var start = index;
+				while (start > 0 && text.charAt(start) != ' ' && text.charAt(start) != '"')
+					--start;
+				var c = start > 0 ? text.charAt(start) : ' ';
+				while (start > 1 && text.charAt(start - 1) == ' ')
+					--start;
+				var end = index + 2;
+				while (end < text.length && text.charAt(end) != c)
+					++end;
+				while (end < text.length && text.charAt(end) == ' ')
+					++end;
+				text = start > 0 && end < text.length ? text.substring(0, start) + ' ' + text.substring(end) : start > 0 ? text.substring(0, start) : text.substring(end);
+				index = text.indexOf('::');
+			}
+			text = text.trim();
+			if (text)
+				terms.push(text);
+		}
 		var type = $('#search_type').val();
 		if (type != 'any')
 			terms.push('type::' + type);
@@ -144,6 +165,18 @@ function search() {
 		var favorite = $('#search_favorite').val();
 		if (favorite != 'any')
 			terms.push('favorite::1');
+		var feature_type = $('#search_feature_type').val();
+		if (feature_type)
+			terms.push('feature_type::' + feature_type);
+		var metadata_key = $('#search_metadata_key').val();
+		if (metadata_key)
+			terms.push('metadata_key::' + metadata_key);
+		var metadata_value = $('#search_metadata_value').val();
+		if (metadata_value)
+			if (metadata_value.indexOf(' ') != -1)
+				terms.push('"metadata_value::' + metadata_value + '"');
+			else
+				terms.push('metadata_value::' + metadata_value);
 		var restricted = $('#search_restricted').val();
 		if (restricted != 'any')
 			terms.push('restricted::' + (restricted == 'yes' ? '1' : '0'));
@@ -152,7 +185,10 @@ function search() {
 			terms.push('role::' + role);
 		var tag = $('#search_tag').val();
 		if (tag)
-			terms.push('tag::' + tag);
+			if (tag.indexOf(' ') != -1)
+				terms.push('"tag::' + tag + '"');
+			else
+				terms.push('tag::' + tag);
 		if (terms.length)
 			window.location.href = 'SearchResults.pl?s=' + terms.join(' ');
 		else
@@ -163,6 +199,19 @@ function search() {
 		alert('Search not specified');
 }
 
+function updateAdvancedSearch() {
+	if (!QUERY)
+		return;
+	['certified', 'deleted', 'favorite', 'restricted', 'role'].forEach(function(opt) {
+		if (QUERY[opt])
+			$('#search_' + opt).val(QUERY[opt] == 1 ? 'yes' : 'no');
+	});
+	['feature_type', 'metadata_key', 'metadata_value', 'tag', 'type'].forEach(function(opt) {
+		if (QUERY[opt])
+			$('#search_' + opt).val(QUERY[opt]);
+	});
+}
+
 function searchKey(event) {
 	if (event.which == 13) {
 		event.preventDefault(); //Without this, the page just reloads
@@ -170,27 +219,25 @@ function searchKey(event) {
 	}
 }
 
-function showDropdown(element) {
+function showDropdown(id) {
 	hideDropdowns();
-	$(element).fadeIn('fast');
-	
-	if( $(element + '_label').find('.dropdown-arrow').attr('src') == "picts/arrow-right-icon.png" ) {
-    	$(element + '_label').find('.dropdown-arrow').attr("src", "picts/arrow-down-icon.png");
-    }
+	$(id).fadeIn('fast');
+	var e = $(id + '_label').find('.dropdown-arrow');
+	if (e.attr('src') == 'picts/arrow-right-icon.png')
+    	e.attr('src', 'picts/arrow-down-icon.png');
+}
+
+function hideDropdown(id) {
+	var e = $(id + '_label').find('.dropdown-arrow');
+	if (e.attr('src') == 'picts/arrow-down-icon.png')
+    	e.attr('src', 'picts/arrow-right-icon.png');
 }
 
 function hideDropdowns() {
 	$('.dropdown-menu').hide();
-	
-    if( $('#user_drop_label').find('.dropdown-arrow').attr('src') == "picts/arrow-down-icon.png" ) {
-        $('#user_drop_label').find('.dropdown-arrow').attr("src", "picts/arrow-right-icon.png");
-    }
-	if( $('#help_drop_label').find('.dropdown-arrow').attr('src') == "picts/arrow-down-icon.png" ) {
-    	$('#help_drop_label').find('.dropdown-arrow').attr("src", "picts/arrow-right-icon.png");
-    }
-	if( $('#tool_drop_label').find('.dropdown-arrow').attr('src') == "picts/arrow-down-icon.png" ) {
-    	$('#tool_drop_label').find('.dropdown-arrow').attr("src", "picts/arrow-right-icon.png");
-    }
+	hideDropdown('#help_drop');
+	hideDropdown('#tool_drop');
+	hideDropdown('#user_drop');
 }
 
 </script>
