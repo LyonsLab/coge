@@ -1154,7 +1154,7 @@ function load(experiment) {
 
     // Set job type based on data
 //    console.log(experiment);
-//    var job_type = 'load_experiment';
+    var job_type = 'load_experiment';
 //    if (experiment.data[0].type == 'sra') {
 //        job_type = 'load_sra';
 //    }
