@@ -12,6 +12,7 @@ use Data::Dumper;
 
 use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
 use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
+use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
 
 requires qw(build);
@@ -24,6 +25,7 @@ has 'page'          => ( is => 'rw' );
 has 'db'            => ( is => 'ro', required => 1, isa  => 'CoGeX' );
 has 'user'          => ( is => 'ro', required => 1, isa  => 'Maybe[CoGeX::Result::User]' ); # mdb changed 10/13/16 -- added "Maybe" to prevent error on undef
 has 'conf'          => ( is => 'ro', required => 1 );
+has 'inputs'        => ( is => 'ro', default => sub { [] } ); # mdb added 12/7/16 for SRA.pm
 has 'outputs'       => ( is => 'rw', default => sub { [] } );
 has 'assets'        => ( is => 'rw', default => sub { [] } );
 has 'errors'        => ( is => 'rw', default => sub { [] } );
@@ -209,6 +211,21 @@ sub get_assets {
 ###############################################################################
 # Task Library (replaces CommonTasks.pm)
 ###############################################################################
+
+# Generate synchronization dependency for chaining pipelines
+sub create_wait {
+    my $self = shift;
+
+    my $wait_file = catfile($self->staging_dir, 'wait_' . get_unique_id() . '.done');
+
+    return {
+        cmd     => "touch $wait_file",
+        args    => [],
+        inputs  => [],
+        outputs => [ $wait_file ],
+        description => 'Waiting for tasks to complete'
+    };
+}
 
 # Generate GFF file of genome annotations
 sub create_gff {
@@ -420,6 +437,30 @@ sub curl_get {
         inputs => [],
         outputs => [ $output_file ],
         description => "Sending GET request to $url"
+    };
+}
+
+sub fastq_dump {
+    my ($self, %params) = @_;
+    my $accn = $params{accn};
+    my $dest_path = $params{dest_path};
+    return unless $accn;
+
+    my $output_file = catfile($dest_path, $accn . '.fastq');
+    my $done_file = "$output_file.done";
+
+    my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
+
+    return {
+        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch $done_file",
+        script => undef,
+        args => [],
+        inputs => [],
+        outputs => [
+            $output_file,
+            $done_file
+        ],
+        description => "Fetching $accn from NCBI-SRA"
     };
 }
 
