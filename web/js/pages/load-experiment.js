@@ -1153,11 +1153,10 @@ function load(experiment) {
     newLoad = true;
 
     // Set job type based on data
-//    console.log(experiment);
     var job_type = 'load_experiment';
-//    if (experiment.data[0].type == 'sra') {
-//        job_type = 'load_sra';
-//    }
+    if (experiment.data[0].type == 'sra') {
+        job_type = 'load_sra';
+    }
 
 	// Convert request into format for job service
 	var request = {
@@ -1232,7 +1231,8 @@ function initialize_wizard(opts) {
     });
     wizard.addStep(new DataView( current_experiment, {
         supportedFileTypes: SUPPORTED_FILE_TYPES,
-        onError: wizard.error_help.bind(wizard)
+        onError: wizard.error_help.bind(wizard),
+        disableMaxItemsCheck: opts.admin
     }));
     wizard.addStep(new OptionsView({
         experiment: current_experiment,

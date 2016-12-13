@@ -532,6 +532,7 @@ const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER">';
 const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
+const IS_POWERUSER  = Boolean('<TMPL_VAR NAME="IS_POWERUSER">');
 const GENOME_ID     = '<TMPL_VAR NAME="GENOME_ID">';
 
 var LOAD_ID = load_id = '<TMPL_VAR NAME="LOAD_ID">';
@@ -578,7 +579,7 @@ $(function() {
 
 	// Initialize wizard
     wizard = initialize_wizard({
-    	admin: IS_ADMIN,
+    	admin: IS_ADMIN || IS_POWERUSER,
     	helpUrl: HELP_URL,
     	gid: GENOME_ID,
     	debug: true

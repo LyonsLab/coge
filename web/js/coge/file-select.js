@@ -441,7 +441,7 @@ var coge = window.coge = (function(namespace) {
 				});
 		},
 
-		_finish_file_in_list: function(type, url, path, size) {
+		_finish_file_in_list: function(type, url, path, size, unit) {
 			var self = this;
 			
 			// Find item in list and update fields
@@ -458,7 +458,7 @@ var coge = window.coge = (function(namespace) {
 			// Create view of file
 			var td1 = $('<td></td>');
 			if (size)
-				td1.html('<span style="margin-right:15px;"><span class="text">Size:</span> ' + self._units(size) + '</span>');
+				td1.html('<span style="margin-right:15px;"><span class="text">Size:</span> ' + (unit ? size + ' ' + unit : self._units(size)) + '</span>');
 			td1.fadeIn();
 			var closeIcon = $('<span class="link ui-icon ui-icon-closethick" title="Remove file"></span>');
 			closeIcon.click(self._cancel_callback.bind(self, file));
@@ -897,20 +897,19 @@ var coge = window.coge = (function(namespace) {
                         }
                     });
                 }
-// mdb removed 11/30/16 -- postponed until backend pipeline is finished
-//                else if (sra.type(accn) == sra.SRA_ACCN_TYPE_PROJECT) {
-//                    sra.esearch(accn).then(function(ids) {
-//                        if (ids) {
-//                            sra.esummary(ids[0]).then(function(xml) {
-//                                var item = sra.extract(xml);
-//                                var title = (item.title ? item.title : accn);
-//                                if (self._add_file_to_list(title, 'sra://'+accn))
-//                                    self._finish_file_in_list('sra', 'sra://'+accn, accn, ids.length + ' items');
-//                                self._sra_status('');
-//                            });
-//                        }
-//                    });
-//                }
+                else if (sra.type(accn) == sra.SRA_ACCN_TYPE_PROJECT) {
+                    sra.esearch(accn).then(function(ids) {
+                        if (ids) {
+                            sra.esummary(ids[0]).then(function(xml) {
+                                var item = sra.extract(xml);
+                                var title = (item.title ? item.title : accn);
+                                if (self._add_file_to_list(title, 'sra://'+accn))
+                                    self._finish_file_in_list('sra', 'sra://'+accn, accn, ids.length, 'items');
+                                self._sra_status('');
+                            });
+                        }
+                    });
+                }
                 else {
                     self._sra_error('Unsupported accession type: ' + accn);
                     return;
