@@ -17,7 +17,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotations export_annotations to_annotations tags_to_string create_image );
+    @EXPORT = qw( create_annotation create_annotations export_annotations to_annotations tags_to_string create_image );
 }
 
 sub create_annotations {
@@ -26,126 +26,185 @@ sub create_annotations {
     my $target = $opts{target};           # experiment, genome, or list object
     my ($target_id, $target_type) = ($opts{target_id}, $opts{target_type}); # or an experiment/genome/list id and type
     my $annotations = $opts{annotations}; # semicolon-separated list of annotations (image_file|link|group|type|text;[...])
+    my $anno_file = $opts{anno_file};     # metadata file
     my $locked = $opts{locked};           # boolean flag to indicate locked (not editable) annotations
 
     my @result = ();
-    foreach ( split(/\s*;\s*/, $annotations) ) {
-        my @tok = split(/\s*\|\s*/, $_);
-        my ($image_file, $link, $group_name, $type_name, $anno_text);
-        $image_file = shift @tok if (@tok == 5);
-        $link       = shift @tok if (@tok == 4);
-        $group_name = shift @tok if (@tok == 3);
-        $type_name  = shift @tok if (@tok == 2);
-        $anno_text  = shift @tok if (@tok == 1);
-        unless ($anno_text and $type_name) {
-            print STDERR "CoGe::Core::Metadata: missing required annotation type and text fields\n";
-            print STDERR Dumper [ $image_file, $link, $group_name, $type_name, $anno_text ], "\n";
-            return;
-        }
-        
-        my $image_id;
-        if ($image_file) {
-            my $image = create_image(filename => $image_file, db => $db);
-            unless($image) {
-                print STDERR "CoGe::Core::Metadata: error creating image\n";
+
+    if ($annotations) { # legacy method
+        foreach (split(/\s*;\s*/, $annotations)) {
+            my @tok = split(/\s*\|\s*/, $_);
+            my ($image_file, $link, $group_name, $type_name, $anno_text);
+            $image_file = shift @tok if (@tok == 5);
+            $link = shift @tok if (@tok == 4);
+            $group_name = shift @tok if (@tok == 3);
+            $type_name = shift @tok if (@tok == 2);
+            $anno_text = shift @tok if (@tok == 1);
+            unless ($anno_text and $type_name) {
+                print STDERR "CoGe::Core::Metadata: missing required annotation type and text fields\n";
+                print STDERR Dumper [ $image_file, $link, $group_name, $type_name, $anno_text ], "\n";
                 return;
             }
-            $image_id = $image->id;
-        }
 
-        # Create type group - first try to find a match by name only
-        my ($group, $type, $anno);
-        if ($group_name) {
-            $group = $db->resultset('AnnotationTypeGroup')->find({ name => $group });
-            if (!$group) {
-                $group = $db->resultset('AnnotationTypeGroup')->create({ name => $group_name }); # null description
-            }
-            unless ($group) {
-                print STDERR "CoGe::Core::Metadata: error creating annotation type group\n";
+            my $anno = create_annotation(
+                db          => $db,
+                target      => $target,
+                target_id   => $target_id,
+                target_type => $target_type,
+                group_name  => $group_name,
+                type_name   => $type_name,
+                text        => $anno_text,
+                link        => $link,
+                image_file  => $image_file,
+                locked      => $locked
+            );
+            unless ($anno) {
+                print STDERR "CoGe::Core::Metadata: error creating annotation\n";
                 return;
             }
-        }
 
-        # Create type - first try to find a match by name and group
-        $type = $db->resultset('AnnotationType')->find({
-            name => $type_name,
-            annotation_type_group_id => ($group ? $group->id : undef) }
-        );
-        if (!$type) {
-            $type = $db->resultset('AnnotationType')->create({
-                name => $type_name,
-                annotation_type_group_id => ($group ? $group->id : undef)
-            }); # null description
+            push @result, $anno;
         }
-        unless ($type) {
-            print STDERR "CoGe::Core::Metadata: error creating annotation type\n";
-            return;
-        }
+    }
 
-        # Fetch target DBIX object if id/type given
-        if ($target_id && $target_type) {
-            if (lc($target_type) eq 'experiment') {
-                $target = $db->resultset('Experiment')->find($target_id);
-            }
-            if (lc($target_type) eq 'genome') {
-                $target = $db->resultset('Genome')->find($target_id);
-            }
-            if (lc($target_type) eq 'notebook') {
-                $target = $db->resultset('List')->find($target_id);
-            }
-        }
-        
-        # Create annotation
-        if ($target) {
-            if (ref($target) =~ /Experiment/) {
-                $anno = $db->resultset('ExperimentAnnotation')->find_or_create({
-                    experiment_id => $target->id,
-                    annotation_type_id => ($type ? $type->id : undef),
-                    annotation => $anno_text,
-                    link => $link,
-                    image_id => $image_id,
-                    locked => $locked
-                }); # null description
-            }
-            elsif (ref($target) =~ /Genome/) {
-                $anno = $db->resultset('GenomeAnnotation')->find_or_create({
-                    genome_id => $target->id,
-                    annotation_type_id => ($type ? $type->id : undef),
-                    annotation => $anno_text,
-                    link => $link,
-                    image_id => $image_id,
-                    locked => $locked
-                }); # null description
-            }
-            elsif (ref($target) =~ /List/) {
-                $anno = $db->resultset('ListAnnotation')->find_or_create({
-                    list_id => $target->id,
-                    annotation_type_id => ($type ? $type->id : undef),
-                    annotation => $anno_text,
-                    link => $link,
-                    image_id => $image_id,
-                    locked => $locked
-                }); # null description
-            }
-            else {
-                print STDERR "CoGe::Core::Metadata: unknown target type\n";
-                return;
-            }
-        }
-        else {
-            print STDERR "CoGe::Core::Metadata: target not found\n";
-            return;
-        }
-        
-        unless ($anno) {
-            print STDERR "CoGe::Core::Metadata: error creating annotation\n";
-            return;
-        }
+    if ($anno_file) { # new method
+        my $annos = CoGe::Accessory::TDS::read($anno_file);
+        if ($annos) {
+            foreach (@$annos) {
+                my $anno = create_annotation(
+                    db          => $db,
+                    target      => $target,
+                    target_id   => $target_id,
+                    target_type => $target_type,
+                    group_name  => $_->{group},
+                    type_name   => $_->{type},
+                    text        => $_->{text},
+                    link        => $_->{link},
+                    locked      => $locked
+                );
+                unless ($anno) {
+                    print STDERR "CoGe::Core::Metadata: error creating annotation\n";
+                    return;
+                }
 
-        push @result, $anno;
+                push @result, $anno;
+            }
+        }
     }
 
     return \@result;
+}
+
+sub create_annotation {
+    my %opts = @_;
+    my $db          = $opts{db};
+    my $target      = $opts{target};    # DBIX experiment/genome/notebook
+    my $target_id   = $opts{target_id}; # or id/type
+    my $target_type = $opts{target_type};
+    my $group_name  = $opts{group_name};
+    my $type_name   = $opts{type_name};
+    my $text        = $opts{text};
+    my $link        = $opts{link};
+    my $image_file  = $opts{image_file};
+    my $locked      = $opts{locked};
+
+    my $image_id;
+    if ($image_file) {
+        my $image = create_image(filename => $image_file, db => $db);
+        unless($image) {
+            print STDERR "CoGe::Core::Metadata: error creating image\n";
+            return;
+        }
+        $image_id = $image->id;
+    }
+
+    # Create type group - first try to find a match by name only
+    my $group;
+    if ($group_name) {
+        $group = $db->resultset('AnnotationTypeGroup')->find({ name => $group });
+        if (!$group) {
+            $group = $db->resultset('AnnotationTypeGroup')->create({ name => $group_name }); # null description
+        }
+        unless ($group) {
+            print STDERR "CoGe::Core::Metadata: error creating annotation type group\n";
+            return;
+        }
+    }
+
+    # Create type - first try to find a match by name and group
+    my $type;
+    $type = $db->resultset('AnnotationType')->find({
+        name => $type_name,
+        annotation_type_group_id => ($group ? $group->id : undef) }
+    );
+    if (!$type) {
+        $type = $db->resultset('AnnotationType')->create({
+            name => $type_name,
+            annotation_type_group_id => ($group ? $group->id : undef)
+        }); # null description
+    }
+    unless ($type) {
+        print STDERR "CoGe::Core::Metadata: error creating annotation type\n";
+        return;
+    }
+
+    # Fetch target DBIX object if id/type given
+    if ($target_id && $target_type) {
+        if (lc($target_type) eq 'experiment') {
+            $target = $db->resultset('Experiment')->find($target_id);
+        }
+        if (lc($target_type) eq 'genome') {
+            $target = $db->resultset('Genome')->find($target_id);
+        }
+        if (lc($target_type) eq 'notebook') {
+            $target = $db->resultset('List')->find($target_id);
+        }
+    }
+
+    # Create annotation
+    my $anno;
+    if ($target) {
+        if (ref($target) =~ /Experiment/) {
+            $anno = $db->resultset('ExperimentAnnotation')->find_or_create({
+                experiment_id => $target->id,
+                annotation_type_id => ($type ? $type->id : undef),
+                annotation => $text,
+                link => $link,
+                image_id => $image_id,
+                locked => $locked
+            }); # null description
+        }
+        elsif (ref($target) =~ /Genome/) {
+            $anno = $db->resultset('GenomeAnnotation')->find_or_create({
+                genome_id => $target->id,
+                annotation_type_id => ($type ? $type->id : undef),
+                annotation => $text,
+                link => $link,
+                image_id => $image_id,
+                locked => $locked
+            }); # null description
+        }
+        elsif (ref($target) =~ /List/) {
+            $anno = $db->resultset('ListAnnotation')->find_or_create({
+                list_id => $target->id,
+                annotation_type_id => ($type ? $type->id : undef),
+                annotation => $text,
+                link => $link,
+                image_id => $image_id,
+                locked => $locked
+            }); # null description
+        }
+        else {
+            print STDERR "CoGe::Core::Metadata: unknown target type\n";
+            return;
+        }
+    }
+    else {
+        print STDERR "CoGe::Core::Metadata: target not found\n";
+        return;
+    }
+
+    return $anno;
 }
 
 sub export_annotations {
