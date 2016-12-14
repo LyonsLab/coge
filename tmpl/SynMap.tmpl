@@ -82,7 +82,7 @@
     <form id="parameters">
     <fieldset class="ui-widget-content ui-corner-all coge-section">
         <legend style="color:#009900">Blast Algorithm</legend>
-        <select id="blast" name="blast">
+        <select id="blast" name="blast" onchange="update_blast_option($(this).val())">
             <option value="6" <tmpl_var name="LAST_SELECT">>Last (fastest)
             <option value="4" <tmpl_var name="LASTZ_SELECT">>(B)lastZ (fast)
             <option value="0" <tmpl_var name="MEGA_SELECT">>MegaBlast
@@ -91,6 +91,11 @@
             <option value="3" <tmpl_var name="TBLASTX_SELECT">>TBlastX (very slow)
             <option value="5" <tmpl_var name="BLASTP_SELECT">>BlastP (slow)
         </select>
+        <label id="blast_option" style="display:none;">
+            <span>--hspthresh</span>
+            <input value="3000" />
+            <span>(default 3000)</span>
+        </label>
     </fieldset>
 
     <fieldset class="ui-widget-content ui-corner-all coge-section">

@@ -352,6 +352,25 @@ function post_to_grimm(seq1, seq2) {
     query_form.submit("action");
 }
 
+function update_blast_option(val) {
+    var l = $('#blast_option');
+    if (val == 4) { // lastz
+        var c = l.children();
+        c[0].innerHTML = '--hspthresh';
+        c[1].value = '3000';
+        c[2].innerHTML = '(default 3000)';
+        l.show();
+    } else if (val == 6) // lastal
+        l.hide();
+    else { // blasts
+        var c = l.children();
+        c[0].innerHTML = '-evalue';
+        c[1].value = '0.0001';
+        c[2].innerHTML = '(default 0.0001)';
+        l.show();
+    }
+}
+
 var coge = window.coge = (function(namespace) {
     var ArrayProto = Array.prototype.slice;
     var slice = ArrayProto.slice;
@@ -658,6 +677,7 @@ var coge = window.coge = (function(namespace) {
                 gm: $('#gm').val(),
                 Dm: $('#Dm').val(),
                 blast: $('#blast').val(),
+                blast_option: $('#blast').val() == 6 ? null : $('blast_option').children()[1].value,
                 feat_type1: $('#feat_type1').val(),
                 feat_type2: $('#feat_type2').val(),
                 dsgid1: $('#dsgid1').val(),
