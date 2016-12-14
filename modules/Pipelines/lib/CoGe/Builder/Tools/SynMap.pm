@@ -19,8 +19,8 @@ use POSIX;
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT = qw( 
-	   add_jobs algo_lookup check_address_validity defaults gen_org_name 
-	   generate_pseudo_assembly get_query_link get_result_path get_log_file_path
+	   add_jobs check_address_validity defaults gen_org_name 
+	   generate_pseudo_assembly get_blast_config get_query_link get_result_path get_log_file_path
 	);
 }
 
@@ -151,6 +151,7 @@ sub add_jobs {
 
 	# blast options
 	my $blast = $opts{blast};
+	my $blast_option = $opts{blast_option};
 
 	# blast2bed options
 
@@ -326,8 +327,8 @@ sub add_jobs {
 	# Generate blastdb files
 	############################################################################
 	my ( $blastdb, @blastdb_files );
-	my $ALGO_LOOKUP = algo_lookup();
-	if ( $ALGO_LOOKUP->{$blast}{formatdb} ) {
+	my $blast_config = get_blast_config($blast, $opts{blast_option});
+	if ( $blast_config->{formatdb} ) {
 		my $basename = "$BLASTDBDIR/$genome_id2-$feat_type2";
 
 		my @blastdbargs = ();
@@ -356,7 +357,7 @@ sub add_jobs {
 		$workflow->log( "Added BlastDB generation" );
 		$workflow->log( $blastdb );
 	}
-	elsif ( $ALGO_LOOKUP->{$blast}{lastdb} ) { # mdb added 3/17/16 for upgrade to Last v731
+	elsif ( $blast_config->{lastdb} ) { # mdb added 3/17/16 for upgrade to Last v731
 	    my $basedir = "$LASTDBDIR/$genome_id2";
 	    my $basename = "$LASTDBDIR/$genome_id2/$genome_id2-$feat_type2";
         $workflow->add_job({
@@ -389,7 +390,7 @@ sub add_jobs {
 			db       => $blastdb,
 			basename => $genome_id1 . "_" . $genome_id2
 			  . ".$feat_type1-$feat_type2."
-			  . $ALGO_LOOKUP->{$blast}{filename},
+			  . $blast_config->{filename},
 			dir => $result_path
 		}
 	);
@@ -410,7 +411,7 @@ sub add_jobs {
 	my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
 
 	foreach my $key ( keys %org_dirs ) {
-		my $cmd = 'nice ' . $ALGO_LOOKUP->{$blast}{algo}; #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
+		my $cmd = 'nice ' . $blast_config->{algo}; #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
 		my $fasta   = $org_dirs{$key}{fasta};
 		my $db      = $org_dirs{$key}{db};
 		my $outfile = $org_dirs{$key}{blastfile};
@@ -421,21 +422,7 @@ sub add_jobs {
 			push @blastargs, [ "-d", $db,      0 ];
 			push @blastargs, [ "-o", $outfile, 1 ];
 		}
-        # mdb removed 3/17/16 -- wrapper no longer needed
-		#elsif ( $cmd =~ /last_wrapper/i ) {
-		#	# mdb added 9/20/13 issue 213
-		#	my $dbpath = $config->{LASTDB} . '/' . $dsgid2;
-		#	mkpath( $dbpath, 0, 0777 );
-		#	push @blastargs, [ "--dbpath", $dbpath, 0 ];
-
-		#	push @blastargs, [ "",   $db,      0 ];
-		#	push @blastargs, [ "",   $fasta,   0 ];
-		#	push @blastargs, [ "-o", $outfile, 1 ];
-		#}
         elsif ( $cmd =~ /lastal/i ) { # mdb added 3/17/16 -- new multithreaded last v731
-            my $fasta   = $org_dirs{$key}{fasta};
-            my $db      = $org_dirs{$key}{db};
-            my $outfile = $org_dirs{$key}{blastfile};
             $cmd .= " $db $fasta > $outfile";
         }
 		else {
@@ -458,7 +445,7 @@ sub add_jobs {
 	}
 
 	$workflow->log("");
-	$workflow->log("Added genome comparison (algorithm: " . $ALGO_LOOKUP->{$blast}{displayname} . ")");
+	$workflow->log("Added genome comparison (algorithm: " . $blast_config->{displayname} . ")");
 
 	###########################################################################
 	# Converting blast to bed and finding local duplications
@@ -1224,80 +1211,70 @@ sub add_jobs {
 	return; # empty means success
 }
 
-sub algo_lookup {
-	my $opts = shift;
+sub get_blast_config {
+	my $blast = shift;
+	my $blast_option = shift;
     # In the web form, each sequence search algorithm has a unique number.
     # This table identifies those and adds appropriate options.
 	my $config        = get_defaults();
 	my $MAX_PROC      = $config->{MAX_PROC} // 32;
-	my $blast_option;
-	$blast_option     = $opts->{'blast_option'} if $opts;
 	my $blast_options = " -num_threads $MAX_PROC -outfmt 6 -evalue " . ($blast_option || 0.0001);
 	my $TBLASTX       = get_command_path('TBLASTX') . $blast_options;
 	my $BLASTN        = get_command_path('BLASTN') . $blast_options;
 	my $BLASTP        = get_command_path('BLASTP') . $blast_options;
 	my $LASTZ = get_command_path('PYTHON') . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . get_command_path('LASTZ');
-	$LASTZ .= ' --hspthresh=' . $blast_option if $blast_option;
+	$LASTZ .= ' --lastz-params="--hspthresh=' . $blast_option . '"' if $blast_option;
 	#my $LAST  = $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH}; # mdb removed 3/17/16
 	my $LAST = $config->{LASTAL} // 'lastal'; $LAST .= " -u 0 -P $MAX_PROC -i3G -f BlastTab"; # mdb added 3/17/16 for new multithreaded LAST v731
 
 	return {
-		0 => {
-			algo => $BLASTN . " -task megablast",    #megablast
-			opt         => "MEGA_SELECT",  #select option for html template file
-			filename    => "megablast",
-			displayname => "MegaBlast",
-			html_select_val => 0,
-			formatdb        => 1,
-		},
-		1 => {
-			algo => $BLASTN . " -task dc-megablast",   #discontinuous megablast
-			opt  => "DCMEGA_SELECT",
-			filename        => "dcmegablast",
-			displayname     => "Discontinuous MegaBlast",
-			html_select_val => 1,
-			formatdb        => 1,
-		},
-		2 => {
-			algo            => $BLASTN . " -task blastn",    #blastn
-			opt             => "BLASTN_SELECT",
-			filename        => "blastn",
-			displayname     => "BlastN",
-			html_select_val => 2,
-			formatdb        => 1,
-		},
-		3 => {
-			algo            => $TBLASTX,                     #tblastx
-			opt             => "TBLASTX_SELECT",
-			filename        => "tblastx",
-			displayname     => "TBlastX",
-			html_select_val => 3,
-			formatdb        => 1,
-		},
-		4 => {
-			algo            => $LASTZ,                       #lastz
-			opt             => "LASTZ_SELECT",
-			filename        => "lastz",
-			displayname     => "(B)lastZ",
-			html_select_val => 4,
-		},
-		5 => {
-			algo            => $BLASTP . " -task blastp",    #blastn
-			opt             => "BLASTP_SELECT",
-			filename        => "blastp",
-			displayname     => "BlastP",
-			html_select_val => 5,
-			formatdb        => 1,
-		},
-		6 => {
-			algo            => $LAST,                        #last
-			opt             => "LAST_SELECT",
-			filename        => "last",
-			displayname     => "Last",
-			html_select_val => 6,
-			lastdb          => 1, # mdb added 3/17/16 for last v731
-		}
-	};
+		algo => $BLASTN . " -task megablast",    #megablast
+		opt         => "MEGA_SELECT",  #select option for html template file
+		filename    => "megablast" . ($blast_option ? '.' . $blast_option : ''),
+		displayname => "MegaBlast",
+		formatdb        => 1,
+	} if $blast == 0;
+	return {
+		algo => $BLASTN . " -task dc-megablast",   #discontinuous megablast
+		opt  => "DCMEGA_SELECT",
+		filename        => "dcmegablast" . ($blast_option ? '.' . $blast_option : ''),
+		displayname     => "Discontinuous MegaBlast",
+		formatdb        => 1,
+	} if $blast == 1;
+	return {
+		algo            => $BLASTN . " -task blastn",
+		opt             => "BLASTN_SELECT",
+		filename        => "blastn" . ($blast_option ? '.' . $blast_option : ''),
+		displayname     => "BlastN",
+		formatdb        => 1,
+	} if $blast == 2;
+	return {
+		algo            => $TBLASTX,
+		opt             => "TBLASTX_SELECT",
+		filename        => "tblastx" . ($blast_option ? '.' . $blast_option : ''),
+		displayname     => "TBlastX",
+		formatdb        => 1,
+	} if $blast == 3;
+	return {
+		algo            => $LASTZ,
+		opt             => "LASTZ_SELECT",
+		filename        => "lastz" . ($blast_option ? '.' . $blast_option : ''),
+		displayname     => "(B)lastZ"
+	} if $blast == 4;
+	return {
+		algo            => $BLASTP . " -task blastp",
+		opt             => "BLASTP_SELECT",
+		filename        => "blastp" . ($blast_option ? '.' . $blast_option : ''),
+		displayname     => "BlastP",
+		formatdb        => 1,
+	} if $blast == 5;
+	return {
+		algo            => $LAST,
+		opt             => "LAST_SELECT",
+		filename        => "last",
+		displayname     => "Last",
+		lastdb          => 1, # mdb added 3/17/16 for last v731
+	}
 }
 
 sub build {

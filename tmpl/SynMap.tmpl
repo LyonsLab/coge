@@ -92,9 +92,9 @@
             <option value="5" <tmpl_var name="BLASTP_SELECT">>BlastP (slow)
         </select>
         <label id="blast_option" style="display:none;">
-            <span>--hspthresh</span>
-            <input value="3000" />
-            <span>(default 3000)</span>
+            <span></span>
+            <input />
+            <span></span>
         </label>
     </fieldset>
 
@@ -466,6 +466,7 @@ const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
+const BLAST_OPTION  = '<TMPL_VAR NAME="BLAST_OPTION">';
 
 $(function() {
     <TMPL_VAR NAME="display_dagchainer_settings">
@@ -498,5 +499,6 @@ $(function() {
     };
 
     coge.synmap.setup(pageObj);
+    update_blast_option($('#blast').val());
 });
 </script>

@@ -48,47 +48,47 @@ function load_results() {
     $('#results').fadeIn();
 }
 
-function update_params(val) {
-    var cmd;
-    var params;
-    var type;
+// function update_params(val) {
+//     var cmd;
+//     var params;
+//     var type;
 
-    if (val) {
-        params = val.split('_');
-    } else {
-        params = $('#prev_params').val()[0].split('_');;
-    }
+//     if (val) {
+//         params = val.split('_');
+//     } else {
+//         params = $('#prev_params').val()[0].split('_');;
+//     }
 
-    if ($('#org_id1').val() == params[3]) {
-        cmd = "$('#feat_type1').attr('value', '"+params[5]+"');$('#feat_type2').attr('value', '"+params[8]+"');";
-        $('#dsgid1').attr('value',params[4]);
-        $('#dsgid2').attr('value',params[7]);
-    } else {
-        cmd = "$('#feat_type2').attr('value', '"+params[5]+"');$('#feat_type1').attr('value', '"+params[8]+"');";
-        $('#dsgid2').attr('value',params[4]);
-        $('#dsgid1').attr('value',params[7]);
-    }
+//     if ($('#org_id1').val() == params[3]) {
+//         cmd = "$('#feat_type1').attr('value', '"+params[5]+"');$('#feat_type2').attr('value', '"+params[8]+"');";
+//         $('#dsgid1').attr('value',params[4]);
+//         $('#dsgid2').attr('value',params[7]);
+//     } else {
+//         cmd = "$('#feat_type2').attr('value', '"+params[5]+"');$('#feat_type1').attr('value', '"+params[8]+"');";
+//         $('#dsgid2').attr('value',params[4]);
+//         $('#dsgid1').attr('value',params[7]);
+//     }
 
-    get_genome_info(['args__dsgid','dsgid1','args__org_num','args__1'],[handle_dsg_info]);
-    get_genome_info(['args__dsgid','dsgid2','args__org_num','args__2'],[handle_dsg_info]);
-    ajax_wait(cmd);
+//     get_genome_info(['args__dsgid','dsgid1','args__org_num','args__1'],[handle_dsg_info]);
+//     get_genome_info(['args__dsgid','dsgid2','args__org_num','args__2'],[handle_dsg_info]);
+//     ajax_wait(cmd);
 
-    $('#blast').attr('value',params[9]);
+//     $('#blast').attr('value',params[9]);
 
-    if (params[10] == 'Distance') {
-        $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
-        type=" bp";
-    } else {
-        $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
-        type= " genes";
-    }
+//     if (params[10] == 'Distance') {
+//         $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
+//         type=" bp";
+//     } else {
+//         $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
+//         type= " genes";
+//     }
 
-    display_dagchainer_settings([params[1],params[2]],type);
-    $('#c').val(params[11]);
-    merge_select_check();
-    depth_algo_check();
+//     display_dagchainer_settings([params[1],params[2]],type);
+//     $('#c').val(params[11]);
+//     merge_select_check();
+//     depth_algo_check();
 
-}    
+// }
 
 function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, org_name, seq_id) {
     $('#dsg_info'+org_num).html(dsg_html);
@@ -354,18 +354,21 @@ function post_to_grimm(seq1, seq2) {
 
 function update_blast_option(val) {
     var l = $('#blast_option');
+    var c = l.children();
+    if (!c[1].value)
+        c[1].value = BLAST_OPTION;
     if (val == 4) { // lastz
-        var c = l.children();
         c[0].innerHTML = '--hspthresh';
-        c[1].value = '3000';
+        if (!c[1].value || c[1].value == '0.0001')
+            c[1].value = '3000';
         c[2].innerHTML = '(default 3000)';
         l.show();
     } else if (val == 6) // lastal
         l.hide();
     else { // blasts
-        var c = l.children();
         c[0].innerHTML = '-evalue';
-        c[1].value = '0.0001';
+        if (!c[1].value || c[1].value == '3000')
+            c[1].value = '0.0001';
         c[2].innerHTML = '(default 0.0001)';
         l.show();
     }
@@ -677,7 +680,7 @@ var coge = window.coge = (function(namespace) {
                 gm: $('#gm').val(),
                 Dm: $('#Dm').val(),
                 blast: $('#blast').val(),
-                blast_option: $('#blast').val() == 6 ? null : $('blast_option').children()[1].value,
+                blast_option: $('#blast').val() == 6 ? null : $('#blast_option').children()[1].value,
                 feat_type1: $('#feat_type1').val(),
                 feat_type2: $('#feat_type2').val(),
                 dsgid1: $('#dsgid1').val(),

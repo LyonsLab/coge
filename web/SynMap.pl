@@ -43,7 +43,7 @@ our (
 	$NWALIGN,       $QUOTA_ALIGN,
 	$CLUSTER_UTILS, $BASE_URL,
 	$BLAST2BED,     $SYNTENY_SCORE, $TEMPDIR,
-	$TEMPURL,       $ALGO_LOOKUP,
+	$TEMPURL,       $get_blast_config,
 #	$GZIP,$GUNZIP,
 	%FUNCTIONS,     $SCRIPTDIR,    $LINK
 );
@@ -81,8 +81,6 @@ $TEMPURL  = $config->{TEMPURL} . "SynMap";
 
 #$GZIP          = $config->{GZIP};
 #$GUNZIP        = $config->{GUNZIP};
-
-$ALGO_LOOKUP = algo_lookup();
 
 $DIAGSDIR = $config->{DIAGSDIR};
 $FASTADIR = $config->{FASTADIR};
@@ -128,7 +126,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 my $pj = new CGI::Ajax(%FUNCTIONS);
 if ( $FORM->param('jquery_ajax') ) {
 	my %args  = $FORM->Vars;
-	my $fname = $args{'fname'};
+	my $fname = $args{fname};
 
 	if ( $fname and defined $FUNCTIONS{$fname} ) {
 	    my $header = $FORM->header;
@@ -207,13 +205,10 @@ sub gen_body {
     );
 
 	#set search algorithm on web-page
-	my $b = $FORM->param('b');
-	if ( defined($b) ) {
-		$template->param( $ALGO_LOOKUP->{$b}{opt} => "selected" );
-	}
-	else {
-		$template->param( $ALGO_LOOKUP->{6}{opt} => "selected" );
-	}
+	my $b = $FORM->param('b') || 6;
+	$template->param( get_blast_config($b)->{opt} => "selected" );
+	my $bo = $FORM->param('bo');
+	$template->param(BLAST_OPTION => $bo);
 	my ( $D, $A, $Dm, $gm, $dt, $vis, $dupdist, $cscore ); #AKB Added '$vis' 2016-10-18
 	$D  = $FORM->param('D');
 	$A  = $FORM->param('A');
@@ -802,189 +797,6 @@ sub get_genome_info {
 	  $dsg->organism->name, $dsg->genomic_sequence_type_id;
 }
 
-#sub get_previous_analyses {
-#
-#	#FIXME:  THis whole sub needs updating or removal!  Lyons 6/12/13
-#	my %opts = @_;
-#	my $oid1 = $opts{oid1};
-#	my $oid2 = $opts{oid2};
-#	return unless $oid1 && $oid2;
-#	my ($org1) = $coge->resultset('Organism')->find($oid1);
-#	my ($org2) = $coge->resultset('Organism')->find($oid2);
-#	return
-#	  if ( $USER->user_name =~ /public/i
-#		&& ( $org1->restricted || $org2->restricted ) );
-#	my ($org_name1) = $org1->name;
-#	my ($org_name2) = $org2->name;
-#	( $oid1, $org_name1, $oid2, $org_name2 ) =
-#	  ( $oid2, $org_name2, $oid1, $org_name1 )
-#	  if ( $org_name2 lt $org_name1 );
-#
-#	my $tmp1 = $org_name1;
-#	my $tmp2 = $org_name2;
-#	foreach my $tmp ( $tmp1, $tmp2 ) {
-#		$tmp =~ s/\///g;
-#		$tmp =~ s/\s+/_/g;
-#		$tmp =~ s/\(//g;
-#		$tmp =~ s/\)//g;
-#		$tmp =~ s/://g;
-#		$tmp =~ s/;//g;
-#		$tmp =~ s/#/_/g;
-#		$tmp =~ s/'//g;
-#		$tmp =~ s/"//g;
-#	}
-#
-#	my $dir = $tmp1 . "/" . $tmp2;
-#	$dir = "$DIAGSDIR/" . $dir;
-#	my $sqlite = 0;
-#	my @items;
-#	if ( -d $dir ) {
-#		opendir( DIR, $dir );
-#		while ( my $file = readdir(DIR) ) {
-#			$sqlite = 1 if $file =~ /sqlite$/;
-#			next unless $file =~ /\.aligncoords/;    #$/\.merge$/;
-#			my ( $D, $g, $A ) = $file =~ /D(\d+)_g(\d+)_A(\d+)/;
-#			my ($Dm) = $file =~ /Dm(\d+)/;
-#			my ($gm) = $file =~ /gm(\d+)/;
-#			my ($ma) = $file =~ /ma(\d+)/;
-#			$Dm = " " unless defined $Dm;
-#			$gm = " " unless defined $gm;
-#			$ma = 0   unless $ma;
-#			my $merge_algo;
-#			$merge_algo = "DAGChainer" if $ma && $ma == 2;
-#
-#			if ( $ma && $ma == 1 ) {
-#				$merge_algo = "Quota Align";
-#				$gm         = " ";
-#			}
-#			unless ($ma) {
-#				$merge_algo = "--none--";
-#				$gm         = " ";
-#				$Dm         = " ";
-#			}
-#
-#			#       $Dm = 0 unless $Dm;
-#			#       $gm = 0 unless $gm;
-#			next unless ( $D && $g && $A );
-#
-#			my ($blast) = $file =~
-#			  /^[^\.]+\.[^\.]+\.([^\.]+)/;    #/blastn/ ? "BlastN" : "TBlastX";
-#			my $select_val;
-#			foreach my $item ( values %$ALGO_LOOKUP ) {
-#				if ( $item->{filename} eq $blast ) {
-#					$blast      = $item->{displayname};
-#					$select_val = $item->{html_select_val};
-#				}
-#			}
-#			my ( $dsgid1, $dsgid2, $type1, $type2 ) =
-#			  $file =~ /^(\d+)_(\d+)\.(\w+)-(\w+)/;
-#			$type1 = "CDS" if $type1 eq "protein";
-#			$type2 = "CDS" if $type2 eq "protein";
-#
-#			#           print STDERR $file,"\n";
-#			#           my ($repeat_filter) = $file =~ /_c(\d+)/;
-#			next unless ( $dsgid1 && $dsgid2 && $type1 && $type2 );
-#			my ($dupdist) = $file =~ /tdd(\d+)/;
-#			my %data = (
-#
-#		   #                                    repeat_filter => $repeat_filter,
-#				tdd        => $dupdist,
-#				D          => $D,
-#				g          => $g,
-#				A          => $A,
-#				Dm         => $Dm,
-#				gm         => $gm,
-#				ma         => $ma,
-#				merge_algo => $merge_algo,
-#				blast      => $blast,
-#				dsgid1     => $dsgid1,
-#				dsgid2     => $dsgid2,
-#				select_val => $select_val
-#			);
-#			my $geneorder = $file =~ /\.go/;
-#			my $genome1 = $coge->resultset('Genome')->find($dsgid1);
-#			next unless $genome1;
-#			next
-#			  if ( $genome1->restricted
-#				&& !$USER->has_access_to_genome($genome1) );
-#			my ($ds1) = $genome1->datasets;
-#			my $genome2 = $coge->resultset('Genome')->find($dsgid2);
-#			next unless $genome2;
-#			next
-#			  if ( $genome2->restricted
-#				&& !$USER->has_access_to_genome($genome2) );
-#			my ($ds2) = $genome2->datasets;
-#			$data{dsg1} = $genome1;
-#			$data{dsg2} = $genome2;
-#			$data{ds1}  = $ds1;
-#			$data{ds2}  = $ds2;
-#
-#			$genome1 .= $genome1->name if $genome1->name;
-#			$genome1 .= ": "           if $genome1;
-#			$genome1 .= $ds1->data_source->name;
-#			$genome2 .= $genome2->name if $genome2->name;
-#			$genome2 .= ": "           if $genome2;
-#			$genome2 .= $ds2->data_source->name;
-#			$data{genome1}    = $genome1;
-#			$data{genome2}    = $genome2;
-#			$data{type_name1} = $type1;
-#			$data{type_name2} = $type2;
-#			$type1 = $type1 eq "CDS" ? 1 : 2;
-#			$type2 = $type2 eq "CDS" ? 1 : 2;
-#			$data{type1}   = $type1;
-#			$data{type2}   = $type2;
-#			$data{dagtype} = $geneorder ? "Ordered genes" : "Distance";
-#			push @items, \%data;
-#		}
-#		closedir(DIR);
-#	}
-#	return unless @items;
-#	my $size = scalar @items;
-#	$size = 8 if $size > 8;
-#	my $html;
-#	my $prev_table = qq{<table id=prev_table class="small resultborder">};
-#	$prev_table .= qq{<THEAD><TR><TH>}
-#	  . join( "<TH>",
-#		qw(Org1 Genome1 Ver1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Ver2 Genome%20Type2 Sequence%20type2 Algo Dist%20Type Dup%20Dist Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A))
-#	  ) . "</THEAD><TBODY>\n";
-#	my %seen;
-#
-#	foreach my $item (
-#		sort { $b->{dsgid1} <=> $a->{dsgid1} || $b->{dsgid2} <=> $a->{dsgid2} }
-#		@items )
-#	{
-#		my $val = join( "_",
-#			$item->{g},          $item->{D},       $item->{A},
-#			$oid1,               $item->{dsgid1},  $item->{type1},
-#			$oid2,               $item->{dsgid2},  $item->{type2},
-#			$item->{select_val}, $item->{dagtype}, $item->{tdd} );
-#		next if $seen{$val};
-#		$seen{$val} = 1;
-#		$prev_table .=
-#		  qq{<TR class=feat onclick="update_params('$val')" align=center><td>};
-#		my $ver1 = $item->{dsg1}->version;
-#		$ver1 = "0" . $ver1 if $ver1 =~ /^\./;
-#		my $ver2 = $item->{dsg2}->version;
-#		$ver2 = "0" . $ver2 if $ver2 =~ /^\./;
-#		$prev_table .= join( "<td>",
-#			$item->{dsg1}->organism->name, $item->{genome1},
-#			$ver1,                         $item->{dsg1}->type->name,
-#			$item->{type_name1},           $item->{dsg2}->organism->name,
-#			$item->{genome2},              $ver2,
-#			$item->{dsg2}->type->name,     $item->{type_name2},
-#			$item->{blast},                $item->{dagtype},
-#			$item->{tdd},                  $item->{g},
-#			$item->{D},                    $item->{A} )
-#		  . "\n";
-#	}
-#	$prev_table .= qq{</TBODY></table>};
-#	$html .= $prev_table;
-#	$html .=
-#"<br><span class=small>Synonymous substitution rates previously calculated</span>"
-#	  if $sqlite;
-#	return "$html";
-#}
-
 sub get_dsg_info {
 	my $dsg       = shift;
 	my $length    = 0;
@@ -1151,7 +963,7 @@ sub get_results {
 	my $merge_algo = $opts{merge_algo};    #is there a merging function?
 	                                       #will non-syntenic dots be shown?
 	my $snsd      = $opts{show_non_syn_dots} =~ /true/i ? 1 : 0;
-	my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
+	my $algo_name = get_blast_config($blast)->{displayname};
 
 	#will the axis be flipped?
 	my $flip = $opts{flip} =~ /true/i ? 1 : 0;
@@ -1262,7 +1074,8 @@ sub get_results {
 	############################################################################
 	my ( $blastdb, @blastdb_files );
 
-	if ( $ALGO_LOOKUP->{$blast}{formatdb} ) {
+	my $blast_config = get_blast_config($blast, $opts{blast_option});
+	if ( $blast_config->{formatdb} ) {
 		my $basename  = "$BLASTDBDIR/$dsgid2-$feat_type2";
 
 		$blastdb = $basename;
@@ -1283,7 +1096,7 @@ sub get_results {
 			basename => $dsgid1 . "_" 
 			  . $dsgid2
 			  . ".$feat_type1-$feat_type2."
-			  . $ALGO_LOOKUP->{$blast}{filename},
+			  . $blast_config->{filename},
 			dir => $result_path
 		  }
 	);
@@ -1523,492 +1336,486 @@ sub get_results {
 	my $final_dagchainer_file_condensed = $final_dagchainer_file_gevolinks . ".condensed";
 
 	my $problem;
-	if ( -r "$out.html" &&
-	     -r $final_dagchainer_file &&           # mdb added 12/2/16 COGE-794
-		 -r $final_dagchainer_file_gevolinks && # mdb added 12/2/16 COGE-794
-		 -r $final_dagchainer_file_condensed )  # mdb added 12/2/16 COGE-794
-	{
-		#Dotplot
-		$/ = "\n";
-		open( IN, "$out.html" )
-		  || warn "problem opening $out.html for reading\n";
-		$axis_metric = $axis_metric =~ /g/ ? "genes" : "nucleotides";
-		$html .=
-		  "<span class='small'>Axis metrics are in $axis_metric</span><br>";
+	return encode_json( { error => "The output $out.html could not be found." } ) unless (-r $out . '.html');
+	return encode_json( { error => "The output $final_dagchainer_file could not be found." } ) unless (-r $final_dagchainer_file);
+	return encode_json( { error => "The output $final_dagchainer_file_gevolinks could not be found." } ) unless (-r $final_dagchainer_file_gevolinks);
+	return encode_json( { error => "The output $final_dagchainer_file_condensed could not be found." } ) unless (-r $final_dagchainer_file_condensed);
+	#Dotplot
+	$/ = "\n";
+	open( IN, "$out.html" )
+		|| warn "problem opening $out.html for reading\n";
+	$axis_metric = $axis_metric =~ /g/ ? "genes" : "nucleotides";
+	$html .=
+		"<span class='small'>Axis metrics are in $axis_metric</span><br>";
 
-		#add version of genome to organism names
-		$org_name1 .= " (v" . $genome1->version . ")";
-		$org_name2 .= " (v" . $genome2->version . ")";
+	#add version of genome to organism names
+	$org_name1 .= " (v" . $genome1->version . ")";
+	$org_name2 .= " (v" . $genome2->version . ")";
 
-		my $out_url = $out;
+	my $out_url = $out;
 # not sure why this test is done
 #		if ($DIR =~ /$URL/) {
-    		$out_url =~ s/$DIR/$URL/;
-    		$y_label =~ s/$DIR/$URL/;
-    		$x_label =~ s/$DIR/$URL/;
+		$out_url =~ s/$DIR/$URL/;
+		$y_label =~ s/$DIR/$URL/;
+		$x_label =~ s/$DIR/$URL/;
 #		}
 #		else {
 #		    print STDERR "get_results: ERROR !!!!, cannot perform URL substitution: out_url=$out_url DIR=$DIR URL=$URL\n";
 #		}
 
-		$/ = "\n";
-		my $tmp;
-		while (<IN>) {
-			next if /<\/?html>/;
-			$tmp .= $_;
-		}
-		close IN;
-		$tmp =~ s/master.*\.png/$out_url.png/;
-		warn "$out_url.html did not parse correctly\n" unless $tmp =~ /map/i;
-		$html .= $tmp;
+	$/ = "\n";
+	my $tmp;
+	while (<IN>) {
+		next if /<\/?html>/;
+		$tmp .= $_;
+	}
+	close IN;
+	$tmp =~ s/master.*\.png/$out_url.png/;
+	warn "$out_url.html did not parse correctly\n" unless $tmp =~ /map/i;
+	$html .= $tmp;
 
-		#Synteny Zoom
-		$results->param( codeml_min  => $codeml_min );
-		$results->param( codeml_max  => $codeml_max );
-		$results->param( axis_metric => $axis_metric );
-		$results->param( ylabel      => $y_label );
-		$results->param( xlabel      => $x_label );
+	#Synteny Zoom
+	$results->param( codeml_min  => $codeml_min );
+	$results->param( codeml_max  => $codeml_max );
+	$results->param( axis_metric => $axis_metric );
+	$results->param( ylabel      => $y_label );
+	$results->param( xlabel      => $x_label );
 
-		if ($flip) {
-			$results->param( yorg_name => html_escape($org_name1) );
-			$results->param( xorg_name => html_escape($org_name2) );
-		}
-		else {
-			$results->param( yorg_name => html_escape($org_name2) );
-			$results->param( xorg_name => html_escape($org_name1) );
-		}
+	if ($flip) {
+		$results->param( yorg_name => html_escape($org_name1) );
+		$results->param( xorg_name => html_escape($org_name2) );
+	}
+	else {
+		$results->param( yorg_name => html_escape($org_name2) );
+		$results->param( xorg_name => html_escape($org_name1) );
+	}
 
-		$results->param( dotplot   => $tmp );
-		$results->param( algorithm => $algo_name );
+	$results->param( dotplot   => $tmp );
+	$results->param( algorithm => $algo_name );
 
-		if ( $hist and $ks_type ) {
-			if ( -r $hist and -s $hist ) {
-				$results->param( histogram => $out_url . '.hist.png' );
-				$results->param( ks_type   => $ks_type );
-			}
-			else {
-				$warn =
-				  qq{The histogram was not generated no ks or kn data found.};
-				warn "problem reading $hist or is empty";
-			}
-		}
-
-		# dotplot
-		if ($ks_type) {
-			my $ks_blocks_file_url = $ks_blocks_file;
-			$ks_blocks_file_url =~ s/$DIR/$URL/;
-			$results->param( file_url => $ks_blocks_file_url );
+	if ( $hist and $ks_type ) {
+		if ( -r $hist and -s $hist ) {
+			$results->param( histogram => $out_url . '.hist.png' );
+			$results->param( ks_type   => $ks_type );
 		}
 		else {
-			my $final_dagchainer_url = $final_dagchainer_file;
-			$final_dagchainer_url =~ s/$DIR/$URL/;
-			$results->param( file_url => $final_dagchainer_url );
+			$warn =
+				qq{The histogram was not generated no ks or kn data found.};
+			warn "problem reading $hist or is empty";
 		}
-		$results->param( dsgid1 => $dsgid1 );
-		$results->param( dsgid2 => $dsgid2 );
-	    my $chromosomes1 = $genome1->chromosomes_all;
-	    my $feature_counts = get_feature_counts($coge->storage->dbh, $genome1->id);
-	    foreach (@$chromosomes1) {
-	        $_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
-	    }
-	    $results->param( chromosomes1 => encode_json($chromosomes1) );
-	    my $chromosomes2 = $genome2->chromosomes_all;
-		$feature_counts = get_feature_counts($coge->storage->dbh, $genome2->id);
-	    foreach (@$chromosomes2) {
-	        $_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
-	    }
-	    $results->param( chromosomes2 => encode_json($chromosomes2) );
+	}
 
-		# fractionation bias
-		# my $gff_sort_output_file;
-		my $synmap_dictionary_output_file;
-		my $fract_bias_raw_output_file;
-		my $fract_bias_results_file;
-		if ( $opts{frac_bias} =~ /true/i ) {
-			my $output_url = $result_path;
-			$output_url =~ s/$DIR/$URL/;
-			my $query_id;
-			my $target_id;
-			if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
-				$query_id      = $dsgid2;
-				$target_id     = $dsgid1;
-				$results -> param( target_genome => html_escape($org_name1))
-			}
-			else {
-				$query_id      = $dsgid1;
-				$target_id     = $dsgid2;
-				$results -> param( target_genome => html_escape($org_name2))
-			}
-			my $all_genes = ($opts{'fb_target_genes'} eq 'true') ? 'False' : 'True';
-			my $rru = $opts{'fb_remove_random_unknown'} ? 'True' : 'False';
-			my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
-			my $fb_prefix = substr($final_dagchainer_file, length($result_path)) . '_tc' . $opts{fb_numtargetchr} . '_qc' . $opts{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts{fb_window_size};
-			my $fb_json_file = $fb_prefix . '.fractbias-fig.json';
-			if (! -r catfile($result_path, $fb_json_file)) {
-				return encode_json( { error => "The fractionation bias data could not be found." } );
-			}
-			$results->param( frac_bias => catfile($output_url, $fb_json_file) );
-			# $gff_sort_output_file = _filename_to_link(
-			# 	file => catfile($result_path, 'gff_sort.txt'),
-			# 	msg  => qq{GFF Sort output file},
-			# 	required => 1
-			# );
-			$synmap_dictionary_output_file = _filename_to_link(
-				file => catfile($result_path, $fb_prefix . '.fractbias-synmap-data.json'),
-				msg  => qq{SynMap dictionary output file},
-				required => 1
-			);
-			$fract_bias_raw_output_file = _filename_to_link(
-				file => catfile($result_path, $fb_prefix . '.fractbias-genes.csv'),
-				msg  => qq{Fractionation Bias synteny report},
-				required => 1
-			);
-			$fract_bias_results_file = _filename_to_link(
-				file => catfile($result_path, $fb_prefix . '.fractbias-results.csv'),
-				msg  => qq{Fractionation Bias sliding window results},
-				required => 1
-			);
+	# dotplot
+	if ($ks_type) {
+		my $ks_blocks_file_url = $ks_blocks_file;
+		$ks_blocks_file_url =~ s/$DIR/$URL/;
+		$results->param( file_url => $ks_blocks_file_url );
+	}
+	else {
+		my $final_dagchainer_url = $final_dagchainer_file;
+		$final_dagchainer_url =~ s/$DIR/$URL/;
+		$results->param( file_url => $final_dagchainer_url );
+	}
+	$results->param( dsgid1 => $dsgid1 );
+	$results->param( dsgid2 => $dsgid2 );
+	my $chromosomes1 = $genome1->chromosomes_all;
+	my $feature_counts = get_feature_counts($coge->storage->dbh, $genome1->id);
+	foreach (@$chromosomes1) {
+		$_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
+	}
+	$results->param( chromosomes1 => encode_json($chromosomes1) );
+	my $chromosomes2 = $genome2->chromosomes_all;
+	$feature_counts = get_feature_counts($coge->storage->dbh, $genome2->id);
+	foreach (@$chromosomes2) {
+		$_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
+	}
+	$results->param( chromosomes2 => encode_json($chromosomes2) );
+
+	# fractionation bias
+	# my $gff_sort_output_file;
+	my $synmap_dictionary_output_file;
+	my $fract_bias_raw_output_file;
+	my $fract_bias_results_file;
+	if ( $opts{frac_bias} =~ /true/i ) {
+		my $output_url = $result_path;
+		$output_url =~ s/$DIR/$URL/;
+		my $query_id;
+		my $target_id;
+		if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
+			$query_id      = $dsgid2;
+			$target_id     = $dsgid1;
+			$results -> param( target_genome => html_escape($org_name1))
 		}
+		else {
+			$query_id      = $dsgid1;
+			$target_id     = $dsgid2;
+			$results -> param( target_genome => html_escape($org_name2))
+		}
+		my $all_genes = ($opts{fb_target_genes} eq 'true') ? 'False' : 'True';
+		my $rru = $opts{fb_remove_random_unknown} ? 'True' : 'False';
+		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
+		my $fb_prefix = substr($final_dagchainer_file, length($result_path)) . '_tc' . $opts{fb_numtargetchr} . '_qc' . $opts{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts{fb_window_size};
+		my $fb_json_file = $fb_prefix . '.fractbias-fig.json';
+		if (! -r catfile($result_path, $fb_json_file)) {
+			return encode_json( { error => "The fractionation bias data could not be found." } );
+		}
+		$results->param( frac_bias => catfile($output_url, $fb_json_file) );
+		# $gff_sort_output_file = _filename_to_link(
+		# 	file => catfile($result_path, 'gff_sort.txt'),
+		# 	msg  => qq{GFF Sort output file},
+		# 	required => 1
+		# );
+		$synmap_dictionary_output_file = _filename_to_link(
+			file => catfile($result_path, $fb_prefix . '.fractbias-synmap-data.json'),
+			msg  => qq{SynMap dictionary output file},
+			required => 1
+		);
+		$fract_bias_raw_output_file = _filename_to_link(
+			file => catfile($result_path, $fb_prefix . '.fractbias-genes.csv'),
+			msg  => qq{Fractionation Bias synteny report},
+			required => 1
+		);
+		$fract_bias_results_file = _filename_to_link(
+			file => catfile($result_path, $fb_prefix . '.fractbias-results.csv'),
+			msg  => qq{Fractionation Bias sliding window results},
+			required => 1
+		);
+	}
 
-		my $qa_file = $merged_dagchainer_file;
-		$qa_file =~ s/\.ma\d$/\.qa/ if $qa_file;
+	my $qa_file = $merged_dagchainer_file;
+	$qa_file =~ s/\.ma\d$/\.qa/ if $qa_file;
 #		my $qa_merged_file = $qa_file . ".merged" if $qa_file;
 #		my $qa_coverage_tmp = $quota_align_coverage . ".tmp" if $quota_align_coverage;
 #		my $qa_coverage_qa = $quota_align_coverage . ".qa" if $quota_align_coverage;
 
-		########################################################################
-		# Compress Results
-		########################################################################
+	########################################################################
+	# Compress Results
+	########################################################################
 
-		#my $file_list = [
-		#    \$raw_blastfile,          \$filtered_blastfile,
-		#    \$query_bed,              \$subject_bed,
-		#    \$org1_localdups,         \$org2_localdups,
-		#    \$dag_file12_all,         \$dag_file12_all_geneorder,
-		#    \$dag_file12,             \$dagchainer_file,
-		#    \$final_dagchainer_file,  \$final_dagchainer_file_condensed,
-		#    \$merged_dagchainer_file, \$qa_file,
-		#    \$qa_merged_file,         \$ks_blocks_file,
-		#    \$quota_align_coverage,   \$qa_coverage_qa
-		#];    #, \$spa_file];
-		#my $pm = new Parallel::ForkManager($MAX_PROC);
+	#my $file_list = [
+	#    \$raw_blastfile,          \$filtered_blastfile,
+	#    \$query_bed,              \$subject_bed,
+	#    \$org1_localdups,         \$org2_localdups,
+	#    \$dag_file12_all,         \$dag_file12_all_geneorder,
+	#    \$dag_file12,             \$dagchainer_file,
+	#    \$final_dagchainer_file,  \$final_dagchainer_file_condensed,
+	#    \$merged_dagchainer_file, \$qa_file,
+	#    \$qa_merged_file,         \$ks_blocks_file,
+	#    \$quota_align_coverage,   \$qa_coverage_qa
+	#];    #, \$spa_file];
+	#my $pm = new Parallel::ForkManager($MAX_PROC);
 
-		#foreach my $item (@$file_list) {
-		#    $pm->start and next;
+	#foreach my $item (@$file_list) {
+	#    $pm->start and next;
 
-		#    #$$item = CoGe::Accessory::Web::gzip($$item);
-		#    $pm->finish;
-		#}
-		#$pm->wait_all_children();
+	#    #$$item = CoGe::Accessory::Web::gzip($$item);
+	#    $pm->finish;
+	#}
+	#$pm->wait_all_children();
 
-		#foreach my $item (@$file_list) {
+	#foreach my $item (@$file_list) {
 
-		#    #$$item = CoGe::Accessory::Web::gzip($$item);
-		#}
+	#    #$$item = CoGe::Accessory::Web::gzip($$item);
+	#}
 
-		#######################################################################
-		# General
-		#######################################################################
+	#######################################################################
+	# General
+	#######################################################################
 
-		my $log_url = _filename_to_link(
-			file     => $cogeweb->logfile,
-			msg      => qq{Analysis Log},
-			required => 1,
+	my $log_url = _filename_to_link(
+		file     => $cogeweb->logfile,
+		msg      => qq{Analysis Log},
+		required => 1,
+	);
+
+	my $image_url = _filename_to_link(
+		file     => "$out.png",
+		msg      => qq{Image File},
+		required => 1,
+	);
+
+	#######################################################################
+	# Homologs
+	#######################################################################
+	# mdb removed 9/20/13 issue 77
+	#        my $fasta1_url = _filename_to_link(
+	#            file => $fasta1,
+	#            msg  => qq{Fasta file for $org_name1: $feat_type1}
+	#        );
+	#        my $fasta2_url = _filename_to_link(
+	#            file => $fasta2,
+	#            msg  => qq{Fasta file for $org_name2: $feat_type2}
+	#        );
+
+	my $sequence_url1 = api_url_for("genomes/$dsgid1/sequence"); #"api/v1/legacy/sequence; # mdb changed 2/12/16 for hypnotoad
+	my $sequence_url2 = api_url_for("genomes/$dsgid2/sequence");
+
+	my $fasta1_url = _filename_to_link(
+		url =>
+			( $feat_type1 eq "genomic" ? $sequence_url1 : undef ),
+		file => (
+			$feat_type1 eq "genomic"
+			? undef
+			: $FASTADIR . "/$dsgid1-$feat_type1.fasta"
+		),
+		msg => qq{Fasta file for $org_name1: $feat_type1}
+	);
+	my $fasta2_url = _filename_to_link(
+		url =>
+			( $feat_type2 eq "genomic" ? $sequence_url2 : undef ),
+		file => (
+			$feat_type2 eq "genomic"
+			? undef
+			: $FASTADIR . "/$dsgid2-$feat_type2.fasta"
+		),
+		msg => qq{Fasta file for $org_name2: $feat_type2}
+	);
+
+	my $raw_blast_url = _filename_to_link(
+		file => $raw_blastfile,
+		msg  => qq{Unfiltered $algo_name results}
+	);
+
+	my $filtered_blast_url = _filename_to_link(
+		file => $filtered_blastfile,
+		msg  => qq{Filtered $algo_name results (no tandem duplicates)}
+		),
+
+		my $tandem_dups1_url = _filename_to_link(
+		file => $raw_blastfile . '.q.tandems',
+		msg  => qq{Tandem Duplicates for $org_name1},
 		);
 
-		my $image_url = _filename_to_link(
-			file     => "$out.png",
-			msg      => qq{Image File},
-			required => 1,
-		);
+	my $tandem_dups2_url = _filename_to_link(
+		file => $raw_blastfile . '.s.tandems',
+		msg  => qq{Tandem Duplicates for $org_name2},
+	);
 
-		#######################################################################
-		# Homologs
-		#######################################################################
-		# mdb removed 9/20/13 issue 77
-		#        my $fasta1_url = _filename_to_link(
-		#            file => $fasta1,
-		#            msg  => qq{Fasta file for $org_name1: $feat_type1}
-		#        );
-		#        my $fasta2_url = _filename_to_link(
-		#            file => $fasta2,
-		#            msg  => qq{Fasta file for $org_name2: $feat_type2}
-		#        );
+	#######################################################################
+	# Diagonals
+	#######################################################################
+	my $dagchainer_input_url = _filename_to_link(
+		file => $dag_file12_all,
+		msg  => qq{DAGChainer Initial Input file}
+	);
 
-		my $sequence_url1 = api_url_for("genomes/$dsgid1/sequence"); #"api/v1/legacy/sequence; # mdb changed 2/12/16 for hypnotoad
-        my $sequence_url2 = api_url_for("genomes/$dsgid2/sequence");
+	my $geneorder_url = _filename_to_link(
+		file => $dag_file12_all_geneorder,
+		msg  => qq{DAGChainer Input file converted to gene order}
+	);
 
-		my $fasta1_url = _filename_to_link(
-			url =>
-			  ( $feat_type1 eq "genomic" ? $sequence_url1 : undef ),
-			file => (
-				$feat_type1 eq "genomic"
-				? undef
-				: $FASTADIR . "/$dsgid1-$feat_type1.fasta"
-			),
-			msg => qq{Fasta file for $org_name1: $feat_type1}
-		);
-		my $fasta2_url = _filename_to_link(
-			url =>
-			  ( $feat_type2 eq "genomic" ? $sequence_url2 : undef ),
-			file => (
-				$feat_type2 eq "genomic"
-				? undef
-				: $FASTADIR . "/$dsgid2-$feat_type2.fasta"
-			),
-			msg => qq{Fasta file for $org_name2: $feat_type2}
-		);
+	my $dagchainer12_url = _filename_to_link(
+		file => $dag_file12,
+		msg  => qq{DAGChainer Input file post repetitve matches filtered}
+	);
 
-		my $raw_blast_url = _filename_to_link(
-			file => $raw_blastfile,
-			msg  => qq{Unfiltered $algo_name results}
-		);
+	#######################################################################
+	# Results
+	#######################################################################
+	my $dagchainer_url = _filename_to_link(
+		file => $dagchainer_file,
+		msg  => qq{DAGChainer Output}
+	);
 
-		my $filtered_blast_url = _filename_to_link(
-			file => $filtered_blastfile,
-			msg  => qq{Filtered $algo_name results (no tandem duplicates)}
-		  ),
+	my $merged_dag_url = _filename_to_link(
+		file => $merged_dagchainer_file,
+		msg  => qq{Merged DAGChainer output}
+	);
 
-		  my $tandem_dups1_url = _filename_to_link(
-			file => $raw_blastfile . '.q.tandems',
-			msg  => qq{Tandem Duplicates for $org_name1},
-		  );
+	#merged dagchainer output is not specified in results.  This hack gets it there.
+	if ( $merged_dagchainer_file and -r $merged_dagchainer_file ) {
+		$dagchainer_url .= $merged_dag_url;
+	}
 
-		my $tandem_dups2_url = _filename_to_link(
-			file => $raw_blastfile . '.s.tandems',
-			msg  => qq{Tandem Duplicates for $org_name2},
-		);
+	my $quota_align_coverage_url = _filename_to_link(
+		file => $quota_align_coverage,
+		msg  => qq{Quota Alignment Results}
+	);
 
-		#######################################################################
-		# Diagonals
-		#######################################################################
-		my $dagchainer_input_url = _filename_to_link(
-			file => $dag_file12_all,
-			msg  => qq{DAGChainer Initial Input file}
-		);
+	my $final_result_url = _filename_to_link(
+		file => $final_dagchainer_file,
+		msg  => qq{DAGChainer output in genomic coordinates}
+	);
 
-		my $geneorder_url = _filename_to_link(
-			file => $dag_file12_all_geneorder,
-			msg  => qq{DAGChainer Input file converted to gene order}
-		);
+	my $ks_blocks_url = _filename_to_link(
+		file     => $ks_blocks_file,
+		msg      => qq{Results with synonymous/non-synonymous rate values},
+		required => $ks_type
+	);
 
-		my $dagchainer12_url = _filename_to_link(
-			file => $dag_file12,
-			msg  => qq{DAGChainer Input file post repetitve matches filtered}
-		);
+	my $final_url = _filename_to_link(
+		file => $final_dagchainer_file_gevolinks,
+		msg  => qq{Final syntenic gene-set output with GEvo links}
+	);
 
-		#######################################################################
-		# Results
-		#######################################################################
-		my $dagchainer_url = _filename_to_link(
-			file => $dagchainer_file,
-			msg  => qq{DAGChainer Output}
-		);
+	my $final_condensed_url = _filename_to_link(
+		file => $final_dagchainer_file_condensed,
+		msg  => qq{Condensed syntelog file with GEvo links}
+	);
 
-		my $merged_dag_url = _filename_to_link(
-			file => $merged_dagchainer_file,
-			msg  => qq{Merged DAGChainer output}
-		);
+	my $svg_url = _filename_to_link(
+		file => $svg_file,
+		msg  => qq{SVG Version of Syntenic Dotplot},
+	);
 
-        #merged dagchainer output is not specified in results.  This hack gets it there.
-		if ( $merged_dagchainer_file and -r $merged_dagchainer_file ) {
-			$dagchainer_url .= $merged_dag_url;
+	my $spa_url = _filename_to_link(
+		file => $spa_file,
+		msg  => qq{Syntenic Path Assembly mapping},
+	);
+
+	$spa_url = "" unless $spa_url;
+
+	my $spa_result = "";
+
+	if ( $spa_url and $assemble ) {
+		#added by EHL: 6/17/15
+		#fixing problem where
+		my $genome1_chr_count = $genome1->chromosome_count();
+		my $genome2_chr_count = $genome2->chromosome_count();
+		my $flip              = 0;
+		if ( $genome1_chr_count <= $genome2_chr_count && $assemble < 0 ) {
+			$flip = 1;
 		}
+		$spa_result =
+			$spa_url
+			. qq{<a href="#" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2', '$flip');">}
+			. qq{Generate Pseudo-Assembled Genomic Sequence}
+			. qq{</a>};
+	}
 
-		my $quota_align_coverage_url = _filename_to_link(
-			file => $quota_align_coverage,
-			msg  => qq{Quota Alignment Results}
-		);
+	my $json_url = _filename_to_link(
+		file => $json_file,
+		msg  => qq{Dotplot JSON},
+	);
 
-		my $final_result_url = _filename_to_link(
-			file => $final_dagchainer_file,
-			msg  => qq{DAGChainer output in genomic coordinates}
-		);
+	$dagchainer_file =~ s/^$URL/$DIR/;
 
-		my $ks_blocks_url = _filename_to_link(
-			file     => $ks_blocks_file,
-			msg      => qq{Results with synonymous/non-synonymous rate values},
-			required => $ks_type
-		);
-
-		my $final_url = _filename_to_link(
-			file => $final_dagchainer_file_gevolinks,
-			msg  => qq{Final syntenic gene-set output with GEvo links}
-		);
-
-		my $final_condensed_url = _filename_to_link(
-			file => $final_dagchainer_file_condensed,
-			msg  => qq{Condensed syntelog file with GEvo links}
-		);
-
-		my $svg_url = _filename_to_link(
-			file => $svg_file,
-			msg  => qq{SVG Version of Syntenic Dotplot},
-		);
-
-		my $spa_url = _filename_to_link(
-			file => $spa_file,
-			msg  => qq{Syntenic Path Assembly mapping},
-		);
-
-		$spa_url = "" unless $spa_url;
-
-		my $spa_result = "";
-
-		if ( $spa_url and $assemble ) {
-			#added by EHL: 6/17/15
-			#fixing problem where
-			my $genome1_chr_count = $genome1->chromosome_count();
-			my $genome2_chr_count = $genome2->chromosome_count();
-			my $flip              = 0;
-			if ( $genome1_chr_count <= $genome2_chr_count && $assemble < 0 ) {
-				$flip = 1;
-			}
-			$spa_result =
-			    $spa_url
-			  . qq{<a href="#" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2', '$flip');">}
-			  . qq{Generate Pseudo-Assembled Genomic Sequence}
-			  . qq{</a>};
-		}
-
-		my $json_url = _filename_to_link(
-			file => $json_file,
-			msg  => qq{Dotplot JSON},
-		);
-
-		$dagchainer_file =~ s/^$URL/$DIR/;
-
-		my $rows = [
+	my $rows = [
+		{
+			general  => 'General',
+			homolog  => 'Homolog search',
+			diagonal => 'Diagonals',
+			result   => 'Results',
+		},
+		{
+			general  => $log_url,
+			homolog  => $fasta1_url,
+			diagonal => $dagchainer_input_url,
+			result   => $dagchainer_url,
+		},
+		{
+			general  => $image_url,
+			homolog  => $fasta2_url,
+			diagonal => $geneorder_url,
+			result   => $final_result_url,
+		},
+		{
+			general  => undef,
+			homolog  => $raw_blast_url,
+			diagonal => $dagchainer12_url,
+			result   => $final_url,
+		},
+		{
+			general  => undef,
+			homolog  => $filtered_blast_url,
+			diagonal => undef,
+			result   => $final_condensed_url,
+		},
+		{
+			general  => undef,
+			homolog  => $tandem_dups1_url,
+			diagonal => undef,
+			result   => $quota_align_coverage_url,
+		},
+		{
+			general  => undef,
+			homolog  => $tandem_dups2_url,
+			diagonal => undef,
+			result   => $ks_blocks_url,
+		},
+		{
+			general  => undef,
+			homolog  => undef,
+			diagonal => undef,
+			result   => $spa_result,
+		},
+		{
+			general  => undef,
+			homolog  => undef,
+			diagonal => undef,
+			result   => $svg_url,
+		},
+		{
+			general  => undef,
+			homolog  => undef,
+			diagonal => undef,
+			result   => $json_url,
+		},
+	];
+	if ( $opts{frac_bias} =~ /true/i ) {
+		push @$rows,
 			{
-				general  => 'General',
-				homolog  => 'Homolog search',
-				diagonal => 'Diagonals',
-				result   => 'Results',
-			},
-			{
-				general  => $log_url,
-				homolog  => $fasta1_url,
-				diagonal => $dagchainer_input_url,
-				result   => $dagchainer_url,
-			},
-			{
-				general  => $image_url,
-				homolog  => $fasta2_url,
-				diagonal => $geneorder_url,
-				result   => $final_result_url,
-			},
-			{
-				general  => undef,
-				homolog  => $raw_blast_url,
-				diagonal => $dagchainer12_url,
-				result   => $final_url,
-			},
-			{
-				general  => undef,
-				homolog  => $filtered_blast_url,
-				diagonal => undef,
-				result   => $final_condensed_url,
-			},
-			{
-				general  => undef,
-				homolog  => $tandem_dups1_url,
-				diagonal => undef,
-				result   => $quota_align_coverage_url,
-			},
-			{
-				general  => undef,
-				homolog  => $tandem_dups2_url,
-				diagonal => undef,
-				result   => $ks_blocks_url,
-			},
-			{
-				general  => undef,
-				homolog  => undef,
-				diagonal => undef,
-				result   => $spa_result,
-			},
-			{
-				general  => undef,
-				homolog  => undef,
-				diagonal => undef,
-				result   => $svg_url,
-			},
-			{
-				general  => undef,
-				homolog  => undef,
-				diagonal => undef,
-				result   => $json_url,
-			},
-		];
-		if ( $opts{frac_bias} =~ /true/i ) {
-			push @$rows,
-			  {
-				general  => undef,
-				homolog  => undef,
-				diagonal => undef,
-				result   => $synmap_dictionary_output_file
-			  };
-			push @$rows,
-			  {
-				general  => undef,
-				homolog  => undef, #$gff_sort_output_file,
-				diagonal => undef,
-				result   => $fract_bias_raw_output_file
-			  };
-			push @$rows,
-			  {
-				general  => undef,
-				homolog  => undef,
-				diagonal => undef,
-				result   => $fract_bias_results_file
-			  };
-		}
-		$results->param( files => $rows );
-
-		########################################################################
-		# SynMap3D Link
-		########################################################################
-		my $syn3d = $BASE_URL . "SynMap3D.pl";
-		my $threedlink = $syn3d . "?x_gid=" . $dsgid1 . ";y_gid=" . $dsgid2;
-		#print STDERR $threedlink . "\n";
-		$results->param( syn3dlink => $threedlink) ;
-
-
-		########################################################################
-		# Regenerate Analysis Link - HTML
-		########################################################################
-
-		$results->param( link => $tiny_link );
-		if ($ks_type) {
-			my ($ks_file) = $ks_db =~ /([^\/]*)$/;
-			my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;file=$ks_file";
-			$results->param( synsub => $link );
-		}
-
-		if ($grimm_stuff) {
-			my $seq1 = ">$org_name1||" . $grimm_stuff->[0];
-			$seq1 =~ s/\n/\|\|/g;
-			my $seq2 = ">$org_name2||" . $grimm_stuff->[1];
-			$seq2 =~ s/\n/\|\|/g;
-			$html .= qq{
-            <br>
-            <span class="coge-button" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
-            };
-
-			my $grimm_data = {
-				seq1       => $seq1,
-				seq2       => $seq2,
-				grimm_link => qq{http://grimm.ucsd.edu/GRIMM/index.html},
+			general  => undef,
+			homolog  => undef,
+			diagonal => undef,
+			result   => $synmap_dictionary_output_file
 			};
+		push @$rows,
+			{
+			general  => undef,
+			homolog  => undef, #$gff_sort_output_file,
+			diagonal => undef,
+			result   => $fract_bias_raw_output_file
+			};
+		push @$rows,
+			{
+			general  => undef,
+			homolog  => undef,
+			diagonal => undef,
+			result   => $fract_bias_results_file
+			};
+	}
+	$results->param( files => $rows );
 
-			$results->param( grimm => $grimm_data );
-		}
-		$html .= "<br>";
+	########################################################################
+	# SynMap3D Link
+	########################################################################
+	my $syn3d = $BASE_URL . "SynMap3D.pl";
+	my $threedlink = $syn3d . "?x_gid=" . $dsgid1 . ";y_gid=" . $dsgid2;
+	#print STDERR $threedlink . "\n";
+	$results->param( syn3dlink => $threedlink) ;
+
+
+	########################################################################
+	# Regenerate Analysis Link - HTML
+	########################################################################
+
+	$results->param( link => $tiny_link );
+	if ($ks_type) {
+		my ($ks_file) = $ks_db =~ /([^\/]*)$/;
+		my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;file=$ks_file";
+		$results->param( synsub => $link );
 	}
-	else {
-		return encode_json(
-			{ error => "The output $out.html could not be found." } );
+
+	if ($grimm_stuff) {
+		my $seq1 = ">$org_name1||" . $grimm_stuff->[0];
+		$seq1 =~ s/\n/\|\|/g;
+		my $seq2 = ">$org_name2||" . $grimm_stuff->[1];
+		$seq2 =~ s/\n/\|\|/g;
+		$html .= qq{
+		<br>
+		<span class="coge-button" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
+		};
+
+		my $grimm_data = {
+			seq1       => $seq1,
+			seq2       => $seq2,
+			grimm_link => qq{http://grimm.ucsd.edu/GRIMM/index.html},
+		};
+
+		$results->param( grimm => $grimm_data );
 	}
+	$html .= "<br>";
 
 	#unless(-r $json_file and -s $json_file ) {
 	#    return encode_json({
