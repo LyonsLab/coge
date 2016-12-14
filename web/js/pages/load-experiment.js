@@ -157,17 +157,17 @@ $.extend(ExperimentDescriptionView.prototype, {
         else
             this.el.find('#sra_message').hide();
 
-        // Set experiment metadata if from SRA  // TODO add this info extracted from SRA metadata
-//		if (this.isSRA) {
-//           this.metadata = {
-//                name: '',
-//                description: '',
-//                version: '',
-//                restricted: 0,
-//                source_name: '',
-//                link: ''
-//            };
-//        }
+        // Set experiment metadata if from SRA  // TODO add metadata extracted from SRA metadata
+		if (this.isSRA) {
+           this.metadata = {
+                name: '',
+                description: '',
+                version: '',
+                restricted: 0,
+                source_name: 'NCBI-SRA',
+                link: ''
+            };
+        }
 
         if (this.metadata) {
             this.el.find('#edit_name').val(this.metadata.name);
