@@ -155,7 +155,7 @@ sub convert_metadata { #TODO rename
     my $metadata = {
         name       => $flattened->{'Summary.Title'} // '',
         version    => $flattened->{'Experiment.ver'} // 1,
-        source     => 'NCBI-SRA',
+        source_name=> 'NCBI-SRA',
         link       => 'https://www.ncbi.nlm.nih.gov/sra',
         restricted => 0, # data is from a public source
         tags       => [ 'SRA' ]
