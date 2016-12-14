@@ -372,15 +372,14 @@ sub get_lists_for_user {
     # Get user/group list connections
     my $query = qq{
         SELECT l.list_id AS id, l.name AS name, l.description AS description, 
-            l.restricted AS restricted, l.deleted AS deleted, lt.name AS type_name,
+            l.restricted AS restricted, l.deleted AS deleted,
             l.date AS date, uc.role_id as role_id,
             (CASE WHEN EXISTS (SELECT 1 FROM favorite_connector AS fc WHERE fc.user_id=$user_id AND fc.child_id=l.list_id AND fc.child_type=1)
                 THEN 1 ELSE 0
             END) AS favorite
         FROM user_connector AS uc 
         JOIN list AS l ON (uc.child_id=l.list_id) 
-        JOIN list_type AS lt ON (lt.list_type_id=l.list_type_id)
-        WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str))) 
+        WHERE ((uc.parent_type=5 AND uc.parent_id=$user_id) OR (uc.parent_type=6 AND uc.parent_id IN ($group_str)))
             AND uc.child_type=1 
     };
     $query .= " AND uc.role_id in ($role_id_str)" if $role_id_str;

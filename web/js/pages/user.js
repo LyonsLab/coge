@@ -1678,7 +1678,7 @@ function create_new_notebook() {
 		return;
 	}
 	var desc = $('#edit_notebook_desc').val();
-	var type_id = $('#edit_notebook_type').val();
+	//var type_id = $('#edit_notebook_type').val(); // mdb removed 12/14/16 COGE-800
 
 	var item_list = contentPanel.grid.getSelectedItemList(); // optional
 	
@@ -1687,7 +1687,7 @@ function create_new_notebook() {
             fname: 'create_new_notebook',
             name: name,
             desc: desc,
-            type_id: type_id,
+            //type_id: type_id, // mdb removed 12/14/16 COGE-800
             item_list: item_list,
         },
         success: function(rc) {

@@ -198,20 +198,21 @@ sub get_list_info {
     return $html;
 }
 
-sub get_list_types {
-    my $current_type_id = shift;
-
-    my @types;
-    foreach my $type ( $DB->resultset('ListType')->all() ) {
-        next if ( $type->name =~ /owner/i ); # reserve this type for system-created lists
-        my $name = $type->name . ( $type->description ? ": " . $type->description : '' );
-        my $selected = '';
-        $selected = 'selected="selected"' if ( $type->id == $current_type_id );
-        push @types,
-          { TID => $type->id, NAME => $name, TYPE_SELECTED => $selected };
-    }
-    return \@types;
-}
+# mdb removed 12/14/16 COGE-800
+#sub get_list_types {
+#    my $current_type_id = shift;
+#
+#    my @types;
+#    foreach my $type ( $DB->resultset('ListType')->all() ) {
+#        next if ( $type->name =~ /owner/i ); # reserve this type for system-created lists
+#        my $name = $type->name . ( $type->description ? ": " . $type->description : '' );
+#        my $selected = '';
+#        $selected = 'selected="selected"' if ( $type->id == $current_type_id );
+#        push @types,
+#          { TID => $type->id, NAME => $name, TYPE_SELECTED => $selected };
+#    }
+#    return \@types;
+#}
 
 sub edit_list_info {
     my %opts = @_;
@@ -228,7 +229,7 @@ sub edit_list_info {
         EDIT_LIST_INFO => 1,
         NAME           => $list->name,
         DESC           => $desc,
-        TYPE_LOOP      => get_list_types( $list->type->id )
+        #TYPE_LOOP      => get_list_types( $list->type->id ) # mdb removed 12/14/16 COGE-800
     );
 
     my %data;
@@ -246,14 +247,14 @@ sub update_list_info {
     my $name = $opts{name};
     return 0 unless $name;
     my $desc = $opts{desc};
-    my $type = $opts{type};
+    #my $type = $opts{type}; # mdb removed 12/14/16 COGE-800
 
     my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
 
     $list->name($name);
     $list->description($desc) if $desc;
-    $list->list_type_id($type);
+    #$list->list_type_id($type); # mdb removed 12/14/16 COGE-800
     $list->update;
 
     return 1;

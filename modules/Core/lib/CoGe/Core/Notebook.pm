@@ -120,7 +120,7 @@ sub create_notebook {
     my $notebook = $db->resultset('List')->create({
         name         => $name,
         description  => $desc,
-        list_type_id => $type_id,
+        #list_type_id => $type_id, # mdb removed 12/14/16 COGE-800
         creator_id   => $user->id,
         restricted   => 1
     });
