@@ -1225,15 +1225,19 @@ sub add_jobs {
 }
 
 sub algo_lookup {
+	my $opts = shift;
     # In the web form, each sequence search algorithm has a unique number.
     # This table identifies those and adds appropriate options.
 	my $config        = get_defaults();
 	my $MAX_PROC      = $config->{MAX_PROC} // 32;
-	my $blast_options = " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6";
+	my $blast_option;
+	$blast_option     = $opts->{'blast_option'} if $opts;
+	my $blast_options = " -num_threads $MAX_PROC -outfmt 6 -evalue " . ($blast_option || 0.0001);
 	my $TBLASTX       = get_command_path('TBLASTX') . $blast_options;
 	my $BLASTN        = get_command_path('BLASTN') . $blast_options;
 	my $BLASTP        = get_command_path('BLASTP') . $blast_options;
 	my $LASTZ = get_command_path('PYTHON') . " " . $config->{MULTI_LASTZ} . " -A $MAX_PROC --path=" . get_command_path('LASTZ');
+	$LASTZ .= ' --hspthresh=' . $blast_option if $blast_option;
 	#my $LAST  = $config->{MULTI_LAST} . " -a $MAX_PROC --path=" . $config->{LAST_PATH}; # mdb removed 3/17/16
 	my $LAST = $config->{LASTAL} // 'lastal'; $LAST .= " -u 0 -P $MAX_PROC -i3G -f BlastTab"; # mdb added 3/17/16 for new multithreaded LAST v731
 
@@ -1487,6 +1491,7 @@ sub get_query_link {
 
 	#	my $basename     = $url_options{basename};
 	my $blast = $url_options{blast};
+	my $blast_option = $url_options{blast_option};
 
 	my $feat_type1 = $url_options{feat_type1};
 	my $feat_type2 = $url_options{feat_type2};
@@ -1589,6 +1594,7 @@ sub get_query_link {
 	  . "SynMap.pl?dsgid1=$genome_id1;dsgid2=$genome_id2"
 	  . ";D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;"
 	  . "ft2=$feat_type2;autogo=1";
+	$synmap_link .= ';bo=' . $blast_option if $blast_option;
 
 	$synmap_link .= ";Dm=$Dm"       if defined $Dm;
 	$synmap_link .= ";csco=$cscore" if $cscore;
