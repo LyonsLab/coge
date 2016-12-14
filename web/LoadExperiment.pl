@@ -128,7 +128,8 @@ sub generate_body {
         MAX_IRODS_LIST_FILES     => 1000,
         MAX_IRODS_TRANSFER_FILES => 30,
         MAX_FTP_FILES            => 30,
-        USER                     => $USER->user_name
+        USER                     => $USER->user_name,
+        IS_POWERUSER             => $USER->is_poweruser,
     );
     $template->param( SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
                       SPLASH_CONTENTS    => 'This page allows you to load quantitative, polymorphism, or alignment data onto a genome from a variety of file formats.' );

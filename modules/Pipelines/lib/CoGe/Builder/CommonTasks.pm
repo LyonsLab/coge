@@ -14,6 +14,7 @@ use String::ShellQuote qw(shell_quote);
 use CoGe::Accessory::Utils qw(detect_paired_end sanitize_name to_filename to_filename_without_extension to_filename_base);
 use CoGe::Accessory::IRODS qw(irods_iget irods_iput irods_set_env);
 use CoGe::Accessory::Web qw(get_defaults get_command_path split_url);
+use CoGe::Accessory::TDS;
 use CoGe::Core::Storage qw(get_workflow_results_file get_download_path get_sra_cache_path get_genome_cache_path);
 use CoGe::Core::Metadata qw(tags_to_string);
 
@@ -652,8 +653,9 @@ sub create_load_experiment_job {
     # Required arguments
     my $user = $opts{user};
     my $metadata = $opts{metadata};
-    my $staging_dir = $opts{staging_dir};
+    my $additional_metadata = $opts{additional_metadata};
     my $annotations = $opts{annotations};
+    my $staging_dir = $opts{staging_dir};
     my $wid = $opts{wid};
     my $gid = $opts{gid};
     my $input_file = $opts{input_file};
@@ -668,31 +670,46 @@ sub create_load_experiment_job {
     
     my $result_file = get_workflow_results_file($user->name, $wid);
     
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+    my $args = [
+        ['-gid',         $gid, 0],
+        ['-wid',         $wid, 0],
+        ['-user_name',   $user->name, 0],
+        ['-name',        ($metadata->{name} ? shell_quote($metadata->{name}) : '""'), 0],
+        ['-desc',        ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
+        ['-version',     ($metadata->{version} ? shell_quote($metadata->{version}) : '""'), 0],
+        ['-restricted',  shell_quote($metadata->{restricted}), 0],
+        ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
+        ['-staging_dir', $output_name, 0],
+        ['-data_file',   $input_file, 0],
+        ['-normalize',   $normalize, 0],
+        ['-disable_range_check', '', 0], # mdb added 8/26/16 COGE-270 - allow values outside of [-1, 1]
+        ['-config',      $CONF->{_CONFIG_PATH}, 0]
+    ];
 
-    my $tags_str = tags_to_string($metadata->{tags});
+    # Add tags
+    if ($metadata->{tags}) {
+        my $tags_str = tags_to_string($metadata->{tags});
+        push @$args, ['-tags', shell_quote($tags_str), 0];
+    }
+
+    # Add additional metadata
+    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
+        my $metadata_file = catfile($output_path, 'metadata.dump');
+        make_path($output_path); #TODO maybe this file should be located somewhere else
+        open(my $fh, ">$metadata_file");
+        print $fh Dumper $additional_metadata;
+        close($fh);
+        push @$args, ['-metadata_file', $metadata_file, 0];
+    }
+    if ($annotations && @$annotations) { # legacy method
+        my $annotations_str = join(';', @$annotations);
+        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
+    }
 
     return {
         cmd => $cmd,
         script => undef,
-        args => [
-            ['-gid',         $gid, 0],
-            ['-wid',         $wid, 0],
-            ['-user_name',   $user->name, 0],
-            ['-name',        ($metadata->{name} ? shell_quote($metadata->{name}) : '""'), 0],
-            ['-desc',        ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
-            ['-version',     ($metadata->{version} ? shell_quote($metadata->{version}) : '""'), 0],
-            ['-restricted',  shell_quote($metadata->{restricted}), 0],
-            ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
-            ['-annotations', ($annotations_str ? shell_quote($annotations_str) : '""'), 0],
-            ['-tags',        shell_quote($tags_str), 0],
-            ['-staging_dir', $output_name, 0],
-            ['-data_file',   $input_file, 0],
-            ['-normalize',   $normalize, 0],
-            ['-disable_range_check', '', 0], # mdb added 8/26/16 COGE-270 - allow values outside of [-1, 1]
-            ['-config',      $CONF->{_CONFIG_PATH}, 0]
-        ],
+        args => $args,
         inputs => [
             $input_file
         ],
@@ -795,7 +812,7 @@ sub create_load_batch_job {
     };
 }
 
-sub create_load_bam_job {
+sub create_load_bam_job { #TODO combine with create_load_experiment_job
     my %opts = @_;
     #print STDERR "CommonTasks::create_load_bam_job ", Dumper \%opts, "\n";
 
@@ -817,33 +834,44 @@ sub create_load_bam_job {
     my $output_path = catdir($staging_dir, $output_name);
     
     my $result_file = get_workflow_results_file($user->name, $wid);
-    
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
-    
+
+    # Add tags
     my @tags = ( 'BAM' ); # add BAM tag
     push @tags, @{$metadata->{tags}} if $metadata->{tags};
     my $tags_str = tags_to_string(\@tags);
 
+    my $args = [
+        ['-user_name',   $user->name, 0],
+        ['-name',        ($metadata->{name} ? shell_quote($metadata->{name} . " (BAM alignment)") : '""'), 0],
+        ['-desc',        shell_quote($metadata->{description}), 0],
+        ['-version',     shell_quote($metadata->{version}), 0],
+        ['-restricted',  shell_quote($metadata->{restricted}), 0],
+        ['-gid',         $gid, 0],
+        ['-wid',         $wid, 0],
+        ['-source_name', shell_quote($metadata->{source_name}), 0],
+        ['-tags',        shell_quote($tags_str), 0],
+        ['-staging_dir', $output_name, 0],
+        ['-file_type',   'bam', 0],
+        ['-data_file',   $bam_file, 0],
+        ['-config',      $CONF->{_CONFIG_PATH}, 0]
+    ];
+
+    # Add additional metadata
+    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
+        my $metadata_file = catfile($output_path, 'metadata.dump');
+        make_path($output_path);
+        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
+        push @$args, ['-metadata_file', $metadata_file, 0];
+    }
+    if ($annotations && @$annotations) { # legacy method
+        my $annotations_str = join(';', @$annotations);
+        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
+    }
+
     return {
         cmd => $cmd,
         script => undef,
-        args => [
-            ['-user_name',   $user->name, 0],
-            ['-name',        ($metadata->{name} ? shell_quote($metadata->{name} . " (BAM alignment)") : '""'), 0],
-            ['-desc',        shell_quote($metadata->{description}), 0],
-            ['-version',     shell_quote($metadata->{version}), 0],
-            ['-restricted',  shell_quote($metadata->{restricted}), 0],
-            ['-gid',         $gid, 0],
-            ['-wid',         $wid, 0],
-            ['-source_name', shell_quote($metadata->{source_name}), 0],
-            ['-tags',        shell_quote($tags_str), 0],
-            ['-annotations', shell_quote($annotations_str), 0],
-            ['-staging_dir', $output_name, 0],
-            ['-file_type',   'bam', 0],
-            ['-data_file',   $bam_file, 0],
-            ['-config',      $CONF->{_CONFIG_PATH}, 0]
-        ],
+        args => $args,
         inputs => [
             $bam_file
         ],

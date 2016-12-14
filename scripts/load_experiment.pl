@@ -18,7 +18,7 @@ use CoGe::Core::Storage qw(add_workflow_result $DATA_TYPE_QUANT $DATA_TYPE_ALIGN
 use CoGe::Core::Experiment qw(@SUPPORTED_TYPES detect_data_type);
 use CoGe::Core::Metadata qw(create_annotations);
 
-use vars qw($staging_dir $install_dir $data_file $file_type 
+use vars qw($staging_dir $install_dir $data_file $file_type $metadata_file
   $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
   $exit_without_error_for_empty_input
@@ -40,6 +40,7 @@ GetOptions(
     "install_dir=s" => \$install_dir,    # final installation path
 #    "result_file=s" => \$result_file,    # results file
     "data_file=s"   => \$data_file,      # input data file (JS escape)
+    "metadata_file=s" => \$metadata_file,# input metadata file (output of Data::Dumper)
     "file_type=s"   => \$file_type,		 # input file type
     "name=s"        => \$name,           # experiment name (JS escaped)
     "desc=s"        => \$description,    # experiment description (JS escaped)
@@ -375,8 +376,14 @@ if ($tags || $detected_tags) {
 }
 
 # Create annotations
-if ($annotations) {
-    CoGe::Core::Metadata::create_annotations(db => $coge, target => $experiment, annotations => $annotations, locked => 1);
+if ($annotations || $metadata_file) {
+    CoGe::Core::Metadata::create_annotations(
+        db => $coge,
+        target => $experiment,
+        annotations => $annotations,
+        anno_file => $metadata_file,
+        locked => 1
+    );
 }
 
 # Determine installation path

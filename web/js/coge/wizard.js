@@ -153,6 +153,8 @@ function DataView(experiment, opts) {
     this.experiment = experiment || {};
     this.onError = opts.onError;
     this.supportedFileTypes = opts.supportedFileTypes;
+    this.maxSraItems = opts.maxSraItems || 10;
+    this.disableMaxItemsCheck = opts.disableMaxItemsCheck;
     this.title = "Select Data";
     this.files = [];
     this.initialize();
@@ -266,6 +268,13 @@ $.extend(DataView.prototype, {
 		}
 		if (Object.keys(types).length > 1 && isSRA) {
 			this.onError('Cannot mix SRA data with other types of data.');
+			return false;
+		}
+
+		// Prevent too many SRA items
+		var totalItems = items.reduce(function(a, b) { return a+b.size; }, 0);
+		if (isSRA && !this.disableMaxItemsCheck && totalItems > this.maxSraItems) {
+            this.onError('Too many SRA items specified (' + totalItems + '), the limit is ' + this.maxSraItems + '.  If you need to load more than that, please contact the CoGe Team at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a>.');
 			return false;
 		}
 

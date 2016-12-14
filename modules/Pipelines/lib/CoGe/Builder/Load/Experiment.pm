@@ -217,12 +217,8 @@ sub build {
     }
     # Else, all other file types
     else {
-        # Generate additional metadata for resulting experiments
-        my $annotations = CoGe::Core::Metadata::to_annotations($additional_metadata);
-        
-        my $input_file = $input_files[0];
-        
         # Add conversion step for BigWig files
+        my $input_file = $input_files[0];
         if ( $file_type eq 'bw' ) {
             my $wig_task = create_bigwig_to_wig_job(
                 staging_dir => $self->staging_dir,
@@ -241,7 +237,7 @@ sub build {
             gid => $genome->id,
             input_file => $input_file,
             metadata => $metadata,
-            annotations => $annotations,
+            additional_metadata => $additional_metadata,
             normalize => $self->params->{normalize} ? $self->params->{normalize_method} : 0
         );
         push @tasks, $load_task;

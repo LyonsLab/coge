@@ -211,8 +211,6 @@ sub build {
     
         # Get custom metadata to add to experiment
         my $annotations = generate_additional_metadata($read_params, $trimming_params, $alignment_params);
-        my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
-        push @$annotations, @annotations2;
         
         # Add bam filename to experiment name for ChIP-seq pipeline
         my $md = clone($metadata);
@@ -224,9 +222,10 @@ sub build {
         my $load_task = create_load_bam_job(
             user => $user,
             metadata => $md,
+            additional_metadata => $additional_metadata,
+            annotations => $annotations,
             staging_dir => $staging_dir,
             result_dir => $result_dir,
-            annotations => $annotations,
             wid => $wid,
             gid => $gid,
             bam_file => $sorted_bam_file
