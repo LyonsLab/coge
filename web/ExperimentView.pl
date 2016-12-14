@@ -88,6 +88,7 @@ sub edit_experiment_info {
         DESC                 => $desc,
         SOURCE               => $exp->source->name,
         SOURCE_ID            => $exp->source->id,
+        LINK                 => $exp->link,
         VERSION              => $exp->version,
     );
 
@@ -107,12 +108,14 @@ sub update_experiment_info {
     return 0 unless $name;
     my $desc      = $opts{desc};
     my $source_id = $opts{source_id};
+    my $link      = $opts{link};
     my $version   = $opts{version};
 
     my $exp = $coge->resultset('Experiment')->find($eid);
     $exp->name($name);
     $exp->description($desc) if $desc;
     $exp->version($version);
+    $exp->link($link);
     $exp->data_source_id($source_id);
     $exp->update;
 
@@ -640,6 +643,7 @@ sub _get_experiment_info {
         { title => "Data Type", value => ucfirst($exp->data_type_desc) },
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
+        { title => "Link", value => $exp->link },
         { title => "Version", value => $exp->version },
         { title => "Tags", value => $tags || '' },
         { title => "Notebooks", value => $exp->notebooks_desc($EMBED) },

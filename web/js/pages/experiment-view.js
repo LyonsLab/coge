@@ -47,6 +47,7 @@ function update_experiment_info () {
     }
 
     var desc = $('#edit_desc').val();
+    var link = $('#edit_link').val();
 
     $.ajax({
         data: {
@@ -55,7 +56,8 @@ function update_experiment_info () {
             name: name,
             desc: desc,
             source_id: source_id,
-            version: version
+            version: version,
+            link: link
         },
         success : function(val) {
             get_experiment_info();

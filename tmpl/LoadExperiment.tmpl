@@ -35,7 +35,8 @@
     <div class="step">
 
         <div id="sra_message" class="hidden form-field indent alert">
-            Metadata fields Name, Description, Version, and Source are automatically imported from SRA and cannot be modified.<br><br>
+            Metadata fields Name, Description, Version, Link, and Source are automatically imported from SRA and cannot be modified.<br>
+			SRA data are automatically made publicly accessible.<br><br>
         </div>
 
         <div class="form-field" title="Enter a unique name for the new experiment">
@@ -62,6 +63,11 @@
                     <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open').dialog({'width': '32em'}); activate_on_input(['edit_source_name'], 'create_source_button');" class='coge-button coge-button-sm'>New</span>
                     &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
                 </div>
+        </div>
+
+		<div class="form-field" title="Enter a link for the new experiment.">
+            <label class="col-md-2">Link:</label>
+            <input id="edit_link" type="textbox" class="col-md-6" size="50" value="<TMPL_VAR NAME='NAME'>" placeholder="Optional" spellcheck="false" />
         </div>
 
         <!--<div class="form-field" title="Leave unchecked to make the new experiment public, or check the box to make the new experiment private to the current user. Note: restricted experiments can be shared with other users on the Profile page.">
