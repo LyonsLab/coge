@@ -36,7 +36,7 @@ function update_list_info (){
 	}
 
 	var desc = $('#edit_desc').val();
-	var type = $('#edit_type').val();
+	//var type = $('#edit_type').val(); // mdb removed 12/14/16 COGE-800
 
 	$.ajax({
 		data: {
@@ -44,7 +44,7 @@ function update_list_info (){
 			lid: NOTEBOOK_ID,
 			name: name,
 			desc: desc,
-			type: type
+			//type: type // mdb removed 12/14/16 COGE-800
 		},
 		success : function(val) {
 			get_list_info();

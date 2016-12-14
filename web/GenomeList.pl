@@ -805,7 +805,7 @@ sub send_to_list          #send to list
         {
             name         => 'genomelist',
             description  => 'Created by GenomeList',
-            list_type_id => 1, # FIXME hardcoded type!
+            #list_type_id => 1, # FIXME hardcoded type! # mdb removed 12/14/16 COGE-800
             creator_id   => $USER->id,
             restricted   => 1
         }

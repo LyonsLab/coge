@@ -151,20 +151,21 @@ $.extend(ExperimentDescriptionView.prototype, {
         var self = this;
 
         this.isSRA = (this.experiment.data && this.experiment.data[0].file_type == 'sra');
-        this.el.find('#edit_name,#edit_description,#edit_version,#edit_source').prop('disabled', (this.isSRA ? true : false));
+        this.el.find('#edit_name,#edit_description,#edit_version,#edit_source,#edit_link').prop('disabled', (this.isSRA ? true : false));
         if (this.isSRA)
             this.el.find('#sra_message').show();
         else
             this.el.find('#sra_message').hide();
 
-        // Set experiment metadata if from SRA
+        // Set experiment metadata if from SRA  // TODO add metadata extracted from SRA metadata
 		if (this.isSRA) {
            this.metadata = {
-                name: 'blah',
+                name: '',
                 description: '',
-                version: '1',
+                version: '',
                 restricted: 0,
-                source_name: 'NCBI-SRA'
+                source_name: 'NCBI-SRA',
+                link: ''
             };
         }
 
@@ -172,6 +173,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             this.el.find('#edit_name').val(this.metadata.name);
             this.el.find('#edit_description').val(this.metadata.description);
             this.el.find('#edit_version').val(this.metadata.version);
+            this.el.find('#edit_link').val(this.metadata.link);
             this.edit_source.val(this.metadata.source_name);
 
             if (!this.metadata.restricted)
@@ -214,32 +216,35 @@ $.extend(ExperimentDescriptionView.prototype, {
         var name = this.el.find('#edit_name').val();
         var description = this.el.find('#edit_description').val();
         var version = this.el.find('#edit_version').val();
+        var link = this.el.find('#edit_link').val();
         var restricted = this.el.find('#restricted').is(':checked');
         var genome = this.el.find('#edit_genome').val();
 
-        if (!name) {
-            if (this.onError)
-            	this.onError('Please specify an experiment name.');
-            return false;
-        }
-        
-        if (!version) {
-//        	if (this.onError)
-//            	this.onError('Please specify an experiment version.');
-//            return false;
-            version = "1";
-        }
+        if (!this.isSRA) { // metadata fields are set in Pipeline for SRA data
+            if (!name) {
+                if (this.onError)
+                    this.onError('Please specify an experiment name.');
+                return false;
+            }
 
-        var source = $('#edit_source').val();
-        if (!source) {
-        	if (this.onError)
-            	this.onError('Please specify a data source.');
-            return false;
+            if (!version) {
+    //        	if (this.onError)
+    //            	this.onError('Please specify an experiment version.');
+    //            return false;
+                version = "1";
+            }
+
+            var source = $('#edit_source').val();
+            if (!source) {
+                if (this.onError)
+                    this.onError('Please specify a data source.');
+                return false;
+            }
         }
 
         if (!genome || !this.gid) {
-        	if (this.onError)
-            	this.onError('Please specify a genome.');
+            if (this.onError)
+                this.onError('Please specify a genome.');
             return false;
         }
 
@@ -248,6 +253,7 @@ $.extend(ExperimentDescriptionView.prototype, {
                 name: coge.utils.removeSpecialChars(name),
                 description: coge.utils.removeSpecialChars(description),
                 version: coge.utils.removeSpecialChars(version),
+                link: coge.utils.removeSpecialChars(link),
                 restricted: restricted,
                 source_name: coge.utils.removeSpecialChars(source),
                 genome: genome,

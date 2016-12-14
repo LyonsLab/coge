@@ -53,13 +53,14 @@ __PACKAGE__->add_columns(
         is_nullable   => 1,
         size          => 1024
     },
-    "list_type_id",
-    {
-        data_type     => "INT",
-        default_value => undef,
-        is_nullable   => 1,
-        size          => 11
-    },
+# mdb removed 12/14/16 COGE-800
+#    "list_type_id",
+#    {
+#        data_type     => "INT",
+#        default_value => undef,
+#        is_nullable   => 1,
+#        size          => 11
+#    },
     "restricted",
     { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
     "locked",
@@ -72,10 +73,11 @@ __PACKAGE__->add_columns(
     { data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
 );
 __PACKAGE__->set_primary_key("list_id");
-__PACKAGE__->belongs_to(
-    "list_type" => "CoGeX::Result::ListType",
-    'list_type_id'
-);
+# mdb removed 12/14/16 COGE-800
+#__PACKAGE__->belongs_to(
+#    "list_type" => "CoGeX::Result::ListType",
+#    'list_type_id'
+#);
 __PACKAGE__->belongs_to(
     "creator" => "CoGeX::Result::User", 
     { 'foreign.user_id' => 'self.creator_id' }
@@ -328,33 +330,34 @@ See Also   : ListType
 
 ################################################## subroutine header end ##
 
-sub type {
-    return shift->list_type;
-}
-
-sub is_genome {
-    return shift->list_type->is_genome;
-}
-
-sub is_experiment {
-    return shift->list_type->is_experiment;
-}
-
-sub is_owner {
-    return shift->list_type->is_owner;
-}
-
-sub is_feature {
-    return shift->list_type->is_feature;
-}
-
-sub is_mixed {
-    return shift->list_type->is_mixed;
-}
-
-sub is_other {
-    return shift->list_type->is_other;
-}
+# mdb removed 12/14/16 COGE-800
+#sub type {
+#    return shift->list_type;
+#}
+#
+#sub is_genome {
+#    return shift->list_type->is_genome;
+#}
+#
+#sub is_experiment {
+#    return shift->list_type->is_experiment;
+#}
+#
+#sub is_owner {
+#    return shift->list_type->is_owner;
+#}
+#
+#sub is_feature {
+#    return shift->list_type->is_feature;
+#}
+#
+#sub is_mixed {
+#    return shift->list_type->is_mixed;
+#}
+#
+#sub is_other {
+#    return shift->list_type->is_other;
+#}
 
 ################################################ subroutine header begin ##
 
@@ -485,7 +488,6 @@ See Also   : CoGe::Accessory::Annotation
 sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view code in the model
     my $self    = shift;
     my %opts    = @_;
-    my $minimal = $opts{minimal};
 
     my $anno_obj = new CoGe::Accessory::Annotation( Type => "anno" );
     $anno_obj->Val_delimit("\n");
@@ -499,8 +501,7 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
     $anno_obj->add_Annot($anno_type);
     $anno_type =
       new CoGe::Accessory::Annotation(
-        Type => "<tr><td nowrap='true'><span class='title5'>" . "Name"
-          . "</span>" );
+        Type => "<tr><td nowrap='true'><span class='title5'>" . "Name" . "</span>" );
     $anno_type->Type_delimit(": <td class='data5'>");
     $anno_type->add_Annot( $self->name . '</td>' );
     $anno_obj->add_Annot($anno_type);
@@ -509,36 +510,37 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
             Type => "<tr valign='top'><td nowrap='true'><span class='title5'>"
           . "Description"
           . "</span>" );
-    $anno_type->Type_delimit(
-": <td class='data5' style='max-width:400px;overflow:hidden;word-wrap:break-word;'>"
-    );
+    $anno_type->Type_delimit(": <td class='data5' style='max-width:400px;overflow:hidden;word-wrap:break-word;'>");
     $anno_type->add_Annot( $self->description ) if $self->description;
     $anno_type->add_Annot( "</td>" );
     $anno_obj->add_Annot($anno_type);
 
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-        Type => "<tr><td nowrap='true'><span class='title5'>" . "Type"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class='data5'>");
-    if ( $self->type ) {
-        my $type = $self->type->name;
-        $type .= ": " . $self->type->description if $self->type->description;
-        $anno_type->add_Annot( $type . "</td>" );
-    }
-    $anno_obj->add_Annot($anno_type);
+# mdb removed 12/14/16 COGE-800
+#    $anno_type =
+#      new CoGe::Accessory::Annotation(
+#        Type => "<tr><td nowrap='true'><span class='title5'>" . "Type"
+#          . "</span>" );
+#    $anno_type->Type_delimit(": <td class='data5'>");
+#    if ( $self->type ) {
+#        my $type = $self->type->name;
+#        $type .= ": " . $self->type->description if $self->type->description;
+#        $anno_type->add_Annot( $type . "</td>" );
+#    }
+#    $anno_obj->add_Annot($anno_type);
 
-    $anno_type =
-      new CoGe::Accessory::Annotation(
-            Type => "<tr><td valign='top' nowrap='true'><span class='title5'>"
-          . "Note"
-          . "</span>" );
-    $anno_type->Type_delimit(": <td class='data5'>");
-    $anno_type->add_Annot(
-"<span style='color:red;font-style:italic;'>this list is locked and cannot be edited.</span>"
-    ) if ( $self->locked );
-    $anno_type->add_Annot("</td>");
-    $anno_obj->add_Annot($anno_type);
+    if ( $self->locked ) {
+        $anno_type =
+            new CoGe::Accessory::Annotation(
+                Type => "<tr><td valign='top' nowrap='true'><span class='title5'>"
+                    ."Note"
+                    ."</span>" );
+        $anno_type->Type_delimit( ": <td class='data5'>" );
+        $anno_type->add_Annot(
+            "<span style='color:red;font-style:italic;'>this list is locked and cannot be edited.</span>"
+        );
+        $anno_type->add_Annot( "</td>" );
+        $anno_obj->add_Annot( $anno_type );
+    }
 
     $anno_type =
       new CoGe::Accessory::Annotation(

@@ -13,7 +13,8 @@ use CoGe::Accessory::Entrez;
 use CoGe::Core::Storage qw(get_upload_path);
 use CoGe::Builder::CommonTasks;
 
-use constant MAX_SRA_EXPERIMENTS => 2;
+use constant MAX_SRA_ACCESSIONS  => 10;
+use constant MAX_SRA_EXPERIMENTS => 10;
 
 sub get_name {
     my $self = shift;
@@ -63,8 +64,9 @@ sub build {
     # Retrieve IDs and metdata from SRA
     my $records = sra_retrieve(\@accns);
 
-    if (@$records >= MAX_SRA_EXPERIMENTS) { # limit the max number of SRA experiments a user can load at one time
-        warn "Too many experiments for accessions ", join(', ', @accns);
+    # Limit the max number of SRA accessions a user can load at one time
+    if (@$records >= MAX_SRA_ACCESSIONS && !$self->user->is_poweruser) {
+        warn "Too many accessions ", join(', ', @accns);
         return;
     }
 
@@ -77,6 +79,12 @@ sub build {
         # Format metadata
         my ($data, $metadata, $additional_metadata, $read_params) = convert_metadata($record);
         print STDERR 'SRA: Building workflow for "', $metadata->{name}, '"\n';
+
+        # Limit the max number of SRA experiments a user can load at one time
+        if (@$data > MAX_SRA_EXPERIMENTS && !$self->user->is_poweruser) {
+            warn "Too many experiments for accessions ", join(', ', @accns);
+            return;
+        }
 
         my $expBuilder = CoGe::Builder::Load::Experiment->new({
             params      => {
@@ -147,7 +155,8 @@ sub convert_metadata { #TODO rename
     my $metadata = {
         name       => $flattened->{'Summary.Title'} // '',
         version    => $flattened->{'Experiment.ver'} // 1,
-        source     => 'NCBI-SRA',
+        source_name=> 'NCBI-SRA',
+        link       => 'https://www.ncbi.nlm.nih.gov/sra' . ($flattened->{'Experiment.acc'} ? '?term='.$flattened->{'Experiment.acc'} : ''),
         restricted => 0, # data is from a public source
         tags       => [ 'SRA' ]
     };

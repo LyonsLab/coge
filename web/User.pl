@@ -152,7 +152,7 @@ sub gen_body {
         EMAIL       => $USER->email,
         ITEM_TYPE     => encode_json(\%ITEM_TYPE),
         ROLES          => get_roles('reader'),
-        NOTEBOOK_TYPES => get_notebook_types('mixed')
+        #NOTEBOOK_TYPES => get_notebook_types('mixed') # mdb removed 12/14/16 COGE-800
     );
 
     return $template->output;
@@ -1738,8 +1738,8 @@ sub create_new_notebook {
     my %opts    = @_;
     my $name    = $opts{name};
     my $desc    = $opts{desc};
-    my $type_id = $opts{type_id};
-    return unless $name && $type_id;
+    #my $type_id = $opts{type_id}; # mdb removed 12/14/16 COGE-800
+    return unless $name;
     my $item_list = $opts{item_list};    # optional
     return if ( $USER->user_name eq "public" );
 
@@ -1748,7 +1748,7 @@ sub create_new_notebook {
         {
             name         => $name,
             description  => $desc,
-            list_type_id => $type_id,
+            #list_type_id => $type_id, # mdb removed 12/14/16 COGE-800
             creator_id   => $USER->id,
             restricted   => 1
         }
@@ -1784,27 +1784,28 @@ sub create_new_notebook {
     return 1;
 }
 
-sub get_notebook_types {
-    my $selected = shift;
-    my $html;
-    foreach my $type ( $DB->resultset('ListType')->all() ) {
-        next
-          if ( $type->name =~ /owner/i )
-          ;    # reserve this type for system-created lists
-        my $name =
-          $type
-          ->name;    # . ($type->description ? ": " . $type->description : '');
-        $html .=
-            '<option value="'
-          . $type->id . '" '
-          . (    $type->id eq $selected
-              || $type->name =~ /$selected/i ? 'selected' : '' )
-          . '>'
-          . $name
-          . '</option>';
-    }
-    return $html;
-}
+# mdb removed 12/14/16 COGE-800
+#sub get_notebook_types {
+#    my $selected = shift;
+#    my $html;
+#    foreach my $type ( $DB->resultset('ListType')->all() ) {
+#        next
+#          if ( $type->name =~ /owner/i )
+#          ;    # reserve this type for system-created lists
+#        my $name =
+#          $type
+#          ->name;    # . ($type->description ? ": " . $type->description : '');
+#        $html .=
+#            '<option value="'
+#          . $type->id . '" '
+#          . (    $type->id eq $selected
+#              || $type->name =~ /$selected/i ? 'selected' : '' )
+#          . '>'
+#          . $name
+#          . '</option>';
+#    }
+#    return $html;
+#}
 
 sub toggle_star {
     my %opts   = @_;

@@ -21,7 +21,7 @@ use CoGe::Core::Metadata qw(create_annotations);
 use vars qw($staging_dir $install_dir $data_file $file_type $metadata_file
   $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
-  $exit_without_error_for_empty_input
+  $exit_without_error_for_empty_input $link
   $user_id $annotations $tags $wid $host $port $db $user $pass $P);
 
 #my $MIN_QUANT_COLUMNS = 5;
@@ -47,6 +47,7 @@ GetOptions(
     "version=s"     => \$version,        # experiment version (JS escaped)
     "restricted=s"  => \$restricted,     # experiment restricted flag (0|1 or false|true)
     "source_name=s" => \$source_name,    # experiment source name (JS escaped)
+    "link=s"        => \$link,           # link (JS escaped)
     "gid=s"         => \$gid,            # genome id
     "wid=s"         => \$wid,            # workflow id
     "user_id=i"     => \$user_id,        # user ID to assign experiment
@@ -87,6 +88,7 @@ $name        = unescape($name);
 $description = unescape($description);
 $version     = unescape($version);
 $source_name = unescape($source_name);
+$link        = unescape($link) if ($link);
 
 unless ($wid) {
     print STDOUT "log: error: required workflow ID not specified\n";
@@ -339,7 +341,7 @@ my $experiment = $coge->resultset('Experiment')->create(
         name        => $name,
         description => $description,
         version     => $version,
-        #link		=> $link, #FIXME
+        link		=> $link,
         data_source_id => int($data_source->id),
         data_type   => int($data_type),
         row_count   => int($count),

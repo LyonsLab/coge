@@ -536,7 +536,7 @@ sub send_to_list    #send to list
         {
             name         => 'featlist',
             description  => 'Created by FeatList',
-            list_type_id => 4, # FIXME hardcoded type!
+            #list_type_id => 4, # FIXME hardcoded type! # mdb removed 12/14/16 COGE-800
             creator_id   => $USER->id,
             restricted   => 1
         }
