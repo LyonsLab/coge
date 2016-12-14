@@ -643,7 +643,7 @@ sub _get_experiment_info {
         { title => "Data Type", value => ucfirst($exp->data_type_desc) },
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
-        { title => "Link", value => $exp->link },
+        { title => "Link", value => "<a target='_blank' href='" . ( $exp->link =~ /^http/ ? $exp->link : 'http://' . $exp->link ) . "'>" . $exp->link . '</a>' },
         { title => "Version", value => $exp->version },
         { title => "Tags", value => $tags || '' },
         { title => "Notebooks", value => $exp->notebooks_desc($EMBED) },
