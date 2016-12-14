@@ -89,7 +89,7 @@ var coge = window.coge = (function(namespace) {
 		    
 		    this.startTime = new Date().getTime();
 
-		    this.begin = 1; // set flag to detect that this function was called in proper order
+		    this.began = 1; // set flag to detect that this function was called in proper order
 		},
 		
 		end: function() {
@@ -97,6 +97,7 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		succeeded: function(response) {
+			delete this.began;
 			var c = this.container;
 			
 		    // Update dialog
@@ -128,6 +129,7 @@ var coge = window.coge = (function(namespace) {
 		},
 		
 		failed: function(string, error) {
+			delete this.began;
 			var c = this.container;
 			
 			var errorMsg = string + (error ? ': ' + this._errorToString(error) : '');
@@ -171,6 +173,7 @@ var coge = window.coge = (function(namespace) {
 		},
 
 		cancelled: function(response) {
+			delete this.began;
 		    // Update dialog
 		    this.container.find('.progress-link,.buttons').hide();
 		    this._set_status(response.status);
@@ -207,7 +210,7 @@ var coge = window.coge = (function(namespace) {
 		update: function(job_id, url) {
 			var self = this;
 
-			if (!self.begin) {
+			if (!self.began) {
 			    self._error('update() called before begin()');
 			    return;
 			}
