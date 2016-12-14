@@ -274,7 +274,7 @@ sub notebooks_desc { #FIXME move this view code out of here
         my $desc = "<a href='$link'>" . $notebook->name . '</a>';
         push @notebooks, $desc;
     }
-    return join(',', @notebooks) || '';
+    return join(', ', @notebooks) || '';
 }
 
 #sub groups {
