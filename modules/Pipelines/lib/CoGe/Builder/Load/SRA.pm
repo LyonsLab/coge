@@ -156,7 +156,7 @@ sub convert_metadata { #TODO rename
         name       => $flattened->{'Summary.Title'} // '',
         version    => $flattened->{'Experiment.ver'} // 1,
         source_name=> 'NCBI-SRA',
-        link       => 'https://www.ncbi.nlm.nih.gov/sra',
+        link       => 'https://www.ncbi.nlm.nih.gov/sra' . ($flattened->{'Experiment.acc'} ? '?term='.$flattened->{'Experiment.acc'} : ''),
         restricted => 0, # data is from a public source
         tags       => [ 'SRA' ]
     };
