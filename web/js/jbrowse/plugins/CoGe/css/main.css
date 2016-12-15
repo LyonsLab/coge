@@ -21,3 +21,7 @@ div.textfilter input {
 .vertical_ruler {
 	display: block;
 }
+.dijitMenuPopup {
+	max-height: 80%;
+	overflow-y: auto;
+}
