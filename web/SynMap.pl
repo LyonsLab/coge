@@ -205,7 +205,7 @@ sub gen_body {
     );
 
 	#set search algorithm on web-page
-	my $b = $FORM->param('b') || 6;
+	my $b = $FORM->param('b') // 6;
 	$template->param( get_blast_config($b)->{opt} => "selected" );
 	my $bo = $FORM->param('bo');
 	$template->param(BLAST_OPTION => $bo);
