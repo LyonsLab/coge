@@ -383,7 +383,7 @@ function plotResults(dataset, divID) {
 
 <!--
 <div class="error-box" style="margin-bottom:1em;margin-right:1em;margin-left:1em;padding:1em;">
-Please note:  CoGe maintenance for November 10th has been completed. 
+Please note: The CyVerse Data Store will be unavailable on Tuesday, December 13th from 8:00am to 5:00pm MST preventing data import into CoGe. 
 </div>
 -->
 
@@ -501,7 +501,7 @@ Please note:  CoGe maintenance for November 10th has been completed.
     	}
     ].forEach(function(tool) {
         var div = $('<div class="coge-summary"></div>').appendTo($('#tools'));
-        $('<a href="' + tool.url + '" class="l"><img src="' + tool.img + '"></a>').appendTo(div);
+        $('<a href="' + tool.url + '" class="l"><img src="' + tool.img + '" style="width:3em;height:3em;"></a>').appendTo(div);
         var body = $('<div class="coge-summary-body"></div>').appendTo(div);
         $('<h4 class="coge-summary-heading"><a href="' + tool.url + '">' + tool.name + '</a></h4>').appendTo(body);
         $('<div style="padding-left:0">' + tool.description + '</div>').appendTo(body);
