@@ -18,3 +18,6 @@ div.textfilter input {
 	overflow-x: hidden;
 	overflow-y: auto;
 }
+.vertical_ruler {
+	display: block;
+}

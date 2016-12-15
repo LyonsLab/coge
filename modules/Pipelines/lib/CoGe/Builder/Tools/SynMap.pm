@@ -1232,7 +1232,7 @@ sub get_blast_config {
 		opt         => "MEGA_SELECT",  #select option for html template file
 		filename    => "megablast" . ($blast_option ? '.' . $blast_option : ''),
 		displayname => "MegaBlast",
-		formatdb        => 1,
+		formatdb    => 1,
 	} if $blast == 0;
 	return {
 		algo => $BLASTN . " -task dc-megablast",   #discontinuous megablast

@@ -462,7 +462,7 @@ sub track_config {
     $self->render(json => {
         formatVersion => 1,
         dataset_id    => 'coge',
-        plugins       => ['CoGe'],
+        plugins       => ['CoGe','HideTrackLabels'],
         trackSelector => {
             type => 'CoGe/View/TrackList/CoGe'
         },

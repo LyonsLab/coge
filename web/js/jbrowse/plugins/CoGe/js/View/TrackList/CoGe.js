@@ -47,9 +47,22 @@ define(['dojo/_base/declare',
 		this.browser.subscribe( '/jbrowse/v1/c/tracks/replace', dojo.hitch( this, 'replaceTracks' ));
 		this.browser.subscribe( '/jbrowse/v1/c/tracks/delete',  dojo.hitch( this, 'deleteTracks' ));
 
-		var splash = localStorage.getItem('EPIC-CoGe splash');
-		if (!splash || 'yes' == splash)
-			this._help('Welcome to EPIC-CoGe', 'splash.html', function(){localStorage.setItem('EPIC-CoGe splash', dojo.byId('splash').checked ? 'yes' : 'no')});
+		this.browser.addGlobalMenuItem('view', new MenuItem({
+			label: 'Hide Track Rulers',
+			onClick: function() {
+				var ss = document.styleSheets;
+				for (var i=0; i<ss.length; i++)
+					if (ss[i].href && ss[i].href.endsWith('plugins/CoGe/css/main.css'))
+						for (var j=0; j<ss[i].cssRules.length; j++) {
+							var rule = ss[i].cssRules[j];
+							if (rule.cssText.startsWith('.vertical_rule')) {
+								rule.style.visibility = rule.style.visibility == 'hidden' ? '' : 'hidden';
+								this.set('label', this.get('label').startsWith('Hide') ? 'Show Track Rulers' : 'Hide Track Rulers')
+								return;
+							}
+						}
+			}
+		}));
 
 		this.browser.addGlobalMenuItem('help', new MenuSeparator());
 		this._add_help('Create experiment from search results', 'EPIC_CoGe_Reference#Create_New_Experiment_from_Search_Tracks');
@@ -60,6 +73,10 @@ define(['dojo/_base/declare',
 		this._add_help('Settings', 'EPIC_CoGe_Reference#Settings');
 		this._add_help('Track overlaps', 'EPIC_CoGe_Reference#Track_Overlaps');
 		this._add_help('Videos', 'EPIC-CoGe_Videos');
+
+		var splash = localStorage.getItem('EPIC-CoGe splash');
+		if (!splash || 'yes' == splash)
+			this._help('Welcome to EPIC-CoGe', 'splash.html', function(){localStorage.setItem('EPIC-CoGe splash', dojo.byId('splash').checked ? 'yes' : 'no')});
 
 		setTimeout(function(){dijit.byId('jbrowse').resize();}, 100);
 	},
