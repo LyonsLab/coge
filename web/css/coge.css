@@ -1192,12 +1192,13 @@ li {
 }
 
 .coge-tag {
-    border-radius: 15px;
+    border-radius: 10px;
     border: 1px solid lightgray;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    padding-right: 6px;
-    padding-left: 5px;
+    padding-top:    1px;
+    padding-bottom: 1px;
+    padding-right:  2px;
+    padding-left:   5px;
+    height: 1em;
 }
 
 h2, h3 {
