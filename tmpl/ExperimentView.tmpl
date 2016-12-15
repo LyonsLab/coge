@@ -33,7 +33,7 @@ $(document).ready(function() {
     });
 
     $(".dialog_box").dialog({ autoOpen: 0 });
-    $("#experiment_tag_edit_box").dialog({ width: '32em' });
+    $("#experiment_tag_edit_box").dialog({ width: '28em' });
 
     $("#edit_tag_name").autocomplete({
         source: function() { get_experiment_tags(); }
@@ -171,13 +171,14 @@ $(document).ready(function() {
 <div id="experiment_info_edit_box" class="dialog_box hidden" title="Edit Experiment Info"></div>
 
 <div id="experiment_tag_edit_box" class="dialog_box hidden" title="Add Experiment Tag">
+  <br>
   <table class="small">
    <tr>
     <td>Tag:</td>
     <td><input id="edit_tag_name" size="53" value=""></td>
    </tr>
   </table>
-  <span onClick="add_tag_to_experiment();" class='coge-button r'>Add</span>
+  <br><span onClick="add_tag_to_experiment();" class='coge-button r'>Add</span>
 </div>
 
 <div id="find_snps_dialog" class="dialog_box hidden" title="Find SNPs">
