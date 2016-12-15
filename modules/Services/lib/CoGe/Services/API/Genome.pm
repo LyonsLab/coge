@@ -2,6 +2,9 @@ package CoGe::Services::API::Genome;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
+use Mojo::JSON qw(decode_json);
+use Data::Dumper;
+
 use CoGe::Services::Auth qw(init);
 use CoGe::Services::API::Job;
 use CoGe::Core::Genome qw(genomecmp search_genomes);
@@ -9,7 +12,6 @@ use CoGe::Core::Storage qw(get_genome_seq);
 use CoGe::Core::Favorites;
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGeDBI qw(get_feature_counts);
-use Data::Dumper;
 
 sub search {
     my $self = shift;
