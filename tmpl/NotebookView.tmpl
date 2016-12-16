@@ -259,6 +259,9 @@ $(document).ready(function() {
 </div> <!-- tabs -->
 </TMPL_IF> <!-- ADD_LIST_ITEMS -->
 
+<script>
+set_contents(<TMPL_VAR NAME="LIST_CONTENTS">);
+</script>
 <TMPL_IF NAME='ADMIN_AREA'>
 <script>
 $(document).ready(function() {
@@ -288,7 +291,6 @@ function update_owner () {
         }
     });
 }
-set_contents(<TMPL_VAR NAME="LIST_CONTENTS">);
 </script>
 
 <br>
