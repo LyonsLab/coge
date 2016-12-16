@@ -318,6 +318,7 @@ $.extend(ContentPanel.prototype, {
 		// Create grid
 		self.grid = new DataGrid({
 			element: self.element.children('.grid'),
+			height: $(window).height() - 210, // this depends on the height of the header/footer and should be passed in as an argument
 			filter: function(data) { 
 				// Filter rows based on view
 				var view = self.views[self.selectedView];
@@ -336,9 +337,48 @@ $.extend(ContentPanel.prototype, {
 				return true;
 			},
 			selection: function(items) {
-				// Update icons
+			    infoPanel.busy().update(items);
 				update_icons(items);
-			}
+			},
+			openCallback: openItem,
+			mouseOver: function(row) {
+			    infoPanel.busy().scheduleUpdate([row]);
+			},
+			mouseOut: function() {
+			    infoPanel.scheduleUpdate();
+			},
+			dateSortAsc:  dateSortAscending,
+			dateSortDesc: dateSortDescending,
+			columns: [
+	            { 	title: "",
+	            	targets: 0,
+	            	orderable: false,
+	            	type: "string",
+	            	width: 15,
+	            	data: null, // use full data object
+	            	render: function(data, type, row, meta) {
+	            		return data.getFlags();
+	            	}
+	            },
+	            { 	title: "Name",
+	            	targets: 1,
+	            	type: "html",
+	            	data: null, // use full data object
+	            	render: function(data, type, row, meta) {
+	            		return data.getDescription();
+	            	}
+	            },
+	            { 	title: "Date added",
+	            	targets: 2,
+	            	type: "relative-date", // this is our own custom type
+	            	data: null, // use full data object
+					orderSequence: [ 'desc', 'asc' ],
+	            	width: "100px",
+	            	render: function(data, type, row, meta) {
+	            		return data.getDate();
+	            	}
+	            }
+			]
 		});
 	},
     
@@ -587,315 +627,38 @@ $.extend(ContentPanel.prototype, {
 });
 
 /*
- * Data Grid
- */
-
-function DataGrid(params) {
-	if (params.element)
-		this.element = params.element;
-	else if (params.elementId)
-		this.element = $('#'+params.elementId);
-	else 
-		console.warn('DataGrid: please specify target element');
-	
-	this.filter = params.filter;
-	this.selection = params.selection;
-	
-	this.initialize();
-}
-
-$.extend(DataGrid.prototype, {
-	initialize: function() {
-		var self = this;
-		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border" style="cursor:pointer;"></table>');
-		
-		// Instantiate grid
-		var dataTable = this.dataTable = this.element.children('table').dataTable({
-			paging:    false,
-			info:      false,
-			searching: true,
-			dom:       'lrt', // remove unused elements (like search box)
-			sScrollY:  $(window).height() - 210, // this depends on the height of the header/footer and should be passed in as an argument
-			oLanguage: { "sZeroRecords": "", "sEmptyTable": "" },
-			columns: [
-	            { 	title: "", 
-	            	targets: 0,
-	            	orderable: false,
-	            	type: "string",
-	            	width: 15,
-	            	data: null, // use full data object
-	            	render: function(data, type, row, meta) {
-	            		return data.getFlags();
-	            	}
-	            },			          
-	            { 	title: "Name", 
-	            	targets: 1,
-	            	type: "html",
-	            	data: null, // use full data object
-	            	render: function(data, type, row, meta) {
-	            		return data.getDescription();
-	            	}
-	            },
-	            { 	title: "Date added", 
-	            	targets: 2, 
-	            	type: "relative-date", // this is our own custom type
-	            	data: null, // use full data object
-					orderSequence: [ 'desc', 'asc' ],
-	            	width: "100px",
-	            	render: function(data, type, row, meta) {
-	            		return data.getDate();
-	            	}
-	            }
-			]
-		});
-		
-		var dataTableBody = dataTable.children('tbody');
-		
-		// Handle row selection event
-		dataTableBody.on('click', 'tr', function(event) {
-			var tr = this;
-			var row = dataTable.api().row(tr).data();
-			if (!row)
-				return;
-			
-	        if ( $(tr).hasClass('selected') ) { // unselect
-	            $(tr).removeClass('selected');
-	        }
-	        else { // select
-	        	if (event.ctrlKey || event.metaKey) // multi select
-	        		; // no action required
-	        	else if (event.shiftKey) { // block select
-		            var oSettings = dataTable.fnSettings(),
-			            fromPos = dataTable.fnGetPosition(self.lastRowSelected),
-		            	toPos = dataTable.fnGetPosition(tr),
-		            	fromIndex = $.inArray(fromPos, oSettings.aiDisplay),
-		            	toIndex = $.inArray(toPos, oSettings.aiDisplay),
-			            start = (fromIndex < toIndex ? fromIndex : toIndex),
-			            end = (fromIndex < toIndex ? toIndex : fromIndex);
-		            
-		            for (var i = start; i <= end; i++) {
-		            	var tr2 = dataTable.api().row(oSettings.aiDisplay[i]).node();
-		            	$(tr2).addClass('selected'); // select item
-		            }
-	        	}
-	        	else
-	        		dataTable.$('tr.selected').removeClass('selected'); // unselect all
-	        	
-	            $(tr).addClass('selected'); // select item
-	            self.lastRowSelected = tr;
-	        }
-	        
-	        self.selectItem(row);
-		});
-		
-		// Handle row double-click event
-		dataTableBody.on('dblclick', 'tr', function() {
-			var tr = this;
-			var row = dataTable.api().row(tr).data();
-			
-			if (row) {
-				self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
-		        $(tr).addClass('selected'); // select item
-		        self.lastRowSelected = tr;
-		        self.selectItem(row);
-		        
-		        self.openItem(row);
-			}
-		});
-		
-		// Handle row hover events
-		dataTableBody.on('mouseover', 'tr', function () {
-	        if (self.getSelectedItems()) // Do nothing if row(s) currently selected
-	    		return;
-	    	
-	        var tr = $(this).closest('tr');
-	        var row = dataTable.api().row(tr).data();
-	        if (row)
-	        	infoPanel.busy().scheduleUpdate([row]);
-	    });
-		
-		dataTableBody.on('mouseout', 'tr', function () {
-	    	if (self.getSelectedItems()) // Do nothing if row(s) currently selected
-	    		return;
-	    	
-	    	infoPanel.scheduleUpdate();
-	    });
-		
-		// Add custom filter
-		$.fn.dataTable.ext.search.push(
-			function(settings, data, dataIndex) { 
-				var data = self.dataTable.api().row(dataIndex).data();
-				return self.filter(data); 
-			}
-		);
-		
-		// Add custom date sort functions
-		$.fn.dataTable.ext.oSort['relative-date-asc'] = function(x,y) {
-			x = this.time_diff(x);
-			y = this.time_diff(y);
-		    return ((x < y) ? 1 : ((x > y) ? -1 : 0));
-		}.bind(this);
-		$.fn.dataTable.ext.oSort['relative-date-desc'] = function(x,y) {
-			x = this.time_diff(x);
-			y = this.time_diff(y);
-			return ((x < y) ? -1 : ((x > y) ? 1 : 0));
-		}.bind(this);
-    },
-
-	time_diff: function(s) {
-		var matches = s.match(/^\<\!\-\-(\d+)\-\-\>/); // the time difference is hidden in an html comment
-		if (!matches || !matches[1])
-			return 999999; // sort last
-		var diff = matches[1];
-		return parseInt(diff);
-	},
-    
-    reset: function() {
-    	// TODO
-    	return this;
-    },
-    
-    update: function(data) {
-    	console.log('DataGrid.update');
-    	
-    	if (data) {
-	    	this.dataTable.api()
-				.clear()
-				.rows.add(data)
-				.draw();
-    	}
-		
-        return this;
-    },
-    
-    search: function(search_term) {
-		this.dataTable.api()
-			.search(search_term)
-			.draw();
-    },
-    
-    redraw: function() {
-    	this.dataTable.api().draw();
-    },
-    
-    getNumRows: function() {
-    	return this.dataTable.api().page.info().recordsTotal;
-    },    
-    
-    getNumRowsDisplayed: function() {
-    	return this.dataTable.api().page.info().recordsDisplay;
-    },
-    
-    getSelectedRows: function() {
-    	var rows = this.dataTable.api().rows('.selected');
-    	return rows;
-    },
-    
-    getSelectedItems: function() {
-    	//console.log('getSelectedItems');
-    	var items = this.dataTable.api().rows('.selected').data();
-    	if (!items || !items.length)
-    		return;
-    	return items;
-    },
-    
-    getSelectedItemList: function() {
-    	var items = this.getSelectedItems();
-    	var item_list;
-    	if (items && items.length)
-    		item_list = $.map(items, function(item) {
-					return item.id + '_' + item.type;
-				}).join(',');
-    	return item_list;
-    },
-    
-    setSelectedItems: function(items) {
-    	this.dataTable.api().rows().every( function () {
-    		var row = this;
-    	    var d = row.data();
-    	    items.each(function(item) {
-	    	    if (d.id == item.id) {
-	    	    	var tr = row.node();
-	    	    	$(tr).addClass('selected'); // select item
-	    	    }
-    	    });
-    	});
-    },
-    
-    clearSelection: function() {
-    	this.dataTable.$('tr.selected').removeClass('selected'); // unselect all
-    },
-    
-    selectItem: function(item) {
-    	console.log('DataGrid.selectItem');
-    	
-    	var selectedItems = this.getSelectedItems();
-    	infoPanel.busy().update(selectedItems); //FIXME move into selection handler
-    	
-    	if (this.selection)
-    		this.selection(selectedItems);
-    },
-
-    openItem: function(row) {
-    	if (row.type == 'group')
-    		group_dialog();
-    	else if (row.type == 'analyses' || row.type == 'loads')
-    		window.open(row.link, '_blank');
-    	else {
-    		var title = row.getDescription();
-    		var link = row.getLink();
-    		var flags = row.getFlags({noSpaces: 1});
-    		title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
-    		link = link + "&embed=1";
-    		console.log('DataGrid.openItem: ' + link);
-    		var height = $(window).height() * 0.8;
-    		var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
-    			.dialog({
-    				//title: title,
-    				width: '80%',
-    				height: height,
-                    open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
-                        $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
-                    }
-    			})
-    			.dialog('open');
-    	}
-    }
-});
-
-/* 
  * Data Grid Row
  */
-		
-function DataGridRow(data, type) {
-	$.extend(this, data);
-	if (!this.type) // mdb added condition 9/16/18 COGE-388 -- prevent native type (genome,etc) from being set to "favorite"
-		this.type = type;
-}
 
-$.extend(DataGridRow.prototype, { // TODO consider extending this into separate classes for each type (genome, experiment, etc...)
-    getFlags: function(opts) {
-    	if (this.type == 'genome' || 
-    		this.type == 'experiment' || 
-    		this.type == 'notebook' || 
-    		this.type == 'favorite') 
+class DataGridRow {
+    constructor(data, type) {
+        $.extend(this, data);
+        if (!this.type) // mdb added condition 9/16/18 COGE-388 -- prevent native type (genome,etc) from being set to "favorite"
+            this.type = type;
+    }
+
+    getFlags(opts) {
+    	if (this.type == 'genome' ||
+    		this.type == 'experiment' ||
+    		this.type == 'notebook' ||
+    		this.type == 'favorite')
     	{
     		var noSpaces = (opts && opts.noSpaces);
-    		
+
     		var flags = '';
     		if (!noSpaces || this.favorite == '1')
-    			flags = '<span style="color:goldenrod;visibility:' + 
-	    			(this.favorite == '1' ? 'visible' : 'hidden') + 
+    			flags = '<span style="color:goldenrod;visibility:' +
+	    			(this.favorite == '1' ? 'visible' : 'hidden') +
 	    			'">&#9733;</span>&nbsp;';
     		if (this.restricted == '1')
 	    		flags += '&#x1f512;' + '&nbsp;';
-    		
+
     		return flags;
     	}
     	return '';
-    },
-    
-    getDescription: function() {
+    }
+
+    getDescription() {
     	if (this.type == 'genome' || this.type == 'favorite')
     		return this._formatGenome();
     	if (this.type == 'experiment')
@@ -908,64 +671,64 @@ $.extend(DataGridRow.prototype, { // TODO consider extending this into separate 
     		return this._formatAnalysis();
     	if (this.type == 'loads')
     		return this._formatLoad();
-    },
-    
-    _formatGenome: function() {
+    }
+
+    _formatGenome() {
     	var icon = '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/> ';
     	var certified = '<span class="glyphicon glyphicon-ok coge-certified-icon"></span> <span class="coge-small-text">Certified Genome<span>';
-    	var descStr = 
+    	var descStr =
     		icon +
-    	   	(this.organism ? this.organism : '') + 
+    	   	(this.organism ? this.organism : '') +
     	   	(this.name ? ' (' + this.name + ')' : '') +
     	   	(this.description ? ': ' + this.description : '') +
     	   	' (v' + this.version + ', id' + this.id + ')' +
     	   	(this.certified == '1' ? '&nbsp;&nbsp;' + certified : '');
     	return descStr;
-    },
-    
-    _formatExperiment: function() {
-    	var descStr = 
+    }
+
+    _formatExperiment() {
+    	var descStr =
     		'<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
     	   	this.name +
     	   	(this.description ? ': ' + this.description : '') +
     	   	' (v' + this.version + ', id' + this.id + ')';
     	return descStr;
-    },
-    
-    _formatNotebook: function() {
+    }
+
+    _formatNotebook() {
     	var descStr =
     		'<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
     		this.name +
     		(this.description ? ': ' + this.description : '') +
     		(this.type_name ? ' (' + this.type_name + ')' : '');
     	return descStr;
-    },
-    
-    _formatGroup: function() {
+    }
+
+    _formatGroup() {
     	var descStr =
     		'<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
     		this.name +
     		(this.description ? ': ' + this.description : '');;
     	return descStr;
-    },
-    
-    _formatWorkflowStatus: function(status) {
+    }
+
+    _formatWorkflowStatus(status) {
     	status = status.toLowerCase();
         var color;
-        
+
         if (status == 'terminated') status = 'cancelled';
-        
+
         switch (status) {
         	case 'running':   color = 'yellowgreen'; 	break;
         	case 'completed': color = 'cornflowerblue'; break;
         	case 'scheduled': color = 'goldenrod'; 		break;
             default:          color = 'salmon';
         }
-        
+
         return '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:' + color + ';">' + coge.utils.ucfirst(status) + '</span>';
-    },
-    
-    _formatAnalysis: function() {
+    }
+
+    _formatAnalysis() {
         var isRunning   = (this.status.toLowerCase() == 'running');
         var isCancelled = (this.status.toLowerCase() == 'cancelled');
         var star_icon    = '<img title="Favorite this analysis" src="picts/star-' + (this.is_important ? 'full' : 'hollow') + '.png" width="15" height="15" class="link" style="vertical-align:middle;" onclick="toggle_star(this, '+this.id+');" />';
@@ -975,18 +738,18 @@ $.extend(DataGridRow.prototype, { // TODO consider extending this into separate 
         var icons = star_icon + ' ' + comment_icon + ' ' + (isCancelled ? restart_icon : '') + ' ' + (isRunning ? cancel_icon : '');
     	var descStr = icons + ' ' + this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + (this.comment ? ' | ' + '<span class="highlighted">' + this.comment : '') + '</span>' + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
     	return descStr;
-    },
-    
-    _formatLoad: function() {
+    }
+
+    _formatLoad() {
     	var descStr =
     		this._formatWorkflowStatus(this.status) + ' ' + this.page + ' | ' + this.description + ' | ' + this.elapsed + (this.workflow_id ? ' | id' + this.workflow_id : '');
     	return descStr;
-    },
+    }
 
-    getInfo: function() {
+    getInfo() {
     	console.log('DataGridRow.getInfo');
     	var self = this;
-    	
+
     	return $.ajax({
     		dataType: 'json',
     		data: {
@@ -1000,11 +763,11 @@ $.extend(DataGridRow.prototype, { // TODO consider extending this into separate 
 				return data.html;
     		return;
     	});
-    },
-    
-    getLink: function() {
+    }
+
+    getLink() {
     	var type = this.type;
-    	
+
     	if (type == 'genome')
     		return 'GenomeInfo.pl?gid=' + this.id;
     	else if (type == 'experiment')
@@ -1013,20 +776,20 @@ $.extend(DataGridRow.prototype, { // TODO consider extending this into separate 
     		return 'NotebookView.pl?nid=' + this.id;
     	else
     		return this.link;
-    },
-    
-    getDate: function() {
+    }
+
+    getDate() {
     	var dateStr = this.date;
-    	
+
     	// Handle null date
     	if (!dateStr || dateStr.indexOf('0000') == 0)
     		dateStr = this.dataset_date;
     	if (!dateStr || dateStr.indexOf('0000') == 0)
     		return '&nbsp;'; // return blank (needed for cell to render properly in Safari)
-    	
+
     	// Convert from database time zone (Tucson) to user's time zone -- mdb added 9/22/16 COGE-196
     	dateStr = coge.utils.timeToLocal(dateStr);
-    	
+
         // Convert date from aboslute into relative form ("yesterday", etc)
     	const MONTHS = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
     	dateStr = dateStr.replace(/-/g, '/'); // needed for Firefox & Safari
@@ -1034,7 +797,7 @@ $.extend(DataGridRow.prototype, { // TODO consider extending this into separate 
     	var today = new Date();
     	var diffMS = Math.abs(today.getTime() - date.getTime());
     	var diffDays = Math.floor(diffMS/(24*60*60*1000));
-    	
+
     	if (diffDays == 0 && today.getDate() == date.getDate()) { // same day as today
     		var hour = (date.getHours() + 24) % 12 || 12;
     		dateStr = hour + ':' + pad(''+date.getMinutes(), 2) + ' ' + (date.getHours() < 12 ? 'am' : 'pm');
@@ -1043,16 +806,62 @@ $.extend(DataGridRow.prototype, { // TODO consider extending this into separate 
     		dateStr = 'Yesterday';
     	else if (diffDays <= 4) // last several days
     		dateStr = diffDays + ' days ago';
-    	else if (date.getFullYear() == today.getFullYear()) // same year 
+    	else if (date.getFullYear() == today.getFullYear()) // same year
     		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate()
     	else // last year or older
     		dateStr = MONTHS[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
 
     	return '<!--' + diffMS + '-->' + dateStr; // embed the time difference in a hidden html comment for sorting
     }
-});
+}
 
-/* 
+function dateSortAscending(x,y) {
+    x = time_diff(x);
+    y = time_diff(y);
+    return ((x < y) ? 1 : ((x > y) ? -1 : 0));
+}
+
+function dateSortDescending(x,y) {
+    x = time_diff(x);
+    y = time_diff(y);
+    return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+}
+
+function time_diff(s) {
+    var matches = s.match(/^\<\!\-\-(\d+)\-\-\>/); // the time difference is hidden in an html comment
+    if (!matches || !matches[1])
+        return 999999; // sort last
+    var diff = matches[1];
+    return parseInt(diff);
+}
+
+function openItem(row) {
+    if (row.type == 'group')
+        group_dialog();
+    else if (row.type == 'analyses' || row.type == 'loads')
+        window.open(row.link, '_blank');
+    else {
+        var title = row.getDescription();
+        var link = row.getLink();
+        var flags = row.getFlags({noSpaces: 1});
+        title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
+        link = link + "&embed=1";
+        console.log('DataGrid.openItem: ' + link);
+        var height = $(window).height() * 0.8;
+        var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+            .dialog({
+                //title: title,
+                width: '80%',
+                height: height,
+                open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
+                    $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
+                }
+            })
+            .dialog('open');
+    }
+}
+
+/*
  * Info Panel
  */
 
@@ -1778,7 +1587,7 @@ function toggle_star(img, id) {
 	});
 }
 
-// For "Create New Genome" and "Create New Experiment" //FIXME merge with ContentPanel.openItem ...?
+// For "Create New Genome" and "Create New Experiment" //FIXME merge with openItem ...?
 function open_item(item_type, title, link) {
 	title = title + "<br><a class='xsmall' style='color:#eeeeee;' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
 	link = link + "&embed=1";
