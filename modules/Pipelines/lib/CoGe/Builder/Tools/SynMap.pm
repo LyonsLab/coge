@@ -383,66 +383,42 @@ sub add_jobs {
 		push @blastdb_files, $blastdb;
 	}
 
-	my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
-	my %org_dirs = (
-		$orgkey1 . "_" . $orgkey2 => {
-			fasta    => $fasta1,
-			db       => $blastdb,
-			basename => $genome_id1 . "_" . $genome_id2
-			  . ".$feat_type1-$feat_type2."
-			  . $blast_config->{filename},
-			dir => $result_path
-		}
-	);
-
-	foreach my $org_dir ( keys %org_dirs ) {
-		my $outfile = $org_dirs{$org_dir}{dir};
-		#mkpath( $outfile, 1, 0777 ) unless -d $outfile; # mdb removed 3/24/16 for hypnotoad (permissions issue)
-		#warn "didn't create path $outfile: $!" unless -d $outfile;
-		$outfile = catfile($outfile, $org_dirs{$org_dir}{basename});
-		$org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
-	}
-	
 	############################################################################
 	# Run Blast
 	############################################################################
 
 	#check blast runs for problems;  Not forked in order to keep variables
-	my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
+	my $raw_blastfile = catfile($result_path, $genome_id1 . "_" . $genome_id2 . ".$feat_type1-$feat_type2." . $blast_config->{filename});
 
-	foreach my $key ( keys %org_dirs ) {
-		my $cmd = 'nice ' . $blast_config->{algo}; #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
-		my $fasta   = $org_dirs{$key}{fasta};
-		my $db      = $org_dirs{$key}{db};
-		my $outfile = $org_dirs{$key}{blastfile};
-		my @blastargs;
+	my $cmd = 'nice ' . $blast_config->{algo}; #$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
+	my $outfile = $raw_blastfile;
+	my @blastargs;
 
-		if ( $cmd =~ /lastz/i ) {
-			push @blastargs, [ "-i", $fasta,   0 ];
-			push @blastargs, [ "-d", $db,      0 ];
-			push @blastargs, [ "-o", $outfile, 1 ];
-		}
-        elsif ( $cmd =~ /lastal/i ) { # mdb added 3/17/16 -- new multithreaded last v731
-            $cmd .= " $db $fasta > $outfile";
-        }
-		else {
-			push @blastargs, [ "-out",   $outfile, 1 ];
-			push @blastargs, [ "-query", $fasta,   0 ];
-			push @blastargs, [ "-db",    $db,      0 ];
-		}
-		push @blastargs, [ ";touch", "$raw_blastfile.done", 0];
-
-		#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
-		push @blastdb_files, $fasta;
-		$workflow->add_job({
-			cmd         => 'mkdir -p ' . join(' ', map { $org_dirs{$_}{dir} } keys %org_dirs) . ';' . $cmd,
-			script      => undef,
-			args        => \@blastargs,
-			inputs      => \@blastdb_files,
-			outputs     => [$outfile, $outfile . '.done'],
-			description => "Running genome comparison",
-		});
+	if ( $cmd =~ /lastz/i ) {
+		push @blastargs, [ "-i", $fasta1,   0 ];
+		push @blastargs, [ "-d", $blastdb,      0 ];
+		push @blastargs, [ "-o", $outfile, 1 ];
 	}
+	elsif ( $cmd =~ /lastal/i ) { # mdb added 3/17/16 -- new multithreaded last v731
+		$cmd .= " $blastdb $fasta1 > $outfile";
+	}
+	else {
+		push @blastargs, [ "-out",   $outfile, 1 ];
+		push @blastargs, [ "-query", $fasta1,   0 ];
+		push @blastargs, [ "-db",    $blastdb,      0 ];
+	}
+	push @blastargs, [ ";touch", "$raw_blastfile.done", 0];
+
+	#( undef, $cmd ) = CoGe::Accessory::Web::check_taint($cmd); # mdb removed 3/17/16 -- lastal fails on '>' character
+	push @blastdb_files, $fasta1;
+	$workflow->add_job({
+		cmd         => 'mkdir -p ' . $result_path . ';' . $cmd,
+		script      => undef,
+		args        => \@blastargs,
+		inputs      => \@blastdb_files,
+		outputs     => [$outfile, $outfile . '.done'],
+		description => "Running genome comparison",
+	});
 
 	$workflow->log("");
 	$workflow->log("Added genome comparison (algorithm: " . $blast_config->{displayname} . ")");
@@ -531,7 +507,7 @@ sub add_jobs {
  #       blastfile => $filtered_blastfile,
  #       bedfile1  => $bedfile1,
  #       bedfile2  => $bedfile2,
- #       outfile   => $org_dirs{$orgkey1 . "_" . $orgkey2}{dir} . "/"
+ #       outfile   => $result_path . "/"
  #         . $genome_id1 . "_"
  #         . $genome_id2
  #         . ".$feat_type1-$feat_type2");
@@ -821,7 +797,7 @@ sub add_jobs {
 	# Create html output directory
 	############################################################################
 #	my ( $qlead, $slead ) = ( "a", "b" );
-	my $out = catdir($org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir}, 'html');
+	my $out = catdir($result_path, 'html');
 	#mkpath( $out, 0, 0777 ) unless -d $out; # mdb removed 3/24/16 for hypnotoad (permissions issue)
 	$out .= "/master_";
 	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
