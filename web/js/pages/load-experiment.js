@@ -160,10 +160,10 @@ $.extend(ExperimentDescriptionView.prototype, {
         // Set experiment metadata if from SRA
 		if (this.isSRA) {
            this.metadata = {
-                name: 'blah',
-                description: '',
-                version: '1',
-                restricted: 0,
+                name:         '<to be determined from SRA>',
+                description:  '<to be determined from SRA>',
+                version:      '<to be determined from SRA>',
+                restricted:   0,
                 source_name: 'NCBI-SRA'
             };
         }
