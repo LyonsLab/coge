@@ -625,8 +625,7 @@ sub add_list_items {
 
     my $desc = ( $list->description ? $list->description : '' );
 
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param( ADD_LIST_ITEMS => 1 );
     $template->param( NAME           => $list->name );
     $template->param( DESC           => $desc );

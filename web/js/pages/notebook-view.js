@@ -384,25 +384,22 @@ function toggle_favorite(img) {
 }
 
 class Contents {
-	constructor(json) {
-		this.contents = json.contents;
-		this.counts = json.counts;
-		this.user_can_edit = json.user_can_edit;
-		let div = $('#list_contents');
-		let table = $('<table id="list_contents_table" class="dataTable compact hover stripe border-top border-bottom" style="margin:0;width:initial;"></table>').appendTo(div);
+	constructor() {
+		this.div = $('#list_contents');
+	}
+	build() {
+		this.div.empty();
+		let table = $('<table id="list_contents_table" class="dataTable compact hover stripe border-top border-bottom" style="margin:0;width:initial;"></table>').appendTo(this.div);
 		let row = $('<tr></tr>').appendTo($('<thead></thead>').appendTo(table));
 		row.append($('<th id="type_col" class="sorting sorting_asc" onclick="contents.sort(\'type\')" style="cursor:pointer;">Type</th>'))
 			.append($('<th id="name_col" class="sorting" onclick="contents.sort(\'name\')" style="cursor:pointer;">Name</th>'))
 			.append($('<th id="date_col" class="sorting" onclick="contents.sort(\'date\')" style="cursor:pointer;">Date</th>'))
 			.append($('<th>Remove</th>'));
 		this.tbody = $('<tbody></tbody>').appendTo(table);
-		this.sort('type');
-		this.build();
-		if (json.user_can_edit)
-			div.append($('<div class="padded"><span class="coge-button" onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span></div>'));
-	}
-	build() {
-		this.tbody.empty();
+		if (this.counts[0] + this.counts[1] + this.counts[2] == 0) {
+			this.div.append($('<table class="border-top border-bottom padded note"><tr><td>This notebook is empty.</tr></td></table>'));
+			return;
+		}
 		let type = -1;
 		let names = ['Genome', 'Experiment', 'Feature', 'Notebook'];
 		let pages = ['GenomeInfo', 'ExperimentView', 'FeatView', 'NotebookView'];
@@ -425,9 +422,17 @@ class Contents {
 			if (row.length > 3 && row[3])
 				td.text(row[3]);
 			if (this.user_can_edit)
-				tr.append($('<td style="padding-left:20px;"><span onClick="remove_list_item(this, {lid: | . $lid . q|, item_type: \'' + node_types[type] + '\', item_id: ' + row[1] + '});" class="link ui-icon ui-icon-closethick"></span></td>'));
+				tr.append($('<td style="padding-left:20px;"><span onClick="remove_list_item(this, {lid: ' + NOTEBOOK_ID + ', item_type: \'' + node_types[type] + '\', item_id: ' + row[1] + '});" class="link ui-icon ui-icon-closethick"></span></td>'));
 			++num_rows;
 		}.bind(this));
+		if (this.user_can_edit)
+			this.div.append($('<div class="padded"><span class="coge-button" onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span></div>'));
+	}
+	set(json) {
+		this.contents = json.contents;
+		this.counts = json.counts;
+		this.user_can_edit = json.user_can_edit;
+		this.sort('type');
 	}
 	sort(col) {
 		if (this.sort_col != col) {
@@ -464,13 +469,11 @@ class Contents {
 	}
 }
 
-var contents;
+var contents = new Contents();
 function set_contents(json) {
-	if (json.counts[0] + json.counts[1] + json.counts[2] == 0) {
-		div.append($('<table class="border-top border-bottom padded note"><tr><td>This notebook is empty.</tr></td></table>'));
-		return;
-	}
-	contents = new Contents(json);
+	if (typeof json == 'string')
+		json = JSON.parse(json);
+	contents.set(json);
 }
 
 function case_insensitive_sort(a, b) {
