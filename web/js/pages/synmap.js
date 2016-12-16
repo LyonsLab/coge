@@ -431,11 +431,29 @@ var coge = window.coge = (function(namespace) {
 
             $("#tabs").removeClass("invisible");
 
-            // track analysis
             $("#synmap_go").on("click", function() {
                 coge.synmap.run_synmap();
                 ga('send', 'event', 'synmap', 'run');
             });
+
+            var params = this.get_params();
+            if ($('#delete_results').length)
+                $("#delete_results").on("click", function() {
+                    $.ajax({
+                        data: {
+                            jquery_ajax: 1,
+                            fname: 'delete_results',
+                            dsgid1: params.dsgid1,
+                            dsgid2: params.dsgid2
+                        },
+                        success: function() {
+                            alert('done');
+                        },
+                        error: function() {
+                            alert('error');
+                        }
+                    });
+                });
         },
 
         //TODO: Create a proper state object

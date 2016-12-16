@@ -119,6 +119,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 	get_dsg_gc             => \&get_dsg_gc,
 	#read_log               => \&CoGe::Accessory::Web::read_log,
 	get_results       => \&get_results,
+	delete_results    => \&delete_results,
 	generate_assembly => \&generate_assembly,
 	%ajax,
 );
@@ -201,7 +202,8 @@ sub gen_body {
 		API_BASE_URL  => $config->{SERVER} . 'api/v1/', #TODO move into config file or module
         MWIDTH => $FORM->param('w') || 0,
         SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
-        USER_NAME => $USER->user_name
+        USER_NAME => $USER->user_name,
+		ADMIN_ONLY => $USER->is_admin
     );
 
 	#set search algorithm on web-page
@@ -1875,6 +1877,16 @@ sub get_results {
 
 	#FIXME Return the json representation of the data instead of html
 	return encode_json( { html => $output } );
+}
+
+sub delete_results {
+	my %opts = @_;
+	my $dsgid1 = $opts{dsgid1};
+	my $dsgid2 = $opts{dsgid2};
+
+	my $result_path = get_result_path($DIAGSDIR, $dsgid1, $dsgid2);
+	unlink glob $result_path . '/html/*.*';
+	unlink glob $result_path . '/*.*';
 }
 
 sub _filename_to_link {
