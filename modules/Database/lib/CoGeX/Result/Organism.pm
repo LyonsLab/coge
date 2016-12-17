@@ -323,6 +323,34 @@ sub datasets
     return wantarray ? values %ds : [values %ds];
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 info
+
+ Usage     : $self->info
+ Purpose   : returns a string of information about the organism.
+
+ Returns   : returns a string
+ Argument  : none
+ Throws    :
+ Comments  : To be used to quickly generate a string about the organism
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info {
+    my $self = shift;
+    my %opts = @_;
+
+    my $info;
+    $info .= $self->name;
+    return $info;
+}
+
 1;
 
 =head1 AUTHORS
