@@ -19,6 +19,98 @@ $(function () {
 	}).done(function() {
 		search_stuff(SEARCH_TEXT);
 	});
+
+    // Define views in the Content Panel
+	var views = {
+		organism: {
+			title: 'Organisms',
+			displayType: 'grid',
+			dataTypes: ['organism'],
+			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
+		},
+		genome: {
+			title: 'Genomes',
+			displayType: 'grid',
+			dataTypes: ['genome'],
+			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
+		},
+		feature: {
+			title: 'Features',
+			displayType: 'grid',
+			dataTypes: ['feature'],
+			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
+		},
+		experiment: {
+			title: 'Experiments',
+			displayType: 'grid',
+			dataTypes: ['experiment'],
+			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
+		},
+		notebook: {
+			title: 'Notebooks',
+			displayType: 'grid',
+			dataTypes: ['notebook'],
+			operations: ['share', 'favorite', 'delete', 'sendto', 'add']
+		},
+		group: {
+			title: 'User Groups',
+			displayType: 'grid',
+			dataTypes: ['group'],
+			operations: ['share', 'favorite', 'delete', 'sendto', 'add']
+		}
+	};
+
+	// Initialize the main panels
+	infoPanel = new InfoPanel({
+		elementId: 'info_panel'
+	});
+
+	contentPanel = new ContentPanel({
+		elementId: 'contents_panel',
+		views: views,
+		grid: new DataGrid({
+			element: $('#contents_panel').find('.grid'),
+			height: $(window).height() - 210, // this depends on the height of the header/footer and should be passed in as an argument
+			columns: [
+                { 	title: "",
+	            	targets: 0,
+	            	orderable: false,
+	            	type: "string",
+	            	width: 15,
+	            	data: null, // use full data object
+	            	render: function(data, type, row, meta) {
+	            		return data.getFlags();
+	            	}
+	            },
+				{ 	title: "Name",
+					targets: 1,
+					type: "html",
+					data: null, // use full data object
+					render: function(data, type, row, meta) {
+						return data.getDescription();
+					}
+				}
+			],
+			selectionCallback: function(items) {
+			    infoPanel.busy().update(items);
+				//update_icons(items);
+			}
+		})
+	});
+
+	tocPanel = new TocPanel({
+		elementId: 'toc_panel',
+		selection: function(typeId) {
+			contentPanel
+			    .update(typeId)
+			    .render();
+			contentPanel.grid.search(''); // clear search filter
+			infoPanel.update(null);
+			//update_icons(null);
+			//$('#search_input').val(''); //FIXME move into ContentPanel
+		}
+	});
+
 });
 
 function search_stuff(search_term) {
@@ -31,103 +123,38 @@ function search_stuff(search_term) {
 	$("#msg").hide();
 	$('masterTable').css('display', 'none');
 	$("#loading").show();
-	
+
 	coge.services.search_global(search_term)
 		.done(function(response) {
-			var obj = response;
-			
-			if (!obj || !obj.results) {
+			if (!response || !response.results || !response.results.length) {
 				$("#loading").hide();
 				return;
 			}
 
-			function add_item(url, obj, num) {
-				let html = '<tr class="';
-				html += num % 2 ? 'odd' : 'even';
-				html += '"><td>';
-				if (url) {
-					html += '<a target="_blank" href="';
-					html += url;
-					html += obj.id;
-					html += '"';
-				} 
-				else
-					html += '<span';
-				if (obj.description) {
-					html += ' title=';
-					html += JSON.stringify(obj.description);
-				}
-				if (obj.deleted == 1)
-					html += ' style="color:red;"';
-				html += '>';
-				if (obj.favorite)
-					html += '&#11088;&nbsp;&nbsp;';
-				if (obj.certified)
-					html += '&#x2705;&nbsp;&nbsp;';
-				if (obj.restricted)
-					html += '&#x1f512;&nbsp;&nbsp;';
-				html += obj.name;
-				html += url ? '</a>' : '</span>';
-				if (obj.type == 'genome')
-					html += '</td><td><span class="coge-button" onclick="window.open(&quot;GenomeView.pl?embed=0&amp;gid=' + obj.id + '&quot;)">Browse</span>';
-				else if (obj.type == 'feature')
-					html += '</td><td>' + obj.feature_type + '</td><td>' + obj.genome;
-				html += '</td><td>';
-				html += obj.id;
-				html += '</td></tr>';
-				return html;
+            // Index results by type
+            var resultsByType = [];
+			for (var i = 0; i < response.results.length; i++) {
+                var o = response.results[i];
+                if (!resultsByType[o.type])
+                    resultsByType[o.type] = [];
+                resultsByType[o.type].push(o);
 			}
-			
-			var org_count = 0, gen_count = 0, exp_count = 0, feature_count = 0, note_count = 0, user_group_count = 0;
-			var org_list = "", gen_list = "", exp_list = "", feature_list = "", note_list = "", user_group_list = "";
+			//console.log(resultsByType);
 
-			for (var i = 0; i < obj.results.length; i++) {
-				var o = obj.results[i];
-
-				if (o.type == "organism")
-					org_list += add_item('OrganismView.pl?oid=', o, org_count++);
-				else if (o.type == "genome")
-					gen_list += add_item('GenomeInfo.pl?gid=', o, gen_count++);
-				else if (o.type == "experiment")
-					exp_list += add_item('ExperimentView.pl?eid=', o, exp_count++);
-				else if (o.type == "feature")
-					feature_list += add_item('FeatView.pl?fid=', o, feature_count++);
-				else if (o.type == "notebook")
-					note_list += add_item('NotebookView.pl?lid=', o, note_count++);	
-				else if (o.type == "user_group")
-					user_group_list += add_item(null, o, user_group_count++);
+			for (var type in resultsByType) {
+			    contentPanel.setData(type, resultsByType[type]);
 			}
 
-			var total = org_count + gen_count + exp_count + feature_count + note_count + user_group_count;
-			if (total == 0) {
-				$("#loading").hide();
-				$('#msg').html('No matching results found').show();
-				return;
-			}
+            var firstType = Object.keys(resultsByType)[0];
+            if (Object.keys(resultsByType).length == 1) {
+                tocPanel.selectItemType(firstType);
+                $('#toc_panel').hide();
+            }
+            else {
+			    tocPanel.selectItemType(firstType);
+			    $('#toc_panel').show();
+            }
 
-			$('masterTable').css('display', 'block');
-			$(".result").fadeIn( 'fast');
-			
-			function setup_results(type, icon, count, cols, rows) {
-				var div = $('#' + type.replace(' ', '_'));
-				if (count > 0) {
-					div.show();
-					div.children().first().children().first().html('<img src="picts/' + icon + '" style="width:15px" /> ' + type + 's: ' + count);
-					var table = div.find('table');
-					var tr = $('<tr></tr>').appendTo($('<thead></thead>').appendTo(table));
-					cols.forEach(function(col) {
-						tr.append($('<th>' + col + '</th>'))
-					});
-					table.append($('<tbody>' + rows + '</tbody>'));
-				}
-			}
-			setup_results('Experiment', 'testtube-icon.png', exp_count, ['name', 'id'], exp_list);
-			setup_results('Feature', 'feature-icon.png', feature_count, ['name', 'type', 'genome', 'id'], feature_list);
-			setup_results('Genome', 'dna-icon.png', gen_count, ['name', 'EPIC-CoGe', 'id'], gen_list);
-			setup_results('Notebook', 'notebook-icon.png', note_count, ['name', 'id'], note_list);
-			setup_results('Organism', 'Organism.svg', org_count, ['name', 'id'], org_list);
-			setup_results('User Group', 'group-icon.png', user_group_count, ['name', 'id'], user_group_list);
-			
 			$("#loading").hide();
 			$("#masterTable").show();
 			if (!user_is_admin)
@@ -141,14 +168,122 @@ function search_stuff(search_term) {
 		});
 }
 
-function toggle_results(div, table) {
-	div = $(div);
-	var img = div.children().last();
-	if (img.attr('src') == 'picts/arrow-right-icon.png') {
-        img.attr('src', 'picts/arrow-down-icon.png');
-		if (!$.fn.dataTable.isDataTable(table))
-			table.DataTable({info: false, lengthChange: false, oLanguage: { sSearch: 'Filter:' }, paging: false});
-    } else
-		img.attr('src', 'picts/arrow-right-icon.png');
-	div.next().fadeToggle('fast');
+/*
+ * Data Grid Row
+ */
+
+class DataGridRow {
+    constructor(data, type) {
+        $.extend(this, data);
+    }
+
+    getID() {
+        return this.id;
+    }
+
+    getFlags(opts) {
+    	if (this.type == 'genome' ||
+    		this.type == 'experiment' ||
+    		this.type == 'notebook' ||
+    		this.type == 'favorite')
+    	{
+    		var noSpaces = (opts && opts.noSpaces);
+
+    		var flags = '';
+    		if (!noSpaces || this.favorite == '1')
+    			flags = '<span style="color:goldenrod;visibility:' +
+	    			(this.favorite == '1' ? 'visible' : 'hidden') +
+	    			'">&#9733;</span>&nbsp;';
+    		if (this.restricted == '1')
+	    		flags += '&#x1f512;' + '&nbsp;';
+
+    		return flags;
+    	}
+    	return '';
+    }
+
+    getDescription() {
+//    	if (this.type == 'genome' || this.type == 'favorite')
+//    		return this._formatGenome();
+//    	if (this.type == 'experiment')
+//    		return this._formatExperiment();
+//    	if (this.type == 'notebook')
+//    		return this._formatNotebook();
+//    	if (this.type == 'group')
+//    		return this._formatGroup();
+        return this.name;
+    }
+
+    _formatGenome() {
+    	var icon = '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/> ';
+    	var certified = '<span class="glyphicon glyphicon-ok coge-certified-icon"></span> <span class="coge-small-text">Certified Genome<span>';
+    	var descStr =
+    		icon +
+    	   	(this.organism ? this.organism : '') +
+    	   	(this.name ? ' (' + this.name + ')' : '') +
+    	   	(this.description ? ': ' + this.description : '') +
+    	   	' (v' + this.version + ', id' + this.id + ')' +
+    	   	(this.certified == '1' ? '&nbsp;&nbsp;' + certified : '');
+    	return descStr;
+    }
+
+    _formatExperiment() {
+    	var descStr =
+    		'<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
+    	   	this.name +
+    	   	(this.description ? ': ' + this.description : '') +
+    	   	' (v' + this.version + ', id' + this.id + ')';
+    	return descStr;
+    }
+
+    _formatNotebook() {
+    	var descStr =
+    		'<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
+    		this.name +
+    		(this.description ? ': ' + this.description : '') +
+    		(this.type_name ? ' (' + this.type_name + ')' : '');
+    	return descStr;
+    }
+
+    _formatGroup() {
+    	var descStr =
+    		'<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
+    		this.name +
+    		(this.description ? ': ' + this.description : '');;
+    	return descStr;
+    }
+
+    getInfo() {
+    	console.log('DataGridRow.getInfo');
+    	var self = this;
+
+    	return coge.utils.ajaxWithTimestamp({
+    		dataType: 'json',
+    		url: 'User.pl',
+    		data: {
+    			fname: 'get_item_info',
+    			item_id: self.id,
+    			item_type: self.type,
+    		}
+    	}).pipe(function(data) {
+    	    console.log('getInfo response');
+    	    console.log(data);
+    		if (data)
+				return data.html;
+    		return;
+    	});
+    }
+
+    getLink() {
+    	var type = this.type;
+
+    	if (type == 'genome')
+    		return 'GenomeInfo.pl?gid=' + this.id;
+    	else if (type == 'experiment')
+    		return 'ExperimentView.pl?eid=' + this.id;
+    	else if (type == 'notebook')
+    		return 'NotebookView.pl?nid=' + this.id;
+    	else
+    		return this.link;
+    }
 }

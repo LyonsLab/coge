@@ -229,6 +229,24 @@ sub get_item_info {
             . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
             . qq{</div></div>};
     }
+    elsif ( $item_type eq 'organism' ) {
+        my $organism = $DB->resultset('Organism')->find($item_id);
+        return unless $organism;
+
+        $html =
+            '<b>Organism id' . $organism->id . '</b><br>'
+          . '<b>Name:</b> ' . $organism->name . '<br>'
+          . '<b>Description:</b> ' . $organism->description . '<br>'
+          . '<b>Public genomes:</b> ' . ($organism->public_genomes > 0 ? $organism->public_genomes : 'none') . '<br>';
+
+        my $info = 'Organism <i>' . js_escape($organism->info) . '</i>';
+        my $view_link = qq{open_item('$item_type','$info','OrganismView.pl?oid=$item_id');};
+
+        $html .= qq{<div><b>Tools:</b><br>}
+            . qq{<div style="padding-left:20px;">}
+            . qq{<span class="link" onclick="$view_link" title="View details">View details</span><br>}
+            . qq{</div></div>};
+    }
     elsif ( $item_type eq 'genome' || $item_type eq 'favorite' ) {
         my $genome = $DB->resultset('Genome')->find($item_id);
         return unless ( $USER->has_access_to_genome($genome) );
@@ -275,6 +293,23 @@ sub get_item_info {
             . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
             . qq{<span class="link" onclick="$load_link" title="Load gene annotation">Load annotation</span><br>}
             . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add to a notebook">Add to notebook</span><br>}
+            . qq{</div></div>};
+    }
+    elsif ( $item_type eq 'feature' ) {
+        my $feature = $DB->resultset('Feature')->find($item_id);
+        return unless $feature;
+
+        $html =
+            '<b>Feature id' . $feature->id . '</b><br>'
+          . '<b>Primary name:</b> ' . ($feature->primary_name ? join (', ', map { $_->name } $feature->primary_name) : 'none') . '<br>'
+          . '<b>Other names:</b> ' . join(', ', $feature->names) . '<br>';
+
+        my $info = 'Feature <i>' . js_escape($feature->info) . '</i>';
+        my $view_link = qq{open_item('$item_type','$info','FeatView.pl?fid=$item_id');};
+
+        $html .= qq{<div><b>Tools:</b><br>}
+            . qq{<div style="padding-left:20px;">}
+            . qq{<span class="link" onclick="$view_link" title="View details">View details</span><br>}
             . qq{</div></div>};
     }
     elsif ( $item_type eq 'experiment' ) {
