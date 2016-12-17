@@ -203,7 +203,7 @@ sub gen_body {
         MWIDTH => $FORM->param('w') || 0,
         SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
         USER_NAME => $USER->user_name,
-		ADMIN_ONLY => $USER->is_admin
+		POWER_USER => $USER->is_poweruser || $USER->is_admin
     );
 
 	#set search algorithm on web-page
@@ -1883,6 +1883,9 @@ sub delete_results {
 	my %opts = @_;
 	my $dsgid1 = $opts{dsgid1};
 	my $dsgid2 = $opts{dsgid2};
+
+	return unless $dsgid1 && $dsgid2;
+	return unless $USER->is_poweruser || $USER->is_admin;
 
 	my $result_path = get_result_path($DIAGSDIR, $dsgid1, $dsgid2);
 	unlink glob $result_path . '/html/*.*';
