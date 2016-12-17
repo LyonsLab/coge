@@ -443,8 +443,8 @@ var coge = window.coge = (function(namespace) {
                         data: {
                             jquery_ajax: 1,
                             fname: 'delete_results',
-                            dsgid1: params.dsgid1,
-                            dsgid2: params.dsgid2
+                            dsgid1: $('#dsgid1').val(),
+                            dsgid2: $('#dsgid2').val()
                         },
                         success: function() {
                             alert('done');
