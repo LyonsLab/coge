@@ -7,6 +7,107 @@ var tocPanel;
 var timestamps = new Array();
 var timers = new Array();
 
+class UserContentPanel extends ContentPanel {
+    update(viewId) {
+    	console.log('ContentPanel.update: ' + viewId + ' ');
+    	var self = this;
+    	this.selectedView = viewId;
+    	var view = this.views[viewId];
+
+    	// Setup requests for content data
+    	var promises = new Array();
+    	view.dataTypes.forEach(function (dataType) {
+    		var deferred = $.Deferred();
+    		var cachedData = self.getData(dataType);
+
+	        if (cachedData) {
+		    	deferred.resolve();
+	    	}
+	    	else {
+	    		self.busy();
+	    		deferred = self.fetch(false, dataType);
+		    	setTimeout(deferred.resolve, 10);
+	    	}
+	        promises.push(deferred);
+    	});
+
+        return $.when.apply($, promises).then(function(schemas) {
+	            console.log("ContentPanel.update: DONE");
+	            self.grid.clearSelection();
+	        }, function(e) {
+	            console.log("ContentPanel.update: FAILED");
+	        });
+    }
+
+    refresh() {
+    	console.log('ContentPanel.refresh');
+    	var self = this;
+    	if (!this.selectedView)
+    		return;
+
+    	var view = this.views[this.selectedView];
+
+    	// Skip refresh if specified
+    	if (view.hasOwnProperty('refresh') && !view.refresh)
+    		return;
+
+    	$('#refresh_label').fadeIn(); //FIXME move into ContentPanel
+
+       	var promises = new Array();
+    	view.dataTypes.forEach(function (dataType) {
+    		console.log('refresh ' + dataType);
+    		var deferred = self.fetch(false, dataType);
+	    	setTimeout(deferred.resolve, 10);
+	        promises.push(deferred);
+    	});
+
+        return $.when.apply($, promises).then(function(schemas) {
+	            console.log("ContentPanel.refresh: DONE");
+	            $('#refresh_label').fadeOut(); //FIXME move into ContentPanel
+	        }, function(e) {
+	            console.log("ContentPanel.refresh: ajax failed");
+	        });
+    }
+
+    fetch(sync, typeId) {
+    	var self = this;
+
+    	if (self.fetchHandler)
+    	    self.fetchHandler.call(self);
+
+    	console.log('ContentPanel.fetch ' + typeId + ' ' + self.selectedTypeId);
+    	if (!typeId)
+    		typeId = self.selectedTypeId;
+
+    	var lastUpdate = (sync ? timestamps['lastUpdate'] : 0);
+
+    	return $.ajax({
+    		dataType: 'text',
+    		data: {
+    			fname: 'get_contents',
+    			user_id: USER_ID,
+    			item_type: typeId,
+    			last_update: lastUpdate,
+    			//timestamp: init_timestamp('get_contents')
+    		},
+    		success : function(data) {
+    			if (!data) {
+    				console.warn('get_contents: null data');
+    				return;
+    			}
+    			//console.log(data);
+    			if (self.views[typeId].displayType == 'grid') {
+    				data = JSON.parse(data);
+    			}
+    			self.setData(typeId, data);
+    		},
+    		complete : function() {
+
+    		}
+    	});
+    }
+}
+
 $(function() {
 	// Initialize AJAX
 	$.ajaxSetup({
@@ -124,12 +225,77 @@ $(function() {
 	
 	// Initialize the main panels
 	infoPanel = new InfoPanel({
-		elementId: 'info_panel'
+		elementId: 'info_panel',
+		defaultInfo: default_info
 	});
 	
-	contentPanel = new ContentPanel({
+	contentPanel = new UserContentPanel({
 		elementId: 'contents_panel',
-		views: views
+		views: views,
+		grid: new DataGrid({
+			element: $('#contents_panel').children('.grid'),
+			height: $(window).height() - 210, // this depends on the height of the header/footer and should be passed in as an argument
+			filter: function(data) {
+				// Filter rows based on view
+				var view = views[contentPanel.selectedView];
+				if (!view.noFilter) {
+					if (view.deleted && data.deleted == '0')
+						return false;
+					if (!view.deleted && data.deleted == '1')
+						return false;
+					if (view.shared && data.role_id == '2')
+						return false;
+					if (!view.shared && data.role_id != '2' && !view.deleted)
+						return false;
+					if (view.favorite && data.favorite == '0')
+						return false;
+				}
+				return true;
+			},
+			selectionCallback: function(items) {
+			    infoPanel.busy().update(items);
+				update_icons(items);
+			},
+			openCallback: openItem,
+			mouseOver: function(row) {
+			    infoPanel.busy().scheduleUpdate([row]);
+			},
+			mouseOut: function() {
+			    infoPanel.scheduleUpdate();
+			},
+			dateSortAsc:  dateSortAscending,
+			dateSortDesc: dateSortDescending,
+			columns: [
+	            { 	title: "",
+	            	targets: 0,
+	            	orderable: false,
+	            	type: "string",
+	            	width: 15,
+	            	data: null, // use full data object
+	            	render: function(data, type, row, meta) {
+	            		return data.getFlags();
+	            	}
+	            },
+	            { 	title: "Name",
+	            	targets: 1,
+	            	type: "html",
+	            	data: null, // use full data object
+	            	render: function(data, type, row, meta) {
+	            		return data.getDescription();
+	            	}
+	            },
+	            { 	title: "Date added",
+	            	targets: 2,
+	            	type: "relative-date", // this is our own custom type
+	            	data: null, // use full data object
+					orderSequence: [ 'desc', 'asc' ],
+	            	width: "100px",
+	            	render: function(data, type, row, meta) {
+	            		return data.getDate();
+	            	}
+	            }
+			]
+		})
 	});
 	
 	tocPanel = new TocPanel({
@@ -299,332 +465,6 @@ function default_info() {
 				"Hover over a group to view additional info. Select one or more groups to edit or delete."; 
 	}
 }
-
-/*
- * Content Panel
- */
-function ContentPanel(params) {
-	this.element = $('#'+params.elementId);
-	this.views = params.views;
-	this.cache = new Array();
-	this.selectedView = null;
-	this.initialize();
-}
-
-$.extend(ContentPanel.prototype, {
-	initialize: function() {
-		var self = this;
-		
-		// Create grid
-		self.grid = new DataGrid({
-			element: self.element.children('.grid'),
-			height: $(window).height() - 210, // this depends on the height of the header/footer and should be passed in as an argument
-			filter: function(data) { 
-				// Filter rows based on view
-				var view = self.views[self.selectedView];
-				if (!view.noFilter) {
-					if (view.deleted && data.deleted == '0')
-						return false;
-					if (!view.deleted && data.deleted == '1')
-						return false;
-					if (view.shared && data.role_id == '2')
-						return false;
-					if (!view.shared && data.role_id != '2' && !view.deleted)
-						return false;
-					if (view.favorite && data.favorite == '0')
-						return false;
-				}
-				return true;
-			},
-			selection: function(items) {
-			    infoPanel.busy().update(items);
-				update_icons(items);
-			},
-			openCallback: openItem,
-			mouseOver: function(row) {
-			    infoPanel.busy().scheduleUpdate([row]);
-			},
-			mouseOut: function() {
-			    infoPanel.scheduleUpdate();
-			},
-			dateSortAsc:  dateSortAscending,
-			dateSortDesc: dateSortDescending,
-			columns: [
-	            { 	title: "",
-	            	targets: 0,
-	            	orderable: false,
-	            	type: "string",
-	            	width: 15,
-	            	data: null, // use full data object
-	            	render: function(data, type, row, meta) {
-	            		return data.getFlags();
-	            	}
-	            },
-	            { 	title: "Name",
-	            	targets: 1,
-	            	type: "html",
-	            	data: null, // use full data object
-	            	render: function(data, type, row, meta) {
-	            		return data.getDescription();
-	            	}
-	            },
-	            { 	title: "Date added",
-	            	targets: 2,
-	            	type: "relative-date", // this is our own custom type
-	            	data: null, // use full data object
-					orderSequence: [ 'desc', 'asc' ],
-	            	width: "100px",
-	            	render: function(data, type, row, meta) {
-	            		return data.getDate();
-	            	}
-	            }
-			]
-		});
-	},
-    
-    getRow: function(dataTypeId, id) {
-    	var row = null;
-    	this.grid.dataTable.api().rows().every( function () {
-    	    var d = this.data();
-    	    if (d.id == id) {
-    	    	row = this;
-    	    }
-    	});
-    	return row;
-    },
-    
-    getRowData: function(dataTypeId, id) {
-    	var data = this.getData(dataTypeId);
-    	var rowData = null;
-    	if (data) {
-    		data.some(function(d) {
-    			if (d.id == id) {
-    				rowData = d;
-    				return true;
-    			}
-    			return false;
-    		});
-    	}
-    	return rowData;
-    },
-    
-    setRowData: function(dataTypeId, id, newData) {
-    	this.grid.dataTable.api().rows().every( function () {
-    	    var d = this.data();
-    	    if (d.id == id) {
-	    	    for (key in newData) {
-	    	    	d[key] = newData[key];
-	    	    }
-	    	    this.data(d);
-    	    }
-    	});
-    },    
-    
-    getData: function(dataTypeId) {
-    	var self = this;
-    	var cachedData = new Array();
-    	
-    	if (dataTypeId instanceof Array)
-    		dataTypeId.forEach(function(i) {
-    			cachedData = cachedData.concat(self.cache[i]);
-    		});
-    	else
-    		cachedData = self.cache[dataTypeId];
-    	
-    	return cachedData;
-    },
-    
-    setData: function(typeId, data) {
-    	console.log("ContentPanel.setData " + typeId);
-    	var typeDef = this.views[typeId];
-    	
-    	if (typeDef.displayType == 'grid') {
-			this.cache[typeId] = data.map(function(obj) {
-				return new DataGridRow(obj, typeId);
-			});
-		}
-		else {
-			this.cache[typeId] = data;
-		}
-    	
-    	return this;
-    },
-    
-    render: function(refresh) {
-    	console.log('ContentPanel.render ' + this.selectedView);
-    	if (!this.selectedView)
-    		return;
-    	
-        var view = this.views[this.selectedView];
-        var isGrid = (view.displayType == 'grid');
-
-        // Disable search bar if specified
-        if (view.hasOwnProperty('search') && !view.search)
-        	$('#search_input').hide();
-        else
-        	$('#search_input').show();
-        
-        // Disable flags column if specified
-        if (view.hasOwnProperty('flagsColumn') && !view.flagsColumn)
-        	this.grid.dataTable.api().column(0).visible(false);
-        else
-        	this.grid.dataTable.api().column(0).visible(true);
-        
-    	// Render contents
-    	if (isGrid) {
-    		// Save selection and scroll position
-    		var items = this.grid.getSelectedItems();
-    		var scrollPos = this.element.find(".dataTables_scrollBody").scrollTop();
-    		
-    		// Swap in grid and update contents
-    		this.element.children('.html').hide();
-    		this.element.children('.grid').show();
-    		this.grid.update(this.getData(view.dataTypes));
-    		if (!refresh)
-    			this.grid.dataTable.api().order(view.defaultSort ? view.defaultSort : [1, 'asc']);
-    		this.grid.redraw(); // needed to display column widths properly
-    		
-    		// Restore selection and scroll position
-    		if (items)
-    			this.grid.setSelectedItems(items);
-    		this.element.find(".dataTables_scrollBody").scrollTop(scrollPos);
-    	}
-    	else {
-    		this.element.children('.grid').hide();
-    		this.element.children('.html').html(this.getData(this.selectedView)).show();
-    	}
-    	
-        // Update title with row number
-        this.renderTitle();
-        
-        // Show/hide action icons based on type of data
-    	$('.item-button').hide(); // hide all icons
-    	if (view.operations) {
-    		view.operations.forEach(function(op) {
-    			$('.'+op).show();
-    		});
-    	}
-    	
-    	// Icons are initially set to invisible on load to prevent flickering
-    	$('.item-button').removeClass('invisible');
-
-    	// Update browser url
-    	var params = coge.utils.getURLParameters();
-    	params['p'] = this.selectedView;
-    	var queryString = coge.utils.toQueryString(params);
-    	window.history.pushState({}, "", PAGE_NAME + "?" + queryString);
-    },
-    
-    renderTitle: function() {
-    	var view = this.views[this.selectedView];
-    	var title = view.title;
-    	var isGrid = (view.displayType == 'grid');
-        if (isGrid)
-        	title += '&nbsp;&nbsp;<span class="small info">' + this.grid.getNumRowsDisplayed() + '</span>';
-        $('#contents_title').html(title);
-    },
-    
-    busy: function() {
-    	var spinner = '<div class="spinner" style="display:flex;justify-content:center;align-items:center;margin-top:40%;"></div>';
-    	this.element.children('.grid').hide();
-    	this.element.children('.html').html(spinner).show();
-    },
-    
-    update: function(viewId) {
-    	console.log('ContentPanel.update: ' + viewId + ' ');
-    	var self = this;
-    	this.selectedView = viewId;
-    	var view = this.views[viewId];
-    	
-    	// Setup requests for content data
-    	var promises = new Array();
-    	view.dataTypes.forEach(function (dataType) {
-    		var deferred = $.Deferred();
-    		var cachedData = self.getData(dataType);
-    	
-	        if (cachedData) {
-		    	deferred.resolve();
-	    	}
-	    	else {
-	    		self.busy();
-	    		deferred = self.fetch(false, dataType);
-		    	setTimeout(deferred.resolve, 10);
-	    	}
-	        promises.push(deferred);
-    	});
-        
-        return $.when.apply($, promises).then(function(schemas) {
-	            console.log("ContentPanel.update: DONE");
-	            self.grid.clearSelection();
-	        }, function(e) {
-	            console.log("ContentPanel.update: FAILED");
-	        });
-    },
-    
-    refresh: function() {
-    	console.log('ContentPanel.refresh');
-    	var self = this;
-    	if (!this.selectedView)
-    		return;
-    	
-    	var view = this.views[this.selectedView];
-    	
-    	// Skip refresh if specified
-    	if (view.hasOwnProperty('refresh') && !view.refresh)
-    		return;
-    	
-    	$('#refresh_label').fadeIn(); //FIXME move into ContentPanel
-    	
-       	var promises = new Array();
-    	view.dataTypes.forEach(function (dataType) {
-    		console.log('refresh ' + dataType);
-    		var deferred = self.fetch(false, dataType);
-	    	setTimeout(deferred.resolve, 10);
-	        promises.push(deferred);
-    	});
-        
-        return $.when.apply($, promises).then(function(schemas) {
-	            console.log("ContentPanel.refresh: DONE");
-	            $('#refresh_label').fadeOut(); //FIXME move into ContentPanel
-	        }, function(e) {
-	            console.log("ContentPanel.refresh: ajax failed");
-	        });
-    },    
-    
-    fetch: function(sync, typeId) {
-    	var self = this;
-    	console.log('ContentPanel.fetch ' + typeId + ' ' + self.selectedTypeId);
-    	if (!typeId)
-    		typeId = self.selectedTypeId;
-    	
-    	var lastUpdate = (sync ? timestamps['lastUpdate'] : 0);
-
-    	return $.ajax({
-    		dataType: 'text',
-    		data: {
-    			fname: 'get_contents',
-    			user_id: USER_ID,
-    			item_type: typeId,
-    			last_update: lastUpdate,
-    			timestamp: init_timestamp('get_contents')
-    		},
-    		success : function(data) {
-    			if (!data) {
-    				console.warn('get_contents: null data');
-    				return;
-    			}
-    			//console.log(data);
-    			if (self.views[typeId].displayType == 'grid') {
-    				data = JSON.parse(data);
-    			}
-    			self.setData(typeId, data);
-    		},
-    		complete : function() {
-    			
-    		}
-    	});
-    }
-});
 
 /*
  * Data Grid Row
@@ -861,121 +701,6 @@ function openItem(row) {
     }
 }
 
-/*
- * Info Panel
- */
-
-function InfoPanel(params) {
-	this.element = $('#'+params.elementId);
-    this.initialize();
-}
-
-$.extend(InfoPanel.prototype, {
-	initialize: function() {
-    },
-    
-    busy: function() {
-    	this.element.html('<img src="picts/ajax-loader.gif"/>');
-    	return this;
-    },
-    
-    update: function(items) {
-    	console.log('InfoPanel.update');
-    	var self = this;
-    	
-    	if (!items || !items.length) {
-    		self.element.html( default_info() );
-    		return;
-    	}
-    	
-    	var numItems = items.length;
-    	if (numItems > 0) {
-    		if (numItems == 1) {
-    			var item = items[0];
-    			if (item) {
-	    			item.getInfo().pipe(function(info) {
-	    				self.element.html(info);
-	    			});
-    			}
-    		}
-    		else {
-    			self.element.html(numItems + ' item' + (numItems > 1 ? 's' : '') + 
-    				' selected.<br><br>Click an action icon at the top to share, organize, delete, or analyze.');
-    				//TODO add action links for sharing, adding to notebook, deleting, etc...
-    		}
-    	}
-    },
-    
-    scheduleUpdate: function(items) {
-    	if (this.timer)
-    		window.clearTimeout(this.timer);
-
-    	this.timer = window.setTimeout( 
-    		function() { 
-    			infoPanel.busy().update(items);
-    		},
-    		500
-    	);
-    }
-});
-
-/* 
- * Table of Contents Panel
- */
-
-function TocPanel(params) {
-	this.element = $('#'+params.elementId);
-	this.selection = params.selection;
-    this.initialize();
-}
-
-$.extend(TocPanel.prototype, {
-	initialize: function() {
-		var self = this;
-		
-		// Style TOC
-		this.element.addClass('coge-side-menu');
-		
-		// Add click handler
-		this.element.find('span').each(function(index, value) {
-			$(value).on('click', function () {
-				self.clearSelection().selectItem(this);
-		    });
-		});
-		
-		//TODO dynamically generate html from types here instead of statically in User.tmpl
-		
-		this.element.show();
-    },
-    
-    clearSelection: function() {
-    	this.element.find('span').removeClass('selected');
-    	return this;
-    },
-    
-    selectItemType: function(itemType) {
-    	var item = $('span[data-type="'+itemType+'"]');
-    	this.selectItem(item);
-    },
-    
-    selectItem: function(item) {
-    	this.element.find('span').removeClass('selected'); // disable all
-    	$(item).addClass('selected'); // enable this one
-    	var itemType = $(item).data('type');
-    	console.log('TocPanel.selectItem ' + itemType);
-    	
-    	if (this.selectedTypeId && itemType === this.selectedTypeId) // already selected
-    		return;
-    	this.selectedTypeId = itemType;
-    	
-    	// Call user handler
-    	if (this.selection)
-			this.selection(itemType);
-    	
-    	return this;
-    }
-});
-
 function update_icons(items) { //TODO move into ContentPanel
 	if ( items && items.length > 0) 
 		$('.item-button:not(#add_button)').removeClass('coge-disabled');
@@ -1176,7 +901,7 @@ function search_notebooks () {
 	$("#wait_notebook").animate({opacity:1});
 	$("#notebook_select").html("<option disabled='disabled'>Searching...</option>");
 
-	$.ajax({
+	coge.utils.ajax({
 		data: {
 			fname: 'search_notebooks',
 			search_term: search_term,
