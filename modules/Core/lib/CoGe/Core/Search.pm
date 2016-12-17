@@ -223,7 +223,7 @@ sub search {
 		my $rs = do_search('UserGroup', $conditions, undef, $query, $db, $user);
 		if ($rs) {
 			my @user_groups = sort info_cmp $rs->all();
-			push_results(\@results, \@user_groups, 'user_group', $user, undef, $favorites);
+			push_results(\@results, \@user_groups, 'group', $user, undef, $favorites);
 		}
 	}
 
