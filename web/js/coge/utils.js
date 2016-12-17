@@ -4,7 +4,7 @@ const COGE_TIME_ZONE = "America/Phoenix";
 var coge = window.coge = (function(ns) {
 	var waitToSearchTimer;
 	var localTimeZone;
-	
+
     ns.utils = {
         ascending: function(a, b) {
             return a < b ? -1 : a > b ? 1 : 0;
@@ -166,6 +166,29 @@ var coge = window.coge = (function(ns) {
     		// Convert time to user's time zone
     	    var userTime = localTime.clone().tz(this.localTimeZone); // is clone necessary here?
     	    return userTime.format("YYYY-MM-DD HH:MM:SS");
+    	},
+
+    	ajaxWithTimestamp: function(request) {
+    	    var self = this;
+
+    	    if (request.data) {
+    	        // Generate a unique string representing the request
+    	        var signature = [request.type, request.url, (request.data && request.data.fname ? request.data.fname : '') ].join('_');
+                if (!this.timestamps)
+                    this.timestamps = [];
+    	        request.data.timestamp = this.timestamps[signature] = new Date().getTime();
+    	    }
+
+    	    return $.ajax(request).done(
+    	        function(response) {
+    	            console.log(self.timestamps);
+                    if (response.data && response.data.timestamp && response.data.timestamp < self.timestamps[name]) {
+                        console.log('ajaxWithTimestamp: skipping stale request');
+                        return;
+                    }
+                    return response;
+    	        }
+            );
     	}
     };
 
