@@ -46,6 +46,7 @@ sub gen_body {
 	my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'SearchResults.tmpl' );
 	$template->param( API_BASE_URL => $CONF->{SERVER} . 'api/v1/',
 	                  USER_NAME   => $USER->user_name,
+					  USER_ID     => $USER->id,
 	                  SEARCH_TEXT => $SEARCH_TEXT,
 					  QUERY       => encode_json(parse_query($SEARCH_TEXT)));
 	

@@ -158,7 +158,7 @@ sub gen_body {
     return $template->output;
 }
 
-sub get_item_info {
+sub get_item_info { #TODO move into API and render on client-side -- this is also called by search-results.js
     my %opts      = @_;
     my $item_id = $opts{item_id};
     my $item_type = $opts{item_type};
@@ -188,13 +188,14 @@ sub get_item_info {
         }
 
         my $info = $group->info;
-        my $view_link = qq{open_item('$item_type','$info','GroupView.pl?ugid=$item_id');};
+        my $view_link = qq{this.open_item('$item_type','$info','GroupView.pl?ugid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="group_dialog();" title="Edit membership">Edit membership</span><br>}
-            . qq{<span class="link" onclick="$view_link" title="View contents">View contents</span><br>}
-            . qq{</div></div>};        
+            . qq{<span class="link" onclick="$view_link" title="View contents">View group</span><br>};
+#        $html .= qq{<span class="link" onclick="group_dialog();" title="Edit membership">Edit membership</span><br>}
+#            if ( ( $group->is_editable($USER) and ( not $group->locked or $USER->is_admin ) ) );
+        $html .= qq{</div></div>};
     }
     elsif ( $item_type eq 'notebook' ) {
         my $notebook = $DB->resultset('List')->find($item_id);
@@ -282,9 +283,9 @@ sub get_item_info {
         $html .= '</div>';
         
         my $info = 'Genome <i>' . js_escape($genome->info) . '</i>';
-        my $edit_link = qq{open_item('$item_type','$info','GenomeInfo.pl?gid=$item_id');};
-        my $view_link = qq{open_item('$item_type','$info','GenomeView.pl?gid=$item_id&tracks=sequence%2Cfeatures');};
-        my $load_link = qq{open_item('$item_type','$info','LoadAnnotation.pl?gid=$item_id');};
+        my $edit_link = qq{this.open('$item_type','$info','GenomeInfo.pl?gid=$item_id');};
+        my $view_link = qq{this.open('$item_type','$info','GenomeView.pl?gid=$item_id&tracks=sequence%2Cfeatures');};
+        my $load_link = qq{this.open('$item_type','$info','LoadAnnotation.pl?gid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}

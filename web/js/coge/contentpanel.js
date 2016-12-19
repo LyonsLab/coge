@@ -89,10 +89,14 @@ class ContentPanel {
     	return this;
     }
 
-    update(viewId) {
+    setView(viewId) {
     	console.log('ContentPanel.update: ' + viewId + ' ');
     	this.selectedView = viewId;
     	return this;
+    }
+
+    getView() {
+        return this.selectedView;
     }
 
     render(refresh) {
