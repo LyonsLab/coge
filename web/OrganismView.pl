@@ -23,7 +23,7 @@ use vars qw(
     $P $PAGE_NAME $PAGE_TITLE $LINK
     $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM
     %FUNCTION $P $SERVER $MAX_NUM_ORGANISM_RESULTS $MAX_NUM_CHROMOSOME_RESULTS
-    $MAX_DS_LENGTH
+    $MAX_DS_LENGTH $EMBED
 );
 
 $| = 1;    # turn off buffering
@@ -107,23 +107,31 @@ sub dispatch {
 }
 
 sub gen_html {
+    my $template;
+
+    $EMBED = $FORM->param('embed') || 0;
+    if ($EMBED) {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+        $template->param( PAGE_TITLE => 'OrganismView',
+            TITLE                    => 'OrganismView: Search Organisms and Genomes',
+            PAGE_LINK                => $LINK,
+            SUPPORT_EMAIL            => $P->{SUPPORT_EMAIL},
+            HEAD                     => qq{},
+            HOME                     => $P->{SERVER},
+            HELP                     => 'OrganismView',
+            WIKI_URL                 => $P->{WIKI_URL} || '',
+            ADMIN_ONLY               => $USER->is_admin,
+            USER                     => $USER->display_name || '',
+            CAS_URL                  => $P->{CAS_URL} || '',
+            COOKIE_NAME              => $P->{COOKIE_NAME} || ''
+        );
+        $template->param( LOGON => 1 ) unless ($USER->user_name eq "public");
+    }
+
     my ( $body, $seq_names, $seqs ) = gen_body();
-    
-    my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
-    $template->param( PAGE_TITLE => 'OrganismView',
-		              TITLE      => 'OrganismView: Search Organisms and Genomes',
-    				  PAGE_LINK  => $LINK,
-    				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
-    				  HEAD       => qq{},
-				      HOME       => $P->{SERVER},
-                      HELP       => 'OrganismView',
-                      WIKI_URL   => $P->{WIKI_URL} || '',
-    				  ADMIN_ONLY => $USER->is_admin,
-                      USER       => $USER->display_name || '',
-                      CAS_URL    => $P->{CAS_URL} || '',
-                      COOKIE_NAME => $P->{COOKIE_NAME} || ''
-    );
-    $template->param( LOGON    => 1 ) unless ($USER->user_name eq "public");
     $template->param( BODY => $body );
 
     return $template->output;
@@ -140,7 +148,8 @@ sub gen_body {
 
     # Initialize template
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'OrganismView.tmpl' );
-    
+
+    $template->param( EMBED => $EMBED );
     $template->param( ORG_SEARCH  => $org_name ) if $org_name;
     
     # Get organisms and insert into template
