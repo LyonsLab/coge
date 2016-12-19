@@ -18,7 +18,6 @@ class DataGrid {
 
         this.filter    = params.filter;
         this.selectionCallback = params.selectionCallback;
-        this.openCallback = params.openCallback;
         this.mouseOver = params.mouseOver;
         this.mouseOut  = params.mouseOut;
         this.dateSortAsc  = params.dateSortAsc;
@@ -150,6 +149,10 @@ class DataGrid {
 				.clear()
 				.rows.add(data);
     	}
+    	else {
+    	    this.dataTable.api()
+    	        .clear()
+    	}
     }
 
     update(data) {
@@ -158,10 +161,6 @@ class DataGrid {
     	if (data) {
     	    this.setData(data);
     	    this.redraw();
-//	    	this.dataTable.api()
-//				.clear()
-//				.rows.add(data)
-//				.draw();
     	}
 
         return this;
@@ -234,7 +233,7 @@ class DataGrid {
 
     openItem(row) {
         console.log('DataGrid.openItem');
-        if (this.openCallback)
-            this.openCallback.call(this, row);
+        if (row && row.open)
+            row.open.call(row);
     }
 }

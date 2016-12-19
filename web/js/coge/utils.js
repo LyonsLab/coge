@@ -92,6 +92,12 @@ var coge = window.coge = (function(ns) {
                urlParams[decode(match[1])] = decode(match[2]);
             return urlParams;
         },
+
+        getURLParameter: function(name) {
+            return decodeURI(
+                (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1]
+            );
+        },
         
         toQueryString: function(obj, prefix) { // accepts an object of query params
 		    var str = [];

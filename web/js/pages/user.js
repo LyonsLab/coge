@@ -237,7 +237,7 @@ $(function() {
 			height: $(window).height() - 210, // this depends on the height of the header/footer and should be passed in as an argument
 			filter: function(data) {
 				// Filter rows based on view
-				var view = views[contentPanel.selectedView];
+				var view = views[contentPanel.getView()];
 				if (!view.noFilter) {
 					if (view.deleted && data.deleted == '0')
 						return false;
@@ -256,7 +256,6 @@ $(function() {
 			    infoPanel.busy().update(items);
 				update_icons(items);
 			},
-			openCallback: openItem,
 			mouseOver: function(row) {
 			    infoPanel.busy().scheduleUpdate([row]);
 			},
@@ -304,7 +303,7 @@ $(function() {
 			cancel_poll();
 			contentPanel
 				.update(typeId)
-				.done(function() { 
+				.done(function() {
 					contentPanel.grid.search(''); // clear search filter
 					contentPanel.render();
 					schedule_poll();
@@ -321,7 +320,7 @@ $(function() {
 	});
 	
 	// Get starting page from URL and initialize TOC panel
-	var toc_id = getURLParameter('p');
+	var toc_id = coge.utils.getURLParameter('p');
 	if (!toc_id || toc_id == 'null')
 		toc_id = 'mine';
 	tocPanel.selectItemType(toc_id);
@@ -381,12 +380,6 @@ function pad(string, size) {
     return string;
 }
 
-function getURLParameter(name) {
-    return decodeURI(
-        (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1]
-    );
-}
-
 function poll(sync) {
 	console.log('poll');
 	
@@ -429,7 +422,7 @@ function cancel_poll() {
 }
 
 function default_info() {
-	switch(contentPanel.selectedView) {
+	switch(contentPanel.getView()) {
 		case 'activity':
 			return "Here is a summary of all analyses you have performed.";
 		case 'analyses':
@@ -470,7 +463,7 @@ function default_info() {
  * Data Grid Row
  */
 
-class DataGridRow {
+class DataGridRow { //FIXME duplicated in search-results.js
     constructor(data, type) {
         $.extend(this, data);
         if (!this.type) // mdb added condition 9/16/18 COGE-388 -- prevent native type (genome,etc) from being set to "favorite"
@@ -653,6 +646,50 @@ class DataGridRow {
 
     	return '<!--' + diffMS + '-->' + dateStr; // embed the time difference in a hidden html comment for sorting
     }
+
+    open(url) {
+        if (this.type == 'group')
+            group_dialog();
+        else if (this.type == 'analyses' || this.type == 'loads')
+            window.open(this.link, '_blank');
+        else {
+            var title = this.getDescription();
+            var link  = url || this.getLink();
+            var flags = this.getFlags({noSpaces: 1});
+            title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
+            link = link + "&embed=1";
+            console.log('DataGrid.openItem: ' + link);
+            var height = $(window).height() * 0.8;
+            var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+                .dialog({
+                    //title: title,
+                    width: '80%',
+                    height: height,
+                    open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
+                        $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
+                    }
+                })
+                .dialog('open');
+        }
+    }
+
+    // For "Create New Genome" and "Create New Experiment" //FIXME merge with openItem ...?
+//    function open_item(item_type, title, link) {
+//        title = title + "<br><a class='xsmall' style='color:#eeeeee;' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
+//        link = link + "&embed=1";
+//        console.log(link);
+//        var height = $(window).height() * 0.8;
+//        var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+//            .dialog({
+//                //title: title,
+//                width: '80%',
+//                height: height, //'80%',
+//                open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
+//                    $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
+//                }
+//            })
+//            .dialog('open');
+//    }
 }
 
 function dateSortAscending(x,y) {
@@ -673,32 +710,6 @@ function time_diff(s) {
         return 999999; // sort last
     var diff = matches[1];
     return parseInt(diff);
-}
-
-function openItem(row) {
-    if (row.type == 'group')
-        group_dialog();
-    else if (row.type == 'analyses' || row.type == 'loads')
-        window.open(row.link, '_blank');
-    else {
-        var title = row.getDescription();
-        var link = row.getLink();
-        var flags = row.getFlags({noSpaces: 1});
-        title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
-        link = link + "&embed=1";
-        console.log('DataGrid.openItem: ' + link);
-        var height = $(window).height() * 0.8;
-        var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
-            .dialog({
-                //title: title,
-                width: '80%',
-                height: height,
-                open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
-                    $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
-                }
-            })
-            .dialog('open');
-    }
 }
 
 function update_icons(items) { //TODO move into ContentPanel
@@ -1118,10 +1129,10 @@ function remove_user_from_group(user_id) {
 }
 
 function edit_dialog() {
-	if (contentPanel.selectedView == 'group') {
+	if (contentPanel.getView() == 'group') {
 		group_dialog();
 	}
-//	else if (contentPanel.selectedView == 'notebook') {
+//	else if (contentPanel.getView() == 'notebook') {
 //		add_to_notebook_dialog();
 //	}
 }
@@ -1169,10 +1180,10 @@ function create_notebook_dialog() {
 }
 
 function add_dialog() {
-	if (contentPanel.selectedView == 'group') {
+	if (contentPanel.getView() == 'group') {
 		create_group_dialog();
 	}
-	else if (contentPanel.selectedView == 'notebook') {
+	else if (contentPanel.getView() == 'notebook') {
 		create_notebook_dialog();
     }
 }
@@ -1310,24 +1321,6 @@ function toggle_star(img, id) {
 			$(img).attr({ src: (val == 0 ? "picts/star-hollow.png" : "picts/star-full.png") });
 		}
 	});
-}
-
-// For "Create New Genome" and "Create New Experiment" //FIXME merge with openItem ...?
-function open_item(item_type, title, link) {
-	title = title + "<br><a class='xsmall' style='color:#eeeeee;' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
-	link = link + "&embed=1";
-	console.log(link);
-	var height = $(window).height() * 0.8;
-	var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
-		.dialog({
-			//title: title,
-			width: '80%',
-			height: height, //'80%',
-			open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
-                $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
-            }
-		})
-		.dialog('open');
 }
 
 function search_metadata(type, key) {

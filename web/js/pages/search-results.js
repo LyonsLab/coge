@@ -62,7 +62,8 @@ $(function () {
 
 	// Initialize the main panels
 	infoPanel = new InfoPanel({
-		elementId: 'info_panel'
+		elementId: 'info_panel',
+		defaultInfo: default_info
 	});
 
 	contentPanel = new ContentPanel({
@@ -102,7 +103,7 @@ $(function () {
 		elementId: 'toc_panel',
 		selection: function(typeId) {
 			contentPanel
-			    .update(typeId)
+			    .setView(typeId)
 			    .render();
 			contentPanel.grid.search(''); // clear search filter
 			infoPanel.update(null);
@@ -110,7 +111,6 @@ $(function () {
 			//$('#search_input').val(''); //FIXME move into ContentPanel
 		}
 	});
-
 });
 
 function search_stuff(search_term) {
@@ -151,7 +151,21 @@ function search_stuff(search_term) {
                 $('#toc_panel').hide();
             }
             else {
-			    tocPanel.selectItemType(firstType);
+                // Remove TOC items with no results
+                $('#toc_panel').find('li > span').each(function (index, el) {
+                    console.log(el);
+                    var type = $(el).attr('data-type');
+                    console.log(type);
+                    if (!resultsByType.hasOwnProperty(type))
+                        $(el).hide();
+                });
+
+                // Get starting page from URL and initialize TOC panel
+                var toc_id = coge.utils.getURLParameter('p');
+                if (toc_id && toc_id != 'null')
+                    tocPanel.selectItemType(toc_id);
+			    else
+			        tocPanel.selectItemType(firstType);
 			    $('#toc_panel').show();
             }
 
@@ -168,11 +182,26 @@ function search_stuff(search_term) {
 		});
 }
 
+function default_info() {
+	switch(contentPanel.getView()) {
+	    case 'organism':
+        case 'genome':
+        case 'feature':
+		case 'experiment':
+		case 'notebook':
+		case 'group':
+			return "<p>These are data items that match your search specification.</p>"
+				+ "<p><b>Hover over</b> an item to view additional info.</p>"
+                + "<p><b>Single-click</b> to select one or more items to " + (USER_ID ? "share, organize, delete, or" : "") + " send to one of CoGe's tools. Use <b>Ctrl-click</b> to select multiple items.</p>"
+                + "<p><b>Double-click</b> an item for a detailed view of the item.</p>";
+	}
+}
+
 /*
  * Data Grid Row
  */
 
-class DataGridRow {
+class DataGridRow { //FIXME duplicated in user.js
     constructor(data, type) {
         $.extend(this, data);
     }
@@ -277,7 +306,9 @@ class DataGridRow {
     getLink() {
     	var type = this.type;
 
-    	if (type == 'genome')
+        if (type == 'organism')
+            return 'OrganismView.pl?oid=' + this.id;
+    	else if (type == 'genome')
     		return 'GenomeInfo.pl?gid=' + this.id;
     	else if (type == 'experiment')
     		return 'ExperimentView.pl?eid=' + this.id;
@@ -285,5 +316,31 @@ class DataGridRow {
     		return 'NotebookView.pl?nid=' + this.id;
     	else
     		return this.link;
+    }
+
+    open() {
+        if (this.type == 'group')
+            group_dialog();
+        else if (this.type == 'analyses' || this.type == 'loads')
+            window.open(this.link, '_blank');
+        else {
+            var title = this.getDescription();
+            var link  = this.getLink();
+            var flags = this.getFlags({noSpaces: 1});
+            title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
+            link = link + "&embed=1";
+            console.log('DataGrid.openItem: ' + link);
+            var height = $(window).height() * 0.8;
+            var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+                .dialog({
+                    //title: title,
+                    width: '80%',
+                    height: height,
+                    open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
+                        $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
+                    }
+                })
+                .dialog('open');
+        }
     }
 }
