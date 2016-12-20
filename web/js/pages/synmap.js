@@ -358,7 +358,7 @@ function update_blast_option(val) {
     if (!c[1].value)
         c[1].value = BLAST_OPTION;
     if (val == 4) { // lastz
-        c[0].innerHTML = '--hspthresh';
+        c[0].innerHTML = 'Threshold (--hspthresh):';
         if (!c[1].value || c[1].value == '0.0001')
             c[1].value = '3000';
         c[2].innerHTML = '(default 3000)';
@@ -366,7 +366,7 @@ function update_blast_option(val) {
     } else if (val == 6) // lastal
         l.hide();
     else { // blasts
-        c[0].innerHTML = '-evalue';
+        c[0].innerHTML = 'Threshold (-evalue):';
         if (!c[1].value || c[1].value == '3000')
             c[1].value = '0.0001';
         c[2].innerHTML = '(default 0.0001)';
