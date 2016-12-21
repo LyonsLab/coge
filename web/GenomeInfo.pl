@@ -1803,10 +1803,18 @@ sub update_annotation {
     my $image_filename = $opts{edit_annotation_image};
     my $fh             = $FORM->upload('edit_annotation_image');
 
+    unless ($aid && $type) {
+        warn "Missing required inputs";
+        return;
+    }
+
     #TODO check user access here
 
     my $ga = $DB->resultset('GenomeAnnotation')->find($aid);
-    return unless $ga;
+    unless ($ga) {
+        warn "Genome annotation $aid not found";
+        return;
+    };
 
     # Create the type and type group if not already present
     my $group_rs;
@@ -1832,7 +1840,7 @@ sub update_annotation {
     $ga->image_id( $image->id ) if ($image);
     $ga->update;
 
-    return;
+    return encode_json({ result => [] }); # a response is needed to fire fileupload "done" callback
 }
 
 sub remove_annotation {
