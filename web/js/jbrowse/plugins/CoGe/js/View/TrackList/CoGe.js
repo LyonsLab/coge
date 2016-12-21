@@ -815,7 +815,11 @@ define(['dojo/_base/declare',
 			return;
 		}
 		var target_is_in_selector = target.node.firstChild.config;
-		if (target_is_in_selector) {
+		if (!target_is_in_selector) { // dragging a track from the selector onto jbrowse's track container
+			var data = nodes.map(function(n){ return source.map[n.id].data; });
+			dojo.destroy(dojo.byId('track_' + data[0].coge.type + data[0].coge.id));
+			this.browser.publish('/jbrowse/v1/c/tracks/show', data);
+		} else {
 			var items = [];
 			nodes.forEach(function(node) {
 				var n = target.node.firstChild;
