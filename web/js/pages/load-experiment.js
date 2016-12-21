@@ -211,12 +211,11 @@ $.extend(ExperimentDescriptionView.prototype, {
     },
 
     is_valid: function() {
-        var name = this.el.find('#edit_name').val();
+        var name        = this.el.find('#edit_name').val();
         var description = this.el.find('#edit_description').val();
-        var version = this.el.find('#edit_version').val();
-        var link = this.el.find('#edit_link').val();
-        var restricted = this.el.find('#restricted').is(':checked');
-        var genome = this.el.find('#edit_genome').val();
+        var version     = this.el.find('#edit_version').val();
+        var link        = this.el.find('#edit_link').val();
+        var restricted  = this.el.find('#restricted').is(':checked');
 
         if (!this.isSRA) { // metadata fields are set in Pipeline for SRA data
             if (!name) {
@@ -240,7 +239,8 @@ $.extend(ExperimentDescriptionView.prototype, {
             }
         }
 
-        if (!genome || !this.experiment.gid) {
+        var genome = this.el.find('#edit_genome').val();
+        if (!genome && !this.experiment.gid) {
             if (this.onError)
                 this.onError('Please specify a genome.');
             return false;
