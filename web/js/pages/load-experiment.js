@@ -115,7 +115,6 @@ function render_template(template, container) {
 function ExperimentDescriptionView(opts) {
     this.experiment = opts.experiment;
     this.metadata = opts.metadata;
-    //this.gid = opts.gid;
     this.onError = opts.onError;
     this.sources = undefined;
     this.title = "Describe Experiment";
@@ -160,12 +159,11 @@ $.extend(ExperimentDescriptionView.prototype, {
         // Set experiment metadata if from SRA  // TODO add metadata extracted from SRA metadata
 		if (this.isSRA) {
            this.metadata = {
-                name: '',
-                description: '',
-                version: '',
-                restricted: 0,
-                source_name: 'NCBI-SRA',
-                link: ''
+                name:         '<to be determined from SRA>',
+                description:  '<to be determined from SRA>',
+                version:      '<to be determined from SRA>',
+                restricted:   0,
+                source_name: 'NCBI-SRA'
             };
         }
 
@@ -242,7 +240,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             }
         }
 
-        if (!genome || !this.gid) {
+        if (!genome || !this.experiment.gid) {
             if (this.onError)
                 this.onError('Please specify a genome.');
             return false;
