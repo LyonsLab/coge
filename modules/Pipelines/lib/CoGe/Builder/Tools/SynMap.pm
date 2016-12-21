@@ -1230,41 +1230,41 @@ sub get_blast_config {
 	return {
 		algo => $BLASTN . " -task megablast",    #megablast
 		opt         => "MEGA_SELECT",  #select option for html template file
-		filename    => "megablast" . ($blast_option && $blast_option != 0.0001 ? '.' . $blast_option : ''),
+		filename    => "megablast" . ($blast_option && $blast_option != 0.0001 ? '_evalue' . $blast_option : ''),
 		displayname => "MegaBlast",
 		formatdb    => 1,
 	} if $blast == 0;
 	return {
 		algo => $BLASTN . " -task dc-megablast",   #discontinuous megablast
 		opt  => "DCMEGA_SELECT",
-		filename        => "dcmegablast" . ($blast_option && $blast_option != 0.0001 ? '.' . $blast_option : ''),
+		filename        => "dcmegablast" . ($blast_option && $blast_option != 0.0001 ? '_evalue' . $blast_option : ''),
 		displayname     => "Discontinuous MegaBlast",
 		formatdb        => 1,
 	} if $blast == 1;
 	return {
 		algo            => $BLASTN . " -task blastn",
 		opt             => "BLASTN_SELECT",
-		filename        => "blastn" . ($blast_option && $blast_option != 0.0001 ? '.' . $blast_option : ''),
+		filename        => "blastn" . ($blast_option && $blast_option != 0.0001 ? '_evalue' . $blast_option : ''),
 		displayname     => "BlastN",
 		formatdb        => 1,
 	} if $blast == 2;
 	return {
 		algo            => $TBLASTX,
 		opt             => "TBLASTX_SELECT",
-		filename        => "tblastx" . ($blast_option && $blast_option != 0.0001 ? '.' . $blast_option : ''),
+		filename        => "tblastx" . ($blast_option && $blast_option != 0.0001 ? '_evalue' . $blast_option : ''),
 		displayname     => "TBlastX",
 		formatdb        => 1,
 	} if $blast == 3;
 	return {
 		algo            => $LASTZ,
 		opt             => "LASTZ_SELECT",
-		filename        => "lastz" . ($blast_option && $blast_option != 3000 ? '.' . $blast_option : ''),
+		filename        => "lastz" . ($blast_option && $blast_option != 3000 ? '_hspthresh' . $blast_option : ''),
 		displayname     => "(B)lastZ"
 	} if $blast == 4;
 	return {
 		algo            => $BLASTP . " -task blastp",
 		opt             => "BLASTP_SELECT",
-		filename        => "blastp" . ($blast_option && $blast_option != 0.0001 ? '.' . $blast_option : ''),
+		filename        => "blastp" . ($blast_option && $blast_option != 0.0001 ? '_evalue' . $blast_option : ''),
 		displayname     => "BlastP",
 		formatdb        => 1,
 	} if $blast == 5;

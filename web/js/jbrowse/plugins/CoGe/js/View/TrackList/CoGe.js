@@ -815,9 +815,7 @@ define(['dojo/_base/declare',
 			return;
 		}
 		var target_is_in_selector = target.node.firstChild.config;
-		if (!target_is_in_selector) // dragging a track from the selector onto jbrowse's track container
-			this.browser.publish('/jbrowse/v1/v/tracks/show', nodes.map(function(n){ return source.map[n.id].data; }));
-		else {
+		if (target_is_in_selector) {
 			var items = [];
 			nodes.forEach(function(node) {
 				var n = target.node.firstChild;
