@@ -229,6 +229,7 @@ function search_bar(div_id){
 
 </SCRIPT>
 
+<TMPL_UNLESS NAME="EMBED">
 <TABLE class="ui-widget-content ui-corner-all coge-section">
        <TR>
          <TD nowrap>
@@ -271,6 +272,7 @@ function search_bar(div_id){
 	<td><span class="coge-button coge-button-lg" onclick="search_chain(1)">Search</span>
 	<td align=right><span class="coge-button coge-button-lg" onclick="$('#feat_list').dialog('open');">Feature List</span>
 </TABLE>
+</TMPL_UNLESS>
 
 <div id="data_table" class="coge-result hidden">
     <table>

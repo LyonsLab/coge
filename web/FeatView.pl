@@ -13,7 +13,7 @@ use POSIX;
 use Storable qw(dclone);
 no warnings 'redefine';
 
-use vars qw($P $USER $FORM $ACCN $FID $coge $PAGE_NAME $PAGE_TITLE $LINK);
+use vars qw($P $USER $FORM $ACCN $FID $coge $PAGE_NAME $PAGE_TITLE $LINK $EMBED);
 
 $PAGE_TITLE = 'FeatView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
@@ -383,7 +383,7 @@ sub get_anno {
         
     my $anno;
     $anno = qq{<h4>Annotation count: <span class="note">(} . scalar @feats . qq{)</span></h4><hr>}
-      if scalar @feats;
+      if (scalar(@feats) && !$EMBED );
 
     my $i = 0;
     foreach my $feat (@feats) {
@@ -453,34 +453,42 @@ sub show_express {
 }
 
 sub gen_html {
-    my $html;
-    my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+    my $template;
 
-    #$template->param(TITLE=>'Feature Viewer');
-    $template->param( PAGE_TITLE => 'FeatView',
-		              TITLE      => 'FeatView: Search Features Across Organisms',
-                      PAGE_LINK  => $LINK,
-                      SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
-                      HOME       => $P->{SERVER},
-                      HELP       => 'FeatView',
-                      WIKI_URL   => $P->{WIKI_URL} || '',
-                      USER       => $USER->display_name || '' );
+    $EMBED = $FORM->param('embed') || 0;
+    if ($EMBED) {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {
+        $template = HTML::Template->new( filename => $P->{TMPLDIR}.'generic_page.tmpl' );
 
-    $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    my $body = gen_body();
-    $template->param( BODY => $body );
-    $template->param( ADMIN_ONLY => $USER->is_admin,
-                      CAS_URL    => $P->{CAS_URL} || '',
-                      COOKIE_NAME => $P->{COOKIE_NAME} || '' );
-    $html .= $template->output;
+        $template->param(
+            PAGE_TITLE    => 'FeatView',
+            TITLE         => 'FeatView: Search Features Across Organisms',
+            PAGE_LINK     => $LINK,
+            SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
+            HOME          => $P->{SERVER},
+            HELP          => 'FeatView',
+            WIKI_URL      => $P->{WIKI_URL} || '',
+            USER          => $USER->display_name || ''
+        );
 
-    #    print STDERR $html;
-    return $html;
+        $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
+        $template->param(
+            ADMIN_ONLY  => $USER->is_admin,
+            CAS_URL     => $P->{CAS_URL} || '',
+            COOKIE_NAME => $P->{COOKIE_NAME} || ''
+        );
+    }
+
+    $template->param( BODY => gen_body() );
+
+    return $template->output;
 }
 
 sub gen_body {
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'FeatView.tmpl' );
+    $template->param( EMBED     => $EMBED );
     $template->param( ACCN      => $ACCN );
     $template->param( FEAT_TYPE => get_feature_types() );
     $template->param( ORG_LIST  => get_orgs( type => "none" ) );
