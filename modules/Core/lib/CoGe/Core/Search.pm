@@ -149,9 +149,9 @@ sub push_results {
 				'name'          => $_->info(hideRestrictedSymbol=>1),
 				'id'            => int $_->id
 			};
-			$result->{'certified'} = $_->certified ? Mojo::JSON->true : Mojo::JSON->false if $_->can('certified');
-			$result->{'deleted'} = $_->deleted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('deleted');
-			$result->{'favorite'} = ($favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false) if defined $favorites;
+			$result->{'certified'}  = $_->certified ? Mojo::JSON->true : Mojo::JSON->false if $_->can('certified');
+			$result->{'deleted'}    = $_->deleted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('deleted');
+			$result->{'favorite'}   = ($favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false) if defined $favorites;
 			$result->{'restricted'} = $_->restricted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('restricted');
 			push @$results, $result;
 		}
@@ -173,7 +173,7 @@ sub search {
     my $favorites;
 	$favorites = CoGe::Core::Favorites->new(user => $user) if ($user && !$user->is_public && (!$type || $type eq 'genome' || $type eq 'experiment' || $type eq 'notebook'));
 
-    # organisms
+    # Organisms
 	if ((!$type || $type eq 'organism') && $query->{'search_terms'} && contains_none_of($query, ['certified', 'deleted', 'favorite', 'feature_type', 'restricted', 'metadata_key', 'metadata_value', 'role', 'tag'])) {
 		my $conditions = build_conditions(['me.name', 'me.description', 'me.organism_id'],  $query->{'search_terms'});
 		my @organisms = $db->resultset("Organism")->search( { -and => $conditions } );
@@ -187,7 +187,7 @@ sub search {
 		}
 	}
 
-    # genomes
+    # Genomes
 	if ((!$type || $type eq 'genome') && contains_none_of($query, ['feature_type', 'tag'])) {
 		my $conditions = build_conditions(['me.name', 'me.description', 'me.genome_id', 'organism.name', 'organism.description'],  $query->{'search_terms'});
 		my $rs = do_search('Genome', $conditions, $conditions ? { join => 'organism' } : undef, $query, $db, $user);
@@ -197,7 +197,7 @@ sub search {
 		}
 	}
 
-    # experiments
+    # Experiments
 	if ((!$type || $type eq 'experiment') && contains_none_of($query, ['certified', 'feature_type'])) {
 		my $conditions = build_conditions(['me.name', 'me.description', 'me.experiment_id', 'genome.name', 'genome.description', 'organism.name', 'organism.description'],  $query->{'search_terms'});
 		my $rs = do_search('Experiment', $conditions, $conditions ? { join => { 'genome' => 'organism' } } : undef, $query, $db, $user);
@@ -207,7 +207,7 @@ sub search {
 		}
 	}
 
-    # notebooks
+    # Notebooks
 	if ((!$type || $type eq 'notebook') && contains_none_of($query, ['certified', 'feature_type', 'tag'])) {
 		my $conditions = build_conditions(['name', 'description', 'list_id'],  $query->{'search_terms'});
 		my $rs = do_search('List', $conditions, undef, $query, $db, $user);
@@ -217,7 +217,7 @@ sub search {
 		}
 	}
 
-    # user groups
+    # User groups
 	if ($show_users && (!$type || $type eq 'usergroup') && contains_none_of($query, ['certified', 'favorite', 'feature_type', 'restricted', 'metadata_key', 'metadata_value', 'role', 'tag'])) {
 		my $conditions = build_conditions(['name', 'description', 'user_group_id'],  $query->{'search_terms'});
 		my $rs = do_search('UserGroup', $conditions, undef, $query, $db, $user);
@@ -227,10 +227,12 @@ sub search {
 		}
 	}
 
-    # features
+    # Features
 	if ((!$type || $type eq 'feature') && $query->{'search_terms'} && contains_none_of($query, ['certified', 'deleted', 'favorite', 'restricted', 'metadata_key', 'metadata_value', 'role', 'tag'])) {
 		my $dbh = $db->storage->dbh;
 		my $feature_type = $query->{'feature_type'};
+
+		#FIXME move literal query into CoGeDBI, mdb 12/22/16
 		my $sql = 'SELECT feature_name.name,feature.feature_id,' . ($feature_type ? "'" . $feature_type . "'" : 'feature_type.name') . ',organism.name,data_source.name,genome.version,genomic_sequence_type.name ' .
 			'FROM feature_name ' .
 				'JOIN feature USING(feature_id) ';
@@ -248,6 +250,7 @@ sub search {
 		}
 		$sql .= 'GROUP BY feature_name.name,feature.feature_id';
 		my $rows = $dbh->selectall_arrayref($sql);
+
 		foreach (@$rows) {
 			push @results, {
 				type         => 'feature',
