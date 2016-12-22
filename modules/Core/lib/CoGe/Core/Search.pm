@@ -251,7 +251,7 @@ sub search {
 		$sql .= 'GROUP BY feature_name.name,feature.feature_id';
 		my $rows = $dbh->selectall_arrayref($sql);
 
-		foreach (@$rows) {
+		foreach (@$rows) { #TODO use fetchall_hashref and map for performance improvement, mdb 12/22/16
 			push @results, {
 				type         => 'feature',
 				name         => $_->[0],
