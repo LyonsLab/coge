@@ -101,7 +101,7 @@
     </tr>
   </table>
   <br>
-  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled coge-button">Create</span>
+  <span id="create_source_button" onClick="create_source();" class="ui-state-disabled coge-button r">Create</span>
 </div>
 
 <TMPL_INCLUDE NAME="widgets/Splash.tmpl">
@@ -149,7 +149,7 @@ $(function() {
     });
 
     // Configure dialogs
-    $(".dialog_box").dialog({autoOpen: false, minWidth: 400});
+    $(".dialog_box").dialog({autoOpen: false, minWidth: 400, width: 'auto'});
     
     // Initialize wizard
     wizard = initialize_wizard({ 
@@ -179,6 +179,10 @@ $(function() {
     	coge.progress.update(WORKFLOW_ID);
     }
 });
+function activate_on_input(element, target) {
+	if (element && $('#'+element).val())
+		$('#'+target).removeClass('ui-state-disabled');
+}
 </script>
 
 <script type="text/javascript" src="js/pages/load-annotation.js"></script>

@@ -22,7 +22,7 @@
     "bootstrap": "~3.2.0",
     "datatables": "~1.10.12",
     "datatables.buttons": "https://github.com/DataTables/Buttons.git",
-    "synteny-vis": "https://github.com/hdc-arizona/synteny-vis.git",
+    "synteny-vis": "https://github.com/hdc-arizona/synteny-vis.git#v1",
     "plotly": "https://github.com/plotly/plotly.js.git",
     "moment-timezone": "~0.5.5",
     "moment-timezone-data": "http://momentjs.com/downloads/moment-timezone-with-data-2010-2020.js"

@@ -1,10 +1,3 @@
-<style>
-#list_contents_table th {
-	color: dimgray !important;
-    font-size: small;
-    text-align: left;
-}
-</style>
 <TMPL_IF NAME="MAIN">
 <link rel="stylesheet" href="css/dataTables.css" type="text/css">
 
@@ -42,7 +35,16 @@
 <br>
 
 <TMPL_IF NAME="LIST_CONTENTS">
-	<style>#list_contents tr { vertical-align: baseline; }</style>
+	<style>
+		#list_contents tr {
+			vertical-align: baseline;
+		}
+		#list_contents_table th {
+			color: dimgray !important;
+			font-size: small;
+			text-align: left;
+		}
+	</style>
 	<div style="padding-left:5px;">
 		<span class="bold text">Contents</span><br>
 		<div id="list_contents">
@@ -66,6 +68,9 @@
 		</select>
 		<span class='coge-button coge-button-sm' onclick="send_list_to();">Go</span>
 	</div>
+	<script>
+	$(function(){set_contents(<TMPL_VAR NAME="LIST_CONTENTS">);});
+	</script>
 </TMPL_IF>
 
 <div id="list_info_edit_box" class="dialog_box hidden" title="Edit Notebook Info"></div>
@@ -288,7 +293,6 @@ function update_owner () {
         }
     });
 }
-set_contents(<TMPL_VAR NAME="LIST_CONTENTS">);
 </script>
 
 <br>

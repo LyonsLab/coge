@@ -24,12 +24,14 @@ define( [
             var id = this.config.coge.id;
             var cookie = this.browser.cookie('track-' + this.name);
 
-            if (!this.config.style.featureColor) {
+            if (!this.config.style.featureColor)
                 this.config.style.featureColor = {};
-            }
 
             if (cookie) {
-                this.config.style = lang.mixin(this.config.style, dojo.fromJson(cookie));
+                try {
+                    cookie = JSON.parse(cookie);
+                } catch (e) {}
+                this.config.style = lang.mixin(this.config.style, cookie);
                 this.config.histograms.color = this.config.style.featureColor[id];
             }
 
