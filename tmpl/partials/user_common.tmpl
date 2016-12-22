@@ -1,0 +1,228 @@
+<div id="add_to_notebook_dialog" class="dialog_box hidden" title="Add Items to Notebook">
+	<table class="small">
+		<tr align='left'>
+			<td>
+				<br>
+				<div style="float:right;">
+					Search: <input type="textbox" size="49" id="notebook_search_input" onkeyup="wait_to_search(search_notebooks, this.value);" />
+					<span class='coge-button' onclick="search_notebooks();"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+					<img id="wait_notebook" src="picts/ajax-loader.gif" style="opacity: 0;" />
+				</div>
+				<div style="float:left;font-weight:bold;">Notebooks</div>
+			</td>
+		</tr>
+		<tr>
+			<td colspan='2'>
+				<select id="notebook_select" size="10" style="width:450px;">
+				</select>
+			</td>
+		</tr>
+	</table>
+	<br>
+	<span href="javascript:void(0)" onClick="add_items_to_notebook();" class='coge-button r'>Add Items</span>
+</div>
+
+<div id="create_group_dialog" class="dialog_box hidden" title="Create New Group">
+	<table class="small" style="padding-top:1em;">
+		<tr>
+			<td>Name:</td>
+			<td class="nowrap"><input id="edit_group_name" type="textbox" size="40" value="" />&nbsp;&nbsp;<span class="small alert">Required</span></td>
+		</tr>
+		<tr>
+			<td>Description:</td>
+			<td><textarea id="edit_group_desc" rows="5" cols="50" placeholder="Optional"></textarea></td>
+		</tr>
+		<tr>
+			<td>Role:</td>
+			<td>
+				<select id="edit_group_role" style="max-width:265px;">
+					<TMPL_VAR NAME="ROLES">
+				</select>
+			</td>
+		</tr>
+	</table><br>
+	<div onClick="create_new_group();" class="r coge-button">Create Group</div>
+</div>
+
+<div id="create_notebook_dialog" class="dialog_box hidden" title="Create New Notebook">
+	<table class="small" style="padding-top:1em;">
+		<tr>
+			<td>Name:</td>
+			<td class="nowrap"><input id="edit_notebook_name" type="textbox" size="40" value="" />&nbsp;&nbsp;<span class="small alert">Required</span></td>
+		</tr>
+		<tr>
+			<td>Description:</td>
+			<td><textarea id="edit_notebook_desc" rows="5" cols="50" placeholder="Optional"></textarea></td>
+		</tr>
+		<!--
+		<tr>
+			<td>Type:</td>
+			<td>
+				<select id="edit_notebook_type" style="max-width:265px;">
+					<TMPL_VAR NAME="NOTEBOOK_TYPES">
+				</select>
+			</td>
+		</tr>
+		-->
+	</table>
+	<br>
+	<div onClick="create_new_notebook();" class="r coge-button">Create Notebook</div>
+</div>
+
+<div id="share_dialog" class="dialog_box hidden" title="Share Items"></div>
+
+<div id="group_dialog" class="dialog_box hidden" title="Edit Group"></div>
+
+<TMPL_IF NAME='SHARE_DIALOG'>
+	<script>
+	$(function(){
+		$("#share_input").autocomplete({
+			source: [],
+			focus: function() { return false; },
+			select:
+		    	function(event, ui) {
+		    		$("#share_input")
+		    			.val( ui.item.label )
+		    			.data('select_id', ui.item.value);
+		    		if (ui.item.value.split(':')[1] == 'user') { //ITEM_TYPE.user) {
+		    			$('#share_role_select').show();
+		    		}
+		    		else {
+		    			$('#share_role_select').hide();
+		    		}
+		    		return false;
+		    	},
+		});
+	});
+	</script>
+	<div style="margin:20px;margin-left:5px;">
+		<span class="small" style="font-weight:bold;color:dimgray;">Who Has Access</span>
+		<div class="small" style="overflow:auto;max-height:120px;padding-left:30px;padding-bottom:10px;border-top:1px solid lightgray;">
+			<div style="padding-top:10px;">
+				<TMPL_LOOP NAME="USER_LOOP">
+					<div>
+						<img src="picts/user-icon.png" width="11" height="11"/>
+						<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) - <TMPL_VAR NAME="USER_ROLE"><span>
+						<TMPL_IF NAME="USER_DELETE">
+							<span onClick="$(this.parentNode).fadeOut('slow'); remove_items_from_user_or_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span>
+						</TMPL_IF>
+						<br>
+					</div>
+				</TMPL_LOOP>
+				<TMPL_LOOP NAME="GROUP_LOOP">
+					<div>
+						<img src="picts/group-icon.png" width="11" height="11"/>
+						<span style="color:dimgray;"><TMPL_VAR NAME="GROUP_NAME"> (group) - <TMPL_VAR NAME="GROUP_ROLE"></span>
+						<TMPL_IF NAME="GROUP_DELETE">
+							<span onClick="$(this.parentNode).fadeOut('slow'); remove_items_from_user_or_group('<TMPL_VAR NAME=GROUP_ITEM>');" class="link ui-icon ui-icon-close"></span>
+						</TMPL_IF>
+						<br>
+						<TMPL_LOOP NAME="GROUP_USER_LOOP">
+							<span style="color:dimgray;padding:5px;padding-left:20px;">
+							<img src="picts/user-icon.png" width="11" height="11"/>
+							<TMPL_VAR NAME="GROUP_USER_FULL_NAME"> (<TMPL_VAR NAME="GROUP_USER_NAME">)<span><br>
+						</TMPL_LOOP>
+					</div>
+				</TMPL_LOOP>
+				<TMPL_LOOP NAME="NOTEBOOK_LOOP">
+					<div>
+						<img src="picts/notebook-icon.png" width="11" height="11"/>
+						<span style="color:dimgray;"><TMPL_VAR NAME="NOTEBOOK_NAME"> (notebook)</span>
+						<br>
+						<TMPL_LOOP NAME="NOTEBOOK_USER_LOOP">
+							<span style="color:dimgray;padding:5px;padding-left:20px;">
+							<img src="picts/user-icon.png" width="11" height="11"/>
+							<TMPL_VAR NAME="NOTEBOOK_USER_FULL_NAME"> (<TMPL_VAR NAME="NOTEBOOK_USER_NAME">)<span><br>
+						</TMPL_LOOP>
+					</div>
+				</TMPL_LOOP>
+				<TMPL_IF NAME="ACCESS_MSG">
+					<div style="color:dimgray;font-style:italic;">
+						<TMPL_VAR NAME="ACCESS_MSG">
+						<span onClick="$(this.parentNode).fadeOut('slow'); make_items_public(0);" class="link ui-icon ui-icon-close"></span>
+					</div>
+				</TMPL_IF>
+			</div>
+		</div>
+		<br>
+		<span class="small" style="font-weight:bold;color:dimgray;">Add Access</span>
+		<div class="small" style="padding:20px;padding-left:30px;border-top:1px solid lightgray;">
+			<TMPL_IF NAME="IS_EDITABLE">
+				<span style="color:dimgray">Enter user or group names:</span><br>
+				<input id="share_input" type="search" maxlength="40" spellcheck="false" style="width:18em;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_share, this.value);" />
+				<select id="share_role_select" class="hidden"><TMPL_VAR NAME="ROLES"></select>&nbsp;
+				<span href="javascript:void(0)" onClick="add_items_to_user_or_group();" class='coge-button'>Add</span>
+				<TMPL_IF NAME="IS_RESTRICTED">
+					<div style="padding-top:1.25em;">
+						<div class="info">Or make available to everyone:</div>
+						<span onClick="make_items_public();" class='coge-button' style='margin-top:5px;'>Make Public</span>
+					</div>
+				</TMPL_IF>
+			<TMPL_ELSE>
+				<span style="color:dimgray">
+					You don't have permission to modify the selected item(s).
+				</span>
+			</TMPL_IF>
+		</div>
+	</div>
+</TMPL_IF>
+
+<TMPL_IF NAME='GROUP_DIALOG'>
+<script>
+$(function(){
+	$("#group_input")
+		.autocomplete({
+			source: [],
+			focus: function() { return false; },
+			select:
+		    	function(event, ui) {
+		    		$("#group_input")
+		    			.val( ui.item.label )
+		    			.data('select_id', ui.item.value);
+		    		return false;
+		    	},
+		});
+	$("#group_input").focus(); // why no work!?
+});
+</script>
+<div style="margin:20px;margin-left:5px;">
+	<div style="padding-bottom:10px;">
+		<span class="small" style="font-weight:bold;color:dimgray;">Group Role:</span>
+		<select id="group_role_select" onchange="change_group_role();"><TMPL_VAR NAME="ROLES"></select>
+	</div>
+	<br>
+	<span class="small" style="font-weight:bold;color:dimgray;">Group Members</span>
+	<div class="small" style="overflow:auto;max-height:120px;padding-left:30px;padding-bottom:10px;border-top:1px solid lightgray;">
+		<div style="padding-top:10px;">
+			<TMPL_LOOP NAME="USER_LOOP">
+				<div>
+					<img src="picts/user-icon.png" width="11" height="11"/>
+					<span style="color:dimgray;"><TMPL_VAR NAME="USER_FULL_NAME"> (<TMPL_VAR NAME="USER_NAME">) <TMPL_VAR NAME="USER_ROLE"><span>
+					<TMPL_IF NAME="USER_DELETE">
+						<span onClick="$(this.parentNode).fadeOut('slow'); remove_user_from_group('<TMPL_VAR NAME=USER_ITEM>');" class="link ui-icon ui-icon-close"></span>
+					</TMPL_IF>
+					<br>
+				</div>
+			</TMPL_LOOP>
+			<TMPL_IF NAME="ACCESS_MSG">
+				<div style="color:dimgray;font-style:italic;">
+					<TMPL_VAR NAME="ACCESS_MSG">
+				</div>
+			</TMPL_IF>
+		</div>
+	</div>
+	<br>
+	<span class="small" style="font-weight:bold;color:dimgray;">Add Member</span>
+	<div class="small border-top" style="padding:20px;padding-left:30px;">
+		<TMPL_IF NAME="IS_EDITABLE">
+			<span style="color:dimgray">Enter names or groups:</span><br>
+			<input id="group_input" type="search" maxlength="40" spellcheck="false" style="width:270px;border:1px solid lightgray;" onclick='$(this).autocomplete("search");' onkeyup="wait_to_search(search_group, this.value);" />
+			<span href="javascript:void(0)" onClick="add_users_to_group();" class='coge-button coge-button-sm'>Add</span>
+		<TMPL_ELSE>
+			<span style="color:dimgray">
+				You don't have permission to modify this group.
+			</span>
+		</TMPL_IF>
+	</div>
+</div>
+</TMPL_IF>

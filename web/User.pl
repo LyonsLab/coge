@@ -16,6 +16,7 @@ use Data::Dumper;
 use Benchmark;
 use File::Path;
 use File::stat;
+use File::Spec::Functions qw(catdir catfile);
 use CoGeDBI;
 use CoGeX;
 use CoGeX::ResultSet::Experiment;
@@ -188,13 +189,13 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
         }
 
         my $info = $group->info;
-        my $view_link = qq{this.open_item('$item_type','$info','GroupView.pl?ugid=$item_id');};
+        my $view_link = qq{open_item('GroupView.pl?ugid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
             . qq{<span class="link" onclick="$view_link" title="View contents">View group</span><br>};
-#        $html .= qq{<span class="link" onclick="group_dialog();" title="Edit membership">Edit membership</span><br>}
-#            if ( ( $group->is_editable($USER) and ( not $group->locked or $USER->is_admin ) ) );
+        $html .= qq{<span class="link" onclick="group_dialog();" title="Edit membership">Edit membership</span><br>}
+            if ( ( $group->is_editable($USER) and ( not $group->locked or $USER->is_admin ) ) );
         $html .= qq{</div></div>};
     }
     elsif ( $item_type eq 'notebook' ) {
@@ -222,7 +223,7 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
         $html .= '</div>';
         
         my $info = 'Notebook <i>' . $notebook->info . '</i>';
-        my $edit_link = qq{open_item('$item_type','$info','NotebookView.pl?lid=$item_id');};
+        my $edit_link = qq{open_item('NotebookView.pl?lid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
@@ -241,7 +242,7 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
           . '<b>Public genomes:</b> ' . ($organism->public_genomes > 0 ? $organism->public_genomes : 'none') . '<br>';
 
         my $info = 'Organism <i>' . js_escape($organism->info) . '</i>';
-        my $view_link = qq{open_item('$item_type','$info','OrganismView.pl?oid=$item_id');};
+        my $view_link = qq{open_item('OrganismView.pl?oid=$item_id');};
 
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
@@ -282,10 +283,9 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
         }
         $html .= '</div>';
         
-        my $info = 'Genome <i>' . js_escape($genome->info) . '</i>';
-        my $edit_link = qq{this.open('$item_type','$info','GenomeInfo.pl?gid=$item_id');};
-        my $view_link = qq{this.open('$item_type','$info','GenomeView.pl?gid=$item_id&tracks=sequence%2Cfeatures');};
-        my $load_link = qq{this.open('$item_type','$info','LoadAnnotation.pl?gid=$item_id');};
+        my $edit_link = qq{open_item('GenomeInfo.pl?gid=$item_id');};
+        my $view_link = qq{open_item('GenomeView.pl?gid=$item_id&tracks=sequence%2Cfeatures');};
+        my $load_link = qq{open_item('LoadAnnotation.pl?gid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
@@ -302,11 +302,15 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
 
         $html =
             '<b>Feature id' . $feature->id . '</b><br>'
+          . '<b>Type:</b> ' . join(', ', map { $_->name } $feature->type) . '<br>'
           . '<b>Primary name:</b> ' . ($feature->primary_name ? join (', ', map { $_->name } $feature->primary_name) : 'none') . '<br>'
-          . '<b>Other names:</b> ' . join(', ', $feature->names) . '<br>';
+          . '<b>Other names:</b> ' . join(', ', $feature->names) . '<br>'
+          . '<b>Genome:</b> ' . join(', ', map { $_->info } $feature->genomes) . '<br>'
+          . '<b>Location:</b> ' . $feature->chromosome . ':' . $feature->start . '-' . $feature->stop . '<br>'
+          . '<b>Length:</b> ' . abs($feature->stop - $feature->start + 1) . ' bp';
 
         my $info = 'Feature <i>' . js_escape($feature->info) . '</i>';
-        my $view_link = qq{open_item('$item_type','$info','FeatView.pl?fid=$item_id');};
+        my $view_link = qq{open_item('FeatView.pl?fid=$item_id');};
 
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
@@ -344,8 +348,8 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
         
         my $gid = $experiment->genome_id;
         my $info = 'Experiment <i>' . js_escape($experiment->info) . '</i>';
-        my $edit_link = qq{open_item('$item_type','$info','ExperimentView.pl?eid=$item_id');};
-        my $view_link = qq{open_item('$item_type','$info','GenomeView.pl?gid=$gid&tracks=experiment$item_id');};
+        my $edit_link = qq{open_item('ExperimentView.pl?eid=$item_id');};
+        my $view_link = qq{open_item('GenomeView.pl?gid=$gid&tracks=experiment$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
@@ -717,7 +721,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         };
     }
 
-    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => catfile($CONF->{TMPLDIR}, 'partials', 'user_common.tmpl') );
     $template->param(
         SHARE_DIALOG => 1,
         IS_EDITABLE  => $USER->is_admin || $isEditable,
@@ -800,8 +804,7 @@ sub get_group_dialog {
         };
     }
 
-    my $template =
-      HTML::Template->new( filename => $CONF->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
+    my $template = HTML::Template->new( filename => catfile($CONF->{TMPLDIR}, 'partials', 'user_common.tmpl') );
 
 	# If no editable groups then show error dialog
     if (!$lowest_role) {

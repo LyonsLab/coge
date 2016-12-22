@@ -153,9 +153,7 @@ function search_stuff(search_term) {
             else {
                 // Remove TOC items with no results
                 $('#toc_panel').find('li > span').each(function (index, el) {
-                    console.log(el);
                     var type = $(el).attr('data-type');
-                    console.log(type);
                     if (!resultsByType.hasOwnProperty(type))
                         $(el).hide();
                 });
@@ -197,6 +195,16 @@ function default_info() {
 	}
 }
 
+function open_item(url) {
+	var selected_rows = contentPanel.grid.getSelectedRows();
+	if (selected_rows && selected_rows.length == 1) {
+		selected_rows.every(function() {
+		    console.log('open_item: ' + url);
+			this.data().open(url);
+		});
+    }
+}
+
 /*
  * Data Grid Row
  */
@@ -232,22 +240,24 @@ class DataGridRow { //FIXME duplicated in user.js
     }
 
     getDescription() {
-//    	if (this.type == 'genome' || this.type == 'favorite')
-//    		return this._formatGenome();
-//    	if (this.type == 'experiment')
-//    		return this._formatExperiment();
-//    	if (this.type == 'notebook')
-//    		return this._formatNotebook();
-//    	if (this.type == 'group')
-//    		return this._formatGroup();
+        if (this.type == 'organism')
+            return this.name;
+    	if (this.type == 'genome')
+    		return this._formatGenome();
+        if (this.type == 'feature')
+    		return this._formatFeature();
+    	if (this.type == 'experiment')
+    		return this._formatExperiment();
+    	if (this.type == 'notebook')
+    		return this._formatNotebook();
+    	if (this.type == 'group')
+    		return this._formatGroup();
         return this.name;
     }
 
     _formatGenome() {
-    	var icon = '<img src="picts/dna-icon.png" width="15" height="15" style="vertical-align:middle;"/> ';
     	var certified = '<span class="glyphicon glyphicon-ok coge-certified-icon"></span> <span class="coge-small-text">Certified Genome<span>';
     	var descStr =
-    		icon +
     	   	(this.organism ? this.organism : '') +
     	   	(this.name ? ' (' + this.name + ')' : '') +
     	   	(this.description ? ': ' + this.description : '') +
@@ -256,9 +266,16 @@ class DataGridRow { //FIXME duplicated in user.js
     	return descStr;
     }
 
+    _formatFeature() {
+    	var descStr =
+    	   	this.name +
+    	   	' (' + this.feature_type + ')' +
+    	   	' - ' + this.genome;
+    	return descStr;
+    }
+
     _formatExperiment() {
     	var descStr =
-    		'<img src="picts/testtube-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
     	   	this.name +
     	   	(this.description ? ': ' + this.description : '') +
     	   	' (v' + this.version + ', id' + this.id + ')';
@@ -267,7 +284,6 @@ class DataGridRow { //FIXME duplicated in user.js
 
     _formatNotebook() {
     	var descStr =
-    		'<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
     		this.name +
     		(this.description ? ': ' + this.description : '') +
     		(this.type_name ? ' (' + this.type_name + ')' : '');
@@ -276,7 +292,6 @@ class DataGridRow { //FIXME duplicated in user.js
 
     _formatGroup() {
     	var descStr =
-    		'<img src="picts/group-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
     		this.name +
     		(this.description ? ': ' + this.description : '');;
     	return descStr;
@@ -318,14 +333,14 @@ class DataGridRow { //FIXME duplicated in user.js
     		return this.link;
     }
 
-    open() {
-        if (this.type == 'group')
+    open(url) {
+        if (this.type == 'group' && !url)
             group_dialog();
         else if (this.type == 'analyses' || this.type == 'loads')
             window.open(this.link, '_blank');
         else {
             var title = this.getDescription();
-            var link  = this.getLink();
+            var link  = url || this.getLink();
             var flags = this.getFlags({noSpaces: 1});
             title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
             link = link + "&embed=1";

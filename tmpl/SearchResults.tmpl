@@ -6,6 +6,7 @@
 <script type="text/javascript" src="js/coge/contentpanel.js"></script>
 <script type="text/javascript" src="js/coge/utils.js"></script>
 <script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/pages/user-common.js"></script>
 <script type="text/javascript" src="js/pages/search-results.js"></script>
 <script type="text/javascript">
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
@@ -15,6 +16,8 @@ const QUERY         = <TMPL_VAR NAME="QUERY">;
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 </script>
+
+<TMPL_INCLUDE NAME="partials/user_common.tmpl">
 
 <div id="bottom-panel" style="width:100%;">
 	<div style="float:right;width:225px;">
@@ -26,16 +29,16 @@ const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 
 	<div style="float:left;margin-right:5px;">
 	    <div id="toc_panel" class="small panel noselect hidden" style="overflow:auto;width:10em;cursor:pointer;">
-            <div class="bold text">Search Results</div>
+            <div class="bold text" style="font-size:1.1em;">Search Results</div>
             <div class="indent">
-            <ul>
-                <li><span data-type="organism">Organisms</span></li>
-                <li><span data-type="genome">Genomes</span></li>
-                <li><span data-type="feature">Features</span></li>
-                <li><span data-type="experiment">Experiments</span></li>
-                <li><span data-type="notebook">Notebooks</span></li>
-                <li><span data-type="group">User Groups</span></li>
-            </ul>
+				<ul>
+					<li><span data-type="organism"><img src="picts/Organism.svg" width="15" height="15"/> Organisms</span></li>
+					<li><span data-type="genome"><img src="picts/dna-icon.png" width="15" height="15"/> Genomes</span></li>
+					<li><span data-type="feature"><img src="picts/feature-icon.png" width="15" height="15"/> Features</span></li>
+					<li><span data-type="experiment"><img src="picts/testtube-icon.png" width="15" height="15"/> Experiments</span></li>
+					<li><span data-type="notebook"><img src="picts/notebook-icon.png" width="15" height="15"/> Notebooks</span></li>
+					<li><span data-type="group"><img src="picts/group-icon.png" width="15" height="15"/> User Groups</span></li>
+				</ul>
             </div>
 		</div>
 	</div>
