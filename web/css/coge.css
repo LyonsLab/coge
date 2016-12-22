@@ -13,6 +13,10 @@
     padding-top: 1em;
 }
 
+.ui-autocomplete {
+     z-index: 9999 !important;
+}
+
 body {
   font-family: "Helvetica Neue", Helvetica, Arial, fixed;
   line-height: 1.125; /* 18/16 = 1.125 */
