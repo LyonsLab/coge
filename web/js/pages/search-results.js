@@ -4,7 +4,8 @@ $(function () {
     	baseUrl: API_BASE_URL,
     	userName: USER_NAME
     });
-    
+
+    // Initiate search
     search_stuff(SEARCH_TEXT);
 
     // Define views in the Content Panel
@@ -129,6 +130,7 @@ function search_stuff(search_term) {
 
 			for (var type in resultsByType) {
 			    contentPanel.setData(type, resultsByType[type]);
+			    tocPanel.setCount(type, resultsByType[type].length);
 			}
 
             var firstType = Object.keys(resultsByType)[0];
