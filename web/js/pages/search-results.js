@@ -1,6 +1,3 @@
-//Global Variables
-var user_is_admin = false;
-
 $(function () {
 	// Initialize CoGe web services
     coge.services.init({
@@ -8,17 +5,7 @@ $(function () {
     	userName: USER_NAME
     });
     
-    // See if the current user is an admin
-    $.ajax({
-		data: {
-			fname: 'user_is_admin',
-		},
-		success: function(data) {
-			user_is_admin = data == 1;
-		}
-	}).done(function() {
-		search_stuff(SEARCH_TEXT);
-	});
+    search_stuff(SEARCH_TEXT);
 
     // Define views in the Content Panel
 	var views = {
@@ -120,8 +107,7 @@ function search_stuff(search_term) {
 		return;
 	}
 	
-	$("#msg").hide();
-	$('masterTable').css('display', 'none');
+	$("#msg,#bottom-panel").hide();
 	$("#loading").show();
 
 	coge.services.search_global(search_term)
@@ -168,15 +154,11 @@ function search_stuff(search_term) {
             }
 
 			$("#loading").hide();
-			$("#masterTable").show();
-			if (!user_is_admin)
-				$(".access").hide();
-			else
-				$(".access").show();
+			$("#bottom-panel").fadeIn();
 		})
 		.fail(function() {
 			$("#loading").hide();
-			$("#masterTable").html("An error occured. Please reload the page and try again.");
+			$("#bottom-panel").html("An error occurred. Please reload the page and try again.");
 		});
 }
 

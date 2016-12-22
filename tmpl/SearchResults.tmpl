@@ -19,7 +19,9 @@ const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 
 <TMPL_INCLUDE NAME="partials/user_common.tmpl">
 
-<div id="bottom-panel" style="width:100%;">
+<div id="loading" class="spinner hidden" style="display:flex;justify-content:center;align-items:center;margin-top:10%;"></div>
+
+<div id="bottom-panel" class="hidden" style="width:100%;">
 	<div style="float:right;width:225px;">
 		<span id="show_panel_button" onClick="show_top_panel();" class="link ui-icon ui-icon-plus hidden coge-border" style="float:right;margin-right:5px;"></span>
 
