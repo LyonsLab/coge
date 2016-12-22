@@ -32,13 +32,19 @@ class TocPanel {
 		this.element.show();
     }
 
+    setCount(itemType, count) {
+        var item = this._getItem(itemType);
+        var span = $('<span></span>').html(count).addClass('coge-item-count').css('display', 'inline');
+        item.append(span);
+    }
+
     clearSelection() {
     	this.element.find('span').removeClass('selected');
     	return this;
     }
 
     selectItemType(itemType) {
-    	var item = $('span[data-type="'+itemType+'"]');
+    	var item = this._getItem(itemType);
     	this.selectItem(item);
     }
 
@@ -57,5 +63,9 @@ class TocPanel {
 			this.selection(itemType);
 
     	return this;
+    }
+
+    _getItem(itemType) {
+        return $('span[data-type="'+itemType+'"]');
     }
 }

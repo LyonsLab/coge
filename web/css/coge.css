@@ -1661,8 +1661,14 @@ h5 > small {
 .coge-side-menu li li span    { padding-left: 1.5em }
 .coge-side-menu li li li span { padding-left: 3em }
 .coge-side-menu .selected { 
-    font-weight: bold; 
+    font-weight: bold;
     color: green;
+}
+
+.coge-item-count {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.75em !important;
+    color: #989898 !important;
 }
 
 /* Dropdown menu */
