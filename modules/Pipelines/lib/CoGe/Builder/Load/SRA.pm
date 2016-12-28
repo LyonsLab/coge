@@ -115,8 +115,6 @@ sub build {
         push @{$wait_task->{inputs}}, @all_outputs;
         $self->workflow->add_job($wait_task);
         $wait_file = $wait_task->{outputs}->[0];
-
-        last; #debug
     }
     
     return 1;
