@@ -1024,44 +1024,6 @@ sub add_jobs {
 		description => "Generating images",
 	});
 
-	#    my $dot_args = [
-	#        [ '-cf', $config->{_CONFIG_PATH}, 0 ],
-	#        [ '-genome1', $genome_id1, 0 ],
-	#        [ '-genome2', $genome_id2, 0 ],
-	#        [ '-a', $final_dagchainer_file, 1 ],
-	#        [ '-b', $json_basename, 1 ],
-	#    ];
-	#
-	#    push @$dot_args, [ '-ksdb', $ks_db,   1 ] if $ks_db;
-	#
-	#    my $dot_inputs = [
-	#        $final_dagchainer_file,
-	#    ];
-	#
-	#    my $dot_outputs = [
-	#        "$json_basename.json",
-	#    ];
-	#
-	#    if ($dag_file12_all) {
-	#        push @$dot_args, [ '-d', $dag_file12_all, 0 ];
-	#        push @$dot_inputs, $dag_file12_all;
-	#        push @$dot_outputs, "$json_basename.all.json";
-	#    }
-	#
-	#    if ($ks_db) {
-	#        push @$dot_inputs, $ks_db if $ks_db;
-	#        push @$dot_outputs, "$json_basename.datasets.json";
-	#    }
-	#
-	#    $workflow->add_job(
-	#        cmd         => $DOTPLOT_DOTS,
-	#        script      => undef,
-	#        args        => $dot_args,
-	#        inputs      => $dot_inputs,
-	#        outputs     => $dot_outputs,
-	#        description => "Generating dotplot dots",
-	#    );
-
 	############################################################################
 	# Post Processing
 	############################################################################
@@ -1124,67 +1086,70 @@ sub add_jobs {
 	$workflow->log( "" );
     $workflow->log( "Added GEvo links generation" );
 
-	if ( test($opts{frac_bias}) ) {
-		my $organism_name;
-		my $query_id;
-		my $target_id;
-		if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
-			$organism_name = $genome1->organism->name;
-			$query_id      = $genome_id2;
-			$target_id     = $genome_id1;
-		}
-		else {
-			$organism_name = $genome2->organism->name;
-			$query_id      = $genome_id1;
-			$target_id     = $genome_id2;
-		}
-
-		my $gff_job = create_gff_generation_job(
-			gid           => $target_id,
-			organism_name => $organism_name
-		);
-		$workflow->add_job($gff_job);
-
-		my $all_genes = test($opts{fb_target_genes}) ? 'False' : 'True';
-		my $rru = test($opts{fb_remove_random_unknown}) ? 'True' : 'False';
-		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
-		my $fb_prefix = $final_dagchainer_file . '_tc' . $opts{fb_numtargetchr} . '_qc' . $opts{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts{fb_window_size};
-		$workflow->add_job({
-			cmd => $FRACBIAS,
-			script => undef,
-			args   => [
-				[ '--gff',          $gff_job->{outputs}->[0], 0 ],
-				[ '--align',        $final_dagchainer_file,   0 ],
-				[ '--numquerychr',  $opts{fb_numquerychr},    0 ],
-				[ '--numtargetchr', $opts{fb_numtargetchr},   0 ],
-				[ '--remove_random_unknown', $rru,            0 ],
-				[ '--query',        $query_id,                0 ],
-				[ '--syndepth',     $syn_depth,               0 ],
-				[ '--target',       $target_id,               0 ],
-				[ '--windowsize',   $opts{fb_window_size},    0 ],
-				[ '--allgenes',     $all_genes,               0 ],
-				[ '--output',       $result_path,             0 ],
-				[ '--prefix',       $fb_prefix,               0 ],
-				[ '--apiurl',       url_for(api_url_for("genomes")), 0],
-				[ '--user',         ( $user ? $user->name : '""'), 0]
-			],
-			inputs => [
-				$final_dagchainer_file, $condensed,
-				$gff_job->{outputs}->[0]
-			],
-			outputs => [
-				$fb_prefix . '.fractbias-fig.json',
-				$fb_prefix . '.fractbias-genes.csv',
-				$fb_prefix . '.fractbias-results.csv'
-			],
-			description => "Running Fractination Bias",
-		});
-	}
+	add_frac_bias() if test($opts{frac_bias});
 
 	$workflow->log( "#" x (25) );
 	$workflow->log( "" );
 
 	return; # empty means success
+}
+
+sub add_frac_bias {
+	my ($workflow, $user, $opts, $result_path, $genome1, $genome2, $depth_org_1_ratio, $depth_org_2_ratio, $final_dagchainer_file, $condensed) = @_;
+	my $organism_name;
+	my $query_id;
+	my $target_id;
+	if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
+		$organism_name = $genome1->organism->name;
+		$query_id      = $genome_id2;
+		$target_id     = $genome_id1;
+	}
+	else {
+		$organism_name = $genome2->organism->name;
+		$query_id      = $genome_id1;
+		$target_id     = $genome_id2;
+	}
+
+	my $gff_job = create_gff_generation_job(
+		gid           => $target_id,
+		organism_name => $organism_name
+	);
+	$workflow->add_job($gff_job);
+
+	my $all_genes = test($opts->{fb_target_genes}) ? 'False' : 'True';
+	my $rru = test($opts->{fb_remove_random_unknown}) ? 'True' : 'False';
+	my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
+	my $fb_prefix = $final_dagchainer_file . '_tc' . $opts->{fb_numtargetchr} . '_qc' . $opts->{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts->{fb_window_size};
+	$workflow->add_job({
+		cmd => $FRACBIAS,
+		script => undef,
+		args   => [
+			[ '--gff',          $gff_job->{outputs}->[0], 0 ],
+			[ '--align',        $final_dagchainer_file,   0 ],
+			[ '--numquerychr',  $opts->{fb_numquerychr},    0 ],
+			[ '--numtargetchr', $opts->{fb_numtargetchr},   0 ],
+			[ '--remove_random_unknown', $rru,            0 ],
+			[ '--query',        $query_id,                0 ],
+			[ '--syndepth',     $syn_depth,               0 ],
+			[ '--target',       $target_id,               0 ],
+			[ '--windowsize',   $opts{fb_window_size},    0 ],
+			[ '--allgenes',     $all_genes,               0 ],
+			[ '--output',       $result_path,             0 ],
+			[ '--prefix',       $fb_prefix,               0 ],
+			[ '--apiurl',       url_for(api_url_for("genomes")), 0],
+			[ '--user',         ( $user ? $user->name : '""'), 0]
+		],
+		inputs => [
+			$final_dagchainer_file, $condensed,
+			$gff_job->{outputs}->[0]
+		],
+		outputs => [
+			$fb_prefix . '.fractbias-fig.json',
+			$fb_prefix . '.fractbias-genes.csv',
+			$fb_prefix . '.fractbias-results.csv'
+		],
+		description => "Running Fractination Bias",
+	});
 }
 
 sub get_blast_config {
