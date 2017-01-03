@@ -242,10 +242,7 @@ class DataGridRow { //FIXME duplicated in user.js
     _formatGenome() {
     	var certified = '<span class="glyphicon glyphicon-ok coge-certified-icon"></span> <span class="coge-small-text">Certified Genome<span>';
     	var descStr =
-    	   	(this.organism ? this.organism : '') +
-    	   	(this.name ? ' (' + this.name + ')' : '') +
-    	   	(this.description ? ': ' + this.description : '') +
-    	   	' (v' + this.version + ', id' + this.id + ')' +
+    	   	this.name + // this is actually the genome->info
     	   	(this.certified == '1' ? '&nbsp;&nbsp;' + certified : '');
     	return descStr;
     }
@@ -254,30 +251,25 @@ class DataGridRow { //FIXME duplicated in user.js
     	var descStr =
     	   	this.name +
     	   	' (' + this.feature_type + ')' +
-    	   	' - ' + this.genome;
+    	   	' ' + this.genome;
     	return descStr;
     }
 
     _formatExperiment() {
     	var descStr =
-    	   	this.name +
-    	   	(this.description ? ': ' + this.description : '') +
-    	   	' (v' + this.version + ', id' + this.id + ')';
+    	   	this.name; // this is actually the experiment->info
     	return descStr;
     }
 
     _formatNotebook() {
     	var descStr =
-    		this.name +
-    		(this.description ? ': ' + this.description : '') +
-    		(this.type_name ? ' (' + this.type_name + ')' : '');
+    		this.name; // this is actually the list->info
     	return descStr;
     }
 
     _formatGroup() {
     	var descStr =
-    		this.name +
-    		(this.description ? ': ' + this.description : '');;
+    		this.name; // this is actually the group->info
     	return descStr;
     }
 
@@ -294,8 +286,8 @@ class DataGridRow { //FIXME duplicated in user.js
     			item_type: self.type,
     		}
     	}).pipe(function(data) {
-    	    console.log('getInfo response');
-    	    console.log(data);
+    	    //console.log('getInfo response');
+    	    //console.log(data);
     		if (data)
 				return data.html;
     		return;
