@@ -734,7 +734,7 @@ sub users_with_access {
 
 	# Direct user connections
 	foreach my $conn ( $item->user_connectors ) {
-		$users{$conn->parent_id} = $conn->parent;
+		$users{$conn->parent_id} = $conn->parent if ($conn->parent_id); # mdb changed 1/3/17 -- added check for defined parent_id for case where NULL (not sure how that happened)
 	}
 
 	# Users in groups
