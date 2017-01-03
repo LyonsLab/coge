@@ -115,6 +115,7 @@ function search_stuff(search_term) {
 		.done(function(response) {
 			if (!response || !response.results || !response.results.length) {
 				$("#loading").hide();
+				$("#msg").html('No matching results').show();
 				return;
 			}
 
