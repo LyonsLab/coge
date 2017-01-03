@@ -96,8 +96,13 @@ $(function () {
 			contentPanel.grid.search(''); // clear search filter
 			infoPanel.update(null);
 			//update_icons(null);
-			//$('#search_input').val(''); //FIXME move into ContentPanel
+			$('#search_input').val(''); //FIXME move into ContentPanel
 		}
+	});
+
+    $('#search_input').on('keyup search', function() { //FIXME move into ContentPanel
+		contentPanel.grid.search( $(this).val() );
+		contentPanel.renderTitle();
 	});
 });
 
