@@ -531,8 +531,7 @@ class DataGridRow { //FIXME duplicated in search-results.js
     	var descStr =
     		'<img src="picts/notebook-icon.png" width="15" height="15" style="vertical-align:middle;"/> ' +
     		this.name +
-    		(this.description ? ': ' + this.description : '') +
-    		(this.type_name ? ' (' + this.type_name + ')' : '');
+    		(this.description ? ': ' + this.description : '');
     	return descStr;
     }
 
