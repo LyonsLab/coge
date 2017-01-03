@@ -583,7 +583,7 @@ sub annotation_pretty_print_html { # FIXME deprecate this -- don't want view cod
           . "</span>" );
     $anno_type->Type_delimit(": <td class='data5'>");
     my $users = ( $self->restricted ? 
-        join( ', ', sort map { $_->display_name } $self->users ) :
+        join( ', ', sort map { $_->display_name } grep { defined $_ } $self->users ) : # mdb changed 1/3/17 -- added check for defined user for case where NULL (not sure how that happened)
         'Everyone' );
     $anno_type->add_Annot( $users . "</td>" );
     $anno_obj->add_Annot($anno_type);
