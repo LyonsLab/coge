@@ -71,7 +71,7 @@ add_workflow_result($user->name, $wid,
         id => int($notebook->id),
         name => $notebook->name,
         description => $notebook->description,
-        type_id => $notebook->type->id,
+        #type_id => $notebook->type->id, # mdb removed 1/3/17 COGE-800
         restricted => $notebook->restricted
     }
 );
