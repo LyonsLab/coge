@@ -143,7 +143,7 @@ sub parse_query {
 sub push_results {
 	my ($results, $objects, $type, $user, $access_method, $favorites) = @_;
 	foreach (@$objects) {
-		if (!$access_method || !$user || $user->$access_method($_)) {
+		if (!$access_method || ($user && $user->$access_method($_))) {
 			my $result = {
 				'type'          => $type,
 				'name'          => $_->info(hideRestrictedSymbol=>1),
