@@ -148,7 +148,7 @@ function search_stuff(search_term) {
 
                 // Get starting page from URL and initialize TOC panel
                 var toc_id = coge.utils.getURLParameter('p');
-                if (toc_id && toc_id != 'null')
+                if (toc_id && toc_id != 'null' && resultsByType.hasOwnProperty(toc_id))
                     tocPanel.selectItemType(toc_id);
 			    else
 			        tocPanel.selectItemType(firstType);
