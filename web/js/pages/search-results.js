@@ -307,6 +307,8 @@ class DataGridRow { //FIXME duplicated in user.js
             return 'OrganismView.pl?oid=' + this.id;
     	else if (type == 'genome')
     		return 'GenomeInfo.pl?gid=' + this.id;
+        else if (type == 'feature')
+    		return 'FeatView.pl?fid=' + this.id;
     	else if (type == 'experiment')
     		return 'ExperimentView.pl?eid=' + this.id;
     	else if (type == 'notebook')
