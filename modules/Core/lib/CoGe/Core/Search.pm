@@ -143,7 +143,7 @@ sub parse_query {
 sub push_results {
 	my ($results, $objects, $type, $user, $access_method, $favorites) = @_;
 	foreach (@$objects) {
-		if (!$access_method || ($user && $user->$access_method($_))) {
+		if (!$access_method || !$user || $user->$access_method($_)) {
 			my $result = {
 				'type'          => $type,
 				'name'          => $_->info(hideRestrictedSymbol=>1),
@@ -152,7 +152,10 @@ sub push_results {
 			$result->{'certified'}  = $_->certified ? Mojo::JSON->true : Mojo::JSON->false if $_->can('certified');
 			$result->{'deleted'}    = $_->deleted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('deleted');
 			$result->{'favorite'}   = ($favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false) if defined $favorites;
-			$result->{'restricted'} = $_->restricted ? Mojo::JSON->true : Mojo::JSON->false if $_->can('restricted');
+			if ($_->can('restricted')) {
+				$result->{'restricted'} = $_->restricted ? Mojo::JSON->true : Mojo::JSON->false;
+				next if (!$user && $result->{'restricted'}); # mdb added 1/3/17 COGE-809 -- remove from results for public user
+			}
 			push @$results, $result;
 		}
 	}
