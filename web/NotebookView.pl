@@ -608,7 +608,7 @@ sub get_list_contents {
     return encode_json({
         contents => \@rows,
         counts => [scalar @genomes, scalar @experiments, scalar @features],
-        user_can_edit => $list->is_editable($USER) ? 'true' : 'false'
+        user_can_edit => $list->is_editable($USER) ? JSON::true : JSON::false
     });
 }
 

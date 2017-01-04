@@ -65,12 +65,24 @@ jQuery(document).ready(function(){
 		if (id)
 			showDropdown('#' + id.slice(0,4) + '_drop');
 	});
-	
+
+	$('#advanced_search').mouseenter(function(e){
+		$('#coge-advanced-search').slideDown('fast');
+		var e = $('#advanced_search').find('.dropdown-arrow');
+		if (e.attr('src') == 'picts/arrow-right-icon.png')
+			e.attr('src', 'picts/arrow-down-icon.png');
+	});
+
     $('.dropdown-label').mouseleave(function(e){
        	if (e.relatedTarget && !e.relatedTarget.closest('.dropdown-menu'))
        	    hideDropdowns();
     });
     
+    $('#advanced_search').mouseleave(function(e){
+       	if (e.relatedTarget && !e.relatedTarget.closest('#coge-advanced-search'))
+       	    hideDropdowns();
+    });
+
     // Add logout detector -- mdb added 9/1/16 COGE-724
     if (coge.logout) { // coge.logout module will not be present if in embedded mode
         coge.logout.init({
@@ -159,12 +171,14 @@ function search() {
 		var certified = $('#search_certified').val();
 		if (certified != 'any')
 			terms.push('certified::' + (certified == 'yes' ? '1' : '0'));
+<TMPL_IF NAME="LOGON">
 		var deleted = $('#search_deleted').val();
 		if (deleted == 'yes')
 			terms.push('deleted::1');
 		var favorite = $('#search_favorite').val();
 		if (favorite != 'any')
 			terms.push('favorite::1');
+</TMPL_IF>
 		var feature_type = $('#search_feature_type').val();
 		if (feature_type)
 			terms.push('feature_type::' + feature_type);
@@ -177,12 +191,14 @@ function search() {
 				terms.push('"metadata_value::' + metadata_value + '"');
 			else
 				terms.push('metadata_value::' + metadata_value);
+<TMPL_IF NAME="LOGON">
 		var restricted = $('#search_restricted').val();
 		if (restricted != 'any')
 			terms.push('restricted::' + (restricted == 'yes' ? '1' : '0'));
 		var role = $('#search_role').val();
 		if (role != 'any')
 			terms.push('role::' + role);
+</TMPL_IF>
 		var tag = $('#search_tag').val();
 		if (tag)
 			if (tag.indexOf(' ') != -1)
@@ -221,7 +237,7 @@ function searchKey(event) {
 
 function showDropdown(id) {
 	hideDropdowns();
-	$(id).fadeIn('fast');
+	$(id).slideDown('fast');
 	var e = $(id + '_label').find('.dropdown-arrow');
 	if (e.attr('src') == 'picts/arrow-right-icon.png')
     	e.attr('src', 'picts/arrow-down-icon.png');
@@ -238,6 +254,8 @@ function hideDropdowns() {
 	hideDropdown('#help_drop');
 	hideDropdown('#tool_drop');
 	hideDropdown('#user_drop');
+	hideDropdown('#advanced_search');
+	$('#coge-advanced-search').hide();
 }
 
 </script>
@@ -262,77 +280,83 @@ Please take a moment to fill out the Future Directions Survey (only 4 questions!
 				<li>
 					<div class="coge-header-searchbar">
 				    	<input id="header_search_text" type="text" class="text" placeholder="Search database" value="<TMPL_VAR NAME='SEARCH_TEXT'>" spellcheck="false" onkeypress="searchKey(event)">
-						<div id="coge-advanced-search" class="text">
-							<table>
-								<tr><td>type:</td><td>
-									<select id="search_type">
-										<option>any</option>
-										<option>experiment</option>
-										<option>feature</option>
-										<option>genome</option>
-										<option>notebook</option>
-										<option>organism</option>
-									</select>
-								</td></tr>
-								<tr><td>certified:</td><td>
-									<select id="search_certified">
-										<option>any</option>
-										<option>yes</option>
-										<option>no</option>
-									</select>
-								</td></tr>
-								<tr><td>deleted:</td><td>
-									<select id="search_deleted">
-										<option>no</option>
-										<option>yes</option>
-									</select>
-								</td></tr>
-								<tr><td>favorite:</td><td>
-									<select id="search_favorite">
-										<option>any</option>
-										<option>yes</option>
-									</select>
-								</td></tr>
-								<tr><td>feature type:</td><td>
-									<input id="search_feature_type" />
-								</td></tr>
-								<tr><td>metadata key:</td><td>
-									<input id="search_metadata_key" />
-								</td></tr>
-								<tr><td>metadata value:</td><td>
-									<input id="search_metadata_value" />
-								</td></tr>
-								<tr><td>restricted:</td><td>
-									<select id="search_restricted">
-										<option>any</option>
-										<option>yes</option>
-										<option>no</option>
-									</select>
-								</td></tr>
-								<tr><td>role:</td><td>
-									<select id="search_role">
-										<option>any</option>
-										<option>owner</option>
-										<option>editor</option>
-										<option>reader</option>
-									</select>
-								</td></tr>
-								<tr><td>tag:</td><td>
-									<input id="search_tag" />
-								</td></tr>
-							</table>
-							<div>
-								<button onclick="$('#coge-advanced-search').slideUp();$('#advanced_search').removeClass('coge-disabled');">cancel</button>
-								<button onclick="search();" style="float:right;">search</button>
-							</div>
-						</div>
 				    </div>
 				</li>
 				<li>
 				    <div id="header_search_button" class="glyphicon glyphicon-search coge-button coge-header-search-button" style="width:1em;" onclick="search();"></div>
 			    </li>
-				<li id="advanced_search">
-					<a onclick="$('#coge-advanced-search').slideDown();$('#advanced_search').addClass('coge-disabled');">advanced</a>
+				<li id="advanced_search" class="coge-header-button">
+					<div id="advanced_search_label">
+						<a>advanced</a>
+						<img class="dropdown-arrow" src="picts/arrow-right-icon.png">
+					</div>
+					<div id="coge-advanced-search" class="text">
+						<table>
+							<tr><td>type:</td><td>
+								<select id="search_type">
+									<option>any</option>
+									<option>experiment</option>
+									<option>feature</option>
+									<option>genome</option>
+									<option>notebook</option>
+									<option>organism</option>
+								</select>
+							</td></tr>
+							<tr><td>certified:</td><td>
+								<select id="search_certified">
+									<option>any</option>
+									<option>yes</option>
+									<option>no</option>
+								</select>
+							</td></tr>
+<TMPL_IF NAME="LOGON">
+							<tr><td>deleted:</td><td>
+								<select id="search_deleted">
+									<option>no</option>
+									<option>yes</option>
+								</select>
+							</td></tr>
+							<tr><td>favorite:</td><td>
+								<select id="search_favorite">
+									<option>any</option>
+									<option>yes</option>
+								</select>
+							</td></tr>
+</TMPL_IF>
+							<tr><td>feature type:</td><td>
+								<input id="search_feature_type" />
+							</td></tr>
+							<tr><td>metadata key:</td><td>
+								<input id="search_metadata_key" />
+							</td></tr>
+							<tr><td>metadata value:</td><td>
+								<input id="search_metadata_value" />
+							</td></tr>
+<TMPL_IF NAME="LOGON">
+							<tr><td>restricted:</td><td>
+								<select id="search_restricted">
+									<option>any</option>
+									<option>yes</option>
+									<option>no</option>
+								</select>
+							</td></tr>
+							<tr><td>my role:</td><td>
+								<select id="search_role">
+									<option>any</option>
+									<option>owner</option>
+									<option>editor</option>
+									<option>reader</option>
+								</select>
+							</td></tr>
+</TMPL_IF>
+							<tr><td>tag:</td><td>
+								<input id="search_tag" />
+							</td></tr>
+						</table>
+						<div>
+							<button onclick="search();" style="float:right;">search</button>
+						</div>
+					</div>
 				</li>
 			</ul>
 	    </li>
