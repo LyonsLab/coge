@@ -67,7 +67,7 @@ jQuery(document).ready(function(){
 	});
 
 	$('#advanced_search').mouseenter(function(e){
-		$('#coge-advanced-search').slideDown();
+		$('#coge-advanced-search').slideDown('fast');
 		var e = $('#advanced_search').find('.dropdown-arrow');
 		if (e.attr('src') == 'picts/arrow-right-icon.png')
 			e.attr('src', 'picts/arrow-down-icon.png');
@@ -237,7 +237,7 @@ function searchKey(event) {
 
 function showDropdown(id) {
 	hideDropdowns();
-	$(id).fadeIn('fast');
+	$(id).slideDown('fast');
 	var e = $(id + '_label').find('.dropdown-arrow');
 	if (e.attr('src') == 'picts/arrow-right-icon.png')
     	e.attr('src', 'picts/arrow-down-icon.png');
@@ -255,7 +255,7 @@ function hideDropdowns() {
 	hideDropdown('#tool_drop');
 	hideDropdown('#user_drop');
 	hideDropdown('#advanced_search');
-	$('#coge-advanced-search').slideUp();
+	$('#coge-advanced-search').hide();
 }
 
 </script>
@@ -340,7 +340,7 @@ Please take a moment to fill out the Future Directions Survey (only 4 questions!
 									<option>no</option>
 								</select>
 							</td></tr>
-							<tr><td>role:</td><td>
+							<tr><td>my role:</td><td>
 								<select id="search_role">
 									<option>any</option>
 									<option>owner</option>
