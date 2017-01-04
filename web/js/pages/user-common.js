@@ -24,14 +24,12 @@ function wait_to_search (search_func, search_term) { //TODO move into module
 	}
 }
 
-function open_item(url) {
-	var selected_rows = contentPanel.grid.getSelectedRows();
-	if (selected_rows && selected_rows.length == 1) {
-		selected_rows.every(function() {
-		    console.log('open_item: ' + url);
-			this.data().open(url);
-		});
-    }
+function open_item(url, title) {
+	var selected = contentPanel.grid.getSelectedItems();
+	if (selected && selected.length == 1)
+		selected[0].open(url, title);
+    else
+        new DataGridRow({}, 'null').open(url, title); // kludge
 }
 
 function favorite_items() {

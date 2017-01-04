@@ -61,7 +61,7 @@ div.deleted { display: none; }
 		</div>
 	</div>
 
-	<div style="float:left;float:left;margin-right:5px;">
+	<div style="float:left;margin-right:5px;">
 	    <div id="create_button" class='coge-button' style="font-size:1em;padding-top:.6em;padding-bottom:.6em;width:6em;" onclick="create_menu();">NEW</div>
 	    <div id="toc_panel" class="small panel noselect hidden" style="overflow:auto;padding-top:1em;width:10em;cursor:pointer;">
 			<ul>
@@ -89,8 +89,8 @@ div.deleted { display: none; }
 		<ul id="create_menu" class="coge-dropdown-menu hidden">
 			<li><a onclick="create_group_dialog();"><img src="picts/group-icon.png" width="15" height="15"/> New User Group</a></li>
 			<li><a onclick="create_notebook_dialog();"><img src="picts/notebook-icon.png" width="15" height="15"/> New Notebook</a></li>
-			<li><a onclick="open_item(-1, 'Create New Genome', 'LoadGenome.pl?');"><img src="picts/dna-icon.png" width="15" height="15"/> New Genome</a></li>
-			<li><a onclick="open_item(-1, 'Create New Experiment', 'LoadExperiment.pl?');"><img src="picts/testtube-icon.png" width="15" height="15"/> New Experiment</a></li>
+			<li><a onclick="open_item('LoadGenome.pl?', 'Create New Genome');"><img src="picts/dna-icon.png" width="15" height="15"/> New Genome</a></li>
+			<li><a onclick="open_item('LoadExperiment.pl?', 'Create New Experiment');"><img src="picts/testtube-icon.png" width="15" height="15"/> New Experiment</a></li>
 		</ul>
 	</div>
 
