@@ -222,14 +222,16 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
         }
         $html .= '</div>';
         
-        my $info = 'Notebook <i>' . $notebook->info . '</i>';
-        my $edit_link = qq{open_item('NotebookView.pl?lid=$item_id');};
-        
+        my $view_link = qq{open_item('NotebookView.pl?lid=$item_id');};
+
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="$edit_link" title="Edit metadata">Edit</span><br>}
-            . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
-            . qq{</div></div>};
+            . qq{<span class="link" onclick="$view_link" title="View contents">View contents</span><br>};
+
+        $html .= qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
+            if ($notebook->is_editable($USER));
+
+        $html .= qq{</div></div>};
     }
     elsif ( $item_type eq 'organism' ) {
         my $organism = $DB->resultset('Organism')->find($item_id);
@@ -241,12 +243,11 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
           . '<b>Description:</b> ' . $organism->description . '<br>'
           . '<b>Public genomes:</b> ' . ($organism->public_genomes > 0 ? $organism->public_genomes : 'none') . '<br>';
 
-        my $info = 'Organism <i>' . js_escape($organism->info) . '</i>';
         my $view_link = qq{open_item('OrganismView.pl?oid=$item_id');};
 
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="$view_link" title="View details">View details</span><br>}
+            . qq{<span class="link" onclick="$view_link" title="View/edit metadata and contents">View details</span><br>}
             . qq{</div></div>};
     }
     elsif ( $item_type eq 'genome' || $item_type eq 'favorite' ) {
@@ -290,10 +291,12 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
             . qq{<span class="link" onclick="$edit_link" title="View/edit metadata, annotation, and experiments">View details</span><br>}
-            . qq{<span class="link" onclick="$view_link" title="Browse sequence, annotation, and experiment tracks">Browse</span><br>}
-            . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
-            . qq{<span class="link" onclick="$load_link" title="Load gene annotation">Load annotation</span><br>}
-            . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add to a notebook">Add to notebook</span><br>}
+            . qq{<span class="link" onclick="$view_link" title="Browse sequence, annotation, and experiment tracks">Browse</span><br>};
+        if ($genome->is_editable($USER)) {
+            $html .= qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
+                . qq{<span class="link" onclick="$load_link" title="Load gene annotation">Load annotation</span><br>};
+        }
+        $html .= qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add to a notebook">Add to notebook</span><br>}
             . qq{</div></div>};
     }
     elsif ( $item_type eq 'feature' ) {
@@ -347,16 +350,16 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
         $html .= '</div>';
         
         my $gid = $experiment->genome_id;
-        my $info = 'Experiment <i>' . js_escape($experiment->info) . '</i>';
         my $edit_link = qq{open_item('ExperimentView.pl?eid=$item_id');};
         my $view_link = qq{open_item('GenomeView.pl?gid=$gid&tracks=experiment$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
             . qq{<span class="link" onclick="$edit_link" title="View/edit metadata">View details</span><br>}
-            . qq{<span class="link" onclick="$view_link" title="Browse track data">Browse data</span><br>}
-            . qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
-            . qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add a notebook">Add to notebook</span><br>}
+            . qq{<span class="link" onclick="$view_link" title="Browse track data">Browse data</span><br>};
+        $html .= qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
+            if ($experiment->is_editable($USER));
+        $html .= qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add a notebook">Add to notebook</span><br>}
             . qq{</div></div>};
     }
     elsif ( $item_type eq 'analyses' or $item_type eq 'loads' ) {

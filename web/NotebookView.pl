@@ -157,11 +157,9 @@ sub get_list_info {
     my ($list) = $DB->resultset('List')->find($lid);
     return unless $USER->has_access_to_list($list);
 
-    my $html          = $list->annotation_pretty_print_html();
-    my $user_can_edit = $USER->is_admin
-      || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
-    my $user_can_delete = $USER->is_admin
-      || ( !$list->locked && $USER->is_owner( list => $lid ) );
+    my $html            = $list->annotation_pretty_print_html();
+    my $user_can_edit   = $list->is_editable($USER);
+    my $user_can_delete = $list->is_deletable($USER);
 
     $html .= qq{<div class="panel">};
     if ($user_can_edit) {
@@ -331,7 +329,7 @@ sub get_annotations {
     my ($list) = $DB->resultset('List')->find($lid);
     return unless $USER->has_access_to_list($list);
 
-    my $user_can_edit = $USER->is_admin || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
+    my $user_can_edit = $list->is_editable($USER);
 
     my %groups;
     my $num_annot = 0;
@@ -610,7 +608,7 @@ sub get_list_contents {
     return encode_json({
         contents => \@rows,
         counts => [scalar @genomes, scalar @experiments, scalar @features],
-        user_can_edit => ($USER->is_admin || (!$list->locked && $USER->is_owner_editor( list => $lid ))) ? JSON::true : JSON::false
+        user_can_edit => $list->is_editable($USER) ? JSON::true : JSON::false
     });
 }
 
@@ -650,8 +648,7 @@ sub add_item_to_list {
 
     my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
-    return 0 if ( $list->locked && !$USER->is_admin );
-    return 0 unless ( $USER->is_admin || $USER->is_owner_editor( list => $lid ) );
+    return 0 unless $list->is_editable($USER);
 
     my $lc =
       $DB->resultset('ListConnector')->find_or_create(
@@ -682,8 +679,7 @@ sub remove_list_item {
 
     my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
-    return 0 if ( $list->locked && !$USER->is_admin );
-    return 0 unless ( $USER->is_admin || $USER->is_owner_editor( list => $lid ) );
+    return 0 unless $list->is_editable($USER);
 
     my $item_type = $opts{item_type};
     my $item_id   = $opts{item_id};

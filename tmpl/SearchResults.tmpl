@@ -33,7 +33,7 @@ const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 
 	<div style="float:left;margin-right:5px;">
 	    <div id="toc_panel" class="small panel noselect hidden" style="overflow:auto;width:11em;cursor:pointer;">
-            <div class="bold text" style="font-size:1.1em;">Search Results</div>
+            <div class="bold padded text" style="font-size:1.1em;">Search Results</div>
             <div class="indent">
 				<ul>
 					<li><span data-type="organism"><img src="picts/Organism.svg" width="15" height="15"/> Organisms </span></li>
@@ -50,11 +50,11 @@ const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 	<div class="noselect" style="height:24px">
 		<span id="contents_title" style="float:left;min-width:130px;font-weight:bold;margin-right:20px;"></span>
 		<span id="add_button" onClick="add_dialog();" class="add coge-icon glyphicon glyphicon-plus item-button invisible" style="margin-right:5px;" title="Create New Item"></span>
-		<span id="share_button" onClick="share_dialog();" class="share coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
+		<!--<span id="share_button" onClick="share_dialog();" class="share coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>-->
 		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="organize coge-icon coge-disabled glyphicon glyphicon-folder-open item-button invisible" style="margin-right:5px;" title="Add Selected Items to Notebook"></span>
 		<span id="edit_button" onClick="edit_dialog();" class="edit coge-icon coge-disabled glyphicon glyphicon-cog item-button invisible" style="margin-right:5px;" title="Edit Selected Items"></span>
 		<span id="favorite_button" onClick="favorite_items();" class="favorite coge-icon coge-disabled glyphicon glyphicon-star item-button invisible" style="margin-right:5px;" title="Favorite Selected Items"></span>
-		<span id="delete_button" onClick="delete_items();" class="delete coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
+		<!--<span id="delete_button" onClick="delete_items();" class="delete coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>-->
 		<span id="send_button" onClick="send_menu();" class="sendto coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
 		<span id="undelete_button" onClick="undelete_items();" class="undelete coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
 		<ul id="send_menu" class="coge-dropdown-menu hidden">

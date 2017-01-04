@@ -255,7 +255,7 @@ sub get_annotations {
     my $exp = $coge->resultset('Experiment')->find($eid);
     return "Access denied\n" unless $USER->has_access_to_experiment($exp);
 
-    my $user_can_edit = ( $USER->is_admin || $USER->is_owner_editor( experiment => $eid ) );
+    my $user_can_edit = $exp->is_editable($USER);
 
     # Categorize annotations based on type group and type
     my %groups;

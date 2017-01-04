@@ -1657,8 +1657,7 @@ sub get_annotations {
     return "Genome not found\n" unless $genome;
     return "Access denied\n" unless $USER->has_access_to_genome($genome);
 
-    my $user_can_edit =
-      ( $USER->is_admin || $USER->is_owner_editor( dsg => $gid ) );
+    my $user_can_edit = $genome->is_editable($USER);
 
     my %groups;
     my $num_annot = 0;
@@ -2158,8 +2157,8 @@ sub generate_body {
     return "There was an error while loading this genome" if $genome->status == ERROR;
     return "This genome is still being loaded" if $genome->status == LOADING;
 
-    my $user_can_edit = $USER->is_admin || $USER->is_owner_editor( dsg => $gid );
-    my $user_can_delete = $USER->is_admin || $USER->is_owner( dsg => $gid );
+    my $user_can_edit = $genome->is_editable($USER);
+    my $user_can_delete = $genome->is_deletable($USER);
 
     my $exp_count = $genome->experiments->count( { deleted => 0 } );
     my $experiments;
