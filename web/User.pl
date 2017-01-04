@@ -188,7 +188,6 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
               . $_->display_name . ' (' . $_->user_name . ')' . '<br>';
         }
 
-        my $info = $group->info;
         my $view_link = qq{open_item('GroupView.pl?ugid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
@@ -313,7 +312,6 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
           . '<b>Location:</b> ' . $feature->chromosome . ':' . $feature->start . '-' . $feature->stop . '<br>'
           . '<b>Length:</b> ' . abs($feature->stop - $feature->start + 1) . ' bp';
 
-        my $info = 'Feature <i>' . js_escape($feature->info) . '</i>';
         my $view_link = qq{open_item('FeatView.pl?fid=$item_id');};
 
         $html .= qq{<div><b>Tools:</b><br>}
