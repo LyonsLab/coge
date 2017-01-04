@@ -194,6 +194,35 @@ sub owner {
 
 ################################################ subroutine header begin ##
 
+=head2 is_editable
+
+ Usage     : is this experiment editable by the specified user?
+ Purpose   :
+ Returns   : 0 or 1
+ Argument  :
+ Throws    : None
+ Comments  :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_editable {
+    my $self = shift;
+    my $user = shift;
+
+    return ( $user->is_admin || $user->is_owner_editor( experiment => $self->id ) );
+}
+
+sub is_deletable {
+    my $self = shift;
+    my $user = shift;
+
+    return ( $user->is_admin || $user->is_owner( experiment => $self->id ) );
+}
+
+################################################ subroutine header begin ##
+
 =head2 experiment_types
 
  Usage     : $self->experiment_types

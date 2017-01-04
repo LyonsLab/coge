@@ -361,6 +361,41 @@ See Also   : ListType
 
 ################################################ subroutine header begin ##
 
+=head2 is_editable
+
+ Usage     : is this notebook editable by the specified user?
+ Purpose   :
+ Returns   : 0 or 1
+ Argument  :
+ Throws    : None
+ Comments  :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_editable {
+    my $self = shift;
+    my $user = shift;
+
+    return (
+             $user->is_admin
+          || ( !$self->locked && $user->is_owner_editor( list => $self->id ) )
+    );
+}
+
+sub is_deletable {
+    my $self = shift;
+    my $user = shift;
+
+    return (
+             $user->is_admin
+          || ( !$self->locked && $user->is_owner( list => $self->id ) )
+    );
+}
+
+################################################ subroutine header begin ##
+
 =head2 info
 
  Usage     :
