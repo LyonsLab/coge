@@ -644,13 +644,13 @@ class DataGridRow { //FIXME duplicated in search-results.js
     	return '<!--' + diffMS + '-->' + dateStr; // embed the time difference in a hidden html comment for sorting
     }
 
-    open(url) {
+    open(url, title) {
         if (this.type == 'group')
             group_dialog();
         else if (this.type == 'analyses' || this.type == 'loads')
             window.open(this.link, '_blank');
         else {
-            var title = this.getDescription();
+            var title = title || this.getDescription();
             var link  = url || this.getLink();
             var flags = this.getFlags({noSpaces: 1});
             title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
