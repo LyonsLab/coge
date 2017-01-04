@@ -1921,7 +1921,7 @@ div.dataTables_scrollBody {
  * Header
  */
 
-@media (min-width: 1160px) {
+@media (min-width: 1180px) {
 	.coge-header {
         font-size: 16px;
 		height: 3.1em;
@@ -1938,7 +1938,7 @@ div.dataTables_scrollBody {
     }
 }
 
-@media (max-width: 1159px) {
+@media (max-width: 1179px) {
 	.coge-header {
 		height: 5.9em;
 		padding: 2px;
@@ -1968,6 +1968,10 @@ div.dataTables_scrollBody {
 .coge-header-menu > li {
     display: inline-block;
 	margin-right: 3em;
+}
+
+#user_drop_label {
+    margin-right: 1em;
 }
 
 .coge-header-search-button {
