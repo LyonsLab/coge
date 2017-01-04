@@ -1,4 +1,7 @@
 $(function () {
+    // Initialize dialog boxes
+	$(".dialog_box").dialog({autoOpen: false, resizable: false});
+
 	// Initialize CoGe web services
     coge.services.init({
     	baseUrl: API_BASE_URL,
@@ -82,7 +85,7 @@ $(function () {
 			],
 			selectionCallback: function(items) {
 			    infoPanel.busy().update(items);
-				//update_icons(items);
+				update_icons(items);
 			}
 		})
 	});
@@ -95,7 +98,7 @@ $(function () {
 			    .render();
 			contentPanel.grid.search(''); // clear search filter
 			infoPanel.update(null);
-			//update_icons(null);
+			update_icons(null);
 			$('#search_input').val(''); //FIXME move into ContentPanel
 		}
 	});
@@ -104,6 +107,17 @@ $(function () {
 		contentPanel.grid.search( $(this).val() );
 		contentPanel.renderTitle();
 	});
+
+    // Initialize dropdown menus
+//	$("#create_menu").menu()
+//		.position({
+//			my: "left top",
+//			at: "left bottom",
+//			of: "#create_button"
+//		})
+//		.css({ position: 'absolute' });
+//
+//	$("#send_menu").menu().css({ position: 'absolute', width: '90px' });
 });
 
 function search_stuff(search_term) {
@@ -289,7 +303,7 @@ class DataGridRow { //FIXME duplicated in user.js
     		data: {
     			fname: 'get_item_info',
     			item_id: self.id,
-    			item_type: self.type,
+    			item_type: self.type
     		}
     	}).pipe(function(data) {
     	    //console.log('getInfo response');
