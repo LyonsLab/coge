@@ -331,8 +331,7 @@ sub get_annotations {
     my ($list) = $DB->resultset('List')->find($lid);
     return unless $USER->has_access_to_list($list);
 
-    my $user_can_edit = $USER->is_admin
-      || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
+    my $user_can_edit = $USER->is_admin || ( !$list->locked && $USER->is_owner_editor( list => $lid ) );
 
     my %groups;
     my $num_annot = 0;
@@ -611,7 +610,7 @@ sub get_list_contents {
     return encode_json({
         contents => \@rows,
         counts => [scalar @genomes, scalar @experiments, scalar @features],
-        user_can_edit => ($USER->is_admin || (!$list->locked && $USER->is_owner_editor( list => $lid ))) ? 'true' : 'false'
+        user_can_edit => ($USER->is_admin || (!$list->locked && $USER->is_owner_editor( list => $lid ))) ? JSON::true : JSON::false
     });
 }
 
