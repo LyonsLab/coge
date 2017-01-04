@@ -364,40 +364,7 @@ Please take a moment to fill out the Future Directions Survey (only 4 questions!
 		
 	<!--Buttons and links-->
 	<ul id="header_menu" class="coge-header-menu">
-        <TMPL_IF NAME="LOGON">
-        <li class="dropdown coge-header-button noselect">
-            <div id="user_drop_label" class="dropdown-label" style="margin-right:3.5em;">
-                <img src="image.pl" class="coge-user-image" style="margin-top:-5px;vertical-align:middle;" id="user_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';"\>
-                <!--<div style="display:inline-block;vertical-align:middle;"><TMPL_VAR NAME="USER"></div>-->
-                <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link">
-            </div>
-            <ul id="user_drop" class="dropdown-menu hidden">
-                <li class="dropdown-item"><a class="dropdown-link" href="Account.pl">My Account</a></li>
-		        <TMPL_IF NAME="ADMIN_ONLY">
-		            <li class="dropdown-item"><a class="dropdown-link" href="Admin.pl">Admin</a></li>
-		        </TMPL_IF>
-                <li class="dropdown-item"><a class="dropdown-link" onclick="$('#logout_dialog').dialog({modal: true, width: '33em'}).dialog('open');">Logout</a></li>
-            </ul>
-        </li>
-        </TMPL_IF>
-		<TMPL_UNLESS NAME="LOGON">
-			<li id="header_login_button" class="coge-header-button" style="margin-right:3.5em;" onclick="login_cas();return true;">
-				<div>Log in</div>
-			</li>
-		</TMPL_UNLESS>
-		<li id="help" class="dropdown coge-header-button noselect">
-			<div id="help_drop_label" class="dropdown-label">Help <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link"></div>
-			<ul id="help_drop" class="dropdown-menu hidden">
-				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
-				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
-				<li class="dropdown-item"><a class="dropdown-link" href="http://ask.iplantcollaborative.org/questions/scope%3Aall/sort%3Aactivity-desc/tags%3ACoGe/" target="_blank">Forums</a></li>
-				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
-				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
-				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page#How_to_cite_CoGe.3F" target="_blank">Cite CoGe</a></li>
-				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
-				<!--<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>-->
-			</ul>
-		</li>
+		<li class="coge-header-button noselect"><div><a href="User.pl">My Data</a></div></li>
 		<li id="tool" class="dropdown coge-header-button noselect">
 			<div id="tool_drop_label" class="dropdown-label">Tools <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link"></div>
 			<ul id="tool_drop" class="dropdown-menu hidden">
@@ -412,7 +379,39 @@ Please take a moment to fill out the Future Directions Survey (only 4 questions!
 				<li class="dropdown-item"><a class="dropdown-link" href="LoadExperiment.pl">Load Experiment</a></li>
 			</ul>
 		</li>
-		<li class="coge-header-button noselect"><div><a href="User.pl">My Data</a></div></li>
+		<li id="help" class="dropdown coge-header-button noselect">
+			<div id="help_drop_label" class="dropdown-label">Help <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link"></div>
+			<ul id="help_drop" class="dropdown-menu hidden">
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>" target="_blank">CoGePedia</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="http://ask.iplantcollaborative.org/questions/scope%3Aall/sort%3Aactivity-desc/tags%3ACoGe/" target="_blank">Forums</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/FAQs" target="_blank">FAQ</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Tutorials" target="_blank">Tutorials</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/Contact_Page#How_to_cite_CoGe.3F" target="_blank">Cite CoGe</a></li>
+				<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/System_Support" target="_blank">System Support</a></li>
+				<!--<li class="dropdown-item"><a class="dropdown-link" href="<TMPL_VAR NAME=WIKI_URL>/CoGepedia:Current_events" target="_blank">Latest News</a><li>-->
+			</ul>
+		</li>
+<TMPL_IF NAME="LOGON">
+        <li class="dropdown coge-header-button noselect">
+            <div id="user_drop_label" class="dropdown-label">
+                <img src="image.pl" class="coge-user-image" style="margin-top:-5px;vertical-align:middle;" id="user_image" onerror="if (this.src != 'picts/default_user_image.png') this.src = 'picts/default_user_image.png';"\>
+                <!--<div style="display:inline-block;vertical-align:middle;"><TMPL_VAR NAME="USER"></div>-->
+                <img class="dropdown-arrow" src="picts/arrow-right-icon.png" class="link">
+            </div>
+            <ul id="user_drop" class="dropdown-menu hidden">
+                <li class="dropdown-item"><a class="dropdown-link" href="Account.pl">My Account</a></li>
+		        <TMPL_IF NAME="ADMIN_ONLY">
+		            <li class="dropdown-item"><a class="dropdown-link" href="Admin.pl">Admin</a></li>
+		        </TMPL_IF>
+                <li class="dropdown-item"><a class="dropdown-link" onclick="$('#logout_dialog').dialog({modal: true, width: '33em'}).dialog('open');">Logout</a></li>
+            </ul>
+        </li>
+<TMPL_ELSE>
+		<li id="header_login_button" class="coge-header-button" onclick="login_cas();return true;">
+			<div>Log in</div>
+		</li>
+</TMPL_IF>
 	</ul>
 </header>
 

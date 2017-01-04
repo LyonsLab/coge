@@ -1921,7 +1921,7 @@ div.dataTables_scrollBody {
  * Header
  */
 
-@media (min-width: 981px) {
+@media (min-width: 1160px) {
 	.coge-header {
         font-size: 16px;
 		height: 3.1em;
@@ -1930,16 +1930,28 @@ div.dataTables_scrollBody {
 		background-color: #f5f5f5;
 		border-bottom: 1px solid lightgray;
 	}
+    .coge-header-menu {
+        padding-top: 1em;
+    }
+    #header_menu {
+        float: right;
+    }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1159px) {
 	.coge-header {
-		height: 6em;
+		height: 5.9em;
 		padding: 2px;
 		margin-bottom: 1em;
 		background-color: #f5f5f5;
 		border-bottom: 1px solid lightgray;
 	}
+    .coge-header-menu {
+        padding-top: 3.6em;
+    }
+    #header_menu {
+        padding-left: 20px;
+    }
 }
 
 .coge-logo {
@@ -1954,8 +1966,8 @@ div.dataTables_scrollBody {
 }
 
 .coge-header-menu > li {
-	float: right;
-	margin-left: 3em;
+    display: inline-block;
+	margin-right: 3em;
 }
 
 .coge-header-search-button {
@@ -1975,18 +1987,12 @@ div.dataTables_scrollBody {
 
 .coge-header-search input {
 	width: 40vw;
-	/*height: 3em;*/
-	font-size:	1.2em;
+	font-size: 1.2em;
 	font-family: helvetica;
     padding: 1px;
 }
 
-.coge-header-menu {
-    padding-top: 1em; /*0.90em;*/
-}
-
 .coge-user-image {
-    /*background: url('image.pl');*/
     border-radius: 5px;
     width: 1.75em;
     height: 1.75em;
@@ -1998,11 +2004,7 @@ div.dataTables_scrollBody {
     font-weight: 600;
     font-size: 0.875em;
     line-height: 1.5;
-    /*border: 1px solid #7adf39;*/
-    /*background: #beef9f;*/
-    /*vertical-align: middle;*/
     height: 2.5em;
-    /*margin-top: 1em;*/
     cursor: pointer;
 }
 
@@ -2022,7 +2024,7 @@ div.dataTables_scrollBody {
 
 #advanced_search_label {
     font-size: 0.9em;
-    padding: 18px 0 0 5px;
+    padding: 18px 40px 0 5px;
 }
 
 #coge-advanced-search {
