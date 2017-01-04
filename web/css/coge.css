@@ -2017,9 +2017,12 @@ div.dataTables_scrollBody {
 }
 
 #advanced_search {
-    font-size: smaller;
-    padding-left: 5px;
-    padding-top: 18px;
+    height: 4em;
+}
+
+#advanced_search_label {
+    font-size: 0.9em;
+    padding: 18px 200px 0 5px;
 }
 
 #coge-advanced-search {
@@ -2028,7 +2031,9 @@ div.dataTables_scrollBody {
     border-left: 1px solid lightgray;
     border-right: 1px solid lightgray;
     display: none;
-    margin-top: 12px;
+    font-size: 1em;
+    font-weight: initial;
+    margin-top: 17px;
     padding: 0 10px 10px 10px;
     position: absolute;
     z-index: 100;
