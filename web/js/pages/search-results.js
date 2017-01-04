@@ -199,16 +199,6 @@ function default_info() {
 	}
 }
 
-function open_item(url) {
-	var selected_rows = contentPanel.grid.getSelectedRows();
-	if (selected_rows && selected_rows.length == 1) {
-		selected_rows.every(function() {
-		    console.log('open_item: ' + url);
-			this.data().open(url);
-		});
-    }
-}
-
 /*
  * Data Grid Row
  */

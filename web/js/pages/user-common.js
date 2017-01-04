@@ -31,6 +31,16 @@ function update_icons(items) { //TODO move into ContentPanel
 		$('.item-button:not(#add_button)').addClass('coge-disabled');
 }
 
+function open_item(url) {
+	var selected_rows = contentPanel.grid.getSelectedRows();
+	if (selected_rows && selected_rows.length == 1) {
+		selected_rows.every(function() {
+		    console.log('open_item: ' + url);
+			this.data().open(url);
+		});
+    }
+}
+
 function favorite_items() {
 	var selected_rows = contentPanel.grid.getSelectedRows();
 	var item_list = contentPanel.grid.getSelectedItemList();
