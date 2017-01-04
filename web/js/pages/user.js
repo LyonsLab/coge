@@ -306,7 +306,7 @@ $(function() {
 					contentPanel.grid.search(''); // clear search filter
 					contentPanel.render();
 					schedule_poll();
-				});my
+				});
 			infoPanel.update(null);
 			update_icons(null);
 			$('#search_input').val(''); //FIXME move into ContentPanel
