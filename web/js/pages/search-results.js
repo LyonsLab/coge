@@ -17,7 +17,7 @@ $(function () {
 			title: 'Organisms',
 			displayType: 'grid',
 			dataTypes: ['organism'],
-			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
+			operations: []
 		},
 		genome: {
 			title: 'Genomes',
@@ -29,7 +29,7 @@ $(function () {
 			title: 'Features',
 			displayType: 'grid',
 			dataTypes: ['feature'],
-			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
+			operations: ['organize', 'sendto']
 		},
 		experiment: {
 			title: 'Experiments',
@@ -85,7 +85,7 @@ $(function () {
 			],
 			selectionCallback: function(items) {
 			    infoPanel.busy().update(items);
-				update_icons(items);
+				contentPanel.renderButtons(items && items.length); //FIXME should happen automatically within contentPanel
 			}
 		})
 	});
@@ -98,7 +98,6 @@ $(function () {
 			    .render();
 			contentPanel.grid.search(''); // clear search filter
 			infoPanel.update(null);
-			update_icons(null);
 			$('#search_input').val(''); //FIXME move into ContentPanel
 		}
 	});
@@ -107,17 +106,6 @@ $(function () {
 		contentPanel.grid.search( $(this).val() );
 		contentPanel.renderTitle();
 	});
-
-    // Initialize dropdown menus
-//	$("#create_menu").menu()
-//		.position({
-//			my: "left top",
-//			at: "left bottom",
-//			of: "#create_button"
-//		})
-//		.css({ position: 'absolute' });
-//
-//	$("#send_menu").menu().css({ position: 'absolute', width: '90px' });
 });
 
 function search_stuff(search_term) {

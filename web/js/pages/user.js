@@ -160,7 +160,7 @@ $(function() {
 			title: 'Shared with me',
 			displayType: 'grid',
 			dataTypes: ['genome', 'experiment', 'notebook'],
-			operations: ['share', 'organize', 'favorite'],
+			operations: ['share', 'organize', 'favorite', 'sendto'],
 			shared: true
 		},
 		favorite: {
@@ -253,7 +253,7 @@ $(function() {
 			},
 			selectionCallback: function(items) {
 			    infoPanel.busy().update(items);
-				update_icons(items);
+				contentPanel.renderButtons(items && items.length);
 			},
 			mouseOver: function(row) {
 			    infoPanel.busy().scheduleUpdate([row]);
@@ -308,7 +308,6 @@ $(function() {
 					schedule_poll();
 				});
 			infoPanel.update(null);
-			update_icons(null);
 			$('#search_input').val(''); //FIXME move into ContentPanel
 		}
 	});
