@@ -71,7 +71,7 @@ sub build {
     
     # Create tasks to retrieve files
     my $upload_dir = get_upload_path($self->user->name, $load_id);
-    my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data);
+    my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data, params => $self->params);
     push @tasks, @{$data_workflow->{tasks}} if ($data_workflow->{tasks});
     push @input_files, @{$data_workflow->{outputs}} if ($data_workflow->{outputs});
     
