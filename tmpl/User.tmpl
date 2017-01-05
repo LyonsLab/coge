@@ -105,13 +105,6 @@ div.deleted { display: none; }
 			<span id="delete_button" onClick="delete_items();" class="delete coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
 			<span id="send_button" onClick="send_menu();" class="sendto coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
 			<span id="undelete_button" onClick="undelete_items();" class="undelete coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
-			<ul id="send_menu" class="coge-dropdown-menu hidden" style="position:absolute;width:90px;">
-				<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
-				<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
-				<li><a onclick="send_items_to('SynMap3D', 1);">SynMap3D</a></li>
-				<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
-				<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
-			</ul>
 			<input id="search_input" type="search" placeholder="Filter" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" />
 			<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
 		</div>
@@ -119,6 +112,14 @@ div.deleted { display: none; }
 		<div class="html hidden" style="overflow:auto;border-top:1px solid lightgray;border-bottom:none !important;"></div>
 	</div>
 </div>
+
+<ul id="send_menu" class="coge-dropdown-menu hidden" style="position:absolute;width:90px;">
+	<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
+	<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
+	<li><a onclick="send_items_to('SynMap3D', 1);">SynMap3D</a></li>
+	<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
+	<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
+</ul>
 
 <script type="text/javascript">
 //const ITEM_TYPE = <TMPL_VAR NAME="ITEM_TYPE">;
