@@ -13,7 +13,7 @@ my $chr = $q->param('chr');
 # Connect to the database
 my $conf = CoGe::Accessory::Web->get_defaults();
 
-my $filename = $gid . "_" . $chr . ".faa";
+my $filename = $gid . "_" . $chr . "_out.txt";
 
 print "Content-Type: application/force-download\n";
 print "Content-disposition: attachement; filename=chromosome_";

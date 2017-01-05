@@ -103,6 +103,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_chr_length_hist        => \&get_chr_length_hist,
     get_chromosomes            => \&get_chromosomes,
     cache_chr_fasta			   => \&cache_chr_fasta,
+    cache_chr_nuccount		   => \&cache_chr_nuccount,
     get_aa_usage               => \&get_aa_usage,
     get_wobble_gc              => \&get_wobble_gc,
     get_wobble_gc_diff         => \&get_wobble_gc_diff,
@@ -871,21 +872,19 @@ sub get_chr_length_hist { #TODO use API Genome Fetch
 sub get_chromosomes { #TODO use API Genome Fetch
     my %opts  = @_;
     my $gid = $opts{gid};
-#    my $rs = $DB->resultset('GenomicSequence')->search({genome_id=>$gid},{
-#    	columns=>['chromosome','sequence_length']
-#    });
 	my $c = CoGe::Core::Chromosomes->new($gid);
     my $html = '[';
     my $first = 1;
-#	while (my $c = $rs->next) {
 	while ($c->next) {
 		if ($first) {
 			$first = 0;
 		} else {
 			$html .= ",";
 		}
-#		$html .= '["' . $c->chromosome . '","' . $c->sequence_length . "\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"f" . $c->chromosome . "\\\" /> FASTA\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"g" . $c->chromosome . "\\\" /> GFF\"]";
-		$html .= '["' . $c->name . " <a href=\\\"GenomeView.pl?gid=" . $gid . '&loc=' . $c->name . '%3A1..' . ($c->length - 1) . "\\\" target=\\\"_blank\\\"><span class=\\\"glyphicon glyphicon-eye-open\\\" style=\\\"color:black;padding-left:20px;\\\" title=\\\"Browse\\\"></span></a>\",\"" . $c->length . "\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"f" . $c->name . "\\\" /> FASTA\",\"<input type=\\\"radio\\\" name=\\\"chr\\\" id=\\\"g" . $c->name . "\\\" /> GFF\"]";
+		$html .= '["' . $c->name . ' <a href=\\"GenomeView.pl?gid=' . $gid . '&loc=' . $c->name . '%3A1..' . ($c->length - 1) .
+            '\\" target=\\"_blank\\"><span class=\\"glyphicon glyphicon-eye-open\\" style=\\"color:black;padding-left:20px;\\" title=\\"Browse\\"></span></a>","' .
+            $c->length . '","<input type=\\"radio\\" name=\\"chr\\" id=\\"f' . $c->name . '\\" /> FASTA","<input type=\\"radio\\" name=\\"chr\\" id=\\"g' . $c->name .
+            '\\" /> GFF","<input type=\\"radio\\" name=\\"chr\\" id=\\"n' . $c->name . '\\" /> NucCount"]';
   	}
 	$html .= ']';
 	return $html;	
@@ -915,6 +914,7 @@ sub cache_chr_fasta { #FIXME remove this, use API genome/sequence
 		stop  => $genome->get_chromosome_length($chr)
 	);
 	open(my $fh, '>', $file) or return "Could not open file '$file' $!";
+    print $fh '>chromosome ' . $chr . "\n";
 	for (my $i=0; $i<length($seq); $i+=70) {
 		print $fh substr($seq, $i, 70);
 		print $fh "\n";
@@ -923,6 +923,24 @@ sub cache_chr_fasta { #FIXME remove this, use API genome/sequence
     return encode_json(\%json);
 }
 
+sub cache_chr_nuccount { #FIXME remove this, use API genome/sequence
+    my %opts  = @_;
+    my $gid = $opts{gid};
+    my $chr = $opts{chr};
+
+    my $path = catfile($config->{SECTEMPDIR}, 'downloads/genome', $gid);
+	mkpath( $path, 0, 0777 ) unless -d $path;
+    my $file = catfile($path, $gid . '_' . $chr . '_out.txt');
+	my %json;
+	$json{file} = $file;
+    if (-e $file) {
+    	return encode_json(\%json);
+    }
+
+    my $nuccounter = catfile($config->{SCRIPTDIR}, 'nuccounter.py');
+    system($nuccounter, catfile($path, $gid . '_' . $chr . '.faa'));
+    return encode_json(\%json);
+}
 
 sub get_genome_info {
     my %opts   = @_;
@@ -2154,8 +2172,8 @@ sub generate_body {
     my $genome = $DB->resultset('Genome')->find($gid);
     return "Genome id $gid not found" unless ($genome);
     return "Access denied" unless $USER->has_access_to_genome($genome);
-    return "There was an error while loading this genome" if $genome->status == ERROR;
-    return "This genome is still being loaded" if $genome->status == LOADING;
+    return "There was an error while loading this genome" if $genome->status && $genome->status == ERROR;
+    return "This genome is still being loaded" if $genome->status && $genome->status == LOADING;
 
     my $user_can_edit = $genome->is_editable($USER);
     my $user_can_delete = $genome->is_deletable($USER);

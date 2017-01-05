@@ -114,7 +114,7 @@ function chr_list() {
 	        dataType: "json",
 	        success: function (data) {
 				chr_list_table = $('#chr_list_table').DataTable({
-			   		columnDefs:[{targets:0,type:'natural'},{targets:1,type:'num'},{orderable:false,targets:[2,3]}],
+			   		columnDefs:[{targets:0,type:'natural'},{targets:1,type:'num'},{orderable:false,targets:[2,3,4]}],
 			   		data:data,
 					deferRender:true,
 					language:{info:'Showing _START_ to _END_ of _TOTAL_ chromosomes'},
@@ -211,6 +211,28 @@ function download_chromosome_sequence(chr) { // FIXME use API genome/sequence (m
     });
 }
 
+function download_chromosome_nuccount(chr) { // FIXME use API genome/sequence (mdb 11/22/16)
+    $.ajax({
+        data: {
+            fname: 'cache_chr_fasta',
+            gid: GENOME_ID,
+            chr: chr
+        },
+        success: function(data) {
+            $.ajax({
+                data: {
+                    fname: 'cache_chr_nuccount',
+                    gid: GENOME_ID,
+                    chr: chr
+                },
+                success: function(data) {
+                	document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
+                }
+            });
+        }
+    });
+}
+
 function download_chr_file() {
 	var i = $('input[name=chr]:checked');
 	if (!i.length) {
@@ -218,10 +240,13 @@ function download_chr_file() {
 		return;
 	}
 	var id = i.attr('id');
-	if (id.substring(0,1)=='f')
+    var type = id.substring(0,1);
+	if (type == 'f')
 		download_chromosome_sequence(id.substring(1));
-	else
+	else if (type == 'g')
 		get_gff(id.substring(1));
+    else
+        download_chromosome_nuccount(id.substring(1));
 }
 
 function export_chr_file() {
@@ -231,9 +256,10 @@ function export_chr_file() {
 		return;
 	}
 	var id = i.attr('id');
-	if (id.substring(0,1)=='f')
+	var type = id.substring(0,1);
+	if (type == 'f')
 		export_fasta_chr(id.substring(1));
-	else
+	else if (type == 'g')
 		export_gff(id.substring(1));
 }
 
