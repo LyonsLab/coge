@@ -57,44 +57,48 @@ sub esearch {
     my $record = XMLin($result, ForceArray => ['Id']);
     #warn Dumper $record;
     my $id_list = $record->{IdList}->{Id};
-    #warn Dumper $id;
+    #warn Dumper $id_list;
 
     return $id_list; # arrayref of IDs
 }
 
 sub esummary {
-    my ($db, $id) = @_;
+    my ($db, $ids) = @_;
     $db = lc($db);
 
-    my $response = get($ESUMMARY_URL . '?db=' . $db . '&id=' . $id);
+    my $xmlResponse = get($ESUMMARY_URL . '?db=' . $db . '&id=' . ( ref($ids) eq 'ARRAY' ? join(',', @$ids) : $ids ) );
+    #warn Dumper $xmlResponse;
 
     if ($db eq 'sra') {
-        my %result;
-
-        my $record = XMLin($response, KeyAttr => {Item => 'Name'}, ForceArray => ['Item'], ContentKey => '-content');
-        unless ($record) {
+        my $response = XMLin($xmlResponse, KeyAttr => {Item => 'Name'}, ForceArray => ['Item'], ContentKey => '-content');
+        #warn Dumper $response;
+        unless ($response) {
+            warn "esummary: No response";
             return;
         }
 
-        # Parse name
-        my $exp = '<Exp>' . $record->{DocSum}->{Item}->{ExpXml}->{content} . '</Exp>'; # Kludge for NCBI, see COGE-778
-        if ($exp) {
-            my $record = XMLin($exp);
-            @result{keys %$record} = values %$record;
-        }
+        my %result;
+        foreach my $d (@{$response->{DocSum}}) {
+            # Parse name
+            my $exp = '<Exp>'.$d->{Item}->{ExpXml}->{content}.'</Exp>'; # Kludge for NCBI, see COGE-778
+            if ($exp) {
+                my $record = XMLin($exp);
+                @result{keys %$record} = values %$record;
+            }
 
-        # Parse runs
-        my $runs = '<Runs>' . $record->{DocSum}->{Item}->{Runs}->{content} . '</Runs>'; # Kludge for NCBI, see COGE-778
-        if ($runs) {
-            my $record = XMLin($runs, KeyAttr => {Run => 'acc'});
-            @result{keys %$record} = values %$record;
+            # Parse runs
+            my $runs = '<Runs>'.$d->{Item}->{Runs}->{content}.'</Runs>'; # Kludge for NCBI, see COGE-778
+            if ($runs) {
+                my $record = XMLin($runs, KeyAttr => { Run => 'acc' });
+                @result{keys %$record} = values %$record;
+            }
         }
 
         #warn Dumper \%result;
         return \%result;
     }
 
-    return $response;
+    return $xmlResponse;
 }
 
 sub efetch {
@@ -102,11 +106,11 @@ sub efetch {
     $db = lc($db);
 
     my $result = get($EFETCH_URL . '?db=' . $db . '&id=' . $id);
-    warn $result;
+    #warn $result;
 
     if ($db eq 'sra') {
         my $record = XMLin($result);
-        warn Dumper $record;
+        #warn Dumper $record;
     }
 
     return $result;
