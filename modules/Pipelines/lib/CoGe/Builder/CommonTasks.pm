@@ -951,7 +951,7 @@ sub create_bam_sort_job {
         args => [
             ["sort", '', 0],
             ["", $input_file, 1],
-            ["-o", $filename . "-sorted", 1] # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
+            ["-o", $filename . "-sorted.bam", 1] # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
         ],
         inputs => [
             $input_file
