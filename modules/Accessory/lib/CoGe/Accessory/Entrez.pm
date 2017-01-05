@@ -77,8 +77,10 @@ sub esummary {
             return;
         }
 
-        my %result;
+        my @results;
         foreach my $d (@{$response->{DocSum}}) {
+            my %result;
+
             # Parse name
             my $exp = '<Exp>'.$d->{Item}->{ExpXml}->{content}.'</Exp>'; # Kludge for NCBI, see COGE-778
             if ($exp) {
@@ -92,10 +94,12 @@ sub esummary {
                 my $record = XMLin($runs, KeyAttr => { Run => 'acc' });
                 @result{keys %$record} = values %$record;
             }
+
+            push @results, \%result;
         }
 
-        #warn Dumper \%result;
-        return \%result;
+        #warn Dumper \@results;
+        return \@results;
     }
 
     return $xmlResponse;

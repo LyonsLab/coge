@@ -77,7 +77,7 @@ sub build {
     my $wait_file;
     foreach my $record (@$records) {
         # Format metadata
-        my ($data, $metadata, $additional_metadata, $read_params) = convert_metadata($record);
+        my ($data, $metadata, $additional_metadata, $read_type) = convert_metadata($record);
         print STDERR 'SRA: Building workflow for "', $metadata->{name}, '"\n';
 
         # Limit the max number of SRA experiments a user can load at one time
@@ -86,14 +86,14 @@ sub build {
             return;
         }
 
+        # Add load experiment pipeline
+        $self->params->{metadata} = $metadata;
+        $self->params->{additional_metadata} = $additional_metadata;
+        $self->params->{read_params}{read_type} = $read_type;
+        $self->params->{source_data} = $data;
+
         my $expBuilder = CoGe::Builder::Load::Experiment->new({
-            params      => {
-                genome_id           => $gid,
-                metadata            => $metadata,
-                additional_metadata => $additional_metadata,
-                source_data         => $data,
-                read_params         => $read_params
-            },
+            params      => $self->params,
             db          => $self->db,
             user        => $self->user,
             conf        => $self->conf,
@@ -129,11 +129,9 @@ sub sra_retrieve {
         my $id_list = esearch('sra', $_);
         return unless ($id_list && @$id_list);
 
-        foreach (@$id_list) { #FIXME speed this up by fetching all in a single query using command-separated list of IDs
-            print STDERR "   fetch summary for $_\n";
-            my $record = esummary('sra', $_);
-            push @results, $record;
-        }
+        print STDERR "   fetch summary for ", join(',', @$id_list), "\n";
+        my $records = esummary('sra', $id_list);
+        push @results, @$records;
     }
 
     return \@results;
@@ -161,10 +159,10 @@ sub convert_metadata { #TODO rename
 
     # Format other fields as additional metadata
     my @additional_metadata = map +{ type => $_, text => $flattened->{$_} }, keys(%$flattened);
-    warn Dumper \@additional_metadata;
+    #warn Dumper \@additional_metadata;
 
-    # Extract accession number(s) and determine single-ended or paired-end
-    my (@accns, $read_params);
+    # Extract accession number(s)
+    my @accns;
     if ($record->{Run}->{acc}) { # single run
         push @accns, $record->{Run}->{acc};
     }
@@ -172,12 +170,14 @@ sub convert_metadata { #TODO rename
         foreach (keys %{$record->{Run}}) {
             push @accns, $_ if ($_ =~ /^SRR/i);
         }
-
-        if ($record->{'Library_descriptor'}->{'LIBRARY_LAYOUT'}->{'PAIRED'}) { # paired-end
-            $read_params->{read_type} = 'paired';
-        }
-        # Else default to single-ended
     }
+
+    # Determine single-ended or paired-end
+    my $read_type;
+    if ($record->{'Library_descriptor'}->{'LIBRARY_LAYOUT'}->{'PAIRED'}) { # paired-end
+        $read_type = 'paired';
+    }
+    # Else default to single-ended
 
     # Create data element
     my @data;
@@ -185,7 +185,7 @@ sub convert_metadata { #TODO rename
         push @data, { file_type => 'sra', type => 'sra', path => $_ };
     }
 
-    return (\@data, $metadata, \@additional_metadata, $read_params);
+    return (\@data, $metadata, \@additional_metadata, $read_type);
 }
 
 1;
