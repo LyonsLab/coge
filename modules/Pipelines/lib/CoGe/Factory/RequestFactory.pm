@@ -47,7 +47,8 @@ sub get {
         $type eq "load_experiment" ||
         $type eq "load_sra" ||
         $type eq "load_batch" ||
-        $type eq "load_annotation")
+        $type eq "load_annotation" ||
+        $type eq "nuccounter")
     {
         return CoGe::Request::Genome->new($options);
     }

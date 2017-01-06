@@ -17,6 +17,7 @@ use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
 use CoGe::Builder::Tools::CoGeBlast;
+use CoGe::Builder::Tools::NucCounter;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Tools::SynMap3D;
 use CoGe::Builder::Expression::MeasureExpression;
@@ -56,7 +57,19 @@ sub get {
 
     # Select pipeline builder
     my $builder;
-    if ($message->{type} eq "blast") {
+    if ($message->{type} eq "analyze_expression") {
+        $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
+    }
+    elsif ($message->{type} eq "analyze_diversity") {
+        $builder = CoGe::Builder::PopGen::MeasureDiversity->new($request);
+    }
+    elsif ($message->{type} eq "analyze_metaplot") {
+        $builder = CoGe::Builder::Methylation::CreateMetaplot->new($request);
+    }        
+    elsif ($message->{type} eq "analyze_snps") {
+        $builder = CoGe::Builder::SNP::IdentifySNPs->new($request);
+    }
+    elsif ($message->{type} eq "blast") {
         $builder = CoGe::Builder::Tools::CoGeBlast->new($request);
     }
     elsif ($message->{type} eq "export_gff") {
@@ -86,23 +99,14 @@ sub get {
     elsif ($message->{type} eq "load_annotation") {
         $builder = CoGe::Builder::Load::Annotation->new($request);
     }
-    elsif ($message->{type} eq "analyze_snps") {
-        $builder = CoGe::Builder::SNP::IdentifySNPs->new($request);
+    elsif ($message->{type} eq "nuccounter") {
+        $builder = CoGe::Builder::Tools::NucCounter->new($request);
     }
     elsif ($message->{type} eq "synmap") {
         $builder = CoGe::Builder::Tools::SynMap->new($request);
     }
     elsif ($message->{type} eq "synmap3d") {
         $builder = CoGe::Builder::Tools::SynMap3D->new($request);
-    }
-    elsif ($message->{type} eq "analyze_expression") {
-        $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
-    }
-    elsif ($message->{type} eq "analyze_metaplot") {
-        $builder = CoGe::Builder::Methylation::CreateMetaplot->new($request);
-    }        
-    elsif ($message->{type} eq "analyze_diversity") {
-        $builder = CoGe::Builder::PopGen::MeasureDiversity->new($request);
     }
     else {
         print STDERR "PipelineFactory::get unknown type\n";
