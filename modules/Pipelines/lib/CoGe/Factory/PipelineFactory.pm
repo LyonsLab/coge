@@ -2,6 +2,7 @@ package CoGe::Factory::PipelineFactory;
 
 use Moose;
 
+use Switch;
 use File::Spec::Functions qw(catfile);
 use Data::Dumper;
 
@@ -56,57 +57,27 @@ sub get {
 
     # Select pipeline builder
     my $builder;
-    if ($message->{type} eq "blast") {
-        $builder = CoGe::Builder::Tools::CoGeBlast->new($request);
-    }
-    elsif ($message->{type} eq "export_gff") {
-        $builder = CoGe::Builder::Export::Gff->new($request);
-    }
-    elsif ($message->{type} eq "export_fasta") {
-        $builder = CoGe::Builder::Export::Fasta->new($request);
-    }
-    elsif ($message->{type} eq "export_genome") {
-        $builder = CoGe::Builder::Export::Genome->new($request);
-    }
-    elsif ($message->{type} eq "export_experiment") {
-        $builder = CoGe::Builder::Export::Experiment->new($request);
-    }
-    elsif ($message->{type} eq "load_experiment") {
-        $builder = CoGe::Builder::Load::Experiment->new($request);
-    }
-    elsif ($message->{type} eq "load_sra") {
-        $builder = CoGe::Builder::Load::SRA->new($request);
-    }
-    elsif ($message->{type} eq "load_batch") {
-        $builder = CoGe::Builder::Load::BatchExperiment->new($request);
-    }
-    elsif ($message->{type} eq "load_genome") {
-        $builder = CoGe::Builder::Load::Genome->new($request);
-    }
-    elsif ($message->{type} eq "load_annotation") {
-        $builder = CoGe::Builder::Load::Annotation->new($request);
-    }
-    elsif ($message->{type} eq "analyze_snps") {
-        $builder = CoGe::Builder::SNP::IdentifySNPs->new($request);
-    }
-    elsif ($message->{type} eq "synmap") {
-        $builder = CoGe::Builder::Tools::SynMap->new($request);
-    }
-    elsif ($message->{type} eq "synmap3d") {
-        $builder = CoGe::Builder::Tools::SynMap3D->new($request);
-    }
-    elsif ($message->{type} eq "analyze_expression") {
-        $builder = CoGe::Builder::Expression::MeasureExpression->new($request);
-    }
-    elsif ($message->{type} eq "analyze_metaplot") {
-        $builder = CoGe::Builder::Methylation::CreateMetaplot->new($request);
-    }        
-    elsif ($message->{type} eq "analyze_diversity") {
-        $builder = CoGe::Builder::PopGen::MeasureDiversity->new($request);
-    }
-    else {
-        print STDERR "PipelineFactory::get unknown type\n";
-        return;
+    switch ($message->{type}) {
+        case "blast"              { $builder = CoGe::Builder::Tools::CoGeBlast->new($request) }
+        case "export_gff"         { $builder = CoGe::Builder::Export::Gff->new($request) }
+        case "export_fasta"       { $builder = CoGe::Builder::Export::Fasta->new($request) }
+        case "export_genome"      { $builder = CoGe::Builder::Export::Genome->new($request) }
+        case "export_experiment"  { $builder = CoGe::Builder::Export::Experiment->new($request) }
+        case "load_experiment"    { $builder = CoGe::Builder::Load::Experiment->new($request) }
+        case "load_sra"           { $builder = CoGe::Builder::Load::SRA->new($request) }
+        case "load_batch"         { $builder = CoGe::Builder::Load::BatchExperiment->new($request) }
+        case "load_genome"        { $builder = CoGe::Builder::Load::Genome->new($request) }
+        case "load_annotation"    { $builder = CoGe::Builder::Load::Annotation->new($request) }
+        case "analyze_snps"       { $builder = CoGe::Builder::SNP::IdentifySNPs->new($request) }
+        case "synmap"             { $builder = CoGe::Builder::Tools::SynMap->new($request) }
+        case "synmap3d"           { $builder = CoGe::Builder::Tools::SynMap3D->new($request) }
+        case "analyze_expression" { $builder = CoGe::Builder::Expression::MeasureExpression->new($request) }
+        case "analyze_metaplot"   { $builder = CoGe::Builder::Methylation::CreateMetaplot->new($request) }
+        case "analyze_diversity"  { $builder = CoGe::Builder::PopGen::MeasureDiversity->new($request) }
+        default {
+            print STDERR "PipelineFactory::get unknown job type\n";
+            return;
+        }
     }
 
     #
