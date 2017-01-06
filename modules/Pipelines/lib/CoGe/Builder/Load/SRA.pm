@@ -4,8 +4,6 @@ use Moose;
 with qw(CoGe::Builder::Buildable);
 
 use Data::Dumper qw(Dumper);
-use File::Spec::Functions qw(catfile catdir);
-use File::Basename qw(basename);
 use Hash::Flatten qw(flatten);
 
 use CoGe::Accessory::Web qw(url_for);
@@ -18,7 +16,8 @@ use constant MAX_SRA_EXPERIMENTS => 10;
 
 sub get_name {
     my $self = shift;
-    return "Import from SRA"; #TODO add accn(s)
+    my @accns = _extract_accns($self->params->{source_data});
+    return "Import from SRA: " . join(', ', @accns);
 }
 
 sub get_site_url {
@@ -45,24 +44,12 @@ sub build {
     my $genome = $self->db->resultset('Genome')->find($gid);
     return unless $genome;
 
-    # Extract SRA accessions and verify only SRA data types present
-    my @accns;
-    foreach (@$source_data) {
-        if (!$_->{type} || lc($_->{type}) ne 'sra') {
-            warn "Data type is undefined or not 'sra'";
-            return;
-        }
-
-        if (!$_->{path}) {
-            warn "Data path is undefined";
-            return;
-        }
-
-        push @accns, $_->{path};
-    }
+    # Extract SRA accessions
+    my @accns = _extract_accns($source_data);
+    return unless @accns;
 
     # Retrieve IDs and metdata from SRA
-    my $records = sra_retrieve(\@accns);
+    my $records = _sra_retrieve(\@accns);
 
     # Limit the max number of SRA accessions a user can load at one time
     if (@$records >= MAX_SRA_ACCESSIONS && !$self->user->is_poweruser) {
@@ -77,7 +64,7 @@ sub build {
     my $wait_file;
     foreach my $record (@$records) {
         # Format metadata
-        my ($data, $metadata, $additional_metadata, $read_type) = convert_metadata($record);
+        my ($data, $metadata, $additional_metadata, $read_type) = _convert_metadata($record);
         print STDERR 'SRA: Building workflow for "', $metadata->{name}, '"\n';
 
         # Limit the max number of SRA experiments a user can load at one time
@@ -120,7 +107,29 @@ sub build {
     return 1;
 }
 
-sub sra_retrieve {
+sub _extract_accns {
+    my $source_data = shift;
+
+    # Extract SRA accessions and verify only SRA data types present
+    my @accns;
+    foreach (@$source_data) {
+        if (!$_->{type} || lc($_->{type}) ne 'sra') {
+            warn "Data type is undefined or not 'sra'";
+            return;
+        }
+
+        if (!$_->{path}) {
+            warn "Data path is undefined";
+            return;
+        }
+
+        push @accns, $_->{path};
+    }
+
+    return wantarray ? @accns : \@accns;
+}
+
+sub _sra_retrieve {
     my $accns = shift;
 
     my @results;
@@ -137,7 +146,7 @@ sub sra_retrieve {
     return \@results;
 }
 
-sub convert_metadata { #TODO rename
+sub _convert_metadata { #TODO rename
     my $record = shift;
     return unless $record;
 
