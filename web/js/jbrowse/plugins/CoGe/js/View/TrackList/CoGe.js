@@ -63,6 +63,13 @@ define(['dojo/_base/declare',
 						}
 			}
 		}));
+		this.browser.addGlobalMenuItem('view', new MenuItem({
+			label: 'Hide Track Gridlines',
+			onClick: function() {
+				dojo.byId('gridtrack').style.display = dojo.byId('gridtrack').style.display == 'none' ? '' : 'none';
+				this.set('label', this.get('label').startsWith('Hide') ? 'Show Track Gridlines' : 'Hide Track Gridlines')
+			}
+		}));
 
 		this.browser.addGlobalMenuItem('help', new MenuSeparator());
 		this._add_help('Create experiment from search results', 'EPIC_CoGe_Reference#Create_New_Experiment_from_Search_Tracks');
