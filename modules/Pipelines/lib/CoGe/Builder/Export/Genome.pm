@@ -1,7 +1,7 @@
 package CoGe::Builder::Export::Genome;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use CoGe::Builder::Export::Fasta;
 use CoGe::Builder::Export::Gff;

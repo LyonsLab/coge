@@ -1,7 +1,8 @@
 package CoGe::Request::Genome;
 
 use Moose;
-with qw(CoGe::Request::Request);
+#with qw(CoGe::Request::Request);
+extends 'CoGe::Request::Request';
 
 sub is_valid {
     my $self = shift;

@@ -1,6 +1,6 @@
 package CoGe::Builder::Buildable;
 
-use Moose::Role;
+use Moose;
 
 use File::Basename qw(basename dirname);
 use File::Spec::Functions qw(catdir catfile);
@@ -15,16 +15,17 @@ use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
 
-requires qw(build);
+#requires qw(build);
 
 # Public attributes
+has 'request' => (
+    isa => 'CoGe::Request::Request',
+    is => 'ro',
+    required => 1
+);
 has 'workflow'      => ( is => 'rw', isa  => 'CoGe::JEX::Workflow' );
-has 'params'        => ( is => 'ro', required => 1 );
 has 'site_url'      => ( is => 'rw' );
 has 'page'          => ( is => 'rw' );
-has 'db'            => ( is => 'ro', required => 1, isa  => 'CoGeX' );
-has 'user'          => ( is => 'ro', required => 1, isa  => 'Maybe[CoGeX::Result::User]' ); # mdb changed 10/13/16 -- added "Maybe" to prevent error on undef
-has 'conf'          => ( is => 'ro', required => 1 );
 has 'inputs'        => ( is => 'ro', default => sub { [] } ); # mdb added 12/7/16 for SRA.pm
 has 'outputs'       => ( is => 'rw', default => sub { [] } );
 has 'assets'        => ( is => 'rw', default => sub { [] } );
@@ -35,6 +36,11 @@ has 'staging_dir'   => ( is => 'rw');#, traits => ['Private'] );
 has 'result_dir'    => ( is => 'rw');#, traits => ['Private'] );
 
 my $previous_outputs = [];
+
+sub params  { return shift->request->parameters }
+sub user    { return shift->request->user }
+sub db      { return shift->request->db }
+sub conf    { return shift->request->conf }
 
 sub get_site_url { # override this or use default in pre_build
     return '';

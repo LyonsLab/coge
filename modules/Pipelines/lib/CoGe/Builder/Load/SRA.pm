@@ -1,7 +1,7 @@
 package CoGe::Builder::Load::SRA;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use Hash::Flatten qw(flatten);
@@ -80,10 +80,11 @@ sub build {
         $self->params->{source_data} = $data;
 
         my $expBuilder = CoGe::Builder::Load::Experiment->new({
-            params      => $self->params,
-            db          => $self->db,
-            user        => $self->user,
-            conf        => $self->conf,
+#            params      => $self->params,
+#            db          => $self->db,
+#            user        => $self->user,
+#            conf        => $self->conf,
+            request     => $self->request,
             workflow    => $self->workflow,
             staging_dir => $self->staging_dir,
             result_dr   => $self->result_dir,

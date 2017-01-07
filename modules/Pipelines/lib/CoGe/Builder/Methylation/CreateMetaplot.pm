@@ -1,7 +1,7 @@
 package CoGe::Builder::Methylation::CreateMetaplot;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use Switch;

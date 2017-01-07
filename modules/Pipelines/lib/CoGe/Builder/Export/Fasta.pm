@@ -1,7 +1,7 @@
 package CoGe::Builder::Export::Fasta;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use File::Spec::Functions qw(catfile);
 

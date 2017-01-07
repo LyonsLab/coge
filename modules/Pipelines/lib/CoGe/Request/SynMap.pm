@@ -1,10 +1,11 @@
 package CoGe::Request::SynMap;
 
 use Moose;
-with qw(CoGe::Request::Request);
+#with qw(CoGe::Request::Request);
+extends 'CoGe::Request::Request';
 
-use CoGe::Request::Request;
-use Data::Dumper;
+#use CoGe::Request::Request;
+#use Data::Dumper;
 
 sub is_valid {
     my $self = shift;

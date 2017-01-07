@@ -1,7 +1,7 @@
 package CoGe::Builder::Expression::MeasureExpression;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use CoGe::Core::Storage qw(get_experiment_files);
 use CoGe::Builder::Expression::qTeller qw(build);

@@ -1,10 +1,11 @@
 package CoGe::Request::Experiment;
 
 use Moose;
-with qw(CoGe::Request::Request);
+#with qw(CoGe::Request::Request);
+extends 'CoGe::Request::Request';
 
-use CoGe::Request::Request;
-use JSON;
+#use CoGe::Request::Request;
+#use JSON;
 
 sub is_valid {
     my $self = shift;
