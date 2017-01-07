@@ -1630,4 +1630,6 @@ sub get_query_link {
 	return $tiny_link;
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;

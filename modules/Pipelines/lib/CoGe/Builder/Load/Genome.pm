@@ -276,4 +276,6 @@ sub load_genome_from_NCBI {
     };
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;

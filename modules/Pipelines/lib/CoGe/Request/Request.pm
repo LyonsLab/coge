@@ -60,4 +60,6 @@ sub execute {
     return $response;
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;

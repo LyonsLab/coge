@@ -2,38 +2,31 @@ package CoGe::Factory::PipelineFactory;
 
 use Moose;
 
-use Switch;
 use File::Spec::Functions qw(catfile);
 use Data::Dumper;
 
 use CoGe::Core::Storage qw(get_workflow_paths);
-#use CoGe::Builder::Export::Fasta;
-#use CoGe::Builder::Export::Gff;
-#use CoGe::Builder::Export::Genome;
-#use CoGe::Builder::Export::Experiment;
+use CoGe::Builder::Export::Fasta;
+use CoGe::Builder::Export::Gff;
+use CoGe::Builder::Export::Genome;
+use CoGe::Builder::Export::Experiment;
 use CoGe::Builder::Load::Experiment;
 use CoGe::Builder::Load::SRA;
-#use CoGe::Builder::Load::BatchExperiment;
+use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
-<<<<<<< HEAD
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
-use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::NucCounter;
-=======
-#use CoGe::Builder::Load::Annotation;
-#use CoGe::Builder::SNP::IdentifySNPs;
-#use CoGe::Builder::Tools::CoGeBlast;
->>>>>>> Use Request class to encapsulate db, conf, user, and jex
+use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::SynMap;
-#use CoGe::Builder::Tools::SynMap3D;
-#use CoGe::Builder::Expression::MeasureExpression;
-#use CoGe::Builder::Methylation::CreateMetaplot;
-#use CoGe::Builder::PopGen::MeasureDiversity;
+use CoGe::Builder::Tools::SynMap3D;
+use CoGe::Builder::Expression::MeasureExpression;
+use CoGe::Builder::Methylation::CreateMetaplot;
+use CoGe::Builder::PopGen::MeasureDiversity;
 
 has 'request' => (
-    isa => 'CoGe::Request::Request',
-    is => 'ro',
+    isa      => 'CoGe::Request::Request',
+    is       => 'ro',
     required => 1
 );
 
@@ -102,5 +95,7 @@ sub get {
     
     return $builder;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

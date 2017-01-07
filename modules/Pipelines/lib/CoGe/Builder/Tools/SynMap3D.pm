@@ -171,4 +171,6 @@ sub get_name {
 	return $description;
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;
