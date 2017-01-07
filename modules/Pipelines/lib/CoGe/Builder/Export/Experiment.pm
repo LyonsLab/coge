@@ -2,7 +2,6 @@ package CoGe::Builder::Export::Experiment;
 
 use Moose;
 extends 'CoGe::Builder::Buildable';
-
 use File::Spec::Functions qw(catdir catfile);
 use Data::Dumper;
 

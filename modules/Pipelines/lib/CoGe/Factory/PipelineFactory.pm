@@ -11,7 +11,7 @@ use CoGe::Builder::Export::Genome;
 use CoGe::Builder::Export::Experiment;
 use CoGe::Builder::Load::Experiment;
 use CoGe::Builder::Load::SRA;
-use CoGe::Builder::Load::BatchExperiment;
+#use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
@@ -33,7 +33,7 @@ my %typeToClass = (
     'export_experiment'     => 'CoGe::Builder::Export::Experiment',
     'load_experiment'       => 'CoGe::Builder::Load::Experiment',
     'load_sra'              => 'CoGe::Builder::Load::SRA',
-    'load_batch'            => 'CoGe::Builder::Load::BatchExperiment',
+    #'load_batch'            => 'CoGe::Builder::Load::BatchExperiment',
     'load_genome'           => 'CoGe::Builder::Load::Genome',
     'load_annotation'       => 'CoGe::Builder::Load::Annotation',
     'analyze_snps'          => 'CoGe::Builder::SNP::IdentifySNPs',
@@ -54,6 +54,8 @@ sub get {
         CoGe::Exception::Generic->throw(message => "Unrecognized job type: " . $request->type);
     }
     my $builder = $className->new(request => $request);
+
+    my $builder = $className->new(request => $self->request);
 
     #
     # Construct the workflow

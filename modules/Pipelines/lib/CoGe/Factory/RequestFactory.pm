@@ -1,7 +1,6 @@
 package CoGe::Factory::RequestFactory;
 
 use Moose;
-use Data::Dumper;
 
 use CoGe::Request::CoGeBlast;
 use CoGe::Request::Empty;
