@@ -1,11 +1,7 @@
 package CoGe::Request::Experiment;
 
 use Moose;
-#with qw(CoGe::Request::Request);
 extends 'CoGe::Request::Request';
-
-#use CoGe::Request::Request;
-#use JSON;
 
 sub is_valid {
     my $self = shift;
@@ -26,5 +22,7 @@ sub has_access {
     my $experiment = $self->db->resultset("Experiment")->find($eid);
     return $self->user->has_access_to_experiment($experiment);
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

@@ -571,4 +571,6 @@ sub create_notebook {
     };
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;

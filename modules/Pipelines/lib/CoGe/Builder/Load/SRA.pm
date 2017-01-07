@@ -198,4 +198,6 @@ sub _convert_metadata { #TODO rename
     return (\@data, $metadata, \@additional_metadata, $read_type);
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;
