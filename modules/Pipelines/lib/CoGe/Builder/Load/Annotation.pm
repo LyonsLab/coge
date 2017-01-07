@@ -1,7 +1,7 @@
 package CoGe::Builder::Load::Annotation;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use Switch;

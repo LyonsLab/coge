@@ -77,8 +77,16 @@ sub esummary {
             return;
         }
 
+        my @docs;
+        if (ref($response->{DocSum}) eq 'ARRAY') {
+            @docs = @{$response->{DocSum}};
+        }
+        else {
+            @docs = ( $response->{DocSum} );
+        }
+
         my @results;
-        foreach my $d (@{$response->{DocSum}}) {
+        foreach my $d (@docs) {
             my %result;
 
             # Parse name

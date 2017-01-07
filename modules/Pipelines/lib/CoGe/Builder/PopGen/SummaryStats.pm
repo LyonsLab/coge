@@ -1,7 +1,7 @@
 package CoGe::Builder::PopGen::SummaryStats;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);

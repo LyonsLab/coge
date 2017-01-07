@@ -7,90 +7,77 @@ use File::Spec::Functions qw(catfile);
 use Data::Dumper;
 
 use CoGe::Core::Storage qw(get_workflow_paths);
-use CoGe::Builder::Export::Fasta;
-use CoGe::Builder::Export::Gff;
-use CoGe::Builder::Export::Genome;
-use CoGe::Builder::Export::Experiment;
+#use CoGe::Builder::Export::Fasta;
+#use CoGe::Builder::Export::Gff;
+#use CoGe::Builder::Export::Genome;
+#use CoGe::Builder::Export::Experiment;
 use CoGe::Builder::Load::Experiment;
 use CoGe::Builder::Load::SRA;
-use CoGe::Builder::Load::BatchExperiment;
+#use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
+<<<<<<< HEAD
 use CoGe::Builder::Load::Annotation;
 use CoGe::Builder::SNP::IdentifySNPs;
 use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::NucCounter;
+=======
+#use CoGe::Builder::Load::Annotation;
+#use CoGe::Builder::SNP::IdentifySNPs;
+#use CoGe::Builder::Tools::CoGeBlast;
+>>>>>>> Use Request class to encapsulate db, conf, user, and jex
 use CoGe::Builder::Tools::SynMap;
-use CoGe::Builder::Tools::SynMap3D;
-use CoGe::Builder::Expression::MeasureExpression;
-use CoGe::Builder::Methylation::CreateMetaplot;
-use CoGe::Builder::PopGen::MeasureDiversity;
+#use CoGe::Builder::Tools::SynMap3D;
+#use CoGe::Builder::Expression::MeasureExpression;
+#use CoGe::Builder::Methylation::CreateMetaplot;
+#use CoGe::Builder::PopGen::MeasureDiversity;
 
-has 'db' => (
+has 'request' => (
+    isa => 'CoGe::Request::Request',
     is => 'ro',
     required => 1
 );
 
-has 'conf' => (
-    is => 'ro',
-    required => 1
-);
-
-has 'user' => (
-    is  => 'ro',
-    required => 1
-);
-
-has 'jex' => (
-    isa => 'CoGe::JEX::Jex',
-    is => 'ro',
-    required => 1
+my %typeToClass = (
+    'blast'                 => 'CoGe::Builder::Tools::CoGeBlast',
+    'export_gff'            => 'CoGe::Builder::Export::Gff',
+    'export_fasta'          => 'CoGe::Builder::Export::Fasta',
+    'export_genome'         => 'CoGe::Builder::Export::Genome',
+    'export_experiment'     => 'CoGe::Builder::Export::Experiment',
+    'load_experiment'       => 'CoGe::Builder::Load::Experiment',
+    'load_sra'              => 'CoGe::Builder::Load::SRA',
+    'load_batch'            => 'CoGe::Builder::Load::BatchExperiment',
+    'load_genome'           => 'CoGe::Builder::Load::Genome',
+    'load_annotation'       => 'CoGe::Builder::Load::Annotation',
+    'analyze_snps'          => 'CoGe::Builder::SNP::IdentifySNPs',
+    'synmap'                => 'CoGe::Builder::Tools::SynMap',
+    'synmap3d'              => 'CoGe::Builder::Tools::SynMap3D',
+    'analyze_expression'    => 'CoGe::Builder::Expression::MeasureExpression',
+    'analyze_metaplot'      => 'CoGe::Builder::Methylation::CreateMetaplot',
+    'analyze_diversity'     => 'CoGe::Builder::PopGen::MeasureDiversity',
+    'nuccounter'            => 'CoGe::Builder::Tools::NucCounter'
 );
 
 sub get {
     my ($self, $message) = @_;
 
-    my $request = {
-        params    => $message->{parameters},
-        db        => $self->db,
-        user      => $self->user,
-        conf      => $self->conf
-    };
-
-    # Select pipeline builder
-    my $builder;
-    switch ($message->{type}) {
-        case "blast"              { $builder = CoGe::Builder::Tools::CoGeBlast->new($request) }
-        case "export_gff"         { $builder = CoGe::Builder::Export::Gff->new($request) }
-        case "export_fasta"       { $builder = CoGe::Builder::Export::Fasta->new($request) }
-        case "export_genome"      { $builder = CoGe::Builder::Export::Genome->new($request) }
-        case "export_experiment"  { $builder = CoGe::Builder::Export::Experiment->new($request) }
-        case "load_experiment"    { $builder = CoGe::Builder::Load::Experiment->new($request) }
-        case "load_sra"           { $builder = CoGe::Builder::Load::SRA->new($request) }
-        case "load_batch"         { $builder = CoGe::Builder::Load::BatchExperiment->new($request) }
-        case "load_genome"        { $builder = CoGe::Builder::Load::Genome->new($request) }
-        case "load_annotation"    { $builder = CoGe::Builder::Load::Annotation->new($request) }
-        case "analyze_snps"       { $builder = CoGe::Builder::SNP::IdentifySNPs->new($request) }
-        case "synmap"             { $builder = CoGe::Builder::Tools::SynMap->new($request) }
-        case "synmap3d"           { $builder = CoGe::Builder::Tools::SynMap3D->new($request) }
-        case "analyze_expression" { $builder = CoGe::Builder::Expression::MeasureExpression->new($request) }
-        case "analyze_metaplot"   { $builder = CoGe::Builder::Methylation::CreateMetaplot->new($request) }
-        case "analyze_diversity"  { $builder = CoGe::Builder::PopGen::MeasureDiversity->new($request) }
-        case "nuccounter"         { $builder = CoGe::Builder::Tools::NucCounter->new($request) }
-        default {
-            print STDERR "PipelineFactory::get unknown job type\n";
-            return;
-        }
+    # Determine pipeline builder
+    my $className = $typeToClass{$message->{type}};
+    unless ($className) {
+        warn "PipelineFactory::get unknown job type";
+        return;
     }
+
+    my $builder = $className->new(request => $self->request);
 
     #
     # Construct the workflow
     #
 
-    $builder->pre_build(jex => $self->jex, requester => $message->{requester});
+    $builder->pre_build(jex => $self->request->jex, requester => $message->{requester});
     my $rc = $builder->build();
     unless ($rc) {
         $rc = 'undef' unless defined $rc;
-        print STDERR "PipelineFactory::get build failed, rc=$rc\n";
+        warn "PipelineFactory::get build failed, rc=$rc";
         return;
     }
 

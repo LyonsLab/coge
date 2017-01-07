@@ -1,7 +1,7 @@
 package CoGe::Builder::Tools::SynMap3D;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use CoGe::Accessory::Web qw( get_defaults );
 use CoGe::JEX::Workflow;

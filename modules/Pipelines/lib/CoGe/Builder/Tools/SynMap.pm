@@ -1,7 +1,7 @@
 package CoGe::Builder::Tools::SynMap;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use CoGe::JEX::Jex;
 use CoGe::JEX::Workflow;

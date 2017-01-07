@@ -1,7 +1,7 @@
 package CoGe::Builder::Common::DataRetrieval;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use File::Basename qw(basename dirname);

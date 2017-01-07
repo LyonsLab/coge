@@ -2,7 +2,8 @@ package CoGe::Request::CoGeBlast;
 
 use CoGe::Builder::Tools::CoGeBlast qw( get_genomes );
 use Moose;
-with qw(CoGe::Request::Request);
+#with qw(CoGe::Request::Request);
+extends 'CoGe::Request::Request';
 
 use CoGe::Request::Request;
 use JSON;

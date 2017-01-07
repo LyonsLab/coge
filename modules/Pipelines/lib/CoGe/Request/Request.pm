@@ -1,14 +1,7 @@
 package CoGe::Request::Request;
 
-use Moose::Role;
-
+use Moose;
 use Data::Dumper;
-
-has 'options' => (
-    is        => 'ro',
-    #isa       => 'HashRef',
-    #required  => 1
-);
 
 has 'parameters' => (
     is        => 'ro',
@@ -18,12 +11,19 @@ has 'parameters' => (
 
 has 'user'  => (
     is        => 'ro',
+    isa       => 'Maybe[CoGeX::Result::User]', # "Maybe" is to prevent error on undef
     required  => 1
 );
 
 has 'db' => (
     is        => 'ro',
+    isa       => 'CoGeX',
     required  => 1
+);
+
+has 'conf' => (
+    is       => 'ro',
+    required => 1
 );
 
 has 'jex' => (

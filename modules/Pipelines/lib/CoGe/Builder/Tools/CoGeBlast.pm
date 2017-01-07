@@ -1,6 +1,7 @@
 package CoGe::Builder::Tools::CoGeBlast;
 
 use Moose;
+extends 'CoGe::Builder::Buildable';
 
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Accessory::Web qw(download_url_for get_command_path url_for);
@@ -335,7 +336,8 @@ sub get_genomes {
 
 sub get_name {
 	my $self = shift;
-    if ($self->user) {
+
+    if ($self->request->user) {
         my @gids = @{$self->params->{genomes}};
         my $genomes_url = CoGe::Accessory::Web::get_tiny_link(
             user_id => $self->user->id,
@@ -441,7 +443,5 @@ sub get_tiny_url {
 #         success => $JEX->is_successful($response) ? JSON::true : JSON::false
 #     })
 # }
-
-with qw(CoGe::Builder::Buildable);
 
 1;
