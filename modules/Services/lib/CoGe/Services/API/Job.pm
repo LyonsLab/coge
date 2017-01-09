@@ -29,8 +29,7 @@ sub add {
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     
     # Create request
-    my $jex = CoGe::JEX::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request = CoGe::Factory::RequestFactory->new(db => $db, conf => $conf, user => $user, jex => $jex)->get($payload);
+    my $request = CoGe::Factory::RequestFactory->new(db => $db, conf => $conf, user => $user)->get($payload);
 
     # Validate the request's parameters
     unless ($request and $request->is_valid) {
@@ -47,7 +46,7 @@ sub add {
     }
 
     # Create pipeline to execute job
-    my $pipeline = CoGe::Factory::PipelineFactory->new(request => $request)->get($payload);
+    my $pipeline = CoGe::Factory::PipelineFactory->new()->get($request);
     unless ($pipeline && $pipeline->workflow) {
         return $self->render(json => {
             error => { Error => "Failed to generate pipeline" }
@@ -55,7 +54,7 @@ sub add {
     }
     
     # Submit pipeline
-    my $response = $request->execute($pipeline);
+    my $response = $pipeline->submit();
     unless ($response->{success} && $response->{id}) {
         return $self->render(json => {
             error => { Error => "JEX returned error on submission" }

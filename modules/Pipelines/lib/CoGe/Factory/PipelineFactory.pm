@@ -22,12 +22,6 @@ use CoGe::Builder::Expression::MeasureExpression;
 use CoGe::Builder::Methylation::CreateMetaplot;
 use CoGe::Builder::PopGen::MeasureDiversity;
 
-has 'request' => (
-    isa      => 'CoGe::Request::Request',
-    is       => 'ro',
-    required => 1
-);
-
 my %typeToClass = (
     'blast'                 => 'CoGe::Builder::Tools::CoGeBlast',
     'export_gff'            => 'CoGe::Builder::Export::Gff',
@@ -48,22 +42,25 @@ my %typeToClass = (
 );
 
 sub get {
-    my ($self, $message) = @_;
+    my ($self, $request) = @_;
 
     # Determine pipeline builder
-    my $className = $typeToClass{$message->{type}};
+    my $className = $typeToClass{$request->type};
     unless ($className) {
         warn "PipelineFactory::get unknown job type";
         return;
     }
 
-    my $builder = $className->new(request => $self->request);
+    my $builder = $className->new(request => $request);
 
     #
     # Construct the workflow
     #
 
-    $builder->pre_build(jex => $self->request->jex, requester => $message->{requester});
+    # Pre-build: initialize pipeline
+    $builder->pre_build();
+
+    # Build: add application-specific pipeline tasks
     my $rc = $builder->build();
     unless ($rc) {
         $rc = 'undef' unless defined $rc;
@@ -71,7 +68,7 @@ sub get {
         return;
     }
 
-    # Add completion tasks (such as sending notifiation email)
+    # Post-build: add completion tasks (such as sending notifiation email)
     $builder->post_build();
 
     # Dump info to file for debugging
@@ -86,7 +83,7 @@ sub get {
 
         # Dump params
         open($fh, '>', catfile($builder->result_dir, 'params.log'));
-        print $fh Dumper $message, "\n";
+        print $fh Dumper $request->payload, "\n";
         close($fh);
     }
     
