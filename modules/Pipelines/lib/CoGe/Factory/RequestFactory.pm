@@ -47,7 +47,6 @@ my %typeToClass = (
     'nuccounter'            => 'CoGe::Request::Genome'
 );
 
-# This function is called before new()
 sub get {
     my ($self, $payload) = @_;
 
