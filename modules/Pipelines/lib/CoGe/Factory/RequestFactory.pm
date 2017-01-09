@@ -1,6 +1,7 @@
 package CoGe::Factory::RequestFactory;
 
 use Moose;
+use Data::Dumper;
 
 use CoGe::Request::CoGeBlast;
 use CoGe::Request::Empty;
@@ -9,9 +10,6 @@ use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
 use CoGe::Request::SynMap;
 use CoGe::Request::TwoGenomes;
-
-use Data::Dumper;
-use Switch;
 
 has 'user'    => (
     is        => 'ro',
@@ -55,26 +53,27 @@ my %typeToClass = (
 );
 
 sub get {
-    my ($self, $message) = @_;
-    unless (defined $message && defined $message->{type}) {
-        warn 'RequestFactory: error: invalid message';
-        warn Dumper $message;
+    my ($self, $payload) = @_;
+    my $type = $payload->{type};
+
+    unless (defined $payload && defined $type) {
+        warn 'RequestFactory: error: invalid payload', Dumper $payload;
         return;
     }
 
-    my $className = $typeToClass{$message->{type}};
+    my $className = $typeToClass{$type};
     unless ($className) {
-        warn "RequestFactory: error: unrecognized job type '", $message->{type};
+        warn "RequestFactory: error: unrecognized job type: $type";
         return;
     }
 
     return $className->new(
-        db         => $self->db,
-        conf       => $self->conf,
-        jex        => $self->jex,
-        user       => $self->user,
-        parameters => $message->{parameters}
-    };
+        db      => $self->db,
+        conf    => $self->conf,
+        jex     => $self->jex,
+        user    => $self->user,
+        payload => $payload
+    );
 }
 
 __PACKAGE__->meta->make_immutable;
