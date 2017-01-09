@@ -26,11 +26,6 @@ has 'conf' => (
     required => 1
 );
 
-has 'jex'     => (
-    is        => 'ro',
-    required  => 1
-);
-
 my %typeToClass = (
     'blast'                 => 'CoGe::Request::CoGeBlast',
     'export_gff'            => 'CoGe::Request::Genome',
@@ -52,25 +47,24 @@ my %typeToClass = (
     'nuccounter'            => 'CoGe::Request::Genome'
 );
 
+# This function is called before new()
 sub get {
     my ($self, $payload) = @_;
-    my $type = $payload->{type};
 
-    unless (defined $payload && defined $type) {
+    unless (defined $payload && defined $payload->{type}) {
         warn 'RequestFactory: error: invalid payload', Dumper $payload;
         return;
     }
 
-    my $className = $typeToClass{$type};
+    my $className = $typeToClass{$payload->{type}};
     unless ($className) {
-        warn "RequestFactory: error: unrecognized job type: $type";
+        warn "RequestFactory: error: unrecognized job type: $payload->{type}";
         return;
     }
 
     return $className->new(
         db      => $self->db,
         conf    => $self->conf,
-        jex     => $self->jex,
         user    => $self->user,
         payload => $payload
     );
