@@ -5,7 +5,6 @@ use Moose;
 use File::Spec::Functions qw(catfile);
 use Data::Dumper;
 
-use CoGe::Core::Storage qw(get_workflow_paths);
 use CoGe::Builder::Export::Fasta;
 use CoGe::Builder::Export::Gff;
 use CoGe::Builder::Export::Genome;
