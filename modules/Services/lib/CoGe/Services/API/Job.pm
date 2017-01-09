@@ -30,8 +30,7 @@ sub add {
     
     # Create request
     my $jex = CoGe::JEX::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, conf => $conf, user => $user, jex => $jex);
-    my $request = $request_factory->get($payload);
+    my $request = CoGe::Factory::RequestFactory->new(db => $db, conf => $conf, user => $user, jex => $jex)->get($payload);
 
     # Validate the request's parameters
     unless ($request and $request->is_valid) {
@@ -48,8 +47,7 @@ sub add {
     }
 
     # Create pipeline to execute job
-    my $pipeline_factory = CoGe::Factory::PipelineFactory->new(request => $request);
-    my $pipeline = $pipeline_factory->get($payload);
+    my $pipeline = CoGe::Factory::PipelineFactory->new(request => $request)->get($payload);
     unless ($pipeline && $pipeline->workflow) {
         return $self->render(json => {
             error => { Error => "Failed to generate pipeline" }
