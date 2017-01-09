@@ -449,16 +449,18 @@ var XYPlot = declare( [XYPlotBase], {
 	// ----------------------------------------------------------------
 
    getGlobalStats: function( successCallback, errorCallback ) {
-		if (this.config.coge.transform == 'Normalize') {
-			if (!this.config.coge.stats) {
-				var coge = this.config.coge;
+		var coge = this.config.coge;
+		if (coge.transform == 'Normalize') {
+			if (!coge.stats) {
 				this.store.getGlobalStats( function(stats) {
 					coge.stats = stats;
 					successCallback({ scoreMin: -1, scoreMax: 1 });
 				}, errorCallback);
 			} else
 				successCallback({ scoreMin: -1, scoreMax: 1 });
-		} else
+		} else if (coge.range)
+			successCallback({ scoreMin: coge.range.min, scoreMax: coge.range.max });
+		else
 	        this.store.getGlobalStats( successCallback, errorCallback );
     },
 
@@ -862,7 +864,6 @@ var XYPlot = declare( [XYPlotBase], {
 								{   label: 'Normalize',
 									onClick: function(event) {
 										config.coge.transform = 'Normalize';
-
 										track.changed();
 									}
 								}
@@ -916,6 +917,47 @@ var XYPlot = declare( [XYPlotBase], {
 					]
 				);
 		}
+		options.push({
+			label: 'Set Track Range',
+			onClick: function(event) {
+				var content = '<table><tr><td>min:</td><td><input id="range_min"';
+				if (config.coge.range)
+					content += ' value="' + config.coge.range.min + '"';
+				content += '/></td></tr><tr><td>max:</td><td><input id="range_max"';
+				if (config.coge.range)
+					content += ' value="' + config.coge.range.max + '"';
+				content += '/></td></tr></table>';
+				var d = new PromptDialog({
+					title: 'Track Range',
+					content: content,
+					onHide: function(){this.destroyRecursive()}
+				});
+				d.ok = function() {
+					var min = dojo.byId('range_min').value;
+					if (!min || isNaN(min)) {
+						coge_plugin.info('Min Value Required', 'Please enter a value');
+						return;
+					}
+					var max = dojo.byId('range_max').value;
+					if (!max || isNaN(max)) {
+						coge_plugin.info('Max Value Required', 'Please enter a value');
+						return;
+					}
+					min = parseFloat(min);
+					max = parseFloat(max);
+					if (max <= min) {
+						coge_plugin.info('Max must be greater than Min', 'Please enter new values');
+						return;
+					}
+					this.on_ok(min, max);
+					this.hide();
+				};
+				d.show(function(min,max){
+					config.coge.range = {min: min, max: max};
+					track.changed();
+				});
+			}
+		});
 
 		if (config.coge.type != 'notebook')
 			options.push({

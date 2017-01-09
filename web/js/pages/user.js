@@ -160,7 +160,7 @@ $(function() {
 			title: 'Shared with me',
 			displayType: 'grid',
 			dataTypes: ['genome', 'experiment', 'notebook'],
-			operations: ['share', 'organize', 'favorite'],
+			operations: ['share', 'organize', 'favorite', 'sendto'],
 			shared: true
 		},
 		favorite: {
@@ -253,7 +253,7 @@ $(function() {
 			},
 			selectionCallback: function(items) {
 			    infoPanel.busy().update(items);
-				update_icons(items);
+				contentPanel.renderButtons(items && items.length);
 			},
 			mouseOver: function(row) {
 			    infoPanel.busy().scheduleUpdate([row]);
@@ -308,7 +308,6 @@ $(function() {
 					schedule_poll();
 				});
 			infoPanel.update(null);
-			update_icons(null);
 			$('#search_input').val(''); //FIXME move into ContentPanel
 		}
 	});
@@ -644,13 +643,13 @@ class DataGridRow { //FIXME duplicated in search-results.js
     	return '<!--' + diffMS + '-->' + dateStr; // embed the time difference in a hidden html comment for sorting
     }
 
-    open(url) {
+    open(url, title) {
         if (this.type == 'group')
             group_dialog();
         else if (this.type == 'analyses' || this.type == 'loads')
             window.open(this.link, '_blank');
         else {
-            var title = this.getDescription();
+            var title = title || this.getDescription();
             var link  = url || this.getLink();
             var flags = this.getFlags({noSpaces: 1});
             title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
@@ -669,24 +668,6 @@ class DataGridRow { //FIXME duplicated in search-results.js
                 .dialog('open');
         }
     }
-
-    // For "Create New Genome" and "Create New Experiment" //FIXME merge with openItem ...?
-//    function open_item(item_type, title, link) {
-//        title = title + "<br><a class='xsmall' style='color:#eeeeee;' href='"+link+"' target='_blank'>[Open in new tab]</a> ";
-//        link = link + "&embed=1";
-//        console.log(link);
-//        var height = $(window).height() * 0.8;
-//        var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
-//            .dialog({
-//                //title: title,
-//                width: '80%',
-//                height: height, //'80%',
-//                open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
-//                    $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
-//                }
-//            })
-//            .dialog('open');
-//    }
 }
 
 function dateSortAscending(x,y) {

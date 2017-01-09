@@ -230,7 +230,6 @@ sub create_filter_bed_file_job {
     my $bed = shift;
     my $staging_dir = shift;
     my $name = to_filename($bed);
-    my $cmd = $CONF->{SAMTOOLS};
     my $NORMALIZE_BED = catfile($CONF->{SCRIPTDIR}, "normalize_bed.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $NORMALIZE_BED;
 

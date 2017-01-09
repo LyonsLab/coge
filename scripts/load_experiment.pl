@@ -924,12 +924,12 @@ sub validate_bam_data_file {
 	
 	# Sort the bam file
 	# TODO this can be slow, is it possible to detect if it is sorted already?
-	my $sorted_file = "$staging_dir/sorted";
-    $cmd = "$SAMTOOLS sort $newfilepath $sorted_file";
+	my $sorted_file = "$staging_dir/sorted.bam";
+    $cmd = "$SAMTOOLS sort $newfilepath -o $sorted_file"; # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
     execute($cmd);
-    if (-e "$sorted_file.bam" && -s "$sorted_file.bam" > 0) {
+    if (-e $sorted_file && -s $sorted_file > 0) {
         # Replace original file with sorted version
-        execute("mv $sorted_file.bam $newfilepath");
+        execute("mv $sorted_file $newfilepath");
     }
     else {
         print STDOUT "log: error: samtools sort produced no result\n";

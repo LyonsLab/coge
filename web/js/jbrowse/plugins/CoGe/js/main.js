@@ -47,7 +47,7 @@ define(['dojo/_base/declare',
 
 	// ----------------------------------------------------------------
 
-	var PromptDialog = declare(ActionBarDialog, {
+	this.PromptDialog = declare(ActionBarDialog, {
 	    _fillActionBar: function( actionBar ) {
 	            new Button({
 	                className: 'Cancel',

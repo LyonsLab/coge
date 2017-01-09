@@ -444,21 +444,37 @@ sub fastq_dump {
     my ($self, %params) = @_;
     my $accn = $params{accn};
     my $dest_path = $params{dest_path};
-    return unless $accn;
-
-    my $output_file = catfile($dest_path, $accn . '.fastq');
-    my $done_file = "$output_file.done";
+    my $read_type = $self->params->{read_params}{read_type} // 'single';
 
     my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
+    $cmd .= ' --split-files' if ($read_type eq 'paired');
+
+    my $output_filepath = catfile($dest_path, $accn);
+
+    my (@output_files, @done_files);
+    if ($read_type eq 'paired') {
+        @output_files = (
+            $output_filepath . '_1.fastq',
+            $output_filepath . '_2.fastq'
+        );
+        @done_files = (
+            $output_filepath . '_1.fastq.done',
+            $output_filepath . '_2.fastq.done'
+        );
+    }
+    else {
+        @output_files = ( $output_filepath . '.fastq');
+        @done_files   = ( $output_filepath . '.fastq.done' );
+    }
 
     return {
-        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch $done_file",
+        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch " . join(' ', @done_files),
         script => undef,
         args => [],
         inputs => [],
         outputs => [
-            $output_file,
-            $done_file
+            @output_files,
+            @done_files
         ],
         description => "Fetching $accn from NCBI-SRA"
     };

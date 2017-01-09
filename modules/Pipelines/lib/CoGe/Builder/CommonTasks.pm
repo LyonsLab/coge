@@ -226,10 +226,11 @@ sub create_ftp_get_job {
     };
 }
 
-sub create_data_retrieval_workflow {
+sub create_data_retrieval_workflow { #TODO remove ASAP: replace with DataRetrieval.pm
     my %opts = @_;
     my $upload_dir = $opts{upload_dir};
     my $data       = $opts{data};
+    my $params     = $opts{params};
     
     my (@tasks, @outputs, @ncbi);
     foreach my $item (@$data) {
@@ -268,8 +269,15 @@ sub create_data_retrieval_workflow {
             my $cache_path = get_sra_cache_path();
             $task = create_fastq_dump_job(
                 accn => $item->{path},
-                dest_path => $cache_path
+                dest_path => $cache_path,
+                read_params => $params->{read_params}
             );
+            if ($task) {
+                push @tasks, $task;
+                my @fastq_outputs = grep { $_ =~ /\.fastq$/ } @{$task->{outputs}}; # kludge
+                push @outputs, @fastq_outputs;
+                next;
+            }
         }
         
         # Add task to workflow
@@ -290,21 +298,38 @@ sub create_fastq_dump_job {
     my %opts = @_;
     my $accn = $opts{accn};
     my $dest_path = $opts{dest_path};
-    die unless $accn;
-    
-    my $output_file = catfile($dest_path, $accn . '.fastq');
-    my $done_file = "$output_file.done";
+    my $read_params = $opts{read_params};
+    my $read_type = $read_params->{read_type} // 'single';
 
     my $cmd = $CONF->{FASTQ_DUMP} || 'fastq-dump';
+    $cmd .= ' --split-files' if ($read_type eq 'paired');
+
+    my $output_filepath = catfile($dest_path, $accn);
+
+    my (@output_files, @done_files);
+    if ($read_type eq 'paired') {
+        @output_files = (
+            $output_filepath . '_1.fastq',
+            $output_filepath . '_2.fastq'
+        );
+        @done_files = (
+            $output_filepath . '_1.fastq.done',
+            $output_filepath . '_2.fastq.done'
+        );
+    }
+    else {
+        @output_files = ( $output_filepath . '.fastq');
+        @done_files   = ( $output_filepath . '.fastq.done' );
+    }
 
     return {
-        cmd => "mkdir -p $dest_path && $cmd $accn --outdir $dest_path && touch $done_file",
+        cmd => "mkdir -p $dest_path && $cmd $accn --outdir $dest_path && touch " . join(' ', @done_files),
         script => undef,
         args => [],
         inputs => [],
         outputs => [
-            $output_file,
-            $done_file
+            @output_files,
+            @done_files
         ],
         description => "Fetching $accn from NCBI-SRA"
     };
@@ -951,7 +976,7 @@ sub create_bam_sort_job {
         args => [
             ["sort", '', 0],
             ["", $input_file, 1],
-            ["", $filename . "-sorted", 1]
+            ["-o", $filename . "-sorted.bam", 1] # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
         ],
         inputs => [
             $input_file

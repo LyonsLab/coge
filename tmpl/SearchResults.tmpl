@@ -27,7 +27,7 @@ const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 	<div style="float:right;width:225px;">
 		<span id="show_panel_button" onClick="show_top_panel();" class="link ui-icon ui-icon-plus hidden coge-border" style="float:right;margin-right:5px;"></span>
 
-		<div id="info_panel" class="small panel coge-border-top" style="overflow:auto;margin-left:10px;margin-top:29px;color:gray;">
+		<div id="info_panel" class="small panel coge-border-top" style="overflow:none;margin-left:10px;margin-top:29px;color:gray;">
 		</div>
 	</div>
 
@@ -47,30 +47,31 @@ const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 		</div>
 	</div>
 
-	<div class="noselect" style="height:24px">
-		<span id="contents_title" style="float:left;min-width:130px;font-weight:bold;margin-right:20px;"></span>
-		<span id="add_button" onClick="add_dialog();" class="add coge-icon glyphicon glyphicon-plus item-button invisible" style="margin-right:5px;" title="Create New Item"></span>
-		<!--<span id="share_button" onClick="share_dialog();" class="share coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>-->
-		<span id="notebook_button" onClick="add_to_notebook_dialog();" class="organize coge-icon coge-disabled glyphicon glyphicon-folder-open item-button invisible" style="margin-right:5px;" title="Add Selected Items to Notebook"></span>
-		<span id="edit_button" onClick="edit_dialog();" class="edit coge-icon coge-disabled glyphicon glyphicon-cog item-button invisible" style="margin-right:5px;" title="Edit Selected Items"></span>
-		<span id="favorite_button" onClick="favorite_items();" class="favorite coge-icon coge-disabled glyphicon glyphicon-star item-button invisible" style="margin-right:5px;" title="Favorite Selected Items"></span>
-		<!--<span id="delete_button" onClick="delete_items();" class="delete coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>-->
-		<span id="send_button" onClick="send_menu();" class="sendto coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
-		<span id="undelete_button" onClick="undelete_items();" class="undelete coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
-		<ul id="send_menu" class="coge-dropdown-menu hidden">
-			<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
-			<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
-			<li><a onclick="send_items_to('SynMap3D', 1);">SynMap3D</a></li>
-			<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
-			<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
-		</ul>
-		<input id="search_input" type="search" placeholder="Filter" size="25" class="coge-border" style="float:right;margin-right:15px;vertical-align:top;" />
-		<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
-	</div>
-
 	<div id="contents_panel" class="small panel">
+		<div class="noselect" style="height:24px">
+			<span id="contents_title" style="float:left;min-width:130px;font-weight:bold;margin-right:20px;"></span>
+			<TMPL_IF NAME="USER_ID">
+			<span id="add_button" onClick="add_dialog();" class="add coge-icon glyphicon glyphicon-plus item-button invisible" style="margin-right:5px;" title="Create New Item"></span>
+			<span id="share_button" onClick="share_dialog();" class="share coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
+			<span id="notebook_button" onClick="add_to_notebook_dialog();" class="organize coge-icon coge-disabled glyphicon glyphicon-folder-open item-button invisible" style="margin-right:5px;" title="Add Selected Items to Notebook"></span>
+			<span id="edit_button" onClick="edit_dialog();" class="edit coge-icon coge-disabled glyphicon glyphicon-cog item-button invisible" style="margin-right:5px;" title="Edit Selected Items"></span>
+			<span id="favorite_button" onClick="favorite_items();" class="favorite coge-icon coge-disabled glyphicon glyphicon-star item-button invisible" style="margin-right:5px;" title="Favorite Selected Items"></span>
+			<span id="delete_button" onClick="delete_items();" class="delete coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
+			<span id="undelete_button" onClick="undelete_items();" class="undelete coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
+			</TMPL_IF>
+			<span id="send_button" onClick="send_menu();" class="sendto coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
+			<input id="search_input" type="search" placeholder="Filter" size="25" class="coge-border" style="float:right;margin-right:15px;vertical-align:top;" />
+			<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
+		</div>
 		<div class="grid hidden noselect coge-border-top" style="overflow:auto;border-bottom:none !important;"></div>
 		<div class="html hidden coge-border-top" style="overflow:auto;border-bottom:none !important;"></div>
 	</div>
 </div>
 
+<ul id="send_menu" class="coge-dropdown-menu hidden" style="position:absolute;width:90px;">
+	<li><a onclick="send_items_to('CoGeBlast', 2);">CoGeBlast</a></li>
+	<li><a onclick="send_items_to('SynMap', 1);">SynMap</a></li>
+	<li><a onclick="send_items_to('SynMap3D', 1);">SynMap3D</a></li>
+	<li><a onclick="send_items_to('SynFind');">SynFind</a></li>
+	<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
+</ul>

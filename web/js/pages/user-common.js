@@ -24,11 +24,12 @@ function wait_to_search (search_func, search_term) { //TODO move into module
 	}
 }
 
-function update_icons(items) { //TODO move into ContentPanel
-	if ( items && items.length > 0) 
-		$('.item-button:not(#add_button)').removeClass('coge-disabled');
-	else
-		$('.item-button:not(#add_button)').addClass('coge-disabled');
+function open_item(url, title) {
+	var selected = contentPanel.grid.getSelectedItems();
+	if (selected && selected.length == 1)
+		selected[0].open(url, title);
+    else
+        new DataGridRow({}, 'null').open(url, title); // kludge
 }
 
 function favorite_items() {
@@ -349,24 +350,19 @@ function edit_dialog() {
 }
 
 function send_menu() {
-	var menu = $("#send_menu");
-
-	// Positioning is done here instead of onload to work-around misplacement problem
-	// due to contents title missing on page load.
-	if (!pageObj.positionMenu) {
-		menu.position({
-			my: "left top",
-			at: "left bottom",
-			of: "#send_button"
-		});
-		pageObj.positionMenu = 1;
-	}
+	var menu = $("#send_menu").menu();
 
 	if (menu.is(":visible")) {
 		menu.hide();
 	}
 	else {
-		menu.show();
+		menu
+		    .show()
+            .position({
+                my: "left top",
+                at: "left bottom",
+                of: "#send_button"
+            });
 		menu.one("mouseleave", function() { menu.hide(); } );
 	}
 }

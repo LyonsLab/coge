@@ -146,7 +146,8 @@ class ContentPanel {
         // Update title with row number
         this.renderTitle();
 
-        // Show/hide action icons based on type of data
+        // Show/hide action icon buttons based on type of data
+        this.renderButtons(false);
     	$('.item-button').hide(); // hide all icons
     	if (view.operations) {
     		view.operations.forEach(function(op) {
@@ -171,11 +172,25 @@ class ContentPanel {
         if (isGrid)
         	title += '&nbsp;&nbsp;<span class="small info">' + this.grid.getNumRowsDisplayed() + '</span>';
         $('#contents_title').html(title);
+
+        return this;
+    }
+
+    renderButtons(enable) {
+        var buttons = $('.item-button:not(#add_button)');
+        if (enable)
+            buttons.removeClass('coge-disabled');
+        else
+            buttons.addClass('coge-disabled');
+
+        return this;
     }
 
     busy() {
     	var spinner = '<div class="spinner" style="display:flex;justify-content:center;align-items:center;margin-top:40%;"></div>';
     	this.element.children('.grid').hide();
     	this.element.children('.html').html(spinner).show();
+
+    	return this;
     }
 }

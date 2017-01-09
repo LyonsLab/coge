@@ -188,7 +188,6 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
               . $_->display_name . ' (' . $_->user_name . ')' . '<br>';
         }
 
-        my $info = $group->info;
         my $view_link = qq{open_item('GroupView.pl?ugid=$item_id');};
         
         $html .= qq{<div><b>Tools:</b><br>}
@@ -226,7 +225,7 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
 
         $html .= qq{<div><b>Tools:</b><br>}
             . qq{<div style="padding-left:20px;">}
-            . qq{<span class="link" onclick="$view_link" title="View contents">View contents</span><br>};
+            . qq{<span class="link" onclick="$view_link" title="View contents">View details</span><br>};
 
         $html .= qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
             if ($notebook->is_editable($USER));
@@ -297,7 +296,8 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
                 . qq{<span class="link" onclick="$load_link" title="Load gene annotation">Load annotation</span><br>};
         }
         $html .= qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add to a notebook">Add to notebook</span><br>}
-            . qq{</div></div>};
+            if (!$USER->is_public);
+        $html .= qq{</div></div>};
     }
     elsif ( $item_type eq 'feature' ) {
         my $feature = $DB->resultset('Feature')->find($item_id);
@@ -312,7 +312,6 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
           . '<b>Location:</b> ' . $feature->chromosome . ':' . $feature->start . '-' . $feature->stop . '<br>'
           . '<b>Length:</b> ' . abs($feature->stop - $feature->start + 1) . ' bp';
 
-        my $info = 'Feature <i>' . js_escape($feature->info) . '</i>';
         my $view_link = qq{open_item('FeatView.pl?fid=$item_id');};
 
         $html .= qq{<div><b>Tools:</b><br>}
@@ -357,10 +356,12 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
             . qq{<div style="padding-left:20px;">}
             . qq{<span class="link" onclick="$edit_link" title="View/edit metadata">View details</span><br>}
             . qq{<span class="link" onclick="$view_link" title="Browse track data">Browse data</span><br>};
-        $html .= qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>}
-            if ($experiment->is_editable($USER));
+        if ($experiment->is_editable($USER)) {
+            $html .= qq{<span class="link" onclick="share_dialog();" title="Share with other users or user groups">Share</span><br>};
+        }
         $html .= qq{<span class="link" onclick="add_to_notebook_dialog();" title="Add a notebook">Add to notebook</span><br>}
-            . qq{</div></div>};
+            if (!$USER->is_public);
+        $html .= qq{</div></div>};
     }
     elsif ( $item_type eq 'analyses' or $item_type eq 'loads' ) {
         my $log = $DB->resultset('Log')->find($item_id);
