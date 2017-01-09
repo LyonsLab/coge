@@ -4,8 +4,6 @@ use Moose;
 extends 'CoGe::Request::Request';
 
 use CoGe::Builder::Tools::CoGeBlast qw( get_genomes );
-use CoGe::Request::Request;
-use JSON;
 
 sub is_valid {
     my $self = shift;
