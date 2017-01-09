@@ -46,7 +46,6 @@ my %typeToClass = (
     'analyze_diversity'     => 'CoGe::Request::ExperimentAnalysis',
 );
 
-# This function is called before new()
 sub get {
     my ($self, $payload) = @_;
 
