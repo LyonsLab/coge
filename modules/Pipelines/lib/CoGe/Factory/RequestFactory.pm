@@ -48,6 +48,7 @@ my %typeToClass = (
     'analyze_nucleotides'   => 'CoGe::Request::Genome'
 );
 
+# This function is called before new()
 sub get {
     my ($self, $payload) = @_;
     unless (defined $payload && defined $payload->{type}) {
