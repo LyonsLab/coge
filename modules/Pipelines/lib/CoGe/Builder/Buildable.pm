@@ -37,10 +37,10 @@ has 'result_dir'    => ( is => 'rw');#, traits => ['Private'] );
 
 my $previous_outputs = [];
 
-sub params  { return shift->request->parameters }
-sub user    { return shift->request->user }
-sub db      { return shift->request->db }
-sub conf    { return shift->request->conf }
+sub params  { shift->request->payload->{parameters} }
+sub user    { shift->request->user }
+sub db      { shift->request->db }
+sub conf    { shift->request->conf }
 
 sub get_site_url { # override this or use default in pre_build
     return '';

@@ -3,7 +3,7 @@ package CoGe::Request::Request;
 use Moose;
 use Data::Dumper;
 
-has 'parameters' => (
+has 'payload' => (
     is        => 'ro',
     isa       => 'HashRef',
     required  => 1
@@ -30,6 +30,8 @@ has 'jex' => (
     is        => 'ro',
     required  => 1
 );
+
+sub parameters { shift->payload->{parameters} }
 
 sub execute {
     my ($self, $pipeline) = @_;
