@@ -10,6 +10,7 @@ use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
 use CoGe::Request::SynMap;
 use CoGe::Request::TwoGenomes;
+use CoGe::Exception::Generic;
 
 has 'user'    => (
     is        => 'ro',
@@ -21,9 +22,9 @@ has 'db'      => (
     required  => 1
 );
 
-has 'conf' => (
-    is => 'ro',
-    required => 1
+has 'conf'    => (
+    is        => 'ro',
+    required  => 1
 );
 
 my %typeToClass = (
@@ -49,16 +50,13 @@ my %typeToClass = (
 
 sub get {
     my ($self, $payload) = @_;
-
     unless (defined $payload && defined $payload->{type}) {
-        warn 'RequestFactory: error: invalid payload', Dumper $payload;
-        return;
+        CoGe::Exception::Generic->throw(message => 'Invalid payload', details => Dumper($payload));
     }
 
     my $className = $typeToClass{$payload->{type}};
     unless ($className) {
-        warn "RequestFactory: error: unrecognized job type: $payload->{type}";
-        return;
+        CoGe::Exception::Generic->throw(message => "Unrecognized job type: " . $payload->{type});
     }
 
     return $className->new(

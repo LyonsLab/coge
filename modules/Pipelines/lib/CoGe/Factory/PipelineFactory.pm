@@ -51,10 +51,8 @@ sub get {
     # Determine pipeline builder
     my $className = $typeToClass{$request->type};
     unless ($className) {
-        CoGe::Exception::Generic->throw(message => "Unknown job type " . $request->type);
-        return;
+        CoGe::Exception::Generic->throw(message => "Unrecognized job type: " . $request->type);
     }
-
     my $builder = $className->new(request => $request);
 
     #
@@ -68,7 +66,7 @@ sub get {
     my $rc = $builder->build();
     unless ($rc) {
         $rc = 'undef' unless defined $rc;
-        CoGe::Exception::Generic->throw(message => "Build failed, rc=$rc");
+        CoGe::Exception::Generic->throw(message => "Build failed: rc=$rc");
     }
 
     # Post-build: add completion tasks (such as sending notifiation email)
