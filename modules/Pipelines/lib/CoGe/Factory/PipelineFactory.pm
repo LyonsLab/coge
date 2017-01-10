@@ -42,7 +42,7 @@ my %typeToClass = (
     'analyze_expression'    => 'CoGe::Builder::Expression::MeasureExpression',
     'analyze_metaplot'      => 'CoGe::Builder::Methylation::CreateMetaplot',
     'analyze_diversity'     => 'CoGe::Builder::PopGen::MeasureDiversity',
-    'nuccounter'            => 'CoGe::Builder::Tools::NucCounter'
+    'analyze_nucleotides'   => 'CoGe::Builder::Tools::NucCounter'
 );
 
 sub get {
