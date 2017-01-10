@@ -7,7 +7,6 @@ use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 use File::Spec::Functions qw( catfile );
 use CoGe::Services::Auth qw( init );
-use CoGe::JEX::Jex;
 use CoGe::Core::Storage qw( get_workflow_paths get_workflow_results );
 use CoGe::Factory::RequestFactory;
 use CoGe::Factory::PipelineFactory;
