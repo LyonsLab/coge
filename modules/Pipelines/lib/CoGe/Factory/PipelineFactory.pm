@@ -51,7 +51,7 @@ sub get {
     # Determine pipeline builder
     my $className = $typeToClass{$request->type};
     unless ($className) {
-        warn "PipelineFactory::get unknown job type";
+        CoGe::Exception::Generic->throw(message => "Unknown job type " . $request->type);
         return;
     }
 

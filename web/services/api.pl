@@ -46,7 +46,7 @@ my $r = app->routes->namespaces(["CoGe::Services::API::JBrowse", "CoGe::Services
 
 # Couldn't get override of render_exception in Jobs controller working as advertised so used
 # this hook as a workaround.  Without this the default html error template is rendered
-# when Mojo::Exception->throw() or Throwable::Error->throw() is called.
+# when throw() is called.
 # See https://groups.google.com/d/msg/mojolicious/UbY9Ac9unfY/VXF9ZWGFRBAJ
 app->hook( # mdb added 1/9/17
     before_render => sub {

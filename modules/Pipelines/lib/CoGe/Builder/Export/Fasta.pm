@@ -11,6 +11,8 @@ use CoGe::Accessory::TDS;
 use CoGe::Accessory::Web qw(download_url_for);
 use CoGe::Core::Storage qw(get_genome_file);
 use CoGe::Core::Genome qw(get_irods_metadata);
+use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
 sub get_name {
     return "Export FASTA"; #TODO add genome id
@@ -22,11 +24,11 @@ sub build {
     # Get genome data file path
     my $gid = $self->params->{gid} || $self->params->{genome_id};
     unless ($gid) {
-        Mojo::Exception->throw("Missing genome_id");
+        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
     }
     my $genome = $self->db->resultset("Genome")->find($gid);
     unless ($genome) {
-        Mojo::Exception->throw("Genome $gid not found");
+        CoGe::Exception::Generic->throw(message => "Genome $gid not found");
     }
 
     # Determine name of exported file

@@ -5,6 +5,8 @@ extends 'CoGe::Builder::Buildable';
 
 use CoGe::Core::Storage qw(get_experiment_files);
 use CoGe::Builder::Expression::qTeller qw(build);
+use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
 sub get_name {
     #my $self = shift;
@@ -17,16 +19,16 @@ sub build {
     # Validate inputs
     my $eid = $self->params->{eid} || $self->params->{experiment_id};
     unless ($eid) {
-        Mojo::Exception->throw("Missing experiment_id");
+        CoGe::Exception::MissingField->throw(message => "Missing experiment_id");
     }
     unless ($self->params->{expression_params}) {
-        Mojo::Exception->throw("Missing expression_params");
+        CoGe::Exception::MissingField->throw(message => "Missing expression_params");
     }
     
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
     unless ($experiment) {
-        Mojo::Exception->throw("Experiment $eid not found");
+        CoGe::Exception::Generic->throw(message => "Experiment $eid not found");
     }
     my $genome = $experiment->genome;
     

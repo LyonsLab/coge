@@ -10,6 +10,8 @@ use File::Spec::Functions qw(catfile);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_upload_path);
 use CoGe::Builder::CommonTasks;
+use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
 sub get_name {
     my $self = shift;
@@ -32,22 +34,22 @@ sub build {
     # Validate inputs
     my $gid = $self->params->{genome_id};
     unless ($gid) {
-        Mojo::Exception->throw("Missing genome_id");
+        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
     }
     my $data = $self->params->{source_data};
     unless (defined $data && @$data) {
-        Mojo::Exception->throw("Missing source_data");
+        CoGe::Exception::MissingField->throw(message => "Missing source_data");
     }
     my $metadata = $self->params->{metadata};
     unless ($metadata) {
-        Mojo::Exception->throw("Missing metadata");
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
     }
     my $load_id = $self->params->{load_id} || get_unique_id();
 
     # Get genome
     my $genome = $self->db->resultset('Genome')->find($gid);
     unless ($genome) {
-        Mojo::Exception->throw("Genome $gid not found");
+        CoGe::Exception::Generic->throw(message => "Genome $gid not found");
     }
     
     #
