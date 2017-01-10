@@ -5,6 +5,7 @@ use warnings;
 use CoGe::Accessory::Web qw(get_defaults);
 use Data::Dumper;
 use File::Basename;
+use File::Path;
 use File::Spec::Functions;
 
 my %opts = @ARGV;
