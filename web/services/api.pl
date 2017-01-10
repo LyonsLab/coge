@@ -4,6 +4,7 @@ use Mojolicious::Lite;
 use Mojo::Log;
 
 #use File::Spec::Functions qw(catdir);
+use Data::Dumper;
 
 use CoGe::Accessory::Web qw(get_defaults);
 print STDERR '=' x 80, "\n== CoGe API\n", '=' x 80, "\n";
@@ -42,7 +43,30 @@ my $r = app->routes->namespaces(["CoGe::Services::API::JBrowse", "CoGe::Services
 #        my ($db, $user, $conf) = CoGe::Services::Auth::init($app);
 #        $c->stash(db => $db, user => $user, conf => $conf);
 #    });
-    
+
+# Couldn't get override of render_exception in Jobs controller working as advertised so used
+# this hook as a workaround.  Without this the default html error template is rendered
+# when Mojo::Exception->throw() or Throwable::Error->throw() is called.
+# See https://groups.google.com/d/msg/mojolicious/UbY9Ac9unfY/VXF9ZWGFRBAJ
+app->hook( # mdb added 1/9/17
+    before_render => sub {
+        return unless $_[0]->accepts('json');
+        my ($c, $args) = @_;
+        my $template = $args->{template} || '';
+
+        if ($template =~ /^exception/) {
+            my $ex = $args->{exception};
+            warn $ex->message->stack_trace->as_string;
+            $args->{json} = {
+                error => {
+                    message => $ex->message || 'Unknown',
+                    trace => $ex->message->stack_trace->as_string || ''
+                }
+            };
+        }
+    }
+);
+
 # Global Search routes
 $r->get("/global/search/#term")
     ->name("global-search")
