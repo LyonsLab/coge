@@ -31,17 +31,24 @@ sub build {
     
     # Validate inputs
     my $gid = $self->params->{genome_id};
-    return unless $gid;
+    unless ($gid) {
+        Mojo::Exception->throw("Missing genome_id");
+    }
     my $data = $self->params->{source_data};
-    return unless (defined $data && @$data);
+    unless (defined $data && @$data) {
+        Mojo::Exception->throw("Missing source_data");
+    }
     my $metadata = $self->params->{metadata};
-    return unless $metadata;
+    unless ($metadata) {
+        Mojo::Exception->throw("Missing metadata");
+    }
     my $load_id = $self->params->{load_id} || get_unique_id();
-    #print STDERR Dumper $data, "\n";
-    
+
     # Get genome
     my $genome = $self->db->resultset('Genome')->find($gid);
-    return unless $genome;
+    unless ($genome) {
+        Mojo::Exception->throw("Genome $gid not found");
+    }
     
     #
     # Build workflow

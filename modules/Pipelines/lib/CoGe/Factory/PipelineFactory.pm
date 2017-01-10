@@ -22,6 +22,8 @@ use CoGe::Builder::Tools::SynMap3D;
 use CoGe::Builder::Expression::MeasureExpression;
 use CoGe::Builder::Methylation::CreateMetaplot;
 use CoGe::Builder::PopGen::MeasureDiversity;
+use CoGe::Exception::MissingField;
+use CoGe::Exception::Generic;
 
 my %typeToClass = (
     'blast'                 => 'CoGe::Builder::Tools::CoGeBlast',
@@ -66,8 +68,7 @@ sub get {
     my $rc = $builder->build();
     unless ($rc) {
         $rc = 'undef' unless defined $rc;
-        warn "PipelineFactory::get build failed, rc=$rc";
-        return;
+        CoGe::Exception::Generic->throw(message => "Build failed, rc=$rc");
     }
 
     # Post-build: add completion tasks (such as sending notifiation email)

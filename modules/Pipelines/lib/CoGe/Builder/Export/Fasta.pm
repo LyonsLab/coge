@@ -21,9 +21,13 @@ sub build {
 
     # Get genome data file path
     my $gid = $self->params->{gid} || $self->params->{genome_id};
-    return unless $gid;
+    unless ($gid) {
+        Mojo::Exception->throw("Missing genome_id");
+    }
     my $genome = $self->db->resultset("Genome")->find($gid);
-    return unless $genome;
+    unless ($genome) {
+        Mojo::Exception->throw("Genome $gid not found");
+    }
 
     # Determine name of exported file
     my $genome_file = get_genome_file($gid);

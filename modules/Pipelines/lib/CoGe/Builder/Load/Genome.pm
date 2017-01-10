@@ -13,6 +13,8 @@ use CoGe::Accessory::Web qw(url_for);
 use CoGe::Core::Storage qw(get_upload_path);
 use CoGe::Builder::CommonTasks;
 use CoGe::Builder::Common::DataRetrieval;
+use CoGe::Exception::MissingField;
+use CoGe::Exception::Generic;
 
 sub get_name {
     my $self = shift;
@@ -35,18 +37,26 @@ sub build {
     
     # Validate inputs
     my $organism_id = $self->params->{organism_id};
-    return unless $organism_id;
+    unless ($organism_id) {
+        CoGe::Exception::MissingField->throw(message => "Missing organism_id");
+    }
     my $data = $self->params->{source_data};
-    return unless (defined $data && @$data);
+    unless (defined $data && @$data) {
+        CoGe::Exception::MissingField->throw(message => "Missing source_data");
+    }
     my $metadata = $self->params->{metadata};
-    return unless $metadata;
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
+    }
 
     # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
     $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
 
     # Get organism
     my $organism = $self->db->resultset('Organism')->find($organism_id);
-    return unless $organism;
+    unless ($organism) {
+        CoGe::Exception::Generic->throw(message => "Organism $organism_id not found");
+    }
     
     #
     # Build workflow
