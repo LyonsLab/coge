@@ -4,15 +4,8 @@ use Moose;
 with qw(CoGe::Builder::Buildable);
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
+use CoGe::Core::Storage qw(get_workflow_paths);
 use File::Spec::Functions;
-
-sub pre_build { # override superclass method for reusable workflow ID, custom site_url, and custom workflow paths
-	my ($self, %params) = @_;
-
-	# Initialize workflow -- NOTE: init => 0 means that a previous identical workflow will be reused when submitted
-    $self->workflow( $params{jex}->create_workflow(name => $self->get_name, init => 0 ) );
-    return unless $self->workflow;
-}
 
 sub build {
 	my $self = shift;
