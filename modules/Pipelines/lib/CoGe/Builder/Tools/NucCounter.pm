@@ -1,10 +1,9 @@
 package CoGe::Builder::Tools::NucCounter;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
-use CoGe::Core::Storage qw(get_workflow_paths);
 use File::Spec::Functions;
 
 sub build {
@@ -48,3 +47,5 @@ sub get_name {
 	my $self = shift;
     return 'NucCounter | ' . $self->params->{'gid'} . ' | ' . $self->params->{'chr'};
 }
+
+1;
