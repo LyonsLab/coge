@@ -8,7 +8,8 @@
 <script type="text/javascript" src="js/pages/genome-info.js"></script>
 <script type="text/javascript" src="js/vendor/moment/moment.js"></script>
 <script type="text/javascript" src="js/vendor/moment-timezone-data/index.js"></script>
-
+<script src="js/coge/progress.js"></script>
+<script src="js/coge/services.js"></script>
 <style>
 #chr_list_table {
   white-space: nowrap;
@@ -43,6 +44,7 @@ var job_id = "<TMPL_VAR NAME=JOB_ID>",
     CERTIFIED = "<TMPL_VAR NAME='CERTIFIED'>",
     PAGE_NAME = "<TMPL_VAR NAME=PAGE_NAME>",
     DISCOVERY_ENVIRONMENT = "https://de.iplantcollaborative.org/de/?type=data&folder=",
+    API_BASE_URL = '<TMPL_VAR NAME="API_BASE_URL">';
     newLoad = false;
 
 // Export dialog global vars
@@ -105,6 +107,14 @@ $(document).ready(function() {
     	if (localized != creation)
     		$('#creation').html(localized);
     }
+    coge.services.init({
+        baseUrl: API_BASE_URL,
+    	userName: pageObj.user
+    });
+    coge.progress.init({
+    	baseUrl: API_BASE_URL,
+    	userName: pageObj.user
+    });
 });
 
 </script>
@@ -348,7 +358,8 @@ Are you sure you want to move this genome into your trash?<p>
 </div>
 
 <TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
-
+<TMPL_INCLUDE NAME="widgets/Overlay.tmpl">
+<TMPL_INCLUDE NAME="widgets/Progress.tmpl">
 </TMPL_IF>
 
 <TMPL_IF NAME="DO_GENOME_INFO">

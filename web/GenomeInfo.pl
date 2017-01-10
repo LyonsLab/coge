@@ -75,7 +75,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     check_login                => \&check_login,
     copy_genome                => \&copy_genome,
     export_fasta		       => \&export_fasta,
-    export_fasta_chr		   => \&export_fasta_chr,
+    export_file_chr		       => \&export_file_chr,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
     update_annotation          => \&update_annotation,
@@ -1634,14 +1634,14 @@ sub export_fasta { #TODO migrate to API
     return encode_json(\%json);
 }
 
-sub export_fasta_chr { #TODO migrate to API
+sub export_file_chr { #TODO migrate to API
     my %args = @_;
     my $dsg = $DB->resultset('Genome')->find($args{gid});
     my $file = $args{file};
 #    print STDERR Dumper \%args;
 
-    # ensure user is logged in
-    return $ERROR if $USER->is_public;
+    # # ensure user is logged in
+    # return $ERROR if $USER->is_public;
 
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
@@ -2221,6 +2221,7 @@ sub generate_body {
         TRANSCRIPTOME   => ($genome->type->name =~ /transcriptome/i) ? 1 : 0,
         IRODS_HOME      => get_irods_path(),
         USER            => $USER->user_name,
+        API_BASE_URL => 'api/v1/',
         DOWNLOAD_URL    => url_for(api_url_for("genomes/$gid/sequence")) #$config->{SERVER}."api/v1/legacy/sequence/$gid" # mdb changed 2/12/16 for hypnotoad
     );
 

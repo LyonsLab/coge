@@ -212,25 +212,48 @@ function download_chromosome_sequence(chr) { // FIXME use API genome/sequence (m
 }
 
 function download_chromosome_nuccount(chr) { // FIXME use API genome/sequence (mdb 11/22/16)
-    $.ajax({
-        data: {
-            fname: 'cache_chr_fasta',
-            gid: GENOME_ID,
-            chr: chr
-        },
-        success: function(data) {
-            $.ajax({
-                data: {
-                    fname: 'cache_chr_nuccount',
-                    gid: GENOME_ID,
-                    chr: chr
-                },
-                success: function(data) {
-                	document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
-                }
-            });
+    coge.progress.init({title: 'Running NucCounter',
+        onSuccess: function() {
+            document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
         }
     });
+    nuccounter(chr);
+}
+
+function export_chromosome_nuccount(chr) { // FIXME use API genome/sequence (mdb 11/22/16)
+    coge.progress.init({title: 'Running NucCounter',
+        onSuccess: function() {
+            document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
+        }
+    });
+    nuccounter(chr);
+}
+
+function nuccounter(chr) {
+    coge.progress.begin();
+    var request = {
+        type: 'nuccounter',
+        requester: {
+            page: PAGE_NAME
+        },
+        parameters: {gid: GENOME_ID, chr: chr}
+    };
+
+    coge.services.submit_job(request) 
+        .done(function(response) {
+            if (!response) {
+                coge.progress.failed("Error: empty response from server");
+                return;
+            }
+            if (!response.success || !response.id) {
+                coge.progress.failed("Error: failed to start workflow", response.error);
+                return;
+            }
+            coge.progress.update(response.id, response.site_url);
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+        });
 }
 
 function download_chr_file() {
@@ -812,7 +835,7 @@ function export_fasta_chr(chr) {
         },
         success: function(data) {
         	var obj = jQuery.parseJSON(data);
-        	export_to_irods("this chromosome's FASTA file", "export_fasta_chr", { chr: chr, file: obj.file });
+        	export_to_irods("This chromosome's FASTA file", "export_file_chr", { chr: chr, file: obj.file });
         }
     });
 }

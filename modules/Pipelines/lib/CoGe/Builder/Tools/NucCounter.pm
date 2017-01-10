@@ -3,6 +3,8 @@ package CoGe::Builder::Tools::NucCounter;
 use Moose;
 with qw(CoGe::Builder::Buildable);
 
+use File::Spec::Functions;
+
 sub pre_build { # override superclass method for reusable workflow ID, custom site_url, and custom workflow paths
 	my ($self, %params) = @_;
 
@@ -13,25 +15,44 @@ sub pre_build { # override superclass method for reusable workflow ID, custom si
 
 sub build {
 	my $self = shift;
-    my $workflow = $self->workflow;
 
-    my $dir = catfile($config->{SECTEMPDIR}, "downloads/genome", $gid);
+    my $gid = $self->params->{'gid'};
+    my $chr = $self->params->{'chr'};
+    my $dir = catfile($self->conf->{SECTEMPDIR}, "downloads/genome", $gid);
 
     my $fasta = catfile($dir, $gid . '_' . $chr . '.faa');
-    $workflow->add_task({
-        script      => catfile($self->conf->{SCRIPTDIR}, 'generate_chr_fasta.pl'),
+    $self->add_task({
+        cmd         => catfile($self->conf->{SCRIPTDIR}, 'generate_chr_fasta.pl'),
         args        => [[ 'gid', $gid, 0 ], [ 'chr', $chr, 0 ]],
         outputs     => [$fasta],
-        description => "Fetching chromosome sequence",        
+        description => "Generating chromosome sequence",        
     });
 
-     my $output = catfile($dir, $gid . '_' . $chr . '_out.txt');
-    $workflow->add_task({
+    my $output = catfile($dir, $gid . '_' . $chr . '_out.txt');
+    $self->add_task({
         cmd         => catfile($self->conf->{SCRIPTDIR}, 'nuccounter.py') . ' ' . $fasta,
         inputs      => [$fasta],
-        outputs     => [$fasta1],
+        outputs     => [$output],
         description => "Generating nucleotide sliding window percentages",        
     });
 
+    if ($self->params->{'irods'}) {
+        $self->export_to_irods({
+            src_file  => $output,
+            dest_file =>
+        })
+        $self->add_task({
+            cmd         => catfile($self->conf->{SCRIPTDIR}, 'nuccounter.py') . ' ' . $fasta,
+            inputs      => [$fasta],
+            outputs     => [$output],
+            description => "Generating nucleotide sliding window percentages",        
+        });
+    }
+
 	return 1;
+}
+
+sub get_name {
+	my $self = shift;
+    return 'NucCounter | ' . $self->params->{'gid'} . ' | ' . $self->params->{'chr'};
 }

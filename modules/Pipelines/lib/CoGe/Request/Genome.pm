@@ -23,10 +23,6 @@ sub is_valid {
 
 sub has_access {
     my $self = shift;
-    unless (defined $self->{user}) {
-        warn "Request::Genome::has_access: User not defined";
-        return;
-    }
 
     my $gid = $self->parameters->{gid} || $self->parameters->{genome_id};
     unless ($gid) {

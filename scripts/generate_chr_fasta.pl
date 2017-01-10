@@ -3,15 +3,14 @@ use v5.14;
 use strict;
 use warnings;
 use CoGe::Accessory::Web qw(get_defaults);
+use Data::Dumper;
+use File::Basename;
+use File::Spec::Functions;
 
-our ($gid, $chr);
-GetOptions(
-    # Required workflow params
-    "gid=s"        => \$gid,    # genome ID
-    "chr=s"        => \$chr     # chromosome
-);
-
-my $config = get_defaults();
+my %opts = @ARGV;
+my $gid = $opts{'gid'};
+my $chr = $opts{'chr'};
+my $config = get_defaults(catfile(File::Basename::dirname(File::Basename::dirname($0)), 'coge.conf'));
 my $path = catfile($config->{SECTEMPDIR}, "downloads/genome", $gid);
 mkpath( $path, 0, 0777 ) unless -d $path;
 my $file = catfile($path, $gid . "_" . $chr . ".faa");
