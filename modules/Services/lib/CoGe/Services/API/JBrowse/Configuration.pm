@@ -108,6 +108,7 @@ sub track_config {
         baseUrl       => "$JBROWSE_API/sequence/$gid/",
         type          => "SequenceTrack",
         storeClass    => "JBrowse/Store/SeqFeature/REST",
+        track         => 'sequence',
         label         => "sequence",
         key           => "Sequence",
         formatVersion => 1,
