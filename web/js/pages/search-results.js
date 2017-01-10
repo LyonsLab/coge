@@ -86,7 +86,13 @@ $(function () {
 			selectionCallback: function(items) {
 			    infoPanel.busy().update(items);
 				contentPanel.renderButtons(items && items.length); //FIXME should happen automatically within contentPanel
-			}
+			},
+            mouseOver: function(row) {
+			    infoPanel.busy().scheduleUpdate([row]);
+			},
+			mouseOut: function() {
+			    infoPanel.scheduleUpdate();
+			},
 		})
 	});
 
