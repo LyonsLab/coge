@@ -14,6 +14,7 @@ use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
 use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
+use CoGe::Exception::Generic;
 
 # Public attributes
 has 'request'       => ( is => 'ro', isa => 'CoGe::Request::Request', required => 1 );
@@ -78,14 +79,15 @@ sub pre_build { # Default method, SynMap & SynMap3D override this
     # Connect to JEX
     my $jex = CoGe::JEX::Jex->new( host => $self->conf->{JOBSERVER}, port => $self->conf->{JOBPORT} );
     unless ($jex) {
-        warn "Buildable: couldn't connect to JEX";
-        return;
+        CoGe::Exception::Generic->throw(message => "Couldn't connect to JEX");
     }
     $self->jex($jex);
 
     # Initialize workflow -- NOTE: init => 1 means that a new workflow will be created right away
     $self->workflow( $jex->create_workflow(name => $self->get_name, init => 1 ) );
-    return unless ($self->workflow && $self->workflow->id);
+    unless ($self->workflow && $self->workflow->id) {
+        CoGe::Exception::Generic->throw(message => "Couldn't create workflow");
+    }
 
     # Setup workflow paths
     my ($staging_dir, $result_dir) = get_workflow_paths(($self->user ? $self->user->name : 'public'), $self->workflow->id);

@@ -8,6 +8,8 @@ use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Accessory::Web qw(download_url_for);
 use CoGe::Core::Genome qw(get_irods_metadata);
 use CoGe::Core::Storage qw(get_genome_cache_path);
+use CoGe::Exception::MissingField;
+use CoGe::Exception::Generic;
 
 use File::Basename qw(basename);
 use File::Spec::Functions;
@@ -26,10 +28,15 @@ sub build {
 
     my $gid = $self->params->{gid} || $self->params->{genome_id};
     $self->params->{gid} = $gid; # required by create_gff() call below
-    return unless $gid;
+    unless ($gid) {
+        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
+    }
 
     # Get genome
     my $genome = $self->db->resultset("Genome")->find($gid);
+    unless ($genome) {
+        CoGe::Exception::Generic->throw(message => "Genome $gid not found");
+    }
     my $genome_name = $self->params->{basename} = sanitize_name($genome->organism->name);
 
     # Parse output types

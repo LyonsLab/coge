@@ -16,12 +16,18 @@ sub build {
     
     # Validate inputs
     my $eid = $self->params->{eid} || $self->params->{experiment_id};
-    return unless $eid;
-    return unless $self->params->{expression_params};
+    unless ($eid) {
+        Mojo::Exception->throw("Missing experiment_id");
+    }
+    unless ($self->params->{expression_params}) {
+        Mojo::Exception->throw("Missing expression_params");
+    }
     
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
-    return unless $experiment;
+    unless ($experiment) {
+        Mojo::Exception->throw("Experiment $eid not found");
+    }
     my $genome = $experiment->genome;
     
     # Copy metadata from input experiment

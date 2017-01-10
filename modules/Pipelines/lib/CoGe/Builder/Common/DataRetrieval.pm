@@ -16,7 +16,9 @@ use CoGe::Core::Storage qw(get_upload_path get_sra_cache_path);
 sub build {
     my $self = shift;
     my $data = $self->params->{source_data};
-    return unless (defined $data && @$data);
+    unless (defined $data && @$data) {
+        Mojo::Exception->throw("Missing source_data");
+    }
     my $load_id = $self->params->{load_id} || get_unique_id();
     
     # Create tasks to retrieve files
