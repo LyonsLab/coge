@@ -121,7 +121,6 @@ ECNCS/t/009_load.t
 ECNCS/t/010_load.t
 ECNCS/t/011_load.t
 ECNCS/t/012_load.t
-Exception/lib/CoGe/Exception/All.pm
 Exception/lib/CoGe/Exception/MissingField.pm
 Exception/lib/CoGe/Exception/Generic.pm
 Graphics/lib/CoGe/Graphics.pm
