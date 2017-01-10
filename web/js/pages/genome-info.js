@@ -211,34 +211,15 @@ function download_chromosome_sequence(chr) { // FIXME use API genome/sequence (m
     });
 }
 
-function download_chromosome_nuccount(chr) { // FIXME use API genome/sequence (mdb 11/22/16)
-    coge.progress.init({title: 'Running NucCounter',
-        onSuccess: function() {
-            document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
-        }
-    });
-    nuccounter(chr);
-}
-
-function export_chromosome_nuccount(chr) { // FIXME use API genome/sequence (mdb 11/22/16)
-    coge.progress.init({title: 'Running NucCounter',
-        onSuccess: function() {
-            document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
-        }
-    });
-    nuccounter(chr);
-}
-
-function nuccounter(chr) {
+function nuccounter(chr, irods) {
     coge.progress.begin();
     var request = {
         type: 'nuccounter',
         requester: {
             page: PAGE_NAME
         },
-        parameters: {gid: GENOME_ID, chr: chr}
+        parameters: {gid: GENOME_ID, chr: chr, irods: irods ? 1 : 0}
     };
-
     coge.services.submit_job(request) 
         .done(function(response) {
             if (!response) {
@@ -268,8 +249,15 @@ function download_chr_file() {
 		download_chromosome_sequence(id.substring(1));
 	else if (type == 'g')
 		get_gff(id.substring(1));
-    else
-        download_chromosome_nuccount(id.substring(1));
+    else {
+        var chr = id.substring(1);
+        coge.progress.init({title: 'NucCounter',
+            onSuccess: function() {
+                document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
+            }
+        });
+        nuccounter(chr);
+    }
 }
 
 function export_chr_file() {
@@ -284,6 +272,10 @@ function export_chr_file() {
 		export_fasta_chr(id.substring(1));
 	else if (type == 'g')
 		export_gff(id.substring(1));
+    else {
+        coge.progress.init({title: 'NucCounter'});
+        nuccounter(id.substring(1), true);
+    }
 }
 
 function toggle_load_log() {

@@ -103,7 +103,6 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_chr_length_hist        => \&get_chr_length_hist,
     get_chromosomes            => \&get_chromosomes,
     cache_chr_fasta			   => \&cache_chr_fasta,
-    cache_chr_nuccount		   => \&cache_chr_nuccount,
     get_aa_usage               => \&get_aa_usage,
     get_wobble_gc              => \&get_wobble_gc,
     get_wobble_gc_diff         => \&get_wobble_gc_diff,
@@ -884,7 +883,7 @@ sub get_chromosomes { #TODO use API Genome Fetch
 		$html .= '["' . $c->name . ' <a href=\\"GenomeView.pl?gid=' . $gid . '&loc=' . $c->name . '%3A1..' . ($c->length - 1) .
             '\\" target=\\"_blank\\"><span class=\\"glyphicon glyphicon-eye-open\\" style=\\"color:black;padding-left:20px;\\" title=\\"Browse\\"></span></a>","' .
             $c->length . '","<input type=\\"radio\\" name=\\"chr\\" id=\\"f' . $c->name . '\\" /> FASTA","<input type=\\"radio\\" name=\\"chr\\" id=\\"g' . $c->name .
-            '\\" /> GFF","<input type=\\"radio\\" name=\\"chr\\" id=\\"n' . $c->name . '\\" /> NucCount"]';
+            '\\" /> GFF","<input type=\\"radio\\" name=\\"chr\\" id=\\"n' . $c->name . '\\" /> NucCounter"]';
   	}
 	$html .= ']';
 	return $html;	
@@ -920,25 +919,6 @@ sub cache_chr_fasta { #FIXME remove this, use API genome/sequence
 		print $fh "\n";
 	}
 	close $fh;
-    return encode_json(\%json);
-}
-
-sub cache_chr_nuccount { #FIXME remove this, use API genome/sequence
-    my %opts  = @_;
-    my $gid = $opts{gid};
-    my $chr = $opts{chr};
-
-    my $path = catfile($config->{SECTEMPDIR}, 'downloads/genome', $gid);
-	mkpath( $path, 0, 0777 ) unless -d $path;
-    my $file = catfile($path, $gid . '_' . $chr . '_out.txt');
-	my %json;
-	$json{file} = $file;
-    if (-e $file) {
-    	return encode_json(\%json);
-    }
-
-    my $nuccounter = catfile($config->{SCRIPTDIR}, 'nuccounter.py');
-    system($nuccounter, catfile($path, $gid . '_' . $chr . '.faa'));
     return encode_json(\%json);
 }
 
