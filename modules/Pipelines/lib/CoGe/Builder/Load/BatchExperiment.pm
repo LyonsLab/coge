@@ -1,7 +1,7 @@
 package CoGe::Builder::Load::BatchExperiment;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use Switch;
@@ -10,6 +10,8 @@ use File::Spec::Functions qw(catfile);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_upload_path);
 use CoGe::Builder::CommonTasks;
+use CoGe::Exception::MissingField;
+use CoGe::Exception::Generic;
 
 sub get_name {
     my $self = shift;
@@ -26,11 +28,17 @@ sub build {
     
     # Validate inputs
     my $genome_id = $self->params->{genome_id};
-    return unless $genome_id;
+    unless ($genome_id) {
+        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
+    }
     my $data = $self->params->{source_data};
-    return unless (defined $data && @$data);
+    unless (defined $data && @$data) {
+        CoGe::Exception::MissingField->throw(message => "Missing source_data");
+    }
     my $metadata = $self->params->{metadata};
-    return unless $metadata;
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
+    }
     my $load_id = $self->params->{load_id} || get_unique_id();
     
     # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
@@ -38,7 +46,9 @@ sub build {
 
     # Get organism
     my $genome = $self->db->resultset('Genome')->find($genome_id);
-    return unless $genome;
+    unless ($genome) {
+        CoGe::Exception::Generic->throw(message => "Genome $genome_id not found");
+    }
     
     # Determine file type if not set
     my $file_type = $data->[0]->{file_type}; # type of first data file
@@ -73,5 +83,7 @@ sub build {
     
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

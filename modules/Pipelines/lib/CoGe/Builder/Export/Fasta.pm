@@ -1,7 +1,7 @@
 package CoGe::Builder::Export::Fasta;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use File::Spec::Functions qw(catfile);
 
@@ -11,6 +11,8 @@ use CoGe::Accessory::TDS;
 use CoGe::Accessory::Web qw(download_url_for);
 use CoGe::Core::Storage qw(get_genome_file);
 use CoGe::Core::Genome qw(get_irods_metadata);
+use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
 sub get_name {
     return "Export FASTA"; #TODO add genome id
@@ -21,9 +23,13 @@ sub build {
 
     # Get genome data file path
     my $gid = $self->params->{gid} || $self->params->{genome_id};
-    return unless $gid;
+    unless ($gid) {
+        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
+    }
     my $genome = $self->db->resultset("Genome")->find($gid);
-    return unless $genome;
+    unless ($genome) {
+        CoGe::Exception::Generic->throw(message => "Genome $gid not found");
+    }
 
     # Determine name of exported file
     my $genome_file = get_genome_file($gid);
@@ -82,5 +88,7 @@ sub build {
     
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

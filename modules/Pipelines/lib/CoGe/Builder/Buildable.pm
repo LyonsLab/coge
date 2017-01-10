@@ -1,6 +1,6 @@
 package CoGe::Builder::Buildable;
 
-use Moose::Role;
+use Moose;
 
 use File::Basename qw(basename dirname);
 use File::Spec::Functions qw(catdir catfile);
@@ -14,17 +14,14 @@ use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
 use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
-
-requires qw(build);
+use CoGe::Exception::Generic;
 
 # Public attributes
-has 'workflow'      => ( is => 'rw', isa  => 'CoGe::JEX::Workflow' );
-has 'params'        => ( is => 'ro', required => 1 );
+has 'request'       => ( is => 'ro', isa => 'CoGe::Request::Request', required => 1 );
+has 'jex'           => ( is => 'rw', isa => 'CoGe::JEX::Jex' );
+has 'workflow'      => ( is => 'rw', isa => 'CoGe::JEX::Workflow' );
 has 'site_url'      => ( is => 'rw' );
 has 'page'          => ( is => 'rw' );
-has 'db'            => ( is => 'ro', required => 1, isa  => 'CoGeX' );
-has 'user'          => ( is => 'ro', required => 1, isa  => 'Maybe[CoGeX::Result::User]' ); # mdb changed 10/13/16 -- added "Maybe" to prevent error on undef
-has 'conf'          => ( is => 'ro', required => 1 );
 has 'inputs'        => ( is => 'ro', default => sub { [] } ); # mdb added 12/7/16 for SRA.pm
 has 'outputs'       => ( is => 'rw', default => sub { [] } );
 has 'assets'        => ( is => 'rw', default => sub { [] } );
@@ -36,16 +33,61 @@ has 'result_dir'    => ( is => 'rw');#, traits => ['Private'] );
 
 my $previous_outputs = [];
 
+sub type    { shift->request->payload->{type} }
+sub params  { shift->request->payload->{parameters} }
+sub user    { shift->request->user }
+sub db      { shift->request->db }
+sub conf    { shift->request->conf }
+
 sub get_site_url { # override this or use default in pre_build
     return '';
 }
 
+sub submit {
+    my $self = shift;
+
+    # Check for workflow
+    my $workflow = $self->workflow;
+    return {
+        success => JSON::false,
+        error => { Error => "failed to build workflow" }
+    } unless $workflow;
+
+    # Submit workflow to JEX
+    my $resp = $self->jex->submit_workflow($workflow);
+    my $success = $self->jex->is_successful($resp);
+    unless ($success) {
+        print STDERR 'JEX response: ', Dumper $resp, "\n";
+        return {
+            success => JSON::false,
+            error => { JEX => 'failed to submit workflow' }
+            #TODO return $resp error message from JEX
+        }
+    }
+
+    my $response = {
+        id => $resp->{id},
+        success => JSON::true
+    };
+    $response->{site_url} = $self->site_url if ($self->site_url);
+    return $response;
+}
+
 sub pre_build { # Default method, SynMap & SynMap3D override this
-    my ($self, %params) = @_;
+    my $self = shift;
+
+    # Connect to JEX
+    my $jex = CoGe::JEX::Jex->new( host => $self->conf->{JOBSERVER}, port => $self->conf->{JOBPORT} );
+    unless ($jex) {
+        CoGe::Exception::Generic->throw(message => "Couldn't connect to JEX");
+    }
+    $self->jex($jex);
 
     # Initialize workflow -- NOTE: init => 1 means that a new workflow will be created right away
-    $self->workflow( $params{jex}->create_workflow(name => $self->get_name, init => 1 ) );
-    return unless ($self->workflow && $self->workflow->id);
+    $self->workflow( $jex->create_workflow(name => $self->get_name, init => 1 ) );
+    unless ($self->workflow && $self->workflow->id) {
+        CoGe::Exception::Generic->throw(message => "Couldn't create workflow");
+    }
 
     # Setup workflow paths
     my ($staging_dir, $result_dir) = get_workflow_paths(($self->user ? $self->user->name : 'public'), $self->workflow->id);
@@ -57,9 +99,10 @@ sub pre_build { # Default method, SynMap & SynMap3D override this
 
     # Set "page" and "site_url" attributes
     my $site_url = $self->get_site_url();
-    if ($params{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
-        my $page = $params{requester}->{page}; # page name used for logging
-        my $url  = $params{requester}->{url};  # used to set site_url with special query params
+    my $requester = $self->request->requester;
+    if ($requester) { # requester is from internal web page - external API requests will not have a 'requester' field
+        my $page = $requester->{page}; # page name used for logging
+        my $url  = $requester->{url};  # used to set site_url with special query params
         $self->page($page) if $page;
         unless ($site_url) {
             $url = $page unless $url;
@@ -564,5 +607,7 @@ sub create_notebook {
         description => "Creating notebook of results"
     };
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

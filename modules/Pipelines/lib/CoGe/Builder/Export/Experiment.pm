@@ -1,7 +1,10 @@
 package CoGe::Builder::Export::Experiment;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
+
+use File::Spec::Functions qw(catdir catfile);
+use Data::Dumper;
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
@@ -9,8 +12,8 @@ use CoGe::Accessory::Web qw(download_url_for);
 use CoGe::Core::Storage qw(get_experiment_cache_path);
 use CoGe::Core::Experiment qw(get_irods_metadata);
 use CoGe::Builder::CommonTasks qw(export_experiment_job export_to_irods);
-use File::Spec::Functions qw(catdir catfile);
-use Data::Dumper;
+use CoGe::Exception::MissingField;
+use CoGe::Exception::Generic;
 
 sub get_name {
     return "Export experiment";
@@ -24,10 +27,15 @@ sub build {
     $dest_type = "http" unless $dest_type;
     
     my $eid = $self->params->{eid} || $self->params->{experiment_id};
-    return unless $eid;
+    unless ($eid) {
+        CoGe::Exception::MissingField->throw(message => "Missing experiment_id");
+    }
 
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
+    unless ($experiment) {
+        CoGe::Exception::Generic->throw(message => "Experiment $eid not found");
+    }
     my $exp_name = sanitize_name($experiment->name);
        $exp_name = $eid unless $exp_name;
 
@@ -95,5 +103,7 @@ sub build {
     
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

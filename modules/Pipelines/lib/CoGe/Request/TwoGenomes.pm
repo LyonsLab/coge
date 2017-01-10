@@ -1,7 +1,7 @@
 package CoGe::Request::TwoGenomes;
 
 use Moose;
-use CoGe::Request::Request;
+extends 'CoGe::Request::Request';
 
 sub is_valid {
     my $self = shift;
@@ -29,6 +29,6 @@ sub has_access {
     return $self->user->has_access_to_genome($genome2);
 }
 
-with qw(CoGe::Request::Request);
+__PACKAGE__->meta->make_immutable;
 
 1;

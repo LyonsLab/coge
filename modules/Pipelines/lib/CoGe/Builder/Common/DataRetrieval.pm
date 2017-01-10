@@ -1,7 +1,7 @@
 package CoGe::Builder::Common::DataRetrieval;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use File::Basename qw(basename dirname);
@@ -12,11 +12,14 @@ use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Accessory::Web qw(split_url);
 use CoGe::Accessory::IRODS qw(irods_iget irods_set_env);
 use CoGe::Core::Storage qw(get_upload_path get_sra_cache_path);
+use CoGe::Exception::MissingField;
 
 sub build {
     my $self = shift;
     my $data = $self->params->{source_data};
-    return unless (defined $data && @$data);
+    unless (defined $data && @$data) {
+        CoGe::Exception::MissingField->throw(message => "Missing source_data");
+    }
     my $load_id = $self->params->{load_id} || get_unique_id();
     
     # Create tasks to retrieve files
@@ -154,5 +157,7 @@ sub ftp_get {
         description => "Fetching $url"
     };
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

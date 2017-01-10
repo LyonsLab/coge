@@ -1,7 +1,7 @@
 package CoGe::Builder::SNP::IdentifySNPs;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use Switch;
@@ -75,5 +75,7 @@ sub build {
     
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

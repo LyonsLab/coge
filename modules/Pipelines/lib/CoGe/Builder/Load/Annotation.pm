@@ -1,7 +1,7 @@
 package CoGe::Builder::Load::Annotation;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use Switch;
@@ -10,6 +10,8 @@ use File::Spec::Functions qw(catfile);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_upload_path);
 use CoGe::Builder::CommonTasks;
+use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
 sub get_name {
     my $self = shift;
@@ -31,17 +33,24 @@ sub build {
     
     # Validate inputs
     my $gid = $self->params->{genome_id};
-    return unless $gid;
+    unless ($gid) {
+        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
+    }
     my $data = $self->params->{source_data};
-    return unless (defined $data && @$data);
+    unless (defined $data && @$data) {
+        CoGe::Exception::MissingField->throw(message => "Missing source_data");
+    }
     my $metadata = $self->params->{metadata};
-    return unless $metadata;
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
+    }
     my $load_id = $self->params->{load_id} || get_unique_id();
-    #print STDERR Dumper $data, "\n";
-    
+
     # Get genome
     my $genome = $self->db->resultset('Genome')->find($gid);
-    return unless $genome;
+    unless ($genome) {
+        CoGe::Exception::Generic->throw(message => "Genome $gid not found");
+    }
     
     #
     # Build workflow
@@ -70,5 +79,7 @@ sub build {
     
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

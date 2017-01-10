@@ -1,10 +1,12 @@
 package CoGe::Builder::Expression::MeasureExpression;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use CoGe::Core::Storage qw(get_experiment_files);
 use CoGe::Builder::Expression::qTeller qw(build);
+use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
 sub get_name {
     #my $self = shift;
@@ -16,12 +18,18 @@ sub build {
     
     # Validate inputs
     my $eid = $self->params->{eid} || $self->params->{experiment_id};
-    return unless $eid;
-    return unless $self->params->{expression_params};
+    unless ($eid) {
+        CoGe::Exception::MissingField->throw(message => "Missing experiment_id");
+    }
+    unless ($self->params->{expression_params}) {
+        CoGe::Exception::MissingField->throw(message => "Missing expression_params");
+    }
     
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
-    return unless $experiment;
+    unless ($experiment) {
+        CoGe::Exception::Generic->throw(message => "Experiment $eid not found");
+    }
     my $genome = $experiment->genome;
     
     # Copy metadata from input experiment
@@ -56,5 +64,7 @@ sub build {
     
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

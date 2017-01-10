@@ -1,7 +1,7 @@
 package CoGe::Builder::Tools::SynMap;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use CoGe::JEX::Jex;
 use CoGe::JEX::Workflow;
@@ -27,10 +27,17 @@ BEGIN {
 my ($result_path, $result_path_html);
 
 sub pre_build { # override superclass method for reusable workflow ID, custom site_url, and custom workflow paths
-	my ($self, %params) = @_;
+	my $self = shift;
+
+	# Connect to JEX
+    my $jex = CoGe::JEX::Jex->new( host => $self->conf->{JOBSERVER}, port => $self->conf->{JOBPORT} );
+    unless ($jex) {
+        CoGe::Exception::Generic->throw(message => "Couldn't connect to JEX");
+    }
+    $self->jex($jex);
 
 	# Initialize workflow -- NOTE: init => 0 means that a previous identical workflow will be reused when submitted
-    $self->workflow( $params{jex}->create_workflow(name => $self->get_name, init => 0 ) );
+    $self->workflow( $jex->create_workflow(name => $self->get_name, init => 0 ) );
     return unless $self->workflow;
 
 	# Setup results paths
@@ -40,9 +47,9 @@ sub pre_build { # override superclass method for reusable workflow ID, custom si
 	# Set site_url attribute
 	my %opts = ( %{ defaults() }, %{ $self->params } );
 	$self->site_url( $opts{tinylink} || get_query_link( $self->conf, $self->db, %opts ) );
-
-    if ($params{requester}) { # request is from internal web page - external API requests will not have a 'requester' field
-        my $page = $params{requester}->{page}; # page name used for logging
+	my $requester = $self->request->requester;
+    if ($requester) { # request is from internal web page - external API requests will not have a 'requester' field
+        my $page = $requester->{page}; # page name used for logging
         $self->page($page) if $page;
     }
 
@@ -1629,5 +1636,7 @@ sub get_query_link {
 
 	return $tiny_link;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

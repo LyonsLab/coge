@@ -318,11 +318,17 @@ var coge = window.coge = (function(namespace) {
                 }
 
 		        // Render workflow results
-		        if (response.results && response.results.length > 2) { // Ignore first two results (debug.log and workflow.log)
-		        	log_content.append("<br><div class='header'>Results (as they are generated)</div>");
+		        if (response.results) {
+		        	var log_results = $('<div></div>');
 		    	    response.results.forEach(function(result) {
-		    	    	log_content.append( self._format_result(result) );
+		    	    	log_results.append(self._format_result(result));
 		    	    });
+
+		    	    if (log_results.html()) {
+		    	        log_content
+		    	            .append("<br><div class='header'>Results (as they are generated)</div>")
+		    	            .append(log_results);
+                    }
 		        }
 
                 // Insert rendered log

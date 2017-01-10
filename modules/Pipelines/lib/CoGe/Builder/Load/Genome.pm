@@ -1,7 +1,7 @@
 package CoGe::Builder::Load::Genome;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catfile catdir);
@@ -13,6 +13,8 @@ use CoGe::Accessory::Web qw(url_for);
 use CoGe::Core::Storage qw(get_upload_path);
 use CoGe::Builder::CommonTasks;
 use CoGe::Builder::Common::DataRetrieval;
+use CoGe::Exception::MissingField;
+use CoGe::Exception::Generic;
 
 sub get_name {
     my $self = shift;
@@ -35,18 +37,26 @@ sub build {
     
     # Validate inputs
     my $organism_id = $self->params->{organism_id};
-    return unless $organism_id;
+    unless ($organism_id) {
+        CoGe::Exception::MissingField->throw(message => "Missing organism_id");
+    }
     my $data = $self->params->{source_data};
-    return unless (defined $data && @$data);
+    unless (defined $data && @$data) {
+        CoGe::Exception::MissingField->throw(message => "Missing source_data");
+    }
     my $metadata = $self->params->{metadata};
-    return unless $metadata;
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
+    }
 
     # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
     $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
 
     # Get organism
     my $organism = $self->db->resultset('Organism')->find($organism_id);
-    return unless $organism;
+    unless ($organism) {
+        CoGe::Exception::Generic->throw(message => "Organism $organism_id not found");
+    }
     
     #
     # Build workflow
@@ -54,10 +64,11 @@ sub build {
     
     # Create tasks to retrieve files #TODO move to pre_build()
     my $dr = CoGe::Builder::Common::DataRetrieval->new({ #FIXME better way to pass these args? See Moose constructors
-        params      => $self->params,
-        db          => $self->db,
-        user        => $self->user,
-        conf        => $self->conf,
+#        params      => $self->params,
+#        db          => $self->db,
+#        user        => $self->user,
+#        conf        => $self->conf,
+        request     => $self->request,
         workflow    => $self->workflow,
         staging_dir => $self->staging_dir,
         result_dr   => $self->result_dir,
@@ -274,5 +285,7 @@ sub load_genome_from_NCBI {
         description => "Importing genome from NCBI"
     };
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

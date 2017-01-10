@@ -181,7 +181,7 @@ sub render_template {
     return $template->output;
 }
 
-sub get_defaults {
+sub get_defaults { #TODO move into Moose module 'Config.pm'
     return $CONF if ($CONF);
 
     my ( $self, $conf_file ) = self_or_default(@_);

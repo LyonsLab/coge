@@ -1,7 +1,7 @@
 package CoGe::Builder::Load::Experiment;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use Switch;
@@ -24,6 +24,8 @@ use CoGe::Builder::Methylation::Bismark qw(build);
 use CoGe::Builder::Methylation::BWAmeth qw(build);
 use CoGe::Builder::Methylation::Metaplot qw(build);
 use CoGe::Builder::Protein::ChIPseq qw(build);
+use CoGe::Exception::MissingField;
+use CoGe::Exception::Generic;
 
 sub get_name {
     my $self = shift;
@@ -45,11 +47,17 @@ sub build {
     
     # Validate inputs
     my $gid = $self->params->{genome_id};
-    return unless $gid;
+    unless ($gid) {
+        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
+    }
     my $data = $self->params->{source_data};
-    return unless (defined $data && ref($data) eq 'ARRAY' && @$data);
+    unless (defined $data && ref($data) eq 'ARRAY' && @$data) {
+        CoGe::Exception::MissingField->throw(message => "Missing source_data");
+    }
     my $metadata = $self->params->{metadata};
-    return unless $metadata;
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
+    }
     my $additional_metadata = $self->params->{additional_metadata}; # optional
     my $load_id = $self->params->{load_id} || get_unique_id();
     
@@ -58,7 +66,9 @@ sub build {
     
     # Get genome
     my $genome = $self->db->resultset('Genome')->find($gid);
-    return unless $genome;
+    unless ($genome) {
+        CoGe::Exception::Generic->throw(message => "Genome $gid not found");
+    }
     
     # Determine file type if not set
     my $file_type = $data->[0]->{file_type}; # type of first data file
@@ -255,5 +265,7 @@ sub build {
     
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

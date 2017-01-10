@@ -214,11 +214,15 @@ function download_chromosome_sequence(chr) { // FIXME use API genome/sequence (m
 function nuccounter(chr, irods) {
     coge.progress.begin();
     var request = {
-        type: 'nuccounter',
+        type: 'analyze_nucleotides',
         requester: {
             page: PAGE_NAME
         },
-        parameters: {gid: GENOME_ID, chr: chr, irods: irods ? 1 : 0}
+        parameters: {
+            gid: GENOME_ID,
+            chr: chr,
+            irods: irods ? 1 : 0
+        }
     };
     coge.services.submit_job(request) 
         .done(function(response) {

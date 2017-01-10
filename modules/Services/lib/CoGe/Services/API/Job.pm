@@ -7,7 +7,6 @@ use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 use File::Spec::Functions qw( catfile );
 use CoGe::Services::Auth qw( init );
-use CoGe::JEX::Jex;
 use CoGe::Core::Storage qw( get_workflow_paths get_workflow_results );
 use CoGe::Factory::RequestFactory;
 use CoGe::Factory::PipelineFactory;
@@ -28,26 +27,25 @@ sub add {
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     
-    # Create request and validate the required fields
-    my $jex = CoGe::JEX::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
-    my $request_factory = CoGe::Factory::RequestFactory->new(db => $db, user => $user, jex => $jex);
-    my $request_handler = $request_factory->get($payload);
-    unless ($request_handler and $request_handler->is_valid) {
+    # Create request
+    my $request = CoGe::Factory::RequestFactory->new(db => $db, conf => $conf, user => $user)->get($payload);
+
+    # Validate the request's parameters
+    unless ($request and $request->is_valid) {
         return $self->render(status => 400, json => {
             error => { Invalid => "Invalid request" }
         });
     }
 
-    # Check users permissions to execute the request
-    unless ($request_handler->has_access) {
+    # Check user's permission to execute the request
+    unless ($request->has_access) {
         return $self->render(status => 401, json => {
             error => { Auth => "Request denied" }
         });
     }
 
     # Create pipeline to execute job
-    my $pipeline_factory = CoGe::Factory::PipelineFactory->new(conf => $conf, user => $user, jex => $jex, db => $db);
-    my $pipeline = $pipeline_factory->get($payload);
+    my $pipeline = CoGe::Factory::PipelineFactory->new()->get($request);
     unless ($pipeline && $pipeline->workflow) {
         return $self->render(json => {
             error => { Error => "Failed to generate pipeline" }
@@ -55,7 +53,7 @@ sub add {
     }
     
     # Submit pipeline
-    my $response = $request_handler->execute($pipeline);
+    my $response = $pipeline->submit();
     unless ($response->{success} && $response->{id}) {
         return $self->render(json => {
             error => { Error => "JEX returned error on submission" }

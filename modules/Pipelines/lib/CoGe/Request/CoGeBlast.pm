@@ -1,11 +1,9 @@
 package CoGe::Request::CoGeBlast;
 
-use CoGe::Builder::Tools::CoGeBlast qw( get_genomes );
 use Moose;
-with qw(CoGe::Request::Request);
+extends 'CoGe::Request::Request';
 
-use CoGe::Request::Request;
-use JSON;
+use CoGe::Builder::Tools::CoGeBlast qw( get_genomes );
 
 sub is_valid {
     my $self = shift;
@@ -28,5 +26,7 @@ sub has_access {
     }
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

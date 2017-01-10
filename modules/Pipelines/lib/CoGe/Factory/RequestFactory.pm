@@ -1,6 +1,8 @@
 package CoGe::Factory::RequestFactory;
 
 use Moose;
+use Data::Dumper;
+
 use CoGe::Request::CoGeBlast;
 use CoGe::Request::Empty;
 use CoGe::Request::Experiment;
@@ -8,7 +10,7 @@ use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
 use CoGe::Request::SynMap;
 use CoGe::Request::TwoGenomes;
-use Data::Dumper;
+use CoGe::Exception::Generic;
 
 has 'user'    => (
     is        => 'ro',
@@ -20,67 +22,51 @@ has 'db'      => (
     required  => 1
 );
 
-has 'jex'     => (
+has 'conf'    => (
     is        => 'ro',
     required  => 1
 );
 
+my %typeToClass = (
+    'blast'                 => 'CoGe::Request::CoGeBlast',
+    'export_gff'            => 'CoGe::Request::Genome',
+    'export_fasta'          => 'CoGe::Request::Genome',
+    'export_genome'         => 'CoGe::Request::Genome',
+    'export_experiment'     => 'CoGe::Request::Experiment',
+    'load_experiment'       => 'CoGe::Request::Genome',
+    'load_sra'              => 'CoGe::Request::Genome',
+    'load_batch'            => 'CoGe::Request::Genome',
+    'load_genome'           => 'CoGe::Request::Empty',
+    'load_annotation'       => 'CoGe::Request::Genome',
+    'analyze_snps'          => 'CoGe::Request::ExperimentAnalysis',
+    'synmap'                => 'CoGe::Request::SynMap',
+    'synmap3d'              => 'CoGe::Request::SynMap',
+    'dotplot_dots'          => 'CoGe::Request::TwoGenomes',
+    'analyze_expression'    => 'CoGe::Request::ExperimentAnalysis',
+    'analyze_metaplot'      => 'CoGe::Request::ExperimentAnalysis',
+    'analyze_diversity'     => 'CoGe::Request::ExperimentAnalysis',
+    'analyze_nucleotides'   => 'CoGe::Request::Genome'
+);
+
 sub get {
-    my ($self, $message) = @_;
-    unless (defined $message && defined $message->{type}) {
-        warn 'RequestFactory: error: invalid message';
-        warn Dumper $message;
-        return;
+    my ($self, $payload) = @_;
+    unless (defined $payload && defined $payload->{type}) {
+        CoGe::Exception::Generic->throw(message => 'Invalid payload', details => Dumper($payload));
     }
 
-    my $options = {
-        db         => $self->db,
-        jex        => $self->jex,
-        user       => $self->user,
-        parameters => $message->{parameters}
-    };
+    my $className = $typeToClass{$payload->{type}};
+    unless ($className) {
+        CoGe::Exception::Generic->throw(message => "Unrecognized job type: " . $payload->{type});
+    }
 
-    my $type = $message->{type};
-    if ($type eq "export_gff" ||
-        $type eq "export_fasta" ||
-        $type eq "export_genome" ||
-        $type eq "load_experiment" ||
-        $type eq "load_sra" ||
-        $type eq "load_batch" ||
-        $type eq "load_annotation" ||
-        $type eq "nuccounter")
-    {
-        return CoGe::Request::Genome->new($options);
-    }
-    elsif ($type eq "export_experiment") {
-        return CoGe::Request::Experiment->new($options);
-    }
-    elsif ($type eq "analyze_snps" ||
-           $type eq "analyze_expression" ||
-           $type eq "analyze_metaplot" || 
-           $type eq "analyze_diversity") 
-    {
-        return CoGe::Request::ExperimentAnalysis->new($options);
-    }
-    elsif ($type eq "blast") {
-        return CoGe::Request::CoGeBlast->new($options);
-    }
-    elsif ($type eq "load_genome") {
-        return CoGe::Request::Empty->new($options);
-    }
-    elsif ($type eq "dotplot_dots")
-    {
-        return CoGe::Request::TwoGenomes->new($options);
-    }
-    elsif ($type eq "synmap" ||
-        $type eq "synmap3d")
-    {
-        return CoGe::Request::SynMap->new($options);
-    }
-    else {
-        print STDERR "RequestFactory: error: unrecognized job type '", $type, "'\n";
-        return;
-    }
+    return $className->new(
+        db      => $self->db,
+        conf    => $self->conf,
+        user    => $self->user,
+        payload => $payload
+    );
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

@@ -1,7 +1,7 @@
 package CoGe::Request::Genome;
 
 use Moose;
-with qw(CoGe::Request::Request);
+extends 'CoGe::Request::Request';
 
 sub is_valid {
     my $self = shift;
@@ -38,5 +38,7 @@ sub has_access {
 
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

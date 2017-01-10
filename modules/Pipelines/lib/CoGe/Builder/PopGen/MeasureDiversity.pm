@@ -1,7 +1,7 @@
 package CoGe::Builder::PopGen::MeasureDiversity;
 
 use Moose;
-with qw(CoGe::Builder::Buildable);
+extends 'CoGe::Builder::Buildable';
 
 use CoGe::Builder::PopGen::SummaryStats qw(build);
 
@@ -40,5 +40,7 @@ sub build {
     
     return 1;
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;
