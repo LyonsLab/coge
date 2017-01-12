@@ -14,24 +14,33 @@ use CoGe::Accessory::IRODS qw(irods_iget irods_set_env);
 use CoGe::Core::Storage qw(get_upload_path get_sra_cache_path);
 use CoGe::Exception::MissingField;
 
+# Inputs
+# <none>
+
+# Outputs
+has data_files => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # input files
+has data_dir   => (is => 'ro', isa => 'Str'); # input directory
+has ncbi_accns => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # GenBank accessions
+
 sub build {
     my $self = shift;
+
     my $data = $self->params->{source_data};
     unless (defined $data && @$data) {
         CoGe::Exception::MissingField->throw(message => "Missing source_data");
     }
+
     my $load_id = $self->params->{load_id} || get_unique_id();
     
     # Create tasks to retrieve files
     my $upload_dir = get_upload_path($self->user->name, $load_id);
     foreach my $item (@$data) {
         my $type = lc($item->{type});
-        #print STDERR Dumper $item, "\n";
-        
+
         # Check if NCBI accession input
         if ($type eq 'ncbi') {
             #TODO move file retrieval from genbank_genome_loader.pl to here
-            $self->add_asset(ncbi_accn => $item->{path});
+            push @{$self->ncbi_accn}, $item->{path};
             next;
         }
         
@@ -69,28 +78,29 @@ sub build {
                     dest_path => get_sra_cache_path()
                 )
             );
+            next;
         }
-        
+
         # Process input files
         my $input_file = $self->previous_output();
         if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) { # Untar if necessary
             my $output_dir = catdir($self->staging_dir, 'untarred');
             $self->add_task_chain(
                 $self->untar(
-                    input_file => $input_file, 
+                    input_file => $input_file,
                     output_path => $output_dir
                 )
             );
-            $self->add_asset( data_dir => $output_dir );
+            $self->data_dir($output_dir);
         }
         elsif ( $input_file =~ /\.gz$/ ) { # Decompress if necessary
             $self->add_task_chain(
                 $self->gunzip( input_file => $input_file )
             );
-            $self->add_asset( data_file => $self->previous_output() );
+            push @{$self->data_files}, $self->previous_output;
         }
         else {
-            $self->add_asset( data_file => $self->previous_output() );
+            push @{$self->data_files}, $self->previous_output;
         }
     }
     
@@ -155,6 +165,46 @@ sub ftp_get {
             $output_file
         ],
         description => "Fetching $url"
+    };
+}
+
+sub fastq_dump {
+    my ($self, %params) = @_;
+    my $accn = $params{accn};
+    my $dest_path = $params{dest_path};
+    my $read_type = $self->params->{read_params}{read_type} // 'single';
+
+    my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
+    $cmd .= ' --split-files' if ($read_type eq 'paired');
+
+    my $output_filepath = catfile($dest_path, $accn);
+
+    my (@output_files, @done_files);
+    if ($read_type eq 'paired') {
+        @output_files = (
+            $output_filepath . '_1.fastq',
+            $output_filepath . '_2.fastq'
+        );
+        @done_files = (
+            $output_filepath . '_1.fastq.done',
+            $output_filepath . '_2.fastq.done'
+        );
+    }
+    else {
+        @output_files = ( $output_filepath . '.fastq');
+        @done_files   = ( $output_filepath . '.fastq.done' );
+    }
+
+    return {
+        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch " . join(' ', @done_files),
+        script => undef,
+        args => [],
+        inputs => [],
+        outputs => [
+            @output_files,
+            @done_files
+        ],
+        description => "Fetching $accn from NCBI-SRA"
     };
 }
 

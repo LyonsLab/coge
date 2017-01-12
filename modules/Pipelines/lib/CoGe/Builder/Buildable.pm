@@ -12,8 +12,9 @@ use Data::Dumper;
 
 use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
 use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
-use CoGe::Accessory::Utils qw(get_unique_id);
+use CoGe::Accessory::Utils;
 use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
+use CoGe::Core::Metadata qw(to_annotations tags_to_string);
 use CoGe::Exception::Generic;
 
 # Public attributes
@@ -32,6 +33,24 @@ has 'staging_dir'   => ( is => 'rw');#, traits => ['Private'] );
 has 'result_dir'    => ( is => 'rw');#, traits => ['Private'] );
 
 my $previous_outputs = [];
+
+# This allows us to instantiate subclasses with a single arg $self.
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $class = shift;
+
+    if ( @_ == 1 && ref $_[0]) { # $self is only argument
+        return $class->$orig(
+            request     => $_[0]->request,
+            workflow    => $_[0]->workflow,
+            outputs     => $_[0]->outputs,
+            staging_dir => $_[0]->staging_dir,
+        );
+    }
+    else { # canonical arguments
+        return $class->$orig(@_);
+    }
+};
 
 sub type    { shift->request->payload->{type} }
 sub params  { shift->request->payload->{parameters} }
@@ -205,6 +224,14 @@ sub previous_output {
     return;
 }
 
+sub previous_outputs {
+    my $self = shift;
+    if ($previous_outputs && @$previous_outputs) {
+        return wantarray ? @$previous_outputs : $previous_outputs;
+    }
+    return;
+}
+
 # Copies unknown ouputs from workflow into outputs array.  For legacy pipelines that don't use
 # the add_task*() routines in this module.
 sub sync_outputs {
@@ -267,6 +294,32 @@ sub create_wait {
         inputs  => [],
         outputs => [ $wait_file ],
         description => 'Waiting for tasks to complete'
+    };
+}
+
+# Generate gunzip task
+sub create_gunzip {
+    my $self = shift;
+    my $input_file = shift;
+
+    my $output_file = $input_file;
+    $output_file =~ s/\.gz$//;
+
+    my $cmd = get_command_path('GUNZIP');
+
+    return {
+        cmd => "$cmd -c $input_file > $output_file && touch $output_file.decompressed",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file,
+            $input_file . '.done' # ensure file is done transferring
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.decompressed"
+        ],
+        description => "Decompressing " . basename($input_file)
     };
 }
 
@@ -483,43 +536,48 @@ sub curl_get {
     };
 }
 
-sub fastq_dump {
-    my ($self, %params) = @_;
-    my $accn = $params{accn};
-    my $dest_path = $params{dest_path};
-    my $read_type = $self->params->{read_params}{read_type} // 'single';
+sub sam_to_bam {
+    my $self = shift;
+    my $samfile = shift;
 
-    my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
-    $cmd .= ' --split-files' if ($read_type eq 'paired');
-
-    my $output_filepath = catfile($dest_path, $accn);
-
-    my (@output_files, @done_files);
-    if ($read_type eq 'paired') {
-        @output_files = (
-            $output_filepath . '_1.fastq',
-            $output_filepath . '_2.fastq'
-        );
-        @done_files = (
-            $output_filepath . '_1.fastq.done',
-            $output_filepath . '_2.fastq.done'
-        );
-    }
-    else {
-        @output_files = ( $output_filepath . '.fastq');
-        @done_files   = ( $output_filepath . '.fastq.done' );
-    }
+    my $filename = to_filename($samfile);
+    my $cmd = get_command_path('SAMTOOLS');
 
     return {
-        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch " . join(' ', @done_files),
+        cmd => $cmd,
         script => undef,
-        args => [],
-        inputs => [],
-        outputs => [
-            @output_files,
-            @done_files
+        args => [
+            ["view", '', 0],
+            ["-bS", $samfile, 1],
+            [">", $filename . ".bam", 0]
         ],
-        description => "Fetching $accn from NCBI-SRA"
+        inputs => [
+            $samfile
+        ],
+        outputs => [
+            catfile($self->staging_dir, $filename . ".bam")
+        ],
+        description => "Converting SAM to BAM"
+    };
+}
+
+sub index_bam {
+    my $self = shift;
+    my $bamfile = shift;
+
+    return {
+        cmd => get_command_path('SAMTOOLS'),
+        script => undef,
+        args => [
+            ["index", $bamfile, 1],
+        ],
+        inputs => [
+            $bamfile,
+        ],
+        outputs => [
+            $bamfile . '.bai'
+        ],
+        description => "Indexing BAM file",
     };
 }
 
@@ -605,6 +663,70 @@ sub create_notebook {
             $log_file
         ],
         description => "Creating notebook of results"
+    };
+}
+
+sub load_bam { #TODO combine with create_load_experiment_job
+    my $self = shift;
+    my %opts = @_;
+#    my $annotations = $opts{annotations};
+    my $bam_file = $opts{bam_file};
+    my $metadata = $opts{metadata} || $self->params->{metadata};
+    my $additional_metadata = $self->params->{additional_metadata};
+
+    my $cmd = 'perl ' . catfile($self->conf->{SCRIPTDIR}, "load_experiment.pl");
+
+    my $output_name = "load_bam_" . to_filename_base($bam_file);
+    my $output_path = catdir($self->staging_dir, $output_name);
+
+    my $result_file = get_workflow_results_file($self->user->name, $self->workflow->id);
+
+    # Add tags
+    my @tags = ( 'BAM' ); # add BAM tag
+    push @tags, @{$metadata->{tags}} if $metadata->{tags};
+    my $tags_str = tags_to_string(\@tags);
+
+    my $args = [
+        ['-user_name',   $self->user->name, 0],
+        ['-name',        ($metadata->{name} ? shell_quote($metadata->{name} . " (BAM alignment)") : '""'), 0],
+        ['-desc',        shell_quote($metadata->{description}), 0],
+        ['-version',     shell_quote($metadata->{version}), 0],
+        ['-link',        shell_quote($metadata->{link}), 0],
+        ['-restricted',  shell_quote($metadata->{restricted}), 0],
+        ['-gid',         $self->request->genome->id, 0],
+        ['-wid',         $self->workflow->id, 0],
+        ['-source_name', shell_quote($metadata->{source_name}), 0],
+        ['-tags',        shell_quote($tags_str), 0],
+        ['-staging_dir', $output_name, 0],
+        ['-file_type',   'bam', 0],
+        ['-data_file',   $bam_file, 0],
+        ['-config',      $self->conf->{_CONFIG_PATH}, 0]
+    ];
+
+    # Add additional metadata
+    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
+        my $metadata_file = catfile($output_path, 'metadata.dump');
+        make_path($output_path);
+        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
+        push @$args, ['-metadata_file', $metadata_file, 0];
+    }
+#    if ($annotations && @$annotations) { # legacy method
+#        my $annotations_str = join(';', @$annotations);
+#        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
+#    }
+
+    return {
+        cmd => $cmd,
+        args => $args,
+        inputs => [
+            $bam_file
+        ],
+        outputs => [
+            [$output_path, '1'],
+            catfile($output_path, "log.done"),
+            $result_file
+        ],
+        description => "Loading alignment as new experiment"
     };
 }
 

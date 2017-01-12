@@ -64,10 +64,6 @@ sub build {
     
     # Create tasks to retrieve files #TODO move to pre_build()
     my $dr = CoGe::Builder::Common::DataRetrieval->new({ #FIXME better way to pass these args? See Moose constructors
-#        params      => $self->params,
-#        db          => $self->db,
-#        user        => $self->user,
-#        conf        => $self->conf,
         request     => $self->request,
         workflow    => $self->workflow,
         staging_dir => $self->staging_dir,
