@@ -19,16 +19,27 @@ sub build {
     # Validate inputs
     my $eid = $self->params->{eid} || $self->params->{experiment_id};
     unless ($eid) {
+<<<<<<< HEAD
         CoGe::Exception::MissingField->throw(message => "Missing experiment_id");
     }
     unless ($self->params->{expression_params}) {
         CoGe::Exception::MissingField->throw(message => "Missing expression_params");
+=======
+        Mojo::Exception->throw("Missing experiment_id");
+    }
+    unless ($self->params->{expression_params}) {
+        Mojo::Exception->throw("Missing expression_params");
+>>>>>>> 64ad5e911b0cc224edca76011b04410d5f95858d
     }
     
     # Get experiment
     my $experiment = $self->db->resultset('Experiment')->find($eid);
     unless ($experiment) {
+<<<<<<< HEAD
         CoGe::Exception::Generic->throw(message => "Experiment $eid not found");
+=======
+        Mojo::Exception->throw("Experiment $eid not found");
+>>>>>>> 64ad5e911b0cc224edca76011b04410d5f95858d
     }
     my $genome = $experiment->genome;
     

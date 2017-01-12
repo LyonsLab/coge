@@ -48,6 +48,7 @@ sub build {
     my $self = shift;
     
     # Validate inputs
+    my $gid = $self->params->{genome_id};
     my $data = $self->params->{source_data};
     unless (defined $data && ref($data) eq 'ARRAY' && @$data) {
         CoGe::Exception::MissingField->throw(message => "Missing source_data");

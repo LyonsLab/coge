@@ -23,13 +23,7 @@ sub build {
 
     # Get genome data file path
     my $gid = $self->params->{gid} || $self->params->{genome_id};
-    unless ($gid) {
-        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
-    }
     my $genome = $self->db->resultset("Genome")->find($gid);
-    unless ($genome) {
-        CoGe::Exception::Generic->throw(message => "Genome $gid not found");
-    }
 
     # Determine name of exported file
     my $genome_file = get_genome_file($gid);

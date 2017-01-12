@@ -7,7 +7,11 @@ use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Accessory::Web qw(download_url_for);
 use CoGe::Core::Genome qw(get_irods_metadata);
+<<<<<<< HEAD
 use CoGe::Core::Storage qw(get_genome_cache_path get_gff_cache_path);
+=======
+use CoGe::Core::Storage qw(get_genome_cache_path);
+>>>>>>> 64ad5e911b0cc224edca76011b04410d5f95858d
 use CoGe::Exception::MissingField;
 use CoGe::Exception::Generic;
 

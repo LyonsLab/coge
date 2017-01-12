@@ -121,10 +121,16 @@ ECNCS/t/009_load.t
 ECNCS/t/010_load.t
 ECNCS/t/011_load.t
 ECNCS/t/012_load.t
+<<<<<<< HEAD
 Exception/lib/CoGe/Exception/AccessDenied.pm
 Exception/lib/CoGe/Exception/Generic.pm
 Exception/lib/CoGe/Exception/ItemNotFound.pm
 Exception/lib/CoGe/Exception/MissingField.pm
+=======
+Exception/lib/CoGe/Exception/All.pm
+Exception/lib/CoGe/Exception/MissingField.pm
+Exception/lib/CoGe/Exception/Generic.pm
+>>>>>>> 64ad5e911b0cc224edca76011b04410d5f95858d
 Graphics/lib/CoGe/Graphics.pm
 Graphics/lib/CoGe/Graphics/Chromosome.pm
 Graphics/lib/CoGe/Graphics/GenomeView.pm

@@ -22,9 +22,9 @@ has 'db'      => (
     required  => 1
 );
 
-has 'conf'    => (
-    is        => 'ro',
-    required  => 1
+has 'conf' => (
+    is => 'ro',
+    required => 1
 );
 
 my %typeToClass = (

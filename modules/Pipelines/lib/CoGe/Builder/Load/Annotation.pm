@@ -33,9 +33,6 @@ sub build {
     
     # Validate inputs
     my $gid = $self->params->{genome_id};
-    unless ($gid) {
-        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
-    }
     my $data = $self->params->{source_data};
     unless (defined $data && @$data) {
         CoGe::Exception::MissingField->throw(message => "Missing source_data");
