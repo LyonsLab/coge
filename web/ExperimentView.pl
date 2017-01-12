@@ -276,7 +276,7 @@ sub get_annotations {
             foreach my $type ( sort keys %{ $groups{$group} } ) { # types
                 my $first_type = 1;
                 foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group}{$type} } ) { # annotations
-                    my $header = ($group and $first_group-- > 0 ? "<b>$group</b>: " : '') . ($first_type-- > 0 ? "$type:" : '');
+                    my $header = ($group and $first_group-- > 0 ? "<b>$group</b> " : '') . ($first_type-- > 0 ? $type : '');
                     $html .= "<tr style='vertical-align:top;'>";
                     $html .= "<th class='title4' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:left;'>$header</th>";
                     #$html .= '<td>';
@@ -345,72 +345,37 @@ sub get_annotation {
 
 sub add_annotation {
     my %opts = @_;
-    my $eid = $opts{parent_id};
-    return 0 unless $eid;
-    my $type = $opts{type};
-    return 0 unless $type;
     my $fh = $FORM->upload('edit_annotation_image');
  
-    return create_annotation(
+    return CoGe::Core::Metadata::create_annotation(
         db => $DB,
         group_name => $opts{type_group},
         image_fh => $fh,
         image_file => $opts{edit_annotation_image},
         link => $opts{link},
         locked => 0,
-        target_id => $eid,
+        target_id => $opts{parent_id},
         target_type => 'experiment',
         text => $opts{annotation},
-        type_name => $type
+        type_name => $opts{type}
     ) ? 1 : 0;
 }
 
 sub update_annotation {
     my %opts = @_;
-    my $aid  = $opts{aid};
-    return unless $aid;
-    my $type_group = $opts{type_group};
-    my $type       = $opts{type};
-    return 0 unless $type;
-    my $annotation     = $opts{annotation};
-    my $link           = $opts{link};
-    my $image_filename = $opts{edit_annotation_image};
-    my $fh             = $FORM->upload('edit_annotation_image');
-
-    #TODO check user access here
-
-    my $ea = $DB->resultset('ExperimentAnnotation')->find($aid);
-    return unless $ea;
-
-    # Create the type and type group if not already present
-    my $group_rs;
-    if ($type_group) {
-        $group_rs =
-          $DB->resultset('AnnotationTypeGroup')
-          ->find_or_create( { name => $type_group } );
-    }
-    my $type_rs = $DB->resultset('AnnotationType')->find_or_create(
-        {
-            name                     => $type,
-            annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
-        }
+    my $fh = $FORM->upload('edit_annotation_image');
+    CoGe::Core::Metadata::update_annotation(
+        annotation_id => $opts{aid},
+        db => $DB,
+        group_name => $opts{type_group},
+        image_fh => $fh,
+        image_file => $opts{edit_annotation_image},
+        link => $opts{link},
+        target_type => 'experiment',
+        text => $opts{annotation},
+        type_name => $opts{type}
     );
-
-    # Create the image
-    #TODO if image was changed delete previous image
-    my $image;
-    if ($fh) {
-        $image = create_image(fh => $fh, filename => $image_filename, db => $DB);
-        return 0 unless $image;
-    }
-
-    $ea->annotation($annotation);
-    $ea->link($link);
-    $ea->annotation_type_id( $type_rs->id );
-    $ea->image_id( $image->id ) if ($image);
-    $ea->update;
-
-    return;
+    return 1;
 }
 
 #XXX: Move to a module
@@ -595,10 +560,10 @@ sub _get_experiment_info {
        $tags .= '</span> ';
     }
 
-    my $view_link = "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid";
-
     my $creation = ($exp->creator_id ? $exp->creator->display_name  . ' ' : '') . ($exp->date ne '0000-00-00 00:00:00' ? $exp->date : '');
 
+    my $link;
+    $link = "<a target='_blank' href='" . ( $exp->link =~ /^http/ ? $exp->link : 'http://' . $exp->link ) . "'>" . $exp->link . '</a>' if $link;
     my $fields = [
         { title => "ID", value => $exp->id },
         { title => "Name", value => $exp->name},
@@ -606,7 +571,7 @@ sub _get_experiment_info {
         { title => "Data Type", value => ucfirst($exp->data_type_desc) },
         { title => "Genome", value => $exp->genome->info_html },
         { title => "Source", value => $exp->source->info_html },
-        { title => "Link", value => "<a target='_blank' href='" . ( $exp->link =~ /^http/ ? $exp->link : 'http://' . $exp->link ) . "'>" . $exp->link . '</a>' },
+        { title => "Link", value => $link },
         { title => "Version", value => $exp->version },
         { title => "Tags", value => $tags || '' },
         { title => "Notebooks", value => $exp->notebooks_desc($EMBED) },
@@ -627,7 +592,7 @@ sub _get_experiment_info {
 
     return {
         fields => $fields,
-        genome_view_url  => $view_link,
+        genome_view_url  => "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid",
         editable => $allow_edit,
         restricted => $exp->restricted
     };

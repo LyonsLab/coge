@@ -1662,7 +1662,7 @@ sub get_annotations {
     foreach my $a ( $genome->annotations ) {
         my $group = (
             defined $a->type->group
-            ? $a->type->group->name . ':' . $a->type->name
+            ? $a->type->group->name . ' ' . $a->type->name
             : $a->type->name
         );
         push @{ $groups{$group} }, $a;
@@ -1678,7 +1678,7 @@ sub get_annotations {
                 $html .= "<tr style='vertical-align:top;'>";
                 $html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan="
                   . @{ $groups{$group} }
-                  . ">$group:</th>"
+                  . ">$group</th>"
                   if ( $first-- > 0 );
                 #$html .= '<td>';
                 my $image_link =
@@ -1746,76 +1746,37 @@ sub get_annotation {
 
 sub add_annotation {
     my %opts = @_;
-    my $gid = $opts{parent_id};
-    return 0 unless $gid;
-    my $type = $opts{type};
-    return 0 unless $type;
     my $fh = $FORM->upload('edit_annotation_image');
  
-    return create_annotation(
+    return CoGe::Core::Metadata::create_annotation(
         db => $DB,
         group_name => $opts{type_group},
         image_fh => $fh,
         image_file => $opts{edit_annotation_image},
         link => $opts{link},
         locked => 0,
-        target_id => $gid,
+        target_id => $opts{parent_id},
         target_type => 'genome',
         text => $opts{annotation},
-        type_name => $type
+        type_name => $opts{type}
     ) ? 1 : 0;
 }
 
 sub update_annotation {
     my %opts = @_;
-    my $aid  = $opts{aid};
-    return unless $aid;
-    my $type_group = $opts{type_group};
-    my $type       = $opts{type};
-    return 0 unless $type;
-    my $annotation     = $opts{annotation};
-    my $link           = $opts{link};
-    my $image_filename = $opts{edit_annotation_image};
-    my $fh             = $FORM->upload('edit_annotation_image');
-
-    unless ($aid && $type) {
-        warn "Missing required inputs";
-        return;
-    }
-
-    #TODO check user access here
-
-    my $ga = $DB->resultset('GenomeAnnotation')->find($aid);
-    unless ($ga) {
-        warn "Genome annotation $aid not found";
-        return;
-    };
-
-    # Create the type and type group if not already present
-    my $group_rs;
-    if ($type_group) {
-        $group_rs = $DB->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
-    }
-    my $type_rs = $DB->resultset('AnnotationType')->find_or_create({
-        name                     => $type,
-        annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
-    });
-
-    # Create the image
-    #TODO if image was changed delete previous image
-    my $image;
-    if ($fh) {
-        $image = create_image(fh => $fh, filename => $image_filename, db => $DB);
-        return 0 unless $image;
-    }
-
-    $ga->annotation($annotation);
-    $ga->link($link);
-    $ga->annotation_type_id( $type_rs->id );
-    $ga->image_id( $image->id ) if ($image);
-    $ga->update;
-
-    return encode_json({ result => [] }); # a response is needed to fire fileupload "done" callback
+    my $fh = $FORM->upload('edit_annotation_image');
+    CoGe::Core::Metadata::update_annotation(
+        annotation_id => $opts{aid},
+        db => $DB,
+        group_name => $opts{type_group},
+        image_fh => $fh,
+        image_file => $opts{edit_annotation_image},
+        link => $opts{link},
+        target_type => 'genome',
+        text => $opts{annotation},
+        type_name => $opts{type}
+    );
+    return 1;
 }
 
 sub remove_annotation {

@@ -3,14 +3,14 @@ package CoGe::Core::Metadata;
 use v5.14;
 use strict;
 use warnings;
-
+use Switch;
 use File::Basename;
 use File::Slurp;
 use Data::Dumper;
 use Text::Unidecode qw(unidecode);
 
 use CoGeX;
-use CoGe::Accessory::IRODS (imeta_ls iput);
+use CoGe::Accessory::IRODS qw(irods_imeta_ls irods_iput);
 
 BEGIN {
     our (@ISA, $VERSION, @EXPORT);
@@ -18,7 +18,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotation create_annotations export_annotations to_annotations tags_to_string create_image );
+    @EXPORT = qw( create_annotation create_annotations create_image export_annotations tags_to_string to_annotations update_annotation );
 }
 
 sub create_annotations {
@@ -97,69 +97,63 @@ sub create_annotations {
 }
 
 sub _init {
-    my ($type_name, $group_name, $link, $db);
+    my $opts = shift;
+    my $type_name = $opts->{type_name};
     return 'type_name required' unless $type_name;
 
+    my $db = $opts->{db};
+    my $group_name = $opts->{group_name};
     my $group_id;
-    $group_id = $db->resultset('AnnotationTypeGroup')->find_or_create( { name => $group_name } )->id; if defined $group_name;
+    $group_id = $db->resultset('AnnotationTypeGroup')->find_or_create({ name => $group_name })->id if defined $group_name;
 
-    my $type_id = $db->resultset('AnnotationType')->find_or_create( { name => $type_name, annotation_type_group_id => $group_id } )->id;
+    my $type_id = $db->resultset('AnnotationType')->find_or_create({ name => $type_name, annotation_type_group_id => $group_id })->id;
     return 'error creating annotation type' unless $type_id;
 
+    my $link = $opts->{link};
     if ($link) {
         $link =~ s/^\s+//;
-        $link = 'http://' . $link if ( !$link =~ /^(\w+)\:\/\// );
+        $link = 'http://' . $link if !($link =~ /^(\w+)\:\/\//);
     }
 
-    return (undef, $type_id, $link);
-}
+    my $image_id;
+    my $image_fh = $opts->{image_fh};
+    my $image_file = $opts->{image_file};
+    if ($image_file) {
+        my $image = create_image(fh => $image_fh, filename => $image_file, db => $db);
+        return 'error creating image' unless $image;
+        $image_id = $image->id;
+    }
 
-sub _get_type_id {
-    my ($type_name, $type_group_id, $db) = @_;
-    return $db->resultset('AnnotationType')->find_or_create( { name => $type_name, annotation_type_group_id => $type_group_id } )->id;
+    return (undef, $type_id, $link, $image_id);
 }
 
 sub create_annotation {
     my %opts = @_;
-    my $db          = $opts{db};
-    my $group_name  = $opts{group_name};
-    my $image_fh    = $opts{image_fh};
-    my $image_file  = $opts{image_file};
-    my $locked      = $opts{locked};
-    my $target      = $opts{target};    # DBIX experiment/genome/notebook
-    my $target_id   = $opts{target_id}; # or id/type
-    my $target_type = $opts{target_type};
-    my $text        = $opts{text};
-    my $type_name   = $opts{type_name};
 
-    my ($error, $type_id, $link) = _init($type_name, $group_name, $opts{link}, $db);
+    my ($error, $type_id, $link, $image_id) = _init(\%opts);
     if ($error) {
         warn 'create_annotation: ' . $error;
         return;
     }
 
-    my $image_id;
-    if ($image_file) {
-        my $image = create_image(fh => $image_fh, filename => $image_file, db => $db);
-        unless($image) {
-            print STDERR "create_annotation: error creating image\n";
-            return;
-        }
-        $image_id = $image->id;
-    }
-
-    # Fetch target DBIX object if id/type given
+    my $db          = $opts{db};
+    my $target      = $opts{target};    # DBIX experiment/genome/notebook
+    my $target_id   = $opts{target_id}; # or id/type
+    my $target_type = $opts{target_type};
     if ($target_id && $target_type) {
         switch (lc($target_type)) {
             case 'experiment' { $target = $db->resultset('Experiment')->find($target_id); }
             case 'genome' { $target = $db->resultset('Genome')->find($target_id); }
             case 'notebook' { $target = $db->resultset('List')->find($target_id); }
+        }
     }
     unless ($target) {
-        print STDERR "create_annotation: target not found\n";
+        warn 'create_annotation: target not found';
         return;
     }
 
+    my $locked = $opts{locked};
+    my $text   = $opts{text};
     if (ref($target) =~ /Experiment/) {
         return $db->resultset('ExperimentAnnotation')->find_or_create({
             experiment_id => $target->id,
@@ -190,56 +184,38 @@ sub create_annotation {
             locked => $locked
         });
     }
+    warn 'create_annotation: unknown target type';
 
-    print STDERR "create_annotation: unknown target type\n";
     return;
 }
 
 sub update_annotation {
     my %opts = @_;
-    my $aid  = $opts{aid};
-    return unless $aid;
-    my $type_group = $opts{type_group};
-    my $type       = $opts{type};
-    return 0 unless $type;
-    my $annotation     = $opts{annotation};
-    my $link           = $opts{link};
-    my $image_filename = $opts{edit_annotation_image};
-    my $fh             = $FORM->upload('edit_annotation_image');
 
-    my $type_group_id;
-    $type_group_id = _get_type_group_id($group_name, $db) if defined $group_name;
-
-    my $type_id;
-    $type_id = _get_type_id($type_name, $type_group_id, $db);
-    unless ($type_id) {
-        warn 'update_annotation: error creating annotation type';
+    my $annotation_id = $opts{annotation_id};
+    unless ($annotation_id) {
+        warn 'update_annotation: annotation_id required';
+        return;
+    }
+ 
+    my ($error, $type_id, $link, $image_id) = _init(\%opts);
+    if ($error) {
+        warn 'update_annotation: ' . $error;
         return;
     }
 
-    if ($link) {
-        $link =~ s/^\s+//;
-        $link = 'http://' . $link if ( !$link =~ /^(\w+)\:\/\// );
+    my $db = $opts{db};
+    my $annotation;
+    switch (lc($opts{target_type})) {
+        case 'experiment' { $annotation = $db->resultset('ExperimentAnnotation')->find($annotation_id); }
+        case 'genome' { $annotation = $db->resultset('GenomeAnnotation')->find($annotation_id); }
+        case 'notebook' { $annotation = $db->resultset('ListAnnotation')->find($annotation_id); }
     }
-
-    my $image_id;
-    if ($image_file) {
-        my $image = create_image(fh => $image_fh, filename => $image_file, db => $db);
-        unless($image) {
-            print STDERR "update_annotation: error creating image\n";
-            return;
-        }
-        $image_id = $image->id;
-    }
-
-    my $ea = $DB->resultset('ExperimentAnnotation')->find($aid);
-    return unless $ea;
-
-    $ea->annotation($annotation);
-    $ea->link($link);
-    $ea->annotation_type_id( $type_rs->id );
-    $ea->image_id( $image_id ) if ($image_id);
-    $ea->update;
+    $annotation->annotation($opts{text});
+    $annotation->link($link);
+    $annotation->annotation_type_id($type_id);
+    $annotation->image_id($image_id) if ($image_id);
+    $annotation->update;
 
     return;
 }
