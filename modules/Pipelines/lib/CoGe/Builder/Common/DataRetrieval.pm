@@ -25,6 +25,7 @@ has ncbi_accns => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # GenB
 sub build {
     my $self = shift;
 
+    # Validate inputs
     my $data = $self->params->{source_data};
     unless (defined $data && @$data) {
         CoGe::Exception::MissingField->throw(message => "Missing source_data");
