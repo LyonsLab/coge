@@ -1753,12 +1753,14 @@ sub add_annotation {
         group_name => $opts{type_group},
         image_fh => $fh,
         image_file => $opts{edit_annotation_image},
+        image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
         link => $opts{link},
         locked => 0,
         target_id => $opts{parent_id},
         target_type => 'genome',
         text => $opts{annotation},
-        type_name => $opts{type}
+        type_name => $opts{type},
+        user => $USER
     ) ? 1 : 0;
 }
 
@@ -1771,10 +1773,12 @@ sub update_annotation {
         group_name => $opts{type_group},
         image_fh => $fh,
         image_file => $opts{edit_annotation_image},
+        image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
         link => $opts{link},
         target_type => 'genome',
         text => $opts{annotation},
-        type_name => $opts{type}
+        type_name => $opts{type},
+        user => $USER
     );
     return 1;
 }

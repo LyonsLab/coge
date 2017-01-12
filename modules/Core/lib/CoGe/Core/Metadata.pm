@@ -5,12 +5,13 @@ use strict;
 use warnings;
 use Switch;
 use File::Basename;
-use File::Slurp;
+# use File::Slurp;
+use File::Spec::Functions qw(catfile);
 use Data::Dumper;
 use Text::Unidecode qw(unidecode);
 
 use CoGeX;
-use CoGe::Accessory::IRODS qw(irods_imeta_ls irods_iput);
+use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_iput);
 
 BEGIN {
     our (@ISA, $VERSION, @EXPORT);
@@ -18,7 +19,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotation create_annotations create_image export_annotations tags_to_string to_annotations update_annotation );
+    @EXPORT = qw( create_annotation create_annotations export_annotations tags_to_string to_annotations update_annotation );
 }
 
 sub create_annotations {
@@ -119,7 +120,7 @@ sub _init {
     my $image_fh = $opts->{image_fh};
     my $image_file = $opts->{image_file};
     if ($image_file) {
-        my $image = create_image(fh => $image_fh, filename => $image_file, db => $db);
+        my $image = create_image(fh => $image_fh, filename => $image_file, tmp_filename => $opts->{image_tmp_file}, db => $db, user => $opts->{user});
         return 'error creating image' unless $image;
         $image_id = $image->id;
     }
@@ -315,31 +316,33 @@ sub tags_to_string {
     return $tags_str;
 }
 
-sub create_image { # mdb: don't have a better place for this atm
+sub create_image {
     my %opts = @_;
     my $fh = $opts{fh};
     my $filename = $opts{filename};
     my $db = $opts{db};
     return unless (($fh || $filename) && $db);
+
+    irods_iput($opts{tmp_filename}, catfile(dirname(irods_get_base_path($opts{user}->name)), 'bisque_data', basename($filename)));
+
+    # unless (defined $fh) {
+    #     unless (open($fh, $filename)) {
+    #         print STDERR "Storage::create_image: ERROR, couldn't open file '$filename'\n";
+    #         return;
+    #     }
+    # }
     
-    unless (defined $fh) {
-        unless (open($fh, $filename)) {
-            print STDERR "Storage::create_image: ERROR, couldn't open file '$filename'\n";
-            return;
-        }
-    }
+    # my $contents = read_file($fh, binmode => ':raw');
+    # unless ($contents) {
+    #     print STDERR "Storage::create_image: ERROR, couldn't read file '$filename'\n";
+    #     return;
+    # }
     
-    my $contents = read_file($fh, binmode => ':raw');
-    unless ($contents) {
-        print STDERR "Storage::create_image: ERROR, couldn't read file '$filename'\n";
-        return;
-    }
-    
-    my $image = $db->resultset('Image')->create({
-        filename => $filename,
-        image    => $contents
-    });
-    return unless $image;
+    # my $image = $db->resultset('Image')->create({
+    #     filename => $filename,
+    #     image    => $contents
+    # });
+    # return unless $image;
 }
 
 1;
