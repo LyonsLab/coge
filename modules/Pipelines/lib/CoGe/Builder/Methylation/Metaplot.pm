@@ -1,64 +1,38 @@
 package CoGe::Builder::Methylation::Metaplot;
 
-use v5.14;
-use strict;
-use warnings;
+use Moose;
+extends 'CoGe::Builder::Methylation::Analyzer';
 
-use Data::Dumper qw(Dumper);
-use File::Spec::Functions qw(catfile);
-use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Core::Storage qw(get_workflow_paths);
-use CoGe::Builder::CommonTasks qw(create_gff_generation_job add_metadata_to_results_job);
+use Data::Dumper;
+use File::Spec::Functions qw(catdir catfile);
 
-our $CONF = CoGe::Accessory::Web::get_defaults();
-
-BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK);
-    require Exporter;
-
-    $VERSION = 0.1;
-    @ISA     = qw(Exporter);
-    @EXPORT  = qw(build);
-}
+use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
+use CoGe::Exception::Generic;
 
 sub build {
-    my $opts = shift;
-    my $genome = $opts->{genome};
-    my $user = $opts->{user};
-    my $bam_file = $opts->{bam_file}; # path to sorted & indexed bam file
-    my $experiment_id = $opts->{experiment_id}; # for when called from ExperimentView
-#    my $metadata = $opts->{metadata};
-#    my $additional_metadata = $opts->{additional_metadata};
-    my $wid = $opts->{wid};
-    my $methylation_params = $opts->{methylation_params};
-    my $metaplot_params = $methylation_params->{metaplot_params};
-    unless ($genome && $user && $bam_file && $wid && $methylation_params && $metaplot_params) {
-        print STDERR " CoGe::Builder::Methylation::Metaplot ERROR, missing inputs: ",
-            ($genome ? '' : ' genome '),
-            ($user ? '' : ' user '),
-            ($bam_file ? '' : ' bam_file '),
-            ($wid ? '' : ' wid '),
-            ($methylation_params ? '' : ' methylation_params '),
-            ($metaplot_params ? '' : ' metaplot_params '),
-            "\n";
-        return;
+    my $self = shift;
+    my $bam_file = shift;
+
+    unless ($bam_file) { # for when called from ExperimentView
+        my $experiment = self->request->experiment;
+        $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     }
 
-    # Setup paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
+    my $genome = $self->request->genome;
 
     # Make sure genome is annotated as is required by metaplot script
     my $isAnnotated = $genome->has_gene_features;
     unless ($isAnnotated) {
-        print STDERR "CoGe::Builder::Methylation::Metaplot ERROR, genome must be annotated to generate metaplot\n";
-        return;
+        CoGe::Exception::Generic->throw(message => 'Genome must be annotated to generate metaplot');
     }
 
     #
     # Build the workflow
     #
-    my (@tasks, @done_files);
-    
+
     # Generate cached gff
     my $gff_task = create_gff_generation_job(
         gid => $genome->id,

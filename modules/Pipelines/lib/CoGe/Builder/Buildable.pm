@@ -183,11 +183,11 @@ sub post_build {
 sub add_task {
     my ($self, $task) = @_;
     return unless $task;
-    
+
     push @{$self->outputs}, @{$task->{outputs}};
     $previous_outputs = $task->{outputs};
-    
-    return $self->workflow->add_job($task);    
+
+    return $self->workflow->add_job($task);
 }
 
 # Chain this task to the previous task assuming add_task*() routines were used
@@ -711,6 +711,31 @@ sub create_notebook {
     };
 }
 
+sub sort_bam {
+    my $self = shift;
+    my $bam_file = shift;
+
+    my $filename = to_filename($bam_file);
+    my $cmd = get_command_path('SAMTOOLS');
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ["sort", '', 0],
+            ["", $bam_file, 1],
+            ["-o", $filename . "-sorted.bam", 1] # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
+        ],
+        inputs => [
+            $bam_file
+        ],
+        outputs => [
+            catfile($self->staging_dir, $filename . "-sorted.bam")
+        ],
+        description => "Sorting BAM file"
+    };
+}
+
 sub load_bam { #TODO combine with create_load_experiment_job
     my $self = shift;
     my %opts = @_;
@@ -772,6 +797,72 @@ sub load_bam { #TODO combine with create_load_experiment_job
             $result_file
         ],
         description => "Loading alignment as new experiment"
+    };
+}
+
+sub load_experiment {
+    my $self = shift;
+    my %opts = @_;
+    my $metadata = $opts{metadata} || $self->params->{metadata};
+    my $additional_metadata = $self->params->{additional_metadata};
+    my $annotations = $opts{annotations};
+    my $gid = $opts{gid};
+    my $input_file = $opts{input_file};
+    my $normalize = $opts{normalize} || 0;
+    my $name = $opts{name}; # optional name for this load
+
+    my $output_name = "load_experiment" . ($name ? "_$name" : '');
+    my $output_path = catdir($self->staging_dir, $output_name);
+
+
+    my $args = [
+        ['-gid',         $gid,                0],
+        ['-wid',         $self->workflow->id, 0],
+        ['-user_name',   $self->user->name,   0],
+        ['-name',        ($metadata->{name}        ? shell_quote($metadata->{name}) : '""'),        0],
+        ['-desc',        ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
+        ['-version',     ($metadata->{version}     ? shell_quote($metadata->{version}) : '""'),     0],
+        ['-link',        ($metadata->{link}        ? shell_quote($metadata->{link}) : '""'),        0],
+        ['-restricted',  shell_quote($metadata->{restricted}), 0],
+        ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
+        ['-staging_dir', $output_name, 0],
+        ['-data_file',   $input_file,  0],
+        ['-normalize',   $normalize,   0],
+        ['-disable_range_check', '',   0], # mdb added 8/26/16 COGE-270 - allow values outside of [-1, 1]
+        ['-config',      $self->conf->{_CONFIG_PATH}, 0]
+    ];
+
+    # Add tags
+    if ($metadata->{tags}) {
+        my $tags_str = tags_to_string($metadata->{tags});
+        push @$args, ['-tags', shell_quote($tags_str), 0];
+    }
+
+    # Add additional metadata
+    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
+        my $metadata_file = catfile($output_path, 'metadata.dump');
+        make_path($output_path); #TODO maybe this file should be located somewhere else
+        open(my $fh, ">$metadata_file");
+        print $fh Dumper $additional_metadata;
+        close($fh);
+        push @$args, ['-metadata_file', $metadata_file, 0];
+    }
+    if ($annotations && @$annotations) { # legacy method
+        my $annotations_str = join(';', @$annotations);
+        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
+    }
+
+    return {
+        cmd => catfile($self->conf->{SCRIPTDIR}, "load_experiment.pl"),
+        args => $args,
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            [$output_path, '1'],
+            catfile($output_path, "log.done")
+        ],
+        description => "Loading" . ($name ? " $name" : '') . " experiment"
     };
 }
 

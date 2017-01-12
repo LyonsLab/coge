@@ -1,115 +1,94 @@
 package CoGe::Builder::SNP::GATK;
 
-use v5.14;
-use warnings;
-use strict;
+use Moose;
+extends 'CoGe::Builder::SNP::SNPFinder';
 
-use Carp;
 use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);
 
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_genome_cache_path);
-use CoGe::Core::Metadata qw(to_annotations);
-use CoGe::Builder::CommonTasks;
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
+use CoGe::Exception::Generic;
 
-require Exporter;
-our @ISA = qw(Exporter);
-our @EXPORT = qw(build);
-our $CONF = CoGe::Accessory::Web::get_defaults();
 
-sub build {
-    my $opts = shift;
-
-    # Required arguments
-    my $genome      = $opts->{genome};
-    my $input_file  = $opts->{input_file}; # path to bam file
-    my $user        = $opts->{user};
-    my $wid         = $opts->{wid};
-    my $metadata    = $opts->{metadata};
-    my $additional_metadata = $opts->{additional_metadata};
-    my $params      = $opts->{params};
-
-    # Setup paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
-    my $fasta_cache_dir = get_genome_cache_path($genome->id);
-    my $fasta_file = get_genome_file($genome->id);
-    my $reheader_fasta = to_filename($fasta_file) . ".reheader.faa";
-    my $reheader_fasta_path = catfile($fasta_cache_dir, $reheader_fasta);
-
-    my $annotations = generate_additional_metadata($params);
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
-    push @$annotations, @annotations2;
-    
-    # Get experiment input file
-    my $processed_bam_file = to_filename($input_file) . '.processed.bam';
-    my $processed_bam_file2 = to_filename($input_file) . '.processed2.bam';
-    my $output_vcf_file = 'snps.flt.vcf';
-
-    # Build all the jobs -- TODO create cache for processed bam files
-    my @tasks = (
-        create_fasta_reheader_job(
-            fasta => $fasta_file,
-            reheader_fasta => $reheader_fasta,
-            cache_dir => $fasta_cache_dir,
-        ),
-        create_fasta_index_job(
-            fasta => $reheader_fasta_path,
-            cache_dir => $fasta_cache_dir
-        ),
-        create_fasta_dict_job({
-            fasta => $reheader_fasta_path,
-            cache_dir => $fasta_cache_dir
-        }),
-        create_add_readgroups_job({
-            input_bam => $input_file,
-            output_bam => catfile($staging_dir, $processed_bam_file),
-        }),
-        create_reorder_sam_job({
-            input_fasta => $reheader_fasta_path,
-            input_bam => catfile($staging_dir, $processed_bam_file),
-            output_bam => catfile($staging_dir, $processed_bam_file2),            
-        }),
-        create_gatk_job({
-            input_fasta => $reheader_fasta_path,
-            input_bam => catfile($staging_dir, $processed_bam_file2),
-            output_vcf => catfile($staging_dir, $output_vcf_file),
-            params => $params
-        })
-    );
-    my $load_vcf_task = create_load_vcf_job({
-        method      => 'GATK',
-        username    => $user->name,
-        metadata    => $metadata,
-        staging_dir => $staging_dir,
-        annotations => $annotations,
-        wid         => $wid,
-        gid         => $genome->id,
-        vcf         => catfile($staging_dir, $output_vcf_file)
-    });
-    push @tasks, $load_vcf_task;
-
-    return {
-        tasks => \@tasks,
-        metadata => $annotations,
-        done_files => [ $load_vcf_task->{outputs}->[1] ]
-    };
+my $PICARD;
+sub BUILD { # called immediately after constructor
+    my $self = shift;
+    $PICARD = $self->conf->{PICARD};
+    unless ($PICARD) {
+        CoGe::Exception::Generic->throw(message => 'Missing PICARD in config file');
+    }
 }
 
-sub create_fasta_dict_job {
-    my $opts = shift;
+sub build {
+    my $self = shift;
+    my $bam_file = shift;
 
-    # Required arguments
-    my $fasta     = $opts->{fasta};
-    my $cache_dir = $opts->{cache_dir};
+    my $gid = $self->request->genome->id;
+
+    my $annotations = generate_additional_metadata();
+    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
+    push @$annotations, @annotations2;
+    
+    #
+    # Build workflow
+    #
+
+    $self->add_task(
+        $self->reheader_fasta($gid)
+    );
+    my $reheader_fasta = $self->previous_output;
+
+    $self->add_task(
+        $self->index_fasta($reheader_fasta)
+    );
+
+    $self->add_task(
+        $self->fasta_dict($gid)
+    );
+
+    $self->add_task(
+        $self->add_readgroups($bam_file)
+    );
+
+    $self->add_task_chain(
+        $self->reorder_sam(
+            input_fasta => $reheader_fasta,
+            input_bam   => $self->previous_output
+        )
+    );
+
+    $self->add_task_chain(
+        $self->gatk(
+            input_fasta => $reheader_fasta,
+            input_bam   => $self->previous_output
+        )
+    );
+
+    $self->vcf($self->previous_output);
+
+    $self->add_task(
+        $self->load_vcf(
+            annotations => $annotations,
+            gid         => $gid,
+            vcf         => $self->vcf
+        )
+    );
+}
+
+sub fasta_dict {
+    my $self = shift;
+    my $gid = shift;
+
+    my $fasta     = get_genome_file($gid);
+    my $cache_dir = get_genome_cache_path($gid);
 
     my $fasta_name = to_filename($fasta);
     my $renamed_fasta = qq[$fasta_name.fa]; # mdb added 9/20/16 -- Picard expects the filename to end in .fa or .fasta
     my $fasta_dict = qq[$fasta_name.dict];
     
-    my $PICARD = $CONF->{PICARD};
-
     return {
         cmd => qq[ln -s $fasta $renamed_fasta && java -jar $PICARD CreateSequenceDictionary REFERENCE=$renamed_fasta OUTPUT=$fasta_dict],
         args => [],
@@ -123,13 +102,12 @@ sub create_fasta_dict_job {
     };
 }
 
-sub create_reorder_sam_job {
-    my $opts = shift;
-
-    # Required arguments
-    my $input_fasta = $opts->{input_fasta};
-    my $input_bam   = $opts->{input_bam};
-    my $output_bam  = $opts->{output_bam};
+sub reorder_sam {
+    my $self = shift;
+    my %opts = @_;
+    my $input_fasta = $opts{input_fasta};
+    my $input_bam   = $opts{input_bam};
+    my $output_bam  = qq[$input_bam.reordered.bam];
     
     # mdb added 9/20/16 -- Picard expects the filename to end in .fa or .fasta
     my $fasta_name = to_filename($input_fasta);
@@ -137,15 +115,12 @@ sub create_reorder_sam_job {
     
     my $done_file = qq[$output_bam.reorder.done];
 
-    my $PICARD = $CONF->{PICARD};
-
     return {
         cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.dict $renamed_fasta.dict && java -jar $PICARD ReorderSam REFERENCE=$renamed_fasta INPUT=$input_bam OUTPUT=$output_bam CREATE_INDEX=true VERBOSITY=ERROR && touch $done_file],
         args => [],
         inputs => [
             $input_fasta,
-            $input_bam,
-            "$input_bam.addRG.done" # from create_add_readgroups_job
+            $input_bam
         ],
         outputs => [
             $output_bam,
@@ -155,16 +130,11 @@ sub create_reorder_sam_job {
     };
 }
 
-sub create_add_readgroups_job {
-    my $opts = shift;
-
-    # Required arguments
-    my $input_bam  = $opts->{input_bam};
-    my $output_bam = $opts->{output_bam};
-    
-    my $done_file = qq[$output_bam.addRG.done];
-
-    my $PICARD = $CONF->{PICARD};
+sub add_readgroups {
+    my $self = shift;
+    my $input_bam  = shift;
+    my $output_bam = qq[$input_bam.readgroups.bam];
+    my $done_file  = qq[$output_bam.readgroups.done];
 
     return {
         cmd => qq[java -jar $PICARD AddOrReplaceReadGroups I=$input_bam O=$output_bam RGID=none RGLB=none RGPL=none RGSM=none RGPU=none && touch $done_file],
@@ -180,16 +150,17 @@ sub create_add_readgroups_job {
     };
 }
 
-sub create_gatk_job {
-    my $opts = shift;
+sub gatk {
+    my $self = shift;
+    my %opts = @_;
+    my $input_fasta = $opts{input_fasta};
+    my $input_bam   = $opts{input_bam};
 
-    # Required arguments
-    my $input_fasta = $opts->{input_fasta};
-    my $input_bam   = $opts->{input_bam};
-    my $output_vcf  = $opts->{output_vcf};
-    my $params      = $opts->{params};
-    my $stand_call_conf = $params->{'-stand_call_conf'} || 30;
-    my $stand_emit_conf = $params->{'-stand_emit_conf'} || 10;    
+    my $output_vcf = 'snps.flt.vcf';
+
+    my $params      = $self->params->{snp_params};
+    my $stand_call_conf = $params->{'-stand_call_conf'} // 30;
+    my $stand_emit_conf = $params->{'-stand_emit_conf'} // 10;
 
     my $fasta_index = qq[$input_fasta.fai];
     
@@ -197,7 +168,10 @@ sub create_gatk_job {
     my $fasta_name = to_filename($input_fasta);
     my $renamed_fasta = qq[$fasta_name.fa];
     
-    my $GATK = $CONF->{GATK};
+    my $GATK = $self->conf->{GATK};
+    unless ($GATK) {
+        CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
+    }
 
     return {
         cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.fai $renamed_fasta.fai && ln -s $input_fasta.dict $fasta_name.dict && java -jar $GATK -T HaplotypeCaller --genotyping_mode DISCOVERY --filter_reads_with_N_cigar --fix_misencoded_quality_scores],
@@ -215,14 +189,15 @@ sub create_gatk_job {
             $fasta_index,
         ],
         outputs => [
-            $output_vcf,
+            catfile($self->staging_dir, $output_vcf),
         ],
         description => "Identifying SNPs using GATK method"
     };
 }
 
 sub generate_additional_metadata {
-    my $params = shift;
+    my $self = shift;
+    my $params = $self->params->{snp_params};
     my $stand_call_conf = $params->{'-stand_call_conf'} || 30;
     my $stand_emit_conf = $params->{'-stand_emit_conf'} || 10; 
     
