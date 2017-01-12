@@ -25,16 +25,12 @@ has ncbi_accns => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # GenB
 sub build {
     my $self = shift;
 
+    # Validate inputs
     my $data = $self->params->{source_data};
     unless (defined $data && @$data) {
-<<<<<<< HEAD
         CoGe::Exception::MissingField->throw(message => "Missing source_data");
     }
 
-=======
-        Mojo::Exception->throw("Missing source_data");
-    }
->>>>>>> 64ad5e911b0cc224edca76011b04410d5f95858d
     my $load_id = $self->params->{load_id} || get_unique_id();
     
     # Create tasks to retrieve files
@@ -173,7 +169,6 @@ sub ftp_get {
     };
 }
 
-<<<<<<< HEAD
 sub fastq_dump {
     my ($self, %params) = @_;
     my $accn = $params{accn};
@@ -214,8 +209,6 @@ sub fastq_dump {
     };
 }
 
-=======
->>>>>>> 64ad5e911b0cc224edca76011b04410d5f95858d
 __PACKAGE__->meta->make_immutable;
 
 1;
