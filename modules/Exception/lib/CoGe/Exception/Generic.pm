@@ -8,7 +8,7 @@ has details => (is => 'ro', isa => 'Str'); # set in throw()
 
 sub as_string {
     my $self = shift;
-    $self->message . ($self->details ? ': ' . $self->details : '');
+    return $self->message . ($self->details ? ': ' . $self->details : '');
 }
 
 1;

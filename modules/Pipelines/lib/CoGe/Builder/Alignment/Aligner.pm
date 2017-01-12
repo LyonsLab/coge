@@ -1,7 +1,7 @@
-package CoGe::Builder::Common::Alignment;
+package CoGe::Builder::Alignment::Align;
 
-use strict;
-use warnings;
+use Moose;
+extends 'CoGe::Builder::Buildable';
 
 use Switch;
 use Data::Dumper qw(Dumper);
@@ -12,40 +12,39 @@ use File::Path qw(make_path);
 use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Web qw(get_defaults get_command_path);
+use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end to_filename_base to_filename_without_extension);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_upload_path get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations);
-use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end to_filename_base to_filename_without_extension);
 use CoGe::Builder::CommonTasks;
+use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
-our $CONF = CoGe::Accessory::Web::get_defaults();
+# Inputs
+has fastq => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # input files
 
-BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK);
-    require Exporter;
-
-    $VERSION = 0.1;
-    @ISA     = qw (Exporter);
-    @EXPORT_OK = qw(build);
-}
+# Outputs
+has index => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # index files
+has bam   => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # bam files
 
 sub build {
-    my %opts = @_;
-    my $user        = $opts{user};
-    my $wid         = $opts{wid};
-    my $input_files = $opts{input_files}; # array of paths of FASTQ files
-    my $genome      = $opts{genome};
-    my $metadata    = $opts{metadata};
-    my $additional_metadata = $opts{additional_metadata};
-    my $load_id     = $opts{load_id};
-    my $params      = $opts{params};
-    my $read_params      = $params->{read_params};
-    my $trimming_params  = $params->{trimming_params};
-    my $alignment_params = $params->{alignment_params};
-    my $chipseq_params   = $params->{chipseq_params};
+    my $self = shift;
+    my $input_files = $self->inputs;
+#    my $input_files = $opts{input_files}; # array of paths of FASTQ files
+#    my $genome      = $opts{genome};
+#    my $metadata    = $opts{metadata};
+#    my $additional_metadata = $opts{additional_metadata};
+#    my $params      = $opts{params};
+    my $read_params      = $self->params->{read_params};
+    my $trimming_params  = $self->params->{trimming_params};
+    my $alignment_params = $self->params->{alignment_params};
+    my $chipseq_params   = $self->params->{chipseq_params};
 
-    my @tasks;
-    
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
+    # Validate inputs (that weren't already checked in Request)
+    my $metadata = $self->params->{metadata};
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
+    }
+    my $additional_metadata = $self->params->{additional_metadata}; # optional
 
 # mdb removed 11/6/15 COGE-673
 #    # Check multiple files (if more than one file then all should be FASTQ)
@@ -64,70 +63,43 @@ sub build {
 #        return { error => $error };
 #    }
 
-    # Decompress and validate the fastq input files
-    my (@decompressed, @validated);
+    #
+    # Build workflow
+    #
+
+    # Decompress and validate the input files
+    my @decompressed;
     foreach my $input_file (@$input_files) {
-        # Decompress
-        my $done_file = "$input_file.done";
-        if ( $input_file =~ /\.gz$/ ) {
-            push @tasks, create_gunzip_job($input_file);
-            $input_file =~ s/\.gz$//;
-            $done_file = "$input_file.decompressed";
+        if ($input_file =~ /\.gz$/) {
+            $self->add_task(
+                $self->create_gunzip( $input_file )
+            );
+            $input_file =~ $self->previous_output(1);
+
+            $self->add_task_chain(
+                $self->create_validate_fastq($input_file)
+            );
         }
+        else {
+            $self->add_task(
+                $self->create_validate_fastq($input_file)
+            );
+        }
+
         push @decompressed, $input_file;
-        
-        # Validate
-        my $validate_task = create_validate_fastq_job($input_file, $done_file);
-        push @validated, @{$validate_task->{outputs}}[0];
-        push @tasks, $validate_task;
     }
-        
+
     # Trim the fastq input files
     my (@trimmed, @trimming_done_files);
     if ($trimming_params) {
-        my ($fastq1, $fastq2);
-        if ($read_params->{read_type} eq 'paired') {
-            # Separate files based on last occurrence of _R1 or _R2 in filename
-            my ($m1, $m2) = detect_paired_end(\@decompressed);
-            unless (@$m1 and @$m2 and @$m1 == @$m2) {
-                my $error = 'Mispaired FASTQ files, m1=' . @$m1 . ' m2=' . @$m2;
-                print STDERR 'CoGe::Builder::Common::Alignment ERROR: ', $error, "\n";
-                print STDERR 'm1: ', join(' ', @$m1), "\n", 'm2: ', join(' ', @$m2), "\n";
-                return { error => $error };
-            }
-            $fastq1 = $m1;
-            $fastq2 = $m2;
-        }
-        else { # default to single-ended
-            $fastq1 = \@decompressed;
-        }
-        
-        my %params = (
-            fastq1 => $fastq1,
-            fastq2 => $fastq2,
-            done_files => \@validated,
-            staging_dir => $staging_dir,
-            read_params => $read_params,
-            trimming_params => $trimming_params
-        );
-
-        my ($tasks, $outputs, $done_files);
-        if ($trimming_params->{trimmer} eq 'cutadapt') {
-            ($tasks, $outputs, $done_files) = create_cutadapt_workflow(%params);
-        }
-        elsif ($trimming_params->{trimmer} eq 'trimgalore') {
-            ($tasks, $outputs, $done_files) = create_trimgalore_workflow(%params);
-        }
-        push @trimmed, @$outputs;
-        push @tasks, @$tasks;
-        push @trimming_done_files, @$done_files if $done_files; # kludge for JEX
+        my $trimmer = CoGe::Builder::Trimming::Trim->new($self);
+        $trimmer->build();
     }
     else { # no trimming
         push @trimmed, @decompressed;
     }
 
     # Get genome cache path
-    my $gid = $genome->id;
     my $fasta_cache_dir = get_genome_cache_path($gid);
 
     # Reheader the fasta file
@@ -159,29 +131,30 @@ sub build {
     my ($alignment_tasks, $alignment_results);
     $alignment_params = {} unless $alignment_params;
 
+    my $aligner;
     switch( _get_aligner($alignment_params) ) {
-        case 'hisat2'  { ($alignment_tasks, $alignment_results) = create_hisat2_workflow(%params) }
-        case 'bowtie2' { ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params) }
-        case 'tophat'  {
-            # Generate gff if genome annotated
-            my $gff_file;
-            if ( $genome->has_gene_features ) {
-                my $gff_task = create_gff_generation_job(
-                    gid => $gid,
-                    organism_name => $genome->organism->name,
-                    #validated => "$fastq.validated"
-                );
-                $gff_file = $gff_task->{outputs}->[0];
-                push @tasks, $gff_task;
-            }
-
-            $params{gff} = $gff_file;
-            ($alignment_tasks, $alignment_results) = create_tophat_workflow(%params);
-        }
-        case 'bismark' { ($alignment_tasks, $alignment_results) = create_bismark_workflow(%params) }
-        case 'bwameth' { ($alignment_tasks, $alignment_results) = create_bwameth_workflow(%params) }
-        case 'bwa'     { ($alignment_tasks, $alignment_results) = create_bwa_workflow(%params) }
-        case 'gsnap'   { ($alignment_tasks, $alignment_results) = create_gsnap_workflow(%params) }
+        case 'hisat2'  { $aligner = CoGe::Builder::Align::HISAT2->new($self) }
+#        case 'bowtie2' { ($alignment_tasks, $alignment_results) = create_bowtie2_workflow(%params) }
+#        case 'tophat'  {
+#            # Generate gff if genome annotated
+#            my $gff_file;
+#            if ( $genome->has_gene_features ) {
+#                my $gff_task = create_gff_generation_job(
+#                    gid => $gid,
+#                    organism_name => $genome->organism->name,
+#                    #validated => "$fastq.validated"
+#                );
+#                $gff_file = $gff_task->{outputs}->[0];
+#                push @tasks, $gff_task;
+#            }
+#
+#            $params{gff} = $gff_file;
+#            ($alignment_tasks, $alignment_results) = create_tophat_workflow(%params);
+#        }
+#        case 'bismark' { ($alignment_tasks, $alignment_results) = create_bismark_workflow(%params) }
+#        case 'bwameth' { ($alignment_tasks, $alignment_results) = create_bwameth_workflow(%params) }
+#        case 'bwa'     { ($alignment_tasks, $alignment_results) = create_bwa_workflow(%params) }
+#        case 'gsnap'   { ($alignment_tasks, $alignment_results) = create_gsnap_workflow(%params) }
     }
 
     unless (@$alignment_tasks && $alignment_results) {
@@ -245,387 +218,23 @@ sub build {
     }
 }
 
-sub create_validate_fastq_job {
+sub create_validate_fastq {
+    my $self = shift;
     my $fastq = shift;
-    my $done_file = shift;
-
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "validate_fastq.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    my $inputs = [ $fastq ];
-    push @$inputs, $done_file if ($done_file);
 
     return {
-        cmd => $cmd,
+        cmd => catfile($self->conf->{SCRIPTDIR}, "validate_fastq.pl"),
         script => undef,
         args => [
             ["", $fastq, 0] # mdb changed 3/1/16 from 1 to 0, COGE-707
         ],
-        inputs => $inputs,
+        inputs => [
+            $fastq
+        ],
         outputs => [
             "$fastq.validated"
         ],
         description => "Validating " . basename($fastq)
-    };
-}
-
-sub create_cutadapt_job {
-    my %opts = @_;
-
-    # Required params
-    my $fastq = $opts{fastq};            # for single fastq file (backwards compatibility) or two paired-end fastq files (new functionality)
-    my $done_files = $opts{done_files};  # input dependency from previous task, one or two files based on fastq arg
-    my $staging_dir = $opts{staging_dir};
-
-    # Optional arguments
-    my $trimming_params = $opts{trimming_params} // {};
-    my $q = $trimming_params->{'-q'} // 25;
-    my $m = $trimming_params->{'-m'} // 17;
-    my $read_params = $opts{read_params} // {};
-    my $encoding = $read_params->{encoding} // 33;
-    my $read_type = $read_params->{read_type} // 'single';
-
-    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
-    $done_files = [ $done_files ] unless (ref($done_files) eq 'ARRAY');
-
-    my $name = join(', ', map { basename($_) } @$fastq);
-    my @inputs = ( @$fastq, @$done_files);
-    my @outputs = map { catfile($staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
-    my @done_files = map { $_ . '.done' } @outputs;
-
-    # Build up command/arguments string
-    my $cmd = get_command_path('CUTADAPT');
-    $cmd = 'nice ' . $cmd; # run at lower priority
-
-    my $arg_str;
-    $arg_str .= $cmd . ' ';
-    $arg_str .= "-q $q --quality-base=$encoding -m $m -o $outputs[0] ";
-    $arg_str .= "-p $outputs[1] " if ($read_type eq 'paired'); # paired-end
-
-    return {
-        cmd => catfile($CONF->{SCRIPTDIR}, 'cutadapt.pl'), # this script was created because JEX can't handle Cutadapt's paired-end argument syntax
-        script => undef,
-        args => [
-            [$read_type, '', 0],
-            [$staging_dir, '', 0],
-            ['"'.$arg_str.'"', '', 0],
-            ['', join(' ', @$fastq), 0]
-        ],
-        inputs => \@inputs,
-        outputs => \@outputs,
-        done_files => \@done_files, # JEX will ignore this
-        description => "Trimming (cutadapt) $name"
-    };
-}
-
-sub create_cutadapt_workflow {
-    my %opts = @_;
-    my $fastq1 = $opts{fastq1}; # array ref of left reads (or all reads if single-ended)
-    my $fastq2 = $opts{fastq2}; # array ref of right reads (or undef if single-ended)
-    my $done_files = $opts{done_files};
-    my $staging_dir = $opts{staging_dir};
-    my $read_params = $opts{read_params};
-    my $read_type = $read_params->{read_type} // 'single'; #/
-    my $trimming_params = $opts{trimming_params};
-
-    my (@tasks, @outputs, @done_files);
-
-    if ($read_type eq 'single') { # single-ended
-        # Create cutadapt task for each file
-        foreach my $file (@$fastq1) {
-            my $task = create_cutadapt_job(
-                fastq => $file,
-                done_files => $done_files,
-                staging_dir => $staging_dir,
-                read_params => $read_params,
-                trimming_params => $trimming_params
-            );
-            push @outputs, $task->{outputs}->[0];
-            push @done_files, @{$task->{done_files}};
-            push @tasks, $task;
-        }
-    }
-    else { # paired-end
-        # Create cutadapt task for each file pair
-        for (my $i = 0;  $i < @$fastq1;  $i++) {
-            my $file1 = $fastq1->[$i];
-            my $file2 = $fastq2->[$i];
-            my $task = create_cutadapt_job(
-                fastq => [ $file1, $file2 ],
-                done_files => $done_files,
-                staging_dir => $staging_dir,
-                read_params => $read_params,
-                trimming_params => $trimming_params
-            );
-            push @outputs, @{$task->{outputs}};
-            push @done_files, @{$task->{done_files}};
-            push @tasks, $task;
-        }
-    }
-
-    return ( \@tasks, \@outputs, \@done_files );
-}
-
-sub create_trimgalore_job {
-    my %opts = @_;
-
-    # Required params
-    my $fastq = $opts{fastq};            # for single fastq file (backwards compatibility) or two paired-end fastq files (new functionality)
-    my $done_files = $opts{done_files};  # input dependency from previous task, one or two files based on fastq arg
-    my $staging_dir = $opts{staging_dir};
-
-    # Optional arguments
-    my $trimming_params = $opts{trimming_params} // {}; #/
-    my $q = $trimming_params->{'-q'} // 20; #/
-    my $length = $trimming_params->{'-length'} // 20; #/
-    my $a = $trimming_params->{'-a'};
-    my $read_params = $opts{read_params} // {}; #/
-    my $encoding = $read_params->{encoding} // 33; #/
-    my $read_type = $read_params->{read_type} // 'single'; #/
-
-    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
-    $done_files = [ $done_files ] unless (ref($done_files) eq 'ARRAY');
-
-    my $name = join(', ', map { basename($_) } @$fastq);
-    my @inputs = ( @$fastq, @$done_files);
-
-    # Build up command/arguments string
-    my $cmd = $CONF->{TRIMGALORE} || 'trim_galore';
-    $cmd = 'nice ' . $cmd; # run at lower priority
-
-    # Create staging dir
-    $cmd = "mkdir -p $staging_dir && " . $cmd;
-
-    my $args = [
-        ['--output_dir', $staging_dir, 0],
-        ['-q', $q, 0],
-        ['--length', $length, 0],
-    ];
-
-    my $phred = ($encoding == 64 ? '--phred64' : '--phred33');
-    push @$args, [$phred, '', 0];
-
-    if (defined $a) {
-        push @$args, ['-a', '"'.$a.'"', 0];
-    }
-
-    my @outputs;
-    if ($read_type eq 'paired') {
-        push @$args, ['--paired', join(' ', @$fastq), 0];
-
-        my ($r1, $r2) = @$fastq;
-        @outputs = ( catfile($staging_dir, to_filename_without_extension($r1) . '_val_1.fq'),
-                     catfile($staging_dir, to_filename_without_extension($r2) . '_val_2.fq') );
-    }
-    else { # single
-        my ($file) = @$fastq;
-        push @$args, ['', $file, 0];
-        @outputs = ( catfile($staging_dir, to_filename_without_extension($file) . '_trimmed.fq') );
-    }
-
-    # kludge to fix JEX sequencing
-    foreach (@$args) {
-        $cmd .= ' ' . $_->[0] . ' ' . $_->[1];
-    }
-    my @done_files = map { $_ . '.done' } @outputs;
-    foreach (@done_files) {
-        $cmd .= " && touch $_";
-    }
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [], #$args
-        inputs => \@inputs,
-        outputs => \@outputs,
-        done_files => \@done_files,
-        description => "Trimming (trimgalore) $name"
-    };
-}
-
-sub create_trimgalore_workflow {
-    my %opts = @_;
-    my $fastq1 = $opts{fastq1} // []; # array ref of left reads (or all reads if single-ended)
-    my $fastq2 = $opts{fastq2} // []; # array ref of right reads (or undef if single-ended)
-    my $done_files = $opts{done_files};
-    my $staging_dir = $opts{staging_dir};
-    my $read_params = $opts{read_params};
-    my $trimming_params = $opts{trimming_params};
-
-    my (@tasks, @outputs, @done_files);
-
-    if (!$read_params->{read_type} || $read_params->{read_type} eq 'single') { # single-ended
-        # Create trimgalore task for each file
-        foreach my $file (@$fastq1, @$fastq2) {
-            my $task = create_trimgalore_job(
-                fastq => $file,
-                done_files => $done_files,
-                staging_dir => $staging_dir,
-                read_params => $read_params,
-                trimming_params => $trimming_params
-            );
-            push @outputs, $task->{outputs}->[0];
-            push @done_files, @{$task->{done_files}};
-            push @tasks, $task;
-        }
-    }
-    else { # paired-end
-        # Create trimgalore task for each file pair
-        for (my $i = 0;  $i < @$fastq1;  $i++) {
-            my $file1 = $fastq1->[$i];
-            my $file2 = $fastq2->[$i];
-            my $task = create_trimgalore_job(
-                fastq => [ $file1, $file2 ],
-                done_files => $done_files,
-                staging_dir => $staging_dir,
-                read_params => $read_params,
-                trimming_params => $trimming_params
-            );
-            push @outputs, @{$task->{outputs}};
-            push @done_files, @{$task->{done_files}};
-            push @tasks, $task;
-        }
-    }
-
-    return ( \@tasks, \@outputs, \@done_files );
-}
-
-sub create_hisat2_workflow {
-    my %opts = @_;
-    my $fasta        = $opts{fasta};
-    my $fastq        = $opts{fastq};
-    my $done_files   = $opts{done_files};
-    my $gid          = $opts{gid};
-    my $encoding     = $opts{encoding};
-    my $read_type    = $opts{read_type} // 'single';
-    my $staging_dir  = $opts{staging_dir};
-    my $doSeparately = $opts{doSeparately}; # for ChIP-seq pipeline, align each fastq in separate runs rather than together
-
-    my @tasks;
-
-    # Add index task
-    my $index_task = create_hisat2_index_job($gid, $fasta);
-    push @tasks, $index_task;
-
-    # Add one or more alignment tasks
-    my @sam_files;
-    if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
-        foreach my $file (@$fastq) {
-            my $task = create_hisat2_alignment_job(
-                fastq => [ $file ],
-                done_files => $done_files,
-                gid => $gid,
-                index_files => $index_task->{outputs},
-                encoding => $encoding,
-                read_type => $read_type,
-                staging_dir => $staging_dir
-            );
-            push @tasks, $task;
-            push @sam_files, $task->{outputs}->[0];
-        }
-    }
-    else { # standard Bowtie run (all fastq's at once)
-        my $task = create_hisat2_alignment_job(
-            fastq => $fastq,
-            done_files => $done_files,
-            gid => $gid,
-            index_files => $index_task->{outputs},
-            encoding => $encoding,
-            read_type => $read_type,
-            staging_dir => $staging_dir
-        );
-        push @tasks, $task;
-        push @sam_files, $task->{outputs}->[0];
-    }
-
-    # Add one or more sam-to-bam tasks
-    my %results;
-    foreach my $file (@sam_files) {
-        my $task = create_sam_to_bam_job($file, $staging_dir);
-        push @tasks, $task;
-        push @{$results{bam_files}}, $task->{outputs}->[0];
-    }
-
-    return (\@tasks, \%results);
-}
-
-sub create_hisat2_alignment_job {
-    my %opts = @_;
-    my $fastq       = $opts{fastq};
-    my $done_files  = $opts{done_files};
-    my $gid         = $opts{gid};
-    my $index_files = $opts{index_files};
-    my $encoding    = $opts{encoding};
-    my $read_type   = $opts{read_type};
-    my $staging_dir = $opts{staging_dir};
-
-    my ($first_fastq) = @$fastq;
-    my $output_file = to_filename_without_extension($first_fastq) . '.sam';
-
-	my $args = [
-		['-p', '32', 0],
-                ['--dta-cufflinks', '', 0], # mdb added 8/9/16 for Cufflinks error "BAM record error: found spliced alignment without XS attribute"
-		['-x', catfile(get_genome_cache_path($gid), 'hisat2_index', 'genome.reheader'), 0],
-		['-S', $output_file, 0]
-    ];
-
-    if ($encoding eq '64') {
-        push $args, ['--phred64', '', 0];
-    }
-    else {
-        push $args, ['--phred33', '', 0];
-    }
-
-    if ($read_type eq 'single') {
-    	push $args, ['-U', join(',', @$fastq), 0];
-    }
-    else {
-		my ($m1, $m2) = detect_paired_end($fastq);
-    	push $args, ['-1', join(',', sort @$m1), 0];
-    	push $args, ['-2', join(',', sort @$m2), 0];
-	}
-
-    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
-
-	return {
-        cmd => 'nice ' . get_command_path('HISAT2'),
-        script => undef,
-        args => $args,
-        inputs => [ @$fastq, @$done_files, @$index_files ],
-        outputs => [ catfile($staging_dir, $output_file) ],
-        description => "Aligning $desc using HISAT2"
-	};
-}
-
-sub create_hisat2_index_job {
-    my $gid = shift;
-    my $fasta = shift;
-
-    my $cache_dir = catdir(get_genome_cache_path($gid), "hisat2_index");
-	make_path $cache_dir unless (-d $cache_dir);
-    my $name = catfile($cache_dir, 'genome.reheader');
-
-    my $done_file = "$name.done";
-
-    my $cmd = 'nice ' . get_command_path('HISAT2_BUILD', 'hisat2-build') . " -p 32 $fasta $name && touch $done_file";
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [],
-        inputs => [ $fasta ],
-        outputs => [
-            $name . ".1.ht2",
-            $name . ".2.ht2",
-            $name . ".3.ht2",
-            $name . ".4.ht2",
-            $name . ".5.ht2",
-            $name . ".6.ht2",
-            $name . ".7.ht2",
-            $name . ".8.ht2",
-            $done_file
-        ],
-        description => "Indexing genome sequence with hisat2-build"
     };
 }
 
