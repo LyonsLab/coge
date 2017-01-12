@@ -1,158 +1,143 @@
 package CoGe::Builder::SNP::Samtools;
 
-use v5.14;
-use warnings;
-use strict;
+use Moose;
+extends 'CoGe::Builder::SNP::SNPFinder';
 
 use Carp;
 use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);
 use File::Basename qw(basename);
 
-use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Accessory::Web qw(get_defaults get_command_path);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_genome_cache_path);
-use CoGe::Core::Metadata qw(to_annotations);
-use CoGe::Builder::CommonTasks;
-
-our $CONF = CoGe::Accessory::Web::get_defaults();
-
-BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK);
-    require Exporter;
-
-    $VERSION   = 0.1;
-    @ISA       = qw(Exporter);
-    @EXPORT    = qw(build);
-}
+use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
+use CoGe::Exception::Generic;
 
 sub build {
-    my $opts = shift;
+    my $self = shift;
+    my $bam_file = shift;
 
-    # Required arguments
-    my $genome = $opts->{genome};
-    my $input_file = $opts->{input_file}; # path to bam file
-    my $user = $opts->{user};
-    my $wid = $opts->{wid};
-    my $metadata = $opts->{metadata};
-    my $additional_metadata = $opts->{additional_metadata};
-    my $params = $opts->{params};
+    my $gid = $self->request->genome->id;
 
-    # Setup paths
-    my $gid = $genome->id;
-    my $FASTA_CACHE_DIR = get_genome_cache_path($gid);
-    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
-    my $fasta_file = get_genome_file($gid);
-    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
-    
-    my $annotations = generate_additional_metadata($params);
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+    my $annotations = generate_additional_metadata($self->params->{snp_params});
+    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
-    my $conf = {
-        staging_dir => $staging_dir,
-        result_dir  => $result_dir,
+#    my $conf = {
+#        staging_dir => $staging_dir,
+#        result_dir  => $result_dir,
+#
+#        bam         => $input_file,
+#        fasta       => catfile($FASTA_CACHE_DIR, $reheader_fasta),
+#        bcf         => catfile($staging_dir, qq[snps.raw.bcf]),
+#        vcf         => catfile($staging_dir, qq[snps.flt.vcf]),
+#
+#        username    => $user->name,
+#        metadata    => $metadata,
+#        wid         => $wid,
+#        gid         => $gid,
+#
+#        method      => 'SAMtools',
+#
+#        params      => $params,
+#
+#        annotations => $annotations
+#    };
 
-        bam         => $input_file,
-        fasta       => catfile($FASTA_CACHE_DIR, $reheader_fasta),
-        bcf         => catfile($staging_dir, qq[snps.raw.bcf]),
-        vcf         => catfile($staging_dir, qq[snps.flt.vcf]),
+    #
+    # Build workflow
+    #
 
-        username    => $user->name,
-        metadata    => $metadata,
-        wid         => $wid,
-        gid         => $gid,
-        
-        method      => 'SAMtools',
-        
-        params      => $params,
-        
-        annotations => $annotations
-    };
+    $self->add_task(
+        $self->reheader_fasta($gid)
+    );
+    my $reheader_fasta = $self->previous_output;
 
-    # Build the workflow's tasks
-    my @tasks;
-    push @tasks, create_fasta_reheader_job(
-        fasta => $fasta_file,
-        reheader_fasta => $reheader_fasta,
-        cache_dir => $FASTA_CACHE_DIR
+    $self->add_task(
+        $self->index_fasta($reheader_fasta)
     );
 
-    push @tasks, create_find_snps_job($conf);
-    
-    push @tasks, create_filter_snps_job($conf);
-    
-    my $load_vcf_task = create_load_vcf_job($conf);
-    push @tasks, $load_vcf_task;
+    $self->add_task(
+        $self->find_snps(
+            $reheader_fasta,
+            $bam_file
+        )
+    );
 
-    return {
-        tasks => \@tasks,
-        metadata => $annotations,
-        done_files => [ $load_vcf_task->{outputs}->[1] ]
-    };
+    $self->add_task(
+        $self->filter_snps($self->previous_output)
+    );
+
+    $self->vcf($self->previous_output);
+    
+    $self->add_task(
+        $self->load_vcf(
+            vcf         => $self->vcf,
+            annotations => $annotations,
+            gid         => $gid
+        )
+    );
 }
 
-sub create_find_snps_job {
-    my $opts = shift;
+sub find_snps {
+    my $self = shift;
+    my $fasta = shift;
+    my $bam = shift;
 
-    # Required arguments
-    my $reference = $opts->{fasta};
-    my $alignment = $opts->{bam};
-    my $snps = $opts->{bcf};
+    my $output_file = 'snps.raw.bcf';
 
     # Pipe commands together
     my $sam_command = get_command_path('SAMTOOLS');
-    $sam_command .= " mpileup -u -f " . basename($reference) . ' ' . basename($alignment);
+    $sam_command .= " mpileup -u -f " . basename($fasta) . ' ' . basename($bam);
     my $bcf_command = get_command_path('BCFTOOLS');
     $bcf_command .= " view -b -v -c -g";
 
     # Get the output filename
-    my $output = basename($snps);
+    my $output = basename($output_file);
 
     return {
         cmd => qq[$sam_command | $bcf_command - > $output],
         inputs => [
-            $reference,
-            $reference . '.fai',
-            $alignment
+            $fasta,
+            $fasta . '.fai',
+            $bam
         ],
-        outputs => [ $snps ],
+        outputs => [ $output_file ],
         description => "Identifying SNPs using SAMtools method"
     };
 }
 
-sub create_filter_snps_job {
-    my $opts = shift;
+sub filter_snps {
+    my $self = shift;
+    my $bcf_file = shift;
 
-    # Required arguments
-    my $snps = $opts->{bcf};
-    my $filtered_snps = $opts->{vcf};
+    my $output_file = 'snps.vcf';
 
-    # Optional arguments
-    my $params = $opts->{params};
-    my $min_read_depth = $params->{'min-read-depth'} || 6;
-    my $max_read_depth = $params->{'max-read-depth'} || 10;
+    my $params = $self->params->{snp_params};
+    my $min_read_depth = $params->{'min-read-depth'} // 6;
+    my $max_read_depth = $params->{'max-read-depth'} // 10;
 
     # Pipe commands together
     my $bcf_command = get_command_path('BCFTOOLS');
-    $bcf_command .= " view " . basename($snps);
+    $bcf_command .= " view " . basename($bcf_file);
     my $vcf_command = get_command_path('VCFTOOLS', 'vcfutils.pl');
     $vcf_command .= " varFilter -d $min_read_depth -D $max_read_depth";
 
     # Get the output filename
-    my $output = basename($filtered_snps);
+    my $output = basename($output_file);
 
     return {
         cmd => qq[$bcf_command | $vcf_command > $output],
-        inputs  => [ $snps ],
-        outputs => [ $filtered_snps ],
+        inputs  => [ $bcf_file ],
+        outputs => [ $output_file ],
         description => "Filtering SNPs"
     };
 }
 
 sub generate_additional_metadata {
-    my $params = shift;
+    my $self = shift;
+    my $params = $self->params->{snp_params};
     
     my @annotations;
     push @annotations, qq{https://genomevolution.org/wiki/index.php?title=LoadExperiment||note|Generated by CoGe's NGS Analysis Pipeline};

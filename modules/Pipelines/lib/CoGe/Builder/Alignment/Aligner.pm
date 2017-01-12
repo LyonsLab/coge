@@ -182,31 +182,6 @@ sub validate_fastq {
     };
 }
 
-sub sort_bam {
-    my $self = shift;
-    my $bam_file = shift;
-
-    my $filename = to_filename($bam_file);
-    my $cmd = get_command_path('SAMTOOLS');
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ["sort", '', 0],
-            ["", $bam_file, 1],
-            ["-o", $filename . "-sorted.bam", 1] # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
-        ],
-        inputs => [
-            $bam_file
-        ],
-        outputs => [
-            catfile($self->staging_dir, $filename . "-sorted.bam")
-        ],
-        description => "Sorting BAM file"
-    };
-}
-
 sub bowtie2_index { # shared between Bowtie and Tophat
     my $self = shift;
 
@@ -310,5 +285,7 @@ sub _get_aligner {
 
     return 'gsnap'; # default aligner if not specified
 }
+
+__PACKAGE__->meta->make_immutable;
 
 1;

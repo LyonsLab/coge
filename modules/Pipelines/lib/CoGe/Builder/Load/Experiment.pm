@@ -47,7 +47,7 @@ sub get_site_url {
 sub build {
     my $self = shift;
     
-    # Validate inputs
+    # Validate inputs not already checked in Request
     my $data = $self->params->{source_data};
     unless (defined $data && ref($data) eq 'ARRAY' && @$data) {
         CoGe::Exception::MissingField->throw(message => "Missing source_data");
@@ -56,9 +56,7 @@ sub build {
     unless ($metadata) {
         CoGe::Exception::MissingField->throw(message => "Missing metadata");
     }
-    my $additional_metadata = $self->params->{additional_metadata}; # optional
-    my $load_id = $self->params->{load_id} || get_unique_id();
-    
+
     # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
     $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
     
@@ -84,7 +82,7 @@ sub build {
         if ( $file_type && ( $file_type eq 'fastq' || $file_type eq 'sra' ) ) {
             # Add alignment workflow
             my $aligner = CoGe::Builder::Alignment::Aligner->new($self);
-            $aligner->build(\@input_files); #, load_id => $load_id);
+            $aligner->build(\@input_files);
             @bam_files = @{$aligner->bam};
             @raw_bam_files = @{$aligner->raw_bam};
         }
@@ -107,62 +105,17 @@ sub build {
         }
         
         # Add SNP workflow (if specified)
-#        if ( $self->params->{snp_params} ) {
-#            my $method = $self->params->{snp_params}->{method};
-#            my $snp_params = {
-#                user => $self->user,
-#                wid => $self->workflow->id,
-#                genome => $genome,
-#                input_file => $bam_file,
-#                sorted => ($file_type ne 'bam'),
-#                metadata => $metadata,
-#                additional_metadata => $additional_metadata,
-#                params => $self->params->{snp_params},
-#            };
-#
-#            my $snp_workflow;
-#            switch ($method) { #FIXME pass into IdentifySNPs instead
-#                case 'coge'     { $snp_workflow = CoGe::Builder::SNP::CoGeSNPs::build($snp_params); }
-#                case 'samtools' { $snp_workflow = CoGe::Builder::SNP::Samtools::build($snp_params); }
-#                case 'platypus' { $snp_workflow = CoGe::Builder::SNP::Platypus::build($snp_params); }
-#                case 'gatk'     { $snp_workflow = CoGe::Builder::SNP::GATK::build($snp_params); }
-#                else            { die "unknown SNP method"; }
-#            }
-#            push @tasks, @{$snp_workflow->{tasks}};
-#            push @done_files, @{$snp_workflow->{done_files}};
-#        }
+        if ( $self->params->{snp_params} ) {
+            my $isBamSorted = ($file_type ne 'bam');
+            my $snp_finder = CoGe::Builder::SNP::SNPFinder->new($self);
+            $snp_finder->build($bam_files[0], $isBamSorted);
+        }
         
         # Add methylation workflow (if specified)
-#        if ( $self->params->{methylation_params} ) {
-#            my $method = $self->params->{methylation_params}->{method};
-#            my $methylation_params = {
-#                user => $self->user,
-#                wid => $self->workflow->id,
-#                genome => $genome,
-#                bam_file => $bam_file,
-#                raw_bam_file => $raw_bam_files[0], # mdb added 2/29/16 for Bismark, COGE-706
-#                metadata => $metadata,
-#                additional_metadata => $additional_metadata,
-#                read_params => $self->params->{read_params},
-#                methylation_params => $self->params->{methylation_params},
-#            };
-#
-#            my $methylation_workflow;
-#            switch ($method) { #FIXME pass into MeasureMethylation instead
-#                case 'bismark' { $methylation_workflow = CoGe::Builder::Methylation::Bismark::build($methylation_params); }
-#                case 'bwameth' { $methylation_workflow = CoGe::Builder::Methylation::BWAmeth::build($methylation_params); }
-#                else           { die "unknown methylation method"; }
-#            }
-#            push @tasks, @{$methylation_workflow->{tasks}};
-#            push @done_files, @{$methylation_workflow->{done_files}};
-#
-#            # Add metaplot workflow (if specified and genome is annotated)
-#            if ( $self->params->{methylation_params}->{metaplot_params} ) {
-#                my $metaplot_workflow = CoGe::Builder::Methylation::Metaplot::build($methylation_params);
-#                push @tasks, @{$metaplot_workflow->{tasks}};
-#                push @done_files, @{$metaplot_workflow->{done_files}};
-#            }
-#        }
+        if ( $self->params->{methylation_params} ) {
+            my $aligner = CoGe::Builder::Alignment::Aligner->new($self);
+            $aligner->build($bam_files[0], $raw_bam_files[0]);
+        }
         
         # Add ChIP-seq workflow (if specified)
 #        if ( $self->params->{chipseq_params} ) {

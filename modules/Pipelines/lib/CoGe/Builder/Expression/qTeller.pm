@@ -346,4 +346,6 @@ sub load_bed {
     };
 }
 
+__PACKAGE__->meta->make_immutable;
+
 1;
