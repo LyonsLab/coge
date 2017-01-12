@@ -39,11 +39,11 @@ elsif ($metaFile) {
 }
 
 switch ($command) {
-    case /submit/i { # iput and imeta
+    case /submit/i { # iput and imeta_add
         croak "The src file was not specified" unless $src;
         croak "The specified src file does not exist" unless -r $src;
         CoGe::Accessory::IRODS::irods_iput($src, $dest);
-        CoGe::Accessory::IRODS::irods_imeta($dest, \%metadata) if (keys %metadata);
+        CoGe::Accessory::IRODS::irods_imeta_add($dest, \%metadata) if (keys %metadata);
     }
 
     case /fetch/i { # iget
@@ -52,9 +52,9 @@ switch ($command) {
         croak "The file $src could not be fetched" unless -r $dest;
     }
     
-    case /metadata/i { # imeta
+    case /metadata/i { # imeta_add
         croak "Medata was not specified" unless (keys %metadata);
-        CoGe::Accessory::IRODS::irods_imeta($dest, \%metadata);
+        CoGe::Accessory::IRODS::irods_imeta_add($dest, \%metadata);
     }
 
     else {

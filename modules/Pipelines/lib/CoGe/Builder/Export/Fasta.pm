@@ -59,7 +59,7 @@ sub build {
         my $md_file = catfile($self->staging_dir, 'irods_metadata.json');
         CoGe::Accessory::TDS::write($md_file, $md);
         $self->add_task_chain(
-            $self->create_irods_imeta(
+            $self->create_irods_imeta_add(
                 dest_file => $irods_dest,
                 metadata_file => $md_file
             )

@@ -194,10 +194,6 @@ function toggle_load_log() { // TODO: shared with GenomeInfo.pl, move to module
 }
 
 function export_data() {
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
-
     coge.progress.begin({
     	title: 'Exporting ...',
     	content: 
@@ -319,14 +315,6 @@ var snpMenu = {
 	},
 	
 	submit: function() { 
-		// Prevent concurrent executions
-		//if ( $("#progress_dialog").dialog( "isOpen" ) )
-		//    return;
-	
-		// Make sure user is still logged-in
-		//if (!check_and_report_login())
-		//    return;
-		
 		var params = this.is_valid();
 	
 		coge.progress.begin({ 
@@ -416,14 +404,6 @@ var expressionMenu = {
 	},
 	
 	submit: function() { 
-		// Prevent concurrent executions
-		//if ( $("#progress_dialog").dialog( "isOpen" ) )
-		//    return;
-	
-		// Make sure user is still logged-in
-		//if (!check_and_report_login())
-		//    return;
-		
 		var params = this.is_valid();
 	
 		coge.progress.begin({ 
@@ -515,14 +495,6 @@ var metaplotMenu = {
 	},
 	
 	submit: function() { 
-		// Prevent concurrent executions
-		//if ( $("#progress_dialog").dialog( "isOpen" ) )
-		//    return;
-	
-		// Make sure user is still logged-in
-		//if (!check_and_report_login())
-		//    return;
-		
 		var params = this.is_valid();
 	
 		coge.progress.begin({ 
@@ -614,14 +586,6 @@ var diversityMenu = {
 	},
 	
 	submit: function() { 
-		// Prevent concurrent executions
-		//if ( $("#progress_dialog").dialog( "isOpen" ) )
-		//    return;
-	
-		// Make sure user is still logged-in
-		//if (!check_and_report_login())
-		//    return;
-		
 		var params = this.is_valid();
 	
 		coge.progress.begin({ 
@@ -671,31 +635,6 @@ function analyze_diversity() {
 		coge.utils.open(POPGEN_RESULT_URL);
 	else 
 		diversityMenu.open();
-}
-
-function check_login() {
-    var logged_in = false;
-
-    $.ajax({
-        async: false,
-        data: {
-            fname: 'check_login'
-        },
-        success : function(rc) {
-            logged_in = rc;
-        }
-    });
-
-    return logged_in;
-}
-
-function check_and_report_login() {
-    if (!check_login()) {
-        alert('Your session has expired, please log in again.');
-        location.reload(true);
-        return false;
-    }
-    return true;
 }
 
 function remove_experiment_tag (opts) {

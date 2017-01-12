@@ -7,7 +7,7 @@ use CoGeX::Result::Genome qw(ERROR LOADING);
 use CoGe::JEX::Jex;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw(sanitize_name get_unique_id commify execute);
-use CoGe::Accessory::IRODS qw(irods_iput irods_imeta);
+use CoGe::Accessory::IRODS qw(irods_iput irods_imeta_add);
 use CoGe::Core::Chromosomes;
 use CoGe::Core::Genome;
 use CoGe::Core::Metadata;
@@ -1607,7 +1607,7 @@ sub export_fasta { #TODO migrate to API
 
     # Set IRODS metadata for object
     my $md = get_irods_metadata($genome);
-    CoGe::Accessory::IRODS::irods_imeta($dest, $md);
+    CoGe::Accessory::IRODS::irods_imeta_add($dest, $md);
 
 	my %json;
 	$json{file} = $dest_filename;
@@ -1746,46 +1746,24 @@ sub get_annotation {
 
 sub add_annotation {
     my %opts = @_;
-    my $gid  = $opts{parent_id};
+    my $gid = $opts{parent_id};
     return 0 unless $gid;
-    my $type_group = $opts{type_group};
-    my $type       = $opts{type};
+    my $type = $opts{type};
     return 0 unless $type;
-    my $annotation     = $opts{annotation};
-    my $link           = $opts{link};
-    my $image_filename = $opts{edit_annotation_image};
-    my $fh             = $FORM->upload('edit_annotation_image');
-
-    #print STDERR "add_annotation: $gid $type $annotation $link\n";
-
-    # Create the type and type group if not already present
-    my $group_rs;
-    if ($type_group) {
-        $group_rs = $DB->resultset('AnnotationTypeGroup')->find_or_create( { name => $type_group } );
-    }
-    my $type_rs = $DB->resultset('AnnotationType')->find_or_create({
-        name => $type,
-        annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
-    });
-
-    # Create the image
-    my $image;
-    if ($fh) {
-        $image = create_image(fh => $fh, filename => $image_filename, db => $DB);
-        return 0 unless $image;
-    }
-
-    # Create the annotation
-    my $annot = $DB->resultset('GenomeAnnotation')->create({
-        genome_id          => $gid,
-        annotation         => $annotation,
-        link               => $link,
-        annotation_type_id => $type_rs->id,
-        image_id           => ( $image ? $image->id : undef )
-    });
-    return 0 unless $annot;
-
-    return 1;
+    my $fh = $FORM->upload('edit_annotation_image');
+ 
+    return create_annotation(
+        db => $DB,
+        group_name => $opts{type_group},
+        image_fh => $fh,
+        image_file => $opts{edit_annotation_image},
+        link => $opts{link},
+        locked => 0,
+        target_id => $gid,
+        target_type => 'genome',
+        text => $opts{annotation},
+        type_name => $type
+    ) ? 1 : 0;
 }
 
 sub update_annotation {
@@ -2054,7 +2032,7 @@ sub export_to_irods { #TODO migrate to API
     my $ifile = catfile($ipath, basename($file));
 
     CoGe::Accessory::IRODS::irods_iput($file, $ifile);
-    CoGe::Accessory::IRODS::irods_imeta($ifile, $meta);
+    CoGe::Accessory::IRODS::irods_imeta_add($ifile, $meta);
 
     return 0;
 }

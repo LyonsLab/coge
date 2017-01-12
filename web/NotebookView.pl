@@ -433,77 +433,24 @@ sub get_annotation {
 
 sub add_annotation {
     my %opts = @_;
-    my $lid  = $opts{parent_id};
-    return 0 unless $lid;
-    my $type_group = $opts{type_group};
-    my $type       = $opts{type};
+    my $nid = $opts{parent_id};
+    return 0 unless $nid;
+    my $type = $opts{type};
     return 0 unless $type;
-    my $annotation     = $opts{annotation};
-    my $link           = $opts{link};
-    my $image_filename = $opts{edit_annotation_image};
-    my $fh             = $FORM->upload('edit_annotation_image');
-
-   #return "Image file is too large (>10MB)" if (-s $fh > 10*1024*1024); # FIXME
-   #print STDERR "add_annotation: $lid\n";
-
-    if ($link) {
-        $link =~ s/^\s+//;
-        $link = 'http://' . $link if ( !$link =~ /^(\w+)\:\/\// );
-    }
-
-    my $group_rs;
-    if ($type_group) {
-        $group_rs =
-          $DB->resultset('AnnotationTypeGroup')
-          ->find( { name => $type_group } );
-
-        # Create type group if it doesn't already exist
-        if ( !$group_rs ) {
-            $group_rs =
-              $DB->resultset('AnnotationTypeGroup')
-              ->create( { name => $type_group } );
-        }
-    }
-
-    my $type_rs;
-    $type_rs = $DB->resultset('AnnotationType')->find(
-        {
-            name                     => $type,
-            annotation_type_group_id => ( $group_rs ? $group_rs->id : undef )
-        }
-    );
-
-    # Create type if it doesn't already exist
-    if ( !$type_rs ) {
-        $type_rs = $DB->resultset('AnnotationType')->create(
-            {
-                name => $type,
-                annotation_type_group_id =>
-                  ( $group_rs ? $group_rs->id : undef )
-            }
-        );
-    }
-
-    # Create the image
-    my $image;
-    if ($fh) {
-        $image = create_image(fh => $fh, filename => $image_filename, db => $DB);
-        return 0 unless $image;
-    }
-
-    # Create the annotation
-    my $la = $DB->resultset('ListAnnotation')->create(
-        {
-            list_id            => $lid,
-            annotation         => $annotation,
-            link               => $link,
-            annotation_type_id => $type_rs->id,
-            image_id           => ( $image ? $image->id : undef )
-        }
-    );
-    return 0 unless $la;
-
-    return 1;
+    my $fh = $FORM->upload('edit_annotation_image');
+ 
+    return create_annotation(
+        db => $DB,
+        group_name => $opts{type_group},
+        image_fh => $fh,
+        image_file => $opts{edit_annotation_image},
+        link => $opts{link},
+        locked => 0,
+        target_id => $nid,
+        target_type => 'notebook',
+        text => $opts{annotation},
+        type_name => $type
+    ) ? 1 : 0;
 }
 
 sub update_annotation {

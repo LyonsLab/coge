@@ -343,10 +343,10 @@ sub export_to_irods {
     };
 }
 
-sub create_irods_imeta {
+sub create_irods_imeta_add {
     my ($self, %params) = @_;
     
-    my $done_file = catfile($self->staging_dir, basename($params{dest_file})) . '.imeta.done';
+    my $done_file = catfile($self->staging_dir, basename($params{dest_file})) . '.imeta_add.done';
     
     my $cmd = catdir($self->conf->{SCRIPTDIR}, 'irods.pl') .
         " -cmd metadata" .

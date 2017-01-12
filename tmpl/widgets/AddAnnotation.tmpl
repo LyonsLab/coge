@@ -215,8 +215,8 @@ function get_annotation_type_groups () {
 }
 
 function verify_image_file(file) {
-	ext = file.name.split('.').pop();
-	if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
+	ext = file.name.split('.').pop().toLowerCase();
+	if (ext != 'jpg' && ext != 'jpeg' && ext != 'gif' && ext != 'png' && ext != 'svg' ) {
 		alert('Error: specified file is not an image');
 		return 0;
 	}

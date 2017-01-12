@@ -27,7 +27,7 @@ our @EXPORT = qw(
     create_load_bam_job create_gunzip_job create_notebook_job create_bam_sort_job create_iget_job
     create_load_annotation_job create_data_retrieval_workflow create_sam_filter_job
     export_experiment_job create_bgzip_job create_tabix_index_job create_sumstats_job
-    add_workflow_result create_image_job add_metadata_to_results_job create_bigwig_to_wig_job
+    add_workflow_result add_metadata_to_results_job create_bigwig_to_wig_job
     create_transdecoder_longorfs_job create_transdecoder_predict_job
 );
 
@@ -422,28 +422,6 @@ sub generate_gff {
         inputs  => [],
         outputs => [ $output_file ],
         description => "Generating GFF"
-    };
-}
-
-sub create_image_job {
-    my $input_file = shift;
-    my $staging_dir = shift;
-    
-    return {
-        cmd => catfile($CONF->{SCRIPTDIR}, 'create_image.pl'),
-        script => undef,
-        args => [
-            ['', $input_file, 0],
-            ['', $CONF->{_CONFIG_PATH}, 0],
-            ['', "$input_file.log", 0]
-        ],
-        inputs => [
-            $input_file
-        ],
-        outputs => [
-            catfile($staging_dir, "$input_file.log")
-        ],
-        description => "Loading image into database"
     };
 }
 
