@@ -59,15 +59,13 @@ sub get {
     # Construct the workflow
     #
 
+    # This loosely corresponds to the Extract-Transform-Load paradigm.
+
     # Pre-build: initialize pipeline
     $builder->pre_build();
 
     # Build: add application-specific pipeline tasks
-    my $rc = $builder->build();
-    unless ($rc) {
-        $rc = 'undef' unless defined $rc;
-        CoGe::Exception::Generic->throw(message => "Build failed: rc=$rc");
-    }
+    $builder->build();
 
     # Post-build: add completion tasks (such as sending notifiation email)
     $builder->post_build();

@@ -7,7 +7,7 @@ use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Accessory::Web qw(download_url_for);
 use CoGe::Core::Genome qw(get_irods_metadata);
-use CoGe::Core::Storage qw(get_genome_cache_path);
+use CoGe::Core::Storage qw(get_genome_cache_path get_gff_cache_path);
 use CoGe::Exception::MissingField;
 use CoGe::Exception::Generic;
 
@@ -48,14 +48,12 @@ sub build {
     # Generate GFF/BED/TBL generation and export tasks
     foreach my $output_type (keys %outputs) {
         # Generate output filename based on params
-        my $param_string = join( "-", map { $_ . ($self->params->{$_} // 0) } qw(annos cds id_type nu upa add_chr) );
-        my $output_filename = $genome_name . "_" . $param_string;
-        $output_filename .= "_" . $self->params->{chr} if $self->params->{chr};
-        $output_filename .= ".gid" . $gid;
-        $output_filename =~ s/\s+/_/g;
-        $output_filename =~ s/\)|\(/_/g;
-        $output_filename .= $output_type;
-        $output_filename = catfile( get_genome_cache_path($gid), $output_filename );
+        my $output_filename = get_gff_cache_path(
+            gid => $gid,
+            genome_name = $genome_name,
+            output_type = $output_type,
+            params => $self->params
+        );
 
         # Add task to generate output file(s)
         if ($output_type eq 'gff') {

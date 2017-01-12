@@ -22,9 +22,9 @@ require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
     export_to_irods generate_gff generate_features copy_and_mask
-    create_fasta_reheader_job create_fasta_index_job create_load_vcf_job create_sam_to_bam_job
+    create_fasta_reheader_job create_fasta_index_job create_load_vcf_job
     create_bam_index_job create_gff_generation_job create_load_experiment_job create_load_batch_job
-    create_load_bam_job create_gunzip_job create_notebook_job create_bam_sort_job create_iget_job
+    create_load_bam_job create_notebook_job create_bam_sort_job create_iget_job
     create_load_annotation_job create_data_retrieval_workflow create_sam_filter_job
     export_experiment_job create_bgzip_job create_tabix_index_job create_sumstats_job
     add_workflow_result create_image_job add_metadata_to_results_job create_bigwig_to_wig_job
@@ -447,29 +447,6 @@ sub create_image_job {
     };
 }
 
-sub create_gunzip_job {
-    my $input_file = shift;
-    my $output_file = $input_file;
-    $output_file =~ s/\.gz$//;
-
-    my $cmd = get_command_path('GUNZIP');
-
-    return {
-        cmd => "$cmd -c $input_file > $output_file && touch $output_file.decompressed",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_file,
-            $input_file . '.done' # ensure file is done transferring
-        ],
-        outputs => [
-            $output_file,
-            "$output_file.decompressed"
-        ],
-        description => "Decompressing " . basename($input_file)
-    };
-}
-
 sub create_bgzip_job {
     my $input_file = shift;
     my $output_file = $input_file . '.bgz';
@@ -560,28 +537,6 @@ sub create_fasta_index_job {
             $fasta . '.fai',
         ],
         description => "Indexing FASTA file",
-    };
-}
-
-sub create_bam_index_job {
-    my %opts = @_;
-
-    # Required arguments
-    my $input_file = $opts{input_file}; # bam file
-
-    return {
-        cmd => get_command_path('SAMTOOLS'),
-        script => undef,
-        args => [
-            ["index", $input_file, 1],
-        ],
-        inputs => [
-            $input_file,
-        ],
-        outputs => [
-            $input_file . '.bai'
-        ],
-        description => "Indexing BAM file",
     };
 }
 
@@ -836,155 +791,6 @@ sub create_load_batch_job {
             catdir($staging_dir, 'log.done')
         ],
         description => "Loading batch experiments"
-    };
-}
-
-sub create_load_bam_job { #TODO combine with create_load_experiment_job
-    my %opts = @_;
-    #print STDERR "CommonTasks::create_load_bam_job ", Dumper \%opts, "\n";
-
-    # Required arguments
-    my $user = $opts{user};
-    my $metadata = $opts{metadata};
-    my $additional_metadata = $opts{additional_metadata};
-    my $staging_dir = $opts{staging_dir};
-    my $annotations = $opts{annotations};
-    my $wid = $opts{wid};
-    my $gid = $opts{gid};
-    my $bam_file = $opts{bam_file};
-    die unless ($user && $staging_dir && $wid && $gid && $bam_file);
-    
-    my $cmd = 'perl ' . catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-    
-    my $output_name = "load_bam_" . to_filename_base($bam_file);
-    my $output_path = catdir($staging_dir, $output_name);
-    
-    my $result_file = get_workflow_results_file($user->name, $wid);
-
-    # Add tags
-    my @tags = ( 'BAM' ); # add BAM tag
-    push @tags, @{$metadata->{tags}} if $metadata->{tags};
-    my $tags_str = tags_to_string(\@tags);
-
-    my $args = [
-        ['-user_name',   $user->name, 0],
-        ['-name',        ($metadata->{name} ? shell_quote($metadata->{name} . " (BAM alignment)") : '""'), 0],
-        ['-desc',        shell_quote($metadata->{description}), 0],
-        ['-version',     shell_quote($metadata->{version}), 0],
-        ['-link',        shell_quote($metadata->{link}), 0],
-        ['-restricted',  shell_quote($metadata->{restricted}), 0],
-        ['-gid',         $gid, 0],
-        ['-wid',         $wid, 0],
-        ['-source_name', shell_quote($metadata->{source_name}), 0],
-        ['-tags',        shell_quote($tags_str), 0],
-        ['-staging_dir', $output_name, 0],
-        ['-file_type',   'bam', 0],
-        ['-data_file',   $bam_file, 0],
-        ['-config',      $CONF->{_CONFIG_PATH}, 0]
-    ];
-
-    # Add additional metadata
-    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
-        my $metadata_file = catfile($output_path, 'metadata.dump');
-        make_path($output_path);
-        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
-        push @$args, ['-metadata_file', $metadata_file, 0];
-    }
-    if ($annotations && @$annotations) { # legacy method
-        my $annotations_str = join(';', @$annotations);
-        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
-    }
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => $args,
-        inputs => [
-            $bam_file
-        ],
-        outputs => [
-            [$output_path, '1'],
-            catfile($output_path, "log.done"),
-            $result_file
-        ],
-        description => "Loading alignment as new experiment"
-    };
-}
-
-sub create_sam_to_bam_job {
-    my $samfile = shift;
-    my $staging_dir = shift;
-    
-    my $filename = to_filename($samfile);
-    my $cmd = get_command_path('SAMTOOLS');
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ["view", '', 0],
-            ["-bS", $samfile, 1],
-            [">", $filename . ".bam", 0]
-        ],
-        inputs => [
-            $samfile
-        ],
-        outputs => [
-            catfile($staging_dir, $filename . ".bam")
-        ],
-        description => "Converting SAM file to BAM"
-    };
-}
-
-sub create_sam_filter_job {
-    my ($samfile, $staging_dir) = @_;
-    
-    my $filename = basename($samfile);
-
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "filter_sam.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    return {
-        cmd => "$cmd $filename $filename.processed",
-        script => undef,
-        args => [],
-        inputs => [
-            $samfile
-        ],
-        outputs => [
-            catfile($staging_dir, $filename . ".processed")
-        ],
-        description => "Filtering SAM file"
-    };
-}
-
-sub create_bam_sort_job {
-    my %opts = @_;
-
-    # Required arguments
-    my $input_file = $opts{input_file}; # bam file
-    my $staging_dir = $opts{staging_dir};
-    die unless ($input_file && $staging_dir);
-    
-    my $filename = to_filename($input_file);
-    my $cmd = get_command_path('SAMTOOLS');
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ["sort", '', 0],
-            ["", $input_file, 1],
-            ["-o", $filename . "-sorted.bam", 1] # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
-        ],
-        inputs => [
-            $input_file
-        ],
-        outputs => [
-            catfile($staging_dir, $filename . "-sorted.bam")
-        ],
-        description => "Sorting BAM file"
     };
 }
 

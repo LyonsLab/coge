@@ -57,7 +57,7 @@ BEGIN {
       get_workflow_results_file get_workflow_log_file get_download_path
       get_experiment_path get_experiment_files get_experiment_metadata
       reverse_complement get_irods_file get_irods_path get_popgen_result_path
-      is_popgen_finished data_type get_sra_cache_path irods_mkdir irods_rm
+      is_popgen_finished data_type get_sra_cache_path irods_mkdir irods_rm get_gff_cache_path
       $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER $DATA_TYPE_SEQUENCE
     );
 
@@ -114,6 +114,25 @@ sub get_genome_cache_path {
     }
     
     return catdir($cache_dir, 'genomes', $gid);
+}
+
+sub get_gff_cache_path {
+    my %opts = @_;
+    my $gid         = $opts{gid};
+    my $genome_name = $opts{genome_name};
+    my $output_type = $opts{output_type};
+    my $params      = $opts{params};
+
+    my $param_string = join( "-", map { $_ . ($params->{$_} // 0) } qw(annos cds id_type nu upa add_chr) );
+    my $output_filename = $genome_name . "_" . $param_string;
+    $output_filename .= "_" . $params->{chr} if $params->{chr};
+    $output_filename .= ".gid" . $gid;
+    $output_filename =~ s/\s+/_/g;
+    $output_filename =~ s/\)|\(/_/g;
+    $output_filename .= $output_type;
+    $output_filename = catfile( get_genome_cache_path($gid), $output_filename );
+
+    return $output_filename;
 }
 
 sub get_genome_path { #TODO rename to get_genome_data_path

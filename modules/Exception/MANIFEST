@@ -1,4 +1,7 @@
 MANIFEST
 Makefile.PL
-lib/CoGe/Exception/MissingField.pm
+lib/CoGe/Exception/AccessDenied.pm
 lib/CoGe/Exception/Generic.pm
+lib/CoGe/Exception/ItemNotFound.pm
+lib/CoGe/Exception/MissingField.pm
+
