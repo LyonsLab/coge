@@ -7,11 +7,7 @@ use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Accessory::Web qw(download_url_for);
 use CoGe::Core::Genome qw(get_irods_metadata);
-<<<<<<< HEAD
 use CoGe::Core::Storage qw(get_genome_cache_path get_gff_cache_path);
-=======
-use CoGe::Core::Storage qw(get_genome_cache_path);
->>>>>>> 64ad5e911b0cc224edca76011b04410d5f95858d
 use CoGe::Exception::MissingField;
 use CoGe::Exception::Generic;
 
@@ -54,8 +50,8 @@ sub build {
         # Generate output filename based on params
         my $output_filename = get_gff_cache_path(
             gid => $gid,
-            genome_name = $genome_name,
-            output_type = $output_type,
+            genome_name => $genome_name,
+            output_type => $output_type,
             params => $self->params
         );
 

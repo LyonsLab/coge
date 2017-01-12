@@ -13,7 +13,7 @@ use Data::Dumper;
 use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
 use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
 use CoGe::Accessory::Utils;
-use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
+use CoGe::Core::Storage;
 use CoGe::Core::Metadata qw(to_annotations tags_to_string);
 use CoGe::Exception::Generic;
 
@@ -325,7 +325,8 @@ sub create_gunzip {
 
 # Generate GFF file of genome annotations
 sub create_gff {
-    my ($self, %params) = @_;
+    my $self = shift;
+    my %params = @_;
     
     # Build argument list
     my $args = [
@@ -533,6 +534,50 @@ sub curl_get {
         inputs => [],
         outputs => [ $output_file ],
         description => "Sending GET request to $url"
+    };
+}
+
+sub reheader_fasta {
+    my $self = shift;
+    my $gid = shift;
+
+    my $fasta     = get_genome_file($gid);
+    my $cache_dir = get_genome_cache_path($gid);
+
+    my $output_file = to_filename($fasta) . '.reheader.faa';
+
+    return {
+        cmd => catfile($self->conf->{SCRIPTDIR}, "fasta_reheader.pl"),
+        args => [
+            ["", $fasta, 1],
+            ["", $output_file, 0]
+        ],
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            catfile($cache_dir, $output_file)
+        ],
+        description => "Reheader fasta file",
+    };
+}
+
+sub index_fasta {
+    my $self = shift;
+    my $fasta = shift;
+
+    return {
+        cmd => get_command_path('SAMTOOLS'),
+        args => [
+            ["faidx", $fasta, 1],
+        ],
+        inputs => [
+            $fasta,
+        ],
+        outputs => [
+            $fasta . '.fai',
+        ],
+        description => "Indexing FASTA file",
     };
 }
 

@@ -21,19 +21,20 @@ sub build {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
     }
 
+    my $genome = $self->request->genome;
     my $doSeparately = $self->params->{chipseq_params};
 
     # Generate gff if genome annotated
     my $gff_file;
     if ( $genome->has_gene_features ) {
         $self->add_task(
-            $self->create_gff(
-                %{$self->params},
+            $self->create_gff( #FIXME simplify this
+                gid => $genome->id,
                 output_file => get_gff_cache_path(
-                    gid => $gid,
-                    genome_name = $genome_name,
-                    output_type = $output_type,
-                    params => $self->params
+                    gid => $genome->id,
+                    genome_name => sanitize_name($genome->organism->name),
+                    output_type => 'gff',
+                    params => {}
                 )
             )
         );
