@@ -70,60 +70,41 @@ sub build {
     # Build workflow
     #
 
-    # Create tasks to retrieve files #TODO move to pre_build()
-#    my $upload_dir = get_upload_path($self->user->name, $load_id);
-#    my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data, params => $self->params);
-#    push @tasks, @{$data_workflow->{tasks}} if ($data_workflow->{tasks});
-#    push @input_files, @{$data_workflow->{outputs}} if ($data_workflow->{outputs});
+    # Create tasks to retrieve files #TODO move to Buildable::pre_build()
     my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
     $dr->build();
     my @input_files = @{$dr->data_files};
 
-    # Build analytical tasks based on file type
+    # Add analytical tasks based on file type
     if ( $file_type eq 'fastq' || $file_type eq 'bam' || $file_type eq 'sra' ) {
-        my ($bam_file, $bam_files); #TODO reconcile these
+        my @bam_files;
         my @raw_bam_files; # mdb added 2/29/16 for Bismark, COGE-706
-         
+
         # Align fastq file or take existing bam
         if ( $file_type && ( $file_type eq 'fastq' || $file_type eq 'sra' ) ) {
             # Add alignment workflow
             my $aligner = CoGe::Builder::Alignment::Aligner->new($self);
             $aligner->build(\@input_files); #, load_id => $load_id);
-
-#            $bam_files = $alignment_workflow->{bam_files};
-#            $bam_file = $bam_files->[0];
-#            @raw_bam_files = @{$alignment_workflow->{raw_bam_files}};
-#            push @done_files, @{$alignment_workflow->{done_files}};
+            @bam_files = @{$aligner->bam};
+            @raw_bam_files = @{$aligner->raw_bam};
         }
         elsif ( $file_type && $file_type eq 'bam' ) {
-#            $bam_file = $input_files[0];
-#            $bam_files = \@input_files;
-#            @raw_bam_files = @$bam_files;
-            
             $self->add_task(
                 $self->load_bam(
                     bam_file => $input_files[0]
                 )
             );
+            @bam_files = @raw_bam_files = @input_files;
         }
         else { # error -- should never happen
             CoGe::Exception::Generic->throw(message => 'Invalid file type');
         }
         
         # Add expression workflow (if specified)
-#        if ( $self->params->{expression_params} ) {
-#            my $expression_workflow = CoGe::Builder::Expression::qTeller::build(
-#                user => $self->user,
-#                wid => $self->workflow->id,
-#                genome => $genome,
-#                input_file => $bam_file,
-#                metadata => $metadata,
-#                additional_metadata => $additional_metadata,
-#                params => $self->params->{expression_params}
-#            );
-#            push @tasks, @{$expression_workflow->{tasks}};
-#            push @done_files, @{$expression_workflow->{done_files}};
-#        }
+        if ( $self->params->{expression_params} ) {
+            my $expr = CoGe::Builder::Expression::qTeller->new($self);
+            $expr->build($bam_files[0]);
+        }
         
         # Add SNP workflow (if specified)
 #        if ( $self->params->{snp_params} ) {

@@ -103,23 +103,15 @@ sub build {
         @trimmed = @decompressed;
     }
 
-    # Get genome cache path
-    my $fasta_cache_dir = get_genome_cache_path($gid);
-
     # Reheader the fasta file
     $self->add_task(
-        create_fasta_reheader_job( #TODO migrate to Buildable
-            fasta => get_genome_file($gid),
-            cache_dir => $fasta_cache_dir
-        )
+        $self->reheader_fasta($gid)
     );
     my $reheader_fasta = $self->previous_output;
 
     # Index the fasta file
     $self->add_task(
-        create_fasta_index_job( #TODO migrate to Buildable
-            fasta => $reheader_fasta
-        )
+        $self->index_fasta($self->previous_output)
     );
 
     my $aligner;
@@ -235,7 +227,7 @@ sub bowtie2_index { # shared between Bowtie and Tophat
         $name . ".rev.2.bt2"
     ]);
 
-    return catdir($BOWTIE_CACHE_DIR, $name), {
+    return catdir($cache_dir, $name), {
         cmd => $cmd,
         args => [
             ["", $fasta, 1],

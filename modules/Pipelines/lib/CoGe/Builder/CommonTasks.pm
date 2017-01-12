@@ -491,55 +491,6 @@ sub create_tabix_index_job {
     };
 }
 
-sub create_fasta_reheader_job {
-    my %opts = @_;
-
-    # Required arguments
-    my $fasta          = $opts{fasta};
-    my $reheader_fasta = $opts{reheader_fasta} ? $opts{reheader_fasta} : to_filename($fasta) . '.reheader.faa';
-    my $cache_dir      = $opts{cache_dir};
-
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "fasta_reheader.pl");
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ["", $fasta, 1],
-            ["", $reheader_fasta, 0]
-        ],
-        inputs => [
-            $fasta,
-        ],
-        outputs => [
-            catfile($cache_dir, $reheader_fasta),
-        ],
-        description => "Reheader fasta file",
-    };
-}
-
-sub create_fasta_index_job {
-    my %opts = @_;
-    
-    # Required params
-    my $fasta = $opts{fasta};
-
-    return {
-        cmd => get_command_path('SAMTOOLS'),
-        script => undef,
-        args => [
-            ["faidx", $fasta, 1],
-        ],
-        inputs => [
-            $fasta,
-        ],
-        outputs => [
-            $fasta . '.fai',
-        ],
-        description => "Indexing FASTA file",
-    };
-}
-
 sub create_bigwig_to_wig_job {
     my %opts = @_;
     my $input_file  = $opts{input_file};

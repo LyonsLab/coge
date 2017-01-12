@@ -50,8 +50,8 @@ sub build {
         # Generate output filename based on params
         my $output_filename = get_gff_cache_path(
             gid => $gid,
-            genome_name = $genome_name,
-            output_type = $output_type,
+            genome_name => $genome_name,
+            output_type => $output_type,
             params => $self->params
         );
 

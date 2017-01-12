@@ -4,13 +4,13 @@ use Moose;
 extends 'CoGe::Builder::Buildable';
 
 use CoGe::Core::Storage qw(get_experiment_files);
-use CoGe::Builder::Expression::qTeller qw(build);
+use CoGe::Builder::Expression::qTeller;
 use CoGe::Exception::Generic;
 use CoGe::Exception::MissingField;
 
 sub get_name {
     #my $self = shift;
-    return 'Measure Expression';
+    return 'Measure Expression'; #TODO add source experiment info
 }
 
 sub build {
