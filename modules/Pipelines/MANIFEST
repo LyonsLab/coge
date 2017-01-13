@@ -9,7 +9,7 @@ lib/CoGe/Builder/Alignment/BWAmeth.pm
 lib/CoGe/Builder/Alignment/GSNAP.pm
 lib/CoGe/Builder/Alignment/HISAT2.pm
 lib/CoGe/Builder/Alignment/Tophat.pm
-lib/CoGe/Builder/Common/DataRetrieval.pm
+lib/CoGe/Builder/Data/Extractor.pm
 lib/CoGe/Builder/CommonTasks.pm
 lib/CoGe/Builder/Export/Experiment.pm
 lib/CoGe/Builder/Export/Fasta.pm
