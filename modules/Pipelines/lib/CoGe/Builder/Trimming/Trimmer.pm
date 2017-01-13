@@ -14,8 +14,9 @@ use CoGe::Exception::Generic;
 has fastq => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # trimmed fastq files
 
 sub build {
-    my $self = shift;
-    my $fastq = shift; # array ref of fastq files
+    my $self  = shift;
+    my %opts = @_;
+    my $fastq = $opts{data_files}; # array ref of fastq files
     unless ($fastq && @$fastq) {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
     }
@@ -48,7 +49,7 @@ sub build {
         CoGe::Exception::Generic->throw(message => 'Unrecognized trimmer');
     }
 
-    $trimmer->build(fastq1 => $fastq1, fastq2 => $fastq2);
+    $trimmer->build(data_files => [$fastq1, $fastq2]);
     push @{$self->fastq}, @{$trimmer->fastq};
 }
 

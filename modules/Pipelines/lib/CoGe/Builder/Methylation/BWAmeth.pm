@@ -25,9 +25,16 @@ sub BUILD { # called immediately after constructor
 
 sub build {
     my $self = shift;
-    my $bam_file = shift;
+    my %opts = @_;
+    my $bam_file = shift @{$opts{data_files}};
 
-    my $gid = $self->request->genome->id;
+    # Validate inputs not already checked in Request
+    my $metadata = $self->params->{metadata};
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
+    }
+
+    my $genome = $self->request->genome;
 
     # Set metadata for the pipeline being used
     my $annotations = generate_additional_metadata();

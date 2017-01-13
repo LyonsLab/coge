@@ -13,8 +13,9 @@ use CoGe::Exception::Generic;
 
 sub build {
     my $self = shift;
-    my $fastq1 = shift;
-    my $fastq2 = shift; # undef for single-ended
+    my %opts = @_;
+    my $fastq1 = shift @{$opts{data_files}};
+    my $fastq2 = shift @{$opts{data_files}}; # undef for single-ended
     unless ($fastq1 && @$fastq1) {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
     }

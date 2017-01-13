@@ -34,9 +34,16 @@ has bam     => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # process
 
 sub build {
     my $self = shift;
-    my $fastq = shift; # array ref of FASTQ files
+    my %opts = @_;
+    my $fastq = $opts{data_files}; # array ref of FASTQ files
     unless ($fastq && @$fastq) {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
+    }
+
+    # Validate inputs not already checked in Request
+    my $metadata = $self->params->{metadata};
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
     }
 
     my $gid = $self->request->genome->id;
@@ -89,7 +96,7 @@ sub build {
     my @trimmed;
     if ($trimming_params) {
         my $trimmer = CoGe::Builder::Trimming::Trimmer->new($self);
-        $trimmer->build(\@decompressed);
+        $trimmer->build(data_files => \@decompressed);
         @trimmed = @{$trimmer->fastq};
     }
     else { # no trimming
@@ -100,7 +107,6 @@ sub build {
     $self->add_task(
         $self->reheader_fasta($gid)
     );
-    my $reheader_fasta = $self->previous_output;
 
     # Index the fasta file
     $self->add_task(
@@ -120,7 +126,7 @@ sub build {
             CoGe::Exception::Generic->throw(message => 'Invalid aligner');
         }
     }
-    $aligner->build(\@trimmed);
+    $aligner->build(data_files => \@trimmed);
     push @{$self->raw_bam}, @{$aligner->bam};
 
     foreach my $bam_file (@{$self->raw_bam}) {

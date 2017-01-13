@@ -24,6 +24,8 @@ sub get_name {
 
 sub build {
     my $self = shift;
+    my %opts = @_;
+    my $input_files = $opts{data_files};
 
     my $genome = $self->request->genome;
     
@@ -38,6 +40,7 @@ sub build {
     $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
 
     # Determine file type if not set
+    my $data = $self->params->{source_data};
     my $file_type = $data->[0]->{file_type}; # type of first data file
     ($file_type) = detect_data_type($file_type, $data->[0]->{path}) unless $file_type;
     
@@ -45,17 +48,12 @@ sub build {
     # Build workflow
     #
 
-    # Create tasks to retrieve files #TODO move to Buildable::pre_build()
-    my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
-    $dr->build();
-    my @input_files = @{$dr->data_files};
-    
     # Add load batch task
     $self->add_task(
         $self->load_batch(
             gid => $genome->id,
             nid => $self->params->{notebook_id},
-            input_files => \@input_files
+            input_files => $input_files
         )
     );
 }
@@ -68,6 +66,8 @@ sub load_batch {
     my $files = $opts{input_files};
 
     my $file_str = join(',', @$files);
+
+    my $metadata = $self->params->{metadata};
 
     my $args = [
         ['-user_name',   $self->user->name, 0],

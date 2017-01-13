@@ -14,8 +14,8 @@ use CoGe::Exception::Generic;
 
 sub build {
     my $self = shift;
-    my $bam_file = shift;
-
+    my %opts = @_;
+    my $bam_file = shift @{$opts{data_files}};
     unless ($bam_file) { # for when called from ExperimentView
         my $experiment = self->request->experiment;
         $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
@@ -34,73 +34,72 @@ sub build {
     #
 
     # Generate cached gff
-    my $gff_task = create_gff_generation_job(
-        gid => $genome->id,
-        organism_name => $genome->organism->name
+    $self->add_task(
+        $self->create_gff( #FIXME simplify this
+            gid => $genome->id,
+            output_file => get_gff_cache_path(
+                gid => $genome->id,
+                genome_name => sanitize_name($genome->organism->name),
+                output_type => 'gff',
+                params => {}
+            )
+        )
     );
-    my $gff_file = $gff_task->{outputs}->[0];
-    push @tasks, $gff_task;
+    my $gff_file = $self->previous_output;
     
     # Generate metaplot
-    my $metaplot_task = create_metaplot_job(
-        bam_file => $bam_file,
-        gff_file => $gff_file,
-        outer => $metaplot_params->{outer},
-        inner => $metaplot_params->{inner},
-        window_size => $metaplot_params->{window},
-        feat_type => 'gene',
-        staging_dir => $staging_dir
+    $self->add_task(
+        $self->metaplot(
+            bam_file => $bam_file,
+            gff_file => $gff_file,
+            feat_type => 'gene'
+        )
     );
-    push @done_files, @{$metaplot_task->{outputs}};
-    push @tasks, $metaplot_task;
-    
-    # Add metadata
-    my $annotations = generate_additional_metadata($metaplot_params, $metaplot_task->{outputs}[1]);
-    my $metadata_task = add_metadata_to_results_job(
-        user => $user,
-        wid => $wid,
-        annotations => $annotations,
-        staging_dir => $staging_dir,
-        done_files => \@done_files,
-        item_id => $experiment_id,
-        item_type => 'experiment',
-        locked => 0
-    );
-    push @tasks, $metadata_task;
 
-    return {
-        tasks => \@tasks,
-        done_files => \@done_files
-    };
+    # Add metadata -- #FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#    my $annotations = generate_additional_metadata($self->previous_outputs->[1]);
+#    my $metadata_task = add_metadata_to_results_job(
+#        user => $user,
+#        wid => $wid,
+#        annotations => $annotations,
+#        staging_dir => $staging_dir,
+#        done_files => \@done_files,
+#        item_id => $experiment_id,
+#        item_type => 'experiment',
+#        locked => 0
+#    );
+#    push @tasks, $metadata_task;
 }
 
 sub generate_additional_metadata {
-    my $metaplot_params = shift;
+    my $self = shift;
     my $metaplot_image_path = shift;
-    
+    my $metaplot_params = $self->params->{metaplot_params};
+
     my @annotations;
     push @annotations, "$metaplot_image_path|||metaplot|parameters: " . join(' ', map { $_.' '.$metaplot_params->{$_} } ('outer', 'inner', 'window'));
     
     return \@annotations;
 }
 
-sub create_metaplot_job {
+sub metaplot {
+    my $self = shift;
     my %opts = @_;
     my $bam_file    = $opts{bam_file};
     my $gff_file    = $opts{gff_file};
-    my $outer       = $opts{outer} // 2000;
-    my $inner       = $opts{inner} // 5000;
-    my $window_size = $opts{window} // 100;
     my $feat_type   = $opts{feat_type};
-    my $staging_dir = $opts{staging_dir};
 
-    my $cmd = catfile($CONF->{SCRIPTDIR}, 'methylation', 'makeMetaplot.pl');
+    my $params = $self->params->{metaplot_params};
+    my $outer       = $params->{outer}  // 2000;
+    my $inner       = $params->{inner}  // 5000;
+    my $window_size = $params->{window} // 100;
+
+    my $cmd = catfile($self->conf->{SCRIPTDIR}, 'methylation', 'makeMetaplot.pl');
     $cmd = 'nice ' . $cmd;
     my $output_name = 'metaplot';
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['-o', $output_name, 0],
             ['-gff', $gff_file, 0],
@@ -115,12 +114,12 @@ sub create_metaplot_job {
         ],
         inputs => [
             $bam_file,
-            $bam_file . '.bai',
+            qq[$bam_file.bai],
             $gff_file
         ],
         outputs => [
-            catfile($staging_dir, "$output_name.tab"),
-            catfile($staging_dir, "$output_name.png")
+            catfile($self->staging_dir, "$output_name.tab"),
+            catfile($self->staging_dir, "$output_name.png")
         ],
         description => "Generating metaplot"
     };

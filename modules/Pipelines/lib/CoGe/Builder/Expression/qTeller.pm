@@ -15,7 +15,8 @@ use CoGe::Exception::Generic;
 
 sub build {
     my $self = shift;
-    my $bam_file = shift;
+    my %opts = @_;
+    my $bam_file = shift @{$opts{data_files}};
     unless ($bam_file) { # use input experiment's bam file (for MeasureExpression)
         my $experiment = self->request->experiment;
         $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];

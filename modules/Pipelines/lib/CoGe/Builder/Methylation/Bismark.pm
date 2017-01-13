@@ -14,7 +14,17 @@ use CoGe::Exception::Generic;
 
 sub build {
     my $self = shift;
-    my $bam_file = shift; # IMPORTANT: this should be the unsorted version, see COGE-706 and http://seqanswers.com/forums/showthread.php?t=45192
+    my %opts = @_;
+    my $bam_file = shift @{$opts{data_files}}; # IMPORTANT: this should be the unsorted version, see COGE-706 and http://seqanswers.com/forums/showthread.php?t=45192
+    unless ($bam_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing bam');
+    }
+
+    # Validate inputs not already checked in Request
+    my $metadata = $self->params->{metadata};
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
+    }
 
     my $gid = $self->request->genome->id;
 
@@ -133,7 +143,7 @@ sub extract_methylation {
     
     push @$args, ['', $bam_file, 0];
     
-    my $done_file = catfile($staging_dir, 'extract_methylation.done');
+    my $done_file = catfile($self->staging_dir, 'extract_methylation.done');
     push @$args, ['', '&& touch ' . $done_file, 0]; # kludge to ensure proper sequence since --output dir must be absolute
     
     return {
@@ -189,6 +199,7 @@ sub bismark_import {
 }
 
 sub generate_additional_metadata {
+    my $self = shift;
     my $read_params        = $self->params->{read_params};
     my $methylation_params = $self->params->{methylation_params};
 

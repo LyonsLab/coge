@@ -24,12 +24,14 @@ sub BUILD { # called immediately after constructor
 
 sub build {
     my $self = shift;
-    my $bam_files = shift;
+    my %opts = @_;
+    my $bam_files = $opts{data_files};
     unless ($bam_files && @$bam_files == 3) { # use input experiment's bam file (for MeasureExpression)
         CoGe::Exception::Generic->throw(message => 'Missing bam inputs');
     }
 
-    unless ($self->params->{metadata}) { # use input experiment's metadata (for MeasureExpression)
+    my $metadata = $self->params->{metadata};
+    unless ($metadata) { # use input experiment's metadata (for MeasureExpression)
         my $experiment = self->request->experiment;
         $self->params->{metadata} = { # could almost use experiment->to_hash here except for source_name
             name       => $experiment->name,
@@ -43,11 +45,11 @@ sub build {
 
     # Set metadata for the pipeline being used
     my $annotations = generate_additional_metadata();
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
     my $chipseq_params = $self->params->{chipseq_params};
-    unless (chipseq_params->{input}) {
+    unless ($chipseq_params->{input}) {
         CoGe::Exception::Generic->throw(message => 'Missing input designation');
     }
 
@@ -64,7 +66,7 @@ sub build {
         }
     }
     unless ($input_file) {
-        CoGe::Exception::Generic->throw( message => "Unable to detect input, base=$input_base", details => Dumper $input_files);
+        CoGe::Exception::Generic->throw( message => "Unable to detect input, base=$input_base", details => Dumper $bam_files);
     }
 
     #
@@ -195,7 +197,7 @@ sub homer_findPeaks {
     my $output_file = "homer_peaks_$replicate_tag.txt";
     
     return {
-        cmd => catfile($HOMER_DIR}, 'findPeaks'),
+        cmd => catfile($HOMER_DIR, 'findPeaks'),
         script => undef,
         args => [
             ['',       $replicate_dir, 0],

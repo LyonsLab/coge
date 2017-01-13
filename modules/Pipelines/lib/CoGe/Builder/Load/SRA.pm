@@ -27,85 +27,56 @@ sub get_site_url {
 
 sub build {
     my $self = shift;
-    
-    # Validate inputs
-    my $gid = $self->params->{genome_id} || $self->params->{gid};
-    return unless $gid;
-    my $source_data = $self->params->{source_data};
-    return unless (defined $source_data && @$source_data);
-#    my $metadata = $self->params->{metadata}; # primary metadata is exctracted from SRA record
-#    return unless $metadata;
-    my $additional_metadata = $self->params->{additional_metadata}; # optional
-
-    # Convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
-#    $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
-
-    # Get genome
-    my $genome = $self->db->resultset('Genome')->find($gid);
-    return unless $genome;
-
-    # Extract SRA accessions
-    my @accns = _extract_accns($source_data);
-    return unless @accns;
-
-    # Retrieve IDs and metdata from SRA
-    my $records = _sra_retrieve(\@accns);
-
-    # Limit the max number of SRA accessions a user can load at one time
-    if (@$records >= MAX_SRA_ACCESSIONS && !$self->user->is_poweruser) {
-        warn "Too many accessions ", join(', ', @accns);
-        return;
-    }
-
-    #
-    # Build workflow
-    #
-
-    my $wait_file;
-    foreach my $record (@$records) {
-        # Format metadata
-        my ($data, $metadata, $additional_metadata, $read_type) = _convert_metadata($record);
-        print STDERR 'SRA: Building workflow for "', $metadata->{name}, '"\n';
-
-        # Limit the max number of SRA experiments a user can load at one time
-        if (@$data > MAX_SRA_EXPERIMENTS && !$self->user->is_poweruser) {
-            warn "Too many experiments for accessions ", join(', ', @accns);
-            return;
-        }
-
-        # Add load experiment pipeline
-        $self->params->{metadata} = $metadata;
-        $self->params->{additional_metadata} = $additional_metadata;
-        $self->params->{read_params}{read_type} = $read_type;
-        $self->params->{source_data} = $data;
-
-        my $expBuilder = CoGe::Builder::Load::Experiment->new({
-#            params      => $self->params,
-#            db          => $self->db,
-#            user        => $self->user,
-#            conf        => $self->conf,
-            request     => $self->request,
-            workflow    => $self->workflow,
-            staging_dir => $self->staging_dir,
-            result_dr   => $self->result_dir,
-            inputs      => ($wait_file ? [ $wait_file ] : undef),
-            #outputs     => $self->outputs
-        });
-        $expBuilder->build();
-
-        # Add wait task to serialize experiment loads -- #FIXME kludge until this can be generalized and incorporated into Buildable
-#        $expBuilder->add_task_chain_all( # won't work because Experiment.pm doesn't use Buildable::add_job
+    my %opts = @_;
+#    my $input_files = $opts{data_files}; #FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#
+#    # Extract SRA accessions
+#    my @accns = _extract_accns($source_data);
+#    return unless @accns;
+#
+#    # Retrieve IDs and metdata from SRA
+#    my $records = _sra_retrieve(\@accns);
+#
+#    # Limit the max number of SRA accessions a user can load at one time
+#    if (@$records >= MAX_SRA_ACCESSIONS && !$self->user->is_poweruser) {
+#        CoGe::Exception::Generic->throw(message => 'Too many accessions', details => Dumper \@accns);
+#    }
+#
+#    #
+#    # Build workflow
+#    #
+#
+#    my $wait_file;
+#    foreach my $record (@$records) {
+#        # Format metadata
+#        my ($data, $metadata, $additional_metadata, $read_type) = _convert_metadata($record);
+#        print STDERR 'SRA: Building workflow for "', $metadata->{name}, '"\n';
+#
+#        # Limit the max number of SRA experiments a user can load at one time
+#        if (@$data > MAX_SRA_EXPERIMENTS && !$self->user->is_poweruser) {
+#            warn "Too many experiments for accessions ", join(', ', @accns);
+#            return;
+#        }
+#
+#        # Add load experiment pipeline
+#        $self->params->{metadata} = $metadata;
+#        $self->params->{additional_metadata} = $additional_metadata;
+#        $self->params->{read_params}{read_type} = $read_type;
+#        $self->params->{source_data} = $data;
+#
+#        my $exp = CoGe::Builder::Load::Experiment->new();
+#        $exp->build();
+#
+#        # Add wait task to serialize experiment loads -- #FIXME kludge until this can be generalized and incorporated into Buildable
+#        $exp->add_task_chain_all(
 #            $self->create_wait()
 #        );
-#        $wait_file = $self->previous_output;
-        my @all_outputs = $self->workflow->get_outputs();
-        my $wait_task = $self->create_wait();
-        push @{$wait_task->{inputs}}, @all_outputs;
-        $self->workflow->add_job($wait_task);
-        $wait_file = $wait_task->{outputs}->[0];
-    }
-    
-    return 1;
+##        my @all_outputs = $self->workflow->get_outputs();
+##        my $wait_task = $self->create_wait();
+##        push @{$wait_task->{inputs}}, @all_outputs;
+##        $self->workflow->add_job($wait_task);
+##        $wait_file = $wait_task->{outputs}->[0];
+#    }
 }
 
 sub _extract_accns {
