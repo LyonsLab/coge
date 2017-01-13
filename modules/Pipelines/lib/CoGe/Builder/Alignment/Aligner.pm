@@ -42,13 +42,6 @@ sub build {
     my $gid = $self->request->genome->id;
     my $trimming_params  = $self->params->{trimming_params};
 
-    # Validate inputs (that weren't already checked in Request)
-    my $metadata = $self->params->{metadata};
-    unless ($metadata) {
-        CoGe::Exception::MissingField->throw(message => "Missing metadata");
-    }
-    my $additional_metadata = $self->params->{additional_metadata}; # optional
-
 # mdb removed 11/6/15 COGE-673
 #    # Check multiple files (if more than one file then all should be FASTQ)
 #    my $numFastq = 0;
