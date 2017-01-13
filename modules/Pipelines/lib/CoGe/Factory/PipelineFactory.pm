@@ -22,7 +22,6 @@ use CoGe::Builder::Tools::SynMap3D;
 use CoGe::Builder::Expression::MeasureExpression;
 use CoGe::Builder::Methylation::CreateMetaplot;
 use CoGe::Builder::PopGen::MeasureDiversity;
-use CoGe::Exception::MissingField;
 use CoGe::Exception::Generic;
 
 my %typeToClass = (
