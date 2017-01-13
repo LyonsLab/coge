@@ -10,7 +10,6 @@ use File::Spec::Functions qw(catdir catfile);
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Accessory::Web qw(get_command_path);
 use CoGe::Exception::Generic;
-use CoGe::Exception::MissingField;
 
 sub build {
     my $self = shift;
