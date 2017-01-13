@@ -14,7 +14,8 @@ use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
 use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage;
-use CoGe::Core::Metadata qw(to_annotations tags_to_string);
+use CoGe::Core::Metadata qw(tags_to_string);
+use CoGe::Builder::Common::DataRetrieval;
 use CoGe::Exception::Generic;
 
 # Public attributes
@@ -23,18 +24,18 @@ has 'jex'           => ( is => 'rw', isa => 'CoGe::JEX::Jex' );
 has 'workflow'      => ( is => 'rw', isa => 'CoGe::JEX::Workflow' );
 has 'site_url'      => ( is => 'rw' );
 has 'page'          => ( is => 'rw' );
-has 'inputs'        => ( is => 'ro', default => sub { [] } ); # mdb added 12/7/16 for SRA.pm
 has 'outputs'       => ( is => 'rw', default => sub { [] } );
-has 'assets'        => ( is => 'rw', default => sub { [] } );
-has 'errors'        => ( is => 'rw', default => sub { [] } );
 
 # Private attributes
 has 'staging_dir'   => ( is => 'rw');#, traits => ['Private'] );
 has 'result_dir'    => ( is => 'rw');#, traits => ['Private'] );
 
+# requires 'build'; # implemented in sub-class
+
 my $previous_outputs = [];
 
 # This allows us to instantiate subclasses with a single arg $self.
+# Called before constructor.
 around BUILDARGS => sub {
     my $orig = shift;
     my $class = shift;
@@ -128,8 +129,17 @@ sub pre_build { # Default method, SynMap & SynMap3D override this
             $site_url = url_for($url, wid => $self->workflow->id);
         }
     }
-
     $self->site_url( get_tiny_link(url => $site_url) ) if $site_url;
+
+    # Add data retrieval tasks
+    my $data = $self->params->{source_data};
+    if ($data) {
+        my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
+        $dr->build($data);
+        return $dr;
+    }
+
+    return;
 }
 
 sub post_build {
@@ -241,42 +251,6 @@ sub sync_outputs {
     my @merged = grep( !$seen{$_}++, $self->workflow->get_outputs(), @{$self->outputs});
     $self->outputs(\@merged);
 }
-
-# Add a pipeline asset.  An asset is a file produced by the pipeline for use by downstream pipelines.
-# The words input and output were purposely avoided.
-sub add_asset {
-    my ($self, $name, $value) = @_;
-    return unless $name;
-    push @{$self->assets}, [ $name, $value ];
-}
-
-sub get_asset {
-    my ($self, $match_name) =  @_;
-    
-    foreach (@{$self->assets}) {
-        my ($name, $value) = @{$_};
-        if ($name eq $match_name) {
-            return $value;
-        }
-    }
-    
-    return;
-}
-
-sub get_assets {
-    my ($self, $match_name) =  @_;
-    
-    my @outputs;
-    foreach (@{$self->assets}) {
-        my ($name, $value) = @{$_};
-        if ($name eq $match_name) {
-            push @outputs, $value;
-        }
-    }
-    
-    return wantarray ? @outputs : \@outputs;
-}
-
 
 ###############################################################################
 # Task Library (replaces CommonTasks.pm)

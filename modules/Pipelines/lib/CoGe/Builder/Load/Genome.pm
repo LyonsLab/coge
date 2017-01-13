@@ -32,6 +32,13 @@ sub get_site_url {
 
 sub build {
     my $self = shift;
+    my %opts = @_;
+    my $input_files = $opts{data_files};
+    my $input_dir   = $opts{data_dir};
+    my $ncbi_accns  = $opts{ncbi_accns};
+    unless (@$input_files || @$input_dir || @$ncbi_accns) {
+        CoGe::Exception::MissingField->throw(message => "Missing inputs");
+    }
     
     # Validate inputs
     my $organism_id = $self->params->{organism_id};
@@ -59,26 +66,23 @@ sub build {
     # Create tasks to retrieve files #TODO move to Buildable::pre_build()
     my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
     $dr->build();
-    my @input_files = @{$dr->data_files};
-    my $input_dir   = @{$dr->data_dir};
-    my @ncbi_accns  = @{$dr->ncbi_accns};
-    
+
     # Build steps to add genome
-    if (@ncbi_accns) { # NCBI-based load
+    if (@$ncbi_accns) { # NCBI-based load
         $self->add_task(
             $self->load_genome_from_NCBI(
-                ncbi_accns => \@ncbi_accns,
+                ncbi_accns => $ncbi_accns,
                 metadata => $metadata,
             )
         );
     }
     else { # File-based load
-        my ($fasta_file) = @input_files; # first file (in case just one);
-        if (@input_files > 1 || $input_dir) { # multiple FASTA files
+        my ($fasta_file) = @$input_files; # first file (in case just one);
+        if (@$input_files > 1 || $input_dir) { # multiple FASTA files
             # Concatenate all input files into one
             $self->add_task_chain_all(
                 $self->join_files(
-                    input_files => \@input_files, 
+                    input_files => $input_files,
                     input_dir => $input_dir,
                     output_file => catfile($self->staging_dir, 'concatenated_genome.fasta'),
                 )

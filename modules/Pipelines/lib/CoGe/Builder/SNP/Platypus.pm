@@ -14,8 +14,12 @@ use CoGe::Exception::Generic;
 
 sub build {
     my $self = shift;
-    my $bam_file = shift;
-    my $isSorted = shift; # input bam file is already sorted (for passing sorted bam file from Experiment.pm)
+    my %opts = @_;
+    my $bam_file = shift @{$opts{data_files}};
+    my $isSorted = $opts{is_sorted}; # input bam file is already sorted (for passing sorted bam file from Experiment.pm)
+    unless ($bam_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing bam');
+    }
 
     my $gid = $self->request->genome->id;
 

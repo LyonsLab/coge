@@ -14,7 +14,8 @@ use CoGe::Exception::MissingField;
 
 sub build {
     my $self = shift;
-    my $fastq = shift; # array ref of fastq files
+    my %opts = @_;
+    my $fastq = $opts{data_files}; # array ref of FASTQ files
     unless ($fastq && @$fastq) {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
     }

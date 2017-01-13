@@ -33,28 +33,30 @@ sub get_site_url {
 
 sub build {
     my $self = shift;
-    
+    my %opts = @_;
+    my $input_files = $opts{data_files};
+    unless ($input_files && @$input_files) {
+        CoGe::Exception::Generic->throw(message => 'Missing inputs');
+    }
+
     # Validate inputs not already checked in Request
     my $metadata = $self->params->{metadata};
     unless ($metadata) {
         CoGe::Exception::MissingField->throw(message => "Missing metadata");
     }
-
     # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
     $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
-    
-    # Determine file type if not set
+
+    my $genome = $self->request->genome;
+
+    # Determine file type if not set #FIXME this is a little kludgey
+    my $data = $self->params->{source_data};
     my $file_type = $data->[0]->{file_type}; # type of first data file
     ($file_type) = detect_data_type($file_type, $data->[0]->{path}) unless $file_type;
     
     #
     # Build workflow
     #
-
-    # Create tasks to retrieve files #TODO move to Buildable::pre_build()
-    my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
-    $dr->build();
-    my @input_files = @{$dr->data_files};
 
     # Add analytical tasks based on file type
     if ( $file_type eq 'fastq' || $file_type eq 'bam' || $file_type eq 'sra' ) {
@@ -65,17 +67,17 @@ sub build {
         if ( $file_type && ( $file_type eq 'fastq' || $file_type eq 'sra' ) ) {
             # Add alignment workflow
             my $aligner = CoGe::Builder::Alignment::Aligner->new($self);
-            $aligner->build(\@input_files);
-            @bam_files = @{$aligner->bam};
+            $aligner->build(data_files => $input_files);
+            @bam_files     = @{$aligner->bam};
             @raw_bam_files = @{$aligner->raw_bam};
         }
         elsif ( $file_type && $file_type eq 'bam' ) {
             $self->add_task(
                 $self->load_bam(
-                    bam_file => $input_files[0]
+                    bam_file => $input_files->[0]
                 )
             );
-            @bam_files = @raw_bam_files = @input_files;
+            @bam_files = @raw_bam_files = @$input_files;
         }
         else { # error -- should never happen
             CoGe::Exception::Generic->throw(message => 'Invalid file type');
@@ -84,38 +86,26 @@ sub build {
         # Add expression workflow (if specified)
         if ( $self->params->{expression_params} ) {
             my $expr = CoGe::Builder::Expression::qTeller->new($self);
-            $expr->build($bam_files[0]);
+            $expr->build(data_files => \@bam_files);
         }
         
         # Add SNP workflow (if specified)
         if ( $self->params->{snp_params} ) {
             my $isBamSorted = ($file_type ne 'bam');
             my $snp_finder = CoGe::Builder::SNP::SNPFinder->new($self);
-            $snp_finder->build($bam_files[0], $isBamSorted);
+            $snp_finder->build(data_files => \@bam_files, is_sorted => $isBamSorted);
         }
         
         # Add methylation workflow (if specified)
         if ( $self->params->{methylation_params} ) {
             my $aligner = CoGe::Builder::Alignment::Aligner->new($self);
-            $aligner->build($bam_files[0], $raw_bam_files[0]);
+            $aligner->build(data_files => [ $bam_files[0], $raw_bam_files[0] ]);
         }
         
         # Add ChIP-seq workflow (if specified)
         if ( $self->params->{chipseq_params} ) {
-            my $chipseq_params = {
-                user => $self->user,
-                wid => $self->workflow->id,
-                genome => $genome,
-                input_files => $bam_files,
-                metadata => $metadata,
-                additional_metadata => $additional_metadata,
-                read_params => $self->params->{read_params},
-                chipseq_params => $self->params->{chipseq_params},
-            };
-
-            my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
-            push @tasks, @{$chipseq_workflow->{tasks}};
-            push @done_files, @{$chipseq_workflow->{done_files}};
+            my $chipseq = CoGe::Builder::Protein::ChIPseq->new($self);
+            $chipseq->build(data_files => \@bam_files);
         }
     }
     # Else, all other file types

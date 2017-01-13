@@ -18,9 +18,9 @@ sub get_name {
 }
 
 sub build {
-    my %opts = @_;
-    my $experiment = $opts{experiment};
+    my $self = shift;
 
+    my $experiment = $self->request->experiment;
     my $genome = $experiment->genome;
 
     #
@@ -78,7 +78,7 @@ sub build {
         $self->sumstats(
             vcf => $vcf_file,
             gff => $gff_file,
-            fasta => $fasta_file,
+            fasta => $reheader_fasta,
             output_path => $result_path
         )
     );

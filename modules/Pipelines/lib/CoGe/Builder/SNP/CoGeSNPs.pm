@@ -14,7 +14,8 @@ use CoGe::Exception::Generic;
 
 sub build {
     my $self = shift;
-    my $bam_file = shift;
+    my %opts = @_;
+    my $bam_file = shift @{$opts{data_files}};
 
     my $gid = $self->request->genome->id;
 

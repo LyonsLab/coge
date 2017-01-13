@@ -29,6 +29,11 @@ sub get_name {
 
 sub build {
     my $self = shift;
+    my %opts = @_;
+    my $gff_file = shift @{$opts{data_files}};
+    unless ($gff_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing gff');
+    }
 
     # Validate inputs
     my $genome = $self->request->genome;
@@ -41,15 +46,10 @@ sub build {
     # Build workflow
     #
 
-    # Create tasks to retrieve files #TODO move to Buildable::pre_build()
-    my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
-    $dr->build();
-    my @input_files = @{$dr->data_files};
-
     $self->add_task(
         $self->load_annotation(
             gid => $genome->id,
-            input_file => $input_files[0]
+            input_file => $gff_file
         )
     );
 }
@@ -63,16 +63,18 @@ sub load_annotation {
     my $output_path = catdir($self->staging_dir, "load_annotation");
 #    my $result_file = get_workflow_results_file($user->name, $wid);
 
+    my $metadata = $self->params->{metadata};
+
     return {
-        cmd => catfile($self->conf->{SCRIPTDIR}, "load_annotation.pl")
+        cmd => catfile($self->conf->{SCRIPTDIR}, "load_annotation.pl"),
         args => [
             ['-user_name',   $self->user->name,   0],
             ['-wid',         $self->workflow->id, 0],
-            ['-name',        ($metadata->{name} ? shell_quote($metadata->{name}) : '""'),               0],
-            ['-desc',        ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
-            ['-link',        ($metadata->{link} ? shell_quote($metadata->{link}) : '""'),               0],
-            ['-version',     ($metadata->{version} ? shell_quote($metadata->{version}) : '""'),         0],
-            ['-source_name', ($metadata->{source} ? shell_quote($metadata->{source}) : '""'),           0],
+            ['-name',        ($metadata->{name} ?        shell_quote($metadata->{name})    : qq['']),     0],
+            ['-desc',        ($metadata->{description} ? shell_quote($metadata->{description}) : qq['']), 0],
+            ['-link',        ($metadata->{link} ?        shell_quote($metadata->{link})    : qq['']),     0],
+            ['-version',     ($metadata->{version} ?     shell_quote($metadata->{version}) : qq['']),     0],
+            ['-source_name', ($metadata->{source} ?      shell_quote($metadata->{source})  : qq['']),     0],
             ['-gid',         $gid, 0],
             ['-staging_dir', "./load_annotation",         0],
             ['-data_file',   shell_quote($input_file),    0],

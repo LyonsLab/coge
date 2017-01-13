@@ -14,21 +14,23 @@ use CoGe::Accessory::IRODS qw(irods_iget irods_set_env);
 use CoGe::Core::Storage qw(get_upload_path get_sra_cache_path);
 use CoGe::Exception::MissingField;
 
-# Inputs
-# <none>
-
 # Outputs
 has data_files => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # input files
 has data_dir   => (is => 'ro', isa => 'Str'); # input directory
 has ncbi_accns => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # GenBank accessions
 
+my $MAX_DATA_ITEMS = 100;
+
 sub build {
     my $self = shift;
+    my $data = shift;
 
     # Validate inputs
-    my $data = $self->params->{source_data};
-    unless (defined $data && @$data) {
-        CoGe::Exception::MissingField->throw(message => "Missing source_data");
+    unless ($data && @$data) {
+        CoGe::Exception::Generic->throw(message => 'Empty source_data');
+    }
+    if (@$data > $MAX_DATA_ITEMS) {
+        CoGe::Exception::Generic->throw(message => "Too many data items given (" . scalar(@$data) . " > $MAX_DATA_ITEMS)");
     }
 
     my $load_id = $self->params->{load_id} || get_unique_id();
@@ -208,7 +210,5 @@ sub fastq_dump {
         description => "Fetching $accn from NCBI-SRA"
     };
 }
-
-__PACKAGE__->meta->make_immutable;
 
 1;
