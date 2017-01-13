@@ -4,13 +4,12 @@ use Moose;
 extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
-use Switch;
 use File::Spec::Functions qw(catfile);
 
-use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Core::Storage qw(get_upload_path);
-use CoGe::Builder::CommonTasks;
-use CoGe::Exception::MissingField;
+use CoGe::Accessory::Utils;
+use CoGe::Accessory::Web qw(get_command_path);
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
 use CoGe::Exception::Generic;
 
 sub get_name {
@@ -25,16 +24,10 @@ sub get_name {
 
 sub build {
     my $self = shift;
+
+    my $genome = $self->request->genome;
     
     # Validate inputs
-    my $genome_id = $self->params->{genome_id};
-    unless ($genome_id) {
-        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
-    }
-    my $data = $self->params->{source_data};
-    unless (defined $data && @$data) {
-        CoGe::Exception::MissingField->throw(message => "Missing source_data");
-    }
     my $metadata = $self->params->{metadata};
     unless ($metadata) {
         CoGe::Exception::MissingField->throw(message => "Missing metadata");
@@ -44,12 +37,6 @@ sub build {
     # mdb added 2/25/15 - convert from Mojolicious boolean: bless( do{\\(my $o = 1)}, 'Mojo::JSON::_Bool' )
     $metadata->{restricted} = $metadata->{restricted} ? 1 : 0;
 
-    # Get organism
-    my $genome = $self->db->resultset('Genome')->find($genome_id);
-    unless ($genome) {
-        CoGe::Exception::Generic->throw(message => "Genome $genome_id not found");
-    }
-    
     # Determine file type if not set
     my $file_type = $data->[0]->{file_type}; # type of first data file
     ($file_type) = detect_data_type($file_type, $data->[0]->{path}) unless $file_type;
@@ -57,31 +44,55 @@ sub build {
     #
     # Build workflow
     #
-    my (@tasks, @input_files, @done_files);
-    
-    # Create tasks to retrieve files
-    my $upload_dir = get_upload_path($self->user->name, $load_id);
-    my $data_workflow = create_data_retrieval_workflow(upload_dir => $upload_dir, data => $data);
-    push @tasks, @{$data_workflow->{tasks}} if ($data_workflow->{tasks});
-    push @input_files, @{$data_workflow->{outputs}} if ($data_workflow->{outputs});
+
+    # Create tasks to retrieve files #TODO move to Buildable::pre_build()
+    my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
+    $dr->build();
+    my @input_files = @{$dr->data_files};
     
     # Add load batch task
-    my $task = create_load_batch_job(
-        user => $self->user,
-        staging_dir => $self->staging_dir,
-        wid => $self->workflow->id,
-        gid => $genome->id,
-        nid => $self->params->{notebook_id},
-        input_files => \@input_files,
-        metadata => $metadata,
+    $self->add_task(
+        $self->load_batch(
+            gid => $genome->id,
+            nid => $self->params->{notebook_id},
+            input_files => \@input_files
+        )
     );
-    push @tasks, $task;
-    push @done_files, $task->{outputs}->[1];
-    
-    #print STDERR Dumper \@tasks, "\n";
-    $self->workflow->add_jobs(\@tasks);
-    
-    return 1;
+}
+
+sub load_batch {
+    my $self = shift;
+    my %opts = @_;
+    my $nid = $opts{nid};
+    my $gid = $opts{gid};
+    my $files = $opts{input_files};
+
+    my $file_str = join(',', @$files);
+
+    my $args = [
+        ['-user_name',   $self->user->name, 0],
+        ['-name',        shell_quote($metadata->{name}), 0],
+        ['-desc',        shell_quote($metadata->{description}), 0],
+        ['-gid',         $gid, 0],
+        ['-wid',         $self->workflow->id, 0],
+        ['-staging_dir', $self->staging_dir, 0],
+        ['-files',       "'".$file_str."'", 0],
+        ['-config',      $self->conf->{_CONFIG_PATH}, 0]
+    ];
+    push $args, ['-nid', $nid, 0] if ($nid);
+
+    return {
+        cmd => catfile($self->conf->{SCRIPTDIR}, "load_batch.pl"),
+        args => $args,
+        inputs => [
+            @$files
+        ],
+        outputs => [
+            [$self->staging_dir, 1],
+            catdir($self->staging_dir, 'log.done')
+        ],
+        description => "Loading batch experiments"
+    };
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -4,17 +4,15 @@ use Moose;
 extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
-use File::Spec::Functions qw(catfile catdir);
-use File::Basename qw(basename);
+use File::Spec::Functions qw(catdir catfile);
 use String::ShellQuote qw(shell_quote);
 
-use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Accessory::Web qw(url_for);
-use CoGe::Core::Storage qw(get_upload_path);
-use CoGe::Builder::CommonTasks;
-use CoGe::Builder::Common::DataRetrieval;
-use CoGe::Exception::MissingField;
+use CoGe::Accessory::Utils;
+use CoGe::Accessory::Web qw(get_command_path);
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
 use CoGe::Exception::Generic;
+use CoGe::Exception::ItemNotFound;
 
 sub get_name {
     my $self = shift;
@@ -40,10 +38,6 @@ sub build {
     unless ($organism_id) {
         CoGe::Exception::MissingField->throw(message => "Missing organism_id");
     }
-    my $data = $self->params->{source_data};
-    unless (defined $data && @$data) {
-        CoGe::Exception::MissingField->throw(message => "Missing source_data");
-    }
     my $metadata = $self->params->{metadata};
     unless ($metadata) {
         CoGe::Exception::MissingField->throw(message => "Missing metadata");
@@ -55,25 +49,21 @@ sub build {
     # Get organism
     my $organism = $self->db->resultset('Organism')->find($organism_id);
     unless ($organism) {
-        CoGe::Exception::Generic->throw(message => "Organism $organism_id not found");
+        CoGe::Exception::ItemNotFound->throw(type => 'organism', id => $organism_id);
     }
     
     #
     # Build workflow
     #
     
-    # Create tasks to retrieve files #TODO move to pre_build()
-    my $dr = CoGe::Builder::Common::DataRetrieval->new({ #FIXME better way to pass these args? See Moose constructors
-        request     => $self->request,
-        workflow    => $self->workflow,
-        staging_dir => $self->staging_dir,
-        result_dr   => $self->result_dir,
-        outputs     => $self->outputs
-    });
+    # Create tasks to retrieve files #TODO move to Buildable::pre_build()
+    my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
     $dr->build();
+    my @input_files = @{$dr->data_files};
+    my $input_dir   = @{$dr->data_dir};
+    my @ncbi_accns  = @{$dr->ncbi_accns};
     
     # Build steps to add genome
-    my @ncbi_accns  = $dr->get_assets('ncbi_accn');
     if (@ncbi_accns) { # NCBI-based load
         $self->add_task(
             $self->load_genome_from_NCBI(
@@ -83,11 +73,8 @@ sub build {
         );
     }
     else { # File-based load
-        my @input_files = $dr->get_assets('data_file');
-        my $input_dir   = $dr->get_asset('data_dir');
-        
         my ($fasta_file) = @input_files; # first file (in case just one);
-        if (@input_files > 1 || $input_dir) {
+        if (@input_files > 1 || $input_dir) { # multiple FASTA files
             # Concatenate all input files into one
             $self->add_task_chain_all(
                 $self->join_files(
@@ -125,12 +112,9 @@ sub build {
             $self->load_genome(
                 organism_id => $organism->id,
                 fasta_file => $processed_fasta_file,
-                metadata => $metadata
             )
         );
     }
-    
-    return 1;
 }
 
 # mdb removed 10/12/16 -- replaced below for COGE-721
@@ -214,7 +198,7 @@ sub process_fasta {
 sub load_genome {
     my ($self, %params) = @_;
 
-    my $metadata    = $params{metadata};
+    my $metadata    = $self->params->metadata;
     my $organism_id = $params{organism_id};
     my $fasta_file  = $params{fasta_file};
     
