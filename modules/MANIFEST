@@ -160,7 +160,7 @@ Pipelines/lib/CoGe/Builder/Alignment/BWAmeth.pm
 Pipelines/lib/CoGe/Builder/Alignment/GSNAP.pm
 Pipelines/lib/CoGe/Builder/Alignment/HISAT2.pm
 Pipelines/lib/CoGe/Builder/Alignment/Tophat.pm
-Pipelines/lib/CoGe/Builder/Common/DataRetrieval.pm
+Pipelines/lib/CoGe/Builder/Data/Extractor.pm
 Pipelines/lib/CoGe/Builder/CommonTasks.pm
 Pipelines/lib/CoGe/Builder/Export/Experiment.pm
 Pipelines/lib/CoGe/Builder/Export/Fasta.pm
