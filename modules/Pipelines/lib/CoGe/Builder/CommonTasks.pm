@@ -447,50 +447,6 @@ sub create_image_job {
     };
 }
 
-sub create_bgzip_job {
-    my $input_file = shift;
-    my $output_file = $input_file . '.bgz';
-
-    my $cmd = get_command_path('BGZIP');
-
-    return {
-        cmd => "$cmd -c $input_file > $output_file && touch $output_file.done",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_file
-        ],
-        outputs => [
-            $output_file,
-            "$output_file.done"
-        ],
-        description => "Compressing " . basename($input_file) . " with bgzip"
-    };
-}
-
-sub create_tabix_index_job {
-    my $input_file = shift;
-    my $index_type = shift; 
-    my $output_file = $input_file . '.tbi';
-
-    my $cmd = $CONF->{TABIX} || 'tabix';
-
-    return {
-        cmd => "$cmd -p $index_type $input_file && touch $output_file.done",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_file,
-            $input_file . '.done'
-        ],
-        outputs => [
-            $output_file,
-            "$output_file.done"
-        ],
-        description => "Indexing " . basename($input_file)
-    };
-}
-
 sub create_bigwig_to_wig_job {
     my %opts = @_;
     my $input_file  = $opts{input_file};
@@ -604,40 +560,6 @@ sub create_load_batch_job {
             catdir($staging_dir, 'log.done')
         ],
         description => "Loading batch experiments"
-    };
-}
-
-sub create_sumstats_job {
-    my %opts = @_;
-
-    # Required arguments
-    my $vcf = $opts{vcf};
-    my $gff = $opts{gff};
-    my $fasta = $opts{fasta};
-    my $output_path = $opts{output_path};
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "popgen/sumstats.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-    
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['-vcf',    $vcf,         0],
-            ['-gff',    $gff,         0],
-            ['-fasta',  $fasta,       0],
-            ['-output', $output_path, 0],
-            ['-debug',  '',           0]
-        ],
-        inputs => [
-            $vcf,
-            $gff,
-            $fasta
-        ],
-        outputs => [
-            catfile($output_path, "sumstats.done"),
-        ],
-        description => "Calculating summary statistics"
     };
 }
 

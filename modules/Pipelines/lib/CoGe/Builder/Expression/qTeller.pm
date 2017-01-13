@@ -4,17 +4,14 @@ use Moose;
 extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
-use File::Basename qw(fileparse basename dirname);
 use File::Spec::Functions qw(catdir catfile);
 use String::ShellQuote qw(shell_quote);
 
-use CoGe::Accessory::Utils qw(to_filename sanitize_name);
-use CoGe::Accessory::Web qw(get_defaults get_command_path);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_workflow_results_file get_gff_cache_path get_genome_cache_path);
-use CoGe::Core::Metadata qw(to_annotations tags_to_string);
+use CoGe::Accessory::Utils;
+use CoGe::Accessory::Web qw(get_command_path);
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
 use CoGe::Exception::Generic;
-
-
 
 sub build {
     my $self = shift;
@@ -36,9 +33,6 @@ sub build {
 
     my $genome = $self->request->genome;
 
-    # Setup paths
-    my $FASTA_CACHE_DIR = get_genome_cache_path($genome->id);
-
     # Check if genome has annotations
     my $isAnnotated = $self->request->genome->has_gene_features;
 
@@ -46,6 +40,10 @@ sub build {
     my $annotations = generate_additional_metadata($self->params->{expression_params}, $isAnnotated);
     my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
+
+    #
+    # Build workflow
+    #
 
     # Reheader the fasta file
     $self->add_task(

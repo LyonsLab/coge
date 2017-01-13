@@ -4,28 +4,15 @@ use Moose;
 extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
-use Switch;
-use File::Spec::Functions qw(catfile catdir);
-use File::Path qw(make_path);
-use String::ShellQuote qw(shell_quote);
 
-use CoGe::Accessory::Utils qw(get_unique_id to_filename_base);
 use CoGe::Accessory::Web qw(url_for);
-use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file get_upload_path);
 use CoGe::Core::Experiment qw(detect_data_type);
-use CoGe::Core::Metadata qw(to_annotations tags_to_string);
 use CoGe::Builder::CommonTasks;
-use CoGe::Builder::Alignment::Aligner qw(build);
-use CoGe::Builder::Expression::qTeller qw(build);
-use CoGe::Builder::PopGen::SummaryStats qw(build);
-use CoGe::Builder::SNP::CoGeSNPs qw(build);
-use CoGe::Builder::SNP::Samtools qw(build);
-use CoGe::Builder::SNP::Platypus qw(build);
-use CoGe::Builder::SNP::GATK qw(build);
-use CoGe::Builder::Methylation::Bismark qw(build);
-use CoGe::Builder::Methylation::BWAmeth qw(build);
-use CoGe::Builder::Methylation::Metaplot qw(build);
-use CoGe::Builder::Protein::ChIPseq qw(build);
+use CoGe::Builder::Alignment::Aligner;
+use CoGe::Builder::Expression::qTeller;
+use CoGe::Builder::SNP::SNPFinder;
+use CoGe::Builder::Methylation::Analyzer;
+use CoGe::Builder::Protein::ChIPseq;
 use CoGe::Exception::MissingField;
 use CoGe::Exception::Generic;
 
@@ -118,22 +105,22 @@ sub build {
         }
         
         # Add ChIP-seq workflow (if specified)
-#        if ( $self->params->{chipseq_params} ) {
-#            my $chipseq_params = {
-#                user => $self->user,
-#                wid => $self->workflow->id,
-#                genome => $genome,
-#                input_files => $bam_files,
-#                metadata => $metadata,
-#                additional_metadata => $additional_metadata,
-#                read_params => $self->params->{read_params},
-#                chipseq_params => $self->params->{chipseq_params},
-#            };
-#
-#            my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
-#            push @tasks, @{$chipseq_workflow->{tasks}};
-#            push @done_files, @{$chipseq_workflow->{done_files}};
-#        }
+        if ( $self->params->{chipseq_params} ) {
+            my $chipseq_params = {
+                user => $self->user,
+                wid => $self->workflow->id,
+                genome => $genome,
+                input_files => $bam_files,
+                metadata => $metadata,
+                additional_metadata => $additional_metadata,
+                read_params => $self->params->{read_params},
+                chipseq_params => $self->params->{chipseq_params},
+            };
+
+            my $chipseq_workflow = CoGe::Builder::Protein::ChIPseq::build($chipseq_params);
+            push @tasks, @{$chipseq_workflow->{tasks}};
+            push @done_files, @{$chipseq_workflow->{done_files}};
+        }
     }
     # Else, all other file types
 #    else {
