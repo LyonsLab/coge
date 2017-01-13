@@ -35,10 +35,6 @@ sub build {
     my $self = shift;
     
     # Validate inputs not already checked in Request
-    my $data = $self->params->{source_data};
-    unless (defined $data && ref($data) eq 'ARRAY' && @$data) {
-        CoGe::Exception::MissingField->throw(message => "Missing source_data");
-    }
     my $metadata = $self->params->{metadata};
     unless ($metadata) {
         CoGe::Exception::MissingField->throw(message => "Missing metadata");
