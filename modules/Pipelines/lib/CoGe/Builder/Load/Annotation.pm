@@ -30,7 +30,7 @@ sub get_name {
 sub build {
     my $self = shift;
     my %opts = @_;
-    my $gff_file = shift @{$opts{data_files}};
+    my ($gff_file) = @{$opts{data_files}};
     unless ($gff_file) {
         CoGe::Exception::Generic->throw(message => 'Missing gff');
     }
