@@ -7,7 +7,6 @@ use Data::Dumper qw(Dumper);
 
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Core::Experiment qw(detect_data_type);
-use CoGe::Builder::CommonTasks;
 use CoGe::Builder::Alignment::Aligner;
 use CoGe::Builder::Expression::qTeller;
 use CoGe::Builder::SNP::SNPFinder;
@@ -70,6 +69,9 @@ sub build {
             $aligner->build(data_files => $input_files);
             @bam_files     = @{$aligner->bam};
             @raw_bam_files = @{$aligner->raw_bam};
+            unless (@bam_files) {
+                CoGe::Exception::Generic->throw(message => 'Alignment returned no results');
+            }
         }
         elsif ( $file_type && $file_type eq 'bam' ) {
             $self->add_task(
@@ -79,7 +81,7 @@ sub build {
             );
             @bam_files = @raw_bam_files = @$input_files;
         }
-        else { # error -- should never happen
+        else {
             CoGe::Exception::Generic->throw(message => 'Invalid file type');
         }
         
@@ -109,42 +111,47 @@ sub build {
         }
     }
     # Else, all other file types
-#    else {
-#        # Add conversion step for BigWig files
-#        my $input_file = $input_files[0];
-#        if ( $file_type eq 'bw' ) {
-#            my $wig_task = create_bigwig_to_wig_job(
-#                staging_dir => $self->staging_dir,
-#                input_file => $input_file
-#            );
-#            push @tasks, $wig_task;
-#            push @done_files, $wig_task->{outputs}->[1];
-#            $input_file = $wig_task->{outputs}->[0];
-#        }
-#
-#        # Submit workflow to generate experiment
-#        my $load_task = create_load_experiment_job(
-#            user => $self->user,
-#            staging_dir => $self->staging_dir,
-#            wid => $self->workflow->id,
-#            gid => $genome->id,
-#            input_file => $input_file,
-#            metadata => $metadata,
-#            additional_metadata => $additional_metadata,
-#            normalize => $self->params->{normalize} ? $self->params->{normalize_method} : 0
-#        );
-#        push @tasks, $load_task;
-#        push @done_files, $load_task->{outputs}->[1];
-#    }
-    
-    # Add pipeline input dependencies to tasks -- temporary kludge for SRA.pm, mdb 12/7/16
-#    if ($self->inputs && @{$self->inputs}) {
-#        foreach my $task (@tasks) {
-#            push @{$task->{inputs}}, @{$self->inputs};
-#        }
-#    }
+    else {
+        # Add conversion step for BigWig files
+        my $input_file = $input_files->[0];
+        if ( $file_type eq 'bw' ) {
+            ($input_file) = $self->add_task(
+                $self->bigwig_to_wig($input_file)
+            );
+        }
 
-#    $self->workflow->add_jobs(\@tasks);
+        $self->add_task(
+            $self->load_experiment(
+                gid => $genome->id,
+                input_file => $input_file,
+                normalize => $self->params->{normalize} ? $self->params->{normalize_method} : 0
+            )
+        );
+    }
+}
+
+sub bigwig_to_wig {
+    my $self = shift;
+    my $input_file  = shift;
+
+    my $filename    = basename($input_file) . '.wig';
+    my $output_file = catfile($self->staging_dir, $filename);
+    my $done_file   = $output_file . '.done';
+
+    my $cmd = $self->conf->{BIGWIGTOWIG} || 'bigWigToWig';
+
+    return {
+        cmd => "$cmd $input_file $output_file && touch $done_file",
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            $done_file
+        ],
+        description => 'Converting BigWig to WIG format'
+    };
 }
 
 __PACKAGE__->meta->make_immutable;
