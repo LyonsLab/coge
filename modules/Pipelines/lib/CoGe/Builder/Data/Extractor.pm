@@ -1,4 +1,4 @@
-package CoGe::Builder::Common::DataRetrieval;
+package CoGe::Builder::Data::Extractor;
 
 use Moose;
 extends 'CoGe::Builder::Buildable';
@@ -11,8 +11,8 @@ use String::ShellQuote qw(shell_quote);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Accessory::Web qw(split_url);
 use CoGe::Accessory::IRODS qw(irods_iget irods_set_env);
-use CoGe::Core::Storage qw(get_upload_path get_sra_cache_path);
-use CoGe::Exception::MissingField;
+use CoGe::Core::Storage qw(get_upload_path);
+use CoGe::Exception::Generic;
 
 # Outputs
 has data_files => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # input files
@@ -34,35 +34,42 @@ sub build {
     }
 
     my $load_id = $self->params->{load_id} || get_unique_id();
-    
-    # Create tasks to retrieve files
+
     my $upload_dir = get_upload_path($self->user->name, $load_id);
+
+    #
+    # Build workflow
+    #
+
     foreach my $item (@$data) {
         my $type = lc($item->{type});
 
         # Check if NCBI accession input
-        if ($type eq 'ncbi') {
+        if ($type eq 'ncbi' || $type eq 'sra') {
             #TODO move file retrieval from genbank_genome_loader.pl to here
-            push @{$self->ncbi_accn}, $item->{path};
+            #TODO move file retrieval from SRA.pm to here
+            push @{$self->ncbi_accns}, $item->{path};
             next;
         }
         
         # Retrieve file based on source type (Upload, IRODS, HTTP, FTP)
+        my $input_file;
         if ($type eq 'file') {  # upload
             my $filepath = catfile($upload_dir, $item->{path});
             if (-r $filepath) {
-                $self->add_output($filepath);
+                $input_file = $filepath;
             }
         }
         elsif ($type eq 'irods') {
             my $irods_path = $item->{path};
-            $irods_path =~ s/^irods//; # strip of leading "irods" from LoadExperiment page # FIXME remove this in FileSelect
+            $irods_path =~ s/^irods//; # strip of leading "irods" from LoadExperiment page # FIXME remove this into FileSelect
             $self->add_task(
                 $self->iget(
                     irods_path => $irods_path, 
                     local_path => $upload_dir
                 )                
             );
+            $input_file = $self->previous_output();
         }
         elsif ($type eq 'http' or $type eq 'ftp') {
             $self->add_task(
@@ -73,20 +80,12 @@ sub build {
                     dest_path => $upload_dir
                 )
             );
-        }
-        elsif ($type eq 'sra') {
-            $self->add_task(
-                $self->fastq_dump(
-                    accn => $item->{path},
-                    dest_path => get_sra_cache_path()
-                )
-            );
-            next;
+            $input_file = $self->previous_output();
         }
 
-        # Process input files
-        my $input_file = $self->previous_output();
-        if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) { # Untar if necessary
+        # Process file
+        if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) {
+            # Untar file
             my $output_dir = catdir($self->staging_dir, 'untarred');
             $self->add_task_chain(
                 $self->untar(
@@ -96,7 +95,8 @@ sub build {
             );
             $self->data_dir($output_dir);
         }
-        elsif ( $input_file =~ /\.gz$/ ) { # Decompress if necessary
+        elsif ( $input_file =~ /\.gz$/ ) {
+            # Decompress file
             $self->add_task_chain(
                 $self->gunzip( input_file => $input_file )
             );
@@ -168,46 +168,6 @@ sub ftp_get {
             $output_file
         ],
         description => "Fetching $url"
-    };
-}
-
-sub fastq_dump {
-    my ($self, %params) = @_;
-    my $accn = $params{accn};
-    my $dest_path = $params{dest_path};
-    my $read_type = $self->params->{read_params}{read_type} // 'single';
-
-    my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
-    $cmd .= ' --split-files' if ($read_type eq 'paired');
-
-    my $output_filepath = catfile($dest_path, $accn);
-
-    my (@output_files, @done_files);
-    if ($read_type eq 'paired') {
-        @output_files = (
-            $output_filepath . '_1.fastq',
-            $output_filepath . '_2.fastq'
-        );
-        @done_files = (
-            $output_filepath . '_1.fastq.done',
-            $output_filepath . '_2.fastq.done'
-        );
-    }
-    else {
-        @output_files = ( $output_filepath . '.fastq');
-        @done_files   = ( $output_filepath . '.fastq.done' );
-    }
-
-    return {
-        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch " . join(' ', @done_files),
-        script => undef,
-        args => [],
-        inputs => [],
-        outputs => [
-            @output_files,
-            @done_files
-        ],
-        description => "Fetching $accn from NCBI-SRA"
     };
 }
 
