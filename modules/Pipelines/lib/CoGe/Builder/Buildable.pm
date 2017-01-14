@@ -15,7 +15,7 @@ use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage;
 use CoGe::Core::Metadata qw(tags_to_string);
-use CoGe::Builder::Common::DataRetrieval;
+use CoGe::Builder::Data::Extractor;
 use CoGe::Exception::Generic;
 
 # Public attributes
@@ -24,13 +24,12 @@ has 'jex'           => ( is => 'rw', isa => 'CoGe::JEX::Jex' );
 has 'workflow'      => ( is => 'rw', isa => 'CoGe::JEX::Workflow' );
 has 'site_url'      => ( is => 'rw' );
 has 'page'          => ( is => 'rw' );
-has 'outputs'       => ( is => 'rw', default => sub { [] } );
 
 # Private attributes
 has 'staging_dir'   => ( is => 'rw');#, traits => ['Private'] );
 has 'result_dir'    => ( is => 'rw');#, traits => ['Private'] );
 
-# requires 'build'; # implemented in sub-class
+# requires 'build'; # must be implemented in sub-class
 
 my $previous_outputs = [];
 
@@ -44,7 +43,6 @@ around BUILDARGS => sub {
         return $class->$orig(
             request     => $_[0]->request,
             workflow    => $_[0]->workflow,
-            outputs     => $_[0]->outputs,
             staging_dir => $_[0]->staging_dir,
         );
     }
@@ -134,7 +132,7 @@ sub pre_build { # Default method, SynMap & SynMap3D override this
     # Add data retrieval tasks
     my $data = $self->params->{source_data};
     if ($data) {
-        my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
+        my $dr = CoGe::Builder::Data::Extractor->new($self);
         $dr->build($data);
         return $dr;
     }
@@ -144,9 +142,6 @@ sub pre_build { # Default method, SynMap & SynMap3D override this
 
 sub post_build {
     my $self = shift;
-
-    # Capture outputs from legacy pipelines
-    $self->sync_outputs();
 
     # Add task to add results to notebook
     if ($self->params->{notebook} || $self->params->{notebook_id}) {
@@ -194,33 +189,39 @@ sub add_task {
     my ($self, $task) = @_;
     return unless $task;
 
-    push @{$self->outputs}, @{$task->{outputs}};
     $previous_outputs = $task->{outputs};
 
-    return $self->workflow->add_job($task);
+    unless ( $self->workflow->add_job($task) ) {
+        CoGe::Exception::Generic->throw(message => 'Failed to add task');
+    }
+
+    return wantarray ? @{$task->{outputs}} : $task->{outputs};
 }
 
-# Chain this task to the previous task assuming add_task*() routines were used
+# Chain this task to the previous task's outputs or given dependencies
 sub add_task_chain {
-    my ($self, $task) = @_;
+    my $self = shift;
+    my $task = shift;
+    my $dependencies = shift; # optional array ref of files
 
-    push @{$task->{inputs}}, @{$previous_outputs} if $previous_outputs;
+    if ($dependencies && @$dependencies) {
+        push @{$task->{inputs}}, @$dependencies;
+    }
+    elsif ($previous_outputs && @$previous_outputs) {
+        push @{$task->{inputs}}, @$previous_outputs;
+    }
+
     return $self->add_task($task);
 }
 
-# Chain this task to all previous tasks
+# Chain this task to all previous tasks's outputs
 sub add_task_chain_all {
     my ($self, $task) = @_;
     
     # Chain this task to all previous tasks
-    push @{$task->{inputs}}, @{$self->outputs} if $self->outputs;
+#    push @{$task->{inputs}}, @{$self->outputs} if $self->outputs;
+    push @{$task->{inputs}}, @{$self->workflow->get_outputs};
     return $self->add_task($task);
-}
-
-sub add_output {
-    my ($self, $output) = @_;
-    push @{$self->outputs}, $output;
-    $previous_outputs = [$output];
 }
 
 sub previous_output {
@@ -244,28 +245,29 @@ sub previous_outputs {
 
 # Copies unknown ouputs from workflow into outputs array.  For legacy pipelines that don't use
 # the add_task*() routines in this module.
-sub sync_outputs {
-    my $self = shift;
-
-    my %seen;
-    my @merged = grep( !$seen{$_}++, $self->workflow->get_outputs(), @{$self->outputs});
-    $self->outputs(\@merged);
-}
+#sub sync_outputs {
+#    my $self = shift;
+#
+#    my %seen;
+#    my @merged = grep( !$seen{$_}++, $self->workflow->get_outputs(), @{$self->outputs});
+#    $self->outputs(\@merged);
+#}
 
 ###############################################################################
 # Task Library (replaces CommonTasks.pm)
 ###############################################################################
 
 # Generate synchronization dependency for chaining pipelines
-sub create_wait {
+sub wait {
     my $self = shift;
+    my $dependencies = shift // [];
 
     my $wait_file = catfile($self->staging_dir, 'wait_' . get_unique_id() . '.done');
 
     return {
         cmd     => "touch $wait_file",
         args    => [],
-        inputs  => [],
+        inputs  => [ @$dependencies ],
         outputs => [ $wait_file ],
         description => 'Waiting for tasks to complete'
     };
