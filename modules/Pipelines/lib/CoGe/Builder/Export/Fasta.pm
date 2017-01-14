@@ -21,14 +21,11 @@ sub get_name {
 sub build {
     my $self = shift;
 
-    # Get genome data file path
-    my $gid = $self->params->{gid} || $self->params->{genome_id};
-    my $genome = $self->db->resultset("Genome")->find($gid);
+    my $genome = $self->request->genome;
 
-    # Determine name of exported file
-    my $genome_file = get_genome_file($gid);
+    my $genome_file = get_genome_file($genome->id);
     my $genome_name = sanitize_name($genome->organism->name);#escape($genome->organism->name);
-       $genome_name = 'genome_'.$gid unless $genome_name;
+       $genome_name = 'genome_'.$genome->id unless $genome_name;
     my $output_file = $genome_name.'.faa';
 
     # Setup tasks to export/download the file

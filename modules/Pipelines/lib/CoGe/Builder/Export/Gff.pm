@@ -22,21 +22,10 @@ sub get_name {
 sub build {
     my $self = shift;
     
-    # Verify required parameters and set defaults
     my $dest_type = $self->params->{dest_type};
     $dest_type = "http" unless $dest_type;
 
-    my $gid = $self->params->{gid} || $self->params->{genome_id};
-    $self->params->{gid} = $gid; # required by create_gff() call below
-    unless ($gid) {
-        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
-    }
-
-    # Get genome
-    my $genome = $self->db->resultset("Genome")->find($gid);
-    unless ($genome) {
-        CoGe::Exception::Generic->throw(message => "Genome $gid not found");
-    }
+    my $genome = $self->request->genome;
     my $genome_name = $self->params->{basename} = sanitize_name($genome->organism->name);
 
     # Parse output types
@@ -49,7 +38,7 @@ sub build {
     foreach my $output_type (keys %outputs) {
         # Generate output filename based on params
         my $output_filename = get_gff_cache_path(
-            gid => $gid,
+            gid => $genome->id,
             genome_name => $genome_name,
             output_type => $output_type,
             params => $self->params
