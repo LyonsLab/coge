@@ -32,7 +32,7 @@ sub build {
 
     my $metadata = $self->params->{metadata};
     unless ($metadata) { # use input experiment's metadata (for MeasureExpression)
-        my $experiment = self->request->experiment;
+        my $experiment = $self->request->experiment;
         $self->params->{metadata} = { # could almost use experiment->to_hash here except for source_name
             name       => $experiment->name,
             version    => $experiment->version,
