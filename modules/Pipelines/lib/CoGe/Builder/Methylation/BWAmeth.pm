@@ -26,7 +26,7 @@ sub BUILD { # called immediately after constructor
 sub build {
     my $self = shift;
     my %opts = @_;
-    my $bam_file = shift @{$opts{data_files}};
+    my ($bam_file) = @{$opts{data_files}};
 
     # Validate inputs not already checked in Request
     my $metadata = $self->params->{metadata};

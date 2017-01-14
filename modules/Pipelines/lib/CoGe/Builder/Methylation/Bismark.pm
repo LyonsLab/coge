@@ -15,7 +15,7 @@ use CoGe::Exception::Generic;
 sub build {
     my $self = shift;
     my %opts = @_;
-    my $bam_file = shift @{$opts{data_files}}; # IMPORTANT: this should be the unsorted version, see COGE-706 and http://seqanswers.com/forums/showthread.php?t=45192
+    my ($bam_file) = @{$opts{data_files}}; # IMPORTANT: this should be the unsorted version, see COGE-706 and http://seqanswers.com/forums/showthread.php?t=45192
     unless ($bam_file) {
         CoGe::Exception::Generic->throw(message => 'Missing bam');
     }

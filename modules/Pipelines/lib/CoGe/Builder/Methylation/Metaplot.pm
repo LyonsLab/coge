@@ -15,9 +15,9 @@ use CoGe::Exception::Generic;
 sub build {
     my $self = shift;
     my %opts = @_;
-    my $bam_file = shift @{$opts{data_files}};
+    my ($bam_file) = @{$opts{data_files}};
     unless ($bam_file) { # for when called from ExperimentView
-        my $experiment = self->request->experiment;
+        my $experiment = $self->request->experiment;
         $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     }
 
