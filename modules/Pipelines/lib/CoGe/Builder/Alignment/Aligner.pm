@@ -15,7 +15,6 @@ use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end to_filename_base to_filename_without_extension);
 use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_upload_path get_genome_cache_path);
 use CoGe::Core::Metadata qw(to_annotations);
-use CoGe::Builder::CommonTasks;
 use CoGe::Builder::Trimming::Trimmer;
 use CoGe::Builder::Alignment::HISAT2;
 use CoGe::Builder::Alignment::GSNAP;
@@ -47,7 +46,6 @@ sub build {
     }
 
     my $gid = $self->request->genome->id;
-    my $trimming_params  = $self->params->{trimming_params};
 
 # mdb removed 11/6/15 COGE-673
 #    # Check multiple files (if more than one file then all should be FASTQ)
@@ -70,37 +68,23 @@ sub build {
     # Build workflow
     #
 
-    # Decompress and validate the input files
-    my @decompressed;
+    # Validate the input files
     foreach my $input_file (@$fastq) {
-        if ($input_file =~ /\.gz$/) {
-            $self->add_task(
-                $self->create_gunzip( $input_file )
-            );
-            $input_file =~ $self->previous_output(1);
-
-            $self->add_task_chain(
-                $self->validate_fastq($input_file)
-            );
-        }
-        else {
-            $self->add_task(
-                $self->validate_fastq($input_file)
-            );
-        }
-
-        push @decompressed, $input_file;
+        $self->add_task(
+            $self->validate_fastq($input_file)
+        );
     }
 
     # Trim the fastq input files
     my @trimmed;
+    my $trimming_params  = $self->params->{trimming_params};
     if ($trimming_params) {
         my $trimmer = CoGe::Builder::Trimming::Trimmer->new($self);
-        $trimmer->build(data_files => \@decompressed);
+        $trimmer->build(data_files => $fastq);
         @trimmed = @{$trimmer->fastq};
     }
     else { # no trimming
-        @trimmed = @decompressed;
+        @trimmed = @$fastq;
     }
 
     # Reheader the fasta file
@@ -131,10 +115,9 @@ sub build {
 
     foreach my $bam_file (@{$self->raw_bam}) {
         # Sort and index the bam output file(s)
-        $self->add_task(
+        my ($sorted_bam_file) = $self->add_task(
             $self->sort_bam($bam_file)
         );
-        my $sorted_bam_file = $self->previous_output;
         push @{$self->bam}, $sorted_bam_file;
 
         $self->add_task(
