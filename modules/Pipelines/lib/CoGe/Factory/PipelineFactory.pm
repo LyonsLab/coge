@@ -60,10 +60,10 @@ sub get {
 
     # This loosely corresponds to the Extract-Transform-Load paradigm.
 
-    # Pre-build: initialize pipeline and add data retrieval tasks
+    # Pre-build (extract): initialize pipeline and add data retrieval tasks
     my $dr = $builder->pre_build();
 
-    # Build: add application-specific pipeline tasks #TODO data passing needs improvement
+    # Build (transform/load): add application-specific pipeline tasks #TODO data passing needs improvement
     $builder->build(
         $dr ? (
                 data_files => $dr->data_files,
