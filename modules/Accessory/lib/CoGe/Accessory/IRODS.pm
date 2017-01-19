@@ -223,7 +223,7 @@ sub irods_imeta_ls {
     my $cmd = "export irodsEnvFile='$env_file' && imeta ls -d '" . $dest . "' '" . $attribute . "'";
     my @result = `$cmd`;
 
-    return;
+    return \@result;
 }
 
 sub irods_imkdir {

@@ -116,22 +116,21 @@ sub _init {
         $link = 'http://' . $link if !($link =~ /^(\w+)\:\/\//);
     }
 
-    my $image_id;
+    my $bisque_id;
     my $image_fh = $opts->{image_fh};
     my $image_file = $opts->{image_file};
     if ($image_file) {
-        my $image = create_image(fh => $image_fh, filename => $image_file, tmp_filename => $opts->{image_tmp_file}, db => $db, user => $opts->{user});
+        $bisque_id = create_image(fh => $image_fh, filename => $image_file, tmp_filename => $opts->{image_tmp_file}, db => $db, user => $opts->{user});
         return 'error creating image' unless $image;
-        $image_id = $image->id;
     }
 
-    return (undef, $type_id, $link, $image_id);
+    return (undef, $type_id, $link, $bisque_id);
 }
 
 sub create_annotation {
     my %opts = @_;
 
-    my ($error, $type_id, $link, $image_id) = _init(\%opts);
+    my ($error, $type_id, $link, $bisque_id) = _init(\%opts);
     if ($error) {
         warn 'create_annotation: ' . $error;
         return;
@@ -161,7 +160,7 @@ sub create_annotation {
             annotation_type_id => $type_id,
             annotation => $text,
             link => $link,
-            image_id => $image_id,
+            bisque_id => $bisque_id,
             locked => $locked
         });
     }
@@ -171,7 +170,7 @@ sub create_annotation {
             annotation_type_id => $type_id,
             annotation => $text,
             link => $link,
-            image_id => $image_id,
+            bisque_id => $bisque_id,
             locked => $locked
         });
     }
@@ -181,7 +180,7 @@ sub create_annotation {
             annotation_type_id => $type_id,
             annotation => $text,
             link => $link,
-            image_id => $image_id,
+            bisque_id => $bisque_id,
             locked => $locked
         });
     }
@@ -199,7 +198,7 @@ sub update_annotation {
         return;
     }
  
-    my ($error, $type_id, $link, $image_id) = _init(\%opts);
+    my ($error, $type_id, $link, $bisque_id) = _init(\%opts);
     if ($error) {
         warn 'update_annotation: ' . $error;
         return;
@@ -215,7 +214,7 @@ sub update_annotation {
     $annotation->annotation($opts{text});
     $annotation->link($link);
     $annotation->annotation_type_id($type_id);
-    $annotation->image_id($image_id) if ($image_id);
+    $annotation->bisque_id($bisque_id) if ($bisque_id);
     $annotation->update;
 
     return;
@@ -235,7 +234,7 @@ sub export_annotations {
     unless (-r $annotation_file) {
         open(my $fh, ">", $annotation_file);
 
-        say $fh "#Type Group, Type, Annotation, Link, Image filename";
+        say $fh "#Type Group, Type, Annotation, Link, Image filename, BisQue URL";
         foreach my $a ( @$annotations ) {
             my $group = (
                 defined $a->type->group
@@ -249,8 +248,9 @@ sub export_annotations {
             # Escape quotes
             $info =~ s/"/\"/g;
 
+            my $filename;
             if ($a->image) {
-                my $filename = $a->image->filename;
+                $filename = $a->image->filename;
                 my $img =  File::Spec->catdir($export_path, $filename);
 
                 eval {
@@ -262,10 +262,9 @@ sub export_annotations {
                 };
 
                 say $fh "log: error: $@" if ($@);
-                say $fh qq{$group,"$info","$url","$filename"};
-            } else {
-                say $fh qq{$group,"$info","$url",""};
             }
+            my $bisque_id = defined($a->bisque_id) ? 'http://bisque.iplantcollaborative.org/data_service/' . $a->bisque_id : '';
+            say $fh qq{$group,$info,$url,$filename,$bisque_id};
         }
         close($fh);
     }
@@ -323,26 +322,16 @@ sub create_image {
     my $db = $opts{db};
     return unless (($fh || $filename) && $db);
 
-    irods_iput($opts{tmp_filename}, catfile(dirname(irods_get_base_path($opts{user}->name)), 'bisque_data', basename($filename)));
-
-    # unless (defined $fh) {
-    #     unless (open($fh, $filename)) {
-    #         print STDERR "Storage::create_image: ERROR, couldn't open file '$filename'\n";
-    #         return;
-    #     }
-    # }
-    
-    # my $contents = read_file($fh, binmode => ':raw');
-    # unless ($contents) {
-    #     print STDERR "Storage::create_image: ERROR, couldn't read file '$filename'\n";
-    #     return;
-    # }
-    
-    # my $image = $db->resultset('Image')->create({
-    #     filename => $filename,
-    #     image    => $contents
-    # });
-    # return unless $image;
+    my $dest = catfile(dirname(irods_get_base_path($opts{user}->name)), 'bisque_data', basename($filename));
+    irods_iput($opts{tmp_filename}, $dest);
+    for my $i (0..9) {
+        sleep 5;
+        my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
+        if (@$result == 4 && substr($result->[2], 0, 6) eq) 'value:') {
+            return substr($result->[2], 6);
+        }
+    }
+    warn 'unable to get bisque id';
 }
 
 1;
