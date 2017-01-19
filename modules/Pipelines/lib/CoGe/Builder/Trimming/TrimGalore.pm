@@ -34,10 +34,8 @@ sub build {
     else { # paired-end
         # Create cutadapt task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) {
-            my $file1 = shift @$fastq1;
-            my $file2 = shift @$fastq2;
             $self->add_task(
-                $self->trimgalore([ $file1, $file2 ])
+                $self->trimgalore([ $fastq1->[$i], $fastq2->[$i] ])
             );
             push @{$self->fastq}, $self->previous_outputs;
         }
