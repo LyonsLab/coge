@@ -116,8 +116,8 @@ sub bismark_alignment {
 
     if ($read_type eq 'paired') {
         $output_bam .= '_bismark_bt2_pe.bam';
-        push @$args, ['-1', shift @$fastq, 0];
-        push @$args, ['-2', shift @$fastq, 0];
+        push @$args, ['-1', $fastq->[0], 0];
+        push @$args, ['-2', $fastq->[1], 0];
     }
     else { # single-ended
         $output_bam .= '_bismark_bt2.bam';
