@@ -278,18 +278,19 @@ sub get_annotations {
                 foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group}{$type} } ) { # annotations
                     my $header = ($group and $first_group-- > 0 ? "<b>$group</b> " : '') . ($first_type-- > 0 ? $type : '');
                     $html .= "<tr style='vertical-align:top;'>";
-                    $html .= "<th class='title4' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:left;'>$header</th>";
-                    #$html .= '<td>';
-                    my $image_link = ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
-                    my $image_info = (
-                        $a->image
-                        ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>"
-                        : ''
-                    );
-                    #$html .= $image_info if $image_info;
-                    #$html .= "</td>";
-                    $html .= "<td class='data4'>" . $image_info . $a->info . '</td>';
-                    $html .= '<td style="padding-left:5px;">';
+                    $html .= "<th class='title4' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:left;'>$header</th><td class='data4'>";
+                    warn $a->bisque_id;
+                    if ($a->image) {
+                        my $image_link = ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
+                        $html .= "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray margin-right:5px;'></a>";
+                    }
+                    elsif ($a->bisque_id) {
+                        $html .= "<a href='' target='_blank' title='click to view in BisQue'><img src='http://bisque.iplantc.org/image_service/";
+                        $html .= $a->bisque_id;
+                        $html .= "?thumbnail=40,40' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray margin-right:5px;'></a>";
+                    }
+                    $html .= $a->info;
+                    $html .= '</td><td style="padding-left:5px;">';
                     $html .= linkify( $a->link, 'Link' ) if $a->link;
                     $html .= '</td>';
                     if ($user_can_edit && !$a->locked) {
@@ -349,9 +350,9 @@ sub add_annotation {
  
     return CoGe::Core::Metadata::create_annotation(
         db => $DB,
+        fh => $fh,
+        filename => $opts{edit_annotation_image},
         group_name => $opts{type_group},
-        image_fh => $fh,
-        image_file => $opts{edit_annotation_image},
         image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
         link => $opts{link},
         locked => 0,
@@ -369,9 +370,9 @@ sub update_annotation {
     CoGe::Core::Metadata::update_annotation(
         annotation_id => $opts{aid},
         db => $DB,
+        fh => $fh,
+        filename => $opts{edit_annotation_image},
         group_name => $opts{type_group},
-        image_fh => $fh,
-        image_file => $opts{edit_annotation_image},
         image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
         link => $opts{link},
         target_type => 'experiment',

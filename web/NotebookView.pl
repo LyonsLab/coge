@@ -437,9 +437,9 @@ sub add_annotation {
  
     return CoGe::Core::Metadata::create_annotation(
         db => $DB,
+        fh => $fh,
+        filename => $opts{edit_annotation_image},
         group_name => $opts{type_group},
-        image_fh => $fh,
-        image_file => $opts{edit_annotation_image},
         image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
         link => $opts{link},
         locked => 0,
@@ -457,9 +457,9 @@ sub update_annotation {
     CoGe::Core::Metadata::update_annotation(
         annotation_id => $opts{aid},
         db => $DB,
+        fh => $fh,
+        filename => $opts{edit_annotation_image},
         group_name => $opts{type_group},
-        image_fh => $fh,
-        image_file => $opts{edit_annotation_image},
         image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
         link => $opts{link},
         target_type => 'notebook',

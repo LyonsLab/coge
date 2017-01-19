@@ -116,21 +116,29 @@ sub _init {
         $link = 'http://' . $link if !($link =~ /^(\w+)\:\/\//);
     }
 
+    my $image_id;
     my $bisque_id;
-    my $image_fh = $opts->{image_fh};
-    my $image_file = $opts->{image_file};
-    if ($image_file) {
-        $bisque_id = create_image(fh => $image_fh, filename => $image_file, tmp_filename => $opts->{image_tmp_file}, db => $db, user => $opts->{user});
-        return 'error creating image' unless $image;
+    my $fh = $opts->{fh};
+    my $filename = $opts->{filename};
+    if ($filename) {
+        if ($fh) {
+            $bisque_id = create_bisque_image(fh => $fh, filename => $filename, tmp_filename => $opts->{image_tmp_file}, db => $db, user => $opts->{user});
+            return 'error creating image' unless $bisque_id;
+        }
+        else {
+            my $image = create_image(filename => $filename, db => $db);
+            return 'error creating image' unless $image;
+            $image_id = $image->id;
+        }
     }
 
-    return (undef, $type_id, $link, $bisque_id);
+    return (undef, $type_id, $link, $image_id, $bisque_id);
 }
 
 sub create_annotation {
     my %opts = @_;
 
-    my ($error, $type_id, $link, $bisque_id) = _init(\%opts);
+    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
     if ($error) {
         warn 'create_annotation: ' . $error;
         return;
@@ -160,6 +168,7 @@ sub create_annotation {
             annotation_type_id => $type_id,
             annotation => $text,
             link => $link,
+            image_id => $image_id,
             bisque_id => $bisque_id,
             locked => $locked
         });
@@ -170,6 +179,7 @@ sub create_annotation {
             annotation_type_id => $type_id,
             annotation => $text,
             link => $link,
+            image_id => $image_id,
             bisque_id => $bisque_id,
             locked => $locked
         });
@@ -180,6 +190,7 @@ sub create_annotation {
             annotation_type_id => $type_id,
             annotation => $text,
             link => $link,
+            image_id => $image_id,
             bisque_id => $bisque_id,
             locked => $locked
         });
@@ -198,7 +209,7 @@ sub update_annotation {
         return;
     }
  
-    my ($error, $type_id, $link, $bisque_id) = _init(\%opts);
+    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
     if ($error) {
         warn 'update_annotation: ' . $error;
         return;
@@ -214,6 +225,7 @@ sub update_annotation {
     $annotation->annotation($opts{text});
     $annotation->link($link);
     $annotation->annotation_type_id($type_id);
+    $annotation->bisque_id($image_id) if ($image_id);
     $annotation->bisque_id($bisque_id) if ($bisque_id);
     $annotation->update;
 
@@ -315,19 +327,43 @@ sub tags_to_string {
     return $tags_str;
 }
 
-sub create_image {
+sub create_image { # mdb: don't have a better place for this atm
     my %opts = @_;
     my $fh = $opts{fh};
     my $filename = $opts{filename};
     my $db = $opts{db};
     return unless (($fh || $filename) && $db);
 
+    unless (defined $fh) {
+        unless (open($fh, $filename)) {
+            print STDERR "Storage::create_image: ERROR, couldn't open file '$filename'\n";
+            return;
+        }
+    }
+
+    my $contents = read_file($fh, binmode => ':raw');
+    unless ($contents) {
+        print STDERR "Storage::create_image: ERROR, couldn't read file '$filename'\n";
+        return;
+    }
+
+    my $image = $db->resultset('Image')->create({
+        filename => $filename,
+        image    => $contents
+    });
+    return unless $image;
+}
+
+sub create_bisque_image {
+    my %opts = @_;
+    my $filename = $opts{filename};
+
     my $dest = catfile(dirname(irods_get_base_path($opts{user}->name)), 'bisque_data', basename($filename));
     irods_iput($opts{tmp_filename}, $dest);
     for my $i (0..9) {
         sleep 5;
         my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
-        if (@$result == 4 && substr($result->[2], 0, 6) eq) 'value:') {
+        if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
             return substr($result->[2], 6);
         }
     }
