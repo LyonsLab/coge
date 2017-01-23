@@ -7,15 +7,22 @@
 // Must call init_annotation_dialog() on page load
 // Need pageObj
 
-function init_annotation_dialog(parent_id, default_type) {
-	$('#annotation_edit_box').data({ parent_id: parent_id, default_type: default_type });
+$(function() {
+    coge.services.init({
+        baseUrl: '<TMPL_VAR NAME="API_BASE_URL">',
+        userName: '<TMPL_VAR NAME="USER_NAME">',
+        //debug: true
+    });
+});
+
+function init_annotation_dialog(api_path, parent_id, default_type) {
+	$('#annotation_edit_box').data({ api_path: api_path, parent_id: parent_id, default_type: default_type });
 }
 
 function add_annotation_dialog() {
 	$('#edit_annotation').val('');
 	$('#edit_annotation_link').val('');
-	var default_type = $('#annotation_edit_box').data('default_type');
-	$('#edit_annotation_type').val(default_type);
+	$('#edit_annotation_type').val($('#annotation_edit_box').data('default_type'));
 	$('#edit_annotation_type_group').val('');
 	$('#edit_annotation_image').val('');
 
@@ -26,25 +33,17 @@ function add_annotation_dialog() {
 }
 
 function edit_annotation_dialog(aid) {
-	$.ajax({
-		data: {
-			fname: 'get_annotation',
-			aid: aid
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			if (obj) {
-				$('#edit_annotation').val(obj.annotation);
-				$('#edit_annotation_link').val(obj.link);
-				$('#edit_annotation_type').val(obj.type);
-				$('#edit_annotation_type_group').val(obj.type_group);
-				$('#edit_annotation_image').val('');
-
-				$('#add_annotation_button').hide();
-				$('#update_annotation_button').data({annotation_id: aid}).show();
-
-				$("#annotation_edit_box").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
-			}
+	coge.services.fetch_annotation($('#annotation_edit_box').data('api_path'), $('#annotation_edit_box').data('parent_id'), aid).done(function(data) {
+		var obj = jQuery.parseJSON(data);
+		if (obj) {
+			$('#edit_annotation').val(obj.annotation);
+			$('#edit_annotation_link').val(obj.link);
+			$('#edit_annotation_type').val(obj.type);
+			$('#edit_annotation_type_group').val(obj.type_group);
+			$('#edit_annotation_image').val('');
+			$('#add_annotation_button').hide();
+			$('#update_annotation_button').data({annotation_id: aid}).show();
+			$("#annotation_edit_box").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
 		}
 	});
 }

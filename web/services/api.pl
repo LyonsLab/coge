@@ -157,6 +157,14 @@ $r->delete("/experiments/:id" => [id => qr/\d+/])
     ->name("experiments-remove")
     ->to("experiment#remove", namespace => 'CoGe::Services::API', id => undef);
 
+$r->get("/experiments/:eid/annotations" => [eid => qr/\d+/])
+    ->name("experiments-fetch-annotations")
+    ->to("experiment#fetch_annotations", namespace => 'CoGe::Services::API', eid => undef);
+
+$r->get("/experiments/:eid/annotations/:aid" => [eid => qr/\d+/,aid => qr/\d+/])
+    ->name("experiments-fetch-annotation")
+    ->to("experiment#fetch_annotation", namespace => 'CoGe::Services::API', eid => undef, aid => undef);
+
 # Notebook routes
 $r->get("/notebooks/search/#term")
     ->name("notebooks-search")

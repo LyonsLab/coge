@@ -279,16 +279,18 @@ sub get_annotations {
                     my $header = ($group and $first_group-- > 0 ? "<b>$group</b> " : '') . ($first_type-- > 0 ? $type : '');
                     $html .= "<tr style='vertical-align:top;'>";
                     $html .= "<th class='title4' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:left;'>$header</th><td class='data4'>";
-                    warn $a->bisque_id;
                     if ($a->image) {
                         my $image_link = ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
                         $html .= "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray margin-right:5px;'></a>";
                     }
                     elsif ($a->bisque_id) {
-                        $html .= "<a href='' target='_blank' title='click to view in BisQue'><img src='http://bisque.iplantc.org/image_service/";
+                        $html .= "<a href='http://bisque.iplantc.org/client_service/view?resource=http://bisque.iplantc.org/data_service/";
                         $html .= $a->bisque_id;
-                        $html .= "?thumbnail=40,40' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray margin-right:5px;'></a>";
+                        $html .= "5' target='_blank' title='click to view in BisQue'><img src='http://bisque.iplantc.org/image_service/";
+                        $html .= $a->bisque_id;
+                        $html .= "5?thumbnail=200,200' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;width:42px;margin-right:5px;'></a>";
                     }
+                    warn $a->bisque_id;
                     $html .= $a->info;
                     $html .= '</td><td style="padding-left:5px;">';
                     $html .= linkify( $a->link, 'Link' ) if $a->link;

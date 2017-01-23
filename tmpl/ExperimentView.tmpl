@@ -41,7 +41,7 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog(EXPERIMENT_ID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    init_annotation_dialog('experiments', EXPERIMENT_ID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 
     // Initialize CoGe packages
     coge.services.init({
@@ -205,7 +205,7 @@ $(document).ready(function() {
 
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
 
-<TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
+<TMPL_INCLUDE NAME='widgets/Annotations.tmpl'>
 
 <TMPL_INCLUDE "widgets/pipeline-options.tmpl">
 

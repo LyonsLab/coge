@@ -39,7 +39,6 @@
 var job_id = "<TMPL_VAR NAME=JOB_ID>",
     GENOME_ID = "<TMPL_VAR NAME=GID>",
     load_id = "<TMPL_VAR NAME=LOAD_ID>",
-    default_type = "<TMPL_VAR NAME=DEFAULT_TYPE>",
     irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>",
     CERTIFIED = "<TMPL_VAR NAME='CERTIFIED'>",
     PAGE_NAME = "<TMPL_VAR NAME=PAGE_NAME>",
@@ -82,7 +81,7 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog(GENOME_ID, default_type);
+    init_annotation_dialog('genomes', GENOME_ID, "<TMPL_VAR NAME=DEFAULT_TYPE>");
     
     $("#edit_user").autocomplete({
         source:[],
@@ -357,7 +356,7 @@ Are you sure you want to move this genome into your trash?<p>
     <span id="annotate_ok_button" onClick="$('#annotate_dialog').dialog('close');" style="float:right;" class="hidden coge-button">OK</span>
 </div>
 
-<TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
+<TMPL_INCLUDE NAME='widgets/Annotations.tmpl'>
 <TMPL_INCLUDE NAME="widgets/Overlay.tmpl">
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
 </TMPL_IF>

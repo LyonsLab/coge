@@ -364,7 +364,9 @@ sub create_bisque_image {
         sleep 5;
         my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
         if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
-            return substr($result->[2], 6);
+            my $bisque_id = substr($result->[2], 7);
+            chomp $bisque_id;
+            return $bisque_id;
         }
     }
     warn 'unable to get bisque id';

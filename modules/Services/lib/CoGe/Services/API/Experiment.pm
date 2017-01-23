@@ -6,6 +6,7 @@ use Data::Dumper;
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Accessory::Utils;
+use CoGe::Core::Annotations qw( get_annotation );
 use CoGe::Core::Experiment qw( delete_experiment );
 use CoGe::Core::Favorites;
 use CoGe::Services::Auth;
@@ -69,25 +70,9 @@ sub fetch {
         return;
     }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Get experiment
-    my $experiment = $db->resultset("Experiment")->find($id);
-    unless (defined $experiment) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
-        return;
-    }
-
-    # Check permissions
-    unless ( !$experiment->restricted || (defined $user && $user->has_access_to_experiment($experiment)) ) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
-        return;
-    }
+    my $experiment = $self->_get_experiment($id, 0, $db, $user);
+    return unless $experiment;
 
     # Format metadata
     my @metadata = map {
@@ -121,6 +106,23 @@ sub fetch {
         additional_metadata => \@metadata,
         restricted => $experiment->restricted ? Mojo::JSON->true : Mojo::JSON->false,
     });
+}
+
+sub fetch_annotations {
+
+}
+
+sub fetch_annotation {
+    my $self = shift;
+    my $eid = int($self->stash('eid'));
+    my $aid = int($self->stash('aid'));
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $experiment = $self->_get_experiment($eid, 0, $db, $user);
+    return unless $experiment;
+
+    my $json = get_annotation($aid, 'Experiment', $db);
+    $self->render(json => $json) if $json;
 }
 
 sub add {
@@ -180,25 +182,9 @@ sub update {
         return;
     }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Get experiment
-    my $experiment = $db->resultset("Experiment")->find($id);
-    unless (defined $experiment) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
-        return;
-    }
-
-    # Check permissions
-    unless ($user->is_owner_editor(experiment => $id)) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
-        return;
-    }
+    my $experiment = $self->_get_experiment($id, 1, $db, $user);
+    return unless $experiment;
 
     my $data = $self->req->json;
     if (exists($data->{metadata}->{id})) {
@@ -206,6 +192,32 @@ sub update {
     }
 	$experiment->update($data->{metadata});
 	$self->render(json => { success => Mojo::JSON->true });
+}
+
+sub _get_experiment {
+    my ($self, $id, $must_own, $db, $user) = @_;
+    my $experiment = $db->resultset("Experiment")->find($id);
+    unless (defined $experiment) {
+        $self->render(status => 404, json => {
+            error => { Error => "Resource not found" }
+        });
+        return;
+    }
+    if ($must_own) {
+        unless ($user->is_owner_editor(experiment => $id)) {
+            $self->render(json => {
+                error => { Auth => "Access denied" }
+            }, status => 401);
+            return;
+        }
+    }
+    unless ( !$experiment->restricted || (defined $user && $user->has_access_to_experiment($experiment)) ) {
+        $self->render(json => {
+            error => { Auth => "Access denied" }
+        }, status => 401);
+        return;
+    }
+    return $experiment;
 }
 
 1;
