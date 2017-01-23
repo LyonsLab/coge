@@ -80,29 +80,26 @@ sub build {
         $self->params->{source_data} = $data;
 
         my $expBuilder = CoGe::Builder::Load::Experiment->new({
-#            params      => $self->params,
-#            db          => $self->db,
-#            user        => $self->user,
-#            conf        => $self->conf,
             request     => $self->request,
             workflow    => $self->workflow,
             staging_dir => $self->staging_dir,
             result_dr   => $self->result_dir,
-            inputs      => ($wait_file ? [ $wait_file ] : undef),
-            #outputs     => $self->outputs
+            inputs      => ($wait_file ? [ $wait_file ] : undef)
         });
         $expBuilder->build();
 
-        # Add wait task to serialize experiment loads -- #FIXME kludge until this can be generalized and incorporated into Buildable
-#        $expBuilder->add_task_chain_all( # won't work because Experiment.pm doesn't use Buildable::add_job
-#            $self->create_wait()
-#        );
-#        $wait_file = $self->previous_output;
-        my @all_outputs = $self->workflow->get_outputs();
-        my $wait_task = $self->create_wait();
-        push @{$wait_task->{inputs}}, @all_outputs;
-        $self->workflow->add_job($wait_task);
-        $wait_file = $wait_task->{outputs}->[0];
+        if (@$records > 1) {
+            # Add wait task to serialize experiment loads -- #FIXME kludge until this can be generalized and incorporated into Buildable
+            #        $expBuilder->add_task_chain_all( # won't work because Experiment.pm doesn't use Buildable::add_job
+            #            $self->create_wait()
+            #        );
+            #        $wait_file = $self->previous_output;
+            my @all_outputs = $self->workflow->get_outputs();
+            my $wait_task = $self->create_wait();
+            push @{$wait_task->{inputs}}, @all_outputs;
+            $self->workflow->add_job( $wait_task );
+            $wait_file = $wait_task->{outputs}->[0];
+        }
     }
     
     return 1;

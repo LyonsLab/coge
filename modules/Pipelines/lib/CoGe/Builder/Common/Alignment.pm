@@ -110,7 +110,7 @@ sub build {
             read_params => $read_params,
             trimming_params => $trimming_params
         );
-        
+
         my ($tasks, $outputs, $done_files);
         if ($trimming_params->{trimmer} eq 'cutadapt') {
             ($tasks, $outputs, $done_files) = create_cutadapt_workflow(%params);
@@ -348,8 +348,8 @@ sub create_cutadapt_workflow {
     else { # paired-end
         # Create cutadapt task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) {
-            my $file1 = shift @$fastq1;
-            my $file2 = shift @$fastq2;
+            my $file1 = $fastq1->[$i];
+            my $file2 = $fastq2->[$i];
             my $task = create_cutadapt_job(
                 fastq => [ $file1, $file2 ],
                 done_files => $done_files,
@@ -472,8 +472,8 @@ sub create_trimgalore_workflow {
     else { # paired-end
         # Create trimgalore task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) {
-            my $file1 = shift @$fastq1;
-            my $file2 = shift @$fastq2;
+            my $file1 = $fastq1->[$i];
+            my $file2 = $fastq2->[$i];
             my $task = create_trimgalore_job(
                 fastq => [ $file1, $file2 ],
                 done_files => $done_files,
@@ -984,7 +984,6 @@ sub create_bismark_alignment_job {
     my %opts = @_;
 
     # Required arguments
-    my $staging_dir = $opts{staging_dir};
     my $fastq       = $opts{fastq};
     my $done_files  = $opts{done_files};
     my $index_path  = $opts{index_path};#basename($opts{index_path});
@@ -1022,8 +1021,8 @@ sub create_bismark_alignment_job {
 
     if ($read_type eq 'paired') {
         $output_bam .= '_bismark_bt2_pe.bam';
-        push @$args, ['-1', shift @$fastq, 0];
-        push @$args, ['-2', shift @$fastq, 0];
+        push @$args, ['-1', $fastq->[0], 0];
+        push @$args, ['-2', $fastq->[1], 0];
     }
     else { # single-ended
         $output_bam .= '_bismark_bt2.bam';

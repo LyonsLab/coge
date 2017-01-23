@@ -1384,17 +1384,6 @@ sub genetic_code {
 	my %opts       = @_;
 	my $trans_type = $opts{trans_type};
 	$trans_type = $self->trans_type unless $trans_type;
-	unless ($trans_type) {
-		foreach my $anno (
-			$self->annotations(
-				{ "annotation_type.name" => "transl_table" },
-				{ join                   => "annotation_type" }
-			)
-		  )
-		{
-			$trans_type = $anno->annotation;
-		}
-	}
 
 	unless ($trans_type) {
 		my $org_name = $self->organism->name;
@@ -1429,6 +1418,19 @@ sub genetic_code {
 		$trans_type = 3 if $org_desc =~ /Fungi/ && $org_name =~ /mitochondri/i;
 		$trans_type = 1 unless $trans_type;
 	}
+
+	unless ($trans_type) {
+		foreach my $anno (
+			$self->annotations(
+				{ "annotation_type.name" => "transl_table" },
+				{ join                   => "annotation_type" }
+			)
+		  )
+		{
+			$trans_type = $anno->annotation;
+		}
+	}
+
 	$self->trans_type($trans_type);
 	my $code = code($trans_type);
 	return ( $code->{code}, $code->{name} );
