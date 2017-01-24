@@ -29,7 +29,7 @@ sub build {
 
     my $gid = $self->request->genome->id;
 
-    # Set metadata for the pipeline being used
+    # Set metadata for the pipeline being used #TODO use metadata file instead
     my $annotations = $self->generate_additional_metadata();
     my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
@@ -95,16 +95,15 @@ sub bismark_deduplicate {
     else { # single-ended
         push @$args, ['-s', '', 0];
     }
-    
     push @$args, ['--bam', $bam_file, 1];
-    
-    my $output_file = qq[$bam_file.deduplicated.bam];
+
+    my $output_file = to_filename_without_extension($bam_file) . '.deduplicated.bam';
     
     return {
-        cmd => $cmd,
-        args => $args,
-        inputs => [ $bam_file ],
-        outputs => [ $output_file ],
+        cmd         => $cmd,
+        args        => $args,
+        inputs      => [ $bam_file ],
+        outputs     => [ catfile($self->staging_dir, $output_file) ],
         description => "Deduplicating PCR artifacts using Bismark"
     };
 }
