@@ -48,7 +48,7 @@ sub get_annotations {
     # Categorize annotations based on type group and type
     my %groups;
     my $num_annot = 0;
-    foreach my $a ( $exp->annotations ) {
+    foreach my $a ( $object->annotations ) {
         my $group = ( $a->type->group ? $a->type->group->name : '');
         my $type = $a->type->name;
         push @{ $groups{$group}{$type} }, $a if (defined $group and defined $type);
@@ -58,7 +58,7 @@ sub get_annotations {
     # Build annotation table
     my $html;
     if ($num_annot) {
-        $html .= '<table id="experiment_annotation_table" class="border-top border-bottom small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
+        $html .= '<table id="annotation_table" class="border-top border-bottom small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
         foreach my $group ( sort keys %groups ) { # groups
             my $first_group = 1;
             foreach my $type ( sort keys %{ $groups{$group} } ) { # types

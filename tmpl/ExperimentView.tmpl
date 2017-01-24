@@ -20,6 +20,7 @@ const POPGEN_RESULT_URL = '<TMPL_VAR NAME="POPGEN_RESULT_URL">';
 var EXPERIMENT_ID = '<TMPL_VAR NAME="EXPERIMENT_ID">';
 var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
 var newLoad = false;
+var annotations;
 
 $(document).ready(function() {
     pageObj = new Object();
@@ -41,7 +42,7 @@ $(document).ready(function() {
 
     set_annotation_table();
 
-    init_annotation_dialog('experiments', EXPERIMENT_ID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
+    annotations = new Annotations('experiment_annotations', 'experiments', EXPERIMENT_ID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 
     // Initialize CoGe packages
     coge.services.init({

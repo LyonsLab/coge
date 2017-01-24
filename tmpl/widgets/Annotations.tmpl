@@ -14,137 +14,142 @@ $(function() {
     });
 });
 
-function init_annotation_dialog(api_path, parent_id, default_type) {
-	$('#annotation_edit_box').data({ api_path: api_path, parent_id: parent_id, default_type: default_type });
-}
+class Annotations {
+	constructor(div_id, api_path, parent_id, default_type) {
+		this.div_id = div_id;
+		this.api_path = api_path;
+		this.parent_id = parent_id;
+		this.default_type = default_type;
+	}
 
-function add_annotation_dialog() {
-	$('#edit_annotation').val('');
-	$('#edit_annotation_link').val('');
-	$('#edit_annotation_type').val($('#annotation_edit_box').data('default_type'));
-	$('#edit_annotation_type_group').val('');
-	$('#edit_annotation_image').val('');
-
-	$('#add_annotation_button').show();
-	$('#update_annotation_button').hide();
-
-	$("#annotation_edit_box").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
-}
-
-function edit_annotation_dialog(aid) {
-	coge.services.fetch_annotation($('#annotation_edit_box').data('api_path'), $('#annotation_edit_box').data('parent_id'), aid).done(function(obj) {
-		$('#edit_annotation').val(obj.annotation);
-		$('#edit_annotation_link').val(obj.link);
-		$('#edit_annotation_type').val(obj.type);
-		$('#edit_annotation_type_group').val(obj.type_group);
+	show_add_dialog() {
+		$('#edit_annotation').val('');
+		$('#edit_annotation_link').val('');
+		$('#edit_annotation_type').val($('#annotation_edit_box').data('default_type'));
+		$('#edit_annotation_type_group').val('');
 		$('#edit_annotation_image').val('');
-		$('#add_annotation_button').hide();
-		$('#update_annotation_button').data({annotation_id: aid}).show();
-		$("#annotation_edit_box").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
-	});
-}
 
-function add_annotation () {
-	var annotation = $('#edit_annotation').val();
-	var type = $('#edit_annotation_type').val();
+		$('#add_annotation_button').show();
+		$('#update_annotation_button').hide();
 
-	if (!annotation) {
-		alert('Please enter some annotation text.');
+		$("#annotation_edit_box").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
 	}
-	else if(!type) {
-		alert ('Please specify a type.');
-	}
-	else {
-		var type_group = $('#edit_annotation_type_group').val();
-		var link = $('#edit_annotation_link').val();
 
-		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-
-		if (annotation_image_file) {
-			if (!verify_image_file(annotation_image_file)) {
-				return;
-			}
-
-			$("#wait_annotation").animate({opacity:1});
-		}
-		else {
-			annotation_image_file = '';
-		}
-
-		var parent_id = $('#annotation_edit_box').data('parent_id');
-		$('#edit_annotation_image').fileupload('send', {
-			files: annotation_image_file,
-			formData: {
-				fname: 'add_annotation',
-				parent_id: parent_id,
-				type_group: type_group,
-				type: type,
-				annotation: annotation,
-				link: link
-			}
+	show_edit_dialog(aid) {
+		coge.services.fetch_annotation($('#annotation_edit_box').data('api_path'), $('#annotation_edit_box').data('parent_id'), aid).done(function(obj) {
+			$('#edit_annotation').val(obj.annotation);
+			$('#edit_annotation_link').val(obj.link);
+			$('#edit_annotation_type').val(obj.type);
+			$('#edit_annotation_type_group').val(obj.type_group);
+			$('#edit_annotation_image').val('');
+			$('#add_annotation_button').hide();
+			$('#update_annotation_button').data({annotation_id: aid}).show();
+			$("#annotation_edit_box").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
 		});
 	}
-}
 
-function update_annotation() {
-	var annotation = $('#edit_annotation').val();
-	var type = $('#edit_annotation_type').val();
+	add_annotation () {
+		var annotation = $('#edit_annotation').val();
+		var type = $('#edit_annotation_type').val();
 
-	if (annotation && type) {
-		var type_group = $('#edit_annotation_type_group').val();
-		var link = $('#edit_annotation_link').val();
-		var aid = $('#update_annotation_button').data('annotation_id');
-		var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-
-		if (annotation_image_file) {
-			if (!verify_image_file(annotation_image_file)) {
-				return;
-			}
-			$("#wait_annotation").animate({opacity:1});
+		if (!annotation) {
+			alert('Please enter some annotation text.');
+		}
+		else if(!type) {
+			alert ('Please specify a type.');
 		}
 		else {
-			annotation_image_file = '';
+			var type_group = $('#edit_annotation_type_group').val();
+			var link = $('#edit_annotation_link').val();
+
+			var annotation_image_file = $('#edit_annotation_image')[0].files[0];
+
+			if (annotation_image_file) {
+				if (!verify_image_file(annotation_image_file)) {
+					return;
+				}
+
+				$("#wait_annotation").animate({opacity:1});
+			}
+			else {
+				annotation_image_file = '';
+			}
+
+			var parent_id = $('#annotation_edit_box').data('parent_id');
+			$('#edit_annotation_image').fileupload('send', {
+				files: annotation_image_file,
+				formData: {
+					fname: 'add_annotation',
+					parent_id: parent_id,
+					type_group: type_group,
+					type: type,
+					annotation: annotation,
+					link: link
+				}
+			});
+		}
+	}
+
+	update_annotation() {
+		var annotation = $('#edit_annotation').val();
+		var type = $('#edit_annotation_type').val();
+
+		if (annotation && type) {
+			var type_group = $('#edit_annotation_type_group').val();
+			var link = $('#edit_annotation_link').val();
+			var aid = $('#update_annotation_button').data('annotation_id');
+			var annotation_image_file = $('#edit_annotation_image')[0].files[0];
+
+			if (annotation_image_file) {
+				if (!verify_image_file(annotation_image_file)) {
+					return;
+				}
+				$("#wait_annotation").animate({opacity:1});
+			}
+			else {
+				annotation_image_file = '';
+			}
+
+			$('#edit_annotation_image').fileupload('send', {
+				files: annotation_image_file,
+				formData: {
+					fname: 'update_annotation',
+					aid: aid,
+					type_group: type_group,
+					type: type,
+					annotation: annotation,
+					link: link
+				}
+			});
+		}
+	}
+
+	image_preview(obj, preview) {
+		var id = obj.src; // need a unique identifier for the obj
+		if (pageObj.timers[id]) {
+			clearInterval(pageObj.timers[id]);
+			pageObj.timers[id] = null;
 		}
 
-		$('#edit_annotation_image').fileupload('send', {
-			files: annotation_image_file,
-			formData: {
-				fname: 'update_annotation',
-				aid: aid,
-				type_group: type_group,
-				type: type,
-				annotation: annotation,
-				link: link
-			}
-		});
+		if (preview) {
+			pageObj.timers[id] = setTimeout(
+				function() {
+					$(obj).animate({width:200, height:200});
+					pageObj.timers[id] = null;
+				},
+				500
+			);
+		}
+		else {
+			pageObj.timers[id] = setTimeout(
+				function() {
+					$(obj).animate({width:40, height:40});
+					pageObj.timers[id] = null;
+				},
+				500
+			);
+		}
 	}
-}
-
-function image_preview(obj, preview) {
-    var id = obj.src; // need a unique identifier for the obj
-    if (pageObj.timers[id]) {
-        clearInterval(pageObj.timers[id]);
-        pageObj.timers[id] = null;
-    }
-
-    if (preview) {
-        pageObj.timers[id] = setTimeout(
-            function() {
-                $(obj).animate({width:200, height:200});
-                pageObj.timers[id] = null;
-            },
-            500
-        );
-    }
-    else {
-        pageObj.timers[id] = setTimeout(
-            function() {
-                $(obj).animate({width:40, height:40});
-                pageObj.timers[id] = null;
-            },
-            500
-        );
-    }
 }
 
 // End Widget API -------------------------------------------------------------
@@ -207,15 +212,9 @@ function verify_image_file(file) {
 	ext = file.name.split('.').pop().toLowerCase();
 	if (ext != 'jpg' && ext != 'jpeg' && ext != 'gif' && ext != 'png' && ext != 'svg' ) {
 		alert('Error: specified file is not an image');
-		return 0;
+		return false;
 	}
-
-	if (file.size > 1*1024*1024) {
-		alert('Error: image file is too large (>1MB)');
-		return 0;
-	}
-
-	return 1;
+	return true;
 }
 </SCRIPT>
 

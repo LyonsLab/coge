@@ -284,9 +284,9 @@ sub get_annotations {
                     elsif ($a->bisque_id) {
                         $html .= "<a href='http://bisque.iplantc.org/client_service/view?resource=http://bisque.iplantc.org/data_service/";
                         $html .= $a->bisque_id;
-                        $html .= "5' target='_blank' title='click to view in BisQue'><img src='http://bisque.iplantc.org/image_service/";
+                        $html .= "6' target='_blank' title='click to view in BisQue'><img src='http://bisque.iplantc.org/image_service/";
                         $html .= $a->bisque_id;
-                        $html .= "5?thumbnail=200,200' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;width:42px;margin-right:5px;'></a>";
+                        $html .= "6?thumbnail=200,200' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;width:42px;margin-right:5px;'></a>";
                     }
                     $html .= $a->info;
                     $html .= '</td><td style="padding-left:5px;">';
