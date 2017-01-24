@@ -21,12 +21,12 @@ sub build {
     }
 
     # Add index task
-    $self->add_task(
+    $self->add(
         $self->bismark_index()
     );
 
     # Add alignment task
-    $self->add_task(
+    $self->add_to_previous(
         $self->bismark_alignment($fastq)
     );
     push @{$self->bam}, $self->previous_output;
@@ -44,7 +44,7 @@ sub bismark_index {
     my $done_file = 'bismark_genome_preparation.done';
 
     my $cmd = $self->conf->{BISMARK_DIR} ? catfile($self->conf->{BISMARK_DIR}, 'bismark_genome_preparation') : 'bismark_genome_preparation';
-    $cmd = "cp $fasta $cache_dir/$name.fa && " . # bismark requires fasta file to end in .fa or .fasta, not .faa
+    $cmd = "cp $fasta $name.fa && " . # bismark requires fasta file to end in .fa or .fasta, not .faa
            "nice $cmd $cache_dir && " .
            "touch $done_file";
 
@@ -65,7 +65,7 @@ sub bismark_index {
 
     return {
         cmd         => $cmd,
-        args        => [ ],
+        args        => [],
         inputs      => [
             $fasta
         ],
@@ -91,12 +91,6 @@ sub bismark_alignment {
     my $L = $alignment_params->{'-L'} // 20;
 
     my $index_path = catdir(get_genome_cache_path($gid), "bismark_index");
-
-    # Setup input dependencies
-    my $inputs = [
-        @$fastq,
-        @{$self->index},
-    ];
 
     # Build up command/arguments string
     my $cmd = $self->conf->{BISMARK_DIR} ? catfile($self->conf->{BISMARK_DIR}, 'bismark') : 'bismark';
@@ -124,15 +118,18 @@ sub bismark_alignment {
         push @$args, ['', join(' ', @$fastq), 0];
     }
 
-    return (
-        cmd => $cmd,
-        args => $args,
-        inputs => $inputs,
-        outputs => [
+    return {
+        cmd         => $cmd,
+        args        => $args,
+        inputs      => [
+            @$fastq,
+            @{$self->index},
+        ],
+        outputs     => [
             $output_bam
         ],
         description => "Aligning sequences with Bismark"
-    );
+    };
 }
 
 1;

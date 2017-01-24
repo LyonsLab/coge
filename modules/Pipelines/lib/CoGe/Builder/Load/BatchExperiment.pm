@@ -49,7 +49,7 @@ sub build {
     #
 
     # Add load batch task
-    $self->add_task(
+    $self->add(
         $self->load_batch(
             gid => $genome->id,
             nid => $self->params->{notebook_id},

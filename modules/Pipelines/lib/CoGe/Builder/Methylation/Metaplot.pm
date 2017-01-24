@@ -34,7 +34,7 @@ sub build {
     #
 
     # Generate cached gff
-    $self->add_task(
+    $self->add(
         $self->create_gff( #FIXME simplify this
             gid => $genome->id,
             output_file => get_gff_cache_path(
@@ -48,7 +48,7 @@ sub build {
     my $gff_file = $self->previous_output;
     
     # Generate metaplot
-    $self->add_task(
+    $self->add(
         $self->metaplot(
             bam_file => $bam_file,
             gff_file => $gff_file,

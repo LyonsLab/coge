@@ -46,7 +46,7 @@ sub build {
     # Build workflow
     #
 
-    $self->add_task(
+    $self->add(
         $self->load_annotation(
             gid => $genome->id,
             input_file => $gff_file

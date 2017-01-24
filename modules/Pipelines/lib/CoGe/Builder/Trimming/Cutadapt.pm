@@ -24,9 +24,9 @@ sub build {
 
     if ($read_type eq 'single') { # single-ended
         # Create cutadapt task for each file
-        foreach my $file (@$fastq1) {
-            $self->add_task(
-                $self->cutadapt($file)
+        foreach (@$fastq1) {
+            $self->add(
+                $self->cutadapt($_)
             );
             push @{$self->fastq}, $self->previous_output;
         }
@@ -34,17 +34,18 @@ sub build {
     else { # paired-end
         # Create cutadapt task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) {
-            $self->add_task(
+            $self->add(
                 $self->cutadapt([ $fastq1->[$i], $fastq2->[$i] ])
             );
-            push @{$self->fastq}, $self->previous_outputs;
+            push @{$self->fastq}, grep { /\.fastq$/ } @{$self->previous_outputs};
         }
     }
 }
 
 sub cutadapt {
     my $self = shift;
-    my $fastq = shift; # for single fastq file (backwards compatibility) or two paired-end fastq files (new functionality)
+    my $fastq = shift; # single fastq file or two paired-end fastq files
+    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
 
     my $trimming_params = $self->params->{trimming_params} // {};
     my $q = $trimming_params->{'-q'} // 25;
@@ -53,33 +54,27 @@ sub cutadapt {
     my $encoding = $read_params->{encoding} // 33;
     my $read_type = $read_params->{read_type} // 'single';
 
-    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
-
-    my $name = join(', ', map { basename($_) } @$fastq);
     my @outputs = map { catfile($self->staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
 
-    # Build up command/arguments string
     my $cmd = get_command_path('CUTADAPT');
     $cmd = 'nice ' . $cmd; # run at lower priority
 
-    my $arg_str;
-    $arg_str .= $cmd . ' ';
-    $arg_str .= "-q $q --quality-base=$encoding -m $m -o $outputs[0] ";
-    $arg_str .= "-p $outputs[1] " if ($read_type eq 'paired'); # paired-end
+    my $arg_str  = "$cmd -q $q --quality-base=$encoding -m $m -o $outputs[0]";
+       $arg_str .= " -p $outputs[1] " if ($read_type eq 'paired'); # paired-end
+
+    my $args = [
+        [ $read_type, '',         0 ],
+        [ $self->staging_dir, '', 0 ],
+        [ '"'.$arg_str.'"', '',   0 ]
+    ];
+    push @$args, map { [ '', $_, 1 ] } @$fastq; # relative path
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, 'cutadapt.pl'), # this script was created because JEX can't handle Cutadapt's paired-end argument syntax
-        args => [
-            [ $read_type, '', 0 ],
-            [ $self->staging_dir, '', 0 ],
-            [ '"'.$arg_str.'"', '', 0 ],
-            [ '', join(' ', @$fastq), 0 ]
-        ],
-        inputs => [
-            @$fastq
-        ],
+        args => $args,
+        inputs => [ @$fastq ],
         outputs => \@outputs,
-        description => "Trimming (cutadapt) $name"
+        description => 'Trimming (cutadapt) ' . join(', ', map { basename($_) } @$fastq)
     };
 }
 

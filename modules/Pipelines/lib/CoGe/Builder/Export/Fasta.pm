@@ -37,7 +37,7 @@ sub build {
         my $irods_dest = catfile($irods_base, $output_file);
 
         # Export file task
-        $self->add_task(
+        $self->add(
             $self->export_to_irods(
                 src_file => $genome_file, 
                 dest_file => catfile($irods_base, $output_file), 
@@ -49,15 +49,15 @@ sub build {
         my $md = get_irods_metadata($genome);
         my $md_file = catfile($self->staging_dir, 'irods_metadata.json');
         CoGe::Accessory::TDS::write($md_file, $md);
-        $self->add_task_chain(
-            $self->create_irods_imeta(
+        $self->add_to_previous(
+            $self->irods_imeta(
                 dest_file => $irods_dest,
                 metadata_file => $md_file
             )
         );
         
         # Add to results
-        $self->add_task_chain(
+        $self->add_to_previous(
             $self->add_result(
                 result   => {
                     type => 'irods',
@@ -67,7 +67,7 @@ sub build {
         );
     }
     else { # http download
-        $self->add_task_chain(
+        $self->add(
             $self->add_result(
                 result   => {
                     type => 'url',

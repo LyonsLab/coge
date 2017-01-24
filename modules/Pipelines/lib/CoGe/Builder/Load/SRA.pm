@@ -63,7 +63,7 @@ sub build {
         # that is for one experiment at a time (instead of downloading all files up front).
         my @fastq;
         foreach (@$accns) {
-            $self->add_task_chain(
+            $self->add_to_previous(
                 $self->fastq_dump($_, $read_type),
                 $wait_file ? [ $wait_file ] : undef
             );
@@ -76,8 +76,8 @@ sub build {
         $self->params->{read_params}{read_type} = $read_type;
         CoGe::Builder::Load::Experiment->new($self)->build(data_files => \@fastq);
 
-        # Add wait task to serialize experiment loads -- #FIXME kludge until this can be generalized and incorporated into Buildable
-        ($wait_file) = $self->add_task_chain_all(
+        # Add wait task to serialize experiment loads
+        ($wait_file) = $self->add_to_all(
             $self->wait()
         );
     }

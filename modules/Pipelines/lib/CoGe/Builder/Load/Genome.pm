@@ -69,7 +69,7 @@ sub build {
 
     # Build steps to add genome
     if (@$ncbi_accns) { # NCBI-based load
-        $self->add_task(
+        $self->add(
             $self->load_genome_from_NCBI(
                 ncbi_accns => $ncbi_accns,
                 metadata => $metadata,
@@ -80,7 +80,7 @@ sub build {
         my ($fasta_file) = @$input_files; # first file (in case just one);
         if (@$input_files > 1 || $input_dir) { # multiple FASTA files
             # Concatenate all input files into one
-            $self->add_task_chain_all(
+            $self->add_to_all(
                 $self->join_files(
                     input_files => $input_files,
                     input_dir => $input_dir,
@@ -91,13 +91,13 @@ sub build {
         }
     
         # Sort FASTA by length (for trimming in next step)
-        $self->add_task_chain_all(
+        $self->add_to_all(
             $self->sort_fasta( fasta_file => $fasta_file )
         );
         
         # Validate/process/trim FASTA file
         my $processed_fasta_file = catdir($self->staging_dir, 'genome.faa');
-        $self->add_task_chain(
+        $self->add_to_previous(
             $self->process_fasta(
                 input_file => $self->previous_output(),
                 output_file => $processed_fasta_file,
@@ -105,14 +105,14 @@ sub build {
         );
         
         # Index processed FASTA file
-        $self->add_task_chain(
+        $self->add_to_previous(
             create_fasta_index_job(
                 fasta => $self->previous_output()
             )
         );
     
         # Create genome in DB
-        $self->add_task_chain(
+        $self->add_to_previous(
             $self->load_genome(
                 organism_id => $organism->id,
                 fasta_file => $processed_fasta_file,

@@ -37,7 +37,7 @@ sub build {
     my $genome = $self->request->genome;
 
     # Set metadata for the pipeline being used
-    my $annotations = generate_additional_metadata();
+    my $annotations = $self->generate_additional_metadata();
     my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
@@ -45,7 +45,7 @@ sub build {
     # Build the workflow
     #
     if ($self->params->{methylation_params}->{'picard-deduplicate'}) {
-        $self->add_task(
+        $self->add(
             $self->picard_deduplicate($bam_file)
         );
         $bam_file = $self->previous_output;
@@ -58,7 +58,7 @@ sub build {
 #        staging_dir => $staging_dir
 #    );
 
-    $self->add_task(
+    my $dependencies = $self->add_to_previous(
         $self->pileometh_extraction(
             bam_file => $bam_file,
             gid => $genome->id
@@ -69,17 +69,18 @@ sub build {
     foreach my $file (@outputs) {
         my ($name) = $file =~ /(CHG|CHH|CpG)/;
 
-        $self->add_task(
+        $self->add_to_previous(
             $self->create_pileometh_import_job(
                 input_file => $file,
                 name => $name
-            )
+            ),
+            $dependencies
         );
 
         my $md = clone($metadata);
         $md->{name} .= " ($name methylation)";
 
-        $self->add_task(
+        $self->add_to_previous(
             $self->load_experiment(
                 metadata => $md,
                 gid => $genome->id,

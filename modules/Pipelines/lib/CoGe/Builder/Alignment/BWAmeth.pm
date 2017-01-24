@@ -21,11 +21,11 @@ sub build {
     }
 
     # Add index task
-    $self->add_task(
+    $self->add(
         $self->bwameth_index()
     );
 
-    $self->add_task(
+    $self->add_to_previous(
         $self->bwameth_alignment($fastq)
     );
     push @{$self->bam}, $self->previous_output;
@@ -77,36 +77,28 @@ sub bwameth_alignment {
     my $fastq = shift;
 
     my $gid         = $self->request->genome->id;
-    my $read_params = $self->params->{read_params} // {};
-
     my $index_path  = catdir(get_genome_cache_path($gid), "bwameth_index");
 
-    # Setup input dependencies
-    my $inputs = [
-        @$fastq,
-        @{$self->index}
-    ];
-
-    # Build command and arguments
     my $cmd = $self->conf->{BWAMETH} || 'bwameth';
     $cmd = 'nice ' . $cmd; # run at lower priority
 
-    my $args = [
-        ['--reference', catfile($index_path, 'genome.faa.reheader.faa'), 0],
-        ['', join(' ', @$fastq), 0],
-        ['-t', 8, 0],
-        ['-p', 'alignment', 0]
-    ];
-
-    return (
-        cmd => $cmd,
-        args => $args,
-        inputs => $inputs,
-        outputs => [
+    return {
+        cmd         => $cmd,
+        args        => [
+            ['--reference', catfile($index_path, 'genome.faa.reheader.faa'), 0],
+            ['', join(' ', @$fastq), 0],
+            ['-t', 8, 0],
+            ['-p', 'alignment', 0]
+        ],
+        inputs      => [
+            @$fastq,
+            @{$self->index}
+        ],
+        outputs     => [
             catfile($self->staging_dir, 'alignment.bam')
         ],
         description => "Aligning sequences with bwameth"
-    );
+    };
 }
 
 1;

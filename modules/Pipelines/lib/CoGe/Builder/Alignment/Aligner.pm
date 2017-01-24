@@ -70,17 +70,18 @@ sub build {
 
     # Validate the input files
     foreach my $input_file (@$fastq) {
-        $self->add_task(
-            $self->validate_fastq($input_file)
+        $self->add(
+            $self->validate_fastq($input_file),
+            "$input_file.done"
         );
     }
 
     # Trim the fastq input files
     my @trimmed;
-    my $trimming_params  = $self->params->{trimming_params};
-    if ($trimming_params) {
+    if ($self->params->{trimming_params}) {
         my $trimmer = CoGe::Builder::Trimming::Trimmer->new($self);
         $trimmer->build(data_files => $fastq);
+        $self->add_to_all($trimmer);
         @trimmed = @{$trimmer->fastq};
     }
     else { # no trimming
@@ -88,39 +89,40 @@ sub build {
     }
 
     # Reheader the fasta file
-    $self->add_task(
+    $self->add(
         $self->reheader_fasta($gid)
     );
 
     # Index the fasta file
-    $self->add_task(
+    $self->add_to_previous(
         $self->index_fasta($self->previous_output)
     );
 
     my $aligner;
     switch( $self->_get_aligner() ) {
-        case 'hisat2'  { $aligner = CoGe::Builder::Alignment::HISAT2->new($self) }
-        case 'bowtie2' { $aligner = CoGe::Builder::Alignment::Bowtie->new($self) }
-        case 'tophat'  { $aligner = CoGe::Builder::Alignment::Tophat->new($self) }
+        case 'hisat2'  { $aligner = CoGe::Builder::Alignment::HISAT2->new($self)  }
+        case 'bowtie2' { $aligner = CoGe::Builder::Alignment::Bowtie->new($self)  }
+        case 'tophat'  { $aligner = CoGe::Builder::Alignment::Tophat->new($self)  }
         case 'bismark' { $aligner = CoGe::Builder::Alignment::Bismark->new($self) }
         case 'bwameth' { $aligner = CoGe::Builder::Alignment::BWAmeth->new($self) }
-        case 'bwa'     { $aligner = CoGe::Builder::Alignment::BWA->new($self) }
-        case 'gsnap'   { $aligner = CoGe::Builder::Alignment::GSNAP->new($self) }
+        case 'bwa'     { $aligner = CoGe::Builder::Alignment::BWA->new($self)     }
+        case 'gsnap'   { $aligner = CoGe::Builder::Alignment::GSNAP->new($self)   }
         default {
             CoGe::Exception::Generic->throw(message => 'Invalid aligner');
         }
     }
     $aligner->build(data_files => \@trimmed);
+    $self->add_to_all($aligner);
     push @{$self->raw_bam}, @{$aligner->bam};
 
     foreach my $bam_file (@{$self->raw_bam}) {
         # Sort and index the bam output file(s)
-        my ($sorted_bam_file) = $self->add_task(
+        my ($sorted_bam_file) = $self->add(
             $self->sort_bam($bam_file)
         );
         push @{$self->bam}, $sorted_bam_file;
 
-        $self->add_task(
+        $self->add_to_previous(
             $self->index_bam($sorted_bam_file)
         );
 
@@ -134,7 +136,7 @@ sub build {
         }
 
         # Load alignment
-        $self->add_task(
+        $self->add(
             $self->load_bam(
                 metadata => $md,
                 annotations => $annotations,

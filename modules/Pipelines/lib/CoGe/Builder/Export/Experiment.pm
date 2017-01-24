@@ -35,7 +35,7 @@ sub build {
     my $cache_file = catfile($cache_dir, $output_file);
 
     # Export experiment
-    $self->workflow->add_job( 
+    $self->add(
         export_experiment(
             eid => $experiment->id,
             output => $cache_file
@@ -49,7 +49,7 @@ sub build {
         my $irods_dest = catfile($irods_base, $output_file);
 
         # Export file task
-        $self->add_task_chain(
+        $self->add_to_previous(
             $self->export_to_irods(
                 src_file => $cache_file,
                 dest_file => catfile($irods_base, $output_file),
@@ -61,7 +61,7 @@ sub build {
         my $md = get_irods_metadata($experiment);
         my $md_file = catfile($self->staging_dir, 'irods_metadata.json');
         CoGe::Accessory::TDS::write($md_file, $md);
-        $self->add_task_chain(
+        $self->add_to_previous(
             $self->create_irods_imeta(
                 dest_file => $irods_dest,
                 metadata_file => $md_file
@@ -69,7 +69,7 @@ sub build {
         );
 
         # Add to results
-        $self->add_task_chain(
+        $self->add_to_previous(
             $self->add_result(
                 result   => {
                     type => 'irods',
@@ -79,7 +79,7 @@ sub build {
         );
     } 
     else { # http download
-        $self->add_task_chain(
+        $self->add_to_previous(
             $self->add_result(
                 result   => {
                     type => 'url',

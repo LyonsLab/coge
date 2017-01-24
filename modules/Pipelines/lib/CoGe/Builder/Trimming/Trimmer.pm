@@ -50,6 +50,7 @@ sub build {
     }
 
     $trimmer->build(data_files => [$fastq1, $fastq2]);
+    $self->add($trimmer);
     push @{$self->fastq}, @{$trimmer->fastq};
 }
 

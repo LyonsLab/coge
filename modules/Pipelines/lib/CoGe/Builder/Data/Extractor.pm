@@ -41,6 +41,8 @@ sub build {
     # Build workflow
     #
 
+    # Add retrieval tasks
+    my @input_files;
     foreach my $item (@$data) {
         my $type = lc($item->{type});
 
@@ -63,7 +65,7 @@ sub build {
         elsif ($type eq 'irods') {
             my $irods_path = $item->{path};
             $irods_path =~ s/^irods//; # strip of leading "irods" from LoadExperiment page # FIXME remove this into FileSelect
-            $self->add_task(
+            $self->add(
                 $self->iget(
                     irods_path => $irods_path, 
                     local_path => $upload_dir
@@ -72,7 +74,7 @@ sub build {
             $input_file = $self->previous_output();
         }
         elsif ($type eq 'http' or $type eq 'ftp') {
-            $self->add_task(
+            $self->add(
                 $self->ftp_get(
                     url => $item->{url} || $item->{path},
                     username => $item->{username},
@@ -83,31 +85,36 @@ sub build {
             $input_file = $self->previous_output();
         }
 
-        # Process file
+        push @input_files, $input_file;
+    }
+
+    # Add processing tasks
+    foreach my $input_file (@input_files) {
+        # Decompress file
         if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) {
             # Untar file
             my $output_dir = catdir($self->staging_dir, 'untarred');
-            $self->add_task_chain(
+            $self->add(
                 $self->untar(
                     input_file => $input_file,
                     output_path => $output_dir
-                )
+                ),
+                "$input_file.done"
             );
             $self->data_dir($output_dir);
         }
         elsif ( $input_file =~ /\.gz$/ ) {
             # Decompress file
-            $self->add_task_chain(
-                $self->gunzip( input_file => $input_file )
+            $self->add(
+                $self->gunzip($input_file),
+                "$input_file.done"
             );
             push @{$self->data_files}, $self->previous_output;
         }
         else {
-            push @{$self->data_files}, $self->previous_output;
+            push @{$self->data_files}, $input_file;
         }
     }
-    
-    return 1;
 }
 
 sub iget {
