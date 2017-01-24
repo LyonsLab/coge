@@ -33,7 +33,11 @@ sub validate_fastq_data_file {
     }
     
     # Validate records
-    open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
+    my $in;
+    unless (open($in, $filepath)) {
+        print STDOUT "Error: can't open $filepath for reading: $!";
+    };
+
     my $line;
     while( $line = <$in> ) {
         if ($line =~ /^\@/) { # header
