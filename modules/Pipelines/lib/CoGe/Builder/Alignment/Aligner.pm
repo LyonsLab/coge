@@ -9,11 +9,10 @@ use File::Spec::Functions qw(catdir catfile);
 use Clone qw(clone);
 use File::Basename qw(basename dirname);
 use File::Path qw(make_path);
-use String::ShellQuote qw(shell_quote);
 
-use CoGe::Accessory::Web qw(get_defaults get_command_path);
-use CoGe::Accessory::Utils qw(is_fastq_file to_filename detect_paired_end to_filename_base to_filename_without_extension);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_upload_path get_genome_cache_path);
+use CoGe::Accessory::Web qw(get_command_path);
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage;
 use CoGe::Core::Metadata qw(to_annotations);
 use CoGe::Builder::Trimming::Trimmer;
 use CoGe::Builder::Alignment::HISAT2;
@@ -28,8 +27,8 @@ use CoGe::Exception::MissingField;
 
 # Outputs
 has index   => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # index files
-has raw_bam => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # unprocessed bam files (straight from the aligner!)
-has bam     => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # processed bam files
+has raw_bam => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # unprocessed bam files
+has bam     => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # processed bam files (sorted and indexed)
 
 sub build {
     my $self = shift;
@@ -70,9 +69,8 @@ sub build {
 
     # Validate the input files
     foreach my $input_file (@$fastq) {
-        $self->add(
-            $self->validate_fastq($input_file),
-            "$input_file.done"
+        $self->add_to_previous( # previous task is file trasfer or decompression
+            $self->validate_fastq($input_file)
         );
     }
 
