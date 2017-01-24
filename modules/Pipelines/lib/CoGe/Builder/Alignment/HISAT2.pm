@@ -23,7 +23,7 @@ sub build {
     my $doSeparately = $self->params->{chipseq_params};
 
     # Add index task
-    $self->add_task(
+    $self->add(
         $self->hisat2_index()
     );
 
@@ -31,14 +31,14 @@ sub build {
     my @sam_files;
     if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
         foreach my $file (@$fastq) {
-            $self->add_task(
+            $self->add(
                 $self->hisat2_alignment([$file])
             );
             push @sam_files, $self->previous_output;
         }
     }
     else { # standard Bowtie run (all fastq's at once)
-        $self->add_task(
+        $self->add(
             $self->hisat2_alignment($fastq)
         );
         push @sam_files, $self->previous_output;
@@ -46,7 +46,7 @@ sub build {
 
     # Add one or more sam-to-bam tasks
     foreach my $file (@sam_files) {
-        $self->add_task(
+        $self->add(
             $self->sam_to_bam($file)
         );
         push @{$self->bam}, $self->previous_output;

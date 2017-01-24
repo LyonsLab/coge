@@ -21,7 +21,7 @@ sub build {
 
     my $gid = $self->request->genome->id;
 
-    my $annotations = generate_additional_metadata($self->params->{snp_params});
+    my $annotations = $self->generate_additional_metadata();
     my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
@@ -50,29 +50,29 @@ sub build {
     # Build workflow
     #
 
-    $self->add_task(
+    $self->add(
         $self->reheader_fasta($gid)
     );
     my $reheader_fasta = $self->previous_output;
 
-    $self->add_task(
+    $self->add(
         $self->index_fasta($reheader_fasta)
     );
 
-    $self->add_task(
+    $self->add(
         $self->find_snps(
             $reheader_fasta,
             $bam_file
         )
     );
 
-    $self->add_task(
+    $self->add(
         $self->filter_snps($self->previous_output)
     );
 
     $self->vcf($self->previous_output);
     
-    $self->add_task(
+    $self->add(
         $self->load_vcf(
             vcf         => $self->vcf,
             annotations => $annotations,

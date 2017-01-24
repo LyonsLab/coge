@@ -31,12 +31,12 @@ sub build {
     # Build workflow
     #
 
-    $self->add_task(
+    $self->add(
         $self->reheader_fasta($gid)
     );
     my $reheader_fasta = $self->previous_output;
 
-    $self->add_task(
+    $self->add(
         $self->index_fasta($reheader_fasta)
     );
 
@@ -45,17 +45,17 @@ sub build {
         $sorted_bam_file = $bam_file
     }
     else {
-        $self->add_task(
+        $self->add(
             $self->sort_bam($bam_file)
         );
         $sorted_bam_file = $self->previous_output;
         
-        $self->add_task(
+        $self->add(
             $self->index_bam($sorted_bam_file)
         );
     }
 
-    $self->add_task(
+    $self->add(
         $self->platypus(
             bam   => $sorted_bam_file,
             fasta => $reheader_fasta
@@ -64,7 +64,7 @@ sub build {
 
     $self->vcf($self->previous_output);
 
-    $self->add_task(
+    $self->add(
         $self->load_vcf(
             vcf         => $self->vcf,
             annotations => $annotations,

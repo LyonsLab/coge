@@ -29,7 +29,7 @@ sub build {
 
     my $gid = $self->request->genome->id;
 
-    my $annotations = generate_additional_metadata();
+    my $annotations = $self->generate_additional_metadata();
     my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
     
@@ -37,31 +37,31 @@ sub build {
     # Build workflow
     #
 
-    $self->add_task(
+    $self->add(
         $self->reheader_fasta($gid)
     );
     my $reheader_fasta = $self->previous_output;
 
-    $self->add_task(
+    $self->add(
         $self->index_fasta($reheader_fasta)
     );
 
-    $self->add_task(
+    $self->add(
         $self->fasta_dict($gid)
     );
 
-    $self->add_task(
+    $self->add(
         $self->add_readgroups($bam_file)
     );
 
-    $self->add_task_chain(
+    $self->add_to_previous(
         $self->reorder_sam(
             input_fasta => $reheader_fasta,
             input_bam   => $self->previous_output
         )
     );
 
-    $self->add_task_chain(
+    $self->add_to_previous(
         $self->gatk(
             input_fasta => $reheader_fasta,
             input_bam   => $self->previous_output
@@ -70,7 +70,7 @@ sub build {
 
     $self->vcf($self->previous_output);
 
-    $self->add_task(
+    $self->add(
         $self->load_vcf(
             annotations => $annotations,
             gid         => $gid,

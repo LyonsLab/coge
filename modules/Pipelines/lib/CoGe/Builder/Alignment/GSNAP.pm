@@ -21,7 +21,7 @@ sub build {
     my $doSeparately = $self->params->{chipseq_params};
 
     # Generate index
-    $self->add_task(
+    $self->add(
         $self->gmap_index()
     );
     $self->index([$self->previous_output->[0]]);
@@ -30,14 +30,14 @@ sub build {
     my @sam_files;
     if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
         foreach my $file (@$fastq) {
-            $self->add_task(
+            $self->add(
                 $self->gsnap_alignment([ $file ])
             );
             push @sam_files, $self->previous_output;
         }
     }
     else { # standard GSNAP run (all fastq's at once)
-        $self->add_task(
+        $self->add(
             $self->gsnap_alignment($fastq)
         );
         push @sam_files, $self->previous_output;
@@ -46,12 +46,12 @@ sub build {
     # Add one or more sam-to-bam tasks
     foreach my $file (@sam_files) {
         # Filter sam file
-        $self->add_task(
+        $self->add(
             $self->filter_sam($file)
         );
 
         # Convert sam file to bam
-        $self->add_task(
+        $self->add(
             $self->sam_to_bam($self->previous_output)
         );
         push @{$self->bam}, $self->previous_output;

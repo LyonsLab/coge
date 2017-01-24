@@ -4,6 +4,7 @@ use Moose;
 extends 'CoGe::Builder::Methylation::Analyzer';
 
 use Data::Dumper;
+use Clone qw(clone);
 use File::Spec::Functions qw(catdir catfile);
 
 use CoGe::Accessory::Web;
@@ -29,23 +30,21 @@ sub build {
     my $gid = $self->request->genome->id;
 
     # Set metadata for the pipeline being used
-    my $annotations = generate_additional_metadata($self->params->{read_params}, $self->params->{methylation_params});
+    my $annotations = $self->generate_additional_metadata();
     my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
     #
     # Build the workflow
     #
-    my (@tasks, @done_files);
-
     if ($self->params->{methylation_params}->{'bismark-deduplicate'}) {
-        $self->add_task(
+        $self->add(
             $self->bismark_deduplicate($bam_file)
         );
         $bam_file = $self->previous_output;
     }
 
-    $self->add_task(
+    $self->add(
          $self->extract_methylation($bam_file)
     );
     
@@ -56,7 +55,7 @@ sub build {
         
         my ($name) = $file1 =~ /(CHG|CHH|CpG)/;
 
-        $self->add_task(
+        $self->add(
             $self->bismark_import(
                 ob_input_file => $file1,
                 ot_input_file => $file2,
@@ -67,7 +66,7 @@ sub build {
         my $md = clone($metadata);
         $md->{name} .= " ($name methylation)";
 
-        $self->add_task(
+        $self->add(
             $self->load_experiment(
                 metadata    => $md,
                 gid         => $gid,

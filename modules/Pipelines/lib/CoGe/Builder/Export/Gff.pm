@@ -46,7 +46,7 @@ sub build {
 
         # Add task to generate output file(s)
         if ($output_type eq 'gff') {
-            $self->add_task(
+            $self->add(
                 $self->create_gff(
                     %{$self->params},
                     output_file => $output_filename
@@ -54,7 +54,7 @@ sub build {
             );
         }
         if ($output_type eq 'bed') {
-            $self->add_task(
+            $self->add(
                 $self->create_bed(
                     %{$self->params},
                     output_file => $output_filename
@@ -62,7 +62,7 @@ sub build {
             );
         }
         if ($output_type eq 'tbl') {
-            $self->add_task(
+            $self->add(
                 $self->create_tbl(
                     %{$self->params},
                     output_file => $output_filename
@@ -78,7 +78,7 @@ sub build {
             my $irods_dest = catfile($irods_base, basename($output_filename));
 
             # Export file task
-            $self->add_task_chain(
+            $self->add_to_previous(
                 $self->export_to_irods(
                     src_file  => $output_filename,
                     dest_file => $irods_dest,
@@ -90,7 +90,7 @@ sub build {
             my $md = get_irods_metadata($genome);
             my $md_file = catfile($self->staging_dir, 'irods_metadata.json');
             CoGe::Accessory::TDS::write($md_file, $md);
-            $self->add_task_chain(
+            $self->add_to_previous(
                 $self->create_irods_imeta(
                     dest_file     => $irods_dest,
                     metadata_file => $md_file
@@ -98,7 +98,7 @@ sub build {
             );
 
             # Add to results
-            $self->add_task_chain(
+            $self->add_to_previous(
                 $self->add_result(
                     result => {
                         type => 'irods',
@@ -108,7 +108,7 @@ sub build {
             );
         }
         else { # http download
-            $self->add_task_chain(
+            $self->add_to_previous(
                 $self->add_result(
                     result => {
                         type => 'url',

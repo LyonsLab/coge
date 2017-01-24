@@ -67,6 +67,7 @@ sub build {
             # Add alignment workflow
             my $aligner = CoGe::Builder::Alignment::Aligner->new($self);
             $aligner->build(data_files => $input_files);
+            $self->add($aligner);
             @bam_files     = @{$aligner->bam};
             @raw_bam_files = @{$aligner->raw_bam};
             unless (@bam_files) {
@@ -74,7 +75,7 @@ sub build {
             }
         }
         elsif ( $file_type && $file_type eq 'bam' ) {
-            $self->add_task(
+            $self->add(
                 $self->load_bam(
                     bam_file => $input_files->[0]
                 )
@@ -89,25 +90,29 @@ sub build {
         if ( $self->params->{expression_params} ) {
             my $expr = CoGe::Builder::Expression::qTeller->new($self);
             $expr->build(data_files => \@bam_files);
+            $self->add($expr);
         }
         
         # Add SNP workflow (if specified)
         if ( $self->params->{snp_params} ) {
             my $isBamSorted = ($file_type ne 'bam');
-            my $snp_finder = CoGe::Builder::SNP::SNPFinder->new($self);
-            $snp_finder->build(data_files => \@bam_files, is_sorted => $isBamSorted);
+            my $snp = CoGe::Builder::SNP::SNPFinder->new($self);
+            $snp->build(data_files => \@bam_files, is_sorted => $isBamSorted);
+            $self->add($snp);
         }
         
         # Add methylation workflow (if specified)
         if ( $self->params->{methylation_params} ) {
-            my $aligner = CoGe::Builder::Alignment::Aligner->new($self);
+            my $aligner = CoGe::Builder::Methylation::Analyzer->new($self);
             $aligner->build(data_files => [ $bam_files[0], $raw_bam_files[0] ]);
+            $self->add($aligner);
         }
         
         # Add ChIP-seq workflow (if specified)
         if ( $self->params->{chipseq_params} ) {
             my $chipseq = CoGe::Builder::Protein::ChIPseq->new($self);
             $chipseq->build(data_files => \@bam_files);
+            $self->add($chipseq);
         }
     }
     # Else, all other file types
@@ -115,12 +120,12 @@ sub build {
         # Add conversion step for BigWig files
         my $input_file = $input_files->[0];
         if ( $file_type eq 'bw' ) {
-            ($input_file) = $self->add_task(
+            ($input_file) = $self->add(
                 $self->bigwig_to_wig($input_file)
             );
         }
 
-        $self->add_task(
+        $self->add(
             $self->load_experiment(
                 gid => $genome->id,
                 input_file => $input_file,

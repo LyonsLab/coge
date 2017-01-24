@@ -23,16 +23,16 @@ sub build {
     # Build workflow
     #
 
-    $self->add_task(
+    $self->add(
         $self->reheader_fasta($gid)
     );
     my $reheader_fasta = $self->previous_output;
     
-    $self->add_task(
+    $self->add(
         $self->index_fasta($reheader_fasta)
     );
     
-    $self->add_task(
+    $self->add(
         $self->samtools_mpileup(
             reheader_fasta => $reheader_fasta,
             bam_file => $bam_file
@@ -41,11 +41,11 @@ sub build {
 
     $self->vcf($self->previous_output);
     
-    my $annotations = generate_additional_metadata();
+    my $annotations = $self->generate_additional_metadata();
     my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
-    $self->add_task(
+    $self->add(
         $self->load_vcf(
             gid => $gid,
             vcf => $self->vcf,

@@ -7,15 +7,15 @@ use Data::Dumper qw(Dumper);
 use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
 
-use CoGe::Accessory::Utils qw(to_filename);
+use CoGe::Accessory::Utils;
 use CoGe::Accessory::Web qw(get_command_path);
 use CoGe::Exception::Generic;
 
 sub build {
     my $self = shift;
     my %opts = @_;
-    my ($fastq1, $fastq2) = @{$opts{data_files}};  # fastq2 is undef for single-ended
-    unless ($fastq1 && @$fastq2) {
+    my ($fastq1, $fastq2) = @{$opts{data_files}}; # fastq2 is undef for single-ended
+    unless ($fastq1 && @$fastq1) {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
     }
 
@@ -24,9 +24,9 @@ sub build {
 
     if ($read_type eq 'single') { # single-ended
         # Create cutadapt task for each file
-        foreach my $file (@$fastq1) {
-            $self->add_task(
-                $self->trimgalore($file)
+        foreach (@$fastq1) {
+            $self->add(
+                $self->trimgalore($_)
             );
             push @{$self->fastq}, $self->previous_output;
         }
@@ -34,7 +34,7 @@ sub build {
     else { # paired-end
         # Create cutadapt task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) {
-            $self->add_task(
+            $self->add(
                 $self->trimgalore([ $fastq1->[$i], $fastq2->[$i] ])
             );
             push @{$self->fastq}, $self->previous_outputs;
@@ -42,9 +42,10 @@ sub build {
     }
 }
 
-sub create_trimgalore_job {
+sub trimgalore {
     my $self = shift;
-    my $fastq = shift; # for single fastq file (backwards compatibility) or two paired-end fastq files (new functionality)
+    my $fastq = shift; # single fastq file or two paired-end fastq files
+    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
 
     my $trimming_params = $self->params->{trimming_params} // {};
     my $q = $trimming_params->{'-q'} // 20;
@@ -54,61 +55,48 @@ sub create_trimgalore_job {
     my $encoding = $read_params->{encoding} // 33;
     my $read_type = $read_params->{read_type} // 'single';
 
-    $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
-
-    my $name = join(', ', map { basename($_) } @$fastq);
-
     # Build up command/arguments string
     my $cmd = $self->conf->{TRIMGALORE} || 'trim_galore';
     $cmd = 'nice ' . $cmd; # run at lower priority
-
-    # Create staging dir
-    $cmd = "mkdir -p $self->staging_dir && " . $cmd;
 
     my $args = [
         ['--output_dir', $self->staging_dir, 0],
         ['-q', $q, 0],
         ['--length', $length, 0],
+        [($encoding == 64 ? '--phred64' : '--phred33'), '', 0]
     ];
 
-    my $phred = ($encoding == 64 ? '--phred64' : '--phred33');
-    push @$args, [$phred, '', 0];
-
-    if (defined $a) {
-        push @$args, ['-a', '"'.$a.'"', 0];
-    }
+    push @$args, ['-a', '"'.$a.'"', 0] if (defined $a);
 
     my @outputs;
     if ($read_type eq 'paired') {
-        push @$args, ['--paired', join(' ', @$fastq), 0];
+        push @$args, ['--paired', '', 0];
+        push @$args, map { ['', $_, 1] } @$fastq; # relative path
 
         my ($r1, $r2) = @$fastq;
         @outputs = ( catfile($self->staging_dir, to_filename_without_extension($r1) . '_val_1.fq'),
                      catfile($self->staging_dir, to_filename_without_extension($r2) . '_val_2.fq') );
     }
     else { # single
-        my ($file) = @$fastq;
-        push @$args, ['', $file, 0];
-        @outputs = ( catfile($self->staging_dir, to_filename_without_extension($file) . '_trimmed.fq') );
+        push @$args, map { ['', $_, 1] } @$fastq; # relative path
+        @outputs = map { catfile($self->staging_dir, to_filename_without_extension($_) . '_trimmed.fq') } @$fastq;
     }
 
-    # kludge to fix JEX sequencing
-    foreach (@$args) {
-        $cmd .= ' ' . $_->[0] . ' ' . $_->[1];
-    }
-    my @done_files = map { $_ . '.done' } @outputs;
-    foreach (@done_files) {
-        $cmd .= " && touch $_";
-    }
+#    # kludge to fix JEX sequencing
+#    foreach (@$args) {
+#        $cmd .= ' ' . $_->[0] . ' ' . $_->[1];
+#    }
+#    my @done_files = map { $_ . '.done' } @outputs;
+#    foreach (@done_files) {
+#        $cmd .= " && touch $_";
+#    }
 
     return {
         cmd => $cmd,
-        args => [],
-        inputs => [
-            @$fastq
-        ],
+        args => $args,
+        inputs => [ @$fastq ],
         outputs => \@outputs,
-        description => "Trimming (trimgalore) $name"
+        description => 'Trimming (trimgalore) ' . join(', ', map { basename($_) } @$fastq)
     };
 }
 

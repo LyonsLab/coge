@@ -4,6 +4,7 @@ use Moose;
 extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
+use Clone qw(clone);
 use File::Spec::Functions qw(catdir catfile);
 use String::ShellQuote qw(shell_quote);
 
@@ -44,7 +45,7 @@ sub build {
     my $genome = $self->request->genome;
 
     # Set metadata for the pipeline being used
-    my $annotations = generate_additional_metadata();
+    my $annotations = $self->generate_additional_metadata();
     my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
@@ -73,11 +74,11 @@ sub build {
     # Build the workflow
     #
     foreach my $bam_file (@$bam_files) {
-        $self->add_task(
+        $self->add(
             $self->bamToBed($bam_file)
         );
 
-        $self->add_task(
+        $self->add(
             $self->homer_makeTagDirectory(
                 bed_file => $self->previous_output,
                 gid => $genome->id
@@ -89,14 +90,14 @@ sub build {
         my ($input_tag) = to_filename_base($input_file);
         my ($replicate_tag) = to_filename_base($replicate);
 
-        $self->add_task(
+        $self->add(
             $self->homer_findPeaks(
                 input_dir => catdir($self->staging_dir, $input_tag),
                 replicate_dir => catdir($self->staging_dir, $replicate_tag)
             )
         );
 
-        $self->add_task(
+        $self->add(
             $self->convert_homer_to_csv($self->previous_output)
         );
 
@@ -104,7 +105,7 @@ sub build {
         $md->{name} .= " ($input_tag vs. $replicate_tag) (ChIP-seq)";
         push @{$md->{tags}}, 'ChIP-seq';
 
-        $self->add_task(
+        $self->add(
             $self->load_experiment(
                 metadata    => $md,
                 gid         => $genome->id,

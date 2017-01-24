@@ -28,7 +28,7 @@ sub build {
     #
 
     # Reheader the fasta file
-    $self->add_task(
+    $self->add(
         $self->reheader_fasta($genome->id)
     );
     my $reheader_fasta = $self->previous_output;
@@ -40,7 +40,7 @@ sub build {
     }
     
     # Generate cached gff if genome is annotated
-    $self->add_task(
+    $self->add(
         $self->create_gff( #FIXME simplify this
             gid => $genome->id,
             output_file => get_gff_cache_path(
@@ -57,13 +57,13 @@ sub build {
     my $vcf_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     
     # Compress file using bgzip
-    $self->add_task(
+    $self->add(
         $self->bgzip($vcf_file)
     );
     $vcf_file = $self->previous_output;
     
     # Create a Tabix index
-    $self->add_task(
+    $self->add(
         $self->tabix_index($vcf_file, 'vcf')
     );
 
@@ -74,7 +74,7 @@ sub build {
     }
     
     # Compute summary stats
-    $self->add_task(
+    $self->add(
         $self->sumstats(
             vcf => $vcf_file,
             gff => $gff_file,
@@ -84,7 +84,7 @@ sub build {
     );
     
     # Add workflow result
-    $self->add_task_chain(
+    $self->add_to_previous(
         $self->add_result(
             result => {
                 type => "popgen",

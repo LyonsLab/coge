@@ -8,9 +8,9 @@ use File::Spec::Functions qw(catdir catfile);
 use File::Path qw(make_path);
 use String::ShellQuote qw(shell_quote);
 
-use CoGe::Accessory::Utils qw(to_filename to_filename_base to_filename_without_extension);
+use CoGe::Accessory::Utils;
 use CoGe::Accessory::Web qw(get_command_path);
-use CoGe::Core::Storage qw(get_genome_file get_genome_cache_path);
+use CoGe::Core::Storage;
 use CoGe::Exception::Generic;
 use CoGe::Exception::MissingField;
 
@@ -28,7 +28,7 @@ sub build {
     # Generate gff if genome annotated
     my $gff_file;
     if ( $genome->has_gene_features ) {
-        $self->add_task(
+        $self->add(
             $self->create_gff( #FIXME simplify this
                 gid => $genome->id,
                 output_file => get_gff_cache_path(
@@ -43,21 +43,21 @@ sub build {
     }
 
     # Add index task
-    $self->add_task(
+    $self->add(
         $self->bowtie2_index()
     );
 
     # Add one or more alignment tasks
     if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
         foreach my $file (@$fastq) {
-            $self->add_task(
+            $self->add(
                 $self->tophat_alignment([$file], $gff_file)
             );
             push @{$self->bam_files}, $self->previous_output;
         }
     }
-    else { # standard Bowtie run (all fastq's at once)
-        $self->add_task(
+    else { # standard Tophat run (all fastq's at once)
+        $self->add(
             $self->tophat_alignment($fastq, $gff_file)
         );
         push @{$self->bam_files}, $self->previous_output;

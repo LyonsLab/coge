@@ -47,7 +47,7 @@ sub build {
     #
 
     # Reheader the fasta file
-    $self->add_task(
+    $self->add(
         $self->reheader_fasta($genome->id)
     );
     my $reheader_fasta = $self->previous_output;
@@ -61,7 +61,7 @@ sub build {
 #    }
     my $gff_file;
     if ( $isAnnotated ) {
-        $self->add_task(
+        $self->add(
             $self->create_gff( #FIXME simplify this
                 gid => $genome->id,
                 output_file => get_gff_cache_path(
@@ -76,17 +76,17 @@ sub build {
     }
 
     # Generate bed file of read depth
-    $self->add_task(
+    $self->add(
         $self->measure_read_depth($bam_file)
     );
 
     # Normalize bed file
-    $self->add_task(
+    $self->add(
         $self->normalize_bed($self->previous_output)
     );
 
     # Load bed experiment (read depth)
-    $self->add_task(
+    $self->add(
         $self->load_bed(
             bed_file    => $self->previous_output,
             gid         => $genome->id,
@@ -97,7 +97,7 @@ sub build {
     # Check for annotations required by cufflinks
     if ($isAnnotated) {
         # Run Cufflinks
-        $self->add_task(
+        $self->add(
             $self->cufflinks(
                 gff   => $gff_file,
                 fasta => $reheader_fasta,
@@ -106,12 +106,12 @@ sub build {
         );
 
         # Convert Cufflinks output (FPKM measurements) to CSV format
-        $self->add_task(
+        $self->add(
             $self->convert_cufflinks($self->previous_output)
         );
 
         # Load CSV
-        $self->add_task(
+        $self->add(
             $self->load_csv(
                 csv_file    => $self->previous_output,
                 gid         => $genome->id,
@@ -283,7 +283,7 @@ sub load_csv {
             ['-staging_dir', './load_csv', 0],
             ['-file_type', 'csv', 0],
             ['-data_file', $csv_file, 0],
-            ['-config', $self->conf->{_CONFIG_PATH}, 1]
+            ['-config', $self->conf->{_CONFIG_PATH}, 0]
         ],
         inputs => [
             $csv_file
