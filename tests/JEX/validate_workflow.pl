@@ -28,7 +28,7 @@ else {
 
 # Validate workflows
 my $totalValidated = 0;
-print STDERR scalar(@workflow_ids), " candidate IDs\n";
+print STDERR scalar(@workflow_ids), " candidate workflow(s)\n";
 foreach my $id (@workflow_ids) {
     next if (defined $START_ID && $id < $START_ID);
 
@@ -45,6 +45,10 @@ foreach my $id (@workflow_ids) {
 
     # Validate workflow
     next unless ($workflow->{jobs} && @{$workflow->{jobs}});
+    if (lc($workflow->{status}) ne 'completed') {
+        print STDERR "Skipping incomplete workflow $id\n";
+        next;
+    }
     print STDERR "Validating workflow ", $id, "\n";
     validate_sequence($workflow, \%tasksByOutput);
 
