@@ -1197,7 +1197,7 @@ function load(experiment) {
     			return;
     		}
     		else if (!response.success || !response.id) {
-    			coge.progress.failed("Error: failed to start workflow", response.error);
+    			coge.progress.failed("Error", response.error);
     			return;
     		}
     		
