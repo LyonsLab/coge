@@ -2,6 +2,7 @@ package CoGe::Builder::Buildable;
 
 use Moose;
 
+use Array::Utils qw(array_minus);
 use File::Basename qw(basename dirname);
 use File::Spec::Functions qw(catdir catfile);
 use File::Path qw(make_path);
@@ -229,7 +230,8 @@ sub add {
     if ($dependencies) {
         $dependencies = [ $dependencies ] unless (ref($dependencies) eq 'ARRAY');
         foreach (@$tasks) {
-            push @{$_->{inputs}}, @$dependencies;
+            my @new_dep = array_minus(@$dependencies, @{$_->{inputs}}); # prevent duplicates
+            push @{$_->{inputs}}, @new_dep;
         }
     }
 
