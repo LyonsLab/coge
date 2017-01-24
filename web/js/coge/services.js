@@ -82,6 +82,10 @@ var coge = window.coge = (function(namespace) {
 		fetch_annotation: function(type,id,aid) {
 			return this._ajax("GET", this.baseUrl + type + '/' + id + '/annotations/' + aid);
 		},
+
+		fetch_annotation_type_groups: function() {
+			return this._ajax("GET", this.baseUrl + 'annotations/type_groups');
+		},
 		
 		fetch_job: function(id) {
 			this._debug('fetch_job');

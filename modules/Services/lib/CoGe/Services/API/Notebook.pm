@@ -48,25 +48,9 @@ sub fetch {
         return;
     }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Get notebook from DB
-    my $notebook = $db->resultset("List")->find($id);
-    unless (defined $notebook) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
-        return;
-    }
-
-    # Verify that user has read access to the notebook
-    unless ( !$notebook->restricted || (defined $user && $user->has_access_to_list($notebook)) ) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
-        return;
-    }
+    my $notebook = $self->_get_notebook($id, 0, $db, $user);
+    return unless $notebook;
 
     # Format metadata
     my @metadata = map {
@@ -97,6 +81,23 @@ sub fetch {
         additional_metadata => \@metadata,
         items => \@items
     });
+}
+
+sub fetch_annotations {
+
+}
+
+sub fetch_annotation {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my $aid = int($self->stash('aid'));
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $notebook = $self->_get_notebook($id, 0, $db, $user);
+    return unless $experiment;
+
+    my $annotation = get_annotation($aid, 'List', $db);
+    $self->render(json => $annotation) if $annotation;
 }
 
 sub add {
@@ -160,21 +161,8 @@ sub add_items {
     
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-    unless ($user) {
-        $self->render(status => 404, json => {
-            error => { Error => "User not logged in"}
-        });
-        return;
-    }
-
-    # Get notebook from DB
-    my $notebook = $db->resultset("List")->find($id);
-    unless (defined $notebook) {
-        $self->render(status => 404, json => {
-            error => { Error => "Notebook $id not found: $notebook"}
-        });
-        return;
-    }
+    my $notebook = $self->_get_notebook($id, 1, $db, $user);
+    return unless $notebook;
 
     my $data = $self->req->json;
     my @items;
@@ -224,15 +212,8 @@ sub remove {
     
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Get notebook from DB
-    my $notebook = $db->resultset("List")->find($id);
-    unless (defined $notebook) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found"}
-        });
-        return;
-    }
+    my $notebook = $self->_get_notebook($id, 1, $db, $user);
+    return unless $notebook;
 
     # Attempt to delete/undelete the notebook
     my $success;
@@ -277,29 +258,8 @@ sub remove_items {
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-    unless ($user) {
-        $self->render(status => 404, json => {
-            error => { Error => "User not logged in"}
-        });
-        return;
-    }
-
-    # Get notebook
-    my $notebook = $db->resultset("List")->find($id);
-    unless (defined $notebook) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
-        return;
-    }
-
-    # Check permissions
-    unless ($user->is_admin || $user->is_owner_editor(list => $id)) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
-        return;
-    }
+    my $notebook = $self->_get_notebook($id, 1, $db, $user);
+    return unless $notebook;
 
     my $data = $self->req->json;
     my @items;
@@ -338,23 +298,8 @@ sub update {
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Get notebook
-    my $notebook = $db->resultset("List")->find($id);
-    unless (defined $notebook) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
-        return;
-    }
-
-    # Check permissions
-    unless ($user->is_admin || $user->is_owner_editor(list => $id)) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
-        return;
-    }
+    my $notebook = $self->_get_notebook($id, 1, $db, $user);
+    return unless $notebook;
 
     my $data = $self->req->json;
     if (exists($data->{metadata}->{id})) {
@@ -364,6 +309,30 @@ sub update {
 	$self->render(json => {
 		success => Mojo::JSON->true
 	});
+}
+
+sub _get_notebook {
+    my ($self, $id, $own_or_edit, $db, $user) = @_;
+    my $notebook = $db->resultset("List")->find($id);
+    unless (defined $notebook) {
+        $self->render(status => 404, json => { error => { Error => "Resource not found" } });
+        return;
+    }
+    if ($own_or_edit) {
+        unless ($user) {
+            $self->render(status => 404, json => { error => { Error => "User not logged in"} });
+            return;
+        }
+        unless ($user->is_owner_editor(list => $id)) {
+            $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+            return;
+        }
+    }
+    unless ( !$notebook->restricted || (defined $user && $user->has_access_to_list($notebook)) ) {
+        $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+        return;
+    }
+    return $notebook;
 }
 
 1;

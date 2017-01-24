@@ -1,7 +1,6 @@
 <SCRIPT language="JavaScript">
 // Begin Widget API -----------------------------------------------------------
 // Required user-defined Perl AJAX functions:
-//		get_annotation
 //		add_annotation
 //		update_annotation
 // Must call init_annotation_dialog() on page load
@@ -33,18 +32,15 @@ function add_annotation_dialog() {
 }
 
 function edit_annotation_dialog(aid) {
-	coge.services.fetch_annotation($('#annotation_edit_box').data('api_path'), $('#annotation_edit_box').data('parent_id'), aid).done(function(data) {
-		var obj = jQuery.parseJSON(data);
-		if (obj) {
-			$('#edit_annotation').val(obj.annotation);
-			$('#edit_annotation_link').val(obj.link);
-			$('#edit_annotation_type').val(obj.type);
-			$('#edit_annotation_type_group').val(obj.type_group);
-			$('#edit_annotation_image').val('');
-			$('#add_annotation_button').hide();
-			$('#update_annotation_button').data({annotation_id: aid}).show();
-			$("#annotation_edit_box").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
-		}
+	coge.services.fetch_annotation($('#annotation_edit_box').data('api_path'), $('#annotation_edit_box').data('parent_id'), aid).done(function(obj) {
+		$('#edit_annotation').val(obj.annotation);
+		$('#edit_annotation_link').val(obj.link);
+		$('#edit_annotation_type').val(obj.type);
+		$('#edit_annotation_type_group').val(obj.type_group);
+		$('#edit_annotation_image').val('');
+		$('#add_annotation_button').hide();
+		$('#update_annotation_button').data({annotation_id: aid}).show();
+		$("#annotation_edit_box").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
 	});
 }
 
@@ -201,15 +197,9 @@ function search_annotation_types () {
 }
 
 function get_annotation_type_groups () {
-	$.ajax({
-		data: {
-			fname: 'get_annotation_type_groups'
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			$("#edit_annotation_type_group").autocomplete("option", "source", items);
-			$("#edit_annotation_type_group").autocomplete("search");
-		},
+	coge.services.fetch_annotation_type_groups().done(function(items){
+		$("#edit_annotation_type_group").autocomplete("option", "source", items);
+		$("#edit_annotation_type_group").autocomplete("search");
 	});
 }
 

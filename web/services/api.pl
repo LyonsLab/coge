@@ -110,6 +110,14 @@ $r->put("/genomes")
     ->name("genomes-add")
     ->to("genome#add", namespace => 'CoGe::Services::API');
 
+$r->get("/genomes/:id/annotations" => [id => qr/\d+/])
+    ->name("genomes-fetch-annotations")
+    ->to("genome#fetch_annotations", namespace => 'CoGe::Services::API', id => undef);
+
+$r->get("/genomes/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("genomes-fetch-annotation")
+    ->to("genome#fetch_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
 # Dataset routes
 #$r->get("/genomes/search/#term")
 #    ->name("genomes-search")
@@ -157,13 +165,13 @@ $r->delete("/experiments/:id" => [id => qr/\d+/])
     ->name("experiments-remove")
     ->to("experiment#remove", namespace => 'CoGe::Services::API', id => undef);
 
-$r->get("/experiments/:eid/annotations" => [eid => qr/\d+/])
+$r->get("/experiments/:id/annotations" => [id => qr/\d+/])
     ->name("experiments-fetch-annotations")
-    ->to("experiment#fetch_annotations", namespace => 'CoGe::Services::API', eid => undef);
+    ->to("experiment#fetch_annotations", namespace => 'CoGe::Services::API', id => undef);
 
-$r->get("/experiments/:eid/annotations/:aid" => [eid => qr/\d+/,aid => qr/\d+/])
+$r->get("/experiments/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
     ->name("experiments-fetch-annotation")
-    ->to("experiment#fetch_annotation", namespace => 'CoGe::Services::API', eid => undef, aid => undef);
+    ->to("experiment#fetch_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
 
 # Notebook routes
 $r->get("/notebooks/search/#term")
@@ -189,6 +197,19 @@ $r->delete("/notebooks/:id" => [id => qr/\d+/])
 $r->post("/notebooks/:id/items/add" => [id => qr/\d+/])
     ->name("notebooks-items-add")
     ->to("notebook#add_items", id => undef);
+
+$r->get("/notebooks/:id/annotations" => [id => qr/\d+/])
+    ->name("notebooks-fetch-annotations")
+    ->to("notebook#fetch_annotations", namespace => 'CoGe::Services::API', id => undef);
+
+$r->get("/notebooks/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("notebooks-fetch-annotation")
+    ->to("notebook#fetch_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
+# Annotation routes
+$r->get("/annotations/type_groups")
+    ->name("annotations-type-groups")
+    ->to("annotations#fetch_type_groups");
     
 # User routes -- not documented, only for internal use
 $r->post("/notebooks/:id/items/remove" => [id => qr/\d+/])

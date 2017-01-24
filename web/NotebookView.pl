@@ -53,7 +53,6 @@ $node_types = $DB->node_types();
     toggle_favorite            => \&toggle_favorite,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
-    get_annotation             => \&get_annotation,
     update_annotation          => \&update_annotation,
     remove_annotation          => \&remove_annotation,
     search_mystuff             => \&search_mystuff,
@@ -63,7 +62,6 @@ $node_types = $DB->node_types();
     search_lists               => \&search_lists,
     search_users               => \&search_users,
     search_annotation_types    => \&search_annotation_types,
-    get_annotation_type_groups => \&get_annotation_type_groups,
     delete_list                => \&delete_list,
     send_to_genomelist         => \&send_to_genomelist,
     send_to_experimentlist     => \&send_to_experimentlist,
@@ -403,32 +401,6 @@ sub get_annotations {
     }
 
     return $html;
-}
-
-sub get_annotation {
-    my %opts = @_;
-    my $aid  = $opts{aid};
-    return unless $aid;
-
-    #TODO check user access here
-
-    my $ea = $DB->resultset('ListAnnotation')->find($aid);
-    return unless $ea;
-
-    my $type       = '';
-    my $type_group = '';
-    if ( $ea->type ) {
-        $type = $ea->type->name;
-        $type_group = $ea->type->group->name if ( $ea->type->group );
-    }
-    return encode_json(
-        {
-            annotation => $ea->annotation,
-            link       => $ea->link,
-            type       => $type,
-            type_group => $type_group
-        }
-    );
 }
 
 sub add_annotation {
@@ -1107,19 +1079,6 @@ sub search_annotation_types {
 
     my %unique;
     map { $unique{ $_->name }++ } @types;
-    return encode_json( [ sort keys %unique ] );
-}
-
-sub get_annotation_type_groups {
-
-    #my %opts = @_;
-    my %unique;
-
-    my $rs = $DB->resultset('AnnotationTypeGroup');
-    while ( my $atg = $rs->next ) {
-        $unique{ $atg->name }++;
-    }
-
     return encode_json( [ sort keys %unique ] );
 }
 

@@ -80,9 +80,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     add_annotation             => \&add_annotation,
     update_annotation          => \&update_annotation,
     remove_annotation          => \&remove_annotation,
-    get_annotation             => \&get_annotation,
     search_annotation_types    => \&search_annotation_types,
-    get_annotation_type_groups => \&get_annotation_type_groups,
     annotate                   => \&annotate,
     get_datasets               => \&get_datasets,
     get_bed                    => \&get_bed,
@@ -1718,32 +1716,6 @@ sub get_annotations {
     return $html;
 }
 
-sub get_annotation {
-    my %opts = @_;
-    my $aid  = $opts{aid};
-    return unless $aid;
-
-    #TODO check user access here
-
-    my $ga = $DB->resultset('GenomeAnnotation')->find($aid);
-    return unless $ga;
-
-    my $type       = '';
-    my $type_group = '';
-    if ( $ga->type ) {
-        $type = $ga->type->name;
-        $type_group = $ga->type->group->name if ( $ga->type->group );
-    }
-    return encode_json(
-        {
-            annotation => $ga->annotation,
-            link       => $ga->link,
-            type       => $type,
-            type_group => $type_group
-        }
-    );
-}
-
 sub add_annotation {
     my %opts = @_;
     my $fh = $FORM->upload('edit_annotation_image');
@@ -1835,18 +1807,6 @@ sub search_annotation_types {
 
     my %unique;
     map { $unique{ $_->name }++ } @types;
-    return encode_json( [ sort keys %unique ] );
-}
-
-sub get_annotation_type_groups {
-    #my %opts = @_;
-    my %unique;
-
-    my $rs = $DB->resultset('AnnotationTypeGroup');
-    while ( my $atg = $rs->next ) {
-        $unique{ $atg->name }++;
-    }
-
     return encode_json( [ sort keys %unique ] );
 }
 

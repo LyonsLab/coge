@@ -56,9 +56,7 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     add_annotation             => \&add_annotation,
     update_annotation          => \&update_annotation,
     remove_annotation          => \&remove_annotation,
-    get_annotation             => \&get_annotation,
     search_annotation_types    => \&search_annotation_types,
-    get_annotation_type_groups => \&get_annotation_type_groups,
     check_login                => \&check_login,
     export_experiment_irods    => \&export_experiment_irods,
     get_file_urls              => \&get_file_urls,
@@ -290,7 +288,6 @@ sub get_annotations {
                         $html .= $a->bisque_id;
                         $html .= "5?thumbnail=200,200' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;width:42px;margin-right:5px;'></a>";
                     }
-                    warn $a->bisque_id;
                     $html .= $a->info;
                     $html .= '</td><td style="padding-left:5px;">';
                     $html .= linkify( $a->link, 'Link' ) if $a->link;
@@ -318,32 +315,6 @@ sub get_annotations {
     }
 
     return $html;
-}
-
-sub get_annotation {
-    my %opts = @_;
-    my $aid  = $opts{aid};
-    return unless $aid;
-
-    #TODO check user access here
-
-    my $ea = $DB->resultset('ExperimentAnnotation')->find($aid);
-    return unless $ea;
-
-    my $type       = '';
-    my $type_group = '';
-    if ( $ea->type ) {
-        $type = $ea->type->name;
-        $type_group = $ea->type->group->name if ( $ea->type->group );
-    }
-    return encode_json(
-        {
-            annotation => $ea->annotation,
-            link       => $ea->link,
-            type       => $type,
-            type_group => $type_group
-        }
-    );
 }
 
 sub add_annotation {
@@ -659,17 +630,6 @@ sub search_annotation_types {
 
     my %unique;
     map { $unique{ $_->name }++ } @types;
-    return encode_json( [ sort keys %unique ] );
-}
-
-sub get_annotation_type_groups {
-    my %unique;
-
-    my $rs = $DB->resultset('AnnotationTypeGroup');
-    while ( my $atg = $rs->next ) {
-        $unique{ $atg->name }++;
-    }
-
     return encode_json( [ sort keys %unique ] );
 }
 

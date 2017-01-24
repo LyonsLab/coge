@@ -3,7 +3,6 @@ package CoGe::Services::API::Experiment;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON qw(decode_json);
 use Data::Dumper;
-#use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Annotations qw( get_annotation );
@@ -114,15 +113,15 @@ sub fetch_annotations {
 
 sub fetch_annotation {
     my $self = shift;
-    my $eid = int($self->stash('eid'));
+    my $id = int($self->stash('id'));
     my $aid = int($self->stash('aid'));
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
-    my $experiment = $self->_get_experiment($eid, 0, $db, $user);
+    my $experiment = $self->_get_experiment($id, 0, $db, $user);
     return unless $experiment;
 
-    my $json = get_annotation($aid, 'Experiment', $db);
-    $self->render(json => $json) if $json;
+    my $annotation = get_annotation($aid, 'Experiment', $db);
+    $self->render(json => $annotation) if $annotation;
 }
 
 sub add {
@@ -195,26 +194,24 @@ sub update {
 }
 
 sub _get_experiment {
-    my ($self, $id, $must_own, $db, $user) = @_;
+    my ($self, $id, $own_or_edit, $db, $user) = @_;
     my $experiment = $db->resultset("Experiment")->find($id);
     unless (defined $experiment) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
+        $self->render(status => 404, json => { error => { Error => "Resource not found" } });
         return;
     }
-    if ($must_own) {
+    if ($own_or_edit) {
+        unless ($user) {
+            $self->render(status => 404, json => { error => { Error => "User not logged in"} });
+            return;
+        }
         unless ($user->is_owner_editor(experiment => $id)) {
-            $self->render(json => {
-                error => { Auth => "Access denied" }
-            }, status => 401);
+            $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
             return;
         }
     }
     unless ( !$experiment->restricted || (defined $user && $user->has_access_to_experiment($experiment)) ) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
+        $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
         return;
     }
     return $experiment;

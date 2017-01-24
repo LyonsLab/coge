@@ -91,25 +91,9 @@ sub fetch {
         return;
     }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Get genome
-    my $genome = $db->resultset("Genome")->find($id);
-    unless (defined $genome) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found"}
-        });
-        return;
-    }
-
-    # Verify permission
-    unless ( !$genome->restricted || (defined $user && $user->has_access_to_genome($genome)) ) {
-        $self->render(json => {
-            error => { Auth => "Access denied"}
-        }, status => 401);
-        return;
-    }
+    my $gnome = $self->_get_gnome($id, 0, $db, $user);
+    return unless $gnome;
 
     # Format metadata
     my @metadata = map {
@@ -155,6 +139,23 @@ sub fetch {
     });
 }
 
+sub fetch_annotations {
+
+}
+
+sub fetch_annotation {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my $aid = int($self->stash('aid'));
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $genome = $self->_get_genome($id, 0, $db, $user);
+    return unless $genome;
+
+    my $annotation = get_annotation($aid, 'Genome', $db);
+    $self->render(json => $annotation) if $annotation;
+}
+
 sub sequence {
     my $self   = shift;
     my $gid    = $self->stash('id');
@@ -168,23 +169,9 @@ sub sequence {
         (defined $start ? "start=$start " : ''),
         (defined $stop ? "stop=$stop " : ''), "\n";
 
-    # Connect to the database
-    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-
-    # Retrieve genome
-    my $genome = $db->resultset('Genome')->find($gid);
-    unless ($genome) {
-        print STDERR "Data::Sequence::get genome $gid not found in db\n";
-        return;
-    }
-
-    # Check permissions
-    if ( $genome->restricted
-        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
-    {
-        print STDERR "Data::Sequence::get access denied to genome $gid\n";
-        return;
-    }
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $gnome = $self->_get_gnome($gid, 0, $db, $user);
+    return unless $gnome;
 
     # Force browser to download whole genome as attachment
     my $format;
@@ -254,6 +241,30 @@ sub add {
     };
     
     return CoGe::Services::API::Job::add($self, $request);
+}
+
+sub _get_genome {
+    my ($self, $id, $own_or_edit, $db, $user) = @_;
+    my $genome = $db->resultset("Genome")->find($id);
+    unless (defined $genome) {
+        $self->render(status => 404, json => { error => { Error => "Resource not found" } });
+        return;
+    }
+    if ($own_or_edit) {
+        unless ($user) {
+            $self->render(status => 404, json => { error => { Error => "User not logged in"} });
+            return;
+        }
+        unless ($user->is_owner_editor(genome => $id)) {
+            $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+            return;
+        }
+    }
+    unless ( !$genome->restricted || (defined $user && $user->has_access_to_genome($genome)) ) {
+        $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+        return;
+    }
+    return $genome;
 }
 
 1;
