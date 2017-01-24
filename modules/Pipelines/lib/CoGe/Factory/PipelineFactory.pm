@@ -76,22 +76,6 @@ sub get {
     # Post-build: add completion tasks (such as sending notifiation email)
     $builder->post_build();
 
-    # Dump info to file for debugging
-    if ($builder->result_dir) {
-        my $cmd = 'chmod g+rw ' . $builder->result_dir;
-        `$cmd`;
-
-        # Dump raw workflow
-        open(my $fh, '>', catfile($builder->result_dir, 'workflow.log'));
-        print $fh Dumper $builder->workflow, "\n";
-        close($fh);
-
-        # Dump params
-        open($fh, '>', catfile($builder->result_dir, 'params.log'));
-        print $fh Dumper $request->payload, "\n";
-        close($fh);
-    }
-    
     return $builder;
 }
 
