@@ -1,7 +1,7 @@
 package CoGe::Services::API::Annotations;
 
 use Mojo::Base 'Mojolicious::Controller';
-use CoGe::Core::Annotations qw( get_type_groups );
+use CoGe::Core::Metadata qw( get_type_groups );
 use CoGe::Services::Auth;
 
 sub fetch_type_groups {

@@ -21,37 +21,37 @@ class Annotations {
 		var annotation = $('#edit_annotation').val();
 		var type = $('#edit_annotation_type').val();
 
-		if (!annotation) {
+		if (!annotation)
 			alert('Please enter some annotation text.');
-		}
-		else if(!type) {
+		else if(!type)
 			alert ('Please specify a type.');
-		}
 		else {
 			var type_group = $('#edit_annotation_type_group').val();
 			var link = $('#edit_annotation_link').val();
-
 			var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-
 			if (annotation_image_file) {
-				if (!verify_image_file(annotation_image_file)) {
+				if (!verify_image_file(annotation_image_file))
 					return;
-				}
-
 				$("#wait_annotation").animate({opacity:1});
-			}
-			else {
+			} else
 				annotation_image_file = '';
-			}
-
-			var parent_id = $('#annotation_edit_box').data('parent_id');
+			$.ajax({
+				type: 'PUT',
+				url: '<TMPL_VAR NAME="API_BASE_URL">' + this.api_path + '/' + this.parent_id + '/annotations',
+				dataType: "json",
+				contentType: 'multipart/form-data',
+				data: JSON.stringify(data),
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) { 
+				self._error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
+			})
 			$('#edit_annotation_image').fileupload('send', {
 				files: annotation_image_file,
 				formData: {
 					fname: 'add_annotation',
-					parent_id: parent_id,
-					type_group: type_group,
-					type: type,
+					target_id: $('#annotation_edit_box').data('parent_id'),
+					group_name: type_group,
+					type_name: type,
 					annotation: annotation,
 					link: link
 				}
@@ -89,7 +89,7 @@ class Annotations {
 	show_add_dialog() {
 		$('#edit_annotation').val('');
 		$('#edit_annotation_link').val('');
-		$('#edit_annotation_type').val($('#annotation_edit_box').data('default_type'));
+		$('#edit_annotation_type').val(this.default_type);
 		$('#edit_annotation_type_group').val('');
 		$('#edit_annotation_image').val('');
 		$('#add_annotation_button').show();
@@ -117,23 +117,28 @@ class Annotations {
 		var thead = $('<thead style="display:none"></thead>').appendTo(table);
 		var tbody = $('<tbody></tbody>').appendTo(table);
 		var user_can_edit = this.user_can_edit;
-		coge.services.fetch_annotations(this.api_path, this.parent_id).done(function(groups){
+		coge.services.fetch_annotations(this.api_path, this.parent_id).done(function(json){
+			var groups = Object.keys(json);
 			if (groups.length) {
-				groups.forEach(function(group){
-					Object.keys(group).sort().forEach(function(type){
-						var prev_group = '';
-						var prev_type;
-						Object.keys(group[type]).sort().forEach(function(annotation){
-							var tr = $('<tr style="vertical-align:top;"></tr>').appendTo(tbody);
-							var header = '';
-							if (group && group != prev_group) {
-								header += '<b>' + group + '</b> ';
-								prev_group = group;
-								prev_type = null;
-							}
-							if (type != prev_type)
-								header += type;
-							tr.append($('<th class="title4" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:left;">' + header + '</th>'));
+				var prev_group = '';
+				var even = 1;
+				groups.sort().forEach(function(group){
+					var prev_type;
+					Object.keys(json[group]).sort().forEach(function(type){
+						json[group][type].forEach(function(annotation){
+							var tr = $('<tr class="' + (even ? 'even' : 'odd') + '" style="vertical-align:top;"></tr>').appendTo(tbody);
+							even ^= 1;
+							if (groups.length > 1)
+								if (group && group !== prev_group) {
+									$('<th class="title4" style="background:white;padding-right:10px;text-align:left;white-space:nowrap;">' + group + '</th>').appendTo(tr);
+									prev_group = group;
+								} else
+									$('<th style="background:white;"></th>').appendTo(tr);
+							if (type != prev_type) {
+								$('<th class="title4" style="background:white;font-weight:normal;padding-right:10px;text-align:left;white-space:nowrap;">' + type + '</th>').appendTo(tr);
+								prev_type = type;
+							} else
+								$('<th style="background:white;"></th>').appendTo(tr);
 							var td = $('<td class="data4"></td>').appendTo(tr);
 							if (annotation.image_id) {
 								var image_link = 'image.pl?id=' + annotation.image_id;
@@ -145,7 +150,9 @@ class Annotations {
 							if (annotation.link)
 								td.append($('<span class="link" onclick="window.open(\'' + annotation.link + '\')">Link</span>'));
 							if (user_can_edit && !annotation.locked)
-								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="edit_annotation_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="$(this).fadeOut(); remove_annotation(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
+								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="$(this).fadeOut(); remove_annotation(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
+							else
+								$('<th></th>').appendTo(tr);
 						});
 					});
 				});
@@ -156,7 +163,7 @@ class Annotations {
 		});
 	}
 
-	update_annotation() {
+	update() {
 		var annotation = $('#edit_annotation').val();
 		var type = $('#edit_annotation_type').val();
 		if (annotation && type) {
@@ -278,6 +285,6 @@ function verify_image_file(file) {
     </tr>
   </table>
   <span id='add_annotation_button' onClick="annotations.add();" class='coge-button r'>Add</span>
-  <span id='update_annotation_button' onClick="update_annotation();" class='hidden coge-button r'>Update</span>
+  <span id='update_annotation_button' onClick="annotations.update();" class='hidden coge-button r'>Update</span>
   <img id="wait_annotation" src="picts/ajax-loader.gif" style="opacity: 0;" />
 </div>

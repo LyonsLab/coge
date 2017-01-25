@@ -173,6 +173,10 @@ $r->get("/experiments/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
     ->name("experiments-fetch-annotation")
     ->to("experiment#fetch_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
 
+$r->put("/experiments/:id/annotations" => [id => qr/\d+/])
+    ->name("experiments-add_annotation")
+    ->to("experiment#add_annotation", namespace => 'CoGe::Services::API');
+
 # Notebook routes
 $r->get("/notebooks/search/#term")
     ->name("notebooks-search")

@@ -5,9 +5,9 @@ use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 use CoGeX;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Annotations qw( get_annotation get_annotations );
 use CoGe::Core::Experiment qw( delete_experiment );
 use CoGe::Core::Favorites;
+use CoGe::Core::Metadata qw( create_annotation get_annotation get_annotations );
 use CoGe::Services::Auth;
 use CoGe::Services::API::Job;
 
@@ -112,7 +112,7 @@ sub fetch_annotations {
     my $id = int($self->stash('id'));
     my ($db) = CoGe::Services::Auth::init($self);
 
-    $self->render(json => get_annotations($id, 'Experiment', $db))
+    $self->render(json => get_annotations($id, 'Experiment', $db, 1));
 }
 
 sub fetch_annotation {
@@ -157,6 +157,29 @@ sub add {
     };
     
     return CoGe::Services::API::Job::add($self, $request);
+}
+
+sub add_annotation {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+
+    my $group_name = $self->param('group_name');
+    my $image = $self->param('edit_annotation_image');
+    my $link = $self->param('link');
+    my $text = $self->param('annotation');
+    my $type_name = $self->param('type_name');
+
+    my ($db) = CoGe::Services::Auth::init($self);
+
+    create_annotation(
+        db => $db,
+        group_name => $group_name,
+        link => $link,
+        target_id => $id,
+        target_type => 'experiment',
+        text => $text,
+        type_name => $type_name
+    );
 }
 
 sub remove {
