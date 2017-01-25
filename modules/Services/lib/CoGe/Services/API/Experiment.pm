@@ -5,7 +5,7 @@ use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 use CoGeX;
 use CoGe::Accessory::Utils;
-use CoGe::Core::Annotations qw( get_annotation );
+use CoGe::Core::Annotations qw( get_annotation get_annotations );
 use CoGe::Core::Experiment qw( delete_experiment );
 use CoGe::Core::Favorites;
 use CoGe::Services::Auth;
@@ -108,7 +108,11 @@ sub fetch {
 }
 
 sub fetch_annotations {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my ($db) = CoGe::Services::Auth::init($self);
 
+    $self->render(json => get_annotations($id, 'Experiment', $db))
 }
 
 sub fetch_annotation {

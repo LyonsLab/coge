@@ -1,7 +1,3 @@
-function set_annotation_table() {
-    $('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
-}
-
 function get_experiment_info() {
     $.ajax({
         data: {
@@ -651,19 +647,6 @@ function remove_experiment_tag (opts) {
     });
 }
 
-function get_annotations() {
-    $.ajax({
-        data: {
-            fname: 'get_annotations',
-            eid: EXPERIMENT_ID,
-        },
-        success : function(data) {
-            $('#experiment_annotations').html(data);
-            set_annotation_table();
-        }
-    });
-}
-
 function remove_annotation (eaid) {
     $.ajax({
         data: {
@@ -672,7 +655,7 @@ function remove_annotation (eaid) {
             eaid: eaid,
         },
         success : function() {
-            get_annotations();
+            //get_annotations();
         },
     });
 }

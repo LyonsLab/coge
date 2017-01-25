@@ -6,49 +6,18 @@
 // Must call init_annotation_dialog() on page load
 // Need pageObj
 
-$(function() {
-    coge.services.init({
-        baseUrl: '<TMPL_VAR NAME="API_BASE_URL">',
-        userName: '<TMPL_VAR NAME="USER_NAME">',
-        //debug: true
-    });
-});
-
 class Annotations {
-	constructor(div_id, api_path, parent_id, default_type) {
+	constructor(div_id, parent_type, parent_id, user_can_edit, default_type) {
 		this.div_id = div_id;
-		this.api_path = api_path;
+		this.parent_type = parent_type;
+		this.api_path = parent_type + 's';
 		this.parent_id = parent_id;
+		this.user_can_edit = user_can_edit;
 		this.default_type = default_type;
+		this.show_table();
 	}
 
-	show_add_dialog() {
-		$('#edit_annotation').val('');
-		$('#edit_annotation_link').val('');
-		$('#edit_annotation_type').val($('#annotation_edit_box').data('default_type'));
-		$('#edit_annotation_type_group').val('');
-		$('#edit_annotation_image').val('');
-
-		$('#add_annotation_button').show();
-		$('#update_annotation_button').hide();
-
-		$("#annotation_edit_box").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
-	}
-
-	show_edit_dialog(aid) {
-		coge.services.fetch_annotation($('#annotation_edit_box').data('api_path'), $('#annotation_edit_box').data('parent_id'), aid).done(function(obj) {
-			$('#edit_annotation').val(obj.annotation);
-			$('#edit_annotation_link').val(obj.link);
-			$('#edit_annotation_type').val(obj.type);
-			$('#edit_annotation_type_group').val(obj.type_group);
-			$('#edit_annotation_image').val('');
-			$('#add_annotation_button').hide();
-			$('#update_annotation_button').data({annotation_id: aid}).show();
-			$("#annotation_edit_box").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
-		});
-	}
-
-	add_annotation () {
+	add() {
 		var annotation = $('#edit_annotation').val();
 		var type = $('#edit_annotation_type').val();
 
@@ -90,40 +59,6 @@ class Annotations {
 		}
 	}
 
-	update_annotation() {
-		var annotation = $('#edit_annotation').val();
-		var type = $('#edit_annotation_type').val();
-
-		if (annotation && type) {
-			var type_group = $('#edit_annotation_type_group').val();
-			var link = $('#edit_annotation_link').val();
-			var aid = $('#update_annotation_button').data('annotation_id');
-			var annotation_image_file = $('#edit_annotation_image')[0].files[0];
-
-			if (annotation_image_file) {
-				if (!verify_image_file(annotation_image_file)) {
-					return;
-				}
-				$("#wait_annotation").animate({opacity:1});
-			}
-			else {
-				annotation_image_file = '';
-			}
-
-			$('#edit_annotation_image').fileupload('send', {
-				files: annotation_image_file,
-				formData: {
-					fname: 'update_annotation',
-					aid: aid,
-					type_group: type_group,
-					type: type,
-					annotation: annotation,
-					link: link
-				}
-			});
-		}
-	}
-
 	image_preview(obj, preview) {
 		var id = obj.src; // need a unique identifier for the obj
 		if (pageObj.timers[id]) {
@@ -150,6 +85,105 @@ class Annotations {
 			);
 		}
 	}
+
+	show_add_dialog() {
+		$('#edit_annotation').val('');
+		$('#edit_annotation_link').val('');
+		$('#edit_annotation_type').val($('#annotation_edit_box').data('default_type'));
+		$('#edit_annotation_type_group').val('');
+		$('#edit_annotation_image').val('');
+		$('#add_annotation_button').show();
+		$('#update_annotation_button').hide();
+		$("#annotation_edit_box").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
+	}
+
+	show_edit_dialog(aid) {
+		coge.services.fetch_annotation(this.api_path, this.parent_id, aid).done(function(obj) {
+			$('#edit_annotation').val(obj.annotation);
+			$('#edit_annotation_link').val(obj.link);
+			$('#edit_annotation_type').val(obj.type);
+			$('#edit_annotation_type_group').val(obj.type_group);
+			$('#edit_annotation_image').val('');
+			$('#add_annotation_button').hide();
+			$('#update_annotation_button').data({annotation_id: aid}).show();
+			$("#annotation_edit_box").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
+		});
+	}
+
+	show_table() {
+		var div = $('#' + this.div_id);
+		div.empty();
+		var table = $('<table id="annotation_table" class="border-top border-bottom small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"></table>');
+		var thead = $('<thead style="display:none"></thead>').appendTo(table);
+		var tbody = $('<tbody></tbody>').appendTo(table);
+		var user_can_edit = this.user_can_edit;
+		coge.services.fetch_annotations(this.api_path, this.parent_id).done(function(groups){
+			if (groups.length) {
+				groups.forEach(function(group){
+					Object.keys(group).sort().forEach(function(type){
+						var prev_group = '';
+						var prev_type;
+						Object.keys(group[type]).sort().forEach(function(annotation){
+							var tr = $('<tr style="vertical-align:top;"></tr>').appendTo(tbody);
+							var header = '';
+							if (group && group != prev_group) {
+								header += '<b>' + group + '</b> ';
+								prev_group = group;
+								prev_type = null;
+							}
+							if (type != prev_type)
+								header += type;
+							tr.append($('<th class="title4" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:left;">' + header + '</th>'));
+							var td = $('<td class="data4"></td>').appendTo(tr);
+							if (annotation.image_id) {
+								var image_link = 'image.pl?id=' + annotation.image_id;
+								$('<a href=' + image_link + ' target="_blank" title="click for full-size image"><img height="40" width="40" src="' + image_link + '" onmouseover="image_preview(this, 1);" onmouseout="image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray margin-right:5px;"></a>').appendTo(td);
+							} else if (annotation.bisque_id)
+								$('<a href="http://bisque.iplantc.org/client_service/view?resource=http://bisque.iplantc.org/data_service/' + annotation.bisque_id + '6" target="_blank" title="click to view in BisQue"><img src="http://bisque.iplantc.org/image_service/' + annotation.bisque_id + '6?thumbnail=200,200" onmouseover="image_preview(this, 1);" onmouseout="image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray;width:42px;margin-right:5px;"></a>').appendTo(td);
+							td.append(document.createTextNode(annotation.annotation));
+							td = $('<td style="padding-left:5px;"></td>');
+							if (annotation.link)
+								td.append($('<span class="link" onclick="window.open(\'' + annotation.link + '\')">Link</span>'));
+							if (user_can_edit && !annotation.locked)
+								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="edit_annotation_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="$(this).fadeOut(); remove_annotation(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
+						});
+					});
+				});
+			} else
+				$('<tr><td class="padded note">There are no metadata items for this ' + annotations.parent_type + '.</td></tr>').appendTo(tbody);
+			table.appendTo(div);
+			$('<div class="padded"><span onClick="annotations.show_add_dialog();" class="coge-button">Add</span></div>').appendTo(div);
+		});
+	}
+
+	update_annotation() {
+		var annotation = $('#edit_annotation').val();
+		var type = $('#edit_annotation_type').val();
+		if (annotation && type) {
+			var type_group = $('#edit_annotation_type_group').val();
+			var link = $('#edit_annotation_link').val();
+			var aid = $('#update_annotation_button').data('annotation_id');
+			var annotation_image_file = $('#edit_annotation_image')[0].files[0];
+
+			if (annotation_image_file) {
+				if (!verify_image_file(annotation_image_file))
+					return;
+				$("#wait_annotation").animate({opacity:1});
+			} else
+				annotation_image_file = '';
+			$('#edit_annotation_image').fileupload('send', {
+				files: annotation_image_file,
+				formData: {
+					fname: 'update_annotation',
+					aid: aid,
+					type_group: type_group,
+					type: type,
+					annotation: annotation,
+					link: link
+				}
+			});
+		}
+	}
 }
 
 // End Widget API -------------------------------------------------------------
@@ -167,7 +201,7 @@ $(function() {
             },
         done:
             function(e, data) {
-                get_annotations();
+                annotations.show_table();
                 $("#wait_annotation").hide();
                 $("#annotation_edit_box").dialog('close');
             }
@@ -243,7 +277,7 @@ function verify_image_file(file) {
       </td>
     </tr>
   </table>
-  <span id='add_annotation_button' onClick="add_annotation();" class='coge-button r'>Add</span>
+  <span id='add_annotation_button' onClick="annotations.add();" class='coge-button r'>Add</span>
   <span id='update_annotation_button' onClick="update_annotation();" class='hidden coge-button r'>Update</span>
   <img id="wait_annotation" src="picts/ajax-loader.gif" style="opacity: 0;" />
 </div>

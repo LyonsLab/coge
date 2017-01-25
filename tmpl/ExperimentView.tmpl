@@ -40,10 +40,6 @@ $(document).ready(function() {
         source: function() { get_experiment_tags(); }
     });
 
-    set_annotation_table();
-
-    annotations = new Annotations('experiment_annotations', 'experiments', EXPERIMENT_ID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
-
     // Initialize CoGe packages
     coge.services.init({
     	baseUrl: API_BASE_URL,
@@ -55,9 +51,11 @@ $(document).ready(function() {
     	userName: USER_NAME,
     	supportEmail: SUPPORT_EMAIL,
     	onReset: reset_location,
-    	onSuccess: get_annotations // for Metaplot
+//    	onSuccess: get_annotations // for Metaplot
     });
     
+    annotations = new Annotations('experiment_annotations', 'experiment', EXPERIMENT_ID, '<TMPL_VAR NAME="USER_CAN_EDIT">', '<TMPL_VAR NAME="DEFAULT_TYPE">');
+
     // Initialize analysis dialogs
     snpMenu.init();
     expressionMenu.init();
@@ -160,14 +158,10 @@ $(document).ready(function() {
 	</tr>
 </table>
 
-<TMPL_IF NAME="EXPERIMENT_ANNOTATIONS">
 <div style="padding-top:2em;">
- <div class="bold text">Metadata</div>
- <div id="experiment_annotations">
-  <TMPL_VAR NAME="EXPERIMENT_ANNOTATIONS">
- </div>
+  <div class="bold text">Metadata</div>
+  <div id="experiment_annotations"></div>
 </div>
-</TMPL_IF>
 
 <div id="experiment_info_edit_box" class="dialog_box hidden" title="Edit Experiment Info"></div>
 

@@ -52,7 +52,6 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     add_tag_to_experiment      => \&add_tag_to_experiment,
     get_experiment_tags        => \&get_experiment_tags,
     remove_experiment_tag      => \&remove_experiment_tag,
-    get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
     update_annotation          => \&update_annotation,
     remove_annotation          => \&remove_annotation,
@@ -245,78 +244,6 @@ sub toggle_favorite {
     return $is_favorited;
 }
 
-sub get_annotations {
-    my %opts = @_;
-    my $eid  = $opts{eid};
-    return "Must have valid experiment id\n" unless ($eid);
-
-    my $exp = $DB->resultset('Experiment')->find($eid);
-    return "Access denied\n" unless $USER->has_access_to_experiment($exp);
-
-    my $user_can_edit = $exp->is_editable($USER);
-
-    # Categorize annotations based on type group and type
-    my %groups;
-    my $num_annot = 0;
-    foreach my $a ( $exp->annotations ) {
-        my $group = ( $a->type->group ? $a->type->group->name : '');
-        my $type = $a->type->name;
-        push @{ $groups{$group}{$type} }, $a if (defined $group and defined $type);
-        $num_annot++;
-    }
-
-    # Build annotation table
-    my $html;
-    if ($num_annot) {
-        $html .= '<table id="experiment_annotation_table" class="border-top border-bottom small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
-        foreach my $group ( sort keys %groups ) { # groups
-            my $first_group = 1;
-            foreach my $type ( sort keys %{ $groups{$group} } ) { # types
-                my $first_type = 1;
-                foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group}{$type} } ) { # annotations
-                    my $header = ($group and $first_group-- > 0 ? "<b>$group</b> " : '') . ($first_type-- > 0 ? $type : '');
-                    $html .= "<tr style='vertical-align:top;'>";
-                    $html .= "<th class='title4' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;text-align:left;'>$header</th><td class='data4'>";
-                    if ($a->image) {
-                        my $image_link = ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
-                        $html .= "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray margin-right:5px;'></a>";
-                    }
-                    elsif ($a->bisque_id) {
-                        $html .= "<a href='http://bisque.iplantc.org/client_service/view?resource=http://bisque.iplantc.org/data_service/";
-                        $html .= $a->bisque_id;
-                        $html .= "6' target='_blank' title='click to view in BisQue'><img src='http://bisque.iplantc.org/image_service/";
-                        $html .= $a->bisque_id;
-                        $html .= "6?thumbnail=200,200' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;width:42px;margin-right:5px;'></a>";
-                    }
-                    $html .= $a->info;
-                    $html .= '</td><td style="padding-left:5px;">';
-                    $html .= linkify( $a->link, 'Link' ) if $a->link;
-                    $html .= '</td>';
-                    if ($user_can_edit && !$a->locked) {
-                        my $aid = $a->id;
-                        $html .=
-                            '<td style="padding-left:20px;white-space:nowrap;">'
-                          . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
-                          . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
-                          . '</td>';
-                    }
-                    $html .= '</tr>';
-                }
-            }
-        }
-        $html .= '</tbody></table>';
-    }
-    elsif ($user_can_edit) {
-        $html .= '<table class="border-top border-bottom small padded note"><tr><td>There are no additional metadata items for this experiment.</tr></td></table>';
-    }
-
-    if ($user_can_edit) {
-        $html .= qq{<div class="padded"><span onClick="add_annotation_dialog();" class='coge-button'>Add</span></div>};
-    }
-
-    return $html;
-}
-
 sub add_annotation {
     my %opts = @_;
     my $fh = $FORM->upload('edit_annotation_image');
@@ -504,10 +431,10 @@ sub gen_body {
         PUBLIC            => $USER->user_name eq "public" ? 1 : 0,
         ADMIN_AREA        => $USER->is_admin,
         API_BASE_URL      => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
+        USER_CAN_EDIT     => $exp->is_editable($USER)
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( EXPERIMENT_INFO => get_experiment_info( eid => $eid ) || undef );
-    $template->param( EXPERIMENT_ANNOTATIONS => get_annotations( eid => $eid ) || undef );
 
     return $template->output;
 }
