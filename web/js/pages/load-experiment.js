@@ -163,7 +163,7 @@ $.extend(ExperimentDescriptionView.prototype, {
                 description:  '<to be determined from SRA>',
                 version:      '<to be determined from SRA>',
                 link:         '<to be determined from SRA>',
-                restricted:   false,
+                //restricted:   false,
                 source_name: 'NCBI-SRA'
             };
         }
