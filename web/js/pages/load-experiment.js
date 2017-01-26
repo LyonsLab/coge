@@ -521,9 +521,10 @@ $.extend(TrimmingView.prototype, {
         this.el = $($("#trim-template").html());
         this.container = this.el.find("#trim-container");
         this.templates = {
-        	none:       $($("#none-template").html()),
-            cutadapt:   $($("#cutadapt-template").html()),
-            trimgalore: $($("#trimgalore-template").html()),
+        	none:        $($("#none-template").html()),
+            cutadapt:    $($("#cutadapt-template").html()),
+            trimgalore:  $($("#trimgalore-template").html()),
+            trimmomatic: $($("#trimmomatic-template").html()),
         };
     },
 
@@ -559,7 +560,21 @@ $.extend(TrimmingView.prototype, {
                 	'-q': this.el.find("[id='-q']").val(),
                 }
             };
-        } 
+        }
+        else if (trimmer === "trimmomatic") {
+            this.data = {
+                trimming_params: {
+                	'trimmer': 'trimmomatic',
+                	'SLIDINGWINDOW': this.el.find("[id='SLIDINGWINDOW']").val(),
+                	'MAXINFO':       this.el.find("[id='MAXINFO']").val(),
+                	'LEADING':       this.el.find("[id='LEADING']").val(),
+                	'TRAILING':      this.el.find("[id='TRAILING']").val(),
+                	'CROP':          this.el.find("[id='CROP']").val(),
+                	'HEADCROP':      this.el.find("[id='HEADCROP']").val(),
+                	'MINLEN':        this.el.find("[id='MINLEN']").val(),
+                }
+            };
+        }
         else {
         	this.data = {}; // Skip trimming
         }
