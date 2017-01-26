@@ -19,66 +19,72 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotation create_annotations export_annotations get_annotation get_annotations get_type_groups tags_to_string to_annotations update_annotation );
+    @EXPORT = qw( create_annotation create_annotations export_annotations get_annotation get_annotations get_type_groups search_annotation_types tags_to_string to_annotations update_annotation );
 }
 
-sub get_annotation {
-    my ($aid, $object_type, $db) = @_;
-    return unless $aid && $object_type && $db;
+sub create_annotation {
+    my %opts = @_;
 
-    #TODO check user access here
-
-    my $annotation = $db->resultset($object_type . 'Annotation')->find($aid);
-    return unless $annotation;
-
-    my $type       = '';
-    my $type_group = '';
-    if ( $annotation->type ) {
-        $type = $annotation->type->name;
-        $type_group = $annotation->type->group->name if ( $annotation->type->group );
-    }
-    return {
-        annotation => $annotation->annotation,
-        link       => $annotation->link,
-        type       => $type,
-        type_group => $type_group
-    };
-}
-
-sub get_annotations {
-    my ($id, $object_type, $db, $for_api) = @_;
-    return unless $id && $object_type && $db;
-
-    my $object = $db->resultset($object_type)->find($id);
-    return unless $object;
-
-    # Categorize annotations based on type group and type
-    my %groups;
-    foreach my $a ( $object->annotations ) {
-        my $group = ( $a->type->group ? $a->type->group->name : '');
-        my $type = $a->type->name;
-        push @{ $groups{$group}{$type} }, {
-            annotation => $a->info,
-            bisque_id => $a->bisque_id,
-            id => $a->id,
-            image_id => $a->image_id,
-            link => $a->link,
-            locked => $for_api ? ($a->locked ? Mojo::JSON->true : Mojo::JSON->false) : $a->locked
-        };
-    }
-    return \%groups;
-}
-
-sub get_type_groups {
-    my $db = shift;
-    my %unique;
-
-    my $rs = $db->resultset('AnnotationTypeGroup');
-    while ( my $atg = $rs->next ) {
-        $unique{ $atg->name }++;
+    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
+    if ($error) {
+        warn 'create_annotation: ' . $error;
+        return;
     }
 
-    return [ sort keys %unique ];
+    my $db          = $opts{db};
+    my $target      = $opts{target};    # DBIX experiment/genome/notebook
+    my $target_id   = $opts{target_id}; # or id/type
+    my $target_type = $opts{target_type};
+    if ($target_id && $target_type) {
+        switch (lc($target_type)) {
+            case 'experiment' { $target = $db->resultset('Experiment')->find($target_id); }
+            case 'genome' { $target = $db->resultset('Genome')->find($target_id); }
+            case 'notebook' { $target = $db->resultset('List')->find($target_id); }
+        }
+    }
+    unless ($target) {
+        warn 'create_annotation: target not found';
+        return;
+    }
+
+    my $locked = $opts{locked};
+    my $text   = $opts{text};
+    if (ref($target) =~ /Experiment/) {
+        return $db->resultset('ExperimentAnnotation')->find_or_create({
+            experiment_id => $target->id,
+            annotation_type_id => $type_id,
+            annotation => $text,
+            link => $link,
+            image_id => $image_id,
+            bisque_id => $bisque_id,
+            locked => $locked
+        });
+    }
+    if (ref($target) =~ /Genome/) {
+        return $db->resultset('GenomeAnnotation')->find_or_create({
+            genome_id => $target->id,
+            annotation_type_id => $type_id,
+            annotation => $text,
+            link => $link,
+            image_id => $image_id,
+            bisque_id => $bisque_id,
+            locked => $locked
+        });
+    }
+    if (ref($target) =~ /List/) {
+        return $db->resultset('ListAnnotation')->find_or_create({
+            list_id => $target->id,
+            annotation_type_id => $type_id,
+            annotation => $text,
+            link => $link,
+            image_id => $image_id,
+            bisque_id => $bisque_id,
+            locked => $locked
+        });
+    }
+    warn 'create_annotation: unknown target type';
+
+    return;
 }
 
 sub create_annotations {
@@ -156,141 +162,6 @@ sub create_annotations {
     return \@result;
 }
 
-sub _init {
-    my $opts = shift;
-    my $type_name = $opts->{type_name};
-    return 'type_name required' unless $type_name;
-
-    my $db = $opts->{db};
-    my $group_name = $opts->{group_name};
-    my $group_id;
-    $group_id = $db->resultset('AnnotationTypeGroup')->find_or_create({ name => $group_name })->id if defined $group_name;
-
-    my $type_id = $db->resultset('AnnotationType')->find_or_create({ name => $type_name, annotation_type_group_id => $group_id })->id;
-    return 'error creating annotation type' unless $type_id;
-
-    my $link = $opts->{link};
-    if ($link) {
-        $link =~ s/^\s+//;
-        $link = 'http://' . $link if !($link =~ /^(\w+)\:\/\//);
-    }
-
-    my $image_id;
-    my $bisque_id;
-    my $fh = $opts->{fh};
-    my $filename = $opts->{filename};
-    if ($filename) {
-        if ($fh) {
-            $bisque_id = create_bisque_image(fh => $fh, filename => $filename, tmp_filename => $opts->{image_tmp_file}, db => $db, user => $opts->{user});
-            return 'error creating image' unless $bisque_id;
-        }
-        else {
-            my $image = create_image(filename => $filename, db => $db);
-            return 'error creating image' unless $image;
-            $image_id = $image->id;
-        }
-    }
-
-    return (undef, $type_id, $link, $image_id, $bisque_id);
-}
-
-sub create_annotation {
-    my %opts = @_;
-
-    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
-    if ($error) {
-        warn 'create_annotation: ' . $error;
-        return;
-    }
-
-    my $db          = $opts{db};
-    my $target      = $opts{target};    # DBIX experiment/genome/notebook
-    my $target_id   = $opts{target_id}; # or id/type
-    my $target_type = $opts{target_type};
-    if ($target_id && $target_type) {
-        switch (lc($target_type)) {
-            case 'experiment' { $target = $db->resultset('Experiment')->find($target_id); }
-            case 'genome' { $target = $db->resultset('Genome')->find($target_id); }
-            case 'notebook' { $target = $db->resultset('List')->find($target_id); }
-        }
-    }
-    unless ($target) {
-        warn 'create_annotation: target not found';
-        return;
-    }
-
-    my $locked = $opts{locked};
-    my $text   = $opts{text};
-    if (ref($target) =~ /Experiment/) {
-        return $db->resultset('ExperimentAnnotation')->find_or_create({
-            experiment_id => $target->id,
-            annotation_type_id => $type_id,
-            annotation => $text,
-            link => $link,
-            image_id => $image_id,
-            bisque_id => $bisque_id,
-            locked => $locked
-        });
-    }
-    if (ref($target) =~ /Genome/) {
-        return $db->resultset('GenomeAnnotation')->find_or_create({
-            genome_id => $target->id,
-            annotation_type_id => $type_id,
-            annotation => $text,
-            link => $link,
-            image_id => $image_id,
-            bisque_id => $bisque_id,
-            locked => $locked
-        });
-    }
-    if (ref($target) =~ /List/) {
-        return $db->resultset('ListAnnotation')->find_or_create({
-            list_id => $target->id,
-            annotation_type_id => $type_id,
-            annotation => $text,
-            link => $link,
-            image_id => $image_id,
-            bisque_id => $bisque_id,
-            locked => $locked
-        });
-    }
-    warn 'create_annotation: unknown target type';
-
-    return;
-}
-
-sub update_annotation {
-    my %opts = @_;
-
-    my $annotation_id = $opts{annotation_id};
-    unless ($annotation_id) {
-        warn 'update_annotation: annotation_id required';
-        return;
-    }
- 
-    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
-    if ($error) {
-        warn 'update_annotation: ' . $error;
-        return;
-    }
-
-    my $db = $opts{db};
-    my $annotation;
-    switch (lc($opts{target_type})) {
-        case 'experiment' { $annotation = $db->resultset('ExperimentAnnotation')->find($annotation_id); }
-        case 'genome' { $annotation = $db->resultset('GenomeAnnotation')->find($annotation_id); }
-        case 'notebook' { $annotation = $db->resultset('ListAnnotation')->find($annotation_id); }
-    }
-    $annotation->annotation($opts{text});
-    $annotation->link($link);
-    $annotation->annotation_type_id($type_id);
-    $annotation->bisque_id($image_id) if ($image_id);
-    $annotation->bisque_id($bisque_id) if ($bisque_id);
-    $annotation->update;
-
-    return;
-}
-
 sub export_annotations {
     my %opts = @_;
     my $annotations = $opts{annotations}; # array ref of DBIX Annotation objects
@@ -343,6 +214,133 @@ sub export_annotations {
     return @files;
 }
 
+sub get_annotation {
+    my ($aid, $object_type, $db) = @_;
+    return unless $aid && $object_type && $db;
+
+    #TODO check user access here
+
+    my $annotation = $db->resultset($object_type . 'Annotation')->find($aid);
+    return unless $annotation;
+
+    my $type       = '';
+    my $type_group = '';
+    if ( $annotation->type ) {
+        $type = $annotation->type->name;
+        $type_group = $annotation->type->group->name if ( $annotation->type->group );
+    }
+    return {
+        annotation => $annotation->annotation,
+        link       => $annotation->link,
+        type       => $type,
+        type_group => $type_group
+    };
+}
+
+sub get_annotations {
+    my ($id, $object_type, $db, $for_api) = @_;
+    return unless $id && $object_type && $db;
+
+    my $object = $db->resultset($object_type)->find($id);
+    return unless $object;
+
+    # Categorize annotations based on type group and type
+    my %groups;
+    foreach my $a ( $object->annotations ) {
+        my $group = ( $a->type->group ? $a->type->group->name : '');
+        my $type = $a->type->name;
+        push @{ $groups{$group}{$type} }, {
+            annotation => $a->info,
+            bisque_id => $a->bisque_id,
+            id => $a->id,
+            image_id => $a->image_id,
+            link => $a->link,
+            locked => $for_api ? ($a->locked ? Mojo::JSON->true : Mojo::JSON->false) : $a->locked
+        };
+    }
+    return \%groups;
+}
+
+sub get_type_groups {
+    my $db = shift;
+    my %unique;
+
+    my $rs = $db->resultset('AnnotationTypeGroup');
+    while ($rs->next) {
+        $unique{ $_->name }++;
+    }
+    return [ sort keys %unique ];
+}
+
+sub search_annotation_types {
+    my ($search_term, $type_group, $db) = @_;
+    return '' unless $search_term && $db;
+
+    $search_term = '%' . $search_term . '%';
+
+    my $group;
+    if ($type_group) {
+        $group = $db->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
+    }
+
+    my @types;
+    if ($group) {
+        @types = $db->resultset("AnnotationType")->search(
+            \[
+                'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
+                [ 'annotation_type_group_id', $group->id ],
+                [ 'name',                     $search_term ],
+                [ 'description',              $search_term ]
+            ]
+        );
+    }
+    else {
+        @types = $db->resultset("AnnotationType")->search(
+            \[
+                'name LIKE ? OR description LIKE ?',
+                [ 'name',        $search_term ],
+                [ 'description', $search_term ]
+            ]
+        );
+    }
+
+    my %unique;
+    map { $unique{ $_->name } = 1 } @types;
+    return [ sort keys %unique ];
+}
+
+sub update_annotation {
+    my %opts = @_;
+
+    my $annotation_id = $opts{annotation_id};
+    unless ($annotation_id) {
+        warn 'update_annotation: annotation_id required';
+        return;
+    }
+ 
+    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
+    if ($error) {
+        warn 'update_annotation: ' . $error;
+        return;
+    }
+
+    my $db = $opts{db};
+    my $annotation;
+    switch (lc($opts{target_type})) {
+        case 'experiment' { $annotation = $db->resultset('ExperimentAnnotation')->find($annotation_id); }
+        case 'genome' { $annotation = $db->resultset('GenomeAnnotation')->find($annotation_id); }
+        case 'notebook' { $annotation = $db->resultset('ListAnnotation')->find($annotation_id); }
+    }
+    $annotation->annotation($opts{text});
+    $annotation->link($link);
+    $annotation->annotation_type_id($type_id);
+    $annotation->image_id($image_id) if ($image_id);
+    $annotation->bisque_id($bisque_id) if ($bisque_id);
+    $annotation->update;
+
+    return;
+}
+
 # Convert metadata hash to a string that can be passed to load scripts (eg, load_experiment.pl).
 # The output of this function is eventually parsed by create_annotations() above.
 sub to_annotations {
@@ -386,7 +384,7 @@ sub tags_to_string {
     return $tags_str;
 }
 
-sub create_image { # mdb: don't have a better place for this atm
+sub _create_image { # mdb: don't have a better place for this atm
     my %opts = @_;
     my $fh = $opts{fh};
     my $filename = $opts{filename};
@@ -413,7 +411,7 @@ sub create_image { # mdb: don't have a better place for this atm
     return unless $image;
 }
 
-sub create_bisque_image {
+sub _create_bisque_image {
     my %opts = @_;
     my $filename = $opts{filename};
 
@@ -441,6 +439,44 @@ sub _get_object {
     }
     return 'Access denied' unless !$object->restricted || ($user && $user->has_access_to($object));
     return undef, $object;
+}
+
+sub _init {
+    my $opts = shift;
+    my $type_name = $opts->{type_name};
+    return 'type_name required' unless $type_name;
+
+    my $db = $opts->{db};
+    my $group_name = $opts->{group_name};
+    my $group_id;
+    $group_id = $db->resultset('AnnotationTypeGroup')->find_or_create({ name => $group_name })->id if defined $group_name;
+
+    my $type_id = $db->resultset('AnnotationType')->find_or_create({ name => $type_name, annotation_type_group_id => $group_id })->id;
+    return 'error creating annotation type' unless $type_id;
+
+    my $link = $opts->{link};
+    if ($link) {
+        $link =~ s/^\s+//;
+        $link = 'http://' . $link if !($link =~ /^(\w+)\:\/\//);
+    }
+
+    my $image_id;
+    my $bisque_id;
+    my $fh = $opts->{fh};
+    my $filename = $opts->{filename};
+    if ($filename) {
+        if ($fh) {
+            $bisque_id = _create_bisque_image(fh => $fh, filename => $filename, tmp_filename => $opts->{image_tmp_file}, db => $db, user => $opts->{user});
+            return 'error creating image' unless $bisque_id;
+        }
+        else {
+            my $image = _create_image(filename => $filename, db => $db);
+            return 'error creating image' unless $image;
+            $image_id = $image->id;
+        }
+    }
+
+    return (undef, $type_id, $link, $image_id, $bisque_id);
 }
 
 1;

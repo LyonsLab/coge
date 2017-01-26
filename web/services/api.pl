@@ -215,6 +215,10 @@ $r->get("/annotations/type_groups")
     ->name("annotations-type-groups")
     ->to("annotations#fetch_type_groups");
     
+$r->get("/annotations/search_types")
+    ->name("annotations-search-types")
+    ->to("annotations#search_types");
+
 # User routes -- not documented, only for internal use
 $r->post("/notebooks/:id/items/remove" => [id => qr/\d+/])
     ->name("notebooks-items-remove")
