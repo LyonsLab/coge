@@ -565,6 +565,7 @@ $.extend(TrimmingView.prototype, {
             this.data = {
                 trimming_params: {
                 	'trimmer': 'trimmomatic',
+                	'ILLUMINACLIP':  this.el.find("[id='ILLUMINACLIP']").val(),
                 	'SLIDINGWINDOW': this.el.find("[id='SLIDINGWINDOW']").val(),
                 	'MAXINFO':       this.el.find("[id='MAXINFO']").val(),
                 	'LEADING':       this.el.find("[id='LEADING']").val(),
